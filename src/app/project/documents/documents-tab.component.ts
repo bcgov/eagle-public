@@ -231,6 +231,32 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
       });
   }
 
+  public onSubmit() {
+    // dismiss any open snackbar
+    // if (this.snackBarRef) { this.snackBarRef.dismiss(); }
+
+    // NOTE: Angular Router doesn't reload page on same URL
+    // REF: https://stackoverflow.com/questions/40983055/how-to-reload-the-current-route-with-the-angular-2-router
+    // WORKAROUND: add timestamp to force URL to be different than last time
+
+    // Reset page.
+    this.tableParams.currentPage = 1;
+    this.tableParams.sortBy = '';
+    this.tableParams.sortDirection = 0;
+
+    const params = this.terms.getParams();
+    params['ms'] = new Date().getMilliseconds();
+    params['dataset'] = this.terms.dataset;
+    params['currentPage'] = this.tableParams.currentPage;
+    params['sortBy'] = this.tableParams.sortBy;
+    params['sortDirection'] = this.tableParams.sortDirection;
+
+
+    console.log('params =', params);
+    console.log('nav:', ['p', this.currentProject._id, 'documents', params]);
+    this.router.navigate(['p', this.currentProject._id, 'documents', params]);
+  }
+
   ngOnDestroy() {
     this.ngUnsubscribe.next();
     this.ngUnsubscribe.complete();
