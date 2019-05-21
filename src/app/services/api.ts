@@ -15,7 +15,7 @@ export class ApiService {
   public isMS: boolean; // IE, Edge, etc
   public apiPath: string;
   public adminUrl: string;
-  public env: 'local' | 'dev' | 'prod';
+  public env: 'local' | 'dev' | 'test' | 'prod';
 
   constructor(
     private http: Http
@@ -40,10 +40,10 @@ export class ApiService {
         break;
 
       case 'eagle-test.pathfinder.gov.bc.ca':
-        // Dev
+        // test
         this.apiPath = 'https://eagle-test.pathfinder.gov.bc.ca/api/public';
         this.adminUrl = 'https://eagle-test.pathfinder.gov.bc.ca/admin/';
-        this.env = 'dev';
+        this.env = 'test';
         break;
 
       default:
