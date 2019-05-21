@@ -40,7 +40,7 @@ export class ApiService {
         break;
 
       case 'eagle-test.pathfinder.gov.bc.ca':
-        // test
+        // Test
         this.apiPath = 'https://eagle-test.pathfinder.gov.bc.ca/api/public';
         this.adminUrl = 'https://eagle-test.pathfinder.gov.bc.ca/admin/';
         this.env = 'test';
