@@ -19,11 +19,11 @@
   vertical-align: bottom;
 
   .inner-block {
-    padding: 2rem;
+    padding: rem;
     border-radius: 0.4rem;
     background: #f7f8fa;
   }
-  
+
   h3 {
     font-size: 1rem;
     font-weight: 700;
@@ -31,13 +31,15 @@
   }
 
   p {
-    margin-bottom: 1rem;
+    margin-bottom: 2rem;
     line-height: 1.25rem;
   }
 
   a {
     display: inline-block;
     font-weight: 600;
+    width: 100%;
+    vertical-align: bottom;
   }
 
   strong {
