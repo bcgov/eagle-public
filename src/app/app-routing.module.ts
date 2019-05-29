@@ -9,6 +9,7 @@ import { NewsListComponent } from './news/news.component';
 import { LegislationComponent } from './legislation/legislation.component';
 import { ProcessComponent } from './process/process.component';
 import { ComplianceOversightComponent } from './compliance-oversight/compliance-oversight.component';
+import { SearchHelpComponent } from './search-help/search-help.component';
 
 const routes: Routes = [
   {
@@ -38,6 +39,10 @@ const routes: Routes = [
   {
     path: 'process',
     component: ProcessComponent
+  },
+  {
+    path: 'search-help',
+    component: SearchHelpComponent
   },
   {
     // default route

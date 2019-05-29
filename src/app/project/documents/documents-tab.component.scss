@@ -24,6 +24,18 @@ input[type="text"] {
   }
 }
 
+.btn-search-help {
+    padding: 6px 12px;
+    margin-bottom: 0.5rem;
+    transition: all ease-out 0.2s;
+    cursor: pointer;
+    .material-icons {
+        font-size: 20px;
+        margin-top: 5px;
+        margin-right: 2px;
+    }
+}
+
 .btn-outline-secondary {
   color: #007bff;
   border-color: #007bff;

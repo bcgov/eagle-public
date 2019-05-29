@@ -106,6 +106,10 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
       );
   }
 
+  navSearchHelp() {
+    this.router.navigate(['/search-help']);
+  }
+
   public selectAction(action) {
     // select all documents
     switch (action) {

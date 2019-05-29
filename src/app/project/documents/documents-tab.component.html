@@ -11,6 +11,11 @@
         </button>
       </div>
     </div>
+    <div class="input-group-append">
+        <button class="btn btn-primary btn-search-help" type="submit" (click)="navSearchHelp()">
+            <span> Search Help</span>
+        </button>
+    </div>
     <div class="results">
       <p *ngIf="!loading && tableParams.totalListItems == 0">
         No result<span *ngIf="count != 1">s</span> found for "{{tableParams.keywords}}"
