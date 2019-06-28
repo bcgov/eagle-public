@@ -231,7 +231,7 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
       });
   }
 
-  public onShowAll() {
+  public onNumItems(numItems) {
     // dismiss any open snackbar
     // if (this.snackBarRef) { this.snackBarRef.dismiss(); }
 
@@ -244,7 +244,7 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
     params['currentPage'] = this.tableParams.currentPage = 1;
     params['sortBy'] = this.tableParams.sortBy;
     params['keywords'] = this.tableParams.keywords;
-    params['pageSize'] = this.tableParams.pageSize = this.tableParams.totalListItems;
+    numItems === 'max' ? params['pageSize'] = this.tableParams.pageSize = this.tableParams.totalListItems : params['pageSize'] = this.tableParams.pageSize = numItems;
 
     this.router.navigate(['p', this.currentProject._id, 'documents', params]);
   }

@@ -14,10 +14,15 @@
       <a _ngcontent-c7 class="btn btn-primary btn-search-help" [routerLink]="['/search-help']" target="_blank">
           <span> Search Help</span>
       </a>
-      <button *ngIf="!loading && tableParams.totalListItems > tableParams.pageSize"
-        class="btn btn-primary btn-search-help" (click)="onShowAll()">
-        <span> Show All Results</span>
-      </button>
+    <button class="btn btn-secondary btn-search-help dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+        Items per page
+    </button>
+    <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+        <a class="dropdown-item" (click)="onNumItems(25)">25</a>
+        <a class="dropdown-item" (click)="onNumItems(50)">50</a>
+        <a class="dropdown-item" (click)="onNumItems(100)">100</a>
+        <a class="dropdown-item" (click)="onNumItems('max')">Show All</a>
+    </div>
     </div>
     <div class="results">
       <p *ngIf="!loading && tableParams.totalListItems == 0">
