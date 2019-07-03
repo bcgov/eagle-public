@@ -75,6 +75,18 @@
         display: inline-block;
       }
     }
+    .legislation-button {
+        margin-top: 20px;
+        label {
+            font-weight: bold;
+            color: #fcba18;
+            font-size: 1rem;
+        }
+        p {
+            font-size: 1rem;
+            display: inline-block;
+        }
+    }
   }
 
   main {
@@ -168,7 +180,7 @@
         font-size: 1rem;
       }
     }
-    
+
     .shape-info-item {
       hr {
           margin: 1rem 0;
