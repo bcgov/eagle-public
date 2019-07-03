@@ -11,6 +11,8 @@ import { Project } from 'app/models/project';
 import { ApiService } from './api';
 import { CommentPeriodService } from './commentperiod.service';
 import { CommentPeriod } from 'app/models/commentperiod';
+import { Org } from 'app/models/organization';
+import { SearchResults } from 'app/models/search';
 
 @Injectable()
 export class ProjectService {
@@ -96,5 +98,20 @@ export class ProjectService {
         return projects.length > 0 ? new Project(projects[0]) : null;
       })
       .catch(this.api.handleError);
+  }
+
+  getPins(proj: string, pageNum: number, pageSize: number, sortBy: any): Observable<any[]> {
+    const searchResults = this.api.getProjectPins(proj, pageNum, pageSize, sortBy)
+    .map((res: any) => {
+      let records = JSON.parse(<string>res._body);
+      let allResults = <any>[];
+      records.forEach(item => {
+        const r = new SearchResults({ type: item._schemaName, data: item });
+        allResults.push(r);
+      });
+      return allResults;
+    })
+    .catch(error => this.api.handleError(error));
+    return searchResults;
   }
 }

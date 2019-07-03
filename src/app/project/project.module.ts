@@ -24,6 +24,8 @@ import { ProjectDetailsTabComponent } from './project-details-tab/project-detail
 import { CommentsTableRowsComponent } from 'app/project/comments/comments-table-rows/comments-table-rows.component';
 import { ProjectActivitesComponent } from './project-activites/project-activites.component';
 import { CertificatesComponent } from './certificates/certificates.component';
+import { PinsComponent } from './pins/pins.component';
+import { PinsTableRowsComponent } from './pins/pins-table-rows/pins-table-rows.component';
 
 @NgModule({
   imports: [
@@ -43,18 +45,20 @@ import { CertificatesComponent } from './certificates/certificates.component';
     DateInputComponent,
     DocumentsTabComponent,
     DocumentTableRowsComponent,
+    PinsTableRowsComponent,
     CommentsTableRowsComponent,
     ProjectDetailsTabComponent,
     ProjectActivitesComponent,
-    CertificatesComponent
+    CertificatesComponent,
+    PinsComponent
   ],
   providers: [
     StorageService
   ],
   entryComponents: [
     DocumentTableRowsComponent,
+    PinsTableRowsComponent,
     CommentsTableRowsComponent
-
   ]
 })
 

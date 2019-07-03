@@ -8,6 +8,7 @@ import * as _ from 'lodash';
 import { Comment } from 'app/models/comment';
 import { Document } from 'app/models/document';
 import { SearchResults } from 'app/models/search';
+import { Org } from 'app/models/organization';
 
 const encode = encodeURIComponent;
 window['encodeURIComponent'] = (component: string) => {
@@ -276,6 +277,14 @@ export class ApiService {
     if (cpEnd !== null) { queryString += `&cpEnd[until]=${cpEnd}`; }
     queryString += `&fields=${this.buildValues(fields)}`;
     return this.get(queryString);
+  }
+
+  getProjectPins(id: string, pageNum: number, pageSize: number, sortBy: any) {
+    let queryString = `project/${id}/pin`;
+    if (pageNum !== null) { queryString += `?pageNum=${pageNum - 1}`; }
+    if (pageSize !== null) { queryString += `&pageSize=${pageSize}`; }
+    if (sortBy !== '' && sortBy !== null) { queryString += `&sortBy=${sortBy}`; }
+    return this.http.get(`${this.apiPath}/${queryString}`, {});
   }
 
   //
