@@ -23,8 +23,7 @@ export class ProjectComponent implements OnInit {
     { label: 'Commenting', link: 'commenting' },
     { label: 'Documents', link: 'documents' },
     { label: 'Certificate', link: 'certificates' },
-    { label: 'Amendment(s)', link: 'amendments' },
-    { label: 'Participating Indigenous Nations', link: 'pins' }
+    { label: 'Amendment(s)', link: 'amendments' }
   ];
 
   public project: Project = null;
