@@ -417,7 +417,8 @@ export class ApiService {
     const fields = [
       'project',
       'dateStarted',
-      'dateCompleted'
+      'dateCompleted',
+      'instructions'
     ];
     // TODO: May want to pass this as a parameter in the future.
     const sort = '&sortBy=-dateStarted';
