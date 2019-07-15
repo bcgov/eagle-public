@@ -1,22 +1,19 @@
-import { Component, OnInit, ChangeDetectorRef, Input } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, OnDestroy } from '@angular/core';
 import { TableObject } from 'app/shared/components/table-template/table-object';
 import { TableParamsObject } from 'app/shared/components/table-template/table-params-object';
-import { ApiService } from 'app/services/api';
 import { ActivatedRoute, Router } from '@angular/router';
-import { SearchService } from 'app/services/search.service';
 import { StorageService } from 'app/services/storage.service';
 import { TableTemplateUtils } from 'app/shared/utils/table-template-utils';
 import { Subject } from 'rxjs';
 import { DocumentTableRowsComponent } from '../documents/project-document-table-rows/project-document-table-rows.component';
 import { SearchTerms } from 'app/models/search';
-import { PlatformLocation } from '@angular/common';
 
 @Component({
   selector: 'app-certificates',
   templateUrl: './certificates.component.html',
   styleUrls: ['./certificates.component.scss']
 })
-export class CertificatesComponent implements OnInit {
+export class CertificatesComponent implements OnInit, OnDestroy {
   public documents = [];
   private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
   public documentTableData: TableObject;
@@ -50,11 +47,8 @@ export class CertificatesComponent implements OnInit {
   ];
   constructor(
     private _changeDetectionRef: ChangeDetectorRef,
-    private api: ApiService,
-    private platformLocation: PlatformLocation,
     private route: ActivatedRoute,
     private router: Router,
-    private searchService: SearchService,
     private storageService: StorageService,
     private tableTemplateUtils: TableTemplateUtils
   ) {
@@ -166,5 +160,10 @@ export class CertificatesComponent implements OnInit {
     } else {
       this.router.navigate(['p', this.currentProject._id, 'certificates', params]);
     }
+  }
+
+  ngOnDestroy() {
+    this.ngUnsubscribe.next();
+    this.ngUnsubscribe.complete();
   }
 }

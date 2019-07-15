@@ -1,14 +1,12 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { trigger, style, transition, animate } from '@angular/animations';
 import { ActivatedRoute, Router } from '@angular/router';
-import { DialogService } from 'ng2-bootstrap-modal';
 import { Subject } from 'rxjs/Subject';
 import 'rxjs/add/operator/takeUntil';
 
 import { Project } from 'app/models/project';
 import { CommentPeriodService } from 'app/services/commentperiod.service';
 import { CommentPeriod } from 'app/models/commentperiod';
-import { StorageService } from 'app/services/storage.service';
 
 @Component({
   templateUrl: './commenting-tab.component.html',

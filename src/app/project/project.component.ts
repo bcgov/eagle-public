@@ -1,4 +1,4 @@
-import { Component, OnInit, Renderer2, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, Renderer2, ChangeDetectorRef, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject } from 'rxjs/Subject';
 import 'rxjs/add/operator/takeUntil';
@@ -17,7 +17,7 @@ import { AddCommentComponent } from './comments/add-comment/add-comment.componen
   templateUrl: './project.component.html',
   styleUrls: ['./project.component.scss']
 })
-export class ProjectComponent implements OnInit {
+export class ProjectComponent implements OnInit, OnDestroy {
   readonly tabLinks = [
     { label: 'Project Details', link: 'project-details' },
     { label: 'Commenting', link: 'commenting' },
@@ -88,5 +88,10 @@ export class ProjectComponent implements OnInit {
 
   public goToViewComments() {
     this.router.navigate(['/p', this.project._id, 'cp', this.project.commentPeriodForBanner._id, 'details']);
+  }
+
+  ngOnDestroy() {
+    this.ngUnsubscribe.next();
+    this.ngUnsubscribe.complete();
   }
 }

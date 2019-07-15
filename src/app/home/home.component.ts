@@ -19,13 +19,15 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.searchService.getTopNewsItems()
-    .takeUntil(this.ngUnsubscribe)
-    .subscribe((res: any) => {
-      this.results = res;
-      this._changeDetectionRef.detectChanges();
-    });
+      .takeUntil(this.ngUnsubscribe)
+      .subscribe((res: any) => {
+        this.results = res;
+        this._changeDetectionRef.detectChanges();
+      });
   }
 
-  ngOnDestroy() { }
-
+  ngOnDestroy() {
+    this.ngUnsubscribe.next();
+    this.ngUnsubscribe.complete();
+  }
 }

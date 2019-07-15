@@ -137,11 +137,6 @@ export class ProjectsComponent implements OnInit, OnDestroy {
     }, 0);
   }
 
-  ngOnDestroy() {
-    this.ngUnsubscribe.next();
-    this.ngUnsubscribe.complete();
-  }
-
   /**
    * Event handler called when filters component updates list of matching apps.
    */
@@ -180,5 +175,10 @@ export class ProjectsComponent implements OnInit, OnDestroy {
    */
   public toggleAppList() {
     this.configService.isApplistListVisible = !this.configService.isApplistListVisible;
+  }
+
+  ngOnDestroy() {
+    this.ngUnsubscribe.next();
+    this.ngUnsubscribe.complete();
   }
 }
