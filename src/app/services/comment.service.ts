@@ -1,14 +1,15 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs/Observable';
-import 'rxjs/add/operator/mergeMap';
+import { flatMap, mergeMap } from 'rxjs/operators';
+import { of, forkJoin } from 'rxjs';
 import 'rxjs/add/operator/toPromise';
 import 'rxjs/add/operator/map';
 import 'rxjs/add/operator/catch';
-import 'rxjs/add/observable/of';
 import * as _ from 'lodash';
 
 import { ApiService } from './api';
 import { Comment } from 'app/models/comment';
+import { DocumentService } from './document.service';
 
 @Injectable()
 export class CommentService {
@@ -16,32 +17,31 @@ export class CommentService {
 
   constructor(
     private api: ApiService,
+    private documentService: DocumentService,
   ) { }
 
   // get count of projects
-  getCountById(commentPeriodId): Observable<number> {
+  getCountById(commentPeriodId: string): Observable<number> {
     return this.api.getCountCommentsById(commentPeriodId)
-      .map(res => {
-        // retrieve the count from the response headers
-        return parseInt(res.headers.get('x-total-count'), 10);
-      })
-      .catch(this.api.handleError);
+      .catch(error => this.api.handleError(error));
   }
 
   // get all comments for the specified comment period id
   // (without documents)
-  getByPeriodId(periodId: string, pageNum: number = null, pageSize: number = null, getCount: boolean = false) {
+  getByPeriodId(periodId: string, pageNum: number = null, pageSize: number = null, getCount: boolean = false): Observable<Object> {
     return this.api.getCommentsByPeriodId(pageNum ? pageNum - 1 : pageNum, pageSize, getCount, periodId)
-      .map(res => {
-        const comments = res.text() ? res.json() : [];
-        comments.forEach((comment, i) => {
-          comments[i] = new Comment(comment);
-        });
-        const commentsDataSet = {
-          totalCount: res.headers.get('x-total-count'),
-          currentComments: comments as Comment[]
-        };
-        return commentsDataSet;
+      .map((res: any) => {
+        if (res) {
+          const comments = res.body;
+          comments.forEach((comment, i) => {
+            comments[i] = new Comment(comment);
+          });
+          const commentsDataSet = {
+            totalCount: res.headers.get('x-total-count'),
+            currentComments: comments as Comment[]
+          };
+          return commentsDataSet;
+        }
       })
       .catch(this.api.handleError);
   }
@@ -55,25 +55,21 @@ export class CommentService {
 
     // first get the comment data
     return this.api.getComment(commentId)
-      .map(res => {
-        const comments = res.text() ? res.json() : [];
-        // return the first (only) comment
-        return comments.length > 0 ? new Comment(comments[0]) : null;
+    .pipe(
+      flatMap(res => {
+        let comments = res.body;
+        if (!comments || comments.length === 0) {
+          return of(null as Comment);
+        }
+        // Safety check for null documents or an empty array of documents.
+        if (comments[0].documents === null || comments[0].documents && comments[0].documents.length === 0) {
+          return of(new Comment(comments[0]));
+        }
+        // now get the rest of the data for this project
+        return this._getExtraAppData(new Comment(comments[0]));
       })
-      // .mergeMap(comment => {
-      //   if (!comment) { return Observable.of(null as Comment); }
-
-      //   // now get the comment documents
-      //   // const promise = this.documentService.getAllByCommentId(comment._id)
-      //   //   .toPromise()
-      //   //   .then(documents => comment.documents = documents);
-
-      //   return Promise.resolve(promise).then(() => {
-      //     this.comment = comment;
-      //     return this.comment;
-      //   });
-      // })
-      .catch(this.api.handleError);
+    )
+    .catch(error => this.api.handleError(error));
   }
 
   add(orig: Comment): Observable<Comment> {
@@ -95,10 +91,18 @@ export class CommentService {
     // }
 
     return this.api.addComment(comment)
-      .map(res => {
-        const c = res.text() ? res.json() : null;
-        return c ? new Comment(c) : null;
+      .map((res: Comment) => {
+        return res ? new Comment(res) : null;
       })
       .catch(this.api.handleError);
+  }
+
+  private _getExtraAppData(comment: Comment): Observable<Comment> {
+    return forkJoin(
+      this.documentService.getByMultiId(comment.documents)
+    ).map(payloads => {
+      comment.documentsList = payloads[0];
+      return comment;
+    });
   }
 }

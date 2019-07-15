@@ -27,7 +27,7 @@ export class DecisionService {
 
     // first get the decision data
     return this.api.getDecisionByAppId(appId)
-      .map(res => {
+      .map((res: any) => {
         const decisions = res.text() ? res.json() : [];
         // return the first (only) decision
         return decisions.length > 0 ? new Decision(decisions[0]) : null;
@@ -56,7 +56,7 @@ export class DecisionService {
 
     // first get the decision data
     return this.api.getDecision(decisionId)
-      .map(res => {
+      .map((res: any) => {
         const decisions = res.text() ? res.json() : [];
         // return the first (only) decision
         return decisions.length > 0 ? new Decision(decisions[0]) : null;

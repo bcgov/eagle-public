@@ -36,7 +36,7 @@ export class CommentsTableRowsComponent implements OnInit {
         for (let doc of comment.documents) {
           let docs = await this.api.getDocument(doc)
             .map(async (res: any) => {
-              let record = JSON.parse(<string>res._body);
+              let record = res;
               // console.log("record:", record[0]);
               return record[0];
             }).toPromise();

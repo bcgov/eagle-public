@@ -73,9 +73,9 @@ export class PinsComponent implements OnInit, OnDestroy {
       .takeUntil(this.ngUnsubscribe)
       .subscribe((res: any) => {
         if (res) {
-          if (res.pins && res.pins[0].data.total_items > 0) {
-            this.tableParams.totalListItems = res.pins[0].data.total_items;
-            this.pins = res.pins[0].data.results;
+          if (res.pins && res.pins.length > 0) {
+            this.tableParams.totalListItems = res.pins.length;
+            this.pins = res.pins;
           } else {
             this.tableParams.totalListItems = 0;
             this.pins = [];

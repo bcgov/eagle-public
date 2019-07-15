@@ -4,7 +4,7 @@ import { AppComponent } from './app.component';
 
 import { HeaderComponent } from './header/header.component';
 import { FooterComponent } from './footer/footer.component';
-import { Ng2PageScrollModule } from 'ng2-page-scroll';
+import { NgxPageScrollModule } from 'ngx-page-scroll';
 import { CookieService } from 'ngx-cookie-service';
 import { ApiService } from 'app/services/api';
 import { ConfigService } from 'app/services/config.service';
@@ -31,7 +31,7 @@ describe('AppComponent', () => {
       ],
       imports: [
         RouterTestingModule,
-        Ng2PageScrollModule.forRoot(),
+        NgxPageScrollModule,
       ],
       providers: [
         { provide: ApiService, useValue: apiServiceStub },

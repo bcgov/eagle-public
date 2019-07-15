@@ -21,7 +21,7 @@ export class CommentPeriodService {
 
   constructor(
     private api: ApiService,
-    private commentService: CommentService
+    private commentService: CommentService,
   ) {
     // user-friendly strings for display
     this.commentPeriodStatuses[this.NOT_STARTED] = 'Commenting Not Started';
@@ -31,32 +31,33 @@ export class CommentPeriodService {
   }
 
   // get all comment periods for the specified application id
-  getAllByProjectId(projId: string): Observable<CommentPeriod[]> {
+  getAllByProjectId(projId: string): Observable<Object> {
     return this.api.getPeriodsByProjId(projId)
-      .map(res => {
-        const periods = res.text() ? res.json() : [];
-        periods.forEach((period, i) => {
-          periods[i] = new CommentPeriod(period);
-        });
-        return periods;
-      })
-      .map((periods: CommentPeriod[]) => {
-        if (periods.length === 0) {
-          return [] as CommentPeriod[];
+      .map((res: any) => {
+        if (res) {
+          const periods: Array<CommentPeriod> = [];
+          if (!res || res.length === 0) {
+            return periods;
+          }
+          res.forEach(cp => {
+            periods.push(new CommentPeriod(cp));
+          });
+          return { totalCount: res.length, data: periods };
         }
-
-        return periods;
+        return {};
       })
-      .catch(this.api.handleError);
+      .catch(error => this.api.handleError(error));
   }
 
   // get a specific comment period by its id
   getById(periodId: string): Observable<CommentPeriod> {
     return this.api.getPeriod(periodId)
-      .map(res => {
-        const periods = res.text() ? res.json() : [];
-        // return the first (only) comment period
-        return periods.length > 0 ? new CommentPeriod(periods[0]) : null;
+      .map((res: any) => {
+        if (res) {
+          const periods = res;
+          // return the first (only) comment period
+          return periods.length > 0 ? new CommentPeriod(periods[0]) : null;
+        }
       })
       .map((period: CommentPeriod) => {
         if (!period) { return null as CommentPeriod; }
@@ -73,7 +74,7 @@ export class CommentPeriodService {
   //     return Observable.of(this.commentPeriod);
   //   }
   //   return this.api.getPeriod(periodId)
-  //     .map(res => {
+  //     .map(res: any) => {
   //       const periods = res.text() ? res.json() : [];
   //       // return the first (only) comment period
   //       return periods.length > 0 ? new CommentPeriod(periods[0]) : null;

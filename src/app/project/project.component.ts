@@ -52,7 +52,8 @@ export class ProjectComponent implements OnInit, OnDestroy {
       .subscribe(
         (data: { project: Project }) => {
           if (data.project) {
-            this.storageService.state.currentProject = { type: 'currentProject', data: data.project };
+            this.project = data.project;
+            this.storageService.state.currentProject = { type: 'currentProject', data: this.project };
             this.renderer.removeClass(document.body, 'no-scroll');
             this.project = data.project;
             this._changeDetectionRef.detectChanges();

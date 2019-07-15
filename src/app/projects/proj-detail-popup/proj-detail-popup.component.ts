@@ -27,7 +27,7 @@ export class ProjDetailPopupComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.commentPeriodService.getAllByProjectId(this.proj._id)
       .takeUntil(this.ngUnsubscribe)
-      .subscribe(data => {
+      .subscribe((data: any) => {
         if (data && data.length > 0 && data[0]) {
           this.commentPeriodStatus = data[0].commentPeriodStatus;
         }

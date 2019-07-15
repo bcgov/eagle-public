@@ -13,7 +13,7 @@ export class FeatureService {
 
   getByDTID(tantalisId: number): Observable<Feature[]> {
     return this.api.getFeaturesByTantalisId(tantalisId)
-      .map(res => {
+      .map((res: any) => {
         const features = res.text() ? res.json() : [];
         features.forEach((feature, index) => {
           feature[index] = new Feature(feature);
@@ -25,7 +25,7 @@ export class FeatureService {
 
   getByApplicationId(applicationId: string): Observable<Feature[]> {
     return this.api.getFeaturesByApplicationId(applicationId)
-      .map(res => {
+      .map((res: any) => {
         const features = res.text() ? res.json() : [];
         features.forEach((feature, index) => {
           feature[index] = new Feature(feature);

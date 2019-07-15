@@ -1,14 +1,22 @@
 import { Injectable } from '@angular/core';
-import { Http, ResponseContentType } from '@angular/http';
+import { ResponseContentType } from '@angular/http';
+import { HttpClient, HttpResponse } from '@angular/common/http';
 import { Observable } from 'rxjs/Observable';
 import { ErrorObservable } from 'rxjs/observable/ErrorObservable';
-import 'rxjs/add/observable/throw';
+import { throwError } from 'rxjs';
+import { map } from 'rxjs/operators';
 import * as _ from 'lodash';
 
+import { Project } from 'app/models/project';
+import { Feature } from 'app/models/feature';
+import { News } from 'app/models/news';
 import { Comment } from 'app/models/comment';
+import { CommentPeriod } from 'app/models/commentperiod';
 import { Document } from 'app/models/document';
 import { SearchResults } from 'app/models/search';
 import { Org } from 'app/models/organization';
+import { Decision } from 'app/models/decision';
+import { User } from 'app/models/user';
 
 const encode = encodeURIComponent;
 window['encodeURIComponent'] = (component: string) => {
@@ -27,7 +35,7 @@ export class ApiService {
   public env: 'local' | 'dev' | 'test' | 'prod';
 
   constructor(
-    private http: Http
+    private http: HttpClient
   ) {
     // const currentUser = JSON.parse(window.localStorage.getItem('currentUser'));
     // this.token = currentUser && currentUser.token;
@@ -73,19 +81,14 @@ export class ApiService {
     };
   }
 
-  handleError(error: any): ErrorObservable<never> {
+  handleError(error: any): Observable<any> {
     const reason = error.message ? error.message : (error.status ? `${error.status} - ${error.statusText}` : 'Server error');
     console.log('API error =', reason);
-    return Observable.throw(error);
+    return throwError(error);
   }
 
-  getFullDataSet(dataSet: string) {
-    return this.get(`search?pageSize=1000&dataset=${dataSet}`, {})
-      .map((res: any) => {
-        let records = JSON.parse(<string>res._body);
-        // console.log("records:", records[0].searchResults);
-        return records[0].searchResults;
-      });
+  getFullDataSet(dataSet: string): Observable<any> {
+    return this.http.get<any>(`${this.apiPath}/search?pageSize=1000&dataset=${dataSet}`, {});
   }
 
   public async downloadDocument(document: Document): Promise<void> {
@@ -94,9 +97,9 @@ export class ApiService {
     let filename = document.displayName;
     filename = encode(filename).replace(/\\/g, '_').replace(/\//g, '_');
     if (this.isMS) {
-      window.navigator.msSaveBlob(blob._body, filename);
+      window.navigator.msSaveBlob(blob, filename);
     } else {
-      const url = window.URL.createObjectURL(blob._body);
+      const url = window.URL.createObjectURL(blob);
       const a = window.document.createElement('a');
       window.document.body.appendChild(a);
       a.setAttribute('style', 'display: none');
@@ -127,22 +130,20 @@ export class ApiService {
     window.open('/api/document/' + document._id + '/fetch/' + safeName, '_blank');
   }
 
-  private downloadResource(id: string) {
+  private downloadResource(id: string): Promise<Blob> {
     const queryString = `document/${id}/download`;
-    return this.get(queryString, { responseType: ResponseContentType.Blob })
-      .map((res: any) => res)
-      .toPromise();
+    return this.http.get<Blob>(this.apiPath + '/' + queryString, { responseType: 'blob' as 'json' }).toPromise();
   }
 
-  getItem(_id: string, schema: string) {
+  getItem(_id: string, schema: string): Observable<SearchResults[]> {
     let queryString = `search?dataset=Item&_id=${_id}&_schemaName=${schema}`;
-    return this.get(`${queryString}`, {});
+    return this.http.get<SearchResults[]>(`${this.apiPath}/${queryString}`, {});
   }
 
   //
   // Searching
   //
-  searchKeywords(keys: string, dataset: string, fields: any[], pageNum: number, pageSize: number, sortBy: string = null, queryModifier: object = {}, populate = false, secondarySort: string = null, filter: object = {}) {
+  searchKeywords(keys: string, dataset: string, fields: any[], pageNum: number, pageSize: number, sortBy: string = null, queryModifier: object = {}, populate = false, secondarySort: string = null, filter: object = {}): Observable<SearchResults[]> {
     let queryString = `search?dataset=${dataset}`;
     if (fields && fields.length > 0) {
       fields.map(item => {
@@ -172,19 +173,25 @@ export class ApiService {
       });
     }
     queryString += `&fields=${this.buildValues(fields)}`;
-    return this.get(`${queryString}`, {});
+    return this.http.get<SearchResults[]>(`${this.apiPath}/${queryString}`, {});
   }
 
   //
   // Projects
   //
-  getCountProjects() {
+  getCountProjects(): Observable<number> {
     const queryString = `project`;
-    return this.http.head(`${this.apiPath}/${queryString}`);
+    return this.http.head<HttpResponse<Object>>(`${this.apiPath}/${queryString}`, { observe: 'response' })
+      .pipe(
+        map(res => {
+          // retrieve the count from the response headers
+          return parseInt(res.headers.get('x-total-count'), 10);
+        })
+      );
   }
 
   getProjects(pageNum: number, pageSize: number, regions: string[], cpStatuses: string[], appStatuses: string[], applicant: string,
-    clFile: string, dispId: string, purpose: string) {
+    clFile: string, dispId: string, purpose: string): Observable<Project[]> {
     const fields = [
       'agency',
       'areaHectares',
@@ -220,10 +227,10 @@ export class ApiService {
     if (purpose !== null) { queryString += `purpose=${purpose}&`; }
     queryString += `fields=${this.buildValues(fields)}`;
 
-    return this.get(queryString);
+    return this.http.get<Project[]>(`${this.apiPath}/${queryString}`, {});
   }
 
-  getProject(id: string, cpStart: string, cpEnd: string) {
+  getProject(id: string, cpStart: string, cpEnd: string): Observable<Project[]> {
     const fields = [
       'CEAAInvolvement',
       'CELead',
@@ -276,27 +283,34 @@ export class ApiService {
     if (cpStart !== null) { queryString += `&cpStart[since]=${cpStart}`; }
     if (cpEnd !== null) { queryString += `&cpEnd[until]=${cpEnd}`; }
     queryString += `&fields=${this.buildValues(fields)}`;
-    return this.get(queryString);
+    return this.http.get<Project[]>(`${this.apiPath}/${queryString}`, {});
   }
 
-  getProjectPins(id: string, pageNum: number, pageSize: number, sortBy: any) {
+  getProjectPins(id: string, pageNum: number, pageSize: number, sortBy: any): Observable<Org> {
     let queryString = `project/${id}/pin`;
     if (pageNum !== null) { queryString += `?pageNum=${pageNum - 1}`; }
     if (pageSize !== null) { queryString += `&pageSize=${pageSize}`; }
     if (sortBy !== '' && sortBy !== null) { queryString += `&sortBy=${sortBy}`; }
-    return this.http.get(`${this.apiPath}/${queryString}`, {});
+    return this.http.get<any>(`${this.apiPath}/${queryString}`, {});
   }
 
+  // TODO: delete these "Applications" calls, cruft.
   //
   // Applications
   //
-  getCountApplications() {
+  getCountApplications(): Observable<number> {
     const queryString = `application`;
-    return this.http.head(`${this.apiPath}/${queryString}`);
+    return this.http.head<HttpResponse<Object>>(`${this.apiPath}/${queryString}`, { observe: 'response' })
+      .pipe(
+        map(res => {
+          // retrieve the count from the response headers
+          return parseInt(res.headers.get('x-total-count'), 10);
+        })
+      );
   }
 
   getApplications(pageNum: number, pageSize: number, regions: string[], cpStatuses: string[], appStatuses: string[], applicant: string,
-    clFile: string, dispId: string, purpose: string) {
+    clFile: string, dispId: string, purpose: string): Observable<Object> {
     const fields = [
       'agency',
       'areaHectares',
@@ -330,10 +344,10 @@ export class ApiService {
     if (purpose !== null) { queryString += `purpose=${purpose}&`; }
     queryString += `fields=${this.buildValues(fields)}`;
 
-    return this.get(queryString);
+    return this.http.get<Object>(`${this.apiPath}/${queryString}`, {});
   }
 
-  getApplication(id: string) {
+  getApplication(id: string): Observable<Object> {
     const fields = [
       'agency',
       'areaHectares',
@@ -355,13 +369,13 @@ export class ApiService {
       'type'
     ];
     const queryString = 'application/' + id + '?fields=' + this.buildValues(fields);
-    return this.get(queryString);
+    return this.http.get<Object>(`${this.apiPath}/${queryString}`, {});
   }
 
   //
   // Features
   //
-  getFeaturesByTantalisId(tantalisID: number) {
+  getFeaturesByTantalisId(tantalisID: number): Observable<Feature[]> {
     const fields = [
       'applicationID',
       'geometry',
@@ -370,10 +384,10 @@ export class ApiService {
       'type'
     ];
     const queryString = `feature?tantalisId=${tantalisID}&fields=${this.buildValues(fields)}`;
-    return this.get(queryString);
+    return this.http.get<Feature[]>(`${this.apiPath}/${queryString}`, {});
   }
 
-  getFeaturesByApplicationId(applicationId: string) {
+  getFeaturesByApplicationId(applicationId: string): Observable<Feature[]> {
     const fields = [
       'applicationID',
       'geometry',
@@ -382,13 +396,13 @@ export class ApiService {
       'type'
     ];
     const queryString = `feature?applicationId=${applicationId}&fields=${this.buildValues(fields)}`;
-    return this.get(queryString);
+    return this.http.get<Feature[]>(`${this.apiPath}/${queryString}`, {});
   }
 
   //
   // Decisions
   //
-  getDecisionByAppId(appId: string) {
+  getDecisionByAppId(appId: string): Observable<Decision[]> {
     const fields = [
       '_addedBy',
       '_application',
@@ -396,10 +410,10 @@ export class ApiService {
       'description'
     ];
     const queryString = 'decision?_application=' + appId + '&fields=' + this.buildValues(fields);
-    return this.get(queryString);
+    return this.http.get<Decision[]>(`${this.apiPath}/${queryString}`, {});
   }
 
-  getDecision(id: string) {
+  getDecision(id: string): Observable<Decision[]> {
     const fields = [
       '_addedBy',
       '_application',
@@ -407,13 +421,13 @@ export class ApiService {
       'description'
     ];
     const queryString = 'decision/' + id + '?fields=' + this.buildValues(fields);
-    return this.get(queryString);
+    return this.http.get<Decision[]>(`${this.apiPath}/${queryString}`, {});
   }
 
   //
   // Comment Periods
   //
-  getPeriodsByProjId(projId: string) {
+  getPeriodsByProjId(projId: string): Observable<Object> {
     const fields = [
       'project',
       'dateStarted',
@@ -425,10 +439,10 @@ export class ApiService {
 
     let queryString = 'commentperiod?project=' + projId + '&fields=' + this.buildValues(fields) + '&';
     if (sort !== null) { queryString += `sortBy=${sort}&`; }
-    return this.get(queryString);
+    return this.http.get<Object>(`${this.apiPath}/${queryString}`, {});
   }
 
-  getPeriod(id: string) {
+  getPeriod(id: string): Observable<CommentPeriod[]> {
     const fields = [
       'additionalText',
       'dateCompleted',
@@ -440,18 +454,24 @@ export class ApiService {
       'relatedDocuments'
     ];
     const queryString = 'commentperiod/' + id + '?fields=' + this.buildValues(fields);
-    return this.get(queryString);
+    return this.http.get<CommentPeriod[]>(`${this.apiPath}/${queryString}`, {});
   }
 
   //
   // Comments
   //
-  getCountCommentsById(commentPeriodId) {
+  getCountCommentsById(commentPeriodId): Observable<number> {
     const queryString = `comment?period=${commentPeriodId}`;
-    return this.http.head(`${this.apiPath}/${queryString}`);
+    return this.http.head<HttpResponse<Object>>(`${this.apiPath}/${queryString}`, { observe: 'response' })
+      .pipe(
+        map(res => {
+          // retrieve the count from the response headers
+          return parseInt(res.headers.get('x-total-count'), 10);
+        })
+      );
   }
 
-  getCommentsByPeriodId(pageNum: number, pageSize: number, getCount: boolean, periodId: string) {
+  getCommentsByPeriodId(pageNum: number, pageSize: number, getCount: boolean, periodId: string): Observable<Object> {
     const fields = [
       'author',
       'comment',
@@ -474,10 +494,10 @@ export class ApiService {
     if (pageNum !== null) { queryString += `pageNum=${pageNum}&`; }
     if (pageSize !== null) { queryString += `pageSize=${pageSize}&`; }
     if (getCount !== null) { queryString += `count=${getCount}&`; }
-    return this.get(queryString);
+    return this.http.get<Object>(`${this.apiPath}/${queryString}`, {observe: 'response'});
   }
 
-  getComment(id: string) {
+  getComment(id: string): Observable<any> {
     const fields = [
       'author',
       'comment',
@@ -492,22 +512,22 @@ export class ApiService {
       'delete'
     ];
     const queryString = 'comment/' + id + '?fields=' + this.buildValues(fields);
-    return this.get(queryString);
+    return this.http.get<any>(`${this.apiPath}/${queryString}`, { observe: 'response' });
   }
 
-  addComment(comment: Comment) {
+  addComment(comment: Comment): Observable<Comment> {
     const fields = [
       'comment',
       'author'
     ];
     const queryString = 'comment?fields=' + this.buildValues(fields);
-    return this.post(queryString, comment);
+    return this.http.post<Comment>(`${this.apiPath}/${queryString}`, comment, {});
   }
 
   //
   // Documents
   //
-  getDocumentsByAppId(appId: string) {
+  getDocumentsByAppId(appId: string): Observable<Document[]> {
     const fields = [
       '_application',
       'documentFileName',
@@ -516,10 +536,10 @@ export class ApiService {
       'internalMime'
     ];
     const queryString = 'document?_application=' + appId + '&fields=' + this.buildValues(fields);
-    return this.get(queryString);
+    return this.http.get<Document[]>(`${this.apiPath}/${queryString}`, {});
   }
 
-  getDocumentsByCommentId(commentId: string) {
+  getDocumentsByCommentId(commentId: string): Observable<Document[]> {
     const fields = [
       '_comment',
       'documentFileName',
@@ -528,10 +548,10 @@ export class ApiService {
       'internalMime'
     ];
     const queryString = 'document?_comment=' + commentId + '&fields=' + this.buildValues(fields);
-    return this.get(queryString);
+    return this.http.get<Document[]>(`${this.apiPath}/${queryString}`, {});
   }
 
-  getDocumentsByDecisionId(decisionId: string) {
+  getDocumentsByDecisionId(decisionId: string): Observable<Document[]> {
     const fields = [
       '_decision',
       'documentFileName',
@@ -540,15 +560,15 @@ export class ApiService {
       'internalMime'
     ];
     const queryString = 'document?_decision=' + decisionId + '&fields=' + this.buildValues(fields);
-    return this.get(queryString);
+    return this.http.get<Document[]>(`${this.apiPath}/${queryString}`, {});
   }
 
-  getDocument(id: string) {
+  getDocument(id: string): Observable<Document[]> {
     const queryString = 'document/' + id + '?fields=internalOriginalName|documentSource';
-    return this.get(queryString);
+    return this.http.get<Document[]>(`${this.apiPath}/${queryString}`, {});
   }
 
-  getDocumentsByMultiId(ids: Array<String>) {
+  getDocumentsByMultiId(ids: Array<String>): Observable<Document[]> {
     const fields = [
       'eaoStatus',
       'internalOriginalName',
@@ -573,10 +593,10 @@ export class ApiService {
       'isPublished'
     ];
     const queryString = `document?docIds=${this.buildValues(ids)}&fields=${this.buildValues(fields)}`;
-    return this.get(queryString);
+    return this.http.get<Document[]>(`${this.apiPath}/${queryString}`, {});
   }
 
-  uploadDocument(formData: FormData) {
+  uploadDocument(formData: FormData): Observable<Document> {
     const fields = [
       'documentFileName',
       'displayName',
@@ -584,22 +604,22 @@ export class ApiService {
       'internalMime'
     ];
     const queryString = 'document/?fields=' + this.buildValues(fields);
-    return this.post(queryString, formData, { reportProgress: true });
+    return this.http.post<Document>(`${this.apiPath}/${queryString}`, formData, {});
   }
 
   getDocumentUrl(document: Document): string {
     return document ? (this.apiPath + '/document/' + document._id + '/download') : '';
   }
 
-  getTopNewsItems(): any {
+  getTopNewsItems(): Observable<any[]> {
     const queryString = 'recentActivity?top=true';
-    return this.get(queryString);
+    return this.http.get<any[]>(`${this.apiPath}/${queryString}`, {});
   }
 
   //
   // Users
   //
-  getAllUsers() {
+  getAllUsers(): Observable<User[]> {
     const fields = [
       'displayName',
       'username',
@@ -607,7 +627,7 @@ export class ApiService {
       'lastName'
     ];
     const queryString = 'user?fields=' + this.buildValues(fields);
-    return this.get(queryString);
+    return this.http.get<User[]>(`${this.apiPath}/${queryString}`, {});
   }
 
   //
@@ -620,20 +640,5 @@ export class ApiService {
     });
     // trim the last |
     return values.replace(/\|$/, '');
-  }
-
-  private get(apiRoute: string, options?: object) {
-    return this.http.get(`${this.apiPath}/${apiRoute}`, options || null);
-  }
-
-  private put(apiRoute: string, body?: object, options?: object) {
-    return this.http.put(`${this.apiPath}/${apiRoute}`, body || null, options || null);
-  }
-
-  private post(apiRoute: string, body?: object, options?: object) {
-    return this.http.post(`${this.apiPath}/${apiRoute}`, body || null, options || null);
-  }
-  private delete(apiRoute: string, body?: object, options?: object) {
-    return this.http.delete(`${this.apiPath}/${apiRoute}`, options || null);
   }
 }

@@ -17,6 +17,8 @@ import { SearchResults } from 'app/models/search';
 @Injectable()
 export class ProjectService {
   private project: Project = null; // for caching
+  private projectList: Project[] = [];
+
 
   constructor(
     private api: ApiService,
@@ -37,12 +39,14 @@ export class ProjectService {
 
     return this.api.getProjects(pageNum, pageSize, regions, cpStatuses, appStatuses, applicantFilter, clFileFilter, dispIdFilter, purposeFilter)
       .map(res => {
-        const projects = res.text() ? res.json() : [];
-        projects.forEach((project, i) => {
-          projects[i] = new Project(project);
-          // FUTURE: derive region code, etc ?
-        });
-        return projects;
+        if (res) {
+          this.projectList = [];
+          res.forEach(project => {
+            this.projectList.push(new Project(project));
+          });
+          return this.projectList;
+        }
+        return  [];
       })
       .catch(this.api.handleError);
   }
@@ -50,11 +54,7 @@ export class ProjectService {
   // get count of projects
   getCount(): Observable<number> {
     return this.api.getCountProjects()
-      .map(res => {
-        // retrieve the count from the response headers
-        return parseInt(res.headers.get('x-total-count'), 10);
-      })
-      .catch(this.api.handleError);
+      .catch(error => this.api.handleError(error));
   }
 
   // get all projects and related data
@@ -64,7 +64,7 @@ export class ProjectService {
     applicantFilter: string = null, clFileFilter: string = null, dispIdFilter: string = null, purposeFilter: string = null): Observable<Project[]> {
     // first get the projects
     return this.getAll(pageNum, pageSize, regionFilters, cpStatusFilters, appStatusFilters, applicantFilter, clFileFilter, dispIdFilter, purposeFilter)
-      .mergeMap(projects => {
+      .mergeMap((projects: any) => {
         if (projects.length === 0) {
           return Observable.of([] as Project[]);
         }
@@ -87,8 +87,7 @@ export class ProjectService {
     }
     // first get the project
     return this.api.getProject(projId, cpStart, cpEnd)
-      .map(res => {
-        const projects = res.text() ? res.json() : [];
+      .map(projects => {
         if (projects[0].commentPeriodForBanner && projects[0].commentPeriodForBanner.length > 0) {
           projects[0].commentPeriodForBanner = new CommentPeriod(projects[0].commentPeriodForBanner[0]);
         } else {
@@ -100,18 +99,8 @@ export class ProjectService {
       .catch(this.api.handleError);
   }
 
-  getPins(proj: string, pageNum: number, pageSize: number, sortBy: any): Observable<any[]> {
-    const searchResults = this.api.getProjectPins(proj, pageNum, pageSize, sortBy)
-    .map((res: any) => {
-      let records = JSON.parse(<string>res._body);
-      let allResults = <any>[];
-      records.forEach(item => {
-        const r = new SearchResults({ type: item._schemaName, data: item });
-        allResults.push(r);
-      });
-      return allResults;
-    })
+  getPins(proj: string, pageNum: number, pageSize: number, sortBy: any): Observable<Org> {
+    return this.api.getProjectPins(proj, pageNum, pageSize, sortBy)
     .catch(error => this.api.handleError(error));
-    return searchResults;
   }
 }

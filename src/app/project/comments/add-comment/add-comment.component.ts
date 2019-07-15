@@ -12,6 +12,7 @@ import { CommentService } from 'app/services/comment.service';
 import { DocumentService } from 'app/services/document.service';
 import * as moment from 'moment-timezone';
 import { Project } from 'app/models/project';
+import { ConfigService } from 'app/services/config.service';
 
 @Component({
   templateUrl: './add-comment.component.html',
@@ -30,6 +31,7 @@ export class AddCommentComponent implements OnInit {
   private comment: Comment;
   public files: Array<File> = [];
   public documents: Document[] = [];
+  public documentAuthor: any;
 
   public contactName: any;
   public commentInput: any;
@@ -40,7 +42,8 @@ export class AddCommentComponent implements OnInit {
   constructor(
     public activeModal: NgbActiveModal,
     private commentService: CommentService,
-    private documentService: DocumentService
+    private documentService: DocumentService,
+    private config: ConfigService,
   ) { }
 
   ngOnInit() {
@@ -48,6 +51,11 @@ export class AddCommentComponent implements OnInit {
     this.comment.period = this.currentPeriod._id;
     this.comment.isAnonymous = false;
     this.commentFiles = [];
+    this.config.lists.map(item => {
+      if (item.type === 'author' && item.name === 'Public') {
+          this.documentAuthor = Object.assign({}, item);
+      }
+    });
   }
 
   register() {
@@ -130,6 +138,7 @@ export class AddCommentComponent implements OnInit {
           formData.append('_comment', this.comment._id);
           formData.append('displayName', file.name);
           formData.append('documentSource', 'COMMENT');
+          formData.append('documentAuthor', this.documentAuthor._id);
           formData.append('project', this.project._id);
           formData.append('documentFileName', file.name);
           formData.append('internalOriginalName', file.name);

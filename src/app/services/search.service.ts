@@ -19,10 +19,9 @@ export class SearchService {
 
   getItem(_id: string, schema: string): Observable<any> {
     const searchResults = this.api.getItem(_id, schema)
-      .map((res: any) => {
-        let records = JSON.parse(<string>res._body);
+      .map(res => {
         let allResults = <any>[];
-        records.forEach(item => {
+        res.forEach(item => {
           const r = new SearchResults({ type: item._schemaName, data: item });
           allResults.push(r);
         });
@@ -42,10 +41,9 @@ export class SearchService {
 
   getSearchResults(keys: string, dataset: string, fields: any[], pageNum: number = 1, pageSize: number = 10, sortBy: string = null, queryModifier: object = {}, populate: boolean = false, secondarySort: string = null, filter: object = {}): Observable<any[]> {
     const searchResults = this.api.searchKeywords(keys, dataset, fields, pageNum, pageSize, sortBy, queryModifier, populate, secondarySort, filter)
-      .map((res: any) => {
-        let records = JSON.parse(<string>res._body);
+      .map(res => {
         let allResults = <any>[];
-        records.forEach(item => {
+        res.forEach(item => {
           const r = new SearchResults({ type: item._schemaName, data: item });
           allResults.push(r);
         });
@@ -61,10 +59,9 @@ export class SearchService {
 
   getTopNewsItems() {
     const searchResults = this.api.getTopNewsItems()
-      .map((res: any) => {
-        let records = JSON.parse(<string>res._body);
+      .map(res => {
         let allResults = <any>[];
-        records.forEach(item => {
+        res.forEach(item => {
           const r = new News(item);
           allResults.push(r);
         });

@@ -1,12 +1,12 @@
-import { NgModule } from '@angular/core';
-import { TagInputModule } from 'ngx-chips';
+import { NgModule, ApplicationRef } from '@angular/core';
+// import { TagInputModule } from 'ngx-chips';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { BrowserModule } from '@angular/platform-browser';
 import { FormsModule } from '@angular/forms';
-import { HttpModule } from '@angular/http';
+import { HttpClientModule } from '@angular/common/http';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { NgxPaginationModule } from 'ngx-pagination';
-import { Ng2PageScrollModule } from 'ng2-page-scroll';
+import { NgxPageScrollModule } from 'ngx-page-scroll';
 import { BootstrapModalModule } from 'ng2-bootstrap-modal';
 import { CookieService } from 'ngx-cookie-service';
 
@@ -48,12 +48,12 @@ import { ActivitiesListTableRowsComponent } from './project/project-activites/ac
 @NgModule({
   imports: [
     BrowserAnimationsModule,
-    TagInputModule,
+    // TagInputModule,
     BrowserModule,
     FormsModule,
-    HttpModule,
+    HttpClientModule,
     NgbModule.forRoot(),
-    Ng2PageScrollModule.forRoot(),
+    NgxPageScrollModule,
     BootstrapModalModule,
     SharedModule,
     ProjectModule,
@@ -99,4 +99,8 @@ import { ActivitiesListTableRowsComponent } from './project/project-activites/ac
   ]
 })
 
-export class AppModule { }
+export class AppModule {
+  constructor(applicationRef: ApplicationRef) {
+    Object.defineProperty(applicationRef, '_rootComponents', {get: () => applicationRef['components']});
+  }
+}

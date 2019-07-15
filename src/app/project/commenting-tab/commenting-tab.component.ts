@@ -63,11 +63,13 @@ export class CommentingTabComponent implements OnInit, OnDestroy {
   getCommentPeriods(projectId) {
     this.commentPeriodService.getAllByProjectId(projectId)
       .takeUntil(this.ngUnsubscribe)
-      .subscribe(data => {
-        this.commentPeriods = data;
-        this.commentPeriods.forEach(element => {
-          element.instructions = element.instructions.match(/Comment Period on the (.*?) for /)[1];
-        });
+      .subscribe((res: any) => {
+        if (res.data) {
+          this.commentPeriods = res.data;
+          this.commentPeriods.forEach(element => {
+            element.instructions = element.instructions.match(/Comment Period on the (.*?) for /)[1];
+          });
+        }
       });
   }
 
