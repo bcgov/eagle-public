@@ -156,9 +156,18 @@
   background-color: white;
 }
 
+.btn-primary {
+  height: 100%;
+}
+
 .advanced-search-button .btn {
   float: right;
   margin-left: 8px;
+}
+
+.advanced-search-buttons-right .btn {
+  float: right;
+  margin-right: 8px !important;
 }
 
 .advanced-search {
@@ -166,6 +175,15 @@
 
   .project-filter {
     margin: 15px;
+  }
+
+  .btn {
+    margin: 8px 0px 8px 8px;
+  }
+
+  .form-check label {
+    padding-left: 0.25rem;
+    font-size: 1rem;
   }
 }
 
