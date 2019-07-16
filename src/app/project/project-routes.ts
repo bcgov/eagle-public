@@ -8,7 +8,6 @@ import { DocumentsResolver } from './documents/documents-resolver.service';
 import { ProjectDetailsTabComponent } from './project-details-tab/project-details-tab.component';
 import { ProjectActivitesComponent } from './project-activites/project-activites.component';
 import { ProjectActivitiesResolver } from './project-activites/project-activities-resolver.service';
-import { DocumentTableResolver } from './documents/project-document-table-rows/project-document-table-rows-resolver.service';
 import { CertificatesResolver } from './certificates/certificates-resolver.service';
 import { CertificatesComponent } from './certificates/certificates.component';
 import { AmendmentsResolverService } from './certificates/amendments-resolver.service';
@@ -57,8 +56,7 @@ export const ProjectRoutes: Routes = [
     path: 'documents',
     component: DocumentsTabComponent,
     resolve: {
-      documents: DocumentsResolver,
-      documentsTableRow: DocumentTableResolver
+      documents: DocumentsResolver
     }
   },
   {
