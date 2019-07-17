@@ -17,6 +17,13 @@
         color: $primary;
         margin-bottom: 5px;
     }
+    .commentInfo{
+        font-weight: bold;
+    }
+    .badge-secondary{
+        display: inline-flex;
+        top: 20%;
+    }
     .list-group-item {
         margin-bottom: 1rem;
         border: 1px #eee solid;
