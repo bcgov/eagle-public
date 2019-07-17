@@ -24,7 +24,7 @@ export class ProjectComponent implements OnInit, OnDestroy {
     { label: 'Documents', link: 'documents' },
     { label: 'Certificate', link: 'certificates' },
     { label: 'Amendment(s)', link: 'amendments' },
-    { label: 'Participating Indigenous Nations', link: 'pins' }
+    // { label: 'Participating Indigenous Nations', link: 'pins' }
   ];
 
   public project: Project = null;
