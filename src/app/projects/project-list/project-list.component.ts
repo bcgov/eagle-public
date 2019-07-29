@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { Subject } from 'rxjs/Subject';
 import 'rxjs/add/operator/takeUntil';
+import * as moment from 'moment';
 import * as _ from 'lodash';
 
 import { Project } from 'app/models/project';
@@ -23,10 +24,10 @@ class ProjectFilterObject {
     public decisionDateStart: object = {},
     public decisionDateEnd: object = {},
     public pcp: object = {},
-    public proponent: object = {},
+    public proponent: Array<string> = [],
     public region: object = {},
     public CEAAInvolvement: object = {},
-    public vc: object = {}
+    public vc: Array<string> = []
   ) { }
 }
 
@@ -139,6 +140,32 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     vancouverIsland: 'Vancouver Island'
   };
 
+  private PCP_MAP: object = {
+    pending: 'pending',
+    open: 'open',
+    closed: 'closed'
+  };
+
+  private CEAA_INVOLVEMENT_MAP: object = {
+    none: 'None',
+    panel: 'Panel',
+    panel2012: 'Panel (CEAA 2012)',
+    coordinated: 'Coordinated',
+    screening: 'Screening',
+    screeningConfirmed: 'Screening - Confirmed',
+    substituted: 'Substituted',
+    substitutedProvincialLead: 'Substituted (Provincial Lead)',
+    comprehensiveStudy: 'Comprehensive Study',
+    comprehensiveStudyConfirmed: 'Comprehensive Study - Unconfirmed',
+    comprehensiveStudyUnconfirmed: 'Comprehensive Study - Confirmed',
+    comprehensiveStudyPre2012: 'Comprehensive Study (Pre CEAA 2012)',
+    compStudy: 'Comp Study',
+    compStudyUnconfired: 'Comp Study - Unconfirmed',
+    tbd: 'To be determined',
+    equivalentNeb: 'Equivalent - NEB',
+    yes: 'Yes'
+  };
+
   constructor(
     private router: Router,
     private route: ActivatedRoute,
@@ -206,13 +233,14 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     this.router.navigate(['/projects', 'add']);
   }
 
-  paramsToFilters(params, name, map = null) {
+  paramsToObjectFilters(params, name, map) {
     this.filterForUI[name] = {};
     delete this.filterForURL[name];
     delete this.filterForAPI[name];
 
     if (params[name]) {
       this.filterForURL[name] = params[name];
+
       const values = params[name].split(',');
       let apiValues = [];
       values.forEach(value => {
@@ -225,40 +253,83 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     }
   }
 
-  setFiltersFromParams(params) {
-    this.paramsToFilters(params, 'type', this.TYPE_MAP);
-    this.paramsToFilters(params, 'eacDecision', this.EAC_DECISIONS_MAP);
-    this.paramsToFilters(params, 'region', this.REGION_MAP);
+  paramsToArrayFilters(params, name) {
+    this.filterForUI[name] = [];
+    delete this.filterForURL[name];
+    delete this.filterForAPI[name];
 
-    this.paramsToFilters(params, 'pcp');
-    this.paramsToFilters(params, 'proponent');
-    this.paramsToFilters(params, 'CEAAInvolvement');
-    this.paramsToFilters(params, 'vc');
-
-    this.paramsToFilters(params, 'decisionDateStart');
-    this.paramsToFilters(params, 'decisionDateEnd');
+    if (params[name]) {
+      this.filterForURL[name] = params[name];
+      this.filterForAPI[name] = params[name];
+      this.filterForUI[name] = params[name].split(',');
+    }
   }
 
-  filterToParams(params, name) {
+  paramsToDateFilters(params, name) {
+    this.filterForUI[name] = null;
+    delete this.filterForURL[name];
+    delete this.filterForAPI[name];
+
+    if (params[name]) {
+      this.filterForURL[name] = params[name];
+      this.filterForAPI[name] = params[name];
+      // NGB Date
+      const date = moment(params[name]).toDate();
+      this.filterForUI[name] = { year: date.getFullYear(), month: date.getMonth() + 1, day: date.getDate() };
+    }
+  }
+
+  setFiltersFromParams(params) {
+    this.paramsToObjectFilters(params, 'type', this.TYPE_MAP);
+    this.paramsToObjectFilters(params, 'eacDecision', this.EAC_DECISIONS_MAP);
+    this.paramsToObjectFilters(params, 'region', this.REGION_MAP);
+    this.paramsToObjectFilters(params, 'pcp', this.PCP_MAP);
+    this.paramsToObjectFilters(params, 'CEAAInvolvement', this.CEAA_INVOLVEMENT_MAP);
+
+    this.paramsToArrayFilters(params, 'proponent');
+    this.paramsToArrayFilters(params, 'vc');
+
+    this.paramsToDateFilters(params, 'decisionDateStart');
+    this.paramsToDateFilters(params, 'decisionDateEnd');
+  }
+
+  filterToObjectParams(params, name) {
     let keys = [];
     Object.keys(this.filterForUI[name]).forEach(key => {
-      if (this.filterForUI[name][key]) { keys.push(key); }
+      if (this.filterForUI[name][key]) {
+        keys.push(key);
+      }
     });
-    if (keys.length) { params[name] = keys.join(','); }
+    if (keys.length) {
+      params[name] = keys.join(',');
+    }
+  }
+
+  filterToArrayParams(params, name) {
+    if (this.filterForUI[name].length) {
+      params[name] = this.filterForUI[name].join(',');
+    }
+  }
+
+  filterToDateParams(params, name) {
+    if (this.filterForUI[name] && this.filterForUI[name].year && this.filterForUI[name].month && this.filterForUI[name].day) {
+      const date = new Date(this.filterForUI[name].year, this.filterForUI[name].month - 1, this.filterForUI[name].day);
+      params[name] = moment(date).format('YYYY-MM-DD');
+    }
   }
 
   getParamsFromFilter(params) {
-    this.filterToParams(params, 'type');
-    this.filterToParams(params, 'eacDecision');
-    this.filterToParams(params, 'pcp');
-    this.filterToParams(params, 'region');
+    this.filterToObjectParams(params, 'type');
+    this.filterToObjectParams(params, 'eacDecision');
+    this.filterToObjectParams(params, 'pcp');
+    this.filterToObjectParams(params, 'region');
+    this.filterToObjectParams(params, 'CEAAInvolvement');
 
-    this.filterToParams(params, 'proponent');
-    this.filterToParams(params, 'CEAAInvolvement');
-    this.filterToParams(params, 'vc');
+    this.filterToArrayParams(params, 'proponent');
+    this.filterToArrayParams(params, 'vc');
 
-    this.filterToParams(params, 'decisionDateStart');
-    this.filterToParams(params, 'decisionDateEnd');
+    this.filterToDateParams(params, 'decisionDateStart');
+    this.filterToDateParams(params, 'decisionDateEnd');
   }
 
   toggleFilter(name) {
@@ -278,7 +349,15 @@ export class ProjectListComponent implements OnInit, OnDestroy {
 
   clearAll() {
     Object.keys(this.filterForUI).forEach(key => {
-      this.filterForUI[key] = {};
+      if (this.filterForUI[key]) {
+        if (Array.isArray(this.filterForUI[key])) {
+          this.filterForUI[key] = [];
+        } else if (typeof this.filterForUI[key] === 'object') {
+          this.filterForUI[key] = {};
+        } else {
+          this.filterForUI[key] = '';
+        }
+      }
     });
     this.updateCounts();
   }
@@ -288,7 +367,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
 
     let num = 0;
     if (name === 'more') {
-      num = getCount('region') + getCount('proponent') + getCount('CEAAInvolvement') + getCount('vc');
+      num = getCount('region') + this.filterForUI.proponent.length + getCount('CEAAInvolvement') + this.filterForUI.vc.length;
     } else {
       num = getCount(name);
     }
