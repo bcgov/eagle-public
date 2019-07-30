@@ -22,6 +22,7 @@ export class CommentPeriod {
   dateUpdated: String;
   downloadRoles: String;
   informationLabel: String;
+  informationForComment: String;
   instructions: String;
   isClassified: Boolean;
   isPublished: Boolean;
@@ -71,6 +72,7 @@ export class CommentPeriod {
     this.dateUpdated = obj && obj.dateUpdated || null;
     this.downloadRoles = obj && obj.downloadRoles || null;
     this.informationLabel = obj && obj.informationLabel || null;
+    this.informationForComment = obj && obj.informationForComment || null;
     this.instructions = obj && obj.instructions || null;
     this.isClassified = obj && obj.isClassified || null;
     this.isPublished = obj && obj.isPublished || null;

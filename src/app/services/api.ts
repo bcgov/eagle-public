@@ -432,7 +432,7 @@ export class ApiService {
       'project',
       'dateStarted',
       'dateCompleted',
-      'instructions'
+      'informationForComment'
     ];
     // TODO: May want to pass this as a parameter in the future.
     const sort = '&sortBy=-dateStarted';

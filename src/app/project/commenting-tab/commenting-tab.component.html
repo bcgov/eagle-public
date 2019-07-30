@@ -14,7 +14,7 @@
                  (click)=goToCP(commentPeriod)>
                 <div *ngIf="commentPeriod.commentPeriodStatus">
                     <label class="title">{{commentPeriod.commentPeriodStatus}}</label>
-                    <div class="commentInfo">{{commentPeriod.instructions}}</div>
+                    <div class="commentInfo">{{commentPeriod.informationForComment}}</div>
                     <p class="mb-0">{{commentPeriod.dateStarted | date:'mediumDate'}} - {{commentPeriod.dateCompleted | date:'mediumDate'}}</p>
                 </div>
                 <div *ngIf="commentPeriodService.isOpen(commentPeriod)">
