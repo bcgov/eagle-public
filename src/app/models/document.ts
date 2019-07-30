@@ -16,6 +16,7 @@ export class Document {
   type: string;
   description: string;
   documentAuthor: string;
+  documentAuthorType: string;
   eaoStatus: string;
   datePosted: Date;
   dateUpdated: Date;

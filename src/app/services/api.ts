@@ -588,6 +588,7 @@ export class ApiService {
       'project',
       'type',
       'documentAuthor',
+      'documentAuthorType',
       'milestone',
       'description',
       'isPublished'

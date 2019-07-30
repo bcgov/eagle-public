@@ -32,6 +32,7 @@ export class AddCommentComponent implements OnInit {
   public files: Array<File> = [];
   public documents: Document[] = [];
   public documentAuthor: any;
+  public documentAuthorType: any;
 
   public contactName: any;
   public commentInput: any;
@@ -51,9 +52,10 @@ export class AddCommentComponent implements OnInit {
     this.comment.period = this.currentPeriod._id;
     this.comment.isAnonymous = false;
     this.commentFiles = [];
-    this.config.lists.map(item => {
+    this.documentAuthorType = null;
+    this.config.lists[0].searchResults.map((item) => {
       if (item.type === 'author' && item.name === 'Public') {
-          this.documentAuthor = Object.assign({}, item);
+          this.documentAuthorType = Object.assign({}, item);
       }
     });
   }
@@ -138,7 +140,8 @@ export class AddCommentComponent implements OnInit {
           formData.append('_comment', this.comment._id);
           formData.append('displayName', file.name);
           formData.append('documentSource', 'COMMENT');
-          formData.append('documentAuthor', this.documentAuthor._id);
+          formData.append('documentAuthor', this.comment.author);
+          formData.append('documentAuthorType', this.documentAuthorType._id);
           formData.append('project', this.project._id);
           formData.append('documentFileName', file.name);
           formData.append('internalOriginalName', file.name);
