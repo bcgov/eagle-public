@@ -43,6 +43,8 @@ export class DocumentTableRowsComponent implements OnInit, OnDestroy, TableCompo
         if (res) {
           if (res.documentsTableRow && res.documentsTableRow.length > 0) {
             this.lists = res.documentsTableRow;
+          } else if (res.documents && res.documents.length > 0) {
+            this.lists = res.documents[0].data.searchResults;
           } else {
             alert('Uh-oh, couldn\'t load list');
             this.lists = [];
