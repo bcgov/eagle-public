@@ -59,7 +59,7 @@ export class DocumentTableRowsComponent implements OnInit, OnDestroy, TableCompo
       return '-';
     }
     // Grab the item from the constant lists, returning the name field of the object.
-    let item = this.lists[0].searchResults.filter(listItem => listItem._id === id);
+    let item = this.lists.filter(listItem => listItem._id === id);
     if (item.length !== 0) {
       return item[0].name;
     } else {
