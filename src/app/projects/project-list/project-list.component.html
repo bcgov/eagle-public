@@ -20,7 +20,7 @@
           </button>
         </div>
       </div>
-      <div hidden *ngIf="!showAdvancedSearch" class="advanced-search-button">
+      <div *ngIf="!showAdvancedSearch" class="advanced-search-button">
         <br>
         <button class="btn btn-secondary" type="button" (click)="showAdvancedSearch = !showAdvancedSearch;">
           <span>Show Advanced Search</span>
@@ -31,28 +31,28 @@
         <div class="row">
           <div class="col-md-8">
             <button type="button" (click)="toggleFilter('type');"
-              [ngClass]="{'btn': true,
+              [ngClass]="{'btn': true, 'type-btn': true,
                 'btn-dark': showFilters.type,
                 'btn-secondary': !showFilters.type && numFilters.type > 0,
                 'btn-outline-dark': !showFilters.type && numFilters.type == 0}">
               Project Type<span *ngIf="numFilters.type > 0 && !showFilters.type">&nbsp;({{ numFilters.type }})</span>
             </button>
             <button type="button" (click)="toggleFilter('eacDecision');"
-              [ngClass]="{'btn': true,
+              [ngClass]="{'btn': true, 'decision-btn': true,
                 'btn-dark': showFilters.eacDecision,
                 'btn-secondary': !showFilters.eacDecision && numFilters.eacDecision > 0,
                 'btn-outline-dark': !showFilters.eacDecision && numFilters.eacDecision == 0}">
               EA Decision<span *ngIf="numFilters.eacDecision > 0 && !showFilters.eacDecision">&nbsp;({{ numFilters.eacDecision }})</span>
             </button>
             <button type="button" (click)="toggleFilter('pcp');"
-              [ngClass]="{'btn': true,
+              [ngClass]="{'btn': true, 'pcp-button': true,
                 'btn-dark': showFilters.pcp,
                 'btn-secondary': !showFilters.pcp && numFilters.pcp > 0,
                 'btn-outline-dark': !showFilters.pcp && numFilters.pcp == 0}">
               Public Comment Period<span *ngIf="numFilters.pcp > 0 && !showFilters.pcp">&nbsp;({{ numFilters.pcp }})</span>
             </button>
             <button type="button" (click)="toggleFilter('more');"
-              [ngClass]="{'btn': true,
+              [ngClass]="{'btn': true, 'more-button': true,
                 'btn-dark': showFilters.more,
                 'btn-secondary': !showFilters.more && numFilters.more > 0,
                 'btn-outline-dark': !showFilters.more && numFilters.more == 0}">
@@ -188,7 +188,7 @@
               </div>
             </div>
             <div class="form-group">
-            <div class="row">
+            <div class="row date">
               <b>Decision Date</b>
             </div>
             <div class="row date-range">
@@ -242,7 +242,24 @@
         <div *ngIf="showFilters.more" class="more-filters project-filter row">
           <div class="col-md-12">
             <div class="row">
-              <div class="col-md-3">
+              <b>Proponent</b>
+            </div>
+            <div class="row">
+              <div class="form-group">
+                <tag-input id="proponent" name="proponent"
+                  [(ngModel)]="filterForUI.proponent" [identifyBy]="'_id'" [displayBy]="'name'"
+                  [onlyFromAutocomplete]="true" [onTextChangeDebounce]="100"
+                  [placeholder]="'Proponent Name'" [secondaryPlaceholder]="'Proponent Name'"
+                >
+                  <tag-input-dropdown [autocompleteItems]="proponents" [identifyBy]="'_id'" [displayBy]="'name'"
+                    [showDropdownIfEmpty]="true" [keepOpen]="false"
+                  >
+                  </tag-input-dropdown>
+                </tag-input>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-4">
                 <div class="row">
                   <b>Region</b>
                 </div>
@@ -296,12 +313,12 @@
                   </div>
                 </div>
               </div>
-              <div class="col-md-9">
+              <div class="col-md-8">
                 <div class="row">
                   <b>CEAA Involvement</b>
                 </div>
                 <div class="row project-sub-filter">
-                  <div class="col-md-4">
+                  <div class="col-md-5">
                     <div class="form-check">
                       <input class="form-check-input" type="checkbox" value="" id="none" name="none"
                         [(ngModel)]="filterForUI.CEAAInvolvement.none">
@@ -348,7 +365,7 @@
                       <label class="form-check-label" for="comprehensiveStudy">Comprehensive Study</label>
                     </div>
                   </div>
-                  <div class="col-md-8">
+                  <div class="col-md-7">
                     <div class="form-check">
                       <input class="form-check-input" type="checkbox" value="" id="comprehensiveStudyConfirmed" name="comprehensiveStudyConfirmed"
                         [(ngModel)]="filterForUI.CEAAInvolvement.comprehensiveStudyConfirmed">

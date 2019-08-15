@@ -294,6 +294,17 @@ export class ApiService {
     return this.http.get<any>(`${this.apiPath}/${queryString}`, {});
   }
 
+  // Organizations
+
+  getOrgsByCompanyType(type: string): Observable<Org[]> {
+    const fields = [
+      'name'
+    ];
+
+    const queryString = `organization?companyType=${type}&sortBy=+name&fields=${this.buildValues(fields)}`;
+    return this.http.get<Org[]>(`${this.apiPath}/${queryString}`, {});
+  }
+
   // TODO: delete these "Applications" calls, cruft.
   //
   // Applications
