@@ -1,79 +1,264 @@
-// def sonarqubePodLabel = "prc-public-${UUID.randomUUID().toString()}"
-// podTemplate(label: sonarqubePodLabel, name: sonarqubePodLabel, serviceAccount: 'jenkins', cloud: 'openshift', containers: [
-//   containerTemplate(
-//     name: 'jnlp',
-//     image: '172.50.0.2:5000/openshift/jenkins-slave-python3nodejs',
-//     resourceRequestCpu: '500m',
-//     resourceLimitCpu: '1000m',
-//     resourceRequestMemory: '1Gi',
-//     resourceLimitMemory: '4Gi',
-//     workingDir: '/tmp',
-//     command: '',
-//     args: '${computer.jnlpmac} ${computer.name}',
-//     envVars: [
-//       envVar(key: 'SONARQUBE_URL', value: 'https://sonarqube-prc-tools.pathfinder.gov.bc.ca')
-//     ]
-//   )
-// ]) {
-//   node(sonarqubePodLabel) {
-//     stage('checkout code') {
-//       checkout scm
-//     }
-//     stage('exeucte sonar') {
-//       dir('sonar-runner') {
-//         try {
-//           sh 'npm install typescript && ./gradlew sonarqube -Dsonar.host.url=https://sonarqube-prc-tools.pathfinder.gov.bc.ca -Dsonar.verbose=true --stacktrace --info'
-//         } finally {
+def sonarqubePodLabel = "eagle-public-${UUID.randomUUID().toString()}"
+// podTemplate(label: sonarqubePodLabel, name: sonarqubePodLabel, serviceAccount: 'jenkins', cloud: 'openshift', containers: [])
+def zapPodLabel = "eagle-public-owasp-zap-${UUID.randomUUID().toString()}"
+// podTemplate(label: zapPodLabel, name: zapPodLabel, serviceAccount: 'jenkins', cloud: 'openshift', containers: [])
 
-//         }
-//       }
-//     }
-//   }
-// }
 
-pipeline {
-  agent any
-  stages {
-    stage('Building: public (develop branch)') {
-      steps {
-        script {
-          try {
-            echo "Building: ${env.JOB_NAME} #${env.BUILD_ID}"
-            notifyBuild("Building: ${env.JOB_NAME} #${env.BUILD_ID}", "YELLOW")
-            openshiftBuild bldCfg: 'eagle-public-angular', showBuildLogs: 'true'
-          } catch (e) {
-            notifyBuild("BUILD ${env.JOB_NAME} #${env.BUILD_ID} ABORTED", "RED")
-            error('Stopping early…')
-          }
-        }
+@NonCPS
+import groovy.json.JsonOutput
+/*
+ * Sends a rocket chat notification
+ */
+def notifyRocketChat(text, url) {
+    def rocketChatURL = url
+    def payload = JsonOutput.toJson([
+      "username":"Jenkins",
+      "icon_url":"https://wiki.jenkins.io/download/attachments/2916393/headshot.png",
+      "text": text
+    ])
+
+    sh("curl -X POST -H 'Content-Type: application/json' --data \'${payload}\' ${rocketChatURL}")
+}
+
+/*
+ * Updates the global pastBuilds array: it will iterate recursively
+ * and add all the builds prior to the current one that had a result
+ * different than 'SUCCESS'.
+ */
+def buildsSinceLastSuccess(previousBuild, build) {
+  if ((build != null) && (build.result != 'SUCCESS')) {
+    pastBuilds.add(build)
+    buildsSinceLastSuccess(pastBuilds, build.getPreviousBuild())
+  }
+}
+
+/*
+ * Generates a string containing all the commit messages from
+ * the builds in pastBuilds.
+ */
+@NonCPS
+def getChangeLog(pastBuilds) {
+  def log = ""
+  for (int x = 0; x < pastBuilds.size(); x++) {
+    for (int i = 0; i < pastBuilds[x].changeSets.size(); i++) {
+      def entries = pastBuilds[x].changeSets[i].items
+      for (int j = 0; j < entries.length; j++) {
+        def entry = entries[j]
+        log += "* ${entry.msg} by ${entry.author} \n"
       }
     }
-    stage('Deploying: public (develop branch)') {
-      steps {
-        script {
+  }
+  return log;
+}
+
+// todo templates can be pulled from a repository, instead of declared here
+def nodejsLinter () {
+  openshift.withCluster() {
+    openshift.withProject() {
+      podTemplate(label: 'node-linter', name: 'node-linter', serviceAccount: 'jenkins', cloud: 'openshift', containers: [
+        containerTemplate(
+          name: 'jnlp',
+          image: 'registry.access.redhat.com/openshift3/jenkins-agent-nodejs-8-rhel7',
+          resourceRequestCpu: '500m',
+          resourceLimitCpu: '800m',
+          resourceRequestMemory: '1Gi',
+          resourceLimitMemory: '2Gi',
+          activeDeadlineSeconds: '1200',
+          workingDir: '/tmp',
+          command: '',
+          args: '${computer.jnlpmac} ${computer.name}',
+        )
+      ]) {
+        node("node-linter") {
+          checkout scm
           try {
-            notifyBuild("Deploying: ${env.JOB_NAME} #${env.BUILD_ID}", "YELLOW")
-            openshiftBuild bldCfg: 'eagle-public-build', showBuildLogs: 'true'
-          } catch (e) {
-            notifyBuild("BUILD ${env.JOB_NAME} #${env.BUILD_ID} ABORTED", "RED")
-            error('Stopping early…')
+            // install deps to get angular-cli
+            sh 'npm install'
+            sh 'npm run lint'
+          } finally {
+            echo "Linting Passed"
           }
-          notifyBuild("Deployed ${env.JOB_NAME} #${env.BUILD_ID}", "GREEN")
         }
       }
+      return true
     }
   }
 }
 
-def notifyBuild(String msg = '', String colour = 'GREEN') {
-  if (colour == 'YELLOW') {
-    colorCode = '#FFFF00'
-  } else if (colour == 'GREEN') {
-    colorCode = '#00FF00'
-  } else {
-    colorCode = '#FF0000'
+def nodejsTester () {
+  openshift.withCluster() {
+    openshift.withProject() {
+      podTemplate(label: 'node-tester', name: 'node-tester', serviceAccount: 'jenkins', cloud: 'openshift', containers: [
+        containerTemplate(
+          name: 'jnlp',
+          image: 'registry.access.redhat.com/openshift3/jenkins-agent-nodejs-8-rhel7',
+          resourceRequestCpu: '500m',
+          resourceLimitCpu: '800m',
+          resourceRequestMemory: '1Gi',
+          resourceLimitMemory: '2Gi',
+          workingDir: '/tmp',
+          command: '',
+        )
+      ]) {
+        node("node-tester") {
+          checkout scm
+          try {
+            sh 'npm run tests'
+          } finally {
+            echo "Unit Tests Passed"
+          }
+        }
+      }
+      return true
+    }
   }
+}
 
-  // Send notifications
-  // slackSend (color: colorCode, message: msg)
+def CHANGELOG = "No new changes"
+def IMAGE_HASH = "latest"
+
+pipeline {
+  agent any
+  options {
+    disableResume()
+  }
+  stages {
+    stage('Parallel Stage') {
+      failFast true
+      parallel {
+        stage('Build') {
+          agent any
+          steps {
+            script {
+              pastBuilds = []
+              buildsSinceLastSuccess(pastBuilds, currentBuild);
+              CHANGELOG = getChangeLog(pastBuilds);
+
+              echo ">>>>>>Changelog: \n ${CHANGELOG}"
+
+              try {
+                ROCKET_DEPLOY_WEBHOOK = sh(returnStdout: true, script: 'cat /var/rocket/rocket-deploy-webhook')
+                ROCKET_QA_WEBHOOK = sh(returnStdout: true, script: 'cat /var/rocket/rocket-qa-webhook')
+
+                echo "Building eagle-public develop branch"
+                openshiftBuild bldCfg: 'eagle-public-angular', showBuildLogs: 'true'
+                openshiftBuild bldCfg: 'eagle-public-build', showBuildLogs: 'true'
+                echo "Build done"
+
+                echo ">>> Get Image Hash"
+                // Don't tag with BUILD_ID so the pruner can do it's job; it won't delete tagged images.
+                // Tag the images for deployment based on the image's hash
+                IMAGE_HASH = sh (
+                  script: """oc get istag eagle-public:latest -o template --template=\"{{.image.dockerImageReference}}\"|awk -F \":\" \'{print \$3}\'""",
+                  returnStdout: true).trim()
+                echo ">> IMAGE_HASH: ${IMAGE_HASH}"
+              } catch (error) {
+                notifyRocketChat(
+                  "@all The latest build of eagle-public seems to be broken. \n Error: \n ${error}",
+                  ROCKET_QA_WEBHOOK
+                )
+                throw error
+              }
+            }
+          }
+        }
+
+        // stage('Unit Tests') {
+        //   agent { node { label 'nodejs' }}
+        //   steps {
+        //     script {
+        //       echo "Placeholder - Running unit-tests"
+              // def result = nodejsTester()
+        //     }
+        //   }
+        // }
+
+        stage('Linting') {
+          steps {
+            script {
+              echo "Running linter"
+              def result = nodejsLinter()
+            }
+          }
+        }
+
+        // stage('exeucte sonar') {
+        //   agent { label 'sonarqubePodLabel' }
+        //   environment {
+        //     // set to whatever the secret name is
+        //     SONARQUBE_URL = credentials('url')
+        //   }
+        //   steps {
+            // checkout scm
+        //     echo "sonar placeholder"
+            // dir('sonar-runner') {
+            //   try {
+                // todo update url
+            //     sh './gradlew sonarqube -Dsonar.host.url=${SONARQUBE_URL} -Dsonar.verbose=true --stacktrace --info'
+            //   } finally {
+            //     echo "Scan complete"
+            //   }
+            // }
+        //   }
+        // }
+      }
+    }
+
+    stage('Deploy to dev'){
+      agent any
+      steps {
+        script {
+          try {
+            echo "Deploying to dev..."
+            openshiftTag destStream: 'eagle-public', verbose: 'false', destTag: 'dev', srcStream: 'eagle-public', srcTag: "${IMAGE_HASH}"
+            sleep 5
+            // todo update namespace before switching over
+            openshiftVerifyDeployment depCfg: 'eagle-public', namespace: 'esm-dev', replicaCount: 1, verbose: 'false', verifyReplicaCount: 'false', waitTime: 600000
+            echo ">>>> Deployment Complete"
+
+            notifyRocketChat(
+              "@all A new version of eagle-public is now in Dev. \n Changes: \n ${CHANGELOG}",
+              ROCKET_DEPLOY_WEBHOOK
+            )
+            notifyRocketChat(
+              "@all A new version of eagle-public is now in Dev and ready for QA. \n Changes to Dev: \n ${CHANGELOG}",
+              ROCKET_QA_WEBHOOK
+            )
+          } catch (error) {
+            notifyRocketChat(
+              "@all The latest deployment of eagle-public to Dev seems to have failed\n Error: \n ${error}",
+              ROCKET_DEPLOY_WEBHOOK
+            )
+            currentBuild.result = "FAILURE"
+            throw new Exception("Deploy failed")
+          }
+        }
+      }
+    }
+
+    // stage('ZAP Security Scan') {
+    //   agent{ label: zapPodLabel }
+      // steps {
+        //the checkout is mandatory
+        // echo "checking out source"
+        // echo "Build: ${BUILD_ID}"
+        // checkout scm
+        // dir('zap') {
+        //   def retVal = sh returnStatus: true, script: './runzap.sh'
+        //   publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: true, reportDir: '/zap/wrk', reportFiles: 'index.html', reportName: 'ZAP Full Scan', reportTitles: 'ZAP Full Scan'])
+        //   echo "Return value is: ${retVal}"
+        // }
+      // }
+    // }
+
+    // stage('BDD Tests') {
+    //   agent { label: bddPodLabel }
+      // steps{
+      //   echo "BDD placeholder"
+      //   echo "Build: ${BUILD_ID}"
+        // checkout scm
+        // todo determine how to call improved BDD Stack
+      // }
+    // }
+  }
 }
