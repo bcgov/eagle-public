@@ -156,26 +156,25 @@
   background-color: white;
 }
 
-.btn-primary {
-  height: 100%;
+.search-area {
+  background-color: white;
 }
 
-.advanced-search-button .btn {
-  float: right;
-  margin-left: 8px;
+.main-search-field {
+  margin-left: 0px;
+  padding: 8px;
 }
 
-.advanced-search-buttons-right .btn {
+.show-advanced-search-button .btn {
   float: right;
   margin-right: 8px !important;
+  width: 200px;
 }
 
 .advanced-search {
-  background-color: white;
-
   hr {
     margin-top: 1rem;
-    margin-bottom: 1rem;
+    margin-bottom: 0.75rem;
   }
 
   .project-filter {
@@ -183,11 +182,6 @@
     margin-top: 10px;
     margin-right: 15px;
     padding-bottom: 10px;
-  }
-
-  .project-sub-filter {
-    margin-left: -30px;
-    margin-top: 5px;
   }
 
   .type-filters {
@@ -238,6 +232,15 @@
   .form-check label {
     padding-left: 0.25rem;
     font-size: 1rem;
+  }
+
+  .search-button {
+    margin-top: -12px;
+
+    .btn {
+      float: right;
+      margin-right: 8px !important;
+    }
   }
 }
 

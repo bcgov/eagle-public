@@ -28,9 +28,9 @@ class ProjectFilterObject {
     public decisionDateEnd: object = {},
     public pcp: object = {},
     public proponent: Array<Org> = [],
-    public region: object = {},
-    public CEAAInvolvement: object = {},
-    public vc: Array<string> = []
+    public region: Array<string> = [],
+    public CEAAInvolvement: Array<string> = [],
+    public vc: Array<object> = []
   ) { }
 }
 
@@ -44,10 +44,11 @@ export class ProjectListComponent implements OnInit, OnDestroy {
 
   public projects: Array<Project> = [];
   public proponents: Array<Org> = [];
+  public regions: Array<object> = [];
+  public ceaaInvolvements: Array<object> = [];
 
   public loading = true;
 
-  public showOnlyOpenApps: boolean;
   public tableParams: TableParamsObject = new TableParamsObject();
   public terms = new SearchTerms();
 
@@ -134,43 +135,43 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     notReviewable: 'Not Designated Reviewable'
   };
 
-  private REGION_MAP: object = {
-    cariboo: 'Cariboo',
-    kootenay: 'Kootenay',
-    lowerMainland: 'Lower Mainland',
-    okanagan: 'Okanagan',
-    omineca: 'Omineca',
-    peace: 'Peace',
-    skeena: 'Skeena',
-    thompsonNicola: 'Thompson-Nicola',
-    vancouverIsland: 'Vancouver Island'
-  };
-
   private PCP_MAP: object = {
     pending: 'pending',
     open: 'open',
     closed: 'closed'
   };
 
-  private CEAA_INVOLVEMENT_MAP: object = {
-    none: 'None',
-    panel: 'Panel',
-    panel2012: 'Panel (CEAA 2012)',
-    coordinated: 'Coordinated',
-    screening: 'Screening',
-    screeningConfirmed: 'Screening - Confirmed',
-    substituted: 'Substituted',
-    substitutedProvincialLead: 'Substituted (Provincial Lead)',
-    comprehensiveStudy: 'Comprehensive Study',
-    comprehensiveStudyConfirmed: 'Comprehensive Study - Unconfirmed',
-    comprehensiveStudyUnconfirmed: 'Comprehensive Study - Confirmed',
-    comprehensiveStudyPre2012: 'Comprehensive Study (Pre CEAA 2012)',
-    compStudy: 'Comp Study',
-    compStudyUnconfired: 'Comp Study - Unconfirmed',
-    tbd: 'To be determined',
-    equivalentNeb: 'Equivalent - NEB',
-    yes: 'Yes'
-  };
+  private REGIONS_COLLECTION: Array<object> = [
+    { code: 'Cariboo', name: 'Cariboo' },
+    { code: 'Kootenay', name: 'Kootenay' },
+    { code: 'Lower Mainland', name: 'Lower Mainland' },
+    { code: 'Okanagan', name: 'Okanagan' },
+    { code: 'Omineca', name: 'Omineca' },
+    { code: 'Peace', name: 'Peace' },
+    { code: 'Skeena', name: 'Skeena' },
+    { code: 'Thompson-Nicola', name: 'Thompson-Nicola' },
+    { code: 'Vancouver Island', name: 'Vancouver Island' }
+  ];
+
+  private CEAA_INVOLVEMENTS_COLLECTION: Array<object> = [
+    { code: 'None', name: 'None' },
+    { code: 'Panel', name: 'Panel' },
+    { code: 'Panel (CEAA 2012)', name: 'Panel (CEAA 2012)' },
+    { code: 'Coordinated', name: 'Coordinated' },
+    { code: 'Screening', name: 'Screening' },
+    { code: 'Screening - Confirmed', name: 'Screening - Confirmed' },
+    { code: 'Substituted', name: 'Substituted' },
+    { code: 'Substituted (Provincial Lead)', name: 'Substituted (Provincial Lead)' },
+    { code: 'Comprehensive Study', name: 'Comprehensive Study' },
+    { code: 'Comprehensive Study - Unconfirmed', name: 'Comprehensive Study - Unconfirmed' },
+    { code: 'Comprehensive Study - Confirmed', name: 'Comprehensive Study - Confirmed' },
+    { code: 'Comprehensive Study (Pre CEAA 2012)', name: 'Comprehensive Study (Pre CEAA 2012)' },
+    { code: 'Comp Study', name: 'Comp Study' },
+    { code: 'Comp Study - Unconfirmed', name: 'Comp Study - Unconfirmed' },
+    { code: 'To be determined', name: 'To be determined' },
+    { code: 'Equivalent - NEB', name: 'Equivalent - NEB' },
+    { code: 'Yes', name: 'Yes' }
+  ];
 
   constructor(
     private router: Router,
@@ -200,6 +201,9 @@ export class ProjectListComponent implements OnInit, OnDestroy {
           .subscribe((proponents: any) => {
             if (proponents) {
               this.proponents = proponents;
+
+              this.regions = this.REGIONS_COLLECTION;
+              this.ceaaInvolvements = this.CEAA_INVOLVEMENTS_COLLECTION;
 
               this.setFiltersFromParams(params);
 
@@ -250,7 +254,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     this.router.navigate(['/projects', 'add']);
   }
 
-  paramsToObjectFilters(params, name, map) {
+  paramsToCheckboxFilters(params, name, map) {
     this.filterForUI[name] = {};
     delete this.filterForURL[name];
     delete this.filterForAPI[name];
@@ -270,25 +274,25 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     }
   }
 
-  paramsToCollectionFilters(params, name, collectionList) {
+  paramsToCollectionFilters(params, name, collection, identifyBy) {
     this.filterForUI[name] = [];
     delete this.filterForURL[name];
     delete this.filterForAPI[name];
 
-    if (params[name] && collectionList) {
-      let confirmedIds = [];
-      // look up each id in collection
-      const ids = params[name].split(',');
-      ids.forEach(id => {
-        const record = _.find(collectionList, { _id: id });
+    if (params[name] && collection) {
+      let confirmedValues = [];
+      // look up each value in collection
+      const values = params[name].split(',');
+      values.forEach(value => {
+        const record = _.find(collection, [ identifyBy, value ]);
         if (record) {
           this.filterForUI[name].push(record);
-          confirmedIds.push(id);
+          confirmedValues.push(value);
         }
       });
-      if (confirmedIds.length) {
-        this.filterForURL[name] = confirmedIds.join(',');
-        this.filterForAPI[name] = confirmedIds.join(',');
+      if (confirmedValues.length) {
+        this.filterForURL[name] = confirmedValues.join(',');
+        this.filterForAPI[name] = confirmedValues.join(',');
       }
     }
   }
@@ -308,20 +312,20 @@ export class ProjectListComponent implements OnInit, OnDestroy {
   }
 
   setFiltersFromParams(params) {
-    this.paramsToObjectFilters(params, 'type', this.TYPE_MAP);
-    this.paramsToObjectFilters(params, 'eacDecision', this.EAC_DECISIONS_MAP);
-    this.paramsToObjectFilters(params, 'region', this.REGION_MAP);
-    this.paramsToObjectFilters(params, 'pcp', this.PCP_MAP);
-    this.paramsToObjectFilters(params, 'CEAAInvolvement', this.CEAA_INVOLVEMENT_MAP);
+    this.paramsToCheckboxFilters(params, 'type', this.TYPE_MAP);
+    this.paramsToCheckboxFilters(params, 'eacDecision', this.EAC_DECISIONS_MAP);
+    this.paramsToCheckboxFilters(params, 'pcp', this.PCP_MAP);
 
-    this.paramsToCollectionFilters(params, 'proponent', this.proponents);
-    this.paramsToCollectionFilters(params, 'vc', null);
+    this.paramsToCollectionFilters(params, 'region', this.regions, 'code');
+    this.paramsToCollectionFilters(params, 'CEAAInvolvement', this.ceaaInvolvements, 'code');
+    this.paramsToCollectionFilters(params, 'proponent', this.proponents, '_id');
+    this.paramsToCollectionFilters(params, 'vc', null, '_id');
 
     this.paramsToDateFilters(params, 'decisionDateStart');
     this.paramsToDateFilters(params, 'decisionDateEnd');
   }
 
-  filterToObjectParams(params, name) {
+  checkboxFilterToParams(params, name) {
     let keys = [];
     Object.keys(this.filterForUI[name]).forEach(key => {
       if (this.filterForUI[name][key]) {
@@ -333,10 +337,10 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     }
   }
 
-  filterToCollectionParams(params, name) {
+  collectionFilterToParams(params, name, identifyBy) {
     if (this.filterForUI[name].length) {
-      const ids = this.filterForUI[name].map(record => { return record._id; });
-      params[name] = ids.join(',');
+      const values = this.filterForUI[name].map(record => { return record[identifyBy]; });
+      params[name] = values.join(',');
     }
   }
 
@@ -344,25 +348,25 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     return date && date.year && date.month && date.day;
   }
 
-  filterToDateParams(params, name) {
+  dateFilterToParams(params, name) {
     if (this.isNGBDate(this.filterForUI[name])) {
       const date = new Date(this.filterForUI[name].year, this.filterForUI[name].month - 1, this.filterForUI[name].day);
       params[name] = moment(date).format('YYYY-MM-DD');
     }
   }
 
-  getParamsFromFilter(params) {
-    this.filterToObjectParams(params, 'type');
-    this.filterToObjectParams(params, 'eacDecision');
-    this.filterToObjectParams(params, 'pcp');
-    this.filterToObjectParams(params, 'region');
-    this.filterToObjectParams(params, 'CEAAInvolvement');
+  setParamsFromFilters(params) {
+    this.checkboxFilterToParams(params, 'type');
+    this.checkboxFilterToParams(params, 'eacDecision');
+    this.checkboxFilterToParams(params, 'pcp');
 
-    this.filterToCollectionParams(params, 'proponent');
-    this.filterToCollectionParams(params, 'vc');
+    this.collectionFilterToParams(params, 'region', 'code');
+    this.collectionFilterToParams(params, 'CEAAInvolvement', 'code');
+    this.collectionFilterToParams(params, 'proponent', '_id');
+    this.collectionFilterToParams(params, 'vc', '_id');
 
-    this.filterToDateParams(params, 'decisionDateStart');
-    this.filterToDateParams(params, 'decisionDateEnd');
+    this.dateFilterToParams(params, 'decisionDateStart');
+    this.dateFilterToParams(params, 'decisionDateEnd');
   }
 
   toggleFilter(name) {
@@ -378,6 +382,10 @@ export class ProjectListComponent implements OnInit, OnDestroy {
       });
       this.showFilters[name] = true;
     }
+  }
+
+  isShowingFilter() {
+    return Object.keys(this.showFilters).some(key => { return this.showFilters[key]; });
   }
 
   clearAll() {
@@ -503,7 +511,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     params['keywords'] = this.tableParams.keywords;
     params['pageSize'] = this.tableParams.pageSize = 10;
 
-    this.getParamsFromFilter(params);
+    this.setParamsFromFilters(params);
 
     console.log('onSubmit params', params);
     this.router.navigate(['projects-list', params]);
