@@ -18,6 +18,7 @@ import { OrgNamePipe } from './pipes/org-name.pipe';
 import { TableTemplateUtils } from './utils/table-template-utils';
 import { TableDirective } from './components/table-template/table.directive';
 import { PublishedPipe } from 'app/shared/pipes/published.pipe';
+import { Utils } from './utils/utils';
 
 @NgModule({
   imports: [
@@ -56,7 +57,8 @@ import { PublishedPipe } from 'app/shared/pipes/published.pipe';
     OrgNamePipe
   ],
   providers: [
-    TableTemplateUtils
+    TableTemplateUtils,
+    Utils
   ]
 })
 
