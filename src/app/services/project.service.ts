@@ -13,6 +13,15 @@ import { CommentPeriodService } from './commentperiod.service';
 import { CommentPeriod } from 'app/models/commentperiod';
 import { Org } from 'app/models/organization';
 import { SearchResults } from 'app/models/search';
+import { flatMap } from 'rxjs/operators';
+import { of } from 'rxjs/internal/observable/of';
+import { forkJoin } from 'rxjs';
+import { SearchService } from './search.service';
+
+interface GetParameters {
+  getresponsibleEPD?: boolean;
+  getprojectLead?: boolean;
+}
 
 @Injectable()
 export class ProjectService {
@@ -23,6 +32,7 @@ export class ProjectService {
   constructor(
     private api: ApiService,
     private commentPeriodService: CommentPeriodService,
+    private searchService: SearchService
   ) { }
 
   // get just the projects (for fast mapping)
@@ -46,7 +56,7 @@ export class ProjectService {
           });
           return this.projectList;
         }
-        return  [];
+        return [];
       })
       .catch(this.api.handleError);
   }
@@ -96,11 +106,47 @@ export class ProjectService {
         // return the first (only) project
         return projects.length > 0 ? new Project(projects[0]) : null;
       })
+      .pipe(
+        flatMap(res => {
+          let project = res;
+          if (!project) {
+            return of(null as Project);
+          }
+          if (project.projectLeadId == null && project.responsibleEPDId == null) {
+            return of(new Project(project));
+          }
+          // now get the rest of the data for this project
+          return this._getExtraAppData(
+            new Project(project),
+            {
+              getresponsibleEPD: project.responsibleEPDId !== null && project.responsibleEPDId !== '' || project.responsibleEPDId !== undefined,
+              getprojectLead: project.projectLeadId !== null && project.projectLeadId !== '' || project.projectLeadId !== undefined
+            }
+          );
+        })
+      )
       .catch(this.api.handleError);
   }
 
   getPins(proj: string, pageNum: number, pageSize: number, sortBy: any): Observable<Org> {
     return this.api.getProjectPins(proj, pageNum, pageSize, sortBy)
-    .catch(error => this.api.handleError(error));
+      .catch(error => this.api.handleError(error));
+  }
+
+  private _getExtraAppData(project: Project, { getresponsibleEPD = false, getprojectLead = false }: GetParameters): Observable<Project> {
+    return forkJoin(
+      getresponsibleEPD ? this.searchService.getItem(project.responsibleEPDId.toString(), 'User') : of(null),
+      getprojectLead ? this.searchService.getItem(project.projectLeadId.toString(), 'User') : of(null)
+    )
+      .map(payloads => {
+        if (getresponsibleEPD) {
+          project.responsibleEPDObj = payloads[0].data;
+        }
+        if (getprojectLead) {
+          project.projectLeadObj = payloads[1].data;
+        }
+        // finally update the object and return
+        return project;
+      });
   }
 }

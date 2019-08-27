@@ -43,29 +43,29 @@ export class ApiService {
         this.env = 'local';
         break;
 
-        case 'eagle-dev.pathfinder.gov.bc.ca':
-          // prod
-          this.apiPath = 'https://eagle-dev.pathfinder.gov.bc.ca/api/public';
-          this.adminUrl = 'https://eagle-dev.pathfinder.gov.bc.ca/admin/';
-          this.env = 'dev';
-          break;
+      case 'eagle-dev.pathfinder.gov.bc.ca':
+        // prod
+        this.apiPath = 'https://eagle-dev.pathfinder.gov.bc.ca/api/public';
+        this.adminUrl = 'https://eagle-dev.pathfinder.gov.bc.ca/admin/';
+        this.env = 'dev';
+        break;
 
-        case 'www.test.projects.eao.gov.bc.ca':
-        case 'eagle-test.pathfinder.gov.bc.ca':
-        case 'test.projects.eao.gov.bc.ca':
-            // Test
-          this.apiPath = 'https://eagle-test.pathfinder.gov.bc.ca/api/public';
-          this.adminUrl = 'https://test.projects.eao.gov.bc.ca/admin/';
-          this.env = 'test';
-          break;
+      case 'www.test.projects.eao.gov.bc.ca':
+      case 'eagle-test.pathfinder.gov.bc.ca':
+      case 'test.projects.eao.gov.bc.ca':
+        // Test
+        this.apiPath = 'https://eagle-test.pathfinder.gov.bc.ca/api/public';
+        this.adminUrl = 'https://test.projects.eao.gov.bc.ca/admin/';
+        this.env = 'test';
+        break;
 
-        case 'www.projects.eao.gov.bc.ca':
-        case 'projects.eao.gov.bc.ca':
-          // prod
-          this.apiPath = 'https://eagle-prod.pathfinder.gov.bc.ca/api/public';
-          this.adminUrl = 'https://projects.eao.gov.bc.ca/admin/';
-          this.env = 'prod';
-          break;
+      case 'www.projects.eao.gov.bc.ca':
+      case 'projects.eao.gov.bc.ca':
+        // prod
+        this.apiPath = 'https://eagle-prod.pathfinder.gov.bc.ca/api/public';
+        this.adminUrl = 'https://projects.eao.gov.bc.ca/admin/';
+        this.env = 'prod';
+        break;
 
       default:
         // Prod
@@ -236,11 +236,13 @@ export class ApiService {
       'eacDecision',
       'location',
       'name',
+      'projectLeadId',
       'projectLead',
       'projectLeadEmail',
       'projectLeadPhone',
       'proponent',
       'region',
+      'responsibleEPDId',
       'responsibleEPD',
       'responsibleEPDEmail',
       'responsibleEPDPhone',
@@ -500,7 +502,7 @@ export class ApiService {
     if (pageNum !== null) { queryString += `pageNum=${pageNum}&`; }
     if (pageSize !== null) { queryString += `pageSize=${pageSize}&`; }
     if (getCount !== null) { queryString += `count=${getCount}&`; }
-    return this.http.get<Object>(`${this.apiPath}/${queryString}`, {observe: 'response'});
+    return this.http.get<Object>(`${this.apiPath}/${queryString}`, { observe: 'response' });
   }
 
   getComment(id: string): Observable<any> {
