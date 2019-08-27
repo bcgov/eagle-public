@@ -73,15 +73,17 @@ def nodejsLinter () {
           checkout scm
           try {
             // install deps to get angular-cli
-            sh 'curl https://raw.githubusercontent.com/bcgov/eagle-dev-guides/master/setup_helper.sh -o setup_helper.sh'
-            sh 'source ./setup_helper.sh'
-            sh 'installNpmModuleIfNeeded "@angular/cli" "package.json" "ng -v"'
-            sh 'installNpmModuleIfNeeded "@angular/core" "package.json" "ng -v"'
-            sh 'installNpmModuleIfNeeded "@angular/compiler" "package.json" "ng -v"'
-            sh 'installNpmModuleIfNeeded "@angular-devkit/build-angular" "package.json" "ng -v"'
-            sh 'installNpmModuleIfNeeded "codelyzer" "package.json" "ng -v"'
-            sh 'installNpmModuleIfNeeded "tslint "package.json" "tslint -v" "true"'
-            sh 'installNpmModuleIfNeeded "rxjs" "package.json" "ng -v"'
+            sh '''
+              curl https://raw.githubusercontent.com/bcgov/eagle-dev-guides/master/setup_helper.sh -o setup_helper.sh'
+              source ./setup_helper.sh
+              installNpmModuleIfNeeded "@angular/cli" "package.json" "ng -v"'
+              installNpmModuleIfNeeded "@angular/core" "package.json" "ng -v"'
+              installNpmModuleIfNeeded "@angular/compiler" "package.json" "ng -v"'
+              installNpmModuleIfNeeded "@angular-devkit/build-angular" "package.json" "ng -v"'
+              installNpmModuleIfNeeded "codelyzer" "package.json" "ng -v"'
+              installNpmModuleIfNeeded "tslint "package.json" "tslint -v" "true"'
+              installNpmModuleIfNeeded "rxjs" "package.json" "ng -v"
+              '''
             // sh 'npm install'
             sh 'npm run lint'
           } finally {
