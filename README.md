@@ -1,25 +1,37 @@
 # eagle-public
 
+Public facing site project for EPIC
+
+## Related projects
+
+Eagle is a revision name of the EAO EPIC application suite.
+
+These projects comprise EAO EPIC:
+
+* <https://github.com/bcgov/eagle-public>
+* <https://github.com/bcgov/eagle-admin>
+* <https://github.com/bcgov/eagle-common-components>
+* <https://github.com/bcgov/eagle-reports>
+* <https://github.com/bcgov/eagle-helper-pods>
+* <https://github.com/bcgov/eagle-dev-guides>
+
 ## Prerequisites
 
-Please install the [Project Prerequisites](https://github.com/bcgov/eagle-dev-guides/blob/master/dev_guides/node_npm_requirements.md)
+Run the following two scripts to create your environment
 
-## Node and NPM
+```bash
+#!/bin/bash
+.\install_prerequisites.sh
+```
 
-| Package | Version |
-| ------- | ------- |
-| Angular CLI | 6.2.x |
-| Yarn | >= 1.10.1 |
-| TSLint | >=5.11.0 |
-| TypeScript | >=2.3.4 |
-
-We use a version manager called *asdf* so as to allow concurrent versions of node and other software.  [asdf](https://github.com/asdf-vm/asdf)\
-Installation of *asdf* and required node packages is covered [here](https://github.com/bcgov/eagle-dev-guides/blob/master/dev_guides/node_npm_requirements.md)
+```bash
+#!/bin/bash
+.\setup_project.sh
+```
 
 ## Fork, Build and Run
 
 1. After installing Node and Yarn, you can fork or straight download a copy of this application to start your own app.
-1. First download all the dependencies with `yarn install`.
 1. Run `npm start` to start the webpack server to run the application on port 4300.
 
     Go to <http://localhost:4300> to verify that the application is running.
