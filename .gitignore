@@ -45,3 +45,8 @@ debug.log
 .DS_Store
 Thumbs.db
 /.vscode/settings.json
+
+# Installer Files
+/developer_install_prerequisites.sh
+/project_installer.sh
+/setup_helper.sh
