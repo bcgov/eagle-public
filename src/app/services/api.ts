@@ -208,6 +208,7 @@ export class ApiService {
       'name',
       'publishDate',
       'purpose',
+      'sector',
       'status',
       'subpurpose',
       'tantalisID',
