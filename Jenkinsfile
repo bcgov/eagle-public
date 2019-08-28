@@ -125,82 +125,87 @@ pipeline {
   options {
     disableResume()
   }
-  stages {
-    stage('Linting') {
-      steps {
-        script {
-          echo "Running linter"
-          def result = nodejsLinter()
-        }
-      }
-    }
-
-    // stage('Unit Tests') {
-    //   agent { node { label 'nodejs' }}
-    //   steps {
-    //     script {
-    //       echo "Placeholder - Running unit-tests"
-    //       def result = nodejsTester()
-    //     }
-    //   }
-    // }
-
-    stage('Build') {
-      agent any
-      steps {
-        script {
-          pastBuilds = []
-          buildsSinceLastSuccess(pastBuilds, currentBuild);
-          CHANGELOG = getChangeLog(pastBuilds);
-
-          echo ">>>>>>Changelog: \n ${CHANGELOG}"
-
-          try {
-            ROCKET_DEPLOY_WEBHOOK = sh(returnStdout: true, script: 'cat /var/rocket/rocket-deploy-webhook')
-            ROCKET_QA_WEBHOOK = sh(returnStdout: true, script: 'cat /var/rocket/rocket-qa-webhook')
-
-            echo "Building eagle-public develop branch"
-            openshiftBuild bldCfg: 'eagle-public-angular', showBuildLogs: 'true'
-            openshiftBuild bldCfg: 'eagle-public-build', showBuildLogs: 'true'
-            echo "Build done"
-
-            echo ">>> Get Image Hash"
-            // Don't tag with BUILD_ID so the pruner can do it's job; it won't delete tagged images.
-            // Tag the images for deployment based on the image's hash
-            IMAGE_HASH = sh (
-              script: """oc get istag eagle-public:latest -o template --template=\"{{.image.dockerImageReference}}\"|awk -F \":\" \'{print \$3}\'""",
-              returnStdout: true).trim()
-            echo ">> IMAGE_HASH: ${IMAGE_HASH}"
-          } catch (error) {
-            notifyRocketChat(
-              "@all The latest build of eagle-public seems to be broken. \n Error: \n ${error}",
-              ROCKET_QA_WEBHOOK
-            )
-            throw error
+  stage('Parallel Build Steps') {
+      failFast true
+      parallel {
+      stages {
+        stage('Linting') {
+          steps {
+            script {
+              echo "Running linter"
+              def result = nodejsLinter()
+            }
           }
         }
+
+        // stage('Unit Tests') {
+        //   agent { node { label 'nodejs' }}
+        //   steps {
+        //     script {
+        //       echo "Placeholder - Running unit-tests"
+        //       def result = nodejsTester()
+        //     }
+        //   }
+        // }
+
+        stage('Build') {
+          agent any
+          steps {
+            script {
+              pastBuilds = []
+              buildsSinceLastSuccess(pastBuilds, currentBuild);
+              CHANGELOG = getChangeLog(pastBuilds);
+
+              echo ">>>>>>Changelog: \n ${CHANGELOG}"
+
+              try {
+                ROCKET_DEPLOY_WEBHOOK = sh(returnStdout: true, script: 'cat /var/rocket/rocket-deploy-webhook')
+                ROCKET_QA_WEBHOOK = sh(returnStdout: true, script: 'cat /var/rocket/rocket-qa-webhook')
+
+                echo "Building eagle-public develop branch"
+                openshiftBuild bldCfg: 'eagle-public-angular', showBuildLogs: 'true'
+                openshiftBuild bldCfg: 'eagle-public-build', showBuildLogs: 'true'
+                echo "Build done"
+
+                echo ">>> Get Image Hash"
+                // Don't tag with BUILD_ID so the pruner can do it's job; it won't delete tagged images.
+                // Tag the images for deployment based on the image's hash
+                IMAGE_HASH = sh (
+                  script: """oc get istag eagle-public:latest -o template --template=\"{{.image.dockerImageReference}}\"|awk -F \":\" \'{print \$3}\'""",
+                  returnStdout: true).trim()
+                echo ">> IMAGE_HASH: ${IMAGE_HASH}"
+              } catch (error) {
+                notifyRocketChat(
+                  "@all The latest build of eagle-public seems to be broken. \n Error: \n ${error}",
+                  ROCKET_QA_WEBHOOK
+                )
+                throw error
+              }
+            }
+          }
+        }
+
+        // stage('exeucte sonar') {
+        //   agent { label 'sonarqubePodLabel' }
+        //   environment {
+        //     // set to whatever the secret name is
+        //     SONARQUBE_URL = credentials('url')
+        //   }
+        //   steps {
+        //     checkout scm
+        //     echo "sonar placeholder"
+        //     dir('sonar-runner') {
+        //       try {
+        //         todo update url
+        //         sh './gradlew sonarqube -Dsonar.host.url=${SONARQUBE_URL} -Dsonar.verbose=true --stacktrace --info'
+        //       } finally {
+        //         echo "Scan complete"
+        //       }
+        //     }
+        //   }
+        // }
       }
     }
-
-    // stage('exeucte sonar') {
-    //   agent { label 'sonarqubePodLabel' }
-    //   environment {
-    //     // set to whatever the secret name is
-    //     SONARQUBE_URL = credentials('url')
-    //   }
-    //   steps {
-    //     checkout scm
-    //     echo "sonar placeholder"
-    //     dir('sonar-runner') {
-    //       try {
-    //         todo update url
-    //         sh './gradlew sonarqube -Dsonar.host.url=${SONARQUBE_URL} -Dsonar.verbose=true --stacktrace --info'
-    //       } finally {
-    //         echo "Scan complete"
-    //       }
-    //     }
-    //   }
-    // }
 
     stage('Deploy to dev'){
       agent any
