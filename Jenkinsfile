@@ -81,7 +81,7 @@ def nodejsLinter () {
               installNpmModuleIfNeeded "@angular/compiler" "package.json" "ng -v"
               installNpmModuleIfNeeded "@angular-devkit/build-angular" "package.json" "ng -v"
               installNpmModuleIfNeeded "codelyzer" "package.json" "ng -v"
-              installNpmModuleIfNeeded "tslint "package.json" "tslint -v" "true"
+              installNpmModuleIfNeeded "tslint" "package.json" "tslint -v" "true"
               installNpmModuleIfNeeded "rxjs" "package.json" "ng -v"
               '''
             // sh 'npm install'
