@@ -60,7 +60,8 @@
               </div>
               <div [ngClass]="{'show-advanced-search-button': true, 'col-md-3': showAdvancedSearch, 'col-md-12': !showAdvancedSearch}">
                 <button class="btn btn-secondary" type="button" (click)="showAdvancedSearch = !showAdvancedSearch;">
-                  <span *ngIf="showAdvancedSearch">Hide</span><span *ngIf="!showAdvancedSearch">Show</span> Advanced Search
+                  <span *ngIf="showAdvancedSearch">Hide Advanced Search</span>
+                  <span *ngIf="!showAdvancedSearch">Show Advanced Search</span>
                 </button>
               </div>
             </div>
@@ -254,11 +255,12 @@
                       <div class="form-group">
                         <tag-input id="proponent" name="proponent"
                           [(ngModel)]="filterForUI.proponent" [identifyBy]="'_id'" [displayBy]="'name'"
-                          [onlyFromAutocomplete]="true" [onTextChangeDebounce]="200" [inputClass]="'tag-input-input'"
+                          [onlyFromAutocomplete]="true" [onTextChangeDebounce]="250" [inputClass]="'tag-input-input'"
+                          [clearOnBlur]="true"
                           [placeholder]="'Type Proponent Name'" [secondaryPlaceholder]="'Type Proponent Name'"
                         >
                           <tag-input-dropdown [autocompleteItems]="proponents" [identifyBy]="'_id'" [displayBy]="'name'"
-                            [showDropdownIfEmpty]="true" [keepOpen]="false"
+                            [showDropdownIfEmpty]="true" [keepOpen]="false" [focusFirstElement]="true"
                           >
                           </tag-input-dropdown>
                         </tag-input>
@@ -276,11 +278,12 @@
                       <div class="form-group">
                         <tag-input id="region" name="region"
                           [(ngModel)]="filterForUI.region" [identifyBy]="'code'" [displayBy]="'name'"
-                          [onlyFromAutocomplete]="true" [onTextChangeDebounce]="200" [inputClass]="'tag-input-input'"
+                          [onlyFromAutocomplete]="true" [onTextChangeDebounce]="250" [inputClass]="'tag-input-input'"
+                          [clearOnBlur]="true"
                           [placeholder]="'Type Region Name'" [secondaryPlaceholder]="'Type Region Name'"
                         >
                           <tag-input-dropdown [autocompleteItems]="regions" [identifyBy]="'code'" [displayBy]="'name'"
-                            [showDropdownIfEmpty]="true" [keepOpen]="false"
+                            [showDropdownIfEmpty]="true" [keepOpen]="false" [focusFirstElement]="true"
                           >
                           </tag-input-dropdown>
                         </tag-input>
@@ -298,11 +301,12 @@
                       <div class="form-group">
                         <tag-input id="ceaaInvolvement" name="ceaaInvolvement"
                           [(ngModel)]="filterForUI.CEAAInvolvement" [identifyBy]="'code'" [displayBy]="'name'"
-                          [onlyFromAutocomplete]="true" [onTextChangeDebounce]="200" [inputClass]="'tag-input-input'"
+                          [onlyFromAutocomplete]="true" [onTextChangeDebounce]="250" [inputClass]="'tag-input-input'"
+                          [clearOnBlur]="true"
                           [placeholder]="'Type Involvement'" [secondaryPlaceholder]="'Type Involvement'"
                         >
                           <tag-input-dropdown [autocompleteItems]="ceaaInvolvements" [identifyBy]="'code'" [displayBy]="'name'"
-                            [showDropdownIfEmpty]="true" [keepOpen]="false"
+                            [showDropdownIfEmpty]="true" [keepOpen]="false" [focusFirstElement]="true"
                           >
                           </tag-input-dropdown>
                         </tag-input>
