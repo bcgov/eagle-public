@@ -196,7 +196,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
         }
 
         // Fetch proponents
-        this.orgService.getByCompanyType('Proponent')
+        this.orgService.getByCompanyType('Proponent/Certificate Holder')
           .takeUntil(this.ngUnsubscribe)
           .subscribe((proponents: any) => {
             if (proponents) {
