@@ -76,6 +76,7 @@ def nodejsLinter () {
             sh '''
               curl https://raw.githubusercontent.com/bcgov/eagle-dev-guides/master/setup_helper.sh -o setup_helper.sh
               source ./setup_helper.sh
+              mkdir node_modules
               installNpmModuleIfNeeded "@angular/cli" "package.json" "ng -v"
               installNpmModuleIfNeeded "@angular/core" "package.json" "ng -v"
               installNpmModuleIfNeeded "@angular/compiler" "package.json" "ng -v"
