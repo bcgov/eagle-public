@@ -60,7 +60,7 @@
   },
   "devDependencies": {
     "8": "0.0.1",
-    "@angular-devkit/build-angular": "~0.8.0",
+    "@angular-devkit/build-angular": "^0.8.9",
     "@angular-devkit/core": "0.0.22",
     "@angular-devkit/schematics": "0.0.40",
     "@angular/cli": "^6.2.9",
@@ -80,7 +80,7 @@
     "node": "^8.16.0",
     "protractor": "^6.0.0",
     "ts-node": "2.0.0",
-    "tslint": "^5.18.0",
+    "tslint": "^5.19.0",
     "typescript": "^2.9.2"
   }
 }
