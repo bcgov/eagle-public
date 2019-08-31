@@ -57,8 +57,7 @@ import { Utils } from './utils/utils';
     OrgNamePipe
   ],
   providers: [
-    TableTemplateUtils,
-    Utils
+    TableTemplateUtils
   ]
 })
 
