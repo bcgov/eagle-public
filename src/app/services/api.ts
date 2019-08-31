@@ -17,7 +17,14 @@ import { SearchResults } from 'app/models/search';
 import { Org } from 'app/models/organization';
 import { Decision } from 'app/models/decision';
 import { User } from 'app/models/user';
-import { Utils } from 'app/shared/utils/utils';
+
+const encode = encodeURIComponent;
+window['encodeURIComponent'] = (component: string) => {
+  return encode(component).replace(/[!'()*]/g, (c) => {
+  // Also encode !, ', (, ), and *
+    return '%' + c.charCodeAt(0).toString(16);
+  });
+};
 
 @Injectable()
 export class ApiService {
@@ -29,7 +36,6 @@ export class ApiService {
 
   constructor(
     private http: HttpClient,
-    private utils: Utils
   ) {
     // const currentUser = JSON.parse(window.localStorage.getItem('currentUser'));
     // this.token = currentUser && currentUser.token;
@@ -89,7 +95,7 @@ export class ApiService {
     console.log(document);
     const blob = await this.downloadResource(document._id);
     let filename = document.displayName;
-    filename = this.utils.encodeFilename(filename, false);
+    filename = encode(filename).replace(/\\/g, '_').replace(/\//g, '_');
     if (this.isMS) {
       window.navigator.msSaveBlob(blob, filename);
     } else {
@@ -115,7 +121,7 @@ export class ApiService {
     console.log(document);
     let safeName = '';
     try {
-      safeName = this.utils.encodeFilename(filename, true)
+      safeName = encode(filename).replace(/\(/g, '%28').replace(/\)/g, '%29').replace(/\\/g, '_').replace(/\//g, '_').replace(/\%2F/g, '_');
     } catch (e) {
       // fall through
       console.log('error', e);
