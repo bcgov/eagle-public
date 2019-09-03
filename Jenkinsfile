@@ -189,16 +189,14 @@ pipeline {
 
         stage('exeucte sonar') {
           agent { label 'sonarqubePodLabel' }
-          environment {
-            // set to whatever the secret name is
-            SONARQUBE_URL = credentials('url')
-          }
           steps {
             checkout scm
             echo "sonar placeholder"
             dir('sonar-runner') {
               try {
-                todo update url
+                sh("oc extract secret/sonarqube-secrets --to=${env.WORKSPACE} --confirm")
+                SONARQUBE_URL = sh(returnStdout: true, script: 'cat sonarqube-route-url')
+
                 sh './gradlew sonarqube -Dsonar.host.url=${SONARQUBE_URL} -Dsonar.verbose=true --stacktrace --info'
               } finally {
                 echo "Scan complete"
