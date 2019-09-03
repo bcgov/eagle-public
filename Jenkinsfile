@@ -197,6 +197,8 @@ pipeline {
                   sh("oc extract secret/sonarqube-secrets --to=${env.WORKSPACE}/sonar-runner --confirm")
                   SONARQUBE_URL = sh(returnStdout: true, script: 'cat sonarqube-route-url')
 
+                  echo "sonar url is: " + SONARQUBE_URL
+
                   sh './gradlew sonarqube -Dsonar.host.url=${SONARQUBE_URL} -Dsonar.verbose=true --stacktrace --info'
                 } finally {
                   echo "Scan complete"
