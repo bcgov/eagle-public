@@ -177,35 +177,35 @@ pipeline {
                   returnStdout: true).trim()
                 echo ">> IMAGE_HASH: ${IMAGE_HASH}"
               } catch (error) {
-                notifyRocketChat(
-                  "@all The latest build of eagle-public seems to be broken. \n Error: \n ${error}",
-                  ROCKET_QA_WEBHOOK
-                )
+                // notifyRocketChat(
+                //   "@all The latest build of eagle-public seems to be broken. \n Error: \n ${error}",
+                //   ROCKET_QA_WEBHOOK
+                // )
                 throw error
               }
             }
           }
         }
 
-        // stage('exeucte sonar') {
-        //   agent { label 'sonarqubePodLabel' }
-        //   environment {
-        //     // set to whatever the secret name is
-        //     SONARQUBE_URL = credentials('url')
-        //   }
-        //   steps {
-        //     checkout scm
-        //     echo "sonar placeholder"
-        //     dir('sonar-runner') {
-        //       try {
-        //         todo update url
-        //         sh './gradlew sonarqube -Dsonar.host.url=${SONARQUBE_URL} -Dsonar.verbose=true --stacktrace --info'
-        //       } finally {
-        //         echo "Scan complete"
-        //       }
-        //     }
-        //   }
-        // }
+        stage('exeucte sonar') {
+          agent { label 'sonarqubePodLabel' }
+          environment {
+            // set to whatever the secret name is
+            SONARQUBE_URL = credentials('url')
+          }
+          steps {
+            checkout scm
+            echo "sonar placeholder"
+            dir('sonar-runner') {
+              try {
+                todo update url
+                sh './gradlew sonarqube -Dsonar.host.url=${SONARQUBE_URL} -Dsonar.verbose=true --stacktrace --info'
+              } finally {
+                echo "Scan complete"
+              }
+            }
+          }
+        }
         }
       }
 
