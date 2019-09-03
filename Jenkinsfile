@@ -194,7 +194,7 @@ pipeline {
               echo "sonar placeholder"
               dir('sonar-runner') {
                 try {
-                  sh("oc extract secret/sonarqube-secrets --to=${env.WORKSPACE} --confirm")
+                  sh("oc extract secret/sonarqube-secrets --to=${env.WORKSPACE}/sonar-runner --confirm")
                   SONARQUBE_URL = sh(returnStdout: true, script: 'cat sonarqube-route-url')
 
                   sh './gradlew sonarqube -Dsonar.host.url=${SONARQUBE_URL} -Dsonar.verbose=true --stacktrace --info'
