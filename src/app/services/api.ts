@@ -213,7 +213,8 @@ export class ApiService {
       'subpurpose',
       'tantalisID',
       'tenureStage',
-      'type'
+      'type',
+      'legislation'
     ];
 
     let queryString = 'project?';
@@ -253,6 +254,7 @@ export class ApiService {
       'responsibleEPDEmail',
       'responsibleEPDPhone',
       'type',
+      'legislation',
       'addedBy',
       'build',
       'CEAALink',

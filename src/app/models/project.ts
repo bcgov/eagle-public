@@ -24,6 +24,7 @@ export class Project {
   responsibleEPDEmail: String;
   responsibleEPDPhone: String;
   type: String;
+  legislation: String;
 
   // Everything else
   addedBy: String;
@@ -89,6 +90,7 @@ export class Project {
     this.responsibleEPDEmail = obj && obj.responsibleEPDEmail || null;
     this.responsibleEPDPhone = obj && obj.responsibleEPDPhone || null;
     this.type                = obj && obj.type                || null;
+    this.legislation         = obj && obj.legislation         || null;
     this.addedBy             = obj && obj.addedBy             || null;
     this.build               = obj && obj.build               || null;
     this.CEAALink            = obj && obj.CEAALink            || null;

@@ -11,6 +11,7 @@ import { CommentPeriodService } from 'app/services/commentperiod.service';
 import { StorageService } from 'app/services/storage.service';
 import { CommentPeriod } from 'app/models/commentperiod';
 import { AddCommentComponent } from './comments/add-comment/add-comment.component';
+import { Constants } from 'app/shared/utils/constants';
 
 @Component({
   selector: 'app-project',
@@ -30,6 +31,7 @@ export class ProjectComponent implements OnInit, OnDestroy {
   public project: Project = null;
   public period: CommentPeriod = null;
   private ngbModal: NgbModalRef = null;
+  public legislationLink: String = '';
 
   private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
 
@@ -64,6 +66,12 @@ export class ProjectComponent implements OnInit, OnDestroy {
           }
         }
       );
+
+      if (this.project.legislation.includes('2002')) {
+        this.legislationLink = Constants.legislationLinks.ENVIRONMENTAL_ASSESSMENT_ACT_2002_LINK;
+      } else {
+        this.legislationLink = Constants.legislationLinks.ENVIRONMENTAL_ASSESSMENT_ACT_1996_LINK;
+      }
   }
 
   public addComment() {
