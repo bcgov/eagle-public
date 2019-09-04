@@ -112,7 +112,7 @@ def nodejsSonarqube () {
               sh("oc extract secret/sonarqube-secrets --to=${env.WORKSPACE}/sonar-runner --confirm")
               SONARQUBE_URL = sh(returnStdout: true, script: 'cat sonarqube-route-url')
 
-              sh "./gradlew sonarqube -Dsonar.host.url=${SONARQUBE_URL} -Dsonar.verbose=true --stacktrace --info"
+              sh "npm install typescript && ./gradlew sonarqube -Dsonar.host.url=${SONARQUBE_URL} -Dsonar.verbose=true --stacktrace --info"
             } finally {
               echo "Scan complete"
             }
@@ -155,6 +155,9 @@ def nodejsTester () {
 
 def CHANGELOG = "No new changes"
 def IMAGE_HASH = "latest"
+
+
+
 
 pipeline {
   agent any
