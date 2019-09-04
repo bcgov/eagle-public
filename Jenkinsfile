@@ -60,8 +60,8 @@ def nodejsTester () {
           image: 'registry.access.redhat.com/openshift3/jenkins-agent-nodejs-8-rhel7',
           resourceRequestCpu: '500m',
           resourceLimitCpu: '800m',
-          resourceRequestMemory: '1Gi',
-          resourceLimitMemory: '2Gi',
+          resourceRequestMemory: '2Gi',
+          resourceLimitMemory: '4Gi',
           workingDir: '/tmp',
           command: '',
         )
@@ -89,9 +89,9 @@ def nodejsLinter () {
           name: 'jnlp',
           image: 'registry.access.redhat.com/openshift3/jenkins-agent-nodejs-8-rhel7',
           resourceRequestCpu: '500m',
-          resourceLimitCpu: '800m',
-          resourceRequestMemory: '1Gi',
-          resourceLimitMemory: '2Gi',
+          resourceLimitCpu: '1000m',
+          resourceRequestMemory: '2Gi',
+          resourceLimitMemory: '4Gi',
           activeDeadlineSeconds: '1200',
           workingDir: '/tmp',
           command: '',
@@ -102,7 +102,7 @@ def nodejsLinter () {
           checkout scm
           try {
             // install deps to get angular-cli
-            sh 'npm install'
+            sh 'npm install @angular/compiler @angular/core @angular/cli @angular-devkit/build-angular codelyzer rxjs tslint'
             sh 'npm run lint'
           } finally {
             echo "Linting Passed"
@@ -173,8 +173,9 @@ pipeline {
               echo ">>>>>>Changelog: \n ${CHANGELOG}"
 
               try {
-                ROCKET_DEPLOY_WEBHOOK = sh(returnStdout: true, script: 'cat /var/rocket/rocket-deploy-webhook')
-                ROCKET_QA_WEBHOOK = sh(returnStdout: true, script: 'cat /var/rocket/rocket-qa-webhook')
+                sh("oc extract secret/rocket-chat-secrets --to=${env.WORKSPACE} --confirm")
+                ROCKET_DEPLOY_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-deploy-webhook')
+                ROCKET_QA_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-qa-webhook')
 
                 echo "Building eagle-public develop branch"
                 openshiftBuild bldCfg: 'eagle-public-angular', showBuildLogs: 'true'
