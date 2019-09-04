@@ -162,152 +162,147 @@ pipeline {
     disableResume()
   }
   stages {
-    stage('Parallel Build Steps') {
-        failFast true
-        parallel {
 
-        stage('Linting') {
-          steps {
-            script {
-              echo "Running linter"
-              def result = nodejsLinter()
-            }
-          }
-        }
-
-        // stage('Unit Tests') {
-        //   agent { node { label 'nodejs' }}
-        //   steps {
-        //     script {
-        //       echo "Placeholder - Running unit-tests"
-        //       def result = nodejsTester()
-        //     }
-        //   }
-        // }
-
-        // stage('Build') {
-        //   agent any
-        //   steps {
-        //     script {
-        //       pastBuilds = []
-        //       buildsSinceLastSuccess(pastBuilds, currentBuild);
-        //       CHANGELOG = getChangeLog(pastBuilds);
-
-        //       echo ">>>>>>Changelog: \n ${CHANGELOG}"
-
-        //       try {
-        //         sh("oc extract secret/rocket-chat-secrets --to=${env.WORKSPACE} --confirm")
-        //         ROCKET_DEPLOY_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-deploy-webhook')
-        //         ROCKET_QA_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-qa-webhook')
-
-        //         echo "Building eagle-public develop branch"
-        //         openshiftBuild bldCfg: 'eagle-public-angular', showBuildLogs: 'true'
-        //         openshiftBuild bldCfg: 'eagle-public-build', showBuildLogs: 'true'
-        //         echo "Build done"
-
-        //         echo ">>> Get Image Hash"
-        //         // Don't tag with BUILD_ID so the pruner can do it's job; it won't delete tagged images.
-        //         // Tag the images for deployment based on the image's hash
-        //         IMAGE_HASH = sh (
-        //           script: """oc get istag eagle-public:latest -o template --template=\"{{.image.dockerImageReference}}\"|awk -F \":\" \'{print \$3}\'""",
-        //           returnStdout: true).trim()
-        //         echo ">> IMAGE_HASH: ${IMAGE_HASH}"
-        //       } catch (error) {
-        //         // notifyRocketChat(
-        //         //   "@all The latest build of eagle-public seems to be broken. \n Error: \n ${error}",
-        //         //   ROCKET_QA_WEBHOOK
-        //         // )
-        //         throw error
-        //       }
-        //     }
-        //   }
-        // }
-
-        stage('Sonarqube') {
-          steps {
-            script {
-              echo "Running Sonarqube"
-              def result = nodejsSonarqube()
-            }
-          }
-        }
-
-        // stage('exeucte sonar') {
-        //   steps {
-        //     script {
-        //       checkout scm
-        //       echo "sonar placeholder"
-        //       dir('sonar-runner') {
-        //         try {
-        //           sh("oc extract secret/sonarqube-secrets --to=${env.WORKSPACE}/sonar-runner --confirm")
-        //           SONARQUBE_URL = sh(returnStdout: true, script: 'cat sonarqube-route-url')
-
-        //           sh "./gradlew sonarqube -Dsonar.host.url=${SONARQUBE_URL} -Dsonar.verbose=true --stacktrace --info"
-        //         } finally {
-        //           echo "Scan complete"
-        //         }
-        //       }
-        //     }
-        //   }
-        // }
+    stage('Linting') {
+      steps {
+        script {
+          echo "Running linter"
+          def result = nodejsLinter()
         }
       }
-
-      stage('Deploy to dev'){
-        agent any
-        steps {
-          script {
-            try {
-              echo "Deploying to dev..."
-              openshiftTag destStream: 'eagle-public', verbose: 'false', destTag: 'dev', srcStream: 'eagle-public', srcTag: "${IMAGE_HASH}"
-              sleep 5
-              // todo update namespace before switching over
-              openshiftVerifyDeployment depCfg: 'eagle-public', namespace: 'mem-mmti-prod', replicaCount: 1, verbose: 'false', verifyReplicaCount: 'false', waitTime: 600000
-              echo ">>>> Deployment Complete"
-
-              // notifyRocketChat(
-              //   "@all A new version of eagle-public is now in Dev. \n Changes: \n ${CHANGELOG}",
-              //   ROCKET_DEPLOY_WEBHOOK
-              // )
-              // notifyRocketChat(
-              //   "@all A new version of eagle-public is now in Dev and ready for QA. \n Changes to Dev: \n ${CHANGELOG}",
-              //   ROCKET_QA_WEBHOOK
-              // )
-            } catch (error) {
-              // notifyRocketChat(
-              //   "@all The latest deployment of eagle-public to Dev seems to have failed\n Error: \n ${error}",
-              //   ROCKET_DEPLOY_WEBHOOK
-              // )
-              currentBuild.result = "FAILURE"
-              throw new Exception("Deploy failed")
-            }
-          }
-        }
-      }
-
-      // stage('ZAP Security Scan') {
-      //   agent{ label: zapPodLabel }
-        // steps {
-          //the checkout is mandatory
-          // echo "checking out source"
-          // echo "Build: ${BUILD_ID}"
-          // checkout scm
-          // dir('zap') {
-          //   def retVal = sh returnStatus: true, script: './runzap.sh'
-          //   publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: true, reportDir: '/zap/wrk', reportFiles: 'index.html', reportName: 'ZAP Full Scan', reportTitles: 'ZAP Full Scan'])
-          //   echo "Return value is: ${retVal}"
-          // }
-        // }
-      // }
-
-      // stage('BDD Tests') {
-      //   agent { label: bddPodLabel }
-        // steps{
-        //   echo "BDD placeholder"
-        //   echo "Build: ${BUILD_ID}"
-          // checkout scm
-          // todo determine how to call improved BDD Stack
-        // }
-      // }
     }
+
+    // stage('Unit Tests') {
+    //   agent { node { label 'nodejs' }}
+    //   steps {
+    //     script {
+    //       echo "Placeholder - Running unit-tests"
+    //       def result = nodejsTester()
+    //     }
+    //   }
+    // }
+
+    stage('Build') {
+      agent any
+      steps {
+        script {
+          pastBuilds = []
+          buildsSinceLastSuccess(pastBuilds, currentBuild);
+          CHANGELOG = getChangeLog(pastBuilds);
+
+          echo ">>>>>>Changelog: \n ${CHANGELOG}"
+
+          try {
+            sh("oc extract secret/rocket-chat-secrets --to=${env.WORKSPACE} --confirm")
+            ROCKET_DEPLOY_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-deploy-webhook')
+            ROCKET_QA_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-qa-webhook')
+
+            echo "Building eagle-public develop branch"
+            openshiftBuild bldCfg: 'eagle-public-angular', showBuildLogs: 'true'
+            openshiftBuild bldCfg: 'eagle-public-build', showBuildLogs: 'true'
+            echo "Build done"
+
+            echo ">>> Get Image Hash"
+            // Don't tag with BUILD_ID so the pruner can do it's job; it won't delete tagged images.
+            // Tag the images for deployment based on the image's hash
+            IMAGE_HASH = sh (
+              script: """oc get istag eagle-public:latest -o template --template=\"{{.image.dockerImageReference}}\"|awk -F \":\" \'{print \$3}\'""",
+              returnStdout: true).trim()
+            echo ">> IMAGE_HASH: ${IMAGE_HASH}"
+          } catch (error) {
+            // notifyRocketChat(
+            //   "@all The latest build of eagle-public seems to be broken. \n Error: \n ${error}",
+            //   ROCKET_QA_WEBHOOK
+            // )
+            throw error
+          }
+        }
+      }
+    }
+
+    stage('Sonarqube') {
+      steps {
+        script {
+          echo "Running Sonarqube"
+          def result = nodejsSonarqube()
+        }
+      }
+    }
+
+    // stage('exeucte sonar') {
+    //   steps {
+    //     script {
+    //       checkout scm
+    //       echo "sonar placeholder"
+    //       dir('sonar-runner') {
+    //         try {
+    //           sh("oc extract secret/sonarqube-secrets --to=${env.WORKSPACE}/sonar-runner --confirm")
+    //           SONARQUBE_URL = sh(returnStdout: true, script: 'cat sonarqube-route-url')
+
+    //           sh "./gradlew sonarqube -Dsonar.host.url=${SONARQUBE_URL} -Dsonar.verbose=true --stacktrace --info"
+    //         } finally {
+    //           echo "Scan complete"
+    //         }
+    //       }
+    //     }
+    //   }
+    // }
+
+    stage('Deploy to dev'){
+      agent any
+      steps {
+        script {
+          try {
+            echo "Deploying to dev..."
+            openshiftTag destStream: 'eagle-public', verbose: 'false', destTag: 'dev', srcStream: 'eagle-public', srcTag: "${IMAGE_HASH}"
+            sleep 5
+            // todo update namespace before switching over
+            openshiftVerifyDeployment depCfg: 'eagle-public', namespace: 'mem-mmti-prod', replicaCount: 1, verbose: 'false', verifyReplicaCount: 'false', waitTime: 600000
+            echo ">>>> Deployment Complete"
+
+            // notifyRocketChat(
+            //   "@all A new version of eagle-public is now in Dev. \n Changes: \n ${CHANGELOG}",
+            //   ROCKET_DEPLOY_WEBHOOK
+            // )
+            // notifyRocketChat(
+            //   "@all A new version of eagle-public is now in Dev and ready for QA. \n Changes to Dev: \n ${CHANGELOG}",
+            //   ROCKET_QA_WEBHOOK
+            // )
+          } catch (error) {
+            // notifyRocketChat(
+            //   "@all The latest deployment of eagle-public to Dev seems to have failed\n Error: \n ${error}",
+            //   ROCKET_DEPLOY_WEBHOOK
+            // )
+            currentBuild.result = "FAILURE"
+            throw new Exception("Deploy failed")
+          }
+        }
+      }
+    }
+
+    // stage('ZAP Security Scan') {
+    //   agent{ label: zapPodLabel }
+      // steps {
+        //the checkout is mandatory
+        // echo "checking out source"
+        // echo "Build: ${BUILD_ID}"
+        // checkout scm
+        // dir('zap') {
+        //   def retVal = sh returnStatus: true, script: './runzap.sh'
+        //   publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: true, reportDir: '/zap/wrk', reportFiles: 'index.html', reportName: 'ZAP Full Scan', reportTitles: 'ZAP Full Scan'])
+        //   echo "Return value is: ${retVal}"
+        // }
+      // }
+    // }
+
+    // stage('BDD Tests') {
+    //   agent { label: bddPodLabel }
+      // steps{
+      //   echo "BDD placeholder"
+      //   echo "Build: ${BUILD_ID}"
+        // checkout scm
+        // todo determine how to call improved BDD Stack
+      // }
+    // }
+  }
 }
