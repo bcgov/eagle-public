@@ -12,15 +12,6 @@ window['encodeURIComponent'] = (component: string) => {
 export class Utils {
   constructor() { }
 
-
-  // public encode(component: string) {
-  //   let encoded = encodeURIComponent(component);
-  //   return encoded.replace(/[!'()*]/g, (c) => {
-  //   // Also encode !, ', (, ), and *
-  //     return '%' + c.charCodeAt(0).toString(16);
-  //   });
-  // }
-
   public encodeFilename(filename: string, isUrl: boolean) {
     let safeName;
     if (isUrl) {
