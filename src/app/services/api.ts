@@ -146,8 +146,8 @@ export class ApiService {
   searchKeywords(keys: string, dataset: string, fields: any[], pageNum: number, pageSize: number, sortBy: string = null, queryModifier: object = {}, populate = false, secondarySort: string = null, filter: object = {}): Observable<SearchResults[]> {
     let queryString = `search?dataset=${dataset}`;
     if (fields && fields.length > 0) {
-      fields.map(item => {
-        queryString += `&${item.name}=${item.value}`;
+      queryString += fields.map(item => {
+        return `&${item.name}=${item.value}`;
       });
     }
     if (keys) {
@@ -159,15 +159,15 @@ export class ApiService {
     if (secondarySort !== null) { queryString += `&sortBy=${secondarySort}`; }
     if (populate !== null) { queryString += `&populate=${populate}`; }
     if (queryModifier !== {}) {
-      Object.keys(queryModifier).map(key => {
-        queryModifier[key].split(',').map(item => {
+      Object.keys(queryModifier).forEach(key => {
+        queryModifier[key].split(',').forEach(item => {
           queryString += `&and[${key}]=${item}`;
         });
       });
     }
     if (filter !== {}) {
-      Object.keys(filter).map(key => {
-        filter[key].split(',').map(item => {
+      Object.keys(filter).forEach(key => {
+        filter[key].split(',').forEach(item => {
           queryString += `&or[${key}]=${item}`;
         });
       });

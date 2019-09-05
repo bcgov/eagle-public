@@ -421,13 +421,13 @@ describe('ProjectService', () => {
 
   describe('isDecision()', () => {
     it('returns false for the non-decision statuses', () => {
-      ['AB', 'AC', 'DE', 'SU', 'UN'].map(status => {
+      ['AB', 'AC', 'DE', 'SU', 'UN'].forEach(status => {
         expect(service.isDecision(status)).toBe(false);
       });
     });
 
     it('returns true for the decision statuses', () => {
-      ['AL', 'CA', 'DI', 'DG', 'OA', 'ON', 'OF'].map(status => {
+      ['AL', 'CA', 'DI', 'DG', 'OA', 'ON', 'OF'].forEach(status => {
         expect(service.isDecision(status)).toBe(true);
       });
     });
