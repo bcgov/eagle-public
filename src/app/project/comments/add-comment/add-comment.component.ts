@@ -107,10 +107,10 @@ export class AddCommentComponent implements OnInit {
     const commentSize = this.sizeof(this.comment);
     this.totalSize = commentSize;
 
-    const files = [];
-    this.documents.map((item) => {
+    let files = [];
+    files = this.documents.map((item) => {
       console.log('upfile', item.upfile);
-      files.push(item.upfile);
+      return item.upfile;
     });
 
     files.forEach(file => this.totalSize += file.size);
