@@ -4,14 +4,7 @@ import { TableComponent } from 'app/shared/components/table-template/table.compo
 import { TableObject } from 'app/shared/components/table-template/table-object';
 import { Router } from '@angular/router';
 import { ApiService } from 'app/services/api';
-
-const encode = encodeURIComponent;
-window['encodeURIComponent'] = (component: string) => {
-  return encode(component).replace(/[!'()*]/g, (c) => {
-  // Also encode !, ', (, ), and *
-    return '%' + c.charCodeAt(0).toString(16);
-  });
-};
+import { Utils } from 'app/shared/utils/utils';
 
 @Component({
   selector: 'tbody[app-pins-table-rows]',
@@ -29,6 +22,7 @@ export class PinsTableRowsComponent implements OnInit, TableComponent {
   constructor(
     private api: ApiService,
     private router: Router,
+    private utils: Utils
   ) { }
 
   ngOnInit() {
@@ -52,7 +46,7 @@ export class PinsTableRowsComponent implements OnInit, TableComponent {
     // let filename = item.documentFileName;
     // let safeName = filename;
     // try {
-      // safeName = encode(filename).replace(/\(/g, '%28').replace(/\)/g, '%29').replace(/\\/g, '_').replace(/\//g, '_').replace(/\%2F/g, '_');
+      // safeName = this.utils.encodeFilename(filename, true);
     // } catch (e) {
     //   console.log('error:', e);
     // }
