@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { RouterModule } from '@angular/router';
+import { TagInputModule } from 'ngx-chips';
 
 // modules
 import { SharedModule } from 'app/shared/shared.module';
@@ -33,6 +34,7 @@ import { PinsTableRowsComponent } from './pins/pins-table-rows/pins-table-rows.c
     FormsModule,
     NgbModule.forRoot(),
     RouterModule,
+    TagInputModule,
     SharedModule,
     CommentsModule,
     ProjectRoutingModule
