@@ -1,3 +1,4 @@
+import { DatePipe } from "@angular/common";
 
 export class Project {
   // the following are retrieved from the API
@@ -64,6 +65,8 @@ export class Project {
   isMatches = true;
   isVisible = true;
   isLoaded = false;
+
+
 
   constructor(obj?: any) {
     this._id                 = obj && obj._id                 || null;

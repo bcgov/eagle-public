@@ -1,4 +1,4 @@
-import * as moment from 'moment';
+import * as moment from 'moment-timezone';
 import { Project } from './project';
 
 
@@ -44,6 +44,7 @@ export class CommentPeriod {
   vettedPercent: Number;
   vettingRoles: String;
 
+  longEndDate: moment.Moment;
   // Permissions
   read: Array<String> = [];
   write: Array<String> = [];
@@ -124,5 +125,7 @@ export class CommentPeriod {
         this.daysRemaining = 'Pending';
       }
     }
+
+    this.longEndDate = moment.tz(this.dateCompleted, moment.tz.guess());
   }
 }
