@@ -1,10 +1,3 @@
-def sonarqubePodLabel = "eagle-public-${UUID.randomUUID().toString()}"
-// podTemplate(label: sonarqubePodLabel, name: sonarqubePodLabel, serviceAccount: 'jenkins', cloud: 'openshift', containers: [])
-def zapPodLabel = "eagle-public-owasp-zap-${UUID.randomUUID().toString()}"
-// podTemplate(label: zapPodLabel, name: zapPodLabel, serviceAccount: 'jenkins', cloud: 'openshift', containers: [])
-
-
-@NonCPS
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 
@@ -153,6 +146,9 @@ def nodejsSonarqube () {
               sh "npm install typescript"
               sh returnStdout: true, script: "./gradlew sonarqube -Dsonar.host.url=${SONARQUBE_URL} -Dsonar. -Dsonar.verbose=true --stacktrace --info"
 
+              // wiat for scan status to update
+              sleep(30)
+
               // check if sonarqube passed
               sh("oc extract secret/sonarqube-status-urls --to=${env.WORKSPACE}/sonar-runner --confirm")
               SONARQUBE_STATUS_URL = sh(returnStdout: true, script: 'cat sonarqube-status-public')
@@ -169,6 +165,7 @@ def nodejsSonarqube () {
                 )
 
                 currentBuild.result = 'FAILURE'
+                exit 1
               } else {
                 echo "Scan Passed"
               }
