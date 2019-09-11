@@ -6,7 +6,7 @@
     "ng": "ng",
     "prestart": "",
     "start": "ng serve -o",
-    "build": "npm run lint && ng build --prod --configuration=production",
+    "build": "ng build --prod --configuration=production",
     "pretest": "",
     "test": "echo 'Test suite should be run with \"`npm run tests` or npm `run tests-ci`\"'",
     "tests": "ng test",
