@@ -12,6 +12,7 @@ import { StorageService } from 'app/services/storage.service';
 import { CommentPeriod } from 'app/models/commentperiod';
 import { AddCommentComponent } from './comments/add-comment/add-comment.component';
 import { Constants } from 'app/shared/utils/constants';
+import { SearchService } from 'app/services/search.service';
 
 @Component({
   selector: 'app-project',
@@ -19,12 +20,12 @@ import { Constants } from 'app/shared/utils/constants';
   styleUrls: ['./project.component.scss']
 })
 export class ProjectComponent implements OnInit, OnDestroy {
-  readonly tabLinks = [
+  public tabLinks = [
     { label: 'Project Details', link: 'project-details' },
     { label: 'Commenting', link: 'commenting' },
     { label: 'Documents', link: 'documents' },
-    { label: 'Certificate', link: 'certificates' },
-    { label: 'Amendment(s)', link: 'amendments' },
+    // { label: 'Certificate', link: 'certificates' },
+    // { label: 'Amendment(s)', link: 'amendments' },
     // { label: 'Participating Indigenous Nations', link: 'pins' }
   ];
 
@@ -32,6 +33,7 @@ export class ProjectComponent implements OnInit, OnDestroy {
   public period: CommentPeriod = null;
   private ngbModal: NgbModalRef = null;
   public legislationLink: String = '';
+  private certTagsExist: boolean;
 
   private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
 
@@ -42,10 +44,35 @@ export class ProjectComponent implements OnInit, OnDestroy {
     private modalService: NgbModal,
     private _changeDetectionRef: ChangeDetectorRef,
     private renderer: Renderer2,
+    private searchService: SearchService,
     public configService: ConfigService,
     public projectService: ProjectService, // used in template
     public commentPeriodService: CommentPeriodService // used in template
   ) { }
+
+  // add an entry to this.tabLinks if the corresponding documents have been tagged
+  // tablink is the label/link pair to append to this.tabLinks
+  // queryModifier is the queryModifier parameter of SearchService.getSearchResults
+  private tabLinkIfNotEmpty(tabLink: {label: string, link: string}, queryModifier: object) {
+    // attempt to get a single document that matches the query
+    this.searchService.getSearchResults(
+      null,
+      'Document',
+      [{ 'name': 'project', 'value': this.project._id }],
+      1,
+      1,
+      null,
+      queryModifier,
+      true)
+        .takeUntil(this.ngUnsubscribe)
+          .subscribe((res: any) => {
+            // add tab link if results are not empty
+            if (res[0].data.searchResults.length) {
+              this.tabLinks.push(tabLink);
+            }
+          })
+  }
+
 
   ngOnInit() {
     // get data from route resolver
@@ -66,7 +93,23 @@ export class ProjectComponent implements OnInit, OnDestroy {
           }
         }
       );
-
+      this.tabLinkIfNotEmpty({ label: 'Certificate', link: 'certificates' },
+      {
+        // Search only Certificate Package/EAO/Certificate
+        documentSource: 'PROJECT',
+        type: '5cf00c03a266b7e1877504d5',
+        documentAuthorType: '5cf00c03a266b7e1877504db',
+        milestone: '5cf00c03a266b7e1877504eb'
+      }
+    );
+      this.tabLinkIfNotEmpty({ label: 'Amendment(s)', link: 'amendments' },
+        {
+          // Search only Amendment Package/Amendment
+          documentSource: 'PROJECT',
+          type: '5cf00c03a266b7e1877504d7',
+          milestone: '5cf00c03a266b7e1877504f2'
+        }
+      );
       if (this.project.legislation.includes('2002')) {
         this.legislationLink = Constants.legislationLinks.ENVIRONMENTAL_ASSESSMENT_ACT_2002_LINK;
       } else {
