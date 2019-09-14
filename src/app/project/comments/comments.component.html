@@ -13,7 +13,7 @@
               {{commentPeriodHeader}}
             </h3>
             <h3>
-              {{commentPeriod.dateStarted | date:'mediumDate'}} - {{commentPeriod.dateCompleted | date:'mediumDate'}}
+              {{commentPeriod.dateStarted | date:'mediumDate'}} - {{project.commentPeriodForBanner.longEndDate.format('MMMM DD @ hh:mm z')}}
             </h3>
             <div *ngIf="commentPeriod.informationLabel !== null">
               <p>
