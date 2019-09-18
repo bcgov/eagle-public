@@ -428,28 +428,8 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
       });
   }
 
-  public onNumItems(numItems) {
-    // dismiss any open snackbar
-    // if (this.snackBarRef) { this.snackBarRef.dismiss(); }
 
-    // NOTE: Angular Router doesn't reload page on same URL
-    // REF: https://stackoverflow.com/questions/40983055/how-to-reload-the-current-route-with-the-angular-2-router
-    // WORKAROUND: add timestamp to force URL to be different than last time
-    const params = this.terms.getParams();
-    params['ms'] = new Date().getMilliseconds();
-    params['dataset'] = this.terms.dataset;
-    params['currentPage'] = this.tableParams.currentPage = 1;
-    params['sortBy'] = this.tableParams.sortBy;
-    params['keywords'] = this.tableParams.keywords;
-    numItems === 'max' ? params['pageSize'] = this.tableParams.pageSize = this.tableParams.totalListItems : params['pageSize'] = this.tableParams.pageSize = numItems;
-
-    this.setParamsFromFilters(params);
-
-    console.log('onNumItems params', params);
-    this.router.navigate(['p', this.currentProject._id, 'documents', params]);
-  }
-
-  public onSubmit() {
+  public onSubmit(currentPage = 1) {
     // dismiss any open snackbar
     // if (this.snackBarRef) { this.snackBarRef.dismiss(); }
 
@@ -460,14 +440,13 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
     const params = this.terms.getParams();
     params['ms'] = new Date().getMilliseconds();
     params['dataset'] = this.terms.dataset;
-    params['currentPage'] = this.tableParams.currentPage = 1;
+    params['currentPage'] = this.tableParams.currentPage;
     params['sortBy'] = this.tableParams.sortBy = '';
     params['keywords'] = this.tableParams.keywords;
-    params['pageSize'] = this.tableParams.pageSize = 10;
+    params['pageSize'] = this.tableParams.pageSize;
 
     this.setParamsFromFilters(params);
 
-    console.log('onSubmit params', params);
     this.router.navigate(['p', this.currentProject._id, 'documents', params]);
   }
 
