@@ -1,5 +1,3 @@
-import { DatePipe } from "@angular/common";
-
 export class Project {
   // the following are retrieved from the API
   _id: string;
