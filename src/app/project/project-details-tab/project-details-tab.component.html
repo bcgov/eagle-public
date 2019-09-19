@@ -6,19 +6,19 @@
           <h2>Details</h2>
           <div>
             <label>Region</label>
-            <p class="value">{{project?.region || "-" | titlecase}}</p>
+            <p class="value">{{project?.region || "-" }}</p>
           </div>
           <div>
             <label>Location</label>
-            <p class="value">{{project?.location || "-" | titlecase}}</p>
+            <p class="value">{{project?.location || "-" }}</p>
           </div>
           <div>
             <label>Nature</label>
-            <p class="value">{{project?.nature || "No nature description available" | titlecase}}</p>
+            <p class="value">{{project?.nature || "No nature description available" }}</p>
           </div>
           <div *ngIf="project?.status">
             <label>CEAA Involvement</label>
-            <p class="value">{{project?.CEAAInvolvement || "-" | titlecase}}</p>
+            <p class="value">{{project?.CEAAInvolvement || "-" }}</p>
           </div>
           <div *ngIf="project?.CEAALink">
             <label>CEAA URL</label>
