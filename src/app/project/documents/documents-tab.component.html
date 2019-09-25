@@ -1,21 +1,20 @@
 <div class="tab-pane" role="tabpanel">
-  <form #f="ngForm" class="search-form ui form" (ngSubmit)="onSubmit()">
-    <div class="search-area">
-      <div class="input-group main-search-field">
-        <input class="form-control" type="text" name="keywordInput" placeholder="Enter keywords to search..."
-          id="keywordInput" [(ngModel)]="tableParams.keywords" autofocus />
-        <div *ngIf="!showAdvancedSearch || !isShowingFilter()" class="input-group-append">
-          <!-- prevent searching if input is empty or we're already searching -->
-          <button class="btn btn-primary" type="submit">
-            <span>Search</span>
-          </button>
-        </div>
-      </div>
-      <div *ngIf="!loading" class="advanced-search">
-        <div class="row">
-          <div *ngIf="showAdvancedSearch" class="col-md-9">
-            <button type="button" (click)="toggleFilter('milestone');"
-              [ngClass]="{'btn': true, 'milestone-btn': true,
+    <form #f="ngForm" class="search-form ui form" (ngSubmit)="onSubmit()">
+        <div class="search-area">
+            <div class="input-group main-search-field">
+                <input class="form-control" type="text" name="keywordInput" placeholder="Enter keywords to search..."
+                    id="keywordInput" [(ngModel)]="tableParams.keywords" autofocus />
+                <div *ngIf="!showAdvancedSearch || !isShowingFilter()" class="input-group-append">
+                    <!-- prevent searching if input is empty or we're already searching -->
+                    <button class="btn btn-primary" type="submit">
+                        <span>Search</span>
+                    </button>
+                </div>
+            </div>
+            <div hidden *ngIf="!loading" class="advanced-search">
+                <div class="row">
+                    <div *ngIf="showAdvancedSearch" class="col-md-9">
+                        <button type="button" (click)="toggleFilter('milestone');" [ngClass]="{'btn': true, 'milestone-btn': true,
                 'btn-dark': showFilters.milestone,
                 'btn-secondary': !showFilters.milestone && numFilters.milestone > 0,
                 'btn-outline-dark': !showFilters.milestone && numFilters.milestone == 0}">
