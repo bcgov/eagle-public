@@ -168,6 +168,9 @@ export class ApiService {
     }
     queryString += `&fields=${this.buildValues(fields)}`;
     return this.http.get<SearchResults[]>(`${this.apiPath}/${queryString}`, {});
+    // if (dataset === 'Project') {
+    //   searchResults = searchResults.currentProjectData
+    // }
   }
 
   //
