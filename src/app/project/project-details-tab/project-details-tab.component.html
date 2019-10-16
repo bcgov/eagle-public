@@ -17,11 +17,11 @@
             <p class="value">{{project?.nature || "No nature description available" }}</p>
           </div>
           <div *ngIf="project?.status">
-            <label>CEAA Involvement</label>
+            <label>IAAC Involvement</label>
             <p class="value">{{project?.CEAAInvolvement || "-" }}</p>
           </div>
           <div *ngIf="project?.CEAALink">
-            <label>CEAA URL</label>
+            <label>IAAC URL</label>
             <p class="value"><a class="value" target="_blank"
                 href="{{project.CEAALink}}">{{project?.CEAALink || "-"}}</a>
             </p>
