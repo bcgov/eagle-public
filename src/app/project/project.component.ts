@@ -13,6 +13,9 @@ import { CommentPeriod } from 'app/models/commentperiod';
 import { AddCommentComponent } from './comments/add-comment/add-comment.component';
 import { Constants } from 'app/shared/utils/constants';
 import { SearchService } from 'app/services/search.service';
+import { ISearchResults } from 'app/models/search';
+import { Utils } from 'app/shared/utils/utils';
+
 
 @Component({
   selector: 'app-project',
@@ -44,6 +47,7 @@ export class ProjectComponent implements OnInit, OnDestroy {
     private modalService: NgbModal,
     private _changeDetectionRef: ChangeDetectorRef,
     private renderer: Renderer2,
+    private utils: Utils,
     private searchService: SearchService,
     public configService: ConfigService,
     public projectService: ProjectService, // used in template
@@ -62,6 +66,7 @@ export class ProjectComponent implements OnInit, OnDestroy {
       1,
       1,
       null,
+      '',
       queryModifier,
       true)
         .takeUntil(this.ngUnsubscribe)
@@ -79,12 +84,12 @@ export class ProjectComponent implements OnInit, OnDestroy {
     this.route.data
       .takeUntil(this.ngUnsubscribe)
       .subscribe(
-        (data: { project: Project }) => {
+        (data: { project: ISearchResults<Project>[] }) => {
           if (data.project) {
-            this.project = data.project;
+            const results = this.utils.extractFromSearchResults(data.project);
+            this.project = results ? results[0] :  null;
             this.storageService.state.currentProject = { type: 'currentProject', data: this.project };
             this.renderer.removeClass(document.body, 'no-scroll');
-            this.project = data.project;
             this._changeDetectionRef.detectChanges();
           } else {
             alert('Uh-oh, couldn\'t load project');

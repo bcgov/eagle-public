@@ -41,15 +41,19 @@ export class SearchService {
   getFullList(schema: string): Observable<any> {
     return this.api.getFullDataSet(schema);
   }
-  getSearchResults(keys: string, dataset: string, fields: any[], pageNum: number = 1, pageSize: number = 10, sortBy: string = null, queryModifier: object = {}, populate: boolean = false, secondarySort: string = null, filter: object = {}): Observable<any[]> {
-    const searchResults = this.api.searchKeywords(keys, dataset, fields, pageNum, pageSize, sortBy, queryModifier, populate, secondarySort, filter)
+  getSearchResults(keys: string, dataset: string, fields: any[], pageNum: number = 1, pageSize: number = 10, projectLegislation: string = '', sortBy: string = null, queryModifier: object = {}, populate: boolean = false, secondarySort: string = null, filter: object = {}): Observable<any[]> {
+    const searchResults = this.api.searchKeywords(keys, dataset, fields, pageNum, pageSize, projectLegislation, sortBy, queryModifier, populate, secondarySort, filter)
       .map(res => {
         let allResults = <any>[];
         res.forEach(item => {
           const r = new SearchResults({ type: item._schemaName, data: item });
           r.data.searchResults = r.data.searchResults.map( value => {
             if (value._schemaName === 'Project') {
-              return value.currentProjectData;
+              return {
+                ...value.currentProjectData,
+                _id: value._id,
+                _legislationId: value.currentProjectData._id
+              };
             }
           });
           allResults.push(r);
