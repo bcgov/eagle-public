@@ -57,6 +57,7 @@ export class DocumentsResolver implements Resolve<Observable<object>> {
           [{ 'name': 'project', 'value': projectId }],
           currentPage,
           pageSize,
+          '',
           sortBy,
           { documentSource: 'PROJECT' },
           true,
