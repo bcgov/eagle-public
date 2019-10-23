@@ -131,6 +131,7 @@ export class NewsListComponent implements OnInit, OnDestroy {
       null,
       pageNumber,
       this.tableParams.pageSize,
+      '',
       this.tableParams.sortBy,
       {},
       true

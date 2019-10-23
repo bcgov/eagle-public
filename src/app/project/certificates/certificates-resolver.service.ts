@@ -22,6 +22,7 @@ export class CertificatesResolver implements Resolve<Observable<object>> {
       [{ 'name': 'project', 'value': projectId }],
       currentPage,
       pageSize,
+      '',
       sortBy,
       {
         // Search only Certificate Package/EAO/Certificate

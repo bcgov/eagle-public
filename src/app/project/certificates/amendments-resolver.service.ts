@@ -22,6 +22,7 @@ export class AmendmentsResolverService implements Resolve<Observable<object>> {
       [{ 'name': 'project', 'value': projectId }],
       currentPage,
       pageSize,
+      '',
       sortBy,
       {
         // Search only Amendment Package/Amendment
