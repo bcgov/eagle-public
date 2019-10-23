@@ -49,7 +49,11 @@ export class SearchService {
           const r = new SearchResults({ type: item._schemaName, data: item });
           r.data.searchResults = r.data.searchResults.map( value => {
             if (value._schemaName === 'Project') {
-              return value.currentProjectData;
+              return {
+                ...value.currentProjectData,
+                _id: value._id,
+                _legislationId: value.currentProjectData._id
+              };
             }
           });
           allResults.push(r);
