@@ -21,7 +21,8 @@ export class ActivitiesListTableRowsComponent implements OnInit, TableComponent 
     ) { }
 
     ngOnInit() {
-        this.activities = this.data.data;
+        // TODO: We need to get the legislation specific data in here to get the project name in the table rows component
+        this.activities = this.data && this.data.data || null;
         this.paginationData = this.data.paginationData;
     }
 
