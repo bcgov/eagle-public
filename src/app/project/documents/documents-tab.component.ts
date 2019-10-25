@@ -229,18 +229,20 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
     let documentList = [];
     if (this.documents && this.documents.length > 0) {
       this.documents.forEach(document => {
-        documentList.push(
-          {
-            documentFileName: document.documentFileName || document.displayName || document.internalOriginalName,
-            // date: document.dateUploaded || document.datePosted,
-            displayName: document.displayName,
-            datePosted: document.datePosted,
-            type: document.type,
-            milestone: document.milestone,
-            _id: document._id,
-            project: document.project
-          }
-        );
+        if (document) {
+          documentList.push(
+            {
+              documentFileName: document.documentFileName || document.displayName || document.internalOriginalName,
+              // date: document.dateUploaded || document.datePosted,
+              displayName: document.displayName,
+              datePosted: document.datePosted,
+              type: document.type,
+              milestone: document.milestone,
+              _id: document._id,
+              project: document.project
+            }
+          );
+        }
       });
       this.documentTableData = new TableObject(
         DocumentTableRowsComponent,

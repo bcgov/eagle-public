@@ -54,6 +54,9 @@ export class SearchService {
                 _id: value._id,
                 _legislationId: value.currentProjectData._id
               };
+            // TODO: add in front end mappings for the back end
+            } else {
+              return value
             }
           });
           allResults.push(r);
