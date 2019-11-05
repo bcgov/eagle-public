@@ -531,7 +531,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
       )
       .takeUntil(this.ngUnsubscribe)
       .subscribe((res: any) => {
-        if (res[0].data) {
+        if (res && res[0].data) {
           this.tableParams.totalListItems =
             res[0].data.meta[0].searchResultsTotal;
           this.projects = res[0].data.searchResults;

@@ -47,18 +47,7 @@ export class SearchService {
         let allResults = <any>[];
         res.forEach(item => {
           const r = new SearchResults({ type: item._schemaName, data: item });
-          r.data.searchResults = r.data.searchResults.map( value => {
-            if (value._schemaName === 'Project') {
-              return {
-                ...value.currentProjectData,
-                _id: value._id,
-                _legislationId: value.currentProjectData._id
-              };
-            // TODO: add in front end mappings for the back end
-            } else {
-              return value
-            }
-          });
+
           allResults.push(r);
         });
         return allResults;
