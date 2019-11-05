@@ -60,6 +60,7 @@ export class ApiService {
         break;
 
       case 'www.projects.eao.gov.bc.ca':
+      case 'eagle-prod.pathfinder.gov.bc.ca':
       case 'projects.eao.gov.bc.ca':
         // prod
         this.apiPath = 'https://eagle-prod.pathfinder.gov.bc.ca/api/public';
