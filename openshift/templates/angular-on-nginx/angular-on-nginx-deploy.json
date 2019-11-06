@@ -6,9 +6,134 @@
       "description": "Deployment template for a angular on nginx",
       "tags": "angular,nginx"
     },
-    "name": "angular-on-nginx"
+    "name": "eagle-public"
   },
   "objects": [
+    {
+      "apiVersion": "v1",
+      "kind": "DeploymentConfig",
+      "metadata": {
+        "creationTimestamp": null,
+        "labels": {
+          "app": "${NAME}"
+        },
+        "name": "${NAME}"
+      },
+      "spec": {
+        "replicas": 2,
+        "selector": {
+          "app": "${NAME}",
+          "deploymentconfig": "${NAME}"
+        },
+        "strategy": {
+          "rollingParams": {
+            "intervalSeconds": 1,
+            "maxSurge": "25%",
+            "maxUnavailable": "25%",
+            "timeoutSeconds": 600,
+            "updatePeriodSeconds": 1
+          },
+          "type": "Rolling"
+        },
+        "template": {
+          "metadata": {
+            "creationTimestamp": null,
+            "labels": {
+              "app": "${NAME}",
+              "deploymentconfig": "${NAME}"
+            }
+          },
+          "spec": {
+            "containers": [
+              {
+                "image": "${NAME}",
+                "imagePullPolicy": "Always",
+                "name": "${NAME}",
+                "ports": [
+                  {
+                    "containerPort": 8080,
+                    "protocol": "TCP"
+                  }
+                ],
+                "env": [
+                  {
+                    "name": "RealIpFrom",
+                    "value": "${REAL_IP_FROM}"
+                  },
+                  {
+                    "name": "AdditionalRealIpFromRules",
+                    "value": "${AdditionalRealIpFromRules}"
+                  },
+                  {
+                    "name": "IpFilterRules",
+                    "value": "${IpFilterRules}"
+                  }
+                ],
+                "resources": {
+                  "requests": {
+                    "cpu": "10m",
+                    "memory": "100Mi"
+                  },
+                  "limits": {
+                    "cpu": "500m",
+                    "memory": "1Gi"
+                  }
+                },
+                "livenessProbe": {
+                  "httpGet": {
+                    "path": "/",
+                    "port": 8080,
+                    "scheme": "HTTP"
+                  },
+                  "initialDelaySeconds": 30,
+                  "timeoutSeconds": 60,
+                  "periodSeconds": 10,
+                  "successThreshold": 1,
+                  "failureThreshold": 3
+                },
+                "readinessProbe": {
+                  "httpGet": {
+                    "path": "/",
+                    "port": 8080,
+                    "scheme": "HTTP"
+                  },
+                  "initialDelaySeconds": 10,
+                  "timeoutSeconds": 60,
+                  "periodSeconds": 10,
+                  "successThreshold": 1,
+                  "failureThreshold": 3
+                }
+              }
+            ],
+            "dnsPolicy": "ClusterFirst",
+            "restartPolicy": "Always",
+            "securityContext": {
+            },
+            "terminationGracePeriodSeconds": 30
+          }
+        },
+        "test": false,
+        "triggers": [
+          {
+            "type": "ConfigChange"
+          },
+          {
+            "type": "ImageChange",
+            "imageChangeParams": {
+              "automatic": true,
+              "containerNames": [
+                "${NAME}"
+              ],
+              "from": {
+                "kind": "ImageStreamTag",
+                "namespace": "${IMAGE_NAMESPACE}",
+                "name": "${NAME}:${TAG_NAME}"
+              }
+            }
+          }
+        ]
+      }
+    },
     {
       "apiVersion": "v1",
       "kind": "Service",
@@ -68,14 +193,14 @@
       "displayName": "Name",
       "name": "NAME",
       "required": true,
-      "value": "angular-on-nginx"
+      "value": "eagle-public"
     },
     {
       "description": "The namespace where to get the above image name",
       "displayName": "Image Namespace",
       "name": "IMAGE_NAMESPACE",
       "required": true,
-      "value": "eagle-tools"
+      "value": "oabrei-tools"
     },
     {
       "description": "OpenShift cluster private IP range in CIDR notation, used by Nginx ngx_http_realip_module.",

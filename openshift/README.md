@@ -1,7 +1,21 @@
 # OpenShift and Jenkins Integration
-This documentation provides you with step by step instructions on how to build and deploy this 
-application in an OpenShift 3.3+ and Jenkins 2.x+ environment.  Jenkins is not required and you could 
-just use the built-in OpenShift triggers.
+
+## Summary
+
+The OpenShift templates are order dependent.  Run them in the following order:
+
+| Order        | Where to run template           | Template  |
+| :------------- |:-------------:| -----:|
+| 1    | openshiftproj-tools | [angular-builder.json](https://raw.githubusercontent.com/bcgov/eagle-public/develop/openshift/templates/angular-builder/angular-builder.json) |
+| 2    | openshiftproj-tools      | [nginx-runtime.json](https://raw.githubusercontent.com/bcgov/eagle-public/develop/openshift/templates/nginx-runtime/nginx-runtime.json) |
+| 3    | openshiftproj-tools      | [angular-on-nginx-build.json](https://raw.githubusercontent.com/bcgov/eagle-public/develop/openshift/templates/angular-on-nginx/angular-on-nginx-build.json) |
+| 4    | openshiftproj-dev, openshiftproj-test, openshiftproj-prod      | [angular-on-nginx-deploy.json](https://raw.githubusercontent.com/bcgov/eagle-public/develop/openshift/templates/angular-on-nginx/angular-on-nginx-deploy.json) |
+
+![alt text](EPIC-ExtendedBuildArchitecture.png "Relationship of templates")
+
+## Long Version
+
+This documentation provides you with step by step instructions on how to build and deploy this application in an OpenShift 3.3+ and Jenkins 2.x+ environment.  Jenkins is not required and you could just use the built-in OpenShift triggers.
 
 The benefits are:
 
@@ -19,21 +33,23 @@ Enhancements to base Nginx image are:
 - uses X-Forwarded-For for client IP for better logging and access control.
 - gzip enabled for better client performance
 - Optional IP filtering for access control
-- TODO: Optional HTTP Basic for access control 
+- TODO: Optional HTTP Basic for access control
 
-## Overview
+## Rationale
 
 This build strategy uses OpenShift's feature called [Extended Builds](https://docs.openshift.com/container-platform/3.3/dev_guide/builds.html#extended-builds).
 
 In a nutshell, it allows you to build with one s2i image, i.e., NodeJS 6+, then use another image, i.e., nginx, for runtime.
 
 OpenShift is responsible for:
+
 - Building Docker images
 - Building S2I Images
 - Moving output of S2I to runtime image
 - Deployments
 
 Jenkins is responsible for:
+
 - Listing for pushes from GitHub SCM, i.e., GitHub hook -> Jenkins
 - Triggers the Build/Deploy Pipeline
 - Executing the `Jenkinsfile`
@@ -51,12 +67,14 @@ We use this because the stock NodeJS 4 can't compile `angular-cli` (an ES6 issue
 is upgraded this won't be required.
 
 To add this image to your OpenShift Project,
+
 1. Open OpenShift web console->Add to Project->Import YAML/JSON
 1. Paste `angular-builder.json` into form -> Create
 1. Change the Git Repo URL to yours -> Create
 1. With the new build config, go to the Builds-> `angular-builder` -> Start Build
 
 What happens in OpenShift:
+
 1. Fetches `Dockerfile` from `<your repo>/angular-builder/Dockerfile`
 1. Executes Dockerfile build strategy
 1. Pushes new `angular-builder` image into your project's Image Streams
@@ -69,12 +87,14 @@ This images is based on docker hub's official nginx image, i.e., `FROM nginx:mai
 update to latest mainline for every build.  If you need to pin it to a version alter the `nginx-runtime/Dockerfile`.
   
 To add this image to your OpenShift Project,
+
 1. Open OpenShift web console->Add to Project->Import YAML/JSON
 1. Paste `nginx-runtime.json` into form -> Create
 1. Change the Git Repo URL to yours -> Create
 1. With the new build config, go to the Builds-> `nginx-runtime` -> Start Build
 
 What happens in OpenShift:
+
 1. Fetches `Dockerfile` from `<your repo>/angular-builder/Dockerfile`
 1. Executes Dockerfile build strategy
 1. Pushes new `nginx-runtime` image into your project's Image Streams
@@ -85,6 +105,7 @@ This is the s2i builder image to glue the `angular-builder` output with the `ngi
 new image based on `nginx-runtime` but with the output of `angular-builder`.
 
 To add this image to your OpenShift Project,
+
 1. Open OpenShift web console->Add to Project->Import YAML/JSON
 1. Paste `angular-on-nginx-build` into form -> Create
 1. Change the `Name` to the name of your application
@@ -92,6 +113,7 @@ To add this image to your OpenShift Project,
 1. This should auto trigger a build
 
 What happens in OpenShift:
+
 1. Trigger's `angular-builder` to build with your source code
 1. Copies output, i.e., `/opt/app-root/src/dist/` to `nginx-runtime` directory `tmp/app`
 1. Create to image, `<your app name>-build` to Image Stream
@@ -100,16 +122,19 @@ What happens in OpenShift:
 
 Once we've got an image out of the `angular-on-nginx` builder, e.g., `<your app name>`, we
 need to setup the deployment.  We've provide a deployment template that is based on real load testing:
+
 1. Tuned CPU/Memory for the ngnix runtime on containers
 1. Auto-scaling for high work loads
 1. Tweaked readiness and liveness probes settings
 
 The deployment template will create in OpenShift:
+
 1. Deployment config with default nginx runtime env vars
 1. Service config
 1. Route config
 
 To add this image to your OpenShift Project,
+
 1. Open OpenShift web console->Add to Project->Import YAML/JSON
 1. Paste `angular-on-nginx-deploy` into form -> Create
 1. Change the `Name` to the name of your application
@@ -143,4 +168,4 @@ Jenkins out-of-the-box needs some additional setup.
 1. Upgrade all the plugins in Jenkins
 1. Add the `GitHub` plugin
 1. Add the `NodeJS` plugin
-1. After installing the plugin, go to the global jenkins configuration panel (JENKINS_URL/configure or JENKINS_URL/configureTools if using jenkins 2), and add new NodeJS installations.  See (https://wiki.jenkins.io/display/JENKINS/NodeJS+Plugin) for more information on what exactly to do.  Your Name of installed node must match the name in the Jenkins file where it declares the tools section.  EG: 'NodeJS-V8.x'
+1. After installing the plugin, go to the global jenkins configuration panel (JENKINS_URL/configure or JENKINS_URL/configureTools if using jenkins 2), and add new NodeJS installations.  See (<https://wiki.jenkins.io/display/JENKINS/NodeJS+Plugin>) for more information on what exactly to do.  Your Name of installed node must match the name in the Jenkins file where it declares the tools section.  EG: 'NodeJS-V8.x'
