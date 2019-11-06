@@ -190,106 +190,15 @@ export class ApiService {
       );
   }
 
-  getProjects(pageNum: number, pageSize: number, regions: string[], cpStatuses: string[], appStatuses: string[], applicant: string,
-    clFile: string, dispId: string, purpose: string): Observable<Project[]> {
-    const fields = [
-      'agency',
-      'areaHectares',
-      'businessUnit',
-      'centroid',
-      'cl_file',
-      'client',
-      'currentPhaseName',
-      'eacDecision',
-      'epicProjectID',
-      'description',
-      'legalDescription',
-      'location',
-      'name',
-      'publishDate',
-      'purpose',
-      'sector',
-      'status',
-      'subpurpose',
-      'tantalisID',
-      'tenureStage',
-      'type',
-      'legislation'
-    ];
+  //
+  // Using Search Service Instead
+  //
+  // getProjects(pageNum: number, pageSize: number, sortBy: string, populate: Boolean = true):
 
-    let queryString = 'project?';
-    if (pageNum !== null) { queryString += `pageNum=${pageNum}&`; }
-    if (pageSize !== null) { queryString += `pageSize=${pageSize}&`; }
-    if (regions !== null && regions.length > 0) { queryString += `regions=${this.buildValues(regions)}&`; }
-    if (cpStatuses !== null && cpStatuses.length > 0) { queryString += `cpStatuses=${this.buildValues(cpStatuses)}&`; }
-    if (appStatuses !== null && appStatuses.length > 0) { queryString += `statuses=${this.buildValues(appStatuses)}&`; }
-    if (applicant !== null) { queryString += `client=${applicant}&`; }
-    if (clFile !== null) { queryString += `cl_file=${clFile}&`; }
-    if (dispId !== null) { queryString += `tantalisId=${dispId}&`; }
-    if (purpose !== null) { queryString += `purpose=${purpose}&`; }
-    queryString += `fields=${this.buildValues(fields)}`;
-
-    return this.http.get<Project[]>(`${this.apiPath}/${queryString}`, {});
-  }
-
-  getProject(id: string, cpStart: string, cpEnd: string): Observable<Project[]> {
-    const fields = [
-      'CEAAInvolvement',
-      'CELead',
-      'CELeadEmail',
-      'CELeadPhone',
-      'centroid',
-      'description',
-      'eacDecision',
-      'location',
-      'name',
-      'projectLeadId',
-      'projectLead',
-      'projectLeadEmail',
-      'projectLeadPhone',
-      'proponent',
-      'region',
-      'responsibleEPDId',
-      'responsibleEPD',
-      'responsibleEPDEmail',
-      'responsibleEPDPhone',
-      'type',
-      'legislation',
-      'addedBy',
-      'build',
-      'CEAALink',
-      'code',
-      'commodity',
-      'currentPhaseName',
-      'dateAdded',
-      'dateCommentsClosed',
-      'commentPeriodStatus',
-      'dateUpdated',
-      'decisionDate',
-      'duration',
-      'eaoMember',
-      'epicProjectID',
-      'fedElecDist',
-      'isTermsAgreed',
-      'overallProgress',
-      'primaryContact',
-      'proMember',
-      'provElecDist',
-      'sector',
-      'shortName',
-      'status',
-      'substitution',
-      'updatedBy',
-      'read',
-      'write',
-      'delete'
-    ];
-    let queryString = `project/${id}?populate=true`;
-    if (cpStart !== null) { queryString += `&cpStart[since]=${cpStart}`; }
-    if (cpEnd !== null) { queryString += `&cpEnd[until]=${cpEnd}`; }
-    queryString += `&fields=${this.buildValues(fields)}`;
-    return this.http.get<Project[]>(`${this.apiPath}/${queryString}`, {});
-  }
+   //
+  // Using Search Service Instead
+  //
+  // getProject(id: string, cpStart: string, cpEnd: string): Observable<Project[]>
 
   getProjectPins(id: string, pageNum: number, pageSize: number, sortBy: any): Observable<Org> {
     let queryString = `project/${id}/pin`;
