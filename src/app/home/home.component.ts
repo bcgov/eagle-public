@@ -13,7 +13,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
   results: any;
 
-  public showNotificationProjects = true;
+  public showNotificationProjects = false;
 
   constructor(
     private _changeDetectionRef: ChangeDetectorRef,
@@ -30,8 +30,8 @@ export class HomeComponent implements OnInit, OnDestroy {
       });
 
     // Remove this when we want notification projects
-    if (this.apiService.env === 'prod') {
-      this.showNotificationProjects = false;
+    if (this.apiService.env === 'demo') {
+      this.showNotificationProjects = true;
     }
   }
 
