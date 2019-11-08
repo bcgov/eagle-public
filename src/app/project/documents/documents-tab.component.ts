@@ -414,12 +414,12 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
       [{ 'name': 'project', 'value': this.currentProject._id }],
       pageNumber,
       this.tableParams.pageSize,
-      '',
       this.tableParams.sortBy,
       { documentSource: 'PROJECT' },
       true,
       null,
-      this.filterForAPI)
+      this.filterForAPI,
+      '')
       .takeUntil(this.ngUnsubscribe)
       .subscribe((res: any) => {
         this.tableParams.totalListItems = res[0].data.meta[0].searchResultsTotal;

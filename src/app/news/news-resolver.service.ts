@@ -23,9 +23,9 @@ export class NewsResolver implements Resolve<Observable<object>> {
       [],
       tableParams.currentPage,
       tableParams.pageSize,
-      '',
       tableParams.sortBy,
       {},
-      true);
+      true,
+      '');
   }
 }

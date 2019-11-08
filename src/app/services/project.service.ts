@@ -40,7 +40,7 @@ export class ProjectService {
   // get just the projects (for fast mapping)
   getAll(pageNum: number = 0, pageSize: number = 1000000, regionFilters: object = {}, cpStatusFilters: object = {}, appStatusFilters: object = {},
     applicantFilter: string = null, clFileFilter: string = null, dispIdFilter: string = null, purposeFilter: string = null): Observable<Project[]> {
-      return this.searchService.getSearchResults('', 'Project', null, pageNum, pageSize, '', '', {}, true, '',  {})
+      return this.searchService.getSearchResults('', 'Project', null, pageNum, pageSize, '', {}, true, '',  {}, '')
       .map((res: ISearchResults<Project>[]) => {
         if (res) {
           const results = this.utils.extractFromSearchResults(res);
@@ -90,7 +90,7 @@ export class ProjectService {
     if (this.project && this.project._id === projId && !forceReload) {
       return Observable.of(this.project);
     }
-    return this.searchService.getSearchResults('', 'Project', null, null, 1, '', '', {_id: projId}, true, '',  {})
+    return this.searchService.getSearchResults('', 'Project', null, null, 1, '', {_id: projId}, true, '',  {},  '')
       .map((projects: ISearchResults<Project>[]) => {
         let results;
         // get upcoming comment period if there is one and convert it into a comment period object.

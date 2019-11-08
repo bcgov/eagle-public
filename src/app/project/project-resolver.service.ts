@@ -23,11 +23,11 @@ export class ProjectResolver implements Resolve<Object> {
       1,
       1,
       '',
-      '',
       {_id: projId},
       true,
       '',
-      {}
+      {},
+      ''
     );
   }
 }

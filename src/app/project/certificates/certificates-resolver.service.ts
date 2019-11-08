@@ -22,7 +22,6 @@ export class CertificatesResolver implements Resolve<Observable<object>> {
       [{ 'name': 'project', 'value': projectId }],
       currentPage,
       pageSize,
-      '',
       sortBy,
       {
         // Search only Certificate Package/EAO/Certificate
@@ -31,6 +30,7 @@ export class CertificatesResolver implements Resolve<Observable<object>> {
         documentAuthorType: '5cf00c03a266b7e1877504db',
         milestone: '5cf00c03a266b7e1877504eb'
       },
-      true);
+      true,
+      '');
   }
 }
