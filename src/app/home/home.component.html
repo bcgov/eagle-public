@@ -13,6 +13,10 @@
             <a class="btn slide-l-btn hero-btn inverted" href="/projects-list" [routerLink]="['/projects-list']">
               <i class="material-icons">list</i><span>List of Projects</span>
             </a>
+            <a *ngIf="showNotificationProjects" class="btn slide-l-btn hero-btn inverted ml-4"
+              href="/notification-projects" [routerLink]="['/notification-projects']">
+              <i class="material-icons">list</i><span>List of Notificaftion Projects</span>
+            </a>
           </div>
         </div>
       </div>
@@ -51,7 +55,8 @@
                     [routerLink]="['/p', item.project?._id, 'cp', item.pcp ]">
                     Submit/ View Comments
                   </a>
-                  <a *ngIf="item.documentUrl && !item?.documentUrl.includes('docs?folder')" class="btn btn-sm content-btn-alt" title="View more information" href="{{item.documentUrl}}"
+                  <a *ngIf="item.documentUrl && !item?.documentUrl.includes('docs?folder')"
+                    class="btn btn-sm content-btn-alt" title="View more information" href="{{item.documentUrl}}"
                     target="_blank">
                     View Document(s)
                   </a>
@@ -72,27 +77,32 @@
     <div class="bg-faded">
       <section class="container">
         <h2>About the BC Environmental Assessment Process...</h2>
-        <p>Learn more about how the Environmental Assessment Office neutrally administers a process that is predictable, transparent, timely, procedurally fair, and holds all participants accountable.</p>
+        <p>Learn more about how the Environmental Assessment Office neutrally administers a process that is predictable,
+          transparent, timely, procedurally fair, and holds all participants accountable.</p>
         <div class="row feature-blocks">
           <div class="col-md-4">
             <div class="feature-block">
               <h3>Legislation</h3>
-              <p>Learn about the legislation and regulations that apply to environmental assessments in the province of British Columbia.</p>
+              <p>Learn about the legislation and regulations that apply to environmental assessments in the province of
+                British Columbia.</p>
               <a class="btn btn-sm inverted" href="/legislation" [routerLink]="['/legislation']">Learn More</a>
             </div>
           </div>
           <div class="col-md-4">
             <div class="feature-block">
               <h3>Process & Procedures</h3>
-              <p>Learn more about how the Environmental Assessment Office neutrally administers a process that holds all participants accountable.</p>
+              <p>Learn more about how the Environmental Assessment Office neutrally administers a process that holds all
+                participants accountable.</p>
               <a class="btn btn-sm inverted" href="/process" [routerLink]="['/process']">Learn More</a>
             </div>
           </div>
           <div class="col-md-4">
             <div class="feature-block">
               <h3>Compliance Oversight</h3>
-              <p>Learn about how we collaborate with other agencies to coordinate oversight of environmental assessment projects.</p>
-              <a class="btn btn-sm inverted" href="/compliance-oversight" [routerLink]="['/compliance-oversight']">Learn More</a>
+              <p>Learn about how we collaborate with other agencies to coordinate oversight of environmental assessment
+                projects.</p>
+              <a class="btn btn-sm inverted" href="/compliance-oversight" [routerLink]="['/compliance-oversight']">Learn
+                More</a>
             </div>
           </div>
         </div>
