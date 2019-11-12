@@ -24,9 +24,9 @@ export class ProjectActivitiesResolver implements Resolve<Observable<object>> {
       [],
       tableParams.currentPage,
       tableParams.pageSize,
-      '',
       tableParams.sortBy,
       { project: projId },
-      true);
+      true,
+      '');
   }
 }

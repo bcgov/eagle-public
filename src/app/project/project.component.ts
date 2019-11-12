@@ -66,9 +66,9 @@ export class ProjectComponent implements OnInit, OnDestroy {
       1,
       1,
       null,
-      '',
       queryModifier,
-      true)
+      true,
+      '')
         .takeUntil(this.ngUnsubscribe)
           .subscribe((res: any) => {
             // add tab link if results are not empty
