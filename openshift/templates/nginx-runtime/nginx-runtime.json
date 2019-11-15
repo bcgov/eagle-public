@@ -35,6 +35,14 @@
         "strategy": {
           "type": "Docker"
         },
+        "triggers": [
+          {
+            "type": "ImageChange"
+          },
+          {
+            "type": "ConfigChange"
+          }
+        ],
         "output": {
           "to": {
             "kind": "ImageStreamTag",
