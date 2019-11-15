@@ -107,13 +107,6 @@
       "description": "The NGINX image with our settings applied to.",
       "required": true,
       "value": "eagle-public-nginx-runtime"
-    },
-    {
-      "name": "GIT_SOURCE_URL",
-      "displayName": "GIT Source Repo URL",
-      "description": "A GIT URL to your source code.",
-      "required": true,
-      "value": "https://github.com/bcgov/eagle-public"
     }
   ]
 }
