@@ -25,7 +25,7 @@
       "spec": {
         "replicas": 2,
         "selector": {
-          "app": "${NAME}",
+          "app": "${GROUP_NAME}",
           "deploymentconfig": "${NAME}"
         },
         "strategy": {
