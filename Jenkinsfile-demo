@@ -162,7 +162,7 @@ def nodejsSonarqube () {
                 echo "Scan Failed"
 
                 notifyRocketChat(
-                  "@all The latest build ${env.BUILD_DISPLAY_NAME} of eagle-public-demo seems to be broken. \n ${env.BUILD_URL}\n Error: \n Sonarqube scan failed",
+                  "@all The latest build ${env.BUILD_DISPLAY_NAME} of demo-eagle-public seems to be broken. \n ${env.BUILD_URL}\n Error: \n Sonarqube scan failed",
                   ROCKET_DEPLOY_WEBHOOK
                 )
 
@@ -174,7 +174,7 @@ def nodejsSonarqube () {
 
             } catch (error) {
               notifyRocketChat(
-                "@all The latest build ${env.BUILD_DISPLAY_NAME} of eagle-public-demo seems to be broken. \n ${env.BUILD_URL}\n Error: \n ${error.message}",
+                "@all The latest build ${env.BUILD_DISPLAY_NAME} of demo-eagle-public seems to be broken. \n ${env.BUILD_URL}\n Error: \n ${error.message}",
                 ROCKET_DEPLOY_WEBHOOK
               )
               throw error
@@ -217,20 +217,20 @@ pipeline {
                 ROCKET_QA_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-qa-webhook')
 
                 echo "Building eagle-public demo branch"
-                openshiftBuild bldCfg: 'eagle-public-demo-angular', showBuildLogs: 'true'
-                openshiftBuild bldCfg: 'eagle-public-demo-build', showBuildLogs: 'true'
+                openshiftBuild bldCfg: 'demo-eagle-public-angular-builder', showBuildLogs: 'true'
+                openshiftBuild bldCfg: 'demo-eagle-public-build', showBuildLogs: 'true'
                 echo "Build done"
 
                 echo ">>> Get Image Hash"
                 // Don't tag with BUILD_ID so the pruner can do it's job; it won't delete tagged images.
                 // Tag the images for deployment based on the image's hash
                 IMAGE_HASH = sh (
-                  script: """oc get istag eagle-public-demo:latest -o template --template=\"{{.image.dockerImageReference}}\"|awk -F \":\" \'{print \$3}\'""",
+                  script: """oc get istag demo-eagle-public:latest -o template --template=\"{{.image.dockerImageReference}}\"|awk -F \":\" \'{print \$3}\'""",
                   returnStdout: true).trim()
                 echo ">> IMAGE_HASH: ${IMAGE_HASH}"
               } catch (error) {
                 notifyRocketChat(
-                  "@all The build ${env.BUILD_DISPLAY_NAME} of eagle-public-demo, seems to be broken.\n ${env.BUILD_URL}\n Error: \n ${error.message}",
+                  "@all The build ${env.BUILD_DISPLAY_NAME} of demo-eagle-public, seems to be broken.\n ${env.BUILD_URL}\n Error: \n ${error.message}",
                   ROCKET_DEPLOY_WEBHOOK
                 )
                 throw error
@@ -275,23 +275,23 @@ pipeline {
         script {
           try {
             echo "Deploying to dev..."
-            openshiftTag destStream: 'eagle-public-demo', verbose: 'false', destTag: 'demo', srcStream: 'eagle-public-demo', srcTag: "${IMAGE_HASH}"
+            openshiftTag destStream: 'demo-eagle-public', verbose: 'false', destTag: 'demo', srcStream: 'demo-eagle-public', srcTag: "${IMAGE_HASH}"
             sleep 5
             // todo update namespace before switching over
-            openshiftVerifyDeployment depCfg: 'eagle-public-demo', namespace: 'esm-test', replicaCount: 1, verbose: 'false', verifyReplicaCount: 'false', waitTime: 600000
+            openshiftVerifyDeployment depCfg: 'demo-eagle-public', namespace: 'esm-test', replicaCount: 1, verbose: 'false', verifyReplicaCount: 'false', waitTime: 600000
             echo ">>>> Deployment Complete"
 
             notifyRocketChat(
-              "A new version of eagle-public-demo is now in Test, build: ${env.BUILD_DISPLAY_NAME} \n Changes: \n ${CHANGELOG}",
+              "A new version of demo-eagle-public is now in Test, build: ${env.BUILD_DISPLAY_NAME} \n Changes: \n ${CHANGELOG}",
               ROCKET_DEPLOY_WEBHOOK
             )
             notifyRocketChat(
-              "@all A new version of eagle-public-demo is now in Test and ready for QA. \n Changes to Dev: \n ${CHANGELOG}",
+              "@all A new version of demo-eagle-public is now in Test and ready for QA. \n Changes to Dev: \n ${CHANGELOG}",
               ROCKET_QA_WEBHOOK
             )
           } catch (error) {
             notifyRocketChat(
-              "@all The build ${env.BUILD_DISPLAY_NAME} of eagle-public-demo, seems to be broken.\n ${env.BUILD_URL}\n Error: \n ${error.message}",
+              "@all The build ${env.BUILD_DISPLAY_NAME} of demo-eagle-public, seems to be broken.\n ${env.BUILD_URL}\n Error: \n ${error.message}",
               ROCKET_DEPLOY_WEBHOOK
             )
             currentBuild.result = "FAILURE"
