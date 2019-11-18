@@ -3,6 +3,8 @@ echo run script starting...
 sed "s~%RealIpFrom%~${RealIpFrom:-172.51.0.0/16}~g; s~%IpFilterRules%~${IpFilterRules}~g; s~%AdditionalRealIpFromRules%~${AdditionalRealIpFromRules}~g" /tmp/nginx.conf.template > /etc/nginx/nginx.conf
 
 mkdir -p /tmp/app/dist;
+ls_output=$(ls -FCalh /tmp/app/dist);
+echo "${ls_output}";
 echo "var remote_api_path = '${REMOTE_API_PATH:-set-in-project-nginx-runtime}';" >> /tmp/app/dist/remotes.js;
 echo "var remote_admin_path = '${REMOTE_ADMIN_PATH:-set-in-project-nginx-runtime}';" >> /tmp/app/dist/remotes.js;
 echo "var deployment_env = '${DEPLOYMENT_ENVIRONMENT:-set-in-project-nginx-runtime}';" >> /tmp/app/dist/remotes.js;
