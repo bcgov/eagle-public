@@ -1,0 +1,54 @@
+<tr
+  *ngFor="let item of items | paginate: { id: 'table-template-pagination', itemsPerPage: paginationData.pageSize, currentPage: paginationData.currentPage, totalItems: paginationData.totalListItems }">
+  <td data-label="Headline">
+    <div class="row">
+      <div class="col-md-12">
+        <h5 class="font-weight-bold">{{item.name || '-'}}</h5>
+        <span [innerHtml]="item.description"></span>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-3">
+        <span class="sub-heading">
+          Proponent&nbsp;
+        </span>
+        {{item.proponentName || '-'}}
+      </div>
+      <div class="col-md-2">
+        <span class="sub-heading">
+          Type&nbsp;
+        </span>
+        {{item.type || '-'}}
+      </div>
+      <div class="col-md-5">
+        <span class="sub-heading">
+          Sub-Type&nbsp;
+        </span>
+        {{item.subType || '-'}}
+      </div>
+      <div class="col-md-2">
+        <span class="sub-heading">
+          Region&nbsp;
+        </span>
+        {{item.region || '-'}}
+      </div>
+    </div>
+    <div *ngIf="item.documents?.length > 0" class="row">
+      <div class="col-md-12">
+        <span class="sub-heading">
+          Documents
+        </span>
+        <ul class="doc-list mt-0">
+          <li class="clickable-row" *ngFor="let doc of item.documents" (click)="downloadDocument(doc)">
+            <span class="cell icon">
+              <i class="material-icons">insert_drive_file</i>
+            </span>
+            <span class="cell name" [title]="doc.documentFileName || ''">
+              <span class="cell__txt-content">{{doc.documentFileName}}</span>
+            </span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </td>
+</tr>

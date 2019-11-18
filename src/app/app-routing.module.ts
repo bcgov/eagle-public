@@ -11,6 +11,8 @@ import { ProcessComponent } from './process/process.component';
 import { ComplianceOversightComponent } from './compliance-oversight/compliance-oversight.component';
 import { SearchHelpComponent } from './search-help/search-help.component';
 import { NewsResolver } from './news/news-resolver.service';
+import { NotificationProjectsListComponent } from './notification-projects/notification-projects.component';
+import { NotificationProjectsResolver } from './notification-projects/notification-projects-resolver.service';
 
 const routes: Routes = [
   {
@@ -24,6 +26,13 @@ const routes: Routes = [
   {
     path: 'projects-list',
     component: ProjectListComponent
+  },
+  {
+    path: 'notification-projects',
+    component: NotificationProjectsListComponent,
+    resolve: {
+      notificationProjects: NotificationProjectsResolver
+    }
   },
   {
     path: 'news',
@@ -64,7 +73,7 @@ const routes: Routes = [
 @NgModule({
   imports: [RouterModule.forRoot(routes)],
   exports: [RouterModule],
-  providers: [NewsResolver]
+  providers: [NewsResolver, NotificationProjectsResolver]
 })
 
 export class AppRoutingModule { }
