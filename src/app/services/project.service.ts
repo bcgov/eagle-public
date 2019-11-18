@@ -148,4 +148,32 @@ export class ProjectService {
         return project;
       });
   }
+  public getPeopleObjs(data): Observable<any> {
+    const projectSearchData = this.utils.extractFromSearchResults(data);
+    if (!projectSearchData) {
+      return of(data)
+    }
+    const project = projectSearchData[0] as Project;
+
+    if (!project) {
+      return of(data);
+    }
+    const epdId = (project.responsibleEPDId) ? project.responsibleEPDId.toString() : '';
+    const leadId = (project.projectLeadId) ? project.projectLeadId.toString() : '';
+    if (!epdId && !leadId) {
+      return of(data);
+    }
+    return forkJoin(
+      this.searchService.getItem(epdId, 'User'),
+      this.searchService.getItem(leadId, 'User')
+    )
+      .map(payloads => {
+        if (payloads) {
+          project.responsibleEPDObj = payloads[0].data;
+          project.projectLeadObj = payloads[1].data;
+          // finally update the object and return
+        }
+        return data;
+      });
+  }
 }

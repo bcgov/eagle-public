@@ -3,11 +3,12 @@ import { Resolve, ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/r
 import { Observable } from 'rxjs/Observable';
 
 import { SearchService } from 'app/services/search.service';
+import { ProjectService } from 'app/services/project.service';
 
 @Injectable()
 export class ProjectResolver implements Resolve<Object> {
 
-  constructor(private searchService: SearchService) { }
+  constructor(private searchService: SearchService, private projectService: ProjectService) { }
 
   resolve(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): Observable<Object> {
     const projId = route.paramMap.get('projId');
@@ -28,6 +29,7 @@ export class ProjectResolver implements Resolve<Object> {
       '',
       {},
       ''
-    );
+    )
+    .flatMap(data => this.projectService.getPeopleObjs(data));
   }
 }
