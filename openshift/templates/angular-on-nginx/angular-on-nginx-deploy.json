@@ -241,6 +241,18 @@
       "displayName": "Env TAG name",
       "description": "The TAG name for this environment, e.g., dev, test, prod",
       "value": "your-openshift-tag"
+    },
+    {
+      "name": "REMOTE_API_PATH",
+      "displayName": "URL path to API",
+      "description": "The URL path to the API the public Angular app will make calls to",
+      "value": "eagle-your-openshift-namespace.pathfinder.gov.bc.ca/api/public"
+    },
+    {
+      "name": "REMOTE_ADMIN_PATH",
+      "displayName": "URL path to Admin",
+      "description": "The URL path to the Admin app that the public Angular app will make calls to.  Note that the trailing slash is required.",
+      "value": "eagle-your-openshift-namespace.pathfinder.gov.bc.ca/admin/"
     }
   ]
 }
