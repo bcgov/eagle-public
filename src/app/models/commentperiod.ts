@@ -120,7 +120,7 @@ export class CommentPeriod {
       } else if (moment(now).isAfter(dateCompleted)) {
         this.commentPeriodStatus = 'Closed';
         this.daysRemaining = 'Completed';
-      } else if (moment(now).isBetween(moment(sevenDays), dateStarted)) {
+      } else {
         this.commentPeriodStatus = 'Pending';
         this.daysRemaining = 'Pending';
       }
