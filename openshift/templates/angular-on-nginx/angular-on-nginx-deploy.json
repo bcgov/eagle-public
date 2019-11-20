@@ -263,7 +263,7 @@
     {
       "name": "REMOTE_ADMIN_PATH",
       "displayName": "URL path to Admin",
-      "description": "The URL path to the Admin app that the public Angular app will make calls to.  Note that the trailing slash is required.",
+      "description": "The URL path to the Admin app that the public Angular app will link to.  Note that the trailing slash is required.",
       "value": "eagle-your-openshift-namespace.pathfinder.gov.bc.ca/admin/"
     }
   ]
