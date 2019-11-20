@@ -239,7 +239,7 @@
     {
       "name": "IpFilterRules",
       "displayName": "Ip Filter Rules",
-      "description": "Nginx ngx_http_access_module ip filter rules",
+      "description": "Nginx ngx_http_access_module ip filter rules. Requires rebuild of nginx-runtime to take effect.",
       "value": "#allow all; deny all;"
     },
     {
@@ -251,20 +251,20 @@
     {
       "name": "TAG_NAME",
       "displayName": "Env TAG name",
-      "description": "The TAG name for this environment, e.g., dev, test, prod",
+      "description": "The TAG name for this environment, e.g., dev, test, prod.",
       "value": "your-openshift-tag"
     },
     {
       "name": "REMOTE_API_PATH",
       "displayName": "URL path to API",
-      "description": "The URL path to the API the public Angular app will make calls to",
-      "value": "eagle-your-openshift-namespace.pathfinder.gov.bc.ca/api/public"
+      "description": "The 'https://' prefixed URL path to the API the public Angular app will make calls to.",
+      "value": "https://eagle-your-openshift-namespace.pathfinder.gov.bc.ca/api/public"
     },
     {
       "name": "REMOTE_ADMIN_PATH",
       "displayName": "URL path to Admin",
-      "description": "The URL path to the Admin app that the public Angular app will make calls to.  Note that the trailing slash is required.",
-      "value": "eagle-your-openshift-namespace.pathfinder.gov.bc.ca/admin/"
+      "description": "The 'https://' prefixed URL path to the Admin app that the public Angular app will link to.  Note that the trailing slash is required.",
+      "value": "https://eagle-your-openshift-namespace.pathfinder.gov.bc.ca/admin/"
     }
   ]
 }
