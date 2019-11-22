@@ -25,7 +25,8 @@ export class ApiService {
   public isMS: boolean; // IE, Edge, etc
   public apiPath: string;
   public adminUrl: string;
-  public env: 'local' | 'dev' | 'test' | 'demo' | 'prod';
+  public env: string;  // Could be anything per Openshift settings but generally is one of 'local' | 'dev' | 'test' | 'prod' | 'demo'
+
 
   constructor(
     private http: HttpClient,
@@ -34,53 +35,16 @@ export class ApiService {
     // const currentUser = JSON.parse(window.localStorage.getItem('currentUser'));
     // this.token = currentUser && currentUser.token;
     this.isMS = window.navigator.msSaveOrOpenBlob ? true : false;
-    const { hostname } = window.location;
-    switch (hostname) {
-      case 'localhost':
-        // Local
-        this.apiPath = 'http://localhost:3000/api/public';
-        this.adminUrl = 'http://localhost:4200';
-        this.env = 'local';
-        break;
 
-      case 'eagle-dev.pathfinder.gov.bc.ca':
-        // prod
-        this.apiPath = 'https://eagle-dev.pathfinder.gov.bc.ca/api/public';
-        this.adminUrl = 'https://eagle-dev.pathfinder.gov.bc.ca/admin/';
-        this.env = 'dev';
-        break;
+    // The following items are loaded by a file that is only present on cluster builds.
+    // Locally, this will be empty and local defaults will be used.
+    const remote_api_path = window.localStorage.getItem('from_public_server--remote_api_path');
+    const remote_admin_path = window.localStorage.getItem('from_public_server--remote_admin_path');
+    const deployment_env = window.localStorage.getItem('from_public_server--deployment_env');
 
-      case 'www.test.projects.eao.gov.bc.ca':
-      case 'eagle-test.pathfinder.gov.bc.ca':
-      case 'test.projects.eao.gov.bc.ca':
-        // Test
-        this.apiPath = 'https://eagle-test.pathfinder.gov.bc.ca/api/public';
-        this.adminUrl = 'https://test.projects.eao.gov.bc.ca/admin/';
-        this.env = 'test';
-        break;
-
-      case 'demo-eagle-test.pathfinder.gov.bc.ca':
-        // Demo - Test
-        this.apiPath = 'https://demo-eagle-test.pathfinder.gov.bc.ca/api/public';
-        this.adminUrl = 'https://demo-eagle-test.pathfinder.gov.bc.ca/admin/';
-        this.env = 'demo';
-        break;
-
-      case 'www.projects.eao.gov.bc.ca':
-      case 'eagle-prod.pathfinder.gov.bc.ca':
-      case 'projects.eao.gov.bc.ca':
-        // prod
-        this.apiPath = 'https://eagle-prod.pathfinder.gov.bc.ca/api/public';
-        this.adminUrl = 'https://projects.eao.gov.bc.ca/admin/';
-        this.env = 'prod';
-        break;
-
-      default:
-        // Prod
-        this.apiPath = 'https://eagle-test.pathfinder.gov.bc.ca/api/public';
-        this.adminUrl = 'https://test.projects.eao.gov.bc.ca/admin/';
-        this.env = 'test';
-    };
+    this.apiPath = (_.isEmpty(remote_api_path)) ? 'http://localhost:3000/api/public' : remote_api_path;
+    this.adminUrl = (_.isEmpty(remote_admin_path)) ? 'http://localhost:4200' : remote_admin_path;
+    this.env = (_.isEmpty(deployment_env)) ? 'local' : deployment_env;
   }
 
   handleError(error: any): Observable<any> {
