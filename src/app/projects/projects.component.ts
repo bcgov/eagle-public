@@ -104,7 +104,7 @@ export class ProjectsComponent implements OnInit, OnDestroy {
         .subscribe(count => {
           // prepare 'pages' of gets
           const observables: Array<Observable<Project[]>> = [];
-          for (let page = 0; page < Math.ceil(count / PAGE_SIZE); page++) {
+          for (let page = 1; page < Math.ceil(count / PAGE_SIZE) + 1; page++) {
             observables.push(this.projectService.getAllFull(page, PAGE_SIZE));
           }
 
