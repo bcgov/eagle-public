@@ -76,11 +76,7 @@ export class ProjectService {
 
         const promises: Array<Promise<any>> = [];
 
-        projects.forEach((project) => {
-          // Set relevant things here
-        });
-
-        return Promise.all(promises).then(() => { return projects; });
+        return Promise.all(promises).then(() => { return projects.data; });
       })
       .catch(this.api.handleError);
   }
