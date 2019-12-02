@@ -61,7 +61,8 @@ export class DocumentsResolver implements Resolve<Observable<object>> {
           { documentSource: 'PROJECT' },
           true,
           null,
-          this.filterForAPI);
+          this.filterForAPI,
+          '');
       });
   }
 

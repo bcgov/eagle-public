@@ -5,9 +5,10 @@ import { Subject } from 'rxjs';
 import { TableParamsObject } from 'app/shared/components/table-template/table-params-object';
 import { News } from 'app/models/news';
 import { TableObject } from 'app/shared/components/table-template/table-object';
-import { SearchTerms } from 'app/models/search';
+import { SearchTerms, ISearchResults } from 'app/models/search';
 import { Project } from 'app/models/project';
 import { ActivitiesListTableRowsComponent } from './activities-list-table-rows/activities-list-table-rows.component';
+import { Utils } from 'app/shared/utils/utils';
 
 @Component({
   selector: 'app-project-activites',
@@ -40,6 +41,7 @@ export class ProjectActivitesComponent implements OnInit, OnDestroy {
   constructor(private router: Router,
     private route: ActivatedRoute,
     private tableTemplateUtils: TableTemplateUtils,
+    private utils: Utils,
     private _changeDetectionRef: ChangeDetectorRef) { }
 
   ngOnInit() {
@@ -47,9 +49,10 @@ export class ProjectActivitesComponent implements OnInit, OnDestroy {
     this.route.parent.data
       .takeUntil(this.ngUnsubscribe)
       .subscribe(
-        (data: { project: Project }) => {
-          if (data.project) {
-            this.currentProject = data.project;
+        (data: { project: ISearchResults<Project>[] }) => {
+          const results = (data && data.project) ?  this.utils.extractFromSearchResults(data.project) : null;
+          if (results) {
+            this.currentProject = results;
           } else {
             alert('Uh-oh, couldn\'t load project');
             // project not found --> navigate back to project list
@@ -71,9 +74,11 @@ export class ProjectActivitesComponent implements OnInit, OnDestroy {
 
         this.route.data
           .takeUntil(this.ngUnsubscribe)
-          .subscribe((data: any) => {
-            if (data) {
-              if (data.documents && data.documents[0].data.meta && data.documents[0].data.meta.length > 0) {
+          // TODO: add in the proper type for documents here
+          .subscribe((data: { documents: ISearchResults<News>[] }) => {
+            const results = (data && data.documents) ?  this.utils.extractFromSearchResults(data.documents) : null;
+            if (results) {
+              if (data.documents && data.documents[0] && data.documents[0].data && data.documents[0].data.meta && data.documents[0].data.meta.length > 0) {
                 this.tableParams.totalListItems = data.documents[0].data.meta[0].searchResultsTotal;
                 this.recentActivities = data.documents[0].data.searchResults;
               } else {

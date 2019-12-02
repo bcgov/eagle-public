@@ -12,11 +12,12 @@ import { ApiService } from './api';
 import { CommentPeriodService } from './commentperiod.service';
 import { CommentPeriod } from 'app/models/commentperiod';
 import { Org } from 'app/models/organization';
-import { SearchResults } from 'app/models/search';
+import { SearchResults, ISearchResults } from 'app/models/search';
 import { flatMap } from 'rxjs/operators';
 import { of } from 'rxjs/internal/observable/of';
 import { forkJoin } from 'rxjs';
 import { SearchService } from './search.service';
+import { Utils } from 'app/shared/utils/utils';
 
 interface GetParameters {
   getresponsibleEPD?: boolean;
@@ -32,33 +33,27 @@ export class ProjectService {
   constructor(
     private api: ApiService,
     private commentPeriodService: CommentPeriodService,
-    private searchService: SearchService
+    private searchService: SearchService,
+    private utils: Utils
   ) { }
 
   // get just the projects (for fast mapping)
   getAll(pageNum: number = 0, pageSize: number = 1000000, regionFilters: object = {}, cpStatusFilters: object = {}, appStatusFilters: object = {},
     applicantFilter: string = null, clFileFilter: string = null, dispIdFilter: string = null, purposeFilter: string = null): Observable<Project[]> {
-    const regions: Array<string> = [];
-    const cpStatuses: Array<string> = [];
-    const appStatuses: Array<string> = [];
-
-    // convert array-like objects to arrays
-    Object.keys(regionFilters).forEach(key => { if (regionFilters[key]) { regions.push(key); } });
-    Object.keys(cpStatusFilters).forEach(key => { if (cpStatusFilters[key]) { cpStatuses.push(key); } });
-    Object.keys(appStatusFilters).forEach(key => { if (appStatusFilters[key]) { appStatuses.push(key); } });
-
-    return this.api.getProjects(pageNum, pageSize, regions, cpStatuses, appStatuses, applicantFilter, clFileFilter, dispIdFilter, purposeFilter)
-      .map(res => {
+      return this.searchService.getSearchResults('', 'Project', null, pageNum, pageSize, '', {}, true, '',  {}, '')
+      .map((res: ISearchResults<Project>[]) => {
         if (res) {
+          const results = this.utils.extractFromSearchResults(res);
+          // let projects: Array<Project> = [];
           this.projectList = [];
-          res.forEach(project => {
+          results.forEach(project => {
             this.projectList.push(new Project(project));
           });
-          return this.projectList;
+          return { totalCount: res[0].data.meta[0].searchResultsTotal, data: this.projectList };
         }
-        return [];
+        return {};
       })
-      .catch(this.api.handleError);
+      .catch(error => this.api.handleError(error));
   }
 
   // get count of projects
@@ -81,11 +76,7 @@ export class ProjectService {
 
         const promises: Array<Promise<any>> = [];
 
-        projects.forEach((project) => {
-          // Set relevant things here
-        });
-
-        return Promise.all(promises).then(() => { return projects; });
+        return Promise.all(promises).then(() => { return projects.data; });
       })
       .catch(this.api.handleError);
   }
@@ -95,16 +86,20 @@ export class ProjectService {
     if (this.project && this.project._id === projId && !forceReload) {
       return Observable.of(this.project);
     }
-    // first get the project
-    return this.api.getProject(projId, cpStart, cpEnd)
-      .map(projects => {
-        if (projects[0].commentPeriodForBanner && projects[0].commentPeriodForBanner.length > 0) {
-          projects[0].commentPeriodForBanner = new CommentPeriod(projects[0].commentPeriodForBanner[0]);
-        } else {
-          projects[0].commentPeriodForBanner = null;
+    return this.searchService.getSearchResults('', 'Project', null, null, 1, '', {_id: projId}, true, '',  {},  '')
+      .map((projects: ISearchResults<Project>[]) => {
+        let results;
+        // get upcoming comment period if there is one and convert it into a comment period object.
+        if (projects.length > 0) {
+          results = this.utils.extractFromSearchResults(projects);
+          if (results[0].commentPeriodForBanner && results[0].commentPeriodForBanner.length > 0) {
+            results[0].commentPeriodForBanner = new CommentPeriod(results[0].commentPeriodForBanner[0]);
+          } else {
+            results[0].commentPeriodForBanner = null;
+          }
         }
         // return the first (only) project
-        return projects.length > 0 ? new Project(projects[0]) : null;
+        return results.length > 0 ? new Project(results[0]) : null;
       })
       .pipe(
         flatMap(res => {
@@ -125,7 +120,7 @@ export class ProjectService {
           );
         })
       )
-      .catch(this.api.handleError);
+      .catch(error => this.api.handleError(error));
   }
 
   getPins(proj: string, pageNum: number, pageSize: number, sortBy: any): Observable<Org> {
@@ -147,6 +142,34 @@ export class ProjectService {
         }
         // finally update the object and return
         return project;
+      });
+  }
+  public getPeopleObjs(data): Observable<any> {
+    const projectSearchData = this.utils.extractFromSearchResults(data);
+    if (!projectSearchData) {
+      return of(data)
+    }
+    const project = projectSearchData[0] as Project;
+
+    if (!project) {
+      return of(data);
+    }
+    const epdId = (project.responsibleEPDId) ? project.responsibleEPDId.toString() : '';
+    const leadId = (project.projectLeadId) ? project.projectLeadId.toString() : '';
+    if (!epdId && !leadId) {
+      return of(data);
+    }
+    return forkJoin(
+      this.searchService.getItem(epdId, 'User'),
+      this.searchService.getItem(leadId, 'User')
+    )
+      .map(payloads => {
+        if (payloads) {
+          project.responsibleEPDObj = payloads[0].data;
+          project.projectLeadObj = payloads[1].data;
+          // finally update the object and return
+        }
+        return data;
       });
   }
 }
