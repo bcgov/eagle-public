@@ -229,18 +229,20 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
     let documentList = [];
     if (this.documents && this.documents.length > 0) {
       this.documents.forEach(document => {
-        documentList.push(
-          {
-            documentFileName: document.documentFileName || document.displayName || document.internalOriginalName,
-            // date: document.dateUploaded || document.datePosted,
-            displayName: document.displayName,
-            datePosted: document.datePosted,
-            type: document.type,
-            milestone: document.milestone,
-            _id: document._id,
-            project: document.project
-          }
-        );
+        if (document) {
+          documentList.push(
+            {
+              documentFileName: document.documentFileName || document.displayName || document.internalOriginalName,
+              // date: document.dateUploaded || document.datePosted,
+              displayName: document.displayName,
+              datePosted: document.datePosted,
+              type: document.type,
+              milestone: document.milestone,
+              _id: document._id,
+              project: document.project
+            }
+          );
+        }
       });
       this.documentTableData = new TableObject(
         DocumentTableRowsComponent,
@@ -416,7 +418,8 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
       { documentSource: 'PROJECT' },
       true,
       null,
-      this.filterForAPI)
+      this.filterForAPI,
+      '')
       .takeUntil(this.ngUnsubscribe)
       .subscribe((res: any) => {
         this.tableParams.totalListItems = res[0].data.meta[0].searchResultsTotal;

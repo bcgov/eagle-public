@@ -147,7 +147,7 @@ export class AddCommentComponent implements OnInit {
           formData.append('internalOriginalName', file.name);
           formData.append('documentSource', 'COMMENT');
           formData.append('dateUploaded', moment());
-          formData.append('datePosted', moment());
+          // formData.append('datePosted', moment());
           formData.append('upfile', file);
           this.progressBufferValue += 100 * file.size / this.totalSize;
 

@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { SearchService } from 'app/services/search.service';
 import { Subject } from 'rxjs';
+import { News } from 'app/models/news';
 import { ApiService } from 'app/services/api';
 
 @Component({
@@ -11,7 +12,7 @@ import { ApiService } from 'app/services/api';
 
 export class HomeComponent implements OnInit, OnDestroy {
   private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
-  results: any;
+  results: News[];
 
   public showNotificationProjects = false;
 
@@ -24,7 +25,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.searchService.getTopNewsItems()
       .takeUntil(this.ngUnsubscribe)
-      .subscribe((res: any) => {
+      .subscribe((res: News[]) => {
         this.results = res;
         this._changeDetectionRef.detectChanges();
       });

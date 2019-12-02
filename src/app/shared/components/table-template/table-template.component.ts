@@ -29,7 +29,7 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
 
   ngOnChanges(changes: SimpleChanges) {
     // only run when property "data" changed
-    if (!changes.firstChange && changes['data'].currentValue) {
+    if (!changes.firstChange && changes['data'].currentValue && this.data && this.data.component && this.data.paginationData && this.data.data) {
       this.data.component = changes['data'].currentValue.component;
       this.data.data = changes['data'].currentValue.data;
       this.data.paginationData = changes['data'].currentValue.paginationData;
@@ -47,19 +47,24 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   loadComponent() {
-    let componentFactory = this.componentFactoryResolver.resolveComponentFactory(this.data.component);
+    if (this.data && this.data.component) {
 
-    let viewContainerRef = this.tableHost.viewContainerRef;
-    viewContainerRef.clear();
+      let componentFactory = this.componentFactoryResolver.resolveComponentFactory(this.data.component);
 
-    let componentRef = viewContainerRef.createComponent(componentFactory);
-    (<TableComponent>componentRef.instance).data = this.data;
+      let viewContainerRef = this.tableHost.viewContainerRef;
+      viewContainerRef.clear();
 
-    // Don't subscribe if it doesn't exist.
-    if (componentRef.instance.selectedCount) {
-      componentRef.instance.selectedCount.subscribe(msg => {
-        this.onSelectedRow.emit(msg);
-      });
+      let componentRef = viewContainerRef.createComponent(componentFactory);
+      (<TableComponent>componentRef.instance).data = this.data;
+
+      // Don't subscribe if it doesn't exist.
+      if (componentRef.instance.selectedCount) {
+        componentRef.instance.selectedCount.subscribe(msg => {
+          this.onSelectedRow.emit(msg);
+        });
+      } else {
+        //  TODO: Display an error with no documents returning
+      }
     }
   }
 

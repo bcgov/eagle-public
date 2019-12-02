@@ -7,7 +7,8 @@ import 'rxjs/add/operator/takeUntil';
 import { Project } from 'app/models/project';
 import { CommentPeriodService } from 'app/services/commentperiod.service';
 import { CommentPeriod } from 'app/models/commentperiod';
-
+import { ISearchResults } from 'app/models/search';
+import { Utils } from 'app/shared/utils/utils';
 @Component({
   templateUrl: './commenting-tab.component.html',
   styleUrls: ['./commenting-tab.component.scss'],
@@ -33,7 +34,8 @@ export class CommentingTabComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     public commentPeriodService: CommentPeriodService, // used in template
-    private _changeDetectionRef: ChangeDetectorRef
+    private _changeDetectionRef: ChangeDetectorRef,
+    private utils: Utils,
   ) { }
 
   ngOnInit() {
@@ -41,10 +43,11 @@ export class CommentingTabComponent implements OnInit, OnDestroy {
     this.route.parent.data
       .takeUntil(this.ngUnsubscribe)
       .subscribe(
-        (data: { project: Project }) => {
-          if (data.project) {
-            this.currentProject = data.project;
-            this.getCommentPeriods(data.project._id);
+        (data: { project:  ISearchResults<Project>[] }) => {
+          const results = this.utils.extractFromSearchResults(data.project);
+          if (results && results.length > 0 && results[0]) {
+            this.currentProject = results[0];
+            this.getCommentPeriods(this.currentProject._id);
           } else {
             alert('Uh-oh, couldn\'t load project');
             // project not found --> navigate back to project list
