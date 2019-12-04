@@ -61,13 +61,6 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
   ngOnInit() {
     this.loggedIn = this.cookieService.get('loggedIn');
 
-    // this.showIntroModal = '';
-
-    // if (!this.cookieService.check('showIntroModal')) {
-    //   this.cookieService.set('showIntroModal', 'true');
-    // }
-    // this.showIntroModal = this.cookieService.get('showIntroModal');
-
     this.router.events
       .takeUntil(this.ngUnsubscribe)
       .subscribe(() => {
