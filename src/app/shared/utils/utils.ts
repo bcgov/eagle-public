@@ -39,7 +39,7 @@ export class Utils {
     return <T[]>data.searchResults;
   }
   // Mapping the build database field to the human readable nature field
-  public natureBuildMapper(key: string, reverseMapping: false): string {
+  public natureBuildMapper(key: string, reverseMapping?: false): string {
     if (!key) {
       return '';
     }

@@ -88,7 +88,7 @@ export class ProjectComponent implements OnInit, OnDestroy {
           const results = (data && data.project) ?  this.utils.extractFromSearchResults(data.project) : null;
           if (results) {
             this.project = results ? results[0] :  null;
-            this.storageService.state.currentProject = { type: 'currentProject', data: {...this.project, nature: this.utils.natureBuildMapper(this.project.build)} };
+            this.storageService.state.currentProject = { type: 'currentProject', data: this.project };
             this.renderer.removeClass(document.body, 'no-scroll');
             this._changeDetectionRef.detectChanges();
           } else {
