@@ -154,6 +154,7 @@ export class ProjectService {
     if (!project) {
       return of(data);
     }
+    project.nature = this.utils.natureBuildMapper(project.build);
     const epdId = (project.responsibleEPDId) ? project.responsibleEPDId.toString() : '';
     const leadId = (project.projectLeadId) ? project.projectLeadId.toString() : '';
     if (!epdId && !leadId) {
