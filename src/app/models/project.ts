@@ -27,7 +27,7 @@ export class Project {
 
   // Everything else
   addedBy: String;
-  build: String;
+  build: string;
   CEAALink: String;
   code: String;
   commodity: String;
