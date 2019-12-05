@@ -32,8 +32,8 @@ export class PinsComponent implements OnInit, OnDestroy {
       width: 'col-8'
     },
     {
-      name: 'Province',
-      value: 'province',
+      name: 'Location',
+      value: 'location',
       width: 'col-4'
     }
     // {
@@ -95,8 +95,8 @@ export class PinsComponent implements OnInit, OnDestroy {
 
   setDocumentRowData() {
     let documentList = [];
-    if (this.pins && this.pins.length > 0) {
-      this.pins.forEach(contact => {
+    if (this.pins && this.pins.length > 0 && this.pins[0].results) {
+      this.pins[0].results.forEach(contact => {
         documentList.push(contact);
       });
       this.tableData = new TableObject(

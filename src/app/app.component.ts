@@ -8,7 +8,6 @@ import 'rxjs/add/operator/takeUntil';
 import { ApiService } from 'app/services/api';
 import { ConfigService } from 'app/services/config.service';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
-import { SplashModalComponent } from './splash-modal/splash-modal.component';
 
 @Component({
   selector: 'app-root',
@@ -16,7 +15,7 @@ import { SplashModalComponent } from './splash-modal/splash-modal.component';
   styleUrls: ['./app.component.scss']
 })
 
-export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
+export class AppComponent implements OnInit, OnDestroy {
   isSafari: boolean;
   loggedIn: string;
   hostname: string;
@@ -62,13 +61,6 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
   ngOnInit() {
     this.loggedIn = this.cookieService.get('loggedIn');
 
-    this.showIntroModal = '';
-
-    if (!this.cookieService.check('showIntroModal')) {
-      this.cookieService.set('showIntroModal', 'true');
-    }
-    this.showIntroModal = this.cookieService.get('showIntroModal');
-
     this.router.events
       .takeUntil(this.ngUnsubscribe)
       .subscribe(() => {
@@ -76,22 +68,6 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
 
         document.documentElement.scrollTop = 0;
       });
-  }
-
-  ngAfterViewInit() {
-    // show splash modal (unless a sub-component has already turned off this flag)
-    // do this in another event so it's not in current change detection cycle
-    if (this.showIntroModal === 'true') {
-      setTimeout(() => {
-        // this.splashModal =
-        this.modalService.open(SplashModalComponent, {
-          backdrop: 'static',
-          windowClass: 'splash-modal'
-        });
-        this.cookieService.set('showIntroModal', 'false');
-      });
-    }
-    return;
   }
 
   ngOnDestroy() {
