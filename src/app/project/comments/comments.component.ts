@@ -15,6 +15,7 @@ import { TableParamsObject } from 'app/shared/components/table-template/table-pa
 import { TableObject } from 'app/shared/components/table-template/table-object';
 import { TableTemplateUtils } from 'app/shared/utils/table-template-utils';
 import { CommentsTableRowsComponent } from 'app/project/comments/comments-table-rows/comments-table-rows.component';
+import { Utils } from 'app/shared/utils/utils';
 
 @Component({
   selector: 'app-comments',
@@ -49,7 +50,8 @@ export class CommentsComponent implements OnInit, OnDestroy {
     private _changeDetectionRef: ChangeDetectorRef,
     private modalService: NgbModal,
     private router: Router,
-    private tableTemplateUtils: TableTemplateUtils
+    private tableTemplateUtils: TableTemplateUtils,
+    private utils: Utils,
   ) { }
 
   ngOnInit() {
@@ -65,7 +67,8 @@ export class CommentsComponent implements OnInit, OnDestroy {
         (data: { commentPeriod: CommentPeriod, project: Project }) => {
 
           if (data.project) {
-            this.project = data.project;
+            const results = this.utils.extractFromSearchResults(data.project);
+            this.project = results ? results[0] :  null;
           }
 
           if (data.commentPeriod) {
