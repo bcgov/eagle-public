@@ -86,20 +86,19 @@ export class ProjectService {
     if (this.project && this.project._id === projId && !forceReload) {
       return Observable.of(this.project);
     }
-    return this.searchService.getSearchResults('', 'Project', null, null, 1, '', {_id: projId}, true, '',  {},  '')
-      .map((projects: ISearchResults<Project>[]) => {
-        let results;
+    return this.api.getProject(projId, cpStart, cpEnd)
+      .map((projects: Project[]) => {
         // get upcoming comment period if there is one and convert it into a comment period object.
-        if (projects.length > 0) {
-          results = this.utils.extractFromSearchResults(projects);
-          if (results[0].commentPeriodForBanner && results[0].commentPeriodForBanner.length > 0) {
-            results[0].commentPeriodForBanner = new CommentPeriod(results[0].commentPeriodForBanner[0]);
+        if (projects) {
+
+          if (projects[0].commentPeriodForBanner && projects[0].commentPeriodForBanner.length > 0) {
+            projects[0].commentPeriodForBanner = new CommentPeriod(projects[0].commentPeriodForBanner[0]);
           } else {
-            results[0].commentPeriodForBanner = null;
+            projects[0].commentPeriodForBanner = null;
           }
         }
         // return the first (only) project
-        return results.length > 0 ? new Project(results[0]) : null;
+        return projects.length > 0 ? new Project(projects[0]) : null;
       })
       .pipe(
         flatMap(res => {

@@ -49,8 +49,8 @@ export class ProjectActivitesComponent implements OnInit, OnDestroy {
     this.route.parent.data
       .takeUntil(this.ngUnsubscribe)
       .subscribe(
-        (data: { project: ISearchResults<Project>[] }) => {
-          const results = (data && data.project) ?  this.utils.extractFromSearchResults(data.project) : null;
+        (data: { project: Project }) => {
+          const results = data ? data.project : null;
           if (results) {
             this.currentProject = results;
           } else {
