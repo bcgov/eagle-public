@@ -84,10 +84,10 @@ export class ProjectComponent implements OnInit, OnDestroy {
     this.route.data
       .takeUntil(this.ngUnsubscribe)
       .subscribe(
-        (data: { project: ISearchResults<Project>[] }) => {
-          const results = (data && data.project) ?  this.utils.extractFromSearchResults(data.project) : null;
+        (data: { project: Project }) => {
+          const results = data ?  data.project : null;
           if (results) {
-            this.project = results ? results[0] :  null;
+            this.project = results;
             this.storageService.state.currentProject = { type: 'currentProject', data: this.project };
             this.renderer.removeClass(document.body, 'no-scroll');
             this._changeDetectionRef.detectChanges();

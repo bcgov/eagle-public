@@ -17,19 +17,7 @@ export class ProjectResolver implements Resolve<Object> {
     let end = new Date();
     start.setDate(start.getDate() - 7);
     end.setDate(end.getDate() + 7);
-    return this.searchService.getSearchResults(
-      '',
-      'Project',
-      [],
-      1,
-      1,
-      '',
-      {_id: projId},
-      true,
-      '',
-      {},
-      ''
-    )
-    .flatMap(data => this.projectService.getPeopleObjs(data));
+    return this.projectService.getById(projId, false, start.toISOString(), end.toISOString())
+      .catch(() => { return Observable.of(null); });
   }
 }
