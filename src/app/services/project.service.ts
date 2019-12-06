@@ -98,7 +98,7 @@ export class ProjectService {
           }
         }
         // return the first (only) project
-        return projects.length > 0 ? new Project(projects) : null;
+        return projects.length > 0 ? new Project(projects[0]) : null;
       })
       .pipe(
         flatMap(res => {

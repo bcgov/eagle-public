@@ -278,6 +278,7 @@ export class ApiService {
       'sector',
       'shortName',
       'status',
+      'legislation',
       'substitution',
       'updatedBy',
       'read',
