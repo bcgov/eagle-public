@@ -16,6 +16,7 @@ import { TableObject } from 'app/shared/components/table-template/table-object';
 import { TableTemplateUtils } from 'app/shared/utils/table-template-utils';
 import { CommentsTableRowsComponent } from 'app/project/comments/comments-table-rows/comments-table-rows.component';
 import { Utils } from 'app/shared/utils/utils';
+import { ISearchResults } from 'app/models/search';
 
 @Component({
   selector: 'app-comments',
@@ -64,11 +65,11 @@ export class CommentsComponent implements OnInit, OnDestroy {
     this.route.data
       .takeUntil(this.ngUnsubscribe)
       .subscribe(
-        (data: { commentPeriod: CommentPeriod, project: Project }) => {
+        (data: { commentPeriod: CommentPeriod, project: ISearchResults<Project>[] }) => {
 
           if (data.project) {
             const results = this.utils.extractFromSearchResults(data.project);
-            this.project = results ? results[0] :  null;
+            this.project = results ? results[0] : null;
           }
 
           if (data.commentPeriod) {
