@@ -67,8 +67,8 @@ export class CommentsComponent implements OnInit, OnDestroy {
         (data: { commentPeriod: CommentPeriod, project: Project }) => {
 
           if (data.project) {
-            const results = this.utils.extractFromSearchResults(data.project);
-            this.project = results ? results[0] :  null;
+            const results = data.project;
+            this.project = results ? results : null;
           }
 
           if (data.commentPeriod) {
