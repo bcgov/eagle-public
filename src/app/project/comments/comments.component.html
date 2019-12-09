@@ -33,7 +33,7 @@
             </p>
             <div class="d-flex justify-content-end">
               <button class="btn btn-light" (click)="addComment()" type="button"
-                *ngIf="commentPeriod.commentPeriodStatus === 'Open'">Submit Comment</button>
+                *ngIf="commentPeriod.commentPeriodStatus === 'Open'">Go to Comment Submission</button>
             </div>
           </div>
           <!-- <p class="desc" [innerHTML]="(project?.description || '-') | newlines"></p> -->
@@ -52,7 +52,7 @@
               <p class="value">{{project?.sector || "-" | titlecase}}</p>
             </div>
           </div>
-          <div class="related-documents value mt-4" *ngIf="commentPeriodDocs?.length > 0">
+          <div class="related-documents value mt-4" *ngIf="commentPeriodDocs && commentPeriodDocs.length > 0">
             <div class="card">
               <div class="card-header">
                 Related Documents
@@ -69,7 +69,7 @@
               </ul>
             </div>
           </div>
-          <div class="open-houses value mt-4" *ngIf="commentPeriod.openHouses.length > 0">
+          <div class="open-houses value mt-4" *ngIf="commentPeriod && commentPeriod.openHouses && commentPeriod.openHouses.length > 0">
             <div class="card">
               <div class="card-header">
                 Open Houses
