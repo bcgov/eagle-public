@@ -53,11 +53,13 @@ export class AddCommentComponent implements OnInit {
     this.comment.isAnonymous = false;
     this.commentFiles = [];
     this.documentAuthorType = null;
-    this.config.lists[0].searchResults.map((item) => {
-      if (item.type === 'author' && item.name === 'Public') {
-          this.documentAuthorType = Object.assign({}, item);
-      }
-    });
+    if (this.config.lists && this.config.lists.length > 0) {
+      this.config.lists[0].searchResults.map((item) => {
+        if (item.type === 'author' && item.name === 'Public') {
+            this.documentAuthorType = Object.assign({}, item);
+        }
+      });
+    }
   }
 
   register() {
