@@ -106,6 +106,8 @@ export class ProjectService {
           if (!project) {
             return of(null as Project);
           }
+          // Map the build to the human readable nature field
+          project.nature = this.utils.natureBuildMapper(project.build);
           if (project.projectLeadId == null && project.responsibleEPDId == null) {
             return of(new Project(project));
           }
@@ -153,7 +155,6 @@ export class ProjectService {
     if (!project) {
       return of(data);
     }
-    project.nature = this.utils.natureBuildMapper(project.build);
     const epdId = (project.responsibleEPDId) ? project.responsibleEPDId.toString() : '';
     const leadId = (project.projectLeadId) ? project.projectLeadId.toString() : '';
     if (!epdId && !leadId) {

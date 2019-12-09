@@ -1,13 +1,8 @@
 import { Injectable } from '@angular/core';
 import { ISearchResults } from 'app/models/search';
+import { Constants } from './constants';
 
 const encode = encodeURIComponent;
-const buildToNature = {
-  new: 'New Construction',
-  modification: 'Modification of Existing',
-  dismantling: 'Dismantling or Abandonment',
-  unknown: 'Unknown nature value',
-}
 window['encodeURIComponent'] = (component: string) => {
   return encode(component).replace(/[!'()*]/g, (c) => {
   // Also encode !, ', (, ), and *
@@ -38,11 +33,12 @@ export class Utils {
     if (!data) { return null; }
     return <T[]>data.searchResults;
   }
-  // Mapping the build database field to the human readable nature field
-  public natureBuildMapper(key: string, reverseMapping?: false): string {
+   // Mapping the build database field to the human readable nature field
+   public natureBuildMapper(key: string): string {
     if (!key) {
       return '';
     }
-    return (reverseMapping) ? Object.keys(buildToNature).find(aKey => buildToNature[aKey] === key) : buildToNature[key]
+    const natureObj = Constants.buildToNature.find(obj => obj.build === key);
+    return (natureObj) ? natureObj.nature : key;
   }
 }

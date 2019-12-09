@@ -1,3 +1,8 @@
+export interface BuildNature {
+  build: string;
+  nature: string;
+}
+
 export class Constants {
 
   public static readonly legislationLinks = {
@@ -13,6 +18,18 @@ export class Constants {
     DEFAULT_SORT_BY: '-datePosted',
     DEFAULT_KEYWORDS: ''
   };
+
+  public static readonly buildToNature: BuildNature[] = [
+    { build: 'new',
+      nature: 'New Construction'
+    },
+    { build: 'modification',
+      nature: 'Modification of Existing'
+    },
+    { build: 'dismantling',
+      nature: 'Dismantling or Abandonment'
+    },
+  ];
 
   public static readonly types = [
     'CERTIFICATE OF PURCHASE',
