@@ -117,8 +117,10 @@ export class ProjectComponent implements OnInit, OnDestroy {
       );
       if (this.project.legislation.includes('2002')) {
         this.legislationLink = Constants.legislationLinks.ENVIRONMENTAL_ASSESSMENT_ACT_2002_LINK;
-      } else {
+      } else if  (this.project.legislation.includes('1996')) {
         this.legislationLink = Constants.legislationLinks.ENVIRONMENTAL_ASSESSMENT_ACT_1996_LINK;
+      } else {
+        this.legislationLink = Constants.legislationLinks.ENVIRONMENTAL_ASSESSMENT_ACT_2018_LINK;
       }
   }
 
