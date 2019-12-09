@@ -73,7 +73,7 @@
 
           <app-file-upload [maxFiles]="50" [maxSize]="300" [showInfo]="false" [showList]="false" [files]="commentFiles"
                            (filesChange)="addFiles($event); commentFiles = []"></app-file-upload>
-          <ul class="doc-list mb-3" *ngIf="documents?.length > 0">
+          <ul class="doc-list mb-3" *ngIf="documents && documents.length > 0">
             <li *ngFor="let doc of documents">
               <span class="cell icon">
                 <i class="material-icons">insert_drive_file</i>
@@ -89,7 +89,7 @@
               </span>
             </li>
           </ul>
-          <div *ngIf="documents?.length === 0">
+          <div *ngIf="documents && documents.length === 0">
             <p>No attached files.</p>
           </div>
       </fieldset>

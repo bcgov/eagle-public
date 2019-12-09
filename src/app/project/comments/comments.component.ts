@@ -141,6 +141,9 @@ export class CommentsComponent implements OnInit, OnDestroy {
   }
 
   public addComment() {
+    // HACK: HOTFIX FOR SUBMIT COMMENT BUTTON PLEASE REVERT
+    this.goBackToProjectDetails();
+    return;
     if (this.commentPeriodId) {
       // open modal
       this.ngbModal = this.modalService.open(AddCommentComponent, { backdrop: 'static', size: 'lg' });
