@@ -76,7 +76,7 @@ export class DocumentTableRowsComponent implements OnInit, OnDestroy, TableCompo
     let filename = item.documentFileName;
     let safeName = filename;
     try {
-      safeName = this.utils.encodeFilename(filename, true)
+      safeName = this.utils.encodeString(filename, true)
     } catch (e) {
       console.log('error:', e);
     }
