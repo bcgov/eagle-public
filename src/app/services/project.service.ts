@@ -124,7 +124,7 @@ export class ProjectService {
       .catch(error => this.api.handleError(error));
   }
 
-  getPins(proj: string, pageNum: number, pageSize: number, sortBy: any): Observable<Org> {
+  getPins(proj: string, pageNum: number, pageSize: number, sortBy: any): Observable<Org[]> {
     return this.api.getProjectPins(proj, pageNum, pageSize, sortBy)
       .catch(error => this.api.handleError(error));
   }

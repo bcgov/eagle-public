@@ -10,6 +10,7 @@ import { Subject } from 'rxjs';
 import { SearchTerms } from 'app/models/search';
 import { PlatformLocation } from '@angular/common';
 import { PinsTableRowsComponent } from './pins-table-rows/pins-table-rows.component';
+import { Org } from 'app/models/organization';
 
 @Component({
   selector: 'app-pins',
@@ -71,7 +72,7 @@ export class PinsComponent implements OnInit, OnDestroy {
 
     this.route.data
       .takeUntil(this.ngUnsubscribe)
-      .subscribe((res: any) => {
+      .subscribe((res: {pins: Org[]}) => {
         if (res) {
           if (res.pins && res.pins.length > 0) {
             this.tableParams.totalListItems = res.pins.length;

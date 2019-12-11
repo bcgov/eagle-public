@@ -15,6 +15,7 @@ import { Constants } from 'app/shared/utils/constants';
 import { SearchService } from 'app/services/search.service';
 import { ISearchResults } from 'app/models/search';
 import { Utils } from 'app/shared/utils/utils';
+import { Org } from 'app/models/organization';
 
 
 @Component({
@@ -29,7 +30,7 @@ export class ProjectComponent implements OnInit, OnDestroy {
     { label: 'Documents', link: 'documents' },
     // { label: 'Certificate', link: 'certificates' },
     // { label: 'Amendment(s)', link: 'amendments' },
-    { label: 'Participating Indigenous Nations', link: 'pins' }
+    // { label: 'Participating Indigenous Nations', link: 'pins' }
   ];
 
   public project: Project = null;
@@ -98,23 +99,8 @@ export class ProjectComponent implements OnInit, OnDestroy {
           }
         }
       );
-      this.tabLinkIfNotEmpty({ label: 'Certificate', link: 'certificates' },
-      {
-        // Search only Certificate Package/EAO/Certificate
-        documentSource: 'PROJECT',
-        type: '5cf00c03a266b7e1877504d5',
-        documentAuthorType: '5cf00c03a266b7e1877504db',
-        milestone: '5cf00c03a266b7e1877504eb'
-      }
-    );
-      this.tabLinkIfNotEmpty({ label: 'Amendment(s)', link: 'amendments' },
-        {
-          // Search only Amendment Package/Amendment
-          documentSource: 'PROJECT',
-          type: '5cf00c03a266b7e1877504d7',
-          milestone: '5cf00c03a266b7e1877504f2'
-        }
-      );
+      this.initTabLinks();
+
       if (this.project.legislation.includes('2002')) {
         this.legislationLink = Constants.legislationLinks.ENVIRONMENTAL_ASSESSMENT_ACT_2002_LINK;
       } else if  (this.project.legislation.includes('1996')) {
@@ -124,6 +110,31 @@ export class ProjectComponent implements OnInit, OnDestroy {
       }
   }
 
+  initTabLinks(): void {
+    [[{ label: 'Certificate', link: 'certificates' },
+    {
+      // Search only Certificate Package/EAO/Certificate
+      documentSource: 'PROJECT',
+      type: '5cf00c03a266b7e1877504d5',
+      documentAuthorType: '5cf00c03a266b7e1877504db',
+      milestone: '5cf00c03a266b7e1877504eb'
+    }],
+    [{ label: 'Amendment(s)', link: 'amendments' },
+    {
+      // Search only Amendment Package/Amendment
+      documentSource: 'PROJECT',
+      type: '5cf00c03a266b7e1877504d7',
+      milestone: '5cf00c03a266b7e1877504f2'
+    }]].forEach((args: any[]) => this.tabLinkIfNotEmpty(args[0], args[1]))
+
+    // Not documents so can't use the tabLinkIfNotEmpty()
+    this.projectService.getPins(this.project._id, 1, 1, null)
+      .takeUntil(this.ngUnsubscribe)
+      .subscribe((results: Org[]) => {
+        if (results && results.length) {
+        this.tabLinks.push({ label: 'Participating Indigenous Nations', link: 'pins' });
+    }})
+  }
   public addComment() {
     if (this.project.commentPeriodForBanner) {
       // open modal
