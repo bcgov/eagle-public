@@ -16,21 +16,19 @@ VERBOSE=${VERBOSE:-}
 
 # App and build settings
 #
-APPLICATION_NAME=${APPLICATION_NAME:-eao-public}
-APPLICATION_PROXY_NAME=${APPLICATION_PROXY_NAME:-rproxy}
-APPLICATION_ROUTE_NAME=${APPLICATION_ROUTE_NAME:-www-esm-prod}
+APPLICATION_NAME=${APPLICATION_NAME:-eagle-public}
+APPLICATION_ROUTE_NAME=${APPLICATION_ROUTE_NAME:-eagle-public}
 APPLICATION_PORT=${APPLICATION_PORT:-8080-tcp}
-APPLICATION_PROXY_PORT=${APPLICATION_PROXY_PORT:-8080-tcp}
 
-STATIC_PAGE_NAME=${STATIC_PAGE_NAME:-eao-proxy-caddy}
-STATIC_PAGE_ROUTE_NAME=${STATIC_PAGE_ROUTE_NAME:-eao-proxy-caddy}
+STATIC_PAGE_NAME=${STATIC_PAGE_NAME:-eagle-proxy-caddy}
+STATIC_PAGE_ROUTE_NAME=${STATIC_PAGE_ROUTE_NAME:-eagle-proxy-caddy}
 STATIC_PAGE_PORT=${STATIC_PAGE_PORT:-2015-tcp}
 
 TOOLS_PROJECT=${TOOLS_PROJECT:-esm}
 #
 IMG_SRC=${IMG_SRC:-bcgov-s2i-caddy}
-GIT_REPO=${GIT_REPO:-https://github.com/bcgov/eao-public.git}
-GIT_BRANCH=${GIT_BRANCH:-dev}
+GIT_REPO=${GIT_REPO:-https://github.com/bcgov/eagle-public.git}
+GIT_BRANCH=${GIT_BRANCH:-develop}
 OC_BUILD=${OC_BUILD:-../templates/caddy.bc.json}
 OC_DEPLOY=${OC_DEPLOY:-../templates/caddy.dc.json}
 
@@ -84,8 +82,8 @@ then
 elif [ "${COMMAND}" == "off" ]
 then
 	oc patch route ${APPLICATION_ROUTE_NAME} -n ${PROJECT} -p \
-		'{ "spec": { "to": { "name": "'$( echo ${APPLICATION_PROXY_NAME} )'" },
-		"port": { "targetPort": "'$( echo ${APPLICATION_PROXY_PORT} )'" }}}'
+		'{ "spec": { "to": { "name": "'$( echo ${APPLICATION_NAME} )'" },
+		"port": { "targetPort": "'$( echo ${APPLICATION_PORT} )'" }}}'
 	oc patch route ${STATIC_PAGE_ROUTE_NAME} -n ${PROJECT} -p \
 		'{ "spec": { "to": { "name": "'$( echo ${STATIC_PAGE_NAME} )'" },
 		"port": { "targetPort": "'$( echo ${STATIC_PAGE_PORT} )'" }}}'

@@ -4,7 +4,7 @@
 
 ### Usage
 
-Caddy pods serving static html are deployed to our prod environment. To enable maintenance mode switch the routes between the eao-public and eao-proxy-caddy services.  A namespace (project) for deployment must be specified.
+Caddy pods serving static html are deployed to our prod environment. To enable maintenance mode switch the routes between the eagle-public and eagle-proxy-caddy services.  A namespace (project) for deployment must be specified.
 
 Expected namespaces:
 
@@ -31,19 +31,19 @@ For the sake of simplicity all examples will use esm-prod and be run on OS X.
     Maintenance mode on.
 
     ```
-    oc patch route www-esm-prod -n esm-prod -p \
-        '{ "spec": { "to": { "name": "eao-proxy-caddy", "port": { "targetPort": "2015-tcp" }}}'
-    oc patch route eao-proxy-caddy -n esm-prod -p \
-        '{ "spec": { "to": { "name": "eao-public" }, "port": { "targetPort": "8080-tcp" }}}'
+    oc patch route eagle-public -n esm-prod -p \
+        '{ "spec": { "to": { "name": "eagle-proxy-caddy", "port": { "targetPort": "2015-tcp" }}}'
+    oc patch route eagle-proxy-caddy -n esm-prod -p \
+        '{ "spec": { "to": { "name": "eagle-public" }, "port": { "targetPort": "8080-tcp" }}}'
     ```
 
     Maintenance mode off.
 
     ```
-    oc patch route www-esm-prod -n esm-prod -p \
-        '{ "spec": { "to": { "name": "rproxy", "port": { "targetPort": "8080-tcp" }}}'
-    oc patch route eao-proxy-caddy -n esm-prod -p \
-        '{ "spec": { "to": { "name": "eao-proxy-caddy" }, "port": { "targetPort": "2015-tcp" }}}'
+    oc patch route eagle-public -n esm-prod -p \
+        '{ "spec": { "to": { "name": "eagle-public", "port": { "targetPort": "8080-tcp" }}}'
+    oc patch route eagle-proxy-caddy -n esm-prod -p \
+        '{ "spec": { "to": { "name": "eagle-proxy-caddy" }, "port": { "targetPort": "2015-tcp" }}}'
     ```
 
 3. ##### Enable/Disable by OpenShift GUI Console
@@ -52,8 +52,8 @@ For the sake of simplicity all examples will use esm-prod and be run on OS X.
     - [esm-test](https://console.pathfinder.gov.bc.ca:8443/console/project/esm-test/browse/routes)
     - [esm-prod](https://console.pathfinder.gov.bc.ca:8443/console/project/esm-prod/browse/routes)
 
-    b. Edit the route called `www-esm-prod` and make it point to the `eao-proxy-caddy` service instead of `rproxy`
-    - [esm-prod](https://console.pathfinder.gov.bc.ca:8443/console/project/esm-prod/edit/routes/www-esm-prod)
+    b. Edit the route called `eagle-public` and make it point to the `eagle-proxy-caddy` service instead of `eagle-public`
+    - [esm-prod](https://console.pathfinder.gov.bc.ca:8443/console/project/esm-prod/edit/routes/eagle-public)
 
     c. Confirm that the Maintenance screen is up
     - [esm-prod](https://www.projects.eao.gov.bc.ca)
@@ -64,8 +64,8 @@ For the sake of simplicity all examples will use esm-prod and be run on OS X.
     - [esm-test](https://console.pathfinder.gov.bc.ca:8443/console/project/esm-test/browse/routes)
     - [esm-prod](https://console.pathfinder.gov.bc.ca:8443/console/project/esm-prod/browse/routes)
 
-    b. Edit the route called `www-esm-prod` and make it point to the `rproxy` service instead of `eao-proxy-caddy`
-    - [esm-prod](https://console.pathfinder.gov.bc.ca:8443/console/project/esm-prod/edit/routes/www-esm-prod)
+    b. Edit the route called `eagle-public` and make it point to the `eagle-public` service instead of `eagle-proxy-caddy`
+    - [esm-prod](https://console.pathfinder.gov.bc.ca:8443/console/project/esm-prod/edit/routes/eagle-public)
 
     c. Confirm that the Maintenance screen is up
     - [esm-prod](https://www.projects.eao.gov.bc.ca)
@@ -87,10 +87,10 @@ Contains:
 
 Default vars:
 
-* NAME: eao-proxy-caddy
+* NAME: eagle-proxy-caddy
 * IMG_SRC: bcgov-s2i-caddy
-* GIT_REPO: https://github.com/bcgov/eao-public.git
-* GIT_BRANCH: dev
+* GIT_REPO: https://github.com/bcgov/eagle-public.git
+* GIT_BRANCH: develop
 
 Build Project:
 
@@ -106,8 +106,8 @@ Build Project:
 2. ##### Build by Command line
 
     ```
-    oc process -f ../templates/caddy.bc.json -p NAME=eao-proxy-caddy \
-      GIT_REPO=https://github.com/bcgov/eao-public.git GIT_BRANCH=dev \
+    oc process -f ../templates/caddy.bc.json -p NAME=eagle-proxy-caddy \
+      GIT_REPO=https://github.com/bcgov/eagle-public.git GIT_BRANCH=develop \
       IMG_SRC=bcgov-s2i-caddy | oc apply -f -
 
     ```
@@ -125,7 +125,7 @@ Contains:
 
 Default vars:
 
-* NAME: eao-proxy-caddy
+* NAME: eagle-proxy-caddy
 * BUILD_PROJECT: [specified namespace]
 
 Build (Source) Project:
@@ -139,7 +139,7 @@ Deploy Projects Available:
 * esm-dev
 
 
-1. ##### Deploy by Script (must be built in the same namespace)
+1. ##### Deploy by Script (must be built in the same namespace, not recommended)
 
     ```
     ./maintenance.sh esm-test deploy
@@ -148,9 +148,9 @@ Deploy Projects Available:
 2. ##### Deploy by Command line
 
     ```
-    oc process -f ../templates/caddy.bc.json -n esm-prod -p NAME=eao-proxy-caddy \
+    oc process -f ../templates/caddy.bc.json -n esm-test -p NAME=eagle-proxy-caddy \
         BUILD_PROJECT=esm-test | oc apply -f -
-    oc expose svc proxy-caddy
+    oc expose svc eagle-proxy-caddy
     ```
 
 ##### Deploy from Tools
@@ -166,7 +166,7 @@ Contains:
 
 Default vars:
 
-* NAME: eao-proxy-caddy
+* NAME: eagle-proxy-caddy
 * BUILD_PROJECT: esm
 
 Build (Source) Project:
@@ -189,9 +189,9 @@ Deploy Projects Available:
 2. ##### Deploy by Command line
 
     ```
-    oc process -f ../openshift/templates/caddy.bc.json -n esm-prod -p NAME=eao-proxy-caddy \
+    oc process -f ../openshift/templates/caddy.bc.json -n esm-prod -p NAME=eagle-proxy-caddy \
         BUILD_PROJECT=esm | oc apply -f -
-    oc expose svc eao-proxy-caddy
+    oc expose svc eagle-proxy-caddy
     ```
 
 ### Initial Setup
