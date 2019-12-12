@@ -18,6 +18,7 @@ import { of } from 'rxjs/internal/observable/of';
 import { forkJoin } from 'rxjs';
 import { SearchService } from './search.service';
 import { Utils } from 'app/shared/utils/utils';
+import { DataQueryResponse } from 'app/models/api-response';
 
 interface GetParameters {
   getresponsibleEPD?: boolean;
@@ -124,7 +125,7 @@ export class ProjectService {
       .catch(error => this.api.handleError(error));
   }
 
-  getPins(proj: string, pageNum: number, pageSize: number, sortBy: any): Observable<Org[]> {
+  getPins(proj: string, pageNum: number, pageSize: number, sortBy: any): Observable<DataQueryResponse<Org>[]> {
     return this.api.getProjectPins(proj, pageNum, pageSize, sortBy)
       .catch(error => this.api.handleError(error));
   }

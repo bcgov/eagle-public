@@ -16,6 +16,7 @@ import { SearchService } from 'app/services/search.service';
 import { ISearchResults } from 'app/models/search';
 import { Utils } from 'app/shared/utils/utils';
 import { Org } from 'app/models/organization';
+import { DataQueryResponse } from 'app/models/api-response';
 
 
 @Component({
@@ -130,8 +131,8 @@ export class ProjectComponent implements OnInit, OnDestroy {
     // Not documents so can't use the tabLinkIfNotEmpty()
     this.projectService.getPins(this.project._id, 1, 1, null)
       .takeUntil(this.ngUnsubscribe)
-      .subscribe((results: Org[]) => {
-        if (results && results.length) {
+      .subscribe((response: DataQueryResponse<Org>[]) => {
+        if (response && response.length && response[0].results && response[0].results.length && response[0].total_items) {
         this.tabLinks.push({ label: 'Participating Indigenous Nations', link: 'pins' });
     }})
   }
