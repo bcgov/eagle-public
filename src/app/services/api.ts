@@ -61,7 +61,7 @@ export class ApiService {
     console.log(document);
     const blob = await this.downloadResource(document._id);
     let filename = document.displayName;
-    filename = this.utils.encodeFilename(filename, false)
+    filename = this.utils.encodeString(filename, false)
     if (this.isMS) {
       window.navigator.msSaveBlob(blob, filename);
     } else {
@@ -87,7 +87,7 @@ export class ApiService {
     console.log(document);
     let safeName = '';
     try {
-      safeName = this.utils.encodeFilename(filename, true);
+      safeName = this.utils.encodeString(filename, true);
     } catch (e) {
       // fall through
       console.log('error', e);
@@ -136,7 +136,8 @@ export class ApiService {
     if (filter !== {}) {
       Object.keys(filter).forEach(key => {
         filter[key].split(',').forEach(item => {
-          queryString += `&or[${key}]=${item}`;
+          let safeItem = this.utils.encodeString(item, true);
+          queryString += `&or[${key}]=${safeItem}`;
         });
       });
     }
