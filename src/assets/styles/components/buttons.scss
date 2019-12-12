@@ -166,6 +166,27 @@ main {
   }
 }
 
+.content-btn-dark {
+  padding: 0.35rem 1rem;
+  color: #003366;
+  border: 2px solid #003366;
+  background: transparent;
+  font-size: 0.85rem;
+  font-weight: 700;
+
+  &:focus,
+  &:hover {
+      color: #fff;
+      border-color: #003366;
+      background: #003366;
+  }
+}
+
+.page-bottom-btn{
+    margin: 20px;
+    margin-bottom: 30px;
+}
+
 // Scroll Top Button
 .scroll-top-btn {
   position: fixed;
@@ -222,7 +243,7 @@ main {
     margin-top: -0.1rem;
     vertical-align: middle;
   }
-  
+
   .btn-txt {
     visibility: hidden;
   }
@@ -252,7 +273,7 @@ main {
     margin-top: -0.1rem;
     vertical-align: middle;
   }
-  
+
   .btn-txt {
     visibility: hidden;
   }
