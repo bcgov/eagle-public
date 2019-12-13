@@ -9,7 +9,7 @@
     <span [innerHtml]="activity.content"></span>
     <br>
     <br>
-    <a *ngIf="activity.project" class="btn content-btn-alt mr-1" [routerLink]="['/p', activity.project._id ]">
+    <a *ngIf="activity.project && activity.project._id" class="btn content-btn-alt mr-1" [routerLink]="['/p', activity.project._id ]">
       <span>Project Info</span>
     </a>
     <a *ngIf="isSingleDoc(activity?.documentUrl) && !activity?.documentUrl.includes('docs?folder')"
