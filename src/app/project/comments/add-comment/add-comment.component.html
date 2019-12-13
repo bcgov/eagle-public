@@ -51,20 +51,25 @@
     <div class="modal-body">
       <fieldset>
           <div class="form-group">
+            <label class="control-label" >
+              <input type="checkbox" aria-label="Checkbox for row item" name="anonymous" [(ngModel)]='makePublic'>
+              Make my name visible to the public.
+            </label>
+            <div >
+              All comments are submitted anonymously by default. By clicking this option, your name will display on the public site.
+            </div>
+          </div>
+          <div class="form-group">
             <label class="control-label">Name (required)</label>
             <div class="form-control-container">
-              <input class="form-control" type="text" name="nameInput" placeholder="Anonymous"
+              <input required class="form-control" type="text" name="nameInput" placeholder="Anonymous"
                 id="nameInput" [(ngModel)]="contactName" autofocus />
             </div>
           </div>
           <div class="form-group">
             <label class="control-label" >Location (required)</label>
-            <input class="form-control" type="text" name="locationInput" placeholder="IE: City, Province, etc."
+            <input required class="form-control" type="text" name="locationInput" placeholder="IE: City, Province, etc."
               id="locationInput" [(ngModel)]="locationInput" autofocus />
-          </div>
-          <div class="form-group">
-            <label class="control-label" >Make my Name visible to the public.</label>
-            <input type="checkbox" aria-label="Checkbox for row item" name="anonymous" [(ngModel)]='makePublic'><label class="control-label" >All comments are submitted anonymously by default. Checking this option will display your Name (if entered) on the public site.</label>
           </div>
           <div class="form-group">
             <label class="control-label" >Your Comment</label>
@@ -96,7 +101,8 @@
     </div>
     <div class="modal-footer">
       <button class="btn btn-light" type="button" (click)="p2_back()">Back</button>
-      <button class="btn btn-primary" type="button" (click)="p2_next()" [disabled]="!commentForm1.form.valid">Submit</button>
+      <!-- enable submission when required fields are entered and when either a file or comment is entered -->
+      <button class="btn btn-primary" type="button" (click)="p2_next()" [disabled]="!commentForm1.form.valid || (!commentInput && (documents && documents.length === 0))">Submit</button>
     </div>
   </div>
 </form>
