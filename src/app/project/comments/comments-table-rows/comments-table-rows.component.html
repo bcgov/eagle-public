@@ -30,8 +30,8 @@
       </div>
     </div>
     <div>
-      <div *ngIf="comment.comment.length > 120">
-        <p *ngIf="comment.expanded == true">
+      <div *ngIf="comment.comment && comment.comment.length > 120">
+        <p *ngIf="comment.comment && comment.expanded == true">
           {{comment.comment}}
         </p>
         <p *ngIf="comment.expanded == false">
@@ -39,7 +39,7 @@
         </p>
         <button class="clickable" (click)="toggle(comment)">{{comment.buttonName}}</button>
       </div>
-      <p *ngIf="comment.comment.length <= 120">{{comment.comment}}</p>
+      <p *ngIf="comment.comment && comment.comment.length <= 120">{{comment.comment}}</p>
     </div>
   </td>
 </tr>
