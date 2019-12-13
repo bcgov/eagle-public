@@ -33,7 +33,6 @@ export class AddCommentComponent implements OnInit {
   public documents: Document[] = [];
   public documentAuthor: any;
   public documentAuthorType: any;
-
   public contactName: any;
   public commentInput: any;
   public locationInput: any;
@@ -60,9 +59,6 @@ export class AddCommentComponent implements OnInit {
         }
       });
     }
-  }
-
-  register() {
   }
 
   public addFiles(files: FileList) {
@@ -101,6 +97,7 @@ export class AddCommentComponent implements OnInit {
     this.currentPage--;
   }
 
+  // TODO: Have some null checks in here from the front end
   private p2_next() {
     this.submitting = true;
     this.progressValue = this.progressBufferValue = 0;
