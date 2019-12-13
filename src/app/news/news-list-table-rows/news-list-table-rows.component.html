@@ -7,11 +7,13 @@
     <br>
     <br>
     <span [innerHtml]="activity.content"></span>
-    <a *ngIf="activity.project" class="btn content-btn-alt" [routerLink]="['/p', activity.project._id ]">
-      <span>View Project</span>
+    <br>
+    <br>
+    <a *ngIf="activity.project" class="btn content-btn-alt mr-1" [routerLink]="['/p', activity.project._id ]">
+      <span>Project Info</span>
     </a>
     <a *ngIf="isSingleDoc(activity?.documentUrl) && !activity?.documentUrl.includes('docs?folder')"
-      class="btn content-btn-alt" href="{{activity.documentUrl}}">
+      class="btn content-btn-alt mr-1" href="{{activity.documentUrl}}">
       <span>View Document(s)</span>
     </a>
     <button *ngIf="activity?.pcp"
