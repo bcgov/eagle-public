@@ -27,6 +27,6 @@ export class ProjectActivitiesResolver implements Resolve<Observable<object>> {
       tableParams.sortBy,
       { project: projId },
       true,
-      '');
+      tableParams.sortBy);
   }
 }
