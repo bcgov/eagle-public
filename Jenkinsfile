@@ -60,18 +60,25 @@ def getChangeLog(pastBuilds) {
 def nodejsTester () {
   openshift.withCluster() {
     openshift.withProject() {
-      podTemplate(label: 'node-tester', name: 'node-tester', serviceAccount: 'jenkins', cloud: 'openshift', containers: [
-        containerTemplate(
-          name: 'jnlp',
-          image: 'registry.access.redhat.com/openshift3/jenkins-agent-nodejs-8-rhel7',
-          resourceRequestCpu: '500m',
-          resourceLimitCpu: '800m',
-          resourceRequestMemory: '2Gi',
-          resourceLimitMemory: '4Gi',
-          workingDir: '/tmp',
-          command: '',
-        )
-      ]) {
+      podTemplate(
+        label: 'node-tester',
+        name: 'node-tester',
+        serviceAccount: 'jenkins',
+        cloud: 'openshift',
+        slaveConnectTimeout: 300,
+        containers: [
+          containerTemplate(
+            name: 'jnlp',
+            image: 'registry.access.redhat.com/openshift3/jenkins-agent-nodejs-8-rhel7',
+            resourceRequestCpu: '500m',
+            resourceLimitCpu: '1000m',
+            resourceRequestMemory: '2Gi',
+            resourceLimitMemory: '4Gi',
+            workingDir: '/tmp',
+            command: '',
+          )
+        ]
+      ) {
         node("node-tester") {
           checkout scm
           try {
@@ -90,20 +97,27 @@ def nodejsTester () {
 def nodejsLinter () {
   openshift.withCluster() {
     openshift.withProject() {
-      podTemplate(label: 'node-linter', name: 'node-linter', serviceAccount: 'jenkins', cloud: 'openshift', containers: [
-        containerTemplate(
-          name: 'jnlp',
-          image: 'registry.access.redhat.com/openshift3/jenkins-agent-nodejs-8-rhel7',
-          resourceRequestCpu: '500m',
-          resourceLimitCpu: '1000m',
-          resourceRequestMemory: '2Gi',
-          resourceLimitMemory: '4Gi',
-          activeDeadlineSeconds: '1200',
-          workingDir: '/tmp',
-          command: '',
-          args: '${computer.jnlpmac} ${computer.name}',
-        )
-      ]) {
+      podTemplate(
+        label: 'node-linter',
+        name: 'node-linter',
+        serviceAccount: 'jenkins',
+        cloud: 'openshift',
+        slaveConnectTimeout: 300,
+        containers: [
+          containerTemplate(
+            name: 'jnlp',
+            image: 'registry.access.redhat.com/openshift3/jenkins-agent-nodejs-8-rhel7',
+            resourceRequestCpu: '500m',
+            resourceLimitCpu: '1000m',
+            resourceRequestMemory: '2Gi',
+            resourceLimitMemory: '4Gi',
+            activeDeadlineSeconds: '1200',
+            workingDir: '/tmp',
+            command: '',
+            args: '${computer.jnlpmac} ${computer.name}',
+          )
+        ]
+      ) {
         node("node-linter") {
           checkout scm
           try {
@@ -124,19 +138,26 @@ def nodejsLinter () {
 def nodejsSonarqube () {
   openshift.withCluster() {
     openshift.withProject() {
-      podTemplate(label: 'node-sonarqube', name: 'node-sonarqube', serviceAccount: 'jenkins', cloud: 'openshift', containers: [
-        containerTemplate(
-          name: 'jnlp',
-          image: 'registry.access.redhat.com/openshift3/jenkins-agent-nodejs-8-rhel7',
-          resourceRequestCpu: '500m',
-          resourceLimitCpu: '1000m',
-          resourceRequestMemory: '2Gi',
-          resourceLimitMemory: '4Gi',
-          workingDir: '/tmp',
-          command: '',
-          args: '${computer.jnlpmac} ${computer.name}',
-        )
-      ]) {
+      podTemplate(
+        label: 'node-sonarqube',
+        name: 'node-sonarqube',
+        serviceAccount: 'jenkins',
+        cloud: 'openshift',
+        slaveConnectTimeout: 300,
+        containers: [
+          containerTemplate(
+            name: 'jnlp',
+            image: 'registry.access.redhat.com/openshift3/jenkins-agent-nodejs-8-rhel7',
+            resourceRequestCpu: '500m',
+            resourceLimitCpu: '1000m',
+            resourceRequestMemory: '2Gi',
+            resourceLimitMemory: '4Gi',
+            workingDir: '/tmp',
+            command: '',
+            args: '${computer.jnlpmac} ${computer.name}',
+          )
+        ]
+      ) {
         node("node-sonarqube") {
           checkout scm
           dir('sonar-runner') {
