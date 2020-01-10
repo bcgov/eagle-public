@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import * as L from 'leaflet';
 import { ApiService } from 'app/services/api';
+import { Observable, of } from 'rxjs';
 
 //
 // This service/class provides a centralized place to persist config values
@@ -20,13 +21,7 @@ export class ConfigService {
   private _baseLayerName = 'World Topographic'; // NB: must match a valid base layer name
   private _mapBounds: L.LatLngBounds = null;
 
-  constructor(private api: ApiService) {
-    this.api.getFullDataSet('List')
-    .subscribe((res: any) => {
-      // Store here for later use across the application.
-      this._lists = res;
-    });
-  }
+  constructor(private api: ApiService) { }
 
   // called by app constructor
   public init() {
@@ -38,7 +33,21 @@ export class ConfigService {
     // FUTURE: save settings to window.localStorage ?
   }
 
-  get lists(): any[] { return this._lists; }
+  get lists(): Observable<any> {
+    if (this._lists.length === 0) {
+      return this.api.getFullDataSet('List')
+        .map(res => {
+          if (res) {
+            this._lists = res[0].searchResults;
+            return this._lists;
+          }
+          return null;
+        })
+        .catch(error => this.api.handleError(error));
+    } else {
+      return of(this._lists);
+    }
+  }
 
   get isApplistListVisible(): boolean { return this._isApplistListVisible; }
   set isApplistListVisible(val: boolean) { this._isApplistListVisible = val; }

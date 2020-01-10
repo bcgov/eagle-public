@@ -5,7 +5,7 @@
         <div class="hero-banner__content">
           <h1>{{project?.name || '-'}}</h1>
           <p class="desc" [innerHTML]="(project?.description || '-') | newlines"></p>
-          <span class="ea-decision">{{project?.eacDecision || "-"}}</span>
+          <span class="ea-decision">{{project?.eacDecision.name || "-"}}</span>
           <div class="basic-info">
             <div>
               <label>Proponent</label>

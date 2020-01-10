@@ -52,13 +52,7 @@ export class AddCommentComponent implements OnInit {
     this.comment.isAnonymous = false;
     this.commentFiles = [];
     this.documentAuthorType = null;
-    if (this.config.lists && this.config.lists.length > 0) {
-      this.config.lists[0].searchResults.map((item) => {
-        if (item.type === 'author' && item.name === 'Public') {
-            this.documentAuthorType = Object.assign({}, item);
-        }
-      });
-    }
+    this.getLists();
   }
 
   public addFiles(files: FileList) {
@@ -195,5 +189,15 @@ export class AddCommentComponent implements OnInit {
       }
     });
     return bytes;
+  }
+
+  private getLists() {
+    this.config.lists.subscribe (lists => {
+      lists.map(item => {
+        if (item.type === 'author' && item.name === 'Public') {
+          this.documentAuthorType = Object.assign({}, item);
+        }
+      });
+    });
   }
 }
