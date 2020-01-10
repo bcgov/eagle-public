@@ -1,5 +1,4 @@
 import { NgModule, ApplicationRef } from '@angular/core';
-// import { TagInputModule } from 'ngx-chips';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { BrowserModule } from '@angular/platform-browser';
 import { FormsModule } from '@angular/forms';
@@ -9,6 +8,7 @@ import { NgxPaginationModule } from 'ngx-pagination';
 import { NgxPageScrollModule } from 'ngx-page-scroll';
 import { BootstrapModalModule } from 'ng2-bootstrap-modal';
 import { CookieService } from 'ngx-cookie-service';
+import { NgSelectModule } from '@ng-select/ng-select';
 
 // modules
 import { SharedModule } from 'app/shared/shared.module';
@@ -49,8 +49,8 @@ import { NotificationProjectsListTableRowsComponent } from './notification-proje
 
 @NgModule({
   imports: [
+    NgSelectModule,
     BrowserAnimationsModule,
-    // TagInputModule,
     BrowserModule,
     FormsModule,
     HttpClientModule,
