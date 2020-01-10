@@ -33,11 +33,12 @@ export class AddCommentComponent implements OnInit {
   public documents: Document[] = [];
   public documentAuthor: any;
   public documentAuthorType: any;
-  public contactName: any;
+  public contactName: string;
   public commentInput: any;
   public locationInput: any;
   public makePublic: any;
   public commentFiles: any;
+  public anonymousName = 'Anonymous';
 
   constructor(
     public activeModal: NgbActiveModal,
@@ -48,8 +49,9 @@ export class AddCommentComponent implements OnInit {
 
   ngOnInit() {
     this.comment = new Comment();
+    this.contactName = this.anonymousName;
     this.comment.period = this.currentPeriod._id;
-    this.comment.isAnonymous = false;
+    this.comment.isAnonymous = true;
     this.commentFiles = [];
     this.documentAuthorType = null;
     if (this.config.lists && this.config.lists.length > 0) {
@@ -60,7 +62,9 @@ export class AddCommentComponent implements OnInit {
       });
     }
   }
-
+  public publicChecked(event: Event) {
+      this.contactName = this.makePublic ? '' : this.anonymousName;
+  }
   public addFiles(files: FileList) {
     if (files) { // safety check
       for (let i = 0; i < files.length; i++) {
@@ -158,11 +162,6 @@ export class AddCommentComponent implements OnInit {
               this.progressValue += 100 * file.size / this.totalSize;
               return document;
             })
-            // .subscribe((event: HttpEventType) => {
-            //   if (event.type === HttpEventType.UploadProgress) {
-            //     // TODO: do something here
-            //   }
-            // })
           );
         });
 
