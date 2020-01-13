@@ -19,6 +19,37 @@ export class Constants {
     DEFAULT_KEYWORDS: ''
   };
 
+  public static readonly PCP_COLLECTION: object[] = [
+    { code: 'pending', name: 'Pending' },
+    { code: 'open', name: 'Open' },
+    { code: 'closed', name: 'Closed' }
+  ];
+
+  public static readonly PROJECT_TYPE_COLLECTION: object[] = [
+    { code: 'energyElectricity', name: 'Energy-Electricity' },
+    { code: 'energyPetroleum', name: 'Energy-Petroleum & Natural Gas' },
+    { code: 'foodProcessing', name: 'Food Processing' },
+    { code: 'industrial', name: 'Industrial' },
+    { code: 'mines', name: 'Mines' },
+    { code: 'other', name: 'Other' },
+    { code: 'tourist', name: 'Tourist Destination Resorts' },
+    { code: 'transportation', name: 'Transportation' },
+    { code: 'wasteDisposal', name: 'Waste Disposal' },
+    { code: 'waterManagement', name: 'Water Management' }
+  ];
+
+  public static readonly REGIONS_COLLECTION: Array<object> = [
+    { code: 'Cariboo', name: 'Cariboo' },
+    { code: 'Kootenay', name: 'Kootenay' },
+    { code: 'Lower Mainland', name: 'Lower Mainland' },
+    { code: 'Okanagan', name: 'Okanagan' },
+    { code: 'Omineca', name: 'Omineca' },
+    { code: 'Peace', name: 'Peace' },
+    { code: 'Skeena', name: 'Skeena' },
+    { code: 'Thompson-Nicola', name: 'Thompson-Nicola' },
+    { code: 'Vancouver Island', name: 'Vancouver Island' }
+  ];
+
   public static readonly buildToNature: BuildNature[] = [
     { build: 'new',
       nature: 'New Construction'

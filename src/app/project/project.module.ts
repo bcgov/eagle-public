@@ -10,7 +10,6 @@ import { SharedModule } from 'app/shared/shared.module';
 import { ProjectRoutingModule } from './project-routing.module';
 import { CommentsModule } from 'app/project/comments/comments.module';
 
-
 // components
 import { ProjectComponent } from './project.component';
 import { CommentingTabComponent } from './commenting-tab/commenting-tab.component';

@@ -13,12 +13,14 @@ import { SearchTerms } from 'app/models/search';
 import { TableObject } from 'app/shared/components/table-template/table-object';
 import { TableParamsObject } from 'app/shared/components/table-template/table-params-object';
 import { TableTemplateUtils } from 'app/shared/utils/table-template-utils';
+import { Constants } from 'app/shared/utils/constants';
 
 import { ProjectListTableRowsComponent } from './project-list-table-rows/project-list-table-rows.component';
 
 import { OrgService } from 'app/services/org.service';
 import { SearchService } from 'app/services/search.service';
 import { StorageService } from 'app/services/storage.service';
+import { ConfigService } from 'app/services/config.service';
 
 class ProjectFilterObject {
   constructor(
@@ -44,6 +46,9 @@ export class ProjectListComponent implements OnInit, OnDestroy {
   public proponents: Array<Org> = [];
   public regions: Array<object> = [];
   public ceaaInvolvements: Array<object> = [];
+  public eacDecisions: Array<any> = [];
+  public commentPeriods: Array<object> = [];
+  public projectTypes: Array<object> = [];
 
   public loading = true;
 
@@ -107,82 +112,6 @@ export class ProjectListComponent implements OnInit, OnDestroy {
 
   private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
 
-  private TYPE_MAP: object = {
-    energyElectricity: 'Energy-Electricity',
-    energyPetroleum: 'Energy-Petroleum & Natural Gas',
-    foodProcessing: 'Food Processing',
-    industrial: 'Industrial',
-    mines: 'Mines',
-    other: 'Other',
-    tourist: 'Tourist Destination Resorts',
-    transportation: 'Transportation',
-    wasteDisposal: 'Waste Disposal',
-    waterManagement: 'Water Management'
-  };
-
-  private EAC_DECISIONS_MAP: object = {
-    inProgress: 'In Progress',
-    certificateIssued: 'Certificate Issued',
-    certificateRefused: 'Certificate Refused',
-    furtherAssessmentRequired: 'Further Assessment Required',
-    certificateNotRequired: 'Certificate Not Required',
-    certificateExpired: 'Certificate Expired',
-    withdrawn: 'Withdrawn',
-    terminated: 'Terminated',
-    preEA: 'Pre-EA Act Approval',
-    notReviewable: 'Not Designated Reviewable'
-  };
-
-  private PCP_MAP: object = {
-    pending: 'pending',
-    open: 'open',
-    closed: 'closed'
-  };
-
-  private REGIONS_COLLECTION: Array<object> = [
-    { code: 'Cariboo', name: 'Cariboo' },
-    { code: 'Kootenay', name: 'Kootenay' },
-    { code: 'Lower Mainland', name: 'Lower Mainland' },
-    { code: 'Okanagan', name: 'Okanagan' },
-    { code: 'Omineca', name: 'Omineca' },
-    { code: 'Peace', name: 'Peace' },
-    { code: 'Skeena', name: 'Skeena' },
-    { code: 'Thompson-Nicola', name: 'Thompson-Nicola' },
-    { code: 'Vancouver Island', name: 'Vancouver Island' }
-  ];
-
-  private CEAA_INVOLVEMENTS_COLLECTION: Array<object> = [
-    { code: 'None', name: 'None' },
-    { code: 'Panel', name: 'Panel' },
-    { code: 'Panel (CEAA 2012)', name: 'Panel (CEAA 2012)' },
-    { code: 'Coordinated', name: 'Coordinated' },
-    { code: 'Screening', name: 'Screening' },
-    { code: 'Screening - Confirmed', name: 'Screening - Confirmed' },
-    { code: 'Substituted', name: 'Substituted' },
-    {
-      code: 'Substituted (Provincial Lead)',
-      name: 'Substituted (Provincial Lead)'
-    },
-    { code: 'Comprehensive Study', name: 'Comprehensive Study' },
-    {
-      code: 'Comprehensive Study - Unconfirmed',
-      name: 'Comprehensive Study - Unconfirmed'
-    },
-    {
-      code: 'Comprehensive Study - Confirmed',
-      name: 'Comprehensive Study - Confirmed'
-    },
-    {
-      code: 'Comprehensive Study (Pre CEAA 2012)',
-      name: 'Comprehensive Study (Pre CEAA 2012)'
-    },
-    { code: 'Comp Study', name: 'Comp Study' },
-    { code: 'Comp Study - Unconfirmed', name: 'Comp Study - Unconfirmed' },
-    { code: 'To be determined', name: 'To be determined' },
-    { code: 'Equivalent - NEB', name: 'Equivalent - NEB' },
-    { code: 'Yes', name: 'Yes' }
-  ];
-
   constructor(
     private router: Router,
     private route: ActivatedRoute,
@@ -190,82 +119,93 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     private storageService: StorageService,
     private searchService: SearchService,
     private orgService: OrgService,
+    private config: ConfigService,
     private _changeDetectionRef: ChangeDetectorRef
   ) {}
 
   ngOnInit() {
-    this.route.params.takeUntil(this.ngUnsubscribe).subscribe(params => {
-      let newParams = params;
-
-      if (
-        Object.keys(newParams).length === 0 &&
-        newParams.constructor === Object
-      ) {
-        newParams = {
-          sortBy: '+name'
-        };
-      }
-
       // Fetch proponents
       this.orgService
         .getByCompanyType('Proponent/Certificate Holder')
-        .takeUntil(this.ngUnsubscribe)
-        .subscribe((proponents: any) => {
-          if (proponents) {
-            this.proponents = proponents;
-
-            this.regions = this.REGIONS_COLLECTION;
-            this.ceaaInvolvements = this.CEAA_INVOLVEMENTS_COLLECTION;
-
-            this.setFiltersFromParams(params);
-
-            this.updateCounts();
-
-            this.tableParams = this.tableTemplateUtils.getParamsFromUrl(
-              newParams,
-              this.filterForURL
-            );
-
-            this.searchService
-              .getSearchResults(
-                this.tableParams.keywords,
-                'Project',
-                [],
-                this.tableParams.currentPage,
-                this.tableParams.pageSize,
-                this.tableParams.sortBy,
-                {},
-                true,
-                null,
-                this.filterForAPI,
-                ''
-              )
-              .takeUntil(this.ngUnsubscribe)
-              .subscribe((res: any) => {
-                if (res[0].data) {
-                  if (res[0].data.searchResults.length > 0) {
-                    this.tableParams.totalListItems =
-                      res[0].data.meta[0].searchResultsTotal;
-                    this.projects = res[0].data.searchResults;
-                  } else {
-                    this.tableParams.totalListItems = 0;
-                    this.projects = [];
-                  }
-                  this.setRowData();
-                } else {
-                  alert('Uh-oh, couldn\'t load search results');
-                  // results not found --> navigate back to search
-                  this.router.navigate(['/']);
-                }
-                this.loading = false;
-                this._changeDetectionRef.detectChanges();
-              });
+        .switchMap((res: any) => {
+          if (res) {
+            this.proponents = res || [];
+            return this.config.lists;
           } else {
-            alert('Uh-oh, couldn\'t load proponents');
+          alert('Uh-oh, couldn\'t load proponents');
+          this.router.navigate(['/']);
+        }  
+        })
+        .switchMap((list: any) => {
+          list.map(item => {
+            switch (item.type) {
+              case 'eaDecisions':
+                this.eacDecisions.push({ ...item });
+                break;
+              case 'ceaaInvolvements':
+                this.ceaaInvolvements.push({ ...item });
+                break;
+            }
+          });
+
+          this.regions = Constants.REGIONS_COLLECTION;
+          this.commentPeriods = Constants.PCP_COLLECTION;
+          this.projectTypes = Constants.PROJECT_TYPE_COLLECTION;
+
+          return this.route.params;
+        })
+        .switchMap((res: any) => {
+          let params = { ...res };
+
+          this.setFiltersFromParams(params);
+
+          this.updateCounts();
+
+          this.tableParams = this.tableTemplateUtils.getParamsFromUrl(
+            params,
+            this.filterForURL
+          );
+
+          if (this.tableParams.sortBy === '') {
+            this.tableParams.sortBy = '+name';
+          }
+
+          return this.searchService
+            .getSearchResults(
+              this.tableParams.keywords,
+              'Project',
+              [],
+              this.tableParams.currentPage,
+              this.tableParams.pageSize,
+              this.tableParams.sortBy,
+              {},
+              true,
+              null,
+              this.filterForAPI,
+              ''
+            );
+        })
+        .takeUntil(this.ngUnsubscribe)
+        .subscribe((res: any) => {
+          if (res[0].data) {
+            if (res[0].data.searchResults.length > 0) {
+              this.tableParams.totalListItems =
+                res[0].data.meta[0].searchResultsTotal;
+              this.projects = res[0].data.searchResults;
+            } else {
+              this.tableParams.totalListItems = 0;
+              this.projects = [];
+            }
+            this.setRowData();
+          } else {
+            alert('Uh-oh, couldn\'t load search results');
+            // results not found --> navigate back to search
             this.router.navigate(['/']);
           }
+          this.loading = false;
+          this._changeDetectionRef.detectChanges();
         });
-    });
+
   }
 
   addProject() {
@@ -338,19 +278,13 @@ export class ProjectListComponent implements OnInit, OnDestroy {
   }
 
   setFiltersFromParams(params) {
-    this.paramsToCheckboxFilters(params, 'type', this.TYPE_MAP);
-    this.paramsToCheckboxFilters(params, 'eacDecision', this.EAC_DECISIONS_MAP);
-    this.paramsToCheckboxFilters(params, 'pcp', this.PCP_MAP);
-
+    this.paramsToCollectionFilters(params, 'type', this.projectTypes, 'code');
+    this.paramsToCollectionFilters(params, 'pcp', this.commentPeriods, 'code');
     this.paramsToCollectionFilters(params, 'region', this.regions, 'code');
-    this.paramsToCollectionFilters(
-      params,
-      'CEAAInvolvement',
-      this.ceaaInvolvements,
-      'code'
-    );
+    this.paramsToCollectionFilters(params, 'CEAAInvolvement', this.ceaaInvolvements, '_id');
     this.paramsToCollectionFilters(params, 'proponent', this.proponents, '_id');
     this.paramsToCollectionFilters(params, 'vc', null, '_id');
+    this.paramsToCollectionFilters(params, 'eacDecision', this.eacDecisions, '_id');
 
     this.paramsToDateFilters(params, 'decisionDateStart');
     this.paramsToDateFilters(params, 'decisionDateEnd');
@@ -393,12 +327,11 @@ export class ProjectListComponent implements OnInit, OnDestroy {
   }
 
   setParamsFromFilters(params) {
-    this.checkboxFilterToParams(params, 'type');
-    this.checkboxFilterToParams(params, 'eacDecision');
-    this.checkboxFilterToParams(params, 'pcp');
-
+    this.collectionFilterToParams(params, 'type', 'code');
+    this.collectionFilterToParams(params, 'pcp', 'code');
+    this.collectionFilterToParams(params, 'eacDecision', '_id');
     this.collectionFilterToParams(params, 'region', 'code');
-    this.collectionFilterToParams(params, 'CEAAInvolvement', 'code');
+    this.collectionFilterToParams(params, 'CEAAInvolvement', '_id');
     this.collectionFilterToParams(params, 'proponent', '_id');
     this.collectionFilterToParams(params, 'vc', '_id');
 
@@ -573,6 +506,21 @@ export class ProjectListComponent implements OnInit, OnDestroy {
 
     console.log('onSubmit params', params);
     this.router.navigate(['projects-list', params]);
+  }
+
+  private getLists() {
+    this.config.lists.subscribe(lists => {
+      lists.map(item => {
+        switch (item.type) {
+          case 'eaDecisions':
+            this.eacDecisions.push({ ...item });
+            break;
+          case 'ceaaInvolvements':
+            this.ceaaInvolvements.push({ ...item });
+            break;
+        }
+      });
+    });
   }
 
   ngOnDestroy() {

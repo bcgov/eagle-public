@@ -15,12 +15,15 @@ export class OrgNamePipe implements PipeTransform {
     if (!objectid) {
       return '-';
     }
-    // Grab the item from the constant lists, returning the name field of the object.
-    let item = this.configService.lists.filter(listItem => listItem._id === objectid);
-    if (item.length !== 0) {
-      return item[0].orgName;
-    } else {
-      return '-';
-    }
+
+    this.configService.lists.subscribe(lists => {
+      const item = lists.filter(listItem => listItem._id === objectid);
+
+      if (item.length !== 0) {
+        return item[0].orgName;
+      } else {
+        return '-';
+      }
+    });
   }
 }
