@@ -134,7 +134,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
           } else {
           alert('Uh-oh, couldn\'t load proponents');
           this.router.navigate(['/']);
-        }  
+        }
         })
         .switchMap((list: any) => {
           list.map(item => {
