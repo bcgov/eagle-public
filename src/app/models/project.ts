@@ -1,13 +1,13 @@
 export class Project {
   // the following are retrieved from the API
   _id: string;
-  CEAAInvolvement: String;
+  CEAAInvolvement: any;
   CELead: String;
   CELeadEmail: String;
   CELeadPhone: String;
   centroid: Array<number> = [];
   description: String;
-  eacDecision: String;
+  eacDecision: any;
   location: String;
   name: String;
   projectLeadId: String;
