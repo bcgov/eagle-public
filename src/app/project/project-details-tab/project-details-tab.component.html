@@ -18,7 +18,7 @@
           </div>
           <div *ngIf="project?.status">
             <label>IAAC Involvement</label>
-            <p class="value">{{project?.CEAAInvolvement.name || "-" }}</p>
+            <p class="value">{{project.CEAAInvolvement?.name || "-" }}</p>
           </div>
           <div *ngIf="project?.CEAALink">
             <label>IAAC URL</label>
@@ -37,7 +37,7 @@
           </div>
           <div *ngIf="project?.eacDecision">
             <label>EAC Status</label>
-            <p class="value">{{project?.eacDecision.name || '-'}} |
+            <p class="value">{{project.eacDecision?.name || '-'}} |
               {{project?.decisionDate | date: 'longDate' || '-'}}</p>
           </div>
         </div>
