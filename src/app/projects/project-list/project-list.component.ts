@@ -523,6 +523,19 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     });
   }
 
+  // Compares selected options when a dropdown is grouped by legislation.
+  compareDropdownOptions(optionA: any, optionB: any) {
+    if ((optionA.name === optionB.name) && (optionA.legislation === optionB.legislation)) {
+      return true;
+    }
+
+    return false;
+  }
+
+  clearSelectedItem(filter: string, item: any) {
+    this.filterForUI[filter] = this.filterForUI[filter].filter(option => option._id !== item._id);
+  }
+
   ngOnDestroy() {
     this.ngUnsubscribe.next();
     this.ngUnsubscribe.complete();
