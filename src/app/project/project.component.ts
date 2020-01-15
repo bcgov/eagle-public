@@ -59,9 +59,8 @@ export class ProjectComponent implements OnInit, OnDestroy {
   // add an entry to this.tabLinks if the corresponding documents have been tagged
   // tablink is the label/link pair to append to this.tabLinks
   // queryModifier is the queryModifier parameter of SearchService.getSearchResults
-  private tabLinkIfNotEmpty(tabLink: {label: string, link: string}, queryModifiers: Array<object>) {
+  private tabLinkIfNotEmpty(tabLink: {label: string, link: string}, queryModifier: object) {
     // attempt to get a single document that matches each query.
-    queryModifiers.forEach(queryModifier => {
       this.searchService.getSearchResults(
         null,
         'Document',
@@ -76,16 +75,13 @@ export class ProjectComponent implements OnInit, OnDestroy {
       .takeUntil(this.ngUnsubscribe)
       .subscribe((res: any) => {
         // add tab link if results are not empty
-        console.log(res[0].data.searchResults);
         if (res[0].data.searchResults.length) {
           if (!this.tabLinks.find(link => link.label === tabLink.label)) {
             this.tabLinks.push(tabLink);
           }
         }
       });
-    });
   }
-
 
   ngOnInit() {
     // get data from route resolver
@@ -125,40 +121,14 @@ export class ProjectComponent implements OnInit, OnDestroy {
           label: 'Certificate',
           link: 'certificates'
         },
-        tabDisplayCriteria: [
-          {
-            // Search only Certificate Package/EAO/Certificate
-            documentSource: 'PROJECT',
-            type: '5cf00c03a266b7e1877504d5',
-            documentAuthorType: '5cf00c03a266b7e1877504db',
-            milestone: '5cf00c03a266b7e1877504eb'
-          },
-          {
-            documentSource: 'PROJECT',
-            type: '5df3f875de25d2a5b592b6ed',
-            documentAuthorType: '5df3f875de25d2a5b592b6f2',
-            milestone: '5dfbfefe4e92304ba9c45872'
-          }
-        ]
+        tabDisplayCriteria: Constants.tabModifier.CERTIFICATE
       },
       {
         tab: {
           label: 'Amendment(s)',
           link: 'amendments'
         },
-        tabDisplayCriteria: [
-          {
-            // Search only Amendment Package/Amendment
-            documentSource: 'PROJECT',
-            type: '5cf00c03a266b7e1877504d7',
-            milestone: '5cf00c03a266b7e1877504f2'
-          },
-          {
-            documentSource: 'PROJECT',
-            type: '5df3f875de25d2a5b592b6f0',
-            milestone: '5df3f875de25d2a5b592b721'
-          }
-        ]
+        tabDisplayCriteria: Constants.tabModifier.AMENDMENT
       }
     ]
 

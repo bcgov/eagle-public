@@ -9,8 +9,7 @@ export class Constants {
     ENVIRONMENTAL_ASSESSMENT_ACT_2002_LINK: 'http://www.bclaws.ca/civix/document/id/complete/statreg/02043_01',
     ENVIRONMENTAL_ASSESSMENT_ACT_1996_LINK: 'http://www.bclaws.ca/civix/document/id/complete/statreg/96119_pit',
     ENVIRONMENTAL_ASSESSMENT_ACT_2018_LINK: 'http://www.bclaws.ca/civix/document/id/complete/statreg/18051'
-
-  }
+  };
 
   public static readonly tableDefaults = {
     DEFAULT_CURRENT_PAGE: 1,
@@ -61,6 +60,21 @@ export class Constants {
       nature: 'Dismantling or Abandonment'
     },
   ];
+
+  // Query criteria for a document's certificate and amendment tabs.
+  public static readonly tabModifier = {
+    CERTIFICATE: {
+      documentSource: 'PROJECT',
+      type: '5cf00c03a266b7e1877504d5,5df3f875de25d2a5b592b6ed',
+      documentAuthorType: '5cf00c03a266b7e1877504db,5df3f875de25d2a5b592b6f2',
+      milestone: '5cf00c03a266b7e1877504eb,5dfbfefe4e92304ba9c45872'
+    },
+    AMENDMENT: {
+      documentSource: 'PROJECT',
+      type: '5cf00c03a266b7e1877504d7,5df3f875de25d2a5b592b6f0',
+      milestone: '5cf00c03a266b7e1877504f2,5df3f875de25d2a5b592b721'
+    }
+  };
 
   public static readonly types = [
     'CERTIFICATE OF PURCHASE',

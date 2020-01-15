@@ -3,6 +3,7 @@ import { Resolve, ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/r
 import { Observable } from 'rxjs/Observable';
 
 import { SearchService } from 'app/services/search.service';
+import { Constants } from 'app/shared/utils/constants';
 
 @Injectable()
 export class AmendmentsResolverService implements Resolve<Observable<object>> {
@@ -23,12 +24,7 @@ export class AmendmentsResolverService implements Resolve<Observable<object>> {
       currentPage,
       pageSize,
       sortBy,
-      {
-        // Search only Amendment Package/Amendment
-        documentSource: 'PROJECT',
-        type: '5cf00c03a266b7e1877504d7',
-        milestone: '5cf00c03a266b7e1877504f2'
-      },
+      Constants.tabModifier.AMENDMENT,
       true,
       '');
   }

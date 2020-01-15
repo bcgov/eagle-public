@@ -77,6 +77,7 @@ export class CertificatesComponent implements OnInit, OnDestroy {
     this.route.data
       .takeUntil(this.ngUnsubscribe)
       .subscribe((res: any) => {
+        console.log(res);
         if (res) {
           if (res.documents && res.documents[0].data.meta && res.documents[0].data.meta.length > 0) {
             this.tableParams.totalListItems = res.documents[0].data.meta[0].searchResultsTotal;
