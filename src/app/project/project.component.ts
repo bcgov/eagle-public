@@ -59,25 +59,31 @@ export class ProjectComponent implements OnInit, OnDestroy {
   // add an entry to this.tabLinks if the corresponding documents have been tagged
   // tablink is the label/link pair to append to this.tabLinks
   // queryModifier is the queryModifier parameter of SearchService.getSearchResults
-  private tabLinkIfNotEmpty(tabLink: {label: string, link: string}, queryModifier: object) {
-    // attempt to get a single document that matches the query
-    this.searchService.getSearchResults(
-      null,
-      'Document',
-      [{ 'name': 'project', 'value': this.project._id }],
-      1,
-      1,
-      null,
-      queryModifier,
-      true,
-      '')
-        .takeUntil(this.ngUnsubscribe)
-          .subscribe((res: any) => {
-            // add tab link if results are not empty
-            if (res[0].data.searchResults.length) {
-              this.tabLinks.push(tabLink);
-            }
-          })
+  private tabLinkIfNotEmpty(tabLink: {label: string, link: string}, queryModifiers: Array<object>) {
+    // attempt to get a single document that matches each query.
+    queryModifiers.forEach(queryModifier => {
+      this.searchService.getSearchResults(
+        null,
+        'Document',
+        [{ 'name': 'project', 'value': this.project._id }],
+        1,
+        1,
+        null,
+        queryModifier,
+        true,
+        ''
+      )
+      .takeUntil(this.ngUnsubscribe)
+      .subscribe((res: any) => {
+        // add tab link if results are not empty
+        console.log(res[0].data.searchResults);
+        if (res[0].data.searchResults.length) {
+          if (!this.tabLinks.find(link => link.label === tabLink.label)) {
+            this.tabLinks.push(tabLink);
+          }
+        }
+      });
+    });
   }
 
 
@@ -100,33 +106,63 @@ export class ProjectComponent implements OnInit, OnDestroy {
           }
         }
       );
-      this.initTabLinks();
+    this.initTabLinks();
 
-      if (this.project.legislation.includes('2002')) {
-        this.legislationLink = Constants.legislationLinks.ENVIRONMENTAL_ASSESSMENT_ACT_2002_LINK;
-      } else if  (this.project.legislation.includes('1996')) {
-        this.legislationLink = Constants.legislationLinks.ENVIRONMENTAL_ASSESSMENT_ACT_1996_LINK;
-      } else {
-        this.legislationLink = Constants.legislationLinks.ENVIRONMENTAL_ASSESSMENT_ACT_2018_LINK;
-      }
+    if (this.project.legislation.includes('2002')) {
+      this.legislationLink = Constants.legislationLinks.ENVIRONMENTAL_ASSESSMENT_ACT_2002_LINK;
+    } else if  (this.project.legislation.includes('1996')) {
+      this.legislationLink = Constants.legislationLinks.ENVIRONMENTAL_ASSESSMENT_ACT_1996_LINK;
+    } else {
+      this.legislationLink = Constants.legislationLinks.ENVIRONMENTAL_ASSESSMENT_ACT_2018_LINK;
+    }
   }
 
   initTabLinks(): void {
-    [[{ label: 'Certificate', link: 'certificates' },
-    {
-      // Search only Certificate Package/EAO/Certificate
-      documentSource: 'PROJECT',
-      type: '5cf00c03a266b7e1877504d5',
-      documentAuthorType: '5cf00c03a266b7e1877504db',
-      milestone: '5cf00c03a266b7e1877504eb'
-    }],
-    [{ label: 'Amendment(s)', link: 'amendments' },
-    {
-      // Search only Amendment Package/Amendment
-      documentSource: 'PROJECT',
-      type: '5cf00c03a266b7e1877504d7',
-      milestone: '5cf00c03a266b7e1877504f2'
-    }]].forEach((args: any[]) => this.tabLinkIfNotEmpty(args[0], args[1]))
+    // TODO: These IDs should not be hardcoded. Need to retrieve them from the list.
+    const tabLinks = [
+      {
+        tab: {
+          label: 'Certificate',
+          link: 'certificates'
+        },
+        tabDisplayCriteria: [
+          {
+            // Search only Certificate Package/EAO/Certificate
+            documentSource: 'PROJECT',
+            type: '5cf00c03a266b7e1877504d5',
+            documentAuthorType: '5cf00c03a266b7e1877504db',
+            milestone: '5cf00c03a266b7e1877504eb'
+          },
+          {
+            documentSource: 'PROJECT',
+            type: '5df3f875de25d2a5b592b6ed',
+            documentAuthorType: '5df3f875de25d2a5b592b6f2',
+            milestone: '5dfbfefe4e92304ba9c45872'
+          }
+        ]
+      },
+      {
+        tab: {
+          label: 'Amendment(s)',
+          link: 'amendments'
+        },
+        tabDisplayCriteria: [
+          {
+            // Search only Amendment Package/Amendment
+            documentSource: 'PROJECT',
+            type: '5cf00c03a266b7e1877504d7',
+            milestone: '5cf00c03a266b7e1877504f2'
+          },
+          {
+            documentSource: 'PROJECT',
+            type: '5df3f875de25d2a5b592b6f0',
+            milestone: '5df3f875de25d2a5b592b721'
+          }
+        ]
+      }
+    ]
+
+    tabLinks.forEach(tabLink => this.tabLinkIfNotEmpty(tabLink.tab, tabLink.tabDisplayCriteria));
 
     // Not documents so can't use the tabLinkIfNotEmpty()
     this.projectService.getPins(this.project._id, 1, 1, null)
@@ -136,6 +172,7 @@ export class ProjectComponent implements OnInit, OnDestroy {
         this.tabLinks.push({ label: 'Participating Indigenous Nations', link: 'pins' });
     }})
   }
+
   public addComment() {
     if (this.project.commentPeriodForBanner) {
       // open modal
