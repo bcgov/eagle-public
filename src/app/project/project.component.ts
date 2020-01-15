@@ -114,7 +114,6 @@ export class ProjectComponent implements OnInit, OnDestroy {
   }
 
   initTabLinks(): void {
-    // TODO: These IDs should not be hardcoded. Need to retrieve them from the list.
     const tabLinks = [
       {
         tab: {
