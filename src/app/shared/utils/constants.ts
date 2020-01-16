@@ -9,8 +9,7 @@ export class Constants {
     ENVIRONMENTAL_ASSESSMENT_ACT_2002_LINK: 'http://www.bclaws.ca/civix/document/id/complete/statreg/02043_01',
     ENVIRONMENTAL_ASSESSMENT_ACT_1996_LINK: 'http://www.bclaws.ca/civix/document/id/complete/statreg/96119_pit',
     ENVIRONMENTAL_ASSESSMENT_ACT_2018_LINK: 'http://www.bclaws.ca/civix/document/id/complete/statreg/18051'
-
-  }
+  };
 
   public static readonly tableDefaults = {
     DEFAULT_CURRENT_PAGE: 1,

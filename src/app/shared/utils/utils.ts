@@ -41,4 +41,60 @@ export class Utils {
     const natureObj = Constants.buildToNature.find(obj => obj.build === key);
     return (natureObj) ? natureObj.nature : key;
   }
+
+  // Creates query modifiers used for tab display in a project.
+  public createProjectTabModifiers(list: Array<object>) {
+    const certTypes = [
+      { legislation: 2002, name: 'Certificate Package' },
+      { legislation: 2018, name: 'Certificate Package' }
+    ];
+    const certMilestones = [
+      { legislation: 2002, name: 'Certificate' },
+      { legislation: 2018, name: 'Certificate Decision' }
+    ];
+    const certAuthTypes = [
+      { legislation: 2002, name: 'EAO' },
+      { legislation: 2018, name: 'EAO' }
+    ];
+    const amendTypes = [
+      { legislation: 2002, name: 'Amendment Package' },
+      { legislation: 2018, name: 'Amendment Package' }
+    ];
+    const amendMilestones = [
+      { legislation: 2002, name: 'Amendment' },
+      { legislation: 2018, name: 'Amendment' }
+    ];
+
+    const certTypesIds = this.getIdsByName(certTypes, list).map(type => type.id).join(',');
+    const certMilestonesIds = this.getIdsByName(certMilestones, list).map(milestone => milestone.id).join(',');
+    const certAuthTypesIds = this.getIdsByName(certAuthTypes, list).map(type => type.id).join(',');
+    const amendTypesIds = this.getIdsByName(amendTypes, list).map(type => type.id).join(',');
+    const amendMilestonesIds = this.getIdsByName(amendMilestones, list).map(milestone => milestone.id).join(',');
+
+    return {
+      CERTIFICATE: {
+        documentSource: 'PROJECT',
+        type: certTypesIds,
+        documentAuthorType: certAuthTypesIds,
+        milestone: certMilestonesIds,
+      },
+      AMENDMENT: {
+        documentSource: 'PROJECT',
+        type: amendTypesIds,
+        milestone: amendMilestonesIds,
+      }
+    };
+  }
+
+  // Searches the list of terms for a name and legislation year.
+  public getIdsByName(terms: Array<any>, list: Array<any>) {
+    const matchedItems = terms.map(term => {
+      const listItem = list.find(item => item.name === term.name && item.legislation === term.legislation)
+      return {
+        name: term.name,
+        id: listItem._id
+      }
+    });
+    return matchedItems;
+  }
 }
