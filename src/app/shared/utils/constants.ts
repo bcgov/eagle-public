@@ -61,21 +61,6 @@ export class Constants {
     },
   ];
 
-  // Query criteria for a document's certificate and amendment tabs.
-  public static readonly tabModifier = {
-    CERTIFICATE: {
-      documentSource: 'PROJECT',
-      type: '5cf00c03a266b7e1877504d5,5df3f875de25d2a5b592b6ed',
-      documentAuthorType: '5cf00c03a266b7e1877504db,5df3f875de25d2a5b592b6f2',
-      milestone: '5cf00c03a266b7e1877504eb,5dfbfefe4e92304ba9c45872'
-    },
-    AMENDMENT: {
-      documentSource: 'PROJECT',
-      type: '5cf00c03a266b7e1877504d7,5df3f875de25d2a5b592b6f0',
-      milestone: '5cf00c03a266b7e1877504f2,5df3f875de25d2a5b592b721'
-    }
-  };
-
   public static readonly types = [
     'CERTIFICATE OF PURCHASE',
     'CROWN GRANT',

@@ -13,7 +13,6 @@ import { CommentPeriod } from 'app/models/commentperiod';
 import { AddCommentComponent } from './comments/add-comment/add-comment.component';
 import { Constants } from 'app/shared/utils/constants';
 import { SearchService } from 'app/services/search.service';
-import { ISearchResults } from 'app/models/search';
 import { Utils } from 'app/shared/utils/utils';
 import { Org } from 'app/models/organization';
 import { DataQueryResponse } from 'app/models/api-response';
@@ -102,6 +101,7 @@ export class ProjectComponent implements OnInit, OnDestroy {
           }
         }
       );
+
     this.initTabLinks();
 
     if (this.project.legislation.includes('2002')) {
@@ -114,24 +114,28 @@ export class ProjectComponent implements OnInit, OnDestroy {
   }
 
   initTabLinks(): void {
-    const tabLinks = [
-      {
-        tab: {
-          label: 'Certificate',
-          link: 'certificates'
+    this.configService.lists.subscribe (list => {
+      const tabModifier = this.utils.createProjectTabModifiers(list);
+      const tabLinks = [
+        {
+          tab: {
+            label: 'Certificate',
+            link: 'certificates'
+          },
+          tabDisplayCriteria: tabModifier.CERTIFICATE
         },
-        tabDisplayCriteria: Constants.tabModifier.CERTIFICATE
-      },
-      {
-        tab: {
-          label: 'Amendment(s)',
-          link: 'amendments'
-        },
-        tabDisplayCriteria: Constants.tabModifier.AMENDMENT
-      }
-    ]
+        {
+          tab: {
+            label: 'Amendment(s)',
+            link: 'amendments'
+          },
+          tabDisplayCriteria: tabModifier.AMENDMENT
+        }
+      ]
 
-    tabLinks.forEach(tabLink => this.tabLinkIfNotEmpty(tabLink.tab, tabLink.tabDisplayCriteria));
+      tabLinks.forEach(tabLink => this.tabLinkIfNotEmpty(tabLink.tab, tabLink.tabDisplayCriteria));
+    });
+
 
     // Not documents so can't use the tabLinkIfNotEmpty()
     this.projectService.getPins(this.project._id, 1, 1, null)
