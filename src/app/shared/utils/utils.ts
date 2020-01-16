@@ -42,6 +42,7 @@ export class Utils {
     return (natureObj) ? natureObj.nature : key;
   }
 
+  // Creates query modifiers used for tab display in a project.
   public createProjectTabModifiers(list: Array<object>) {
     const certTypes = [
       { legislation: 2002, name: 'Certificate Package' },
@@ -85,6 +86,7 @@ export class Utils {
     };
   }
 
+  // Searches the list of terms for a name and legislation year.
   public getIdsByName(terms: Array<any>, list: Array<any>) {
     const matchedItems = terms.map(term => {
       const listItem = list.find(item => item.name === term.name && item.legislation === term.legislation)
