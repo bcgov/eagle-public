@@ -31,7 +31,8 @@ export class Project {
   CEAALink: String;
   code: String;
   commodity: String;
-  currentPhaseName: string;
+  currentPhaseName: any;
+  previousPhases: any[];
   dateAdded: String;
   dateUpdated: String;
   decisionDate: String;
@@ -98,6 +99,7 @@ export class Project {
     this.code                = obj && obj.code                || null;
     this.commodity           = obj && obj.commodity           || null;
     this.currentPhaseName    = obj && obj.currentPhaseName    || null;
+    this.previousPhases      = obj && obj.previousPhases      || null;
     this.dateAdded           = obj && obj.dateAdded           || null;
     this.dateUpdated         = obj && obj.dateUpdated         || null;
     this.decisionDate        = obj && obj.decisionDate        || null;
