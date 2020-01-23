@@ -76,6 +76,11 @@ export class ProjectDetailsTabComponent implements OnInit, AfterViewInit, OnDest
       maxZoom: 16,
       noWrap: true
     });
+    const OpenMapSurfer_Roads = L.tileLayer('https://korona.geog.uni-heidelberg.de/tiles/roads/x={x}&y={y}&z={z}', {
+      attribution: 'Imagery from <a href="http://giscience.uni-hd.de/">GIScience Research Group @ University of Heidelberg</a> &mdash; Map data &copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      maxZoom: 20,
+      noWrap: true
+    });
     const World_Topo_Map = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
       attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ, TomTom, Intermap, iPC, USGS, FAO, NPS, NRCAN, GeoBase, Kadaster NL, Ordnance Survey, Esri Japan, METI, Esri China (Hong Kong), and the GIS User Community',
       maxZoom: 16,
@@ -109,6 +114,7 @@ export class ProjectDetailsTabComponent implements OnInit, AfterViewInit, OnDest
     const baseLayers = {
       'Ocean Base': Esri_OceanBasemap,
       'Nat Geo World Map': Esri_NatGeoWorldMap,
+      'Open Surfer Roads': OpenMapSurfer_Roads,
       'World Topographic': World_Topo_Map,
       'World Imagery': World_Imagery
     };
@@ -157,12 +163,11 @@ export class ProjectDetailsTabComponent implements OnInit, AfterViewInit, OnDest
   // ref: https://stackoverflow.com/questions/19669786/check-if-element-is-visible-in-dom
   private fixMap() {
     if (this.elementRef.nativeElement.offsetParent) {
-      this.fitBounds(this.appFG.getBounds());
+      //this.fitBounds(this.appFG.getBounds());
 
-      // option to centre the map instead of prov view
-      // let markerBounds = L.latLngBounds([L.latLng(this.project.centroid[1], this.project.centroid[0])]);
-      // this.map.fitBounds(markerBounds);
-      // this.map.setZoom(5);
+      let markerBounds = L.latLngBounds([L.latLng(this.project.centroid[1], this.project.centroid[0])]);
+      this.map.fitBounds(markerBounds);
+      this.map.setZoom(5);
 
     } else {
       setTimeout(this.fixMap.bind(this), 50);
