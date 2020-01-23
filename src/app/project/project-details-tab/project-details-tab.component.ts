@@ -163,7 +163,12 @@ export class ProjectDetailsTabComponent implements OnInit, AfterViewInit, OnDest
   // ref: https://stackoverflow.com/questions/19669786/check-if-element-is-visible-in-dom
   private fixMap() {
     if (this.elementRef.nativeElement.offsetParent) {
-      this.fitBounds(this.appFG.getBounds());
+      //this.fitBounds(this.appFG.getBounds());
+
+      let markerBounds = L.latLngBounds([L.latLng(this.project.centroid[1], this.project.centroid[0])]);
+      this.map.fitBounds(markerBounds);
+      this.map.setZoom(5);
+
     } else {
       setTimeout(this.fixMap.bind(this), 50);
     }
