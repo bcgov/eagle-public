@@ -27,6 +27,8 @@ import { CertificatesComponent } from './certificates/certificates.component';
 import { PinsComponent } from './pins/pins.component';
 import { PinsTableRowsComponent } from './pins/pins-table-rows/pins-table-rows.component';
 
+import { NgSelectModule } from '@ng-select/ng-select';
+
 @NgModule({
   imports: [
     CommonModule,
@@ -36,7 +38,8 @@ import { PinsTableRowsComponent } from './pins/pins-table-rows/pins-table-rows.c
     TagInputModule,
     SharedModule,
     CommentsModule,
-    ProjectRoutingModule
+    ProjectRoutingModule,
+    NgSelectModule
   ],
   declarations: [
     ProjectComponent,

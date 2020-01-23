@@ -8,13 +8,13 @@ import { NgxPaginationModule } from 'ngx-pagination';
 import { NgxPageScrollModule } from 'ngx-page-scroll';
 import { BootstrapModalModule } from 'ng2-bootstrap-modal';
 import { CookieService } from 'ngx-cookie-service';
-import { NgSelectModule } from '@ng-select/ng-select';
 
 // modules
 import { SharedModule } from 'app/shared/shared.module';
 import { ProjectModule } from 'app/project/project.module';
 import { ProjectsModule } from 'app/projects/projects.module';
 import { AppRoutingModule } from 'app/app-routing.module';
+import { NgSelectModule } from '@ng-select/ng-select';
 
 // components
 import { AppComponent } from 'app/app.component';
@@ -49,7 +49,6 @@ import { NotificationProjectsListTableRowsComponent } from './notification-proje
 
 @NgModule({
   imports: [
-    NgSelectModule,
     BrowserAnimationsModule,
     BrowserModule,
     FormsModule,
@@ -60,7 +59,8 @@ import { NotificationProjectsListTableRowsComponent } from './notification-proje
     SharedModule,
     ProjectModule,
     ProjectsModule,
-    AppRoutingModule // <-- module import order matters - https://angular.io/guide/router#module-import-order-matters
+    AppRoutingModule, // <-- module import order matters - https://angular.io/guide/router#module-import-order-matters
+    NgSelectModule
   ],
   declarations: [
     AppComponent,
