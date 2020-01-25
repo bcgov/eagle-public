@@ -95,7 +95,6 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
   ];
 
   public selectedCount = 0;
-  public selectedUntaggedCount = 0;
   public currentProject;
 
   private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
@@ -233,21 +232,6 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
             document.body.removeChild(selBox);
           }
         });
-        this.untaggedDocumentTableData.data.map((item) => {
-          if (item.checkbox === true) {
-            let selBox = document.createElement('textarea');
-            selBox.style.position = 'fixed';
-            selBox.style.left = '0';
-            selBox.style.top = '0';
-            selBox.style.opacity = '0';
-            selBox.value = window.location.href.split(';')[0] + `/detail/${item._id}`;
-            document.body.appendChild(selBox);
-            selBox.focus();
-            selBox.select();
-            document.execCommand('copy');
-            document.body.removeChild(selBox);
-          }
-        });
         break;
       case 'selectAll':
         let someSelected = false;
@@ -256,15 +240,7 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
             someSelected = true;
           }
         });
-        this.untaggedDocumentTableData.data.map((item) => {
-          if (item.checkbox === true) {
-            someSelected = true;
-          }
-        });
         this.documentTableData.data.map((item) => {
-          item.checkbox = !someSelected;
-        });
-        this.untaggedDocumentTableData.data.map((item) => {
           item.checkbox = !someSelected;
         });
 
@@ -274,11 +250,6 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
       case 'download':
         let promises = [];
         this.documentTableData.data.map((item) => {
-          if (item.checkbox === true) {
-            promises.push(this.api.downloadDocument(this.documents.filter(d => d._id === item._id)[0]));
-          }
-        });
-        this.untaggedDocumentTableData.data.map((item) => {
           if (item.checkbox === true) {
             promises.push(this.api.downloadDocument(this.documents.filter(d => d._id === item._id)[0]));
           }
