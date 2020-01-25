@@ -157,9 +157,12 @@ export class ProjectDetailsTabComponent implements OnInit, AfterViewInit, OnDest
   // ref: https://stackoverflow.com/questions/19669786/check-if-element-is-visible-in-dom
   private fixMap() {
     if (this.elementRef.nativeElement.offsetParent) {
-      let markerBounds = L.latLngBounds([L.latLng(this.project.centroid[1], this.project.centroid[0])]);
-      this.map.fitBounds(markerBounds);
-      this.map.setZoom(5);
+      this.fitBounds(this.appFG.getBounds());
+
+      // option to centre the map instead of prov view
+      // let markerBounds = L.latLngBounds([L.latLng(this.project.centroid[1], this.project.centroid[0])]);
+      // this.map.fitBounds(markerBounds);
+      // this.map.setZoom(5);
 
     } else {
       setTimeout(this.fixMap.bind(this), 50);
@@ -172,7 +175,7 @@ export class ProjectDetailsTabComponent implements OnInit, AfterViewInit, OnDest
       // ref: https://github.com/Leaflet/Leaflet/issues/3249
       animate: false,
       // use bottom padding to keep shape in bounds
-     // paddingBottomRight: [0, 35]
+      paddingBottomRight: [0, 35]
     };
 
     if (bounds && bounds.isValid()) {
