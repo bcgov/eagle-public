@@ -1,6 +1,5 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { RouterModule } from '@angular/router';
 import { TagInputModule } from 'ngx-chips';
@@ -28,18 +27,19 @@ import { PinsComponent } from './pins/pins.component';
 import { PinsTableRowsComponent } from './pins/pins-table-rows/pins-table-rows.component';
 
 import { NgSelectModule } from '@ng-select/ng-select';
+import { FormsModule } from '@angular/forms';
 
 @NgModule({
   imports: [
     CommonModule,
-    FormsModule,
     NgbModule.forRoot(),
     RouterModule,
     TagInputModule,
     SharedModule,
     CommentsModule,
     ProjectRoutingModule,
-    NgSelectModule
+    NgSelectModule,
+    FormsModule
   ],
   declarations: [
     ProjectComponent,
