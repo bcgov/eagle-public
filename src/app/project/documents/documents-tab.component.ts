@@ -122,8 +122,7 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
           // Get the lists first
           if (res.documentsTableRow && res.documentsTableRow.length > 0) {
 
-            if(this.milestones.length === 0)
-            {
+            if (this.milestones.length === 0) {
               res.documentsTableRow[0].searchResults.map(item => {
                 switch (item.type) {
                   case 'label':
@@ -135,26 +134,24 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
               });
             }
 
-            if(this.types.length === 0)
-            {
+            if (this.types.length === 0) {
               res.documentsTableRow[0].searchResults.map(item => {
                 switch (item.type) {
                   case 'doctype':
                     this.types.push({ ...item });
-                  break;
+                    break;
                   default:
                     break;
                 }
               });
             }
 
-            if(this.authors.length === 0)
-            {
+            if (this.authors.length === 0) {
               res.documentsTableRow[0].searchResults.map(item => {
                 switch (item.type) {
                   case 'author':
                     this.authors.push({ ...item });
-                  break;
+                    break;
                   default:
                     break;
                 }
@@ -305,36 +302,28 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
     this.selectedCount = count;
   }
 
-  paramsToCollectionFilters(params, name, collection, identifyBy)
-  {
+  paramsToCollectionFilters(params, name, collection, identifyBy) {
     delete this.filterForURL[name];
     delete this.filterForAPI[name];
 
-    if (params[name] && collection)
-    {
+    if (params[name] && collection) {
       let confirmedValues = [];
       const values = params[name].split(',');
-      for(let valueIdx in values)
-      {
-        if (values.hasOwnProperty(valueIdx))
-        {
+      for (let valueIdx in values) {
+        if (values.hasOwnProperty(valueIdx)) {
           let value = values[valueIdx];
-          const record = _.find(collection, [ identifyBy, value ]);
-          if (record)
-          {
+          const record = _.find(collection, [identifyBy, value]);
+          if (record) {
             let optionArray = this.filterForUI[name];
             let recordExists = false;
-            for(let optionIdx in optionArray)
-            {
-              if(optionArray[optionIdx]._id === record['_id'])
-              {
+            for (let optionIdx in optionArray) {
+              if (optionArray[optionIdx]._id === record['_id']) {
                 recordExists = true;
                 break;
               }
             }
 
-            if(!recordExists)
-            {
+            if (!recordExists) {
               optionArray.push(record);
               confirmedValues.push(value);
             }
@@ -482,16 +471,14 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
       });
   }
 
-  clearSelectedItem(filter: string, item: any)
-  {
+  clearSelectedItem(filter: string, item: any) {
     this.filterForUI[filter] = this.filterForUI[filter].filter(option => option._id !== item._id);
   }
 
-  public filterCompareWith(filter: any, filterToCompare: any)
-  {
+  public filterCompareWith(filter: any, filterToCompare: any) {
     return filter && filterToCompare
-           ? filter._id === filterToCompare._id
-           : filter === filterToCompare;
+      ? filter._id === filterToCompare._id
+      : filter === filterToCompare;
   }
 
   public onSubmit(currentPage = 1) {
