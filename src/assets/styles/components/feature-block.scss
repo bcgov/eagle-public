@@ -42,17 +42,17 @@
     color: inherit;
     font-weight: normal;
   }
-  
+
   h3 {
     margin-bottom: 1rem;
     font-size: x-large;
   }
-  
+
   h4 {
     margin-bottom: 1rem;
     font-size: 1.25rem;
   }
-  
+
   p {
     margin-bottom: 1.5rem;
     font-size: 0.875rem;
@@ -63,6 +63,9 @@
     padding: 0.5rem;
     font-size: 0.85rem;
     cursor: pointer;
+    position: absolute;
+    bottom: 30px;
+    align-self: center;
   }
 
   .watermark {
