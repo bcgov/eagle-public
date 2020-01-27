@@ -38,6 +38,7 @@ class DocumentFilterObject {
 
 export class DocumentsTabComponent implements OnInit, OnDestroy {
   public documents: Document[] = null;
+
   public milestones: any[] = [];
   public authors: any[] = [];
   public types: any[] = [];
@@ -55,20 +56,21 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
   public showAdvancedSearch = true;
 
   public showFilters: object = {
-    milestone: false,
     date: false,
-    documentAuthorType: false,
-    type: false
+    type: false,
+    milestone: false,
+    documentAuthorType: false
   };
 
   public numFilters: object = {
-    milestone: 0,
     date: 0,
-    documentAuthorType: 0,
-    type: 0
+    type: 0,
+    milestone: 0,
+    documentAuthorType: 0
   };
 
   public documentTableData: TableObject;
+
   public documentTableColumns: any[] = [
     {
       name: 'Name',
@@ -119,21 +121,45 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
         if (res) {
           // Get the lists first
           if (res.documentsTableRow && res.documentsTableRow.length > 0) {
-            res.documentsTableRow[0].searchResults.map(item => {
-              switch (item.type) {
-                case 'label':
-                  this.milestones.push({ ...item });
+
+            if(this.milestones.length === 0)
+            {
+              res.documentsTableRow[0].searchResults.map(item => {
+                switch (item.type) {
+                  case 'label':
+                    this.milestones.push({ ...item });
+                    break;
+                  default:
+                    break;
+                }
+              });
+            }
+
+            if(this.types.length === 0)
+            {
+              res.documentsTableRow[0].searchResults.map(item => {
+                switch (item.type) {
+                  case 'doctype':
+                    this.types.push({ ...item });
                   break;
-                case 'author':
-                  this.authors.push({ ...item });
+                  default:
+                    break;
+                }
+              });
+            }
+
+            if(this.authors.length === 0)
+            {
+              res.documentsTableRow[0].searchResults.map(item => {
+                switch (item.type) {
+                  case 'author':
+                    this.authors.push({ ...item });
                   break;
-                case 'doctype':
-                  this.types.push({ ...item });
-                  break;
-                default:
-                  break;
-              }
-            });
+                  default:
+                    break;
+                }
+              });
+            }
 
             // This code reorders the document type list defined by EAO (See Jira Ticket EAGLE-88)
             let copy_doctype = this.types;
@@ -144,6 +170,11 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
             docList_order.map((item, i) => {
               this.types[item] = copy_doctype[i];
             });
+
+            // Sort by legislation.
+            this.milestones = _.sortBy(this.milestones, ['legislation']);
+            this.authors = _.sortBy(this.authors, ['legislation']);
+            this.types = _.sortBy(this.types, ['legislation', 'listOrder']);
           }
 
           this.setFiltersFromParams(params);
@@ -274,25 +305,45 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
     this.selectedCount = count;
   }
 
-  paramsToCollectionFilters(params, name, collection, identifyBy) {
-    this.filterForUI[name] = [];
+  paramsToCollectionFilters(params, name, collection, identifyBy)
+  {
     delete this.filterForURL[name];
     delete this.filterForAPI[name];
 
-    if (params[name] && collection) {
+    if (params[name] && collection)
+    {
       let confirmedValues = [];
-      // look up each value in collection
       const values = params[name].split(',');
-      values.forEach(value => {
-        const record = _.find(collection, [ identifyBy, value ]);
-        if (record) {
-          this.filterForUI[name].push(record);
-          confirmedValues.push(value);
+      for(let valueIdx in values)
+      {
+        if (values.hasOwnProperty(valueIdx))
+        {
+          let value = values[valueIdx];
+          const record = _.find(collection, [ identifyBy, value ]);
+          if (record)
+          {
+            let optionArray = this.filterForUI[name];
+            let recordExists = false;
+            for(let optionIdx in optionArray)
+            {
+              if(optionArray[optionIdx]._id === record['_id'])
+              {
+                recordExists = true;
+                break;
+              }
+            }
+
+            if(!recordExists)
+            {
+              optionArray.push(record);
+              confirmedValues.push(value);
+            }
+          }
+          if (confirmedValues.length) {
+            this.filterForURL[name] = confirmedValues.join(',');
+            this.filterForAPI[name] = confirmedValues.join(',');
+          }
         }
-      });
-      if (confirmedValues.length) {
-        this.filterForURL[name] = confirmedValues.join(',');
-        this.filterForAPI[name] = confirmedValues.join(',');
       }
     }
   }
@@ -415,7 +466,7 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
       pageNumber,
       this.tableParams.pageSize,
       this.tableParams.sortBy,
-      { documentSource: 'PROJECT' },
+      { documentSource: 'PROJECT', eaoStatus: 'Published' },
       true,
       null,
       this.filterForAPI,
@@ -431,6 +482,17 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
       });
   }
 
+  clearSelectedItem(filter: string, item: any)
+  {
+    this.filterForUI[filter] = this.filterForUI[filter].filter(option => option._id !== item._id);
+  }
+
+  public filterCompareWith(filter: any, filterToCompare: any)
+  {
+    return filter && filterToCompare
+           ? filter._id === filterToCompare._id
+           : filter === filterToCompare;
+  }
 
   public onSubmit(currentPage = 1) {
     // dismiss any open snackbar
