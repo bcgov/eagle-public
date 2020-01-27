@@ -119,10 +119,6 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
       .takeUntil(this.ngUnsubscribe)
       .subscribe((res: any) => {
         if (res) {
-
-          //this.milestones.length = 0;
-          //this.authors.length = 0;
-          //this.types.length = 0;
           // Get the lists first
           if (res.documentsTableRow && res.documentsTableRow.length > 0) {
 
@@ -311,10 +307,6 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
 
   paramsToCollectionFilters(params, name, collection, identifyBy)
   {
-    // Clearing the array breaks the Angular ng-select reference
-    // Array cannot be reset with a new instance, but cleared "manually"
-    //this.filterForUI[name] = [];
-    //this.filterForUI[name].length = 0
     delete this.filterForURL[name];
     delete this.filterForAPI[name];
 
@@ -354,23 +346,6 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
         }
       }
     }
-
-    /*if (params[name] && collection) {
-      let confirmedValues = [];
-      // look up each value in collection
-      const values = params[name].split(',');
-      values.forEach(value => {
-        const record = _.find(collection, [ identifyBy, value ]);
-        if (record) {
-          this.filterForUI[name].push(record);
-          confirmedValues.push(value);
-        }
-      });
-      if (confirmedValues.length) {
-        this.filterForURL[name] = confirmedValues.join(',');
-        this.filterForAPI[name] = confirmedValues.join(',');
-      }
-    }*/
   }
 
   paramsToDateFilters(params, name) {
