@@ -139,7 +139,11 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
                 switch (item.type) {
                   case 'doctype':
                     this.types.push({ ...item });
+<<<<<<< HEAD
                   break;
+=======
+                    break;
+>>>>>>> eece06f4af58b801443690f2b9309fdae20ba20e
                   default:
                     break;
                 }
@@ -151,7 +155,11 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
                 switch (item.type) {
                   case 'author':
                     this.authors.push({ ...item });
+<<<<<<< HEAD
                   break;
+=======
+                    break;
+>>>>>>> eece06f4af58b801443690f2b9309fdae20ba20e
                   default:
                     break;
                 }
@@ -312,7 +320,7 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
       for (let valueIdx in values) {
         if (values.hasOwnProperty(valueIdx)) {
           let value = values[valueIdx];
-          const record = _.find(collection, [ identifyBy, value ]);
+          const record = _.find(collection, [identifyBy, value]);
           if (record) {
             let optionArray = this.filterForUI[name];
             let recordExists = false;
@@ -477,8 +485,13 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
 
   public filterCompareWith(filter: any, filterToCompare: any) {
     return filter && filterToCompare
+<<<<<<< HEAD
            ? filter._id === filterToCompare._id
            : filter === filterToCompare;
+=======
+      ? filter._id === filterToCompare._id
+      : filter === filterToCompare;
+>>>>>>> eece06f4af58b801443690f2b9309fdae20ba20e
   }
 
   public onSubmit(currentPage = 1) {

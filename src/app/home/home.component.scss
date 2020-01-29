@@ -55,6 +55,10 @@ main {
   }
 }
 
+.btn.inverted {
+    text-transform: none;
+}
+
 @media (max-width: 767px) {
   .hero-banner h1 {
     line-height: 2rem;
