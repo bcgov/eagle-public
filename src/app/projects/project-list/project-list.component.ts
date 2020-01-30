@@ -159,6 +159,9 @@ export class ProjectListComponent implements OnInit, OnDestroy {
 
           this.setFiltersFromParams(params);
 
+          //default sort for project list is alphabetical
+          params.sortBy = '+name'
+
           this.updateCounts();
 
           this.tableParams = this.tableTemplateUtils.getParamsFromUrl(
