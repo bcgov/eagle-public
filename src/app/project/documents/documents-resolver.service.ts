@@ -60,7 +60,7 @@ export class DocumentsResolver implements Resolve<Observable<object>> {
           currentPage,
           pageSize,
           sortBy,
-          { },
+          { documentSource: 'PROJECT', datePostedStart: datePostedStart, datePostedEnd: datePostedEnd },
           true,
           null,
           this.filterForAPI,
@@ -99,8 +99,5 @@ export class DocumentsResolver implements Resolve<Observable<object>> {
     this.paramsToCollectionFilter(params, 'milestone', this.milestones, '_id');
     this.paramsToCollectionFilter(params, 'documentAuthorType', this.authors, '_id');
     this.paramsToCollectionFilter(params, 'type', this.types, '_id');
-
-    this.paramsToDateFilter(params, 'datePostedStart');
-    this.paramsToDateFilter(params, 'datePostedEnd');
   }
 }
