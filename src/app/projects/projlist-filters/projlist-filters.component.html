@@ -1,6 +1,6 @@
 <div class="app-filters__container d-flex flex-column" name="Filters to limit displayed EAO Projects">
   <div class="search-container" id="applist-filters">
-    <fieldset class="additional-filters" (click)="$event.stopPropagation()">
+    <fieldset class="additional-filters" (click)="$event.stopPropagation(); applyAllFilters();">
       <div class="form-group typeahead-container">
         <label for="applicantInput">Search Environmental Assessment Projects</label>
         <input type="text" class="form-control gtm-filter-applicant " placeholder="Start Typing A Project Name" id="applicantInput"

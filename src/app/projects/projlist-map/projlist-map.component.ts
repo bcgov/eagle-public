@@ -271,6 +271,19 @@ export class ProjlistMapComponent implements AfterViewInit, OnChanges, OnDestroy
         const markerLatLng = marker.getLatLng();
         // app is visible if map contains its marker
         app.isVisible = mapBounds.contains(markerLatLng);
+
+        // If there is only one result from the filter
+        // force the popup to auto-display
+        if (this.markerList.length === 1 && app.isVisible) {
+          if (marker.getPopup()) {
+            marker.openPopup();
+          } else {
+            // create the popup
+            this.createMarkerPopup(app, marker);
+            marker.openPopup();
+          }
+        }
+
       }
     }
 
@@ -336,6 +349,10 @@ export class ProjlistMapComponent implements AfterViewInit, OnChanges, OnDestroy
     const app = args[0] as Project;
     const marker = args[1].target as L.Marker;
 
+    this.createMarkerPopup(app, marker);
+  }
+
+  private createMarkerPopup(app: Project, marker: L.Marker) {
     this.applist.toggleCurrentApp(app); // update selected item in app list
 
     // if there's already a popup, delete it
