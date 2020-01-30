@@ -134,9 +134,14 @@ export class ApiService {
       });
     }
     if (filter !== {}) {
-      Object.keys(filter).forEach(key => {
-        filter[key].split(',').forEach(item => {
-          let safeItem = this.utils.encodeString(item, true);
+      let safeItem;
+      Object.keys(filter).map(key => {
+        filter[key].split(',').map(item => {
+          if (item.includes('&')) {
+            safeItem = this.utils.encodeString(item, true);
+          } else {
+            safeItem = item;
+          }
           queryString += `&or[${key}]=${safeItem}`;
         });
       });
