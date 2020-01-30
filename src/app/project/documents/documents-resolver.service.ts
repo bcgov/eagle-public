@@ -58,7 +58,7 @@ export class DocumentsResolver implements Resolve<Observable<object>> {
           currentPage,
           pageSize,
           sortBy,
-          { documentSource: 'PROJECT', eaoStatus: 'Published' },
+          { documentSource: 'PROJECT' },
           true,
           null,
           this.filterForAPI,
