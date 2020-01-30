@@ -455,7 +455,7 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
       pageNumber,
       this.tableParams.pageSize,
       this.tableParams.sortBy,
-      { documentSource: 'PROJECT' },
+      { documentSource: 'PROJECT', eaoStatus: 'Published' },
       true,
       null,
       this.filterForAPI,
