@@ -33,7 +33,7 @@ class ProjectFilterObject {
     public region: Array<string> = [],
     public CEAAInvolvement: Array<string> = [],
     public vc: Array<object> = []
-  ) {}
+  ) { }
 }
 
 @Component({
@@ -121,93 +121,93 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     private orgService: OrgService,
     private config: ConfigService,
     private _changeDetectionRef: ChangeDetectorRef
-  ) {}
+  ) { }
 
   ngOnInit() {
-      // Fetch proponents
-      this.orgService
-        .getByCompanyType('Proponent/Certificate Holder')
-        .switchMap((res: any) => {
-          if (res) {
-            this.proponents = res || [];
-            return this.config.lists;
-          } else {
+    // Fetch proponents
+    this.orgService
+      .getByCompanyType('Proponent/Certificate Holder')
+      .switchMap((res: any) => {
+        if (res) {
+          this.proponents = res || [];
+          return this.config.lists;
+        } else {
           alert('Uh-oh, couldn\'t load proponents');
           this.router.navigate(['/']);
         }
-        })
-        .switchMap((list: any) => {
-          list.map(item => {
-            switch (item.type) {
-              case 'eaDecisions':
-                this.eacDecisions.push({ ...item });
-                break;
-              case 'ceaaInvolvements':
-                this.ceaaInvolvements.push({ ...item });
-                break;
-            }
-          });
-
-          this.regions = Constants.REGIONS_COLLECTION;
-          this.commentPeriods = Constants.PCP_COLLECTION;
-          this.projectTypes = Constants.PROJECT_TYPE_COLLECTION;
-
-          return this.route.params;
-        })
-        .switchMap((res: any) => {
-          let params = { ...res };
-
-          this.setFiltersFromParams(params);
-
-          //default sort for project list is alphabetical
-          params.sortBy = '+name'
-
-          this.updateCounts();
-
-          this.tableParams = this.tableTemplateUtils.getParamsFromUrl(
-            params,
-            this.filterForURL
-          );
-
-          if (this.tableParams.sortBy === '') {
-            this.tableParams.sortBy = '+name';
+      })
+      .switchMap((list: any) => {
+        list.map(item => {
+          switch (item.type) {
+            case 'eaDecisions':
+              this.eacDecisions.push({ ...item });
+              break;
+            case 'ceaaInvolvements':
+              this.ceaaInvolvements.push({ ...item });
+              break;
           }
-
-          return this.searchService
-            .getSearchResults(
-              this.tableParams.keywords,
-              'Project',
-              [],
-              this.tableParams.currentPage,
-              this.tableParams.pageSize,
-              this.tableParams.sortBy,
-              {},
-              true,
-              null,
-              this.filterForAPI,
-              ''
-            );
-        })
-        .takeUntil(this.ngUnsubscribe)
-        .subscribe((res: any) => {
-          if (res[0].data) {
-            if (res[0].data.searchResults.length > 0) {
-              this.tableParams.totalListItems =
-                res[0].data.meta[0].searchResultsTotal;
-              this.projects = res[0].data.searchResults;
-            } else {
-              this.tableParams.totalListItems = 0;
-              this.projects = [];
-            }
-            this.setRowData();
-          } else {
-            alert('Uh-oh, couldn\'t load search results');
-            // results not found --> navigate back to search
-            this.router.navigate(['/']);
-          }
-          this.loading = false;
-          this._changeDetectionRef.detectChanges();
         });
+
+        this.regions = Constants.REGIONS_COLLECTION;
+        this.commentPeriods = Constants.PCP_COLLECTION;
+        this.projectTypes = Constants.PROJECT_TYPE_COLLECTION;
+
+        return this.route.params;
+      })
+      .switchMap((res: any) => {
+        let params = { ...res };
+
+        this.setFiltersFromParams(params);
+
+        // default sort for project list is alphabetical
+        params.sortBy = '+name'
+
+        this.updateCounts();
+
+        this.tableParams = this.tableTemplateUtils.getParamsFromUrl(
+          params,
+          this.filterForURL
+        );
+
+        if (this.tableParams.sortBy === '') {
+          this.tableParams.sortBy = '+name';
+        }
+
+        return this.searchService
+          .getSearchResults(
+            this.tableParams.keywords,
+            'Project',
+            [],
+            this.tableParams.currentPage,
+            this.tableParams.pageSize,
+            this.tableParams.sortBy,
+            {},
+            true,
+            null,
+            this.filterForAPI,
+            ''
+          );
+      })
+      .takeUntil(this.ngUnsubscribe)
+      .subscribe((res: any) => {
+        if (res[0].data) {
+          if (res[0].data.searchResults.length > 0) {
+            this.tableParams.totalListItems =
+              res[0].data.meta[0].searchResultsTotal;
+            this.projects = res[0].data.searchResults;
+          } else {
+            this.tableParams.totalListItems = 0;
+            this.projects = [];
+          }
+          this.setRowData();
+        } else {
+          alert('Uh-oh, couldn\'t load search results');
+          // results not found --> navigate back to search
+          this.router.navigate(['/']);
+        }
+        this.loading = false;
+        this._changeDetectionRef.detectChanges();
+      });
 
   }
 
