@@ -241,7 +241,6 @@ export class ProjectListComponent implements OnInit, OnDestroy {
 
   paramsToCollectionFilters(params, name, collection, identifyBy) {
     this.filterForUI[name] = [];
-  
     delete this.filterForURL[name];
     delete this.filterForAPI[name];
 
