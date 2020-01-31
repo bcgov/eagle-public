@@ -1,17 +1,20 @@
 import { TestBed, inject } from '@angular/core/testing';
 import { ProjectService } from './project.service';
 import { ApiService } from 'app/services/api';
-import { DocumentService } from './document.service';
 import { CommentPeriodService } from './commentperiod.service';
 import { DecisionService } from './decision.service';
 import { FeatureService } from './feature.service';
 import 'rxjs/add/observable/of';
 import { Observable } from 'rxjs/Observable';
 import { Project } from 'app/models/project';
-import { Document } from 'app/models/document';
 import { CommentPeriod } from 'app/models/commentperiod';
 import { Decision } from 'app/models/decision';
 import { Feature } from 'app/models/feature';
+import { SearchService } from './search.service';
+import { AjaxData } from 'app/shared/utils/mock-data';
+import { Utils } from 'app/shared/utils/utils';
+import { ISearchResults } from 'app/models/search';
+import { Constants } from 'app/shared/utils/constants';
 
 describe('ProjectService', () => {
   let service;
@@ -29,7 +32,7 @@ describe('ProjectService', () => {
       const response = {
         text() {
           return [
-            {_id: 'AAAA', status: 'ACCEPTED'},
+            {_id: '58851197aaecd9001b8227cc', status: 'ACCEPTED'},
             {_id: 'BBBB', status: 'OFFERED'}
           ];
         }
@@ -57,13 +60,14 @@ describe('ProjectService', () => {
     }
   };
 
-  const documentServiceStub = {
-    getAllByProjectId(projectId: string) {
-      const documents = [
-        new Document({_id: 'DDDDD'}),
-        new Document({_id: 'EEEEE'})
-      ];
-      return Observable.of(documents);
+  const searchServiceStub = {
+    getSearchResults(projectData: Project[]) {
+      // Just returning the ajax project for now
+      return Observable.of(projectData);
+    },
+    // Returning null for now on the getItem call
+    getItem(string: String) {
+      return Observable.of({data: string})
     }
   };
 
@@ -88,7 +92,18 @@ describe('ProjectService', () => {
       return 'Commenting Open';
     }
   };
-
+  const utilsStub = {
+    extractFromSearchResults(obj: ISearchResults<Project>[]) {
+      return obj;
+    },
+    natureBuildMapper(key: String) {
+      if (!key) {
+        return '';
+      }
+      const natureObj = Constants.buildToNature.find(obj => obj.build === key);
+      return (natureObj) ? natureObj.nature : key;
+    }
+  }
   const decisionServiceStub = {
     getByProjectId(projectId: string) {
       return Observable.of(new Decision({_id: 'IIIII'}));
@@ -110,7 +125,8 @@ describe('ProjectService', () => {
       providers: [
         ProjectService,
         { provide: ApiService, useValue: apiServiceStub },
-        { provide: DocumentService, useValue: documentServiceStub },
+        { provide: SearchService, useValue: searchServiceStub },
+        { provide: Utils, useValue: utilsStub },
         { provide: CommentPeriodService, useValue: commentPeriodServiceStub },
         { provide: DecisionService, useValue: decisionServiceStub },
         { provide: FeatureService, useValue: featureServiceStub },
@@ -124,92 +140,30 @@ describe('ProjectService', () => {
     expect(appService).toBeTruthy();
   }));
 
-  describe('getCount()', () => {
-    it('retrieves the x-total-count header', () => {
-      service.getCount().subscribe(number => {
-        expect(number).toEqual(300);
-      });
-    });
-  });
-
-  describe('getAll()', () => {
-    let apiService;
-    const existingProjectsData = [
-      {
-        _id: 'AAAA', status: 'ACCEPTED', description: 'Wonderful project',
-        cl_file: null, businessUnit: null
-      },
-      {
-        _id: 'BBBB', status: 'ABANDONED', description: 'Terrible project',
-        cl_file: null, businessUnit: null
-      },
-    ];
-
-    beforeEach(() => {
-      apiService = TestBed.get(ApiService);
-
-      const response = {
-        text() {
-          return existingProjectsData;
-        },
-        json() {
-          return existingProjectsData;
-        }
-      };
-
-      spyOn(apiService, 'getProjects')
-        .and.returnValue(Observable.of(response));
-    });
-
-    describe('with no filters', () => {
-      it('returns the projects', () => {
-        service.getAll().subscribe(projects => {
-          expect(projects[0]._id).toEqual('AAAA');
-          expect(projects[1]._id).toEqual('BBBB');
-        });
-      });
-    });
-
-    describe('with region filters', () => {
-      xit('calls the api.getProjects method with the region filters', () => {
-        service.getAll(1, 100, {});
-      });
-    });
-  });
-
   describe('getById()', () => {
     let apiService;
-    const freshProjectData = {
-      _id: 'AAAA', status: 'ACCEPTED', description: 'Hot new project',
-      cl_file: null, businessUnit: null
-    };
+    const freshProjectData: Project = AjaxData[0];
+    const freshProjectArray: Project[] = AjaxData;
 
     beforeEach(() => {
       apiService = TestBed.get(ApiService);
 
-      const response = {
-        text() {
-          return [freshProjectData];
-        },
-        json() {
-          return [freshProjectData];
-        }
-      };
+      const response = freshProjectArray;
 
       spyOn(apiService, 'getProject')
         .and.returnValue(Observable.of(response));
     });
 
     describe('when an project has been cached', () => {
-      const cachedProject = new Project({_id: 'AAAA', description: 'Old outdated project'});
+      const cachedProject = new Project({_id: '58851197aaecd9001b8227cc', description: 'Old outdated project'});
       beforeEach(() => {
         service.project = cachedProject;
       });
 
       describe('and forceReload is false', () => {
         it('returns the cached project', () => {
-          service.getById('AAAA', false).subscribe(project => {
-            expect(project._id).toEqual('AAAA');
+          service.getById('58851197aaecd9001b8227cc', false).subscribe(project => {
+            expect(project._id).toEqual('58851197aaecd9001b8227cc');
             expect(project.description).toEqual('Old outdated project');
           });
         });
@@ -217,9 +171,9 @@ describe('ProjectService', () => {
 
       describe('and forceReload is true', () => {
         it('calls the api for an project', () => {
-          service.getById('AAAA', true).subscribe(project => {
-            expect(project._id).toEqual('AAAA');
-            expect(project.description).toEqual('Hot new project');
+          service.getById('58851197aaecd9001b8227cc', true).subscribe(project => {
+            expect(project._id).toEqual('58851197aaecd9001b8227cc');
+            expect(project.description).toEqual('KGHM Ajax Mining Inc.  proposes to develop a new open-pit copper and gold mine with a production capacity of up to 24 million tonnes of ore per year. The mine\'s life expectancy is 23 years.');
           });
         });
       });
@@ -231,76 +185,23 @@ describe('ProjectService', () => {
       });
 
       it('calls the api for an project', () => {
-        service.getById('AAAA', false).subscribe(project => {
-          expect(project._id).toEqual('AAAA');
-          expect(project.description).toEqual('Hot new project');
+        service.getById('58851197aaecd9001b8227cc', false).subscribe(project => {
+          expect(project._id).toEqual('58851197aaecd9001b8227cc');
+          expect(project.description).toEqual('KGHM Ajax Mining Inc.  proposes to develop a new open-pit copper and gold mine with a production capacity of up to 24 million tonnes of ore per year. The mine\'s life expectancy is 23 years.');
         });
       });
 
       describe('project properties', () => {
         it('sets the appStatus property', () => {
-          freshProjectData.status = 'ACCEPTED';
-          service.getById('AAAA').subscribe( project => {
-            expect(project.appStatus).toBe('Project Under Review');
+          freshProjectData.build = 'new';
+          service.getById('58851197aaecd9001b8227cc').subscribe( project => {
+            expect(project.nature).toBe(utilsStub.natureBuildMapper('new'));
           });
-        });
-
-        it('clFile property is padded to be seven digits', () => {
-          freshProjectData.cl_file = 7777;
-          service.getById('AAAA').subscribe( project => {
-            expect(project.clFile).toBe('0007777');
-          });
-        });
-
-        it('clFile property is null if there is no cl_file property', () => {
-          freshProjectData.cl_file = null;
-          service.getById('AAAA').subscribe( project => {
-            expect(project.clFile).toBeUndefined();
-          });
-        });
-
-        it('sets the region property', () => {
-          freshProjectData.businessUnit = 'ZOO Keeper';
-          service.getById('AAAA').subscribe( project => {
-            expect(project.region).toBeDefined();
-            expect(project.region).toEqual('ZOO');
-          });
-        });
-      });
-
-      it('sets the documents to the result of the document service', () => {
-        service.getById('AAAA').subscribe( project => {
-          expect(project.documents).toBeDefined();
-          expect(project.documents).not.toBeNull();
-          expect(project.documents[0]._id).toBe('DDDDD');
-          expect(project.documents[1]._id).toBe('EEEEE');
-        });
-      });
-
-      it('gets the commentPeriods for the project, sets the current period and cpStatus ', () => {
-        service.getById('AAAA').subscribe( project => {
-          expect(project.currentPeriod).toBeDefined();
-          expect(project.currentPeriod).not.toBeNull();
-          expect(project.currentPeriod._id).toBe('DDDDD');
-        });
-      });
-
-      it('sets the commentPeriod status', () => {
-        service.getById('AAAA').subscribe( project => {
-          expect(project.cpStatus).toEqual('Commenting Open');
-        });
-      });
-
-      it('sets the decisions to the result of the decisionService', () => {
-        service.getById('AAAA').subscribe( project => {
-          expect(project.decision).toBeDefined();
-          expect(project.decision).not.toBeNull();
-          expect(project.decision._id).toBe('IIIII');
         });
       });
 
       it('sets the features to the result of the featureService', () => {
-        service.getById('AAAA').subscribe( project => {
+        service.getById('58851197aaecd9001b8227cc').subscribe( project => {
           expect(project.features).toBeDefined();
           expect(project.features).not.toBeNull();
           expect(project.features[0].id).toBe('FFFFF');

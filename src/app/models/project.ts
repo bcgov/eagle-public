@@ -11,14 +11,14 @@ export class Project {
   location: String;
   name: String;
   projectLeadId: String;
-  projectLeadObj: any;
+  projectLeadObj?: any;
   projectLead: String;
   projectLeadEmail: String;
   projectLeadPhone: String;
   proponent: any;
   region: String;
   responsibleEPDId: String;
-  responsibleEPDObj: any;
+  responsibleEPDObj?: any;
   responsibleEPD: String;
   responsibleEPDEmail: String;
   responsibleEPDPhone: String;
@@ -33,12 +33,13 @@ export class Project {
   commodity: String;
   currentPhaseName: string;
   dateAdded: String;
+  dateCommentsClosed: String;
   dateUpdated: String;
   decisionDate: String;
   duration: String;
   // TODO: directoryStructure
   eaoMember: String;
-  epicProjectID: Number;
+  epicProjectID?: Number;
   fedElecDist: String;
   // TODO: intake
   isTermsAgreed: Boolean;
@@ -50,19 +51,19 @@ export class Project {
   shortName: String;
   status: String;
   substitution: Boolean;
-  updatedBy: String;
-  operational: any;
-  nature: any;
+  updatedBy?: String;
+  operational?: any;
+  nature?: any;
   commentPeriodForBanner: any;
 
   // Permissions
-  read: Array<String> = [];
-  write: Array<String> = [];
-  delete: Array<String> = [];
+  read?: Array<String> = [];
+  write?: Array<String> = [];
+  delete?: Array<String> = [];
 
-  isMatches = true;
-  isVisible = true;
-  isLoaded = false;
+  isMatches?: Boolean = true;
+  isVisible?: Boolean = true;
+  isLoaded?: Boolean = false;
 
 
 
@@ -120,41 +121,11 @@ export class Project {
     this.write               = obj && obj.write               || null;
     this.delete              = obj && obj.delete              || null;
 
-    // if (obj && obj.publishDate) {
-    //   this.publishDate = new Date(obj.publishDate);
-    // }
-
-    // // replace \\n (JSON format) with newlines
-    // if (obj && obj.description) {
-    //   this.description = obj.description.replace(/\\n/g, '\n');
-    // }
-    // if (obj && obj.legalDescription) {
-    //   this.legalDescription = obj.legalDescription.replace(/\\n/g, '\n');
-    // }
-
     // copy centroid
     if (obj && obj.centroid) {
       obj.centroid.forEach(num => {
         this.centroid.push(num);
       });
     }
-
-    // if (obj && obj.decision) {
-    //   this.decision = new Decision(obj.decision);
-    // }
-
-    // // copy documents
-    // if (obj && obj.documents) {
-    //   for (const doc of obj.documents) {
-    //     this.documents.push(doc);
-    //   }
-    // }
-
-    // // copy features
-    // if (obj && obj.features) {
-    //   for (const feature of obj.features) {
-    //     this.features.push(feature);
-    //   }
-    // }
   }
 }
