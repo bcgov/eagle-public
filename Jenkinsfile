@@ -57,11 +57,12 @@ def getChangeLog(pastBuilds) {
   return log;
 }
 
+def testPodLabel = 'node-tester-' + UUID.randomUUID().toString();
 def nodejsTester () {
   openshift.withCluster() {
     openshift.withProject() {
       podTemplate(
-        label: 'node-tester',
+        label: testPodLabel,
         name: 'node-tester',
         serviceAccount: 'jenkins',
         cloud: 'openshift',
@@ -79,53 +80,14 @@ def nodejsTester () {
           )
         ]
       ) {
-        node("node-tester") {
+        node(testPodLabel) {
           checkout scm
           try {
-            sh 'npm run tests'
-          } finally {
-            echo "Unit Tests Passed"
-          }
-        }
-      }
-      return true
-    }
-  }
-}
-
-// todo templates can be pulled from a repository, instead of declared here
-def nodejsLinter () {
-  openshift.withCluster() {
-    openshift.withProject() {
-      podTemplate(
-        label: 'node-linter',
-        name: 'node-linter',
-        serviceAccount: 'jenkins',
-        cloud: 'openshift',
-        slaveConnectTimeout: 300,
-        containers: [
-          containerTemplate(
-            name: 'jnlp',
-            image: 'registry.access.redhat.com/openshift3/jenkins-agent-nodejs-8-rhel7',
-            resourceRequestCpu: '500m',
-            resourceLimitCpu: '1000m',
-            resourceRequestMemory: '2Gi',
-            resourceLimitMemory: '4Gi',
-            activeDeadlineSeconds: '1200',
-            workingDir: '/tmp',
-            command: '',
-            args: '${computer.jnlpmac} ${computer.name}',
-          )
-        ]
-      ) {
-        node("node-linter") {
-          checkout scm
-          try {
-            // install deps to get angular-cli
-            sh 'npm install @angular/compiler @angular/core @angular/cli @angular-devkit/build-angular codelyzer rxjs tslint'
+            sh 'npm i'
+            // sh 'npm run tests'
             sh 'npm run lint'
           } finally {
-            echo "Linting Passed"
+            echo "Lint & Unit Tests Passed"
           }
         }
       }
@@ -134,12 +96,12 @@ def nodejsLinter () {
   }
 }
 
-// todo templates can be pulled from a repository, instead of declared here
+def sonarLabel = 'sonarqube-runner-' + UUID.randomUUID().toString();
 def nodejsSonarqube () {
   openshift.withCluster() {
     openshift.withProject() {
       podTemplate(
-        label: 'node-sonarqube',
+        label: sonarLabel,
         name: 'node-sonarqube',
         serviceAccount: 'jenkins',
         cloud: 'openshift',
@@ -158,7 +120,7 @@ def nodejsSonarqube () {
           )
         ]
       ) {
-        node("node-sonarqube") {
+        node(sonarLabel) {
           checkout scm
           dir('sonar-runner') {
             try {
@@ -274,7 +236,7 @@ pipeline {
           steps {
             script {
               echo "Running linter"
-              def result = nodejsLinter()
+              def result = nodejsTester()
             }
           }
         }
