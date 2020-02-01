@@ -57,12 +57,12 @@ def getChangeLog(pastBuilds) {
   return log;
 }
 
-def testPodLabel = 'node-tester-' + UUID.randomUUID().toString();
+// def testPodLabel = 'node-tester-' + UUID.randomUUID().toString();
 def nodejsTester () {
   openshift.withCluster() {
     openshift.withProject() {
       podTemplate(
-        label: testPodLabel,
+        label: 'node-tester',
         name: 'node-tester',
         serviceAccount: 'jenkins',
         cloud: 'openshift',
@@ -80,7 +80,7 @@ def nodejsTester () {
           )
         ]
       ) {
-        node(testPodLabel) {
+        node('node-tester') {
           checkout scm
           try {
             sh 'npm i'
@@ -96,12 +96,12 @@ def nodejsTester () {
   }
 }
 
-def sonarLabel = 'sonarqube-runner-' + UUID.randomUUID().toString();
+// def sonarLabel = 'sonarqube-runner-' + UUID.randomUUID().toString();
 def nodejsSonarqube () {
   openshift.withCluster() {
     openshift.withProject() {
       podTemplate(
-        label: sonarLabel,
+        label: 'node-sonarqube',
         name: 'node-sonarqube',
         serviceAccount: 'jenkins',
         cloud: 'openshift',
@@ -120,7 +120,7 @@ def nodejsSonarqube () {
           )
         ]
       ) {
-        node(sonarLabel) {
+        node('node-sonarqube') {
           checkout scm
           dir('sonar-runner') {
             try {
