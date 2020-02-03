@@ -33,6 +33,7 @@ export const AjaxData: Project[] = [
     projectLead: 'Nathan Braun',
     projectLeadEmail: 'Nathan.Braun@gov.bc.ca',
     projectLeadPhone: '778-698-9280',
+    phaseHistory: [],
     proponent: {
       _id: '58850f69aaecd9001b8085cd',
       _schemaName: 'Organization',
