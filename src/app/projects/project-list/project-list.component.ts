@@ -49,6 +49,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
   public eacDecisions: Array<any> = [];
   public commentPeriods: Array<object> = [];
   public projectTypes: Array<object> = [];
+  public projectPhase: Array<object> = [];
 
   public loading = true;
 
@@ -144,6 +145,9 @@ export class ProjectListComponent implements OnInit, OnDestroy {
               break;
             case 'ceaaInvolvements':
               this.ceaaInvolvements.push({ ...item });
+              break;
+            case 'currentPhaseName':
+              this.projectPhase.push({ ...item});
               break;
           }
         });

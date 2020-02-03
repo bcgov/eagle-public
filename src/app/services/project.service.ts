@@ -9,10 +9,9 @@ import * as _ from 'lodash';
 
 import { Project } from 'app/models/project';
 import { ApiService } from './api';
-import { CommentPeriodService } from './commentperiod.service';
 import { CommentPeriod } from 'app/models/commentperiod';
 import { Org } from 'app/models/organization';
-import { SearchResults, ISearchResults } from 'app/models/search';
+import { ISearchResults } from 'app/models/search';
 import { flatMap } from 'rxjs/operators';
 import { of } from 'rxjs/internal/observable/of';
 import { forkJoin } from 'rxjs';
@@ -33,7 +32,6 @@ export class ProjectService {
 
   constructor(
     private api: ApiService,
-    private commentPeriodService: CommentPeriodService,
     private searchService: SearchService,
     private utils: Utils
   ) { }
