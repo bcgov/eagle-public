@@ -325,8 +325,8 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
 
             if (!recordExists) {
               optionArray.push(record);
-              confirmedValues.push(value);
             }
+            confirmedValues.push(value);
           }
           if (confirmedValues.length) {
             this.filterForURL[name] = confirmedValues.join(',');
@@ -448,6 +448,15 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
 
     this.tableParams = this.tableTemplateUtils.updateTableParams(this.tableParams, pageNumber, this.tableParams.sortBy);
 
+    // Filters and params are not set when paging
+    // We don't need to redo everything, but we will
+    // need to fetch the dates
+    const params = this.terms.getParams();
+    this.setParamsFromFilters(params);
+
+    const datePostedStart = params.hasOwnProperty('datePostedStart') && params.datePostedStart ? params.datePostedStart : '0001-01-01';
+    const datePostedEnd = params.hasOwnProperty('datePostedEnd') && params.datePostedEnd ? params.datePostedEnd : '9999-12-31';
+
     this.searchService.getSearchResults(
       this.tableParams.keywords,
       'Document',
@@ -455,7 +464,7 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
       pageNumber,
       this.tableParams.pageSize,
       this.tableParams.sortBy,
-      { documentSource: 'PROJECT'},
+      { documentSource: 'PROJECT', datePostedStart: datePostedStart, datePostedEnd: datePostedEnd },
       true,
       null,
       this.filterForAPI,
