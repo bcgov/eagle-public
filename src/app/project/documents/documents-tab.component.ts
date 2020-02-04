@@ -1,6 +1,7 @@
 import { Component, OnInit, ChangeDetectorRef, OnDestroy } from '@angular/core';
-import { Router, ActivatedRoute } from '@angular/router';
+import { NavigationEnd, Router, ActivatedRoute } from '@angular/router';
 import { Subject } from 'rxjs';
+import { filter } from 'rxjs/operators';
 import 'rxjs/add/operator/switchMap';
 import 'rxjs/add/operator/takeUntil';
 
@@ -54,6 +55,7 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
   public filterForUI: DocumentFilterObject = new DocumentFilterObject();
 
   public showAdvancedSearch = true;
+  public showDocFilter = true;
 
   public showFilters: object = {
     date: false,
@@ -107,7 +109,16 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
     private searchService: SearchService,
     private storageService: StorageService,
     private tableTemplateUtils: TableTemplateUtils
-  ) { }
+  ) {
+    router.events.pipe(
+      filter(event => event instanceof NavigationEnd))
+      .takeUntil(this.ngUnsubscribe)
+      .subscribe(event => {
+        if (this.api.env === 'prod') {
+          this.showDocFilter = false;
+        }
+      });
+   }
 
   ngOnInit() {
     let params = null;
