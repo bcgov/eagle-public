@@ -491,14 +491,14 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
       });
   }
 
-  clearSelectedItem(filter: string, item: any) {
-    this.filterForUI[filter] = this.filterForUI[filter].filter(option => option._id !== item._id);
+  clearSelectedItem(filterKey: string, item: any) {
+    this.filterForUI[filterKey] = this.filterForUI[filterKey].filter(option => option._id !== item._id);
   }
 
-  public filterCompareWith(filter: any, filterToCompare: any) {
-    return filter && filterToCompare
-      ? filter._id === filterToCompare._id
-      : filter === filterToCompare;
+  public filterCompareWith(filterKey: any, filterToCompare: any) {
+    return filterKey && filterToCompare
+      ? filterKey._id === filterToCompare._id
+      : filterKey === filterToCompare;
   }
 
   public onSubmit(currentPage = 1) {
