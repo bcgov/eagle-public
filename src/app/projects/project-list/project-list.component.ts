@@ -256,7 +256,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
 
 
 
-      for ( const value of values){
+      for ( const value of values) {
         const record = _.find(collection, [identifyBy, value]);
         if (record) {
           this.filterForUI[name].push(record);
