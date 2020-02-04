@@ -52,7 +52,6 @@ export class Utils {
       { legislation: 2002, name: 'Certificate' },
       { legislation: 2018, name: 'Certificate Decision' }
     ];
-    
     const amendTypes = [
       { legislation: 2002, name: 'Amendment Package' },
       { legislation: 2018, name: 'Amendment Package' }
