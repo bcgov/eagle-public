@@ -22,9 +22,9 @@
           </div>
           <div>
             <a class="btn btn-dark legislation-button" target=”_blank”
-              [href]="this.legislationLink">
+              [href]="this.legislationLink" aria-labelledby="legislation-act">
               <label>Legislation</label>
-              <p class="value">{{project?.legislation || "-" }}</p>
+              <p id="legislation-act" class="value">{{project?.legislation || "-" }}</p>
             </a>
           </div>
         </div>
