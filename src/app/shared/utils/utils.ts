@@ -78,13 +78,12 @@ export class Utils {
       CERTIFICATE: {
         documentSource: 'PROJECT',
         type: certTypesIds,
-
+          //  documentAuthorType: certAuthTypesIds,
         milestone: certMilestonesIds,
       },
       AMENDMENT: {
         documentSource: 'PROJECT',
         type: amendTypesIds,
-        //  documentAuthorType: certAuthTypesIds,
         milestone: amendMilestonesIds,
       }
     };
