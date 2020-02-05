@@ -57,13 +57,13 @@ def getChangeLog(pastBuilds) {
   return log;
 }
 
-// def testPodLabel = 'node-tester-' + UUID.randomUUID().toString();
 def nodejsTester () {
   openshift.withCluster() {
     openshift.withProject() {
+      String testPodLabel = "node-tester-${UUID.randomUUID().toString()}";
       podTemplate(
-        label: 'node-tester',
-        name: 'node-tester',
+        label: testPodLabel,
+        name: testPodLabel,
         serviceAccount: 'jenkins',
         cloud: 'openshift',
         slaveConnectTimeout: 300,
@@ -80,7 +80,7 @@ def nodejsTester () {
           )
         ]
       ) {
-        node('node-tester') {
+        node(testPodLabel) {
           checkout scm
           try {
             sh 'npm i'
@@ -96,13 +96,13 @@ def nodejsTester () {
   }
 }
 
-// def sonarLabel = 'sonarqube-runner-' + UUID.randomUUID().toString();
 def nodejsSonarqube () {
   openshift.withCluster() {
     openshift.withProject() {
+      String sonarLabel = "sonarqube-runner-${UUID.randomUUID().toString()}";
       podTemplate(
-        label: 'node-sonarqube',
-        name: 'node-sonarqube',
+        label: sonarLabel,
+        name: sonarLabel,
         serviceAccount: 'jenkins',
         cloud: 'openshift',
         slaveConnectTimeout: 300,
@@ -120,7 +120,7 @@ def nodejsSonarqube () {
           )
         ]
       ) {
-        node('node-sonarqube') {
+        node(sonarLabel) {
           checkout scm
           dir('sonar-runner') {
             try {
@@ -222,20 +222,10 @@ pipeline {
           }
         }
 
-        // stage('Unit Tests') {
-        //   agent { node { label 'nodejs' }}
-        //   steps {
-        //     script {
-        //       echo "Placeholder - Running unit-tests"
-              // def result = nodejsTester()
-        //     }
-        //   }
-        // }
-
-        stage('Linting') {
+        stage('Lint & Unit Test') {
           steps {
             script {
-              echo "Running linter"
+              echo "Running linter and unit tests"
               def result = nodejsTester()
             }
           }
@@ -305,7 +295,6 @@ pipeline {
       //   echo "BDD placeholder"
       //   echo "Build: ${BUILD_ID}"
         // checkout scm
-        // todo determine how to call improved BDD Stack
       // }
     // }
   }

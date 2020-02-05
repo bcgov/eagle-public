@@ -26,6 +26,6 @@ export class ProjectListTableRowsComponent implements OnInit, TableComponent {
     }
 
     goToProject(project) {
-        this.router.navigate([`p/${project._id}/project-details`]);
+      window.open(`p/${project._id}/project-details`, '_blank');
     }
 }
