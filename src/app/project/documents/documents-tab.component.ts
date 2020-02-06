@@ -172,11 +172,13 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
             // This code reorders the document type list defined by EAO (See Jira Ticket EAGLE-88)
             let copy_doctype = this.types;
             this.types = [];
-            // This order was created by mapping the doctype items from the database with the EAO defined ordered list
-            let docList_order = [0, 1, 2, 6, 10, 11, 14, 4, 3, 5, 13, 16, 15, 17, 18, 19, 7, 8, 9, 12];
             // We map the doctypes to put in the correct order as defined in doclist_order
-            docList_order.map((item, i) => {
-              this.types[item] = copy_doctype[i];
+            copy_doctype.map((item, i) => {
+              if (item.legislation === 2002) {
+                this.types[item.listOrder] = item;
+              } else {
+                this.types[item.listOrder + 20] = item;
+              }
             });
 
             // Sort by legislation.
