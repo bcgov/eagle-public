@@ -497,10 +497,17 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
     this.filterForUI[filterKey] = this.filterForUI[filterKey].filter(option => option._id !== item._id);
   }
 
+
   public filterCompareWith(filterKey: any, filterToCompare: any) {
-    return filterKey && filterToCompare
-      ? filterKey._id === filterToCompare._id
-      : filterKey === filterToCompare;
+    if (filterKey.hasOwnProperty('code')) {
+      return filterKey && filterToCompare
+              ? filterKey.code === filterToCompare.code
+              : filterKey === filterToCompare;
+    } else if (filterKey.hasOwnProperty('_id')) {
+      return filterKey && filterToCompare
+              ? filterKey._id === filterToCompare._id
+              : filterKey === filterToCompare;
+    }
   }
 
   public onSubmit(currentPage = 1) {
