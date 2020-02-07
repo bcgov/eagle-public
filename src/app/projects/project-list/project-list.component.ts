@@ -253,9 +253,6 @@ export class ProjectListComponent implements OnInit, OnDestroy {
       // look up each value in collection
       const values = params[name].split(',');
 
-
-
-
       for ( const value of values) {
         const record = _.find(collection, [identifyBy, value]);
         if (record) {
@@ -264,7 +261,6 @@ export class ProjectListComponent implements OnInit, OnDestroy {
         }
 
       }
-
 
       if (confirmedValues.length) {
         this.filterForURL[name] = confirmedValues.join(',');
@@ -292,7 +288,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
   }
 
   setFiltersFromParams(params) {
-    this.paramsToCollectionFilters(params, 'type', this.projectTypes, 'code');
+    this.paramsToCollectionFilters(params, 'type', this.projectTypes, 'name');
     this.paramsToCollectionFilters(params, 'pcp', this.commentPeriods, 'code');
     this.paramsToCollectionFilters(params, 'region', this.regions, 'code');
     this.paramsToCollectionFilters(params, 'CEAAInvolvement', this.ceaaInvolvements, '_id');
@@ -341,7 +337,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
   }
 
   setParamsFromFilters(params) {
-    this.collectionFilterToParams(params, 'type', 'code');
+    this.collectionFilterToParams(params, 'type', 'name');
     this.collectionFilterToParams(params, 'pcp', 'code');
     this.collectionFilterToParams(params, 'eacDecision', '_id');
     this.collectionFilterToParams(params, 'region', 'code');
