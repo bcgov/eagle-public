@@ -244,7 +244,6 @@ export class ProjectListComponent implements OnInit, OnDestroy {
   }
 
   paramsToCollectionFilters(params, name, collection, identifyBy) {
-    this.filterForUI[name] = [];
     delete this.filterForURL[name];
     delete this.filterForAPI[name];
 
@@ -252,16 +251,12 @@ export class ProjectListComponent implements OnInit, OnDestroy {
       let confirmedValues = [];
       // look up each value in collection
       const values = params[name].split(',');
-
-      for ( const value of values) {
-        const record = _.find(collection, [identifyBy, value]);
+      values.forEach(value => {
+        const record = _.find(collection, [ identifyBy, value ]);
         if (record) {
-          this.filterForUI[name].push(record);
           confirmedValues.push(value);
         }
-
-      }
-
+      });
       if (confirmedValues.length) {
         this.filterForURL[name] = confirmedValues.join(',');
         this.filterForAPI[name] = confirmedValues.join(',');
