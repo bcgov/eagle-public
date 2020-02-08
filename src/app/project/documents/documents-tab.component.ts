@@ -169,16 +169,6 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
               });
             }
 
-            // This code reorders the document type list defined by EAO (See Jira Ticket EAGLE-88)
-            let copy_doctype = this.types;
-            this.types = [];
-            // This order was created by mapping the doctype items from the database with the EAO defined ordered list
-            let docList_order = [0, 1, 2, 6, 10, 11, 14, 4, 3, 5, 13, 16, 15, 17, 18, 19, 7, 8, 9, 12];
-            // We map the doctypes to put in the correct order as defined in doclist_order
-            docList_order.map((item, i) => {
-              this.types[item] = copy_doctype[i];
-            });
-
             // Sort by legislation.
             this.milestones = _.sortBy(this.milestones, ['legislation']);
             this.authors = _.sortBy(this.authors, ['legislation']);
@@ -319,31 +309,17 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
 
     if (params[name] && collection) {
       let confirmedValues = [];
+      // look up each value in collection
       const values = params[name].split(',');
-      for (let valueIdx in values) {
-        if (values.hasOwnProperty(valueIdx)) {
-          let value = values[valueIdx];
-          const record = _.find(collection, [identifyBy, value]);
-          if (record) {
-            let optionArray = this.filterForUI[name];
-            let recordExists = false;
-            for (let optionIdx in optionArray) {
-              if (optionArray[optionIdx]._id === record['_id']) {
-                recordExists = true;
-                break;
-              }
-            }
-
-            if (!recordExists) {
-              optionArray.push(record);
-            }
-            confirmedValues.push(value);
-          }
-          if (confirmedValues.length) {
-            this.filterForURL[name] = confirmedValues.join(',');
-            this.filterForAPI[name] = confirmedValues.join(',');
-          }
+      values.forEach(value => {
+        const record = _.find(collection, [ identifyBy, value ]);
+        if (record) {
+          confirmedValues.push(value);
         }
+      });
+      if (confirmedValues.length) {
+        this.filterForURL[name] = confirmedValues.join(',');
+        this.filterForAPI[name] = confirmedValues.join(',');
       }
     }
   }
@@ -495,10 +471,17 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
     this.filterForUI[filterKey] = this.filterForUI[filterKey].filter(option => option._id !== item._id);
   }
 
+
   public filterCompareWith(filterKey: any, filterToCompare: any) {
-    return filterKey && filterToCompare
-      ? filterKey._id === filterToCompare._id
-      : filterKey === filterToCompare;
+    if (filterKey.hasOwnProperty('code')) {
+      return filterKey && filterToCompare
+              ? filterKey.code === filterToCompare.code
+              : filterKey === filterToCompare;
+    } else if (filterKey.hasOwnProperty('_id')) {
+      return filterKey && filterToCompare
+              ? filterKey._id === filterToCompare._id
+              : filterKey === filterToCompare;
+    }
   }
 
   public onSubmit(currentPage = 1) {
