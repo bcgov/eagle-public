@@ -75,6 +75,11 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
 
   public documentTableColumns: any[] = [
     {
+      name: 'Feature',
+      value: 'isFeatured',
+      width: 'col-1'
+    },
+    {
       name: 'Name',
       value: 'displayName',
       width: 'col-6'
@@ -268,7 +273,8 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
               type: document.type,
               milestone: document.milestone,
               _id: document._id,
-              project: document.project
+              project: document.project,
+              isFeatured: document.isFeatured
             }
           );
         }

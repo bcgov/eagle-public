@@ -66,6 +66,7 @@ export class Project {
   isVisible?: Boolean = true;
   isLoaded?: Boolean = false;
 
+  featuredDocuments?: Array<Document> = [];
 
 
   constructor(obj?: any) {
@@ -122,6 +123,8 @@ export class Project {
     this.read                = obj && obj.read                || null;
     this.write               = obj && obj.write               || null;
     this.delete              = obj && obj.delete              || null;
+
+    this.featuredDocuments   = obj && obj.featuredDocuments   || [];
 
     // copy centroid
     if (obj && obj.centroid) {
