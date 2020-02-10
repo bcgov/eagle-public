@@ -84,10 +84,9 @@ def nodejsTester () {
           checkout scm
           try {
             sh 'npm i'
-            sh 'npm run lint'
             sh 'npm run tests-ci'
           } finally {
-            echo "Lint & Unit Tests Passed"
+            echo "Unit Tests Passed"
           }
         }
       }
