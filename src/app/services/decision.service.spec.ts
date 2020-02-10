@@ -4,7 +4,7 @@ import 'rxjs/add/observable/of';
 import { Observable } from 'rxjs/Observable';
 import 'rxjs/add/observable/throw';
 import { ApiService } from './api';
-import { DecisionService } from './Decision.service';
+import { DecisionService } from './decision.service';
 import { DocumentService } from './document.service';
 import { Document } from 'app/models/document';
 
