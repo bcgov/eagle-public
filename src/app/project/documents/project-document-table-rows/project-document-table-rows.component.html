@@ -7,7 +7,7 @@
              aria-label="Checkbox for row item"
              [(ngModel)]='document.checkbox'>
     </td> -->
-    <td data-label="Featured" (click)="goToItem(document)" scope="row" class="col-1">
+    <td *ngIf="currentUrl === 'documents'" data-label="Featured" (click)="goToItem(document)" scope="row" class="col-1">
         <i *ngIf="document.isFeatured === true" class="material-icons featured-star" aria-hidden="true">star</i>
         <i *ngIf="document.isFeatured !== true" class="material-icons un-featured-star" aria-hidden="true">star_border</i>
     </td>
