@@ -70,7 +70,7 @@ def nodejsTester () {
         containers: [
           containerTemplate(
             name: 'jnlp',
-            image: 'registry.access.redhat.com/openshift3/jenkins-agent-nodejs-8-rhel7',
+            image: 'docker-registry.default.svc:5000/esm/eagle-unit-tester',
             resourceRequestCpu: '500m',
             resourceLimitCpu: '1000m',
             resourceRequestMemory: '2Gi',
@@ -84,8 +84,8 @@ def nodejsTester () {
           checkout scm
           try {
             sh 'npm i'
-            // sh 'npm run tests'
             sh 'npm run lint'
+            sh 'npm run tests-ci'
           } finally {
             echo "Lint & Unit Tests Passed"
           }
