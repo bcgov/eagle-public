@@ -82,7 +82,7 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
     {
       name: 'Name',
       value: 'displayName',
-      width: 'col-6'
+      width: 'col-5'
     },
     {
       name: 'Date',
