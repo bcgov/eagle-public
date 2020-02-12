@@ -18,7 +18,7 @@
                     <div class="input-group main-search-field">
                         <input class="form-control" type="text" name="keywordInput"
                             placeholder="Enter keywords to search..." id="keywordInput"
-                            [(ngModel)]="tableParams.keywords" autofocus 
+                            [(ngModel)]="tableParams.keywords" autofocus
                             aria-label="Enter keywords to search projects by title, description, or type"/>
                         <div *ngIf="!showAdvancedSearch || !isShowingFilter()" class="input-group-append">
                             <!-- prevent searching if input is empty or we're already searching -->
@@ -281,7 +281,7 @@
                 </div>
                 <div>
                     <div class="row align-items-end">
-                        <div class="col justify-content-start results ml-1 mb-1">
+                        <div class="col justify-content-start results ml-1 pt-3 mb-1">
                             <p class="justify-content-start align-text-bottom" align="left"
                                 *ngIf="!loading && tableParams.totalListItems === 0">
                                 No result<span *ngIf="count !== 1">s</span> found for "{{tableParams.keywords}}"
@@ -292,33 +292,6 @@
                                     found</span>
                             </div>
                         </div>
-                        <div class="col mb-2">
-                            <div *ngIf="!loading && this.tableParams.totalListItems > 10">
-                                <p class="text-right m-2"><b>Show Items Per Page:</b></p>
-                                <div class="btn-toolbar mb-2" class="text-right" role="toolbar"
-                                    aria-label="Toolbar with button groups">
-                                    <div class="btn-group-toggle mr-2" role="group" aria-label="First group">
-                                        <a href="javascript:void(0);" role="button" class="btn btn-primary mr-1"
-                                            (click)="tableParams.pageSize=25; onSubmit();"
-                                            aria-pressed="tableParams.pageSize === 25"
-                                            [ngClass]="{'active': this.tableParams.pageSize === '25'}">25</a>
-                                        <a href="javascript:void(0);" role="button" class="btn btn-primary mr-1"
-                                            (click)="tableParams.pageSize=50; onSubmit();"
-                                            aria-pressed="tableParams.pageSize === 50"
-                                            [ngClass]="{'active': this.tableParams.pageSize === '50'}">50</a>
-                                        <a href="javascript:void(0);" role="button" class="btn btn-primary mr-1"
-                                            (click)="tableParams.pageSize=100; onSubmit();"
-                                            aria-pressed="tableParams.pageSize === 100"
-                                            [ngClass]="{'active': this.tableParams.pageSize === '100'}">100</a>
-                                        <a href="javascript:void(0);" role="button" class="btn btn-primary"
-                                            (click)="tableParams.pageSize=this.tableParams.totalListItems; onSubmit();"
-                                            aria-pressed="tableParams.pageSize === this.tableParams.totalListItems"
-                                            [ngClass]="{'active': this.tableParams.pageSize === '' + this.tableParams.totalListItems}">Show
-                                            All</a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </form>
@@ -326,27 +299,6 @@
                 [data]="projectTableData" (onColumnSort)='setColumnSort($event)'
                 (onPageNumUpdate)='getPaginatedProjects($event)'>
             </app-table-template>
-            <div *ngIf="!loading && this.tableParams.pageSize >= 50" class="m-1">
-                <p class="text-right"><b>Show Items Per Page:</b></p>
-                <div class="btn-toolbar" class="text-right" role="toolbar" aria-label="Toolbar with button groups">
-                    <div class="btn-group-toggle mr-2" role="group" aria-label="First group">
-                        <a href="javascript:void(0);" role="button" class="btn btn-primary mr-1"
-                            (click)="tableParams.pageSize=25; onSubmit();" aria-pressed="tableParams.pageSize === 25"
-                            [ngClass]="{'active': this.tableParams.pageSize === '25'}">25</a>
-                        <a href="javascript:void(0);" role="button" class="btn btn-primary mr-1"
-                            (click)="tableParams.pageSize=50; onSubmit();" aria-pressed="tableParams.pageSize === 50"
-                            [ngClass]="{'active': this.tableParams.pageSize === '50'}">50</a>
-                        <a href="javascript:void(0);" role="button" class="btn btn-primary mr-1"
-                            (click)="tableParams.pageSize=100; onSubmit();" aria-pressed="tableParams.pageSize === 100"
-                            [ngClass]="{'active': this.tableParams.pageSize === '100'}">100</a>
-                        <a href="javascript:void(0);" role="button" class="btn btn-primary"
-                            (click)="tableParams.pageSize=this.tableParams.totalListItems; onSubmit();"
-                            aria-pressed="tableParams.pageSize === this.tableParams.totalListItems"
-                            [ngClass]="{'active': this.tableParams.pageSize === '' + this.tableParams.totalListItems}">Show
-                            All</a>
-                    </div>
-                </div>
-            </div>
         </div>
     </section>
 </main>

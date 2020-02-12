@@ -11,7 +11,6 @@ import { ObjectFilterPipe } from 'app/shared/pipes/object-filter.pipe';
 import { VarDirective } from 'app/shared/utils/ng-var.directive';
 import { DragMoveDirective } from 'app/shared/utils/drag-move.directive';
 
-import { NgxPaginationModule } from 'ngx-pagination';
 import { TableTemplateComponent } from 'app/shared/components/table-template/table-template.component';
 import { ListConverterPipe } from './pipes/list-converter.pipe';
 import { OrgNamePipe } from './pipes/org-name.pipe';
@@ -19,6 +18,9 @@ import { TableTemplateUtils } from './utils/table-template-utils';
 import { TableDirective } from './components/table-template/table.directive';
 import { PublishedPipe } from 'app/shared/pipes/published.pipe';
 import { Utils } from './utils/utils';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { NzPaginationModule } from 'ng-zorro-antd/pagination';
+import { NZ_I18N, en_US } from 'ng-zorro-antd';
 
 @NgModule({
   imports: [
@@ -26,7 +28,8 @@ import { Utils } from './utils/utils';
     MatProgressBarModule,
     MatSnackBarModule,
     NgxTextOverflowClampModule,
-    NgxPaginationModule
+    BrowserAnimationsModule,
+    NzPaginationModule,
   ],
   declarations: [
     OrderByPipe,
@@ -52,13 +55,13 @@ import { Utils } from './utils/utils';
     VarDirective,
     DragMoveDirective,
     TableTemplateComponent,
-    NgxPaginationModule,
     ListConverterPipe,
     OrgNamePipe
   ],
   providers: [
     TableTemplateUtils,
-    Utils
+    Utils,
+    { provide: NZ_I18N, useValue: en_US }
   ]
 })
 

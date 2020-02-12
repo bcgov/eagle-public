@@ -1,5 +1,5 @@
 <tr
-  *ngFor="let activity of activities | paginate: { id: 'table-template-pagination', itemsPerPage: paginationData.pageSize, currentPage: paginationData.currentPage, totalItems: paginationData.totalListItems }">
+  *ngFor="let activity of activities">
   <td scope="row" data-label="Headline" class="col-10">
     <span class="font-weight-bold">{{activity.project?.name}}</span>
     <br>

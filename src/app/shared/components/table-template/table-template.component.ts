@@ -3,6 +3,7 @@ import { Component, Input, OnInit, ComponentFactoryResolver, OnDestroy, ViewChil
 import { TableDirective } from './table.directive';
 import { TableObject } from './table-object';
 import { TableComponent } from './table.component';
+import { Constants } from 'app/shared/utils/constants';
 
 @Component({
   selector: 'app-table-template',
@@ -12,6 +13,7 @@ import { TableComponent } from './table.component';
 export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
   @Input() data: TableObject;
   @Input() columns: any[];
+  @Input() activePage: Number = Constants.tableDefaults.DEFAULT_CURRENT_PAGE;
   @ViewChild(TableDirective) tableHost: TableDirective;
 
   @Output() onPageNumUpdate: EventEmitter<any> = new EventEmitter();
@@ -25,6 +27,9 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
 
   ngOnInit() {
     this.loadComponent();
+    if (this.activePage !== parseInt(this.data.paginationData.currentPage, 10)) {
+      this.activePage = parseInt(this.data.paginationData.currentPage, 10);
+    }
   }
 
   ngOnChanges(changes: SimpleChanges) {
@@ -70,5 +75,9 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
 
   updatePageNumber(pageNum) {
     this.onPageNumUpdate.emit(pageNum);
+  }
+  updatePageSize(pageSize) {
+    this.data.paginationData.pageSize = pageSize;
+    this.onPageNumUpdate.emit(this.activePage);
   }
 }

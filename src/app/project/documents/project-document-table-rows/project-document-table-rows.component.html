@@ -1,4 +1,4 @@
-<tr *ngFor="let document of documents | paginate: { id: 'table-template-pagination', itemsPerPage: paginationData.pageSize, currentPage: paginationData.currentPage, totalItems: paginationData.totalListItems }"
+<tr *ngFor="let document of documents"
   class="clickable-row">
     <!-- <td data-label="Select" (click)="selectItem(document)"
         scope="row"
