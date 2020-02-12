@@ -26,7 +26,8 @@
         [nzShowSizeChanger]="true"
         [nzPageSize]="data.paginationData.pageSize"
         [nzTotal]="data.paginationData.totalListItems"
-        [nzPageSizeOptions]="[25, 50, 100, data.paginationData.totalListItems]">
+        [nzPageSizeOptions]="pageSizeArray"
+        [nzShowTotal]="totalTemplate">
     </nz-pagination>
-
+    <ng-template #totalTemplate let-total>{{total}} result<span *ngIf="total != 1">s</span> found</ng-template>
 </div>

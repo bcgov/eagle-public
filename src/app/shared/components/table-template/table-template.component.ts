@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, ComponentFactoryResolver, OnDestroy, ViewChild, Output, EventEmitter, SimpleChanges, OnChanges } from '@angular/core';
+import { Component, Input, OnInit, ComponentFactoryResolver, OnDestroy, ViewChild, Output, EventEmitter, SimpleChanges, OnChanges, ViewEncapsulation } from '@angular/core';
 
 import { TableDirective } from './table.directive';
 import { TableObject } from './table-object';
@@ -8,12 +8,14 @@ import { Constants } from 'app/shared/utils/constants';
 @Component({
   selector: 'app-table-template',
   templateUrl: './table-template.component.html',
-  styleUrls: ['./table-template.component.scss']
+  styleUrls: ['./table-template.component.scss'],
+  encapsulation: ViewEncapsulation.None,
 })
 export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
   @Input() data: TableObject;
   @Input() columns: any[];
-  @Input() activePage: Number = Constants.tableDefaults.DEFAULT_CURRENT_PAGE;
+  @Input() pageSizeArray: number[];
+  @Input() activePage: number = Constants.tableDefaults.DEFAULT_CURRENT_PAGE;
   @ViewChild(TableDirective) tableHost: TableDirective;
 
   @Output() onPageNumUpdate: EventEmitter<any> = new EventEmitter();
@@ -27,6 +29,8 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
 
   ngOnInit() {
     this.loadComponent();
+    this.pageSizeArray = [10, 25, 50, 100, this.data.paginationData.totalListItems];
+    this.pageSizeArray.sort(function(a: number, b: number) { return a - b });
     if (this.activePage !== parseInt(this.data.paginationData.currentPage, 10)) {
       this.activePage = parseInt(this.data.paginationData.currentPage, 10);
     }
