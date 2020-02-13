@@ -1,6 +1,6 @@
 <div class="tab-pane" role="tabpanel">
   <form #f="ngForm" class="search-form ui form" (ngSubmit)="onSubmit()">
-    <div class="input-group main-search-field">
+    <div class="input-group main-search-field pb-3">
       <input class="form-control" type="text" name="keywordInput" placeholder="Enter keywords to search..."
         id="keywordInput" [(ngModel)]="tableParams.keywords" autofocus />
       <div class="input-group-append">
@@ -8,14 +8,6 @@
         <button class="btn btn-primary" type="submit">
           <span>Search</span>
         </button>
-      </div>
-    </div>
-    <div class="results">
-      <!-- <p *ngIf="!loading && tableParams.totalListItems == 0">
-        No result<span *ngIf="count != 1">s</span> found for "{{tableParams.keywords}}"
-      </p> -->
-      <div *ngIf="!loading && tableParams.totalListItems > 0">
-        {{tableParams.totalListItems}} result<span *ngIf="tableParams.totalListItems != 1">s found</span>
       </div>
     </div>
   </form>
