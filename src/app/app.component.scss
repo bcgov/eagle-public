@@ -1,5 +1,8 @@
 @import "~assets/styles/base/base.scss";
 
+.scroll-top-btn{
+    z-index: 10;
+}
 
 :host {
   display: block;
