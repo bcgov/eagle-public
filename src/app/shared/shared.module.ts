@@ -20,6 +20,7 @@ import { PublishedPipe } from 'app/shared/pipes/published.pipe';
 import { Utils } from './utils/utils';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { NzPaginationModule } from 'ng-zorro-antd/pagination';
+import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NZ_I18N, en_US } from 'ng-zorro-antd';
 
 @NgModule({
@@ -30,6 +31,7 @@ import { NZ_I18N, en_US } from 'ng-zorro-antd';
     NgxTextOverflowClampModule,
     BrowserAnimationsModule,
     NzPaginationModule,
+    NzButtonModule
   ],
   declarations: [
     OrderByPipe,

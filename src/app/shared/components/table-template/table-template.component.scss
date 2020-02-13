@@ -35,7 +35,8 @@
 .no-sort {
   cursor: default !important;
 }
-.ant-pagination-item:focus, .ant-pagination-item:hover, .ant-select-dropdown-menu-item-active, .ant-pagination-item-active, .ant-select-dropdown-menu-item:hover {
+.ant-pagination-item:focus, .ant-pagination-item:hover, .ant-btn-primary, .ant-select-dropdown-menu-item-active,
+.ant-pagination-item-active, .ant-select-dropdown-menu-item:hover {
     background: #007bff !important;
     color: #fff !important;
 }
@@ -48,4 +49,7 @@
 .ant-pagination-prev:hover .ant-pagination-item-link, .ant-pagination-next:hover .ant-pagination-item-link {
     background: #007bff !important;
     color: #fff !important;
+}
+.show_all_btn {
+    margin-left: 10px;
 }
