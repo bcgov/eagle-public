@@ -1,4 +1,4 @@
-<tr *ngFor="let contact of contacts | paginate: { id: 'table-template-pagination', itemsPerPage: paginationData.pageSize, currentPage: paginationData.currentPage, totalItems: paginationData.totalListItems }"
+<tr *ngFor="let contact of contacts"
   class="clickable-row">
     <td data-label="Nation Name" scope="row" class="col-8">{{contact.name}}</td>
     <td data-label="Location" scope="row" class="col-4">{{contact.province}}</td>

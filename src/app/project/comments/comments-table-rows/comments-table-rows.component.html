@@ -1,5 +1,5 @@
 <tr
-  *ngFor="let comment of comments | paginate: { id: 'table-template-pagination', itemsPerPage: paginationData.pageSize, currentPage: paginationData.currentPage, totalItems: paginationData.totalListItems }"
+  *ngFor="let comment of comments"
   class="clickable-row">
   <td data-label="Comment" scope="row" class="col-12">
     <div class="d-flex w-100 justify-content-between">

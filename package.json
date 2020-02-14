@@ -14,6 +14,9 @@
     "lint": "ng lint --format=stylish",
     "e2e": "ng e2e"
   },
+  "pre-push": [
+    "lint"
+  ],
   "private": true,
   "dependencies": {
     "@angular/animations": "^6.1.10",
@@ -46,11 +49,11 @@
     "moment": "^2.21.0",
     "moment-timezone": "^0.5.25",
     "mygovbc-bootstrap-theme": "^0.4.1",
+    "ng-zorro-antd": "7.5.1",
     "ng2-bootstrap-modal": "^1.0.1",
     "ngx-chips": "2.0.2",
     "ngx-cookie-service": "1.0.10",
     "ngx-page-scroll": "^5.0.1",
-    "ngx-pagination": "^3.3.1",
     "ngx-text-overflow-clamp": "0.0.1",
     "popper.js": "^1.14.1",
     "rxjs": "^6.5.2",
@@ -78,6 +81,7 @@
     "karma-jasmine": "~1.1.1",
     "karma-jasmine-html-reporter": "^0.2.2",
     "node": "^8.16.0",
+    "pre-push": "^0.1.1",
     "protractor": "~5.4.3",
     "ts-node": "2.0.0",
     "tslint": "^5.19.0",
