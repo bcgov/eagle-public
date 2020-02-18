@@ -248,11 +248,6 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
     if (this.elementRef.nativeElement.offsetParent) {
       this.fitBounds(this.appFG.getBounds());
 
-      // option to centre the map instead of prov view
-      // let markerBounds = L.latLngBounds([L.latLng(this.project.centroid[1], this.project.centroid[0])]);
-      // this.map.fitBounds(markerBounds);
-      // this.map.setZoom(5);
-
     } else {
       setTimeout(this.fixMap.bind(this), 50);
     }
