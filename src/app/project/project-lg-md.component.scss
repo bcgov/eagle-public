@@ -160,7 +160,6 @@
                 display: block;
                 position: relative;
                 overflow: hidden;
-                // height: (400px - 33px); // to hide attribution
             }
             .map {
             position: relative;
@@ -310,9 +309,7 @@
         */
 
         .people {
-            // overflow: hidden;
             background: #f7f7f7;
-            // color: #003366;
             color: black;
 
             width: 71%;
@@ -323,7 +320,6 @@
             }
 
             a {
-                // color: #FCBA19;
                 color: black;
                 text-decoration: underline;
             }
@@ -372,7 +368,6 @@
 
     .people {
         background: #f7f7f7;
-        // color: #003366;
         color: black;
         width: 71%;
         transform: translateX(41%);
@@ -383,7 +378,6 @@
         }
 
         a {
-            // color: #FCBA19;
             color: black;
             text-decoration: underline;
         }
