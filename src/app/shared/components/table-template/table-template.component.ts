@@ -15,6 +15,7 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
   @Input() data: TableObject;
   @Input() columns: any[];
   @Input() pageSizeArray: number[];
+  @Input() activePageSize: number;
   @Input() activePage: number = Constants.tableDefaults.DEFAULT_CURRENT_PAGE;
   @ViewChild(TableDirective) tableHost: TableDirective;
 
@@ -29,7 +30,9 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
 
   ngOnInit() {
     this.loadComponent();
-    this.pageSizeArray = [10, 25, 50, 100, this.data.paginationData.totalListItems];
+    this.activePageSize = parseInt(this.data.paginationData.pageSize, 10);
+    const pageSizeTemp = [10, 25, 50, 100, parseInt(this.data.paginationData.totalListItems, 10)];
+    this.pageSizeArray = pageSizeTemp.filter(function(el: number) { return el >= 10; });
     this.pageSizeArray.sort(function(a: number, b: number) { return a - b });
     if (this.activePage !== parseInt(this.data.paginationData.currentPage, 10)) {
       this.activePage = parseInt(this.data.paginationData.currentPage, 10);
