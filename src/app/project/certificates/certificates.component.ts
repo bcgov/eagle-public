@@ -25,7 +25,7 @@ export class CertificatesComponent implements OnInit, OnDestroy {
   public currentUrl: String = '';
   public documentTableColumns: any[] = [
     {
-      name: 'Feature',
+      name: '★',
       value: 'isFeatured',
       width: 'col-1'
     },

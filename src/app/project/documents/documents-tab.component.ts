@@ -75,7 +75,7 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
 
   public documentTableColumns: any[] = [
     {
-      name: 'Feature',
+      name: '★',
       value: 'isFeatured',
       width: 'col-1'
     },

@@ -9,7 +9,7 @@
     </td> -->
     <!-- May be a request to not show the 'star' on other document tabs -->
     <!-- To hide it, add: *ngIf="currentUrl === 'documents'" tp the td -->
-    <td data-label="Feature" (click)="goToItem(document)" scope="row" class="col-1">
+    <td data-label="★" (click)="goToItem(document)" scope="row" class="col-1">
         <i *ngIf="document.isFeatured === true" class="material-icons featured-star" aria-hidden="true">star</i>
     </td>
     <td data-label="Name" (click)="goToItem(document)" scope="row" class="col-5">
