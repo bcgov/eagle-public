@@ -47,6 +47,15 @@
       </div>
     </div>
     <br>
+    <div class="row" *ngIf="!loading && tableParams.totalListItems != 0">
+        <div class="col-12">
+            <h2>Featured Documents</h2>
+            <app-table-template
+                [columns]="documentTableColumns" [data]="documentTableData" (onColumnSort)='setColumnSort($event)'
+                (onSelectedRow)='updateSelectedRow($event)'>
+            </app-table-template>
+        </div>
+    </div>
     <div class="row">
       <div class="col-12">
         <h2>Activities and Updates</h2>

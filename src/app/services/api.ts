@@ -220,7 +220,8 @@ export class ApiService {
       'tantalisID',
       'tenureStage',
       'type',
-      'legislation'
+      'legislation',
+      'featuredDocuments',
     ];
 
     let queryString = 'project?';
@@ -286,10 +287,12 @@ export class ApiService {
       'status',
       'legislation',
       'substitution',
+      'featuredDocuments',
       'updatedBy',
       'read',
       'write',
-      'delete'
+      'delete',
+      'featuredDocuments'
     ];
     let queryString = `project/${id}?populate=true`;
     if (cpStart !== null) { queryString += `&cpStart[since]=${cpStart}`; }
@@ -536,7 +539,8 @@ export class ApiService {
       'documentFileName',
       'displayName',
       'internalURL',
-      'internalMime'
+      'internalMime',
+      'isFeatured'
     ];
     const queryString = 'document?_application=' + appId + '&fields=' + this.buildValues(fields);
     return this.http.get<Document[]>(`${this.apiPath}/${queryString}`, {});
@@ -548,7 +552,8 @@ export class ApiService {
       'documentFileName',
       'displayName',
       'internalURL',
-      'internalMime'
+      'internalMime',
+      'isFeatured'
     ];
     const queryString = 'document?_comment=' + commentId + '&fields=' + this.buildValues(fields);
     return this.http.get<Document[]>(`${this.apiPath}/${queryString}`, {});
@@ -560,7 +565,8 @@ export class ApiService {
       'documentFileName',
       'displayName',
       'internalURL',
-      'internalMime'
+      'internalMime',
+      'isFeatured'
     ];
     const queryString = 'document?_decision=' + decisionId + '&fields=' + this.buildValues(fields);
     return this.http.get<Document[]>(`${this.apiPath}/${queryString}`, {});
@@ -594,7 +600,8 @@ export class ApiService {
       'documentAuthorType',
       'milestone',
       'description',
-      'isPublished'
+      'isPublished',
+      'isFeatured'
     ];
     const queryString = `document?docIds=${this.buildValues(ids)}&fields=${this.buildValues(fields)}`;
     return this.http.get<Document[]>(`${this.apiPath}/${queryString}`, {});
