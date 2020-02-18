@@ -20,6 +20,7 @@ import { DocumentTableRowsComponent } from './project-document-table-rows/projec
 import { ApiService } from 'app/services/api';
 import { SearchService } from 'app/services/search.service';
 import { StorageService } from 'app/services/storage.service';
+import { Constants } from 'app/shared/utils/constants';
 
 class DocumentFilterObject {
   constructor(
@@ -63,6 +64,8 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
     milestone: false,
     documentAuthorType: false
   };
+
+  public searchDisclaimer = Constants.searchDisclaimer;
 
   public numFilters: object = {
     date: 0,
