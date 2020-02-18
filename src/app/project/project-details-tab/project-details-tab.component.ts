@@ -63,18 +63,9 @@ export class ProjectDetailsTabComponent implements OnInit {
   ngOnInit() {
     this.project = this.storageService.state.currentProject.data;
     this.commentPeriod = this.project.commentPeriodForBanner;
-
-    let params = null;
     this.route.params
-      .switchMap((res: any) => {
-        params = { ...res };
-        return this.route.data;
-      })
-      .takeUntil(this.ngUnsubscribe)
-      .subscribe((res: any) => {
-
+    .subscribe((res: any) => {
       this.getFavoriteDocs();
-
     });
   }
   // Featured Documents table addition
@@ -136,7 +127,6 @@ export class ProjectDetailsTabComponent implements OnInit {
           documentList.push(
             {
               documentFileName: document.documentFileName || document.displayName || document.internalOriginalName,
-              // date: document.dateUploaded || document.datePosted,
               displayName: document.displayName,
               datePosted: document.datePosted,
               type: document.type,
