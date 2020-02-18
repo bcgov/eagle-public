@@ -1,0 +1,90 @@
+@import "~assets/styles/base/base.scss";
+
+
+@media (min-width: 768px) {
+
+    .location-info {
+    padding: 0 20px 20px 20px;
+    .info-block {
+        display: inline-block;
+        padding: 10px 10px 10px 0;
+        p, a {
+            font-size: small;
+        }
+    }
+
+    h2 {
+        color: #003364;
+    }
+    label {
+        font-weight: bold;
+        color: $primary;
+        margin-bottom: 0;
+        line-height: 1.2;
+    }
+    p {
+        font-size: 1rem;
+    }
+    .value {
+        font-size: 1rem;
+        line-height: 1.25;
+        margin-bottom: 5px;
+    }
+    .organization-item {
+        margin-top: 0;
+        color: white;
+        background-color: white;
+        border-radius: 4px 4px 0 0;
+        padding: 7px 10px;
+        width: 100%;
+        text-align: center;
+        p {
+        font-size: 1.2rem;
+        font-weight: bold;
+        margin-bottom: 0;
+        }
+    }
+    }
+
+    .tab-section {
+    .status {
+        text-align: right;
+        font-size: large;
+        font-weight: bold;
+    }
+    .title {
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: $primary;
+        margin-bottom: 5px;
+    }
+    a {
+        display: inline-flex;
+    }
+    .row {
+        @media (max-width: 767px) {
+        display: block;
+        > div {
+            max-width: 100%;
+            margin-bottom: 20px;
+        }
+        }
+    }
+    }
+
+    .banner {
+        background-color: #003366;
+        color: white;
+    }
+
+
+    .no-results-msg {
+        position: absolute;
+        top: 50%;
+        width: 100%;
+        left: 0;
+        margin-top: -12px;
+        text-align: center;
+    }
+
+}
