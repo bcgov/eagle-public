@@ -43,6 +43,10 @@
                                 *ngIf="numFilters.type > 0 && !showFilters.type">&nbsp;({{ numFilters.type }})</span>
                         </button>
                         <button class="btn btn-outline-dark" type="button" (click)="clearAll();">Clear All</button>
+                        <br/>
+                        <div *ngIf="showAdvancedSearch" class="search-disclaimer">
+                            <span>{{searchDisclaimer}}</span>
+                        </div>
                     </div>
                     <div
                         [ngClass]="{'show-advanced-search-button': true, 'col-md-3': showAdvancedSearch, 'col-md-12': !showAdvancedSearch}">
