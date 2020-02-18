@@ -4,6 +4,12 @@
   background: $footer-bg;
   color: $footer-color;
 
+  position: relative;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 5;
+
   .container {
     padding-top: 1.5rem;
     padding-right: 1.5rem;
