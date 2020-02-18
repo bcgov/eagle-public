@@ -19,9 +19,7 @@ import { TableDirective } from './components/table-template/table.directive';
 import { PublishedPipe } from 'app/shared/pipes/published.pipe';
 import { Utils } from './utils/utils';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { NzPaginationModule } from 'ng-zorro-antd/pagination';
-import { NzButtonModule } from 'ng-zorro-antd/button';
-import { NZ_I18N, en_US } from 'ng-zorro-antd';
+import { NgZorroAntdModule, NZ_I18N, en_US } from 'ng-zorro-antd';
 
 @NgModule({
   imports: [
@@ -30,8 +28,7 @@ import { NZ_I18N, en_US } from 'ng-zorro-antd';
     MatSnackBarModule,
     NgxTextOverflowClampModule,
     BrowserAnimationsModule,
-    NzPaginationModule,
-    NzButtonModule
+    NgZorroAntdModule
   ],
   declarations: [
     OrderByPipe,

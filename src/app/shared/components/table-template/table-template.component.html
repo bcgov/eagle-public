@@ -23,7 +23,7 @@
         (nzPageIndexChange)="updatePageNumber($event)"
         (nzPageSizeChange)="updatePageSize($event)"
         [nzShowSizeChanger]="true"
-        [nzPageSize]="data.paginationData.pageSize"
+        [nzPageSize]="activePageSize"
         [nzTotal]="data.paginationData.totalListItems"
         [nzPageSizeOptions]="pageSizeArray"
         [nzShowTotal]="totalTemplate">
