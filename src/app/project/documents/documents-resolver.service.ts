@@ -53,6 +53,13 @@ export class DocumentsResolver implements Resolve<Observable<object>> {
         // Validate the filter parameters being sent to the API
         this.setFilterFromParams(route.params);
 
+        let queryModifiers = { documentSource: 'PROJECT' };
+
+        if (datePostedStart !== null && datePostedEnd !== null) {
+          queryModifiers['datePostedStart'] = datePostedStart;
+          queryModifiers['datePostedEnd'] = datePostedEnd;
+        }
+
         return this.searchService.getSearchResults(
           keywords,
           'Document',
@@ -60,7 +67,7 @@ export class DocumentsResolver implements Resolve<Observable<object>> {
           currentPage,
           pageSize,
           sortBy,
-          { documentSource: 'PROJECT', datePostedStart: datePostedStart, datePostedEnd: datePostedEnd },
+          queryModifiers,
           true,
           null,
           this.filterForAPI,
