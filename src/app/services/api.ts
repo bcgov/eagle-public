@@ -142,7 +142,7 @@ export class ApiService {
           } else {
             safeItem = item;
           }
-          queryString += `&and[${key}]=${safeItem}`;
+          queryString += `&or[${key}]=${safeItem}`;
         });
       });
     }
