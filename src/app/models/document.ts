@@ -25,6 +25,7 @@ export class Document {
   upfile: File;
   labels: any[];
   isPublished = false; // depends on tags; see below
+  isFeatured = false;
 
   constructor(obj?: any) {
     this._id = obj && obj._id || null;
@@ -51,5 +52,7 @@ export class Document {
     this.checkbox = obj && obj.checkbox || null;
     this.upfile = obj && obj.upfile || null;
     this.labels = obj && obj.labels || null;
+
+    this.isFeatured = obj && obj.isFeatured || false;
   }
 }

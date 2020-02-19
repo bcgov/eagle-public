@@ -20,6 +20,7 @@ import { DocumentTableRowsComponent } from './project-document-table-rows/projec
 import { ApiService } from 'app/services/api';
 import { SearchService } from 'app/services/search.service';
 import { StorageService } from 'app/services/storage.service';
+import { Constants } from 'app/shared/utils/constants';
 
 class DocumentFilterObject {
   constructor(
@@ -64,6 +65,8 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
     documentAuthorType: false
   };
 
+  public searchDisclaimer = Constants.searchDisclaimer;
+
   public numFilters: object = {
     date: 0,
     type: 0,
@@ -75,9 +78,14 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
 
   public documentTableColumns: any[] = [
     {
+      name: '★',
+      value: 'isFeatured',
+      width: 'col-1'
+    },
+    {
       name: 'Name',
       value: 'displayName',
-      width: 'col-6'
+      width: 'col-5'
     },
     {
       name: 'Date',
@@ -268,7 +276,8 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
               type: document.type,
               milestone: document.milestone,
               _id: document._id,
-              project: document.project
+              project: document.project,
+              isFeatured: document.isFeatured
             }
           );
         }
@@ -441,8 +450,15 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
     const params = this.terms.getParams();
     this.setParamsFromFilters(params);
 
-    const datePostedStart = params.hasOwnProperty('datePostedStart') && params.datePostedStart ? params.datePostedStart : '0001-01-01';
-    const datePostedEnd = params.hasOwnProperty('datePostedEnd') && params.datePostedEnd ? params.datePostedEnd : '9999-12-31';
+    const datePostedStart = params.hasOwnProperty('datePostedStart') && params.datePostedStart ? params.datePostedStart : null;
+    const datePostedEnd = params.hasOwnProperty('datePostedEnd') && params.datePostedEnd ? params.datePostedEnd : null;
+
+    let queryModifiers = { documentSource: 'PROJECT' };
+
+    if (datePostedStart !== null && datePostedEnd !== null) {
+      queryModifiers['datePostedStart'] = datePostedStart;
+      queryModifiers['datePostedEnd'] = datePostedEnd;
+    }
 
     this.searchService.getSearchResults(
       this.tableParams.keywords,
@@ -451,7 +467,7 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
       pageNumber,
       this.tableParams.pageSize,
       this.tableParams.sortBy,
-      { documentSource: 'PROJECT', datePostedStart: datePostedStart, datePostedEnd: datePostedEnd },
+      queryModifiers,
       true,
       null,
       this.filterForAPI,

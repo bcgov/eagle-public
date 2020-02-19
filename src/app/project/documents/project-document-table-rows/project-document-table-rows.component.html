@@ -7,10 +7,19 @@
              aria-label="Checkbox for row item"
              [(ngModel)]='document.checkbox'>
     </td> -->
-    <td data-label="Name" (click)="goToItem(document)" scope="row" class="col-6">{{document.displayName}}</td>
+    <!-- May be a request to not show the 'star' on other document tabs -->
+    <!-- To hide it, add: *ngIf="currentUrl === 'documents'" tp the td -->
+    <td data-label="★" (click)="goToItem(document)" scope="row" class="col-1">
+        <i *ngIf="document.isFeatured === true" class="material-icons featured-star" aria-hidden="true">star</i>
+    </td>
+    <td data-label="Name" (click)="goToItem(document)" scope="row" class="col-5">
+        {{document.displayName}}
+    </td>
     <td data-label="Date" (click)="goToItem(document)" scope="row" class="col-2"><div *ngIf="document.datePosted !== '1900-01-01T08:00:00.000Z'">{{document.datePosted | date:'longDate'}}</div></td>
-    <td data-label="Type" (click)="goToItem(document)" scope="row" class="col-2">{{idToList(document.type)}}</td>
-    <td data-label="Milestone" (click)="goToItem(document)" scope="row" class="col-2">{{idToList(document.milestone)}}</td>
+    <td *ngIf="currentUrl !== 'project-details'" data-label="Type" (click)="goToItem(document)" scope="row" class="col-2">{{idToList(document.type)}}</td>
+    <td *ngIf="currentUrl !== 'project-details'"  data-label="Milestone" (click)="goToItem(document)" scope="row" class="col-2">{{idToList(document.milestone)}}</td>
+    <td *ngIf="currentUrl === 'project-details'" data-label="Type" (click)="goToItem(document)" scope="row" class="col-2">{{document.typeString}}</td>
+
     <!-- <td>
             <button type="button" (click)="deleteVC(valuedComponent)" class="btn btn-danger">Delete</button>
         </td> -->

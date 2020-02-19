@@ -22,8 +22,13 @@
 */
 
     .banner {
-        background-color: #003366;
-        color: white;
+        background-color: #EFEFEF;
+        color: #003366;
+
+        .btn {
+            color: #003366;
+            border-color: #003366;
+        }
     }
 
 /*

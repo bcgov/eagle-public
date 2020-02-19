@@ -20,13 +20,19 @@ export class DocumentTableRowsComponent implements OnInit, OnDestroy, TableCompo
   public documents: any;
   public paginationData: any;
   private lists: any[] = [];
+
+  public currentUrl: String = '';
+
   constructor(
     private _changeDetectionRef: ChangeDetectorRef,
     private route: ActivatedRoute,
     private api: ApiService,
     private router: Router,
     private utils: Utils
-  ) { }
+  ) {
+    let currRoute = router.url.split(';')[0];
+    this.currentUrl = currRoute.substring(currRoute.lastIndexOf('/') + 1);
+   }
 
   ngOnInit() {
     this.documents = this.data.data;
