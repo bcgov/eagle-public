@@ -450,8 +450,15 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
     const params = this.terms.getParams();
     this.setParamsFromFilters(params);
 
-    const datePostedStart = params.hasOwnProperty('datePostedStart') && params.datePostedStart ? params.datePostedStart : '0001-01-01';
-    const datePostedEnd = params.hasOwnProperty('datePostedEnd') && params.datePostedEnd ? params.datePostedEnd : '9999-12-31';
+    const datePostedStart = params.hasOwnProperty('datePostedStart') && params.datePostedStart ? params.datePostedStart : null;
+    const datePostedEnd = params.hasOwnProperty('datePostedEnd') && params.datePostedEnd ? params.datePostedEnd : null;
+
+    let queryModifiers = { documentSource: 'PROJECT' };
+
+    if (datePostedStart !== null && datePostedEnd !== null) {
+      queryModifiers['datePostedStart'] = datePostedStart;
+      queryModifiers['datePostedEnd'] = datePostedEnd;
+    }
 
     this.searchService.getSearchResults(
       this.tableParams.keywords,
@@ -460,7 +467,7 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
       pageNumber,
       this.tableParams.pageSize,
       this.tableParams.sortBy,
-      { documentSource: 'PROJECT', datePostedStart: datePostedStart, datePostedEnd: datePostedEnd },
+      queryModifiers,
       true,
       null,
       this.filterForAPI,
