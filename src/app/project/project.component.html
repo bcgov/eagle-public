@@ -38,16 +38,16 @@
                 </div>
             </div>
 
-            <div class="main-content col-md-8 col-sm-12">
-                <div *ngIf="project.commentPeriodForBanner" class="container my-4 banner">
-                    <div class="m-3 py-3">
+            <div class="content">
+                <div *ngIf="project.commentPeriodForBanner" class="pcp-banner col-md-10 col-sm-12">
+                    <div class="container">
                         <div class="row">
-                            <div class="col-md-4">
+                            <div class="col-md-6">
                                 <h2 class="mb-0">Public Comment Period is {{project.commentPeriodForBanner.commentPeriodStatus}}</h2>
                                 <h5>{{project.commentPeriodForBanner.dateStarted | date: 'MMMM d'}} -
                                 {{project.commentPeriodForBanner.longEndDate.format('MMMM DD @ hh:mm z')}}</h5>
                             </div>
-                            <div class="col-md-4 text-right">
+                            <div class="col-md-6 text-right">
                                 <div *ngIf="project.commentPeriodForBanner.commentPeriodStatus !== Open">
                                 <button type="button" class="btn btn-light" (click)="goToViewComments()">
                                     View Comment Period
@@ -59,7 +59,7 @@
                             </div>
                         </div>
                         <div class="row">
-                            <div class="col-md-8">
+                            <div class="col-md-12">
                                 <p *ngIf="project.commentPeriodForBanner.informationLabel" class="mb-0">
                                 This Public Comment Period is regarding the <b>{{project.commentPeriodForBanner.informationLabel}}</b>
                                 </p>
@@ -71,24 +71,25 @@
                     </div>
                 </div>
 
-                <section class="project-tabs">
-                <div class="container">
-                    <div class="tab-container">
-                    <div role="navigation">
-                        <ul class="nav-tabs" role="tablist">
-                        <li class="nav-item" role="presentation" *ngFor="let tabLink of tabLinks">
-                            <a class="nav-link" role="tab" [routerLink]="tabLink.link" [replaceUrl]="true"
-                            routerLinkActive="active">{{tabLink.label}}</a>
-                        </li>
-                        </ul>
+                <div class="main-content col-md-8 col-sm-12">
+                    <section class="project-tabs">
+                    <div class="container">
+                        <div class="tab-container">
+                        <div role="navigation">
+                            <ul class="nav-tabs" role="tablist">
+                            <li class="nav-item" role="presentation" *ngFor="let tabLink of tabLinks">
+                                <a class="nav-link" role="tab" [routerLink]="tabLink.link" [replaceUrl]="true"
+                                routerLinkActive="active">{{tabLink.label}}</a>
+                            </li>
+                            </ul>
+                        </div>
+                        <router-outlet></router-outlet>
+                        </div>
                     </div>
-                    <router-outlet></router-outlet>
-                    </div>
+                    </section>
                 </div>
-                </section>
-
-
             </div>
+
             <section class="people col-md-10 col-sm-12">
                 <div class="container">
                     <h2>Contacts</h2>

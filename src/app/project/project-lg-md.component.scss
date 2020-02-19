@@ -26,9 +26,22 @@
         PCP banner
     */
 
-        .banner {
-            background-color: #003366;
-            color: white;
+        .pcp-banner {
+            background-color: #EFEFEF;
+            color: #003366;
+            width: 71%;
+            transform: translateX(41%);
+            padding-top: 60px;
+            margin-bottom: -60px; // pull the rest of the page up
+
+            .container {
+                padding: 40px 20px 40px 40px;
+            }
+
+            .btn {
+                color: #003366;
+                border-color: #003366;
+            }
         }
 
     /*
@@ -188,15 +201,16 @@
             font-size: .9rem;
             overflow-x: hidden; /* Disable horizontal scroll */
             // entire view height minus the footer
-            min-height: calc(100vh - 69px);
 
+            .content {
+                // entire view height minus the footer, minus the contacts section
+                min-height: calc(100vh - 69px - 311px);
+            }
 
             .main-content {
                 transform: translateX(35%);
                 margin: 0 0 0 8.5%;
                 padding: 80px 0 0 0;
-                // entire view height minus the footer, minus the contacts section
-                min-height: calc(100vh - 69px - 311px);
             }
 
             section {
