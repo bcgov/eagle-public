@@ -49,21 +49,21 @@
                             </div>
                             <div class="col-md-6 text-right">
                                 <div *ngIf="project.commentPeriodForBanner.commentPeriodStatus !== Open">
-                                <button type="button" class="btn btn-light" (click)="goToViewComments()">
+                                <button type="button" class="btn content-btn-dark page-bottom-btn" (click)="goToViewComments()">
                                     View Comment Period
                                 </button>
                                 &nbsp;
-                                <button class="btn btn-light" (click)="addComment()" type="button"
+                                <button class="btn content-btn-dark page-bottom-btn" (click)="addComment()" type="button"
                                     *ngIf="project.commentPeriodForBanner.commentPeriodStatus === 'Open'">Submit Comment</button>
                                 </div>
                             </div>
                         </div>
                         <div class="row">
                             <div class="col-md-12">
-                                <p *ngIf="project.commentPeriodForBanner.informationLabel" class="mb-0">
+                                <p *ngIf="project.commentPeriodForBanner.informationLabel" class="mb-0 info">
                                 This Public Comment Period is regarding the <b>{{project.commentPeriodForBanner.informationLabel}}</b>
                                 </p>
-                                <p *ngIf="project.commentPeriodForBanner.informationLabel == null" class="mb-0">
+                                <p *ngIf="project.commentPeriodForBanner.informationLabel == null" class="mb-0 info">
                                 {{project.commentPeriodForBanner.instructions}}
                                 </p>
                             </div>
