@@ -49,11 +49,11 @@
                             </div>
                             <div class="col-md-6 text-right">
                                 <div *ngIf="project.commentPeriodForBanner.commentPeriodStatus !== Open">
-                                <button type="button" class="btn content-btn-dark page-bottom-btn" (click)="goToViewComments()">
+                                <button type="button" class="btn content-btn-dark" (click)="goToViewComments()">
                                     View Comment Period
                                 </button>
                                 &nbsp;
-                                <button class="btn content-btn-dark page-bottom-btn" (click)="addComment()" type="button"
+                                <button class="btn content-btn-dark" (click)="addComment()" type="button"
                                     *ngIf="project.commentPeriodForBanner.commentPeriodStatus === 'Open'">Submit Comment</button>
                                 </div>
                             </div>
