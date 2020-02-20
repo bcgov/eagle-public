@@ -43,57 +43,52 @@ export class Utils {
   }
 
   // Creates query modifiers used for tab display in a project.
-  public createProjectTabModifiers(list: Array<object>) {
-    const certTypes = [
-      { legislation: 2002, name: 'Certificate Package' },
-      { legislation: 2018, name: 'Certificate Package' }
-    ];
-    const certMilestones = [
-      { legislation: 2002, name: 'Certificate' },
-      { legislation: 2018, name: 'Certificate Decision' }
-    ];
-    const amendTypes = [
-      { legislation: 2002, name: 'Amendment Package' },
-      { legislation: 2018, name: 'Amendment Package' }
-    ];
-    const amendMilestones = [
-      { legislation: 2002, name: 'Amendment' },
-      { legislation: 2018, name: 'Amendment' }
-    ];
-    const appTypes = [
-      { legislation: 2002, name: 'Application Materials' },
-      { legislation: 2018, name: 'Application Materials' },
-      { legislation: 2002, name: 'Scientific Memo' },
-      { legislation: 2018, name: 'Independent Memo' }
-    ];
-    const appMilestones = [
-      { legislation: 2002, name: 'Application Review' },
-      { legislation: 2018, name: 'Revised EAC Application' },
-    ];
+  public createProjectTabModifiers(projectTab: string, list: Array<object>) {
+    let types: Array<object>;
+    let milestones: Array<object>;
 
-    const certTypesIds = this.getIdsByName(certTypes, list).map(type => type.id).join(',');
-    const certMilestonesIds = this.getIdsByName(certMilestones, list).map(milestone => milestone.id).join(',');
-    const amendTypesIds = this.getIdsByName(amendTypes, list).map(type => type.id).join(',');
-    const amendMilestonesIds = this.getIdsByName(amendMilestones, list).map(milestone => milestone.id).join(',');
-    const appTypesIds = this.getIdsByName(appTypes, list).map(milestone => milestone.id).join(',');
-    const appMilestonesIds = this.getIdsByName(appMilestones, list).map(milestone => milestone.id).join(',');
+    switch (projectTab) {
+      case Constants.optionalProjectDocTabs.AMENDMENT:
+        types = [
+          { legislation: 2002, name: 'Amendment Package' },
+          { legislation: 2018, name: 'Amendment Package' }
+        ];
+        milestones = [
+          { legislation: 2002, name: 'Amendment' },
+          { legislation: 2018, name: 'Amendment' }
+        ];
+        break;
+      case Constants.optionalProjectDocTabs.CERTIFICATE:
+        types = [
+          { legislation: 2002, name: 'Certificate Package' },
+          { legislation: 2018, name: 'Certificate Package' }
+        ];
+        milestones = [
+          { legislation: 2002, name: 'Certificate' },
+          { legislation: 2018, name: 'Certificate Decision' }
+        ];
+        break;
+      case Constants.optionalProjectDocTabs.APPLICATION:
+        types = [
+          { legislation: 2002, name: 'Application Materials' },
+          { legislation: 2018, name: 'Application Materials' },
+          { legislation: 2002, name: 'Scientific Memo' },
+          { legislation: 2018, name: 'Independent Memo' }
+        ];
+        milestones = [
+          { legislation: 2002, name: 'Application Review' },
+          { legislation: 2018, name: 'Revised EAC Application' },
+        ];
+        break;
+    }
+
+    const typeIds = this.getIdsByName(types, list).map(type => type.id).join(',');
+    const milestoneIds = this.getIdsByName(milestones, list).map(milestone => milestone.id).join(',');
 
     return {
-      CERTIFICATE: {
-        documentSource: 'PROJECT',
-        type: certTypesIds,
-        milestone: certMilestonesIds,
-      },
-      AMENDMENT: {
-        documentSource: 'PROJECT',
-        type: amendTypesIds,
-        milestone: amendMilestonesIds,
-      },
-      APPLICATION: {
-        documentSource: 'PROJECT',
-        type: appTypesIds,
-        milestone: appMilestonesIds,
-      }
+      documentSource: 'PROJECT',
+      type: typeIds,
+      milestone: milestoneIds,
     };
   }
 

@@ -7,6 +7,12 @@ export class Constants {
 
   public static readonly searchDisclaimer = 'Note: Some documents within this project have not yet been categorized by author, document type, and/or milestone and may not be displayed when using some of the search filters. We are actively processing these documents so they can be searched and filtered, making it easier to find what you’re looking for. Clearing the filters and searching based on a keyword will show all results.';
 
+  public static readonly optionalProjectDocTabs = {
+    APPLICATION: 'application',
+    CERTIFICATE: 'certificate',
+    AMENDMENT: 'amendment',
+  };
+
   public static readonly legislationLinks = {
     ENVIRONMENTAL_ASSESSMENT_ACT_2002_LINK: 'http://www.bclaws.ca/civix/document/id/complete/statreg/02043_01',
     ENVIRONMENTAL_ASSESSMENT_ACT_1996_LINK: 'http://www.bclaws.ca/civix/document/id/complete/statreg/96119_pit',

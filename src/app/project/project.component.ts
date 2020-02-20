@@ -25,7 +25,6 @@ import { DataQueryResponse } from 'app/models/api-response';
   styleUrls: ['./project-lg-md.component.scss', './project-sm.component.scss']
 })
 export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
-  public tabLinks: Array<any> = [];
   public project: Project = null;
   public period: CommentPeriod = null;
   private ngbModal: NgbModalRef = null;
@@ -38,6 +37,49 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
   readonly defaultBounds = L.latLngBounds([48, -139], [60, -114]); // all of BC
 
   private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
+
+  public tabLinks = [
+    {
+      label: 'Project Details',
+      link: 'project-details',
+      tabDisplayCriteria: null,
+      display: true,
+    },
+    {
+      label: 'Commenting',
+      link: 'commenting',
+      tabDisplayCriteria: null,
+      display: true,
+    },
+    {
+      label: 'Documents',
+      link: 'documents',
+      tabDisplayCriteria: null,
+      display: true,
+    },
+    // Any tabs that start off hidden (display = false) must have a key.
+    {
+      key: Constants.optionalProjectDocTabs.APPLICATION,
+      label: 'Application',
+      link: 'application',
+      tabDisplayCriteria: null,
+      display: false,
+    },
+    {
+      key: Constants.optionalProjectDocTabs.CERTIFICATE,
+      label: 'Certificate',
+      link: 'certificates',
+      tabDisplayCriteria: null,
+      display: false,
+    },
+    {
+      key: Constants.optionalProjectDocTabs.AMENDMENT,
+      label: 'Amendment(s)',
+      link: 'amendments',
+      tabDisplayCriteria: null,
+      display: false,
+    },
+  ];
 
   constructor(
     private route: ActivatedRoute,
@@ -57,7 +99,7 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
   // add an entry to this.tabLinks if the corresponding documents have been tagged
   // tablink is the label/link pair to append to this.tabLinks
   // queryModifier is the queryModifier parameter of SearchService.getSearchResults
-  private tabLinkIfNotEmpty(tabLink: {label: string, link: string}, queryModifier: object) {
+  private tabLinkIfNotEmpty(key: string, queryModifier: object) {
     // attempt to get a single document that matches each query.
     if (queryModifier) {
       this.searchService.getSearchResults(
@@ -73,17 +115,11 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
       )
       .takeUntil(this.ngUnsubscribe)
       .subscribe((res: any) => {
-        // add tab link if results are not empty
+        // Display tab if there are results.
         if (res[0].data.searchResults.length) {
-          this.tabLinks.forEach(tab => {
-            if (tab.tab.label === tabLink.label) {
-              // Need to add a key here to find.
-            }
-          })
-
-          if (!this.tabLinks.find(link => link.tab.label === tabLink.label)) {
-            this.tabLinks.push(tabLink);
-          }
+          // Accessing via reference to change the original array's value.
+          const tab = this.tabLinks.find(docTab => docTab.key === key);
+          tab.display = true;
         }
       })
     };
@@ -271,70 +307,28 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
 
   initTabLinks(): void {
     this.configService.lists.subscribe (list => {
-      const tabModifier = this.utils.createProjectTabModifiers(list);
-      this.tabLinks = [
-        {
-          tab: {
-            label: 'Project Details',
-            link: 'project-details',
-          },
-          tabDisplayCriteria: null,
-          display: true,
-        },
-        {
-          tab: {
-            label: 'Commenting',
-            link: 'commenting',
-          },
-          tabDisplayCriteria: null,
-          display: true,
-        },
-        {
-          tab: {
-            label: 'Documents',
-            link: 'documents',
-          },
-          tabDisplayCriteria: null,
-          display: true,
-        },
-        {
-          tab: {
-            label: 'Application',
-            link: 'application',
-          },
-          tabDisplayCriteria: tabModifier.APPLICATION,
-          display: false,
-        },
-        {
-          tab: {
-            label: 'Certificate',
-            link: 'certificates',
-          },
-          tabDisplayCriteria: tabModifier.CERTIFICATE,
-          display: false,
-        },
-        {
-          tab: {
-            label: 'Amendment(s)',
-            link: 'amendments',
-          },
-          tabDisplayCriteria: tabModifier.AMENDMENT,
-          display: false,
-        },
-      ];
-
-      this.tabLinks.forEach(tabLink => this.tabLinkIfNotEmpty(tabLink.tab, tabLink.tabDisplayCriteria));
+      this.tabLinks.forEach(tabLink => {
+        if (!tabLink.display) {
+          const tabModifier = this.utils.createProjectTabModifiers(tabLink.key, list);
+          this.tabLinkIfNotEmpty(tabLink.key, tabModifier);
+        }
+      });
     });
-
 
     // Not documents so can't use the tabLinkIfNotEmpty()
     this.projectService.getPins(this.project._id, 1, 1, null)
       .takeUntil(this.ngUnsubscribe)
       .subscribe((response: DataQueryResponse<Org>[]) => {
         if (response && response.length && response[0].results && response[0].results.length && response[0].total_items) {
-        this.tabLinks.push({ label: 'Participating Indigenous Nations', link: 'pins' });
+        this.tabLinks.push({
+          label: 'Participating Indigenous Nations',
+          link: 'pins',
+          display: false,
+          tabDisplayCriteria: null,
+        });
     }})
   }
+
 
   public addComment() {
     if (this.project.commentPeriodForBanner) {
