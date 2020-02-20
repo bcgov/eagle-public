@@ -38,7 +38,7 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
 
   private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
 
-  public tabLinks: Array<object> = [
+  public tabLinks: Array<any> = [
     {
       label: 'Project Details',
       link: 'project-details',
