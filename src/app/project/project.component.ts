@@ -25,15 +25,7 @@ import { DataQueryResponse } from 'app/models/api-response';
   styleUrls: ['./project-lg-md.component.scss', './project-sm.component.scss']
 })
 export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
-  public tabLinks = [
-    { label: 'Project Details', link: 'project-details' },
-    { label: 'Commenting', link: 'commenting' },
-    { label: 'Documents', link: 'documents' },
-    // { label: 'Certificate', link: 'certificates' },
-    // { label: 'Amendment(s)', link: 'amendments' },
-    // { label: 'Participating Indigenous Nations', link: 'pins' }
-  ];
-
+  public tabLinks: Array<any> = [];
   public project: Project = null;
   public period: CommentPeriod = null;
   private ngbModal: NgbModalRef = null;
@@ -67,6 +59,7 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
   // queryModifier is the queryModifier parameter of SearchService.getSearchResults
   private tabLinkIfNotEmpty(tabLink: {label: string, link: string}, queryModifier: object) {
     // attempt to get a single document that matches each query.
+    if (queryModifier) {
       this.searchService.getSearchResults(
         null,
         'Document',
@@ -82,11 +75,18 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
       .subscribe((res: any) => {
         // add tab link if results are not empty
         if (res[0].data.searchResults.length) {
-          if (!this.tabLinks.find(link => link.label === tabLink.label)) {
+          this.tabLinks.forEach(tab => {
+            if (tab.tab.label === tabLink.label) {
+              // Need to add a key here to find.
+            }
+          })
+
+          if (!this.tabLinks.find(link => link.tab.label === tabLink.label)) {
             this.tabLinks.push(tabLink);
           }
         }
-      });
+      })
+    };
   }
 
   ngOnInit() {
@@ -272,24 +272,58 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
   initTabLinks(): void {
     this.configService.lists.subscribe (list => {
       const tabModifier = this.utils.createProjectTabModifiers(list);
-      const tabLinks = [
+      this.tabLinks = [
+        {
+          tab: {
+            label: 'Project Details',
+            link: 'project-details',
+          },
+          tabDisplayCriteria: null,
+          display: true,
+        },
+        {
+          tab: {
+            label: 'Commenting',
+            link: 'commenting',
+          },
+          tabDisplayCriteria: null,
+          display: true,
+        },
+        {
+          tab: {
+            label: 'Documents',
+            link: 'documents',
+          },
+          tabDisplayCriteria: null,
+          display: true,
+        },
+        {
+          tab: {
+            label: 'Application',
+            link: 'application',
+          },
+          tabDisplayCriteria: tabModifier.APPLICATION,
+          display: false,
+        },
         {
           tab: {
             label: 'Certificate',
-            link: 'certificates'
+            link: 'certificates',
           },
-          tabDisplayCriteria: tabModifier.CERTIFICATE
+          tabDisplayCriteria: tabModifier.CERTIFICATE,
+          display: false,
         },
         {
           tab: {
             label: 'Amendment(s)',
-            link: 'amendments'
+            link: 'amendments',
           },
-          tabDisplayCriteria: tabModifier.AMENDMENT
-        }
-      ]
+          tabDisplayCriteria: tabModifier.AMENDMENT,
+          display: false,
+        },
+      ];
 
-      tabLinks.forEach(tabLink => this.tabLinkIfNotEmpty(tabLink.tab, tabLink.tabDisplayCriteria));
+      this.tabLinks.forEach(tabLink => this.tabLinkIfNotEmpty(tabLink.tab, tabLink.tabDisplayCriteria));
     });
 
 

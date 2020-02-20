@@ -162,6 +162,8 @@ export class CertificatesComponent implements OnInit, OnDestroy {
 
     if (this.currentUrl === 'amendments') {
       this.router.navigate(['p', this.currentProject._id, 'amendments', params]);
+    } else if (this.currentUrl === 'application') {
+      this.router.navigate(['p', this.currentProject._id, 'application', params]);
     } else {
       this.router.navigate(['p', this.currentProject._id, 'certificates', params]);
     }

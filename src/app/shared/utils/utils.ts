@@ -52,13 +52,6 @@ export class Utils {
       { legislation: 2002, name: 'Certificate' },
       { legislation: 2018, name: 'Certificate Decision' }
     ];
-    /* Removed so that authors other than EAO can submit certificates as author is not supposed to be a determiner of what is a valid certifcate
-    Does not appear to be used elsewhere but left in incase this assumption is incorrect.
-    const certAuthTypes = [
-      { legislation: 2002, name: 'EAO' },
-      { legislation: 2018, name: 'EAO' }
-    ];
-    */
     const amendTypes = [
       { legislation: 2002, name: 'Amendment Package' },
       { legislation: 2018, name: 'Amendment Package' }
@@ -67,24 +60,39 @@ export class Utils {
       { legislation: 2002, name: 'Amendment' },
       { legislation: 2018, name: 'Amendment' }
     ];
+    const appTypes = [
+      { legislation: 2002, name: 'Application Materials' },
+      { legislation: 2018, name: 'Application Materials' },
+      { legislation: 2002, name: 'Scientific Memo' },
+      { legislation: 2018, name: 'Independent Memo' }
+    ];
+    const appMilestones = [
+      { legislation: 2002, name: 'Application Review' },
+      { legislation: 2018, name: 'Revised EAC Application' },
+    ];
 
     const certTypesIds = this.getIdsByName(certTypes, list).map(type => type.id).join(',');
     const certMilestonesIds = this.getIdsByName(certMilestones, list).map(milestone => milestone.id).join(',');
-    // const certAuthTypesIds = this.getIdsByName(certAuthTypes, list).map(type => type.id).join(',');
     const amendTypesIds = this.getIdsByName(amendTypes, list).map(type => type.id).join(',');
     const amendMilestonesIds = this.getIdsByName(amendMilestones, list).map(milestone => milestone.id).join(',');
+    const appTypesIds = this.getIdsByName(appTypes, list).map(milestone => milestone.id).join(',');
+    const appMilestonesIds = this.getIdsByName(appMilestones, list).map(milestone => milestone.id).join(',');
 
     return {
       CERTIFICATE: {
         documentSource: 'PROJECT',
         type: certTypesIds,
-          //  documentAuthorType: certAuthTypesIds,
         milestone: certMilestonesIds,
       },
       AMENDMENT: {
         documentSource: 'PROJECT',
         type: amendTypesIds,
         milestone: amendMilestonesIds,
+      },
+      APPLICATION: {
+        documentSource: 'PROJECT',
+        type: appTypesIds,
+        milestone: appMilestonesIds,
       }
     };
   }

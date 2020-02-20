@@ -11,6 +11,7 @@ import { ProjectActivitiesResolver } from './project-activites/project-activitie
 import { DocumentTableResolver } from './documents/project-document-table-rows/project-document-table-rows-resolver.service';
 import { CertificatesResolver } from './certificates/certificates-resolver.service';
 import { AmendmentsResolverService } from './certificates/amendments-resolver.service';
+import { ApplicationResolver } from './certificates/application-resolver.service';
 import { PinsResolverService } from './pins/pins-resolver.service';
 
 const routes: Routes = [
@@ -54,7 +55,8 @@ const routes: Routes = [
     AmendmentsResolverService,
     ProjectActivitiesResolver,
     DocumentTableResolver,
-    PinsResolverService
+    PinsResolverService,
+    ApplicationResolver
   ]
 })
 
