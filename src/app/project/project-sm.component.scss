@@ -1,5 +1,12 @@
 @import "~assets/styles/base/base.scss";
 
+.cactext {
+  color: #003366;
+  display: flex;
+  flex-direction: column;
+  float: right;
+  justify-content: space-between;
+}
 
 .project-info {
     display: block;

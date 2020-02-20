@@ -13,6 +13,7 @@ import { DocumentService } from 'app/services/document.service';
 import * as moment from 'moment-timezone';
 import { Project } from 'app/models/project';
 import { ConfigService } from 'app/services/config.service';
+import { ProjectService } from 'app/services/project.service';
 
 @Component({
   templateUrl: './add-comment.component.html',
@@ -37,12 +38,15 @@ export class AddCommentComponent implements OnInit {
   public commentInput: any;
   public locationInput: any;
   public makePublic: any;
+  public email: any;
   public commentFiles: any;
   public anonymousName = 'Anonymous';
+  public submittedCAC: Boolean;
 
   constructor(
     public activeModal: NgbActiveModal,
     private commentService: CommentService,
+    private projectService: ProjectService,
     private documentService: DocumentService,
     private config: ConfigService,
   ) { }
@@ -52,6 +56,7 @@ export class AddCommentComponent implements OnInit {
     this.contactName = this.anonymousName;
     this.comment.period = this.currentPeriod._id;
     this.comment.isAnonymous = true;
+    this.submittedCAC = false;
     this.commentFiles = [];
     this.documentAuthorType = null;
     this.getLists();
@@ -87,16 +92,74 @@ export class AddCommentComponent implements OnInit {
     }
   }
 
+  private learnMore() {
+    this.currentPage = 2;
+  }
+
   private p1_next() {
-    this.currentPage++;
+    // TODO: Check if they already submitted something, if so, skip
+    // to adding their comment again.
+    if (this.submittedCAC || !this.project.projectCAC) {
+      this.currentPage += 4;
+    } else {
+      this.currentPage++;
+    }
   }
 
   private p2_back() {
     this.currentPage--;
   }
 
-  // TODO: Have some null checks in here from the front end
   private p2_next() {
+    // Skip
+    this.currentPage += 3;
+  };
+
+  private p2_becomeAMember() {
+    this.contactName = '';
+    this.currentPage++;
+  }
+
+  private p3_back() {
+    this.currentPage--;
+  }
+
+  private p3_next() {
+    // Submit CAC information
+    this.submitting = true;
+
+    // Build the comment
+    let signUpObject = {
+      name: this.contactName,
+      email: this.email,
+      comment: this.commentInput,
+    };
+
+    this.projectService.cacSignUp(this.project, signUpObject)
+    .toPromise()
+    .then((res: any) => {
+      console.log('Success:', res);
+      this.submitting = false;
+      this.submittedCAC = true;
+      this.currentPage++;
+    })
+    .catch(error => {
+      console.log('error', error);
+      alert('Uh-oh, error submitting informaiton');
+      this.submitting = false;
+    });
+  }
+
+  private p4_next() {
+    this.currentPage++;
+  }
+
+  private p5_back() {
+    this.currentPage -= 4;
+  }
+
+  // TODO: Have some null checks in here from the front end
+  private p5_next() {
     this.submitting = true;
     this.progressValue = this.progressBufferValue = 0;
 

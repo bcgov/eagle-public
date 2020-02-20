@@ -12,6 +12,7 @@ import { CommentPeriodService } from 'app/services/commentperiod.service';
 import { StorageService } from 'app/services/storage.service';
 import { CommentPeriod } from 'app/models/commentperiod';
 import { AddCommentComponent } from './comments/add-comment/add-comment.component';
+import { BecomeAMemberComponent } from './cac/become-a-member.component';
 import { Constants } from 'app/shared/utils/constants';
 import { SearchService } from 'app/services/search.service';
 import { Utils } from 'app/shared/utils/utils';
@@ -292,6 +293,22 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
       tabLinks.forEach(tabLink => this.tabLinkIfNotEmpty(tabLink.tab, tabLink.tabDisplayCriteria));
     });
 
+  public learnMore() {
+    this.ngbModal = this.modalService.open(BecomeAMemberComponent, { backdrop: 'static', size: 'lg' });
+    // set input parameter
+    (<BecomeAMemberComponent>this.ngbModal.componentInstance).project = this.project;
+    // check result
+    this.ngbModal.result.then(
+      value => {
+        // saved
+        console.log(`Success, value = ${value}`);
+      },
+      reason => {
+        // cancelled
+        console.log(`Cancelled, reason = ${reason}`);
+      }
+    );
+  }
 
     // Not documents so can't use the tabLinkIfNotEmpty()
     this.projectService.getPins(this.project._id, 1, 1, null)

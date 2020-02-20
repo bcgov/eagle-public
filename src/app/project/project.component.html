@@ -70,8 +70,16 @@
                         </div>
                     </div>
                 </div>
-
-                <div class="main-content col-md-8 col-sm-12">
+                <div class="main-content col-sm-12 {{ sidebarOpen ? 'col-md-8' : 'wide' }}">
+                    <div *ngIf="project.projectCAC">
+                      <div class="row">
+                        <div class="col float-right text-right"><i class="material-icons" role="presentation" wiid="C937">person</i><span class="align-top">Become a Community Advisory Committee Member</span></div>
+                      </div>
+                      <div class="row">
+                        <div class="col-10">&nbsp;</div>
+                        <div class="col float-right text-right btn btn-link mb-0 font-weight-light" (click)="learnMore()">Learn More</div>
+                      </div>
+                    </div>
                     <section class="project-tabs">
                     <div class="container">
                         <div class="tab-container">
