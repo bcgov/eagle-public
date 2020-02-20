@@ -41,8 +41,9 @@
           </div>
           <div *ngIf="project?.operational" class="col-sm-12 col-md-3 info-block">
             <label>Active Phase</label>
-            <p class="value">{{project?.operational?.label || '-'}} |
+            <p *ngIf="project?.operational?.date" class="value">{{project?.operational?.label || '-'}} |
               {{project?.operational?.date | date: 'longDate' || '-'}}</p>
+            <p *ngIf="!project?.operational?.date" class="value">{{project?.operational?.label || '-'}}</p>
           </div>
         </div>
       </div>
