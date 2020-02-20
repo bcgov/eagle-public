@@ -38,7 +38,7 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
 
   private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
 
-  public tabLinks = [
+  public tabLinks: Array<object> = [
     {
       label: 'Project Details',
       link: 'project-details',
@@ -323,7 +323,7 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
         this.tabLinks.push({
           label: 'Participating Indigenous Nations',
           link: 'pins',
-          display: false,
+          display: true,
           tabDisplayCriteria: null,
         });
     }})
