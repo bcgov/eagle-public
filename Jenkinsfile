@@ -17,6 +17,49 @@ def notifyRocketChat(text, url) {
     sh("curl -X POST -H 'Content-Type: application/json' --data \'${payload}\' ${rocketChatURL}")
 }
 
+// Print stack trace of error
+@NonCPS
+private static String stackTraceAsString(Throwable t) {
+    StringWriter sw = new StringWriter();
+    t.printStackTrace(new PrintWriter(sw));
+    return sw.toString()
+}
+
+def _openshift(String name, String project, Closure body) {
+  script {
+    openshift.withCluster() {
+      openshift.withProject(project) {
+        echo "Running Stage '${name}'"
+        waitUntil {
+          boolean isDone=false
+          try {
+            body()
+            isDone=true
+            echo "Completed Stage '${name}'"
+          } catch (error) {
+            echo "${stackTraceAsString(error)}"
+            def inputAction = input(
+              message: "This step (${name}) has failed. See related messages:",
+              ok: 'Confirm',
+              parameters: [
+                choice(
+                  name: 'action',
+                  choices: 'Re-run\nIgnore',
+                  description: 'What would you like to do?'
+                )
+              ]
+            )
+            if ('Ignore'.equalsIgnoreCase(inputAction)) {
+              isDone=true
+            }
+          }
+          return isDone
+        }
+      }
+    }
+  }
+}
+
 /*
  * takes in a sonarqube status json payload
  * and returns the status string
@@ -24,6 +67,34 @@ def notifyRocketChat(text, url) {
 def sonarGetStatus (jsonPayload) {
   def jsonSlurper = new JsonSlurper()
   return jsonSlurper.parseText(jsonPayload).projectStatus.status
+}
+
+/*
+ * takes in a sonarqube status json payload
+ * and returns the date string
+ */
+def sonarGetDate (jsonPayload) {
+  def jsonSlurper = new JsonSlurper()
+  return jsonSlurper.parseText(jsonPayload).projectStatus.periods[0].date
+}
+
+boolean sonarqubeReportComplete ( String oldDate, String sonarqubeStatusUrl, def iterations = 6 ) {
+  def oldSonarqubeReportDate = oldDate
+  def newSonarqubeReportDate = sonarGetDate ( sh ( returnStdout: true, script: "curl -w '%{http_code}' '${sonarqubeStatusUrl}'" ) )
+  int delay = 0
+
+  for (int i=0; i<iterations; i++) {
+    echo "waiting for sonarqube report, iterator is: ${i}, max iterator is: ${iterations} \n Old Date: ${oldSonarqubeReportDate} \n New Date: ${newSonarqubeReportDate}"
+    if (oldSonarqubeReportDate != newSonarqubeReportDate) {
+      echo "sonarqube report complete"
+      return true
+    } else {
+      delay = (1<<i) // exponential backoff
+      sleep(delay)
+      newSonarqubeReportDate = sonarGetDate ( sh ( returnStdout: true, script: "curl -w '%{http_code}' '${sonarqubeStatusUrl}'" ) )
+    }
+  }
+  return false
 }
 
 /*
@@ -58,128 +129,164 @@ def getChangeLog(pastBuilds) {
 }
 
 def nodejsTester () {
-  openshift.withCluster() {
-    openshift.withProject() {
-      String testPodLabel = "node-tester-${UUID.randomUUID().toString()}";
-      podTemplate(
-        label: testPodLabel,
-        name: testPodLabel,
-        serviceAccount: 'jenkins',
-        cloud: 'openshift',
-        slaveConnectTimeout: 300,
-        containers: [
-          containerTemplate(
-            name: 'jnlp',
-            image: 'docker-registry.default.svc:5000/esm/eagle-unit-tester',
-            resourceRequestCpu: '500m',
-            resourceLimitCpu: '1000m',
-            resourceRequestMemory: '2Gi',
-            resourceLimitMemory: '4Gi',
-            workingDir: '/tmp',
-            command: '',
-          )
-        ]
-      ) {
-        node(testPodLabel) {
-          checkout scm
-          try {
-            sh 'npm i'
-            sh 'npm run tests-ci'
-          } finally {
-            echo "Unit Tests Passed"
-          }
+  _openshift(env.STAGE_NAME, TOOLSPROJECT) {
+    String testPodLabel = "node-tester-${UUID.randomUUID().toString()}";
+    podTemplate(
+      label: testPodLabel,
+      name: testPodLabel,
+      serviceAccount: 'jenkins',
+      cloud: 'openshift',
+      slaveConnectTimeout: 300,
+      containers: [
+        containerTemplate(
+          name: 'jnlp',
+          image: 'docker-registry.default.svc:5000/esm/eagle-unit-tester',
+          resourceRequestCpu: '500m',
+          resourceLimitCpu: '1000m',
+          resourceRequestMemory: '2Gi',
+          resourceLimitMemory: '3Gi',
+          workingDir: '/tmp',
+          command: '',
+        )
+      ]
+    ) {
+      node(testPodLabel) {
+        checkout scm
+        try {
+          sh 'npm i'
+          sh 'npm run tests-ci'
+        } finally {
+          echo "Unit Tests Passed"
         }
       }
-      return true
     }
   }
+  return true
 }
+
 
 def nodejsSonarqube () {
-  openshift.withCluster() {
-    openshift.withProject() {
-      String sonarLabel = "sonarqube-runner-${UUID.randomUUID().toString()}";
-      podTemplate(
-        label: sonarLabel,
-        name: sonarLabel,
-        serviceAccount: 'jenkins',
-        cloud: 'openshift',
-        slaveConnectTimeout: 300,
-        containers: [
-          containerTemplate(
-            name: 'jnlp',
-            image: 'registry.access.redhat.com/openshift3/jenkins-agent-nodejs-8-rhel7',
-            resourceRequestCpu: '500m',
-            resourceLimitCpu: '1000m',
-            resourceRequestMemory: '2Gi',
-            resourceLimitMemory: '4Gi',
-            workingDir: '/tmp',
-            command: '',
-            args: '${computer.jnlpmac} ${computer.name}',
-          )
-        ]
-      ) {
-        node(sonarLabel) {
-          checkout scm
-          dir('sonar-runner') {
-            try {
-              // run scan
-              sh("oc extract secret/sonarqube-secrets --to=${env.WORKSPACE}/sonar-runner --confirm")
-              SONARQUBE_URL = sh(returnStdout: true, script: 'cat sonarqube-route-url')
+  openshift(env.STAGE_NAME, TOOLSPROJECT) {
+    String sonarLabel = "sonarqube-runner-${UUID.randomUUID().toString()}";
+    podTemplate(
+      label: sonarLabel,
+      name: sonarLabel,
+      serviceAccount: 'jenkins',
+      cloud: 'openshift',
+      slaveConnectTimeout: 300,
+      containers: [
+        containerTemplate(
+          name: 'jnlp',
+          image: 'registry.access.redhat.com/openshift3/jenkins-agent-nodejs-8-rhel7',
+          resourceRequestCpu: '500m',
+          resourceLimitCpu: '1000m',
+          resourceRequestMemory: '2Gi',
+          resourceLimitMemory: '3Gi',
+          workingDir: '/tmp',
+          command: '',
+          args: '${computer.jnlpmac} ${computer.name}',
+        )
+      ]
+    ) {
+      node(sonarLabel) {
+        checkout scm
+        dir('sonar-runner') {
+          try {
+          // run scan
+          sh("oc extract secret/sonarqube-secrets --to=${env.WORKSPACE}/sonar-runner --confirm")
+          SONARQUBE_URL = sh(returnStdout: true, script: 'cat sonarqube-route-url')
 
-              sh "npm install typescript"
-              sh returnStdout: true, script: "./gradlew sonarqube -Dsonar.host.url=${SONARQUBE_URL} -Dsonar. -Dsonar.verbose=true --stacktrace --info"
+          sh "npm install typescript"
+          sh returnStdout: true, script: "./gradlew sonarqube -Dsonar.host.url=${SONARQUBE_URL} -Dsonar. -Dsonar.verbose=true --stacktrace --info"
 
-              // wiat for scan status to update
-              sleep(30)
+          // check if sonarqube passed
+          sh("oc extract secret/sonarqube-status-urls --to=${env.WORKSPACE}/sonar-runner --confirm")
+          SONARQUBE_STATUS_URL = sh(returnStdout: true, script: 'cat sonarqube-status-public')
 
-              // check if sonarqube passed
-              sh("oc extract secret/sonarqube-status-urls --to=${env.WORKSPACE}/sonar-runner --confirm")
-              SONARQUBE_STATUS_URL = sh(returnStdout: true, script: 'cat sonarqube-status-public')
+          boolean firstScan = false;
+          def OLD_SONAR_DATE
+          try {
+            // get old sonar report date
+            def OLD_SONAR_DATE_JSON = sh(returnStdout: true, script: "curl -w '%{http_code}' '${SONARQUBE_STATUS_URL}'")
+            OLD_SONAR_DATE = sonarGetDate (OLD_SONAR_DATE_JSON)
+          } catch (error) {
+            firstScan = true
+          }
 
-              SONARQUBE_STATUS_JSON = sh(returnStdout: true, script: "curl -w '%{http_code}' '${SONARQUBE_STATUS_URL}'")
-              SONARQUBE_STATUS = sonarGetStatus (SONARQUBE_STATUS_JSON)
+          if ( !firstScan ) {
+            // wiat for report to be updated
+            if ( !sonarqubeReportComplete ( OLD_SONAR_DATE, SONARQUBE_STATUS_URL ) ) {
+              echo "sonarqube report failed to complete, or timed out"
 
-              if ( "${SONARQUBE_STATUS}" == "ERROR") {
-                echo "Scan Failed"
-
-                notifyRocketChat(
-                  "@all The latest build ${env.BUILD_DISPLAY_NAME} of eagle-public seems to be broken. \n ${env.RUN_DISPLAY_URL}\n Error: \n Sonarqube scan failed",
-                  ROCKET_DEPLOY_WEBHOOK
-                )
-
-                currentBuild.result = 'FAILURE'
-                exit 1
-              } else {
-                echo "Scan Passed"
-              }
-
-            } catch (error) {
               notifyRocketChat(
-                "@all The latest build ${env.BUILD_DISPLAY_NAME} of eagle-public seems to be broken. \n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
+                "@all The latest build, ${env.BUILD_DISPLAY_NAME} of eagle-public seems to be broken. \n ${env.RUN_DISPLAY_URL}\n Error: \n sonarqube report failed to complete, or timed out : ${SONARQUBE_URL}",
                 ROCKET_DEPLOY_WEBHOOK
               )
-              throw error
-            } finally {
-              echo "Scan Complete"
+
+              currentBuild.result = "FAILURE"
+              exit 1
             }
+          } else {
+            sleep (30)
           }
+
+          SONARQUBE_STATUS_JSON = sh(returnStdout: true, script: "curl -w '%{http_code}' '${SONARQUBE_STATUS_URL}'")
+          SONARQUBE_STATUS = sonarGetStatus (SONARQUBE_STATUS_JSON)
+
+          // check if sonarqube passed
+          sh("oc extract secret/sonarqube-status-urls --to=${env.WORKSPACE}/sonar-runner --confirm")
+          SONARQUBE_STATUS_URL = sh(returnStdout: true, script: 'cat sonarqube-status-public')
+
+          notifyRocketChat(
+            "@all The latest build ${env.BUILD_DISPLAY_NAME} of eagle-public seems to be broken. \n ${env.RUN_DISPLAY_URL}\n Error: \n Sonarqube scan failed",
+            ROCKET_DEPLOY_WEBHOOK
+          )
+
+          if ( "${SONARQUBE_STATUS}" == "ERROR") {
+            echo "Scan Failed"
+
+            notifyRocketChat(
+              "@all The latest build ${env.BUILD_DISPLAY_NAME} of eagle-public seems to be broken. \n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
+              ROCKET_DEPLOY_WEBHOOK
+            )
+
+            currentBuild.result = 'FAILURE'
+            exit 1
+          } else {
+            echo "Scan Passed"
+          }
+        } catch (error) {
+          notifyRocketChat(
+            "@all The latest build ${env.BUILD_DISPLAY_NAME} of eagle-public seems to be broken. \n ${env.BUILD_URL}\n Error: \n ${error.message}",
+            ROCKET_DEPLOY_WEBHOOK
+          )
+          throw error
+        } finally {
+          echo "Scan Complete"
         }
       }
-      return true
     }
   }
+  return true
 }
+
 
 def CHANGELOG = "No new changes"
 def IMAGE_HASH = "latest"
-
+def lockName = "eagle-public-${env.JOB_NAME}-${env.BUILD_NUMBER}"
 pipeline {
-  agent any
-  options {
-    disableResume()
+  environment {
+    TOOLSPROJECT = "esm"
   }
+  agent any
   stages {
+    stage('Build Init') {
+      steps {
+        script {
+          openshift.setLockName(lockName)
+        }
+      }
+    }
     stage('Parallel Stage') {
       failFast true
       parallel {
@@ -221,7 +328,7 @@ pipeline {
           }
         }
 
-        stage('Lint & Unit Test') {
+        stage('Unit Test') {
           steps {
             script {
               echo "Running linter and unit tests"
@@ -272,21 +379,6 @@ pipeline {
         }
       }
     }
-
-    // stage('ZAP Security Scan') {
-    //   agent{ label: zapPodLabel }
-      // steps {
-        //the checkout is mandatory
-        // echo "checking out source"
-        // echo "Build: ${BUILD_ID}"
-        // checkout scm
-        // dir('zap') {
-        //   def retVal = sh returnStatus: true, script: './runzap.sh'
-        //   publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: true, reportDir: '/zap/wrk', reportFiles: 'index.html', reportName: 'ZAP Full Scan', reportTitles: 'ZAP Full Scan'])
-        //   echo "Return value is: ${retVal}"
-        // }
-      // }
-    // }
 
     // stage('BDD Tests') {
     //   agent { label: bddPodLabel }
