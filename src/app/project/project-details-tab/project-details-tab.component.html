@@ -35,8 +35,9 @@
           </div>
           <div *ngIf="project?.eacDecision" class="col-sm-12 col-md-3 info-block">
             <label>EAC Status</label>
-            <p class="value">{{project.eacDecision?.name || '-'}} |
+            <p *ngIf="project?.decisionDate" class="value">{{project.eacDecision?.name || '-'}} |
               {{project?.decisionDate | date: 'longDate' || '-'}}</p>
+            <p *ngIf="!project?.decisionDate" class="value">{{project.eacDecision?.name || '-'}}</p>
           </div>
           <div *ngIf="project?.operational" class="col-sm-12 col-md-3 info-block">
             <label>Active Phase</label>
