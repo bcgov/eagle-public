@@ -85,6 +85,6 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
   }
   updatePageSize(pageSize) {
     this.data.paginationData.pageSize = pageSize;
-    this.onPageNumUpdate.emit(this.activePage);
+    this.onPageNumUpdate.emit(1);
   }
 }
