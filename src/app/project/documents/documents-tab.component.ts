@@ -27,6 +27,7 @@ class DocumentFilterObject {
     public datePostedStart: object = {},
     public datePostedEnd: object = {},
     public type: Array<string> = [],
+    public projectPhase: Array<string> = [],
     public documentAuthorType: Array<string> = []
   ) { }
 }
@@ -43,6 +44,7 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
   public milestones: any[] = [];
   public authors: any[] = [];
   public types: any[] = [];
+  public projectPhases: any[] = [];
 
   public loading = true;
 
@@ -60,6 +62,7 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
     date: false,
     type: false,
     milestone: false,
+    projectPhase: false,
     documentAuthorType: false
   };
 
@@ -69,6 +72,7 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
     date: 0,
     type: 0,
     milestone: 0,
+    projectPhase: 0,
     documentAuthorType: 0
   };
 
@@ -166,10 +170,23 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
               });
             }
 
+            if (this.projectPhases.length === 0) {
+              res.documentsTableRow[0].searchResults.map(item => {
+                switch (item.type) {
+                  case 'projectPhase':
+                    this.projectPhases.push({ ...item });
+                    break;
+                  default:
+                    break;
+                }
+              });
+            }
+
             // Sort by legislation.
             this.milestones = _.sortBy(this.milestones, ['legislation']);
             this.authors = _.sortBy(this.authors, ['legislation']);
             this.types = _.sortBy(this.types, ['legislation', 'listOrder']);
+            this.projectPhases = _.sortBy(this.projectPhases, ['legislation']);
           }
 
           this.setFiltersFromParams(params);
@@ -340,6 +357,7 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
     this.paramsToCollectionFilters(params, 'milestone', this.milestones, '_id');
     this.paramsToCollectionFilters(params, 'documentAuthorType', this.authors, '_id');
     this.paramsToCollectionFilters(params, 'type', this.types, '_id');
+    this.paramsToCollectionFilters(params, 'projectPhase', this.projectPhases, '_id');
 
     this.paramsToDateFilters(params, 'datePostedStart');
     this.paramsToDateFilters(params, 'datePostedEnd');
@@ -367,6 +385,7 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
     this.collectionFilterToParams(params, 'milestone', '_id');
     this.collectionFilterToParams(params, 'documentAuthorType', '_id');
     this.collectionFilterToParams(params, 'type', '_id');
+    this.collectionFilterToParams(params, 'projectPhase', '_id');
 
     this.dateFilterToParams(params, 'datePostedStart');
     this.dateFilterToParams(params, 'datePostedEnd');
@@ -424,6 +443,7 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
     this.updateCount('date');
     this.updateCount('documentAuthorType');
     this.updateCount('type');
+    this.updateCount('projectPhase');
   }
 
   getPaginatedDocs(pageNumber) {
