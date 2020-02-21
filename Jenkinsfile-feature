@@ -197,7 +197,7 @@ def nodejsSonarqube () {
             SONARQUBE_URL = sh(returnStdout: true, script: 'cat sonarqube-route-url')
 
             sh "npm install typescript"
-            sh returnStdout: true, script: "./gradlew sonarqube -Dsonar.host.url=${SONARQUBE_URL} -Dsonar.projectKey='org.sonarqube:cac-eagle-public' -Dsonar.verbose=true --stacktrace --info"
+            sh returnStdout: true, script: "./gradlew sonarqube -Dsonar.host.url=${SONARQUBE_URL} -Dsonar.projectKey='org.sonarqube:cac-eagle-public' -Dsonar.projectName=cac-eagle-public -Dsonar.verbose=true --stacktrace --info"
 
             // check if sonarqube passed
             sh("oc extract secret/sonarqube-status-urls --to=${env.WORKSPACE}/sonar-runner --confirm")
