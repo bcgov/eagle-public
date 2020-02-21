@@ -58,8 +58,15 @@ export class ApiService {
   }
 
   public async downloadDocument(document: Document): Promise<void> {
-    console.log(document);
-    const blob = await this.downloadResource(document._id);
+    let blob;
+    try {
+      blob = await this.downloadResource(document._id)
+    } catch (e) {
+      throw new Error(e)
+    }
+    if (!blob) {
+      return
+    }
     let filename = document.displayName;
     filename = this.utils.encodeString(filename, false)
     if (this.isMS) {
