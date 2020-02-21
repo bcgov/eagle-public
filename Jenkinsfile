@@ -162,7 +162,6 @@ def nodejsTester () {
     }
     return true
   }
-  return true
 }
 
 
@@ -247,7 +246,7 @@ def nodejsSonarqube () {
               echo "Scan Failed"
 
               notifyRocketChat(
-                "@all The latest build, ${env.BUILD_DISPLAY_NAME} of eagle-public seems to be broken. \n ${env.RUN_DISPLAY_URL}\n Error: \n sonarqube report failed to complete, or timed out : ${SONARQUBE_URL}",
+                "@all The latest build ${env.BUILD_DISPLAY_NAME} of eagle-public seems to be broken. \n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
                 ROCKET_DEPLOY_WEBHOOK
               )
 
@@ -265,46 +264,11 @@ def nodejsSonarqube () {
           } finally {
             echo "Scan Complete"
           }
-
-          SONARQUBE_STATUS_JSON = sh(returnStdout: true, script: "curl -w '%{http_code}' '${SONARQUBE_STATUS_URL}'")
-          SONARQUBE_STATUS = sonarGetStatus (SONARQUBE_STATUS_JSON)
-
-          // check if sonarqube passed
-          sh("oc extract secret/sonarqube-status-urls --to=${env.WORKSPACE}/sonar-runner --confirm")
-          SONARQUBE_STATUS_URL = sh(returnStdout: true, script: 'cat sonarqube-status-public')
-
-          notifyRocketChat(
-            "@all The latest build ${env.BUILD_DISPLAY_NAME} of eagle-public seems to be broken. \n ${env.RUN_DISPLAY_URL}\n Error: \n Sonarqube scan failed",
-            ROCKET_DEPLOY_WEBHOOK
-          )
-
-          if ( "${SONARQUBE_STATUS}" == "ERROR") {
-            echo "Scan Failed"
-
-            notifyRocketChat(
-              "@all The latest build ${env.BUILD_DISPLAY_NAME} of eagle-public seems to be broken. \n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
-              ROCKET_DEPLOY_WEBHOOK
-            )
-
-            currentBuild.result = 'FAILURE'
-            exit 1
-          } else {
-            echo "Scan Passed"
-          }
-        } catch (error) {
-          notifyRocketChat(
-            "@all The latest build ${env.BUILD_DISPLAY_NAME} of eagle-public seems to be broken. \n ${env.BUILD_URL}\n Error: \n ${error.message}",
-            ROCKET_DEPLOY_WEBHOOK
-          )
-          throw error
-        } finally {
-          echo "Scan Complete"
         }
       }
     }
     return true
   }
-  return true
 }
 
 
@@ -427,3 +391,4 @@ pipeline {
     // }
   }
 }
+
