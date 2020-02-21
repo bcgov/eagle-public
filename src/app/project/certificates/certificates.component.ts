@@ -25,14 +25,9 @@ export class CertificatesComponent implements OnInit, OnDestroy {
   public currentUrl: String = '';
   public documentTableColumns: any[] = [
     {
-      name: '★',
-      value: 'isFeatured',
-      width: 'col-1'
-    },
-    {
       name: 'Name',
       value: 'displayName',
-      width: 'col-5'
+      width: 'col-6'
     },
     {
       name: 'Date',
@@ -122,7 +117,8 @@ export class CertificatesComponent implements OnInit, OnDestroy {
       this.documentTableData = new TableObject(
         DocumentTableRowsComponent,
         documentList,
-        this.tableParams
+        this.tableParams,
+        { showFeatured: false },
       );
     }
   }
