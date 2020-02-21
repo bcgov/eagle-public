@@ -79,7 +79,7 @@ export class CommentPeriodService {
     }
 
     const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 0, 0);
 
     if (commentPeriod.dateCompleted < today) {
       return this.CLOSED;
