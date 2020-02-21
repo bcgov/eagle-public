@@ -166,7 +166,7 @@ def nodejsTester () {
 
 
 def nodejsSonarqube () {
-  openshift(env.STAGE_NAME, TOOLSPROJECT) {
+  _openshift(env.STAGE_NAME, TOOLSPROJECT) {
     String sonarLabel = "sonarqube-runner-${UUID.randomUUID().toString()}";
     podTemplate(
       label: sonarLabel,
