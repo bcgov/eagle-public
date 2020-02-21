@@ -8,7 +8,7 @@ import { Utils } from 'app/shared/utils/utils';
 import { Constants } from 'app/shared/utils/constants';
 
 @Injectable()
-export class AmendmentsResolverService implements Resolve<Observable<object>> {
+export class ApplicationResolver implements Resolve<Observable<object>> {
   constructor(
     private searchService: SearchService,
     private configService: ConfigService,
@@ -23,7 +23,7 @@ export class AmendmentsResolverService implements Resolve<Observable<object>> {
     const keywords = route.params.keywords;
 
     return this.configService.lists.switchMap (list => {
-      const tabModifier = this.utils.createProjectTabModifiers(Constants.optionalProjectDocTabs.AMENDMENT, list);
+      const tabModifier = this.utils.createProjectTabModifiers(Constants.optionalProjectDocTabs.APPLICATION, list);
       return this.searchService.getSearchResults(
         keywords,
         'Document',

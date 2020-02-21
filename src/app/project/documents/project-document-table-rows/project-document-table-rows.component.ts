@@ -19,6 +19,7 @@ export class DocumentTableRowsComponent implements OnInit, OnDestroy, TableCompo
 
   public documents: any;
   public paginationData: any;
+  public showFeatured = true;
   private lists: any[] = [];
 
   public currentUrl: String = '';
@@ -37,6 +38,10 @@ export class DocumentTableRowsComponent implements OnInit, OnDestroy, TableCompo
   ngOnInit() {
     this.documents = this.data.data;
     this.paginationData = this.data.paginationData;
+    if (this.data.extraData) {
+      this.showFeatured = this.data.extraData.showFeatured;
+    }
+
     this.route.data
       .takeUntil(this.ngUnsubscribe)
       .subscribe((res: any) => {

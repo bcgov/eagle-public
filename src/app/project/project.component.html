@@ -79,7 +79,7 @@
                             <ul class="nav-tabs" role="tablist">
                             <li class="nav-item" role="presentation" *ngFor="let tabLink of tabLinks">
                                 <a class="nav-link" role="tab" [routerLink]="tabLink.link" [replaceUrl]="true"
-                                routerLinkActive="active">{{tabLink.label}}</a>
+                                routerLinkActive="active" *ngIf="tabLink.display === true">{{tabLink.label}}</a>
                             </li>
                             </ul>
                         </div>
