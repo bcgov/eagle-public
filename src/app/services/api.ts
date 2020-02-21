@@ -65,7 +65,7 @@ export class ApiService {
       throw new Error(e)
     }
     if (!blob) {
-      return
+      throw new Error()
     }
     let filename = document.displayName;
     filename = this.utils.encodeString(filename, false)
