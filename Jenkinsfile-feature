@@ -160,8 +160,8 @@ def nodejsTester () {
         }
       }
     }
+    return true
   }
-  return true
 }
 
 
