@@ -62,11 +62,18 @@ export class Utils {
       case Constants.optionalProjectDocTabs.CERTIFICATE:
         types = [
           { legislation: 2002, name: 'Certificate Package' },
-          { legislation: 2018, name: 'Certificate Package' }
+          { legislation: 2018, name: 'Certificate Package' },
+          { legislation: 2002, name: 'Order' },
+          { legislation: 2018, name: 'Order' },
+          { legislation: 2002, name: 'Decision Materials' },
+          { legislation: 2018, name: 'Decision Materials' }
         ];
         milestones = [
           { legislation: 2002, name: 'Certificate' },
-          { legislation: 2018, name: 'Certificate Decision' }
+          { legislation: 2018, name: 'Certificate Decision' },
+          { legislation: 2002, name: 'Decision' },
+          { legislation: 2018, name: 'Certificate Extension' },
+          { legislation: 2002, name: 'Certificate Extension' },
         ];
         break;
       case Constants.optionalProjectDocTabs.APPLICATION:
