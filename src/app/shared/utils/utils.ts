@@ -43,9 +43,10 @@ export class Utils {
   }
 
   // Creates query modifiers used for tab display in a project.
-  public createProjectTabModifiers(projectTab: string, list: Array<object>) {
+  public createProjectTabModifiers(projectTab: string, list: Array<any>) {
     let types: Array<object>;
     let milestones: Array<object>;
+    let phases: string;
 
     switch (projectTab) {
       case Constants.optionalProjectDocTabs.AMENDMENT:
@@ -79,17 +80,29 @@ export class Utils {
           { legislation: 2002, name: 'Application Review' },
           { legislation: 2018, name: 'Revised EAC Application' },
         ];
+        // Special case for phases.
+        const amendmentPhaseId = this.getIdsByName([{ legislation: 2002, name: 'Post Decision - Amendment' }], list).map(type => type.id);
+        phases = list
+                  .filter(item => item.type === 'projectPhase' && item._id !== amendmentPhaseId)
+                  .map(item => item._id)
+                  .join(',');
         break;
     }
 
     const typeIds = this.getIdsByName(types, list).map(type => type.id).join(',');
     const milestoneIds = this.getIdsByName(milestones, list).map(milestone => milestone.id).join(',');
 
-    return {
+    const queryModifier = {
       documentSource: 'PROJECT',
       type: typeIds,
       milestone: milestoneIds,
     };
+
+    if (phases) {
+      queryModifier['projectPhase'] = phases;
+    }
+
+    return queryModifier;
   }
 
   // Searches the list of terms for a name and legislation year.
