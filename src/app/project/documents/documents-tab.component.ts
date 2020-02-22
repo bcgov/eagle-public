@@ -134,53 +134,22 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
           // Get the lists first
           if (res.documentsTableRow && res.documentsTableRow.length > 0) {
 
-            if (this.milestones.length === 0) {
-              res.documentsTableRow[0].searchResults.map(item => {
-                switch (item.type) {
-                  case 'label':
-                    this.milestones.push({ ...item });
-                    break;
-                  default:
-                    break;
-                }
-              });
-            }
+            this.milestones = [];
+            this.types = [];
+            this.authors = [];
+            this.projectPhases = [];
 
-            if (this.types.length === 0) {
-              res.documentsTableRow[0].searchResults.map(item => {
-                switch (item.type) {
-                  case 'doctype':
-                    this.types.push({ ...item });
-                    break;
-                  default:
-                    break;
-                }
-              });
-            }
-
-            if (this.authors.length === 0) {
-              res.documentsTableRow[0].searchResults.map(item => {
-                switch (item.type) {
-                  case 'author':
-                    this.authors.push({ ...item });
-                    break;
-                  default:
-                    break;
-                }
-              });
-            }
-
-            if (this.projectPhases.length === 0) {
-              res.documentsTableRow[0].searchResults.map(item => {
-                switch (item.type) {
-                  case 'projectPhase':
-                    this.projectPhases.push({ ...item });
-                    break;
-                  default:
-                    break;
-                }
-              });
-            }
+            res.documentsTableRow[0].searchResults.map(item => {
+              if (item.type === 'label') {
+                this.milestones.push({ ...item });
+              } else if (item.type === 'doctype') {
+                this.types.push({ ...item });
+              } else if (item.type === 'author') {
+                this.authors.push({ ...item });
+              } else if (item.type === 'projectPhase') {
+                this.projectPhases.push({ ...item });
+              }
+            });
 
             // Sort by legislation.
             this.milestones = _.sortBy(this.milestones, ['legislation']);
