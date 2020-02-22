@@ -160,13 +160,13 @@ def nodejsTester () {
         }
       }
     }
-    return true
   }
+  return true
 }
 
 
 def nodejsSonarqube () {
-  _openshift(env.STAGE_NAME, TOOLSPROJECT) {
+  openshift(env.STAGE_NAME, TOOLSPROJECT) {
     String sonarLabel = "sonarqube-runner-${UUID.randomUUID().toString()}";
     podTemplate(
       label: sonarLabel,
@@ -201,7 +201,7 @@ def nodejsSonarqube () {
 
             // check if sonarqube passed
             sh("oc extract secret/sonarqube-status-urls --to=${env.WORKSPACE}/sonar-runner --confirm")
-            SONARQUBE_STATUS_URL = sh(returnStdout: true, script: 'cat sonarqube-status-public')
+            def SONARQUBE_STATUS_URL = "${SONARQUBE_URL}/api/qualitygates/project_status?projectKey=org.sonarqube:cac-eagle-public"
 
             boolean firstScan = false;
             def OLD_SONAR_DATE
@@ -219,7 +219,7 @@ def nodejsSonarqube () {
                 echo "sonarqube report failed to complete, or timed out"
 
                 notifyRocketChat(
-                  "@all The latest build, ${env.BUILD_DISPLAY_NAME} of eagle-public seems to be broken. \n ${env.RUN_DISPLAY_URL}\n Error: \n sonarqube report failed to complete, or timed out : ${SONARQUBE_URL}",
+                  "@all The latest build, ${env.BUILD_DISPLAY_NAME} of cac-eagle-public seems to be broken. \n ${env.RUN_DISPLAY_URL}\n Error: \n sonarqube report failed to complete, or timed out : ${SONARQUBE_URL}",
                   ROCKET_DEPLOY_WEBHOOK
                 )
 
@@ -238,7 +238,7 @@ def nodejsSonarqube () {
             SONARQUBE_STATUS_URL = sh(returnStdout: true, script: 'cat sonarqube-status-public')
 
             notifyRocketChat(
-              "@all The latest build ${env.BUILD_DISPLAY_NAME} of eagle-public seems to be broken. \n ${env.RUN_DISPLAY_URL}\n Error: \n Sonarqube scan failed",
+              "@all The latest build ${env.BUILD_DISPLAY_NAME} of cac-eagle-public seems to be broken. \n ${env.RUN_DISPLAY_URL}\n Error: \n Sonarqube scan failed",
               ROCKET_DEPLOY_WEBHOOK
             )
 
@@ -246,7 +246,7 @@ def nodejsSonarqube () {
               echo "Scan Failed"
 
               notifyRocketChat(
-                "@all The latest build ${env.BUILD_DISPLAY_NAME} of eagle-public seems to be broken. \n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
+                "@all The latest build ${env.BUILD_DISPLAY_NAME} of cac-eagle-public seems to be broken. \n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
                 ROCKET_DEPLOY_WEBHOOK
               )
 
@@ -257,7 +257,7 @@ def nodejsSonarqube () {
             }
           } catch (error) {
             notifyRocketChat(
-              "@all The latest build ${env.BUILD_DISPLAY_NAME} of eagle-public seems to be broken. \n ${env.BUILD_URL}\n Error: \n ${error.message}",
+              "@all The latest build ${env.BUILD_DISPLAY_NAME} of cac-eagle-public seems to be broken. \n ${env.BUILD_URL}\n Error: \n ${error.message}",
               ROCKET_DEPLOY_WEBHOOK
             )
             throw error
@@ -274,7 +274,7 @@ def nodejsSonarqube () {
 
 def CHANGELOG = "No new changes"
 def IMAGE_HASH = "latest"
-def lockName = "eagle-public-${env.JOB_NAME}-${env.BUILD_NUMBER}"
+def lockName = "cac-eagle-public-${env.JOB_NAME}-${env.BUILD_NUMBER}"
 pipeline {
   environment {
     TOOLSPROJECT = "esm"
@@ -307,20 +307,20 @@ pipeline {
                 ROCKET_QA_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-qa-webhook')
 
                 echo "Building eagle-public develop branch"
-                openshiftBuild bldCfg: 'eagle-public-angular', showBuildLogs: 'true'
-                openshiftBuild bldCfg: 'eagle-public-build', showBuildLogs: 'true'
+                openshiftBuild bldCfg: 'cac-eagle-public-angular', showBuildLogs: 'true'
+                openshiftBuild bldCfg: 'cac-eagle-public-build', showBuildLogs: 'true'
                 echo "Build done"
 
                 echo ">>> Get Image Hash"
                 // Don't tag with BUILD_ID so the pruner can do it's job; it won't delete tagged images.
                 // Tag the images for deployment based on the image's hash
                 IMAGE_HASH = sh (
-                  script: """oc get istag eagle-public:latest -o template --template=\"{{.image.dockerImageReference}}\"|awk -F \":\" \'{print \$3}\'""",
+                  script: """oc get istag cac-eagle-public:latest -o template --template=\"{{.image.dockerImageReference}}\"|awk -F \":\" \'{print \$3}\'""",
                   returnStdout: true).trim()
                 echo ">> IMAGE_HASH: ${IMAGE_HASH}"
               } catch (error) {
                 notifyRocketChat(
-                  "@all The build ${env.BUILD_DISPLAY_NAME} of eagle-public, seems to be broken.\n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
+                  "@all The build ${env.BUILD_DISPLAY_NAME} of cac-eagle-public, seems to be broken.\n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
                   ROCKET_DEPLOY_WEBHOOK
                 )
                 throw error
@@ -355,23 +355,23 @@ pipeline {
         script {
           try {
             echo "Deploying to dev..."
-            openshiftTag destStream: 'eagle-public', verbose: 'false', destTag: 'dev', srcStream: 'eagle-public', srcTag: "${IMAGE_HASH}"
+            openshiftTag destStream: 'cac-eagle-public', verbose: 'false', destTag: 'cac', srcStream: 'cac-eagle-public', srcTag: "${IMAGE_HASH}"
             sleep 5
             // todo update namespace before switching over
-            openshiftVerifyDeployment depCfg: 'eagle-public', namespace: 'esm-dev', replicaCount: 1, verbose: 'false', verifyReplicaCount: 'false', waitTime: 600000
+            openshiftVerifyDeployment depCfg: 'cac-eagle-public', namespace: 'esm-dev', replicaCount: 1, verbose: 'false', verifyReplicaCount: 'false', waitTime: 600000
             echo ">>>> Deployment Complete"
 
             notifyRocketChat(
-              "A new version of eagle-public is now in Dev, build: ${env.BUILD_DISPLAY_NAME} \n Changes: \n ${CHANGELOG}",
+              "A new version of cac-eagle-public is now in Dev, build: ${env.BUILD_DISPLAY_NAME} \n Changes: \n ${CHANGELOG}",
               ROCKET_DEPLOY_WEBHOOK
             )
             notifyRocketChat(
-              "@all A new version of eagle-public is now in Dev and ready for QA. \n Changes to Dev: \n ${CHANGELOG}",
+              "@all A new version of cac-eagle-public is now in Dev and ready for QA. \n Changes to Dev: \n ${CHANGELOG}",
               ROCKET_QA_WEBHOOK
             )
           } catch (error) {
             notifyRocketChat(
-              "@all The build ${env.BUILD_DISPLAY_NAME} of eagle-public, seems to be broken.\n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
+              "@all The build ${env.BUILD_DISPLAY_NAME} of cac-eagle-public, seems to be broken.\n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
               ROCKET_DEPLOY_WEBHOOK
             )
             currentBuild.result = "FAILURE"
@@ -391,4 +391,3 @@ pipeline {
     // }
   }
 }
-

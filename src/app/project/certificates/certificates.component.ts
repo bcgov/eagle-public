@@ -25,14 +25,9 @@ export class CertificatesComponent implements OnInit, OnDestroy {
   public currentUrl: String = '';
   public documentTableColumns: any[] = [
     {
-      name: '★',
-      value: 'isFeatured',
-      width: 'col-1'
-    },
-    {
       name: 'Name',
       value: 'displayName',
-      width: 'col-5'
+      width: 'col-6'
     },
     {
       name: 'Date',
@@ -122,7 +117,8 @@ export class CertificatesComponent implements OnInit, OnDestroy {
       this.documentTableData = new TableObject(
         DocumentTableRowsComponent,
         documentList,
-        this.tableParams
+        this.tableParams,
+        { showFeatured: false },
       );
     }
   }
@@ -162,6 +158,8 @@ export class CertificatesComponent implements OnInit, OnDestroy {
 
     if (this.currentUrl === 'amendments') {
       this.router.navigate(['p', this.currentProject._id, 'amendments', params]);
+    } else if (this.currentUrl === 'application') {
+      this.router.navigate(['p', this.currentProject._id, 'application', params]);
     } else {
       this.router.navigate(['p', this.currentProject._id, 'certificates', params]);
     }
