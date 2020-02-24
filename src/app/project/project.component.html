@@ -9,7 +9,7 @@
                     <div class="basic-info">
                         <div class="info-block">
                             <label>Environmental Assessment Decision</label>
-                            <p><span class="ea-decision">{{project?.eacDecision.name || "-"}}</span></p>
+                            <p><span class="ea-decision">{{project?.eacDecision?.name || "-"}}</span></p>
                         </div>
                         <div class="info-block">
                             <label>Legislation</label>
@@ -79,7 +79,7 @@
                             <ul class="nav-tabs" role="tablist">
                             <li class="nav-item" role="presentation" *ngFor="let tabLink of tabLinks">
                                 <a class="nav-link" role="tab" [routerLink]="tabLink.link" [replaceUrl]="true"
-                                routerLinkActive="active">{{tabLink.label}}</a>
+                                routerLinkActive="active" *ngIf="tabLink.display === true">{{tabLink.label}}</a>
                             </li>
                             </ul>
                         </div>

@@ -11,6 +11,9 @@
 <div *ngIf="documents.length === 0 && currentUrl === 'amendments'">
   There are no amendments associated with this project.
 </div>
-<div *ngIf="documents.length === 0 && currentUrl !== 'amendments'">
+<div *ngIf="documents.length === 0 && currentUrl === 'certificates'">
   There are no certificate documents associated with this project.
+</div>
+<div *ngIf="documents.length === 0 && currentUrl === 'application'">
+  There are no application documents associated with this project.
 </div>

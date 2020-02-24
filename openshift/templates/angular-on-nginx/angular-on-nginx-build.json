@@ -2,7 +2,7 @@
   "kind": "Template",
   "apiVersion": "v1",
   "metadata": {
-    "name": "eagle-public",
+    "name": "${NAME}",
     "creationTimestamp": null
   },
   "objects": [

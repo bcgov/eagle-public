@@ -13,6 +13,7 @@ export class DocumentsResolver implements Resolve<Observable<object>> {
   private milestones: any[] = [];
   private authors: any[] = [];
   private types: any[] = [];
+  private projectPhases: any[] = []
 
   private filterForAPI: object = {};
 
@@ -43,6 +44,9 @@ export class DocumentsResolver implements Resolve<Observable<object>> {
                 break;
               case 'doctype':
                 this.types.push({ ...item });
+                break;
+              case 'projectPhase':
+                this.projectPhases.push({ ...item });
                 break;
               default:
                 break;
@@ -106,5 +110,6 @@ export class DocumentsResolver implements Resolve<Observable<object>> {
     this.paramsToCollectionFilter(params, 'milestone', this.milestones, '_id');
     this.paramsToCollectionFilter(params, 'documentAuthorType', this.authors, '_id');
     this.paramsToCollectionFilter(params, 'type', this.types, '_id');
+    this.paramsToCollectionFilter(params, 'projectPhase', this.projectPhases, '_id');
   }
 }

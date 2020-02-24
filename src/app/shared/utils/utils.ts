@@ -43,50 +43,66 @@ export class Utils {
   }
 
   // Creates query modifiers used for tab display in a project.
-  public createProjectTabModifiers(list: Array<object>) {
-    const certTypes = [
-      { legislation: 2002, name: 'Certificate Package' },
-      { legislation: 2018, name: 'Certificate Package' }
-    ];
-    const certMilestones = [
-      { legislation: 2002, name: 'Certificate' },
-      { legislation: 2018, name: 'Certificate Decision' }
-    ];
-    /* Removed so that authors other than EAO can submit certificates as author is not supposed to be a determiner of what is a valid certifcate
-    Does not appear to be used elsewhere but left in incase this assumption is incorrect.
-    const certAuthTypes = [
-      { legislation: 2002, name: 'EAO' },
-      { legislation: 2018, name: 'EAO' }
-    ];
-    */
-    const amendTypes = [
-      { legislation: 2002, name: 'Amendment Package' },
-      { legislation: 2018, name: 'Amendment Package' }
-    ];
-    const amendMilestones = [
-      { legislation: 2002, name: 'Amendment' },
-      { legislation: 2018, name: 'Amendment' }
-    ];
+  public createProjectTabModifiers(projectTab: string, list: Array<any>) {
+    let types: Array<object>;
+    let milestones: Array<object>;
+    let phases: string;
 
-    const certTypesIds = this.getIdsByName(certTypes, list).map(type => type.id).join(',');
-    const certMilestonesIds = this.getIdsByName(certMilestones, list).map(milestone => milestone.id).join(',');
-    // const certAuthTypesIds = this.getIdsByName(certAuthTypes, list).map(type => type.id).join(',');
-    const amendTypesIds = this.getIdsByName(amendTypes, list).map(type => type.id).join(',');
-    const amendMilestonesIds = this.getIdsByName(amendMilestones, list).map(milestone => milestone.id).join(',');
+    switch (projectTab) {
+      case Constants.optionalProjectDocTabs.AMENDMENT:
+        types = [
+          { legislation: 2002, name: 'Amendment Package' },
+          { legislation: 2018, name: 'Amendment Package' }
+        ];
+        milestones = [
+          { legislation: 2002, name: 'Amendment' },
+          { legislation: 2018, name: 'Amendment' }
+        ];
+        break;
+      case Constants.optionalProjectDocTabs.CERTIFICATE:
+        types = [
+          { legislation: 2002, name: 'Certificate Package' },
+          { legislation: 2018, name: 'Certificate Package' }
+        ];
+        milestones = [
+          { legislation: 2002, name: 'Certificate' },
+          { legislation: 2018, name: 'Certificate Decision' }
+        ];
+        break;
+      case Constants.optionalProjectDocTabs.APPLICATION:
+        types = [
+          { legislation: 2002, name: 'Application Materials' },
+          { legislation: 2018, name: 'Application Materials' },
+          { legislation: 2002, name: 'Scientific Memo' },
+          { legislation: 2018, name: 'Independent Memo' }
+        ];
+        milestones = [
+          { legislation: 2002, name: 'Application Review' },
+          { legislation: 2018, name: 'Revised EAC Application' },
+        ];
+        // Special case for phases.
+        const amendmentPhaseId = this.getIdsByName([{ legislation: 2002, name: 'Post Decision - Amendment' }], list).map(type => type.id);
+        phases = list
+                  .filter(item => item.type === 'projectPhase' && item._id !== amendmentPhaseId)
+                  .map(item => item._id)
+                  .join(',');
+        break;
+    }
 
-    return {
-      CERTIFICATE: {
-        documentSource: 'PROJECT',
-        type: certTypesIds,
-          //  documentAuthorType: certAuthTypesIds,
-        milestone: certMilestonesIds,
-      },
-      AMENDMENT: {
-        documentSource: 'PROJECT',
-        type: amendTypesIds,
-        milestone: amendMilestonesIds,
-      }
+    const typeIds = this.getIdsByName(types, list).map(type => type.id).join(',');
+    const milestoneIds = this.getIdsByName(milestones, list).map(milestone => milestone.id).join(',');
+
+    const queryModifier = {
+      documentSource: 'PROJECT',
+      type: typeIds,
+      milestone: milestoneIds,
     };
+
+    if (phases) {
+      queryModifier['projectPhase'] = phases;
+    }
+
+    return queryModifier;
   }
 
   // Searches the list of terms for a name and legislation year.
