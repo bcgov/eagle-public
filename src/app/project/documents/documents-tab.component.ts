@@ -56,7 +56,6 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
 
   public showAdvancedSearch = true;
   public hasUncategorizedDocs = false;
-  public numUncatigorizedDocs = 0;
 
   public showFilters: object = {
     date: false,
@@ -205,7 +204,7 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
 
     this.searchService.getSearchResults(
       '',
-      'Documents',
+      'Document',
       [
         { name: 'project', value: this.currentProject._id },
         { name: 'categorized', value: false }
@@ -221,15 +220,10 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
     )
     .takeUntil(this.ngUnsubscribe)
     .subscribe((res: any) => {
-      if (res.uncategorized) {
-        if (res.uncategorized.data.meta && res.uncategorized.data.meta.length > 0) {
-          this.numUncategorizedDocs = res.uncategorized.data.meta[0].searchResultsTotal;
-        }
-      }
-
-      // display disclaimer on search if we have uncategorized docs
-      if (this.numUncategorizedDocs > 0) {
+      if (res[0].data.meta && res[0].data.meta.length > 0) {
         this.hasUncategorizedDocs = true;
+        this.loading = false;
+        this._changeDetectionRef.detectChanges();
       }
     });
   }
