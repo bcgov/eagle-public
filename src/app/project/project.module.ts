@@ -17,6 +17,7 @@ import { DateInputComponent } from 'app/date-input/date-input.component';
 import { DocumentsTabComponent } from './documents/documents-tab.component';
 import { DocumentTableRowsComponent } from 'app/project/documents/project-document-table-rows/project-document-table-rows.component';
 import { DocumentDetailComponent } from 'app/project/documents/detail/detail.component';
+import { ToggleButtonComponent } from 'app/toggle-button/toggle-button.component';
 
 import { StorageService } from 'app/services/storage.service';
 import { ProjectDetailsTabComponent } from './project-details-tab/project-details-tab.component';
@@ -54,7 +55,8 @@ import { FormsModule } from '@angular/forms';
     ProjectDetailsTabComponent,
     ProjectActivitesComponent,
     CertificatesComponent,
-    PinsComponent
+    PinsComponent,
+    ToggleButtonComponent
   ],
   providers: [
     StorageService
