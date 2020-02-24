@@ -320,12 +320,12 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
       .takeUntil(this.ngUnsubscribe)
       .subscribe((response: DataQueryResponse<Org>[]) => {
         if (response && response.length && response[0].results && response[0].results.length && response[0].total_items) {
-        this.tabLinks.push({
+        /*this.tabLinks.push({
           label: 'Participating Indigenous Nations',
           link: 'pins',
           display: true,
           tabDisplayCriteria: null,
-        });
+        });*/
     }})
   }
 

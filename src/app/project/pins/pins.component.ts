@@ -11,6 +11,8 @@ import { SearchTerms } from 'app/models/search';
 import { PlatformLocation } from '@angular/common';
 import { PinsTableRowsComponent } from './pins-table-rows/pins-table-rows.component';
 import { Org } from 'app/models/organization';
+import { ProjectService } from 'app/services/project.service';
+import { DataQueryResponse } from 'app/models/api-response';
 
 @Component({
   selector: 'app-pins',
@@ -51,7 +53,8 @@ export class PinsComponent implements OnInit, OnDestroy {
     private router: Router,
     private searchService: SearchService,
     private storageService: StorageService,
-    private tableTemplateUtils: TableTemplateUtils
+    private tableTemplateUtils: TableTemplateUtils,
+    private projectService: ProjectService
   ) {
     try {
       let currRoute = router.url.split(';')[0];
@@ -62,36 +65,35 @@ export class PinsComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.route.params
-      .takeUntil(this.ngUnsubscribe)
-      .subscribe(params => {
-        // Different sort order:
-        this.tableParams = this.tableTemplateUtils.getParamsFromUrl(params, null, '+name');
-      });
+    .takeUntil(this.ngUnsubscribe)
+    .subscribe(params => {
+      // Different sort order:
+      this.tableParams = this.tableTemplateUtils.getParamsFromUrl(params, null, '+name');
+    });
 
     this.currentProject = this.storageService.state.currentProject.data;
 
-    this.route.data
-      .takeUntil(this.ngUnsubscribe)
-      .subscribe((res: {pins: Org[]}) => {
-        if (res) {
-          if (res.pins && res.pins.length > 0) {
-            this.tableParams.totalListItems = res.pins.length;
-            this.pins = res.pins;
-          } else {
-            this.tableParams.totalListItems = 0;
-            this.pins = [];
-          }
-          this.loading = false;
-          this.setDocumentRowData();
-          this._changeDetectionRef.detectChanges();
+    this.projectService.getPins(this.currentProject._id, 1, 5, '+name')
+    .takeUntil(this.ngUnsubscribe)
+    .subscribe((res: DataQueryResponse<Org>[]) => {
+      if (res && res.length && res[0].results && res[0].results.length && res[0].total_items) {
+        if (res[0].results && res[0].results.length > 0) {
+          this.tableParams.totalListItems = res[0].total_items.valueOf();
+          this.pins = res;
         } else {
-          alert('Uh-oh, couldn\'t load valued components');
-          // project not found --> navigate back to search
-          this.router.navigate(['/search']);
-          this.loading = false;
+          this.tableParams.totalListItems = 0;
+          this.pins = [];
         }
+        this.loading = false;
+        this.setDocumentRowData();
+        this._changeDetectionRef.detectChanges();
+      } else {
+        alert('Uh-oh, couldn\'t load valued components');
+        // project not found --> navigate back to search
+        this.router.navigate(['/search']);
+        this.loading = false;
       }
-      );
+    });
   }
 
   setDocumentRowData() {
@@ -118,7 +120,6 @@ export class PinsComponent implements OnInit, OnDestroy {
   }
 
   getPaginated(pageNumber, reset = false) {
-    // Go to top of page after clicking to a different page.
     this.loading = true;
     this._changeDetectionRef.detectChanges();
 
@@ -139,7 +140,27 @@ export class PinsComponent implements OnInit, OnDestroy {
     params['keywords'] = this.tableParams.keywords;
     if (this.typeFilters.length > 0) { params['type'] = this.typeFilters.toString(); }
 
-    this.router.navigate(['p', this.currentProject._id, 'pins', params]);
+    this.projectService.getPins(this.currentProject._id, 1, this.tableParams.pageSize, this.tableParams.sortBy)
+    .takeUntil(this.ngUnsubscribe)
+    .subscribe((res: DataQueryResponse<Org>[]) => {
+      if (res && res.length && res[0].results && res[0].results.length && res[0].total_items) {
+        if (res[0].results && res[0].results.length > 0) {
+          this.tableParams.totalListItems = res[0].total_items.valueOf();
+          this.pins = res;
+        } else {
+          this.tableParams.totalListItems = 0;
+          this.pins = [];
+        }
+        this.loading = false;
+        this.setDocumentRowData();
+        this._changeDetectionRef.detectChanges();
+      } else {
+        alert('Uh-oh, couldn\'t load valued components');
+        // project not found --> navigate back to search
+        this.router.navigate(['/search']);
+        this.loading = false;
+      }
+    });
   }
 
   ngOnDestroy() {
