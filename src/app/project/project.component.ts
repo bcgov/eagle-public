@@ -29,7 +29,6 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
   public period: CommentPeriod = null;
   private ngbModal: NgbModalRef = null;
   public legislationLink: String = '';
-  private certTagsExist: boolean;
 
   public commentPeriod = null;
   public map: L.Map = null;
