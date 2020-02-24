@@ -18,6 +18,18 @@
             padding: 40px 15px 40px;
         }
 
+        .wide {
+            transform: translateX(0) !important;
+            margin: 0 !important;
+        }
+
+        .banner-wide {
+            transform: translateX(0) !important;
+            margin-right: auto;
+            margin-left: auto;
+            width: 100% !important;
+        }
+
     /*
         PCP banner
     */
@@ -167,7 +179,6 @@
         /*
             Contacts
         */
-
         .people {
             background: #f7f7f7;
             color: black;

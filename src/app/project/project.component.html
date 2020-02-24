@@ -1,9 +1,9 @@
 <div class="project">
     <main>
         <div class="project-info">
-           <details-sidebar [project]="project"></details-sidebar>
+           <details-sidebar [project]="project" (onSidebarToggle)="handleSidebarToggle($event)"></details-sidebar>
             <div class="content">
-                <div *ngIf="project.commentPeriodForBanner" class="pcp-banner col-md-10 col-sm-12">
+                <div *ngIf="project.commentPeriodForBanner" class="pcp-banner col-sm-12 {{ sidebarOpen ? 'col-md-10' : 'banner-wide' }}">
                     <div class="container">
                         <div class="row">
                             <div class="col-md-6">
@@ -35,7 +35,7 @@
                     </div>
                 </div>
 
-                <div class="main-content col-md-8 col-sm-12">
+                <div class="main-content col-sm-12 {{ sidebarOpen ? 'col-md-8' : 'wide' }}">
                     <section class="project-tabs">
                     <div class="container">
                         <div class="tab-container">
@@ -54,7 +54,7 @@
                 </div>
             </div>
 
-            <section class="people col-md-10 col-sm-12">
+            <section class="people col-sm-12 {{ sidebarOpen ? 'col-md-10' : 'banner-wide' }}">
                 <div class="container">
                     <h2>Contacts</h2>
                     <div class="flex-container">

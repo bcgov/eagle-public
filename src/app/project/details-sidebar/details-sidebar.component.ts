@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { Project } from 'app/models/project';
 
 @Component({
@@ -9,6 +9,7 @@ import { Project } from 'app/models/project';
 
 export class DetailsSidebarComponent {
   @Input() project: Project;
+  @Output() onSidebarToggle: EventEmitter<any> = new EventEmitter();
 
   public sidebarOpen = true;
 
@@ -17,5 +18,6 @@ export class DetailsSidebarComponent {
 
   toggleSidebar() {
     this.sidebarOpen = !this.sidebarOpen;
+    this.onSidebarToggle.emit({ open: this.sidebarOpen });
   }
 }
