@@ -33,7 +33,6 @@
         <button nz-button nzType="primary" class="show_all_btn" (click)="updatePageSize(data.paginationData.totalListItems)">Show All</button>
     </ng-template>
 </div>
-<!-- && data.paginationData.totalListItems >= activePageSize -->
-<div *ngIf="hidePager === true && showMoreLoader === true">
-    <button nz-button nzType="primary" class="show_all_btn" (click)="updatePageSize(activePageSize + showMoreIncrement)">Show More</button>
+<div *ngIf="hidePager === true && showMoreLoader === true && data.paginationData.totalListItems > activePageSize">
+    <button nz-button nzType="primary" class="show_all_btn" (click)="updatePageSize(activePageSize + showMoreIncrement)">Show More ({{data.paginationData.totalListItems - activePageSize}} remaining)</button>
 </div>

@@ -69,6 +69,7 @@ export class PinsComponent implements OnInit, OnDestroy {
     .subscribe(params => {
       // Different sort order:
       this.tableParams = this.tableTemplateUtils.getParamsFromUrl(params, null, '+name');
+      this.tableParams.pageSize = 5;
     });
 
     this.currentProject = this.storageService.state.currentProject.data;
@@ -87,11 +88,6 @@ export class PinsComponent implements OnInit, OnDestroy {
         this.loading = false;
         this.setDocumentRowData();
         this._changeDetectionRef.detectChanges();
-      } else {
-        alert('Uh-oh, couldn\'t load valued components');
-        // project not found --> navigate back to search
-        this.router.navigate(['/search']);
-        this.loading = false;
       }
     });
   }
@@ -154,11 +150,6 @@ export class PinsComponent implements OnInit, OnDestroy {
         this.loading = false;
         this.setDocumentRowData();
         this._changeDetectionRef.detectChanges();
-      } else {
-        alert('Uh-oh, couldn\'t load valued components');
-        // project not found --> navigate back to search
-        this.router.navigate(['/search']);
-        this.loading = false;
       }
     });
   }
