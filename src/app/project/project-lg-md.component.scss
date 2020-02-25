@@ -25,8 +25,7 @@
         }
 
         .closed {
-            padding: 60px 0 0 0 !important;
-
+            padding-left: 20px !important;
             .flex-container {
                 display: flex;
                 justify-content: space-between;
@@ -220,8 +219,6 @@
                 }
             }
 
-            
-
             .flex-container {
                 display: flex;
                 flex-direction: column;
@@ -234,17 +231,13 @@
                     }
                 }
             }
-            
-
         }
 
         .closed {
-            padding: 60px 0 0 0 !important;
-
+            padding-left: 20px !important;
             .container {
-                padding-left: 0 !important;
+                padding-left: 15px !important;
             }
-        
             .flex-container {
                 flex-direction: row;
                 justify-content: space-between;
@@ -259,8 +252,6 @@
                 margin: 0;
             }
         }
-        
-
     }
 }
 
@@ -272,10 +263,9 @@
     */
 
    .closed {
-    padding: 60px 0 0 0 !important;
-    
+        padding-left: 20px !important;
         .container {
-            padding-left: 0 !important;
+            padding-left: 15px !important;
         }
     }
 
