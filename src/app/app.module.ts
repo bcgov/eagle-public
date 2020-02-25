@@ -24,7 +24,6 @@ import { FooterComponent } from 'app/footer/footer.component';
 import { NewsListTableRowsComponent } from 'app/news/news-list-table-rows/news-list-table-rows.component';
 import { SearchHelpComponent } from './search-help/search-help.component';
 
-
 // services
 import { ApiService } from 'app/services/api';
 import { CommentService } from 'app/services/comment.service';
@@ -77,7 +76,7 @@ import { NotificationProjectsListTableRowsComponent } from './notification-proje
     LegislationComponent,
     ProcessComponent,
     ComplianceOversightComponent,
-    SearchHelpComponent
+    SearchHelpComponent,
   ],
   entryComponents: [
     NewsListTableRowsComponent,
