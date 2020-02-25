@@ -1,45 +1,9 @@
 <div class="project">
     <main>
         <div class="project-info">
-            <div class=" side-banner col-lg-4 col-md-4 col-sm-12">
-                <div class="hero-banner__content">
-                    <div>
-                        <h1>{{project?.name || '-'}}</h1>
-                    </div>
-                    <div class="basic-info">
-                        <div class="info-block">
-                            <label>Environmental Assessment Decision</label>
-                            <p><span class="ea-decision">{{project?.eacDecision?.name || "-"}}</span></p>
-                        </div>
-                        <div class="info-block">
-                            <label>Legislation</label>
-                            <a target=”_blank” [href]="this.legislationLink">
-                                <p class="value hyperlink">{{project?.legislation || "-" }}</p>
-                            </a>
-                        </div>
-                        <hr>
-                        <div class="info-block">
-                            <label>Region</label>
-                            <p class="value">{{project?.region || "-" }}</p>
-                        </div>
-                        <div class="info-block">
-                            <label>Location</label>
-                            <p class="value">{{project?.location || "-" }}</p>
-                        </div>
-                        <div class="map-wrapper map-item">
-                            <div class="map-item__no-results" *ngIf="!project.centroid || project.centroid.length != 2">
-                                <span class="no-results-msg">No map available</span>
-                            </div>
-                            <div class="map-container">
-                                <div class="map" id="map"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
+           <details-sidebar [project]="project" (onSidebarToggle)="handleSidebarToggle($event)"></details-sidebar>
             <div class="content">
-                <div *ngIf="project.commentPeriodForBanner" class="pcp-banner col-md-10 col-sm-12">
+                <div *ngIf="project.commentPeriodForBanner" class="pcp-banner col-sm-12 {{ !sidebarOpen && 'closed' }}">
                     <div class="container">
                         <div class="row">
                             <div class="col-md-6">
@@ -71,7 +35,7 @@
                     </div>
                 </div>
 
-                <div class="main-content col-md-8 col-sm-12">
+                <div class="main-content col-sm-12 {{ sidebarOpen ? 'col-md-8' : 'wide' }}">
                     <section class="project-tabs">
                     <div class="container">
                         <div class="tab-container">
@@ -90,61 +54,61 @@
                 </div>
             </div>
 
-            <section class="people col-md-10 col-sm-12">
+            <section class="people {{ sidebarOpen ? 'open' : 'closed' }}">
                 <div class="container">
-                    <h2>Contacts</h2>
-                    <div class="flex-container">
-                        <div class="inner-col col-lg-10 col-xl-4" *ngIf="project?.projectLeadObj == null">
-                            <h3>Project Lead</h3>
-                            <p class="value"><i _ngcontent-c11="" class="material-icons mr-3" role="presentation"
-                                wiid="C937">person</i>{{project?.projectLead || "-"}}</p>
-                            <p class="value"><i _ngcontent-c11="" class="material-icons mr-3" role="presentation"
-                                wiid="C937">phone</i>{{project?.projectLeadPhone || "-"}}</p>
-                            <p class="value"><i _ngcontent-c11="" class="material-icons mr-3" role="presentation"
-                                wiid="C937">email</i><a
-                                href="mailto:{{project?.projectLeadEmail}}">{{project?.projectLeadEmail || "-"}}</a></p>
-                        </div>
-                        <div class="inner-col ccol-lg-10 col-xl-4" *ngIf="project?.projectLeadObj">
-                            <h3>Project Lead</h3>
-                            <p class="value"><i _ngcontent-c11="" class="material-icons mr-3" role="presentation"
-                                wiid="C937">person</i>{{project?.projectLeadObj?.displayName || "-"}}</p>
-                            <p class="value"><i _ngcontent-c11="" class="material-icons mr-3" role="presentation"
-                                wiid="C937">phone</i>{{project?.projectLeadObj?.phoneNumber || "-"}}</p>
-                            <p class="value"><i _ngcontent-c11="" class="material-icons mr-3" role="presentation"
-                                wiid="C937">email</i><a
-                                href="mailto:{{project?.projectLeadObj?.email}}">{{project?.projectLeadObj?.email || "-"}}</a></p>
-                        </div>
-                        <div class="inner-col col-lg-10 col-xl-4" *ngIf="project?.responsibleEPDObj == null">
-                            <h3>Executive Project Director</h3>
-                            <p class="value"><i _ngcontent-c11="" class="material-icons mr-3" role="presentation"
-                                wiid="C937">person</i>{{project?.responsibleEPD || "-"}}</p>
-                            <p class="value"><i _ngcontent-c11="" class="material-icons mr-3" role="presentation"
-                                wiid="C937">phone</i>{{project?.responsibleEPDPhone || "-"}}</p>
-                            <p class="value"><i _ngcontent-c11="" class="material-icons mr-3" role="presentation"
-                                wiid="C937">email</i><a
-                                href="mailto:{{project?.responsibleEPDEmail}}">{{project?.responsibleEPDEmail || "-"}}</a></p>
-                        </div>
-                        <div class="inner-col col-lg-10 col-xl-4" *ngIf="project?.responsibleEPDObj">
-                            <h3>Executive Project Director</h3>
-                            <p class="value"><i _ngcontent-c11="" class="material-icons mr-3" role="presentation"
-                                wiid="C937">person</i>{{project?.responsibleEPDObj?.displayName || "-"}}</p>
-                            <p class="value"><i _ngcontent-c11="" class="material-icons mr-3" role="presentation"
-                                wiid="C937">phone</i>{{project?.responsibleEPDObj?.phoneNumber || "-"}}</p>
-                            <p class="value"><i _ngcontent-c11="" class="material-icons mr-3" role="presentation"
-                                wiid="C937">email</i><a
-                                href="mailto:{{project?.responsibleEPDObj?.email}}">{{project?.responsibleEPDObj?.email || "-"}}</a></p>
-                        </div>
-                        <div class="inner-col col-lg-10 col-xl-4">
-                            <h3>Compliance & Enforcement Lead</h3>
-                            <p class="value"><i _ngcontent-c11="" class="material-icons mr-3" role="presentation"
-                                wiid="C937">person</i>Compliance & Enforcement Branch</p>
-                            <p class="value"><i _ngcontent-c11="" class="material-icons mr-3" role="presentation"
-                                wiid="C937">phone</i>250-387-0131</p>
-                            <p class="value"><i _ngcontent-c11="" class="material-icons mr-3" role="presentation"
-                                wiid="C937">email</i><a href="mailTo:eao.compliance@gov.bc.ca">eao.compliance@gov.bc.ca</a></p>
+                        <h2>Contacts</h2>
+                        <div class="flex-container">
+                            <div class="flex-item" *ngIf="project?.projectLeadObj == null">
+                                <h3>Project Lead</h3>
+                                <p class="value"><i _ngcontent-c11="" class="material-icons mr-3" role="presentation"
+                                    wiid="C937">person</i>{{project?.projectLead || "-"}}</p>
+                                <p class="value"><i _ngcontent-c11="" class="material-icons mr-3" role="presentation"
+                                    wiid="C937">phone</i>{{project?.projectLeadPhone || "-"}}</p>
+                                <p class="value"><i _ngcontent-c11="" class="material-icons mr-3" role="presentation"
+                                    wiid="C937">email</i><a
+                                    href="mailto:{{project?.projectLeadEmail}}">{{project?.projectLeadEmail || "-"}}</a></p>
+                            </div>
+                            <div class="flex-item" *ngIf="project?.projectLeadObj">
+                                <h3>Project Lead</h3>
+                                <p class="value"><i _ngcontent-c11="" class="material-icons mr-3" role="presentation"
+                                    wiid="C937">person</i>{{project?.projectLeadObj?.displayName || "-"}}</p>
+                                <p class="value"><i _ngcontent-c11="" class="material-icons mr-3" role="presentation"
+                                    wiid="C937">phone</i>{{project?.projectLeadObj?.phoneNumber || "-"}}</p>
+                                <p class="value"><i _ngcontent-c11="" class="material-icons mr-3" role="presentation"
+                                    wiid="C937">email</i><a
+                                    href="mailto:{{project?.projectLeadObj?.email}}">{{project?.projectLeadObj?.email || "-"}}</a></p>
+                            </div>
+                            <div class="flex-item" *ngIf="project?.responsibleEPDObj == null">
+                                <h3>Executive Project Director</h3>
+                                <p class="value"><i _ngcontent-c11="" class="material-icons mr-3" role="presentation"
+                                    wiid="C937">person</i>{{project?.responsibleEPD || "-"}}</p>
+                                <p class="value"><i _ngcontent-c11="" class="material-icons mr-3" role="presentation"
+                                    wiid="C937">phone</i>{{project?.responsibleEPDPhone || "-"}}</p>
+                                <p class="value"><i _ngcontent-c11="" class="material-icons mr-3" role="presentation"
+                                    wiid="C937">email</i><a
+                                    href="mailto:{{project?.responsibleEPDEmail}}">{{project?.responsibleEPDEmail || "-"}}</a></p>
+                            </div>
+                            <div class="flex-item" *ngIf="project?.responsibleEPDObj">
+                                <h3>Executive Project Director</h3>
+                                <p class="value"><i _ngcontent-c11="" class="material-icons mr-3" role="presentation"
+                                    wiid="C937">person</i>{{project?.responsibleEPDObj?.displayName || "-"}}</p>
+                                <p class="value"><i _ngcontent-c11="" class="material-icons mr-3" role="presentation"
+                                    wiid="C937">phone</i>{{project?.responsibleEPDObj?.phoneNumber || "-"}}</p>
+                                <p class="value"><i _ngcontent-c11="" class="material-icons mr-3" role="presentation"
+                                    wiid="C937">email</i><a
+                                    href="mailto:{{project?.responsibleEPDObj?.email}}">{{project?.responsibleEPDObj?.email || "-"}}</a></p>
+                            </div>
+                            <div class="flex-item">
+                                <h3>Compliance & Enforcement Lead</h3>
+                                <p class="value"><i _ngcontent-c11="" class="material-icons mr-3" role="presentation"
+                                    wiid="C937">person</i>Compliance & Enforcement Branch</p>
+                                <p class="value"><i _ngcontent-c11="" class="material-icons mr-3" role="presentation"
+                                    wiid="C937">phone</i>250-387-0131</p>
+                                <p class="value"><i _ngcontent-c11="" class="material-icons mr-3" role="presentation"
+                                    wiid="C937">email</i><a href="mailTo:eao.compliance@gov.bc.ca">eao.compliance@gov.bc.ca</a></p>
+                            </div>
                         </div>
                     </div>
-                </div>
             </section>
         </div>
     </main>

@@ -7,19 +7,36 @@
         display: block;
     }
 
-
-
-
     /*
         Project
     */
 
-
     .project {
+        transition: padding-left .5s;
         background: white;
 
         .container {
             padding: 40px 15px 40px;
+        }
+
+        .wide {
+            transform: translateX(0) !important;
+            margin: 0 !important;
+        }
+
+        .closed {
+            padding-left: 20px !important;
+            .flex-container {
+                display: flex;
+                justify-content: space-between;
+                .flex-item {
+                    // display: inline-block;
+                    // padding: 10px 10px 10px 0;
+                    p, a {
+                        font-size: small;
+                    }
+                }
+            }
         }
 
     /*
@@ -29,9 +46,8 @@
         .pcp-banner {
             background-color: #EFEFEF;
             color: #003366;
-            width: 71%;
-            transform: translateX(41%);
             padding-top: 60px;
+            padding-left: 33%;
             margin-bottom: -60px; // pull the rest of the page up
 
             .container {
@@ -41,155 +57,6 @@
             .info {
                 color: black;
             }
-        }
-
-    /*
-        Side Banner
-    */
-
-        .side-banner {
-
-            height: 100%; /* Full-height: remove this if you want "auto" height */
-            width: 30%; /* Set the width of the sidebar */
-            position: fixed; /* Fixed Sidebar (stay in place on scroll) */
-            z-index: 1; /* Stay on top */
-            top: 0; /* Stay at the top */
-            left: 0;
-            background-color: #003366;
-            overflow-x: hidden; /* Disable horizontal scroll */
-            overflow-y: hidden; /* Disable vertical scroll */
-            margin: 60px 0 60px 0;
-            padding: 20px 30px 90px 30px;
-
-            div {
-                padding: 6px 8px 6px 6px;
-                text-decoration: none;
-                font-size: 20px;
-                display: block;
-            }
-
-            h1 {
-                display: inline-block;
-            }
-            .desc {
-                margin: 0 0 30px;
-            }
-            .proj-status {
-                display: inline-block;
-                font-size: 1.2rem;
-                font-weight: 700;
-                margin: 0 0 8px 10px;
-                color: #fcba18;
-                text-transform: uppercase;
-            }
-            .ea-decision {
-                color: white;
-                font-size: 1rem;
-                border: 2px solid white;
-                padding: 5px 10px;
-                font-weight: bold;
-                display: inline-block;
-                margin: 5px 0 15px 0;
-            }
-
-
-            .basic-info {
-                width: 100%;
-
-                .info-block {
-                    p, a {
-                        font-size: small;
-                        color: white;
-                    }
-                }
-
-                @media (min-width: 767px) {
-                    display: inline-block;
-                }
-
-                > div {
-                    padding: 0 0 0 0;
-                    .hyperlink {
-                        text-decoration: underline;
-                    }
-                    max-width: 100%;
-                }
-
-                hr {
-                    background-color: grey ;
-                    margin: 30px 0 20px 0;
-                }
-
-                label {
-                    font-weight: bold;
-                    color: #fcba18;
-                    font-size: 1rem;
-                    padding-bottom: 5px;
-                }
-                p {
-                    font-size: 1rem;
-                    display: a;
-                }
-            }
-            .legislation-button {
-                margin-top: 20px;
-                label {
-                    font-weight: bold;
-                    color: #fcba18;
-                    font-size: 1rem;
-                }
-                p {
-                    font-size: 1rem;
-                    display: block;
-                    margin-left: 1px;
-                }
-            }
-        }
-
-    /*
-        Map
-    */
-
-        .map-wrapper {
-            width: 100%;
-            height: 250px;
-            padding-top: 10px;
-            margin-bottom: 30px;
-        }
-
-        .map-item {
-            position: relative;
-            height: 250px;
-            color: black;
-            .container {
-                position: relative;
-                @media (min-width: 400px) {
-                    padding-right: 280px;
-                }
-            }
-            .map-container {
-                padding: 10px 0 10px 0;
-                display: block;
-                position: relative;
-                overflow: hidden;
-            }
-            .map {
-            position: relative;
-                min-height: 250px;
-                height: 250px;
-                outline: none;
-                touch-action: none;
-                background-color: $map-bg;
-            }
-        }
-
-        .map-item__no-results {
-            text-align: center;
-            position: absolute;
-            background: grey;
-            z-index: 2000;
-            width: 100%;
-            height: 250px;
         }
 
     /*
@@ -320,17 +187,14 @@
         /*
             Contacts
         */
-
         .people {
             background: #f7f7f7;
             color: black;
 
-            width: 71%;
-            transform: translateX(41%);
-
-            .container {
-                padding: 40px 0 40px 60px;
-            }
+            width: 100%;
+            padding-left: 40%;
+            display: flex;
+            flex-direction: column;
 
             a {
                 color: black;
@@ -356,19 +220,38 @@
             }
 
             .flex-container {
-                padding: 0 20px 0 20px;
-                display: block;
-                .inner-col {
-                    display: inline-block;
-                    padding: 10px 10px 10px 0;
+                display: flex;
+                flex-direction: column;
+
+                .flex-item {
+                    padding: 10px;
+
                     p, a {
                         font-size: small;
                     }
                 }
             }
-
         }
 
+        .closed {
+            padding-left: 20px !important;
+            .container {
+                padding-left: 15px !important;
+            }
+            .flex-container {
+                flex-direction: row;
+                justify-content: space-between;
+            }
+        }
+
+        .open {
+            .container {
+                padding-left: 33% !important;
+                padding-right: 20px;
+                max-width: 100%;
+                margin: 0;
+            }
+        }
     }
 }
 
@@ -379,16 +262,29 @@
         Contacts
     */
 
+   .closed {
+        padding-left: 20px !important;
+        .container {
+            padding-left: 15px !important;
+        }
+    }
+
+    .open {
+        .container {
+            padding-left: 33% !important;
+            padding-right: 20px;
+            max-width: 100%;
+            margin: 0;
+        }
+    }
+
     .people {
         background: #f7f7f7;
         color: black;
-        width: 71%;
-        transform: translateX(41%);
+        width: 100%;
+        padding-left: 100;
+        display: flex;
 
-
-        .container {
-            padding: 40px 0 40px 40px;
-        }
 
         a {
             color: black;
@@ -412,11 +308,14 @@
                 vertical-align: bottom;
             }
         }
+
+
         .flex-container {
-            padding: 20px;
-            .inner-col {
-                display: inline-block;
-                padding: 10px 10px 10px 0;
+            display: flex;
+            flex-direction: row !important;
+            justify-content: space-between;
+
+            .flex-item {
                 p, a {
                     font-size: small;
                 }

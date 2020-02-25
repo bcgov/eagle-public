@@ -1,0 +1,188 @@
+@import "~assets/styles/base/base.scss";
+
+// Pulls the sidebar to the left for larger screens.
+@media (min-width: 768px) {
+  .side-banner {
+    height: 100%; /* Full-height: remove this if you want "auto" height */
+    width: 30%; /* Set the width of the sidebar */
+    position: fixed; /* Fixed Sidebar (stay in place on scroll) */
+    z-index: 1; /* Stay on top */
+    top: 0; /* Stay at the top */
+    left: 0;
+    margin: 60px 0 60px 0;
+    padding: 20px 30px 90px 30px;
+
+  }
+}
+
+.side-banner {
+  background-color: #003366;
+  transition: margin-left .5s;
+
+  &.closed {
+    margin-left: -30% !important;
+  }
+
+  div {
+    padding: 6px 8px 6px 6px;
+    text-decoration: none;
+    font-size: 20px;
+    display: block;
+  }
+
+  h1 {
+    display: inline-block;
+  }
+
+  .desc {
+    margin: 0 0 30px;
+  }
+
+  .proj-status {
+    display: inline-block;
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin: 0 0 8px 10px;
+    color: #fcba18;
+    text-transform: uppercase;
+  }
+
+.ea-decision {
+    color: white;
+    font-size: 1rem;
+    border: 2px solid white;
+    padding: 5px 10px;
+    font-weight: bold;
+    display: inline-block;
+    margin: 5px 0 15px 0;
+  }
+
+  .basic-info {
+      width: 100%;
+
+      .info-block {
+        p, a {
+            font-size: small;
+            color: white;
+        }
+      }
+
+      @media (min-width: 767px) {
+        display: inline-block;
+      }
+
+      > div {
+        padding: 0 0 0 0;
+        max-width: 100%;
+
+        .hyperlink {
+          text-decoration: underline;
+        }
+      }
+
+      hr {
+        background-color: grey ;
+        margin: 30px 0 20px 0;
+      }
+
+      label {
+        font-weight: bold;
+        color: #fcba18;
+        font-size: 1rem;
+        padding-bottom: 5px;
+      }
+
+      p {
+        font-size: 1rem;
+        display: block;
+      }
+  }
+
+  .legislation-button {
+    margin-top: 20px;
+
+    label {
+      font-weight: bold;
+      color: #fcba18;
+      font-size: 1rem;
+    }
+
+    p {
+      font-size: 1rem;
+      display: block;
+      margin-left: 1px;
+    }
+  }
+
+  .map-wrapper {
+    width: 100%;
+    height: 250px;
+    padding-top: 10px;
+    margin-bottom: 30px;
+  }
+
+  .map-item {
+    position: relative;
+    height: 250px;
+    color: black;
+
+    .container {
+        position: relative;
+        @media (min-width: 400px) {
+            padding-right: 280px;
+        }
+    }
+
+    .map-container {
+        padding: 10px 0 10px 0;
+        display: block;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .map {
+        position: relative;
+        min-height: 250px;
+        height: 250px;
+        outline: none;
+        touch-action: none;
+        background-color: $map-bg;
+    }
+  }
+
+  .map-item__no-results {
+    text-align: center;
+    position: absolute;
+    background: grey;
+    z-index: 2000;
+    width: 100%;
+    height: 250px;
+  }
+
+  button {
+
+    // hide button on mobile
+    @media (max-width: 768px) {
+        visibility: hidden;
+        position: relative;
+    }
+
+    position: absolute;
+    right: -35px;
+    top: 15px;
+    background: #003366;
+    border-radius: 0 6px 6px 0;
+    box-shadow: 0.1rem 0.1rem 0.5rem rgba(0, 0, 0, 0.25);
+    height: 48px;
+    width: 35px;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    .icon {
+      color: #fff;
+      font-size: 2.2rem;
+    }
+  }
+}

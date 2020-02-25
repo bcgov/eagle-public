@@ -29,7 +29,7 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
   public period: CommentPeriod = null;
   private ngbModal: NgbModalRef = null;
   public legislationLink: String = '';
-  private certTagsExist: boolean;
+  public sidebarOpen = true;
 
   public commentPeriod = null;
   public map: L.Map = null;
@@ -353,6 +353,10 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
 
   public goToViewComments() {
     this.router.navigate(['/p', this.project._id, 'cp', this.project.commentPeriodForBanner._id, 'details']);
+  }
+
+  public handleSidebarToggle(event) {
+    this.sidebarOpen = event.open;
   }
 
   ngOnDestroy() {
