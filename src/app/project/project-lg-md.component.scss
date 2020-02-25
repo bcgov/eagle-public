@@ -12,6 +12,7 @@
     */
 
     .project {
+        transition: padding-left .5s;
         background: white;
 
         .container {
@@ -24,10 +25,7 @@
         }
 
         .banner-wide {
-            transform: translateX(0) !important;
-            margin-right: auto;
-            margin-left: auto;
-            width: 100% !important;
+            padding: 60px 0 0 0 !important;
         }
 
     /*
@@ -37,9 +35,8 @@
         .pcp-banner {
             background-color: #EFEFEF;
             color: #003366;
-            width: 71%;
-            transform: translateX(41%);
             padding-top: 60px;
+            padding-left: 33%;
             margin-bottom: -60px; // pull the rest of the page up
 
             .container {
@@ -183,8 +180,8 @@
             background: #f7f7f7;
             color: black;
 
-            width: 71%;
-            transform: translateX(41%);
+            width: 100%;
+            padding-left: 40%;
 
             .container {
                 padding: 40px 0 40px 60px;
@@ -215,10 +212,10 @@
 
             .flex-container {
                 padding: 0 20px 0 20px;
-                display: block;
+                display: flex;
                 .inner-col {
-                    display: inline-block;
-                    padding: 10px 10px 10px 0;
+                    // display: inline-block;
+                    // padding: 10px 10px 10px 0;
                     p, a {
                         font-size: small;
                     }
@@ -240,9 +237,8 @@
     .people {
         background: #f7f7f7;
         color: black;
-        width: 71%;
-        transform: translateX(41%);
-
+        width: 100%;
+        padding-left: 100;
 
         .container {
             padding: 40px 0 40px 40px;

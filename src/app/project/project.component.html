@@ -3,7 +3,7 @@
         <div class="project-info">
            <details-sidebar [project]="project" (onSidebarToggle)="handleSidebarToggle($event)"></details-sidebar>
             <div class="content">
-                <div *ngIf="project.commentPeriodForBanner" class="pcp-banner col-sm-12 {{ sidebarOpen ? 'col-md-10' : 'banner-wide' }}">
+                <div *ngIf="project.commentPeriodForBanner" class="pcp-banner col-sm-12 {{ !sidebarOpen && 'banner-wide' }}">
                     <div class="container">
                         <div class="row">
                             <div class="col-md-6">
@@ -54,11 +54,11 @@
                 </div>
             </div>
 
-            <section class="people col-sm-12 {{ sidebarOpen ? 'col-md-10' : 'banner-wide' }}">
+            <section class="people col-sm-12 {{ !sidebarOpen && 'banner-wide' }}">
                 <div class="container">
                     <h2>Contacts</h2>
                     <div class="flex-container">
-                        <div class="inner-col col-lg-10 col-xl-4" *ngIf="project?.projectLeadObj == null">
+                        <div class="inner-col" *ngIf="project?.projectLeadObj == null">
                             <h3>Project Lead</h3>
                             <p class="value"><i _ngcontent-c11="" class="material-icons mr-3" role="presentation"
                                 wiid="C937">person</i>{{project?.projectLead || "-"}}</p>
@@ -68,7 +68,7 @@
                                 wiid="C937">email</i><a
                                 href="mailto:{{project?.projectLeadEmail}}">{{project?.projectLeadEmail || "-"}}</a></p>
                         </div>
-                        <div class="inner-col ccol-lg-10 col-xl-4" *ngIf="project?.projectLeadObj">
+                        <div class="inner-col" *ngIf="project?.projectLeadObj">
                             <h3>Project Lead</h3>
                             <p class="value"><i _ngcontent-c11="" class="material-icons mr-3" role="presentation"
                                 wiid="C937">person</i>{{project?.projectLeadObj?.displayName || "-"}}</p>
@@ -78,7 +78,7 @@
                                 wiid="C937">email</i><a
                                 href="mailto:{{project?.projectLeadObj?.email}}">{{project?.projectLeadObj?.email || "-"}}</a></p>
                         </div>
-                        <div class="inner-col col-lg-10 col-xl-4" *ngIf="project?.responsibleEPDObj == null">
+                        <div class="inner-col" *ngIf="project?.responsibleEPDObj == null">
                             <h3>Executive Project Director</h3>
                             <p class="value"><i _ngcontent-c11="" class="material-icons mr-3" role="presentation"
                                 wiid="C937">person</i>{{project?.responsibleEPD || "-"}}</p>
@@ -88,7 +88,7 @@
                                 wiid="C937">email</i><a
                                 href="mailto:{{project?.responsibleEPDEmail}}">{{project?.responsibleEPDEmail || "-"}}</a></p>
                         </div>
-                        <div class="inner-col col-lg-10 col-xl-4" *ngIf="project?.responsibleEPDObj">
+                        <div class="inner-col" *ngIf="project?.responsibleEPDObj">
                             <h3>Executive Project Director</h3>
                             <p class="value"><i _ngcontent-c11="" class="material-icons mr-3" role="presentation"
                                 wiid="C937">person</i>{{project?.responsibleEPDObj?.displayName || "-"}}</p>
@@ -98,7 +98,7 @@
                                 wiid="C937">email</i><a
                                 href="mailto:{{project?.responsibleEPDObj?.email}}">{{project?.responsibleEPDObj?.email || "-"}}</a></p>
                         </div>
-                        <div class="inner-col col-lg-10 col-xl-4">
+                        <div class="inner-col">
                             <h3>Compliance & Enforcement Lead</h3>
                             <p class="value"><i _ngcontent-c11="" class="material-icons mr-3" role="presentation"
                                 wiid="C937">person</i>Compliance & Enforcement Branch</p>
