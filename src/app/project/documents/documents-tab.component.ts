@@ -57,6 +57,7 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
   public filterForUI: DocumentFilterObject = new DocumentFilterObject();
 
   public showAdvancedSearch = true;
+  public hasUncategorizedDocs = false;
 
   public showFilters: object = {
     date: false,
@@ -164,6 +165,7 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
 
           this.tableParams = this.tableTemplateUtils.getParamsFromUrl(params, this.filterForURL);
 
+
           if (res.documents && res.documents[0].data.meta && res.documents[0].data.meta.length > 0) {
             this.tableParams.totalListItems = res.documents[0].data.meta[0].searchResultsTotal;
             this.documents = res.documents[0].data.searchResults;
@@ -180,10 +182,36 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
           // project not found --> navigate back to search
           this.router.navigate(['/search']);
           this.loading = false;
+          this._changeDetectionRef.detectChanges();
         }
       });
 
     this.currentProject = this.storageService.state.currentProject.data;
+
+    this.searchService.getSearchResults(
+      '',
+      'Document',
+      [
+        { name: 'project', value: this.currentProject._id },
+        { name: 'categorized', value: false }
+      ],
+      this.route.params.value.currentPage,
+      this.route.params.value.pageSize,
+      this.route.params.value.sortBy,
+      { documentSource: 'PROJECT' },
+      true,
+      null,
+      this.filterForAPI,
+      ''
+    )
+    .takeUntil(this.ngUnsubscribe)
+    .subscribe((res: any) => {
+      if (res[0].data.meta && res[0].data.meta.length > 0) {
+        this.hasUncategorizedDocs = true;
+        this.loading = false;
+        this._changeDetectionRef.detectChanges();
+      }
+    });
   }
 
   navSearchHelp() {
