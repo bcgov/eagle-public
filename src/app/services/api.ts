@@ -120,8 +120,8 @@ export class ApiService {
     projectLegislation = (projectLegislation === '') ? 'default' : projectLegislation;
     let queryString = `search?dataset=${dataset}`;
     if (fields && fields.length > 0) {
-      queryString += fields.map(item => {
-        return `&${item.name}=${item.value}`;
+      fields.forEach(item => {
+        queryString += `&${item.name}=${item.value}`;
       });
     }
     if (keys) {
