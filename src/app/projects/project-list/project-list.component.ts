@@ -32,6 +32,7 @@ class ProjectFilterObject {
     public proponent: Array<Org> = [],
     public region: Array<string> = [],
     public CEAAInvolvement: Array<string> = [],
+    public projectPhase: Array<string> = [],
     public vc: Array<object> = []
   ) { }
 }
@@ -49,7 +50,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
   public eacDecisions: Array<any> = [];
   public commentPeriods: Array<object> = [];
   public projectTypes: Array<object> = [];
-  public projectPhase: Array<object> = [];
+  public projectPhases: Array<object> = [];
 
   public loading = true;
 
@@ -146,8 +147,8 @@ export class ProjectListComponent implements OnInit, OnDestroy {
             case 'ceaaInvolvements':
               this.ceaaInvolvements.push({ ...item });
               break;
-            case 'currentPhaseName':
-              this.projectPhase.push({ ...item});
+            case 'projectPhase':
+              this.projectPhases.push({ ...item});
               break;
           }
         });
@@ -177,6 +178,11 @@ export class ProjectListComponent implements OnInit, OnDestroy {
           this.tableParams.sortBy = '+name';
         }
 
+        if (this.filterForAPI.hasOwnProperty('projectPhase')) {
+          this.filterForAPI['currentPhaseName'] = this.filterForAPI['projectPhase'];
+          delete this.filterForAPI['projectPhase'];
+        }
+
         return this.searchService
           .getSearchResults(
             this.tableParams.keywords,
@@ -194,6 +200,12 @@ export class ProjectListComponent implements OnInit, OnDestroy {
       })
       .takeUntil(this.ngUnsubscribe)
       .subscribe((res: any) => {
+
+        if (this.filterForAPI.hasOwnProperty('currentPhaseName')) {
+          this.filterForAPI['projectPhase'] = this.filterForAPI['currentPhaseName'];
+          delete this.filterForAPI['currentPhaseName'];
+        }
+
         if (res[0].data) {
           if (res[0].data.searchResults.length > 0) {
             this.tableParams.totalListItems =
@@ -290,6 +302,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     this.paramsToCollectionFilters(params, 'proponent', this.proponents, '_id');
     this.paramsToCollectionFilters(params, 'vc', null, '_id');
     this.paramsToCollectionFilters(params, 'eacDecision', this.eacDecisions, '_id');
+    this.paramsToCollectionFilters(params, 'projectPhase', this.projectPhases, '_id');
 
     this.paramsToDateFilters(params, 'decisionDateStart');
     this.paramsToDateFilters(params, 'decisionDateEnd');
@@ -339,6 +352,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     this.collectionFilterToParams(params, 'CEAAInvolvement', '_id');
     this.collectionFilterToParams(params, 'proponent', '_id');
     this.collectionFilterToParams(params, 'vc', '_id');
+    this.collectionFilterToParams(params, 'projectPhase', '_id');
 
     this.dateFilterToParams(params, 'decisionDateStart');
     this.dateFilterToParams(params, 'decisionDateEnd');
@@ -453,6 +467,11 @@ export class ProjectListComponent implements OnInit, OnDestroy {
       this.tableParams.sortBy
     );
 
+    if (this.filterForAPI.hasOwnProperty('projectPhase')) {
+      this.filterForAPI['currentPhaseName'] = this.filterForAPI['projectPhase'];
+      delete this.filterForAPI['projectPhase'];
+    }
+
     this.searchService
       .getSearchResults(
         this.tableParams.keywords,
@@ -484,11 +503,16 @@ export class ProjectListComponent implements OnInit, OnDestroy {
           this.loading = false;
           this._changeDetectionRef.detectChanges();
         } else {
-          alert('Uh-oh, couldn\'t load topics');
+          alert('Uh-oh, couldn\'t load projects');
           // project not found --> navigate back to search
           this.router.navigate(['/']);
         }
       });
+
+      if (this.filterForAPI.hasOwnProperty('currentPhaseName')) {
+        this.filterForAPI['projectPhase'] = this.filterForAPI['currentPhaseName'];
+        delete this.filterForAPI['currentPhaseName'];
+      }
   }
 
   public onSubmit(currentPage = 1) {
@@ -511,21 +535,6 @@ export class ProjectListComponent implements OnInit, OnDestroy {
 
     console.log('onSubmit params', params);
     this.router.navigate(['projects-list', params]);
-  }
-
-  private getLists() {
-    this.config.lists.subscribe(lists => {
-      lists.map(item => {
-        switch (item.type) {
-          case 'eaDecisions':
-            this.eacDecisions.push({ ...item });
-            break;
-          case 'ceaaInvolvements':
-            this.ceaaInvolvements.push({ ...item });
-            break;
-        }
-      });
-    });
   }
 
   // Compares selected options when a dropdown is grouped by legislation.
