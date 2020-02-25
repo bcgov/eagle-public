@@ -14,10 +14,12 @@
     right: 0;
     top: 60px;
     height: 50px;
-    opacity: 0;
-}
-.showForIEorEdge{
     opacity: 0.78;
+    display: none;
+}
+
+.showForIEorEdge{
+  display: block;
 }
 .md-24{
     display: inline-flex;
