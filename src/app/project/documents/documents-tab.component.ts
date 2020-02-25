@@ -195,9 +195,9 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
         { name: 'project', value: this.currentProject._id },
         { name: 'categorized', value: false }
       ],
-      this.route.params.value.currentPage,
-      this.route.params.value.pageSize,
-      this.route.params.value.sortBy,
+      1,
+      10,
+      '-datePosted',
       { documentSource: 'PROJECT' },
       true,
       null,
