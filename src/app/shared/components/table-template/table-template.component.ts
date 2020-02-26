@@ -17,6 +17,9 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
   @Input() pageSizeArray: number[];
   @Input() activePageSize: number;
   @Input() activePage: number = Constants.tableDefaults.DEFAULT_CURRENT_PAGE;
+  @Input() hidePager = false;
+  @Input() showMoreLoader = false;
+  @Input() showMoreIncrement: number = Constants.tableDefaults.DEFAULT_SHOW_MORE_INCREMENT;
   @ViewChild(TableDirective) tableHost: TableDirective;
 
   @Output() onPageNumUpdate: EventEmitter<any> = new EventEmitter();

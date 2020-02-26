@@ -17,9 +17,9 @@
     <div (selectedCount)="updateSelectedCount($event)"></div>
   </ng-template>
 </table>
-<div class="page-controls text-center pt-3 pb-3">
+<div class="page-controls text-center pt-3 pb-3" *ngIf="hidePager === false">
     <nz-pagination
-        *ngIf="data.paginationData.totalListItems > 10"
+        *ngIf="data.paginationData.totalListItems > activePageSize"
         [nzPageIndex]="activePage"
         (nzPageIndexChange)="updatePageNumber($event)"
         (nzPageSizeChange)="updatePageSize($event)"
@@ -32,4 +32,7 @@
     <ng-template #totalTemplate let-total>{{total}} result<span *ngIf="total != 1">s</span> found
         <button nz-button nzType="primary" class="show_all_btn" (click)="updatePageSize(data.paginationData.totalListItems)">Show All</button>
     </ng-template>
+</div>
+<div *ngIf="showMoreLoader === true && data.paginationData.totalListItems > activePageSize">
+    <button nz-button nzType="primary" class="show_all_btn" (click)="updatePageSize(activePageSize + showMoreIncrement)">Show More ({{data.paginationData.totalListItems - activePageSize}} remaining)</button>
 </div>
