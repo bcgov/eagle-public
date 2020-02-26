@@ -54,10 +54,11 @@
             <h2>Featured Documents</h2>
             <app-table-template
                 [columns]="documentTableColumns" [data]="documentTableData" (onColumnSort)='setColumnSort($event)'
-                (onSelectedRow)='updateSelectedRow($event)'>
+                (onSelectedRow)='updateSelectedRow($event)' [hidePager]="true">
             </app-table-template>
         </div>
     </div>
+    <app-pins></app-pins>
     <div class="row">
       <div class="col-12">
         <h2>Activities and Updates</h2>
