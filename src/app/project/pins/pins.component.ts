@@ -92,17 +92,22 @@ export class PinsComponent implements OnInit, OnDestroy {
     });
   }
 
+
   setDocumentRowData() {
     let documentList = [];
     if (this.pins && this.pins.length > 0 && this.pins[0].results) {
       this.pins[0].results.forEach(contact => {
         documentList.push(contact);
       });
-      this.tableData = new TableObject(
-        PinsTableRowsComponent,
-        documentList,
-        this.tableParams
-      );
+      if (!this.tableData) {
+        this.tableData = new TableObject(
+          PinsTableRowsComponent,
+          this.pins[0].results,
+          this.tableParams
+        );
+      } else {
+        this.tableData.data = documentList;
+      }
     }
   }
 

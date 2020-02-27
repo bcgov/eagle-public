@@ -1,9 +1,14 @@
+import { NgbDateStruct } from '@ng-bootstrap/ng-bootstrap';
+
 export interface BuildNature {
   build: string;
   nature: string;
 }
 
 export class Constants {
+
+  public static readonly minPickerDate: NgbDateStruct = { year: 1900, month: 1, day: 1 };
+  public static readonly maxPickerDate: NgbDateStruct = { year: (new Date().getFullYear() + 20), month: 1, day: 1 };
 
   public static readonly searchDisclaimer = 'Note: Some documents within this project have not yet been categorized by author, document type, and/or milestone and may not be displayed when using some of the search filters. We are actively processing these documents so they can be searched and filtered, making it easier to find what you’re looking for. Clearing the filters and searching based on a keyword will show all results.';
 
