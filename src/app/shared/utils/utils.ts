@@ -80,12 +80,26 @@ export class Utils {
           { legislation: 2002, name: 'Application Review' },
           { legislation: 2018, name: 'Revised EAC Application' },
         ];
+
+        const applications = [
+          { legislation: 2002, name: 'Post Decision - Amendment' },
+          { legislation: 2018, name: 'Post Decision - Amendment' }
+        ];
+
         // Special case for phases.
-        const amendmentPhaseId = this.getIdsByName([{ legislation: 2002, name: 'Post Decision - Amendment' }], list).map(type => type.id);
-        phases = list
-                  .filter(item => item.type === 'projectPhase' && item._id !== amendmentPhaseId)
-                  .map(item => item._id)
-                  .join(',');
+        const amendmentPhaseIds = this.getIdsByName(applications, list).map(type => type.id);
+
+        // Get all phase list items excluding the matched applications.
+        phases = list.filter(item => {
+          if (item.type === 'projectPhase' && !amendmentPhaseIds.includes(item._id)) {
+            return true;
+          }
+
+          return false;
+        })
+        .map(item => item._id)
+        .join(',');
+
         break;
     }
 
