@@ -265,7 +265,7 @@
 
     <section class="tab-section" *ngIf="!loading">
         <div *ngIf="documents.length === 0">
-            No documents visible yet.
+            No results found.
         </div>
 
         <app-table-template *ngIf="!loading && tableParams.totalListItems != 0" (checkboxChange)='checkChange($event)'
