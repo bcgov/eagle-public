@@ -99,15 +99,11 @@ export class PinsComponent implements OnInit, OnDestroy {
       this.pins[0].results.forEach(contact => {
         documentList.push(contact);
       });
-      if (!this.tableData) {
-        this.tableData = new TableObject(
-          PinsTableRowsComponent,
-          this.pins[0].results,
-          this.tableParams
+      this.tableData = new TableObject(
+        PinsTableRowsComponent,
+        documentList,
+        this.tableParams
         );
-      } else {
-        this.tableData.data = documentList;
-      }
     }
   }
 
