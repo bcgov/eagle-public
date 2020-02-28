@@ -178,6 +178,16 @@ export class ProjectListComponent implements OnInit, OnDestroy {
           this.tableParams.sortBy = '+name';
         }
 
+        // check if the filters are in session state, for handling
+        // retaining the filters when a user clicks back from a project
+        // into the project list
+        if (this.storageService && this.storageService.state.projList) {
+          this.filterForAPI = this.storageService.state.projList.filterForAPI;
+          this.filterForUI = this.storageService.state.projList.filterForUI;
+          this.tableParams = this.storageService.state.projList.tableParams;
+          this.setParamsFromFilters(params);
+        }
+
         if (this.filterForAPI.hasOwnProperty('projectPhase')) {
           this.filterForAPI['currentPhaseName'] = this.filterForAPI['projectPhase'];
           delete this.filterForAPI['projectPhase'];
@@ -216,6 +226,17 @@ export class ProjectListComponent implements OnInit, OnDestroy {
             this.projects = [];
           }
           this.setRowData();
+
+          // store the state of the filterForAPI set into the session
+          // so a user can navigate back to this page without losing
+          // their filters
+          if (this.storageService) {
+            this.storageService.state.projList = {};
+            this.storageService.state.projList.filterForAPI = this.filterForAPI;
+            this.storageService.state.projList.filterForUI = this.filterForUI;
+            this.storageService.state.projList.tableParams = this.tableParams;
+          }
+
         } else {
           alert('Uh-oh, couldn\'t load search results');
           // results not found --> navigate back to search
@@ -466,6 +487,9 @@ export class ProjectListComponent implements OnInit, OnDestroy {
       pageNumber,
       this.tableParams.sortBy
     );
+
+    // store the table params in the event of a page navigation
+    this.storageService.state.projList.tableParams = this.tableParams;
 
     if (this.filterForAPI.hasOwnProperty('projectPhase')) {
       this.filterForAPI['currentPhaseName'] = this.filterForAPI['projectPhase'];

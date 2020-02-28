@@ -7,6 +7,7 @@ import 'rxjs/add/operator/switchMap';
 import * as _ from 'lodash';
 
 import { SearchService } from 'app/services/search.service';
+import { StorageService } from 'app/services/storage.service';
 
 @Injectable()
 export class DocumentsResolver implements Resolve<Observable<object>> {
@@ -18,17 +19,18 @@ export class DocumentsResolver implements Resolve<Observable<object>> {
   private filterForAPI: object = {};
 
   constructor(
-    private searchService: SearchService
+    private searchService: SearchService,
+    private storageService: StorageService
   ) { }
 
   resolve(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): Observable<object> {
     const projectId = route.parent.paramMap.get('projId');
-    const currentPage = route.params.currentPage ? route.params.currentPage : 1;
-    const pageSize = route.params.pageSize ? route.params.pageSize : 10;
-    const sortBy = route.params.sortBy && route.params.sortBy !== 'null' ? route.params.sortBy : '-datePosted';
+    let currentPage = route.params.currentPage ? route.params.currentPage : 1;
+    let pageSize = route.params.pageSize ? route.params.pageSize : 10;
+    let sortBy = route.params.sortBy && route.params.sortBy !== 'null' ? route.params.sortBy : '-datePosted';
     const datePostedStart = route.params.hasOwnProperty('datePostedStart') &&  route.params.datePostedStart ? route.params.datePostedStart : null;
     const datePostedEnd = route.params.hasOwnProperty('datePostedEnd') && route.params.datePostedEnd ? route.params.datePostedEnd : null;
-    const keywords = route.params.keywords;
+    const keywords = route.params.hasOwnProperty('keywords') ? route.params.keywords : '';
 
     // Get the lists first
     return this.searchService.getFullList('List')
@@ -62,6 +64,21 @@ export class DocumentsResolver implements Resolve<Observable<object>> {
         if (datePostedStart !== null && datePostedEnd !== null) {
           queryModifiers['datePostedStart'] = datePostedStart;
           queryModifiers['datePostedEnd'] = datePostedEnd;
+        }
+
+        if (this.storageService && this.storageService.state[projectId]) {
+          let filterForUI = this.storageService.state[projectId].filterForUI
+          let tableParams = this.storageService.state[projectId].tableParams;
+
+          if (tableParams) {
+            currentPage = tableParams.currentPage;
+            pageSize = tableParams.pageSize;
+            sortBy = tableParams.sortBy;
+          }
+
+          if(filterForUI) {
+            this.setParamsFromFilters(route.params, filterForUI);
+          }
         }
 
         return this.searchService.getSearchResults(
@@ -111,5 +128,19 @@ export class DocumentsResolver implements Resolve<Observable<object>> {
     this.paramsToCollectionFilter(params, 'documentAuthorType', this.authors, '_id');
     this.paramsToCollectionFilter(params, 'type', this.types, '_id');
     this.paramsToCollectionFilter(params, 'projectPhase', this.projectPhases, '_id');
+  }
+
+  setParamsFromFilters(params, filterForUI) {
+    this.collectionFilterToParams(params, filterForUI, 'milestone', '_id');
+    this.collectionFilterToParams(params, filterForUI, 'documentAuthorType', '_id');
+    this.collectionFilterToParams(params, filterForUI, 'type', '_id');
+    this.collectionFilterToParams(params, filterForUI, 'projectPhase', '_id');
+  }
+
+  collectionFilterToParams(params, filterForUI, name, identifyBy) {
+    if (filterForUI[name].length) {
+      const values = filterForUI[name].map(record => { return record[identifyBy]; });
+      this.filterForAPI[name] = values.join(',');
+    }
   }
 }
