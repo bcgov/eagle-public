@@ -42,10 +42,15 @@ export class ProjlistFiltersComponent implements OnInit, OnChanges, OnDestroy {
   readonly minDate = moment('2018-03-23').toDate(); // first app created
   readonly maxDate = moment().toDate(); // today
 
+  public projectTypes: Array<any> = [];
+  public projectRegions: Array<any> = [];
+  public projectPhases: Array<any> = [];
+
   public isFiltersCollapsed: boolean;
   public isCpStatusCollapsed = true;
   public isAppStatusCollapsed = true;
   public loading = false;
+  public showFilters = false;
   private paramMap: ParamMap = null;
   private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
 
@@ -56,8 +61,6 @@ export class ProjlistFiltersComponent implements OnInit, OnChanges, OnDestroy {
 
   // search keys for text boxes
   private applicantKeys: Array<string> = [];
-  // private clFileKeys: Array<number> = []; // NOT CURRENTLY USED
-  // private dispIdKeys: Array<number> = []; // NOT CURRENTLY USED
   private purposeKeys: Array<string> = [];
 
   public regionFilters: object = {}; // array-like object
@@ -71,6 +74,15 @@ export class ProjlistFiltersComponent implements OnInit, OnChanges, OnDestroy {
 
   public applicantFilter: string = null;
   public _applicantFilter: string = null; // temporary filters for Cancel feature
+
+  public regionFilter: string = null;
+  public _regionFilter: string = null;
+
+  public typeFilter: string = null;
+  public _typeFilter: string = null;
+
+  public phaseFilter: string = null;
+  public _phaseFilter: string = null;
 
   public clFileFilter: number = null;
   public _clFileFilter: number = null; // temporary filters for Cancel feature
@@ -123,12 +135,24 @@ export class ProjlistFiltersComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   public ngOnInit() {
-    this.isFiltersCollapsed = !this.configService.isApplistFiltersVisible;
+    this.configService.lists
+    .switchMap(list => {
+      list.forEach(item => {
+        switch (item.type) {
+          case 'region':
+            this.projectRegions.push({ ...item });
+            break;
+          case 'projectPhase':
+            this.projectPhases.push({ ...item });
+            break;
+        }
+      });
 
-    // get optional query parameters
-    this.route.queryParamMap
-      .takeUntil(this.ngUnsubscribe)
-      .subscribe(paramMap => {
+      this.projectTypes = Constants.PROJECT_TYPE_COLLECTION;
+
+      return this.route.queryParamMap;
+    })
+    .subscribe(paramMap => {
         this.paramMap = paramMap;
 
         // set filters according to paramMap
@@ -210,6 +234,10 @@ export class ProjlistFiltersComponent implements OnInit, OnChanges, OnDestroy {
     this.purposeFilter = this._purposeFilter;
     this.publishFromFilter = this._publishFromFilter;
     this.publishToFilter = this._publishToFilter;
+
+    this.typeFilter = this._typeFilter;
+    this.phaseFilter = this._phaseFilter;
+    this.regionFilter = this._regionFilter;
 
     this.internalApplyAllFilters(true);
   }
@@ -510,4 +538,9 @@ export class ProjlistFiltersComponent implements OnInit, OnChanges, OnDestroy {
   public onLoadStart() { this.loading = true; }
 
   public onLoadEnd() { this.loading = false; }
+
+  public toggleFilters() {
+    this.showFilters = !this.showFilters;
+  }
+
 }
