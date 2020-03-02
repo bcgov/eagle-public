@@ -63,26 +63,23 @@ export class ProjlistFiltersComponent implements OnInit, OnChanges, OnDestroy {
   private applicantKeys: Array<string> = [];
   private purposeKeys: Array<string> = [];
 
-  public regionFilters: object = {}; // array-like object
-  public _regionFilters: object = {}; // temporary filters for Cancel feature
+  public cpStatusFilters: Array<any> = []; // array-like object
+  public _cpStatusFilters: Array<any> = []; // temporary filters for Cancel feature
 
-  public cpStatusFilters: object = {}; // array-like object
-  public _cpStatusFilters: object = {}; // temporary filters for Cancel feature
-
-  public appStatusFilters: object = {}; // array-like object
-  public _appStatusFilters: object = {}; // temporary filters for Cancel feature
+  public appStatusFilters: Array<any> = []; // array-like object
+  public _appStatusFilters: Array<any> = []; // temporary filters for Cancel feature
 
   public applicantFilter: string = null;
   public _applicantFilter: string = null; // temporary filters for Cancel feature
 
-  public regionFilter: string = null;
-  public _regionFilter: string = null;
+  public regionFilter: Array<any> = [];
+  public _regionFilter: Array<any> = [];
 
-  public typeFilter: string = null;
-  public _typeFilter: string = null;
+  public typeFilter: Array<any> = [];
+  public _typeFilter: Array<any> = [];
 
-  public phaseFilter: string = null;
-  public _phaseFilter: string = null;
+  public phaseFilter: Array<any> = [];
+  public _phaseFilter: Array<any> = [];
 
   public clFileFilter: number = null;
   public _clFileFilter: number = null; // temporary filters for Cancel feature
@@ -186,7 +183,7 @@ export class ProjlistFiltersComponent implements OnInit, OnChanges, OnDestroy {
   // FOR FUTURE USE
   public getFilters(): FiltersType {
     return {
-      regionFilters: this.regionFilters,
+      regionFilters: this.regionFilter,
       cpStatusFilters: this.cpStatusFilters,
       appStatusFilters: this.appStatusFilters,
       applicantFilter: this.applicantFilter && this.applicantFilter.trim(),
@@ -202,7 +199,7 @@ export class ProjlistFiltersComponent implements OnInit, OnChanges, OnDestroy {
   // The following are to "Apply" the temporary filters: copy the temporary values to the actual variables, etc.
   //
   public applyRegionFilters() {
-    this.regionFilters = { ...this._regionFilters };
+    this.regionFilter = { ...this._regionFilter };
     this.internalApplyAllFilters(true);
     // this.isRegionCollapsed = true; // FUTURE
   }
@@ -225,7 +222,6 @@ export class ProjlistFiltersComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   public applyAllFilters() {
-    this.regionFilters = { ...this._regionFilters };
     this.cpStatusFilters = { ...this._cpStatusFilters };
     this.appStatusFilters = { ...this._appStatusFilters };
     this.applicantFilter = this._applicantFilter;
@@ -259,20 +255,26 @@ export class ProjlistFiltersComponent implements OnInit, OnChanges, OnDestroy {
   private showThisApp(item: Project): boolean {
     let retVal = true; // for short-circuiting checks
 
-    // if no option is selected, match all
-    const allRegions = this.regionKeys.every(key => {
-      return (this.regionFilters[key] === false);
-    });
+    let regionMatch = true;
+    if (this.regionFilter.length) {
+      regionMatch = this.regionFilter.some(region => region.name === item.region);
+    }
 
-    // if no option is selected, match all
-    const allCpStatuses = this.cpStatusKeys.every(key => {
-      return (this.cpStatusFilters[key] === false);
-    });
+    let phaseMatch = true;
+    if (this.phaseFilter.length) {
+      phaseMatch = this.phaseFilter.some(phase => {
+        if (item.currentPhaseName && item.currentPhaseName._id && phase._id === item.currentPhaseName._id) {
+          return true;
+        }
 
-    // if no option is selected, match all
-    const allAppStatuses = this.appStatusKeys.every(key => {
-      return (this.appStatusFilters[key] === false);
-    });
+        return false;
+      });
+    }
+
+    let typeMatch = true;
+    if (this.typeFilter.length) {
+      typeMatch = this.typeFilter.some(type => type.name === item.type);
+    }
 
     // check for matching Applicant
     const applicantFilter = this.applicantFilter && this.applicantFilter.trim(); // returns null or empty
@@ -287,6 +289,9 @@ export class ProjlistFiltersComponent implements OnInit, OnChanges, OnDestroy {
       item._id.toString().indexOf(this.dispIdFilter.toString()) > -1
     );
 
+    // Check matching filters
+    retVal = retVal && (regionMatch && phaseMatch && typeMatch);
+
     return retVal;
   }
 
@@ -294,7 +299,7 @@ export class ProjlistFiltersComponent implements OnInit, OnChanges, OnDestroy {
     const params: Params = {}; // array-like object
 
     this.regionKeys.forEach(key => {
-      if (this.regionFilters[key]) {
+      if (this.regionFilter[key]) {
         if (!params['regions']) {
           params['regions'] = key;
         } else {
@@ -359,7 +364,7 @@ export class ProjlistFiltersComponent implements OnInit, OnChanges, OnDestroy {
   // The following are to "Cancel" the temporary filters: just reset the values.
   //
   public cancelRegionFilters() {
-    this._regionFilters = { ...this.regionFilters };
+    this._regionFilter = { ...this.regionFilter };
     // this.isRegionCollapsed = true; // FUTURE
   }
 
@@ -374,7 +379,7 @@ export class ProjlistFiltersComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   public cancelAllFilters() {
-    this._regionFilters = { ...this.regionFilters };
+    this._regionFilter = { ...this.regionFilter };
     this._cpStatusFilters = { ...this.cpStatusFilters };
     this._appStatusFilters = { ...this.appStatusFilters };
     this._applicantFilter = this.applicantFilter;
@@ -395,7 +400,7 @@ export class ProjlistFiltersComponent implements OnInit, OnChanges, OnDestroy {
       // set region filters according to current param options
       const regions = (this.paramMap.get('regions') || '').split(',');
       this.regionKeys.forEach(key => {
-        this.regionFilters[key] = regions.includes(key);
+        this.regionFilter[key] = regions.includes(key);
       });
 
       // set cpStatus filters according to current param options
@@ -418,7 +423,7 @@ export class ProjlistFiltersComponent implements OnInit, OnChanges, OnDestroy {
       this.publishToFilter = this.paramMap.get('publishTo') ? moment(this.paramMap.get('publishTo')).toDate() : null;
 
       // copy all data from actual to temporary properties
-      this._regionFilters = { ...this.regionFilters };
+      this._regionFilter = { ...this.regionFilter };
       this._cpStatusFilters = { ...this.cpStatusFilters };
       this._appStatusFilters = { ...this.appStatusFilters };
       this._applicantFilter = this.applicantFilter;
@@ -441,7 +446,7 @@ export class ProjlistFiltersComponent implements OnInit, OnChanges, OnDestroy {
   //
   public clearRegionFilters() {
     this.regionKeys.forEach(key => {
-      this._regionFilters[key] = false;
+      this._regionFilter[key] = false;
     });
     this.applyRegionFilters();
   }
@@ -475,7 +480,7 @@ export class ProjlistFiltersComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   public regionCount(): number {
-    return this.regionKeys.filter(key => this.regionFilters[key]).length;
+    return this.regionKeys.filter(key => this.regionFilter[key]).length;
   }
 
   public cpStatusCount(): number {
@@ -520,7 +525,7 @@ export class ProjlistFiltersComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   public regionHasChanges(): boolean {
-    return !_.isEqual(this._regionFilters, this.regionFilters);
+    return !_.isEqual(this._regionFilter, this.regionFilter);
   }
 
   public cpStatusHasChanges(): boolean {
