@@ -58,6 +58,7 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
 
   public showAdvancedSearch = true;
   public hasUncategorizedDocs = false;
+  public readonly constants = Constants;
 
   public showFilters: object = {
     date: false,

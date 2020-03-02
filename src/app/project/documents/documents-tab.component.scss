@@ -24,19 +24,6 @@ input[type="text"] {
   margin-bottom: 5px;
 }
 
-.btn-outline-secondary {
-  color: #007bff;
-  border-color: #007bff;
-  i {
-  	margin-right: 4px;
-  	font-size: 20px;
-  }
-  &:disabled {
-    border-color: #6c757d;
-    color: #6c757d;
-  }
-}
-
 .search-area {
   background-color: white;
   border: 1px solid lightgray;
