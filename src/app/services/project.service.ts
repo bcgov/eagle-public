@@ -97,7 +97,7 @@ export class ProjectService {
               let currentDate = now.toISOString();
               // Default to the same comment period we're using currently in case one is not active
               let finalCommentPeriod = new CommentPeriod(projects[0].commentPeriodForBanner[0]);
-              for ( let commentPeriod in projects[0].commentPeriodForBanner){
+              for ( let commentPeriod in projects[0].commentPeriodForBanner) {
                 if (Date.parse(projects[0].commentPeriodForBanner[commentPeriod].dateCompleted) > Date.parse(currentDate)
                 && Date.parse(projects[0].commentPeriodForBanner[commentPeriod].dateStarted)  < Date.parse(currentDate) ) {
                     finalCommentPeriod = new CommentPeriod(projects[0].commentPeriodForBanner[commentPeriod]);
