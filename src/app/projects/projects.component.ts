@@ -48,8 +48,8 @@ export class ProjectsComponent implements OnInit, OnDestroy {
   public filterApps: Array<Project> = [];
   public mapApps: Array<Project> = [];
   public listApps: Array<Project> = [];
-  // private filters: FiltersType = null; // FUTURE
   private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
+
 
   previousUrl: string;
 
