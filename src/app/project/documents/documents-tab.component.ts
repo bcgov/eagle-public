@@ -160,12 +160,26 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
             this.projectPhases = _.sortBy(this.projectPhases, ['legislation']);
           }
 
+          this.currentProject = this.storageService.state.currentProject.data;
+
+          if (this.currentProject && this.storageService.state[this.currentProject._id]) {
+            if (this.storageService.state[this.currentProject._id].filterForUI) {
+              this.filterForUI = this.storageService.state[this.currentProject._id].filterForUI;
+              this.setParamsFromFilters(params);
+            }
+
+            if (this.storageService.state[this.currentProject._id].tableParams) {
+              this.tableParams = this.storageService.state[this.currentProject._id].tableParams;
+            }
+          }
+
+          if (!this.tableParams) {
+            this.tableParams = this.tableTemplateUtils.getParamsFromUrl(params, this.filterForURL);
+          }
+
           this.setFiltersFromParams(params);
 
           this.updateCounts();
-
-          this.tableParams = this.tableTemplateUtils.getParamsFromUrl(params, this.filterForURL);
-
 
           if (res.documents && res.documents[0].data.meta && res.documents[0].data.meta.length > 0) {
             this.tableParams.totalListItems = res.documents[0].data.meta[0].searchResultsTotal;
@@ -189,6 +203,10 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
 
     this.currentProject = this.storageService.state.currentProject.data;
 
+    if (!this.storageService.state[this.currentProject._id]) {
+      this.storageService.state[this.currentProject._id] = {};
+    }
+
     this.searchService.getSearchResults(
       '',
       'Document',
@@ -196,9 +214,9 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
         { name: 'project', value: this.currentProject._id },
         { name: 'categorized', value: false }
       ],
-      1,
-      10,
-      '-datePosted',
+      this.storageService.state[this.currentProject._id].tableParams ? this.storageService.state[this.currentProject._id].tableParams.currentPage : 1,
+      this.storageService.state[this.currentProject._id].tableParams ? this.storageService.state[this.currentProject._id].tableParams.pageSize : 10,
+      this.storageService.state[this.currentProject._id].tableParams ? this.storageService.state[this.currentProject._id].tableParams.sortBy : '-datePosted',
       { documentSource: 'PROJECT' },
       true,
       null,
@@ -365,6 +383,7 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
     if (this.filterForUI[name].length) {
       const values = this.filterForUI[name].map(record => { return record[identifyBy]; });
       params[name] = values.join(',');
+      this.storageService.state[this.currentProject._id].filterForAPI[name] = values.join(',');
     }
   }
 
@@ -467,6 +486,10 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
       queryModifiers['datePostedEnd'] = datePostedEnd;
     }
 
+    if (this.storageService) {
+      this.storageService.state[this.currentProject._id].tableParams = this.tableParams;
+    }
+
     this.searchService.getSearchResults(
       this.tableParams.keywords,
       'Document',
@@ -523,7 +546,14 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
     params['keywords'] = this.tableParams.keywords;
     params['pageSize'] = this.tableParams.pageSize;
 
+    if (this.storageService) {
+      this.storageService.state[this.currentProject._id].tableParams = this.tableParams;
+      this.storageService.state[this.currentProject._id].filterForUI = this.filterForUI;
+      this.storageService.state[this.currentProject._id].filterForAPI = {};
+    }
+
     this.setParamsFromFilters(params);
+
 
     this.router.navigate(['p', this.currentProject._id, 'documents', params]);
   }
