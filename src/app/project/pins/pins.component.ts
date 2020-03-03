@@ -92,6 +92,7 @@ export class PinsComponent implements OnInit, OnDestroy {
     });
   }
 
+
   setDocumentRowData() {
     let documentList = [];
     if (this.pins && this.pins.length > 0 && this.pins[0].results) {
@@ -102,7 +103,7 @@ export class PinsComponent implements OnInit, OnDestroy {
         PinsTableRowsComponent,
         documentList,
         this.tableParams
-      );
+        );
     }
   }
 

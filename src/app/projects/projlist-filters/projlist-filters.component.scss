@@ -33,7 +33,7 @@ $app-filters-font-lg: 0.9375rem;
       padding: .75rem .75rem .2rem;
     }
 
-    label {
+    .header-label {
       font-size: 1.3rem;
       font-weight: 700;
       margin-bottom: .25rem;
@@ -56,7 +56,7 @@ $app-filters-font-lg: 0.9375rem;
       border: 2px solid #c6d0da;
       font-size: 1rem;
       font-weight: 400;
-      height: auto;
+      height: 50px;
       &:focus {
         box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
         border-color: #5091cd;
@@ -66,23 +66,13 @@ $app-filters-font-lg: 0.9375rem;
     .btn {
       border-radius: 0 4px 4px 0;
       font-size: 1rem;
-      position: absolute;
-      right: 22px;
-      bottom: 19px;
+      min-width: 140px;
       height: 50px;
       background: #fcba18;
       color: #003367;
       border: none;
       font-weight: bold;
       padding: .5rem 1.4rem .6rem;
-
-      @media (max-width: 768px) {
-        position: relative;
-        width: 100%;
-        left: auto;
-        right: auto;
-        margin-top: 10px;
-      }
 
       i {
         vertical-align: top;
@@ -300,5 +290,49 @@ $app-filters-font-lg: 0.9375rem;
       margin-bottom: 0.5rem;
       width: 100%;
     }
+  }
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+}
+
+.toggle-container {
+  display: flex;
+  justify-content: flex-end;
+  margin: 5px 0;
+
+  .toggle-btn {
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+
+    &:hover {
+      cursor: pointer;
+      color: #03509c;
+    }
+  }
+}
+
+.filters-container {
+  display: flex;
+  justify-content: space-between;
+  margin: 10px 0;
+}
+
+.filter-container {
+  margin: 0 5px;
+  font-weight: normal;
+  flex-grow: 1;
+  flex-basis: 33.33%;
+
+  .filter-select {
+    color: black;
+  }
+
+  label {
+    font-size: inherit;
+    margin-bottom: 0;
   }
 }

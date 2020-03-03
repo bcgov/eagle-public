@@ -237,11 +237,6 @@ def nodejsSonarqube () {
             sh("oc extract secret/sonarqube-status-urls --to=${env.WORKSPACE}/sonar-runner --confirm")
             SONARQUBE_STATUS_URL = sh(returnStdout: true, script: 'cat sonarqube-status-public')
 
-            notifyRocketChat(
-              "@all The latest build ${env.BUILD_DISPLAY_NAME} of eagle-public seems to be broken. \n ${env.RUN_DISPLAY_URL}\n Error: \n Sonarqube scan failed",
-              ROCKET_DEPLOY_WEBHOOK
-            )
-
             if ( "${SONARQUBE_STATUS}" == "ERROR") {
               echo "Scan Failed"
 
@@ -391,4 +386,3 @@ pipeline {
     // }
   }
 }
-
