@@ -328,6 +328,36 @@ export class ProjlistFiltersComponent implements OnInit, OnChanges, OnDestroy {
       }
     });
 
+    if (this.regionFilter && Array.isArray(this.regionFilter)) {
+      this.regionFilter.forEach(region => {
+        if (!params['regions']) {
+          params['regions'] = region._id;
+        } else {
+          params['regions'] += ',' + region._id;
+        }
+      });
+    }
+
+    if (this.typeFilter && Array.isArray(this.typeFilter)) {
+      this.typeFilter.forEach(type => {
+        if (!params['types']) {
+          params['types'] = encodeURIComponent(type.code);
+        } else {
+          params['types'] += ',' + encodeURIComponent(type.code);
+        }
+      });
+    }
+
+    if (this.phaseFilter && Array.isArray(this.phaseFilter)) {
+      this.phaseFilter.forEach(phase => {
+        if (!params['phases']) {
+          params['phases'] = phase._id;
+        } else {
+          params['phases'] += ',' + phase._id;
+        }
+      });
+    }
+
     const applicantFilter = this.applicantFilter && this.applicantFilter.trim(); // returns null or empty
     if (applicantFilter) {
       params['applicant'] = applicantFilter;
@@ -383,6 +413,9 @@ export class ProjlistFiltersComponent implements OnInit, OnChanges, OnDestroy {
     this._cpStatusFilters = { ...this.cpStatusFilters };
     this._appStatusFilters = { ...this.appStatusFilters };
     this._applicantFilter = this.applicantFilter;
+    this._regionFilter = this.regionFilter;
+    this._phaseFilter = this.phaseFilter;
+    this._typeFilter = this.typeFilter;
     this._clFileFilter = this.clFileFilter;
     this._dispIdFilter = this.dispIdFilter;
     this._purposeFilter = this.purposeFilter;
@@ -422,6 +455,33 @@ export class ProjlistFiltersComponent implements OnInit, OnChanges, OnDestroy {
       this.publishFromFilter = this.paramMap.get('publishFrom') ? moment(this.paramMap.get('publishFrom')).toDate() : null;
       this.publishToFilter = this.paramMap.get('publishTo') ? moment(this.paramMap.get('publishTo')).toDate() : null;
 
+      // Handle filters.
+      const setRegions = this.paramMap.get('regions');
+      const setPhases = this.paramMap.get('phases');
+      const setTypes = this.paramMap.get('types');
+      let regionIds = setRegions ? setRegions.split(',') : null;
+      let phaseIds = setPhases ? setPhases.split(',') : null;
+      let typeIds = setTypes ? setTypes.split(',') : null;
+
+      // Map to List objects.
+      if (regionIds) {
+        regionIds.forEach(regionId => {
+          this.regionFilter.push(this.projectRegions.find(region => region._id === regionId));
+        });
+      }
+
+      if (phaseIds) {
+        phaseIds.forEach(phaseId => {
+          this.phaseFilter.push(this.projectPhases.find(phase => phase._id === phaseId));
+        });
+      }
+
+      if (typeIds) {
+        typeIds.forEach(typeCode => {
+          this.typeFilter.push(this.projectTypes.find(type => type.code === typeCode));
+        });
+      }
+
       // copy all data from actual to temporary properties
       this._regionFilter = { ...this.regionFilter };
       this._cpStatusFilters = { ...this.cpStatusFilters };
@@ -432,6 +492,9 @@ export class ProjlistFiltersComponent implements OnInit, OnChanges, OnDestroy {
       this._purposeFilter = this.purposeFilter;
       this._publishFromFilter = this.publishFromFilter;
       this._publishToFilter = this.publishToFilter;
+      this._regionFilter = this.regionFilter;
+      this._typeFilter = this.typeFilter;
+      this._phaseFilter = this.phaseFilter;
     }
 
     // if called from UI, apply new filters
