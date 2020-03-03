@@ -90,9 +90,9 @@ export class ProjectService {
         // get upcoming comment period if there is one and convert it into a comment period object.
         // If there are multiple comment periods any that is currently running is a higher priority than a past comment period
         if (projects) {
-          if (projects[0].commentPeriodForBanner && projects[0].commentPeriodForBanner.length === 1) {
+          if (projects[0] && projects[0].commentPeriodForBanner && projects[0].commentPeriodForBanner.length === 1) {
             projects[0].commentPeriodForBanner = new CommentPeriod(projects[0].commentPeriodForBanner[0]);
-          } else if (projects[0].commentPeriodForBanner && projects[0].commentPeriodForBanner.length > 1) {
+          } else if (projects[0] && projects[0].commentPeriodForBanner && projects[0].commentPeriodForBanner.length > 1) {
               let now = new Date
               let currentDate = now.toISOString();
               // Default to the same comment period we're using currently in case one is not active
