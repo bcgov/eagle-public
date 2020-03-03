@@ -76,7 +76,7 @@ export class DocumentsResolver implements Resolve<Observable<object>> {
             sortBy = tableParams.sortBy;
           }
 
-          if(filterForUI) {
+          if (filterForUI) {
             this.setParamsFromFilters(route.params, filterForUI);
           }
         }
