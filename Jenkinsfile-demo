@@ -252,7 +252,7 @@ def nodejsSonarqube () {
             }
           } catch (error) {
             notifyRocketChat(
-              "@all The latest build ${env.BUILD_DISPLAY_NAME} of eagle-public seems to be broken. \n ${env.BUILD_URL}\n Error: \n ${error.message}",
+              "@all The latest build ${env.BUILD_DISPLAY_NAME} of demo-eagle-public seems to be broken. \n ${env.BUILD_URL}\n Error: \n ${error.message}",
               ROCKET_DEPLOY_WEBHOOK
             )
             throw error
