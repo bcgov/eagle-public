@@ -100,7 +100,7 @@ export class ApiService {
       console.log('error', e);
     }
     console.log('safeName', safeName);
-    window.open('/api/document/' + document._id + '/fetch/' + safeName, '_blank');
+    window.open('/api/public/document/' + document._id + '/download/' + safeName, '_blank');
   }
 
   private downloadResource(id: string): Promise<Blob> {
