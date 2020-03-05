@@ -28,7 +28,7 @@ const routes: Routes = [
     component: ProjectListComponent
   },
   {
-    path: 'notification-projects',
+    path: 'project-notifications',
     component: NotificationProjectsListComponent,
     resolve: {
       notificationProjects: NotificationProjectsResolver
