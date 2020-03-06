@@ -91,7 +91,7 @@ export class DocumentTableRowsComponent implements OnInit, OnDestroy, TableCompo
     } catch (e) {
       console.log('error:', e);
     }
-    window.open('/api/document/' + item._id + '/fetch/' + safeName, '_blank');
+    window.open('/api/public/document/' + item._id + '/download/' + safeName, '_blank');
   }
   ngOnDestroy() {
     this.ngUnsubscribe.next();
