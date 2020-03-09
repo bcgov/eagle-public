@@ -13,19 +13,12 @@ import { TableParamsObject } from 'app/shared/components/table-template/table-pa
 import { TableTemplateUtils } from 'app/shared/utils/table-template-utils';
 
 import { NotificationProjectsListTableRowsComponent } from './notification-projects-list-table-rows/notification-projects-list-table-rows.component';
-import { Project } from 'app/models/project';
 
 class ProjectNotificationFilterObject {
   constructor(
     public type: object = {},
-    public eacDecision: object = {},
-    public decisionDateStart: object = {},
-    public decisionDateEnd: object = {},
     public pcp: object = {},
-    public region: Array<string> = [],
-    public CEAAInvolvement: Array<string> = [],
-    public projectPhase: Array<string> = [],
-    public vc: Array<object> = []
+    public region: Array<string> = []
   ) { }
 }
 
@@ -37,7 +30,9 @@ class ProjectNotificationFilterObject {
 
 export class NotificationProjectsListComponent implements OnInit, OnDestroy {
   private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
-
+  public regions: Array<object> = [];
+  public commentPeriods: Array<object> = [];
+  public projectTypes: Array<object> = [];
   public loading = true;
   public notificationProjects: Array<News> = [];
   public tableData: TableObject;
@@ -49,19 +44,18 @@ export class NotificationProjectsListComponent implements OnInit, OnDestroy {
   public filterForUI: ProjectNotificationFilterObject = new ProjectNotificationFilterObject();
 
   public projectNotifications: Array<ProjectNotification> = [];
+  public readonly constants = Constants;
 
   public showFilters: object = {
     type: false,
-    eacDecision: false,
-    pcp: false,
-    more: false
+    region: false,
+    pcp: false
   };
 
   public numFilters: object = {
     type: 0,
-    eacDecision: 0,
-    pcp: 0,
-    more: 0
+    region: 0,
+    pcp: 0
   };
 
   constructor(
@@ -70,6 +64,11 @@ export class NotificationProjectsListComponent implements OnInit, OnDestroy {
     private router: Router,
     private tableTemplateUtils: TableTemplateUtils
   ) {
+
+    this.regions = Constants.REGIONS_COLLECTION;
+    this.commentPeriods = Constants.PCP_COLLECTION;
+    this.projectTypes = Constants.PROJECT_TYPE_COLLECTION;
+
     let mock1 = new ProjectNotification();
     mock1._id = '123';
     mock1.name = 'Project Notification 123';
@@ -169,30 +168,6 @@ export class NotificationProjectsListComponent implements OnInit, OnDestroy {
     }
   }
 
-  updateCount(name) {
-    const getCount = n => {
-      return Object.keys(this.filterForUI[n]).filter(
-        k => this.filterForUI[n][k]
-      ).length;
-    };
-
-    let num = 0;
-    if (name === 'more') {
-      num =
-        getCount('region') +
-        // this.filterForUI.proponent.length +
-        getCount('CEAAInvolvement') +
-        this.filterForUI.vc.length;
-    } else {
-      num = getCount(name);
-      if (name === 'eacDecision') {
-        // num += this.isNGBDate(this.filterForUI.decisionDateStart) ? 1 : 0;
-        // num += this.isNGBDate(this.filterForUI.decisionDateEnd) ? 1 : 0;
-      }
-    }
-    this.numFilters[name] = num;
-  }
-
   isShowingFilter() {
     return Object.keys(this.showFilters).some(key => {
       return this.showFilters[key];
@@ -209,5 +184,36 @@ export class NotificationProjectsListComponent implements OnInit, OnDestroy {
 
   getProjectCommentPeriod(project: ProjectNotification) {
     return { pcp: new Date(), active: true , _id: '5e1bfa955f6fe400218fc620'};
+  }
+
+  clearAll() {
+    Object.keys(this.filterForUI).forEach(key => {
+      if (this.filterForUI[key]) {
+        if (Array.isArray(this.filterForUI[key])) {
+          this.filterForUI[key] = [];
+        } else if (typeof this.filterForUI[key] === 'object') {
+          this.filterForUI[key] = {};
+        } else {
+          this.filterForUI[key] = '';
+        }
+      }
+    });
+    this.updateCounts();
+  }
+
+  updateCount(name) {
+    const getCount = n => {
+      return Object.keys(this.filterForUI[n]).filter(
+        k => this.filterForUI[n][k]
+      ).length;
+    };
+
+    this.numFilters[name] = getCount(name);
+  }
+
+  updateCounts() {
+    this.updateCount('type');
+    this.updateCount('region');
+    this.updateCount('pcp');
   }
 }

@@ -6,7 +6,7 @@
   <div class="container">
     <div class="hero-banner__content">
       <h1>Project Notifications in British Columbia</h1>
-      <p>Use the list below to navigate Notification Projects. A Notification Project is required if a proposed project meets the notification thresholds in the Reviewable Projects Regulation, indicating that while the project is not automatically reviewable, it may have the potential to cause adverse effects and warrants further review to determine if the project requires and Environmental Assessment Certificate. <a href='http://google.ca' target='_blank'>Learn More</a></p>
+      <p>Use the list below to navigate Project Notifications. A Project Notification is required if a proposed project meets the notification thresholds in the Reviewable Projects Regulation, indicating that while the project is not automatically reviewable, it may have the potential to cause adverse effects and warrants further review to determine if the project requires an Environmental Assessment. <a href='http://google.ca' target='_blank'>Learn More</a></p>
     </div>
   </div>
 
@@ -37,12 +37,12 @@
                                 Project Type<span
                                     *ngIf="numFilters.type > 0 && !showFilters.type">&nbsp;({{ numFilters.type }})</span>
                             </button>
-                            <button type="button" (click)="toggleFilter('eacDecision');" [ngClass]="{'btn': true, 'decision-btn': true,
-                'btn-dark': showFilters.eacDecision,
-                'btn-secondary': !showFilters.eacDecision && numFilters.eacDecision > 0,
-                'btn-outline-dark': !showFilters.eacDecision && numFilters.eacDecision == 0}">
-                                EA Decision<span
-                                    *ngIf="numFilters.eacDecision > 0 && !showFilters.eacDecision">&nbsp;({{ numFilters.eacDecision }})</span>
+                            <button type="button" (click)="toggleFilter('region');" [ngClass]="{'btn': true, 'region-btn': true,
+                'btn-dark': showFilters.region,
+                'btn-secondary': !showFilters.region && numFilters.region > 0,
+                'btn-outline-dark': !showFilters.region && numFilters.region == 0}">
+                                Region<span
+                                    *ngIf="numFilters.region > 0 && !showFilters.region">&nbsp;({{ numFilters.region }})</span>
                             </button>
                             <button type="button" (click)="toggleFilter('pcp');" [ngClass]="{'btn': true, 'pcp-btn': true,
                 'btn-dark': showFilters.pcp,
@@ -50,13 +50,6 @@
                 'btn-outline-dark': !showFilters.pcp && numFilters.pcp == 0}">
                                 Public Comment Period<span
                                     *ngIf="numFilters.pcp > 0 && !showFilters.pcp">&nbsp;({{ numFilters.pcp }})</span>
-                            </button>
-                            <button type="button" (click)="toggleFilter('more');" [ngClass]="{'btn': true, 'more-btn': true,
-                'btn-dark': showFilters.more,
-                'btn-secondary': !showFilters.more && numFilters.more > 0,
-                'btn-outline-dark': !showFilters.more && numFilters.more == 0}">
-                                More Filters&hellip;<span
-                                    *ngIf="numFilters.more > 0 && !showFilters.more">&nbsp;({{ numFilters.more }})</span>
                             </button>
                             <button class="btn btn-outline-dark" type="button" (click)="clearAll();">Clear
                                 All</button>
@@ -68,6 +61,31 @@
                                 <span *ngIf="showAdvancedSearch">Hide Advanced Search</span>
                                 <span *ngIf="!showAdvancedSearch">Show Advanced Search</span>
                             </button>
+                        </div>
+                    </div>
+                    <div *ngIf="showAdvancedSearch && showFilters.region" class="region-filters project-filter row">
+                        <div class="col-md-6 filter-border">
+                            <div class="col-md-12">
+                                <div class="row">
+                                    <b>Region</b>
+                                </div>
+
+                                <div class="row">
+                                    <div class="form-group">
+                                        <ng-select
+                                            id="region"
+                                            name="region"
+                                            multiple="true"
+                                            bindLabel="name"
+                                            placeholder="Type Region"
+                                            [items]="regions"
+                                            [closeOnSelect]="false"
+                                            [(ngModel)]="filterForUI.region"
+                                        >
+                                        </ng-select>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div *ngIf="showAdvancedSearch && showFilters.type" class="type-filters project-filter row">
@@ -94,77 +112,6 @@
                             </div>
                         </div>
                     </div>
-                    <div *ngIf="showAdvancedSearch && showFilters.eacDecision"
-                        class="decision-filters project-filter row">
-                        <div class="col-md-8 filter-border">
-                            <div class="row">
-                                <div class="col-md-12">
-                                    <ng-select
-                                        id="eacDecision"
-                                        name="eacDecision"
-                                        multiple="true"
-                                        groupBy="legislation"
-                                        bindLabel="name"
-                                        placeholder="Type EA Decision"
-                                        [items]="eacDecisions"
-                                        [closeOnSelect]="false"
-                                        [markFirst]="false"
-                                        [(ngModel)]="filterForUI.eacDecision"
-                                    >
-                                        <ng-template ng-label-tmp let-item="item">
-                                            <span class="ng-value-icon left" (click)="clearSelectedItem('eacDecision', item)" aria-hidden="true">×</span>
-                                            <span class="ng-value-label">{{item.name}} ({{item.legislation}})</span>
-                                        </ng-template>
-                                        <ng-template ng-optgroup-tmp let-item="item" let-index="index">
-                                            {{item.legislation}} Act Terms
-                                        </ng-template>
-                                    </ng-select>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-12">
-                                    <hr />
-                                </div>
-                            </div>
-                            <div>
-                                <div class="row date">
-                                    <b>Decision Date</b>
-                                </div>
-                                <div class="row date-range">
-                                    <div class="col-md-6">
-                                        <div class="input-group">
-                                            <input type="text" class="form-control" placeholder="yyyy-mm-dd"
-                                                name="decisionDateStart" [(ngModel)]="filterForUI.decisionDateStart"
-                                                ngbDatepicker #decisionDateStartPicker="ngbDatepicker"
-                                                [minDate]="constants.minPickerDate"
-                                                [maxDate]="constants.maxPickerDate">
-                                            <div class="input-group-append">
-                                                <button class="btn btn-outline-secondary calendar"
-                                                    (click)="decisionDateStartPicker.toggle()" type="button">
-                                                    <i class="material-icons">date_range</i>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="input-group">
-                                            <input type="text" class="form-control" placeholder="yyyy-mm-dd"
-                                                name="decisionDateEnd" [(ngModel)]="filterForUI.decisionDateEnd"
-                                                ngbDatepicker #decisionDateEndPicker="ngbDatepicker"
-                                                [minDate]="constants.minPickerDate"
-                                                [maxDate]="constants.maxPickerDate">
-                                            <div class="input-group-append">
-                                                <button class="btn btn-outline-secondary calendar"
-                                                    (click)="decisionDateEndPicker.toggle()" type="button">
-                                                    <i class="material-icons">date_range</i>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                     <div *ngIf="showAdvancedSearch && showFilters.pcp" class="pcp-filters project-filter row">
                         <div class="col-md-6 filter-border">
                             <div class="col-md-12">
@@ -185,119 +132,6 @@
                                             [(ngModel)]="filterForUI.pcp"
                                         >
                                         </ng-select>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div *ngIf="showAdvancedSearch && showFilters.more" class="more-filters project-filter row">
-                        <div class="col-md-11 filter-border">
-                            <div class="row sub-filters">
-                                <div class="col-md-12">
-                                    <div class="row">
-                                        <b>Proponent</b>
-                                    </div>
-                                    <div class="row">
-                                        <div class="form-group">
-                                            <ng-select
-                                                id="proponent"
-                                                name="proponent"
-                                                multiple="true"
-                                                bindLabel="name"
-                                                placeholder="Type Proponent Name"
-                                                [items]="proponents"
-                                                [closeOnSelect]="false"
-                                                [(ngModel)]="filterForUI.proponent"
-                                            >
-                                            </ng-select>
-                                        </div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-md-12">
-                                            <hr />
-                                        </div>
-                                    </div>
-                                    <div class="row">
-                                        <b>Region</b>
-                                    </div>
-                                    <div class="row">
-                                        <div class="form-group">
-                                            <ng-select
-                                                id="region"
-                                                name="region"
-                                                multiple="true"
-                                                bindLabel="name"
-                                                placeholder="Type Region Name"
-                                                [items]="regions"
-                                                [closeOnSelect]="false"
-                                                [(ngModel)]="filterForUI.region"
-                                            >
-                                            </ng-select>
-                                        </div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-md-12">
-                                            <hr />
-                                        </div>
-                                    </div>
-                                    <div class="row">
-                                        <b>IAAC Involvement</b>
-                                    </div>
-                                    <div class="row">
-                                        <div class="form-group">
-                                            <ng-select
-                                                id="ceaaInvolvement"
-                                                name="ceaaInvolvement"
-                                                multiple="true"
-                                                groupBy="legislation"
-                                                bindLabel="name"
-                                                placeholder="Type Involvement"
-                                                [items]="ceaaInvolvements"
-                                                [closeOnSelect]="false"
-                                                [markFirst]="false"
-                                                [(ngModel)]="filterForUI.CEAAInvolvement"
-                                            >
-                                                <ng-template ng-label-tmp let-item="item">
-                                                    <span class="ng-value-icon left" (click)="clearSelectedItem('CEAAInvolvement', item)" aria-hidden="true">×</span>
-                                                    <span class="ng-value-label">{{item.name}} ({{item.legislation}})</span>
-                                                </ng-template>
-                                                <ng-template ng-optgroup-tmp let-item="item" let-index="index">
-                                                    {{item.legislation}} Act Terms
-                                                </ng-template>
-                                            </ng-select>
-                                        </div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-md-12">
-                                            <hr />
-                                        </div>
-                                    </div>
-                                    <div class="row">
-                                        <b>Project Phase</b>
-                                    </div>
-                                    <div class="row">
-                                        <div class="form-group">
-                                            <ng-select
-                                                id="projectPhase"
-                                                name="projectPhase"
-                                                multiple="true"
-                                                groupBy="legislation"
-                                                bindLabel="name"
-                                                placeholder="Type Project Phase"
-                                                [items]="projectPhases"
-                                                [closeOnSelect]="false"
-                                                [markFirst]="false"
-                                                [(ngModel)]="filterForUI.projectPhase"
-                                            >
-                                                <ng-template ng-label-tmp let-item="item">
-                                                    <span class="ng-value-icon left" (click)="clearSelectedItem('projectPhase', item)" aria-hidden="true">×</span>
-                                                    <span class="ng-value-label">{{item.name}} ({{item.legislation}})</span>
-                                                </ng-template>
-                                                <ng-template ng-optgroup-tmp let-item="item" let-index="index">
-                                                    {{item.legislation}} Act Terms
-                                                </ng-template>
-                                            </ng-select>
-                                        </div>
                                     </div>
                                 </div>
                             </div>
