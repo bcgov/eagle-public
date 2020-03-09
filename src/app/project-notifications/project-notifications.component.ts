@@ -12,7 +12,7 @@ import { TableObject } from 'app/shared/components/table-template/table-object';
 import { TableParamsObject } from 'app/shared/components/table-template/table-params-object';
 import { TableTemplateUtils } from 'app/shared/utils/table-template-utils';
 
-import { NotificationProjectsListTableRowsComponent } from './notification-projects-list-table-rows/notification-projects-list-table-rows.component';
+import { ProjectNotificationsListTableRowsComponent } from './project-notifications-list-table-rows/project-notifications-list-table-rows.component';
 
 class ProjectNotificationFilterObject {
   constructor(
@@ -23,18 +23,17 @@ class ProjectNotificationFilterObject {
 }
 
 @Component({
-  selector: 'app-notification-projects',
-  templateUrl: './notification-projects.component.html',
-  styleUrls: ['./notification-projects.component.scss']
+  selector: 'app-project-notifications',
+  templateUrl: './project-notifications.component.html',
+  styleUrls: ['./project-notifications.component.scss']
 })
 
-export class NotificationProjectsListComponent implements OnInit, OnDestroy {
+export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
   private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
   public regions: Array<object> = [];
   public commentPeriods: Array<object> = [];
   public projectTypes: Array<object> = [];
   public loading = true;
-  public notificationProjects: Array<News> = [];
   public tableData: TableObject;
   public tableParams: TableParamsObject = new TableParamsObject();
   public terms = new SearchTerms();
@@ -68,37 +67,6 @@ export class NotificationProjectsListComponent implements OnInit, OnDestroy {
     this.regions = Constants.REGIONS_COLLECTION;
     this.commentPeriods = Constants.PCP_COLLECTION;
     this.projectTypes = Constants.PROJECT_TYPE_COLLECTION;
-
-    let mock1 = new ProjectNotification();
-    mock1._id = '123';
-    mock1.name = 'Project Notification 123';
-    mock1.type = 'Mine';
-    mock1.subType = 'Placer';
-    mock1.nature = 'New Construction';
-    mock1.region = 'Central';
-    mock1.location = 'Somewhere in the middle';
-    mock1.decision = 'No';
-    mock1.decisionDate = new Date();
-    mock1.description = 'Building a pretty sweet mine, probably going to dig stuff up.';
-    mock1.centroid = [47, -123];
-    mock1.trigger = 'Greenhouse Gas';
-
-    let mock2 = new ProjectNotification();
-    mock2._id = 'abc';
-    mock2.name = 'Another cool Project Notification';
-    mock2.type = 'Mine';
-    mock2.subType = 'Waste Plutonium Dump';
-    mock2.nature = 'Bulldozing over sunny acres free-range orphanage';
-    mock2.region = 'Central';
-    mock2.location = 'As close to your house as possible';
-    mock2.decision = 'Absolutely';
-    mock2.decisionDate = new Date();
-    mock2.description = 'Massive ecological catastrophe';
-    mock2.centroid = [47, -123];
-    mock2.trigger = 'Large mutant rat-like monsters in the area';
-
-    this.projectNotifications.push(mock1);
-    this.projectNotifications.push(mock2);
   }
 
   ngOnInit() {
@@ -115,13 +83,45 @@ export class NotificationProjectsListComponent implements OnInit, OnDestroy {
         this.route.data
           .takeUntil(this.ngUnsubscribe)
           .subscribe((res: any) => {
-            if (res.notificationProjects[0].data) {
-              if (res.notificationProjects[0].data.searchResults.length > 0) {
-                this.tableParams.totalListItems = res.notificationProjects[0].data.meta[0].searchResultsTotal;
-                this.notificationProjects = res.notificationProjects[0].data.searchResults;
+            if (res.projectNotifications[0].data) {
+              if (res.projectNotifications[0].data.searchResults.length > 0) {
+                this.tableParams.totalListItems = res.projectNotifications[0].data.meta[0].searchResultsTotal;
+                this.projectNotifications = res.projectNotifications[0].data.searchResults;
               } else {
                 this.tableParams.totalListItems = 0;
-                this.notificationProjects = [];
+                this.projectNotifications = [];
+
+                // mock data for testing
+                let mock1 = new ProjectNotification();
+                mock1._id = '123';
+                mock1.name = 'Project Notification 123';
+                mock1.type = 'Mine';
+                mock1.subType = 'Placer';
+                mock1.nature = 'New Construction';
+                mock1.region = 'Central';
+                mock1.location = 'Somewhere in the middle';
+                mock1.decision = 'No';
+                mock1.decisionDate = new Date();
+                mock1.description = 'Building a pretty sweet mine, probably going to dig stuff up.';
+                mock1.centroid = [47, -123];
+                mock1.trigger = 'Greenhouse Gas';
+
+                let mock2 = new ProjectNotification();
+                mock2._id = 'abc';
+                mock2.name = 'Another cool Project Notification';
+                mock2.type = 'Mine';
+                mock2.subType = 'Waste Plutonium Dump';
+                mock2.nature = 'Bulldozing over sunny acres free-range orphanage';
+                mock2.region = 'Central';
+                mock2.location = 'As close to your house as possible';
+                mock2.decision = 'Absolutely';
+                mock2.decisionDate = new Date();
+                mock2.description = 'Massive ecological catastrophe';
+                mock2.centroid = [47, -123];
+                mock2.trigger = 'Large mutant rat-like monsters in the area';
+
+                this.projectNotifications.push(mock1);
+                this.projectNotifications.push(mock2);
               }
 
               this.setRowData();
@@ -137,10 +137,10 @@ export class NotificationProjectsListComponent implements OnInit, OnDestroy {
   }
 
   setRowData() {
-    if (this.notificationProjects && this.notificationProjects.length > 0) {
+    if (this.projectNotifications && this.projectNotifications.length > 0) {
       this.tableData = new TableObject(
-        NotificationProjectsListTableRowsComponent,
-        this.notificationProjects,
+        ProjectNotificationsListTableRowsComponent,
+        this.projectNotifications,
         this.tableParams
       );
     }

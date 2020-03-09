@@ -6,12 +6,12 @@ import { TableObject } from 'app/shared/components/table-template/table-object';
 import { ApiService } from 'app/services/api';
 
 @Component({
-  selector: 'tbody[app-notification-projects-list-table-rows]',
-  templateUrl: './notification-projects-list-table-rows.component.html',
-  styleUrls: ['./notification-projects-list-table-rows.component.scss']
+  selector: 'tbody[app-project-notifications-list-table-rows]',
+  templateUrl: './project-notifications-list-table-rows.component.html',
+  styleUrls: ['./project-notifications-list-table-rows.component.scss']
 })
 
-export class NotificationProjectsListTableRowsComponent implements OnInit, TableComponent {
+export class ProjectNotificationsListTableRowsComponent implements OnInit, TableComponent {
   @Input() data: TableObject;
 
   public items: any;
