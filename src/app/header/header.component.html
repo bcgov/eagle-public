@@ -21,11 +21,18 @@
             <span>Map View</span>
           </a>
         </li>
-        <li class="nav-item">
-          <a class="nav-link" title="List Projects" routerLink="/projects-list">
-            <span class="icon align-middle"><i class="material-icons">list</i></span>
-            <span>List of Projects</span>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" id="searchProjects" tabindex="4" data-toggle="dropdown" aria-haspopup="true"
+            aria-expanded="false"><span>Project Information</span><span class="caret"></span>
           </a>
+          <div class="dropdown-menu dropdown-menu-right" aria-labelledby="searchProjects">
+            <a class="dropdown-item" href="/projects-list"  [routerLink]="['/projects-list']" tabindex="5" title="List Projects">
+              <span class="icon align-middle"><i class="material-icons">list</i></span>
+              <strong>List of Projects</strong>
+              <span class="dd-item-desc">Access all information relating to projects that have been involved with an environmental assessment in British Columbia</span>
+            </a>
+          </div>
+
         </li>
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle" id="aboutMMTI" tabindex="4" data-toggle="dropdown" aria-haspopup="true"
