@@ -13,6 +13,7 @@ import { TableParamsObject } from 'app/shared/components/table-template/table-pa
 import { TableTemplateUtils } from 'app/shared/utils/table-template-utils';
 
 import { NotificationProjectsListTableRowsComponent } from './notification-projects-list-table-rows/notification-projects-list-table-rows.component';
+import { Project } from 'app/models/project';
 
 class ProjectNotificationFilterObject {
   constructor(
@@ -82,13 +83,14 @@ export class NotificationProjectsListComponent implements OnInit, OnDestroy {
     mock1.description = 'Building a pretty sweet mine, probably going to dig stuff up.';
     mock1.longitude = '-123';
     mock1.latitude = '47';
+    mock1.trigger = 'Greenhouse Gas';
 
     let mock2 = new ProjectNotification();
     mock2._id = 'abc';
     mock2.name = 'Another cool Project Notification';
     mock2.type = 'Mine';
     mock2.subType = 'Waste Plutonium Dump';
-    mock2.nature = 'Bulldozing over sunny acres orphanage';
+    mock2.nature = 'Bulldozing over sunny acres free-range orphanage';
     mock2.region = 'Central';
     mock2.location = 'As close to your house as possible';
     mock2.decision = 'Absolutely';
@@ -96,6 +98,7 @@ export class NotificationProjectsListComponent implements OnInit, OnDestroy {
     mock2.description = 'Massive ecological catastrophe';
     mock2.longitude = '-123';
     mock2.latitude = '52';
+    mock2.trigger = 'Large mutant rat-like monsters in the area';
 
     this.projectNotifications.push(mock1);
     this.projectNotifications.push(mock2);
@@ -198,5 +201,9 @@ export class NotificationProjectsListComponent implements OnInit, OnDestroy {
 
   clearSelectedItem(filter: string, item: any) {
     this.filterForUI[filter] = this.filterForUI[filter].filter(option => option._id !== item._id);
+  }
+
+  projectInProgressIndicator(project: ProjectNotification) {
+    return project.decisionDate <= new Date() ? 'In Progress' : 'Complete';
   }
 }

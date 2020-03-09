@@ -319,11 +319,74 @@
         <div class="app-details" *ngFor="let project of projectNotifications">
             <div class="card">
                 <div class="card-body">
-                    <div class="flex-container">
-                        <p class="card-text"><label>Project:</label> {{project.name}}</p>
+                    <div class="row">
+                        <div class="col-12">
+                          <div class="pn-location-info">
+                              <div class="row">
+                                <div class="col-sm-12 col-md-8">
+                                    <h4>{{(project?.name || '-')}}</h4>
+                                </div>
+                                <div class="col-sm-12 col-md-4">
+                                    <button class="btn btn-primary view-pcp-btn"
+                                            type="submit">
+                                        <div class="pcp-indicator pcp-indicator-active"></div><span>View Public Comment Period</span>
+                                    </button>
+                                </div>
+                              </div>
+                              <div class="row">
+                                <div class="col-sm-12 col-md-3 pn-info-block">
+                                <label>Type</label>
+                                <p class="value">{{project?.type || "-" }}</p>
+                                </div>
+                                <div class="col-sm-12 col-md-3 pn-info-block">
+                                <label>Location</label>
+                                <p class="value">{{project?.location || "-" }}</p>
+                                </div>
+                                <div class="col-sm-12 col-md-3 pn-info-block">
+                                <label>Nature</label>
+                                <p class="value">{{project?.nature || "-" }}</p>
+                                </div>
+                                <div class="col-sm-12 col-md-3 pn-info-block">
+                                <label>Public Comment Period</label>
+                                <p class="value">-</p>
+                                </div>
+                                <div class="col-sm-12 col-md-3 pn-info-block">
+                                <label>Sub-Type</label>
+                                <p class="value">{{project?.subType || "-" }}</p>
+                                </div>
+                                <div class="col-sm-12 col-md-3 pn-info-block">
+                                    <label>Region</label>
+                                    <p class="value">{{project?.region || "-" }}</p>
+                                </div>
+                                <div class="col-sm-12 col-md-3 pn-info-block">
+                                    <label>Notification Trigger</label>
+                                    <p class="value">{{project?.trigger || "-" }}</p>
+                                </div>
+                                <div class="col-sm-12 col-md-3 pn-info-block">
+                                    <label>Notification Decision</label>
+                                    <p class="value">{{ projectInProgressIndicator(project) }} | {{project?.decisionDate || "-" }}</p>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="pn-info-block">
+                                    <label>Description:</label>
+                                    <p class="value" [innerHTML]="(project?.description || '-') | newlines"></p>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <a class="btn btn-sm content-btn-alt"
+                                   title="View more information"
+                                   href="\"
+                                   target="_blank">
+                                   View Document(s)
+                                </a>
+                            </div>
+                          </div>
+                        </div>
                     </div>
                 </div>
             </div>
+            <br/>
         </div>
     </div>
     </section>
