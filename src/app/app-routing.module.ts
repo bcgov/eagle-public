@@ -13,6 +13,7 @@ import { SearchHelpComponent } from './search-help/search-help.component';
 import { NewsResolver } from './news/news-resolver.service';
 import { NotificationProjectsListComponent } from './notification-projects/notification-projects.component';
 import { NotificationProjectsResolver } from './notification-projects/notification-projects-resolver.service';
+import { SearchComponent } from './search/search.component';
 
 const routes: Routes = [
   {
@@ -52,6 +53,10 @@ const routes: Routes = [
   {
     path: 'process',
     component: ProcessComponent
+  },
+  {
+    path: 'search',
+    component: SearchComponent
   },
   {
     path: 'search-help',
