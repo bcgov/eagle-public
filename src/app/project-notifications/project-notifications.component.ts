@@ -100,7 +100,7 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
                 mock1.nature = 'New Construction';
                 mock1.region = 'Central';
                 mock1.location = 'Somewhere in the middle';
-                mock1.decision = 'No';
+                mock1.decision = 'In Progress';
                 mock1.decisionDate = new Date();
                 mock1.description = 'Building a pretty sweet mine, probably going to dig stuff up.';
                 mock1.centroid = [47, -123];
@@ -114,7 +114,7 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
                 mock2.nature = 'Bulldozing over sunny acres free-range orphanage';
                 mock2.region = 'Central';
                 mock2.location = 'As close to your house as possible';
-                mock2.decision = 'Absolutely';
+                mock2.decision = 'Nuke the place';
                 mock2.decisionDate = new Date();
                 mock2.description = 'Massive ecological catastrophe';
                 mock2.centroid = [47, -123];
