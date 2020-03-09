@@ -23,6 +23,7 @@ import { ContactComponent } from 'app/contact/contact.component';
 import { HeaderComponent } from 'app/header/header.component';
 import { FooterComponent } from 'app/footer/footer.component';
 import { NewsListTableRowsComponent } from 'app/news/news-list-table-rows/news-list-table-rows.component';
+import { SearchComponent } from 'app/search/search.component';
 import { SearchHelpComponent } from './search-help/search-help.component';
 import { CACUnsubscribeComponent } from 'app/cac-unsubscribe/cac-unsubscribe.component';
 
@@ -79,6 +80,7 @@ import { ProjectNotificationsListComponent } from './project-notifications/proje
     LegislationComponent,
     ProcessComponent,
     ComplianceOversightComponent,
+    SearchComponent,
     SearchHelpComponent,
     CACUnsubscribeComponent
   ],

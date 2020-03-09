@@ -17,6 +17,8 @@ import { ProjectNotificationsResolver } from './project-notifications/project-no
 import { ProjectNotificationResolver } from './project-notifications/project-notification-resolver.service';
 import { CommentsComponent } from 'app/comments/comments.component';
 import { CommentsResolver } from 'app/comments/comments-resolver.service';
+import { SearchComponent } from 'app/search/search.component';
+
 
 const routes: Routes = [
   {
@@ -73,6 +75,10 @@ const routes: Routes = [
   {
     path: 'process',
     component: ProcessComponent
+  },
+  {
+    path: 'search',
+    component: SearchComponent
   },
   {
     path: 'search-help',
