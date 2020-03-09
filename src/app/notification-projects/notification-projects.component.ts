@@ -80,8 +80,7 @@ export class NotificationProjectsListComponent implements OnInit, OnDestroy {
     mock1.decision = 'No';
     mock1.decisionDate = new Date();
     mock1.description = 'Building a pretty sweet mine, probably going to dig stuff up.';
-    mock1.longitude = '-123';
-    mock1.latitude = '47';
+    mock1.centroid = [47, -123];
     mock1.trigger = 'Greenhouse Gas';
 
     let mock2 = new ProjectNotification();
@@ -95,8 +94,7 @@ export class NotificationProjectsListComponent implements OnInit, OnDestroy {
     mock2.decision = 'Absolutely';
     mock2.decisionDate = new Date();
     mock2.description = 'Massive ecological catastrophe';
-    mock2.longitude = '-123';
-    mock2.latitude = '52';
+    mock2.centroid = [47, -123];
     mock2.trigger = 'Large mutant rat-like monsters in the area';
 
     this.projectNotifications.push(mock1);

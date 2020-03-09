@@ -9,9 +9,8 @@ export class ProjectNotification {
   decision: String;
   decisionDate: Date;
   description: String;
-  longitude: String;
-  latitude: String;
   trigger: String;
+  centroid: Array<number>;
 
   read: Array<String> = [];
 
@@ -23,13 +22,8 @@ export class ProjectNotification {
  */
   public static mapResponseToModel(responseData: any): ProjectNotification {
     const projectNotification = {
-      ...responseData,
-      longitude: responseData.centroid[0],
-      latitude: responseData.centroid[1]
+      ...responseData
     };
-
-    // Remove the centroid array.
-    delete projectNotification.centroid;
 
     return projectNotification;
   }
@@ -45,9 +39,8 @@ export class ProjectNotification {
     this.decision = obj && obj.decision || undefined;
     this.decisionDate = obj && obj.decisionDate || undefined;
     this.description = obj && obj.description || undefined;
-    this.longitude = obj && obj.longitude || undefined;
-    this.latitude = obj && obj.latitude || undefined;
     this.trigger = obj && obj.trigger || undefined;
+    this.centroid = obj && obj.centroid || [];
 
     this.read = obj && obj.read || undefined;
   }
