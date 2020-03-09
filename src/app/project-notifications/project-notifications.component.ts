@@ -5,7 +5,6 @@ import 'rxjs/add/operator/takeUntil';
 import { Subject } from 'rxjs/Subject';
 import * as _ from 'lodash';
 import { ProjectNotification } from 'app/models/projectNotification';
-import { News } from 'app/models/news';
 import { SearchTerms } from 'app/models/search';
 
 import { TableObject } from 'app/shared/components/table-template/table-object';
