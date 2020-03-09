@@ -206,4 +206,8 @@ export class NotificationProjectsListComponent implements OnInit, OnDestroy {
   projectInProgressIndicator(project: ProjectNotification) {
     return project.decisionDate <= new Date() ? 'In Progress' : 'Complete';
   }
+
+  getProjectCommentPeriod(project: ProjectNotification) {
+    return { pcp: new Date(), active: true , _id: '5e1bfa955f6fe400218fc620'};
+  }
 }
