@@ -14,6 +14,7 @@ import { NewsResolver } from './news/news-resolver.service';
 import { NotificationProjectsListComponent } from './notification-projects/notification-projects.component';
 import { NotificationProjectsResolver } from './notification-projects/notification-projects-resolver.service';
 import { SearchComponent } from './search/search.component';
+import { DocumentTableResolver } from './project/documents/project-document-table-rows/project-document-table-rows-resolver.service';
 
 const routes: Routes = [
   {
@@ -56,7 +57,10 @@ const routes: Routes = [
   },
   {
     path: 'search',
-    component: SearchComponent
+    component: SearchComponent,
+    resolve: {
+      documentsTableRow: DocumentTableResolver
+    }
   },
   {
     path: 'search-help',
