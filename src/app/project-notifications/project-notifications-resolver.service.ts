@@ -30,7 +30,7 @@ export class ProjectNotificationsResolver implements Resolve<Observable<object>>
     }
 
     if (pcpStatus) {
-      queryConditions['pcpStatus'] = pcpStatus;
+      queryConditions['pcp'] = pcpStatus;
     }
 
     return this.searchService.getSearchResults(
@@ -39,7 +39,7 @@ export class ProjectNotificationsResolver implements Resolve<Observable<object>>
       null,
       1,
       10000,
-      '-startDate',
+      '-decisionDate',
       queryConditions
     );
   }

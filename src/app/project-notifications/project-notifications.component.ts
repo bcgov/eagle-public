@@ -143,10 +143,6 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
     this.filterForUI[filter] = this.filterForUI[filter].filter(option => option._id !== item._id);
   }
 
-  projectInProgressIndicator(project: ProjectNotification) {
-    return project.decisionDate <= new Date() ? 'In Progress' : 'Complete';
-  }
-
   getProjectCommentPeriod(project: ProjectNotification) {
     return { pcp: new Date(), active: true , _id: '5e1bfa955f6fe400218fc620'};
   }
@@ -240,7 +236,7 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
       null,
       1,
       10000,
-      '-startDate',
+      '-decisionDate',
       queryConditions
     )
     .takeUntil(this.ngUnsubscribe)
