@@ -22,7 +22,7 @@
                         aria-label="Enter keywords to search project notifications by ..."/>
                     <div *ngIf="!showAdvancedSearch || !isShowingFilter()" class="input-group-append">
                         <!-- prevent searching if input is empty or we're already searching -->
-                        <button class="btn btn-primary" type="submit">
+                        <button class="btn btn-primary" type="button" (click)="search();">
                             <span>Search</span>
                         </button>
                     </div>

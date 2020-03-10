@@ -14,19 +14,33 @@ export class ProjectNotificationsResolver implements Resolve<Observable<object>>
 
   resolve(route: ActivatedRouteSnapshot): Observable<object> {
     let tableParams = this.tableTemplateUtils.getParamsFromUrl(route.params);
-    if (tableParams.sortBy === '-datePosted') {
-      tableParams.sortBy = '-startDate';
+
+    const type = route.params.type ? route.params.type : null;
+    const region =  route.params.region ? route.params.region : null;
+    const pcpStatus = route.params.pcp ? route.params.pcp : null;
+
+    let queryConditions = {};
+
+    if (type) {
+      queryConditions['type'] = type;
+    }
+
+    if (region) {
+      queryConditions['region'] = region;
+    }
+
+    if (pcpStatus) {
+      queryConditions['pcpStatus'] = pcpStatus;
     }
 
     return this.searchService.getSearchResults(
       null,
-      'NotificationProject',
-      [],
+      'ProjectNotification',
+      null,
       1,
       10000,
-      null,
-      {},
-      true
+      '-startDate',
+      queryConditions
     );
   }
 }

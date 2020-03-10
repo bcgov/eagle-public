@@ -6,11 +6,10 @@ import { Subject } from 'rxjs/Subject';
 import * as _ from 'lodash';
 import { ProjectNotification } from 'app/models/projectNotification';
 import { SearchTerms } from 'app/models/search';
-
 import { TableObject } from 'app/shared/components/table-template/table-object';
 import { TableParamsObject } from 'app/shared/components/table-template/table-params-object';
 import { TableTemplateUtils } from 'app/shared/utils/table-template-utils';
-
+import { SearchService } from 'app/services/search.service';
 import { ProjectNotificationsListTableRowsComponent } from './project-notifications-list-table-rows/project-notifications-list-table-rows.component';
 
 class ProjectNotificationFilterObject {
@@ -60,7 +59,8 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
     private _changeDetectionRef: ChangeDetectorRef,
     private route: ActivatedRoute,
     private router: Router,
-    private tableTemplateUtils: TableTemplateUtils
+    private tableTemplateUtils: TableTemplateUtils,
+    private searchService: SearchService
   ) {
 
     this.regions = Constants.REGIONS_COLLECTION;
@@ -89,38 +89,6 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
               } else {
                 this.tableParams.totalListItems = 0;
                 this.projectNotifications = [];
-
-                // mock data for testing
-                let mock1 = new ProjectNotification();
-                mock1._id = '123';
-                mock1.name = 'Project Notification 123';
-                mock1.type = 'Mine';
-                mock1.subType = 'Placer';
-                mock1.nature = 'New Construction';
-                mock1.region = 'Central';
-                mock1.location = 'Somewhere in the middle';
-                mock1.decision = 'In Progress';
-                mock1.decisionDate = new Date();
-                mock1.description = 'Building a pretty sweet mine, probably going to dig stuff up.';
-                mock1.centroid = [47, -123];
-                mock1.trigger = 'Greenhouse Gas';
-
-                let mock2 = new ProjectNotification();
-                mock2._id = 'abc';
-                mock2.name = 'Another cool Project Notification';
-                mock2.type = 'Mine';
-                mock2.subType = 'Waste Plutonium Dump';
-                mock2.nature = 'Bulldozing over sunny acres free-range orphanage';
-                mock2.region = 'Central';
-                mock2.location = 'As close to your house as possible';
-                mock2.decision = 'Nuke the place';
-                mock2.decisionDate = new Date();
-                mock2.description = 'Massive ecological catastrophe';
-                mock2.centroid = [47, -123];
-                mock2.trigger = 'Large mutant rat-like monsters in the area';
-
-                this.projectNotifications.push(mock1);
-                this.projectNotifications.push(mock2);
               }
 
               this.setRowData();
@@ -212,5 +180,87 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
     this.updateCount('type');
     this.updateCount('region');
     this.updateCount('pcp');
+  }
+
+  public onSubmit(currentPage = 1) {
+    let params = this.terms.getParams();
+
+    params['ms'] = new Date().getMilliseconds();
+    params['dataset'] = this.terms.dataset;
+    params['currentPage'] = this.tableParams.currentPage;
+    params['sortBy'] = this.tableParams.sortBy = '-score';
+    params['keywords'] = this.tableParams.keywords;
+    params['pageSize'] = this.tableParams.pageSize
+
+    this.setParamsFromFilters(params);
+
+    this.router.navigate(['project-notifications', params]);
+  }
+
+  setParamsFromFilters(params) {
+    this.collectionFilterToParams(params, 'type', 'name');
+    this.collectionFilterToParams(params, 'pcp', 'code');
+    this.collectionFilterToParams(params, 'region', 'code');
+  }
+
+  collectionFilterToParams(params, name, identifyBy) {
+    if (this.filterForUI[name].length) {
+      const values = this.filterForUI[name].map(record => {
+        return record[identifyBy];
+      });
+      params[name] = values.join(',');
+    }
+  }
+
+  search() {
+
+    let params = this.terms.getParams();
+
+    params['ms'] = new Date().getMilliseconds();
+
+    this.setParamsFromFilters(params);
+
+    let queryConditions = {};
+
+    if (params.type) {
+      queryConditions['type'] = params.type;
+    }
+
+    if (params.region) {
+      queryConditions['region'] = params.region;
+    }
+
+    if (params.pcp) {
+      queryConditions['pcp'] = params.pcp;
+    }
+
+    this.searchService.getSearchResults(
+      null,
+      'ProjectNotification',
+      null,
+      1,
+      10000,
+      '-startDate',
+      queryConditions
+    )
+    .takeUntil(this.ngUnsubscribe)
+    .subscribe((res: any) => {
+      if (res.projectNotifications && res.projectNotifications[0].data) {
+        if (res.projectNotifications[0].data.searchResults.length > 0) {
+          this.tableParams.totalListItems = res.projectNotifications[0].data.meta[0].searchResultsTotal;
+          this.projectNotifications = res.projectNotifications[0].data.searchResults;
+        } else {
+          this.tableParams.totalListItems = 0;
+          this.projectNotifications = [];
+        }
+        this.setRowData();
+        this.loading = false;
+        this._changeDetectionRef.detectChanges();
+      } else {
+        alert('Uh-oh, couldn\'t load project notifications');
+        // project not found --> navigate back to search
+        this.router.navigate(['/']);
+      }
+    });
   }
 }
