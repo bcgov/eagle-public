@@ -18,6 +18,7 @@ import { ProjectNotificationResolver } from './project-notifications/project-not
 import { CommentsComponent } from 'app/comments/comments.component';
 import { CommentsResolver } from 'app/comments/comments-resolver.service';
 import { SearchComponent } from 'app/search/search.component';
+import { DocumentTableResolver } from './project/documents/project-document-table-rows/project-document-table-rows-resolver.service';
 
 
 const routes: Routes = [
@@ -78,7 +79,10 @@ const routes: Routes = [
   },
   {
     path: 'search',
-    component: SearchComponent
+    component: SearchComponent,
+    resolve: {
+      documentsTableRow: DocumentTableResolver
+    }
   },
   {
     path: 'search-help',

@@ -12,6 +12,7 @@ import * as _ from 'lodash';
 import * as moment from 'moment';
 
 import { Document } from 'app/models/document';
+import { DocumentTableRowsComponent } from 'app/project/documents/project-document-table-rows/project-document-table-rows.component';
 import { Org } from 'app/models/organization';
 import { SearchTerms } from 'app/models/search';
 
@@ -105,6 +106,7 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck {
     projectPhase: 0
   };
 
+  public searchDisclaimer = Constants.searchDisclaimer;
   public terms = new SearchTerms();
   private ngUnsubscribe = new Subject<boolean>();
 
@@ -137,7 +139,31 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck {
     { code: 'Vancouver Island', name: 'Vancouver Island' }
   ];
 
-  public tableParams: TableParamsObject = new TableParamsObject();
+  public documents: Document[] = null;
+  public documentTableData: TableObject;
+  public documentTableColumns: any[] = [
+    {
+      name: 'Name',
+      value: 'displayName',
+      width: 'col-5'
+    },
+    {
+      name: 'Date',
+      value: 'datePosted',
+      width: 'col-2'
+    },
+    {
+      name: 'Type',
+      value: 'type',
+      width: 'col-2'
+    },
+    {
+      name: 'Milestone',
+      value: 'milestone',
+      width: 'col-2'
+    }
+  ];
+
   public projectTableData: TableObject;
   public projectTableColumns: any[] = [
     {
@@ -171,6 +197,9 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck {
       width: 'col-2'
     }
   ];
+
+  public tableParams: TableParamsObject = new TableParamsObject();
+
 
   constructor(
     public snackBar: MatSnackBar,
@@ -248,6 +277,11 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck {
         this.terms.keywords = params.keywords || null;
         this.terms.dataset = params.dataset || 'Document';
 
+
+        if (!this.tableParams) {
+          this.tableParams = this.tableTemplateUtils.getParamsFromUrl(params, this.filterForURL);
+        }
+
         this.setFiltersFromParams(params);
 
         this.updatetotalListItemss();
@@ -281,6 +315,22 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck {
         // stripped from the filterForAPI
         delete this.filterForAPI['docType'];
         delete this.filterForAPI['projectType'];
+
+        if (this.storageService && this.storageService.state.docList) {
+          this.filterForAPI = this.storageService.state.docList.filterForAPI;
+          this.filterForUI = this.storageService.state.docList.filterForUI;
+          this.tableParams = this.storageService.state.docList.tableParams;
+          this.setParamsFromFilters(params);
+        }
+  // todo is this necessary? i think so for paging?
+        // retaining the filters when a user clicks back from a pagination
+        // into the project list
+        if (this.storageService && this.storageService.state.projList) {
+          this.filterForAPI = this.storageService.state.projList.filterForAPI;
+          this.filterForUI = this.storageService.state.projList.filterForUI;
+          this.tableParams = this.storageService.state.projList.tableParams;
+          this.setParamsFromFilters(params);
+        }
 
         // if we're searching for projects, replace projectPhase with currentPhaseName
         // The code is called projectPhase, but the db column on projects is currentPhaseName
@@ -319,15 +369,37 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck {
           items.map(item => {
             if (this.terms.dataset === 'Document') {
               this.results.push(new Document(item));
+              if (this.storageService) {
+                this.storageService.state.docList = {};
+                this.storageService.state.docList.filterForAPI = this.filterForAPI;
+                this.storageService.state.docList.filterForUI = this.filterForUI;
+                this.storageService.state.docList.tableParams = this.tableParams;
+              }
             } else {
               this.results.push(item);
+              // store the state of the filterForAPI set into the session
+              // so a user can navigate back to this page without losing
+              // their filters
+              if (this.storageService) {
+                this.storageService.state.projList = {};
+                this.storageService.state.projList.filterForAPI = this.filterForAPI;
+                this.storageService.state.projList.filterForUI = this.filterForUI;
+                this.storageService.state.projList.tableParams = this.tableParams;
+              }
             }
           });
         } else {
           this.tableParams.totalListItems = 0;
           this.results = [];
         }
-        this.setRowData();
+
+
+        if (this.terms.dataset === 'Document') {
+          this.tableTemplateUtils.updateUrl(this.tableParams.sortBy, this.tableParams.currentPage, this.tableParams.pageSize, null, this.tableParams.keywords);
+          this.setDocumentRowData();
+        } else {
+          this.setRowData();
+        }
         this.loading = false;
         this.searching = false;
         this.ranSearch = true;
@@ -626,6 +698,58 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck {
     this.getPaginatedProjects(this.tableParams.currentPage);
   }
 
+  getPaginatedDocs(pageNumber) {
+    // Go to top of page after clicking to a different page.
+    window.scrollTo(0, 0);
+    this.loading = true;
+
+    this.tableParams = this.tableTemplateUtils.updateTableParams(this.tableParams, pageNumber, this.tableParams.sortBy);
+
+    // Filters and params are not set when paging
+    // We don't need to redo everything, but we will
+    // need to fetch the dates
+    const params = this.terms.getParams();
+    this.setParamsFromFilters(params);
+
+    const datePostedStart = params.hasOwnProperty('datePostedStart') && params.datePostedStart ? params.datePostedStart : null;
+    const datePostedEnd = params.hasOwnProperty('datePostedEnd') && params.datePostedEnd ? params.datePostedEnd : null;
+
+    let queryModifiers = { documentSource: 'PROJECT' };
+
+    if (datePostedStart !== null && datePostedEnd !== null) {
+      queryModifiers['datePostedStart'] = datePostedStart;
+      queryModifiers['datePostedEnd'] = datePostedEnd;
+    }
+
+    if (this.storageService) {
+      this.storageService.state.docList.tableParams = this.tableParams;
+    }
+
+    this.searchService.getSearchResults(
+      this.tableParams.keywords,
+      'Document',
+      [
+        { name: 'categorized', value: false }
+      ],
+      pageNumber,
+      this.tableParams.pageSize,
+      this.tableParams.sortBy,
+      queryModifiers,
+      true,
+      null,
+      this.filterForAPI,
+      '')
+      .takeUntil(this.ngUnsubscribe)
+      .subscribe((res: any) => {
+        this.tableParams.totalListItems = res[0].data.meta[0].searchResultsTotal;
+        this.documents = res[0].data.searchResults;
+        // this.tableTemplateUtils.updateUrl(this.tableParams.sortBy, this.tableParams.currentPage, this.tableParams.pageSize, this.filterForURL, this.tableParams.keywords);
+        this.setDocumentRowData();
+        this.loading = false;
+        this._changeDetectionRef.detectChanges();
+      });
+  }
+
   getPaginatedProjects(pageNumber) {
     // Go to top of page after clicking to a different page.
     window.scrollTo(0, 0);
@@ -686,6 +810,33 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck {
         this.filterForAPI['projectPhase'] = this.filterForAPI['currentPhaseName'];
         delete this.filterForAPI['currentPhaseName'];
       }
+  }
+
+  setDocumentRowData() {
+    let documentList = [];
+    if (this.results && this.results.length > 0) {
+      this.results.forEach(document => {
+        if (document) {
+          documentList.push(
+            {
+              documentFileName: document.documentFileName || document.displayName || document.internalOriginalName,
+              displayName: document.displayName,
+              datePosted: document.datePosted,
+              type: document.type,
+              milestone: document.milestone,
+              _id: document._id,
+              project: document.project,
+              isFeatured: document.isFeatured
+            }
+          );
+        }
+      });
+      this.documentTableData = new TableObject(
+        DocumentTableRowsComponent,
+        documentList,
+        this.tableParams
+      );
+    }
   }
 
   setRowData() {
