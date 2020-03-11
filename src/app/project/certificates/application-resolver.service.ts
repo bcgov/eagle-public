@@ -19,7 +19,7 @@ export class ApplicationResolver implements Resolve<Observable<object>> {
     const projectId = route.parent.paramMap.get('projId');
     const currentPage = route.params.currentPage ? route.params.currentPage : 1;
     const pageSize = route.params.pageSize ? route.params.pageSize : 10;
-    const sortBy = route.params.sortBy && route.params.sortBy !== 'null' ? route.params.sortBy : '-datePosted';
+    const sortBy = route.params.sortBy && route.params.sortBy !== 'null' ? route.params.sortBy : '+sortOrder,-datePosted,+displayName';
     const keywords = route.params.keywords;
 
     return this.configService.lists.switchMap (list => {
