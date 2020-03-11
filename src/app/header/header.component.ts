@@ -13,10 +13,11 @@ export class HeaderComponent {
   ) { }
   // tslint:disable-next-line:use-life-cycle-interface
   ngOnInit() {
-  let isIEOrEdge = /msie\s|trident\/|edge\//i.test(window.navigator.userAgent);
-  const browser_alert = document.getElementById('browser-alert');
-  if ( isIEOrEdge) {
-    browser_alert.classList.add('showForIEorEdge');
-  }
+    let isIEOrEdge = /msie\s|trident\/|edge\//i.test(window.navigator.userAgent);
+    const browser_alert = document.getElementById('browser-alert');
+    if (isIEOrEdge) {
+      browser_alert.classList.add('showForIEorEdge');
+      browser_alert.hidden = false;
+    }
   }
 }
