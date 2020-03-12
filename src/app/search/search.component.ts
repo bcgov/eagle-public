@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef, ChangeDetectionStrategy, OnDestroy, DoCheck, ViewEncapsulation } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, ChangeDetectionStrategy, OnDestroy, DoCheck, ViewEncapsulation, Output, EventEmitter } from '@angular/core';
 import { MatSnackBarRef, SimpleSnackBar, MatSnackBar } from '@angular/material';
 import { Router, ActivatedRoute } from '@angular/router';
 
@@ -27,7 +27,8 @@ import { TableParamsObject } from 'app/shared/components/table-template/table-pa
 import { TableTemplateUtils } from 'app/shared/utils/table-template-utils';
 import { StorageService } from 'app/services/storage.service';
 import { ProjectListTableRowsComponent } from 'app/projects/project-list/project-list-table-rows/project-list-table-rows.component';
-
+import { TableTemplateComponent } from 'app/shared/components/table-template/table-template.component';
+import { TableComponent } from 'app/shared/components/table-template/table.component';
 
 // TODO: Project and Document filters should be made into components
 class SearchFilterObject {
@@ -60,9 +61,9 @@ class SearchFilterObject {
   encapsulation: ViewEncapsulation.None
 })
 
-export class SearchComponent implements OnInit, OnDestroy, DoCheck {
+export class SearchComponent implements OnInit, OnDestroy, DoCheck, TableComponent {
   public readonly constants = Constants;
-  public results: Array<any> = [];
+  public data: Array<any> = [];
   public proponents: Array<Org> = [];
   public regions: Array<object> = [];
   public ceaaInvolvements: Array<object> = [];
@@ -277,11 +278,6 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck {
         this.terms.keywords = params.keywords || null;
         this.terms.dataset = params.dataset || 'Document';
 
-
-        if (!this.tableParams) {
-          this.tableParams = this.tableTemplateUtils.getParamsFromUrl(params, this.filterForURL);
-        }
-
         this.setFiltersFromParams(params);
 
         this.updatetotalListItemss();
@@ -300,7 +296,7 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck {
           return Observable.of(null);
         }
 
-        this.results = [];
+        this.data = [];
 
         this.searching = true;
         this.tableParams.totalListItems = 0;
@@ -322,7 +318,7 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck {
           this.tableParams = this.storageService.state.docList.tableParams;
           this.setParamsFromFilters(params);
         }
-  // todo is this necessary? i think so for paging?
+
         // retaining the filters when a user clicks back from a pagination
         // into the project list
         if (this.storageService && this.storageService.state.projList) {
@@ -368,15 +364,16 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck {
           let items = res[0].data.searchResults;
           items.map(item => {
             if (this.terms.dataset === 'Document') {
-              this.results.push(new Document(item));
+              this.data.push(new Document(item));
               if (this.storageService) {
                 this.storageService.state.docList = {};
                 this.storageService.state.docList.filterForAPI = this.filterForAPI;
                 this.storageService.state.docList.filterForUI = this.filterForUI;
                 this.storageService.state.docList.tableParams = this.tableParams;
+                this.storageService.state.docList.keywords = this.terms.keywords;
               }
             } else {
-              this.results.push(item);
+              this.data.push(item);
               // store the state of the filterForAPI set into the session
               // so a user can navigate back to this page without losing
               // their filters
@@ -390,7 +387,7 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck {
           });
         } else {
           this.tableParams.totalListItems = 0;
-          this.results = [];
+          this.data = [];
         }
 
 
@@ -446,10 +443,11 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck {
     // Go to top of page after clicking to a different page.
     window.scrollTo(0, 0);
     this.currentPage = pageNumber;
+    this.tableTemplateUtils.updateUrl(this.tableParams.sortBy, pageNumber, this.tableParams.pageSize, this.filterForURL, this.tableParams.keywords);
     this.onSubmit();
   }
 
-  updatePageSize(pageSize) {
+  updatePageTableSize(pageSize) {
     window.scrollTo(0, 0);
     this.currentPage = 1;
     this.pageSize = parseInt(pageSize, 10);
@@ -695,10 +693,10 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck {
     } else {
       this.tableParams.sortBy = '+' + column;
     }
-    this.getPaginatedProjects(this.tableParams.currentPage);
+    this.getPaginated(this.tableParams.currentPage);
   }
 
-  getPaginatedDocs(pageNumber) {
+  getPaginated(pageNumber) {
     // Go to top of page after clicking to a different page.
     window.scrollTo(0, 0);
     this.loading = true;
@@ -714,23 +712,19 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck {
     const datePostedStart = params.hasOwnProperty('datePostedStart') && params.datePostedStart ? params.datePostedStart : null;
     const datePostedEnd = params.hasOwnProperty('datePostedEnd') && params.datePostedEnd ? params.datePostedEnd : null;
 
-    let queryModifiers = { documentSource: 'PROJECT' };
-
+    let queryModifiers = {};
     if (datePostedStart !== null && datePostedEnd !== null) {
       queryModifiers['datePostedStart'] = datePostedStart;
       queryModifiers['datePostedEnd'] = datePostedEnd;
     }
 
-    if (this.storageService) {
-      this.storageService.state.docList.tableParams = this.tableParams;
-    }
+    this.updatePageTableSize(this.tableParams.pageSize);
+    this.updatePageNumber(pageNumber);
 
     this.searchService.getSearchResults(
-      this.tableParams.keywords,
-      'Document',
-      [
-        { name: 'categorized', value: false }
-      ],
+      this.terms.keywords,
+      this.terms.dataset,
+      null,
       pageNumber,
       this.tableParams.pageSize,
       this.tableParams.sortBy,
@@ -741,54 +735,8 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck {
       '')
       .takeUntil(this.ngUnsubscribe)
       .subscribe((res: any) => {
-        this.tableParams.totalListItems = res[0].data.meta[0].searchResultsTotal;
-        this.documents = res[0].data.searchResults;
-        // this.tableTemplateUtils.updateUrl(this.tableParams.sortBy, this.tableParams.currentPage, this.tableParams.pageSize, this.filterForURL, this.tableParams.keywords);
-        this.setDocumentRowData();
-        this.loading = false;
-        this._changeDetectionRef.detectChanges();
-      });
-  }
-
-  getPaginatedProjects(pageNumber) {
-    // Go to top of page after clicking to a different page.
-    window.scrollTo(0, 0);
-    this.loading = true;
-
-    this.tableParams = this.tableTemplateUtils.updateTableParams(
-      this.tableParams,
-      pageNumber,
-      this.tableParams.sortBy
-    );
-
-    // store the table params in the event of a page navigation
-    this.storageService.state.projList.tableParams = this.tableParams;
-
-    if (this.filterForAPI.hasOwnProperty('projectPhase')) {
-      this.filterForAPI['currentPhaseName'] = this.filterForAPI['projectPhase'];
-      delete this.filterForAPI['projectPhase'];
-    }
-
-    this.searchService
-      .getSearchResults(
-        this.tableParams.keywords,
-        'Project',
-        null,
-        pageNumber,
-        this.tableParams.pageSize,
-        this.tableParams.sortBy,
-        {},
-        true,
-        null,
-        this.filterForAPI,
-        ''
-      )
-      .takeUntil(this.ngUnsubscribe)
-      .subscribe((res: any) => {
         if (res && res[0].data) {
-          this.tableParams.totalListItems =
-            res[0].data.meta[0].searchResultsTotal;
-          this.results = res[0].data.searchResults;
+          this.tableParams.totalListItems = res[0].data.meta[0].searchResultsTotal;
           this.tableTemplateUtils.updateUrl(
             this.tableParams.sortBy,
             this.tableParams.currentPage,
@@ -796,26 +744,29 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck {
             this.filterForURL,
             this.tableParams.keywords
           );
-          this.setRowData();
+          if (this.terms.dataset === 'Document') {
+            this.setDocumentRowData();
+          } else {
+            this.setRowData();
+          }
           this.loading = false;
           this._changeDetectionRef.detectChanges();
         } else {
-          alert('Uh-oh, couldn\'t load projects');
-          // project not found --> navigate back to search
-          this.router.navigate(['/']);
+          alert('Couldn\'t load search results');
+          this.router.navigate(['/search']);
         }
       });
 
-      if (this.filterForAPI.hasOwnProperty('currentPhaseName')) {
-        this.filterForAPI['projectPhase'] = this.filterForAPI['currentPhaseName'];
-        delete this.filterForAPI['currentPhaseName'];
-      }
+    if (this.filterForAPI.hasOwnProperty('currentPhaseName')) {
+      this.filterForAPI['projectPhase'] = this.filterForAPI['currentPhaseName'];
+      delete this.filterForAPI['currentPhaseName'];
+    }
   }
 
   setDocumentRowData() {
     let documentList = [];
-    if (this.results && this.results.length > 0) {
-      this.results.forEach(document => {
+    if (this.data && this.data.length > 0) {
+      this.data.forEach(document => {
         if (document) {
           documentList.push(
             {
@@ -841,8 +792,8 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck {
 
   setRowData() {
     let projectList = [];
-    if (this.results && this.results.length > 0) {
-      this.results.forEach(project => {
+    if (this.data && this.data.length > 0) {
+      this.data.forEach(project => {
         projectList.push({
           _id: project._id,
           name: project.name,
