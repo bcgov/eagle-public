@@ -11,6 +11,7 @@ import { TableParamsObject } from 'app/shared/components/table-template/table-pa
 import { TableTemplateUtils } from 'app/shared/utils/table-template-utils';
 import { SearchService } from 'app/services/search.service';
 import { ApiService } from 'app/services/api';
+import { MatSnackBarRef, SimpleSnackBar, MatSnackBar } from '@angular/material';
 
 class ProjectNotificationFilterObject {
   constructor(
@@ -43,6 +44,8 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
   public projectNotifications: Array<ProjectNotification> = [];
   public readonly constants = Constants;
 
+  private snackBarRef: MatSnackBarRef<SimpleSnackBar> = null;
+
   public showFilters: object = {
     type: false,
     region: false,
@@ -61,7 +64,8 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
     private router: Router,
     private tableTemplateUtils: TableTemplateUtils,
     private searchService: SearchService,
-    private api: ApiService
+    private api: ApiService,
+    public snackBar: MatSnackBar
   ) {
 
     this.regions = Constants.REGIONS_COLLECTION;
@@ -87,6 +91,8 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
               if (res.projectNotifications[0].data.searchResults.length > 0) {
                 this.tableParams.totalListItems = res.projectNotifications[0].data.meta[0].searchResultsTotal;
                 this.projectNotifications = res.projectNotifications[0].data.searchResults;
+
+                // apply the document counts?
               } else {
                 this.tableParams.totalListItems = 0;
                 this.projectNotifications = [];
@@ -199,7 +205,6 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
   }
 
   downloadDocuments(project) {
-
     this.searchService.getSearchResults(
       null,
       'Document',
@@ -213,13 +218,18 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
         let documents = res[0].data.searchResults;
 
         // fire download requests for the documents we found (if any);
-        let promises = [];
-
         documents.forEach(doc => {
-          promises.push(this.api.downloadDocument(doc));
+         this.api.downloadDocument(doc)
+         .then(() => {
+          // Turn this into a toast
+          this.snackBarRef = this.snackBar.open('Downloading document');
+          window.setTimeout(() => this.snackBar.dismiss(), 2000)
+        })
+        .catch((error) => {
+          this.snackBarRef = this.snackBar.open('Error opening document! Please try again later');
+          window.setTimeout(() => this.snackBar.dismiss(), 2000)
+        })
         });
-
-        return Promise.all(promises).catch(error => { alert('Document(s) not found!'); });
       });
   }
   search() {
