@@ -54,32 +54,63 @@
     <div class="modal-body">
       <fieldset>
           <h5 class="modal-title">Member Sign-up</h5>
+
           <div class="form-group row">
             <div class="form-group">
               <label class="control-label">Full Name *</label>
               <div class="form-control-container">
-                <input required class="form-control" type="text" name="nameInput" id="nameInput" [(ngModel)]="contactName" autofocus />
+                <input required class="form-control" type="text" name="nameInput" id="nameInput" [(ngModel)]="nameInput" autofocus />
               </div>
             </div>
             <div class="form-group">
+              <label class="control-label">Location</label>
+              <div class="form-control-container">
+                <input class="form-control" type="text" name="locationInput" id="locationInput" [(ngModel)]="location" autofocus />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group row">
+            <div class="form-group">
               <label class="control-label">Email Address *</label>
               <div class="form-control-container">
-                <input required email class="form-control" type="text" name="emailInput" id="emailInput" [(ngModel)]="email" autofocus />
+                <input required email class="form-control" type="text" name="emailInput" id="emailInput" [(ngModel)]="emailInput" autofocus />
               </div>
             </div>
             <div class="form-group">
               <label class="control-label">Confirm Email Address *</label>
               <div class="form-control-container">
-                <input required email class="form-control" type="text" name="emailConfirmInput" id="emailConfirmInput" [(ngModel)]="emailConfirm" autofocus />
+                <input required email class="form-control" type="text" name="emailConfirmInput" id="emailConfirmInput" [(ngModel)]="emailConfirmInput" autofocus />
               </div>
             </div>
           </div>
+
           <div class="form-group">
-            <label class="control-label" >Describe your interest in the project</label>
+            <label class="control-label">Describe your interest in the project</label>
             <div>
-              <label class="control-label font-italic" >Please select all that apply. You may include additional details or information regarding your interest in the text box below. This information is for the EAO to better understand the membership of the committee, any information you provide here will not be considered as input into the review of the project. Please submit your comments on the proposed project through the public comment periods throughout the environmental assessment process.</label>
+              <p class="font-italic understandText">Please select all that apply. You may include additional details or information regarding your interest in the text box below. This information is for the EAO to better understand the membership of the committee, any information you provide here will not be considered as input into the review of the project. Please submit your comments on the proposed project through the public comment periods throughout the environmental assessment process.</p>
             </div>
-            <textarea class="form-control" rows="8" name="reasonInput" id="reasonInput" [(ngModel)]="reasonInput" autofocus></textarea>
+
+            <!-- I live near -->
+            <div class="form-group row">
+                <label class="control-label"><input class="mr-1" name="liveNear" type="checkbox" [(ngModel)]="liveNear"/>I live near or use the project area</label>
+                <input [hidden]="!liveNear" class="form-control col-12" type="text" name="liveNearInput" id="liveNearInput" [(ngModel)]="liveNearInput" autofocus />
+            </div>
+            <!-- I am a member of -->
+            <div class="form-group row">
+              <label class="control-label"><input class="mr-1" name="memberOf" type="checkbox" [(ngModel)]="memberOf"/>I am a member of a stakeholder organization</label>
+              <input [hidden]="!memberOf" class="form-control col-12" type="text" name="memberOfInput" id="memberOfInput" [(ngModel)]="memberOfInput" autofocus />
+            </div>
+            <!-- I have knowledge of -->
+            <div class="form-group row">
+              <label class="control-label"><input class="mr-1" name="knowledgeOf" type="checkbox" [(ngModel)]="knowledgeOf"/>I have knowledge of issues relevant to the potential project</label>
+              <input [hidden]="!knowledgeOf" class="form-control col-12" type="text" name="knowledgeOfInput" id="knowledgeOfInput" [(ngModel)]="knowledgeOfInput" autofocus />
+            </div>
+            <!-- Additional Notes -->
+            <div class="form-group row">
+              <label class="control-label">Additional Notes:</label>
+              <textarea class="form-control" rows="4" name="additionalNotesInput" id="additionalNotesInput" [(ngModel)]="additionalNotesInput" autofocus></textarea>
+            </div>
           </div>
 
           <div class="form-group">
@@ -101,7 +132,7 @@
     </div>
     <div class="modal-footer">
       <!-- enable submission when required fields are entered and when either a file or comment is entered -->
-      <button class="btn btn-primary" type="button" (click)="p2_next()" [disabled]="!commentForm1.form.valid || (email !== emailConfirm)">Complete Submission</button>
+      <button class="btn btn-primary" type="button" (click)="p2_next()" [disabled]="!commentForm1.form.valid || (emailInput !== emailConfirmInput)">Complete Submission</button>
     </div>
   </div>
 </form>

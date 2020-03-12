@@ -25,13 +25,19 @@ export class BecomeAMemberComponent implements OnInit {
   public totalSize: number;
   public currentPage = 1;
   private comment: Comment;
-  public contactName: string;
-  public email: any;
-  public emailInput: any;
-  public commentInput: any;
-  public reasonInput: any;
   public acknowledged: any;
-  public emailConfirm: any;
+
+  // CAC
+  public nameInput: string;
+  public emailInput: any;
+  public emailConfirmInput: any;
+  public liveNear: boolean;
+  public liveNearInput: any;
+  public memberOf: boolean;
+  public memberOfInput: any;
+  public knowledgeOf: boolean;
+  public knowledgeOfInput: any;
+  public additionalNotesInput: any;
 
   constructor(
     public activeModal: NgbActiveModal,
@@ -52,9 +58,12 @@ export class BecomeAMemberComponent implements OnInit {
 
     // Build the comment
     let signUpObject = {
-      name: this.contactName,
-      email: this.email,
-      comment: this.reasonInput,
+      name: this.nameInput,
+      email: this.emailInput,
+      liveNear: this.liveNear ? this.liveNearInput : '',
+      memberOf: this.memberOf ? this.memberOfInput : '',
+      knowledgeOf: this.knowledgeOf ? this.knowledgeOfInput : '',
+      additionalNotes: this.additionalNotesInput
     };
 
     this.projectService.cacSignUp(this.project, signUpObject)

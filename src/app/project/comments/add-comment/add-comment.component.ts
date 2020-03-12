@@ -36,14 +36,22 @@ export class AddCommentComponent implements OnInit {
   public documentAuthorType: any;
   public contactName: string;
   public commentInput: any;
-  public reasonInput: any;
   public locationInput: any;
   public makePublic: any;
-  public email: any;
   public commentFiles: any;
   public anonymousName = 'Anonymous';
+
+  // CAC
+  public nameInput: any;
+  public emailInput: any;
+  public liveNear: boolean;
+  public liveNearInput: any;
+  public memberOf: boolean;
+  public memberOfInput: any;
+  public knowledgeOf: boolean;
+  public knowledgeOfInput: any;
+  public additionalNotesInput: any;
   public submittedCAC: Boolean;
-  public memberName: any;
 
   constructor(
     public activeModal: NgbActiveModal,
@@ -131,9 +139,12 @@ export class AddCommentComponent implements OnInit {
 
     // Build the comment
     let signUpObject = {
-      name: this.memberName,
-      email: this.email,
-      comment: this.reasonInput,
+      name: this.nameInput,
+      email: this.emailInput,
+      liveNear: this.liveNear ? this.liveNearInput : '',
+      memberOf: this.memberOf ? this.memberOfInput : '',
+      knowledgeOf: this.knowledgeOf ? this.knowledgeOfInput : '',
+      additionalNotes: this.additionalNotesInput
     };
 
     this.projectService.cacSignUp(this.project, signUpObject)
