@@ -66,6 +66,8 @@ export class CertificatesComponent implements OnInit, OnDestroy {
       .subscribe(params => {
         if (this.currentUrl === 'amendments') {
           this.tableParams = this.tableTemplateUtils.getParamsFromUrl(params);
+        } else if(this.currentUrl === 'application'){
+          this.tableParams = this.tableTemplateUtils.getParamsFromUrl(params, null, '+sortOrder,-datePosted,+displayName');
         } else {
           // Different sort order:
           this.tableParams = this.tableTemplateUtils.getParamsFromUrl(params, null, '+displayName');
