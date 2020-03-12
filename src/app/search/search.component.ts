@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef, ChangeDetectionStrategy, OnDestroy, DoCheck, ViewEncapsulation } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, ChangeDetectionStrategy, OnDestroy, DoCheck, ViewEncapsulation, Output, EventEmitter } from '@angular/core';
 import { MatSnackBarRef, SimpleSnackBar, MatSnackBar } from '@angular/material';
 import { Router, ActivatedRoute } from '@angular/router';
 
@@ -27,7 +27,6 @@ import { TableParamsObject } from 'app/shared/components/table-template/table-pa
 import { TableTemplateUtils } from 'app/shared/utils/table-template-utils';
 import { StorageService } from 'app/services/storage.service';
 import { ProjectListTableRowsComponent } from 'app/projects/project-list/project-list-table-rows/project-list-table-rows.component';
-
 
 // TODO: Project and Document filters should be made into components
 class SearchFilterObject {
@@ -277,11 +276,6 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck {
         this.terms.keywords = params.keywords || null;
         this.terms.dataset = params.dataset || 'Document';
 
-
-        if (!this.tableParams) {
-          this.tableParams = this.tableTemplateUtils.getParamsFromUrl(params, this.filterForURL);
-        }
-
         this.setFiltersFromParams(params);
 
         this.updatetotalListItemss();
@@ -322,15 +316,15 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck {
           this.tableParams = this.storageService.state.docList.tableParams;
           this.setParamsFromFilters(params);
         }
-  // todo is this necessary? i think so for paging?
-        // retaining the filters when a user clicks back from a pagination
-        // into the project list
-        if (this.storageService && this.storageService.state.projList) {
-          this.filterForAPI = this.storageService.state.projList.filterForAPI;
-          this.filterForUI = this.storageService.state.projList.filterForUI;
-          this.tableParams = this.storageService.state.projList.tableParams;
-          this.setParamsFromFilters(params);
-        }
+        // // todo is this necessary? i think so for paging?
+        //       // retaining the filters when a user clicks back from a pagination
+        //       // into the project list
+        //       if (this.storageService && this.storageService.state.projList) {
+        //         this.filterForAPI = this.storageService.state.projList.filterForAPI;
+        //         this.filterForUI = this.storageService.state.projList.filterForUI;
+        //         this.tableParams = this.storageService.state.projList.tableParams;
+        //         this.setParamsFromFilters(params);
+        //       }
 
         // if we're searching for projects, replace projectPhase with currentPhaseName
         // The code is called projectPhase, but the db column on projects is currentPhaseName
@@ -374,6 +368,7 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck {
                 this.storageService.state.docList.filterForAPI = this.filterForAPI;
                 this.storageService.state.docList.filterForUI = this.filterForUI;
                 this.storageService.state.docList.tableParams = this.tableParams;
+                this.storageService.state.docList.keywords = this.terms.keywords;
               }
             } else {
               this.results.push(item);
@@ -446,14 +441,15 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck {
     // Go to top of page after clicking to a different page.
     window.scrollTo(0, 0);
     this.currentPage = pageNumber;
+    this.tableTemplateUtils.updateUrl(this.tableParams.sortBy, pageNumber, this.tableParams.pageSize, this.filterForURL, this.tableParams.keywords);
     this.onSubmit();
   }
 
-  updatePageSize(pageSize) {
+  updatePageTableSize(pageSize) {
     window.scrollTo(0, 0);
     this.currentPage = 1;
     this.pageSize = parseInt(pageSize, 10);
-    this.onSubmit();
+    // this.onSubmit();
   }
 
   paramsToCheckboxFilters(params, name, map) {
@@ -714,26 +710,22 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck {
     const datePostedStart = params.hasOwnProperty('datePostedStart') && params.datePostedStart ? params.datePostedStart : null;
     const datePostedEnd = params.hasOwnProperty('datePostedEnd') && params.datePostedEnd ? params.datePostedEnd : null;
 
-    let queryModifiers = { documentSource: 'PROJECT' };
-
+    let queryModifiers = {};
     if (datePostedStart !== null && datePostedEnd !== null) {
       queryModifiers['datePostedStart'] = datePostedStart;
       queryModifiers['datePostedEnd'] = datePostedEnd;
     }
 
-    if (this.storageService) {
-      this.storageService.state.docList.tableParams = this.tableParams;
-    }
+    this.updatePageTableSize(this.tableParams.pageSize);
+    this.updatePageNumber(pageNumber);
 
     this.searchService.getSearchResults(
-      this.tableParams.keywords,
+      this.storageService.state.docList.keywords ? this.storageService.state.docList.keywords : '',
       'Document',
-      [
-        { name: 'categorized', value: false }
-      ],
+      null,
       pageNumber,
-      this.tableParams.pageSize,
-      this.tableParams.sortBy,
+      this.storageService.state.docList.tableParams ? this.storageService.state.docList.tableParams.pageSize : 1,
+      this.storageService.state.docList.tableParams ? this.storageService.state.docList.tableParams.sortBy : '-datePosted',
       queryModifiers,
       true,
       null,
@@ -743,7 +735,7 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck {
       .subscribe((res: any) => {
         this.tableParams.totalListItems = res[0].data.meta[0].searchResultsTotal;
         this.documents = res[0].data.searchResults;
-        // this.tableTemplateUtils.updateUrl(this.tableParams.sortBy, this.tableParams.currentPage, this.tableParams.pageSize, this.filterForURL, this.tableParams.keywords);
+        this.tableTemplateUtils.updateUrl(this.tableParams.sortBy, this.tableParams.currentPage, this.tableParams.pageSize, this.filterForURL, this.tableParams.keywords);
         this.setDocumentRowData();
         this.loading = false;
         this._changeDetectionRef.detectChanges();
@@ -806,10 +798,10 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck {
         }
       });
 
-      if (this.filterForAPI.hasOwnProperty('currentPhaseName')) {
-        this.filterForAPI['projectPhase'] = this.filterForAPI['currentPhaseName'];
-        delete this.filterForAPI['currentPhaseName'];
-      }
+    if (this.filterForAPI.hasOwnProperty('currentPhaseName')) {
+      this.filterForAPI['projectPhase'] = this.filterForAPI['currentPhaseName'];
+      delete this.filterForAPI['currentPhaseName'];
+    }
   }
 
   setDocumentRowData() {
