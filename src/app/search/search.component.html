@@ -560,14 +560,13 @@
                 <div *ngIf="terms.dataset === 'Document'">
                     <app-table-template *ngIf="!loading && tableParams.totalListItems != 0"
                         [columns]="documentTableColumns" [data]="documentTableData" (onColumnSort)='setColumnSort($event)'
-                        (onPageNumUpdate)='getPaginatedDocs($event)'>
+                        (onPageNumUpdate)='getPaginated($event)'>
                     </app-table-template>
                 </div>
                 <div *ngIf="terms.dataset === 'Project'">
-                    <p>List items {{tableParams.totalListItems}}</p>
                     <app-table-template *ngIf="tableParams.totalListItems > 0" [columns]="projectTableColumns"
                         [data]="projectTableData" (onColumnSort)='setColumnSort($event)'
-                        (onPageNumUpdate)='getPaginatedProjects($event)'>
+                        (onPageNumUpdate)='getPaginated($event)'>
                     </app-table-template>
                 </div>
             </div>
