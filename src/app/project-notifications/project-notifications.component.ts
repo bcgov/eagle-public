@@ -10,7 +10,7 @@ import { TableObject } from 'app/shared/components/table-template/table-object';
 import { TableParamsObject } from 'app/shared/components/table-template/table-params-object';
 import { TableTemplateUtils } from 'app/shared/utils/table-template-utils';
 import { SearchService } from 'app/services/search.service';
-import { ProjectNotificationsListTableRowsComponent } from './project-notifications-list-table-rows/project-notifications-list-table-rows.component';
+import { ApiService } from 'app/services/api';
 
 class ProjectNotificationFilterObject {
   constructor(
@@ -60,7 +60,8 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private tableTemplateUtils: TableTemplateUtils,
-    private searchService: SearchService
+    private searchService: SearchService,
+    private api: ApiService
   ) {
 
     this.regions = Constants.REGIONS_COLLECTION;
@@ -91,7 +92,6 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
                 this.projectNotifications = [];
               }
 
-              this.setRowData();
               this.loading = false;
               this._changeDetectionRef.detectChanges();
             } else {
@@ -101,16 +101,6 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
             }
           });
       });
-  }
-
-  setRowData() {
-    if (this.projectNotifications && this.projectNotifications.length > 0) {
-      this.tableData = new TableObject(
-        ProjectNotificationsListTableRowsComponent,
-        this.projectNotifications,
-        this.tableParams
-      );
-    }
   }
 
   ngOnDestroy() {
@@ -208,6 +198,30 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
     }
   }
 
+  downloadDocuments(project) {
+
+    this.searchService.getSearchResults(
+      null,
+      'Document',
+      [],
+      1,
+      1000,
+      null,
+      { documentSource: 'PROJECT-NOTIFICATION', project: project._id })
+      .takeUntil(this.ngUnsubscribe)
+      .subscribe((res: any) => {
+        let documents = res[0].data.searchResults;
+
+        // fire download requests for the documents we found (if any);
+        let promises = [];
+
+        documents.forEach(doc => {
+          promises.push(this.api.downloadDocument(doc));
+        });
+
+        return Promise.all(promises).catch(error => { alert('Document(s) not found!'); });
+      });
+  }
   search() {
 
     let params = this.terms.getParams();
@@ -249,7 +263,6 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
           this.tableParams.totalListItems = 0;
           this.projectNotifications = [];
         }
-        this.setRowData();
         this.loading = false;
         this._changeDetectionRef.detectChanges();
       } else {
