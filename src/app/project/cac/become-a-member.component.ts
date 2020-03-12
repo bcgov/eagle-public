@@ -1,5 +1,4 @@
 import { Component, Input, OnInit } from '@angular/core';
-// import { HttpEventType } from '@angular/common/http';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { Observable } from 'rxjs/Observable';
 import 'rxjs/add/operator/toPromise';
