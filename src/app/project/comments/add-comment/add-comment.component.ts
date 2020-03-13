@@ -107,8 +107,6 @@ export class AddCommentComponent implements OnInit {
   }
 
   private p1_next() {
-    // TODO: Check if they already submitted something, if so, skip
-    // to adding their comment again.
     if (this.submittedCAC || !this.project.projectCAC) {
       this.currentPage += 4;
     } else {
@@ -157,7 +155,7 @@ export class AddCommentComponent implements OnInit {
     })
     .catch(error => {
       console.log('error', error);
-      alert('Uh-oh, error submitting informaiton');
+      alert('Uh-oh, error submitting information');
       this.submitting = false;
     });
   }

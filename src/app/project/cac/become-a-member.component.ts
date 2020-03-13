@@ -51,7 +51,6 @@ export class BecomeAMemberComponent implements OnInit {
     this.currentPage++;
   }
 
-  // TODO: Have some null checks in here from the front end
   private p2_next() {
     this.submitting = true;
 
@@ -74,7 +73,7 @@ export class BecomeAMemberComponent implements OnInit {
     })
     .catch(error => {
       console.log('error', error);
-      alert('Uh-oh, error submitting informaiton');
+      alert('Uh-oh, error submitting information');
       this.submitting = false;
     });
   }
