@@ -1,3 +1,5 @@
+import { CommentPeriod } from "./commentperiod";
+
 export class ProjectNotification {
   _id: string;
   name: String;
@@ -11,6 +13,7 @@ export class ProjectNotification {
   description: String;
   trigger: String;
   centroid: Array<number>;
+  commentPeriod: CommentPeriod;
 
   read: Array<String> = [];
 

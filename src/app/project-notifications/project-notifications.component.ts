@@ -12,6 +12,7 @@ import { TableTemplateUtils } from 'app/shared/utils/table-template-utils';
 import { SearchService } from 'app/services/search.service';
 import { ApiService } from 'app/services/api';
 import { MatSnackBarRef, SimpleSnackBar, MatSnackBar } from '@angular/material';
+import { CommentPeriodService } from 'app/services/commentperiod.service';
 
 class ProjectNotificationFilterObject {
   constructor(
@@ -65,7 +66,8 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
     private tableTemplateUtils: TableTemplateUtils,
     private searchService: SearchService,
     private api: ApiService,
-    public snackBar: MatSnackBar
+    public snackBar: MatSnackBar,
+    private commentPeriodService: CommentPeriodService
   ) {
 
     this.regions = Constants.REGIONS_COLLECTION;
@@ -92,7 +94,12 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
                 this.tableParams.totalListItems = res.projectNotifications[0].data.meta[0].searchResultsTotal;
                 this.projectNotifications = res.projectNotifications[0].data.searchResults;
 
-                // apply the document counts?
+                // load projetNotification comment periods
+                this.projectNotifications.forEach(projectNotification => {
+                  projectNotification['commentPeriod'] = null;
+                  this.getProjectCommentPeriod(projectNotification);
+                });
+
               } else {
                 this.tableParams.totalListItems = 0;
                 this.projectNotifications = [];
@@ -140,7 +147,14 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
   }
 
   getProjectCommentPeriod(project: ProjectNotification) {
-    return { pcp: new Date(), active: true , _id: '5e1bfa955f6fe400218fc620'};
+    this.commentPeriodService.getAllByProjectId(project._id)
+    .takeUntil(this.ngUnsubscribe)
+    .subscribe((res: any) => {
+      if (res && res.data) {
+        project['commentPeriod'] = res.data[0];
+        this._changeDetectionRef.detectChanges();
+      }
+    });
   }
 
   clearAll() {

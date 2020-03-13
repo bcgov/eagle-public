@@ -7,7 +7,7 @@ import { TagInputModule } from 'ngx-chips';
 // modules
 import { SharedModule } from 'app/shared/shared.module';
 import { ProjectRoutingModule } from './project-routing.module';
-import { CommentsModule } from 'app/project/comments/comments.module';
+import { CommentsModule } from 'app/comments/comments.module';
 
 // components
 import { ProjectComponent } from './project.component';
@@ -22,7 +22,7 @@ import { DetailsSidebarComponent } from 'app/project/details-sidebar/details-sid
 
 import { StorageService } from 'app/services/storage.service';
 import { ProjectDetailsTabComponent } from './project-details-tab/project-details-tab.component';
-import { CommentsTableRowsComponent } from 'app/project/comments/comments-table-rows/comments-table-rows.component';
+import { CommentsTableRowsComponent } from 'app/comments/comments-table-rows/comments-table-rows.component';
 import { ProjectActivitesComponent } from './project-activites/project-activites.component';
 import { CertificatesComponent } from './certificates/certificates.component';
 import { PinsComponent } from './pins/pins.component';

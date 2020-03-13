@@ -163,9 +163,9 @@
                                 <div class="col-sm-12 col-md-4">
                                     <a class="btn btn-primary view-pcp-btn"
                                        title="View this Public Comment Period"
-                                       [routerLink]="['/np', project._id, 'cp', getProjectCommentPeriod(project)]">
-                                       <div *ngIf="getProjectCommentPeriod(project)?.active" class="pcp-indicator pcp-indicator-active"></div>
-                                       <div *ngIf="!getProjectCommentPeriod(project)?.active" class="pcp-indicator pcp-indicator-inactive"></div>
+                                       [routerLink]="['/pn', project?._id, 'cp', project?.commentPeriod?._id]">
+                                       <div *ngIf="project?.commentPeriod?.daysRemainingCount > 0" class="pcp-indicator pcp-indicator-active"></div>
+                                       <div *ngIf="project?.commentPeriod === null || project?.commentPeriod?.daysRemainingCount <= 0" class="pcp-indicator pcp-indicator-inactive"></div>
                                        View Public Comment Period
                                     </a>
                                 </div>
@@ -185,7 +185,7 @@
                                 </div>
                                 <div class="col-sm-12 col-md-3 pn-info-block">
                                 <label>Public Comment Period</label>
-                                <p class="value">{{getProjectCommentPeriod(project)?.pcp  || "-"}}</p>
+                                <p class="value">{{project?.commentPeriod?.daysRemaining  || "-"}}</p>
                                 </div>
                                 <div class="col-sm-12 col-md-3 pn-info-block">
                                 <label>Sub-Type</label>
