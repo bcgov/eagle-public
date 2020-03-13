@@ -84,10 +84,6 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck, TableCompone
   public showAdvancedSearch = true;
 
   public showFilters: object = {
-    projectType: false,
-    eacDecision: false,
-    pcp: false,
-    more: false,
     milestone: false,
     date: false,
     documentAuthorType: false,
@@ -96,10 +92,6 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck, TableCompone
   };
 
   public numFilters: object = {
-    projectType: 0,
-    eacDecision: 0,
-    pcp: 0,
-    more: 0,
     milestone: 0,
     date: 0,
     documentAuthorType: 0,
@@ -126,20 +118,6 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck, TableCompone
 
   public pageSizeArray: number[];
 
-  // These values should be moved into Lists instead of being hard-coded all over the place
-
-  private REGIONS_COLLECTION: Array<object> = [
-    { code: 'Cariboo', name: 'Cariboo' },
-    { code: 'Kootenay', name: 'Kootenay' },
-    { code: 'Lower Mainland', name: 'Lower Mainland' },
-    { code: 'Okanagan', name: 'Okanagan' },
-    { code: 'Omineca', name: 'Omineca' },
-    { code: 'Peace', name: 'Peace' },
-    { code: 'Skeena', name: 'Skeena' },
-    { code: 'Thompson-Nicola', name: 'Thompson-Nicola' },
-    { code: 'Vancouver Island', name: 'Vancouver Island' }
-  ];
-
   public documents: Document[] = null;
   public documentTableData: TableObject;
   public documentTableColumns: any[] = [
@@ -162,39 +140,10 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck, TableCompone
       name: 'Milestone',
       value: 'milestone',
       width: 'col-2'
-    }
-  ];
-
-  public projectTableData: TableObject;
-  public projectTableColumns: any[] = [
-    {
-      name: 'Name',
-      value: 'name',
-      width: 'col-2'
     },
     {
-      name: 'Proponent',
-      value: 'proponent.name',
-      width: 'col-2'
-    },
-    {
-      name: 'Type',
-      value: 'type',
-      width: 'col-2'
-    },
-    {
-      name: 'Region',
-      value: 'region',
-      width: 'col-2'
-    },
-    {
-      name: 'Phase',
-      value: 'currentPhaseName',
-      width: 'col-2'
-    },
-    {
-      name: 'Decision',
-      value: 'eacDecision',
+      name: 'Project Phase',
+      value: 'projectPhase',
       width: 'col-2'
     }
   ];
@@ -214,8 +163,6 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck, TableCompone
     private tableTemplateUtils: TableTemplateUtils,
   ) { }
 
-  // TODO: when clicking on radio buttons, url must change to reflect dataset.
-
   ngOnInit() {
     // Fetch the Lists
     this.searchService.getFullList('List')
@@ -231,12 +178,6 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck, TableCompone
                 break;
               case 'doctype':
                 this.docTypes.push({ ...item });
-                break;
-              case 'eaDecisions':
-                this.eacDecisions.push({ ...item });
-                break;
-              case 'ceaaInvolvements':
-                this.ceaaInvolvements.push({ ...item });
                 break;
               case 'projectPhase':
                 this.projectPhases.push({ ...item });
@@ -256,22 +197,14 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck, TableCompone
         this.milestones = _.sortBy(this.milestones, ['legislation']);
         this.authors = _.sortBy(this.authors, ['legislation']);
         this.projectPhases = _.sortBy(this.projectPhases, ['legislation']);
-        this.eacDecisions = _.sortBy(this.eacDecisions, ['legislation', 'listOrder']);
-        this.ceaaInvolvements = _.sortBy(this.ceaaInvolvements, ['legislation', 'listOrder']);
 
         // Fetch proponents and other collections
         // TODO: Put all of these into Lists
         return this.orgService.getByCompanyType('Proponent/Certificate Holder');
       })
       .switchMap((res: any) => {
-        this.proponents = res || [];
-
-        this.regions = this.REGIONS_COLLECTION;
-        this.commentPeriods = Constants.PCP_COLLECTION;
-        this.projectTypes = Constants.PROJECT_TYPE_COLLECTION;
-
         return this.route.params;
-      })
+       })
       .switchMap((res: any) => {
         let params = { ...res };
 
@@ -310,7 +243,7 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck, TableCompone
         // send "docType" ir "projectType" as a filter, so we need to ensure these are
         // stripped from the filterForAPI
         delete this.filterForAPI['docType'];
-        delete this.filterForAPI['projectType'];
+        // delete this.filterForAPI['projectType'];
 
         if (this.storageService && this.storageService.state.docList) {
           this.filterForAPI = this.storageService.state.docList.filterForAPI;
@@ -319,22 +252,9 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck, TableCompone
           this.setParamsFromFilters(params);
         }
 
-        // retaining the filters when a user clicks back from a pagination
-        // into the project list
-        if (this.storageService && this.storageService.state.projList) {
-          this.filterForAPI = this.storageService.state.projList.filterForAPI;
-          this.filterForUI = this.storageService.state.projList.filterForUI;
-          this.tableParams = this.storageService.state.projList.tableParams;
-          this.setParamsFromFilters(params);
-        }
-
         // if we're searching for projects, replace projectPhase with currentPhaseName
         // The code is called projectPhase, but the db column on projects is currentPhaseName
         // so the rename is required to pass in the correct query
-        if (this.filterForAPI.hasOwnProperty('projectPhase') && this.terms.dataset === 'Project') {
-          this.filterForAPI['currentPhaseName'] = this.filterForAPI['projectPhase'];
-          delete this.filterForAPI['projectPhase'];
-        }
 
         return this.searchService.getSearchResults(
           this.terms.keywords,
@@ -352,37 +272,17 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck, TableCompone
       })
       .takeUntil(this.ngUnsubscribe)
       .subscribe((res: any) => {
-        // if we renamed the projectPhase to currentPhaseName when querying for projects, revert
-        // the change so the UI can function as normal
-        if (this.filterForAPI.hasOwnProperty('currentPhaseName') && this.terms.dataset === 'Project') {
-          this.filterForAPI['projectPhase'] = this.filterForAPI['currentPhaseName'];
-          delete this.filterForAPI['currentPhaseName'];
-        }
-
         if (res && res[0].data.meta.length > 0) {
           this.tableParams.totalListItems = res[0].data.meta[0].searchResultsTotal;
           let items = res[0].data.searchResults;
           items.map(item => {
-            if (this.terms.dataset === 'Document') {
-              this.data.push(new Document(item));
-              if (this.storageService) {
-                this.storageService.state.docList = {};
-                this.storageService.state.docList.filterForAPI = this.filterForAPI;
-                this.storageService.state.docList.filterForUI = this.filterForUI;
-                this.storageService.state.docList.tableParams = this.tableParams;
-                this.storageService.state.docList.keywords = this.terms.keywords;
-              }
-            } else {
-              this.data.push(item);
-              // store the state of the filterForAPI set into the session
-              // so a user can navigate back to this page without losing
-              // their filters
-              if (this.storageService) {
-                this.storageService.state.projList = {};
-                this.storageService.state.projList.filterForAPI = this.filterForAPI;
-                this.storageService.state.projList.filterForUI = this.filterForUI;
-                this.storageService.state.projList.tableParams = this.tableParams;
-              }
+            this.data.push(new Document(item));
+            if (this.storageService) {
+              this.storageService.state.docList = {};
+              this.storageService.state.docList.filterForAPI = this.filterForAPI;
+              this.storageService.state.docList.filterForUI = this.filterForUI;
+              this.storageService.state.docList.tableParams = this.tableParams;
+              this.storageService.state.docList.keywords = this.terms.keywords;
             }
           });
         } else {
@@ -391,12 +291,9 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck, TableCompone
         }
 
 
-        if (this.terms.dataset === 'Document') {
-          this.tableTemplateUtils.updateUrl(this.tableParams.sortBy, this.tableParams.currentPage, this.tableParams.pageSize, null, this.tableParams.keywords);
-          this.setDocumentRowData();
-        } else {
-          this.setRowData();
-        }
+        this.tableTemplateUtils.updateUrl(this.tableParams.sortBy, this.tableParams.currentPage, this.tableParams.pageSize, null, this.tableParams.keywords);
+        this.setRowData();
+
         this.loading = false;
         this.searching = false;
         this.ranSearch = true;
@@ -483,8 +380,7 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck, TableCompone
     // The UI filters are remapping document and project type to the single 'Type' value
     // this means that whenever we map back to the filters, we need to revert them
     // from 'type', to the appropriate type.
-    let optionName = this.terms.dataset === 'Document' && name === 'type' ? 'docType' :
-      this.terms.dataset === 'Project' && name === 'type' ? 'projectType' : name;
+    let optionName = 'docType';
 
     if (optionName !== name) {
       delete this.filterForURL[optionName];
@@ -529,28 +425,14 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck, TableCompone
   }
 
   setFiltersFromParams(params) {
-    if (this.terms.dataset === 'Project') {
-      this.paramsToCollectionFilters(params, 'region', this.regions, 'code');
-      this.paramsToCollectionFilters(params, 'CEAAInvolvement', this.ceaaInvolvements, '_id');
-      this.paramsToCollectionFilters(params, 'proponent', this.proponents, '_id');
-      this.paramsToCollectionFilters(params, 'eacDecision', this.eacDecisions, '_id');
-      this.paramsToCollectionFilters(params, 'pcp', this.commentPeriods, 'code');
-      this.paramsToCollectionFilters(params, 'projectType', this.projectTypes, 'name');
-      this.paramsToCollectionFilters(params, 'type', this.projectTypes, 'name');
-      this.paramsToCollectionFilters(params, 'projectPhase', this.projectPhases, '_id');
+    this.paramsToCollectionFilters(params, 'milestone', this.milestones, '_id');
+    this.paramsToCollectionFilters(params, 'documentAuthorType', this.authors, '_id');
+    this.paramsToCollectionFilters(params, 'docType', this.docTypes, '_id');
+    this.paramsToCollectionFilters(params, 'type', this.docTypes, '_id');
+    this.paramsToCollectionFilters(params, 'projectPhase', this.projectPhases, '_id');
 
-      this.paramsToDateFilters(params, 'decisionDateStart');
-      this.paramsToDateFilters(params, 'decisionDateEnd');
-    } else if (this.terms.dataset === 'Document') {
-      this.paramsToCollectionFilters(params, 'milestone', this.milestones, '_id');
-      this.paramsToCollectionFilters(params, 'documentAuthorType', this.authors, '_id');
-      this.paramsToCollectionFilters(params, 'docType', this.docTypes, '_id');
-      this.paramsToCollectionFilters(params, 'type', this.docTypes, '_id');
-      this.paramsToCollectionFilters(params, 'projectPhase', this.projectPhases, '_id');
-
-      this.paramsToDateFilters(params, 'datePostedStart');
-      this.paramsToDateFilters(params, 'datePostedEnd');
-    }
+    this.paramsToDateFilters(params, 'datePostedStart');
+    this.paramsToDateFilters(params, 'datePostedEnd');
   }
 
   checkboxFilterToParams(params, name) {
@@ -584,26 +466,13 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck, TableCompone
   }
 
   setParamsFromFilters(params) {
-    if (this.terms.dataset === 'Project') {
-      this.collectionFilterToParams(params, 'region', 'code');
-      this.collectionFilterToParams(params, 'CEAAInvolvement', '_id');
-      this.collectionFilterToParams(params, 'eacDecision', '_id');
-      this.collectionFilterToParams(params, 'pcp', 'code');
-      this.collectionFilterToParams(params, 'proponent', '_id');
-      this.collectionFilterToParams(params, 'projectType', 'name');
-      this.collectionFilterToParams(params, 'projectPhase', '_id');
+    this.collectionFilterToParams(params, 'milestone', '_id');
+    this.collectionFilterToParams(params, 'documentAuthorType', '_id');
+    this.collectionFilterToParams(params, 'docType', '_id');
+    this.collectionFilterToParams(params, 'projectPhase', '_id');
 
-      this.dateFilterToParams(params, 'decisionDateStart');
-      this.dateFilterToParams(params, 'decisionDateEnd');
-    } else if (this.terms.dataset === 'Document') {
-      this.collectionFilterToParams(params, 'milestone', '_id');
-      this.collectionFilterToParams(params, 'documentAuthorType', '_id');
-      this.collectionFilterToParams(params, 'docType', '_id');
-      this.collectionFilterToParams(params, 'projectPhase', '_id');
-
-      this.dateFilterToParams(params, 'datePostedStart');
-      this.dateFilterToParams(params, 'datePostedEnd');
-    }
+    this.dateFilterToParams(params, 'datePostedStart');
+    this.dateFilterToParams(params, 'datePostedEnd');
   }
 
   toggleFilter(name) {
@@ -744,11 +613,7 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck, TableCompone
             this.filterForURL,
             this.tableParams.keywords
           );
-          if (this.terms.dataset === 'Document') {
-            this.setDocumentRowData();
-          } else {
-            this.setRowData();
-          }
+          this.setRowData();
           this.loading = false;
           this._changeDetectionRef.detectChanges();
         } else {
@@ -763,7 +628,7 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck, TableCompone
     }
   }
 
-  setDocumentRowData() {
+  setRowData() {
     let documentList = [];
     if (this.data && this.data.length > 0) {
       this.data.forEach(document => {
@@ -777,7 +642,7 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck, TableCompone
               milestone: document.milestone,
               _id: document._id,
               project: document.project,
-              isFeatured: document.isFeatured
+              projectPhase: document.projectPhase
             }
           );
         }
@@ -785,28 +650,6 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck, TableCompone
       this.documentTableData = new TableObject(
         DocumentTableRowsComponent,
         documentList,
-        this.tableParams
-      );
-    }
-  }
-
-  setRowData() {
-    let projectList = [];
-    if (this.data && this.data.length > 0) {
-      this.data.forEach(project => {
-        projectList.push({
-          _id: project._id,
-          name: project.name,
-          proponent: project.proponent,
-          type: project.type,
-          region: project.region,
-          currentPhaseName: project.currentPhaseName,
-          eacDecision: project.eacDecision
-        });
-      });
-      this.projectTableData = new TableObject(
-        ProjectListTableRowsComponent,
-        projectList,
         this.tableParams
       );
     }
