@@ -50,6 +50,6 @@ export class PinsTableRowsComponent implements OnInit, TableComponent {
     // } catch (e) {
     //   console.log('error:', e);
     // }
-    // window.open('/api/document/' + item._id + '/fetch/' + safeName, '_blank');
+    // window.open('/api/public/document/' + item._id + '/download/' + safeName, '_blank');
   }
 }

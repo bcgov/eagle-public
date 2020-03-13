@@ -20,15 +20,6 @@
         {{(comment.dateAdded | date:'longDate') || "-"}}
       </div>
     </div>
-    <div class="pb-3" *ngIf="comment.documents.length > 0">
-      <div class="attachment" *ngFor="let file of comment.documents" (click)="openAttachment(file)">
-        <div *ngIf="file && file.internalOriginalName">
-          <i class="material-icons">
-            attach_file
-          </i>{{file.internalOriginalName}}
-        </div>
-      </div>
-    </div>
     <div>
       <div *ngIf="comment.comment && comment.comment.length > 120">
         <p *ngIf="comment.comment && comment.expanded == true">
@@ -40,6 +31,15 @@
         <button class="clickable" (click)="toggle(comment)">{{comment.buttonName}}</button>
       </div>
       <p *ngIf="comment.comment && comment.comment.length <= 120">{{comment.comment}}</p>
+    </div>
+    <div class="pb-3" *ngIf="comment.documents.length > 0">
+        <div class="attachment" *ngFor="let file of comment.documents" (click)="openAttachment(file)">
+            <div *ngIf="file && file.internalOriginalName">
+            <i class="material-icons">
+                attach_file
+            </i>{{file.internalOriginalName}}
+            </div>
+        </div>
     </div>
   </td>
 </tr>
