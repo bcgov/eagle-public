@@ -27,9 +27,9 @@
                                 <p *ngIf="project.commentPeriodForBanner.informationLabel" class="mb-0 info">
                                 This Public Comment Period is regarding the <b>{{project.commentPeriodForBanner.informationLabel}}</b>
                                 </p>
-                                <p *ngIf="project.commentPeriodForBanner.informationLabel == null" class="mb-0 info">
-                                {{project.commentPeriodForBanner.instructions}}
-                                </p>
+                                <div *ngIf="project.commentPeriodForBanner.informationLabel == null" class="mb-0 info">
+                                    <div id="instructions" [innerHTML]="project.commentPeriodForBanner.instructions  | safeHtml"></div>
+                                </div>
                             </div>
                         </div>
                     </div>

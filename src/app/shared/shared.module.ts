@@ -13,6 +13,7 @@ import { DragMoveDirective } from 'app/shared/utils/drag-move.directive';
 
 import { TableTemplateComponent } from 'app/shared/components/table-template/table-template.component';
 import { ListConverterPipe } from './pipes/list-converter.pipe';
+import { SafeHtmlPipe } from './pipes/safe-html-converter.pipe';
 import { OrgNamePipe } from './pipes/org-name.pipe';
 import { TableTemplateUtils } from './utils/table-template-utils';
 import { TableDirective } from './components/table-template/table.directive';
@@ -20,6 +21,7 @@ import { PublishedPipe } from 'app/shared/pipes/published.pipe';
 import { Utils } from './utils/utils';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { NgZorroAntdModule, NZ_I18N, en_US } from 'ng-zorro-antd';
+import { from } from 'rxjs';
 
 @NgModule({
   imports: [
@@ -40,6 +42,7 @@ import { NgZorroAntdModule, NZ_I18N, en_US } from 'ng-zorro-antd';
     TableTemplateComponent,
     TableDirective,
     ListConverterPipe,
+    SafeHtmlPipe,
     OrgNamePipe
   ],
   exports: [
@@ -55,6 +58,7 @@ import { NgZorroAntdModule, NZ_I18N, en_US } from 'ng-zorro-antd';
     DragMoveDirective,
     TableTemplateComponent,
     ListConverterPipe,
+    SafeHtmlPipe,
     OrgNamePipe
   ],
   providers: [
