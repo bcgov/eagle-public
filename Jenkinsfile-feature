@@ -160,13 +160,13 @@ def nodejsTester () {
         }
       }
     }
+    return true
   }
-  return true
 }
 
 
 def nodejsSonarqube () {
-  openshift(env.STAGE_NAME, TOOLSPROJECT) {
+  _openshift(env.STAGE_NAME, TOOLSPROJECT) {
     String sonarLabel = "sonarqube-runner-${UUID.randomUUID().toString()}";
     podTemplate(
       label: sonarLabel,
@@ -197,7 +197,7 @@ def nodejsSonarqube () {
             SONARQUBE_URL = sh(returnStdout: true, script: 'cat sonarqube-route-url')
 
             sh "npm install typescript"
-            sh returnStdout: true, script: "./gradlew sonarqube -Dsonar.host.url=${SONARQUBE_URL} -Dsonar. -Dsonar.verbose=true --stacktrace --info"
+            sh returnStdout: true, script: "./gradlew sonarqube -Dsonar.host.url=${SONARQUBE_URL} -Dsonar.projectKey='org.sonarqube:cac-eagle-public' -Dsonar.projectName=cac-eagle-public -Dsonar.verbose=true --stacktrace --info"
 
             // check if sonarqube passed
             sh("oc extract secret/sonarqube-status-urls --to=${env.WORKSPACE}/sonar-runner --confirm")
@@ -307,7 +307,7 @@ pipeline {
                 ROCKET_QA_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-qa-webhook')
 
                 echo "Building eagle-public develop branch"
-                openshiftBuild bldCfg: 'cac-eagle-public-angular', showBuildLogs: 'true'
+                openshiftBuild bldCfg: 'cac-eagle-public-angular-builder', showBuildLogs: 'true'
                 openshiftBuild bldCfg: 'cac-eagle-public-build', showBuildLogs: 'true'
                 echo "Build done"
 

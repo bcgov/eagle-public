@@ -192,6 +192,12 @@ export class ApiService {
     return this.http.get<any>(`${this.apiPath}/${queryString}`, {});
   }
 
+  // CAC
+  cacSignUp(project: Project, meta: any) {
+    // We are just looking for a 200 OK
+    return this.http.post<any>(`${this.apiPath}/project/${project._id}/cacSignUp`, meta, {});
+  }
+
   // Organizations
 
   getOrgsByCompanyType(type: string): Observable<Org[]> {
@@ -229,6 +235,8 @@ export class ApiService {
       'type',
       'legislation',
       'featuredDocuments',
+      'projectCAC',
+      'cacEmail'
     ];
 
     let queryString = 'project?';
@@ -299,7 +307,9 @@ export class ApiService {
       'read',
       'write',
       'delete',
-      'featuredDocuments'
+      'featuredDocuments',
+      'projectCAC',
+      'cacEmail'
     ];
     let queryString = `project/${id}?populate=true`;
     if (cpStart !== null) { queryString += `&cpStart[since]=${cpStart}`; }
