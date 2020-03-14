@@ -1,4 +1,5 @@
 import { Project } from 'app/models/project';
+import { Observable } from 'rxjs';
 
 export const AjaxData: Project[] = [
   {
@@ -113,3 +114,39 @@ export const regionsData = [
   'Vancouver Island',
   'Thompson-Nicola'
 ];
+
+
+const listsData = [{
+  meta: [{searchResultsTotal: 3}],
+  searchResults: [
+    {_id: "5cf00c03a266b7e1877504ca", type: "doctype", _schemaName: "List", legislation: 2002, listOrder: 0, name: "Request", read: ["public", "staff", "sysadmin"]},
+    {_id: "5cf00c03a266b7e1877504cb", type: "doctype", _schemaName: "List", legislation: 2002, listOrder: 1, name: "Letter", read: ["public", "staff", "sysadmin"]},
+    {_id: "5cf00c03a266b7e1877504cd", type: "doctype", _schemaName: "List", legislation: 2002, listOrder: 2, name: "Meeting Notes", read: ["public", "staff", "sysadmin"]},
+  ]
+}]
+
+export class ListDataStub {
+  public getFullList(schema: string): Observable<any> {
+    return Observable.of(listsData)
+  }
+}
+
+export class SearchTermsStub {
+  public getParams() {
+    return {
+      currentPage: "1",
+      dataset: "Document",
+      keywords: "wolverine",
+      pageSize: 10
+    }
+  }
+}
+
+export const paramsWithDates = {
+  dataset: 'Document',
+  currentPage: 1,
+  pageSize: 10,
+  ms: 807,
+  datePostedStart: '2020-02-01',
+  datePostedEnd: '2020-03-12'
+};
