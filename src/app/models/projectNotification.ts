@@ -17,20 +17,6 @@ export class ProjectNotification {
 
   read: Array<String> = [];
 
- /**
- * Maps a project notification API response to the data model.
- *
- * @param responseData Project Notification API response.
- * @returns {ProjectNotification} Complete project notification object.
- */
-  public static mapResponseToModel(responseData: any): ProjectNotification {
-    const projectNotification = {
-      ...responseData
-    };
-
-    return projectNotification;
-  }
-
   constructor(obj?: any) {
     this._id = obj && obj._id || undefined;
     this.name = obj && obj.name || undefined;
