@@ -49,6 +49,8 @@ export class Utils {
     let phases: string;
 
     switch (projectTab) {
+      case Constants.optionalProjectDocTabs.UNSUBSCRIBE_CAC:
+        break;
       case Constants.optionalProjectDocTabs.AMENDMENT:
         types = [
           { legislation: 2002, name: 'Amendment Package' },
