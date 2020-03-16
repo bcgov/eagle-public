@@ -16,9 +16,7 @@
               {{commentPeriod.dateStarted | date:'mediumDate'}} - {{commentPeriod.longEndDate.format('MMMM DD @ hh:mm z')}}
             </h3>
             <div *ngIf="commentPeriod.informationLabel !== null">
-              <p>
-                {{commentPeriod.instructions}}
-              </p>
+              <div id="instructions" [innerHTML]="commentPeriod.instructions  | safeHtml"></div>
               <br>
               <p>
                 {{commentPeriod.additionalText}}
@@ -28,9 +26,9 @@
                 {{commentPeriod.informationLabel}}
               </p>
             </div>
-            <p *ngIf="commentPeriod.informationLabel === null">
-              {{commentPeriod.instructions}}
-            </p>
+            <div *ngIf="commentPeriod.informationLabel === null">
+              <div id="instructions" [innerHTML]="commentPeriod.instructions  | safeHtml"></div>
+            </div>
             <div class="d-flex justify-content-end">
               <button class="btn btn-light" (click)="addComment()" type="button"
                 *ngIf="commentPeriod.commentPeriodStatus === 'Open'">Submit Comment</button>
