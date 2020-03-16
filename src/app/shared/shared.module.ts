@@ -21,7 +21,6 @@ import { PublishedPipe } from 'app/shared/pipes/published.pipe';
 import { Utils } from './utils/utils';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { NgZorroAntdModule, NZ_I18N, en_US } from 'ng-zorro-antd';
-import { from } from 'rxjs';
 
 @NgModule({
   imports: [
