@@ -117,11 +117,11 @@ export const regionsData = [
 
 
 const listsData = [{
-  meta: [{searchResultsTotal: 3}],
+  meta: [{ searchResultsTotal: 3 }],
   searchResults: [
-    {_id: "5cf00c03a266b7e1877504ca", type: "doctype", _schemaName: "List", legislation: 2002, listOrder: 0, name: "Request", read: ["public", "staff", "sysadmin"]},
-    {_id: "5cf00c03a266b7e1877504cb", type: "doctype", _schemaName: "List", legislation: 2002, listOrder: 1, name: "Letter", read: ["public", "staff", "sysadmin"]},
-    {_id: "5cf00c03a266b7e1877504cd", type: "doctype", _schemaName: "List", legislation: 2002, listOrder: 2, name: "Meeting Notes", read: ["public", "staff", "sysadmin"]},
+    { _id: '5cf00c03a266b7e1877504ca', type: 'doctype', _schemaName: 'List', legislation: 2002, listOrder: 0, name: 'Request', read: ['public', 'staff', 'sysadmin'] },
+    { _id: '5cf00c03a266b7e1877504cb', type: 'doctype', _schemaName: 'List', legislation: 2002, listOrder: 1, name: 'Letter', read: ['public', 'staff', 'sysadmin'] },
+    { _id: '5cf00c03a266b7e1877504cd', type: 'doctype', _schemaName: 'List', legislation: 2002, listOrder: 2, name: 'Meeting Notes', read: ['public', 'staff', 'sysadmin'] },
   ]
 }]
 
@@ -134,9 +134,9 @@ export class ListDataStub {
 export class SearchTermsStub {
   public getParams() {
     return {
-      currentPage: "1",
-      dataset: "Document",
-      keywords: "wolverine",
+      currentPage: '1',
+      dataset: 'Document',
+      keywords: 'wolverine',
       pageSize: 10
     }
   }
