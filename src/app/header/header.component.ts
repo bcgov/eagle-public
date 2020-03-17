@@ -26,7 +26,6 @@ export class HeaderComponent {
     }
 
        // Set the environment
-       this.apiService.env = 'prod';
        switch (this.apiService.env) {
         case 'local':
           this.envName = 'Local';
