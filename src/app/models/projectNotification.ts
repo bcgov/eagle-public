@@ -1,4 +1,4 @@
-import { CommentPeriod } from "./commentperiod";
+import { CommentPeriod } from './commentperiod';
 
 export class ProjectNotification {
   _id: string;
