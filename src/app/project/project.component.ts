@@ -11,7 +11,7 @@ import { ProjectService } from 'app/services/project.service';
 import { CommentPeriodService } from 'app/services/commentperiod.service';
 import { StorageService } from 'app/services/storage.service';
 import { CommentPeriod } from 'app/models/commentperiod';
-import { AddCommentComponent } from './comments/add-comment/add-comment.component';
+import { AddCommentComponent } from 'app/comments/add-comment/add-comment.component';
 import { Constants } from 'app/shared/utils/constants';
 import { SearchService } from 'app/services/search.service';
 import { Utils } from 'app/shared/utils/utils';

@@ -6,7 +6,7 @@ import { SearchService } from 'app/services/search.service';
 import { TableTemplateUtils } from 'app/shared/utils/table-template-utils';
 
 @Injectable()
-export class NotificationProjectsResolver implements Resolve<Observable<object>> {
+export class ProjectNotificationResolver implements Resolve<Observable<object>> {
   constructor(
     private searchService: SearchService,
     private tableTemplateUtils: TableTemplateUtils
@@ -14,19 +14,15 @@ export class NotificationProjectsResolver implements Resolve<Observable<object>>
 
   resolve(route: ActivatedRouteSnapshot): Observable<object> {
     let tableParams = this.tableTemplateUtils.getParamsFromUrl(route.params);
-    if (tableParams.sortBy === '-datePosted') {
-      tableParams.sortBy = '-startDate';
-    }
 
     return this.searchService.getSearchResults(
       null,
-      'NotificationProject',
-      [],
+      'ProjectNotification',
+      null,
       1,
       10000,
-      null,
-      {},
-      true
+      '-decisionDate',
+      {_id: route.params.projId}
     );
   }
 }

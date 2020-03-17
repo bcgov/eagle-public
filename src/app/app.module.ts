@@ -42,8 +42,7 @@ import { LegislationComponent } from 'app/legislation/legislation.component';
 import { ProcessComponent } from 'app/process/process.component';
 import { ComplianceOversightComponent } from 'app/compliance-oversight/compliance-oversight.component';
 import { ActivitiesListTableRowsComponent } from './project/project-activites/activities-list-table-rows/activities-list-table-rows.component';
-import { NotificationProjectsListComponent } from './notification-projects/notification-projects.component';
-import { NotificationProjectsListTableRowsComponent } from './notification-projects/notification-projects-list-table-rows/notification-projects-list-table-rows.component';
+import { ProjectNotificationsListComponent } from './project-notifications/project-notifications.component';
 
 @NgModule({
   imports: [
@@ -70,8 +69,7 @@ import { NotificationProjectsListTableRowsComponent } from './notification-proje
     NewsTypeFilterPipe,
     NewsMultifieldFilterPipe,
     NewsListTableRowsComponent,
-    NotificationProjectsListComponent,
-    NotificationProjectsListTableRowsComponent,
+    ProjectNotificationsListComponent,
     ActivitiesListTableRowsComponent,
     LegislationComponent,
     ProcessComponent,
@@ -80,7 +78,6 @@ import { NotificationProjectsListTableRowsComponent } from './notification-proje
   ],
   entryComponents: [
     NewsListTableRowsComponent,
-    NotificationProjectsListTableRowsComponent,
     ActivitiesListTableRowsComponent,
   ],
   providers: [
