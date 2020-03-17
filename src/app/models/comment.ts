@@ -8,6 +8,7 @@ export class Comment {
   isAnonymous: boolean;
   location: string;
   period: any;
+  submittedCAC: Boolean;
   documents: any;
   documentsList: any;
 
@@ -28,6 +29,7 @@ export class Comment {
     this.documents       = obj && obj.documents    || null;
     this.documentsList       = obj && obj.documentsList    || [];
     this.period         = obj && obj.period      || null;
+    this.submittedCAC   = obj && obj.submittedCAC || null;
     this.read           = obj && obj.read        || null;
     this.write          = obj && obj.write       || null;
 

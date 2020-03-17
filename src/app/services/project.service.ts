@@ -184,4 +184,10 @@ export class ProjectService {
         return data;
       });
   }
+
+  // Send this users' information to our CAC back-end
+  cacSignUp(project: Project, meta: any): Observable<any> {
+    return this.api.cacSignUp(project, meta)
+      .catch(error => this.api.handleError(error));
+  }
 }
