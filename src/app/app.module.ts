@@ -46,6 +46,8 @@ import { ProcessComponent } from 'app/process/process.component';
 import { ComplianceOversightComponent } from 'app/compliance-oversight/compliance-oversight.component';
 import { ActivitiesListTableRowsComponent } from './project/project-activites/activities-list-table-rows/activities-list-table-rows.component';
 import { ProjectNotificationsListComponent } from './project-notifications/project-notifications.component';
+import { SearchResolver } from './search/search-resolver.service';
+
 
 @NgModule({
   imports: [
@@ -99,7 +101,8 @@ import { ProjectNotificationsListComponent } from './project-notifications/proje
     DocumentService,
     SearchService,
     OrgService,
-    FeatureService
+    FeatureService,
+    SearchResolver
   ],
   bootstrap: [
     AppComponent

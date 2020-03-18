@@ -140,118 +140,93 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck, TableCompone
   ) { }
 
   ngOnInit() {
-    // Fetch the Lists
-    this.searchService.getFullList('List')
+    let params = null;
+    this.route.params
       .switchMap((res: any) => {
-        if (res.length > 0) {
-          res[0].searchResults.map(item => {
-            switch (item.type) {
-              case 'label':
-                this.milestones.push({ ...item });
-                break;
-              case 'author':
-                this.authors.push({ ...item });
-                break;
-              case 'doctype':
-                this.docTypes.push({ ...item });
-                break;
-              case 'projectPhase':
-                this.projectPhases.push({ ...item });
-                break;
-              default:
-                break;
-            }
-          });
-        }
-
-        // This code reorders the document type list defined by EAO (See Jira Ticket EAGLE-88)
-        // this.docTypes = this.docTypes.filter(item => item.legislation === 2002);
-        this.docTypes = _.sortBy(this.docTypes, ['legislation', 'listOrder']);
-
-        // Sort by legislation.
-        this.milestones = _.sortBy(this.milestones, ['legislation']);
-        this.authors = _.sortBy(this.authors, ['legislation']);
-        this.projectPhases = _.sortBy(this.projectPhases, ['legislation']);
-
-        return this.route.data
+        params = { ...res };
+        return this.route.data;
       })
+      .takeUntil(this.ngUnsubscribe)
       .switchMap((res: any) => {
-        return this.route.params;
-       })
-      .switchMap((res: any) => {
-        if (res.length > 0) {
-          res[0].searchResults.map(item => {
-            switch (item.type) {
-              case 'label':
-                this.milestones.push({ ...item });
-                break;
-              case 'author':
-                this.authors.push({ ...item });
-                break;
-              case 'doctype':
-                this.docTypes.push({ ...item });
-                break;
-              case 'projectPhase':
-                this.projectPhases.push({ ...item });
-                break;
-              default:
-                break;
-            }
-          });
-        }
+        if (res) {
+          if (res.documents && res.documents.length > 0) {
+            res.documents[0].searchResults.map(item => {
+              switch (item.type) {
+                case 'label':
+                  this.milestones.push({ ...item });
+                  break;
+                case 'author':
+                  this.authors.push({ ...item });
+                  break;
+                case 'doctype':
+                  this.docTypes.push({ ...item });
+                  break;
+                case 'projectPhase':
+                  this.projectPhases.push({ ...item });
+                  break;
+                default:
+                  break;
+              }
+            });
+          }
 
-        // This code reorders the document type list defined by EAO (See Jira Ticket EAGLE-88)
-        // this.docTypes = this.docTypes.filter(item => item.legislation === 2002);
-        this.docTypes = _.sortBy(this.docTypes, ['legislation', 'listOrder']);
+          // This code reorders the document type list defined by EAO (See Jira Ticket EAGLE-88)
+          // this.docTypes = this.docTypes.filter(item => item.legislation === 2002);
+          this.docTypes = _.sortBy(this.docTypes, ['legislation', 'listOrder']);
+          // Sort by legislation.
+          this.milestones = _.sortBy(this.milestones, ['legislation']);
+          this.authors = _.sortBy(this.authors, ['legislation']);
+          this.projectPhases = _.sortBy(this.projectPhases, ['legislation']);
 
-        // Sort by legislation.
-        this.milestones = _.sortBy(this.milestones, ['legislation']);
-        this.authors = _.sortBy(this.authors, ['legislation']);
-        this.projectPhases = _.sortBy(this.projectPhases, ['legislation']);
+          params = { ...res };
 
-        let params = { ...res };
+          this.terms.keywords = params.keywords || null;
+          this.terms.dataset = 'Document';
 
-        this.terms.keywords = params.keywords || null;
-        this.terms.dataset = 'Document';
+          this.setFiltersFromParams(params);
 
-        this.setFiltersFromParams(params);
+          this.updatetotalListItemss();
 
-        this.updatetotalListItemss();
+          this.keywords = this.terms.keywords;
+          this.hadFilter = this.hasFilter();
 
-        this.keywords = this.terms.keywords;
-        this.hadFilter = this.hasFilter();
+          // additional check to see if we have any filter elements applied to the
+          // query string. Previously these were ignored on a refresh
+          let filterKeys = Object.keys(this.filterForAPI);
+          let hasFilterFromQueryString = (filterKeys && filterKeys.length > 0);
 
-        // additional check to see if we have any filter elements applied to the
-        // query string. Previously these were ignored on a refresh
-        let filterKeys = Object.keys(this.filterForAPI);
-        let hasFilterFromQueryString = (filterKeys && filterKeys.length > 0);
+          if (_.isEmpty(this.terms.getParams())
+            && !this.hasFilter()
+            && !hasFilterFromQueryString) {
+            return Observable.of(null);
+          }
 
-        if (_.isEmpty(this.terms.getParams())
-          && !this.hasFilter()
-          && !hasFilterFromQueryString) {
-          return Observable.of(null);
-        }
+          this.data = [];
 
-        this.data = [];
+          this.searching = true;
+          this.tableParams.totalListItems = 0;
+          this.currentPage = params.currentPage ? params.currentPage : 1;
+          this.pageSize = params.pageSize ? parseInt(params.pageSize, 10) : 25;
 
-        this.searching = true;
-        this.tableParams.totalListItems = 0;
-        this.currentPage = params.currentPage ? params.currentPage : 1;
-        this.pageSize = params.pageSize ? parseInt(params.pageSize, 10) : 25;
+          // remove doc types
+          // The UI filters are remapping documentto the single 'Type' value
+          // this means that whenever we map back to the filters, we need to revert them
+          // from 'type', to the appropriate type. Additionally, the API will fail if we
+          // send "docType" as a filter, so we need to ensure these are
+          // stripped from the filterForAPI
+          delete this.filterForAPI['docType'];
 
-        // remove doc types
-        // The UI filters are remapping documentto the single 'Type' value
-        // this means that whenever we map back to the filters, we need to revert them
-        // from 'type', to the appropriate type. Additionally, the API will fail if we
-        // send "docType" as a filter, so we need to ensure these are
-        // stripped from the filterForAPI
-        delete this.filterForAPI['docType'];
-
-        if (this.storageService && this.storageService.state.docList) {
-          this.filterForAPI = this.storageService.state.docList.filterForAPI;
-          this.filterForUI = this.storageService.state.docList.filterForUI;
-          this.tableParams = this.storageService.state.docList.tableParams;
-          this.setParamsFromFilters(params);
+          if (this.storageService && this.storageService.state.docList) {
+            this.filterForAPI = this.storageService.state.docList.filterForAPI;
+            this.filterForUI = this.storageService.state.docList.filterForUI;
+            this.tableParams = this.storageService.state.docList.tableParams;
+            this.setParamsFromFilters(params);
+          }
+        } else {
+          // log error or alert
+          this.router.navigate(['/search']);
+          this.loading = false;
+          this._changeDetectionRef.detectChanges();
         }
 
         return this.searchService.getSearchResults(
