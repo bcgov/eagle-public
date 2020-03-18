@@ -257,10 +257,10 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck, TableCompone
         return this.searchService.getSearchResults(
           this.terms.keywords,
           this.terms.dataset,
-          null,
+          [{ name: 'categorized', value: true }],
           this.currentPage,
           this.pageSize,
-          null,
+          '-datePosted,+displayName',
           {},
           true,
           '',
@@ -536,7 +536,7 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck, TableCompone
     this.searchService.getSearchResults(
       this.terms.keywords,
       this.terms.dataset,
-      null,
+      [{ name: 'categorized', value: true }],
       pageNumber,
       this.tableParams.pageSize,
       this.tableParams.sortBy,
