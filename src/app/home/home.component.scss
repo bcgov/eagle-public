@@ -69,3 +69,28 @@ main {
     margin-top: -0.3rem;
   }
 }
+.table {
+    margin-bottom: 1rem;
+    color: #212529;
+}
+
+.table tbody tr {
+    background: #f7f8fa;
+}
+
+.table tr {
+    display: flex;
+}
+*, ::after, ::before {
+    box-sizing: border-box;
+}
+
+tr {
+    display: table-row;
+    vertical-align: inherit;
+    border-color: inherit;
+}
+
+.table tbody tr:nth-child(even) {
+    background: #f4f4f4;
+}

@@ -22,9 +22,9 @@ const PAGE_SIZE = 100;
 })
 
 export class ProjectsComponent implements OnInit, OnDestroy {
-  @ViewChild('appmap', {static: false}) appmap;
-  @ViewChild('applist', {static: false}) applist;
-  @ViewChild('appfilters', {static: false}) appfilters;
+  @ViewChild('appmap', {static: true}) appmap;
+  @ViewChild('applist', {static: true}) applist;
+  @ViewChild('appfilters', {static: true}) appfilters;
 
   // FUTURE: change this to an observable and components subscribe to changes ?
   // ref: https://github.com/escardin/angular2-community-faq/blob/master/services.md#how-do-i-communicate-between-components-using-a-shared-service
