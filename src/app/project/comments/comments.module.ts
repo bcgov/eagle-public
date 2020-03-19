@@ -17,7 +17,7 @@ import { AddCommentComponent } from './add-comment/add-comment.component';
   imports: [
     CommonModule,
     FormsModule,
-    NgbModule.forRoot(),
+    NgbModule,
     RouterModule,
     SharedModule
   ],

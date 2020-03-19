@@ -51,7 +51,7 @@ import { NotificationProjectsListTableRowsComponent } from './notification-proje
     BrowserModule,
     FormsModule,
     HttpClientModule,
-    NgbModule.forRoot(),
+    NgbModule,
     NgxPageScrollModule,
     BootstrapModalModule,
     SharedModule,

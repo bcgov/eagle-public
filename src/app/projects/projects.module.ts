@@ -22,7 +22,7 @@ import { ProjectListTableRowsComponent } from './project-list/project-list-table
   imports: [
     CommonModule,
     FormsModule,
-    NgbModule.forRoot(),
+    NgbModule,
     RouterModule,
     TagInputModule,
     SharedModule,

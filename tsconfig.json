@@ -20,6 +20,6 @@
     "module": "es2015"
   },
   "angularCompilerOptions": {
-    "enableIvy": true
+    "enableIvy": false
   }
 }
