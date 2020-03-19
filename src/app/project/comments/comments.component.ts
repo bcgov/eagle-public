@@ -16,8 +16,6 @@ import { TableObject } from 'app/shared/components/table-template/table-object';
 import { TableTemplateUtils } from 'app/shared/utils/table-template-utils';
 import { CommentsTableRowsComponent } from 'app/project/comments/comments-table-rows/comments-table-rows.component';
 import { Utils } from 'app/shared/utils/utils';
-import { ISearchResults } from 'app/models/search';
-import { e } from '@angular/core/src/render3';
 
 @Component({
   selector: 'app-comments',
