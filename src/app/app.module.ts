@@ -60,19 +60,7 @@ import { NotificationProjectsListTableRowsComponent } from './notification-proje
     AppRoutingModule, // <-- module import order matters - https://angular.io/guide/router#module-import-order-matters
     NgSelectModule,
     NgxPageScrollCoreModule.forRoot({
-      defaultScrollOffset: 50, easingLogic: (t: number, b: number, c: number, d: number): number => {
-        // easeInOutExpo easing
-        if (t === 0) {
-          return b;
-        }
-        if (t === d) {
-          return b + c;
-        }
-        if ((t /= d / 2) < 1) {
-          return c / 2 * Math.pow(2, 8 * (t - 1)) + b;
-        }
-        return c / 2 * (-Math.pow(2, -8 * --t) + 2) + b;
-      }
+      scrollOffset: 50
     }),
     NgxPageScrollModule
   ],
