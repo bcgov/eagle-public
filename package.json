@@ -9,7 +9,7 @@
     "build": "ng build --prod --configuration=production",
     "pretest": "",
     "test": "echo 'Test suite should be run with \"`npm run tests` or npm `run tests-ci`\"'",
-    "tests": "ng test",
+    "tests": "ng test --watch=false",
     "tests-ci": "ng test --watch=false",
     "lint": "ng lint --format=stylish",
     "e2e": "ng e2e"
@@ -83,6 +83,7 @@
     "node": "^8.16.0",
     "pre-push": "^0.1.1",
     "protractor": "~5.4.3",
+    "puppeteer": "^2.1.1",
     "ts-node": "2.0.0",
     "tslint": "^5.19.0",
     "typescript": "^2.9.2"
