@@ -64,14 +64,8 @@ import 'zone.js/dist/zone';  // Included with Angular CLI.
  * APPLICATION IMPORTS
  */
 
-/**
- * Date, currency, decimal and percent pipes.
- * Needed for: All but Chrome, Firefox, Edge, IE11 and Safari 10
- */
-import 'intl';  // Run `npm install --save intl`.
-import 'intl/locale-data/complete.js';
-import 'intl/locale-data/jsonp/en.js';
-
+// global is not defined fix (https://github.com/Leonidas-from-XIV/node-xml2js/issues/538)
+(window as any)['global'] = window;
 
 // Specific polyfill needed for IE11 using current packages as of Sep 24, 2018:
 // https://github.com/uxitten/polyfill/blob/master/string.polyfill.js

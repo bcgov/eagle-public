@@ -58,6 +58,9 @@ export class AppComponent implements OnInit, OnDestroy {
     this.router.events
     .takeUntil(this.ngUnsubscribe)
     .subscribe(() => {
+      document.body.scrollTop = 0;
+      document.documentElement.scrollTop = 0;
+
       this.pageScrollService.scroll({
         document: document,
         scrollTarget: '.theTop',
