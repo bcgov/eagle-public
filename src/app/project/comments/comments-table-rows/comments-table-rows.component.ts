@@ -1,6 +1,5 @@
 import { Component, OnInit, Input, ChangeDetectorRef } from '@angular/core';
 import { ApiService } from 'app/services/api';
-import { Document } from 'app/models/document';
 import { TableObject } from 'app/shared/components/table-template/table-object';
 
 @Component({

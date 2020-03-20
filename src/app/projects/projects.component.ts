@@ -29,7 +29,7 @@ export class ProjectsComponent implements OnInit, OnDestroy {
   // FUTURE: change this to an observable and components subscribe to changes ?
   // ref: https://github.com/escardin/angular2-community-faq/blob/master/services.md#how-do-i-communicate-between-components-using-a-shared-service
   // ref: https://stackoverflow.com/questions/34700438/global-events-in-angular
-  private _loading = false;
+  public _loading = false;
   set isLoading(val: boolean) {
     this._loading = val;
     if (val) {
@@ -67,7 +67,6 @@ export class ProjectsComponent implements OnInit, OnDestroy {
       .takeUntil(this.ngUnsubscribe)
       .subscribe((event) => {
         if (event instanceof NavigationEnd) {
-          const currentUrlSlug = event.url.slice(1);
           this.renderer.removeClass(document.body, 'no-scroll');
           this._changeDetectionRef.detectChanges();
         }

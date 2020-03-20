@@ -25,11 +25,11 @@ export class AddCommentComponent implements OnInit {
   @Input() project: Project;
 
   public submitting = false;
-  private progressValue: number;
-  private progressBufferValue: number;
+  public progressValue: number;
+  public progressBufferValue: number;
   public totalSize: number;
   public currentPage = 1;
-  private comment: Comment;
+  public comment: Comment;
   public files: Array<File> = [];
   public documents: Document[] = [];
   public documentAuthor: any;
@@ -71,7 +71,7 @@ export class AddCommentComponent implements OnInit {
     this.documentAuthorType = null;
     this.getLists();
   }
-  public publicChecked(event: Event) {
+  public publicChecked() {
       this.contactName = this.makePublic ? '' : this.anonymousName;
   }
   public addFiles(files: FileList) {
@@ -102,11 +102,11 @@ export class AddCommentComponent implements OnInit {
     }
   }
 
-  private learnMore() {
+  public learnMore() {
     this.currentPage = 2;
   }
 
-  private p1_next() {
+  public p1_next() {
     if (this.submittedCAC || !this.project.projectCAC) {
       this.currentPage += 4;
     } else {
@@ -114,24 +114,24 @@ export class AddCommentComponent implements OnInit {
     }
   }
 
-  private p2_back() {
+  public p2_back() {
     this.currentPage--;
   }
 
-  private p2_next() {
+  public p2_next() {
     // Skip
     this.currentPage += 3;
   };
 
-  private p2_becomeAMember() {
+  public p2_becomeAMember() {
     this.currentPage++;
   }
 
-  private p3_back() {
+  public p3_back() {
     this.currentPage--;
   }
 
-  private p3_next() {
+  public p3_next() {
     // Submit CAC information
     this.submitting = true;
 
@@ -160,16 +160,16 @@ export class AddCommentComponent implements OnInit {
     });
   }
 
-  private p4_next() {
+  public p4_next() {
     this.currentPage++;
   }
 
-  private p5_back() {
+  public p5_back() {
     this.currentPage -= 4;
   }
 
   // TODO: Have some null checks in here from the front end
-  private p5_next() {
+  public p5_next() {
     this.submitting = true;
     this.progressValue = this.progressBufferValue = 0;
 
@@ -202,7 +202,7 @@ export class AddCommentComponent implements OnInit {
         this.comment = comment;
         return comment;
       })
-      .then((comment: Comment) => {
+      .then(() => {
         // then upload all documents
         const observables: Array<Observable<Document>> = [];
 

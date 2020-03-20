@@ -530,7 +530,7 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
     }
   }
 
-  public onSubmit(currentPage = 1) {
+  public onSubmit() {
     // dismiss any open snackbar
     // if (this.snackBarRef) { this.snackBarRef.dismiss(); }
 

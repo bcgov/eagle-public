@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, AfterViewInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { PageScrollService, EasingLogic } from 'ngx-page-scroll-core';
 import { CookieService } from 'ngx-cookie-service';
@@ -6,8 +6,6 @@ import { Subject } from 'rxjs/Subject';
 import 'rxjs/add/operator/takeUntil';
 
 import { ApiService } from 'app/services/api';
-import { ConfigService } from 'app/services/config.service';
-import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 
 @Component({
   selector: 'app-root',
@@ -41,15 +39,13 @@ export class AppComponent implements OnInit, OnDestroy {
     public router: Router,
     private cookieService: CookieService,
     private api: ApiService,
-    private configService: ConfigService,
-    private modalService: NgbModal,
     private pageScrollService: PageScrollService
   ) {
     // ref: https://stackoverflow.com/questions/5899783/detect-safari-using-jquery
     this.isSafari = (/^((?!chrome|android).)*safari/i.test(navigator.userAgent));
 
     // used for sharing links
-    this.hostname = api.apiPath; // TODO: Wrong
+    this.hostname = this.api.apiPath; // TODO: Wrong
   }
 
   ngOnInit() {

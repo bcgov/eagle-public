@@ -1,5 +1,4 @@
 import { Project } from './project';
-import { CommentPeriod } from './commentperiod';
 
 export class News {
   _id: number;

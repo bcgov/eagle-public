@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs/Observable';
-import { flatMap, mergeMap } from 'rxjs/operators';
+import { flatMap } from 'rxjs/operators';
 import { of, forkJoin } from 'rxjs';
 import 'rxjs/add/operator/toPromise';
 import 'rxjs/add/operator/map';
@@ -78,17 +78,6 @@ export class CommentService {
 
     // ID must not exist on POST
     delete comment._id;
-
-    // don't send documents
-    // delete comment.documents;
-
-    // // replace newlines with \\n (JSON format)
-    // if (comment.comment) {
-    //   comment.comment = comment.comment.replace(/\n/g, '\\n');
-    // }
-    // if (comment.review && comment.review.reviewerNotes) {
-    //   comment.review.reviewerNotes = comment.review.reviewerNotes.replace(/\n/g, '\\n');
-    // }
 
     return this.api.addComment(comment)
       .map((res: Comment) => {

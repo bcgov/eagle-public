@@ -1,14 +1,10 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
-import { Observable } from 'rxjs/Observable';
 import 'rxjs/add/operator/toPromise';
 import 'rxjs/add/observable/forkJoin';
 
 import { ProjectService } from 'app/services/project.service';
-import * as moment from 'moment-timezone';
 import { Project } from 'app/models/project';
-import { ConfigService } from 'app/services/config.service';
-import { AbstractControl } from '@angular/forms';
 
 @Component({
   templateUrl: './become-a-member.component.html',
@@ -19,11 +15,11 @@ export class BecomeAMemberComponent implements OnInit {
   @Input() project: Project;
 
   public submitting = false;
-  private progressValue: number;
-  private progressBufferValue: number;
+  public progressValue: number;
+  public progressBufferValue: number;
   public totalSize: number;
   public currentPage = 1;
-  private comment: Comment;
+  public comment: Comment;
   public acknowledged: any;
 
   // CAC
@@ -47,11 +43,11 @@ export class BecomeAMemberComponent implements OnInit {
     this.comment = new Comment();
   }
 
-  private p1_next() {
+  public p1_next() {
     this.currentPage++;
   }
 
-  private p2_next() {
+  public p2_next() {
     this.submitting = true;
 
     // Build the comment
