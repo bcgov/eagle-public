@@ -88,7 +88,7 @@ describe('ProjectService', () => {
   };
 
   const featureServiceStub = {
-    getByProjectId(projectId: string) {
+    getByProjectId() {
       const features = [
         new Feature({id: 'FFFFF', properties: { TENURE_AREA_IN_HECTARES: 12 }}),
         new Feature({id: 'GGGGG', properties: { TENURE_AREA_IN_HECTARES: 13 }})
