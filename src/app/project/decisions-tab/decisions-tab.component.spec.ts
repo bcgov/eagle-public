@@ -71,6 +71,7 @@ describe('DecisionsTabComponent', () => {
     });
 
     it('sets the component project to the one from the route', () => {
+      component.ngOnInit();
       expect(component.project).toEqual(existingProject);
     });
   });
