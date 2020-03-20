@@ -30,9 +30,9 @@
       <h2 class="mb-4">Recent Activities & Updates</h2>
       <div class="home-news-feed">
 
-        <table class="activity-feed table" id="tableTop" *ngIf="results">
-          <ng-container *ngFor="let item of results">
-            <tr class="activity-feed__item" *ngIf="item.active == true">
+        <table class="table" id="tableTop" *ngIf="results">
+          <tbody *ngFor="let item of results">
+            <tr *ngIf="item.active == true">
               <td>
                 <div class="title-container">
                   <h3 class="title-container__title">
@@ -43,10 +43,10 @@
                   </h3>
                   <span class="title-container__date">{{item.dateAdded | date:'longDate'}}</span>
                 </div>
-                <div class="activity-feed__content">
+                <div>
                   <div class="activity-content" [innerHTML]="item.content"></div>
                 </div>
-                <div class="activity-feed__actions">
+                <div>
                   <a class="btn btn-sm content-btn-alt" title="View more information about {{item.project.name}}"
                     [routerLink]="['/p', item.project?._id ]" *ngIf="item.project?._id">
                     Project Info
@@ -63,7 +63,7 @@
                 </div>
               </td>
             </tr>
-          </ng-container>
+          </tbody>
         </table>
         <div class="news-block-more">
           <a class="btn slide-r-btn content-btn-alt" href="/news" [routerLink]="['/news']">
