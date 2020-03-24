@@ -21,7 +21,7 @@ export class ProjectNotificationResolver implements Resolve<Observable<object>> 
       null,
       1,
       10000,
-      '-decisionDate',
+      '-_id',
       {_id: route.params.projId}
     );
   }

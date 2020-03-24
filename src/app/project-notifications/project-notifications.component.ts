@@ -278,26 +278,21 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
       null,
       1,
       10000,
-      '-decisionDate',
+      '-_id',
       queryConditions
     )
     .takeUntil(this.ngUnsubscribe)
     .subscribe((res: any) => {
-      if (res.projectNotifications && res.projectNotifications[0].data) {
-        if (res.projectNotifications[0].data.searchResults.length > 0) {
-          this.tableParams.totalListItems = res.projectNotifications[0].data.meta[0].searchResultsTotal;
-          this.projectNotifications = res.projectNotifications[0].data.searchResults;
-        } else {
-          this.tableParams.totalListItems = 0;
-          this.projectNotifications = [];
-        }
-        this.loading = false;
-        this._changeDetectionRef.detectChanges();
-      } else {
-        alert('Uh-oh, couldn\'t load project notifications');
-        // project not found --> navigate back to search
-        this.router.navigate(['/']);
+      this.tableParams.totalListItems = 0;
+      this.projectNotifications = [];
+
+      if (res[0] && res[0].data && res[0].data.searchResults.length > 0) {
+        this.tableParams.totalListItems = res[0].data.meta[0].searchResultsTotal;
+        this.projectNotifications = res[0].data.searchResults;
       }
+
+      this.loading = false;
+      this._changeDetectionRef.detectChanges();
     });
   }
 }

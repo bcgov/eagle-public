@@ -33,13 +33,19 @@ export class ProjectNotificationsResolver implements Resolve<Observable<object>>
       queryConditions['pcp'] = pcpStatus;
     }
 
+    // mongoDB id's include a timestamp, so you can use them for sorting
+    // you can extract the timestamp value with:
+    // new Date(parseInt(objectId.substring(0, 8), 16) * 1000)
+    // or create an ObjectId from a Date with:
+    // Math.floor(date.getTime() / 1000).toString(16) + "0000000000000000";
+
     return this.searchService.getSearchResults(
       null,
       'ProjectNotification',
       null,
       1,
       10000,
-      '-decisionDate',
+      '-_id',
       queryConditions
     );
   }
