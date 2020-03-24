@@ -138,7 +138,7 @@
                         </div>
                     </div>
                     <button *ngIf="showAdvancedSearch && isShowingFilter()" class="btn btn-primary search-button"
-                        type="submit">
+                        type="button" (click)="search();">
                         <span>Search</span>
                     </button>
                 </div>
