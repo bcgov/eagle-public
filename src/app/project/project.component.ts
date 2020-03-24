@@ -80,6 +80,13 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
       tabDisplayCriteria: null,
       display: false,
     },
+    {
+      key: Constants.optionalProjectDocTabs.UNSUBSCRIBE_CAC,
+      label: 'Unsubscribe',
+      link: Constants.optionalProjectDocTabs.UNSUBSCRIBE_CAC,
+      tabDisplayCriteria: null,
+      display: false,
+    }
   ];
 
   constructor(
@@ -309,7 +316,7 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
   initTabLinks(): void {
     this.configService.lists.subscribe (list => {
       this.tabLinks.forEach(tabLink => {
-        if (!tabLink.display) {
+        if (!tabLink.display && tabLink.key !== Constants.optionalProjectDocTabs.UNSUBSCRIBE_CAC) {
           const tabModifier = this.utils.createProjectTabModifiers(tabLink.key, list);
           this.tabLinkIfNotEmpty(tabLink.key, tabModifier);
         }

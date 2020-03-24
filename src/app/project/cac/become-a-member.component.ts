@@ -58,9 +58,12 @@ export class BecomeAMemberComponent implements OnInit {
     let signUpObject = {
       name: this.nameInput,
       email: this.emailInput,
-      liveNear: this.liveNear ? this.liveNearInput : '',
-      memberOf: this.memberOf ? this.memberOfInput : '',
-      knowledgeOf: this.knowledgeOf ? this.knowledgeOfInput : '',
+      liveNear: this.liveNear,
+      liveNearInput: this.liveNearInput,
+      memberOf: this.memberOf,
+      memberOfInput: this.memberOfInput,
+      knowledgeOf: this.knowledgeOf,
+      knowledgeOfInput: this.knowledgeOfInput,
       additionalNotes: this.additionalNotesInput
     };
 

@@ -52,6 +52,7 @@ export class AddCommentComponent implements OnInit {
   public knowledgeOfInput: any;
   public additionalNotesInput: any;
   public submittedCAC: Boolean;
+  public hasSeenCAC: Boolean;
 
   constructor(
     public activeModal: NgbActiveModal,
@@ -62,6 +63,7 @@ export class AddCommentComponent implements OnInit {
   ) { }
 
   ngOnInit() {
+    this.hasSeenCAC = false;
     this.comment = new Comment();
     this.contactName = this.anonymousName;
     this.comment.period = this.currentPeriod._id;
@@ -103,11 +105,12 @@ export class AddCommentComponent implements OnInit {
   }
 
   private learnMore() {
+    this.hasSeenCAC = true;
     this.currentPage = 2;
   }
 
   private p1_next() {
-    if (this.submittedCAC || !this.project.projectCAC) {
+    if (this.submittedCAC || !this.project.projectCAC || !this.hasSeenCAC) {
       this.currentPage += 4;
     } else {
       this.currentPage++;
@@ -139,9 +142,12 @@ export class AddCommentComponent implements OnInit {
     let signUpObject = {
       name: this.nameInput,
       email: this.emailInput,
-      liveNear: this.liveNear ? this.liveNearInput : '',
-      memberOf: this.memberOf ? this.memberOfInput : '',
-      knowledgeOf: this.knowledgeOf ? this.knowledgeOfInput : '',
+      liveNear: this.liveNear,
+      liveNearInput: this.liveNearInput,
+      memberOf: this.memberOf,
+      memberOfInput: this.memberOfInput,
+      knowledgeOf: this.knowledgeOf,
+      knowledgeOfInput: this.knowledgeOfInput,
       additionalNotes: this.additionalNotesInput
     };
 

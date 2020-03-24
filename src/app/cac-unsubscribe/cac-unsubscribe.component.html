@@ -1,0 +1,52 @@
+<div class="hero-banner hb-sm">
+  <div class="container">
+    <div class="container-inner">
+      <div class="hero-banner__content">
+        <h1>Unsubcribe from Community Advisory Committee</h1>
+        <p>Please confirm the email you used to sign up to the Community Advisory Committee.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<section class="static-content mt-2">
+  <div class="container" id="anchor-point">
+    <div class="spinner-container" *ngIf="loading">
+      <div class="spinner-new rotating"></div>
+    </div>
+
+    <!-- Not subscribed yet -->
+    <div class="row" *ngIf="!success">
+      <main class="m-5">
+        <form>
+          <div class="form-group">
+            <label class="control-label">Project</label>
+            <div class="form-control-container">
+              <label>{{projectName}}</label>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="control-label">Email Address</label>
+            <div class="form-control-container">
+              <input required email class="form-control" type="text" name="emailInput" id="emailInput" [(ngModel)]="emailInput" autofocus />
+            </div>
+            <button class="btn content-btn-dark page-bottom-btn" (click)="unsubscribe()">
+              <span>Unsubscribe</span>
+            </button>
+            <button class="btn content-btn-dark page-bottom-btn" (click)="cancel()">
+              <span>Cancel</span>
+            </button>
+          </div>
+        </form>
+
+      </main>
+    </div>
+
+    <!-- Successfully unsubscribed -->
+    <div class="row" *ngIf="success">
+      <p>You have been unsubscribed successfully.  Click <button class="btn content-btn-dark page-bottom-btn" (click)="cancel()">
+        <span>here</span>
+      </button> to go back to the homepage.</p>
+    </div>
+  </div>
+</section>
