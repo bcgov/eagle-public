@@ -191,7 +191,7 @@ export class ProjectService {
       .catch(error => this.api.handleError(error));
   }
 
-  // Remvoe this user from the CAC membership on this project
+  // Remove this user from the CAC membership on this project
   cacRemoveMember(projectId: String, meta: any): Observable<any> {
     return this.api.cacRemoveMember(projectId, meta)
       .catch(error => this.api.handleError(error));

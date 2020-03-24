@@ -17,16 +17,16 @@
 
     <!-- Not subscribed yet -->
     <div class="row" *ngIf="!success">
-      <main class="mb-0">
+      <main class="m-5">
         <form>
-          <div class="form-group mb-2">
-            <p class="control-label">Project</p>
+          <div class="form-group">
+            <label class="control-label">Project</label>
             <div class="form-control-container">
               <label>{{projectName}}</label>
             </div>
           </div>
           <div class="form-group">
-            <p class="control-label">Email Address</p>
+            <label class="control-label">Email Address</label>
             <div class="form-control-container">
               <input required email class="form-control" type="text" name="emailInput" id="emailInput" [(ngModel)]="emailInput" autofocus />
             </div>
