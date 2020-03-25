@@ -12,7 +12,7 @@ import * as _ from 'lodash';
 import * as moment from 'moment';
 
 import { Document } from 'app/models/document';
-import { DocumentTableRowsComponent } from 'app/project/documents/project-document-table-rows/project-document-table-rows.component';
+
 import { SearchTerms } from 'app/models/search';
 
 import { ApiService } from 'app/services/api';
@@ -20,11 +20,11 @@ import { SearchService } from 'app/services/search.service';
 
 import { Constants } from 'app/shared/utils/constants';
 
+import { DocSearchTableRowsComponent } from './search-documents-table-rows/search-document-table-rows.component';
 import { TableObject } from 'app/shared/components/table-template/table-object';
 import { TableParamsObject } from 'app/shared/components/table-template/table-params-object';
 import { TableTemplateUtils } from 'app/shared/utils/table-template-utils';
 import { StorageService } from 'app/services/storage.service';
-import { TableComponent } from 'app/shared/components/table-template/table.component';
 
 class SearchFilterObject {
   constructor(
@@ -32,9 +32,10 @@ class SearchFilterObject {
     public milestone: Array<string> = [],
     public datePostedStart: object = {},
     public datePostedEnd: object = {},
-    public docType: Array<string> = [],
+    public type: Array<string> = [],
     public documentAuthorType: Array<string> = [],
     public projectPhase: Array<string> = []
+
   ) { }
 }
 
@@ -46,63 +47,58 @@ class SearchFilterObject {
   encapsulation: ViewEncapsulation.None
 })
 
-export class SearchComponent implements OnInit, OnDestroy, DoCheck, TableComponent {
-  public readonly constants = Constants;
-  public data: Array<any> = [];
+
+export class SearchComponent implements OnInit, OnDestroy {
+  public documents: Document[] = null;
+
   public milestones: any[] = [];
   public authors: any[] = [];
-  public docTypes: any[] = [];
+  public types: any[] = [];
   public projectPhases: any[] = [];
+
   public loading = true;
+
+  public tableParams: TableParamsObject = new TableParamsObject();
+  public terms = new SearchTerms();
 
   public filterForURL: object = {};
   public filterForAPI: object = {};
+
   public filterForUI: SearchFilterObject = new SearchFilterObject();
 
   public showAdvancedSearch = true;
+  public hasUncategorizedDocs = false;
+  public readonly constants = Constants;
 
   public showFilters: object = {
-    milestone: false,
     date: false,
-    documentAuthorType: false,
-    docType: false,
-    projectPhase: false
-  };
-
-  public numFilters: object = {
-    milestone: 0,
-    date: 0,
-    documentAuthorType: 0,
-    docType: 0,
-    projectPhase: 0
+    type: false,
+    milestone: false,
+    projectPhase: false,
+    documentAuthorType: false
   };
 
   public searchDisclaimer = Constants.searchDisclaimer;
-  public terms = new SearchTerms();
-  private ngUnsubscribe = new Subject<boolean>();
 
-  private snackBarRef: MatSnackBarRef<SimpleSnackBar> = null;
+  public numFilters: object = {
+    date: 0,
+    type: 0,
+    milestone: 0,
+    projectPhase: 0,
+    documentAuthorType: 0
+  };
 
-  public searching = false;
-  public ranSearch = false;
-  public keywords: string;
-  public hadFilter = false;
-
-  public totalListItems = 0; // for template
-  public currentPage = 1;
-  public pageSize = 10;
-
-  private togglingOpen = '';
-
-  public pageSizeArray: number[];
-
-  public documents: Document[] = null;
   public documentTableData: TableObject;
   public documentTableColumns: any[] = [
     {
       name: 'Name',
       value: 'displayName',
       width: 'col-5'
+    },
+    {
+      name: 'Project',
+      value: 'projectName',
+      width: 'col-2'
     },
     {
       name: 'Date',
@@ -119,14 +115,10 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck, TableCompone
       value: 'milestone',
       width: 'col-2'
     },
-    {
-      name: 'Project Phase',
-      value: 'projectPhase',
-      width: 'col-2'
-    }
   ];
 
-  public tableParams: TableParamsObject = new TableParamsObject();
+  private snackBarRef: MatSnackBarRef<SimpleSnackBar> = null;
+  private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
 
   constructor(
     public snackBar: MatSnackBar,
@@ -147,172 +139,81 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck, TableCompone
         return this.route.data;
       })
       .takeUntil(this.ngUnsubscribe)
-      .switchMap((res: any) => {
+      .subscribe((res: any) => {
         if (res) {
-          if (res.documents && res.documents.length > 0) {
-            res.documents[0].searchResults.map(item => {
-              switch (item.type) {
-                case 'label':
-                  this.milestones.push({ ...item });
-                  break;
-                case 'author':
-                  this.authors.push({ ...item });
-                  break;
-                case 'doctype':
-                  this.docTypes.push({ ...item });
-                  break;
-                case 'projectPhase':
-                  this.projectPhases.push({ ...item });
-                  break;
-                default:
-                  break;
+          // Get the lists first
+          if (res.documentsTableRows && res.documentsTableRows.length > 0) {
+
+            this.milestones = [];
+            this.types = [];
+            this.authors = [];
+            this.projectPhases = [];
+
+            res.documentsTableRows[0].searchResults.map(item => {
+              if (item.type === 'label') {
+                this.milestones.push({ ...item });
+              } else if (item.type === 'doctype') {
+                this.types.push({ ...item });
+              } else if (item.type === 'author') {
+                this.authors.push({ ...item });
+              } else if (item.type === 'projectPhase') {
+                this.projectPhases.push({ ...item });
               }
             });
+
+            // Sort by legislation.
+            this.milestones = _.sortBy(this.milestones, ['legislation']);
+            this.authors = _.sortBy(this.authors, ['legislation']);
+            this.types = _.sortBy(this.types, ['legislation', 'listOrder']);
+            this.projectPhases = _.sortBy(this.projectPhases, ['legislation']);
           }
 
-          // This code reorders the document type list defined by EAO (See Jira Ticket EAGLE-88)
-          // this.docTypes = this.docTypes.filter(item => item.legislation === 2002);
-          this.docTypes = _.sortBy(this.docTypes, ['legislation', 'listOrder']);
-          // Sort by legislation.
-          this.milestones = _.sortBy(this.milestones, ['legislation']);
-          this.authors = _.sortBy(this.authors, ['legislation']);
-          this.projectPhases = _.sortBy(this.projectPhases, ['legislation']);
+          if (this.storageService && this.storageService.state['search']) {
+            if (this.storageService.state['search'].filterForUI) {
+              this.filterForUI = this.storageService.state['search'].filterForUI;
+              this.setParamsFromFilters(params);
+            }
 
-          params = { ...res };
+            if (this.storageService.state['search'].tableParams) {
+              this.tableParams = this.storageService.state['search'].tableParams;
+            }
+          }
 
-          this.terms.keywords = params.keywords || null;
-          this.terms.dataset = 'Document';
+          // todo table params is always at least default tableParams object, replace with ?
+          if (!this.tableParams ) {
+            this.tableParams = this.tableTemplateUtils.getParamsFromUrl(params, this.filterForURL);
+          }
 
           this.setFiltersFromParams(params);
-
-          this.updatetotalListItemss();
-
-          this.keywords = this.terms.keywords;
-          this.hadFilter = this.hasFilter();
-
-          // additional check to see if we have any filter elements applied to the
-          // query string. Previously these were ignored on a refresh
-          let filterKeys = Object.keys(this.filterForAPI);
-          let hasFilterFromQueryString = (filterKeys && filterKeys.length > 0);
-
-          if (_.isEmpty(this.terms.getParams())
-            && !this.hasFilter()
-            && !hasFilterFromQueryString) {
-            return Observable.of(null);
+          if (this.tableParams.keywords) {
+            this.terms = new SearchTerms(this.tableParams)
           }
+          this.updateCounts();
 
-          this.data = [];
-
-          this.searching = true;
-          this.tableParams.totalListItems = 0;
-          this.currentPage = params.currentPage ? params.currentPage : 1;
-          this.pageSize = params.pageSize ? parseInt(params.pageSize, 10) : 25;
-
-          // remove doc types
-          // The UI filters are remapping documentto the single 'Type' value
-          // this means that whenever we map back to the filters, we need to revert them
-          // from 'type', to the appropriate type. Additionally, the API will fail if we
-          // send "docType" as a filter, so we need to ensure these are
-          // stripped from the filterForAPI
-          delete this.filterForAPI['docType'];
-
-          if (this.storageService && this.storageService.state.docList) {
-            this.filterForAPI = this.storageService.state.docList.filterForAPI;
-            this.filterForUI = this.storageService.state.docList.filterForUI;
-            this.tableParams = this.storageService.state.docList.tableParams;
-            this.setParamsFromFilters(params);
+          if (res.documents && res.documents[0].data && res.documents[0].data.meta.length > 0) {
+            this.tableParams.totalListItems = res.documents[0].data.meta[0].searchResultsTotal;
+            this.documents = res.documents[0].data.searchResults;
+          } else {
+            this.tableParams.totalListItems = 0;
+            this.documents = [];
           }
+// todo load terms from storage service
+          this.loading = false;
+          this.setRowData();
+          this._changeDetectionRef.detectChanges();
         } else {
-          // log error or alert
+          this.loading = false;
+          this.snackBarRef = this.snackBar.open('Error search documents ...', 'RETRY');
+          this.snackBarRef.onAction().subscribe(() => this.onSubmit());
           this.router.navigate(['/search']);
           this.loading = false;
           this._changeDetectionRef.detectChanges();
         }
-
-        return this.searchService.getSearchResults(
-          this.terms.keywords,
-          this.terms.dataset,
-          [{ name: 'categorized', value: true }],
-          this.currentPage,
-          this.pageSize,
-          '-datePosted,+displayName',
-          {},
-          true,
-          '',
-          this.filterForAPI,
-          ''
-        );
-      })
-      .takeUntil(this.ngUnsubscribe)
-      .subscribe((res: any) => {
-        if (res && res[0].data.meta.length > 0) {
-          this.tableParams.totalListItems = res[0].data.meta[0].searchResultsTotal;
-          let items = res[0].data.searchResults;
-          items.map(item => {
-            this.data.push(new Document(item));
-            if (this.storageService) {
-              this.storageService.state.docList = {};
-              this.storageService.state.docList.filterForAPI = this.filterForAPI;
-              this.storageService.state.docList.filterForUI = this.filterForUI;
-              this.storageService.state.docList.tableParams = this.tableParams;
-              this.storageService.state.docList.keywords = this.terms.keywords;
-            }
-          });
-        } else {
-          this.tableParams.totalListItems = 0;
-          this.data = [];
-        }
-
-
-        this.tableTemplateUtils.updateUrl(this.tableParams.sortBy, this.tableParams.currentPage, this.tableParams.pageSize, null, this.tableParams.keywords);
-        this.setRowData();
-
-        this.loading = false;
-        this.searching = false;
-        this.ranSearch = true;
-        this._changeDetectionRef.detectChanges();
-        const pageSizeTemp = [10, 25, 50, 100, this.tableParams.totalListItems];
-        this.pageSizeArray = pageSizeTemp.filter(function (el: number) { return el >= 10; });
-        this.pageSizeArray.sort(function (a: number, b: number) { return a - b; });
-      }, error => {
-        console.log('error =', error);
-
-        // update variables on error
-        this.loading = false;
-        this.searching = false;
-        this.ranSearch = true;
-
-        this.snackBarRef = this.snackBar.open('Error searching documents ...', 'RETRY');
-        this.snackBarRef.onAction().subscribe(() => this.onSubmit());
-      }, () => { // onCompleted
-        // update variables on completion
       });
-  }
 
-  ngDoCheck() {
-    if (this.togglingOpen) {
-      // Focus on designated input when pane is opened
-      let input = document.getElementById(this.togglingOpen + '_input');
-      if (input) {
-        input.focus();
-        this.togglingOpen = '';
-      }
+    if (!this.storageService.state['search']) {
+      this.storageService.state['search'] = {};
     }
-  }
-
-  updatePageNumber(pageNumber) {
-    // Go to top of page after clicking to a different page.
-    window.scrollTo(0, 0);
-    this.currentPage = pageNumber;
-    this.tableTemplateUtils.updateUrl(this.tableParams.sortBy, pageNumber, this.tableParams.pageSize, this.filterForURL, this.tableParams.keywords);
-    this.onSubmit();
-  }
-
-  updatePageTableSize(pageSize) {
-    window.scrollTo(0, 0);
-    this.currentPage = 1;
-    this.pageSize = parseInt(pageSize, 10);
-    this.onSubmit();
   }
 
   paramsToCollectionFilters(params, name, collection, identifyBy) {
@@ -322,7 +223,7 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck, TableCompone
     // The UI filters are remapping document and project type to the single 'Type' value
     // this means that whenever we map back to the filters, we need to revert them
     // from 'type', to the appropriate type.
-    let optionName = 'docType';
+    let optionName = 'type';
 
     if (optionName !== name) {
       delete this.filterForURL[optionName];
@@ -351,7 +252,6 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck, TableCompone
     }
   }
 
-
   paramsToDateFilters(params, name) {
     this.filterForUI[name] = null;
     delete this.filterForURL[name];
@@ -369,18 +269,18 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck, TableCompone
   setFiltersFromParams(params) {
     this.paramsToCollectionFilters(params, 'milestone', this.milestones, '_id');
     this.paramsToCollectionFilters(params, 'documentAuthorType', this.authors, '_id');
-    this.paramsToCollectionFilters(params, 'docType', this.docTypes, '_id');
-    this.paramsToCollectionFilters(params, 'type', this.docTypes, '_id');
+    this.paramsToCollectionFilters(params, 'type', this.types, '_id');
     this.paramsToCollectionFilters(params, 'projectPhase', this.projectPhases, '_id');
 
     this.paramsToDateFilters(params, 'datePostedStart');
     this.paramsToDateFilters(params, 'datePostedEnd');
   }
 
-  collectionFilterToParams(params, name, identifyBy) {
+collectionFilterToParams(params, name, identifyBy) {
     if (this.filterForUI[name].length) {
       const values = this.filterForUI[name].map(record => { return record[identifyBy]; });
-      params[name === 'docType' ? 'type' : name] = values.join(',');
+      params[name] = values.join(',');
+      this.storageService.state['search'].filterForAPI[name] = values.join(',');
     }
   }
 
@@ -398,7 +298,7 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck, TableCompone
   setParamsFromFilters(params) {
     this.collectionFilterToParams(params, 'milestone', '_id');
     this.collectionFilterToParams(params, 'documentAuthorType', '_id');
-    this.collectionFilterToParams(params, 'docType', '_id');
+    this.collectionFilterToParams(params, 'type', '_id');
     this.collectionFilterToParams(params, 'projectPhase', '_id');
 
     this.dateFilterToParams(params, 'datePostedStart');
@@ -407,18 +307,16 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck, TableCompone
 
   toggleFilter(name) {
     if (this.showFilters[name]) {
-      this.togglingOpen = '';
-      this.updatetotalListItems(name);
+      this.updateCount(name);
       this.showFilters[name] = false;
     } else {
       Object.keys(this.showFilters).forEach(key => {
         if (this.showFilters[key]) {
-          this.updatetotalListItems(key);
+          this.updateCount(key);
           this.showFilters[key] = false;
         }
       });
       this.showFilters[name] = true;
-      this.togglingOpen = name;
     }
   }
 
@@ -433,7 +331,7 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck, TableCompone
   }
 
   hasFilter() {
-    this.updatetotalListItemss();
+    this.updateCounts();
     return Object.keys(this.numFilters).some(key => { return this.numFilters[key]; });
   }
 
@@ -449,10 +347,10 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck, TableCompone
         }
       }
     });
-    this.updatetotalListItemss();
+    this.updateCounts();
   }
 
-  updatetotalListItems(name) {
+  updateCount(name) {
     const gettotalListItems = (n) => { return Object.keys(this.filterForUI[n]).filter(k => this.filterForUI[n][k]).length; };
 
     let num = 0;
@@ -465,13 +363,13 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck, TableCompone
     this.numFilters[name] = num;
   }
 
-  updatetotalListItemss() {
+  updateCounts() {
     // Documents
-    this.updatetotalListItems('milestone');
-    this.updatetotalListItems('date');
-    this.updatetotalListItems('documentAuthorType');
-    this.updatetotalListItems('docType');
-    this.updatetotalListItems('projectPhase');
+    this.updateCount('milestone');
+    this.updateCount('date');
+    this.updateCount('documentAuthorType');
+    this.updateCount('type');
+    this.updateCount('projectPhase');
   }
 
   setColumnSort(column) {
@@ -499,19 +397,22 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck, TableCompone
     const datePostedStart = params.hasOwnProperty('datePostedStart') && params.datePostedStart ? params.datePostedStart : null;
     const datePostedEnd = params.hasOwnProperty('datePostedEnd') && params.datePostedEnd ? params.datePostedEnd : null;
 
-    let queryModifiers = {};
+    let queryModifiers = { documentSource: 'PROJECT' };
     if (datePostedStart !== null && datePostedEnd !== null) {
       queryModifiers['datePostedStart'] = datePostedStart;
       queryModifiers['datePostedEnd'] = datePostedEnd;
     }
 
-    this.updatePageTableSize(this.tableParams.pageSize);
-    this.updatePageNumber(pageNumber);
+    // this.updatePageTableSize(this.tableParams.pageSize);
+    // this.updatePageNumber(pageNumber);
+    if (this.storageService) {
+      this.storageService.state['search'].tableParams = this.tableParams;
+    }
 
     this.searchService.getSearchResults(
-      this.terms.keywords,
-      this.terms.dataset,
-      [{ name: 'categorized', value: true }],
+      this.tableParams.keywords,
+      'Document',
+      [],
       pageNumber,
       this.tableParams.pageSize,
       this.tableParams.sortBy,
@@ -522,29 +423,19 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck, TableCompone
       '')
       .takeUntil(this.ngUnsubscribe)
       .subscribe((res: any) => {
-        if (res && res[0].data) {
-          this.tableParams.totalListItems = res[0].data.meta[0].searchResultsTotal;
-          this.tableTemplateUtils.updateUrl(
-            this.tableParams.sortBy,
-            this.tableParams.currentPage,
-            this.tableParams.pageSize,
-            this.filterForURL,
-            this.tableParams.keywords
-          );
-          this.setRowData();
-          this.loading = false;
-          this._changeDetectionRef.detectChanges();
-        } else {
-          alert('Couldn\'t load search results');
-          this.router.navigate(['/search']);
-        }
+        this.tableParams.totalListItems = res[0].data.meta[0].searchResultsTotal;
+        this.documents = res[0].data.searchResults;
+        this.tableTemplateUtils.updateUrl(this.tableParams.sortBy, this.tableParams.currentPage, this.tableParams.pageSize, this.filterForURL, this.tableParams.keywords);
+        this.setRowData();
+        this.loading = false;
+        this._changeDetectionRef.detectChanges();
       });
   }
 
   setRowData() {
     let documentList = [];
-    if (this.data && this.data.length > 0) {
-      this.data.forEach(document => {
+    if (this.documents && this.documents.length > 0) {
+      this.documents.forEach(document => {
         if (document) {
           documentList.push(
             {
@@ -561,7 +452,7 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck, TableCompone
         }
       });
       this.documentTableData = new TableObject(
-        DocumentTableRowsComponent,
+        DocSearchTableRowsComponent,
         documentList,
         this.tableParams
       );
@@ -576,14 +467,24 @@ export class SearchComponent implements OnInit, OnDestroy, DoCheck, TableCompone
     // NOTE: Angular Router doesn't reload page on same URL
     // REF: https://stackoverflow.com/questions/40983055/how-to-reload-the-current-route-with-the-angular-2-router
     // WORKAROUND: add timestamp to force URL to be different than last time
-    let params = this.terms.getParams();
+    const params = this.terms.getParams();
     params['ms'] = new Date().getMilliseconds();
-    params['dataset'] = this.terms.dataset;
-    params['currentPage'] = this.currentPage ? this.currentPage : 1;
-    params['pageSize'] = this.pageSize ? this.pageSize : 10;
+    params['dataset'] = 'Document';
+    params['currentPage'] = this.tableParams.currentPage;
+    // todo  sortby always has default value of '-datePosted'
+    params['sortBy'] = this.tableParams.sortBy ? this.tableParams.sortBy : '-datePosted,+displayName';
+    params['pageSize'] = this.tableParams.pageSize;
+
+    // update table params before submit?
+    this.tableParams.keywords = params['keywords'];
+    if (this.storageService) {
+      this.storageService.state['search'].tableParams = this.tableParams;
+      this.storageService.state['search'].filterForUI = this.filterForUI;
+      this.storageService.state['search'].filterForAPI = {};
+    }
 
     this.setParamsFromFilters(params);
-
+    this.tableTemplateUtils.updateUrl(this.tableParams.sortBy, this.tableParams.currentPage, this.tableParams.pageSize, this.filterForURL, this.tableParams.keywords);
     this.router.navigate(['search', params]);
   }
 

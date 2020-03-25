@@ -31,9 +31,9 @@ export class SearchResolver implements Resolve<Observable<object>> {
     const datePostedEnd = route.params.hasOwnProperty('datePostedEnd') && route.params.datePostedEnd ? route.params.datePostedEnd : null;
     const keywords = route.params.hasOwnProperty('keywords') ? route.params.keywords : '';
 
-    // Get the lists first
     if (Object.keys(route.params).length === 0) {
-      return this.searchService.getFullList('List');
+      // return this.searchService.getFullList('List');
+      return;
     } else {
       // Get the lists first
       return this.searchService.getFullList('List')
@@ -83,7 +83,7 @@ export class SearchResolver implements Resolve<Observable<object>> {
               this.setParamsFromFilters(route.params, filterForUI);
             }
           }
-
+          // todo update fields to match onsubmit, its the [] in this call
           return this.searchService.getSearchResults(
             keywords,
             'Document',

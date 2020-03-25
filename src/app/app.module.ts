@@ -47,6 +47,7 @@ import { ComplianceOversightComponent } from 'app/compliance-oversight/complianc
 import { ActivitiesListTableRowsComponent } from './project/project-activites/activities-list-table-rows/activities-list-table-rows.component';
 import { ProjectNotificationsListComponent } from './project-notifications/project-notifications.component';
 import { SearchResolver } from './search/search-resolver.service';
+import { DocSearchTableRowsComponent } from './search/search-documents-table-rows/search-document-table-rows.component';
 
 
 @NgModule({
@@ -84,11 +85,13 @@ import { SearchResolver } from './search/search-resolver.service';
     ComplianceOversightComponent,
     SearchComponent,
     SearchHelpComponent,
-    CACUnsubscribeComponent
+    CACUnsubscribeComponent,
+    DocSearchTableRowsComponent,
   ],
   entryComponents: [
     NewsListTableRowsComponent,
     ActivitiesListTableRowsComponent,
+    DocSearchTableRowsComponent,
   ],
   providers: [
     ConfigService,

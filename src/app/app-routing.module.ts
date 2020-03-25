@@ -19,6 +19,7 @@ import { CommentsComponent } from 'app/comments/comments.component';
 import { CommentsResolver } from 'app/comments/comments-resolver.service';
 import { SearchComponent } from 'app/search/search.component';
 import { SearchResolver } from './search/search-resolver.service';
+import { DocumentTableResolver } from './project/documents/project-document-table-rows/project-document-table-rows-resolver.service';
 
 
 const routes: Routes = [
@@ -82,6 +83,7 @@ const routes: Routes = [
     component: SearchComponent,
     resolve: {
       documents: SearchResolver,
+      documentsTableRows: DocumentTableResolver
     }
   },
   {

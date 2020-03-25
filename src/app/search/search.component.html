@@ -52,12 +52,12 @@
                             'btn-outline-dark': !showFilters.documentAuthorType && numFilters.documentAuthorType == 0}">
                         Document Author<span *ngIf="numFilters.documentAuthorType > 0 && !showFilters.documentAuthorType">&nbsp;({{ numFilters.documentAuthorType }})</span>
                         </button>
-                        <button type="button" (click)="toggleFilter('docType');"
-                        [ngClass]="{'btn': true, 'docType-btn': true,
-                            'btn-dark': showFilters.docType,
-                            'btn-secondary': !showFilters.docType && numFilters.docType > 0,
-                            'btn-outline-dark': !showFilters.docType && numFilters.docType == 0}">
-                        Document Type<span *ngIf="numFilters.docType > 0 && !showFilters.docType">&nbsp;({{ numFilters.docType }})</span>
+                        <button type="button" (click)="toggleFilter('type');"
+                        [ngClass]="{'btn': true, 'type-btn': true,
+                            'btn-dark': showFilters.type,
+                            'btn-secondary': !showFilters.type && numFilters.type > 0,
+                            'btn-outline-dark': !showFilters.type && numFilters.type == 0}">
+                        Document Type<span *ngIf="numFilters.type > 0 && !showFilters.type">&nbsp;({{ numFilters.type }})</span>
                         </button>
                         <button type="button" (click)="toggleFilter('projectPhase');" [ngClass]="{'btn': true, 'type-btn': true,
                             'btn-dark': showFilters.projectPhase,
@@ -182,42 +182,41 @@
                         </div>
                     </div>
                     </div>
-                    <div *ngIf="showAdvancedSearch && showFilters.docType" class="docType-filters project-filter row">
-                    <div class="col-md-12 filter-border">
-                        <div class="row sub-filter">
-                            <div class="col-md-12">
-                                <div class="row">
-                                    <b>Type</b>
-                                </div>
-                                <div class="row">
-                                    <div class="form-group">
-                                        <ng-select
-                                            id="docType"
-                                            name="docType"
-                                            multiple="true"
-                                            bindLabel="name"
-                                            groupBy="legislation"
-                                            placeholder="Type Document Type"
-                                            [items]="docTypes"
-                                            [markFirst]="false"
-                                            [closeOnSelect]="false"
-                                            [(ngModel)]="filterForUI.docType"
-                                            [compareWith]="compareDropdownOptions"
-                                            [compareWith]="filterCompareWith"
-                                        >
-                                            <ng-template ng-label-tmp let-item="item">
-                                                <span class="ng-value-icon left" (click)="clearSelectedItem('docType', item)" aria-hidden="true">×</span>
-                                                <span class="ng-value-label">{{item.name}} ({{item.legislation}})</span>
-                                            </ng-template>
-                                            <ng-template ng-optgroup-tmp let-item="item" let-index="index">
-                                                {{item.legislation}} Act Terms
-                                            </ng-template>
-                                        </ng-select>
+                    <div *ngIf="showAdvancedSearch && showFilters.type" class="type-filters project-filter row">
+                        <div class="col-md-12 filter-border">
+                            <div class="row sub-filter">
+                                <div class="col-md-12">
+                                    <div class="row">
+                                        <b>Type</b>
+                                    </div>
+                                    <div class="row">
+                                        <div class="form-group">
+                                            <ng-select
+                                                id="type"
+                                                name="type"
+                                                multiple="true"
+                                                bindLabel="name"
+                                                groupBy="legislation"
+                                                placeholder="Type Document Type"
+                                                [items]="types"
+                                                [markFirst]="false"
+                                                [closeOnSelect]="false"
+                                                [(ngModel)]="filterForUI.type"
+                                                [compareWith]="filterCompareWith"
+                                            >
+                                                <ng-template ng-label-tmp let-item="item">
+                                                    <span class="ng-value-icon left" (click)="clearSelectedItem('type', item)" aria-hidden="true">×</span>
+                                                    <span class="ng-value-label">{{item.name}} ({{item.legislation}})</span>
+                                                </ng-template>
+                                                <ng-template ng-optgroup-tmp let-item="item" let-index="index">
+                                                    {{item.legislation}} Act Terms
+                                                </ng-template>
+                                            </ng-select>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
                     </div>
                     <div *ngIf="showAdvancedSearch && showFilters.projectPhase" class="projectPhase-filters project-filter row">
                     <div class="col-md-12 filter-border">
