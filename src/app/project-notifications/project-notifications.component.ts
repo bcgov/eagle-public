@@ -273,7 +273,7 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
     }
 
     this.searchService.getSearchResults(
-      null,
+      this.tableParams.keywords,
       'ProjectNotification',
       null,
       1,
@@ -289,6 +289,12 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
       if (res[0] && res[0].data && res[0].data.searchResults.length > 0) {
         this.tableParams.totalListItems = res[0].data.meta[0].searchResultsTotal;
         this.projectNotifications = res[0].data.searchResults;
+
+        // load projetNotification comment periods
+        this.projectNotifications.forEach(projectNotification => {
+          projectNotification['commentPeriod'] = null;
+          this.getProjectCommentPeriod(projectNotification);
+        });
       }
 
       this.loading = false;
