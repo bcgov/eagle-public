@@ -27,7 +27,7 @@ export class DocumentsResolver implements Resolve<Observable<object>> {
     const projectId = route.parent.paramMap.get('projId');
     let currentPage = route.params.currentPage ? route.params.currentPage : 1;
     let pageSize = route.params.pageSize ? route.params.pageSize : 10;
-    let sortBy = route.params.sortBy && route.params.sortBy !== 'null'|| '' ? route.params.sortBy : '-datePosted,+displayName';
+    let sortBy = route.params.sortBy && route.params.sortBy !== 'null' || '' ? route.params.sortBy : '-datePosted,+displayName';
     const datePostedStart = route.params.hasOwnProperty('datePostedStart') &&  route.params.datePostedStart ? route.params.datePostedStart : null;
     const datePostedEnd = route.params.hasOwnProperty('datePostedEnd') && route.params.datePostedEnd ? route.params.datePostedEnd : null;
     const keywords = route.params.hasOwnProperty('keywords') ? route.params.keywords : '';
