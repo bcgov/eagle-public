@@ -402,6 +402,8 @@ export class ProjectListComponent implements OnInit, OnDestroy {
   }
 
   clearAll() {
+    this.tableParams.keywords = '';
+    delete this.filterForURL['keywords'];
     Object.keys(this.filterForUI).forEach(key => {
       if (this.filterForUI[key]) {
         if (Array.isArray(this.filterForUI[key])) {
