@@ -4,6 +4,7 @@ import { BrowserModule } from '@angular/platform-browser';
 import { FormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
+import { NgxPageScrollCoreModule } from 'ngx-page-scroll-core';
 import { NgxPageScrollModule } from 'ngx-page-scroll';
 import { BootstrapModalModule } from 'ng2-bootstrap-modal';
 import { CookieService } from 'ngx-cookie-service';
@@ -23,6 +24,7 @@ import { HeaderComponent } from 'app/header/header.component';
 import { FooterComponent } from 'app/footer/footer.component';
 import { NewsListTableRowsComponent } from 'app/news/news-list-table-rows/news-list-table-rows.component';
 import { SearchHelpComponent } from './search-help/search-help.component';
+import { CACUnsubscribeComponent } from 'app/cac-unsubscribe/cac-unsubscribe.component';
 
 // services
 import { ApiService } from 'app/services/api';
@@ -50,14 +52,17 @@ import { ProjectNotificationsListComponent } from './project-notifications/proje
     BrowserModule,
     FormsModule,
     HttpClientModule,
-    NgbModule.forRoot(),
-    NgxPageScrollModule,
+    NgbModule,
     BootstrapModalModule,
     SharedModule,
     ProjectModule,
     ProjectsModule,
     AppRoutingModule, // <-- module import order matters - https://angular.io/guide/router#module-import-order-matters
-    NgSelectModule
+    NgSelectModule,
+    NgxPageScrollCoreModule.forRoot({
+      scrollOffset: 50
+    }),
+    NgxPageScrollModule
   ],
   declarations: [
     AppComponent,
@@ -75,6 +80,7 @@ import { ProjectNotificationsListComponent } from './project-notifications/proje
     ProcessComponent,
     ComplianceOversightComponent,
     SearchHelpComponent,
+    CACUnsubscribeComponent
   ],
   entryComponents: [
     NewsListTableRowsComponent,

@@ -13,6 +13,7 @@ import { DocumentService } from 'app/services/document.service';
 import * as moment from 'moment-timezone';
 import { Project } from 'app/models/project';
 import { ConfigService } from 'app/services/config.service';
+import { ProjectService } from 'app/services/project.service';
 
 @Component({
   templateUrl: './add-comment.component.html',
@@ -24,11 +25,11 @@ export class AddCommentComponent implements OnInit {
   @Input() project: Project;
 
   public submitting = false;
-  private progressValue: number;
-  private progressBufferValue: number;
+  public progressValue: number;
+  public progressBufferValue: number;
   public totalSize: number;
   public currentPage = 1;
-  private comment: Comment;
+  public comment: Comment;
   public files: Array<File> = [];
   public documents: Document[] = [];
   public documentAuthor: any;
@@ -40,23 +41,39 @@ export class AddCommentComponent implements OnInit {
   public commentFiles: any;
   public anonymousName = 'Anonymous';
 
+  // CAC
+  public nameInput: any;
+  public emailInput: any;
+  public liveNear: boolean;
+  public liveNearInput: any;
+  public memberOf: boolean;
+  public memberOfInput: any;
+  public knowledgeOf: boolean;
+  public knowledgeOfInput: any;
+  public additionalNotesInput: any;
+  public submittedCAC: Boolean;
+  public hasSeenCAC: Boolean;
+
   constructor(
     public activeModal: NgbActiveModal,
     private commentService: CommentService,
+    private projectService: ProjectService,
     private documentService: DocumentService,
     private config: ConfigService,
   ) { }
 
   ngOnInit() {
+    this.hasSeenCAC = false;
     this.comment = new Comment();
     this.contactName = this.anonymousName;
     this.comment.period = this.currentPeriod._id;
     this.comment.isAnonymous = true;
+    this.submittedCAC = false;
     this.commentFiles = [];
     this.documentAuthorType = null;
     this.getLists();
   }
-  public publicChecked(event: Event) {
+  public publicChecked() {
       this.contactName = this.makePublic ? '' : this.anonymousName;
   }
   public addFiles(files: FileList) {
@@ -87,16 +104,78 @@ export class AddCommentComponent implements OnInit {
     }
   }
 
-  private p1_next() {
-    this.currentPage++;
+  public learnMore() {
+    this.hasSeenCAC = true;
+    this.currentPage = 2;
   }
 
-  private p2_back() {
+  public p1_next() {
+    if (this.submittedCAC || !this.project.projectCAC || !this.hasSeenCAC) {
+      this.currentPage += 4;
+    } else {
+      this.currentPage++;
+    }
+  }
+
+  public p2_back() {
     this.currentPage--;
   }
 
+  public p2_next() {
+    // Skip
+    this.currentPage += 3;
+  };
+
+  public p2_becomeAMember() {
+    this.currentPage++;
+  }
+
+  public p3_back() {
+    this.currentPage--;
+  }
+
+  public p3_next() {
+    // Submit CAC information
+    this.submitting = true;
+
+    // Build the comment
+    let signUpObject = {
+      name: this.nameInput,
+      email: this.emailInput,
+      liveNear: this.liveNear,
+      liveNearInput: this.liveNearInput,
+      memberOf: this.memberOf,
+      memberOfInput: this.memberOfInput,
+      knowledgeOf: this.knowledgeOf,
+      knowledgeOfInput: this.knowledgeOfInput,
+      additionalNotes: this.additionalNotesInput
+    };
+
+    this.projectService.cacSignUp(this.project, signUpObject)
+    .toPromise()
+    .then((res: any) => {
+      console.log('Success:', res);
+      this.submitting = false;
+      this.submittedCAC = true;
+      this.currentPage++;
+    })
+    .catch(error => {
+      console.log('error', error);
+      alert('Uh-oh, error submitting information');
+      this.submitting = false;
+    });
+  }
+
+  public p4_next() {
+    this.currentPage++;
+  }
+
+  public p5_back() {
+    this.currentPage -= 4;
+  }
+
   // TODO: Have some null checks in here from the front end
-  private p2_next() {
+  public p5_next() {
     this.submitting = true;
     this.progressValue = this.progressBufferValue = 0;
 
@@ -120,6 +199,7 @@ export class AddCommentComponent implements OnInit {
     this.comment.comment = this.commentInput;
     this.comment.location = this.locationInput;
     this.comment.isAnonymous = !this.makePublic;
+    this.comment.submittedCAC = this.submittedCAC;
 
     this.commentService.add(this.comment)
       .toPromise()
@@ -128,7 +208,7 @@ export class AddCommentComponent implements OnInit {
         this.comment = comment;
         return comment;
       })
-      .then((comment: Comment) => {
+      .then(() => {
         // then upload all documents
         const observables: Array<Observable<Document>> = [];
 

@@ -3,7 +3,6 @@ import { Subject } from 'rxjs';
 import { TableComponent } from 'app/shared/components/table-template/table.component';
 import { TableObject } from 'app/shared/components/table-template/table-object';
 import { Router, ActivatedRoute } from '@angular/router';
-import { ApiService } from 'app/services/api';
 import { Utils } from 'app/shared/utils/utils';
 
 @Component({
@@ -27,11 +26,10 @@ export class DocumentTableRowsComponent implements OnInit, OnDestroy, TableCompo
   constructor(
     private _changeDetectionRef: ChangeDetectorRef,
     private route: ActivatedRoute,
-    private api: ApiService,
     private router: Router,
     private utils: Utils
   ) {
-    let currRoute = router.url.split(';')[0];
+    let currRoute = this.router.url.split(';')[0];
     this.currentUrl = currRoute.substring(currRoute.lastIndexOf('/') + 1);
    }
 
@@ -91,7 +89,7 @@ export class DocumentTableRowsComponent implements OnInit, OnDestroy, TableCompo
     } catch (e) {
       console.log('error:', e);
     }
-    window.open('/api/document/' + item._id + '/fetch/' + safeName, '_blank');
+    window.open('/api/public/document/' + item._id + '/download/' + safeName, '_blank');
   }
   ngOnDestroy() {
     this.ngUnsubscribe.next();

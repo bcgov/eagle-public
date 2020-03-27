@@ -1,15 +1,12 @@
 import { Injectable } from '@angular/core';
-import { ResponseContentType } from '@angular/http';
 import { HttpClient, HttpResponse } from '@angular/common/http';
 import { Observable } from 'rxjs/Observable';
-import { ErrorObservable } from 'rxjs/observable/ErrorObservable';
 import { throwError } from 'rxjs';
 import { map } from 'rxjs/operators';
 import * as _ from 'lodash';
 
 import { Project } from 'app/models/project';
 import { Feature } from 'app/models/feature';
-import { News } from 'app/models/news';
 import { Comment } from 'app/models/comment';
 import { CommentPeriod } from 'app/models/commentperiod';
 import { Document } from 'app/models/document';
@@ -100,7 +97,7 @@ export class ApiService {
       console.log('error', e);
     }
     console.log('safeName', safeName);
-    window.open('/api/document/' + document._id + '/fetch/' + safeName, '_blank');
+    window.open('/api/public/document/' + document._id + '/download/' + safeName, '_blank');
   }
 
   private downloadResource(id: string): Promise<Blob> {
@@ -192,6 +189,17 @@ export class ApiService {
     return this.http.get<any>(`${this.apiPath}/${queryString}`, {});
   }
 
+  // CAC
+  cacSignUp(project: Project, meta: any) {
+    // We are just looking for a 200 OK
+    return this.http.post<any>(`${this.apiPath}/project/${project._id}/cacSignUp`, meta, {});
+  }
+
+  cacRemoveMember(projectId: String, meta: any) {
+    // We are just looking for a 200 OK
+    return this.http.put<any>(`${this.apiPath}/project/${projectId}/cacRemoveMember`, meta, {});
+  }
+
   // Organizations
 
   getOrgsByCompanyType(type: string): Observable<Org[]> {
@@ -229,6 +237,8 @@ export class ApiService {
       'type',
       'legislation',
       'featuredDocuments',
+      'projectCAC',
+      'cacEmail'
     ];
 
     let queryString = 'project?';
@@ -299,7 +309,9 @@ export class ApiService {
       'read',
       'write',
       'delete',
-      'featuredDocuments'
+      'featuredDocuments',
+      'projectCAC',
+      'cacEmail'
     ];
     let queryString = `project/${id}?populate=true`;
     if (cpStart !== null) { queryString += `&cpStart[since]=${cpStart}`; }

@@ -1,9 +1,8 @@
-import { Component, OnInit, ChangeDetectorRef, ElementRef } from '@angular/core';
-import { NavigationEnd, Router, ActivatedRoute } from '@angular/router';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { StorageService } from 'app/services/storage.service';
 import { Subject } from 'rxjs';
 import { ConfigService } from 'app/services/config.service';
-import { NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { TableObject } from 'app/shared/components/table-template/table-object';
 import { TableParamsObject } from 'app/shared/components/table-template/table-params-object';
 import { TableTemplateUtils } from 'app/shared/utils/table-template-utils';
@@ -56,15 +55,14 @@ export class ProjectDetailsTabComponent implements OnInit {
     public configService: ConfigService,
     private tableTemplateUtils: TableTemplateUtils,
     private searchService: SearchService,
-    private route: ActivatedRoute,
-    private router: Router
+    private route: ActivatedRoute
   ) { }
 
   ngOnInit() {
     this.project = this.storageService.state.currentProject.data;
     this.commentPeriod = this.project.commentPeriodForBanner;
     this.route.params
-    .subscribe((res: any) => {
+    .subscribe(() => {
       this.getFavoriteDocs();
     });
   }

@@ -12,11 +12,10 @@ import { CommentPeriodService } from 'app/services/commentperiod.service';
 import { StorageService } from 'app/services/storage.service';
 import { CommentPeriod } from 'app/models/commentperiod';
 import { AddCommentComponent } from 'app/comments/add-comment/add-comment.component';
+import { BecomeAMemberComponent } from './cac/become-a-member.component';
 import { Constants } from 'app/shared/utils/constants';
 import { SearchService } from 'app/services/search.service';
 import { Utils } from 'app/shared/utils/utils';
-import { Org } from 'app/models/organization';
-import { DataQueryResponse } from 'app/models/api-response';
 
 
 @Component({
@@ -79,6 +78,13 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
       tabDisplayCriteria: null,
       display: false,
     },
+    {
+      key: Constants.optionalProjectDocTabs.UNSUBSCRIBE_CAC,
+      label: 'Unsubscribe',
+      link: Constants.optionalProjectDocTabs.UNSUBSCRIBE_CAC,
+      tabDisplayCriteria: null,
+      display: false,
+    }
   ];
 
   constructor(
@@ -164,7 +170,7 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
       options: {
         position: 'topleft'
       },
-      onAdd: function (map) {
+      onAdd: function () {
         const element = L.DomUtil.create('i', 'material-icons leaflet-bar leaflet-control leaflet-control-custom');
 
         element.title = 'Reset view';
@@ -308,12 +314,29 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
   initTabLinks(): void {
     this.configService.lists.subscribe (list => {
       this.tabLinks.forEach(tabLink => {
-        if (!tabLink.display) {
+        if (!tabLink.display && tabLink.key !== Constants.optionalProjectDocTabs.UNSUBSCRIBE_CAC) {
           const tabModifier = this.utils.createProjectTabModifiers(tabLink.key, list);
           this.tabLinkIfNotEmpty(tabLink.key, tabModifier);
         }
       });
     });
+  }
+
+  public learnMore() {
+    this.ngbModal = this.modalService.open(BecomeAMemberComponent, { backdrop: 'static', size: 'lg' });
+    // set input parameter
+    (<BecomeAMemberComponent>this.ngbModal.componentInstance).project = this.project;
+    // check result
+    this.ngbModal.result.then(
+      value => {
+        // saved
+        console.log(`Success, value = ${value}`);
+      },
+      reason => {
+        // cancelled
+        console.log(`Cancelled, reason = ${reason}`);
+      }
+    );
   }
 
 

@@ -2,7 +2,7 @@ import { Component, OnInit, ChangeDetectorRef, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject } from 'rxjs/Subject';
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
-import { MatSnackBarRef, SimpleSnackBar, MatSnackBar } from '@angular/material';
+import { MatSnackBar } from '@angular/material';
 import { CommentPeriod } from 'app/models/commentperiod';
 import { Comment } from 'app/models/comment';
 
@@ -15,9 +15,6 @@ import { TableParamsObject } from 'app/shared/components/table-template/table-pa
 import { TableObject } from 'app/shared/components/table-template/table-object';
 import { TableTemplateUtils } from 'app/shared/utils/table-template-utils';
 import { CommentsTableRowsComponent } from 'app/comments/comments-table-rows/comments-table-rows.component';
-import { Utils } from 'app/shared/utils/utils';
-import { ISearchResults } from 'app/models/search';
-import { e } from '@angular/core/src/render3';
 
 @Component({
   selector: 'app-comments',
@@ -41,7 +38,6 @@ export class CommentsComponent implements OnInit, OnDestroy {
   private ngbModal: NgbModalRef = null;
 
   public tableParams: TableParamsObject = new TableParamsObject();
-  private snackBarRef: MatSnackBarRef<SimpleSnackBar> = null;
   public commentTableColumns = [];
 
   public type = 'PROJECT';
@@ -55,8 +51,7 @@ export class CommentsComponent implements OnInit, OnDestroy {
     private _changeDetectionRef: ChangeDetectorRef,
     private modalService: NgbModal,
     private router: Router,
-    private tableTemplateUtils: TableTemplateUtils,
-    private utils: Utils,
+    private tableTemplateUtils: TableTemplateUtils
   ) { }
 
   ngOnInit() {
@@ -147,16 +142,16 @@ export class CommentsComponent implements OnInit, OnDestroy {
 
   public downloadDocument(document) {
     this.loadingDoc = true;
-    const doc = this.api.downloadDocument(document)
-      .then((res) => {
+    this.api.downloadDocument(document)
+      .then(() => {
         // Turn this into a toast
         this.loadingDoc = false;
-        this.snackBarRef = this.snackBar.open('Downloading document');
+        this.snackBar.open('Downloading document');
         window.setTimeout(() => this.snackBar.dismiss(), 2000)
       })
-      .catch((error) => {
+      .catch(() => {
         this.loadingDoc = false;
-        this.snackBarRef = this.snackBar.open('Error opening document! Please try again later');
+        this.snackBar.open('Error opening document! Please try again later');
         window.setTimeout(() => this.snackBar.dismiss(), 2000)
       })
 

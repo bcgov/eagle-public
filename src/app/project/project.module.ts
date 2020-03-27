@@ -19,6 +19,7 @@ import { DocumentTableRowsComponent } from 'app/project/documents/project-docume
 import { DocumentDetailComponent } from 'app/project/documents/detail/detail.component';
 import { ToggleButtonComponent } from 'app/project/toggle-button/toggle-button.component';
 import { DetailsSidebarComponent } from 'app/project/details-sidebar/details-sidebar.component';
+import { BecomeAMemberComponent } from 'app/project/cac/become-a-member.component';
 
 import { StorageService } from 'app/services/storage.service';
 import { ProjectDetailsTabComponent } from './project-details-tab/project-details-tab.component';
@@ -34,7 +35,7 @@ import { FormsModule } from '@angular/forms';
 @NgModule({
   imports: [
     CommonModule,
-    NgbModule.forRoot(),
+    NgbModule,
     RouterModule,
     TagInputModule,
     SharedModule,
@@ -45,6 +46,7 @@ import { FormsModule } from '@angular/forms';
   ],
   declarations: [
     ProjectComponent,
+    BecomeAMemberComponent,
     CommentingTabComponent,
     DecisionsTabComponent,
     DocumentDetailComponent,
@@ -64,6 +66,7 @@ import { FormsModule } from '@angular/forms';
     StorageService
   ],
   entryComponents: [
+    BecomeAMemberComponent,
     DocumentTableRowsComponent,
     PinsTableRowsComponent,
     CommentsTableRowsComponent

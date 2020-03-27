@@ -37,8 +37,7 @@ export class ProjectService {
   ) { }
 
   // get just the projects (for fast mapping)
-  getAll(pageNum: number = 0, pageSize: number = 1000000, regionFilters: object = {}, cpStatusFilters: object = {}, appStatusFilters: object = {},
-    applicantFilter: string = null, clFileFilter: string = null, dispIdFilter: string = null, purposeFilter: string = null): Observable<Project[]> {
+  getAll(pageNum: number = 0, pageSize: number = 1000000): Observable<Project[]> {
       return this.searchService.getSearchResults('', 'Project', null, pageNum, pageSize, '', {}, true, '',  {}, '')
       .map((res: ISearchResults<Project>[]) => {
         if (res) {
@@ -64,10 +63,9 @@ export class ProjectService {
   // get all projects and related data
   // TODO: instead of using promises to get all data at once, use observables and DEEP-OBSERVE changes
   // see https://github.com/angular/angular/issues/11704
-  getAllFull(pageNum: number = 0, pageSize: number = 1000000, regionFilters: object = {}, cpStatusFilters: object = {}, appStatusFilters: object = {},
-    applicantFilter: string = null, clFileFilter: string = null, dispIdFilter: string = null, purposeFilter: string = null): Observable<Project[]> {
+  getAllFull(pageNum: number = 0, pageSize: number = 1000000): Observable<Project[]> {
     // first get the projects
-    return this.getAll(pageNum, pageSize, regionFilters, cpStatusFilters, appStatusFilters, applicantFilter, clFileFilter, dispIdFilter, purposeFilter)
+    return this.getAll(pageNum, pageSize)
       .mergeMap((projects: any) => {
         if (projects.length === 0) {
           return Observable.of([] as Project[]);
@@ -97,7 +95,7 @@ export class ProjectService {
               let currentDate = now.toISOString();
               // Default to the same comment period we're using currently in case one is not active
               let finalCommentPeriod = new CommentPeriod(projects[0].commentPeriodForBanner[0]);
-              for ( let commentPeriod in projects[0].commentPeriodForBanner) {
+              for (let commentPeriod in projects[0].commentPeriodForBanner) {
                 if (Date.parse(projects[0].commentPeriodForBanner[commentPeriod].dateCompleted) > Date.parse(currentDate)
                 && Date.parse(projects[0].commentPeriodForBanner[commentPeriod].dateStarted)  < Date.parse(currentDate) ) {
                     finalCommentPeriod = new CommentPeriod(projects[0].commentPeriodForBanner[commentPeriod]);
@@ -183,5 +181,17 @@ export class ProjectService {
         }
         return data;
       });
+  }
+
+  // Send this users' information to our CAC back-end
+  cacSignUp(project: Project, meta: any): Observable<any> {
+    return this.api.cacSignUp(project, meta)
+      .catch(error => this.api.handleError(error));
+  }
+
+  // Remove this user from the CAC membership on this project
+  cacRemoveMember(projectId: String, meta: any): Observable<any> {
+    return this.api.cacRemoveMember(projectId, meta)
+      .catch(error => this.api.handleError(error));
   }
 }
