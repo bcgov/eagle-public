@@ -63,8 +63,8 @@ export class SearchComponent implements OnInit, OnDestroy {
 
   public filterForURL: object = {};
   public filterForAPI: object = {};
-
   public filterForUI: SearchFilterObject = new SearchFilterObject();
+  public currentSearch: object = {};
 
   public showAdvancedSearch = true;
   public hasUncategorizedDocs = false;
@@ -168,7 +168,9 @@ export class SearchComponent implements OnInit, OnDestroy {
             this.projectPhases = _.sortBy(this.projectPhases, ['legislation']);
           }
 
-          if (this.storageService && this.storageService.state['search']) {
+          this.currentSearch = this.storageService.state['search'];
+
+          if (this.currentSearch && this.storageService.state['search']) {
             if (this.storageService.state['search'].filterForUI) {
               this.filterForUI = this.storageService.state['search'].filterForUI;
               this.setParamsFromFilters(params);
@@ -180,14 +182,14 @@ export class SearchComponent implements OnInit, OnDestroy {
           }
 
           // todo table params is always at least default tableParams object, replace with ?
-          if (!this.tableParams ) {
-            this.tableParams = this.tableTemplateUtils.getParamsFromUrl(params, this.filterForURL);
-          }
+          // if (!this.tableParams ) {
+          //   this.tableParams = this.tableTemplateUtils.getParamsFromUrl(params, this.filterForURL);
+          // }
 
           this.setFiltersFromParams(params);
-          if (this.tableParams.keywords) {
-            this.terms = new SearchTerms(this.tableParams)
-          }
+          // if (this.tableParams.keywords) {
+          //   this.terms = new SearchTerms(this.tableParams)
+          // }
           this.updateCounts();
 
           if (res.documents && res.documents[0].data && res.documents[0].data.meta.length > 0) {
@@ -197,7 +199,7 @@ export class SearchComponent implements OnInit, OnDestroy {
             this.tableParams.totalListItems = 0;
             this.documents = [];
           }
-// todo load terms from storage service
+
           this.loading = false;
           this.setRowData();
           this._changeDetectionRef.detectChanges();
@@ -214,21 +216,35 @@ export class SearchComponent implements OnInit, OnDestroy {
     if (!this.storageService.state['search']) {
       this.storageService.state['search'] = {};
     }
+
+    this.searchService.getSearchResults(
+      '',
+      'Document',
+      [
+        { name: 'categorized', value: false }
+      ],
+      this.storageService.state['search'].tableParams ? this.storageService.state['search'].tableParams.currentPage : 1,
+      this.storageService.state['search'].tableParams ? this.storageService.state['search'].tableParams.pageSize : 10,
+      this.storageService.state['search'].tableParams ? this.storageService.state['search'].tableParams.sortBy : '-datePosted,+displayName',
+      { documentSource: 'PROJECT' },
+      true,
+      null,
+      this.filterForAPI,
+      ''
+    )
+    .takeUntil(this.ngUnsubscribe)
+    .subscribe((res: any) => {
+      if (res[0].data.meta && res[0].data.meta.length > 0) {
+        this.hasUncategorizedDocs = true;
+        this.loading = false;
+        this._changeDetectionRef.detectChanges();
+      }
+    });
   }
 
   paramsToCollectionFilters(params, name, collection, identifyBy) {
     delete this.filterForURL[name];
     delete this.filterForAPI[name];
-
-    // The UI filters are remapping document and project type to the single 'Type' value
-    // this means that whenever we map back to the filters, we need to revert them
-    // from 'type', to the appropriate type.
-    let optionName = 'type';
-
-    if (optionName !== name) {
-      delete this.filterForURL[optionName];
-      delete this.filterForAPI[optionName];
-    }
 
     if (params[name] && collection) {
       let confirmedValues = [];
@@ -241,12 +257,8 @@ export class SearchComponent implements OnInit, OnDestroy {
         }
       });
       if (confirmedValues.length) {
-        if (optionName !== name) {
-          this.filterForURL[optionName] = encodeURI(confirmedValues.join(','));
-          this.filterForAPI[optionName] = confirmedValues.join(',');
-        }
-
-        this.filterForURL[name] = encodeURI(confirmedValues.join(','));
+        // this.filterForURL[name] = encodeURI(confirmedValues.join(','));
+        this.filterForURL[name] = confirmedValues.join(',');
         this.filterForAPI[name] = confirmedValues.join(',');
       }
     }
@@ -336,6 +348,8 @@ collectionFilterToParams(params, name, identifyBy) {
   }
 
   clearAllFilters() {
+    this.tableParams.keywords = '';
+    delete this.filterForURL['keywords'];
     Object.keys(this.filterForUI).forEach(key => {
       if (this.filterForUI[key]) {
         if (Array.isArray(this.filterForUI[key])) {
@@ -381,18 +395,21 @@ collectionFilterToParams(params, name, identifyBy) {
     this.getPaginated(this.tableParams.currentPage);
   }
 
+  // todo filters are lost on pagination?? storage service is getting reset..?
   getPaginated(pageNumber) {
     // Go to top of page after clicking to a different page.
     window.scrollTo(0, 0);
     this.loading = true;
-
+    // const things = this.tableTemplateUtils.getParamsFromUrl(params, );
     this.tableParams = this.tableTemplateUtils.updateTableParams(this.tableParams, pageNumber, this.tableParams.sortBy);
 
     // Filters and params are not set when paging
     // We don't need to redo everything, but we will
     // need to fetch the dates
+    // todo this clears my filters... params only has keywords????
     const params = this.terms.getParams();
-    this.setParamsFromFilters(params);
+    // todo on page 3 params no long has any filter values, so filterForUI is cleared in this method
+    this.setFiltersFromParams(params);
 
     const datePostedStart = params.hasOwnProperty('datePostedStart') && params.datePostedStart ? params.datePostedStart : null;
     const datePostedEnd = params.hasOwnProperty('datePostedEnd') && params.datePostedEnd ? params.datePostedEnd : null;
@@ -403,10 +420,10 @@ collectionFilterToParams(params, name, identifyBy) {
       queryModifiers['datePostedEnd'] = datePostedEnd;
     }
 
-    // this.updatePageTableSize(this.tableParams.pageSize);
-    // this.updatePageNumber(pageNumber);
     if (this.storageService) {
+      this.filterForAPI = this.storageService.state['search'].filterForAPI ? this.storageService.state['search'].filterForAPI : {};
       this.storageService.state['search'].tableParams = this.tableParams;
+      // this.storageService.state['search'].filterForUI = this.filterForUI;
     }
 
     this.searchService.getSearchResults(
@@ -425,7 +442,7 @@ collectionFilterToParams(params, name, identifyBy) {
       .subscribe((res: any) => {
         this.tableParams.totalListItems = res[0].data.meta[0].searchResultsTotal;
         this.documents = res[0].data.searchResults;
-        this.tableTemplateUtils.updateUrl(this.tableParams.sortBy, this.tableParams.currentPage, this.tableParams.pageSize, this.filterForURL, this.tableParams.keywords);
+        this.tableTemplateUtils.updateUrl(this.tableParams.sortBy, this.tableParams.currentPage, this.tableParams.pageSize, this.filterForAPI, this.tableParams.keywords);
         this.setRowData();
         this.loading = false;
         this._changeDetectionRef.detectChanges();
@@ -480,6 +497,7 @@ collectionFilterToParams(params, name, identifyBy) {
     if (this.storageService) {
       this.storageService.state['search'].tableParams = this.tableParams;
       this.storageService.state['search'].filterForUI = this.filterForUI;
+      this.storageService.state['search'].filterForURL = this.filterForURL;
       this.storageService.state['search'].filterForAPI = {};
     }
 

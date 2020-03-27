@@ -26,13 +26,12 @@ export class SearchResolver implements Resolve<Observable<object>> {
   resolve(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): Observable<object> {
     let currentPage = route.params.currentPage ? route.params.currentPage : 1;
     let pageSize = route.params.pageSize ? route.params.pageSize : 10;
-    let sortBy = route.params.sortBy && route.params.sortBy !== 'null' ? route.params.sortBy : '-datePosted,+displayName';
+    let sortBy = route.params.sortBy ? route.params.sortBy : '-datePosted,+displayName';
     const datePostedStart = route.params.hasOwnProperty('datePostedStart') && route.params.datePostedStart ? route.params.datePostedStart : null;
     const datePostedEnd = route.params.hasOwnProperty('datePostedEnd') && route.params.datePostedEnd ? route.params.datePostedEnd : null;
     const keywords = route.params.hasOwnProperty('keywords') ? route.params.keywords : '';
 
     if (Object.keys(route.params).length === 0) {
-      // return this.searchService.getFullList('List');
       return;
     } else {
       // Get the lists first
@@ -76,14 +75,14 @@ export class SearchResolver implements Resolve<Observable<object>> {
             if (tableParams) {
               currentPage = tableParams.currentPage;
               pageSize = tableParams.pageSize;
-              sortBy = tableParams.sortBy;
+              sortBy = tableParams.sortBy ? tableParams.sortBy : sortBy;
             }
 
             if (filterForUI) {
               this.setParamsFromFilters(route.params, filterForUI);
             }
           }
-          // todo update fields to match onsubmit, its the [] in this call
+
           return this.searchService.getSearchResults(
             keywords,
             'Document',
