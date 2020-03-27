@@ -406,10 +406,7 @@ collectionFilterToParams(params, name, identifyBy) {
     // Filters and params are not set when paging
     // We don't need to redo everything, but we will
     // need to fetch the dates
-    // todo this clears my filters... params only has keywords????
     const params = this.terms.getParams();
-    // todo on page 3 params no long has any filter values, so filterForUI is cleared in this method
-    this.setFiltersFromParams(params);
 
     const datePostedStart = params.hasOwnProperty('datePostedStart') && params.datePostedStart ? params.datePostedStart : null;
     const datePostedEnd = params.hasOwnProperty('datePostedEnd') && params.datePostedEnd ? params.datePostedEnd : null;
@@ -423,7 +420,6 @@ collectionFilterToParams(params, name, identifyBy) {
     if (this.storageService) {
       this.filterForAPI = this.storageService.state['search'].filterForAPI ? this.storageService.state['search'].filterForAPI : {};
       this.storageService.state['search'].tableParams = this.tableParams;
-      // this.storageService.state['search'].filterForUI = this.filterForUI;
     }
 
     this.searchService.getSearchResults(
