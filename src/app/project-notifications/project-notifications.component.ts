@@ -11,7 +11,7 @@ import { TableParamsObject } from 'app/shared/components/table-template/table-pa
 import { TableTemplateUtils } from 'app/shared/utils/table-template-utils';
 import { SearchService } from 'app/services/search.service';
 import { ApiService } from 'app/services/api';
-import { MatSnackBarRef, SimpleSnackBar, MatSnackBar } from '@angular/material';
+import { MatSnackBar } from '@angular/material';
 import { CommentPeriodService } from 'app/services/commentperiod.service';
 
 class ProjectNotificationFilterObject {
@@ -44,8 +44,6 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
 
   public projectNotifications: Array<ProjectNotification> = [];
   public readonly constants = Constants;
-
-  private snackBarRef: MatSnackBarRef<SimpleSnackBar> = null;
 
   public showFilters: object = {
     type: false,
@@ -192,7 +190,7 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
     this.updateCount('pcp');
   }
 
-  public onSubmit(currentPage = 1) {
+  public onSubmit() {
     let params = this.terms.getParams();
 
     params['ms'] = new Date().getMilliseconds();
@@ -240,11 +238,11 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
          this.api.downloadDocument(doc)
          .then(() => {
           // Turn this into a toast
-          this.snackBarRef = this.snackBar.open('Downloading document');
+          this.snackBar.open('Downloading document');
           window.setTimeout(() => this.snackBar.dismiss(), 2000)
         })
-        .catch((error) => {
-          this.snackBarRef = this.snackBar.open('Error opening document! Please try again later');
+        .catch(() => {
+          this.snackBar.open('Error opening document! Please try again later');
           window.setTimeout(() => this.snackBar.dismiss(), 2000)
         })
         });
