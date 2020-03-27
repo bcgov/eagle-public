@@ -1,7 +1,5 @@
 <tr *ngFor="let document of documents"
   class="clickable-row">
-    <td data-label="★" (click)="goToItem(document)" scope="row" class="col-1" *ngIf="currentUrl !== 'search' && showFeatured">
-    </td>
     <td data-label="Name" (click)="goToItem(document)" scope="row" class="col-6">
         {{document.displayName}}
     </td>
