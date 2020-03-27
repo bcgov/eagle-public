@@ -5,7 +5,6 @@ import { VarDirective } from 'app/shared/utils/ng-var.directive';
 import { RouterTestingModule } from '@angular/router/testing';
 import { ApiService } from 'app/services/api';
 import { ProjectService } from 'app/services/project.service';
-import { Observable } from 'rxjs/Observable';
 import 'rxjs/add/observable/of';
 import { Project } from 'app/models/project';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -72,6 +71,7 @@ describe('DecisionsTabComponent', () => {
     });
 
     it('sets the component project to the one from the route', () => {
+      component.ngOnInit();
       expect(component.project).toEqual(existingProject);
     });
   });

@@ -12,7 +12,6 @@ import * as moment from 'moment';
 
 import { Constants } from 'app/shared/utils/constants';
 import { Project } from 'app/models/project';
-import { ProjectService } from 'app/services/project.service';
 import { CommentPeriodService } from 'app/services/commentperiod.service';
 import { ConfigService } from 'app/services/config.service';
 
@@ -119,7 +118,6 @@ export class ProjlistFiltersComponent implements OnInit, OnChanges, OnDestroy {
     private location: Location,
     private route: ActivatedRoute,
     private router: Router,
-    private projectService: ProjectService,
     public commentPeriodService: CommentPeriodService, // also used in template
     private configService: ConfigService,
     private elementRef: ElementRef

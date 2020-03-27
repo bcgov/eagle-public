@@ -62,7 +62,7 @@ export class ProjlistMapComponent implements AfterViewInit, OnChanges, OnDestroy
     maxClusterRadius: 40, // NB: change to 0 to disable clustering
     // iconCreateFunction: this.clusterCreate // FUTURE: for custom markers, if needed
   });
-  private loading = false;
+  public loading = false;
   private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
 
   readonly defaultBounds = L.latLngBounds([48, -139], [60, -114]); // all of BC
@@ -427,7 +427,7 @@ export class ProjlistMapComponent implements AfterViewInit, OnChanges, OnDestroy
    * Center map on specified point, applying offset if needed.
    */
   // TODO: register for list/filter changes and apply offset accordingly ?
-  private centerMap(latlng: L.LatLng) {
+  public centerMap(latlng: L.LatLng) {
     let point = this.map.latLngToLayerPoint(latlng);
 
     if (this.configService.isApplistListVisible) {

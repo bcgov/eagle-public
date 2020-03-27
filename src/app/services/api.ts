@@ -1,15 +1,12 @@
 import { Injectable } from '@angular/core';
-import { ResponseContentType } from '@angular/http';
 import { HttpClient, HttpResponse } from '@angular/common/http';
 import { Observable } from 'rxjs/Observable';
-import { ErrorObservable } from 'rxjs/observable/ErrorObservable';
 import { throwError } from 'rxjs';
 import { map } from 'rxjs/operators';
 import * as _ from 'lodash';
 
 import { Project } from 'app/models/project';
 import { Feature } from 'app/models/feature';
-import { News } from 'app/models/news';
 import { Comment } from 'app/models/comment';
 import { CommentPeriod } from 'app/models/commentperiod';
 import { Document } from 'app/models/document';

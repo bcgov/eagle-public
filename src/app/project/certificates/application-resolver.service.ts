@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Resolve, ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
+import { Resolve, ActivatedRouteSnapshot } from '@angular/router';
 import { Observable } from 'rxjs/Observable';
 
 import { SearchService } from 'app/services/search.service';
@@ -15,13 +15,12 @@ export class ApplicationResolver implements Resolve<Observable<object>> {
     private utils: Utils
   ) { }
 
-  resolve(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): Observable<object> {
+  resolve(route: ActivatedRouteSnapshot): Observable<object> {
     const projectId = route.parent.paramMap.get('projId');
     const currentPage = route.params.currentPage ? route.params.currentPage : 1;
     const pageSize = route.params.pageSize ? route.params.pageSize : 10;
     const sortBy = route.params.sortBy && route.params.sortBy !== 'null' ? route.params.sortBy : '+sortOrder,-datePosted,+displayName';
     const keywords = route.params.keywords;
-
     return this.configService.lists.switchMap (list => {
       const tabModifier = this.utils.createProjectTabModifiers(Constants.optionalProjectDocTabs.APPLICATION, list);
       return this.searchService.getSearchResults(

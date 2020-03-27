@@ -6,7 +6,6 @@ import { FeatureService } from './feature.service';
 import 'rxjs/add/observable/of';
 import { Observable } from 'rxjs/Observable';
 import { Project } from 'app/models/project';
-import { CommentPeriod } from 'app/models/commentperiod';
 import { Decision } from 'app/models/decision';
 import { Feature } from 'app/models/feature';
 import { SearchService } from './search.service';
@@ -83,13 +82,13 @@ describe('ProjectService', () => {
     }
   }
   const decisionServiceStub = {
-    getByProjectId(projectId: string) {
+    getByProjectId() {
       return Observable.of(new Decision({_id: 'IIIII'}));
     }
   };
 
   const featureServiceStub = {
-    getByProjectId(projectId: string) {
+    getByProjectId() {
       const features = [
         new Feature({id: 'FFFFF', properties: { TENURE_AREA_IN_HECTARES: 12 }}),
         new Feature({id: 'GGGGG', properties: { TENURE_AREA_IN_HECTARES: 13 }})

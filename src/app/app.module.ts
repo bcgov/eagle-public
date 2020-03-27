@@ -4,6 +4,7 @@ import { BrowserModule } from '@angular/platform-browser';
 import { FormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
+import { NgxPageScrollCoreModule } from 'ngx-page-scroll-core';
 import { NgxPageScrollModule } from 'ngx-page-scroll';
 import { BootstrapModalModule } from 'ng2-bootstrap-modal';
 import { CookieService } from 'ngx-cookie-service';
@@ -52,14 +53,17 @@ import { NotificationProjectsListTableRowsComponent } from './notification-proje
     BrowserModule,
     FormsModule,
     HttpClientModule,
-    NgbModule.forRoot(),
-    NgxPageScrollModule,
+    NgbModule,
     BootstrapModalModule,
     SharedModule,
     ProjectModule,
     ProjectsModule,
     AppRoutingModule, // <-- module import order matters - https://angular.io/guide/router#module-import-order-matters
-    NgSelectModule
+    NgSelectModule,
+    NgxPageScrollCoreModule.forRoot({
+      scrollOffset: 50
+    }),
+    NgxPageScrollModule
   ],
   declarations: [
     AppComponent,
