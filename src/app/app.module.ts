@@ -24,6 +24,7 @@ import { HeaderComponent } from 'app/header/header.component';
 import { FooterComponent } from 'app/footer/footer.component';
 import { NewsListTableRowsComponent } from 'app/news/news-list-table-rows/news-list-table-rows.component';
 import { SearchHelpComponent } from './search-help/search-help.component';
+import { CACUnsubscribeComponent } from 'app/cac-unsubscribe/cac-unsubscribe.component';
 
 // services
 import { ApiService } from 'app/services/api';
@@ -81,6 +82,7 @@ import { NotificationProjectsListTableRowsComponent } from './notification-proje
     ProcessComponent,
     ComplianceOversightComponent,
     SearchHelpComponent,
+    CACUnsubscribeComponent
   ],
   entryComponents: [
     NewsListTableRowsComponent,

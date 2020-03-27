@@ -62,7 +62,7 @@
     </section>
     <section class="m-b-0">
       <h3>What can I expect as a Community Advisory Committee Member?</h3>
-      <p>The Environmental Assessment Office will provide subscribed Community Advisory Committee members information on the environmental assessment process and the proposed project, including notifications of process milestones, when and where key documents are posted, information on public comment periods and any other engagement opportunities. Members will be invited to provide their input through the public comment periods held throughout the environmental assessment. See the <strong>Community Advisory Committee Guideline</strong> and the <strong>Community Advisory Committee Terms of Reference</strong> for further information.</p>
+      <p>The Environmental Assessment Office will provide subscribed Community Advisory Committee members information on the environmental assessment process and the proposed project, including notifications of process milestones, when and where key documents are posted, information on public comment periods and any other engagement opportunities. Members will be invited to provide their input through the public comment periods held throughout the environmental assessment and, depending on the overall interest of Community Advisory Committee members, the Environmental Assessment Office may directly seek the advice of Community Advisory Committee members and establish other engagement opportunities. See the <strong>Community Advisory Committee Guideline</strong> and the <strong>Community Advisory Committee Terms of Reference</strong> for further information.</p>
     </section>
   </div>
   <div class="modal-footer">
@@ -121,7 +121,7 @@
         <div class="form-group">
           <label class="control-label">Describe your interest in the project</label>
           <div>
-            <p class="font-italic understandText">Please select all that apply. You may include additional details or information regarding your interest in the text box below. This information is for the EAO to better understand the membership of the committee, any information you provide here will not be considered as input into the review of the project. Please submit your comments on the proposed project through the public comment periods throughout the environmental assessment process.</p>
+            <p class="font-italic understandText">Please select all that apply. You may include additional details or information regarding your interest in the text box below. This information is for the EAO to better understand the membership of the committee, any information you provide here will not be considered as input into the assessment of the project. Please submit your comments on the proposed project through the public comment periods throughout the environmental assessment.</p>
           </div>
 
           <!-- I live near -->
@@ -148,7 +148,7 @@
 
         <div class="form-group">
           <label class="control-label understandText">I understand that...</label>
-          <p class="font-italic understandText">Your personal information is collected by the Environmental Assessment Agency for the purpose of sending you updates on {{project.name}} project under the authority of s.26(c) of the Freedom of Information and Protection of Privacy Act. In submitting your comment, you consent to receiving updates to the email address you have provided. This consent is valid from this date forward and may be revoked by contacting the EAO representative below. Should you have any questions about this collection, or wish to revoke your consent please contact:</p>
+          <p class="font-italic understandText">Your personal information is collected by the Environmental Assessment Office for the purpose of sending you updates on {{project.name}} project under the authority of s.26(c) of the Freedom of Information and Protection of Privacy Act. In submitting your comment, you consent to receiving updates to the email address you have provided. This consent is valid from this date forward and may be revoked by contacting the EAO representative below. Should you have any questions about this collection, or wish to revoke your consent please contact:</p>
             <ul class="font-italic understandText m-0">Director, Digital Services</ul>
             <ul class="font-italic understandText m-0">Environmental Assessment Office</ul>
             <ul class="font-italic understandText m-0">836 Yates Street, Victoria, BC</ul>
@@ -158,6 +158,12 @@
             <label class="control-label" >
             <input required type="checkbox" aria-label="Checkbox for row item" name="acknowledged" [(ngModel)]='acknowledged'>
               By checking this box, I acklowedge that I understand the above text.
+            </label>
+          </div>
+          <div class="form-control-container">
+            <label class="control-label" >
+              <input required type="checkbox" aria-label="Checkbox for row item" name="termsOfReference" [(ngModel)]='termsOfReference'>
+              By checking this box, I acknowledge that I have read, understood, and will abide by the <a href="https://projects.eao.gov.bc.ca/">Community Advisory Committee Terms of Referece</a>
             </label>
           </div>
         </div>
@@ -184,7 +190,7 @@
   <div class="thank-you-icon"></div>
   <h4>Thank you for becoming a Community Advisory Committee Member</h4>
   <p>You are now a member of this group!</p>
-  <p>We will be communicating with members of the Community Advisory Committee over the review stages of this project.  We will send out emails to members of this group at various key points through the review.</p>
+  <p>We will be communicating with members of the Community Advisory Committee over the assessment stages of this project.  We will send out emails to members of this committee at key points through the assessment.</p>
   <p>Please add <a href="mailto:{{project.cacEmail}}">{{project.cacEmail}}</a> to your contacts to ensure that our emails go to your inbox and are not filtered to your Spam folder.</p>
   <button class="btn btn-primary gtm-submit-comment-done" type="button" (click)="p4_next()">Continue to Commenting</button>
 </div>

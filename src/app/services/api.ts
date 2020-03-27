@@ -195,6 +195,11 @@ export class ApiService {
     return this.http.post<any>(`${this.apiPath}/project/${project._id}/cacSignUp`, meta, {});
   }
 
+  cacRemoveMember(projectId: String, meta: any) {
+    // We are just looking for a 200 OK
+    return this.http.put<any>(`${this.apiPath}/project/${projectId}/cacRemoveMember`, meta, {});
+  }
+
   // Organizations
 
   getOrgsByCompanyType(type: string): Observable<Org[]> {
