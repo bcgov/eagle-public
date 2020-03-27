@@ -16,6 +16,7 @@ export class Constants {
     APPLICATION: 'application',
     CERTIFICATE: 'certificate',
     AMENDMENT: 'amendment',
+    UNSUBSCRIBE_CAC: 'project-unsubscribe'
   };
 
   public static readonly legislationLinks = {

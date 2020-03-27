@@ -13,7 +13,7 @@
 
     <section class="project-list table-container">
         <div class="container">
-            <form #f="ngForm" class="search-form ui form" (ngSubmit)="onSubmit()">
+            <form #f="ngForm" class="search-form ui form" (ngSubmit)="getPaginatedProjects(tableParams.currentPage);">
                 <div class="search-area">
                     <div class="input-group main-search-field">
                         <input class="form-control" type="text" name="keywordInput"
@@ -22,7 +22,7 @@
                             aria-label="Enter keywords to search projects by title, description, or type"/>
                         <div *ngIf="!showAdvancedSearch || !isShowingFilter()" class="input-group-append">
                             <!-- prevent searching if input is empty or we're already searching -->
-                            <button class="btn btn-primary" type="submit">
+                            <button class="btn btn-primary" type="button" (click)="getPaginatedProjects(tableParams.currentPage);">
                                 <span>Search</span>
                             </button>
                         </div>

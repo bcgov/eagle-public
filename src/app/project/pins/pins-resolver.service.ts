@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Resolve, ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
+import { Resolve, ActivatedRouteSnapshot } from '@angular/router';
 import { Observable } from 'rxjs/Observable';
 
 import { ProjectService } from 'app/services/project.service';
@@ -12,7 +12,7 @@ export class PinsResolverService implements Resolve<Observable<object>> {
     private projectService: ProjectService
   ) { }
 
-  resolve(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): Observable<DataQueryResponse<Org>[]> {
+  resolve(route: ActivatedRouteSnapshot): Observable<DataQueryResponse<Org>[]> {
     const projectId = route.parent.paramMap.get('projId');
     const pageNum = route.params.currentPage ? route.params.currentPage : 1;
     const pageSize = route.params.pageSize ? route.params.pageSize : 10;

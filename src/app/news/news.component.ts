@@ -14,7 +14,6 @@ import { TableTemplateUtils } from 'app/shared/utils/table-template-utils';
 import { NewsListTableRowsComponent } from './news-list-table-rows/news-list-table-rows.component';
 
 import { SearchService } from 'app/services/search.service';
-import { StorageService } from 'app/services/storage.service';
 
 @Component({
   selector: 'app-news',

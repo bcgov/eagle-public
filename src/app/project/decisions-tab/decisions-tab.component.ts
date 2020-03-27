@@ -12,7 +12,7 @@ import { ProjectService } from 'app/services/project.service';
   styleUrls: ['./decisions-tab.component.scss']
 })
 export class DecisionsTabComponent implements OnInit, OnDestroy {
-  public project: Project = null;
+  public project: Project = new Project();
   private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
 
   constructor(
@@ -31,6 +31,7 @@ export class DecisionsTabComponent implements OnInit, OnDestroy {
           if (data.project) {
             this.project = data.project;
           } else {
+            this.project = null;
             alert('Uh-oh, couldn\'t load project');
             // project not found --> navigate back to project list
             this.router.navigate(['/projects']);
