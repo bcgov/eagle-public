@@ -68,6 +68,7 @@ export class SearchComponent implements OnInit, OnDestroy {
 
   public showAdvancedSearch = true;
   public hasUncategorizedDocs = false;
+  public categorizedQuery = { name: 'categorized', value: true };
   public readonly constants = Constants;
 
   public showFilters: object = {
@@ -78,7 +79,7 @@ export class SearchComponent implements OnInit, OnDestroy {
     documentAuthorType: false
   };
 
-  public searchDisclaimer = Constants.searchDisclaimer;
+  public searchDisclaimer = Constants.docSearchDisclaimer;
 
   public numFilters: object = {
     date: 0,
@@ -170,6 +171,7 @@ export class SearchComponent implements OnInit, OnDestroy {
 
           this.currentSearch = this.storageService.state['search'];
 
+          // reload query params from storage
           if (this.currentSearch && this.storageService.state['search']) {
             if (this.storageService.state['search'].filterForUI) {
               this.filterForUI = this.storageService.state['search'].filterForUI;
@@ -179,17 +181,22 @@ export class SearchComponent implements OnInit, OnDestroy {
             if (this.storageService.state['search'].tableParams) {
               this.tableParams = this.storageService.state['search'].tableParams;
             }
+
+            if (this.storageService.state['search'].categorizedQuery) {
+              this.categorizedQuery = this.storageService.state['search'].categorizedQuery
+            }
           }
 
-          // todo table params is always at least default tableParams object, replace with ?
-          // if (!this.tableParams ) {
-          //   this.tableParams = this.tableTemplateUtils.getParamsFromUrl(params, this.filterForURL);
-          // }
+          if (_.isEqual(this.tableParams, new TableParamsObject())) {
+            this.tableParams = this.tableTemplateUtils.getParamsFromUrl(params, this.filterForURL);
+            this.terms.keywords = this.tableParams.keywords;
+          }
+
+          // todo this will override, need a different check to set this
+          // set default sort
+          this.tableParams.sortBy = '-datePosted,+displayName';
 
           this.setFiltersFromParams(params);
-          // if (this.tableParams.keywords) {
-          //   this.terms = new SearchTerms(this.tableParams)
-          // }
           this.updateCounts();
 
           if (res.documents && res.documents[0].data && res.documents[0].data.meta.length > 0) {
@@ -217,11 +224,16 @@ export class SearchComponent implements OnInit, OnDestroy {
       this.storageService.state['search'] = {};
     }
 
+
+    if (!this.filterForAPI) {
+      this.categorizedQuery = { name: 'categorized', value: false }
+    }
+
     this.searchService.getSearchResults(
       '',
       'Document',
       [
-        { name: 'categorized', value: false }
+        this.categorizedQuery
       ],
       this.storageService.state['search'].tableParams ? this.storageService.state['search'].tableParams.currentPage : 1,
       this.storageService.state['search'].tableParams ? this.storageService.state['search'].tableParams.pageSize : 10,
@@ -235,7 +247,9 @@ export class SearchComponent implements OnInit, OnDestroy {
     .takeUntil(this.ngUnsubscribe)
     .subscribe((res: any) => {
       if (res[0].data.meta && res[0].data.meta.length > 0) {
-        this.hasUncategorizedDocs = true;
+        if (!this.filterForAPI) {
+          this.hasUncategorizedDocs = true;
+        }
         this.loading = false;
         this._changeDetectionRef.detectChanges();
       }
@@ -292,7 +306,8 @@ collectionFilterToParams(params, name, identifyBy) {
     if (this.filterForUI[name].length) {
       const values = this.filterForUI[name].map(record => { return record[identifyBy]; });
       params[name] = values.join(',');
-      this.storageService.state['search'].filterForAPI[name] = values.join(',');
+      this.filterForAPI[name] = values.join(',')
+      this.storageService.state['search'].filterForAPI[name] = this.filterForAPI;
     }
   }
 
@@ -395,12 +410,10 @@ collectionFilterToParams(params, name, identifyBy) {
     this.getPaginated(this.tableParams.currentPage);
   }
 
-  // todo filters are lost on pagination?? storage service is getting reset..?
   getPaginated(pageNumber) {
     // Go to top of page after clicking to a different page.
     window.scrollTo(0, 0);
     this.loading = true;
-    // const things = this.tableTemplateUtils.getParamsFromUrl(params, );
     this.tableParams = this.tableTemplateUtils.updateTableParams(this.tableParams, pageNumber, this.tableParams.sortBy);
 
     // Filters and params are not set when paging
@@ -425,7 +438,9 @@ collectionFilterToParams(params, name, identifyBy) {
     this.searchService.getSearchResults(
       this.tableParams.keywords,
       'Document',
-      [],
+      [
+        this.categorizedQuery
+      ],
       pageNumber,
       this.tableParams.pageSize,
       this.tableParams.sortBy,
@@ -484,11 +499,9 @@ collectionFilterToParams(params, name, identifyBy) {
     params['ms'] = new Date().getMilliseconds();
     params['dataset'] = 'Document';
     params['currentPage'] = this.tableParams.currentPage;
-    // todo  sortby always has default value of '-datePosted'
     params['sortBy'] = this.tableParams.sortBy ? this.tableParams.sortBy : '-datePosted,+displayName';
     params['pageSize'] = this.tableParams.pageSize;
 
-    // update table params before submit?
     this.tableParams.keywords = params['keywords'];
     if (this.storageService) {
       this.storageService.state['search'].tableParams = this.tableParams;
@@ -498,6 +511,12 @@ collectionFilterToParams(params, name, identifyBy) {
     }
 
     this.setParamsFromFilters(params);
+    if (!_.isEmpty(this.filterForAPI)) {
+      this.categorizedQuery = { name: 'categorized', value: true }
+      if (this.storageService && this.storageService.state['search']) {
+        this.storageService.state['search'].categorizedQuery = this.categorizedQuery;
+      }
+    }
     this.tableTemplateUtils.updateUrl(this.tableParams.sortBy, this.tableParams.currentPage, this.tableParams.pageSize, this.filterForURL, this.tableParams.keywords);
     this.router.navigate(['search', params]);
   }

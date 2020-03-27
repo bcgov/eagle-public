@@ -30,6 +30,7 @@ export class SearchResolver implements Resolve<Observable<object>> {
     const datePostedStart = route.params.hasOwnProperty('datePostedStart') && route.params.datePostedStart ? route.params.datePostedStart : null;
     const datePostedEnd = route.params.hasOwnProperty('datePostedEnd') && route.params.datePostedEnd ? route.params.datePostedEnd : null;
     const keywords = route.params.hasOwnProperty('keywords') ? route.params.keywords : '';
+    let categorizedQuery = { name: 'categorized', value: false };
 
     if (Object.keys(route.params).length === 0) {
       return;
@@ -81,12 +82,16 @@ export class SearchResolver implements Resolve<Observable<object>> {
             if (filterForUI) {
               this.setParamsFromFilters(route.params, filterForUI);
             }
+
+            if (this.storageService.state['search'].categorizedQuery) {
+              categorizedQuery = this.storageService.state['search'].categorizedQuery
+            }
           }
 
           return this.searchService.getSearchResults(
             keywords,
             'Document',
-            [],
+            [ categorizedQuery ],
             currentPage,
             pageSize,
             sortBy,

@@ -254,6 +254,17 @@
                         </div>
                     </div>
                 </div>
+                <div *ngIf="showAdvancedSearch" class="search-disclaimer">
+                    <span>{{searchDisclaimer}}</span>
+                </div>
+                <button *ngIf="!hasUncategorizedDocs && showAdvancedSearch && isShowingFilter()" class="btn btn-primary search-button"
+                type="submit">
+                    <span>Search</span>
+                </button>
+                <button *ngIf="hasUncategorizedDocs && showAdvancedSearch && isShowingFilter()" class="btn btn-primary search-button-above-disclaimer"
+                    type="submit">
+                    <span>Search</span>
+                </button>
                     <button *ngIf="showAdvancedSearch && isShowingFilter()"
                     class="btn btn-primary search-button" type="submit" [disabled]="!(terms.keywords || hasFilter()) || searching"
                     >
