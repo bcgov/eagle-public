@@ -16,8 +16,6 @@ import { BecomeAMemberComponent } from './cac/become-a-member.component';
 import { Constants } from 'app/shared/utils/constants';
 import { SearchService } from 'app/services/search.service';
 import { Utils } from 'app/shared/utils/utils';
-import { Org } from 'app/models/organization';
-import { DataQueryResponse } from 'app/models/api-response';
 
 
 @Component({
@@ -172,7 +170,7 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
       options: {
         position: 'topleft'
       },
-      onAdd: function (map) {
+      onAdd: function () {
         const element = L.DomUtil.create('i', 'material-icons leaflet-bar leaflet-control leaflet-control-custom');
 
         element.title = 'Reset view';
