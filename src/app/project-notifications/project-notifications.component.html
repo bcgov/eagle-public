@@ -161,12 +161,17 @@
                                     <h4>{{(project?.name || '-')}}</h4>
                                 </div>
                                 <div class="col-sm-12 col-md-4">
-                                    <a class="btn btn-primary view-pcp-btn"
+                                    <a *ngIf="project?.commentPeriod?.daysRemainingCount > 0" class="btn btn-primary view-pcp-btn"
                                        title="View this Public Comment Period"
                                        [routerLink]="['/pn', project?._id, 'cp', project?.commentPeriod?._id]">
-                                       <div *ngIf="project?.commentPeriod?.daysRemainingCount > 0" class="pcp-indicator pcp-indicator-active"></div>
-                                       <div *ngIf="project?.commentPeriod === null || project?.commentPeriod?.daysRemainingCount <= 0" class="pcp-indicator pcp-indicator-inactive"></div>
-                                       View Public Comment Period
+                                       <div class="pcp-indicator pcp-indicator-active"></div>
+                                       View Open Comment Period
+                                    </a>
+                                    <a *ngIf="project?.commentPeriod?.daysRemainingCount === 0" class="btn btn-primary view-pcp-btn"
+                                       title="View this Public Comment Period"
+                                       [routerLink]="['/pn', project?._id, 'cp', project?.commentPeriod?._id]">
+                                       <div class="pcp-indicator pcp-indicator-inactive"></div>
+                                       View Closed Comment Period
                                     </a>
                                 </div>
                               </div>
