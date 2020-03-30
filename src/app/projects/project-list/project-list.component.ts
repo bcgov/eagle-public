@@ -115,6 +115,9 @@ export class ProjectListComponent implements OnInit, OnDestroy {
 
   private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
 
+  private previousFilters;
+  private previousKeyword;
+
   constructor(
     private router: Router,
     private route: ActivatedRoute,
@@ -237,6 +240,10 @@ export class ProjectListComponent implements OnInit, OnDestroy {
             this.storageService.state.projList.filterForUI = this.filterForUI;
             this.storageService.state.projList.tableParams = this.tableParams;
           }
+
+          // We need to clone filters, not reference
+          this.previousFilters = { ...this.filterForAPI };
+          this.previousKeyword = this.tableParams.keywords;
 
         } else {
           alert('Uh-oh, couldn\'t load search results');
@@ -463,12 +470,12 @@ export class ProjectListComponent implements OnInit, OnDestroy {
           eacDecision: project.eacDecision
         });
       });
-      this.projectTableData = new TableObject(
-        ProjectListTableRowsComponent,
-        projectList,
-        this.tableParams
-      );
     }
+    this.projectTableData = new TableObject(
+      ProjectListTableRowsComponent,
+      projectList,
+      this.tableParams
+    );
   }
 
   setColumnSort(column) {
@@ -491,12 +498,34 @@ export class ProjectListComponent implements OnInit, OnDestroy {
       this.tableParams.sortBy
     );
 
+    // the need to do this here is mildly disturbing
+    // TODO: replace the param-filter calls
+    let params = this.terms.getParams();
+    params['ms'] = new Date().getMilliseconds();
+    params['dataset'] = this.terms.dataset;
+    params['currentPage'] = this.tableParams.currentPage;
+    params['sortBy'] = this.tableParams.sortBy = '-score';
+    params['keywords'] = this.tableParams.keywords;
+    params['pageSize'] = this.tableParams.pageSize
+    this.setParamsFromFilters(params);
+    this.setFiltersFromParams(params);
+
     // store the table params in the event of a page navigation
     this.storageService.state.projList.tableParams = this.tableParams;
 
     if (this.filterForAPI.hasOwnProperty('projectPhase')) {
       this.filterForAPI['currentPhaseName'] = this.filterForAPI['projectPhase'];
       delete this.filterForAPI['projectPhase'];
+    }
+
+    this.storageService.state.projList.filterForAPI = this.filterForAPI;
+    this.storageService.state.projList.filterForUI = this.filterForUI;
+    this.storageService.state.projList.tableParams = this.tableParams;
+
+    if (this.tableParams.keywords !== this.previousKeyword || JSON.stringify(this.filterForAPI) !== JSON.stringify(this.previousFilters)) {
+      this.projectTableData.paginationData.currentPage = 1;
+      this.tableParams.currentPage = 1;
+      pageNumber = 1;
     }
 
     this.searchService
@@ -529,6 +558,10 @@ export class ProjectListComponent implements OnInit, OnDestroy {
           this.setRowData();
           this.loading = false;
           this._changeDetectionRef.detectChanges();
+
+          this.previousFilters = { ...this.filterForAPI };
+          this.previousKeyword = this.tableParams.keywords;
+
         } else {
           alert('Uh-oh, couldn\'t load projects');
           // project not found --> navigate back to search
