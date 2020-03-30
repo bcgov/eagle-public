@@ -242,7 +242,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
           }
 
           // We need to clone filters, not reference
-          this.previousFilters = JSON.parse(JSON.stringify(this.filterForAPI));
+          this.previousFilters = { ...this.filterForAPI };
           this.previousKeyword = this.tableParams.keywords;
 
         } else {
@@ -559,7 +559,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
           this.loading = false;
           this._changeDetectionRef.detectChanges();
 
-          this.previousFilters = JSON.parse(JSON.stringify(this.filterForAPI));
+          this.previousFilters = { ...this.filterForAPI };
           this.previousKeyword = this.tableParams.keywords;
 
         } else {
