@@ -3,7 +3,6 @@ import { Subject } from 'rxjs';
 import { TableComponent } from 'app/shared/components/table-template/table.component';
 import { TableObject } from 'app/shared/components/table-template/table-object';
 import { Router, ActivatedRoute } from '@angular/router';
-import { ApiService } from 'app/services/api';
 import { Utils } from 'app/shared/utils/utils';
 
 @Component({
@@ -13,9 +12,10 @@ import { Utils } from 'app/shared/utils/utils';
 })
 
 export class DocSearchTableRowsComponent implements OnInit, OnDestroy, TableComponent {
-  private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
   @Input() data: TableObject;
   @Output() selectedCount: EventEmitter<any> = new EventEmitter();
+
+  private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
 
   public documents: any;
   public paginationData: any;
@@ -27,11 +27,10 @@ export class DocSearchTableRowsComponent implements OnInit, OnDestroy, TableComp
   constructor(
     private _changeDetectionRef: ChangeDetectorRef,
     private route: ActivatedRoute,
-    private api: ApiService,
     private router: Router,
     private utils: Utils
   ) {
-    let currRoute = router.url.split(';')[0];
+    let currRoute = this.router.url.split(';')[0];
     this.currentUrl = currRoute.substring(currRoute.lastIndexOf('/') + 1);
    }
 
