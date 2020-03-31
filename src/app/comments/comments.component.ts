@@ -14,7 +14,7 @@ import { ApiService } from 'app/services/api';
 import { TableParamsObject } from 'app/shared/components/table-template/table-params-object';
 import { TableObject } from 'app/shared/components/table-template/table-object';
 import { TableTemplateUtils } from 'app/shared/utils/table-template-utils';
-import { CommentsTableRowsComponent } from 'app/project/comments/comments-table-rows/comments-table-rows.component';
+import { CommentsTableRowsComponent } from 'app/comments/comments-table-rows/comments-table-rows.component';
 
 @Component({
   selector: 'app-comments',
@@ -40,6 +40,8 @@ export class CommentsComponent implements OnInit, OnDestroy {
   public tableParams: TableParamsObject = new TableParamsObject();
   public commentTableColumns = [];
 
+  public type = 'PROJECT';
+
   constructor(
     public snackBar: MatSnackBar,
     private api: ApiService,
@@ -64,10 +66,13 @@ export class CommentsComponent implements OnInit, OnDestroy {
       .subscribe(
         (data: { commentPeriod: CommentPeriod, project: Project }) => {
 
-          if (data.project) {
-            const results = data.project;
-            this.project = results ? results : null;
-          }
+        if (data.project[0]) {
+          this.type = 'PROJECT-NOTIFICATION';
+          this.project = data.project[0].data.searchResults[0];
+        } else {
+          this.type = 'PROJECT';
+          this.project = data.project ? data.project : null;
+        }
 
           if (data.commentPeriod) {
             // To fix the issue where the last page is empty.
@@ -174,7 +179,11 @@ export class CommentsComponent implements OnInit, OnDestroy {
   }
 
   public goBackToProjectDetails() {
-    this.router.navigate(['/p', this.project._id]);
+    if (this.type === 'PROJECT') {
+      this.router.navigate(['/p', this.project._id]);
+    } else {
+      this.router.navigate(['/project-notifications']);
+    }
   }
 
   getPaginatedComments(pageNumber) {

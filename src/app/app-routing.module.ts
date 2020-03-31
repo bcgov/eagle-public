@@ -12,8 +12,11 @@ import { ProcessComponent } from './process/process.component';
 import { ComplianceOversightComponent } from './compliance-oversight/compliance-oversight.component';
 import { SearchHelpComponent } from './search-help/search-help.component';
 import { NewsResolver } from './news/news-resolver.service';
-import { NotificationProjectsListComponent } from './notification-projects/notification-projects.component';
-import { NotificationProjectsResolver } from './notification-projects/notification-projects-resolver.service';
+import { ProjectNotificationsListComponent } from './project-notifications/project-notifications.component';
+import { ProjectNotificationsResolver } from './project-notifications/project-notifications-resolver.service';
+import { ProjectNotificationResolver } from './project-notifications/project-notification-resolver.service';
+import { CommentsComponent } from 'app/comments/comments.component';
+import { CommentsResolver } from 'app/comments/comments-resolver.service';
 
 const routes: Routes = [
   {
@@ -33,10 +36,23 @@ const routes: Routes = [
     component: ProjectListComponent
   },
   {
-    path: 'notification-projects',
-    component: NotificationProjectsListComponent,
+    path: 'project-notifications',
+    component: ProjectNotificationsListComponent,
     resolve: {
-      notificationProjects: NotificationProjectsResolver
+      projectNotifications: ProjectNotificationsResolver
+    }
+  },
+  {
+    path: 'pn/:projId/cp/:commentPeriodId',
+    redirectTo: 'pn/:projId/cp/:commentPeriodId/details',
+    pathMatch: 'full'
+  },
+  {
+    path: 'pn/:projId/cp/:commentPeriodId/details',
+    component: CommentsComponent,
+    resolve: {
+      commentPeriod: CommentsResolver,
+      project: ProjectNotificationResolver
     }
   },
   {
@@ -78,7 +94,7 @@ const routes: Routes = [
 @NgModule({
   imports: [RouterModule.forRoot(routes)],
   exports: [RouterModule],
-  providers: [NewsResolver, NotificationProjectsResolver]
+  providers: [NewsResolver, ProjectNotificationsResolver, ProjectNotificationResolver]
 })
 
 export class AppRoutingModule { }

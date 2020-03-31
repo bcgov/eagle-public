@@ -17,6 +17,49 @@ def notifyRocketChat(text, url) {
     sh("curl -X POST -H 'Content-Type: application/json' --data \'${payload}\' ${rocketChatURL}")
 }
 
+// Print stack trace of error
+@NonCPS
+private static String stackTraceAsString(Throwable t) {
+    StringWriter sw = new StringWriter();
+    t.printStackTrace(new PrintWriter(sw));
+    return sw.toString()
+}
+
+def _openshift(String name, String project, Closure body) {
+  script {
+    openshift.withCluster() {
+      openshift.withProject(project) {
+        echo "Running Stage '${name}'"
+        waitUntil {
+          boolean isDone=false
+          try {
+            body()
+            isDone=true
+            echo "Completed Stage '${name}'"
+          } catch (error) {
+            echo "${stackTraceAsString(error)}"
+            def inputAction = input(
+              message: "This step (${name}) has failed. See related messages:",
+              ok: 'Confirm',
+              parameters: [
+                choice(
+                  name: 'action',
+                  choices: 'Re-run\nIgnore',
+                  description: 'What would you like to do?'
+                )
+              ]
+            )
+            if ('Ignore'.equalsIgnoreCase(inputAction)) {
+              isDone=true
+            }
+          }
+          return isDone
+        }
+      }
+    }
+  }
+}
+
 /*
  * takes in a sonarqube status json payload
  * and returns the status string
@@ -24,6 +67,34 @@ def notifyRocketChat(text, url) {
 def sonarGetStatus (jsonPayload) {
   def jsonSlurper = new JsonSlurper()
   return jsonSlurper.parseText(jsonPayload).projectStatus.status
+}
+
+/*
+ * takes in a sonarqube status json payload
+ * and returns the date string
+ */
+def sonarGetDate (jsonPayload) {
+  def jsonSlurper = new JsonSlurper()
+  return jsonSlurper.parseText(jsonPayload).projectStatus.periods[0].date
+}
+
+boolean sonarqubeReportComplete ( String oldDate, String sonarqubeStatusUrl, def iterations = 6 ) {
+  def oldSonarqubeReportDate = oldDate
+  def newSonarqubeReportDate = sonarGetDate ( sh ( returnStdout: true, script: "curl -w '%{http_code}' '${sonarqubeStatusUrl}'" ) )
+  int delay = 0
+
+  for (int i=0; i<iterations; i++) {
+    echo "waiting for sonarqube report, iterator is: ${i}, max iterator is: ${iterations} \n Old Date: ${oldSonarqubeReportDate} \n New Date: ${newSonarqubeReportDate}"
+    if (oldSonarqubeReportDate != newSonarqubeReportDate) {
+      echo "sonarqube report complete"
+      return true
+    } else {
+      delay = (1<<i) // exponential backoff
+      sleep(delay)
+      newSonarqubeReportDate = sonarGetDate ( sh ( returnStdout: true, script: "curl -w '%{http_code}' '${sonarqubeStatusUrl}'" ) )
+    }
+  }
+  return false
 }
 
 /*
@@ -58,146 +129,160 @@ def getChangeLog(pastBuilds) {
 }
 
 def nodejsTester () {
-  openshift.withCluster() {
-    openshift.withProject() {
-      podTemplate(label: 'node-tester', name: 'node-tester', serviceAccount: 'jenkins', cloud: 'openshift', containers: [
+  _openshift(env.STAGE_NAME, TOOLSPROJECT) {
+    String testPodLabel = "node-tester-${UUID.randomUUID().toString()}";
+    podTemplate(
+      label: testPodLabel,
+      name: testPodLabel,
+      serviceAccount: 'jenkins',
+      cloud: 'openshift',
+      slaveConnectTimeout: 300,
+      containers: [
         containerTemplate(
           name: 'jnlp',
-          image: 'registry.access.redhat.com/openshift3/jenkins-agent-nodejs-8-rhel7',
-          resourceRequestCpu: '500m',
-          resourceLimitCpu: '800m',
-          resourceRequestMemory: '2Gi',
-          resourceLimitMemory: '4Gi',
-          workingDir: '/tmp',
-          command: '',
-        )
-      ]) {
-        node("node-tester") {
-          checkout scm
-          try {
-            sh 'npm run tests'
-          } finally {
-            echo "Unit Tests Passed"
-          }
-        }
-      }
-      return true
-    }
-  }
-}
-
-// todo templates can be pulled from a repository, instead of declared here
-def nodejsLinter () {
-  openshift.withCluster() {
-    openshift.withProject() {
-      podTemplate(label: 'node-linter', name: 'node-linter', serviceAccount: 'jenkins', cloud: 'openshift', containers: [
-        containerTemplate(
-          name: 'jnlp',
-          image: 'registry.access.redhat.com/openshift3/jenkins-agent-nodejs-8-rhel7',
+          image: 'docker-registry.default.svc:5000/esm/eagle-unit-tester',
           resourceRequestCpu: '500m',
           resourceLimitCpu: '1000m',
           resourceRequestMemory: '2Gi',
-          resourceLimitMemory: '4Gi',
-          activeDeadlineSeconds: '1200',
+          resourceLimitMemory: '3Gi',
           workingDir: '/tmp',
           command: '',
-          args: '${computer.jnlpmac} ${computer.name}',
         )
-      ]) {
-        node("node-linter") {
-          checkout scm
-          try {
-            // install deps to get angular-cli
-            sh 'npm install @angular/compiler @angular/core @angular/cli @angular-devkit/build-angular codelyzer rxjs tslint'
-            sh 'npm run lint'
-          } finally {
-            echo "Linting Passed"
-          }
+      ]
+    ) {
+      node(testPodLabel) {
+        checkout scm
+        try {
+          sh 'npm i'
+          sh 'npm run tests-ci'
+        } finally {
+          echo "Unit Tests Passed"
         }
       }
-      return true
     }
+    return true
   }
 }
 
-// todo templates can be pulled from a repository, instead of declared here
+
 def nodejsSonarqube () {
-  openshift.withCluster() {
-    openshift.withProject() {
-      podTemplate(label: 'node-sonarqube', name: 'node-sonarqube', serviceAccount: 'jenkins', cloud: 'openshift', containers: [
+  _openshift(env.STAGE_NAME, TOOLSPROJECT) {
+    String sonarLabel = "sonarqube-runner-${UUID.randomUUID().toString()}";
+    podTemplate(
+      label: sonarLabel,
+      name: sonarLabel,
+      serviceAccount: 'jenkins',
+      cloud: 'openshift',
+      slaveConnectTimeout: 300,
+      containers: [
         containerTemplate(
           name: 'jnlp',
           image: 'registry.access.redhat.com/openshift3/jenkins-agent-nodejs-8-rhel7',
           resourceRequestCpu: '500m',
           resourceLimitCpu: '1000m',
           resourceRequestMemory: '2Gi',
-          resourceLimitMemory: '4Gi',
+          resourceLimitMemory: '3Gi',
           workingDir: '/tmp',
           command: '',
           args: '${computer.jnlpmac} ${computer.name}',
         )
-      ]) {
-        node("node-sonarqube") {
-          checkout scm
-          dir('sonar-runner') {
+      ]
+    ) {
+      node(sonarLabel) {
+        checkout scm
+        dir('sonar-runner') {
+          try {
+            // run scan
+            sh("oc extract secret/sonarqube-secrets --to=${env.WORKSPACE}/sonar-runner --confirm")
+            SONARQUBE_URL = sh(returnStdout: true, script: 'cat sonarqube-route-url')
+
+            sh "npm install typescript"
+            sh returnStdout: true, script: "./gradlew sonarqube -Dsonar.host.url=${SONARQUBE_URL} -Dsonar.projectKey=org.sonarqube:demo-eagle-public -Dsonar.projectName=org.sonarqube:demo-eagle-public -Dsonar.verbose=true --stacktrace --info"
+
+            // check if sonarqube passed
+            sh("oc extract secret/sonarqube-status-urls --to=${env.WORKSPACE}/sonar-runner --confirm")
+            def SONARQUBE_STATUS_URL = "${SONARQUBE_URL}/api/qualitygates/project_status?projectKey=org.sonarqube:demo-eagle-public"
+
+            boolean firstScan = false;
+            def OLD_SONAR_DATE
             try {
-              // run scan
-              sh("oc extract secret/sonarqube-secrets --to=${env.WORKSPACE}/sonar-runner --confirm")
-              SONARQUBE_URL = sh(returnStdout: true, script: 'cat sonarqube-route-url')
+              // get old sonar report date
+              def OLD_SONAR_DATE_JSON = sh(returnStdout: true, script: "curl -w '%{http_code}' '${SONARQUBE_STATUS_URL}'")
+              OLD_SONAR_DATE = sonarGetDate (OLD_SONAR_DATE_JSON)
+            } catch (error) {
+              firstScan = true
+            }
 
-              sh "npm install typescript"
-              sh returnStdout: true, script: "./gradlew sonarqube -Dsonar.host.url=${SONARQUBE_URL} -Dsonar. -Dsonar.verbose=true --stacktrace --info"
-
-              // wiat for scan status to update
-              sleep(30)
-
-              // check if sonarqube passed
-              sh("oc extract secret/sonarqube-status-urls --to=${env.WORKSPACE}/sonar-runner --confirm")
-              SONARQUBE_STATUS_URL = sh(returnStdout: true, script: 'cat sonarqube-status-public')
-
-              SONARQUBE_STATUS_JSON = sh(returnStdout: true, script: "curl -w '%{http_code}' '${SONARQUBE_STATUS_URL}'")
-              SONARQUBE_STATUS = sonarGetStatus (SONARQUBE_STATUS_JSON)
-
-              if ( "${SONARQUBE_STATUS}" == "ERROR") {
-                echo "Scan Failed"
+            if ( !firstScan ) {
+              // wiat for report to be updated
+              if ( !sonarqubeReportComplete ( OLD_SONAR_DATE, SONARQUBE_STATUS_URL ) ) {
+                echo "sonarqube report failed to complete, or timed out"
 
                 notifyRocketChat(
-                  "@all The latest build ${env.BUILD_DISPLAY_NAME} of demo-eagle-public seems to be broken. \n ${env.BUILD_URL}\n Error: \n Sonarqube scan failed",
+                  "@all The latest build, ${env.BUILD_DISPLAY_NAME} of demo-eagle-public seems to be broken. \n ${env.RUN_DISPLAY_URL}\n Error: \n sonarqube report failed to complete, or timed out : ${SONARQUBE_URL}",
                   ROCKET_DEPLOY_WEBHOOK
                 )
 
-                currentBuild.result = 'FAILURE'
+                currentBuild.result = "FAILURE"
                 exit 1
-              } else {
-                echo "Scan Passed"
               }
+            } else {
+              sleep (30)
+            }
 
-            } catch (error) {
+            SONARQUBE_STATUS_JSON = sh(returnStdout: true, script: "curl -w '%{http_code}' '${SONARQUBE_STATUS_URL}'")
+            SONARQUBE_STATUS = sonarGetStatus (SONARQUBE_STATUS_JSON)
+
+            // check if sonarqube passed
+            sh("oc extract secret/sonarqube-status-urls --to=${env.WORKSPACE}/sonar-runner --confirm")
+            SONARQUBE_STATUS_URL = sh(returnStdout: true, script: 'cat sonarqube-status-public')
+
+            if ( "${SONARQUBE_STATUS}" == "ERROR") {
+              echo "Scan Failed"
+
               notifyRocketChat(
-                "@all The latest build ${env.BUILD_DISPLAY_NAME} of demo-eagle-public seems to be broken. \n ${env.BUILD_URL}\n Error: \n ${error.message}",
+                "@all The latest build ${env.BUILD_DISPLAY_NAME} of demo-eagle-public seems to be broken. \n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
                 ROCKET_DEPLOY_WEBHOOK
               )
-              throw error
-            } finally {
-              echo "Scan Complete"
+
+              currentBuild.result = 'FAILURE'
+              exit 1
+            } else {
+              echo "Scan Passed"
             }
+          } catch (error) {
+            notifyRocketChat(
+              "@all The latest build ${env.BUILD_DISPLAY_NAME} of demo-eagle-public seems to be broken. \n ${env.BUILD_URL}\n Error: \n ${error.message}",
+              ROCKET_DEPLOY_WEBHOOK
+            )
+            throw error
+          } finally {
+            echo "Scan Complete"
           }
         }
       }
-      return true
     }
+    return true
   }
 }
 
+
 def CHANGELOG = "No new changes"
 def IMAGE_HASH = "latest"
-
+def lockName = "demo-eagle-public-${env.JOB_NAME}-${env.BUILD_NUMBER}"
 pipeline {
-  agent any
-  options {
-    disableResume()
+  environment {
+    TOOLSPROJECT = "esm"
   }
+  agent any
   stages {
+    stage('Build Init') {
+      steps {
+        script {
+          openshift.setLockName(lockName)
+        }
+      }
+    }
     stage('Parallel Stage') {
       failFast true
       parallel {
@@ -216,7 +301,7 @@ pipeline {
                 ROCKET_DEPLOY_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-deploy-webhook')
                 ROCKET_QA_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-qa-webhook')
 
-                echo "Building eagle-public demo branch"
+                echo "Building eagle-public projectNotificationFeature develop branch"
                 openshiftBuild bldCfg: 'demo-eagle-public-angular-builder', showBuildLogs: 'true'
                 openshiftBuild bldCfg: 'demo-eagle-public-build', showBuildLogs: 'true'
                 echo "Build done"
@@ -230,7 +315,7 @@ pipeline {
                 echo ">> IMAGE_HASH: ${IMAGE_HASH}"
               } catch (error) {
                 notifyRocketChat(
-                  "@all The build ${env.BUILD_DISPLAY_NAME} of demo-eagle-public, seems to be broken.\n ${env.BUILD_URL}\n Error: \n ${error.message}",
+                  "@all The build ${env.BUILD_DISPLAY_NAME} of demo-eagle-public, seems to be broken.\n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
                   ROCKET_DEPLOY_WEBHOOK
                 )
                 throw error
@@ -239,33 +324,23 @@ pipeline {
           }
         }
 
-        // stage('Unit Tests') {
-        //   agent { node { label 'nodejs' }}
-        //   steps {
-        //     script {
-        //       echo "Placeholder - Running unit-tests"
-              // def result = nodejsTester()
-        //     }
-        //   }
-        // }
-
-        stage('Linting') {
+        stage('Unit Test') {
           steps {
             script {
-              echo "Running linter"
-              def result = nodejsLinter()
+              echo "Running linter and unit tests"
+              def result = nodejsTester()
             }
           }
         }
 
-        // stage('Sonarqube') {
-        //   steps {
-        //     script {
-        //       echo "Running Sonarqube"
-        //       def result = nodejsSonarqube()
-        //     }
-        //   }
-        // }
+        stage('Sonarqube') {
+          steps {
+            script {
+              echo "Running Sonarqube"
+              def result = nodejsSonarqube()
+            }
+          }
+        }
       }
     }
 
@@ -282,16 +357,16 @@ pipeline {
             echo ">>>> Deployment Complete"
 
             notifyRocketChat(
-              "A new version of demo-eagle-public is now in Test, build: ${env.BUILD_DISPLAY_NAME} \n Changes: \n ${CHANGELOG}",
+              "A new version of demo-eagle-public is now in Dev, build: ${env.BUILD_DISPLAY_NAME} \n Changes: \n ${CHANGELOG}",
               ROCKET_DEPLOY_WEBHOOK
             )
             notifyRocketChat(
-              "@all A new version of demo-eagle-public is now in Test and ready for QA. \n Changes to Dev: \n ${CHANGELOG}",
+              "@all A new version of demo-eagle-public is now in Dev and ready for QA. \n Changes to Dev: \n ${CHANGELOG}",
               ROCKET_QA_WEBHOOK
             )
           } catch (error) {
             notifyRocketChat(
-              "@all The build ${env.BUILD_DISPLAY_NAME} of demo-eagle-public, seems to be broken.\n ${env.BUILD_URL}\n Error: \n ${error.message}",
+              "@all The build ${env.BUILD_DISPLAY_NAME} of demo-eagle-public, seems to be broken.\n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
               ROCKET_DEPLOY_WEBHOOK
             )
             currentBuild.result = "FAILURE"
@@ -301,28 +376,12 @@ pipeline {
       }
     }
 
-    // stage('ZAP Security Scan') {
-    //   agent{ label: zapPodLabel }
-      // steps {
-        //the checkout is mandatory
-        // echo "checking out source"
-        // echo "Build: ${BUILD_ID}"
-        // checkout scm
-        // dir('zap') {
-        //   def retVal = sh returnStatus: true, script: './runzap.sh'
-        //   publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: true, reportDir: '/zap/wrk', reportFiles: 'index.html', reportName: 'ZAP Full Scan', reportTitles: 'ZAP Full Scan'])
-        //   echo "Return value is: ${retVal}"
-        // }
-      // }
-    // }
-
     // stage('BDD Tests') {
     //   agent { label: bddPodLabel }
       // steps{
       //   echo "BDD placeholder"
       //   echo "Build: ${BUILD_ID}"
         // checkout scm
-        // todo determine how to call improved BDD Stack
       // }
     // }
   }

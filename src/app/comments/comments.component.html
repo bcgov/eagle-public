@@ -35,8 +35,8 @@
             </div>
           </div>
           <!-- <p class="desc" [innerHTML]="(project?.description || '-') | newlines"></p> -->
-          <span class="ea-decision">{{project?.eacDecision?.name || "-"}}</span>
-          <div class="basic-info">
+          <span *ngIf="type === 'PROJECT'" class="ea-decision">{{project?.eacDecision?.name || "-"}}</span>
+          <div *ngIf="type === 'PROJECT'" class="basic-info">
             <div>
               <label>Proponent</label>
               <p class="value">{{project?.proponent?.name || "-" | titlecase}}</p>

@@ -43,6 +43,7 @@ export class CommentPeriod {
   userCan: String;
   vettedPercent: Number;
   vettingRoles: String;
+  daysRemainingCount: number;
 
   longEndDate: moment.Moment;
   // Permissions
@@ -97,6 +98,8 @@ export class CommentPeriod {
     this.write = obj && obj.write || null;
     this.delete = obj && obj.delete || null;
 
+    this.daysRemainingCount = 0;
+
     if (obj && obj.dateStarted) {
       this.dateStarted = new Date(obj.dateStarted);
     }
@@ -113,8 +116,8 @@ export class CommentPeriod {
 
       if (moment(now).isBetween(dateStarted, dateCompleted)) {
         this.commentPeriodStatus = 'Open';
-        let days = dateCompleted.diff(moment(now), 'days');
-        this.daysRemaining = days === 0 ? 'Final Day' : days + (days === 1 ? ' Day ' : ' Days ') + 'Remaining';
+        this.daysRemainingCount = dateCompleted.diff(moment(now), 'days');
+        this.daysRemaining = this.daysRemainingCount === 0 ? 'Final Day' : this.daysRemainingCount + (this.daysRemainingCount === 1 ? ' Day ' : ' Days ') + 'Remaining';
       } else if (moment(now).isAfter(dateCompleted)) {
         this.commentPeriodStatus = 'Closed';
         this.daysRemaining = 'Completed';
