@@ -1,8 +1,7 @@
-import { Component, OnInit, ChangeDetectorRef, ChangeDetectionStrategy, OnDestroy, DoCheck, ViewEncapsulation } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, ChangeDetectionStrategy, OnDestroy, ViewEncapsulation } from '@angular/core';
 import { MatSnackBarRef, SimpleSnackBar, MatSnackBar } from '@angular/material';
 import { Router, ActivatedRoute } from '@angular/router';
 
-import { Observable } from 'rxjs/Observable';
 import { Subject } from 'rxjs/Subject';
 
 import 'rxjs/add/operator/switchMap';
@@ -65,10 +64,10 @@ export class SearchComponent implements OnInit, OnDestroy {
   public filterForAPI: object = {};
   public filterForUI: SearchFilterObject = new SearchFilterObject();
   public currentSearch: object = {};
+  public categorizedQuery: object = {};
 
   public showAdvancedSearch = true;
   public hasUncategorizedDocs = false;
-  public categorizedQuery = { name: 'categorized', value: true };
   public readonly constants = Constants;
 
   public showFilters: object = {
@@ -225,8 +224,8 @@ export class SearchComponent implements OnInit, OnDestroy {
     }
 
 
-    if (!this.filterForAPI) {
-      this.categorizedQuery = { name: 'categorized', value: false }
+    if (!_.isEmpty(this.filterForAPI)) {
+      this.categorizedQuery =  { name: 'categorized', value: true }
     }
 
     this.searchService.getSearchResults(

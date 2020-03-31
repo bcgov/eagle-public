@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Resolve, ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
+import { Resolve, ActivatedRouteSnapshot } from '@angular/router';
 import { Observable } from 'rxjs/Observable';
 
 import 'rxjs/add/operator/switchMap';
@@ -23,14 +23,14 @@ export class SearchResolver implements Resolve<Observable<object>> {
     private storageService: StorageService
   ) { }
 
-  resolve(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): Observable<object> {
+  resolve(route: ActivatedRouteSnapshot): Observable<object> {
     let currentPage = route.params.currentPage ? route.params.currentPage : 1;
     let pageSize = route.params.pageSize ? route.params.pageSize : 10;
     let sortBy = route.params.sortBy ? route.params.sortBy : '-datePosted,+displayName';
     const datePostedStart = route.params.hasOwnProperty('datePostedStart') && route.params.datePostedStart ? route.params.datePostedStart : null;
     const datePostedEnd = route.params.hasOwnProperty('datePostedEnd') && route.params.datePostedEnd ? route.params.datePostedEnd : null;
     const keywords = route.params.hasOwnProperty('keywords') ? route.params.keywords : '';
-    let categorizedQuery = { name: 'categorized', value: false };
+    let categorizedQuery = {};
 
     if (Object.keys(route.params).length === 0) {
       return;
@@ -80,7 +80,7 @@ export class SearchResolver implements Resolve<Observable<object>> {
             }
 
             if (filterForUI) {
-              this.setParamsFromFilters(route.params, filterForUI);
+              this.setParamsFromFilters(filterForUI);
             }
 
             if (this.storageService.state['search'].categorizedQuery) {
@@ -138,14 +138,14 @@ export class SearchResolver implements Resolve<Observable<object>> {
     this.paramsToCollectionFilter(params, 'projectPhase', this.projectPhases, '_id');
   }
 
-  setParamsFromFilters(params, filterForUI) {
-    this.collectionFilterToParams(params, filterForUI, 'milestone', '_id');
-    this.collectionFilterToParams(params, filterForUI, 'documentAuthorType', '_id');
-    this.collectionFilterToParams(params, filterForUI, 'type', '_id');
-    this.collectionFilterToParams(params, filterForUI, 'projectPhase', '_id');
+  setParamsFromFilters(filterForUI) {
+    this.collectionFilterToParams(filterForUI, 'milestone', '_id');
+    this.collectionFilterToParams(filterForUI, 'documentAuthorType', '_id');
+    this.collectionFilterToParams(filterForUI, 'type', '_id');
+    this.collectionFilterToParams(filterForUI, 'projectPhase', '_id');
   }
 
-  collectionFilterToParams(params, filterForUI, name, identifyBy) {
+  collectionFilterToParams(filterForUI, name, identifyBy) {
     if (filterForUI[name].length) {
       const values = filterForUI[name].map(record => { return record[identifyBy]; });
       this.filterForAPI[name] = values.join(',');
