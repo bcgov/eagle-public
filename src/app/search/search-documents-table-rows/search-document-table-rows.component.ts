@@ -51,7 +51,6 @@ export class DocSearchTableRowsComponent implements OnInit, OnDestroy, TableComp
             this.lists = res.documents[0].data.searchResults;
           } else {
             alert('Uh-oh, couldn\'t load list');
-            this.lists = [];
           }
           this._changeDetectionRef.detectChanges();
         }
