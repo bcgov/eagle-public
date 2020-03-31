@@ -2,7 +2,7 @@ import { Component, Input, Output, OnInit, OnDestroy, EventEmitter, ChangeDetect
 import { Subject } from 'rxjs';
 import { TableComponent } from 'app/shared/components/table-template/table.component';
 import { TableObject } from 'app/shared/components/table-template/table-object';
-import { Router, ActivatedRoute } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { Utils } from 'app/shared/utils/utils';
 
 @Component({
@@ -22,17 +22,11 @@ export class DocSearchTableRowsComponent implements OnInit, OnDestroy, TableComp
   public showFeatured = true;
   private lists: any[] = [];
 
-  public currentUrl: String = '';
-
   constructor(
     private _changeDetectionRef: ChangeDetectorRef,
     private route: ActivatedRoute,
-    private router: Router,
     private utils: Utils
-  ) {
-    let currRoute = this.router.url.split(';')[0];
-    this.currentUrl = currRoute.substring(currRoute.lastIndexOf('/') + 1);
-   }
+  ) { }
 
   ngOnInit() {
     this.documents = this.data.data;
@@ -68,17 +62,6 @@ export class DocSearchTableRowsComponent implements OnInit, OnDestroy, TableComp
     } else {
       return '-';
     }
-  }
-  selectItem(item) {
-    item.checkbox = !item.checkbox;
-
-    let count = 0;
-    this.documents.map(doc => {
-      if (doc.checkbox === true) {
-        count++;
-      }
-    });
-    this.selectedCount.emit(count);
   }
 
   goToItem(item) {
