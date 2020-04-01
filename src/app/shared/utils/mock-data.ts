@@ -126,7 +126,7 @@ const listsData = [{
 }]
 
 export class ListDataStub {
-  public getFullList(schema: string): Observable<any> {
+  public getFullList(): Observable<any> {
     return Observable.of(listsData)
   }
 }
