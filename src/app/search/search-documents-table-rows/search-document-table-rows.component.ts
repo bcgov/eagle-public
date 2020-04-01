@@ -4,6 +4,7 @@ import { TableComponent } from 'app/shared/components/table-template/table.compo
 import { TableObject } from 'app/shared/components/table-template/table-object';
 import { ActivatedRoute } from '@angular/router';
 import { Utils } from 'app/shared/utils/utils';
+import { MatSnackBarRef, SimpleSnackBar, MatSnackBar } from '@angular/material';
 
 @Component({
   selector: 'tbody[app-document-table-rows]',
@@ -22,7 +23,10 @@ export class DocSearchTableRowsComponent implements OnInit, OnDestroy, TableComp
   public showFeatured = true;
   private lists: any[] = [];
 
+  private snackBarRef: MatSnackBarRef<SimpleSnackBar> = null;
+
   constructor(
+    public snackBar: MatSnackBar,
     private _changeDetectionRef: ChangeDetectorRef,
     private route: ActivatedRoute,
     private utils: Utils
@@ -44,7 +48,8 @@ export class DocSearchTableRowsComponent implements OnInit, OnDestroy, TableComp
           } else if (res.documents && res.documents.length > 0) {
             this.lists = res.documents[0].data.searchResults;
           } else {
-            alert('Uh-oh, couldn\'t load list');
+            this.snackBar.open('Error loading document list');
+            window.setTimeout(() => this.snackBar.dismiss(), 2000)
           }
           this._changeDetectionRef.detectChanges();
         }
@@ -80,6 +85,7 @@ export class DocSearchTableRowsComponent implements OnInit, OnDestroy, TableComp
   }
 
   ngOnDestroy() {
+    if (this.snackBarRef) { this.snackBarRef.dismiss(); }
     this.ngUnsubscribe.next();
     this.ngUnsubscribe.complete();
   }
