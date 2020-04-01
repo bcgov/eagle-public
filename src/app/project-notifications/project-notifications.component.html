@@ -51,6 +51,13 @@
                                 Public Comment Period<span
                                     *ngIf="numFilters.pcp > 0 && !showFilters.pcp">&nbsp;({{ numFilters.pcp }})</span>
                             </button>
+                            <button type="button" (click)="toggleFilter('decision');" [ngClass]="{'btn': true, 'decision-btn': true,
+                'btn-dark': showFilters.decision,
+                'btn-secondary': !showFilters.decision && numFilters.decision > 0,
+                'btn-outline-dark': !showFilters.decision && numFilters.decision == 0}">
+                                Notification Decision<span
+                                    *ngIf="numFilters.pcp > 0 && !showFilters.pcp">&nbsp;({{ numFilters.pcp }})</span>
+                            </button>
                             <button class="btn btn-outline-dark" type="button" (click)="clearAll();">Clear
                                 All</button>
                         </div>
@@ -130,6 +137,31 @@
                                             [items]="commentPeriods"
                                             [closeOnSelect]="false"
                                             [(ngModel)]="filterForUI.pcp"
+                                        >
+                                        </ng-select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div *ngIf="showAdvancedSearch && showFilters.decision" class="decision-filters project-filter row">
+                        <div class="col-md-6 filter-border">
+                            <div class="col-md-12">
+                                <div class="row">
+                                    <b>Notification Decision</b>
+                                </div>
+
+                                <div class="row">
+                                    <div class="form-group">
+                                        <ng-select
+                                            id="decision"
+                                            name="decision"
+                                            multiple="true"
+                                            bindLabel="name"
+                                            placeholder="Type Notification Decision"
+                                            [items]="decisions"
+                                            [closeOnSelect]="false"
+                                            [(ngModel)]="filterForUI.decision"
                                         >
                                         </ng-select>
                                     </div>

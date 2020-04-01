@@ -18,7 +18,8 @@ class ProjectNotificationFilterObject {
   constructor(
     public type: object = {},
     public pcp: object = {},
-    public region: Array<string> = []
+    public region: Array<string> = [],
+    public decision: object = {}
   ) { }
 }
 
@@ -31,6 +32,7 @@ class ProjectNotificationFilterObject {
 export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
   private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
   public regions: Array<object> = [];
+  public decisions: Array<object> = [];
   public commentPeriods: Array<object> = [];
   public projectTypes: Array<object> = [];
   public loading = true;
@@ -48,13 +50,15 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
   public showFilters: object = {
     type: false,
     region: false,
-    pcp: false
+    pcp: false,
+    decision: false
   };
 
   public numFilters: object = {
     type: 0,
     region: 0,
-    pcp: 0
+    pcp: 0,
+    decision: 0
   };
 
   constructor(
@@ -71,6 +75,7 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
     this.regions = Constants.REGIONS_COLLECTION;
     this.commentPeriods = Constants.PCP_COLLECTION;
     this.projectTypes = Constants.PROJECT_TYPE_COLLECTION;
+    this.decisions = Constants.PROJECT_NOTIFICATION_DECISIONS;
   }
 
   ngOnInit() {
@@ -188,6 +193,7 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
     this.updateCount('type');
     this.updateCount('region');
     this.updateCount('pcp');
+    this.updateCount('decision');
   }
 
   public onSubmit() {
@@ -209,6 +215,7 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
     this.collectionFilterToParams(params, 'type', 'name');
     this.collectionFilterToParams(params, 'pcp', 'code');
     this.collectionFilterToParams(params, 'region', 'code');
+    this.collectionFilterToParams(params, 'decision', 'code');
   }
 
   collectionFilterToParams(params, name, identifyBy) {
@@ -268,6 +275,10 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
 
     if (params.pcp) {
       queryConditions['pcp'] = params.pcp;
+    }
+
+    if (params.decision) {
+      queryConditions['decision'] = params.decision;
     }
 
     this.searchService.getSearchResults(
