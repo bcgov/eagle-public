@@ -168,10 +168,8 @@ export class SearchComponent implements OnInit, OnDestroy {
             this.projectPhases = _.sortBy(this.projectPhases, ['legislation']);
           }
 
-          this.currentSearch = this.storageService.state['search'];
-
           // reload query params from storage
-          if (this.currentSearch && this.storageService.state['search']) {
+          if (this.storageService.state['search']) {
             if (this.storageService.state['search'].filterForUI) {
               this.filterForUI = this.storageService.state['search'].filterForUI;
               this.setParamsFromFilters(params);
@@ -186,14 +184,12 @@ export class SearchComponent implements OnInit, OnDestroy {
             }
           }
 
+          // set default params or load from url
           if (_.isEqual(this.tableParams, new TableParamsObject())) {
+            this.tableParams.sortBy = '-datePosted,+displayName';
             this.tableParams = this.tableTemplateUtils.getParamsFromUrl(params, this.filterForURL);
             this.terms.keywords = this.tableParams.keywords;
           }
-
-          // todo this will override, need a different check to set this
-          // set default sort
-          this.tableParams.sortBy = '-datePosted,+displayName';
 
           this.setFiltersFromParams(params);
           this.updateCounts();
@@ -219,40 +215,9 @@ export class SearchComponent implements OnInit, OnDestroy {
         }
       });
 
-    if (!this.storageService.state['search']) {
-      this.storageService.state['search'] = {};
-    }
-
-
     if (!_.isEmpty(this.filterForAPI)) {
       this.categorizedQuery =  { name: 'categorized', value: true }
     }
-
-    this.searchService.getSearchResults(
-      '',
-      'Document',
-      [
-        this.categorizedQuery
-      ],
-      this.storageService.state['search'].tableParams ? this.storageService.state['search'].tableParams.currentPage : 1,
-      this.storageService.state['search'].tableParams ? this.storageService.state['search'].tableParams.pageSize : 10,
-      this.storageService.state['search'].tableParams ? this.storageService.state['search'].tableParams.sortBy : '-datePosted,+displayName',
-      { documentSource: 'PROJECT' },
-      true,
-      null,
-      this.filterForAPI,
-      ''
-    )
-    .takeUntil(this.ngUnsubscribe)
-    .subscribe((res: any) => {
-      if (res[0].data.meta && res[0].data.meta.length > 0) {
-        if (!this.filterForAPI) {
-          this.hasUncategorizedDocs = true;
-        }
-        this.loading = false;
-        this._changeDetectionRef.detectChanges();
-      }
-    });
   }
 
   paramsToCollectionFilters(params, name, collection, identifyBy) {
@@ -497,12 +462,14 @@ collectionFilterToParams(params, name, identifyBy) {
     const params = this.terms.getParams();
     params['ms'] = new Date().getMilliseconds();
     params['dataset'] = 'Document';
-    params['currentPage'] = this.tableParams.currentPage;
+    // params['currentPage'] = this.tableParams.currentPage;
+    params['currentPage'] = 1;
     params['sortBy'] = this.tableParams.sortBy ? this.tableParams.sortBy : '-datePosted,+displayName';
     params['pageSize'] = this.tableParams.pageSize;
 
     this.tableParams.keywords = params['keywords'];
-    if (this.storageService) {
+    if (this.storageService && this.storageService.state) {
+      this.storageService.state['search'] = {};
       this.storageService.state['search'].tableParams = this.tableParams;
       this.storageService.state['search'].filterForUI = this.filterForUI;
       this.storageService.state['search'].filterForURL = this.filterForURL;
