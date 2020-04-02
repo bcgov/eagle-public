@@ -2,7 +2,7 @@ import { Routes } from '@angular/router';
 
 import { CommentingTabComponent } from './commenting-tab/commenting-tab.component';
 import { DecisionsTabComponent } from './decisions-tab/decisions-tab.component';
-import { CommentsComponent } from './comments/comments.component';
+import { CommentsComponent } from 'app/comments/comments.component';
 import { DocumentsTabComponent } from './documents/documents-tab.component';
 import { DocumentsResolver } from './documents/documents-resolver.service';
 import { ProjectDetailsTabComponent } from './project-details-tab/project-details-tab.component';
