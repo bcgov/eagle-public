@@ -69,9 +69,9 @@ export class SearchResolver implements Resolve<Observable<object>> {
             queryModifiers['datePostedEnd'] = datePostedEnd;
           }
 
-          if (this.storageService && this.storageService.state['search']) {
-            let filterForUI = this.storageService.state['search'].filterForUI
-            let tableParams = this.storageService.state['search'].tableParams;
+          if (this.storageService && this.storageService.state.search) {
+            let filterForUI = this.storageService.state.search.filterForUI
+            let tableParams = this.storageService.state.search.tableParams;
 
             if (tableParams) {
               currentPage = tableParams.currentPage;
@@ -83,8 +83,8 @@ export class SearchResolver implements Resolve<Observable<object>> {
               this.setParamsFromFilters(filterForUI);
             }
 
-            if (this.storageService.state['search'].categorizedQuery) {
-              categorizedQuery = [ this.storageService.state['search'].categorizedQuery ]
+            if (this.storageService.state.search.categorizedQuery) {
+              categorizedQuery = [ this.storageService.state.search.categorizedQuery ]
             }
           }
 

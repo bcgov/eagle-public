@@ -169,18 +169,18 @@ export class SearchComponent implements OnInit, OnDestroy {
           }
 
           // reload query params from storage
-          if (this.storageService.state['search']) {
-            if (this.storageService.state['search'].filterForUI) {
-              this.filterForUI = this.storageService.state['search'].filterForUI;
+          if (this.storageService.state.search) {
+            if (this.storageService.state.search.filterForUI) {
+              this.filterForUI = this.storageService.state.search.filterForUI;
               this.setParamsFromFilters(params);
             }
 
-            if (this.storageService.state['search'].tableParams) {
-              this.tableParams = this.storageService.state['search'].tableParams;
+            if (this.storageService.state.search.tableParams) {
+              this.tableParams = this.storageService.state.search.tableParams;
             }
 
-            if (this.storageService.state['search'].categorizedQuery) {
-              this.categorizedQuery = this.storageService.state['search'].categorizedQuery
+            if (this.storageService.state.search.categorizedQuery) {
+              this.categorizedQuery = this.storageService.state.search.categorizedQuery
             }
           }
 
@@ -270,7 +270,7 @@ collectionFilterToParams(params, name, identifyBy) {
       const values = this.filterForUI[name].map(record => { return record[identifyBy]; });
       params[name] = values.join(',');
       this.filterForAPI[name] = values.join(',')
-      this.storageService.state['search'].filterForAPI = this.filterForAPI;
+      this.storageService.state.search.filterForAPI = this.filterForAPI;
     }
   }
 
@@ -394,8 +394,8 @@ collectionFilterToParams(params, name, identifyBy) {
     }
 
     if (this.storageService) {
-      this.filterForAPI = this.storageService.state['search'].filterForAPI ? this.storageService.state['search'].filterForAPI : {};
-      this.storageService.state['search'].tableParams = this.tableParams;
+      this.filterForAPI = this.storageService.state.search.filterForAPI ? this.storageService.state.search.filterForAPI : {};
+      this.storageService.state.search.tableParams = this.tableParams;
     }
 
     this.searchService.getSearchResults(
@@ -467,19 +467,20 @@ collectionFilterToParams(params, name, identifyBy) {
 
     this.tableParams.keywords = params['keywords'];
     this.tableParams.sortBy = params['sortBy'];
+    this.tableParams = this.tableTemplateUtils.updateTableParams(this.tableParams, 1, this.tableParams.sortBy);
     if (this.storageService && this.storageService.state) {
-      this.storageService.state['search'] = {};
-      this.storageService.state['search'].tableParams = this.tableParams;
-      this.storageService.state['search'].filterForUI = this.filterForUI;
-      this.storageService.state['search'].filterForURL = this.filterForURL;
-      this.storageService.state['search'].filterForAPI = {};
+      this.storageService.state.search = {};
+      this.storageService.state.search.tableParams = this.tableParams;
+      this.storageService.state.search.filterForUI = this.filterForUI;
+      this.storageService.state.search.filterForURL = this.filterForURL;
+      this.storageService.state.search.filterForAPI = {};
     }
 
     this.setParamsFromFilters(params);
     if (!_.isEmpty(this.filterForAPI)) {
       this.categorizedQuery = { name: 'categorized', value: true }
-      if (this.storageService && this.storageService.state['search']) {
-        this.storageService.state['search'].categorizedQuery = this.categorizedQuery;
+      if (this.storageService && this.storageService.state.search) {
+        this.storageService.state.search.categorizedQuery = this.categorizedQuery;
       }
     }
     this.tableTemplateUtils.updateUrl(this.tableParams.sortBy, this.tableParams.currentPage, this.tableParams.pageSize, this.filterForURL, this.tableParams.keywords);
