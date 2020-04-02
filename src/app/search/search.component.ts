@@ -271,7 +271,7 @@ collectionFilterToParams(params, name, identifyBy) {
       const values = this.filterForUI[name].map(record => { return record[identifyBy]; });
       params[name] = values.join(',');
       this.filterForAPI[name] = values.join(',')
-      this.storageService.state['search'].filterForAPI[name] = this.filterForAPI;
+      this.storageService.state['search'].filterForAPI = this.filterForAPI;
     }
   }
 
