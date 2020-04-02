@@ -186,7 +186,6 @@ export class SearchComponent implements OnInit, OnDestroy {
 
           // set default params or load from url
           if (_.isEqual(this.tableParams, new TableParamsObject())) {
-            this.tableParams.sortBy = '-datePosted,+displayName';
             this.tableParams = this.tableTemplateUtils.getParamsFromUrl(params, this.filterForURL);
             this.terms.keywords = this.tableParams.keywords;
           }
@@ -462,12 +461,12 @@ collectionFilterToParams(params, name, identifyBy) {
     const params = this.terms.getParams();
     params['ms'] = new Date().getMilliseconds();
     params['dataset'] = 'Document';
-    // params['currentPage'] = this.tableParams.currentPage;
     params['currentPage'] = 1;
-    params['sortBy'] = this.tableParams.sortBy ? this.tableParams.sortBy : '-datePosted,+displayName';
+    params['sortBy'] = '-datePosted,+displayName';
     params['pageSize'] = this.tableParams.pageSize;
 
     this.tableParams.keywords = params['keywords'];
+    this.tableParams.sortBy = params['sortBy'];
     if (this.storageService && this.storageService.state) {
       this.storageService.state['search'] = {};
       this.storageService.state['search'].tableParams = this.tableParams;
