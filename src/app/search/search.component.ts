@@ -64,7 +64,7 @@ export class SearchComponent implements OnInit, OnDestroy {
   public filterForAPI: object = {};
   public filterForUI: SearchFilterObject = new SearchFilterObject();
   public currentSearch: object = {};
-  public categorizedQuery: object = {};
+  public categorizedQuery: any[] = [];
 
   public showAdvancedSearch = true;
   public hasUncategorizedDocs = false;
@@ -173,18 +173,10 @@ export class SearchComponent implements OnInit, OnDestroy {
 
           // reload query params from storage
           if (this.storageService.state.search) {
-            if (this.storageService.state.search.filterForUI) {
               this.filterForUI = this.storageService.state.search.filterForUI;
-              this.setParamsFromFilters(params);
-            }
-
-            if (this.storageService.state.search.tableParams) {
+              // this.setParamsFromFilters(params);
               this.tableParams = this.storageService.state.search.tableParams;
-            }
-
-            if (this.storageService.state.search.categorizedQuery) {
               this.categorizedQuery = this.storageService.state.search.categorizedQuery
-            }
           }
 
           // set default params or load from url
@@ -210,7 +202,7 @@ export class SearchComponent implements OnInit, OnDestroy {
         } else {
           this.loading = false;
           this.snackBarRef = this.snackBar.open('Error search documents ...', 'RETRY');
-          this.snackBarRef.onAction().subscribe(() => this.onSubmit());
+          this.snackBarRef.onAction().subscribe(() => this.getPaginated(1));
           this.router.navigate(['/search']);
           this.loading = false;
           this._changeDetectionRef.detectChanges();
@@ -221,10 +213,6 @@ export class SearchComponent implements OnInit, OnDestroy {
         this.previousKeyword = this.terms.keywords;
 
       });
-
-    if (!_.isEmpty(this.filterForAPI)) {
-      this.categorizedQuery =  { name: 'categorized', value: true }
-    }
   }
 
   paramsToCollectionFilters(params, name, collection, identifyBy) {
@@ -383,6 +371,24 @@ collectionFilterToParams(params, name, identifyBy) {
     this.getPaginated(this.tableParams.currentPage);
   }
 
+  isCategorizedQuery() {
+    const categorizedFilters = ['documentAuthorType', 'milestone', 'projectPhase', 'type'];
+    let isCategorized = false;
+    Object.keys(this.filterForAPI).forEach(key => {
+      if (categorizedFilters.includes(key)) {
+        isCategorized = true;
+      }
+    });
+
+    if (isCategorized) {
+      this.categorizedQuery = [{ name: 'categorized', value: true }];
+    }
+
+    if (this.storageService && this.storageService.state.search) {
+      this.storageService.state.search.categorizedQuery = this.categorizedQuery;
+    }
+  }
+
   getPaginated(pageNumber) {
     // Go to top of page after clicking to a different page.
     window.scrollTo(0, 0);
@@ -397,14 +403,7 @@ collectionFilterToParams(params, name, identifyBy) {
     this.setParamsFromFilters(params);
     this.setFiltersFromParams(params);
 
-    const datePostedStart = params.hasOwnProperty('datePostedStart') && params.datePostedStart ? params.datePostedStart : null;
-    const datePostedEnd = params.hasOwnProperty('datePostedEnd') && params.datePostedEnd ? params.datePostedEnd : null;
-
     let queryModifiers = { documentSource: 'PROJECT' };
-    if (datePostedStart !== null && datePostedEnd !== null) {
-      queryModifiers['datePostedStart'] = datePostedStart;
-      queryModifiers['datePostedEnd'] = datePostedEnd;
-    }
 
     if (this.storageService && this.storageService.state.search) {
       this.filterForAPI = this.storageService.state.search.filterForAPI ? this.storageService.state.search.filterForAPI : {};
@@ -412,17 +411,16 @@ collectionFilterToParams(params, name, identifyBy) {
     }
 
     if (this.terms.keywords !== this.previousKeyword || JSON.stringify(this.filterForAPI) !== JSON.stringify(this.previousFilters)) {
-      // this.documentTableData.paginationData.currentPage = 1;
       this.tableParams.currentPage = 1;
       pageNumber = 1;
+      this.tableParams.sortBy = '-datePosted,+displayName'
     }
+    this.isCategorizedQuery();
 
     this.searchService.getSearchResults(
       this.terms.keywords,
       'Document',
-      [
-        this.categorizedQuery
-      ],
+      this.categorizedQuery,
       pageNumber,
       this.tableParams.pageSize,
       this.tableParams.sortBy,
@@ -435,7 +433,7 @@ collectionFilterToParams(params, name, identifyBy) {
       .subscribe((res: any) => {
         this.tableParams.totalListItems = res[0].data.meta[0].searchResultsTotal;
         this.documents = res[0].data.searchResults;
-        this.tableTemplateUtils.updateUrl(this.tableParams.sortBy, this.tableParams.currentPage, this.tableParams.pageSize, this.filterForAPI, this.tableParams.keywords);
+        this.tableTemplateUtils.updateUrl(this.tableParams.sortBy, this.tableParams.currentPage, this.tableParams.pageSize, this.filterForURL, this.tableParams.keywords);
         this.setRowData();
         this.loading = false;
         this._changeDetectionRef.detectChanges();
@@ -499,12 +497,6 @@ collectionFilterToParams(params, name, identifyBy) {
     }
 
     this.setParamsFromFilters(params);
-    if (!_.isEmpty(this.filterForAPI)) {
-      this.categorizedQuery = { name: 'categorized', value: true }
-      if (this.storageService && this.storageService.state.search) {
-        this.storageService.state.search.categorizedQuery = this.categorizedQuery;
-      }
-    }
     this.tableTemplateUtils.updateUrl(this.tableParams.sortBy, this.tableParams.currentPage, this.tableParams.pageSize, this.filterForURL, this.tableParams.keywords);
     this.router.navigate(['search', params]);
   }
