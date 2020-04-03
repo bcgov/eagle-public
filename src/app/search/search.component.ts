@@ -120,6 +120,9 @@ export class SearchComponent implements OnInit, OnDestroy {
   private snackBarRef: MatSnackBarRef<SimpleSnackBar> = null;
   private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
 
+  private previousFilters;
+  private previousKeyword;
+
   constructor(
     public snackBar: MatSnackBar,
     private _changeDetectionRef: ChangeDetectorRef,
@@ -212,6 +215,11 @@ export class SearchComponent implements OnInit, OnDestroy {
           this.loading = false;
           this._changeDetectionRef.detectChanges();
         }
+
+        // We need to clone filters, not reference
+        this.previousFilters = { ...this.filterForAPI };
+        this.previousKeyword = this.terms.keywords;
+
       });
 
     if (!_.isEmpty(this.filterForAPI)) {
@@ -270,7 +278,9 @@ collectionFilterToParams(params, name, identifyBy) {
       const values = this.filterForUI[name].map(record => { return record[identifyBy]; });
       params[name] = values.join(',');
       this.filterForAPI[name] = values.join(',')
-      this.storageService.state.search.filterForAPI = this.filterForAPI;
+      if (this.storageService.state.search && this.storageService.state.search.filterForAPI) {
+        this.storageService.state.search.filterForAPI = this.filterForAPI;
+      }
     }
   }
 
@@ -384,6 +394,9 @@ collectionFilterToParams(params, name, identifyBy) {
     // need to fetch the dates
     const params = this.terms.getParams();
 
+    this.setParamsFromFilters(params);
+    this.setFiltersFromParams(params);
+
     const datePostedStart = params.hasOwnProperty('datePostedStart') && params.datePostedStart ? params.datePostedStart : null;
     const datePostedEnd = params.hasOwnProperty('datePostedEnd') && params.datePostedEnd ? params.datePostedEnd : null;
 
@@ -393,13 +406,19 @@ collectionFilterToParams(params, name, identifyBy) {
       queryModifiers['datePostedEnd'] = datePostedEnd;
     }
 
-    if (this.storageService) {
+    if (this.storageService && this.storageService.state.search) {
       this.filterForAPI = this.storageService.state.search.filterForAPI ? this.storageService.state.search.filterForAPI : {};
       this.storageService.state.search.tableParams = this.tableParams;
     }
 
+    if (this.terms.keywords !== this.previousKeyword || JSON.stringify(this.filterForAPI) !== JSON.stringify(this.previousFilters)) {
+      // this.documentTableData.paginationData.currentPage = 1;
+      this.tableParams.currentPage = 1;
+      pageNumber = 1;
+    }
+
     this.searchService.getSearchResults(
-      this.tableParams.keywords,
+      this.terms.keywords,
       'Document',
       [
         this.categorizedQuery
@@ -420,6 +439,9 @@ collectionFilterToParams(params, name, identifyBy) {
         this.setRowData();
         this.loading = false;
         this._changeDetectionRef.detectChanges();
+
+        this.previousFilters = { ...this.filterForAPI };
+        this.previousKeyword = this.terms.keywords;
       });
   }
 

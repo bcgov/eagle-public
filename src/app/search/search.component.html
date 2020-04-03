@@ -14,7 +14,7 @@
         <div class="container">
             <div class="container-fluid-padding">
             <h1>Search Environmental Assessment Projects</h1>
-            <form #f="ngForm" class="search-form ui form" (ngSubmit)="onSubmit()">
+            <form #f="ngForm" class="search-form ui form" (ngSubmit)="getPaginated(tableParams.currentPage)">
                 <div class="search-area">
                 <div class="input-group main-search-field">
                     <input class="form-control" type="text" name="keywordInput" placeholder="Enter keywords to search..."
@@ -258,7 +258,7 @@
                     <span>{{searchDisclaimer}}</span>
                 </div>
                 <button *ngIf="showAdvancedSearch && isShowingFilter()" class="btn btn-primary search-button"
-                    type="submit">
+                    type="button" (click)="getPaginated(tableParams.currentPage)">
                     <i class="material-icons"[hidden]="loading">search</i>
                     <i class="spinner rotating" [hidden]="!loading"></i>
                     <span>{{loading ? 'Searching...' : 'Search'}}</span>
