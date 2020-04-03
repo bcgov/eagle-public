@@ -203,7 +203,7 @@
                                        title="View this Public Comment Period"
                                        [routerLink]="['/pn', project?._id, 'cp', project?.commentPeriod?._id]">
                                        <div class="pcp-indicator pcp-indicator-inactive"></div>
-                                       View Closed Comment Period
+                                       View {{project?.commentPeriod?.commentPeriodStatus}} Comment Period
                                     </a>
                                 </div>
                               </div>
