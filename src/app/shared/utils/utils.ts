@@ -72,7 +72,7 @@ export class Utils {
           { legislation: 2002, name: 'Post Decision - Amendment' },
           { legislation: 2018, name: 'Post Decision - Amendment' }
         ];
-        
+
         // Special case for phases.
         phases = this.getIdsByName(amendPhase, list).map(phase => phase.id).join(',');
         break;
