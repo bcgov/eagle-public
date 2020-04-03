@@ -156,8 +156,10 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
       { documentSource: 'PROJECT-NOTIFICATION', project: project._id })
       .takeUntil(this.ngUnsubscribe)
       .subscribe((res: any) => {
-        project.documents = res[0].data.searchResults;
-        this._changeDetectionRef.detectChanges();
+        if (res[0] && res[0].data && res[0].data.searchResults) {
+          project.documents = res[0].data.searchResults;
+          this._changeDetectionRef.detectChanges();
+        }
       });
   }
   getProjectCommentPeriod(project: ProjectNotification) {
