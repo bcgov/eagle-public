@@ -27,8 +27,6 @@ export class SearchResolver implements Resolve<Observable<object>> {
     let currentPage = route.params.currentPage ? route.params.currentPage : 1;
     let pageSize = route.params.pageSize ? route.params.pageSize : 10;
     let sortBy = route.params.sortBy ? route.params.sortBy : '-datePosted,+displayName';
-    const datePostedStart = route.params.hasOwnProperty('datePostedStart') && route.params.datePostedStart ? route.params.datePostedStart : null;
-    const datePostedEnd = route.params.hasOwnProperty('datePostedEnd') && route.params.datePostedEnd ? route.params.datePostedEnd : null;
     const keywords = route.params.hasOwnProperty('keywords') ? route.params.keywords : '';
     let categorizedQuery = [];
 
@@ -63,11 +61,6 @@ export class SearchResolver implements Resolve<Observable<object>> {
           this.setFilterFromParams(route.params);
 
           let queryModifiers = { documentSource: 'PROJECT' };
-
-          if (datePostedStart !== null && datePostedEnd !== null) {
-            queryModifiers['datePostedStart'] = datePostedStart;
-            queryModifiers['datePostedEnd'] = datePostedEnd;
-          }
 
           if (this.storageService && this.storageService.state.search) {
             let filterForUI = this.storageService.state.search.filterForUI
@@ -136,6 +129,9 @@ export class SearchResolver implements Resolve<Observable<object>> {
     this.paramsToCollectionFilter(params, 'documentAuthorType', this.authors, '_id');
     this.paramsToCollectionFilter(params, 'type', this.types, '_id');
     this.paramsToCollectionFilter(params, 'projectPhase', this.projectPhases, '_id');
+
+    this.paramsToDateFilter(params, 'datePostedStart');
+    this.paramsToDateFilter(params, 'datePostedEnd');
   }
 
   setParamsFromFilters(filterForUI) {

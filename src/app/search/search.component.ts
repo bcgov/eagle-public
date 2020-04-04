@@ -179,13 +179,14 @@ export class SearchComponent implements OnInit, OnDestroy {
               this.categorizedQuery = this.storageService.state.search.categorizedQuery
           }
 
+          this.setFiltersFromParams(params);
+
           // set default params or load from url
           if (_.isEqual(this.tableParams, new TableParamsObject())) {
             this.tableParams = this.tableTemplateUtils.getParamsFromUrl(params, this.filterForURL);
             this.terms.keywords = this.tableParams.keywords;
           }
 
-          this.setFiltersFromParams(params);
           this.updateCounts();
 
           if (res.documents && res.documents[0].data && res.documents[0].data.meta.length > 0) {
@@ -416,6 +417,16 @@ collectionFilterToParams(params, name, identifyBy) {
       this.tableParams.sortBy = '-datePosted,+displayName'
     }
     this.isCategorizedQuery();
+    this.tableParams.keywords = this.terms.keywords;
+
+    if (this.storageService && this.storageService.state) {
+      this.storageService.state.search = {};
+      this.storageService.state.search.tableParams = this.tableParams;
+      this.storageService.state.search.filterForUI = this.filterForUI;
+      this.storageService.state.search.filterForURL = this.filterForURL;
+      this.storageService.state.search.filterForAPI = this.filterForAPI;
+      this.storageService.state.search.categorizedQuery = this.categorizedQuery;
+    }
 
     this.searchService.getSearchResults(
       this.terms.keywords,
@@ -468,37 +479,6 @@ collectionFilterToParams(params, name, identifyBy) {
         this.tableParams
       );
     }
-  }
-
-  // reload page with current search terms
-  public onSubmit() {
-    // dismiss any open snackbar
-    if (this.snackBarRef) { this.snackBarRef.dismiss(); }
-
-    // NOTE: Angular Router doesn't reload page on same URL
-    // REF: https://stackoverflow.com/questions/40983055/how-to-reload-the-current-route-with-the-angular-2-router
-    // WORKAROUND: add timestamp to force URL to be different than last time
-    const params = this.terms.getParams();
-    params['ms'] = new Date().getMilliseconds();
-    params['dataset'] = 'Document';
-    params['currentPage'] = 1;
-    params['sortBy'] = '-datePosted,+displayName';
-    params['pageSize'] = this.tableParams.pageSize;
-
-    this.tableParams.keywords = params['keywords'];
-    this.tableParams.sortBy = params['sortBy'];
-    this.tableParams = this.tableTemplateUtils.updateTableParams(this.tableParams, 1, this.tableParams.sortBy);
-    if (this.storageService && this.storageService.state) {
-      this.storageService.state.search = {};
-      this.storageService.state.search.tableParams = this.tableParams;
-      this.storageService.state.search.filterForUI = this.filterForUI;
-      this.storageService.state.search.filterForURL = this.filterForURL;
-      this.storageService.state.search.filterForAPI = {};
-    }
-
-    this.setParamsFromFilters(params);
-    this.tableTemplateUtils.updateUrl(this.tableParams.sortBy, this.tableParams.currentPage, this.tableParams.pageSize, this.filterForURL, this.tableParams.keywords);
-    this.router.navigate(['search', params]);
   }
 
   // Compares selected options when a dropdown is grouped by legislation.
