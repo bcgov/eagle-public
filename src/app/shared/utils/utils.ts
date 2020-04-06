@@ -56,21 +56,41 @@ export class Utils {
       case Constants.optionalProjectDocTabs.AMENDMENT:
         types = [
           { legislation: 2002, name: 'Amendment Package' },
-          { legislation: 2018, name: 'Amendment Package' }
+          { legislation: 2018, name: 'Amendment Package' },
+          { legislation: 2002, name: 'Request' },
+          { legislation: 2002, name: 'Decision Materials' },
+          { legislation: 2018, name: 'Decision Materials' },
+          { legislation: 2002, name: 'Tracking Table' },
+          { legislation: 2018, name: 'Tracking Table' }
         ];
         milestones = [
           { legislation: 2002, name: 'Amendment' },
           { legislation: 2018, name: 'Amendment' }
         ];
+
+        const amendPhase = [
+          { legislation: 2002, name: 'Post Decision - Amendment' },
+          { legislation: 2018, name: 'Post Decision - Amendment' }
+        ];
+
+        // Special case for phases.
+        phases = this.getIdsByName(amendPhase, list).map(phase => phase.id).join(',');
         break;
       case Constants.optionalProjectDocTabs.CERTIFICATE:
         types = [
           { legislation: 2002, name: 'Certificate Package' },
-          { legislation: 2018, name: 'Certificate Package' }
+          { legislation: 2018, name: 'Certificate Package' },
+          { legislation: 2002, name: 'Order' },
+          { legislation: 2018, name: 'Order' },
+          { legislation: 2002, name: 'Decision Materials' },
+          { legislation: 2018, name: 'Decision Materials' }
         ];
         milestones = [
           { legislation: 2002, name: 'Certificate' },
-          { legislation: 2018, name: 'Certificate Decision' }
+          { legislation: 2018, name: 'Certificate Decision' },
+          { legislation: 2002, name: 'Decision' },
+          { legislation: 2002, name: 'Certificate Extension' },
+          { legislation: 2018, name: 'Certificate Extension' }
         ];
         break;
       case Constants.optionalProjectDocTabs.APPLICATION:
