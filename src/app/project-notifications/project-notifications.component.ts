@@ -97,10 +97,11 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
                 this.tableParams.totalListItems = res.projectNotifications[0].data.meta[0].searchResultsTotal;
                 this.projectNotifications = res.projectNotifications[0].data.searchResults;
 
-                // load projetNotification comment periods
+                // load projetNotification comment periods and document refs
                 this.projectNotifications.forEach(projectNotification => {
                   projectNotification['commentPeriod'] = null;
                   this.getProjectCommentPeriod(projectNotification);
+                  this.getProjectDocuments(projectNotification);
                 });
 
               } else {
@@ -149,6 +150,23 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
     this.filterForUI[filter] = this.filterForUI[filter].filter(option => option._id !== item._id);
   }
 
+  getProjectDocuments(project: ProjectNotification) {
+    this.searchService.getSearchResults(
+      null,
+      'Document',
+      [],
+      1,
+      1000,
+      null,
+      { documentSource: 'PROJECT-NOTIFICATION', project: project._id })
+      .takeUntil(this.ngUnsubscribe)
+      .subscribe((res: any) => {
+        if (res[0] && res[0].data && res[0].data.searchResults) {
+          project.documents = res[0].data.searchResults;
+          this._changeDetectionRef.detectChanges();
+        }
+      });
+  }
   getProjectCommentPeriod(project: ProjectNotification) {
     this.commentPeriodService.getAllByProjectId(project._id)
     .takeUntil(this.ngUnsubscribe)
@@ -228,32 +246,18 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
   }
 
   downloadDocuments(project) {
-    this.searchService.getSearchResults(
-      null,
-      'Document',
-      [],
-      1,
-      1000,
-      null,
-      { documentSource: 'PROJECT-NOTIFICATION', project: project._id })
-      .takeUntil(this.ngUnsubscribe)
-      .subscribe((res: any) => {
-        let documents = res[0].data.searchResults;
-
-        // fire download requests for the documents we found (if any);
-        documents.forEach(doc => {
-         this.api.downloadDocument(doc)
-         .then(() => {
-          // Turn this into a toast
-          this.snackBar.open('Downloading document');
-          window.setTimeout(() => this.snackBar.dismiss(), 2000)
-        })
-        .catch(() => {
-          this.snackBar.open('Error opening document! Please try again later');
-          window.setTimeout(() => this.snackBar.dismiss(), 2000)
-        })
-        });
-      });
+    project.documents.forEach(doc => {
+      this.api.downloadDocument(doc)
+      .then(() => {
+         // Turn this into a toast
+         this.snackBar.open('Downloading document');
+         window.setTimeout(() => this.snackBar.dismiss(), 2000)
+       })
+       .catch(() => {
+         this.snackBar.open('Error opening document! Please try again later');
+         window.setTimeout(() => this.snackBar.dismiss(), 2000)
+       })
+     });
   }
   search() {
 
@@ -299,10 +303,11 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
         this.tableParams.totalListItems = res[0].data.meta[0].searchResultsTotal;
         this.projectNotifications = res[0].data.searchResults;
 
-        // load projetNotification comment periods
+        // load projetNotification comment periods and document refs
         this.projectNotifications.forEach(projectNotification => {
           projectNotification['commentPeriod'] = null;
           this.getProjectCommentPeriod(projectNotification);
+          this.getProjectDocuments(projectNotification);
         });
       }
 

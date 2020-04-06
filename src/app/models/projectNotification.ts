@@ -13,7 +13,9 @@ export class ProjectNotification {
   description: String;
   trigger: String;
   centroid: Array<number>;
+  // dynamic attributes
   commentPeriod: CommentPeriod;
+  documents: Array<Document>;
 
   read: Array<String> = [];
 
