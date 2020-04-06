@@ -64,6 +64,12 @@ export class Constants {
     { code: 'Vancouver Island', name: 'Vancouver Island' }
   ];
 
+  public static readonly PROJECT_NOTIFICATION_DECISIONS: Array<object> = [
+    { code: 'In Progress', name: 'In Progress' },
+    { code: 'Referred for s.11 consideration', name: 'Referred for s.11 consideration' },
+    { code: 'Not referred for s.11 consideration', name: 'Not referred for s.11 consideration' }
+  ];
+
   public static readonly buildToNature: BuildNature[] = [
     { build: 'new',
       nature: 'New Construction'
