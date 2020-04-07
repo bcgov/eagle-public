@@ -99,8 +99,6 @@ def CHANGELOG = "No new changes"
 def IMAGE_HASH = "latest"
 def lockName = "eagle-public-${env.JOB_NAME}-${env.BUILD_NUMBER}"
 pipeline {
-  environment {
-  }
   agent any
   stages {
     stage('Build Init') {
