@@ -174,7 +174,6 @@ export class SearchComponent implements OnInit, OnDestroy {
           // reload query params from storage
           if (this.storageService.state.search) {
               this.filterForUI = this.storageService.state.search.filterForUI;
-              // this.setParamsFromFilters(params);
               this.tableParams = this.storageService.state.search.tableParams;
               this.categorizedQuery = this.storageService.state.search.categorizedQuery
           }
@@ -231,7 +230,6 @@ export class SearchComponent implements OnInit, OnDestroy {
         }
       });
       if (confirmedValues.length) {
-        // this.filterForURL[name] = encodeURI(confirmedValues.join(','));
         this.filterForURL[name] = confirmedValues.join(',');
         this.filterForAPI[name] = confirmedValues.join(',');
       }
