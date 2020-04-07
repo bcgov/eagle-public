@@ -7,10 +7,11 @@ import { MatSnackBarModule } from '@angular/material';
 import { ApiService } from 'app/services/api';
 import { StorageService } from 'app/services/storage.service';
 import { Utils } from 'app/shared/utils/utils';
-import { ListDataStub, paramsWithDates } from 'app/shared/utils/mock-data';
+import { paramsWithDates, SearchResultsStub } from 'app/shared/utils/mock-data';
 import { TableTemplateUtils } from 'app/shared/utils/table-template-utils';
 import { SearchComponent } from './search.component';
 import { SearchService } from 'app/services/search.service';
+import { TableParamsObject } from 'app/shared/components/table-template/table-params-object';
 
 describe('DocSearchComponent', () => {
   let component: SearchComponent;
@@ -22,16 +23,15 @@ describe('DocSearchComponent', () => {
 
   const mockTableTemplateUtils = jasmine.createSpyObj('TableTemplateUtils', [
     'updateUrl',
-    'updateTableParams'
+    'updateTableParams',
+    'getParamsFromUrl'
   ])
 
   const mockStorageService = jasmine.createSpyObj('StorageService', [
     'state'
   ]);
-  const mockSearchService = jasmine.createSpyObj('SearchService', [
-    'getFullList',
-    // 'getSearchResults'
-  ]);
+
+  const defaultParams = new TableParamsObject();
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
@@ -50,7 +50,7 @@ describe('DocSearchComponent', () => {
       providers: [
         { provide: ApiService, useValue: mockApiService },
         { provide: StorageService, useValue: mockStorageService },
-        { provide: SearchService, useClass: ListDataStub },
+        { provide: SearchService, useClass: SearchResultsStub },
         { provide: Utils, useValue: utils },
         { provide: TableTemplateUtils, useValue: mockTableTemplateUtils }
       ],
@@ -60,7 +60,9 @@ describe('DocSearchComponent', () => {
   }));
   beforeEach(() => {
     fixture = TestBed.createComponent(SearchComponent);
+    fixture.debugElement.injector.get(SearchService);
     component = fixture.componentInstance;
+    mockTableTemplateUtils.getParamsFromUrl.and.returnValue(defaultParams);
     fixture.detectChanges();
   });
 
@@ -79,13 +81,10 @@ describe('DocSearchComponent', () => {
     expect(params).toEqual(paramsWithDates);
   });
 
-  it('page size change updates url', () => {
-    component.updatePageTableSize(50);
-    expect(component.pageSize).toBe(50);
-  });
-
   it('page number change updates url', () => {
-    component.updatePageNumber(2);
+    defaultParams.currentPage = 2;
+    mockTableTemplateUtils.updateTableParams.and.returnValue(defaultParams);
+    component.getPaginated(2);
     expect(mockTableTemplateUtils.updateUrl).toHaveBeenCalledWith('-datePosted', 2, 10, {}, '')
   });
 

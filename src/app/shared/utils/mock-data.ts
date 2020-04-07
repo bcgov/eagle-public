@@ -1,5 +1,6 @@
 import { Project } from 'app/models/project';
 import { Observable } from 'rxjs';
+import { SearchResults } from 'app/models/search';
 
 export const AjaxData: Project[] = [
   {
@@ -125,9 +126,35 @@ const listsData = [{
   ]
 }]
 
-export class ListDataStub {
+const searchDocsResultsData = {
+  meta: [{ searchResultsTotal: 2 }],
+  searchResults: [
+    {
+      _id: '5555e166eb4cd100213c5555',
+      _schemaName: 'Document',
+      datePosted: '2019-07-05T07:00:00.000Z',
+      displayName: 'mock document 1'
+    },
+    {
+      _id: '4555e166eb4cd100213c5554',
+      _schemaName: 'Document',
+      datePosted: '2019-06-05T07:00:00.000Z',
+      displayName: 'mock document 2'
+    }
+  ]
+}
+
+export class SearchResultsStub {
   public getFullList(): Observable<any> {
     return Observable.of(listsData)
+  }
+
+  public getSearchResults(): Observable<any> {
+    let resultsArr = [];
+    let docSearchResults = new SearchResults();
+    docSearchResults.data = searchDocsResultsData;
+    resultsArr.push(docSearchResults);
+    return Observable.of(resultsArr)
   }
 }
 
