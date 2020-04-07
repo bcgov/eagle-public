@@ -169,11 +169,11 @@ pipeline {
             echo ">>>> Deployment Complete"
 
             notifyRocketChat(
-              "A new version of eagle-public is now in prod, build: ${env.BUILD_DISPLAY_NAME} \n Changes: \n ${CHANGELOG}",
+              "A new hotfix image has been created, build: ${env.BUILD_DISPLAY_NAME} \n Changes: \n ${CHANGELOG}",
               ROCKET_DEPLOY_WEBHOOK
             )
             notifyRocketChat(
-              "@all A new version of eagle-public is now in prod. \n Changes to prod: \n ${CHANGELOG}",
+              "@all A new hotfix image has been created \n Changes to prod: \n ${CHANGELOG}",
               ROCKET_QA_WEBHOOK
             )
           } catch (error) {
