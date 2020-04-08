@@ -546,7 +546,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
       .subscribe((res: any) => {
         if (res && res[0].data) {
           this.tableParams.totalListItems =
-          res[0].data.meta[0].searchResultsTotal;
+            res[0].data.meta[0].searchResultsTotal;
           this.projects = res[0].data.searchResults;
           this.tableTemplateUtils.updateUrl(
             this.tableParams.sortBy,
