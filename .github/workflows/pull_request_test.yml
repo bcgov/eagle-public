@@ -1,4 +1,4 @@
-name: Create TEST PR
+name: Create test branch PR
 
 # Run when a PR is merged
 #on:
@@ -21,7 +21,7 @@ jobs:
       with:
         destination_branch: "test"
         pr_title: "Pulling ${{ github.ref }} into TEST"
-        pr_body: ":crown: *An automated PR*"  # Full markdown support, requires pr_title to be set
-        pr_label: "auto-pr from dev to test"                   # Comma-separated list (no spaces)
-        pr_draft: true                        # Creates pull request as draft
+        pr_body: ":crown: *An automated PR*  This PR will pull all recent merges from DEVELOP into TEST"
+        pr_label: "auto-pr from dev to test"
+        pr_draft: true
         github_token: ${{ secrets.GITHUB_TOKEN }}
