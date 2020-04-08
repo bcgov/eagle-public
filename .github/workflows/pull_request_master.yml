@@ -1,5 +1,6 @@
 name: Create master branch PR
 
+# force a pr to create
 # Run when a PR is merged in test
 on:
   pull_request:
