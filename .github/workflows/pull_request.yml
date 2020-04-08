@@ -9,7 +9,7 @@ name: Create TEST PR
 on:
   push:
     branches:
-    - develop
+    - test-actions
 
 jobs:
   pull-request:
@@ -22,6 +22,6 @@ jobs:
         destination_branch: "test"
         pr_title: "Pulling ${{ github.ref }} into TEST"
         pr_body: ":crown: *An automated PR*"  # Full markdown support, requires pr_title to be set
-        pr_label: "auto-pr"                   # Comma-separated list (no spaces)
+        pr_label: "auto-pr from dev to test"                   # Comma-separated list (no spaces)
         pr_draft: true                        # Creates pull request as draft
         github_token: ${{ secrets.GITHUB_TOKEN }}
