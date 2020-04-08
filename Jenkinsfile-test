@@ -188,13 +188,6 @@ pipeline {
       }
     }
 
-    // stage('BDD Tests') {
-    //   agent { label: bddPodLabel }
-      // steps{
-      //   echo "BDD placeholder"
-      //   echo "Build: ${BUILD_ID}"
-        // checkout scm
-      // }
-    // }
+  
   }
 }
