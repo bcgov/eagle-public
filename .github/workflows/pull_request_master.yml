@@ -1,7 +1,7 @@
+# This action will create a Pull Request to merge all changes on TEST
+# into the MASTER branch. PR will be created as a draft
 name: Create master branch PR
 
-# force a pr to create, and again, this time with feeling
-# Run when a PR is merged in test
 on:
   pull_request:
     branches:

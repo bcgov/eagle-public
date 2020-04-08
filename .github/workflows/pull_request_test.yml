@@ -1,14 +1,12 @@
+# This action will create a Pull Request to merge all changes on DEVELOP
+# into the TEST branch. PR will be created as a draft
 name: Create test branch PR
 
-# Run when a PR is merged
-#on:
-#  pull_request:
-#    types: [closed]
-
 on:
-  push:
+  pull_request:
     branches:
-    - test-actions
+    - develop
+    types: [closed]
 
 jobs:
   pull-request:
