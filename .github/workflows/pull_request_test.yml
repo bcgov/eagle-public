@@ -5,7 +5,6 @@ name: Create test branch PR
 #  pull_request:
 #    types: [closed]
 
-# run when a push Occurs to the develop branch
 on:
   push:
     branches:
