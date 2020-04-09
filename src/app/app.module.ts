@@ -23,6 +23,7 @@ import { ContactComponent } from 'app/contact/contact.component';
 import { HeaderComponent } from 'app/header/header.component';
 import { FooterComponent } from 'app/footer/footer.component';
 import { NewsListTableRowsComponent } from 'app/news/news-list-table-rows/news-list-table-rows.component';
+import { SearchComponent } from 'app/search/search.component';
 import { SearchHelpComponent } from './search-help/search-help.component';
 import { CACUnsubscribeComponent } from 'app/cac-unsubscribe/cac-unsubscribe.component';
 
@@ -45,6 +46,9 @@ import { ProcessComponent } from 'app/process/process.component';
 import { ComplianceOversightComponent } from 'app/compliance-oversight/compliance-oversight.component';
 import { ActivitiesListTableRowsComponent } from './project/project-activites/activities-list-table-rows/activities-list-table-rows.component';
 import { ProjectNotificationsListComponent } from './project-notifications/project-notifications.component';
+import { SearchResolver } from './search/search-resolver.service';
+import { DocSearchTableRowsComponent } from './search/search-documents-table-rows/search-document-table-rows.component';
+
 
 @NgModule({
   imports: [
@@ -79,12 +83,15 @@ import { ProjectNotificationsListComponent } from './project-notifications/proje
     LegislationComponent,
     ProcessComponent,
     ComplianceOversightComponent,
+    SearchComponent,
     SearchHelpComponent,
-    CACUnsubscribeComponent
+    CACUnsubscribeComponent,
+    DocSearchTableRowsComponent,
   ],
   entryComponents: [
     NewsListTableRowsComponent,
     ActivitiesListTableRowsComponent,
+    DocSearchTableRowsComponent,
   ],
   providers: [
     ConfigService,
@@ -97,7 +104,8 @@ import { ProjectNotificationsListComponent } from './project-notifications/proje
     DocumentService,
     SearchService,
     OrgService,
-    FeatureService
+    FeatureService,
+    SearchResolver
   ],
   bootstrap: [
     AppComponent

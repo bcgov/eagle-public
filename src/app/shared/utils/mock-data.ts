@@ -1,4 +1,6 @@
 import { Project } from 'app/models/project';
+import { Observable } from 'rxjs';
+import { SearchResults } from 'app/models/search';
 
 export const AjaxData: Project[] = [
   {
@@ -113,3 +115,65 @@ export const regionsData = [
   'Vancouver Island',
   'Thompson-Nicola'
 ];
+
+
+const listsData = [{
+  meta: [{ searchResultsTotal: 3 }],
+  searchResults: [
+    { _id: '5cf00c03a266b7e1877504ca', type: 'doctype', _schemaName: 'List', legislation: 2002, listOrder: 0, name: 'Request', read: ['public', 'staff', 'sysadmin'] },
+    { _id: '5cf00c03a266b7e1877504cb', type: 'doctype', _schemaName: 'List', legislation: 2002, listOrder: 1, name: 'Letter', read: ['public', 'staff', 'sysadmin'] },
+    { _id: '5cf00c03a266b7e1877504cd', type: 'doctype', _schemaName: 'List', legislation: 2002, listOrder: 2, name: 'Meeting Notes', read: ['public', 'staff', 'sysadmin'] },
+  ]
+}]
+
+const searchDocsResultsData = {
+  meta: [{ searchResultsTotal: 2 }],
+  searchResults: [
+    {
+      _id: '5555e166eb4cd100213c5555',
+      _schemaName: 'Document',
+      datePosted: '2019-07-05T07:00:00.000Z',
+      displayName: 'mock document 1'
+    },
+    {
+      _id: '4555e166eb4cd100213c5554',
+      _schemaName: 'Document',
+      datePosted: '2019-06-05T07:00:00.000Z',
+      displayName: 'mock document 2'
+    }
+  ]
+}
+
+export class SearchResultsStub {
+  public getFullList(): Observable<any> {
+    return Observable.of(listsData)
+  }
+
+  public getSearchResults(): Observable<any> {
+    let resultsArr = [];
+    let docSearchResults = new SearchResults();
+    docSearchResults.data = searchDocsResultsData;
+    resultsArr.push(docSearchResults);
+    return Observable.of(resultsArr)
+  }
+}
+
+export class SearchTermsStub {
+  public getParams() {
+    return {
+      currentPage: '1',
+      dataset: 'Document',
+      keywords: 'wolverine',
+      pageSize: 10
+    }
+  }
+}
+
+export const paramsWithDates = {
+  dataset: 'Document',
+  currentPage: 1,
+  pageSize: 10,
+  ms: 807,
+  datePostedStart: '2020-02-01',
+  datePostedEnd: '2020-03-12'
+};
