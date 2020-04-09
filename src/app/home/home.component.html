@@ -39,6 +39,7 @@
                     <span class="font-weight-bold" *ngIf="item.project">
                       {{item.project?.name}}
                     </span>
+                    <span *ngIf="item.notificationName" class="font-weight-bold">{{item.notificationName}}</span>
                     <span class="home-news-feed__headline">{{item.headline}}</span>
                   </h3>
                   <span class="title-container__date">{{item.dateAdded | date:'longDate'}}</span>
@@ -55,10 +56,15 @@
                     [routerLink]="['/p', item.project?._id, 'cp', item.pcp ]">
                     Submit/ View Comments
                   </a>
-                  <a *ngIf="item.documentUrl && !item?.documentUrl.includes('docs?folder')"
+                  <a *ngIf="item.documentUrl && !item?.documentUrl.includes('docs?folder') && !item?.notificationName"
                     class="btn btn-sm content-btn-alt" title="View more information" href="{{item.documentUrl}}"
                     target="_blank">
                     View Document(s)
+                  </a>
+                  <a *ngIf="item.documentUrl && item?.notificationName"
+                    class="btn btn-sm content-btn-alt" title="View more information" href="{{item.documentUrl}}"
+                    target="_blank">
+                    View Project Notification Public Comment Period
                   </a>
                 </div>
               </td>

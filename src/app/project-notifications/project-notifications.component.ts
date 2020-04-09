@@ -18,7 +18,8 @@ class ProjectNotificationFilterObject {
   constructor(
     public type: object = {},
     public pcp: object = {},
-    public region: Array<string> = []
+    public region: Array<string> = [],
+    public decision: object = {}
   ) { }
 }
 
@@ -31,6 +32,7 @@ class ProjectNotificationFilterObject {
 export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
   private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
   public regions: Array<object> = [];
+  public decisions: Array<object> = [];
   public commentPeriods: Array<object> = [];
   public projectTypes: Array<object> = [];
   public loading = true;
@@ -48,13 +50,15 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
   public showFilters: object = {
     type: false,
     region: false,
-    pcp: false
+    pcp: false,
+    decision: false
   };
 
   public numFilters: object = {
     type: 0,
     region: 0,
-    pcp: 0
+    pcp: 0,
+    decision: 0
   };
 
   constructor(
@@ -71,6 +75,7 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
     this.regions = Constants.REGIONS_COLLECTION;
     this.commentPeriods = Constants.PCP_COLLECTION;
     this.projectTypes = Constants.PROJECT_TYPE_COLLECTION;
+    this.decisions = Constants.PROJECT_NOTIFICATION_DECISIONS;
   }
 
   ngOnInit() {
@@ -92,10 +97,11 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
                 this.tableParams.totalListItems = res.projectNotifications[0].data.meta[0].searchResultsTotal;
                 this.projectNotifications = res.projectNotifications[0].data.searchResults;
 
-                // load projetNotification comment periods
+                // load projetNotification comment periods and document refs
                 this.projectNotifications.forEach(projectNotification => {
                   projectNotification['commentPeriod'] = null;
                   this.getProjectCommentPeriod(projectNotification);
+                  this.getProjectDocuments(projectNotification);
                 });
 
               } else {
@@ -144,6 +150,23 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
     this.filterForUI[filter] = this.filterForUI[filter].filter(option => option._id !== item._id);
   }
 
+  getProjectDocuments(project: ProjectNotification) {
+    this.searchService.getSearchResults(
+      null,
+      'Document',
+      [],
+      1,
+      1000,
+      null,
+      { documentSource: 'PROJECT-NOTIFICATION', project: project._id })
+      .takeUntil(this.ngUnsubscribe)
+      .subscribe((res: any) => {
+        if (res[0] && res[0].data && res[0].data.searchResults) {
+          project.documents = res[0].data.searchResults;
+          this._changeDetectionRef.detectChanges();
+        }
+      });
+  }
   getProjectCommentPeriod(project: ProjectNotification) {
     this.commentPeriodService.getAllByProjectId(project._id)
     .takeUntil(this.ngUnsubscribe)
@@ -188,6 +211,7 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
     this.updateCount('type');
     this.updateCount('region');
     this.updateCount('pcp');
+    this.updateCount('decision');
   }
 
   public onSubmit() {
@@ -209,6 +233,7 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
     this.collectionFilterToParams(params, 'type', 'name');
     this.collectionFilterToParams(params, 'pcp', 'code');
     this.collectionFilterToParams(params, 'region', 'code');
+    this.collectionFilterToParams(params, 'decision', 'code');
   }
 
   collectionFilterToParams(params, name, identifyBy) {
@@ -221,32 +246,18 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
   }
 
   downloadDocuments(project) {
-    this.searchService.getSearchResults(
-      null,
-      'Document',
-      [],
-      1,
-      1000,
-      null,
-      { documentSource: 'PROJECT-NOTIFICATION', project: project._id })
-      .takeUntil(this.ngUnsubscribe)
-      .subscribe((res: any) => {
-        let documents = res[0].data.searchResults;
-
-        // fire download requests for the documents we found (if any);
-        documents.forEach(doc => {
-         this.api.downloadDocument(doc)
-         .then(() => {
-          // Turn this into a toast
-          this.snackBar.open('Downloading document');
-          window.setTimeout(() => this.snackBar.dismiss(), 2000)
-        })
-        .catch(() => {
-          this.snackBar.open('Error opening document! Please try again later');
-          window.setTimeout(() => this.snackBar.dismiss(), 2000)
-        })
-        });
-      });
+    project.documents.forEach(doc => {
+      this.api.downloadDocument(doc)
+      .then(() => {
+         // Turn this into a toast
+         this.snackBar.open('Downloading document');
+         window.setTimeout(() => this.snackBar.dismiss(), 2000)
+       })
+       .catch(() => {
+         this.snackBar.open('Error opening document! Please try again later');
+         window.setTimeout(() => this.snackBar.dismiss(), 2000)
+       })
+     });
   }
   search() {
 
@@ -270,6 +281,10 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
       queryConditions['pcp'] = params.pcp;
     }
 
+    if (params.decision) {
+      queryConditions['decision'] = params.decision;
+    }
+
     this.searchService.getSearchResults(
       this.tableParams.keywords,
       'ProjectNotification',
@@ -288,10 +303,11 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
         this.tableParams.totalListItems = res[0].data.meta[0].searchResultsTotal;
         this.projectNotifications = res[0].data.searchResults;
 
-        // load projetNotification comment periods
+        // load projetNotification comment periods and document refs
         this.projectNotifications.forEach(projectNotification => {
           projectNotification['commentPeriod'] = null;
           this.getProjectCommentPeriod(projectNotification);
+          this.getProjectDocuments(projectNotification);
         });
       }
 
