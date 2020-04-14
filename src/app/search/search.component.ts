@@ -91,7 +91,7 @@ export class SearchComponent implements OnInit, OnDestroy {
   public documentTableData: TableObject;
   public documentTableColumns: any[] = [
     {
-      name: 'Name',
+      name: 'Document Name',
       value: 'displayName',
       width: 'col-5'
     },
