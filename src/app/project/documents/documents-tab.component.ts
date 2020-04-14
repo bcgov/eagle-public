@@ -89,7 +89,7 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
     {
       name: 'Name',
       value: 'displayName',
-      width: 'col-5'
+      width: 'col-3'
     },
     {
       name: 'Date',
@@ -104,6 +104,11 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
     {
       name: 'Milestone',
       value: 'milestone',
+      width: 'col-2'
+    },
+    {
+      name: 'Phase',
+      value: 'phase',
       width: 'col-2'
     }
   ];
@@ -299,7 +304,8 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
               milestone: document.milestone,
               _id: document._id,
               project: document.project,
-              isFeatured: document.isFeatured
+              isFeatured: document.isFeatured,
+              projectPhase: document.projectPhase
             }
           );
         }
