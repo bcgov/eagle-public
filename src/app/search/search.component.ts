@@ -440,13 +440,17 @@ collectionFilterToParams(params, name, identifyBy) {
       '')
       .takeUntil(this.ngUnsubscribe)
       .subscribe((res: any) => {
-        this.tableParams.totalListItems = res[0].data.meta[0].searchResultsTotal;
-        this.documents = res[0].data.searchResults;
-        this.tableTemplateUtils.updateUrl(this.tableParams.sortBy, this.tableParams.currentPage, this.tableParams.pageSize, this.filterForURL, this.tableParams.keywords);
+        if (res && res[0].data && res[0].data.meta.length > 0) {
+          this.tableParams.totalListItems = res[0].data.meta[0].searchResultsTotal;
+          this.documents = res[0].data.searchResults;
+          this.tableTemplateUtils.updateUrl(this.tableParams.sortBy, this.tableParams.currentPage, this.tableParams.pageSize, this.filterForURL, this.tableParams.keywords);
+        } else {
+          this.tableParams.totalListItems = 0;
+          this.documents = [];
+        }
         this.setRowData();
         this.loading = false;
         this._changeDetectionRef.detectChanges();
-
         this.previousFilters = { ...this.filterForAPI };
         this.previousKeyword = this.terms.keywords;
       });
