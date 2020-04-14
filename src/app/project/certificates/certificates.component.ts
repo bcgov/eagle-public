@@ -117,7 +117,8 @@ export class CertificatesComponent implements OnInit, OnDestroy {
             datePosted: document.datePosted,
             type: document.type,
             milestone: document.milestone,
-            project: document.project
+            project: document.project,
+            projectPhase: document.projectPhase
           }
         );
       });
