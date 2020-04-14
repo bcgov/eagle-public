@@ -410,7 +410,7 @@ collectionFilterToParams(params, name, identifyBy) {
     }
 
     if (this.terms.keywords !== this.previousKeyword || JSON.stringify(this.filterForAPI) !== JSON.stringify(this.previousFilters)) {
-      this.tableParams.currentPage = 1;
+      this.tableParams = new TableParamsObject();
       pageNumber = 1;
       this.tableParams.sortBy = '-datePosted,+displayName'
     }
