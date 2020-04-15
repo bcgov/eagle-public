@@ -26,9 +26,14 @@ export class ProjectDetailsTabComponent implements OnInit {
   public lists: any[] = [];
   public documentTableColumns: any[] = [
     {
+      name: '★',
+      value: 'isFeatured',
+      width: 'col-1'
+    },
+    {
       name: 'Name',
       value: 'displayName',
-      width: 'col-4'
+      width: 'col-3'
     },
     {
       name: 'Date',
@@ -138,7 +143,8 @@ export class ProjectDetailsTabComponent implements OnInit {
               project: document.project,
               isFeatured: document.isFeatured,
               typeString: this.idToList(document.type),
-              milestoneString: this.idToList(document.milestone)
+              milestoneString: this.idToList(document.milestone),
+              projectPhase: this.idToList(document.projectPhase)
             }
           );
         }
