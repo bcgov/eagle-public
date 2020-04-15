@@ -28,7 +28,7 @@ export class ProjectDetailsTabComponent implements OnInit {
     {
       name: 'Name',
       value: 'displayName',
-      width: 'col-6'
+      width: 'col-4'
     },
     {
       name: 'Date',
@@ -43,6 +43,11 @@ export class ProjectDetailsTabComponent implements OnInit {
     {
       name: 'Milestone',
       value: 'milestone',
+      width: 'col-2'
+    },
+    {
+      name: 'Phase',
+      value: 'phase',
       width: 'col-2'
     }
   ];
