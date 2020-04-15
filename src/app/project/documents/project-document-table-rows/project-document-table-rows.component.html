@@ -11,8 +11,9 @@
     </td>
     <td *ngIf="currentUrl !== 'project-details'" data-label="Type" (click)="goToItem(document)" scope="row" class="col-2">{{idToList(document.type)}}</td>
     <td *ngIf="currentUrl !== 'project-details'"  data-label="Milestone" (click)="goToItem(document)" scope="row" class="col-2">{{idToList(document.milestone)}}</td>
-    <td data-label="Phase" (click)="goToItem(document)" scope="row" class="col-2">{{idToList(document.projectPhase)}}</td>
+    <td *ngIf="currentUrl !== 'project-details'" data-label="Phase" (click)="goToItem(document)" scope="row" class="col-2">{{idToList(document.projectPhase)}}</td>
     <td *ngIf="currentUrl === 'project-details'" data-label="Type" (click)="goToItem(document)" scope="row" class="col-2">{{document.typeString}}</td>
     <td *ngIf="currentUrl === 'project-details'"  data-label="Milestone" (click)="goToItem(document)" scope="row" class="col-2">{{document.milestoneString}}</td>
+    <td *ngIf="currentUrl === 'project-details'"data-label="Phase" (click)="goToItem(document)" scope="row" class="col-2">{{document.projectPhase}}</td>
 
 </tr>
