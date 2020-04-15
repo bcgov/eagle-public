@@ -91,7 +91,7 @@ export class SearchComponent implements OnInit, OnDestroy {
   public documentTableData: TableObject;
   public documentTableColumns: any[] = [
     {
-      name: 'Name',
+      name: 'Document Name',
       value: 'displayName',
       width: 'col-5'
     },
@@ -410,7 +410,7 @@ collectionFilterToParams(params, name, identifyBy) {
     }
 
     if (this.terms.keywords !== this.previousKeyword || JSON.stringify(this.filterForAPI) !== JSON.stringify(this.previousFilters)) {
-      this.tableParams.currentPage = 1;
+      this.tableParams = new TableParamsObject();
       pageNumber = 1;
       this.tableParams.sortBy = '-datePosted,+displayName'
     }
@@ -440,13 +440,17 @@ collectionFilterToParams(params, name, identifyBy) {
       '')
       .takeUntil(this.ngUnsubscribe)
       .subscribe((res: any) => {
-        this.tableParams.totalListItems = res[0].data.meta[0].searchResultsTotal;
-        this.documents = res[0].data.searchResults;
-        this.tableTemplateUtils.updateUrl(this.tableParams.sortBy, this.tableParams.currentPage, this.tableParams.pageSize, this.filterForURL, this.tableParams.keywords);
+        if (res && res[0].data && res[0].data.meta.length > 0) {
+          this.tableParams.totalListItems = res[0].data.meta[0].searchResultsTotal;
+          this.documents = res[0].data.searchResults;
+          this.tableTemplateUtils.updateUrl(this.tableParams.sortBy, this.tableParams.currentPage, this.tableParams.pageSize, this.filterForURL, this.tableParams.keywords);
+        } else {
+          this.tableParams.totalListItems = 0;
+          this.documents = [];
+        }
         this.setRowData();
         this.loading = false;
         this._changeDetectionRef.detectChanges();
-
         this.previousFilters = { ...this.filterForAPI };
         this.previousKeyword = this.terms.keywords;
       });
