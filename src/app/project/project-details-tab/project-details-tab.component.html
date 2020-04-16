@@ -54,7 +54,7 @@
             <h2>Featured Documents</h2>
             <app-table-template
                 [columns]="documentTableColumns" [data]="documentTableData" (onColumnSort)='setColumnSort($event)'
-                (onSelectedRow)='updateSelectedRow($event)' [hidePager]="true">
+                (onSelectedRow)='updateSelectedRow($event)' [hidePager]="true" [showCountAtTop]="false">
             </app-table-template>
         </div>
     </div>
