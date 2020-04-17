@@ -184,89 +184,95 @@
                 </a>
             </div>
         </form>
-        <div class="app-details" *ngFor="let project of projectNotifications">
-            <div class="card">
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-12">
-                          <div class="pn-location-info">
-                              <div class="row">
-                                <div class="col-sm-12 col-md-8">
-                                    <h4>{{(project?.name || '-')}}</h4>
+        <div *ngIf="projectNotifications.length === 0">
+            <p>
+                There are currently no Project Notifications
+            </p>
+        </div>
+        <div *ngIf="projectNotifications.length !== 0">
+            <div class="app-details" *ngFor="let project of projectNotifications">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-12">
+                            <div class="pn-location-info">
+                                <div class="row">
+                                    <div class="col-sm-12 col-md-8">
+                                        <h4>{{(project?.name || '-')}}</h4>
+                                    </div>
+                                    <div class="col-sm-12 col-md-4">
+                                        <a *ngIf="project?.commentPeriod?.daysRemainingCount > 0" class="btn btn-primary view-pcp-btn"
+                                        title="View this Public Comment Period"
+                                        [routerLink]="['/pn', project?._id, 'cp', project?.commentPeriod?._id]">
+                                        <div class="pcp-indicator pcp-indicator-active"></div>
+                                        View Open Comment Period
+                                        </a>
+                                        <a *ngIf="project?.commentPeriod?.daysRemainingCount === 0" class="btn btn-primary view-pcp-btn"
+                                        title="View this Public Comment Period"
+                                        [routerLink]="['/pn', project?._id, 'cp', project?.commentPeriod?._id]">
+                                        <div class="pcp-indicator pcp-indicator-inactive"></div>
+                                        View {{project?.commentPeriod?.commentPeriodStatus}} Comment Period
+                                        </a>
+                                    </div>
                                 </div>
-                                <div class="col-sm-12 col-md-4">
-                                    <a *ngIf="project?.commentPeriod?.daysRemainingCount > 0" class="btn btn-primary view-pcp-btn"
-                                       title="View this Public Comment Period"
-                                       [routerLink]="['/pn', project?._id, 'cp', project?.commentPeriod?._id]">
-                                       <div class="pcp-indicator pcp-indicator-active"></div>
-                                       View Open Comment Period
-                                    </a>
-                                    <a *ngIf="project?.commentPeriod?.daysRemainingCount === 0" class="btn btn-primary view-pcp-btn"
-                                       title="View this Public Comment Period"
-                                       [routerLink]="['/pn', project?._id, 'cp', project?.commentPeriod?._id]">
-                                       <div class="pcp-indicator pcp-indicator-inactive"></div>
-                                       View {{project?.commentPeriod?.commentPeriodStatus}} Comment Period
-                                    </a>
+                                <div class="row">
+                                    <div class="col-sm-12 col-md-3 pn-info-block">
+                                    <label>Type</label>
+                                    <p class="value">{{project?.type || "-" }}</p>
+                                    </div>
+                                    <div class="col-sm-12 col-md-3 pn-info-block">
+                                    <label>Location</label>
+                                    <p class="value">{{project?.location || "-" }}</p>
+                                    </div>
+                                    <div class="col-sm-12 col-md-3 pn-info-block">
+                                    <label>Nature</label>
+                                    <p class="value">{{project?.nature || "-" }}</p>
+                                    </div>
+                                    <div class="col-sm-12 col-md-3 pn-info-block">
+                                    <label>Public Comment Period</label>
+                                    <p class="value">{{project?.commentPeriod?.daysRemaining  || "-"}}</p>
+                                    </div>
+                                    <div class="col-sm-12 col-md-3 pn-info-block">
+                                    <label>Sub-Type</label>
+                                    <p class="value">{{project?.subType || "-" }}</p>
+                                    </div>
+                                    <div class="col-sm-12 col-md-3 pn-info-block">
+                                        <label>Region</label>
+                                        <p class="value">{{project?.region || "-" }}</p>
+                                    </div>
+                                    <div class="col-sm-12 col-md-3 pn-info-block">
+                                        <label>Notification Trigger</label>
+                                        <p class="value">{{project?.trigger || "-" }}</p>
+                                    </div>
+                                    <div class="col-sm-12 col-md-3 pn-info-block">
+                                        <label>Notification Decision</label>
+                                        <a [routerLink]="['/p', project?.associatedProjectId ]" *ngIf="project?.associatedProjectId; else noHyperlink">  
+                                        <p class="value">{{ project?.decision }} | {{project?.decisionDate?.toString().split('T')[0] || "-" }} </p>
+                                        </a>
+                                        <ng-template #noHyperlink><p class="value">{{ project?.decision }} | {{project?.decisionDate?.toString().split('T')[0] || "-" }} </p></ng-template>
+                                    </div>
                                 </div>
-                              </div>
-                              <div class="row">
-                                <div class="col-sm-12 col-md-3 pn-info-block">
-                                <label>Type</label>
-                                <p class="value">{{project?.type || "-" }}</p>
+                                <div class="row">
+                                    <div class="pn-info-block">
+                                        <label>Description:</label>
+                                        <p class="value" [innerHTML]="(project?.description || '-') | newlines"></p>
+                                    </div>
                                 </div>
-                                <div class="col-sm-12 col-md-3 pn-info-block">
-                                <label>Location</label>
-                                <p class="value">{{project?.location || "-" }}</p>
-                                </div>
-                                <div class="col-sm-12 col-md-3 pn-info-block">
-                                <label>Nature</label>
-                                <p class="value">{{project?.nature || "-" }}</p>
-                                </div>
-                                <div class="col-sm-12 col-md-3 pn-info-block">
-                                <label>Public Comment Period</label>
-                                <p class="value">{{project?.commentPeriod?.daysRemaining  || "-"}}</p>
-                                </div>
-                                <div class="col-sm-12 col-md-3 pn-info-block">
-                                <label>Sub-Type</label>
-                                <p class="value">{{project?.subType || "-" }}</p>
-                                </div>
-                                <div class="col-sm-12 col-md-3 pn-info-block">
-                                    <label>Region</label>
-                                    <p class="value">{{project?.region || "-" }}</p>
-                                </div>
-                                <div class="col-sm-12 col-md-3 pn-info-block">
-                                    <label>Notification Trigger</label>
-                                    <p class="value">{{project?.trigger || "-" }}</p>
-                                </div>
-                                <div class="col-sm-12 col-md-3 pn-info-block">
-                                    <label>Notification Decision</label>
-                                    <a [routerLink]="['/p', project?.associatedProjectId ]" *ngIf="project?.associatedProjectId; else noHyperlink">  
-                                    <p class="value">{{ project?.decision }} | {{project?.decisionDate?.toString().split('T')[0] || "-" }} </p>
-                                    </a>
-                                    <ng-template #noHyperlink><p class="value">{{ project?.decision }} | {{project?.decisionDate?.toString().split('T')[0] || "-" }} </p></ng-template>
-
+                                <div class="row">
+                                    <button *ngIf="project.documents.length > 0"
+                                            class="btn btn-sm content-btn-alt"
+                                            type="button"
+                                            (click)="downloadDocuments(project)">
+                                        <span>View Document(s)</span>
+                                    </button>
                                 </div>
                             </div>
-                            <div class="row">
-                                <div class="pn-info-block">
-                                    <label>Description:</label>
-                                    <p class="value" [innerHTML]="(project?.description || '-') | newlines"></p>
-                                </div>
                             </div>
-                            <div class="row">
-                                <button *ngIf="project.documents.length > 0"
-                                        class="btn btn-sm content-btn-alt"
-                                        type="button"
-                                        (click)="downloadDocuments(project)">
-                                    <span>View Document(s)</span>
-                                </button>
-                            </div>
-                          </div>
                         </div>
                     </div>
                 </div>
+                <br/>
             </div>
-            <br/>
         </div>
     </div>
     </section>
