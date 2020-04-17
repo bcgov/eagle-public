@@ -51,13 +51,15 @@
                                 Public Comment Period<span
                                     *ngIf="numFilters.pcp > 0 && !showFilters.pcp">&nbsp;({{ numFilters.pcp }})</span>
                             </button>
+
                             <button type="button" (click)="toggleFilter('decision');" [ngClass]="{'btn': true, 'decision-btn': true,
                 'btn-dark': showFilters.decision,
                 'btn-secondary': !showFilters.decision && numFilters.decision > 0,
                 'btn-outline-dark': !showFilters.decision && numFilters.decision == 0}">
-                                Notification Decision<span
-                                    *ngIf="numFilters.pcp > 0 && !showFilters.pcp">&nbsp;({{ numFilters.pcp }})</span>
+                                Notification Decision
+                                <span *ngIf="numFilters.pcp > 0 && !showFilters.pcp">&nbsp;({{ numFilters.pcp }})</span>
                             </button>
+
                             <button class="btn btn-outline-dark" type="button" (click)="clearAll();">Clear
                                 All</button>
                         </div>
@@ -238,7 +240,11 @@
                                 </div>
                                 <div class="col-sm-12 col-md-3 pn-info-block">
                                     <label>Notification Decision</label>
-                                    <p class="value">{{ project?.decision }} | {{project?.decisionDate?.toString().split('T')[0] || "-" }}</p>
+                                    <a [routerLink]="['/p', project?.associatedProjectId ]" *ngIf="project?.associatedProjectId; else noHyperlink">  
+                                    <p class="value">{{ project?.decision }} | {{project?.decisionDate?.toString().split('T')[0] || "-" }} </p>
+                                    </a>
+                                    <ng-template #noHyperlink><p class="value">{{ project?.decision }} | {{project?.decisionDate?.toString().split('T')[0] || "-" }} </p></ng-template>
+
                                 </div>
                             </div>
                             <div class="row">
