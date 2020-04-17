@@ -18,14 +18,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Build image
+      - name: Build & Deploy image
         uses: bcgov/openshift-launchpad-deployment@master
         with:
-          AUTH_TOKEN: ${{ secrets.action_token }}
-          SCRIPT: GIT_BRANCH=${GITHUB_HEAD_REF} openshift/scripts/oc_build.sh ${SUFFIX} apply
-
-      - name: Deploy to Dev
-        uses: bcgov/openshift-launchpad-deployment@master
-        with:
-          AUTH_TOKEN: ${{ secrets.action_token }}
-          SCRIPT: openshift/scripts/oc_deploy.sh ${SUFFIX} apply
+          AUTH_TOKEN: ${{ secrets.BUILD_TOKEN }}
+          SCRIPT: GIT_BRANCH=${GITHUB_HEAD_REF} openshift/scripts/oc_build_deploy.sh ${SUFFIX} apply
