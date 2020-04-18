@@ -104,11 +104,11 @@ export class SearchComponent implements OnInit, OnDestroy {
 
   private legislationFilterGroup = { name: 'legislation', labelPrefix: null, labelPostfix: ' Act Terms' };
 
-  private milestoneFilter = new FilterObject('milestone', 'Milestone', false, [], [], false, this.legislationFilterGroup);
-  private docDateFilter = new FilterObject('datePosted', 'Document Date', true, [], [], false, this.legislationFilterGroup);
-  private authorTypeFilter = new FilterObject('documentAuthorType', 'Document Author', false, [], [], false, this.legislationFilterGroup);
-  private docTypeFilter = new FilterObject('type', 'Document Type', false, [], [], false, this.legislationFilterGroup);
-  private projectPhaseFilter = new FilterObject('projectPhase', 'Project Phase', false, [], [], false, this.legislationFilterGroup);
+  private milestoneFilter = new FilterObject('milestone', 'Milestone', false, null, [], [], this.legislationFilterGroup);
+  private docDateFilter = new FilterObject('datePosted', 'Document Date', true, { startDateId: 'datePostedStart', endDateId: 'datePostedEnd' }, [], [], this.legislationFilterGroup);
+  private authorTypeFilter = new FilterObject('documentAuthorType', 'Document Author', false, null, [], [], this.legislationFilterGroup);
+  private docTypeFilter = new FilterObject('type', 'Document Type', false, null, [], [], this.legislationFilterGroup);
+  private projectPhaseFilter = new FilterObject('projectPhase', 'Project Phase', false, null, [], [], this.legislationFilterGroup);
 
   constructor(
     public snackBar: MatSnackBar,
@@ -281,6 +281,14 @@ collectionFilterToParams(params, name, identifyBy) {
     this.dateFilterToParams(params, 'datePostedEnd');
   }
 
+  setColumnSort(column) {
+    if (this.tableParams.sortBy.charAt(0) === '+') {
+      this.tableParams.sortBy = '-' + column;
+    } else {
+      this.tableParams.sortBy = '+' + column;
+    }
+    this.getPaginated(this.tableParams.currentPage);
+  }
   isCategorizedQuery() {
     const categorizedFilters = ['documentAuthorType', 'milestone', 'projectPhase', 'type'];
     let isCategorized = false;

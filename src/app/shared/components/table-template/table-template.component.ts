@@ -52,6 +52,7 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
 
   private previousFilters;
   private previousKeyword;
+  private defaultSortBy;
 
   constructor(
     private componentFactoryResolver: ComponentFactoryResolver,
@@ -68,6 +69,8 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
     if (this.activePage !== parseInt(this.data.paginationData.currentPage, 10)) {
       this.activePage = parseInt(this.data.paginationData.currentPage, 10);
     }
+
+    this.defaultSortBy = this.data.paginationData.sortBy;
   }
 
   ngOnChanges(changes: SimpleChanges) {
@@ -128,9 +131,10 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
 
     if (this.previousKeyword !== this.keywords || JSON.stringify(this.previousFilters) !== JSON.stringify(newFilters)) {
       this.data.paginationData.pageNum = 1;
+      this.data.paginationData.sortBy = this.defaultSortBy;
     }
 
-    this.previousFilters = newFilters;
+    this.previousFilters = { ...newFilters };
     this.previousKeyword = this.keywords;
 
     let searchPackage = {
@@ -143,7 +147,7 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
   getFiltersForAPI() {
     let filtersForAPI = {};
     this.filters.forEach(filter => {
-      if (!filter.dateFilter) {
+      if (!filter.hasDateFilter) {
         filtersForAPI[filter.id] = '';
         filter.selectedOptions.forEach(option => {
           if (option.hasOwnProperty('code')) {
@@ -160,10 +164,10 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
         // filter to always match for start/end, and to always end in Start or End
         // We will need to rework this
         if (filter.startDate) {
-          filtersForAPI[filter.id + 'Start'] = filter.startDate;
+          filtersForAPI[filter.dateFilter.startDateId] = filter.startDate;
         }
         if (filter.endDate) {
-          filtersForAPI[filter.id + 'End'] = filter.endDate;
+          filtersForAPI[filter.dateFilter.endDateId] = filter.endDate;
         }
       }
 

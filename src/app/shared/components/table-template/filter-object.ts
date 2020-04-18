@@ -6,18 +6,26 @@ export class FilterGroupObject {
   ) { }
 }
 
+export class DateFilterObject {
+  constructor(
+    public startDateId: string,
+    public endDateId: string
+  ) { }
+}
+
 export class FilterObject {
 
   // Handlers for start and end dates if this is also has a date filter
   public startDate;
   public endDate;
+  public active = false;
   constructor(
     public id: string,
     public name: string,
-    public dateFilter: boolean = false,
+    public hasDateFilter: boolean = false,
+    public dateFilter: DateFilterObject,
     public options: any[],
     public selectedOptions: any[],
-    public active: boolean = false,
     public group: FilterGroupObject
   ) { }
 }
