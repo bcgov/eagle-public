@@ -337,6 +337,7 @@ collectionFilterToParams(params, name, identifyBy) {
 
   clearAllFilters() {
     this.tableParams.keywords = '';
+    this.terms.keywords = '';
     delete this.filterForURL['keywords'];
     Object.keys(this.filterForUI).forEach(key => {
       if (this.filterForUI[key]) {
