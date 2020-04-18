@@ -1,6 +1,5 @@
-import { Component, Input, OnInit, ComponentFactoryResolver, OnDestroy, ViewChild, Output, EventEmitter, SimpleChanges, OnChanges, ViewEncapsulation, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
+import { Component, Input, OnInit, ComponentFactoryResolver, OnDestroy, ViewChild, Output, EventEmitter, SimpleChanges, OnChanges, ViewEncapsulation, ChangeDetectionStrategy } from '@angular/core';
 
-import { Subject } from 'rxjs/Subject';
 import 'rxjs/add/operator/switchMap';
 import 'rxjs/add/operator/takeUntil';
 import * as _ from 'lodash';
@@ -35,14 +34,12 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
   @Input() showAdvancedSearch = false;
   @Input() searchDisclaimer: string = null;
   @Input() filters: FilterObject[];
-  @Input() dataset: string; // Document, Project, etc
-  @Input() isCategorized = false;
-  @Input() queryModifiers: Object = null;
   @ViewChild(TableDirective, {static: true}) tableHost: TableDirective;
 
   @Output() onPageNumUpdate: EventEmitter<any> = new EventEmitter();
   @Output() onSelectedRow: EventEmitter<any> = new EventEmitter();
   @Output() onColumnSort: EventEmitter<any> = new EventEmitter();
+  @Output() onSearch: EventEmitter<any> = new EventEmitter();
 
   public column: string = null;
 
@@ -53,16 +50,14 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
 
   public readonly constants = Constants;
 
-  private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
-
   constructor(
     private componentFactoryResolver: ComponentFactoryResolver,
-    private _changeDetectionRef: ChangeDetectorRef,
     public api: ApiService,
     public searchService: SearchService) { }
 
   ngOnInit() {
     this.loadComponent();
+
     this.activePageSize = parseInt(this.data.paginationData.pageSize, 10);
     const pageSizeTemp = [10, 25, 50, 100, parseInt(this.data.paginationData.totalListItems, 10)];
     this.pageSizeArray = pageSizeTemp.filter(function(el: number) { return el >= 10; });
@@ -70,8 +65,6 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
     if (this.activePage !== parseInt(this.data.paginationData.currentPage, 10)) {
       this.activePage = parseInt(this.data.paginationData.currentPage, 10);
     }
-
-    this.search();
   }
 
   ngOnChanges(changes: SimpleChanges) {
@@ -127,29 +120,11 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
   // Searching and filtering components
 
   search() {
-    this.searching = true;
-
-    this.searchService.getSearchResults(
-      this.keywords,
-      this.dataset,
-      [{ name: 'categorized', value: this.isCategorized }],
-      this.data.paginationData.currentPage,
-      this.data.paginationData.pageSize,
-      this.data.paginationData.sortBy,
-      this.queryModifiers,
-      true,
-      null,
-      this.getFiltersForAPI(), // build these dynamically from filters
-      '')
-      .takeUntil(this.ngUnsubscribe)
-      .subscribe((res: any) => {
-        // rebuild the data table object with the res
-        this.searching = false;
-        this._changeDetectionRef.detectChanges();
-      });
-
-      this.searching = false;
-      this._changeDetectionRef.detectChanges();
+    let searchPackage = {
+      filterForAPI: this.getFiltersForAPI(),
+      keywords: this.keywords
+    }
+    this.onSearch.emit(searchPackage);
   }
 
   getFiltersForAPI() {

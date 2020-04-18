@@ -51,11 +51,6 @@ class SearchFilterObject {
 export class SearchComponent implements OnInit, OnDestroy {
   public documents: Document[] = null;
 
-  public milestones: any[] = [];
-  public authors: any[] = [];
-  public types: any[] = [];
-  public projectPhases: any[] = [];
-
   public loading = true;
 
   public tableParams: TableParamsObject = new TableParamsObject();
@@ -126,6 +121,14 @@ export class SearchComponent implements OnInit, OnDestroy {
   private previousFilters;
   private previousKeyword;
 
+  private legislationFilterGroup = { name: 'legislation', labelPrefix: null, labelPostfix: ' Act Terms' };
+
+  private milestoneFilter = new FilterObject('milestone', 'Milestone', false, [], [], false, this.legislationFilterGroup);
+  private docDateFilter = new FilterObject('datePosted', 'Document Date', true, [], [], false, this.legislationFilterGroup);
+  private authorTypeFilter = new FilterObject('documentAuthorType', 'Document Author', false, [], [], false, this.legislationFilterGroup);
+  private docTypeFilter = new FilterObject('type', 'Document Type', false, [], [], false, this.legislationFilterGroup);
+  private projectPhaseFilter = new FilterObject('projectPhase', 'Project Phase', false, [], [], false, this.legislationFilterGroup);
+
   constructor(
     public snackBar: MatSnackBar,
     private _changeDetectionRef: ChangeDetectorRef,
@@ -135,7 +138,17 @@ export class SearchComponent implements OnInit, OnDestroy {
     private router: Router,
     private route: ActivatedRoute,
     private tableTemplateUtils: TableTemplateUtils,
-  ) { }
+  ) {
+    // prebake for table
+    this.setRowData();
+
+    // inject filters into table template
+    this.filters.push(this.milestoneFilter);
+    this.filters.push(this.docDateFilter);
+    this.filters.push(this.authorTypeFilter);
+    this.filters.push(this.docTypeFilter);
+    this.filters.push(this.projectPhaseFilter);
+   }
 
   ngOnInit() {
     let params = null;
@@ -150,28 +163,23 @@ export class SearchComponent implements OnInit, OnDestroy {
           // Get the lists first
           if (res.documentsTableRows && res.documentsTableRows.length > 0) {
 
-            this.milestones = [];
-            this.types = [];
-            this.authors = [];
-            this.projectPhases = [];
-
             res.documentsTableRows[0].searchResults.map(item => {
               if (item.type === 'label') {
-                this.milestones.push({ ...item });
+                this.milestoneFilter.options.push({ ...item });
               } else if (item.type === 'doctype') {
-                this.types.push({ ...item });
+                this.docTypeFilter.options.push({ ...item });
               } else if (item.type === 'author') {
-                this.authors.push({ ...item });
+                this.authorTypeFilter.options.push({ ...item });
               } else if (item.type === 'projectPhase') {
-                this.projectPhases.push({ ...item });
+                this.projectPhaseFilter.options.push({ ...item });
               }
             });
 
             // Sort by legislation.
-            this.milestones = _.sortBy(this.milestones, ['legislation']);
-            this.authors = _.sortBy(this.authors, ['legislation']);
-            this.types = _.sortBy(this.types, ['legislation', 'listOrder']);
-            this.projectPhases = _.sortBy(this.projectPhases, ['legislation']);
+            this.milestoneFilter.options = _.sortBy(this.milestoneFilter.options, ['legislation']);
+            this.authorTypeFilter.options = _.sortBy(this.authorTypeFilter.options, ['legislation']);
+            this.docTypeFilter.options = _.sortBy(this.docTypeFilter.options, ['legislation', 'listOrder']);
+            this.projectPhaseFilter.options = _.sortBy(this.projectPhaseFilter.options, ['legislation']);
           }
 
           // reload query params from storage
@@ -214,17 +222,6 @@ export class SearchComponent implements OnInit, OnDestroy {
         // We need to clone filters, not reference
         this.previousFilters = { ...this.filterForAPI };
         this.previousKeyword = this.terms.keywords;
-
-        // inject filters into table template
-        let legislationFilterGroup = { name: 'legislation', labelPrefix: null, labelPostfix: ' Act Terms' };
-
-        // !!! how to handle the dates with an ID for filterForAPI?
-        // !!! datePostedStart, datePostedEnd
-        this.filters.push(new FilterObject('milestone', 'Milestone', false, this.milestones, [], false, legislationFilterGroup));
-        this.filters.push(new FilterObject('datePosted', 'Document Date', true, [], [], false, legislationFilterGroup));
-        this.filters.push(new FilterObject('documentAuthorType', 'Document Author', false, this.authors, [], false, legislationFilterGroup));
-        this.filters.push(new FilterObject('type', 'Document Type', false, this.types, [], false, legislationFilterGroup));
-        this.filters.push(new FilterObject('projectPhase', 'Project Phase', false, this.projectPhases, [], false, legislationFilterGroup));
       });
   }
 
@@ -264,10 +261,10 @@ export class SearchComponent implements OnInit, OnDestroy {
   }
 
   setFiltersFromParams(params) {
-    this.paramsToCollectionFilters(params, 'milestone', this.milestones, '_id');
-    this.paramsToCollectionFilters(params, 'documentAuthorType', this.authors, '_id');
-    this.paramsToCollectionFilters(params, 'type', this.types, '_id');
-    this.paramsToCollectionFilters(params, 'projectPhase', this.projectPhases, '_id');
+    this.paramsToCollectionFilters(params, 'milestone', this.milestoneFilter.options, '_id');
+    this.paramsToCollectionFilters(params, 'documentAuthorType', this.authorTypeFilter.options, '_id');
+    this.paramsToCollectionFilters(params, 'type', this.docTypeFilter.options, '_id');
+    this.paramsToCollectionFilters(params, 'projectPhase', this.projectPhaseFilter.options, '_id');
 
     this.paramsToDateFilters(params, 'datePostedStart');
     this.paramsToDateFilters(params, 'datePostedEnd');
@@ -402,6 +399,15 @@ collectionFilterToParams(params, name, identifyBy) {
     }
   }
 
+  executeSearch(apiFilters) {
+    console.log(apiFilters);
+
+    this.terms.keywords = apiFilters.keywords;
+    this.filterForAPI = apiFilters.filterForAPI;
+
+    this.getPaginated(this.tableParams.currentPage);
+  }
+
   getPaginated(pageNumber) {
     // Go to top of page after clicking to a different page.
     window.scrollTo(0, 0);
@@ -411,10 +417,10 @@ collectionFilterToParams(params, name, identifyBy) {
     // Filters and params are not set when paging
     // We don't need to redo everything, but we will
     // need to fetch the dates
-    const params = this.terms.getParams();
+    // const params = this.terms.getParams();
 
-    this.setParamsFromFilters(params);
-    this.setFiltersFromParams(params);
+    // this.setParamsFromFilters(params);
+    // this.setFiltersFromParams(params);
 
     let queryModifiers = { documentSource: 'PROJECT' };
 
@@ -489,37 +495,12 @@ collectionFilterToParams(params, name, identifyBy) {
           );
         }
       });
-      this.documentTableData = new TableObject(
-        DocSearchTableRowsComponent,
-        documentList,
-        this.tableParams
-      );
     }
-  }
-
-  // Compares selected options when a dropdown is grouped by legislation.
-  compareDropdownOptions(optionA: any, optionB: any) {
-    if ((optionA.name === optionB.name) && (optionA.legislation === optionB.legislation)) {
-      return true;
-    }
-
-    return false;
-  }
-
-  clearSelectedItem(filter: string, item: any) {
-    this.filterForUI[filter] = this.filterForUI[filter].filter(option => option._id !== item._id);
-  }
-
-  public filterCompareWith(filter: any, filterToCompare: any) {
-    if (filter.hasOwnProperty('code')) {
-      return filter && filterToCompare
-        ? filter.code === filterToCompare.code
-        : filter === filterToCompare;
-    } else if (filter.hasOwnProperty('_id')) {
-      return filter && filterToCompare
-        ? filter._id === filterToCompare._id
-        : filter === filterToCompare;
-    }
+    this.documentTableData = new TableObject(
+      DocSearchTableRowsComponent,
+      documentList,
+      this.tableParams
+    );
   }
 
   ngOnDestroy() {
