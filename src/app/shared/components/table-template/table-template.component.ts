@@ -50,6 +50,9 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
 
   public readonly constants = Constants;
 
+  private previousFilters;
+  private previousKeyword;
+
   constructor(
     private componentFactoryResolver: ComponentFactoryResolver,
     public api: ApiService,
@@ -120,8 +123,18 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
   // Searching and filtering components
 
   search() {
+    // if the new search doesnt match the old search, reset to page 1
+    let newFilters = this.getFiltersForAPI();
+
+    if (this.previousKeyword !== this.keywords || JSON.stringify(this.previousFilters) !== JSON.stringify(newFilters)) {
+      this.data.paginationData.pageNum = 1;
+    }
+
+    this.previousFilters = newFilters;
+    this.previousKeyword = this.keywords;
+
     let searchPackage = {
-      filterForAPI: this.getFiltersForAPI(),
+      filterForAPI: newFilters,
       keywords: this.keywords
     }
     this.onSearch.emit(searchPackage);

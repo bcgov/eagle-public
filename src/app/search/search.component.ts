@@ -68,23 +68,7 @@ export class SearchComponent implements OnInit, OnDestroy {
 
   public filters: FilterObject[] = [];
 
-  public showFilters: object = {
-    date: false,
-    type: false,
-    milestone: false,
-    projectPhase: false,
-    documentAuthorType: false
-  };
-
   public searchDisclaimer = Constants.docSearchDisclaimer;
-
-  public numFilters: object = {
-    date: 0,
-    type: 0,
-    milestone: 0,
-    projectPhase: 0,
-    documentAuthorType: 0
-  };
 
   public documentTableData: TableObject;
   public documentTableColumns: any[] = [
@@ -118,9 +102,6 @@ export class SearchComponent implements OnInit, OnDestroy {
   private snackBarRef: MatSnackBarRef<SimpleSnackBar> = null;
   private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
 
-  private previousFilters;
-  private previousKeyword;
-
   private legislationFilterGroup = { name: 'legislation', labelPrefix: null, labelPostfix: ' Act Terms' };
 
   private milestoneFilter = new FilterObject('milestone', 'Milestone', false, [], [], false, this.legislationFilterGroup);
@@ -140,7 +121,11 @@ export class SearchComponent implements OnInit, OnDestroy {
     private tableTemplateUtils: TableTemplateUtils,
   ) {
     // prebake for table
-    this.setRowData();
+    this.documentTableData = new TableObject(
+      DocSearchTableRowsComponent,
+      [],
+      this.tableParams
+    );
 
     // inject filters into table template
     this.filters.push(this.milestoneFilter);
@@ -197,8 +182,6 @@ export class SearchComponent implements OnInit, OnDestroy {
             this.terms.keywords = this.tableParams.keywords;
           }
 
-          this.updateCounts();
-
           if (res.documents && res.documents[0].data && res.documents[0].data.meta.length > 0) {
             this.tableParams.totalListItems = res.documents[0].data.meta[0].searchResultsTotal;
             this.documents = res.documents[0].data.searchResults;
@@ -218,10 +201,6 @@ export class SearchComponent implements OnInit, OnDestroy {
           this.loading = false;
           this._changeDetectionRef.detectChanges();
         }
-
-        // We need to clone filters, not reference
-        this.previousFilters = { ...this.filterForAPI };
-        this.previousKeyword = this.terms.keywords;
       });
   }
 
@@ -302,85 +281,6 @@ collectionFilterToParams(params, name, identifyBy) {
     this.dateFilterToParams(params, 'datePostedEnd');
   }
 
-  toggleFilter(name) {
-    if (this.showFilters[name]) {
-      this.updateCount(name);
-      this.showFilters[name] = false;
-    } else {
-      Object.keys(this.showFilters).forEach(key => {
-        if (this.showFilters[key]) {
-          this.updateCount(key);
-          this.showFilters[key] = false;
-        }
-      });
-      this.showFilters[name] = true;
-    }
-  }
-
-  isShowingFilter() {
-    return Object.keys(this.showFilters).some(key => { return this.showFilters[key]; });
-  }
-
-  hideAllFilters() {
-    Object.keys(this.showFilters).forEach(key => {
-      this.showFilters[key] = false;
-    });
-  }
-
-  hasFilter() {
-    this.updateCounts();
-    return Object.keys(this.numFilters).some(key => { return this.numFilters[key]; });
-  }
-
-  clearAllFilters() {
-    this.tableParams.keywords = '';
-    this.terms.keywords = '';
-    delete this.filterForURL['keywords'];
-    Object.keys(this.filterForUI).forEach(key => {
-      if (this.filterForUI[key]) {
-        if (Array.isArray(this.filterForUI[key])) {
-          this.filterForUI[key] = [];
-        } else if (typeof this.filterForUI[key] === 'object') {
-          this.filterForUI[key] = {};
-        } else {
-          this.filterForUI[key] = '';
-        }
-      }
-    });
-    this.updateCounts();
-  }
-
-  updateCount(name) {
-    const gettotalListItems = (n) => { return Object.keys(this.filterForUI[n]).filter(k => this.filterForUI[n][k]).length; };
-
-    let num = 0;
-    if (name === 'date') {
-      num += this.isNGBDate(this.filterForUI.datePostedStart) ? 1 : 0;
-      num += this.isNGBDate(this.filterForUI.datePostedEnd) ? 1 : 0;
-    } else {
-      num = gettotalListItems(name);
-    }
-    this.numFilters[name] = num;
-  }
-
-  updateCounts() {
-    // Documents
-    this.updateCount('milestone');
-    this.updateCount('date');
-    this.updateCount('documentAuthorType');
-    this.updateCount('type');
-    this.updateCount('projectPhase');
-  }
-
-  setColumnSort(column) {
-    if (this.tableParams.sortBy.charAt(0) === '+') {
-      this.tableParams.sortBy = '-' + column;
-    } else {
-      this.tableParams.sortBy = '+' + column;
-    }
-    this.getPaginated(this.tableParams.currentPage);
-  }
-
   isCategorizedQuery() {
     const categorizedFilters = ['documentAuthorType', 'milestone', 'projectPhase', 'type'];
     let isCategorized = false;
@@ -429,11 +329,12 @@ collectionFilterToParams(params, name, identifyBy) {
       this.storageService.state.search.tableParams = this.tableParams;
     }
 
-    if (this.terms.keywords !== this.previousKeyword || JSON.stringify(this.filterForAPI) !== JSON.stringify(this.previousFilters)) {
-      this.tableParams = new TableParamsObject();
-      pageNumber = 1;
-      this.tableParams.sortBy = '-datePosted,+displayName'
-    }
+    // if (this.terms.keywords !== this.previousKeyword || JSON.stringify(this.filterForAPI) !== JSON.stringify(this.previousFilters)) {
+    //   this.tableParams = new TableParamsObject();
+    //   pageNumber = 1;
+    //   this.tableParams.sortBy = '-datePosted,+displayName'
+    // }
+
     this.isCategorizedQuery();
     this.tableParams.keywords = this.terms.keywords;
 
@@ -471,8 +372,6 @@ collectionFilterToParams(params, name, identifyBy) {
         this.setRowData();
         this.loading = false;
         this._changeDetectionRef.detectChanges();
-        this.previousFilters = { ...this.filterForAPI };
-        this.previousKeyword = this.terms.keywords;
       });
   }
 
