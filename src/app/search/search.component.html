@@ -278,7 +278,13 @@
                 <div>
                     <app-table-template *ngIf="!loading && tableParams.totalListItems != 0"
                         [columns]="documentTableColumns" [data]="documentTableData" (onColumnSort)='setColumnSort($event)'
-                        (onPageNumUpdate)='getPaginated($event)'>
+                        (onPageNumUpdate)='getPaginated($event)'
+                        [showSearch]="true"
+                        [showAdvancedSearch]="true"
+                        [searchDisclaimer]="'testing a disclaimer'"
+                        [filters]="filters"
+                        [dataset]="Documents"
+                        [queryModifiers]="{ documentSource: 'PROJECT' }">
                     </app-table-template>
                 </div>
             </div>

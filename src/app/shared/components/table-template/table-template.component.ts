@@ -1,8 +1,16 @@
-import { Component, Input, OnInit, ComponentFactoryResolver, OnDestroy, ViewChild, Output, EventEmitter, SimpleChanges, OnChanges, ViewEncapsulation } from '@angular/core';
+import { Component, Input, OnInit, ComponentFactoryResolver, OnDestroy, ViewChild, Output, EventEmitter, SimpleChanges, OnChanges, ViewEncapsulation, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
+
+import { Subject } from 'rxjs/Subject';
+import 'rxjs/add/operator/switchMap';
+import 'rxjs/add/operator/takeUntil';
+import * as _ from 'lodash';
+import { ApiService } from 'app/services/api';
+import { SearchService } from 'app/services/search.service';
 
 import { TableDirective } from './table.directive';
 import { TableObject } from './table-object';
 import { TableComponent } from './table.component';
+import { FilterObject } from './filter-object';
 import { Constants } from 'app/shared/utils/constants';
 
 @Component({
@@ -10,6 +18,7 @@ import { Constants } from 'app/shared/utils/constants';
   templateUrl: './table-template.component.html',
   styleUrls: ['./table-template.component.scss'],
   encapsulation: ViewEncapsulation.None,
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
   @Input() data: TableObject;
@@ -21,16 +30,36 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
   @Input() showMoreLoader = false;
   @Input() showMoreIncrement: number = Constants.tableDefaults.DEFAULT_SHOW_MORE_INCREMENT;
   @Input() showCountAtTop = true;
+  // use the below options for dynamic table control
+  @Input() showSearch = false;
+  @Input() showAdvancedSearch = false;
+  @Input() searchDisclaimer: string = null;
+  @Input() filters: FilterObject[];
+  @Input() dataset: string; // Document, Project, etc
+  @Input() isCategorized = false;
+  @Input() queryModifiers: Object = null;
   @ViewChild(TableDirective, {static: true}) tableHost: TableDirective;
 
   @Output() onPageNumUpdate: EventEmitter<any> = new EventEmitter();
   @Output() onSelectedRow: EventEmitter<any> = new EventEmitter();
   @Output() onColumnSort: EventEmitter<any> = new EventEmitter();
+
   public column: string = null;
 
   interval: any;
 
-  constructor(private componentFactoryResolver: ComponentFactoryResolver) { }
+  public keywords: string = null;
+  public searching = false;
+
+  public readonly constants = Constants;
+
+  private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
+
+  constructor(
+    private componentFactoryResolver: ComponentFactoryResolver,
+    private _changeDetectionRef: ChangeDetectorRef,
+    public api: ApiService,
+    public searchService: SearchService) { }
 
   ngOnInit() {
     this.loadComponent();
@@ -41,6 +70,8 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
     if (this.activePage !== parseInt(this.data.paginationData.currentPage, 10)) {
       this.activePage = parseInt(this.data.paginationData.currentPage, 10);
     }
+
+    this.search();
   }
 
   ngOnChanges(changes: SimpleChanges) {
@@ -91,5 +122,108 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
   updatePageSize(pageSize) {
     this.data.paginationData.pageSize = pageSize;
     this.onPageNumUpdate.emit(1);
+  }
+
+  // Searching and filtering components
+
+  search() {
+    this.searching = true;
+
+    this.searchService.getSearchResults(
+      this.keywords,
+      this.dataset,
+      [{ name: 'categorized', value: this.isCategorized }],
+      this.data.paginationData.currentPage,
+      this.data.paginationData.pageSize,
+      this.data.paginationData.sortBy,
+      this.queryModifiers,
+      true,
+      null,
+      this.getFiltersForAPI(), // build these dynamically from filters
+      '')
+      .takeUntil(this.ngUnsubscribe)
+      .subscribe((res: any) => {
+        // rebuild the data table object with the res
+        this.searching = false;
+        this._changeDetectionRef.detectChanges();
+      });
+
+      this.searching = false;
+      this._changeDetectionRef.detectChanges();
+  }
+
+  getFiltersForAPI() {
+    let filtersForAPI = {};
+    this.filters.forEach(filter => {
+      if (!filter.dateFilter) {
+        filtersForAPI[filter.id] = '';
+        filter.selectedOptions.forEach(option => {
+          if (option.hasOwnProperty('code')) {
+            filtersForAPI[filter.id] += option.code + ',';
+          } else if (option.hasOwnProperty('_id')) {
+            filtersForAPI[filter.id] += option._id + ',';
+          } else {
+            filtersForAPI[filter.id] += option + ',';
+          }
+        });
+        filtersForAPI[filter.id] = filtersForAPI[filter.id].slice(0, -1);
+      } else {
+        // handle a date filter. For this to work, we need the ID of the date
+        // filter to always match for start/end, and to always end in Start or End
+        // We will need to rework this
+        if (filter.startDate) {
+          filtersForAPI[filter.id + 'Start'] = filter.startDate;
+        }
+        if (filter.endDate) {
+          filtersForAPI[filter.id + 'End'] = filter.endDate;
+        }
+      }
+
+      if (filtersForAPI[filter.id] === null || filtersForAPI[filter.id] === '') {
+        delete filtersForAPI[filter.id];
+      }
+    });
+
+    return filtersForAPI;
+  }
+
+  clearAllFilters() {
+    this.keywords = '';
+    this.filters.forEach(filter => {
+      filter.selectedOptions = [];
+    })
+  }
+
+  isShowingFilter() {
+    return true;
+  }
+
+  toggleFilter(filter: FilterObject) {
+    filter.active = !filter.active;
+    this.filters.forEach(otherfilter => {
+      if (filter.name !== otherfilter.name) { otherfilter.active = false };
+      // otherfilter.active = otherfilter.name === filter.name; would be nicer
+    });
+  }
+
+  public filterCompareWith(item: any, itemToCompare: any) {
+    if (item.hasOwnProperty('code')) {
+      return item && itemToCompare
+        ? item.code === itemToCompare.code
+        : item === itemToCompare;
+    } else if (item.hasOwnProperty('_id')) {
+      return item && itemToCompare
+        ? item._id === itemToCompare._id
+        : item === itemToCompare;
+    } else {
+      return item === itemToCompare;
+    }
+  }
+
+  clearSelectedItem(filter: FilterObject, item: any) {
+    // may have strings, or a list of code table items with _id values
+    filter.selectedOptions = filter.selectedOptions.filter(option => {
+      return option !== item || option._id !== item._id
+    });
   }
 }

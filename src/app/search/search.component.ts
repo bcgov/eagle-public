@@ -21,6 +21,7 @@ import { Constants } from 'app/shared/utils/constants';
 
 import { DocSearchTableRowsComponent } from './search-documents-table-rows/search-document-table-rows.component';
 import { TableObject } from 'app/shared/components/table-template/table-object';
+import { FilterObject } from 'app/shared/components/table-template/filter-object';
 import { TableParamsObject } from 'app/shared/components/table-template/table-params-object';
 import { TableTemplateUtils } from 'app/shared/utils/table-template-utils';
 import { StorageService } from 'app/services/storage.service';
@@ -69,6 +70,8 @@ export class SearchComponent implements OnInit, OnDestroy {
   public showAdvancedSearch = true;
   public hasUncategorizedDocs = false;
   public readonly constants = Constants;
+
+  public filters: FilterObject[] = [];
 
   public showFilters: object = {
     date: false,
@@ -212,6 +215,16 @@ export class SearchComponent implements OnInit, OnDestroy {
         this.previousFilters = { ...this.filterForAPI };
         this.previousKeyword = this.terms.keywords;
 
+        // inject filters into table template
+        let legislationFilterGroup = { name: 'legislation', labelPrefix: null, labelPostfix: ' Act Terms' };
+
+        // !!! how to handle the dates with an ID for filterForAPI?
+        // !!! datePostedStart, datePostedEnd
+        this.filters.push(new FilterObject('milestone', 'Milestone', false, this.milestones, [], false, legislationFilterGroup));
+        this.filters.push(new FilterObject('datePosted', 'Document Date', true, [], [], false, legislationFilterGroup));
+        this.filters.push(new FilterObject('documentAuthorType', 'Document Author', false, this.authors, [], false, legislationFilterGroup));
+        this.filters.push(new FilterObject('type', 'Document Type', false, this.types, [], false, legislationFilterGroup));
+        this.filters.push(new FilterObject('projectPhase', 'Project Phase', false, this.projectPhases, [], false, legislationFilterGroup));
       });
   }
 
