@@ -64,7 +64,9 @@
                                 </div>
                                 <div class="row" *ngIf="filter.options.length && filter.options.length > 0">
                                     <div class="form-group">
-                                        <ng-select id="{{filter.name}}"
+                                        <!-- Filter definition for filters with group options -->
+                                        <ng-select *ngIf="filter.group"
+                                                id="{{filter.name}}"
                                                 name="{{filter.name}}"
                                                 multiple="true"
                                                 bindLabel="name"
@@ -83,6 +85,23 @@
                                                 {{filter.group.labelPrefix + item[filter.group.name] + filter.group.labelPostfix}} <!-- add a prefix and postfix text string? -->
                                             </ng-template>
                                         </ng-select>
+                                        <!-- Filter definition for filters without group options -->
+                                        <ng-select *ngIf="!filter.group"
+                                                id="{{filter.name}}"
+                                                name="{{filter.name}}"
+                                                multiple="true"
+                                                bindLabel="name"
+                                                placeholder="Type {{filter.name}}"
+                                                [items]="filter.options"
+                                                [markFirst]="false"
+                                                [closeOnSelect]="false"
+                                                [(ngModel)]="filter.selectedOptions"
+                                                [compareWith]="filterCompareWith">
+                                        </ng-select>
+                                        <ng-template ng-label-tmp let-item="item">
+                                            <span class="ng-value-icon left" (click)="clearSelectedItem(filter, item)" aria-hidden="true">×</span>
+                                            <span class="ng-value-label">{{item.name}}</span>
+                                        </ng-template>
                                     </div>
                                 </div>
                                 <!-- If we have a picker, and a date filter, put a divider between them -->
@@ -169,7 +188,7 @@
     <br/>
 </div>
 <table class="table">
-  <thead class="thead-light">
+  <thead class="thead-light" *ngIf="data.paginationData.totalListItems > 0">
     <tr class="no-sort">
       <th *ngFor="let entry of columns"
         class="project-table__name-col sortable"

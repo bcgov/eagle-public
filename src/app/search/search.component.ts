@@ -114,7 +114,7 @@ export class SearchComponent implements OnInit, OnDestroy {
     private _changeDetectionRef: ChangeDetectorRef,
     public api: ApiService,
     private storageService: StorageService,
-    public searchService: SearchService, // also used in template
+    public searchService: SearchService,
     private router: Router,
     private route: ActivatedRoute,
     private tableTemplateUtils: TableTemplateUtils,
