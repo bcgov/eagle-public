@@ -179,6 +179,9 @@ export class ProjectListComponent implements OnInit, OnDestroy {
         // into the project list
         if (this.storageService && this.storageService.state.projList) {
           this.tableParams = this.storageService.state.projList.tableParams;
+          this.filterForAPI = this.storageService.state.projList.filterForAPI;
+          this.filterForUI = this.storageService.state.projList.filterForUI;
+          this.filterForURL = this.storageService.state.projList.filterForURL;
         }
 
         if (this.filterForAPI.hasOwnProperty('projectPhase')) {
@@ -318,14 +321,16 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     );
 
     // store the table params in the event of a page navigation
+    this.storageService.state.projList = {};
+    this.storageService.state.projList.filterForAPI = this.filterForAPI;
+    this.storageService.state.projList.filterForUI = this.filterForUI;
+    this.storageService.state.projList.filterForURL = this.filterForURL;
     this.storageService.state.projList.tableParams = this.tableParams;
 
     if (this.filterForAPI.hasOwnProperty('projectPhase')) {
       this.filterForAPI['currentPhaseName'] = this.filterForAPI['projectPhase'];
       delete this.filterForAPI['projectPhase'];
     }
-
-    this.storageService.state.projList.tableParams = this.tableParams;
 
     this.searchService
       .getSearchResults(
