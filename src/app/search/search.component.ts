@@ -8,7 +8,6 @@ import 'rxjs/add/operator/switchMap';
 import 'rxjs/add/operator/takeUntil';
 
 import * as _ from 'lodash';
-import * as moment from 'moment';
 
 import { Document } from 'app/models/document';
 
@@ -104,11 +103,11 @@ export class SearchComponent implements OnInit, OnDestroy {
 
   private legislationFilterGroup = { name: 'legislation', labelPrefix: null, labelPostfix: ' Act Terms' };
 
-  private milestoneFilter = new FilterObject('milestone', 'Milestone', false, null, [], [], this.legislationFilterGroup);
-  private docDateFilter = new FilterObject('datePosted', 'Document Date', true, { startDateId: 'datePostedStart', endDateId: 'datePostedEnd' }, [], [], this.legislationFilterGroup);
-  private authorTypeFilter = new FilterObject('documentAuthorType', 'Document Author', false, null, [], [], this.legislationFilterGroup);
-  private docTypeFilter = new FilterObject('type', 'Document Type', false, null, [], [], this.legislationFilterGroup);
-  private projectPhaseFilter = new FilterObject('projectPhase', 'Project Phase', false, null, [], [], this.legislationFilterGroup);
+  private milestoneFilter = new FilterObject('milestone', 'Milestone', null, [], [], this.legislationFilterGroup);
+  private docDateFilter = new FilterObject('datePosted', 'Document Date', { startDateId: 'datePostedStart', endDateId: 'datePostedEnd' }, [], [], this.legislationFilterGroup);
+  private authorTypeFilter = new FilterObject('documentAuthorType', 'Document Author', null, [], [], this.legislationFilterGroup);
+  private docTypeFilter = new FilterObject('type', 'Document Type', null, [], [], this.legislationFilterGroup);
+  private projectPhaseFilter = new FilterObject('projectPhase', 'Project Phase', null, [], [], this.legislationFilterGroup);
 
   constructor(
     public snackBar: MatSnackBar,
@@ -169,12 +168,9 @@ export class SearchComponent implements OnInit, OnDestroy {
 
           // reload query params from storage
           if (this.storageService.state.search) {
-              this.filterForUI = this.storageService.state.search.filterForUI;
               this.tableParams = this.storageService.state.search.tableParams;
               this.categorizedQuery = this.storageService.state.search.categorizedQuery
           }
-
-          this.setFiltersFromParams(params);
 
           // set default params or load from url
           if (_.isEqual(this.tableParams, new TableParamsObject())) {
@@ -202,83 +198,6 @@ export class SearchComponent implements OnInit, OnDestroy {
           this._changeDetectionRef.detectChanges();
         }
       });
-  }
-
-  paramsToCollectionFilters(params, name, collection, identifyBy) {
-    delete this.filterForURL[name];
-    delete this.filterForAPI[name];
-
-    if (params[name] && collection) {
-      let confirmedValues = [];
-      // look up each value in collection
-      const values = params[name].split(',');
-      values.forEach(value => {
-        const record = _.find(collection, [identifyBy, value]);
-        if (record) {
-          confirmedValues.push(value);
-        }
-      });
-      if (confirmedValues.length) {
-        this.filterForURL[name] = confirmedValues.join(',');
-        this.filterForAPI[name] = confirmedValues.join(',');
-      }
-    }
-  }
-
-  paramsToDateFilters(params, name) {
-    this.filterForUI[name] = null;
-    delete this.filterForURL[name];
-    delete this.filterForAPI[name];
-
-    if (params[name]) {
-      this.filterForURL[name] = params[name];
-      this.filterForAPI[name] = params[name];
-      // NGB Date
-      const date = moment(params[name]).toDate();
-      this.filterForUI[name] = { year: date.getFullYear(), month: date.getMonth() + 1, day: date.getDate() };
-    }
-  }
-
-  setFiltersFromParams(params) {
-    this.paramsToCollectionFilters(params, 'milestone', this.milestoneFilter.options, '_id');
-    this.paramsToCollectionFilters(params, 'documentAuthorType', this.authorTypeFilter.options, '_id');
-    this.paramsToCollectionFilters(params, 'type', this.docTypeFilter.options, '_id');
-    this.paramsToCollectionFilters(params, 'projectPhase', this.projectPhaseFilter.options, '_id');
-
-    this.paramsToDateFilters(params, 'datePostedStart');
-    this.paramsToDateFilters(params, 'datePostedEnd');
-  }
-
-collectionFilterToParams(params, name, identifyBy) {
-    if (this.filterForUI[name].length) {
-      const values = this.filterForUI[name].map(record => { return record[identifyBy]; });
-      params[name] = values.join(',');
-      this.filterForAPI[name] = values.join(',')
-      if (this.storageService.state.search && this.storageService.state.search.filterForAPI) {
-        this.storageService.state.search.filterForAPI = this.filterForAPI;
-      }
-    }
-  }
-
-  isNGBDate(date) {
-    return date && date.year && date.month && date.day;
-  }
-
-  dateFilterToParams(params, name) {
-    if (this.isNGBDate(this.filterForUI[name])) {
-      const date = new Date(this.filterForUI[name].year, this.filterForUI[name].month - 1, this.filterForUI[name].day);
-      params[name] = moment(date).format('YYYY-MM-DD');
-    }
-  }
-
-  setParamsFromFilters(params) {
-    this.collectionFilterToParams(params, 'milestone', '_id');
-    this.collectionFilterToParams(params, 'documentAuthorType', '_id');
-    this.collectionFilterToParams(params, 'type', '_id');
-    this.collectionFilterToParams(params, 'projectPhase', '_id');
-
-    this.dateFilterToParams(params, 'datePostedStart');
-    this.dateFilterToParams(params, 'datePostedEnd');
   }
 
   setColumnSort(column) {
@@ -313,7 +232,24 @@ collectionFilterToParams(params, name, identifyBy) {
     this.terms.keywords = apiFilters.keywords;
     this.filterForAPI = apiFilters.filterForAPI;
 
+    // build filterForUI/URL from the new filterForAPI object
+    this.createFilterForURL();
+
     this.getPaginated(this.tableParams.currentPage);
+  }
+
+  createFilterForURL() {
+    // for each key in filterForAPI
+    Object.keys(this.filterForAPI).forEach(key => {
+      this.filterForURL[key] = this.filterForAPI[key];
+    });
+
+    this.filterForUI.milestone = this.filterForAPI['milestone'] ? this.filterForAPI['milestone'].split(',') : null;
+    this.filterForUI.documentAuthorType = this.filterForAPI['documentAuthorType'] ? this.filterForAPI['documentAuthorType'].split(',') : null;
+    this.filterForUI.type = this.filterForAPI['type'] ? this.filterForAPI['type'].split(',') : null;
+    this.filterForUI.projectPhase = this.filterForAPI['projectPhase'] ? this.filterForAPI['projectPhase'].split(',') : null;
+    this.filterForUI.datePostedStart = this.filterForAPI['datePostedStart'];
+    this.filterForUI.datePostedEnd = this.filterForAPI['datePostedEnd'];
   }
 
   getPaginated(pageNumber) {
@@ -322,36 +258,17 @@ collectionFilterToParams(params, name, identifyBy) {
     this.loading = true;
     this.tableParams = this.tableTemplateUtils.updateTableParams(this.tableParams, pageNumber, this.tableParams.sortBy);
 
-    // Filters and params are not set when paging
-    // We don't need to redo everything, but we will
-    // need to fetch the dates
-    // const params = this.terms.getParams();
-
-    // this.setParamsFromFilters(params);
-    // this.setFiltersFromParams(params);
-
     let queryModifiers = { documentSource: 'PROJECT' };
 
     if (this.storageService && this.storageService.state.search) {
-      this.filterForAPI = this.storageService.state.search.filterForAPI ? this.storageService.state.search.filterForAPI : {};
       this.storageService.state.search.tableParams = this.tableParams;
     }
-
-    // if (this.terms.keywords !== this.previousKeyword || JSON.stringify(this.filterForAPI) !== JSON.stringify(this.previousFilters)) {
-    //   this.tableParams = new TableParamsObject();
-    //   pageNumber = 1;
-    //   this.tableParams.sortBy = '-datePosted,+displayName'
-    // }
 
     this.isCategorizedQuery();
     this.tableParams.keywords = this.terms.keywords;
 
     if (this.storageService && this.storageService.state) {
       this.storageService.state.search = {};
-      this.storageService.state.search.tableParams = this.tableParams;
-      this.storageService.state.search.filterForUI = this.filterForUI;
-      this.storageService.state.search.filterForURL = this.filterForURL;
-      this.storageService.state.search.filterForAPI = this.filterForAPI;
       this.storageService.state.search.categorizedQuery = this.categorizedQuery;
     }
 

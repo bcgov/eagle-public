@@ -22,7 +22,6 @@ export class FilterObject {
   constructor(
     public id: string,
     public name: string,
-    public hasDateFilter: boolean = false,
     public dateFilter: DateFilterObject,
     public options: any[],
     public selectedOptions: any[],

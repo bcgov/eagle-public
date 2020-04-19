@@ -25,7 +25,8 @@
                     (onSearch)='executeSearch($event)'
                     [showAdvancedSearch]="true"
                     [searchDisclaimer]="constants.docSearchDisclaimer"
-                    [filters]="filters">
+                    [filters]="filters"
+                    [persistenceId]="'globalDocSearch'">
                 </app-table-template>
             </div>
         </div>
