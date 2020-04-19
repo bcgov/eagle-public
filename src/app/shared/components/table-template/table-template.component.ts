@@ -102,6 +102,8 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
 
       this.loadComponent();
     }
+
+    this.searching = false;
   }
 
   ngOnDestroy() {

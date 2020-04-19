@@ -167,12 +167,9 @@ export class ProjectListComponent implements OnInit, OnDestroy {
 
         this.tableParams = this.tableTemplateUtils.getParamsFromUrl(
           params,
-          this.filterForURL
+          this.filterForURL,
+          '+name'
         );
-
-        if (this.tableParams.sortBy === '') {
-          this.tableParams.sortBy = '+name';
-        }
 
         // check if the filters are in session state, for handling
         // retaining the filters when a user clicks back from a project
@@ -184,7 +181,19 @@ export class ProjectListComponent implements OnInit, OnDestroy {
           this.filterForURL = this.storageService.state.projList.filterForURL;
         }
 
-        if (this.filterForAPI.hasOwnProperty('projectPhase')) {
+        // get params from URL, if the user passed them in. This should override storage service values
+        this.router.url.split(';').forEach(filterVal => {
+          if (filterVal.split('=').length === 2) {
+            let filter = filterVal.split('=')[0];
+            let val = filterVal.split('=')[1];
+
+            if (!['currentPage', 'pageSize', 'sortBy', 'ms', 'keywords'].includes(filter)) {
+              this.filterForAPI[filter] = val;
+            }
+          }
+        });
+
+        if (this.filterForAPI && this.filterForAPI.hasOwnProperty('projectPhase')) {
           this.filterForAPI['currentPhaseName'] = this.filterForAPI['projectPhase'];
           delete this.filterForAPI['projectPhase'];
         }
@@ -207,7 +216,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
       .takeUntil(this.ngUnsubscribe)
       .subscribe((res: any) => {
 
-        if (this.filterForAPI.hasOwnProperty('currentPhaseName')) {
+        if (this.filterForAPI && this.filterForAPI.hasOwnProperty('currentPhaseName')) {
           this.filterForAPI['projectPhase'] = this.filterForAPI['currentPhaseName'];
           delete this.filterForAPI['currentPhaseName'];
         }
@@ -222,14 +231,6 @@ export class ProjectListComponent implements OnInit, OnDestroy {
             this.projects = [];
           }
           this.setRowData();
-
-          // store the state of the filterForAPI set into the session
-          // so a user can navigate back to this page without losing
-          // their filters
-          if (this.storageService) {
-            this.storageService.state.projList = {};
-            this.storageService.state.projList.tableParams = this.tableParams;
-          }
         } else {
           alert('Uh-oh, couldn\'t load search results');
           // results not found --> navigate back to search
@@ -281,8 +282,6 @@ export class ProjectListComponent implements OnInit, OnDestroy {
   }
 
   executeSearch(apiFilters) {
-    console.log(apiFilters);
-
     this.terms.keywords = apiFilters.keywords;
     this.filterForAPI = apiFilters.filterForAPI;
 
@@ -293,27 +292,25 @@ export class ProjectListComponent implements OnInit, OnDestroy {
   }
 
   createFilterForURL() {
+    this.filterForURL = {};
     // for each key in filterForAPI
     Object.keys(this.filterForAPI).forEach(key => {
       this.filterForURL[key] = this.filterForAPI[key];
     });
 
-    this.filterForUI.type = this.filterForAPI['type'] ? this.filterForAPI['type'].split(',') : null;
-    this.filterForUI.eacDecision = this.filterForAPI['eacDecision'] ? this.filterForAPI['eacDecision'].split(',') : null;
-    this.filterForUI.pcp = this.filterForAPI['pcp'] ? this.filterForAPI['pcp'].split(',') : null;
-    this.filterForUI.proponent = this.filterForAPI['proponent'] ? this.filterForAPI['proponent'].split(',') : null;
-    this.filterForUI.CEAAInvolvement = this.filterForAPI['CEAAInvolvement'] ? this.filterForAPI['CEAAInvolvement'].split(',') : null;
-    this.filterForUI.region = this.filterForAPI['region'] ? this.filterForAPI['region'].split(',') : null;
-    this.filterForUI.projectPhase = this.filterForAPI['projectPhase'] ? this.filterForAPI['projectPhase'].split(',') : null;
-    this.filterForUI.decisionDateStart = this.filterForAPI['decisionDateStart'];
-    this.filterForUI.decisionDateEnd = this.filterForAPI['decisionDateEnd'];
+  this.filterForUI = new ProjectFilterObject(this.filterForAPI['type'] ? this.filterForAPI['type'].split(',') : null,
+                                             this.filterForAPI['eacDecision'] ? this.filterForAPI['eacDecision'].split(',') : null,
+                                             this.filterForAPI['decisionDateStart'],
+                                             this.filterForAPI['decisionDateEnd'],
+                                             this.filterForAPI['pcp'] ? this.filterForAPI['pcp'].split(',') : null,
+                                             this.filterForAPI['proponent'] ? this.filterForAPI['proponent'].split(',') : null,
+                                             this.filterForAPI['region'] ? this.filterForAPI['region'].split(',') : null,
+                                             this.filterForAPI['CEAAInvolvement'] ? this.filterForAPI['CEAAInvolvement'].split(',') : null,
+                                             this.filterForAPI['projectPhase'] ? this.filterForAPI['projectPhase'].split(',') : null,
+                                             null);
   }
 
   getPaginatedProjects(pageNumber) {
-    // Go to top of page after clicking to a different page.
-    window.scrollTo(0, 0);
-    this.loading = true;
-
     this.tableParams = this.tableTemplateUtils.updateTableParams(
       this.tableParams,
       pageNumber,
@@ -361,7 +358,6 @@ export class ProjectListComponent implements OnInit, OnDestroy {
             this.tableParams.keywords
           );
           this.setRowData();
-          this.loading = false;
           this._changeDetectionRef.detectChanges();
         } else {
           alert('Uh-oh, couldn\'t load projects');

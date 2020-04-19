@@ -227,8 +227,6 @@ export class SearchComponent implements OnInit, OnDestroy {
   }
 
   executeSearch(apiFilters) {
-    console.log(apiFilters);
-
     this.terms.keywords = apiFilters.keywords;
     this.filterForAPI = apiFilters.filterForAPI;
 
@@ -253,9 +251,6 @@ export class SearchComponent implements OnInit, OnDestroy {
   }
 
   getPaginated(pageNumber) {
-    // Go to top of page after clicking to a different page.
-    window.scrollTo(0, 0);
-    this.loading = true;
     this.tableParams = this.tableTemplateUtils.updateTableParams(this.tableParams, pageNumber, this.tableParams.sortBy);
 
     let queryModifiers = { documentSource: 'PROJECT' };
@@ -295,7 +290,6 @@ export class SearchComponent implements OnInit, OnDestroy {
           this.documents = [];
         }
         this.setRowData();
-        this.loading = false;
         this._changeDetectionRef.detectChanges();
       });
   }
