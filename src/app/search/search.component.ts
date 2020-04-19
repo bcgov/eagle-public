@@ -182,6 +182,9 @@ export class SearchComponent implements OnInit, OnDestroy {
             this.tableParams.totalListItems = res.documents[0].data.meta[0].searchResultsTotal;
             this.documents = res.documents[0].data.searchResults;
           } else {
+            if (!this.tableParams) {
+              this.tableParams = new TableParamsObject(10, 1, 0, '-name', null);
+            }
             this.tableParams.totalListItems = 0;
             this.documents = [];
           }
