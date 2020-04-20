@@ -329,8 +329,8 @@
     <div class="ant-pagination">{{data.paginationData.totalListItems !== 0 ? 'Showing ' + (data.paginationData.pageSize > data.paginationData.totalListItems ? data.paginationData.totalListItems : data.paginationData.pageSize) + ' of ' + data.paginationData.totalListItems : 'No'}} results</div>
     <br/>
 </div>
-<table *ngIf="showTableTemplate" class="table">
-  <thead class="thead-light" *ngIf="data.paginationData.totalListItems > 0">
+<table class="table">
+  <thead class="thead-light" *ngIf="data.paginationData.totalListItems > 0 && showTableTemplate">
     <tr class="no-sort">
       <th *ngFor="let entry of columns"
         class="project-table__name-col sortable"
