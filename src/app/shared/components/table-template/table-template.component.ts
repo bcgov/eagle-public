@@ -197,36 +197,47 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
   // for sending filters to the search endpoint
   getFiltersForAPI() {
     let filtersForAPI = {};
-    this.filters.forEach(filter => {
-      if (filter.selectedOptions && filter.selectedOptions.length > 0) {
-        filtersForAPI[filter.id] = '';
-        filter.selectedOptions.forEach(option => {
-          if (option.hasOwnProperty('code')) {
-            filtersForAPI[filter.id] += option.name + ',';
-          } else if (option.hasOwnProperty('_id')) {
-            filtersForAPI[filter.id] += option._id + ',';
-          } else {
-            filtersForAPI[filter.id] += option + ',';
-          }
-        });
-        filtersForAPI[filter.id] = filtersForAPI[filter.id].slice(0, -1);
-      }
 
-      if (filter.dateFilter) {
-        if (filter.startDate) {
-          filtersForAPI[filter.dateFilter.startDateId] = filter.startDate.year + '-' + filter.startDate.month + '-' + filter.startDate.day;
-        }
-        if (filter.endDate) {
-          filtersForAPI[filter.dateFilter.endDateId] = filter.endDate.year + '-' + filter.endDate.month + '-' + filter.endDate.day;
-        }
-      }
+    if (this.filters) {
+      this.filters.forEach(filter => {
+        this.addToFiltersByCollection(filtersForAPI, filter);
+      });
+    }
 
-      if (filtersForAPI[filter.id] === null || filtersForAPI[filter.id] === '') {
-        delete filtersForAPI[filter.id];
-      }
-    });
+    if (this.buttonFilter) {
+      this.addToFiltersByCollection(filtersForAPI, this.buttonFilter);
+    }
 
     return filtersForAPI;
+  }
+
+  private addToFiltersByCollection(filtersForAPI, filter) {
+    if (filter.selectedOptions && filter.selectedOptions.length > 0) {
+      filtersForAPI[filter.id] = '';
+      filter.selectedOptions.forEach(option => {
+        if (option.hasOwnProperty('code')) {
+          filtersForAPI[filter.id] += option.name + ',';
+        } else if (option.hasOwnProperty('_id')) {
+          filtersForAPI[filter.id] += option._id + ',';
+        } else {
+          filtersForAPI[filter.id] += option + ',';
+        }
+      });
+      filtersForAPI[filter.id] = filtersForAPI[filter.id].slice(0, -1);
+    }
+
+    if (filter.dateFilter) {
+      if (filter.startDate) {
+        filtersForAPI[filter.dateFilter.startDateId] = filter.startDate.year + '-' + filter.startDate.month + '-' + filter.startDate.day;
+      }
+      if (filter.endDate) {
+        filtersForAPI[filter.dateFilter.endDateId] = filter.endDate.year + '-' + filter.endDate.month + '-' + filter.endDate.day;
+      }
+    }
+
+    if (filtersForAPI[filter.id] === null || filtersForAPI[filter.id] === '') {
+      delete filtersForAPI[filter.id];
+    }
   }
 
   // clear all filters and keywords
