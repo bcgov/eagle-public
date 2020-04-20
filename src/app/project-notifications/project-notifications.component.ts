@@ -15,15 +15,6 @@ import { ApiService } from 'app/services/api';
 import { MatSnackBar } from '@angular/material';
 import { CommentPeriodService } from 'app/services/commentperiod.service';
 
-class ProjectNotificationFilterObject {
-  constructor(
-    public type: object = {},
-    public pcp: object = {},
-    public region: Array<string> = [],
-    public decision: object = {}
-  ) { }
-}
-
 @Component({
   selector: 'app-project-notifications',
   templateUrl: './project-notifications.component.html',
@@ -37,26 +28,10 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
   public tableParams: TableParamsObject = new TableParamsObject();
   public terms = new SearchTerms();
   public showAdvancedSearch = true;
-  public filterForURL: object = {};
   public filterForAPI: object = {};
-  public filterForUI: ProjectNotificationFilterObject = new ProjectNotificationFilterObject();
 
   public projectNotifications: Array<ProjectNotification> = [];
   public readonly constants = Constants;
-
-  public showFilters: object = {
-    type: false,
-    region: false,
-    pcp: false,
-    decision: false
-  };
-
-  public numFilters: object = {
-    type: 0,
-    region: 0,
-    pcp: 0,
-    decision: 0
-  };
 
   public filters: FilterObject[] = [];
 
@@ -180,22 +155,7 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
     this.tableParams.keywords = apiFilters.keywords;
     this.filterForAPI = apiFilters.filterForAPI;
 
-    // build filterForUI/URL from the new filterForAPI object
-    this.createFilterForURL();
-
     this.search();
-  }
-
-  createFilterForURL() {
-    // for each key in filterForAPI
-    Object.keys(this.filterForAPI).forEach(key => {
-      this.filterForURL[key] = this.filterForAPI[key];
-    });
-
-    this.filterForUI.type = this.filterForAPI['type'] ? this.filterForAPI['type'].split(',') : null;
-    this.filterForUI.pcp = this.filterForAPI['pcp'] ? this.filterForAPI['pcp'].split(',') : null;
-    this.filterForUI.region = this.filterForAPI['region'] ? this.filterForAPI['region'].split(',') : null;
-    this.filterForUI.decision = this.filterForAPI['decision'] ? this.filterForAPI['decision'].split(',') : null;
   }
 
   search() {
