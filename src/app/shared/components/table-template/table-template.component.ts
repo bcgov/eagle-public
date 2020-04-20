@@ -259,7 +259,7 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
   isShowingFilter() {
     let isOpen = false;
 
-    for(let idx in this.filters) {
+    for (let idx in this.filters) {
       if (idx && this.filters[idx].active) {
         isOpen = true;
         break;
