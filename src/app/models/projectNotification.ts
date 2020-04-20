@@ -12,6 +12,8 @@ export class ProjectNotification {
   decisionDate: Date;
   description: String;
   trigger: String;
+  associatedProjectId: string;
+  associatedProjectName: string;
   centroid: Array<number>;
   // dynamic attributes
   commentPeriod: CommentPeriod;
@@ -32,7 +34,8 @@ export class ProjectNotification {
     this.description = obj && obj.description || undefined;
     this.trigger = obj && obj.trigger || undefined;
     this.centroid = obj && obj.centroid || [];
-
+    this.associatedProjectId = obj && obj.associatedProjectId || undefined;
+    this.associatedProjectName = obj && obj.associatedProjectName || undefined;
     this.read = obj && obj.read || undefined;
   }
 }

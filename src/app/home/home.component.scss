@@ -59,6 +59,10 @@ main {
     text-transform: none;
 }
 
+.hero-btn:focus {
+    color: #003d57;
+}
+
 @media (max-width: 767px) {
   .hero-banner h1 {
     line-height: 2rem;
