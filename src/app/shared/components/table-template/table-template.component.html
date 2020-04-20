@@ -18,7 +18,8 @@
                 <button class="btn btn-primary"
                         type="button"
                         (click)="search()"
-                        [disabled]="searching">
+                        [disabled]="searching"
+                        *ngIf="!isShowingFilter() || !showAdvancedSearch">
                     <i class="material-icons"[hidden]="searching">search</i>
                     <i class="spinner rotating" [hidden]="!searching"></i>
                     <span>{{searching ? 'Searching...' : 'Search'}}</span>
@@ -278,6 +279,12 @@
                     </div>
                 </div>
             </div>
+            <button *ngIf="showAdvancedSearch && isShowingFilter()"
+                    class="btn btn-primary search-button"
+                    type="button"
+                    (click)="search()">
+                <span>Search</span>
+            </button>
         </div>
         <div *ngIf="showAdvancedSearch && searchDisclaimer" class="search-disclaimer">
             <span>{{searchDisclaimer}}</span>
@@ -322,7 +329,7 @@
     <div class="ant-pagination">{{data.paginationData.totalListItems !== 0 ? 'Showing ' + (data.paginationData.pageSize > data.paginationData.totalListItems ? data.paginationData.totalListItems : data.paginationData.pageSize) + ' of ' + data.paginationData.totalListItems : 'No'}} results</div>
     <br/>
 </div>
-<table class="table">
+<table *ngIf="showTableTemplate" class="table">
   <thead class="thead-light" *ngIf="data.paginationData.totalListItems > 0">
     <tr class="no-sort">
       <th *ngFor="let entry of columns"

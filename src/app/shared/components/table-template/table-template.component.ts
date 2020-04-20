@@ -28,6 +28,7 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
   @Input() showCountAtTop = true;
   // use the below options for dynamic search control configuration
   // These are only relevent if "showSearch" is true
+  @Input() showTableTemplate = true;
   @Input() showSearch = false;
   @Input() showAdvancedSearch = false;
   @Input() searchDisclaimer: string = null;
@@ -57,6 +58,11 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
     private storageService: StorageService) { }
 
   ngOnInit() {
+    if (!this.showTableTemplate && !this.data) {
+      // we are going to ignore the table, so just create a stub data component
+      this.data = new TableObject(null, null, { totalListItems: 0, pageSize: 0, currentPage: 1, sortBy: null }, null);
+    }
+
     this.restorePersistence();
     this.loadComponent();
 
@@ -78,7 +84,7 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
 
   ngOnChanges(changes: SimpleChanges) {
     // only run when property "data" changed
-    if (!changes.firstChange && changes['data'].currentValue && this.data && this.data.component && this.data.paginationData && this.data.data) {
+    if (!changes.firstChange && changes['data'] && changes['data'].currentValue && this.data && this.data.component && this.data.paginationData && this.data.data) {
       this.data.component = changes['data'].currentValue.component;
       this.data.data = changes['data'].currentValue.data;
       this.data.paginationData = changes['data'].currentValue.paginationData;
@@ -173,6 +179,10 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
     // send the search package, consisting of filters and keyword
     this.searching = true;
     this.onSearch.emit(searchPackage);
+
+    if (!this.showTableTemplate) {
+      this.searching = false;
+    }
   }
 
   // Build the Filter for API object. This is used by the api service
@@ -244,6 +254,20 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
     })
   }
 
+  // Check if any filter window is currently active. If so, and we're showing advanced search
+  // move the search button down
+  isShowingFilter() {
+    let isOpen = false;
+
+    for(let idx in this.filters) {
+      if (idx && this.filters[idx].active) {
+        isOpen = true;
+        break;
+      }
+    }
+
+    return isOpen;
+  }
   // Toggle a filter display on or off (set active to true/false)
   toggleFilter(filter: FilterObject) {
     filter.active = !filter.active;
