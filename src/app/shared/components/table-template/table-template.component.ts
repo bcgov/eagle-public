@@ -136,6 +136,11 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
 
   // Table action emits
   sort(property: string) {
+    if (this.data.paginationData.sortBy.charAt(0) === '+') {
+      this.data.paginationData.sortBy = '-' + property;
+    } else {
+      this.data.paginationData.sortBy = '+' + property;
+    }
     this.onColumnSort.emit(property);
   }
 
@@ -148,7 +153,7 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
   updatePageSize(pageSize) {
     this.data.paginationData.pageSize = pageSize;
     this.persist();
-    this.onPageNumUpdate.emit(1);
+    this.onPageNumUpdate.emit(pageSize);
     // ??? Call search?
   }
 
@@ -266,7 +271,7 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
   // If the component has a persistence ID set, it means we will persist the table
   // filters, so if a user changes pages and comes back, their previous search
   // will auto-populate
-  persist() {
+  async persist() {
     if (this.showSearch && this.persistenceId && this.persistenceId !== '') {
 
       // if the searchComponent set doesn't exist in storage, create it
