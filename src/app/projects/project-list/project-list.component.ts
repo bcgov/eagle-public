@@ -97,7 +97,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
   private projectTypeFilter = new FilterObject('type', 'Project Type', null, Constants.PROJECT_TYPE_COLLECTION, [], null);
   private eaDecisionDateFilter = new FilterObject('eacDecision', 'EA Decision', { startDateId: 'decisionDateStart', endDateId: 'decisionDateEnd' }, [], [], this.legislationFilterGroup);
   private pcpFilter = new FilterObject('pcp', 'Public Comment Period', null, Constants.PCP_COLLECTION, [], null);
-
+  // the filterObjects below will get added to a "more filters" collection
   private proponentFilter = new FilterObject('proponent', 'Proponent', null, [], [], null);
   private regionFilter = new FilterObject('region', 'Region', null, Constants.REGIONS_COLLECTION, [], null);
   private iaacFilter = new FilterObject('CEAAInvolvement', 'IAAC Involvement', null, [], [], this.legislationFilterGroup);
@@ -124,10 +124,16 @@ export class ProjectListComponent implements OnInit, OnDestroy {
       this.filters.push(this.projectTypeFilter);
       this.filters.push(this.eaDecisionDateFilter);
       this.filters.push(this.pcpFilter);
-      this.filters.push(this.proponentFilter);
-      this.filters.push(this.regionFilter);
-      this.filters.push(this.iaacFilter);
-      this.filters.push(this.phaseFilter);
+
+      // Add the "More filters" collection to filters, then add the filters
+      // you want in the collection to the filterCollections 'collection' attribute
+      let filterCollection = new FilterObject('moreFilters', 'More Filters...');
+      filterCollection.collection = [this.proponentFilter,
+                                     this.regionFilter,
+                                     this.iaacFilter,
+                                     this.phaseFilter];
+
+      this.filters.push(filterCollection);
   }
 
   ngOnInit() {

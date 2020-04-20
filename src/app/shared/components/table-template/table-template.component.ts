@@ -57,24 +57,7 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
     private storageService: StorageService) { }
 
   ngOnInit() {
-    // if the component is using persisted searches, check if we have any existing search configurations
-    if (this.showSearch && this.persistenceId && this.persistenceId !== '' && this.storageService.state.searchComponent && this.storageService.state.searchComponent[this.persistenceId]) {
-      // fetch the persistence object, for clarity in the code below
-      let persistenceObject = this.storageService.state.searchComponent[this.persistenceId];
-      let selectedFilters = persistenceObject.filters;
-
-      this.filters.forEach(filter => {
-        filter.selectedOptions = selectedFilters[filter.id].selectedOptions ? selectedFilters[filter.id].selectedOptions : [];
-        // set dates
-        if (filter.dateFilter) {
-          filter.startDate = selectedFilters[filter.id].startDate;
-          filter.endDate = selectedFilters[filter.id].endDate;
-        }
-      });
-      this.keywords = persistenceObject.keywords;
-      this.data.paginationData = persistenceObject.paginationData;
-    }
-
+    this.restorePersistence();
     this.loadComponent();
 
     this.activePageSize = parseInt(this.data.paginationData.pageSize, 10);
@@ -200,7 +183,16 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
 
     if (this.filters) {
       this.filters.forEach(filter => {
-        this.addToFiltersByCollection(filtersForAPI, filter);
+        if (!filter.collection) {
+          this.addToFiltersByCollection(filtersForAPI, filter);
+        } else {
+          // theoretically, a developer could add collections to collections, so we should
+          // handle this recursively. However, the UI doesn't currently support this so
+          // we'll assume only top level collections.
+          filter.collection.forEach(subfilter => {
+            this.addToFiltersByCollection(filtersForAPI, subfilter);
+          });
+        }
       });
     }
 
@@ -245,6 +237,11 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
     this.keywords = '';
     this.filters.forEach(filter => {
       filter.selectedOptions = [];
+      if (filter.collection) {
+        filter.collection.forEach(subfilter => {
+          subfilter.selectedOptions = [];
+        });
+      }
     })
   }
 
@@ -297,10 +294,22 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
     });
   }
 
+  getCollectionSelectedCount(filter) {
+    let count = 0;
+
+    if (filter.collection) {
+      filter.collection.forEach(subfilter => {
+        count += subfilter.selectedOptions ? subfilter.selectedOptions.length : 0;
+      });
+    }
+
+    return count;
+  }
+
   // If the component has a persistence ID set, it means we will persist the table
   // filters, so if a user changes pages and comes back, their previous search
   // will auto-populate
-  async persist() {
+  private async persist() {
     if (this.showSearch && this.persistenceId && this.persistenceId !== '') {
 
       // if the searchComponent set doesn't exist in storage, create it
@@ -319,16 +328,59 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
       let selectedFilters = {};
       this.filters.forEach(filter => {
         selectedFilters[filter.id] = {};
-        selectedFilters[filter.id].selectedOptions = filter.selectedOptions ? filter.selectedOptions : [];
-        // persist dates
-        if (filter.dateFilter) {
-          selectedFilters[filter.id].startDate = filter.startDate;
-          selectedFilters[filter.id].endDate = filter.endDate;
+        if (!filter.collection) {
+          this.persistFilters(selectedFilters[filter.id], filter);
+        } else {
+          // this is a filter collection, so we need to persist the subfilter values instead
+          selectedFilters[filter.id].subfilters = {};
+          filter.collection.forEach(subFilter => {
+            selectedFilters[filter.id].subfilters[subFilter.id] = {};
+            this.persistFilters(selectedFilters[filter.id].subfilters[subFilter.id], subFilter);
+          });
         }
       });
       persistenceObject.filters = selectedFilters;
       persistenceObject.keywords = this.keywords;
       persistenceObject.paginationData = this.data.paginationData;
+    }
+  }
+
+  private persistFilters(selectedFilters, filter) {
+    selectedFilters.selectedOptions = filter.selectedOptions ? filter.selectedOptions : [];
+    // persist dates
+    if (filter.dateFilter) {
+      selectedFilters.startDate = filter.startDate;
+      selectedFilters.endDate = filter.endDate;
+    }
+  }
+
+  private restorePersistence() {
+    // if the component is using persisted searches, check if we have any existing search configurations
+    if (this.showSearch && this.persistenceId && this.persistenceId !== '' && this.storageService.state.searchComponent && this.storageService.state.searchComponent[this.persistenceId]) {
+      // fetch the persistence object, for clarity in the code below
+      let persistenceObject = this.storageService.state.searchComponent[this.persistenceId];
+      let selectedFilters = persistenceObject.filters;
+
+      this.filters.forEach(filter => {
+        if (!selectedFilters[filter.id].hasOwnProperty('subfilters')) {
+          this.restoreFilters(selectedFilters[filter.id], filter);
+        } else {
+          filter.collection.forEach(subFilter => {
+            this.restoreFilters(selectedFilters[filter.id].subfilters[subFilter.id], subFilter);
+          });
+        }
+      });
+      this.keywords = persistenceObject.keywords;
+      this.data.paginationData = persistenceObject.paginationData;
+    }
+  }
+
+  private restoreFilters(selectedFilters, filter) {
+    filter.selectedOptions = selectedFilters.selectedOptions ? selectedFilters.selectedOptions : [];
+    // set dates
+    if (filter.dateFilter) {
+      filter.startDate = selectedFilters.startDate;
+      filter.endDate = selectedFilters.endDate;
     }
   }
 }

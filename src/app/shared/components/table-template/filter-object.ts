@@ -18,11 +18,19 @@ export class FilterObject {
   constructor(
     public id: string,
     public name: string,
-    public dateFilter: DateFilterObject,
-    public options: any[],
-    public selectedOptions: any[],
-    public group: FilterGroupObject
-  ) { }
+    public dateFilter: DateFilterObject = null,
+    public options: any[] = [],
+    public selectedOptions: any[] = [],
+    public group: FilterGroupObject = null,
+    public collection: FilterObject[] = null
+  ) {
+    // If we have a collection value, empty the options container so the UI doesn't
+    // get confused by trying to create multiple components
+    if (collection) {
+      options = [];
+      selectedOptions = [];
+    }
+  }
 }
 
 /**
