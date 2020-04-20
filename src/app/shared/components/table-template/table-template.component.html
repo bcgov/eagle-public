@@ -166,7 +166,7 @@
                     </div>
                 </div>
                 <!-- for filter collections, add to a single button-->
-                <!-- find a better way to do this aside from duplicating the above -->
+                <!-- find a better way to do this aside from duplicating the above... another template? -->
                 <div *ngIf="showAdvancedSearch && filters.length > 0 && filter.active && filter.collection" class="project-filter row">
                     <div class="col-md-12 filter-border" *ngFor="let subfilter of filter.collection">
                         <div class="row sub-filter">

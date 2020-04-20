@@ -130,16 +130,15 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   updatePageNumber(pageNum) {
-    this.persist();
+    this.data.paginationData.currentPage = pageNum;
     this.onPageNumUpdate.emit(pageNum);
-    // ??? Call search?
+    this.persist();
   }
 
   updatePageSize(pageSize) {
     this.data.paginationData.pageSize = pageSize;
-    this.persist();
     this.onPageNumUpdate.emit(pageSize);
-    // ??? Call search?
+    this.search();
   }
 
   // Searching and filtering functions
