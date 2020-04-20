@@ -383,3 +383,31 @@ $sr-table-row-bg: #f7f8fa;
 .show_all_btn {
     margin-left: 10px;
 }
+
+.btn-group-toggle > .btn {
+    margin-bottom: 0;
+    border-radius: 24px;
+    background: none;
+    color: #003367;
+    border: 2px solid #003367;
+    font-weight: 600;
+    margin-right: 10px;
+    &:hover {
+      background: #fcb118;
+    }
+
+    &.active {
+        background: #003367;
+        color: #fff;
+    }
+  }
+
+  .active-flag {
+    background: #5BB75C;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 3px 8px 4px;
+    border-radius: 5px;
+    font-size: .8rem;
+  }

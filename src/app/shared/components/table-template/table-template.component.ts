@@ -32,7 +32,9 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
   @Input() showAdvancedSearch = false;
   @Input() searchDisclaimer: string = null;
   @Input() filters: FilterObject[];
+  @Input() buttonFilter: FilterObject;
   @Input() persistenceId: string = null;
+  @Input() showSearchHelp = true;
 
   @ViewChild(TableDirective, {static: true}) tableHost: TableDirective;
 
@@ -242,6 +244,22 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
       if (filter.name !== otherfilter.name) { otherfilter.active = false };
       // otherfilter.active = otherfilter.name === filter.name; would be nicer, but then we can only see one at a time
     });
+  }
+
+  // Toggle a filter option on or off (for button type filter)
+  toggleFilterOption(filter: FilterObject, option) {
+    if (!option.hasOwnProperty('active')) {
+      option.active = false;
+    }
+
+    option.active = !option.active;
+
+    // add or remove from filters selected Options
+    if (option.active) {
+      filter.selectedOptions.push(option);
+    } else {
+      this.clearSelectedItem(filter, option);
+    }
   }
 
   // comparator for filters. We use objects in Constants, or list objects from

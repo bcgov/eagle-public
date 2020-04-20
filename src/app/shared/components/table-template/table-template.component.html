@@ -172,13 +172,36 @@
         </div>
     </div>
     <!-- Help, any additional buttons-->
-    <div class="input-group-append">
+    <div class="input-group-append" *ngIf="showSearchHelp">
         <a _ngcontent-c7 class="btn btn-primary btn-search-help"
            [routerLink]="['/search-help']"
            target="_blank">
             <i class="material-icons md-18">info</i>
             <span> Search Help</span>
         </a>
+    </div>
+    <!-- Button Type Filter -->
+    <!-- These are identical to regular filters, but display as buttons. There is only ever one -->
+    <div *ngIf="buttonFilter && buttonFilter.options && buttonFilter.options.length > 0">
+        <p class="mb-1"><b>{{buttonFilter.name}} Filters:</b></p>
+        <div class="form-row">
+            <div class="form-group col-md-8">
+                <div class="btn-group btn-group-toggle">
+                    <div class="btn-group-toggle"
+                         data-toggle="buttons"
+                         *ngFor="let option of buttonFilter.options">
+                        <label class="btn btn-primary" [class.active]="option.active">
+                            <input type="checkbox"
+                                   (click)="toggleFilterOption(buttonFilter, option);"
+                                   [(ngModel)]="option.active"
+                                   autocomplete="off"
+                                   [ngModelOptions]="{standalone: true}">
+                            {{option.name}}
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </form>
 <br/>
