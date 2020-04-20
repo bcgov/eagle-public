@@ -93,7 +93,7 @@ export class SearchComponent implements OnInit, OnDestroy {
     {
       name: 'Document Name',
       value: 'displayName',
-      width: 'col-5'
+      width: 'col-4'
     },
     {
       name: 'Project',
@@ -114,6 +114,12 @@ export class SearchComponent implements OnInit, OnDestroy {
       name: 'Milestone',
       value: 'milestone',
       width: 'col-2'
+    },
+    {
+      name: 'Download',
+      value: '',
+      width: 'col-1',
+      nosort: true,
     },
   ];
 
@@ -324,6 +330,7 @@ collectionFilterToParams(params, name, identifyBy) {
 
   clearAllFilters() {
     this.tableParams.keywords = '';
+    this.terms.keywords = '';
     delete this.filterForURL['keywords'];
     Object.keys(this.filterForUI).forEach(key => {
       if (this.filterForUI[key]) {
