@@ -1,3 +1,7 @@
+<div *ngIf="showCountAtTop && data.paginationData.pageSize < data.paginationData.totalListItems">
+    <div class="ant-pagination">{{data.paginationData.totalListItems !== 0 ? 'Showing ' + (data.paginationData.pageSize > data.paginationData.totalListItems ? data.paginationData.totalListItems : data.paginationData.pageSize) + ' of ' + data.paginationData.totalListItems : 'No'}} results</div>
+    <br/>
+</div>
 <table class="table">
   <thead class="thead-light">
     <tr class="no-sort">
