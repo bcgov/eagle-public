@@ -289,6 +289,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
 
   executeSearch(apiFilters) {
     this.terms.keywords = apiFilters.keywords;
+    this.tableParams.keywords = apiFilters.keywords;
     this.filterForAPI = apiFilters.filterForAPI;
 
     // build filterForUI/URL from the new filterForAPI object
@@ -304,16 +305,16 @@ export class ProjectListComponent implements OnInit, OnDestroy {
       this.filterForURL[key] = this.filterForAPI[key];
     });
 
-  this.filterForUI = new ProjectFilterObject(this.filterForAPI['type'] ? this.filterForAPI['type'].split(',') : null,
-                                             this.filterForAPI['eacDecision'] ? this.filterForAPI['eacDecision'].split(',') : null,
-                                             this.filterForAPI['decisionDateStart'],
-                                             this.filterForAPI['decisionDateEnd'],
-                                             this.filterForAPI['pcp'] ? this.filterForAPI['pcp'].split(',') : null,
-                                             this.filterForAPI['proponent'] ? this.filterForAPI['proponent'].split(',') : null,
-                                             this.filterForAPI['region'] ? this.filterForAPI['region'].split(',') : null,
-                                             this.filterForAPI['CEAAInvolvement'] ? this.filterForAPI['CEAAInvolvement'].split(',') : null,
-                                             this.filterForAPI['projectPhase'] ? this.filterForAPI['projectPhase'].split(',') : null,
-                                             null);
+    this.filterForUI = new ProjectFilterObject(this.filterForAPI['type'] ? this.filterForAPI['type'].split(',') : null,
+                                               this.filterForAPI['eacDecision'] ? this.filterForAPI['eacDecision'].split(',') : null,
+                                               this.filterForAPI['decisionDateStart'],
+                                               this.filterForAPI['decisionDateEnd'],
+                                               this.filterForAPI['pcp'] ? this.filterForAPI['pcp'].split(',') : null,
+                                               this.filterForAPI['proponent'] ? this.filterForAPI['proponent'].split(',') : null,
+                                               this.filterForAPI['region'] ? this.filterForAPI['region'].split(',') : null,
+                                               this.filterForAPI['CEAAInvolvement'] ? this.filterForAPI['CEAAInvolvement'].split(',') : null,
+                                               this.filterForAPI['projectPhase'] ? this.filterForAPI['projectPhase'].split(',') : null,
+                                               null);
   }
 
   getPaginatedProjects(pageNumber) {
