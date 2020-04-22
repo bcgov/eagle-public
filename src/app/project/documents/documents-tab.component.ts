@@ -197,6 +197,18 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
       this.storageService.state[this.currentProject._id] = {};
     }
 
+    this.router.url.split(';').forEach(filterVal => {
+      if (filterVal.split('=').length === 2) {
+        let filterName = filterVal.split('=')[0];
+        let val = filterVal.split('=')[1];
+        if (val && val !== 'null' && val.length !== 0) {
+          if (!['currentPage', 'pageSize', 'sortBy', 'ms', 'keywords'].includes(filterName)) {
+            this.filterForAPI[filterName] = val;
+          }
+        }
+      }
+    });
+
     this.searchService.getSearchResults(
       '',
       'Document',

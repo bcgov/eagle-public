@@ -2,6 +2,7 @@ import { Component, Input, OnInit, ComponentFactoryResolver, OnDestroy, ViewChil
 import 'rxjs/add/operator/switchMap';
 import 'rxjs/add/operator/takeUntil';
 import * as _ from 'lodash';
+import { Router } from '@angular/router';
 import { StorageService } from 'app/services/storage.service';
 import { TableDirective } from './table.directive';
 import { TableObject } from './table-object';
@@ -55,7 +56,8 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
 
   constructor(
     private componentFactoryResolver: ComponentFactoryResolver,
-    private storageService: StorageService) { }
+    private storageService: StorageService,
+    private router: Router,) { }
 
   ngOnInit() {
     if (!this.showTableTemplate && !this.data) {
@@ -80,6 +82,41 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
       this.data.paginationData.previousKeyword = null;
       this.data.paginationData.defaultSortBy = this.data.paginationData.sortBy
     }
+
+    // values passed in on the URL should override any current settings
+    this.router.url.split(';').forEach(filterVal => {
+      if (filterVal.split('=').length === 2) {
+        let filterName = filterVal.split('=')[0];
+        let val = filterVal.split('=')[1];
+
+        if (val && val !== 'null' && val.length !== 0) {
+
+          if (filterName === 'keywords') {
+            this.data.paginationData.keywords = val;
+          } else if (filterName === 'pageSize') {
+            this.data.paginationData.pageSize = parseInt(val, 10);
+          } else if (filterName === 'currentPage') {
+            this.data.paginationData.currentPage = parseInt(val, 10);
+          } else if (filterName === 'sortBy') {
+            this.data.paginationData.sortBy = val;
+          }
+
+          if (!['currentPage', 'pageSize', 'sortBy', 'ms', 'keywords'].includes(filterName)) {
+            this.filters.forEach(filter => {
+              if (filter.id === filterName) {
+                filter.options.forEach(option => {
+                  if (option.hasOwnProperty('code') && option.name === val) {
+                    filter.selectedOptions.push(option);
+                  } else if (option.hasOwnProperty('_id') && option._id === val) {
+                    filter.selectedOptions.push(option);
+                  }
+                })
+              }
+            })
+          }
+        }
+      }
+    });
   }
 
   ngOnChanges(changes: SimpleChanges) {
@@ -133,12 +170,14 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
       this.data.paginationData.sortBy = '+' + property;
     }
     this.onColumnSort.emit(property);
+    this.search();
   }
 
   updatePageNumber(pageNum) {
     this.data.paginationData.currentPage = pageNum;
+    this.activePage = pageNum;
     this.onPageNumUpdate.emit(pageNum);
-    this.persist();
+    this.search();
   }
 
   updatePageSize(pageSize) {
@@ -165,6 +204,10 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
       this.data.paginationData.sortBy = this.data.paginationData.defaultSortBy;
       this.data.paginationData.previousFilters = { ...newFilters };
       this.data.paginationData.previousKeyword = this.keywords;
+      // because we're changing the values here, fire an emit
+      this.onColumnSort.emit(this.data.paginationData.defaultSortBy);
+      this.onPageNumUpdate.emit(1);
+      this.activePage = 1;
     }
 
     this.persist();
@@ -172,7 +215,8 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
     // The search package to return to the parent component
     let searchPackage = {
       filterForAPI: newFilters,
-      keywords: this.keywords
+      keywords: this.keywords,
+      paginationData: this.data.paginationData
     }
 
     // emit to parent that a search has been requested

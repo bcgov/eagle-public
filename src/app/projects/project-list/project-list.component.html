@@ -15,8 +15,6 @@
         <div class="container">
             <app-table-template [columns]="projectTableColumns"
                                 [data]="projectTableData"
-                                (onColumnSort)='setColumnSort($event)'
-                                (onPageNumUpdate)='getPaginatedProjects($event)'
                                 [showSearch]="true"
                                 (onSearch)='executeSearch($event)'
                                 [showAdvancedSearch]="true"

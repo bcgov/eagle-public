@@ -49,7 +49,6 @@ export class ProjectListComponent implements OnInit, OnDestroy {
   public tableParams: TableParamsObject = new TableParamsObject();
   public terms = new SearchTerms();
 
-  public filterForURL: object = {};
   public filterForAPI: object = {};
 
   public filterForUI: ProjectFilterObject = new ProjectFilterObject();
@@ -173,7 +172,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
 
         this.tableParams = this.tableTemplateUtils.getParamsFromUrl(
           params,
-          this.filterForURL,
+          this.filterForAPI,
           '+name'
         );
 
@@ -184,17 +183,16 @@ export class ProjectListComponent implements OnInit, OnDestroy {
           this.tableParams = this.storageService.state.projList.tableParams;
           this.filterForAPI = this.storageService.state.projList.filterForAPI;
           this.filterForUI = this.storageService.state.projList.filterForUI;
-          this.filterForURL = this.storageService.state.projList.filterForURL;
         }
 
-        // get params from URL, if the user passed them in. This should override storage service values
         this.router.url.split(';').forEach(filterVal => {
           if (filterVal.split('=').length === 2) {
-            let filter = filterVal.split('=')[0];
+            let filterName = filterVal.split('=')[0];
             let val = filterVal.split('=')[1];
-
-            if (!['currentPage', 'pageSize', 'sortBy', 'ms', 'keywords'].includes(filter)) {
-              this.filterForAPI[filter] = val;
+            if (val && val !== 'null' && val.length !== 0) {
+              if (!['currentPage', 'pageSize', 'sortBy', 'ms', 'keywords'].includes(filterName)) {
+                this.filterForAPI[filterName] = val;
+              }
             }
           }
         });
@@ -278,43 +276,24 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     );
   }
 
-  setColumnSort(column) {
-    if (this.tableParams.sortBy.charAt(0) === '+') {
-      this.tableParams.sortBy = '-' + column;
-    } else {
-      this.tableParams.sortBy = '+' + column;
-    }
-    this.getPaginatedProjects(this.tableParams.currentPage);
-  }
-
   executeSearch(apiFilters) {
     this.terms.keywords = apiFilters.keywords;
     this.tableParams.keywords = apiFilters.keywords;
     this.filterForAPI = apiFilters.filterForAPI;
 
     // build filterForUI/URL from the new filterForAPI object
-    this.createFilterForURL();
-
-    this.getPaginatedProjects(this.tableParams.currentPage);
-  }
-
-  createFilterForURL() {
-    this.filterForURL = {};
-    // for each key in filterForAPI
-    Object.keys(this.filterForAPI).forEach(key => {
-      this.filterForURL[key] = this.filterForAPI[key];
-    });
-
-    this.filterForUI = new ProjectFilterObject(this.filterForAPI['type'] ? this.filterForAPI['type'].split(',') : null,
-                                               this.filterForAPI['eacDecision'] ? this.filterForAPI['eacDecision'].split(',') : null,
+    this.filterForUI = new ProjectFilterObject(this.filterForAPI['type']               ? this.filterForAPI['type'].split(',')            : null,
+                                               this.filterForAPI['eacDecision']        ? this.filterForAPI['eacDecision'].split(',')     : null,
                                                this.filterForAPI['decisionDateStart'],
                                                this.filterForAPI['decisionDateEnd'],
-                                               this.filterForAPI['pcp'] ? this.filterForAPI['pcp'].split(',') : null,
-                                               this.filterForAPI['proponent'] ? this.filterForAPI['proponent'].split(',') : null,
-                                               this.filterForAPI['region'] ? this.filterForAPI['region'].split(',') : null,
-                                               this.filterForAPI['CEAAInvolvement'] ? this.filterForAPI['CEAAInvolvement'].split(',') : null,
-                                               this.filterForAPI['projectPhase'] ? this.filterForAPI['projectPhase'].split(',') : null,
+                                               this.filterForAPI['pcp']                ? this.filterForAPI['pcp'].split(',')             : null,
+                                               this.filterForAPI['proponent']          ? this.filterForAPI['proponent'].split(',')       : null,
+                                               this.filterForAPI['region']             ? this.filterForAPI['region'].split(',')          : null,
+                                               this.filterForAPI['CEAAInvolvement']    ? this.filterForAPI['CEAAInvolvement'].split(',') : null,
+                                               this.filterForAPI['projectPhase']       ? this.filterForAPI['projectPhase'].split(',')    : null,
                                                null);
+
+    this.getPaginatedProjects(this.tableParams.currentPage);
   }
 
   getPaginatedProjects(pageNumber) {
@@ -328,7 +307,6 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     this.storageService.state.projList = {};
     this.storageService.state.projList.filterForAPI = this.filterForAPI;
     this.storageService.state.projList.filterForUI = this.filterForUI;
-    this.storageService.state.projList.filterForURL = this.filterForURL;
     this.storageService.state.projList.tableParams = this.tableParams;
 
     if (this.filterForAPI.hasOwnProperty('projectPhase')) {
@@ -361,7 +339,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
             this.tableParams.sortBy,
             this.tableParams.currentPage,
             this.tableParams.pageSize,
-            this.filterForURL,
+            this.filterForAPI,
             this.tableParams.keywords
           );
           this.setRowData();

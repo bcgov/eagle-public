@@ -55,7 +55,6 @@ export class SearchComponent implements OnInit, OnDestroy {
   public tableParams: TableParamsObject = new TableParamsObject();
   public terms = new SearchTerms();
 
-  public filterForURL: object = {};
   public filterForAPI: object = {};
   public filterForUI: SearchFilterObject = new SearchFilterObject();
   public currentSearch: object = {};
@@ -125,19 +124,19 @@ export class SearchComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private tableTemplateUtils: TableTemplateUtils,
   ) {
+      // inject filters into table template
+      this.filters.push(this.milestoneFilter);
+      this.filters.push(this.docDateFilter);
+      this.filters.push(this.authorTypeFilter);
+      this.filters.push(this.docTypeFilter);
+      this.filters.push(this.projectPhaseFilter);
+
     // prebake for table
     this.documentTableData = new TableObject(
       DocSearchTableRowsComponent,
       [],
       this.tableParams
     );
-
-    // inject filters into table template
-    this.filters.push(this.milestoneFilter);
-    this.filters.push(this.docDateFilter);
-    this.filters.push(this.authorTypeFilter);
-    this.filters.push(this.docTypeFilter);
-    this.filters.push(this.projectPhaseFilter);
    }
 
   ngOnInit() {
@@ -180,7 +179,7 @@ export class SearchComponent implements OnInit, OnDestroy {
 
           // set default params or load from url
           if (_.isEqual(this.tableParams, new TableParamsObject())) {
-            this.tableParams = this.tableTemplateUtils.getParamsFromUrl(params, this.filterForURL);
+            this.tableParams = this.tableTemplateUtils.getParamsFromUrl(params, this.filterForAPI);
             this.terms.keywords = this.tableParams.keywords;
           }
 
@@ -194,6 +193,21 @@ export class SearchComponent implements OnInit, OnDestroy {
             this.tableParams.totalListItems = 0;
             this.documents = [];
           }
+
+          // If the route has configs specified in the URL
+          // automatically select them in the components
+          this.router.url.split(';').forEach(filterVal => {
+            if (filterVal.split('=').length === 2) {
+              let filterName = filterVal.split('=')[0];
+              let val = filterVal.split('=')[1];
+
+              if (val && val !== 'null' && val.length !== 0) {
+                if (!['currentPage', 'pageSize', 'sortBy', 'ms', 'keywords'].includes(filterName)) {
+                  this.filterForAPI[filterName] = val;
+                }
+              }
+            }
+          });
 
           this.loading = false;
           this.setRowData();
@@ -209,14 +223,6 @@ export class SearchComponent implements OnInit, OnDestroy {
       });
   }
 
-  setColumnSort(column) {
-    if (this.tableParams.sortBy.charAt(0) === '+') {
-      this.tableParams.sortBy = '-' + column;
-    } else {
-      this.tableParams.sortBy = '+' + column;
-    }
-    this.getPaginated(this.tableParams.currentPage);
-  }
   isCategorizedQuery() {
     const categorizedFilters = ['documentAuthorType', 'milestone', 'projectPhase', 'type'];
     let isCategorized = false;
@@ -240,23 +246,14 @@ export class SearchComponent implements OnInit, OnDestroy {
     this.filterForAPI = apiFilters.filterForAPI;
 
     // build filterForUI/URL from the new filterForAPI object
-    this.createFilterForURL();
-
-    this.getPaginated(this.tableParams.currentPage);
-  }
-
-  createFilterForURL() {
-    // for each key in filterForAPI
-    Object.keys(this.filterForAPI).forEach(key => {
-      this.filterForURL[key] = this.filterForAPI[key];
-    });
-
     this.filterForUI.milestone = this.filterForAPI['milestone'] ? this.filterForAPI['milestone'].split(',') : null;
     this.filterForUI.documentAuthorType = this.filterForAPI['documentAuthorType'] ? this.filterForAPI['documentAuthorType'].split(',') : null;
     this.filterForUI.type = this.filterForAPI['type'] ? this.filterForAPI['type'].split(',') : null;
     this.filterForUI.projectPhase = this.filterForAPI['projectPhase'] ? this.filterForAPI['projectPhase'].split(',') : null;
     this.filterForUI.datePostedStart = this.filterForAPI['datePostedStart'];
     this.filterForUI.datePostedEnd = this.filterForAPI['datePostedEnd'];
+
+    this.getPaginated(this.tableParams.currentPage);
   }
 
   getPaginated(pageNumber) {
@@ -293,7 +290,7 @@ export class SearchComponent implements OnInit, OnDestroy {
         if (res && res[0].data && res[0].data.meta.length > 0) {
           this.tableParams.totalListItems = res[0].data.meta[0].searchResultsTotal;
           this.documents = res[0].data.searchResults;
-          this.tableTemplateUtils.updateUrl(this.tableParams.sortBy, this.tableParams.currentPage, this.tableParams.pageSize, this.filterForURL, this.tableParams.keywords);
+          this.tableTemplateUtils.updateUrl(this.tableParams.sortBy, this.tableParams.currentPage, this.tableParams.pageSize, this.filterForAPI, this.tableParams.keywords);
         } else {
           this.tableParams.totalListItems = 0;
           this.documents = [];
