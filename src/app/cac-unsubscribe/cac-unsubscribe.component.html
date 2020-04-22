@@ -27,24 +27,24 @@
           </div>
           <div class="form-group">
             <label class="control-label">Email Address</label>
-            <div class="form-control-container">
-              <input required email class="form-control" type="text" name="emailInput" id="emailInput" [(ngModel)]="emailInput" autofocus />
-            </div>
-            <button class="btn content-btn-dark page-bottom-btn" (click)="unsubscribe()">
+            <input readonly required email class="form-control" type="text" name="emailInput" id="emailInput" [(ngModel)]="emailInput" autofocus />
+            <button class="btn content-btn-dark mt-2 mr-2" (click)="unsubscribe()">
               <span>Unsubscribe</span>
             </button>
-            <button class="btn content-btn-dark page-bottom-btn" (click)="cancel()">
+            <button class="btn content-btn-dark mt-2 " (click)="cancel()">
               <span>Cancel</span>
             </button>
           </div>
+          <div class="form-group">
+            <label>If you are experiencing any issues with unsubscribing please send an email to <a href="mailto:epicsupport.eao@gov.bc.ca">epicsupport.eao@gov.bc.ca</a></label>
+          </div>
         </form>
-
       </main>
     </div>
 
     <!-- Successfully unsubscribed -->
     <div class="row" *ngIf="success">
-      <p>You have been unsubscribed successfully.  Click <button class="btn content-btn-dark page-bottom-btn" (click)="cancel()">
+      <p>You have been unsubscribed successfully.  Click <button class="btn content-btn-dark" (click)="cancel()">
         <span>here</span>
       </button> to go back to the homepage.</p>
     </div>
