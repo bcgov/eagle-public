@@ -57,7 +57,7 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
   constructor(
     private componentFactoryResolver: ComponentFactoryResolver,
     private storageService: StorageService,
-    private router: Router,) { }
+    private router: Router) { }
 
   ngOnInit() {
     if (!this.showTableTemplate && !this.data) {
