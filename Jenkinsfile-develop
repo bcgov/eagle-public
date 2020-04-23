@@ -292,11 +292,12 @@ def createPRDeployment() {
 def CHANGELOG = "No new changes"
 def IMAGE_HASH = "latest"
 def lockName = "eagle-public-${env.JOB_NAME}-${env.BUILD_NUMBER}"
+def gitBranch = "pr-${env.GIT_BRANCH}"
 pipeline {
   environment {
     TOOLSPROJECT = "esm"
     GIT_BRANCH = sh(returnStdout: true, script: 'git rev-parse --abbrev-ref HEAD').trim()
-    PR_NAME = "pr-${env.GIT_BRANCH}"
+    PR_NAME = gitBranch.toLowerCase()
   }
   agent any
   stages {
