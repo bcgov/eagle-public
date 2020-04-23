@@ -4,7 +4,6 @@ import { Subject } from 'rxjs';
 import 'rxjs/add/operator/switchMap';
 import 'rxjs/add/operator/takeUntil';
 
-import * as moment from 'moment';
 import * as _ from 'lodash';
 
 import { Document } from 'app/models/document';
@@ -13,10 +12,9 @@ import { SearchTerms } from 'app/models/search';
 import { TableObject } from 'app/shared/components/table-template/table-object';
 import { TableParamsObject } from 'app/shared/components/table-template/table-params-object';
 import { TableTemplateUtils } from 'app/shared/utils/table-template-utils';
-
+import { FilterObject } from 'app/shared/components/table-template/filter-object';
 import { DocumentTableRowsComponent } from './project-document-table-rows/project-document-table-rows.component';
 
-import { ApiService } from 'app/services/api';
 import { SearchService } from 'app/services/search.service';
 import { StorageService } from 'app/services/storage.service';
 import { Constants } from 'app/shared/utils/constants';
@@ -41,11 +39,6 @@ class DocumentFilterObject {
 export class DocumentsTabComponent implements OnInit, OnDestroy {
   public documents: Document[] = null;
 
-  public milestones: any[] = [];
-  public authors: any[] = [];
-  public types: any[] = [];
-  public projectPhases: any[] = [];
-
   public loading = true;
 
   public tableParams: TableParamsObject = new TableParamsObject();
@@ -53,30 +46,10 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
 
   public filterForURL: object = {};
   public filterForAPI: object = {};
-
   public filterForUI: DocumentFilterObject = new DocumentFilterObject();
 
-  public showAdvancedSearch = true;
   public hasUncategorizedDocs = false;
   public readonly constants = Constants;
-
-  public showFilters: object = {
-    date: false,
-    type: false,
-    milestone: false,
-    projectPhase: false,
-    documentAuthorType: false
-  };
-
-  public searchDisclaimer = Constants.searchDisclaimer;
-
-  public numFilters: object = {
-    date: 0,
-    type: 0,
-    milestone: 0,
-    projectPhase: 0,
-    documentAuthorType: 0
-  };
 
   public documentTableData: TableObject;
 
@@ -118,15 +91,38 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
 
   private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
 
+  public filters: FilterObject[] = [];
+
+  private legislationFilterGroup = { name: 'legislation', labelPrefix: null, labelPostfix: ' Act Terms' };
+
+  private milestoneFilter = new FilterObject('milestone', 'Milestone', null, [], [], this.legislationFilterGroup);
+  private docDateFilter = new FilterObject('datePosted', 'Document Date', { startDateId: 'datePostedStart', endDateId: 'datePostedEnd' }, [], [], this.legislationFilterGroup);
+  private authorTypeFilter = new FilterObject('documentAuthorType', 'Document Author', null, [], [], this.legislationFilterGroup);
+  private docTypeFilter = new FilterObject('type', 'Document Type', null, [], [], this.legislationFilterGroup);
+  private projectPhaseFilter = new FilterObject('projectPhase', 'Project Phase', null, [], [], this.legislationFilterGroup);
+
+
   constructor(
     private _changeDetectionRef: ChangeDetectorRef,
     private route: ActivatedRoute,
     private router: Router,
-    private api: ApiService,
     private searchService: SearchService,
     private storageService: StorageService,
     private tableTemplateUtils: TableTemplateUtils
-  ) { }
+  ) {
+    this.documentTableData = new TableObject(
+      DocumentTableRowsComponent,
+      [],
+      this.tableParams
+    );
+
+    // inject filters into table template
+    this.filters.push(this.milestoneFilter);
+    this.filters.push(this.docDateFilter);
+    this.filters.push(this.authorTypeFilter);
+    this.filters.push(this.docTypeFilter);
+    this.filters.push(this.projectPhaseFilter);
+  }
 
   ngOnInit() {
     let params = null;
@@ -140,29 +136,23 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
         if (res) {
           // Get the lists first
           if (res.documentsTableRow && res.documentsTableRow.length > 0) {
-
-            this.milestones = [];
-            this.types = [];
-            this.authors = [];
-            this.projectPhases = [];
-
             res.documentsTableRow[0].searchResults.map(item => {
               if (item.type === 'label') {
-                this.milestones.push({ ...item });
+                this.milestoneFilter.options.push({ ...item });
               } else if (item.type === 'doctype') {
-                this.types.push({ ...item });
+                this.docTypeFilter.options.push({ ...item });
               } else if (item.type === 'author') {
-                this.authors.push({ ...item });
+                this.authorTypeFilter.options.push({ ...item });
               } else if (item.type === 'projectPhase') {
-                this.projectPhases.push({ ...item });
+                this.projectPhaseFilter.options.push({ ...item });
               }
             });
 
             // Sort by legislation.
-            this.milestones = _.sortBy(this.milestones, ['legislation']);
-            this.authors = _.sortBy(this.authors, ['legislation']);
-            this.types = _.sortBy(this.types, ['legislation', 'listOrder']);
-            this.projectPhases = _.sortBy(this.projectPhases, ['legislation']);
+            this.milestoneFilter.options = _.sortBy(this.milestoneFilter.options, ['legislation']);
+            this.authorTypeFilter.options = _.sortBy(this.authorTypeFilter.options, ['legislation']);
+            this.docTypeFilter.options = _.sortBy(this.docTypeFilter.options, ['legislation', 'listOrder']);
+            this.projectPhaseFilter.options = _.sortBy(this.projectPhaseFilter.options, ['legislation']);
           }
 
           this.currentProject = this.storageService.state.currentProject.data;
@@ -170,7 +160,6 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
           if (this.currentProject && this.storageService.state[this.currentProject._id]) {
             if (this.storageService.state[this.currentProject._id].filterForUI) {
               this.filterForUI = this.storageService.state[this.currentProject._id].filterForUI;
-              this.setParamsFromFilters(params);
             }
 
             if (this.storageService.state[this.currentProject._id].tableParams) {
@@ -181,10 +170,6 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
           if (!this.tableParams) {
             this.tableParams = this.tableTemplateUtils.getParamsFromUrl(params, this.filterForURL);
           }
-
-          this.setFiltersFromParams(params);
-
-          this.updateCounts();
 
           if (res.documents && res.documents[0].data.meta && res.documents[0].data.meta.length > 0) {
             this.tableParams.totalListItems = res.documents[0].data.meta[0].searchResultsTotal;
@@ -211,6 +196,18 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
     if (!this.storageService.state[this.currentProject._id]) {
       this.storageService.state[this.currentProject._id] = {};
     }
+
+    this.router.url.split(';').forEach(filterVal => {
+      if (filterVal.split('=').length === 2) {
+        let filterName = filterVal.split('=')[0];
+        let val = filterVal.split('=')[1];
+        if (val && val !== 'null' && val.length !== 0) {
+          if (!['currentPage', 'pageSize', 'sortBy', 'ms', 'keywords'].includes(filterName)) {
+            this.filterForAPI[filterName] = val;
+          }
+        }
+      }
+    });
 
     this.searchService.getSearchResults(
       '',
@@ -242,53 +239,6 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
     this.router.navigate(['/search-help']);
   }
 
-  public selectAction(action) {
-    // select all documents
-    switch (action) {
-      case 'copyLink':
-        this.documentTableData.data.map((item) => {
-          if (item.checkbox === true) {
-            let selBox = document.createElement('textarea');
-            selBox.style.position = 'fixed';
-            selBox.style.left = '0';
-            selBox.style.top = '0';
-            selBox.style.opacity = '0';
-            selBox.value = window.location.href.split(';')[0] + `/detail/${item._id}`;
-            document.body.appendChild(selBox);
-            selBox.focus();
-            selBox.select();
-            document.execCommand('copy');
-            document.body.removeChild(selBox);
-          }
-        });
-        break;
-      case 'selectAll':
-        let someSelected = false;
-        this.documentTableData.data.map((item) => {
-          if (item.checkbox === true) {
-            someSelected = true;
-          }
-        });
-        this.documentTableData.data.map((item) => {
-          item.checkbox = !someSelected;
-        });
-
-        this.selectedCount = someSelected ? 0 : this.documentTableData.data.length;
-        this._changeDetectionRef.detectChanges();
-        break;
-      case 'download':
-        let promises = [];
-        this.documentTableData.data.map((item) => {
-          if (item.checkbox === true) {
-            promises.push(this.api.downloadDocument(this.documents.filter(d => d._id === item._id)[0]));
-          }
-        });
-        return Promise.all(promises).then(() => {
-          console.log('Download initiated for file(s)');
-        });
-    }
-  }
-
   setDocumentRowData() {
     let documentList = [];
     if (this.documents && this.documents.length > 0) {
@@ -310,12 +260,12 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
           );
         }
       });
-      this.documentTableData = new TableObject(
-        DocumentTableRowsComponent,
-        documentList,
-        this.tableParams
-      );
     }
+    this.documentTableData = new TableObject(
+      DocumentTableRowsComponent,
+      documentList,
+      this.tableParams
+    );
   }
 
   setColumnSort(column) {
@@ -340,147 +290,37 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
     this.selectedCount = count;
   }
 
-  paramsToCollectionFilters(params, name, collection, identifyBy) {
-    delete this.filterForURL[name];
-    delete this.filterForAPI[name];
+  executeSearch(apiFilters) {
+    this.terms.keywords = apiFilters.keywords;
+    this.filterForAPI = apiFilters.filterForAPI;
 
-    if (params[name] && collection) {
-      let confirmedValues = [];
-      // look up each value in collection
-      const values = params[name].split(',');
-      values.forEach(value => {
-        const record = _.find(collection, [ identifyBy, value ]);
-        if (record) {
-          confirmedValues.push(value);
-        }
-      });
-      if (confirmedValues.length) {
-        this.filterForURL[name] = confirmedValues.join(',');
-        this.filterForAPI[name] = confirmedValues.join(',');
-      }
-    }
+    // build filterForUI/URL from the new filterForAPI object
+    this.createFilterForURL();
+
+    this.getPaginatedDocs(this.tableParams.currentPage);
   }
 
-  paramsToDateFilters(params, name) {
-    this.filterForUI[name] = null;
-    delete this.filterForURL[name];
-    delete this.filterForAPI[name];
-
-    if (params[name]) {
-      this.filterForURL[name] = params[name];
-      this.filterForAPI[name] = params[name];
-      // NGB Date
-      const date = moment(params[name]).toDate();
-      this.filterForUI[name] = { year: date.getFullYear(), month: date.getMonth() + 1, day: date.getDate() };
-    }
-  }
-
-  setFiltersFromParams(params) {
-    this.paramsToCollectionFilters(params, 'milestone', this.milestones, '_id');
-    this.paramsToCollectionFilters(params, 'documentAuthorType', this.authors, '_id');
-    this.paramsToCollectionFilters(params, 'type', this.types, '_id');
-    this.paramsToCollectionFilters(params, 'projectPhase', this.projectPhases, '_id');
-
-    this.paramsToDateFilters(params, 'datePostedStart');
-    this.paramsToDateFilters(params, 'datePostedEnd');
-  }
-
-  collectionFilterToParams(params, name, identifyBy) {
-    if (this.filterForUI[name].length) {
-      const values = this.filterForUI[name].map(record => { return record[identifyBy]; });
-      params[name] = values.join(',');
-      this.storageService.state[this.currentProject._id].filterForAPI[name] = values.join(',');
-    }
-  }
-
-  isNGBDate(date) {
-    return date && date.year && date.month && date.day;
-  }
-
-  dateFilterToParams(params, name) {
-    if (this.isNGBDate(this.filterForUI[name])) {
-      const date = new Date(this.filterForUI[name].year, this.filterForUI[name].month - 1, this.filterForUI[name].day);
-      params[name] = moment(date).format('YYYY-MM-DD');
-    }
-  }
-
-  setParamsFromFilters(params) {
-    this.collectionFilterToParams(params, 'milestone', '_id');
-    this.collectionFilterToParams(params, 'documentAuthorType', '_id');
-    this.collectionFilterToParams(params, 'type', '_id');
-    this.collectionFilterToParams(params, 'projectPhase', '_id');
-
-    this.dateFilterToParams(params, 'datePostedStart');
-    this.dateFilterToParams(params, 'datePostedEnd');
-  }
-
-  toggleFilter(name) {
-    if (this.showFilters[name]) {
-      this.updateCount(name);
-      this.showFilters[name] = false;
-    } else {
-      Object.keys(this.showFilters).forEach(key => {
-        if (this.showFilters[key]) {
-          this.updateCount(key);
-          this.showFilters[key] = false;
-        }
-      });
-      this.showFilters[name] = true;
-    }
-  }
-
-  isShowingFilter() {
-    return Object.keys(this.showFilters).some(key => { return this.showFilters[key]; });
-  }
-
-  clearAll() {
-    Object.keys(this.filterForUI).forEach(key => {
-      if (this.filterForUI[key]) {
-        if (Array.isArray(this.filterForUI[key])) {
-          this.filterForUI[key] = [];
-        } else if (typeof this.filterForUI[key] === 'object') {
-          this.filterForUI[key] = {};
-        } else {
-          this.filterForUI[key] = '';
-        }
-      }
+  createFilterForURL() {
+    // for each key in filterForAPI
+    Object.keys(this.filterForAPI).forEach(key => {
+      this.filterForURL[key] = this.filterForAPI[key];
     });
-    this.updateCounts();
-  }
 
-  updateCount(name) {
-    const getCount = (n) => { return Object.keys(this.filterForUI[n]).filter(k => this.filterForUI[n][k]).length; };
-
-    let num = 0;
-    if (name === 'date') {
-      num += this.isNGBDate(this.filterForUI.datePostedStart) ? 1 : 0;
-      num += this.isNGBDate(this.filterForUI.datePostedEnd) ? 1 : 0;
-    } else {
-      num = getCount(name);
-    }
-    this.numFilters[name] = num;
-  }
-
-  updateCounts() {
-    this.updateCount('milestone');
-    this.updateCount('date');
-    this.updateCount('documentAuthorType');
-    this.updateCount('type');
-    this.updateCount('projectPhase');
+    this.filterForUI.milestone = this.filterForAPI['milestone'] ? this.filterForAPI['milestone'].split(',') : null;
+    this.filterForUI.documentAuthorType = this.filterForAPI['documentAuthorType'] ? this.filterForAPI['documentAuthorType'].split(',') : null;
+    this.filterForUI.type = this.filterForAPI['type'] ? this.filterForAPI['type'].split(',') : null;
+    this.filterForUI.projectPhase = this.filterForAPI['projectPhase'] ? this.filterForAPI['projectPhase'].split(',') : null;
+    this.filterForUI.datePostedStart = this.filterForAPI['datePostedStart'];
+    this.filterForUI.datePostedEnd = this.filterForAPI['datePostedEnd'];
   }
 
   getPaginatedDocs(pageNumber) {
-    // Go to top of page after clicking to a different page.
-    window.scrollTo(0, 0);
-    this.loading = true;
-
     this.tableParams = this.tableTemplateUtils.updateTableParams(this.tableParams, pageNumber, this.tableParams.sortBy);
 
     // Filters and params are not set when paging
     // We don't need to redo everything, but we will
     // need to fetch the dates
     const params = this.terms.getParams();
-    this.setParamsFromFilters(params);
 
     const datePostedStart = params.hasOwnProperty('datePostedStart') && params.datePostedStart ? params.datePostedStart : null;
     const datePostedEnd = params.hasOwnProperty('datePostedEnd') && params.datePostedEnd ? params.datePostedEnd : null;
@@ -510,63 +350,23 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
       '')
       .takeUntil(this.ngUnsubscribe)
       .subscribe((res: any) => {
-        this.tableParams.totalListItems = res[0].data.meta[0].searchResultsTotal;
-        this.documents = res[0].data.searchResults;
-        this.tableTemplateUtils.updateUrl(this.tableParams.sortBy, this.tableParams.currentPage, this.tableParams.pageSize, this.filterForURL, this.tableParams.keywords);
+        if (res[0].data && res[0].data.meta[0]) {
+          this.tableParams.totalListItems = res[0].data.meta[0].searchResultsTotal;
+          this.documents = res[0].data.searchResults;
+          this.tableTemplateUtils.updateUrl(this.tableParams.sortBy, this.tableParams.currentPage, this.tableParams.pageSize, this.filterForURL, this.tableParams.keywords);
+        } else {
+          this.documents = [];
+          this.tableParams.totalListItems = 0;
+          this.tableTemplateUtils.updateUrl(this.tableParams.sortBy, this.tableParams.currentPage, this.tableParams.pageSize, this.filterForURL, this.tableParams.keywords);
+        }
+
         this.setDocumentRowData();
-        this.loading = false;
         this._changeDetectionRef.detectChanges();
       });
-  }
-
-  clearSelectedItem(filterKey: string, item: any) {
-    this.filterForUI[filterKey] = this.filterForUI[filterKey].filter(option => option._id !== item._id);
-  }
-
-
-  public filterCompareWith(filterKey: any, filterToCompare: any) {
-    if (filterKey.hasOwnProperty('code')) {
-      return filterKey && filterToCompare
-              ? filterKey.code === filterToCompare.code
-              : filterKey === filterToCompare;
-    } else if (filterKey.hasOwnProperty('_id')) {
-      return filterKey && filterToCompare
-              ? filterKey._id === filterToCompare._id
-              : filterKey === filterToCompare;
-    }
-  }
-
-  public onSubmit() {
-    // dismiss any open snackbar
-    // if (this.snackBarRef) { this.snackBarRef.dismiss(); }
-
-    // NOTE: Angular Router doesn't reload page on same URL
-    // REF: https://stackoverflow.com/questions/40983055/how-to-reload-the-current-route-with-the-angular-2-router
-    // WORKAROUND: add timestamp to force URL to be different than last time
-
-    const params = this.terms.getParams();
-    params['ms'] = new Date().getMilliseconds();
-    params['dataset'] = this.terms.dataset;
-    params['currentPage'] = this.tableParams.currentPage;
-    params['sortBy'] = this.tableParams.sortBy = '';
-    params['keywords'] = this.tableParams.keywords;
-    params['pageSize'] = this.tableParams.pageSize;
-
-    if (this.storageService) {
-      this.storageService.state[this.currentProject._id].tableParams = this.tableParams;
-      this.storageService.state[this.currentProject._id].filterForUI = this.filterForUI;
-      this.storageService.state[this.currentProject._id].filterForAPI = {};
-    }
-
-    this.setParamsFromFilters(params);
-
-
-    this.router.navigate(['p', this.currentProject._id, 'documents', params]);
   }
 
   ngOnDestroy() {
     this.ngUnsubscribe.next();
     this.ngUnsubscribe.complete();
   }
-
 }

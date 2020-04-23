@@ -1,4 +1,5 @@
 import { NgModule } from '@angular/core';
+import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { BrowserModule } from '@angular/platform-browser';
 import { MatProgressBarModule } from '@angular/material';
 import { MatSnackBarModule } from '@angular/material';
@@ -17,19 +18,30 @@ import { SafeHtmlPipe } from './pipes/safe-html-converter.pipe';
 import { OrgNamePipe } from './pipes/org-name.pipe';
 import { TableTemplateUtils } from './utils/table-template-utils';
 import { TableDirective } from './components/table-template/table.directive';
+import { TableTemplateModule } from './components/table-template/table-template.modules'
 import { PublishedPipe } from 'app/shared/pipes/published.pipe';
 import { Utils } from './utils/utils';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { NgZorroAntdModule, NZ_I18N, en_US } from 'ng-zorro-antd';
+import { NgSelectModule } from '@ng-select/ng-select';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 
 @NgModule({
   imports: [
     BrowserModule,
+    CommonModule,
+    FormsModule,
+    NgSelectModule,
     MatProgressBarModule,
     MatSnackBarModule,
     NgxTextOverflowClampModule,
     BrowserAnimationsModule,
-    NgZorroAntdModule
+    NgZorroAntdModule,
+    TableTemplateModule,
+    RouterModule,
+    NgbModule
   ],
   declarations: [
     OrderByPipe,
