@@ -117,7 +117,7 @@
       @include flex(0 0 auto);
       padding-left: 0.75rem;
       padding-right: 0;
-  
+
       i {
         margin-top: 0.5rem;
         font-size: 1.35rem;
@@ -125,7 +125,7 @@
         cursor: default;
       }
     }
-  
+
     // Name Column
     &.name {
       @include flex(1 1 auto);
@@ -137,4 +137,15 @@
       @include flex(0 0 auto);
     }
   }
+}
+
+.dragDropStyling {
+    border-style: dotted;
+    border-color: gray;
+    background-color: #d3d3d37a;
+    padding-bottom: 20px;
+    padding-top: 20px;
+}
+.fileInfo {
+    font-size: 10pt;
 }

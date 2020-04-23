@@ -1,0 +1,116 @@
+@import "~assets/styles/base/base.scss";
+
+.row {
+  padding-left: 1rem;
+}
+
+.form-group {
+  padding-right: 1rem;
+}
+
+.understandText {
+  font-size: 0.8rem !important;
+}
+
+.modal-dialog {
+  .progress-new {
+    position: absolute;
+    top: 40%;
+    left: 25%;
+    width: 50%;
+  }
+}
+
+.modal-content {
+  h4, h5 {
+    font-weight: 600;
+  }
+
+  h5 {
+    margin-bottom: 0.5rem;
+  }
+}
+
+.modal-footer {
+  .btn {
+    min-width: 6rem;
+    text-transform: uppercase;
+    font-size: 0.875rem;
+    font-weight: 700;
+  }
+}
+
+.contact-info {
+  margin: 0;
+  padding: 0;
+  list-style-type: none;
+}
+
+.contact-info__name {
+  font-weight: 600;
+}
+
+.confirm-check {
+  margin-top: 1rem;
+  margin-bottom: 0;
+
+  label {
+    font-weight: 600;
+  }
+}
+
+.step-desc {
+  margin-bottom: 1.5rem;
+}
+
+.progress-content {
+  text-align: center;
+
+  h4 {
+    margin-bottom: 1rem;
+  }
+}
+
+.progress-content__msg {
+  margin-bottom: 1rem;
+}
+
+.thank-you-content {
+  text-align: center;
+
+  .modal-header {
+    padding-bottom: 0;
+    border: none;
+  }
+
+  .modal-body {
+    padding-top: 0;
+    padding-bottom: 3rem;
+  }
+
+  h4 {
+    margin-top: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  p {
+    margin-bottom: 1.75em;
+  }
+
+  .btn {
+    font-size: 0.875rem;
+    font-weight: 700;
+  }
+}
+
+.thank-you-icon {
+  display: inline-block;
+  width: 96px;
+  height: 96px;
+  border: 6px solid #007bff;
+  border-radius: 48px;
+  background-image: url('/assets/images/baseline-check-24px.svg');
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-size: 72px;
+}

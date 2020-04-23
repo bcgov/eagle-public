@@ -1,0 +1,292 @@
+<!-- only show when submitting larger submissions -->
+<div class="modal-content progress-content" *ngIf="submitting && (totalSize > 100000)">
+  <div class="modal-body">
+    <h4 class="modal-title">Submitting your comment...</h4>
+    <mat-progress-bar color="primary" mode="buffer" [value]="progressValue" [bufferValue]="progressBufferValue"></mat-progress-bar>
+  </div>
+</div>
+
+<!-- FIRST PAGE -->
+<form #preCommentForm="ngForm">
+  <div class="modal-content" *ngIf="this.currentPage === 1">
+    <div class="modal-header">
+      <h4 class="modal-title">Submit a Comment</h4>
+      <button class="btn btn-icon close-btn gtm-submit-comment_cancel-pg1" type="button" aria-label="Close" (click)="activeModal.dismiss('dismissed page1')">
+        <i class="material-icons">
+          close
+        </i>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <section>
+        <h2>How it Works</h2>
+        <p>All accepted comments submitted to the Environmental Assessment Office (EAO) will be published online within seven days of receipt. Comments are not accepted if - in EAO’s view - they are profane, abusive or do not relate to the matter being consulted upon as stated in our  <a href="https://www2.gov.bc.ca/assets/gov/environment/natural-resource-stewardship/environmental-assessments/commenting-on-projects/public_comment_policy_v10.pdf" target="_blank">Public Comment Policy [PDF]</a>.</p>
+        <p>EAO forwards all accepted comments to the project proponent so they can be considered during the project's environmental assessment.</p>
+        <p><strong>EAO requires that you provide your city/town</strong> when making a comment. In order to have your name displayed with your comment, you must select the 'Make my Name visible to public' option. All hyperlinks in comments will be converted to plain text. All attachments must be no larger than 10MB and must be a <strong>.png, .pdf, .gif, .jpg, .jpeg, .doc, .docx, .xls, .xlst, .ppt, .rtf, .pptx, .txt</strong> or <strong>.bmp</strong> file.</p>
+      </section>
+      <section class="m-b-0">
+        <h2>Collection Notice</h2>
+        <p>Your personal information is collected by the Environmental Assessment Agency for the purpose of commenting on the <em>{{project.name}} Project</em> under the authority of s.26(c) of the <a href="http://www.bclaws.ca/Recon/document/ID/freeside/96165_00" target="_blank">Freedom of Information and Protection of Privacy Act</a>. In submitting your comment, you consent to your comment being published online and shared with the proponent. This consent is valid from this date forward and may be revoked by contacting the EAO representative below. Should you have any questions about this collection please contact:</p>
+        <p class="m-b-0">Director, Digital Services<br>Environmental Assessment Office<br>836 Yates Street, Victoria, BC<br><a href="mailto: epicsupport.eao@gov.bc.ca">epicsupport.eao@gov.bc.ca</a><br>(250) 356-7441
+      </section>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-primary" (click)="p1_next()">Next</button>
+    </div>
+  </div>
+</form>
+
+<!-- Interested in CAC Form-->
+<form #interestedForm="ngForm">
+  <div class="modal-content" *ngIf="this.currentPage === 2">
+  <div class="modal-header">
+    <h4 class="modal-title">Community Advisory Committee</h4>
+    <button class="btn btn-icon close-btn gtm-submit-comment_cancel-pg1" type="button" aria-label="Close" (click)="activeModal.dismiss('dismissed page1')">
+      <i class="material-icons">
+        close
+      </i>
+    </button>
+  </div>
+
+  <div class="modal-body">
+    <section>
+      <h3>What is a Community Advisory Committee?</h3>
+      <p>The Community Advisory Committee is a way for interested members of the public to actively participate in and stay informed about an environmental assessment by:</p>
+        <ul>
+          <li>learning more about a proposed project;</li>
+          <li>staying up to date on the progress of the environmental assessment; and</li>
+          <li>being informed of opportunities to provide their input and advice during the public comment periods and other engagement activities.</li>
+        </ul>
+      <p>Feedback from Community Advisory Committee members contributes to a better understanding of the potential effects of the proposed project on the community. The Environmental Assessment Office forms and operates Community Advisory Committees digitally through EPIC.</p>
+    </section>
+    <section class="m-b-0">
+      <h3>What can I expect as a Community Advisory Committee Member?</h3>
+      <p>The Environmental Assessment Office will provide subscribed Community Advisory Committee members information on the environmental assessment process and the proposed project, including notifications of process milestones, when and where key documents are posted, information on public comment periods and any other engagement opportunities. Members will be invited to provide their input through the public comment periods held throughout the environmental assessment and, depending on the overall interest of Community Advisory Committee members, the Environmental Assessment Office may directly seek the advice of Community Advisory Committee members and establish other engagement opportunities. See the <strong>Community Advisory Committee Guideline</strong> and the <strong>Community Advisory Committee Terms of Reference</strong> for further information.</p>
+    </section>
+  </div>
+  <div class="modal-footer">
+      <button class="btn btn-light" type="button" (click)="p2_back()">Back</button>
+      <button class="btn btn-light" type="button" (click)="p2_next()">No Thanks</button>
+      <button type="button" class="btn btn-primary" (click)="p2_becomeAMember()">Become a Member</button>
+  </div>
+</div>
+</form>
+
+<!-- Contact Information Form-->
+<form #cacSignUpForm="ngForm">
+<div class="modal-content" *ngIf="this.currentPage === 3">
+  <div class="modal-header">
+    <h4 class="modal-title">Community Advisory Committee</h4>
+    <button class="btn btn-icon close-btn gtm-submit-comment-cancel-pg2" type="button" aria-label="Close" (click)="activeModal.dismiss('dismissed page2')">
+      <i class="material-icons">
+        close
+      </i>
+    </button>
+  </div>
+  <div class="modal-body">
+    <fieldset>
+        <h5 class="modal-title">Member Sign-up</h5>
+
+        <div class="form-group row">
+          <div class="form-group">
+            <label class="control-label">Full Name *</label>
+            <div class="form-control-container">
+              <input required class="form-control" type="text" name="nameInput" id="nameInput" [(ngModel)]="nameInput" autofocus />
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="control-label">Location</label>
+            <div class="form-control-container">
+              <input class="form-control" type="text" name="caclocationInput" id="caclocationInput" [(ngModel)]="caclocationInput" autofocus />
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group row">
+          <div class="form-group">
+            <label class="control-label">Email Address *</label>
+            <div class="form-control-container">
+              <input required email class="form-control" type="text" name="emailInput" id="emailInput" [(ngModel)]="emailInput" autofocus />
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="control-label">Confirm Email Address *</label>
+            <div class="form-control-container">
+              <input required email class="form-control" type="text" name="emailConfirmInput" id="emailConfirmInput" [(ngModel)]="emailConfirmInput" autofocus />
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="control-label">Describe your interest in the project</label>
+          <div>
+            <p class="font-italic understandText">Please select all that apply. You may include additional details or information regarding your interest in the text box below. This information is for the EAO to better understand the membership of the committee, any information you provide here will not be considered as input into the assessment of the project. Please submit your comments on the proposed project through the public comment periods throughout the environmental assessment.</p>
+          </div>
+
+          <!-- I live near -->
+          <div class="form-group row">
+              <label class="control-label"><input class="mr-1" name="liveNear" type="checkbox" [(ngModel)]="liveNear"/>I live near or use the project area</label>
+              <input [hidden]="!liveNear" class="form-control col-12" type="text" name="liveNearInput" id="liveNearInput" [(ngModel)]="liveNearInput" autofocus />
+          </div>
+          <!-- I am a member of -->
+          <div class="form-group row">
+            <label class="control-label"><input class="mr-1" name="memberOf" type="checkbox" [(ngModel)]="memberOf"/>I am a member of a stakeholder organization</label>
+            <input [hidden]="!memberOf" class="form-control col-12" type="text" name="memberOfInput" id="memberOfInput" [(ngModel)]="memberOfInput" autofocus />
+          </div>
+          <!-- I have knowledge of -->
+          <div class="form-group row">
+            <label class="control-label"><input class="mr-1" name="knowledgeOf" type="checkbox" [(ngModel)]="knowledgeOf"/>I have knowledge of issues relevant to the potential project</label>
+            <input [hidden]="!knowledgeOf" class="form-control col-12" type="text" name="knowledgeOfInput" id="knowledgeOfInput" [(ngModel)]="knowledgeOfInput" autofocus />
+          </div>
+          <!-- Additional Notes -->
+          <div class="form-group row">
+            <label class="control-label">Additional Notes:</label>
+            <textarea class="form-control" rows="4" name="additionalNotesInput" id="additionalNotesInput" [(ngModel)]="additionalNotesInput" autofocus></textarea>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="control-label understandText">I understand that...</label>
+          <p class="font-italic understandText">Your personal information is collected by the Environmental Assessment Office for the purpose of sending you updates on {{project.name}} project under the authority of s.26(c) of the Freedom of Information and Protection of Privacy Act. In submitting your comment, you consent to receiving updates to the email address you have provided. This consent is valid from this date forward and may be revoked by contacting the EAO representative below. Should you have any questions about this collection, or wish to revoke your consent please contact:</p>
+            <ul class="font-italic understandText m-0">Director, Digital Services</ul>
+            <ul class="font-italic understandText m-0">Environmental Assessment Office</ul>
+            <ul class="font-italic understandText m-0">836 Yates Street, Victoria, BC</ul>
+            <ul class="font-italic understandText m-0">epicsupport.eao@gov.bc.ca</ul>
+            <ul class="font-italic understandText m-0 mb-2">(250) 356-7441</ul>
+          <div class="form-control-container">
+            <label class="control-label" >
+            <input required type="checkbox" aria-label="Checkbox for row item" name="acknowledged" [(ngModel)]='acknowledged'>
+              By checking this box, I acklowedge that I understand the above text.
+            </label>
+          </div>
+          <div class="form-control-container">
+            <label class="control-label" >
+              <input required type="checkbox" aria-label="Checkbox for row item" name="termsOfReference" [(ngModel)]='termsOfReference'>
+              By checking this box, I acknowledge that I have read, understood, and will abide by the <a href="https://projects.eao.gov.bc.ca/">Community Advisory Committee Terms of Referece</a>
+            </label>
+          </div>
+        </div>
+    </fieldset>
+  </div>
+  <div class="modal-footer">
+    <!-- enable submission when required fields are entered and when either a file or comment is entered -->
+      <button class="btn btn-light" type="button" (click)="p3_back()">Back</button>
+      <button class="btn btn-primary" type="button" (click)="p3_next()" [disabled]="!cacSignUpForm.form.valid || (emailInput!== emailConfirmInput)">Complete Submission</button>
+  </div>
+</div>
+</form>
+
+<!-- Success -->
+<div class="modal-content thank-you-content" *ngIf="this.currentPage === 4">
+<div class="modal-header">
+  <button class="btn btn-icon close-btn gtm-submit-comment-cancel-pg3" type="button" aria-label="Close" (click)="activeModal.dismiss('dismissed page3')">
+    <i class="material-icons">
+      close
+    </i>
+  </button>
+</div>
+<div class="modal-body">
+  <div class="thank-you-icon"></div>
+  <h4>Thank you for becoming a Community Advisory Committee Member</h4>
+  <p>You are now a member of this group!</p>
+  <p>We will be communicating with members of the Community Advisory Committee over the assessment stages of this project.  We will send out emails to members of this committee at key points through the assessment.</p>
+  <p>Please add <a href="mailto:{{project.cacEmail}}">{{project.cacEmail}}</a> to your contacts to ensure that our emails go to your inbox and are not filtered to your Spam folder.</p>
+  <button class="btn btn-primary gtm-submit-comment-done" type="button" (click)="p4_next()">Continue to Commenting</button>
+</div>
+</div>
+
+<!-- Contact Information Form-->
+<form #commentForm1="ngForm">
+  <div class="modal-content" *ngIf="this.currentPage === 5">
+    <div class="modal-header">
+      <h4 class="modal-title">Submit a Comment</h4>
+      <button class="btn btn-icon close-btn gtm-submit-comment-cancel-pg2" type="button" aria-label="Close" (click)="activeModal.dismiss('dismissed page2')">
+        <i class="material-icons">
+          close
+        </i>
+      </button>
+    </div>
+    <div class="modal-body">
+      <fieldset>
+          <div class="form-group">
+            <label class="control-label">Name *</label>
+            <div class="form-control-container">
+              <input required class="form-control" type="text" name="nameInput" id="nameInput" [(ngModel)]="contactName" autofocus [disabled]="!makePublic"/>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="control-label" >
+              <input type="checkbox" aria-label="Checkbox for row item" name="anonymous" [(ngModel)]='makePublic' (ngModelChange)="publicChecked()">
+              Please make my name visible to the public.
+            </label>
+            <div >
+              All comments are submitted anonymously by default. Checking this option will display your Name on the public site.
+            </div>
+          </div>
+          <div class="form-group" *ngIf="project.projectCAC">
+            <label class="control-label" >
+              <input type="checkbox" aria-label="Checkbox for row item" name="submittedCAC" [(ngModel)]='submittedCAC'>
+              I'm a Community Advisory Committee Member.
+            </label>
+            <div class="btn btn-link mb-1" (click)="learnMore()">
+              <span class="float-right">Learn More</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="control-label" >Location *</label>
+            <input required class="form-control" type="text" name="locationInput" placeholder="IE: City, Province, etc."
+              id="locationInput" [(ngModel)]="locationInput" autofocus />
+          </div>
+          <div class="form-group">
+            <label class="control-label" >Your Comment *</label>
+            <textarea class="form-control" rows="8" name="commentInput" id="commentInput" [(ngModel)]="commentInput" autofocus></textarea>
+          </div>
+
+          <app-file-upload [maxFiles]="15" [maxSize]="10" [showInfo]="false" [showList]="false" [files]="commentFiles"
+                           (filesChange)="addFiles($event); commentFiles = []"></app-file-upload>
+          <ul class="doc-list mb-3" *ngIf="documents && documents.length > 0">
+            <li *ngFor="let doc of documents">
+              <span class="cell icon">
+                <i class="material-icons">insert_drive_file</i>
+              </span>
+              <span class="cell name" [title]="doc.displayName || ''">
+                <span class="cell__txt-content">{{doc.internalOriginalName}}</span>
+              </span>
+              <span class="cell actions">
+                <button class="btn btn-icon" type="button" title="Remove this file"
+                  (click)="deleteFile(doc, documents)">
+                  <i class="material-icons">delete</i>
+                </button>
+              </span>
+            </li>
+          </ul>
+          <div *ngIf="documents && documents.length === 0">
+            <p>No attached files.</p>
+          </div>
+      </fieldset>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-light" type="button" (click)="p5_back()">Back</button>
+      <!-- enable submission when required fields are entered and when either a file or comment is entered -->
+      <button class="btn btn-primary" type="button" (click)="p5_next()" [disabled]="!commentForm1.form.valid || (!commentInput && (documents && documents.length === 0))">Submit</button>
+    </div>
+  </div>
+</form>
+
+<!-- Success -->
+<div class="modal-content thank-you-content" *ngIf="this.currentPage === 6">
+  <div class="modal-header">
+    <button class="btn btn-icon close-btn gtm-submit-comment-cancel-pg3" type="button" aria-label="Close" (click)="activeModal.dismiss('dismissed page3')">
+      <i class="material-icons">
+        close
+      </i>
+    </button>
+  </div>
+  <div class="modal-body">
+    <div class="thank-you-icon"></div>
+    <h4>Your comment has been submitted!</h4>
+    <p>Thank you for participating in the public comment period for the {{project.name}} Project.</p>
+    <button class="btn btn-primary gtm-submit-comment-done" type="button" (click)="activeModal.close('closed page4')">Back to Project Page</button>
+  </div>
+</div>

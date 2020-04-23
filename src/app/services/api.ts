@@ -1,15 +1,12 @@
 import { Injectable } from '@angular/core';
-import { ResponseContentType } from '@angular/http';
 import { HttpClient, HttpResponse } from '@angular/common/http';
 import { Observable } from 'rxjs/Observable';
-import { ErrorObservable } from 'rxjs/observable/ErrorObservable';
 import { throwError } from 'rxjs';
 import { map } from 'rxjs/operators';
 import * as _ from 'lodash';
 
 import { Project } from 'app/models/project';
 import { Feature } from 'app/models/feature';
-import { News } from 'app/models/news';
 import { Comment } from 'app/models/comment';
 import { CommentPeriod } from 'app/models/commentperiod';
 import { Document } from 'app/models/document';
@@ -17,14 +14,7 @@ import { SearchResults } from 'app/models/search';
 import { Org } from 'app/models/organization';
 import { Decision } from 'app/models/decision';
 import { User } from 'app/models/user';
-
-const encode = encodeURIComponent;
-window['encodeURIComponent'] = (component: string) => {
-  return encode(component).replace(/[!'()*]/g, (c) => {
-    // Also encode !, ', (, ), and *
-    return '%' + c.charCodeAt(0).toString(16);
-  });
-};
+import { Utils } from 'app/shared/utils/utils';
 
 @Injectable()
 export class ApiService {
@@ -32,53 +22,26 @@ export class ApiService {
   public isMS: boolean; // IE, Edge, etc
   public apiPath: string;
   public adminUrl: string;
-  public env: 'local' | 'dev' | 'test' | 'prod';
+  public env: string;  // Could be anything per Openshift settings but generally is one of 'local' | 'dev' | 'test' | 'prod' | 'demo'
+
 
   constructor(
-    private http: HttpClient
+    private http: HttpClient,
+    private utils: Utils
   ) {
     // const currentUser = JSON.parse(window.localStorage.getItem('currentUser'));
     // this.token = currentUser && currentUser.token;
     this.isMS = window.navigator.msSaveOrOpenBlob ? true : false;
-    const { hostname } = window.location;
-    switch (hostname) {
-      case 'localhost':
-        // Local
-        this.apiPath = 'http://localhost:3000/api/public';
-        this.adminUrl = 'http://localhost:4200';
-        this.env = 'local';
-        break;
 
-        case 'eagle-dev.pathfinder.gov.bc.ca':
-          // prod
-          this.apiPath = 'https://eagle-dev.pathfinder.gov.bc.ca/api/public';
-          this.adminUrl = 'https://eagle-dev.pathfinder.gov.bc.ca/admin/';
-          this.env = 'dev';
-          break;
+    // The following items are loaded by a file that is only present on cluster builds.
+    // Locally, this will be empty and local defaults will be used.
+    const remote_api_path = window.localStorage.getItem('from_public_server--remote_api_path');
+    const remote_admin_path = window.localStorage.getItem('from_public_server--remote_admin_path');
+    const deployment_env = window.localStorage.getItem('from_public_server--deployment_env');
 
-        case 'www.test.projects.eao.gov.bc.ca':
-        case 'eagle-test.pathfinder.gov.bc.ca':
-        case 'test.projects.eao.gov.bc.ca':
-            // Test
-          this.apiPath = 'https://eagle-test.pathfinder.gov.bc.ca/api/public';
-          this.adminUrl = 'https://test.projects.eao.gov.bc.ca/admin/';
-          this.env = 'test';
-          break;
-
-        case 'www.projects.eao.gov.bc.ca':
-        case 'projects.eao.gov.bc.ca':
-          // prod
-          this.apiPath = 'https://eagle-prod.pathfinder.gov.bc.ca/api/public';
-          this.adminUrl = 'https://projects.eao.gov.bc.ca/admin/';
-          this.env = 'prod';
-          break;
-
-      default:
-        // Prod
-        this.apiPath = 'https://eagle-test.pathfinder.gov.bc.ca/api/public';
-        this.adminUrl = 'https://test.projects.eao.gov.bc.ca/admin/';
-        this.env = 'test';
-    };
+    this.apiPath = (_.isEmpty(remote_api_path)) ? 'http://localhost:3000/api/public' : remote_api_path;
+    this.adminUrl = (_.isEmpty(remote_admin_path)) ? 'http://localhost:4200/admin' : remote_admin_path;
+    this.env = (_.isEmpty(deployment_env)) ? 'local' : deployment_env;
   }
 
   handleError(error: any): Observable<any> {
@@ -92,10 +55,17 @@ export class ApiService {
   }
 
   public async downloadDocument(document: Document): Promise<void> {
-    console.log(document);
-    const blob = await this.downloadResource(document._id);
+    let blob;
+    try {
+      blob = await this.downloadResource(document._id)
+    } catch (e) {
+      throw new Error(e)
+    }
+    if (!blob) {
+      throw new Error()
+    }
     let filename = document.displayName;
-    filename = encode(filename).replace(/\\/g, '_').replace(/\//g, '_');
+    filename = this.utils.encodeString(filename, false)
     if (this.isMS) {
       window.navigator.msSaveBlob(blob, filename);
     } else {
@@ -121,13 +91,13 @@ export class ApiService {
     console.log(document);
     let safeName = '';
     try {
-      safeName = encode(filename).replace(/\(/g, '%28').replace(/\)/g, '%29').replace(/\\/g, '_').replace(/\//g, '_').replace(/\%2F/g, '_');
+      safeName = this.utils.encodeString(filename, true);
     } catch (e) {
       // fall through
       console.log('error', e);
     }
     console.log('safeName', safeName);
-    window.open('/api/document/' + document._id + '/fetch/' + safeName, '_blank');
+    window.open('/api/public/document/' + document._id + '/download/' + safeName, '_blank');
   }
 
   private downloadResource(id: string): Promise<Blob> {
@@ -143,10 +113,11 @@ export class ApiService {
   //
   // Searching
   //
-  searchKeywords(keys: string, dataset: string, fields: any[], pageNum: number, pageSize: number, sortBy: string = null, queryModifier: object = {}, populate = false, secondarySort: string = null, filter: object = {}): Observable<SearchResults[]> {
+  searchKeywords(keys: string, dataset: string, fields: any[], pageNum: number, pageSize: number, projectLegislation: string = null, sortBy: string = null, queryModifier: object = {}, populate = false, secondarySort: string = null, filter: object = {}): Observable<SearchResults[]> {
+    projectLegislation = (projectLegislation === '') ? 'default' : projectLegislation;
     let queryString = `search?dataset=${dataset}`;
     if (fields && fields.length > 0) {
-      fields.map(item => {
+      fields.forEach(item => {
         queryString += `&${item.name}=${item.value}`;
       });
     }
@@ -155,25 +126,35 @@ export class ApiService {
     }
     if (pageNum !== null) { queryString += `&pageNum=${pageNum - 1}`; }
     if (pageSize !== null) { queryString += `&pageSize=${pageSize}`; }
+    if (projectLegislation !== '') { queryString += `&projectLegislation=${projectLegislation}`; }
     if (sortBy !== null) { queryString += `&sortBy=${sortBy}`; }
     if (secondarySort !== null) { queryString += `&sortBy=${secondarySort}`; }
     if (populate !== null) { queryString += `&populate=${populate}`; }
     if (queryModifier !== {}) {
-      Object.keys(queryModifier).map(key => {
-        queryModifier[key].split(',').map(item => {
+      Object.keys(queryModifier).forEach(key => {
+        queryModifier[key].split(',').forEach(item => {
           queryString += `&and[${key}]=${item}`;
         });
       });
     }
     if (filter !== {}) {
+      let safeItem;
       Object.keys(filter).map(key => {
         filter[key].split(',').map(item => {
-          queryString += `&or[${key}]=${item}`;
+          if (item.includes('&')) {
+            safeItem = this.utils.encodeString(item, true);
+          } else {
+            safeItem = item;
+          }
+          queryString += `&and[${key}]=${safeItem}`;
         });
       });
     }
     queryString += `&fields=${this.buildValues(fields)}`;
     return this.http.get<SearchResults[]>(`${this.apiPath}/${queryString}`, {});
+    // if (dataset === 'Project') {
+    //   searchResults = searchResults.currentProjectData
+    // }
   }
 
   //
@@ -190,10 +171,50 @@ export class ApiService {
       );
   }
 
-  getProjects(pageNum: number, pageSize: number, regions: string[], cpStatuses: string[], appStatuses: string[], applicant: string,
-    clFile: string, dispId: string, purpose: string): Observable<Project[]> {
+  //
+  // Using Search Service Instead
+  //
+  // getProjects(pageNum: number, pageSize: number, sortBy: string, populate: Boolean = true):
+
+   //
+  // Using Search Service Instead
+  //
+  // getProject(id: string, cpStart: string, cpEnd: string): Observable<Project[]>
+
+  getProjectPins(id: string, pageNum: number, pageSize: number, sortBy: any): Observable<Org> {
+    let queryString = `project/${id}/pin`;
+    if (pageNum !== null) { queryString += `?pageNum=${pageNum - 1}`; }
+    if (pageSize !== null) { queryString += `&pageSize=${pageSize}`; }
+    if (sortBy !== '' && sortBy !== null) { queryString += `&sortBy=${sortBy}`; }
+    return this.http.get<any>(`${this.apiPath}/${queryString}`, {});
+  }
+
+  // CAC
+  cacSignUp(project: Project, meta: any) {
+    // We are just looking for a 200 OK
+    return this.http.post<any>(`${this.apiPath}/project/${project._id}/cacSignUp`, meta, {});
+  }
+
+  cacRemoveMember(projectId: String, meta: any) {
+    // We are just looking for a 200 OK
+    return this.http.put<any>(`${this.apiPath}/project/${projectId}/cacRemoveMember`, meta, {});
+  }
+
+  // Organizations
+
+  getOrgsByCompanyType(type: string): Observable<Org[]> {
     const fields = [
-      'agency',
+      'name'
+    ];
+
+    const queryString = `organization?companyType=${type}&sortBy=+name&fields=${this.buildValues(fields)}`;
+    return this.http.get<Org[]>(`${this.apiPath}/${queryString}`, {});
+  }
+
+  getProjects(pageNum: number, pageSize: number, regions: string[], cpStatuses: string[], appStatuses: string[], applicant: string,	  //
+    clFile: string, dispId: string, purpose: string): Observable<Project[]> {	  // Using Search Service Instead
+    const fields = [	  //
+      'agency',	  // getProjects(pageNum: number, pageSize: number, sortBy: string, populate: Boolean = true):
       'areaHectares',
       'businessUnit',
       'centroid',
@@ -208,11 +229,16 @@ export class ApiService {
       'name',
       'publishDate',
       'purpose',
+      'sector',
       'status',
       'subpurpose',
       'tantalisID',
       'tenureStage',
-      'type'
+      'type',
+      'legislation',
+      'featuredDocuments',
+      'projectCAC',
+      'cacEmail'
     ];
 
     let queryString = 'project?';
@@ -230,10 +256,10 @@ export class ApiService {
     return this.http.get<Project[]>(`${this.apiPath}/${queryString}`, {});
   }
 
-  getProject(id: string, cpStart: string, cpEnd: string): Observable<Project[]> {
-    const fields = [
-      'CEAAInvolvement',
-      'CELead',
+  getProject(id: string, cpStart: string, cpEnd: string): Observable<Project[]> {	   //
+    const fields = [	  // Using Search Service Instead
+      'CEAAInvolvement',	  //
+      'CELead',	  // getProject(id: string, cpStart: string, cpEnd: string): Observable<Project[]>
       'CELeadEmail',
       'CELeadPhone',
       'centroid',
@@ -241,15 +267,18 @@ export class ApiService {
       'eacDecision',
       'location',
       'name',
+      'projectLeadId',
       'projectLead',
       'projectLeadEmail',
       'projectLeadPhone',
       'proponent',
       'region',
+      'responsibleEPDId',
       'responsibleEPD',
       'responsibleEPDEmail',
       'responsibleEPDPhone',
       'type',
+      'legislation',
       'addedBy',
       'build',
       'CEAALink',
@@ -273,11 +302,16 @@ export class ApiService {
       'sector',
       'shortName',
       'status',
+      'legislation',
       'substitution',
+      'featuredDocuments',
       'updatedBy',
       'read',
       'write',
-      'delete'
+      'delete',
+      'featuredDocuments',
+      'projectCAC',
+      'cacEmail'
     ];
     let queryString = `project/${id}?populate=true`;
     if (cpStart !== null) { queryString += `&cpStart[since]=${cpStart}`; }
@@ -285,26 +319,6 @@ export class ApiService {
     queryString += `&fields=${this.buildValues(fields)}`;
     return this.http.get<Project[]>(`${this.apiPath}/${queryString}`, {});
   }
-
-  getProjectPins(id: string, pageNum: number, pageSize: number, sortBy: any): Observable<Org> {
-    let queryString = `project/${id}/pin`;
-    if (pageNum !== null) { queryString += `?pageNum=${pageNum - 1}`; }
-    if (pageSize !== null) { queryString += `&pageSize=${pageSize}`; }
-    if (sortBy !== '' && sortBy !== null) { queryString += `&sortBy=${sortBy}`; }
-    return this.http.get<any>(`${this.apiPath}/${queryString}`, {});
-  }
-
-  // Organizations
-
-  getOrgsByCompanyType(type: string): Observable<Org[]> {
-    const fields = [
-      'name'
-    ];
-
-    const queryString = `organization?companyType=${type}&sortBy=+name&fields=${this.buildValues(fields)}`;
-    return this.http.get<Org[]>(`${this.apiPath}/${queryString}`, {});
-  }
-
   // TODO: delete these "Applications" calls, cruft.
   //
   // Applications
@@ -505,7 +519,7 @@ export class ApiService {
     if (pageNum !== null) { queryString += `pageNum=${pageNum}&`; }
     if (pageSize !== null) { queryString += `pageSize=${pageSize}&`; }
     if (getCount !== null) { queryString += `count=${getCount}&`; }
-    return this.http.get<Object>(`${this.apiPath}/${queryString}`, {observe: 'response'});
+    return this.http.get<Object>(`${this.apiPath}/${queryString}`, { observe: 'response' });
   }
 
   getComment(id: string): Observable<any> {
@@ -544,7 +558,8 @@ export class ApiService {
       'documentFileName',
       'displayName',
       'internalURL',
-      'internalMime'
+      'internalMime',
+      'isFeatured'
     ];
     const queryString = 'document?_application=' + appId + '&fields=' + this.buildValues(fields);
     return this.http.get<Document[]>(`${this.apiPath}/${queryString}`, {});
@@ -556,7 +571,8 @@ export class ApiService {
       'documentFileName',
       'displayName',
       'internalURL',
-      'internalMime'
+      'internalMime',
+      'isFeatured'
     ];
     const queryString = 'document?_comment=' + commentId + '&fields=' + this.buildValues(fields);
     return this.http.get<Document[]>(`${this.apiPath}/${queryString}`, {});
@@ -568,7 +584,8 @@ export class ApiService {
       'documentFileName',
       'displayName',
       'internalURL',
-      'internalMime'
+      'internalMime',
+      'isFeatured'
     ];
     const queryString = 'document?_decision=' + decisionId + '&fields=' + this.buildValues(fields);
     return this.http.get<Document[]>(`${this.apiPath}/${queryString}`, {});
@@ -602,7 +619,8 @@ export class ApiService {
       'documentAuthorType',
       'milestone',
       'description',
-      'isPublished'
+      'isPublished',
+      'isFeatured'
     ];
     const queryString = `document?docIds=${this.buildValues(ids)}&fields=${this.buildValues(fields)}`;
     return this.http.get<Document[]>(`${this.apiPath}/${queryString}`, {});

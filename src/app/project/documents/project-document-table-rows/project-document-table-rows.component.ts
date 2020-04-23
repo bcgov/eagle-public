@@ -3,15 +3,7 @@ import { Subject } from 'rxjs';
 import { TableComponent } from 'app/shared/components/table-template/table.component';
 import { TableObject } from 'app/shared/components/table-template/table-object';
 import { Router, ActivatedRoute } from '@angular/router';
-import { ApiService } from 'app/services/api';
-
-const encode = encodeURIComponent;
-window['encodeURIComponent'] = (component: string) => {
-  return encode(component).replace(/[!'()*]/g, (c) => {
-    // Also encode !, ', (, ), and *
-    return '%' + c.charCodeAt(0).toString(16);
-  });
-};
+import { Utils } from 'app/shared/utils/utils';
 
 @Component({
   selector: 'tbody[app-document-table-rows]',
@@ -26,17 +18,28 @@ export class DocumentTableRowsComponent implements OnInit, OnDestroy, TableCompo
 
   public documents: any;
   public paginationData: any;
+  public showFeatured = true;
   private lists: any[] = [];
+
+  public currentUrl: String = '';
+
   constructor(
     private _changeDetectionRef: ChangeDetectorRef,
     private route: ActivatedRoute,
-    private api: ApiService,
-    private router: Router
-  ) { }
+    private router: Router,
+    private utils: Utils
+  ) {
+    let currRoute = this.router.url.split(';')[0];
+    this.currentUrl = currRoute.substring(currRoute.lastIndexOf('/') + 1);
+   }
 
   ngOnInit() {
     this.documents = this.data.data;
     this.paginationData = this.data.paginationData;
+    if (this.data.extraData) {
+      this.showFeatured = this.data.extraData.showFeatured;
+    }
+
     this.route.data
       .takeUntil(this.ngUnsubscribe)
       .subscribe((res: any) => {
@@ -82,11 +85,11 @@ export class DocumentTableRowsComponent implements OnInit, OnDestroy, TableCompo
     let filename = item.documentFileName;
     let safeName = filename;
     try {
-      safeName = encode(filename).replace(/\(/g, '%28').replace(/\)/g, '%29').replace(/\\/g, '_').replace(/\//g, '_').replace(/\%2F/g, '_');
+      safeName = this.utils.encodeString(filename, true)
     } catch (e) {
       console.log('error:', e);
     }
-    window.open('/api/document/' + item._id + '/fetch/' + safeName, '_blank');
+    window.open('/api/public/document/' + item._id + '/download/' + safeName, '_blank');
   }
   ngOnDestroy() {
     this.ngUnsubscribe.next();

@@ -1,0 +1,39 @@
+<div class="side-banner {{ !sidebarOpen && 'closed' }}">
+    <div class="hero-banner__content">
+        <div>
+            <h1>{{project?.name || '-'}}</h1>
+        </div>
+        <div class="basic-info">
+            <div class="info-block">
+                <label>Environmental Assessment Decision</label>
+                <p><span class="ea-decision">{{project?.eacDecision?.name || "-"}}</span></p>
+            </div>
+            <div class="info-block">
+                <label>Legislation</label>
+                <a target=”_blank” [href]="this.legislationLink">
+                    <p class="value hyperlink">{{project?.legislation || "-" }}</p>
+                </a>
+            </div>
+            <hr>
+            <div class="info-block">
+                <label>Region</label>
+                <p class="value">{{project?.region || "-" }}</p>
+            </div>
+            <div class="info-block">
+                <label>Location</label>
+                <p class="value">{{project?.location || "-" }}</p>
+            </div>
+            <div class="map-wrapper map-item">
+                <div class="map-item__no-results" *ngIf="!project.centroid || project.centroid.length != 2">
+                    <span class="no-results-msg">No map available</span>
+                </div>
+                <div class="map-container">
+                    <div class="map" id="map"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <button class="btn icon-btn" (click)="toggleSidebar()">
+        <i class="material-icons icon">{{ sidebarOpen ? 'keyboard_arrow_left' : 'keyboard_arrow_right' }}</i>
+    </button>  
+</div>

@@ -1,211 +1,80 @@
-<div class="app-filters__container d-flex flex-column" name="Filters to limit displayed EAO Projects">
+<div class="app-filters__container d-flex flex-column">
   <div class="search-container" id="applist-filters">
-    <fieldset class="additional-filters" (click)="$event.stopPropagation()">
-      <div class="form-group typeahead-container">
-        <label for="applicantInput">Search Environmental Assessment Projects</label>
+    <div class="additional-filters">
+      <label class="header-label" for="applicantInput">Search Environmental Assessment Projects</label>
+      <div class="search-box">
         <input type="text" class="form-control gtm-filter-applicant " placeholder="Start Typing A Project Name" id="applicantInput"
         [(ngModel)]="_applicantFilter"
         [ngbTypeahead]="applicantSearch" [focusFirst]="false">
+        <button type="button" class="btn btn-primary" title="Apply Filters" id="applyButton" (click)="applyAllFilters();"
+            [disabled]="loading">
+          <i class="material-icons">search</i>Search
+        </button>
       </div>
-      <button type="button" class="btn btn-primary" title="Apply Filters" id="applyButton" (click)="applyAllFilters();"
-          [disabled]="loading"><i class="material-icons">search</i>Search</button>
-    </fieldset>
+      <div class="toggle-container">
+        <div class="toggle-btn" (click)="toggleFilters()">
+          <span>{{ showFilters ? 'Hide' : 'Show' }} Advanced Filters</span>
+          <i class="material-icons">{{ showFilters ? 'keyboard_arrow_up' : 'keyboard_arrow_down' }}</i>
+        </div>
+      </div>
+      <div class="filters-container" *ngIf="showFilters">
+        <div class="filter-container">
+          <label for="type">
+            Project Type
+          </label>
+          <div class="filter-select">
+            <ng-select
+                id="type"
+                name="type"
+                multiple="true"
+                bindLabel="name"
+                placeholder="Type Project Type"
+                [items]="projectTypes"
+                [closeOnSelect]="false"
+                [(ngModel)]="_typeFilter"
+            >
+            </ng-select>
+          </div>
+        </div>
+        <div class="filter-container">
+          <label for="region">
+            Region
+          </label>
+          <div class="filter-select">
+            <ng-select
+                id="region"
+                name="region"
+                multiple="true"
+                bindLabel="name"
+                placeholder="Type Project Region"
+                [items]="projectRegions"
+                [closeOnSelect]="false"
+                [(ngModel)]="_regionFilter"
+            >
+            </ng-select>
+          </div>
+        </div>
+        <div class="filter-container">
+          <label for="phase">
+            Project Phase
+          </label>
+          <div class="filter-select">
+            <ng-select
+                id="phase"
+                name="phase"
+                multiple="true"
+                bindLabel="name"
+                groupBy="legislation"
+                placeholder="Type Project Phase"
+                [items]="projectPhases"
+                [closeOnSelect]="false"
+                [markFirst]="false"
+                [(ngModel)]="_phaseFilter"
+            >
+            </ng-select>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
-
-<!--   <div class="app-filters__header d-flex justify-content-between">
-    <div class="d-flex align-items-center"> -->
-
-      <!-- Filter Actions Bar -->
-<!--       <div class="app-filters__title" *ngIf="!isFiltersCollapsed">
-        All Filters
-      </div>
-
-      <div class="filter-actions-bar clearfix" *ngIf="isFiltersCollapsed"> -->
-        <!-- Comment Period Dropdown -->
-<!--         <div class="filter-control dropdown float-left" *ngVar="cpStatusCount() as numCpStatus">
-          <button class="btn dropdown-toggle" type="button" [ngClass]="(numCpStatus > 0) ? 'btn-secondary' : 'btn-outline-secondary'" id="cpStatusFilterButton"
-            (click)="isAppStatusCollapsed=true;isCpStatusCollapsed=!isCpStatusCollapsed" [attr.aria-expanded]="!isCpStatusCollapsed"
-            aria-controls="applist-cpstatus-filters" title="Comment Status filters">
-            Commenting ({{numCpStatus}})
-          </button>
-          <div class="dropdown-menu" id="applist-cpstatus-filters" [ngbCollapse]="isCpStatusCollapsed">
-            <div aria-labelledby="cpStatusFilterButton" (click)="$event.stopPropagation()">
-              <div class="form-check" *ngFor="let key of cpStatusKeys">
-                <label class="form-check-label">
-                  <input class="form-check-input gtm-filter-cp-status" type="checkbox" [(ngModel)]="_cpStatusFilters[key]" name="{{key}}">
-                  {{commentPeriodService.getStatusString(key)}}
-                </label>
-              </div>
-            </div>
-            <div class="dropdown-button-bar" *ngVar="cpStatusHasChanges() as hasChanges">
-              <button class="btn btn-light no-default" role="button"
-                (click)="clearCpStatusFilters()"
-                *ngIf="!hasChanges && numCpStatus > 0" [class.disabled]="loading">
-                Clear
-              </button>
-              <button class="btn btn-light no-default" role="button"
-                (click)="cancelCpStatusFilters()"
-                *ngIf="hasChanges || numCpStatus == 0">
-                Cancel
-              </button>
-              <button class="btn btn-primary" type="button"
-                (click)="applyCpStatusFilters();"
-                [disabled]="loading">
-                Apply
-              </button>
-            </div>
-          </div>
-        </div> -->
-
-        <!-- Project Status Dropdown -->
-<!--         <div class="filter-control dropdown float-left" *ngVar="appStatusCount() as numAppStatus">
-          <button class="btn dropdown-toggle" type="button" [ngClass]="(numAppStatus > 0) ? 'btn-secondary' : 'btn-outline-secondary'" id="appStatusFilterButton"
-            (click)="isCpStatusCollapsed=true;isAppStatusCollapsed=!isAppStatusCollapsed" [attr.aria-expanded]="!isAppStatusCollapsed"
-            aria-controls="applist-appstatus-filters" title="Project Status filters">
-            Project Status ({{numAppStatus}})
-          </button>
-          <div class="dropdown-menu" id="applist-appstatus-filters" [ngbCollapse]="isAppStatusCollapsed">
-            <div aria-labelledby="appStatusFilterButton" (click)="$event.stopPropagation()">
-              <div class="form-check" *ngFor="let key of appStatusKeys">
-                <label class="form-check-label">
-                  <input class="form-check-input gtm-filter-app-status" type="checkbox" [(ngModel)]="_appStatusFilters[key]" name="{{key}}">  -->
-                  <!-- {{projectService.getStatusString(key)}} -->
-<!--                 </label>
-              </div>
-              <div class="dropdown-button-bar" *ngVar="appStatusHasChanges() as hasChanges">
-                <button class="btn btn-light no-default" role="button"
-                  (click)="clearAppStatusFilters()"
-                  *ngIf="!hasChanges && numAppStatus > 0"
-                  [class.disabled]="loading">
-                  Clear
-                </button>
-                <button class="btn btn-light no-default" role="button"
-                  (click)="cancelAppStatusFilters()"
-                  *ngIf="hasChanges || numAppStatus == 0">
-                  Cancel
-                </button>
-                <button class="btn btn-primary" type="button"
-                  (click)="applyAppStatusFilters()"
-                  [disabled]="loading">
-                  Apply
-                </button>
-              </div>
-            </div>
-          </div>
-        </div> -->
-
-        <!-- EAO Projects Input -->
-<!--         <div class="clf-input filter-control input-group float-left">
-          <input class="form-control gtm-filter-cl-file" type="number" placeholder="EAO Project # (eg: 1234567)" id="clFileInput3" [(ngModel)]="_clFileFilter"
-            (keydown.arrowup)="$event.preventDefault()" (keydown.arrowdown)="$event.preventDefault()" (mousewheel)="$event.preventDefault()"
-            (keyup.enter)="applyClFileFilter()" (focus)="isCpStatusCollapsed=true;isAppStatusCollapsed=true" title="EAO Project Number" [disabled]="loading">
-          <div class="input-group-btn"> -->
-            <!-- *ngIf="clFileFilterCount() > 0" -->
-<!--             <button type="button" class="btn btn-primary gtm-apply-filters" (click)="applyClFileFilter()" [disabled]="loading">Apply</button>
-          </div>
-        </div>
-      </div>
-
-    </div>
- -->
-    <!-- ACTIONS -->
-<!--     <div class="filter-actions">
-      <button class="btn btn-light no-default" role="button" title="Clear filters"
-        (click)="clearAllFilters();isFiltersCollapsed=true" *ngVar="filterCount() as filtCnt"
-        [class.disabled]="loading">
-        Clear {{filtCnt > 0 ? '(' + filtCnt + ')' : ''}}
-      </button> -->
-      <!-- Remove Inline Block Spacing -->
-<!--       <button class="toggle-filter-btn btn btn-light" role="button" title="Show all filters"
-        *ngIf="isFiltersCollapsed"
-        (click)="isCpStatusCollapsed=true;isAppStatusCollapsed=true;isFiltersCollapsed=false;onShowHideClick()"
-        [attr.aria-expanded]="!isFiltersCollapsed" aria-controls="applist-filters">
-        <i class="material-icons">
-          tune
-        </i>
-      </button> -->
-
-      <!-- Show when filters are open -->
-<!--       <div class="all-filter-actions" *ngIf="!isFiltersCollapsed">
-        <button class="btn btn-light no-default" role="button" title="Cancel" id="cancelButton" (click)="cancelAllFilters();isFiltersCollapsed=true;onShowHideClick()">
-          Cancel
-        </button>
-        <button type="button" class="btn btn-primary" title="Apply Filters" id="applyButton" (click)="applyAllFilters();isFiltersCollapsed=true;onShowHideClick()"
-          [disabled]="loading">
-          Apply
-        </button>
-      </div>
-
-    </div>
-
-  </div> -->
-
-  <!-- Project Filter Inputs / All Filters -->
-  <!-- <div class="app-filters__body" id="applist-filters" [ngbCollapse]="isFiltersCollapsed"> -->
-
-    <!-- Comment Period -->
-<!--     <fieldset (click)="$event.stopPropagation()">
-      <legend>Comment Period Status</legend>
-      <div class="form-check" *ngFor="let key of cpStatusKeys">
-        <label class="form-check-label" for="{{key}}">
-          <input class="form-check-input gtm-filter-cp-status" type="checkbox" name="{{key}}" id="{{key}}" [(ngModel)]="_cpStatusFilters[key]">
-          {{commentPeriodService.getStatusString(key)}}
-        </label>
-      </div>
-    </fieldset> -->
-
-    <!-- Project Status -->
-<!--     <fieldset (click)="$event.stopPropagation()">
-      <legend>Project Status</legend>
-      <div class="form-check" *ngFor="let key of appStatusKeys">
-        <label class="form-check-label" for="{{key}}">
-          <input class="form-check-input gtm-filter-app-status" type="checkbox" name="{{key}}" id="{{key}}" [(ngModel)]="_appStatusFilters[key]">-->
-          <!-- {{projectService.getStatusString(key)}} -->
-<!--         </label>
-      </div>
-    </fieldset> -->
-
-    <!-- Additional Filters -->
-<!--     <fieldset class="additional-filters" (click)="$event.stopPropagation()">
-        <div class="form-group typeahead-container">
-          <label for="applicantInput">Applicant Name</label>
-          <input type="text" class="form-control gtm-filter-applicant " placeholder="Applicant Name" id="applicantInput" [(ngModel)]="_applicantFilter"
-          [ngbTypeahead]="applicantSearch" [focusFirst]="false">
-        </div>
-        <div class="form-group">
-          <label for="clFileInput2">EAO Project #</label>
-          <input type="number" class="form-control gtm-filter-cl-file " placeholder="EAO Project #" id="clFileInput2" [(ngModel)]="_clFileFilter"
-            (keydown.arrowup)="$event.preventDefault()" (keydown.arrowdown)="$event.preventDefault()" (mousewheel)="$event.preventDefault()">
-        </div>
-        <div class="form-group">
-          <label for="dispIdInput">Disposition Transaction</label>
-          <input type="number" class="form-control gtm-filter-disposition-id" placeholder="Disposition Transaction" id="dispIdInput" [(ngModel)]="_dispIdFilter"
-            (keydown.arrowup)="$event.preventDefault()" (keydown.arrowdown)="$event.preventDefault()" (mousewheel)="$event.preventDefault()">
-        </div>
-        <div class="form-group typeahead-container">
-          <label for="purposeInput">Purpose / Subpurpose</label>
-          <input type="text" class="form-control gtm-filter-purpose" placeholder="Purpose / Subpurpose" id="purposeInput" [(ngModel)]="_purposeFilter"
-            [ngbTypeahead]="purposeSearch" [focusFirst]="false">
-        </div> -->
-        <!-- <div class="form-group">
-          <label>Published Between</label>
-          <div class="date-range">
-            <div class="form-group mb-0">
-              <label class="sr-only">Start Date</label>
-              <app-date-input class="gtm-filter-published-from" [(date)]="_publishFromFilter" [minDate]="minDate"
-                [maxDate]="_publishToFilter ? _publishToFilter : maxDate"></app-date-input>
-            </div>
-            <div class="spacer">TO</div>
-            <div class="form-group mb-0">
-              <label class="sr-only">End Date</label>
-              <app-date-input class="gtm-filter-published-to" [(date)]="_publishToFilter" [maxDate]="maxDate"
-                [minDate]="_publishFromFilter ? _publishFromFilter : minDate"></app-date-input>
-            </div>
-          </div>
-        </div>
-    </fieldset>
-
-  </div>
-
-</div> -->

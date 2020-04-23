@@ -27,7 +27,7 @@ export class CertificatesComponent implements OnInit, OnDestroy {
     {
       name: 'Name',
       value: 'displayName',
-      width: 'col-6'
+      width: 'col-4'
     },
     {
       name: 'Date',
@@ -42,6 +42,11 @@ export class CertificatesComponent implements OnInit, OnDestroy {
     {
       name: 'Milestone',
       value: 'milestone',
+      width: 'col-2'
+    },
+    {
+      name: 'Phase',
+      value: 'phase',
       width: 'col-2'
     }
   ];
@@ -66,6 +71,8 @@ export class CertificatesComponent implements OnInit, OnDestroy {
       .subscribe(params => {
         if (this.currentUrl === 'amendments') {
           this.tableParams = this.tableTemplateUtils.getParamsFromUrl(params);
+        } else if (this.currentUrl === 'application') {
+          this.tableParams = this.tableTemplateUtils.getParamsFromUrl(params, null, '+sortOrder,-datePosted,+displayName');
         } else {
           // Different sort order:
           this.tableParams = this.tableTemplateUtils.getParamsFromUrl(params, null, '+displayName');
@@ -110,14 +117,16 @@ export class CertificatesComponent implements OnInit, OnDestroy {
             datePosted: document.datePosted,
             type: document.type,
             milestone: document.milestone,
-            project: document.project
+            project: document.project,
+            projectPhase: document.projectPhase
           }
         );
       });
       this.documentTableData = new TableObject(
         DocumentTableRowsComponent,
         documentList,
-        this.tableParams
+        this.tableParams,
+        { showFeatured: false },
       );
     }
   }
@@ -157,6 +166,8 @@ export class CertificatesComponent implements OnInit, OnDestroy {
 
     if (this.currentUrl === 'amendments') {
       this.router.navigate(['p', this.currentProject._id, 'amendments', params]);
+    } else if (this.currentUrl === 'application') {
+      this.router.navigate(['p', this.currentProject._id, 'application', params]);
     } else {
       this.router.navigate(['p', this.currentProject._id, 'certificates', params]);
     }

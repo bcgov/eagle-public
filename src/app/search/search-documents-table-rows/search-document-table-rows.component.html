@@ -1,0 +1,11 @@
+<tr *ngFor="let document of documents"
+  class="clickable-row">
+    <td data-label="Name" (click)="goToItem(document)" scope="row" class="col-6">
+        {{document.displayName}}
+    </td>
+    <td data-label="ProjectName" (click)="goToProject(document)" scope="row" class="col-2 btn-link">{{document.project.name}}</td>
+    <td data-label="Date" (click)="goToItem(document)" scope="row" class="col-2"><div *ngIf="document.datePosted !== '1900-01-01T08:00:00.000Z'">{{document.datePosted | date:'longDate'}}</div></td>
+    <td data-label="Type" (click)="goToItem(document)" scope="row" class="col-2">{{idToList(document.type)}}</td>
+    <td data-label="Milestone" (click)="goToItem(document)" scope="row" class="col-2">{{idToList(document.milestone)}}</td>
+    <td data-label="Download" (click)="goToItem(document)" scope="row" class="col-1 d-flex justify-content-center"><i class="material-icons">cloud_download</i></td>
+</tr>

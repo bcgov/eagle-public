@@ -30,7 +30,11 @@
 @import "assets/styles/components/leaflet.scss";
 @import "assets/styles/components/lists.scss";
 @import "assets/styles/components/modal.scss";
+@import "assets/styles/components/multi-select.scss";
 @import "assets/styles/components/pagination.scss";
 @import "assets/styles/components/spinner.scss";
 @import "assets/styles/components/tab-nav.scss";
 @import "assets/styles/components/table.scss";
+
+// For the ng-select multiselect component.
+@import "~@ng-select/ng-select/themes/default.theme.css";

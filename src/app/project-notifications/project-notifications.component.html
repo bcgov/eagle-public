@@ -1,0 +1,279 @@
+<div class="spinner-container" *ngIf="loading">
+  <div class="spinner-new rotating"></div>
+</div>
+
+<main *ngIf="!loading">
+  <div class="container">
+    <div class="hero-banner__content">
+      <h1>Project Notifications in British Columbia</h1>
+      <p>Use the list below to navigate Project Notifications. A Project Notification is required if a proposed project meets the notification thresholds in the Reviewable Projects Regulation, indicating that while the project is not automatically reviewable, it may have the potential to cause adverse effects and warrants further review to determine if the project requires an Environmental Assessment. <a href='https://www2.gov.bc.ca/gov/content?id=5BFEC629E95E4D60A69DB7575BC78B33' target='_blank'>Learn More</a></p>
+    </div>
+  </div>
+
+  <section class="project-list table-container">
+    <div class="container">
+        <h4>Project Notifications</h4>
+        <form #f="ngForm" class="search-form ui form" (ngSubmit)="onSubmit()">
+            <div class="search-area">
+                <div class="input-group main-search-field">
+                    <input class="form-control" type="text" name="keywordInput"
+                        placeholder="Enter keywords to search..." id="keywordInput"
+                        [(ngModel)]="tableParams.keywords" autofocus
+                        aria-label="Enter keywords to search project notifications by ..."/>
+                    <div *ngIf="!showAdvancedSearch || !isShowingFilter()" class="input-group-append">
+                        <!-- prevent searching if input is empty or we're already searching -->
+                        <button class="btn btn-primary" type="button" (click)="search();">
+                            <span>Search</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="advanced-search">
+                    <div class="row">
+                        <div *ngIf="showAdvancedSearch" class="col-md-9">
+                            <button type="button" (click)="toggleFilter('type');" [ngClass]="{'btn': true, 'type-btn': true,
+                'btn-dark': showFilters.type,
+                'btn-secondary': !showFilters.type && numFilters.type > 0,
+                'btn-outline-dark': !showFilters.type && numFilters.type == 0}">
+                                Project Type<span
+                                    *ngIf="numFilters.type > 0 && !showFilters.type">&nbsp;({{ numFilters.type }})</span>
+                            </button>
+                            <button type="button" (click)="toggleFilter('region');" [ngClass]="{'btn': true, 'region-btn': true,
+                'btn-dark': showFilters.region,
+                'btn-secondary': !showFilters.region && numFilters.region > 0,
+                'btn-outline-dark': !showFilters.region && numFilters.region == 0}">
+                                Region<span
+                                    *ngIf="numFilters.region > 0 && !showFilters.region">&nbsp;({{ numFilters.region }})</span>
+                            </button>
+                            <button type="button" (click)="toggleFilter('pcp');" [ngClass]="{'btn': true, 'pcp-btn': true,
+                'btn-dark': showFilters.pcp,
+                'btn-secondary': !showFilters.pcp && numFilters.pcp > 0,
+                'btn-outline-dark': !showFilters.pcp && numFilters.pcp == 0}">
+                                Public Comment Period<span
+                                    *ngIf="numFilters.pcp > 0 && !showFilters.pcp">&nbsp;({{ numFilters.pcp }})</span>
+                            </button>
+
+                            <button type="button" (click)="toggleFilter('decision');" [ngClass]="{'btn': true, 'decision-btn': true,
+                'btn-dark': showFilters.decision,
+                'btn-secondary': !showFilters.decision && numFilters.decision > 0,
+                'btn-outline-dark': !showFilters.decision && numFilters.decision == 0}">
+                                Notification Decision
+                                <span *ngIf="numFilters.pcp > 0 && !showFilters.pcp">&nbsp;({{ numFilters.pcp }})</span>
+                            </button>
+
+                            <button class="btn btn-outline-dark" type="button" (click)="clearAll();">Clear
+                                All</button>
+                        </div>
+                        <div
+                            [ngClass]="{'show-advanced-search-button': true, 'col-md-3': showAdvancedSearch, 'col-md-12': !showAdvancedSearch}">
+                            <button class="btn btn-secondary" type="button"
+                                (click)="showAdvancedSearch = !showAdvancedSearch;">
+                                <span *ngIf="showAdvancedSearch">Hide Advanced Search</span>
+                                <span *ngIf="!showAdvancedSearch">Show Advanced Search</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div *ngIf="showAdvancedSearch && showFilters.region" class="region-filters project-filter row">
+                        <div class="col-md-6 filter-border">
+                            <div class="col-md-12">
+                                <div class="row">
+                                    <b>Region</b>
+                                </div>
+
+                                <div class="row">
+                                    <div class="form-group">
+                                        <ng-select
+                                            id="region"
+                                            name="region"
+                                            multiple="true"
+                                            bindLabel="name"
+                                            placeholder="Type Region"
+                                            [items]="regions"
+                                            [closeOnSelect]="false"
+                                            [(ngModel)]="filterForUI.region"
+                                        >
+                                        </ng-select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div *ngIf="showAdvancedSearch && showFilters.type" class="type-filters project-filter row">
+                        <div class="col-md-6 filter-border">
+                            <div class="col-md-12">
+                                <div class="row">
+                                    <b>Project Type</b>
+                                </div>
+                                <div class="row">
+                                    <div class="form-group">
+                                        <ng-select
+                                            id="type"
+                                            name="type"
+                                            multiple="true"
+                                            bindLabel="name"
+                                            placeholder="Type Project Type"
+                                            [items]="projectTypes"
+                                            [closeOnSelect]="false"
+                                            [(ngModel)]="filterForUI.type"
+                                        >
+                                        </ng-select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div *ngIf="showAdvancedSearch && showFilters.pcp" class="pcp-filters project-filter row">
+                        <div class="col-md-6 filter-border">
+                            <div class="col-md-12">
+                                <div class="row">
+                                    <b>Public Comment Period</b>
+                                </div>
+
+                                <div class="row">
+                                    <div class="form-group">
+                                        <ng-select
+                                            id="pcp"
+                                            name="pcp"
+                                            multiple="true"
+                                            bindLabel="name"
+                                            placeholder="Type Comment Period"
+                                            [items]="commentPeriods"
+                                            [closeOnSelect]="false"
+                                            [(ngModel)]="filterForUI.pcp"
+                                        >
+                                        </ng-select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div *ngIf="showAdvancedSearch && showFilters.decision" class="decision-filters project-filter row">
+                        <div class="col-md-6 filter-border">
+                            <div class="col-md-12">
+                                <div class="row">
+                                    <b>Notification Decision</b>
+                                </div>
+
+                                <div class="row">
+                                    <div class="form-group">
+                                        <ng-select
+                                            id="decision"
+                                            name="decision"
+                                            multiple="true"
+                                            bindLabel="name"
+                                            placeholder="Type Notification Decision"
+                                            [items]="decisions"
+                                            [closeOnSelect]="false"
+                                            [(ngModel)]="filterForUI.decision"
+                                        >
+                                        </ng-select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button *ngIf="showAdvancedSearch && isShowingFilter()" class="btn btn-primary search-button"
+                        type="button" (click)="search();">
+                        <span>Search</span>
+                    </button>
+                </div>
+            </div>
+            <br>
+            <div class="input-group-append pb-3">
+                <a _ngcontent-c7 class="btn btn-primary btn-search-help" [routerLink]="['/search-help']" target="_blank">
+                    <span> Search Help</span>
+                </a>
+            </div>
+        </form>
+        <div *ngIf="projectNotifications.length === 0">
+            <p>
+                There are currently no Project Notifications
+            </p>
+        </div>
+        <div *ngIf="projectNotifications.length !== 0">
+            <div class="app-details" *ngFor="let project of projectNotifications">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-12">
+                            <div class="pn-location-info">
+                                <div class="row">
+                                    <div class="col-sm-12 col-md-8">
+                                        <h4>{{(project?.name || '-')}}</h4>
+                                    </div>
+                                    <div class="col-sm-12 col-md-4">
+                                        <a *ngIf="project?.commentPeriod?.daysRemainingCount > 0" class="btn btn-primary view-pcp-btn"
+                                        title="View this Public Comment Period"
+                                        [routerLink]="['/pn', project?._id, 'cp', project?.commentPeriod?._id]">
+                                        <div class="pcp-indicator pcp-indicator-active"></div>
+                                        View Open Comment Period
+                                        </a>
+                                        <a *ngIf="project?.commentPeriod?.daysRemainingCount === 0" class="btn btn-primary view-pcp-btn"
+                                        title="View this Public Comment Period"
+                                        [routerLink]="['/pn', project?._id, 'cp', project?.commentPeriod?._id]">
+                                        <div class="pcp-indicator pcp-indicator-inactive"></div>
+                                        View {{project?.commentPeriod?.commentPeriodStatus}} Comment Period
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-sm-12 col-md-3 pn-info-block">
+                                    <label>Type</label>
+                                    <p class="value">{{project?.type || "-" }}</p>
+                                    </div>
+                                    <div class="col-sm-12 col-md-3 pn-info-block">
+                                    <label>Location</label>
+                                    <p class="value">{{project?.location || "-" }}</p>
+                                    </div>
+                                    <div class="col-sm-12 col-md-3 pn-info-block">
+                                    <label>Nature</label>
+                                    <p class="value">{{project?.nature || "-" }}</p>
+                                    </div>
+                                    <div class="col-sm-12 col-md-3 pn-info-block">
+                                    <label>Public Comment Period</label>
+                                    <p class="value">{{project?.commentPeriod?.daysRemaining  || "-"}}</p>
+                                    </div>
+                                    <div class="col-sm-12 col-md-3 pn-info-block">
+                                    <label>Sub-Type</label>
+                                    <p class="value">{{project?.subType || "-" }}</p>
+                                    </div>
+                                    <div class="col-sm-12 col-md-3 pn-info-block">
+                                        <label>Region</label>
+                                        <p class="value">{{project?.region || "-" }}</p>
+                                    </div>
+                                    <div class="col-sm-12 col-md-3 pn-info-block">
+                                        <label>Notification Trigger</label>
+                                        <p class="value">{{project?.trigger || "-" }}</p>
+                                    </div>
+                                    <div class="col-sm-12 col-md-3 pn-info-block">
+                                        <label>Notification Decision</label>
+                                        <a [routerLink]="['/p', project?.associatedProjectId ]" *ngIf="project?.associatedProjectId; else noHyperlink">  
+                                        <p class="value">{{ project?.decision }} | {{project?.decisionDate?.toString().split('T')[0] || "-" }} </p>
+                                        </a>
+                                        <ng-template #noHyperlink><p class="value">{{ project?.decision }} | {{project?.decisionDate?.toString().split('T')[0] || "-" }} </p></ng-template>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="pn-info-block">
+                                        <label>Description:</label>
+                                        <p class="value" [innerHTML]="(project?.description || '-') | newlines"></p>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <button *ngIf="project.documents.length > 0"
+                                            class="btn btn-sm content-btn-alt"
+                                            type="button"
+                                            (click)="downloadDocuments(project)">
+                                        <span>View Document(s)</span>
+                                    </button>
+                                </div>
+                            </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <br/>
+            </div>
+        </div>
+    </div>
+    </section>
+</main>

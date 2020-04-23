@@ -1,17 +1,19 @@
-<tr *ngFor="let document of documents | paginate: { id: 'table-template-pagination', itemsPerPage: paginationData.pageSize, currentPage: paginationData.currentPage, totalItems: paginationData.totalListItems }"
+<tr *ngFor="let document of documents"
   class="clickable-row">
-    <!-- <td data-label="Select" (click)="selectItem(document)"
-        scope="row"
-        class="col-1">
-      <input type="checkbox"
-             aria-label="Checkbox for row item"
-             [(ngModel)]='document.checkbox'>
-    </td> -->
-    <td data-label="Name" (click)="goToItem(document)" scope="row" class="col-6">{{document.displayName}}</td>
-    <td data-label="Date" (click)="goToItem(document)" scope="row" class="col-2"><div *ngIf="document.datePosted !== '1900-01-01T08:00:00.000Z'">{{document.datePosted | date:'longDate'}}</div></td>
-    <td data-label="Type" (click)="goToItem(document)" scope="row" class="col-2">{{idToList(document.type)}}</td>
-    <td data-label="Milestone" (click)="goToItem(document)" scope="row" class="col-2">{{idToList(document.milestone)}}</td>
-    <!-- <td>
-            <button type="button" (click)="deleteVC(valuedComponent)" class="btn btn-danger">Delete</button>
-        </td> -->
+    <td data-label="★" (click)="goToItem(document)" scope="row" class="col-1" *ngIf="currentUrl !== 'search' && showFeatured">
+        <i *ngIf="document.isFeatured === true" class="material-icons featured-star" aria-hidden="true">star</i>
+    </td>
+    <td data-label="Name" (click)="goToItem(document)" scope="row" [ngClass]="(showFeatured) ? 'col-5' : 'col-6'">
+        {{document.displayName}}
+    </td>
+    <td data-label="Date" (click)="goToItem(document)" scope="row" class="col-2">
+        <div *ngIf="document.datePosted !== '1900-01-01T08:00:00.000Z'">{{document.datePosted | date:'longDate'}}</div>
+    </td>
+    <td *ngIf="currentUrl !== 'project-details'" data-label="Type" (click)="goToItem(document)" scope="row" class="col-2">{{idToList(document.type)}}</td>
+    <td *ngIf="currentUrl !== 'project-details'"  data-label="Milestone" (click)="goToItem(document)" scope="row" class="col-2">{{idToList(document.milestone)}}</td>
+    <td *ngIf="currentUrl !== 'project-details'" data-label="Phase" (click)="goToItem(document)" scope="row" class="col-2">{{idToList(document.projectPhase)}}</td>
+    <td *ngIf="currentUrl === 'project-details'" data-label="Type" (click)="goToItem(document)" scope="row" class="col-2">{{document.typeString}}</td>
+    <td *ngIf="currentUrl === 'project-details'"  data-label="Milestone" (click)="goToItem(document)" scope="row" class="col-2">{{document.milestoneString}}</td>
+    <td *ngIf="currentUrl === 'project-details'"data-label="Phase" (click)="goToItem(document)" scope="row" class="col-2">{{document.projectPhase}}</td>
+
 </tr>

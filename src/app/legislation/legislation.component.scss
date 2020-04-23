@@ -1,3 +1,9 @@
 .static-content {
-  background: white
+  background: white;
+}
+
+.bg-white {
+    padding: 50px 0 50px 0;
+    // total view height minus the banner minus the footer
+    min-height: calc(100vh - 30rem - 69px);
 }

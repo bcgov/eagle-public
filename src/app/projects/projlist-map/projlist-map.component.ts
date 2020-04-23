@@ -62,7 +62,7 @@ export class ProjlistMapComponent implements AfterViewInit, OnChanges, OnDestroy
     maxClusterRadius: 40, // NB: change to 0 to disable clustering
     // iconCreateFunction: this.clusterCreate // FUTURE: for custom markers, if needed
   });
-  private loading = false;
+  public loading = false;
   private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
 
   readonly defaultBounds = L.latLngBounds([48, -139], [60, -114]); // all of BC
@@ -117,11 +117,12 @@ export class ProjlistMapComponent implements AfterViewInit, OnChanges, OnDestroy
       maxZoom: 16,
       noWrap: true
     });
-    const OpenMapSurfer_Roads = L.tileLayer('https://korona.geog.uni-heidelberg.de/tiles/roads/x={x}&y={y}&z={z}', {
-      attribution: 'Imagery from <a href="http://giscience.uni-hd.de/">GIScience Research Group @ University of Heidelberg</a> &mdash; Map data &copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-      maxZoom: 20,
-      noWrap: true
-    });
+    // TODO update or remove this layer, now requires a token to use
+    // const OpenMapSurfer_Roads = L.tileLayer('https://korona.geog.uni-heidelberg.de/tiles/roads/x={x}&y={y}&z={z}', {
+    //   attribution: 'Imagery from <a href="http://giscience.uni-hd.de/">GIScience Research Group @ University of Heidelberg</a> &mdash; Map data &copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    //   maxZoom: 20,
+    //   noWrap: true
+    // });
     const World_Topo_Map = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
       attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ, TomTom, Intermap, iPC, USGS, FAO, NPS, NRCAN, GeoBase, Kadaster NL, Ordnance Survey, Esri Japan, METI, Esri China (Hong Kong), and the GIS User Community',
       maxZoom: 16,
@@ -167,7 +168,7 @@ export class ProjlistMapComponent implements AfterViewInit, OnChanges, OnDestroy
     const baseLayers = {
       'Ocean Base': Esri_OceanBasemap,
       'Nat Geo World Map': Esri_NatGeoWorldMap,
-      'Open Surfer Roads': OpenMapSurfer_Roads,
+      // 'Open Surfer Roads': OpenMapSurfer_Roads,
       'World Topographic': World_Topo_Map,
       'World Imagery': World_Imagery
     };
@@ -270,6 +271,19 @@ export class ProjlistMapComponent implements AfterViewInit, OnChanges, OnDestroy
         const markerLatLng = marker.getLatLng();
         // app is visible if map contains its marker
         app.isVisible = mapBounds.contains(markerLatLng);
+
+        // If there is only one result from the filter
+        // force the popup to auto-display
+        if (this.markerList.length === 1 && app.isVisible) {
+          if (marker.getPopup()) {
+            marker.openPopup();
+          } else {
+            // create the popup
+            this.createMarkerPopup(app, marker);
+            marker.openPopup();
+          }
+        }
+
       }
     }
 
@@ -335,6 +349,10 @@ export class ProjlistMapComponent implements AfterViewInit, OnChanges, OnDestroy
     const app = args[0] as Project;
     const marker = args[1].target as L.Marker;
 
+    this.createMarkerPopup(app, marker);
+  }
+
+  private createMarkerPopup(app: Project, marker: L.Marker) {
     this.applist.toggleCurrentApp(app); // update selected item in app list
 
     // if there's already a popup, delete it
@@ -409,7 +427,7 @@ export class ProjlistMapComponent implements AfterViewInit, OnChanges, OnDestroy
    * Center map on specified point, applying offset if needed.
    */
   // TODO: register for list/filter changes and apply offset accordingly ?
-  private centerMap(latlng: L.LatLng) {
+  public centerMap(latlng: L.LatLng) {
     let point = this.map.latLngToLayerPoint(latlng);
 
     if (this.configService.isApplistListVisible) {

@@ -1,0 +1,105 @@
+<div *ngIf="loading" class="spinner-border" role="status">
+  <span class="sr-only">Loading...</span>
+</div>
+
+<div *ngIf="!loading" class="project">
+  <main class="project-info">
+    <div class="hero-banner-alt">
+      <div class="container">
+        <div class="hero-banner__content">
+          <h1>{{project?.name || '-'}}</h1>
+          <div class="header-section mb-4" *ngIf="commentPeriod !== null && commentPeriod._id == commentPeriod._id">
+            <h3>
+              {{commentPeriodHeader}}
+            </h3>
+            <h3>
+              {{commentPeriod.dateStarted | date:'mediumDate'}} - {{commentPeriod.longEndDate.format('MMMM DD @ hh:mm z')}}
+            </h3>
+            <div *ngIf="commentPeriod.informationLabel !== null">
+              <div id="instructions" [innerHTML]="commentPeriod.instructions  | safeHtml"></div>
+              <br>
+              <p>
+                {{commentPeriod.additionalText}}
+              </p>
+              <br>
+              <p>
+                {{commentPeriod.informationLabel}}
+              </p>
+            </div>
+            <div *ngIf="commentPeriod.informationLabel === null">
+              <div id="instructions" [innerHTML]="commentPeriod.instructions  | safeHtml"></div>
+            </div>
+            <div class="d-flex justify-content-end">
+              <button class="btn btn-light" (click)="addComment()" type="button"
+                *ngIf="commentPeriod.commentPeriodStatus === 'Open'">Submit Comment</button>
+            </div>
+          </div>
+          <!-- <p class="desc" [innerHTML]="(project?.description || '-') | newlines"></p> -->
+          <span *ngIf="type === 'PROJECT'" class="ea-decision">{{project?.eacDecision?.name || "-"}}</span>
+          <div *ngIf="type === 'PROJECT'" class="basic-info">
+            <div>
+              <label>Proponent</label>
+              <p class="value">{{project?.proponent?.name || "-" | titlecase}}</p>
+            </div>
+            <div>
+              <label>Type</label>
+              <p class="value">{{project?.type || "-" | titlecase}}</p>
+            </div>
+            <div>
+              <label>Sub-type</label>
+              <p class="value">{{project?.sector || "-" | titlecase}}</p>
+            </div>
+          </div>
+          <div class="related-documents value mt-4" *ngIf="commentPeriodDocs && commentPeriodDocs.length > 0">
+            <div class="card">
+              <div class="card-header">
+                Related Documents
+              </div>
+              <ul class="doc-list mt-0">
+                <li class="clickable-row" *ngFor="let doc of commentPeriodDocs" (click)="downloadDocument(doc)">
+                  <span class="cell icon">
+                    <i class="material-icons">insert_drive_file</i>
+                  </span>
+                  <span class="cell name" [title]="doc.displayName || ''">
+                    <span class="cell__txt-content">{{doc.displayName}}</span>
+                  </span>
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div class="open-houses value mt-4" *ngIf="commentPeriod && commentPeriod.openHouses && commentPeriod.openHouses.length > 0">
+            <div class="card">
+              <div class="card-header">
+                Open Houses
+              </div>
+              <ul class="list-group">
+                <li class="list-group-item" *ngFor="let openHouse of commentPeriod.openHouses">
+                  <h6>
+                    <b>Date:</b>&nbsp;{{openHouse.eventDate | date}}
+                  </h6>
+                  <br>
+                  <h6>
+                    <b>Description:</b>&nbsp;{{openHouse.description}}
+                  </h6>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <button class="btn btn-sm inverted mb-3" (click)="goBackToProjectDetails()" type="button">
+          {{type === 'PROJECT' ? 'Back to Project Details' : 'Back to Project Notifications'}}
+        </button>
+      </div>
+    </div>
+  </main>
+</div>
+<div *ngIf="!loading" class="container comments mt-3">
+  <div *ngIf="tableParams.totalListItems > 0">
+    <app-table-template [columns]="commentTableColumns" [data]="commentTableData" (onColumnSort)='setColumnSort($event)'
+      (onPageNumUpdate)='getPaginatedComments($event)'>
+    </app-table-template>
+  </div>
+  <div *ngIf="tableParams.totalListItems == 0">
+    There are no comments.
+  </div>
+</div>

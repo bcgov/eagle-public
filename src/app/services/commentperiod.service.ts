@@ -6,7 +6,6 @@ import 'rxjs/add/observable/of';
 
 import { ApiService } from './api';
 import { CommentPeriod } from 'app/models/commentperiod';
-import { CommentService } from './comment.service';
 
 @Injectable()
 export class CommentPeriodService {
@@ -21,7 +20,6 @@ export class CommentPeriodService {
 
   constructor(
     private api: ApiService,
-    private commentService: CommentService,
   ) {
     // user-friendly strings for display
     this.commentPeriodStatuses[this.NOT_STARTED] = 'Commenting Not Started';
@@ -67,38 +65,6 @@ export class CommentPeriodService {
       })
       .catch(this.api.handleError);
   }
-
-  // get a specific comment period by its id
-  // getByIdWithComments(periodId: string, forceReload: boolean = false): Observable<CommentPeriod> {
-  //   if (this.commentPeriod && this.commentPeriod._id === periodId && !forceReload) {
-  //     return Observable.of(this.commentPeriod);
-  //   }
-  //   return this.api.getPeriod(periodId)
-  //     .map(res: any) => {
-  //       const periods = res.text() ? res.json() : [];
-  //       // return the first (only) comment period
-  //       return periods.length > 0 ? new CommentPeriod(periods[0]) : null;
-  //     })
-  //     .mergeMap(commentPeriod => {
-  //       if (!commentPeriod) { return Observable.of(null as CommentPeriod); }
-
-  //       const promises: Array<Promise<any>> = [];
-
-  //       // get the current comment period
-  //       promises.push(this.commentService.getAllByPeriodId(commentPeriod._id)
-  //         .toPromise()
-  //         .then(comments => {
-  //           commentPeriod.comments = comments;
-  //         })
-  //       );
-  //       return Promise.all(promises).then(() => {
-  //         this.commentPeriod = commentPeriod;
-  //         return this.commentPeriod;
-  //       });
-  //     })
-  //     .catch(this.api.handleError);
-  // }
-
   // returns first period - multiple comment periods are currently not supported
   getCurrent(periods: CommentPeriod[]): CommentPeriod {
     return (periods.length > 0) ? periods[0] : null;
@@ -113,7 +79,7 @@ export class CommentPeriodService {
     }
 
     const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 0, 0);
 
     if (commentPeriod.dateCompleted < today) {
       return this.CLOSED;

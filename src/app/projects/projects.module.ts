@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { RouterModule } from '@angular/router';
 import { TagInputModule } from 'ngx-chips';
+import { NgSelectModule } from '@ng-select/ng-select';
 
 // Modules
 import { SharedModule } from 'app/shared/shared.module';
@@ -21,10 +22,11 @@ import { ProjectListTableRowsComponent } from './project-list/project-list-table
   imports: [
     CommonModule,
     FormsModule,
-    NgbModule.forRoot(),
+    NgbModule,
     RouterModule,
     TagInputModule,
-    SharedModule
+    SharedModule,
+    NgSelectModule
   ],
   declarations: [
     ProjectsComponent,

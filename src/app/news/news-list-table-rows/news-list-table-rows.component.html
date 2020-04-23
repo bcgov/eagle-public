@@ -1,18 +1,22 @@
 <tr
-  *ngFor="let activity of activities | paginate: { id: 'table-template-pagination', itemsPerPage: paginationData.pageSize, currentPage: paginationData.currentPage, totalItems: paginationData.totalListItems }">
+  *ngFor="let activity of activities">
   <td scope="row" data-label="Headline" class="col-10">
     <span class="font-weight-bold">{{activity.project?.name}}</span>
+    <span *ngIf="activity.notificationName" class="font-weight-bold">{{activity.notificationName}}</span>
     <br>
     <span>{{activity.headline || '-'}}</span>
     <br>
     <br>
     <span [innerHtml]="activity.content"></span>
-    <a *ngIf="activity.project" class="btn content-btn-alt" [routerLink]="['/p', activity.project._id ]">
-      <span>View Project</span>
+    <br>
+    <br>
+    <a *ngIf="activity.project && activity.project._id" class="btn content-btn-alt mr-1" [routerLink]="['/p', activity.project._id ]">
+      <span>Project Info</span>
     </a>
     <a *ngIf="isSingleDoc(activity?.documentUrl) && !activity?.documentUrl.includes('docs?folder')"
-      class="btn content-btn-alt" href="{{activity.documentUrl}}">
-      <span>View Document(s)</span>
+      class="btn content-btn-alt mr-1" href="{{activity.documentUrl}}">
+      <span *ngIf="!activity?.notificationName">View Document(s)</span>
+      <span *ngIf="activity.notificationName">View Project Notification Public Comment Period</span>
     </a>
     <button *ngIf="activity?.pcp"
       class="btn content-btn-alt" (click)="goToCP(activity)">

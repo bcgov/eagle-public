@@ -22,14 +22,14 @@ const PAGE_SIZE = 100;
 })
 
 export class ProjectsComponent implements OnInit, OnDestroy {
-  @ViewChild('appmap') appmap;
-  @ViewChild('applist') applist;
-  @ViewChild('appfilters') appfilters;
+  @ViewChild('appmap', {static: true}) appmap;
+  @ViewChild('applist', {static: true}) applist;
+  @ViewChild('appfilters', {static: true}) appfilters;
 
   // FUTURE: change this to an observable and components subscribe to changes ?
   // ref: https://github.com/escardin/angular2-community-faq/blob/master/services.md#how-do-i-communicate-between-components-using-a-shared-service
   // ref: https://stackoverflow.com/questions/34700438/global-events-in-angular
-  private _loading = false;
+  public _loading = false;
   set isLoading(val: boolean) {
     this._loading = val;
     if (val) {
@@ -48,8 +48,8 @@ export class ProjectsComponent implements OnInit, OnDestroy {
   public filterApps: Array<Project> = [];
   public mapApps: Array<Project> = [];
   public listApps: Array<Project> = [];
-  // private filters: FiltersType = null; // FUTURE
   private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
+
 
   previousUrl: string;
 
@@ -67,7 +67,6 @@ export class ProjectsComponent implements OnInit, OnDestroy {
       .takeUntil(this.ngUnsubscribe)
       .subscribe((event) => {
         if (event instanceof NavigationEnd) {
-          const currentUrlSlug = event.url.slice(1);
           this.renderer.removeClass(document.body, 'no-scroll');
           this._changeDetectionRef.detectChanges();
         }
@@ -104,7 +103,7 @@ export class ProjectsComponent implements OnInit, OnDestroy {
         .subscribe(count => {
           // prepare 'pages' of gets
           const observables: Array<Observable<Project[]>> = [];
-          for (let page = 0; page < Math.ceil(count / PAGE_SIZE); page++) {
+          for (let page = 1; page < Math.ceil(count / PAGE_SIZE) + 1; page++) {
             observables.push(this.projectService.getAllFull(page, PAGE_SIZE));
           }
 

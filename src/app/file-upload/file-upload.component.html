@@ -1,15 +1,14 @@
-<div class="files-info" *ngIf="showInfo">
-    Maximum of {{maxFiles}} files, up to {{maxSize}}MB each.
-    <br> Acceptable file types: {{fileExt}}
-  </div>
-
-  <div draggable="true" ngClass="{{dragDropClass}}">
+  <div draggable="true" ngClass="{{dragDropClass}} dragDropStyling">
     <div class="row">
       <div class="col-md-12 text-center">
         <a href="javascript:void(0)" (click)="file.click()">
           <i class="material-icons">file_upload</i>
           Drop files to attach, or browse.
+          <br>
         </a>
+        <span class="fileInfo">Accepted file types: {{fileExt}}
+        <br>
+        Individual file size limit: {{maxSize}}MB</span>
         <input type="file" #file [multiple]="(maxFiles > 1)" (click)="file.value = null" value="" (change)="onFileChange($event)" style="display:none" />
       </div>
     </div>

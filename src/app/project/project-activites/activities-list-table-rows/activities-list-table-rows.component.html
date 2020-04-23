@@ -1,8 +1,9 @@
 <tr
-  *ngFor="let activity of activities | paginate: { id: 'table-template-pagination', itemsPerPage: paginationData.pageSize, currentPage: paginationData.currentPage, totalItems: paginationData.totalListItems }">
+  *ngFor="let activity of activities">
   <td scope="row" data-label="Headline" class="col-10">
     <div>
       <span class="font-weight-bold">{{activity.project.name || '-'}}</span>
+      <span *ngIf="activity.notificationName" class="font-weight-bold">{{activity.notificationName}}</span>
       <br>
       <span>{{activity.headline || '-'}}</span>
       <br>
@@ -13,7 +14,8 @@
     <div>
       <a *ngIf="isSingleDoc(activity?.documentUrl) && !activity?.documentUrl.includes('docs?folder')"
         class="btn content-btn-alt" href="{{activity.documentUrl}}">
-        <span>View Document(s)</span>
+        <span *ngIf="!activity?.notificationName">View Document(s)</span>
+        <span *ngIf="activity.notificationName">View Project Notification Public Comment Period</span>
       </a>
       <button *ngIf="activity?.pcp"
         class="btn content-btn-alt" (click)="goToCP(activity)">

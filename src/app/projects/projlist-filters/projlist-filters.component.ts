@@ -12,7 +12,6 @@ import * as moment from 'moment';
 
 import { Constants } from 'app/shared/utils/constants';
 import { Project } from 'app/models/project';
-import { ProjectService } from 'app/services/project.service';
 import { CommentPeriodService } from 'app/services/commentperiod.service';
 import { ConfigService } from 'app/services/config.service';
 
@@ -42,10 +41,15 @@ export class ProjlistFiltersComponent implements OnInit, OnChanges, OnDestroy {
   readonly minDate = moment('2018-03-23').toDate(); // first app created
   readonly maxDate = moment().toDate(); // today
 
+  public projectTypes: Array<any> = [];
+  public projectRegions: Array<any> = [];
+  public projectPhases: Array<any> = [];
+
   public isFiltersCollapsed: boolean;
   public isCpStatusCollapsed = true;
   public isAppStatusCollapsed = true;
   public loading = false;
+  public showFilters = false;
   private paramMap: ParamMap = null;
   private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
 
@@ -56,21 +60,25 @@ export class ProjlistFiltersComponent implements OnInit, OnChanges, OnDestroy {
 
   // search keys for text boxes
   private applicantKeys: Array<string> = [];
-  // private clFileKeys: Array<number> = []; // NOT CURRENTLY USED
-  // private dispIdKeys: Array<number> = []; // NOT CURRENTLY USED
   private purposeKeys: Array<string> = [];
 
-  public regionFilters: object = {}; // array-like object
-  public _regionFilters: object = {}; // temporary filters for Cancel feature
+  public cpStatusFilters: Array<any> = []; // array-like object
+  public _cpStatusFilters: Array<any> = []; // temporary filters for Cancel feature
 
-  public cpStatusFilters: object = {}; // array-like object
-  public _cpStatusFilters: object = {}; // temporary filters for Cancel feature
-
-  public appStatusFilters: object = {}; // array-like object
-  public _appStatusFilters: object = {}; // temporary filters for Cancel feature
+  public appStatusFilters: Array<any> = []; // array-like object
+  public _appStatusFilters: Array<any> = []; // temporary filters for Cancel feature
 
   public applicantFilter: string = null;
   public _applicantFilter: string = null; // temporary filters for Cancel feature
+
+  public regionFilter: Array<any> = [];
+  public _regionFilter: Array<any> = [];
+
+  public typeFilter: Array<any> = [];
+  public _typeFilter: Array<any> = [];
+
+  public phaseFilter: Array<any> = [];
+  public _phaseFilter: Array<any> = [];
 
   public clFileFilter: number = null;
   public _clFileFilter: number = null; // temporary filters for Cancel feature
@@ -110,7 +118,6 @@ export class ProjlistFiltersComponent implements OnInit, OnChanges, OnDestroy {
     private location: Location,
     private route: ActivatedRoute,
     private router: Router,
-    private projectService: ProjectService,
     public commentPeriodService: CommentPeriodService, // also used in template
     private configService: ConfigService,
     private elementRef: ElementRef
@@ -123,12 +130,24 @@ export class ProjlistFiltersComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   public ngOnInit() {
-    this.isFiltersCollapsed = !this.configService.isApplistFiltersVisible;
+    this.configService.lists
+    .switchMap(list => {
+      list.forEach(item => {
+        switch (item.type) {
+          case 'region':
+            this.projectRegions.push({ ...item });
+            break;
+          case 'projectPhase':
+            this.projectPhases.push({ ...item });
+            break;
+        }
+      });
 
-    // get optional query parameters
-    this.route.queryParamMap
-      .takeUntil(this.ngUnsubscribe)
-      .subscribe(paramMap => {
+      this.projectTypes = Constants.PROJECT_TYPE_COLLECTION;
+
+      return this.route.queryParamMap;
+    })
+    .subscribe(paramMap => {
         this.paramMap = paramMap;
 
         // set filters according to paramMap
@@ -162,7 +181,7 @@ export class ProjlistFiltersComponent implements OnInit, OnChanges, OnDestroy {
   // FOR FUTURE USE
   public getFilters(): FiltersType {
     return {
-      regionFilters: this.regionFilters,
+      regionFilters: this.regionFilter,
       cpStatusFilters: this.cpStatusFilters,
       appStatusFilters: this.appStatusFilters,
       applicantFilter: this.applicantFilter && this.applicantFilter.trim(),
@@ -178,7 +197,7 @@ export class ProjlistFiltersComponent implements OnInit, OnChanges, OnDestroy {
   // The following are to "Apply" the temporary filters: copy the temporary values to the actual variables, etc.
   //
   public applyRegionFilters() {
-    this.regionFilters = { ...this._regionFilters };
+    this.regionFilter = { ...this._regionFilter };
     this.internalApplyAllFilters(true);
     // this.isRegionCollapsed = true; // FUTURE
   }
@@ -201,7 +220,6 @@ export class ProjlistFiltersComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   public applyAllFilters() {
-    this.regionFilters = { ...this._regionFilters };
     this.cpStatusFilters = { ...this._cpStatusFilters };
     this.appStatusFilters = { ...this._appStatusFilters };
     this.applicantFilter = this._applicantFilter;
@@ -210,6 +228,10 @@ export class ProjlistFiltersComponent implements OnInit, OnChanges, OnDestroy {
     this.purposeFilter = this._purposeFilter;
     this.publishFromFilter = this._publishFromFilter;
     this.publishToFilter = this._publishToFilter;
+
+    this.typeFilter = this._typeFilter;
+    this.phaseFilter = this._phaseFilter;
+    this.regionFilter = this._regionFilter;
 
     this.internalApplyAllFilters(true);
   }
@@ -231,20 +253,26 @@ export class ProjlistFiltersComponent implements OnInit, OnChanges, OnDestroy {
   private showThisApp(item: Project): boolean {
     let retVal = true; // for short-circuiting checks
 
-    // if no option is selected, match all
-    const allRegions = this.regionKeys.every(key => {
-      return (this.regionFilters[key] === false);
-    });
+    let regionMatch = true;
+    if (this.regionFilter.length) {
+      regionMatch = this.regionFilter.some(region => region.name === item.region);
+    }
 
-    // if no option is selected, match all
-    const allCpStatuses = this.cpStatusKeys.every(key => {
-      return (this.cpStatusFilters[key] === false);
-    });
+    let phaseMatch = true;
+    if (this.phaseFilter.length) {
+      phaseMatch = this.phaseFilter.some(phase => {
+        if (item.currentPhaseName && item.currentPhaseName._id && phase._id === item.currentPhaseName._id) {
+          return true;
+        }
 
-    // if no option is selected, match all
-    const allAppStatuses = this.appStatusKeys.every(key => {
-      return (this.appStatusFilters[key] === false);
-    });
+        return false;
+      });
+    }
+
+    let typeMatch = true;
+    if (this.typeFilter.length) {
+      typeMatch = this.typeFilter.some(type => type.name === item.type);
+    }
 
     // check for matching Applicant
     const applicantFilter = this.applicantFilter && this.applicantFilter.trim(); // returns null or empty
@@ -259,6 +287,9 @@ export class ProjlistFiltersComponent implements OnInit, OnChanges, OnDestroy {
       item._id.toString().indexOf(this.dispIdFilter.toString()) > -1
     );
 
+    // Check matching filters
+    retVal = retVal && (regionMatch && phaseMatch && typeMatch);
+
     return retVal;
   }
 
@@ -266,7 +297,7 @@ export class ProjlistFiltersComponent implements OnInit, OnChanges, OnDestroy {
     const params: Params = {}; // array-like object
 
     this.regionKeys.forEach(key => {
-      if (this.regionFilters[key]) {
+      if (this.regionFilter[key]) {
         if (!params['regions']) {
           params['regions'] = key;
         } else {
@@ -294,6 +325,36 @@ export class ProjlistFiltersComponent implements OnInit, OnChanges, OnDestroy {
         }
       }
     });
+
+    if (this.regionFilter && Array.isArray(this.regionFilter)) {
+      this.regionFilter.forEach(region => {
+        if (!params['regions']) {
+          params['regions'] = region._id;
+        } else {
+          params['regions'] += ',' + region._id;
+        }
+      });
+    }
+
+    if (this.typeFilter && Array.isArray(this.typeFilter)) {
+      this.typeFilter.forEach(type => {
+        if (!params['types']) {
+          params['types'] = encodeURIComponent(type.code);
+        } else {
+          params['types'] += ',' + encodeURIComponent(type.code);
+        }
+      });
+    }
+
+    if (this.phaseFilter && Array.isArray(this.phaseFilter)) {
+      this.phaseFilter.forEach(phase => {
+        if (!params['phases']) {
+          params['phases'] = phase._id;
+        } else {
+          params['phases'] += ',' + phase._id;
+        }
+      });
+    }
 
     const applicantFilter = this.applicantFilter && this.applicantFilter.trim(); // returns null or empty
     if (applicantFilter) {
@@ -331,7 +392,7 @@ export class ProjlistFiltersComponent implements OnInit, OnChanges, OnDestroy {
   // The following are to "Cancel" the temporary filters: just reset the values.
   //
   public cancelRegionFilters() {
-    this._regionFilters = { ...this.regionFilters };
+    this._regionFilter = { ...this.regionFilter };
     // this.isRegionCollapsed = true; // FUTURE
   }
 
@@ -346,10 +407,13 @@ export class ProjlistFiltersComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   public cancelAllFilters() {
-    this._regionFilters = { ...this.regionFilters };
+    this._regionFilter = { ...this.regionFilter };
     this._cpStatusFilters = { ...this.cpStatusFilters };
     this._appStatusFilters = { ...this.appStatusFilters };
     this._applicantFilter = this.applicantFilter;
+    this._regionFilter = this.regionFilter;
+    this._phaseFilter = this.phaseFilter;
+    this._typeFilter = this.typeFilter;
     this._clFileFilter = this.clFileFilter;
     this._dispIdFilter = this.dispIdFilter;
     this._purposeFilter = this.purposeFilter;
@@ -367,7 +431,7 @@ export class ProjlistFiltersComponent implements OnInit, OnChanges, OnDestroy {
       // set region filters according to current param options
       const regions = (this.paramMap.get('regions') || '').split(',');
       this.regionKeys.forEach(key => {
-        this.regionFilters[key] = regions.includes(key);
+        this.regionFilter[key] = regions.includes(key);
       });
 
       // set cpStatus filters according to current param options
@@ -389,8 +453,35 @@ export class ProjlistFiltersComponent implements OnInit, OnChanges, OnDestroy {
       this.publishFromFilter = this.paramMap.get('publishFrom') ? moment(this.paramMap.get('publishFrom')).toDate() : null;
       this.publishToFilter = this.paramMap.get('publishTo') ? moment(this.paramMap.get('publishTo')).toDate() : null;
 
+      // Handle filters.
+      const setRegions = this.paramMap.get('regions');
+      const setPhases = this.paramMap.get('phases');
+      const setTypes = this.paramMap.get('types');
+      let regionIds = setRegions ? setRegions.split(',') : null;
+      let phaseIds = setPhases ? setPhases.split(',') : null;
+      let typeIds = setTypes ? setTypes.split(',') : null;
+
+      // Map to List objects.
+      if (regionIds) {
+        regionIds.forEach(regionId => {
+          this.regionFilter.push(this.projectRegions.find(region => region._id === regionId));
+        });
+      }
+
+      if (phaseIds) {
+        phaseIds.forEach(phaseId => {
+          this.phaseFilter.push(this.projectPhases.find(phase => phase._id === phaseId));
+        });
+      }
+
+      if (typeIds) {
+        typeIds.forEach(typeCode => {
+          this.typeFilter.push(this.projectTypes.find(type => type.code === typeCode));
+        });
+      }
+
       // copy all data from actual to temporary properties
-      this._regionFilters = { ...this.regionFilters };
+      this._regionFilter = { ...this.regionFilter };
       this._cpStatusFilters = { ...this.cpStatusFilters };
       this._appStatusFilters = { ...this.appStatusFilters };
       this._applicantFilter = this.applicantFilter;
@@ -399,6 +490,9 @@ export class ProjlistFiltersComponent implements OnInit, OnChanges, OnDestroy {
       this._purposeFilter = this.purposeFilter;
       this._publishFromFilter = this.publishFromFilter;
       this._publishToFilter = this.publishToFilter;
+      this._regionFilter = this.regionFilter;
+      this._typeFilter = this.typeFilter;
+      this._phaseFilter = this.phaseFilter;
     }
 
     // if called from UI, apply new filters
@@ -413,7 +507,7 @@ export class ProjlistFiltersComponent implements OnInit, OnChanges, OnDestroy {
   //
   public clearRegionFilters() {
     this.regionKeys.forEach(key => {
-      this._regionFilters[key] = false;
+      this._regionFilter[key] = false;
     });
     this.applyRegionFilters();
   }
@@ -447,7 +541,7 @@ export class ProjlistFiltersComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   public regionCount(): number {
-    return this.regionKeys.filter(key => this.regionFilters[key]).length;
+    return this.regionKeys.filter(key => this.regionFilter[key]).length;
   }
 
   public cpStatusCount(): number {
@@ -492,7 +586,7 @@ export class ProjlistFiltersComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   public regionHasChanges(): boolean {
-    return !_.isEqual(this._regionFilters, this.regionFilters);
+    return !_.isEqual(this._regionFilter, this.regionFilter);
   }
 
   public cpStatusHasChanges(): boolean {
@@ -510,4 +604,9 @@ export class ProjlistFiltersComponent implements OnInit, OnChanges, OnDestroy {
   public onLoadStart() { this.loading = true; }
 
   public onLoadEnd() { this.loading = false; }
+
+  public toggleFilters() {
+    this.showFilters = !this.showFilters;
+  }
+
 }

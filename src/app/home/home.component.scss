@@ -47,11 +47,20 @@ main {
 
   .feature-block {
     padding: 2rem 1.5rem;
+    height: 105%;
   }
 
   p {
     margin-bottom: 30px;
   }
+}
+
+.btn.inverted {
+    text-transform: none;
+}
+
+.hero-btn:focus {
+    color: #003d57;
 }
 
 @media (max-width: 767px) {

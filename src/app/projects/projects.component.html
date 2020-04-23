@@ -13,10 +13,6 @@
       (setCurrentApp)="highlightProject($event, true)"
         (unsetCurrentApp)="highlightProject($event, false)">
       </app-projlist-list>
-<!--       <button class="toggle-app-list-btn btn" title="Show/hide list of projects" type="button"
-        (click)="toggleAppList();$event.stopPropagation();" aria-controls="applist-list">
-        <i class="material-icons">{{configService.isApplistListVisible ? 'keyboard_arrow_left':'keyboard_arrow_right'}}</i>
-      </button> -->
     </div>
 
     <div class="overlay" (click)="toggleAppList();$event.stopPropagation();"></div>

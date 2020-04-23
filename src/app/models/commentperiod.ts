@@ -1,4 +1,4 @@
-import * as moment from 'moment';
+import * as moment from 'moment-timezone';
 import { Project } from './project';
 
 
@@ -43,7 +43,9 @@ export class CommentPeriod {
   userCan: String;
   vettedPercent: Number;
   vettingRoles: String;
+  daysRemainingCount: number;
 
+  longEndDate: moment.Moment;
   // Permissions
   read: Array<String> = [];
   write: Array<String> = [];
@@ -96,6 +98,8 @@ export class CommentPeriod {
     this.write = obj && obj.write || null;
     this.delete = obj && obj.delete || null;
 
+    this.daysRemainingCount = 0;
+
     if (obj && obj.dateStarted) {
       this.dateStarted = new Date(obj.dateStarted);
     }
@@ -109,20 +113,20 @@ export class CommentPeriod {
       const now = new Date();
       const dateStarted = moment(obj.dateStarted);
       const dateCompleted = moment(obj.dateCompleted);
-      const sevenDays = new Date(obj.dateStarted);
-      sevenDays.setDate(sevenDays.getDate() - 7);
 
       if (moment(now).isBetween(dateStarted, dateCompleted)) {
         this.commentPeriodStatus = 'Open';
-        let days = dateCompleted.diff(moment(now), 'days');
-        this.daysRemaining = days + (days === 1 ? ' Day ' : ' Days ') + 'Remaining';
+        this.daysRemainingCount = dateCompleted.diff(moment(now), 'days');
+        this.daysRemaining = this.daysRemainingCount === 0 ? 'Final Day' : this.daysRemainingCount + (this.daysRemainingCount === 1 ? ' Day ' : ' Days ') + 'Remaining';
       } else if (moment(now).isAfter(dateCompleted)) {
         this.commentPeriodStatus = 'Closed';
         this.daysRemaining = 'Completed';
-      } else if (moment(now).isBetween(moment(sevenDays), dateStarted)) {
+      } else {
         this.commentPeriodStatus = 'Pending';
         this.daysRemaining = 'Pending';
       }
     }
+
+    this.longEndDate = moment.tz(this.dateCompleted, moment.tz.guess());
   }
 }

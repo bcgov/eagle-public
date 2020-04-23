@@ -1,11 +1,10 @@
 import { NgModule, ApplicationRef } from '@angular/core';
-// import { TagInputModule } from 'ngx-chips';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { BrowserModule } from '@angular/platform-browser';
 import { FormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
-import { NgxPaginationModule } from 'ngx-pagination';
+import { NgxPageScrollCoreModule } from 'ngx-page-scroll-core';
 import { NgxPageScrollModule } from 'ngx-page-scroll';
 import { BootstrapModalModule } from 'ng2-bootstrap-modal';
 import { CookieService } from 'ngx-cookie-service';
@@ -15,6 +14,7 @@ import { SharedModule } from 'app/shared/shared.module';
 import { ProjectModule } from 'app/project/project.module';
 import { ProjectsModule } from 'app/projects/projects.module';
 import { AppRoutingModule } from 'app/app-routing.module';
+import { NgSelectModule } from '@ng-select/ng-select';
 
 // components
 import { AppComponent } from 'app/app.component';
@@ -23,9 +23,9 @@ import { ContactComponent } from 'app/contact/contact.component';
 import { HeaderComponent } from 'app/header/header.component';
 import { FooterComponent } from 'app/footer/footer.component';
 import { NewsListTableRowsComponent } from 'app/news/news-list-table-rows/news-list-table-rows.component';
-import { SplashModalComponent } from './splash-modal/splash-modal.component';
+import { SearchComponent } from 'app/search/search.component';
 import { SearchHelpComponent } from './search-help/search-help.component';
-
+import { CACUnsubscribeComponent } from 'app/cac-unsubscribe/cac-unsubscribe.component';
 
 // services
 import { ApiService } from 'app/services/api';
@@ -45,21 +45,28 @@ import { LegislationComponent } from 'app/legislation/legislation.component';
 import { ProcessComponent } from 'app/process/process.component';
 import { ComplianceOversightComponent } from 'app/compliance-oversight/compliance-oversight.component';
 import { ActivitiesListTableRowsComponent } from './project/project-activites/activities-list-table-rows/activities-list-table-rows.component';
+import { ProjectNotificationsListComponent } from './project-notifications/project-notifications.component';
+import { SearchResolver } from './search/search-resolver.service';
+import { DocSearchTableRowsComponent } from './search/search-documents-table-rows/search-document-table-rows.component';
+
 
 @NgModule({
   imports: [
     BrowserAnimationsModule,
-    // TagInputModule,
     BrowserModule,
     FormsModule,
     HttpClientModule,
-    NgbModule.forRoot(),
-    NgxPageScrollModule,
+    NgbModule,
     BootstrapModalModule,
     SharedModule,
     ProjectModule,
     ProjectsModule,
-    AppRoutingModule // <-- module import order matters - https://angular.io/guide/router#module-import-order-matters
+    AppRoutingModule, // <-- module import order matters - https://angular.io/guide/router#module-import-order-matters
+    NgSelectModule,
+    NgxPageScrollCoreModule.forRoot({
+      scrollOffset: 50
+    }),
+    NgxPageScrollModule
   ],
   declarations: [
     AppComponent,
@@ -71,17 +78,20 @@ import { ActivitiesListTableRowsComponent } from './project/project-activites/ac
     NewsTypeFilterPipe,
     NewsMultifieldFilterPipe,
     NewsListTableRowsComponent,
+    ProjectNotificationsListComponent,
     ActivitiesListTableRowsComponent,
-    SplashModalComponent,
     LegislationComponent,
     ProcessComponent,
     ComplianceOversightComponent,
-    SearchHelpComponent
+    SearchComponent,
+    SearchHelpComponent,
+    CACUnsubscribeComponent,
+    DocSearchTableRowsComponent,
   ],
   entryComponents: [
     NewsListTableRowsComponent,
     ActivitiesListTableRowsComponent,
-    SplashModalComponent
+    DocSearchTableRowsComponent,
   ],
   providers: [
     ConfigService,
@@ -94,7 +104,8 @@ import { ActivitiesListTableRowsComponent } from './project/project-activites/ac
     DocumentService,
     SearchService,
     OrgService,
-    FeatureService
+    FeatureService,
+    SearchResolver
   ],
   bootstrap: [
     AppComponent

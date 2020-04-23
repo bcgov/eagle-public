@@ -23,6 +23,11 @@
                 "glob": "**/*",
                 "input": "node_modules/leaflet/dist/images",
                 "output": "/assets/images"
+              },
+              {
+                "glob": "**/*",
+                "input": "./node_modules/@ant-design/icons-angular/src/inline-svg/",
+                "output": "/assets/"
               }
             ],
             "styles": [
@@ -30,7 +35,10 @@
               "node_modules/leaflet/dist/leaflet.css",
               "node_modules/leaflet.markercluster/dist/MarkerCluster.css",
               "node_modules/leaflet.markercluster/dist/MarkerCluster.Default.css",
-              "src/styles.scss"
+              "src/assets/fonts/BCSans.css",
+              "src/styles.scss",
+              "src/ant-design-custom.less"
+
             ],
             "scripts": [
               "node_modules/jquery/dist/jquery.min.js",

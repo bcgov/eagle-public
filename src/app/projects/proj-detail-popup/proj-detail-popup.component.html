@@ -11,17 +11,13 @@
             <div class="value" [clamp]="3" [innerHTML]="proj.description"></div>
           </li>
           <li>
-            <span class="key">EAO Project Number:</span>
-            <span class="value">{{proj?.epicProjectID || '-'}}</span>
-          </li>
-          <li>
             <span class="key">Decision:</span>
-            <span class="value">{{proj?.eacDecision || '-'}}</span>
+            <span class="value">{{proj?.eacDecision?.name || '-'}}</span>
           </li>
           <li>
             <!-- Phase object not ready -->
             <span class="key">Phase:</span>
-            <span class="value">{{proj?.currentPhaseName || '-'}}</span>
+            <span class="value">{{proj?.currentPhaseName?.name || '-'}}</span>
           </li>
           <li>
             <span class="key">Location:</span>
@@ -44,7 +40,7 @@
           </i><span>{{proj?.cpStatus}}</span>
         </li>
         <li *ngVar="projectService.getStatusCode(proj?.status) as projStatusCode">
-          
+
           <i class="material-icons" title="{{proj?.projStatus}}"
             *ngIf="projectService.isAccepted(projStatusCode)">
             access_time

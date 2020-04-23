@@ -13,6 +13,10 @@
             <a class="btn slide-l-btn hero-btn inverted" href="/projects-list" [routerLink]="['/projects-list']">
               <i class="material-icons">list</i><span>List of Projects</span>
             </a>
+            <a class="btn slide-l-btn hero-btn inverted ml-4"
+              href="/project-notifications" [routerLink]="['/project-notifications']">
+              <i class="material-icons">list</i><span>Project Notifications</span>
+            </a>
           </div>
         </div>
       </div>
@@ -26,23 +30,24 @@
       <h2 class="mb-4">Recent Activities & Updates</h2>
       <div class="home-news-feed">
 
-        <table class="activity-feed table" id="tableTop" *ngIf="results">
-          <ng-container *ngFor="let item of results">
-            <tr class="activity-feed__item" *ngIf="item.active == true">
+        <table class="table" id="tableTop" *ngIf="results">
+          <tbody *ngFor="let item of results">
+            <tr *ngIf="item.active == true">
               <td>
                 <div class="title-container">
                   <h3 class="title-container__title">
                     <span class="font-weight-bold" *ngIf="item.project">
                       {{item.project?.name}}
                     </span>
+                    <span *ngIf="item.notificationName" class="font-weight-bold">{{item.notificationName}}</span>
                     <span class="home-news-feed__headline">{{item.headline}}</span>
                   </h3>
                   <span class="title-container__date">{{item.dateAdded | date:'longDate'}}</span>
                 </div>
-                <div class="activity-feed__content">
+                <div>
                   <div class="activity-content" [innerHTML]="item.content"></div>
                 </div>
-                <div class="activity-feed__actions">
+                <div>
                   <a class="btn btn-sm content-btn-alt" title="View more information about {{item.project.name}}"
                     [routerLink]="['/p', item.project?._id ]" *ngIf="item.project?._id">
                     Project Info
@@ -51,14 +56,20 @@
                     [routerLink]="['/p', item.project?._id, 'cp', item.pcp ]">
                     Submit/ View Comments
                   </a>
-                  <a *ngIf="item.documentUrl && !item?.documentUrl.includes('docs?folder')" class="btn btn-sm content-btn-alt" title="View more information" href="{{item.documentUrl}}"
+                  <a *ngIf="item.documentUrl && !item?.documentUrl.includes('docs?folder') && !item?.notificationName"
+                    class="btn btn-sm content-btn-alt" title="View more information" href="{{item.documentUrl}}"
                     target="_blank">
                     View Document(s)
+                  </a>
+                  <a *ngIf="item.documentUrl && item?.notificationName"
+                    class="btn btn-sm content-btn-alt" title="View more information" href="{{item.documentUrl}}"
+                    target="_blank">
+                    View Project Notification Public Comment Period
                   </a>
                 </div>
               </td>
             </tr>
-          </ng-container>
+          </tbody>
         </table>
         <div class="news-block-more">
           <a class="btn slide-r-btn content-btn-alt" href="/news" [routerLink]="['/news']">
@@ -71,28 +82,33 @@
     <hr>
     <div class="bg-faded">
       <section class="container">
-        <h2>About the BC Environmental Assessment Process...</h2>
-        <p>Learn more about how the Environmental Assessment Office neutrally administers a process that is predictable, transparent, timely, procedurally fair, and holds all participants accountable.</p>
+        <h2>About the B.C. Environmental Assessment Process...</h2>
+        <p>Learn more about how the Environmental Assessment Office neutrally administers a process that is predictable,
+          transparent, timely, procedurally fair, and holds all participants accountable.</p>
         <div class="row feature-blocks">
           <div class="col-md-4">
             <div class="feature-block">
               <h3>Legislation</h3>
-              <p>Learn about the legislation and regulations that apply to environmental assessments in the province of British Columbia.</p>
-              <a class="btn btn-sm inverted" href="/legislation" [routerLink]="['/legislation']">Learn More</a>
+              <p>Learn about the legislation and regulations that apply to environmental assessments in the province of
+                British Columbia.</p>
+              <a class="btn btn-sm inverted" href="/legislation" [routerLink]="['/legislation']" aria-label="Learn more about legislation">Learn More</a>
             </div>
           </div>
           <div class="col-md-4">
             <div class="feature-block">
               <h3>Process & Procedures</h3>
-              <p>Learn more about how the Environmental Assessment Office neutrally administers a process that holds all participants accountable.</p>
-              <a class="btn btn-sm inverted" href="/process" [routerLink]="['/process']">Learn More</a>
+              <p>Learn more about how the Environmental Assessment Office neutrally administers a process that holds all
+                participants accountable.</p>
+              <a class="btn btn-sm inverted" href="/process" [routerLink]="['/process']" aria-label="Learn more about process and procedures">Learn More</a>
             </div>
           </div>
           <div class="col-md-4">
             <div class="feature-block">
               <h3>Compliance Oversight</h3>
-              <p>Learn about how we collaborate with other agencies to coordinate oversight of environmental assessment projects.</p>
-              <a class="btn btn-sm inverted" href="/compliance-oversight" [routerLink]="['/compliance-oversight']">Learn More</a>
+              <p>Learn about how we collaborate with other agencies to coordinate oversight of environmental assessment
+                projects.</p>
+              <a class="btn btn-sm inverted" href="/compliance-oversight" [routerLink]="['/compliance-oversight']" aria-label="Learn more about compliance oversight">Learn
+                More</a>
             </div>
           </div>
         </div>

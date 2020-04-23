@@ -1,10 +1,87 @@
+import { NgbDateStruct } from '@ng-bootstrap/ng-bootstrap';
+
+export interface BuildNature {
+  build: string;
+  nature: string;
+}
+
 export class Constants {
+
+  public static readonly minPickerDate: NgbDateStruct = { year: 1900, month: 1, day: 1 };
+  public static readonly maxPickerDate: NgbDateStruct = { year: (new Date().getFullYear() + 20), month: 1, day: 1 };
+
+  public static readonly searchDisclaimer = 'Note: Some documents within this project have not yet been categorized by author, document type, and/or milestone and may not be displayed when using some of the search filters. We are actively processing these documents so they can be searched and filtered, making it easier to find what you’re looking for. Clearing the filters and searching based on a keyword will show all results.';
+  public static readonly docSearchDisclaimer = 'Note: Some documents have not yet been categorized by author, document type, and/or milestone and may not be displayed when using some of the search filters. We are actively processing these documents so they can be searched and filtered, making it easier to find what you’re looking for. Clearing the filters and searching based on a keyword will show all results.';
+
+  public static readonly optionalProjectDocTabs = {
+    APPLICATION: 'application',
+    CERTIFICATE: 'certificate',
+    AMENDMENT: 'amendment',
+    UNSUBSCRIBE_CAC: 'project-unsubscribe'
+  };
+
+  public static readonly legislationLinks = {
+    ENVIRONMENTAL_ASSESSMENT_ACT_2002_LINK: 'http://www.bclaws.ca/civix/document/id/complete/statreg/02043_01',
+    ENVIRONMENTAL_ASSESSMENT_ACT_1996_LINK: 'http://www.bclaws.ca/civix/document/id/complete/statreg/96119_pit',
+    ENVIRONMENTAL_ASSESSMENT_ACT_2018_LINK: 'http://www.bclaws.ca/civix/document/id/complete/statreg/18051'
+  };
+
   public static readonly tableDefaults = {
     DEFAULT_CURRENT_PAGE: 1,
     DEFAULT_PAGE_SIZE: 10,
     DEFAULT_SORT_BY: '-datePosted',
-    DEFAULT_KEYWORDS: ''
+    DEFAULT_KEYWORDS: '',
+    DEFAULT_SHOW_MORE_INCREMENT: 5
   };
+
+  public static readonly PCP_COLLECTION: object[] = [
+    { code: 'pending', name: 'Pending' },
+    { code: 'open', name: 'Open' },
+    { code: 'closed', name: 'Closed' }
+  ];
+
+  public static readonly PROJECT_TYPE_COLLECTION: object[] = [
+    { code: 'energyElectricity', name: 'Energy-Electricity' },
+    { code: 'energyPetroleum', name: 'Energy-Petroleum & Natural Gas' },
+    { code: 'foodProcessing', name: 'Food Processing' },
+    { code: 'industrial', name: 'Industrial' },
+    { code: 'mines', name: 'Mines' },
+    { code: 'other', name: 'Other' },
+    { code: 'tourist', name: 'Tourist Destination Resorts' },
+    { code: 'transportation', name: 'Transportation' },
+    { code: 'wasteDisposal', name: 'Waste Disposal' },
+    { code: 'waterManagement', name: 'Water Management' }
+  ];
+
+  public static readonly REGIONS_COLLECTION: Array<object> = [
+    { code: 'Cariboo', name: 'Cariboo' },
+    { code: 'Kootenay', name: 'Kootenay' },
+    { code: 'Lower Mainland', name: 'Lower Mainland' },
+    { code: 'Okanagan', name: 'Okanagan' },
+    { code: 'Omineca', name: 'Omineca' },
+    { code: 'Peace', name: 'Peace' },
+    { code: 'Skeena', name: 'Skeena' },
+    { code: 'Thompson-Nicola', name: 'Thompson-Nicola' },
+    { code: 'Vancouver Island', name: 'Vancouver Island' }
+  ];
+
+  public static readonly PROJECT_NOTIFICATION_DECISIONS: Array<object> = [
+    { code: 'In Progress', name: 'In Progress' },
+    { code: 'Referred for s.11 consideration', name: 'Referred for s.11 consideration' },
+    { code: 'Not referred for s.11 consideration', name: 'Not referred for s.11 consideration' }
+  ];
+
+  public static readonly buildToNature: BuildNature[] = [
+    { build: 'new',
+      nature: 'New Construction'
+    },
+    { build: 'modification',
+      nature: 'Modification of Existing'
+    },
+    { build: 'dismantling',
+      nature: 'Dismantling or Abandonment'
+    },
+  ];
 
   public static readonly types = [
     'CERTIFICATE OF PURCHASE',
