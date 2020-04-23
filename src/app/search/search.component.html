@@ -16,15 +16,14 @@
                 <!-- NOT ALL -->
             <div>
                 <app-table-template *ngIf="filters.length !== 0"
-                    [columns]="documentTableColumns"
-                    [data]="documentTableData"
-                    (onColumnSort)='setColumnSort($event)'
-                    (onPageNumUpdate)='getPaginated($event)'
-                    [showSearch]="true"
-                    (onSearch)='executeSearch($event)'
-                    [showAdvancedSearch]="true"
-                    [searchDisclaimer]="'testing a disclaimer'"
-                    [filters]="filters">
+                                    [columns]="documentTableColumns"
+                                    [data]="documentTableData"
+                                    [showSearch]="true"
+                                    (onSearch)='executeSearch($event)'
+                                    [showAdvancedSearch]="true"
+                                    [searchDisclaimer]="constants.docSearchDisclaimer"
+                                    [filters]="filters"
+                                    [persistenceId]="'globalDocSearch'">
                 </app-table-template>
             </div>
         </div>

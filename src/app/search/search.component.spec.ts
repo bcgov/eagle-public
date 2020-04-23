@@ -7,7 +7,7 @@ import { MatSnackBarModule } from '@angular/material';
 import { ApiService } from 'app/services/api';
 import { StorageService } from 'app/services/storage.service';
 import { Utils } from 'app/shared/utils/utils';
-import { paramsWithDates, SearchResultsStub } from 'app/shared/utils/mock-data';
+import { SearchResultsStub } from 'app/shared/utils/mock-data';
 import { TableTemplateUtils } from 'app/shared/utils/table-template-utils';
 import { SearchComponent } from './search.component';
 import { SearchService } from 'app/services/search.service';
@@ -64,21 +64,6 @@ describe('DocSearchComponent', () => {
     component = fixture.componentInstance;
     mockTableTemplateUtils.getParamsFromUrl.and.returnValue(defaultParams);
     fixture.detectChanges();
-  });
-
-  it ('Date params are converted to filters', () => {
-    component.setFiltersFromParams(paramsWithDates);
-    expect(component.filterForUI['datePostedStart']).toEqual({year: 2020, month: 2, day: 1})
-    expect(component.filterForUI['datePostedEnd']).toEqual({year: 2020, month: 3, day: 12})
-  });
-
-  it('Date filters are converted to params format YYYY-MM-DD', () => {
-    component.filterForUI['datePostedStart'] = { year: 2020, month: 2, day: 1 };
-    component.filterForUI['datePostedEnd'] = { year: 2020, month: 3, day: 12 };
-    let params = { dataset: 'Document', currentPage: 1, pageSize: 10, ms: 807 };
-    component.dateFilterToParams(params, 'datePostedStart');
-    component.dateFilterToParams(params, 'datePostedEnd');
-    expect(params).toEqual(paramsWithDates);
   });
 
   it('page number change updates url', () => {
