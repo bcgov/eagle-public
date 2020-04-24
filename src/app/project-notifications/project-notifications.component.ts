@@ -103,6 +103,9 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
     this.ngUnsubscribe.complete();
   }
 
+  getTrigger(project) {
+    return project && project.trigger ? project.trigger.replace(/,/g, ', ') : null;
+  }
   getProjectDocuments(project: ProjectNotification) {
     this.searchService.getSearchResults(
       null,
