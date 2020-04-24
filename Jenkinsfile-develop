@@ -323,15 +323,17 @@ pipeline {
     stage('Setup PR env') {
       steps {
         script {
-          sh("oc extract secret/rocket-chat-secrets --to=${env.WORKSPACE} --confirm")
-          def existingDeploy = checkForPRDeployment()
-          echo "My branch is: ${PR_NAME}"
-          if (!existingDeploy) {
-            // env hasn't been created, call setup scripts
-            echo "Deploying PR Environment"
-            createPRDeployment()
-          } else {
-            echo "Deployment for this PR already exists, skipping deploy all"
+          openshift.withCluster() {
+            sh("oc extract secret/rocket-chat-secrets --to=${env.WORKSPACE} --confirm")
+            def existingDeploy = checkForPRDeployment()
+            echo "My branch is: ${PR_NAME}"
+            if (!existingDeploy) {
+              // env hasn't been created, call setup scripts
+              echo "Deploying PR Environment"
+              createPRDeployment()
+            } else {
+              echo "Deployment for this PR already exists, skipping deploy all"
+            }
           }
         }
       }
