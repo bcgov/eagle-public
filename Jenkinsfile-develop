@@ -277,8 +277,10 @@ def createPRDeployment() {
       # create builds and deploys
       cd ../../../../..
       ./setup-all.sh
+      # switch back to esm project,
+      oc project esm
     '''
-    echo "deployment scripts configured"
+    echo "deployment scripts configured and PR env created"
   } catch (error) {
     notifyRocketChat(
       "@all The build ${env.BUILD_DISPLAY_NAME} of eagle-public dev-pr, seems to be broken.\n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
@@ -309,18 +311,19 @@ pipeline {
       }
     }
 
-    // stage('Sonarqube') {
-    //  steps {
-    //    script {
-    //      echo "Running Sonarqube"
-    //      def result = nodejsSonarqube()
-    //    }
-    //  }
-    // }
+    stage('Sonarqube') {
+     steps {
+       script {
+         echo "Running Sonarqube"
+         def result = nodejsSonarqube()
+       }
+     }
+    }
 
     stage('Setup PR env') {
       steps {
         script {
+          sh("oc extract secret/rocket-chat-secrets --to=${env.WORKSPACE} --confirm")
           def existingDeploy = checkForPRDeployment()
           echo "My branch is: ${PR_NAME}"
           if (!existingDeploy) {
@@ -331,13 +334,6 @@ pipeline {
             echo "Deployment for this PR already exists, skipping deploy all"
           }
         }
-      }
-    }
-
-    stage('Debug - pause') {
-      steps {
-        input 'Continue?'
-        echo 'params checked - continuing'
       }
     }
 
