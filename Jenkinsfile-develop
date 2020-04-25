@@ -236,7 +236,7 @@ def nodejsSonarqube () {
 }
 
 boolean checkForPRDeployment() {
-  _openshift(env.STAGE_NAME, 'esm-dev') {
+  _openshift(env.STAGE_NAME, DEVPROJECT) {
     def dcCount = openshift.selector('dc', 'pr-eagle-public').count()
     echo "count: ${dcCount}"
     if (dcCount == 0) {
@@ -261,7 +261,7 @@ def createPRDeployment() {
           rm -rf eagle-helper-pods
           pwd
         fi
-        git clone https://github.com/bcgov/eagle-helper-pods
+        git clone https://github.com/mtcarto/eagle-helper-pods
         cd eagle-helper-pods/openshift/setup-teardown/
 
         # set project to PR deployment template folder
@@ -278,8 +278,8 @@ def createPRDeployment() {
         # create builds and deploys
         cd ../../../../..
         ./setup-all.sh
-        # switch back to esm project,
-        oc project esm
+        # switch back to tools project,
+        oc project ${TOOLSPROJECT}
       '''
       echo "deployment scripts configured and PR env created"
     } catch (error) {
@@ -299,7 +299,8 @@ def lockName = "eagle-public-${env.JOB_NAME}-${env.BUILD_NUMBER}"
 def gitBranch = "pr-${env.GIT_BRANCH}"
 pipeline {
   environment {
-    TOOLSPROJECT = "esm"
+    TOOLSPROJECT = "md4m71-tools"
+    DEVPROJECT = "md4m71-dev"
     GIT_BRANCH = sh(returnStdout: true, script: 'git rev-parse --abbrev-ref HEAD').trim()
     PR_NAME = gitBranch.toLowerCase()
   }
@@ -389,10 +390,10 @@ pipeline {
             openshift.withCluster() {
               openshift.withProject(TOOLSPROJECT) {
                 echo "Deploying to dev..."
-                openshift.tag("esm/${PR_NAME}-eagle-public:${IMAGE_HASH}", "esm/${PR_NAME}-eagle-public:${PR_NAME}")
+                openshift.tag("${TOOLSPROJECT}/${PR_NAME}-eagle-public:${IMAGE_HASH}", "${TOOLSPROJECT}/${PR_NAME}-eagle-public:${PR_NAME}")
               }
 
-              openshift.withProject('esm-dev') {
+              openshift.withProject(DEVPROJECT) {
                 def dcObj = openshift.selector('dc', "${PR_NAME}-eagle-public")
                 dcObj.rollout().status()
                 echo ">>>> Deployment Complete"
