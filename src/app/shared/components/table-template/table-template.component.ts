@@ -164,7 +164,7 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
 
   // Table action emits
   sort(property: string) {
-    if (this.data.paginationData.sortBy.charAt(0) === '+') {
+    if (this.data.paginationData.sortBy && this.data.paginationData.sortBy.charAt(0) === '+') {
       this.data.paginationData.sortBy = '-' + property;
     } else {
       this.data.paginationData.sortBy = '+' + property;
@@ -429,12 +429,14 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
       let selectedFilters = persistenceObject.filters;
 
       this.filters.forEach(filter => {
-        if (!selectedFilters[filter.id].hasOwnProperty('subfilters')) {
-          this.restoreFilters(selectedFilters[filter.id], filter);
-        } else {
-          filter.collection.forEach(subFilter => {
-            this.restoreFilters(selectedFilters[filter.id].subfilters[subFilter.id], subFilter);
-          });
+        if (selectedFilters[filter.id]) {
+          if (!selectedFilters[filter.id].hasOwnProperty('subfilters')) {
+            this.restoreFilters(selectedFilters[filter.id], filter);
+          } else {
+            filter.collection.forEach(subFilter => {
+              this.restoreFilters(selectedFilters[filter.id].subfilters[subFilter.id], subFilter);
+            });
+          }
         }
       });
       this.keywords = persistenceObject.keywords;

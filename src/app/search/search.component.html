@@ -18,6 +18,7 @@
                 <app-table-template *ngIf="filters.length !== 0"
                                     [columns]="documentTableColumns"
                                     [data]="documentTableData"
+                                    (onColumnSort)='setColumnSort($event)'
                                     [showSearch]="true"
                                     (onSearch)='executeSearch($event)'
                                     [showAdvancedSearch]="true"
