@@ -268,12 +268,7 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
     );
   }
 
-  setColumnSort(column) {
-    if (this.tableParams.sortBy.charAt(0) === '+') {
-      this.tableParams.sortBy = '-' + column;
-    } else {
-      this.tableParams.sortBy = '+' + column;
-    }
+  setColumnSort() {
     this.getPaginatedDocs(this.tableParams.currentPage);
   }
 

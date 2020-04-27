@@ -77,7 +77,7 @@ export class SearchComponent implements OnInit, OnDestroy {
     },
     {
       name: 'Project',
-      value: 'projectName',
+      value: 'project.name',
       width: 'col-2'
     },
     {
@@ -327,6 +327,8 @@ export class SearchComponent implements OnInit, OnDestroy {
     );
   }
 
+  setColumnSort() {
+  }
   ngOnDestroy() {
     // dismiss any open snackbar
     if (this.snackBarRef) { this.snackBarRef.dismiss(); }
