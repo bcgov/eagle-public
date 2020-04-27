@@ -77,7 +77,7 @@ export class SearchComponent implements OnInit, OnDestroy {
     },
     {
       name: 'Project',
-      value: 'projectName',
+      value: 'project',
       width: 'col-2'
     },
     {
