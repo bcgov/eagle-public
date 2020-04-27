@@ -39,6 +39,9 @@ export class HeaderComponent {
         case 'demo':
           this.envName = 'Demo';
           break;
+        case 'hotfix':
+          this.envName = 'Hotfix';
+          break;
         default:
           this.envName = null;
       }

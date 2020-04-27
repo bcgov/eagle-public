@@ -9,19 +9,11 @@ import { SearchTerms } from 'app/models/search';
 import { TableObject } from 'app/shared/components/table-template/table-object';
 import { TableParamsObject } from 'app/shared/components/table-template/table-params-object';
 import { TableTemplateUtils } from 'app/shared/utils/table-template-utils';
+import { FilterObject } from 'app/shared/components/table-template/filter-object';
 import { SearchService } from 'app/services/search.service';
 import { ApiService } from 'app/services/api';
 import { MatSnackBar } from '@angular/material';
 import { CommentPeriodService } from 'app/services/commentperiod.service';
-
-class ProjectNotificationFilterObject {
-  constructor(
-    public type: object = {},
-    public pcp: object = {},
-    public region: Array<string> = [],
-    public decision: object = {}
-  ) { }
-}
 
 @Component({
   selector: 'app-project-notifications',
@@ -31,35 +23,22 @@ class ProjectNotificationFilterObject {
 
 export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
   private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
-  public regions: Array<object> = [];
-  public decisions: Array<object> = [];
-  public commentPeriods: Array<object> = [];
-  public projectTypes: Array<object> = [];
   public loading = true;
   public tableData: TableObject;
   public tableParams: TableParamsObject = new TableParamsObject();
   public terms = new SearchTerms();
   public showAdvancedSearch = true;
-  public filterForURL: object = {};
   public filterForAPI: object = {};
-  public filterForUI: ProjectNotificationFilterObject = new ProjectNotificationFilterObject();
 
   public projectNotifications: Array<ProjectNotification> = [];
   public readonly constants = Constants;
 
-  public showFilters: object = {
-    type: false,
-    region: false,
-    pcp: false,
-    decision: false
-  };
+  public filters: FilterObject[] = [];
 
-  public numFilters: object = {
-    type: 0,
-    region: 0,
-    pcp: 0,
-    decision: 0
-  };
+  private typeFilter = new FilterObject('type', 'Project Type', null, Constants.PROJECT_TYPE_COLLECTION, []);
+  private regionFilter = new FilterObject('region', 'Region', null, Constants.REGIONS_COLLECTION, []);
+  private pcpFilter = new FilterObject('pcp', 'Public Comment Period', null, Constants.PCP_COLLECTION, []);
+  private decisionFilter = new FilterObject('decision', 'Notification Decision', null, Constants.PROJECT_NOTIFICATION_DECISIONS, []);
 
   constructor(
     private _changeDetectionRef: ChangeDetectorRef,
@@ -71,11 +50,10 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
     public snackBar: MatSnackBar,
     private commentPeriodService: CommentPeriodService
   ) {
-
-    this.regions = Constants.REGIONS_COLLECTION;
-    this.commentPeriods = Constants.PCP_COLLECTION;
-    this.projectTypes = Constants.PROJECT_TYPE_COLLECTION;
-    this.decisions = Constants.PROJECT_NOTIFICATION_DECISIONS;
+    this.filters.push(this.typeFilter);
+    this.filters.push(this.regionFilter);
+    this.filters.push(this.pcpFilter);
+    this.filters.push(this.decisionFilter);
   }
 
   ngOnInit() {
@@ -125,31 +103,9 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
     this.ngUnsubscribe.complete();
   }
 
-  toggleFilter(name) {
-    if (this.showFilters[name]) {
-      this.updateCount(name);
-      this.showFilters[name] = false;
-    } else {
-      Object.keys(this.showFilters).forEach(key => {
-        if (this.showFilters[key]) {
-          this.updateCount(key);
-          this.showFilters[key] = false;
-        }
-      });
-      this.showFilters[name] = true;
-    }
+  getTrigger(project) {
+    return project && project.trigger ? project.trigger.replace(/,/g, ', ') : null;
   }
-
-  isShowingFilter() {
-    return Object.keys(this.showFilters).some(key => {
-      return this.showFilters[key];
-    });
-  }
-
-  clearSelectedItem(filter: string, item: any) {
-    this.filterForUI[filter] = this.filterForUI[filter].filter(option => option._id !== item._id);
-  }
-
   getProjectDocuments(project: ProjectNotification) {
     this.searchService.getSearchResults(
       null,
@@ -182,69 +138,6 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
     });
   }
 
-  clearAll() {
-    Object.keys(this.filterForUI).forEach(key => {
-      if (this.filterForUI[key]) {
-        if (Array.isArray(this.filterForUI[key])) {
-          this.filterForUI[key] = [];
-        } else if (typeof this.filterForUI[key] === 'object') {
-          this.filterForUI[key] = {};
-        } else {
-          this.filterForUI[key] = '';
-        }
-      }
-    });
-    this.updateCounts();
-  }
-
-  updateCount(name) {
-    const getCount = n => {
-      return Object.keys(this.filterForUI[n]).filter(
-        k => this.filterForUI[n][k]
-      ).length;
-    };
-
-    this.numFilters[name] = getCount(name);
-  }
-
-  updateCounts() {
-    this.updateCount('type');
-    this.updateCount('region');
-    this.updateCount('pcp');
-    this.updateCount('decision');
-  }
-
-  public onSubmit() {
-    let params = this.terms.getParams();
-
-    params['ms'] = new Date().getMilliseconds();
-    params['dataset'] = this.terms.dataset;
-    params['currentPage'] = this.tableParams.currentPage;
-    params['sortBy'] = this.tableParams.sortBy = '-score';
-    params['keywords'] = this.tableParams.keywords;
-    params['pageSize'] = this.tableParams.pageSize
-
-    this.setParamsFromFilters(params);
-
-    this.router.navigate(['project-notifications', params]);
-  }
-
-  setParamsFromFilters(params) {
-    this.collectionFilterToParams(params, 'type', 'name');
-    this.collectionFilterToParams(params, 'pcp', 'code');
-    this.collectionFilterToParams(params, 'region', 'code');
-    this.collectionFilterToParams(params, 'decision', 'code');
-  }
-
-  collectionFilterToParams(params, name, identifyBy) {
-    if (this.filterForUI[name].length) {
-      const values = this.filterForUI[name].map(record => {
-        return record[identifyBy];
-      });
-      params[name] = values.join(',');
-    }
-  }
-
   downloadDocuments(project) {
     project.documents.forEach(doc => {
       this.api.downloadDocument(doc)
@@ -259,32 +152,16 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
        })
      });
   }
+
+  executeSearch(apiFilters) {
+    this.terms.keywords = apiFilters.keywords;
+    this.tableParams.keywords = apiFilters.keywords;
+    this.filterForAPI = apiFilters.filterForAPI;
+
+    this.search();
+  }
+
   search() {
-
-    let params = this.terms.getParams();
-
-    params['ms'] = new Date().getMilliseconds();
-
-    this.setParamsFromFilters(params);
-
-    let queryConditions = {};
-
-    if (params.type) {
-      queryConditions['type'] = params.type;
-    }
-
-    if (params.region) {
-      queryConditions['region'] = params.region;
-    }
-
-    if (params.pcp) {
-      queryConditions['pcp'] = params.pcp;
-    }
-
-    if (params.decision) {
-      queryConditions['decision'] = params.decision;
-    }
-
     this.searchService.getSearchResults(
       this.tableParams.keywords,
       'ProjectNotification',
@@ -292,7 +169,7 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
       1,
       10000,
       '-_id',
-      queryConditions
+      this.filterForAPI
     )
     .takeUntil(this.ngUnsubscribe)
     .subscribe((res: any) => {

@@ -1,5 +1,336 @@
+<!-- Search component -->
+<form *ngIf="showSearch"
+      #f="ngForm"
+      class="search-form ui form"
+      (ngSubmit)="search()">
+    <div class="search-area">
+        <div class="input-group main-search-field">
+            <input id="keywordInput"
+                   class="form-control"
+                   type="text"
+                   name="keywordInput"
+                   placeholder="Enter keywords to search..."
+                   [(ngModel)]="keywords"
+                   [disabled]="searching"
+                   autofocus />
+            <div class="input-group-append">
+                <!-- prevent searching if input is empty or we're already searching -->
+                <button class="btn btn-primary"
+                        type="button"
+                        (click)="search()"
+                        [disabled]="searching"
+                        *ngIf="!isShowingFilter() || !showAdvancedSearch">
+                    <i class="material-icons"[hidden]="searching">search</i>
+                    <i class="spinner rotating" [hidden]="!searching"></i>
+                    <span>{{searching ? 'Searching...' : 'Search'}}</span>
+                </button>
+            </div>
+        </div>
+        <div class="advanced-search">
+            <div class="row">
+                <div *ngIf="showAdvancedSearch" class="col-md-9">
+                    <!-- Filter button group (loop through and create all applied filters) -->
+                    <button *ngFor="let filter of filters"
+                            type="button"
+                            (click)="toggleFilter(filter);"
+                            [ngClass]="{'btn': true,
+                                        'btn-dark': filter.active,
+                                        'btn-secondary': !filter.active && ((!filter.collection && filter.selectedOptions.length > 0) || (filter.collection && getCollectionSelectedCount(filter) > 0)),
+                                        'btn-outline-dark': !filter.active && ((!filter.collection && filter.selectedOptions.length === 0) || (filter.collection && getCollectionSelectedCount(filter) === 0))}">
+                        {{filter.name}}<span *ngIf="(!filter.collection && filter.selectedOptions.length > 0) || (filter.collection && getCollectionSelectedCount(filter))">&nbsp;({{ !filter.collection ? filter.selectedOptions.length : getCollectionSelectedCount(filter)}})</span>
+                    </button>
+                    <!-- clear all filters -->
+                    <button class="btn btn-outline-dark"
+                            type="button"
+                            (click)="clearAllFilters();">Clear All
+                    </button>
+                </div>
+                <div [ngClass]="{'show-advanced-search-button': true, 'col-md-3': showAdvancedSearch, 'col-md-12': !showAdvancedSearch}">
+                    <button class="btn btn-secondary"
+                            type="button"
+                            (click)="showAdvancedSearch = !showAdvancedSearch;">
+                        <span *ngIf="showAdvancedSearch">Hide Advanced Search</span>
+                        <span *ngIf="!showAdvancedSearch">Show Advanced Search</span>
+                    </button>
+                </div>
+            </div>
+            <!-- advanced search menus (loop through and create all applied filters) -->
+            <div *ngFor="let filter of filters">
+                <div *ngIf="showAdvancedSearch && filters.length > 0 && filter.active && !filter.collection" class="project-filter row">
+                    <div class="col-md-12 filter-border">
+                        <div class="row sub-filter">
+                            <div class="col-md-12">
+                                <div class="row">
+                                    <b>{{filter.name}}</b>
+                                </div>
+                                <div class="row" *ngIf="filter.options.length && filter.options.length > 0">
+                                    <div class="form-group">
+                                        <!-- Filter definition for filters with group options -->
+                                        <ng-select *ngIf="filter.group"
+                                                id="{{filter.name}}"
+                                                name="{{filter.name}}"
+                                                multiple="true"
+                                                bindLabel="name"
+                                                groupBy="{{filter.group.name}}"
+                                                placeholder="Type {{filter.name}}"
+                                                [items]="filter.options"
+                                                [markFirst]="false"
+                                                [closeOnSelect]="false"
+                                                [(ngModel)]="filter.selectedOptions"
+                                                [compareWith]="filterCompareWith">
+                                            <ng-template ng-label-tmp let-item="item">
+                                                <span class="ng-value-icon left" (click)="clearSelectedItem(filter, item)" aria-hidden="true">×</span>
+                                                <span class="ng-value-label">{{item.name}} ({{item[filter.group.name]}})</span>
+                                            </ng-template>
+                                            <ng-template ng-optgroup-tmp let-item="item" let-index="index">
+                                                {{filter.group.labelPrefix + item[filter.group.name] + filter.group.labelPostfix}} <!-- add a prefix and postfix text string? -->
+                                            </ng-template>
+                                        </ng-select>
+                                        <!-- Filter definition for filters without group options -->
+                                        <ng-select *ngIf="!filter.group"
+                                                id="{{filter.name}}"
+                                                name="{{filter.name}}"
+                                                multiple="true"
+                                                bindLabel="name"
+                                                placeholder="Type {{filter.name}}"
+                                                [items]="filter.options"
+                                                [markFirst]="false"
+                                                [closeOnSelect]="false"
+                                                [(ngModel)]="filter.selectedOptions"
+                                                [compareWith]="filterCompareWith">
+                                        </ng-select>
+                                        <ng-template ng-label-tmp let-item="item">
+                                            <span class="ng-value-icon left" (click)="clearSelectedItem(filter, item)" aria-hidden="true">×</span>
+                                            <span class="ng-value-label">{{item.name}}</span>
+                                        </ng-template>
+                                    </div>
+                                </div>
+                                <!-- If we have a picker, and a date filter, put a divider between them -->
+                                <div *ngIf="filter.dateFilter && filter.options.length && filter.options.length > 0" class="row">
+                                    <div class="col-md-12"><hr></div>
+                                </div>
+                                <!-- Date filter to/from options -->
+                                <div *ngIf="filter.dateFilter">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <b>From</b>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <b>To</b>
+                                        </div>
+                                    </div>
+                                    <div class="row date-range">
+                                        <div class="col-md-6">
+                                            <div class="input-group">
+                                                <input name="startPicker"
+                                                       type="text"
+                                                       class="form-control"
+                                                       placeholder="yyyy-mm-dd"
+                                                       [(ngModel)]="filter.startDate"
+                                                       ngbDatepicker
+                                                       #startPicker="ngbDatepicker"
+                                                       [minDate]="constants.minPickerDate"
+                                                       [maxDate]="constants.maxPickerDate">
+                                                <div class="input-group-append">
+                                                    <button type="button"
+                                                            class="btn btn-outline-secondary calendar"
+                                                            (click)="startPicker.toggle()">
+                                                        <i class="material-icons">date_range</i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="input-group">
+                                                <input type="text"
+                                                       name="endPicker"
+                                                       class="form-control"
+                                                       placeholder="yyyy-mm-dd"
+                                                       [(ngModel)]="filter.endDate"
+                                                       ngbDatepicker
+                                                       #endPicker="ngbDatepicker"
+                                                       [minDate]="constants.minPickerDate"
+                                                       [maxDate]="constants.maxPickerDate">
+                                                <div class="input-group-append">
+                                                    <button type="button"
+                                                            class="btn btn-outline-secondary calendar"
+                                                            (click)="endPicker.toggle()">
+                                                        <i class="material-icons">date_range</i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- for filter collections, add to a single button-->
+                <!-- find a better way to do this aside from duplicating the above... another template? -->
+                <div *ngIf="showAdvancedSearch && filters.length > 0 && filter.active && filter.collection" class="project-filter row">
+                    <div class="col-md-12 filter-border" *ngFor="let subfilter of filter.collection">
+                        <div class="row sub-filter">
+                            <div class="col-md-12">
+                                <div class="row">
+                                    <b>{{subfilter.name}}</b>
+                                </div>
+                                <div class="row" *ngIf="subfilter.options.length && subfilter.options.length > 0">
+                                    <div class="form-group">
+                                        <!-- Filter definition for filters with group options -->
+                                        <ng-select *ngIf="subfilter.group"
+                                                id="{{subfilter.name}}"
+                                                name="{{subfilter.name}}"
+                                                multiple="true"
+                                                bindLabel="name"
+                                                groupBy="{{subfilter.group.name}}"
+                                                placeholder="Type {{subfilter.name}}"
+                                                [items]="subfilter.options"
+                                                [markFirst]="false"
+                                                [closeOnSelect]="false"
+                                                [(ngModel)]="subfilter.selectedOptions"
+                                                [compareWith]="filterCompareWith">
+                                            <ng-template ng-label-tmp let-item="item">
+                                                <span class="ng-value-icon left" (click)="clearSelectedItem(subfilter, item)" aria-hidden="true">×</span>
+                                                <span class="ng-value-label">{{item.name}} ({{item[subfilter.group.name]}})</span>
+                                            </ng-template>
+                                            <ng-template ng-optgroup-tmp let-item="item" let-index="index">
+                                                {{subfilter.group.labelPrefix + item[subfilter.group.name] + subfilter.group.labelPostfix}} <!-- add a prefix and postfix text string? -->
+                                            </ng-template>
+                                        </ng-select>
+                                        <!-- Filter definition for filters without group options -->
+                                        <ng-select *ngIf="!subfilter.group"
+                                                id="{{subfilter.name}}"
+                                                name="{{subfilter.name}}"
+                                                multiple="true"
+                                                bindLabel="name"
+                                                placeholder="Type {{subfilter.name}}"
+                                                [items]="subfilter.options"
+                                                [markFirst]="false"
+                                                [closeOnSelect]="false"
+                                                [(ngModel)]="subfilter.selectedOptions"
+                                                [compareWith]="filterCompareWith">
+                                        </ng-select>
+                                        <ng-template ng-label-tmp let-item="item">
+                                            <span class="ng-value-icon left" (click)="clearSelectedItem(subfilter, item)" aria-hidden="true">×</span>
+                                            <span class="ng-value-label">{{item.name}}</span>
+                                        </ng-template>
+                                    </div>
+                                </div>
+                                <!-- If we have a picker, and a date filter, put a divider between them -->
+                                <div *ngIf="subfilter.dateFilter && subfilter.options.length && subfilter.options.length > 0" class="row">
+                                    <div class="col-md-12"><hr></div>
+                                </div>
+                                <!-- Date filter to/from options -->
+                                <div *ngIf="subfilter.dateFilter">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <b>From</b>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <b>To</b>
+                                        </div>
+                                    </div>
+                                    <div class="row date-range">
+                                        <div class="col-md-6">
+                                            <div class="input-group">
+                                                <input name="startPicker"
+                                                       type="text"
+                                                       class="form-control"
+                                                       placeholder="yyyy-mm-dd"
+                                                       [(ngModel)]="subfilter.startDate"
+                                                       ngbDatepicker
+                                                       #startPicker="ngbDatepicker"
+                                                       [minDate]="constants.minPickerDate"
+                                                       [maxDate]="constants.maxPickerDate">
+                                                <div class="input-group-append">
+                                                    <button type="button"
+                                                            class="btn btn-outline-secondary calendar"
+                                                            (click)="startPicker.toggle()">
+                                                        <i class="material-icons">date_range</i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="input-group">
+                                                <input type="text"
+                                                       name="endPicker"
+                                                       class="form-control"
+                                                       placeholder="yyyy-mm-dd"
+                                                       [(ngModel)]="subfilter.endDate"
+                                                       ngbDatepicker
+                                                       #endPicker="ngbDatepicker"
+                                                       [minDate]="constants.minPickerDate"
+                                                       [maxDate]="constants.maxPickerDate">
+                                                <div class="input-group-append">
+                                                    <button type="button"
+                                                            class="btn btn-outline-secondary calendar"
+                                                            (click)="endPicker.toggle()">
+                                                        <i class="material-icons">date_range</i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <button *ngIf="showAdvancedSearch && isShowingFilter()"
+                    class="btn btn-primary search-button"
+                    type="button"
+                    (click)="search()">
+                <span>Search</span>
+            </button>
+        </div>
+        <div *ngIf="showAdvancedSearch && searchDisclaimer" class="search-disclaimer">
+            <span>{{searchDisclaimer}}</span>
+        </div>
+    </div>
+    <!-- Help, any additional buttons-->
+    <div class="input-group-append" *ngIf="showSearchHelp">
+        <a _ngcontent-c7 class="btn btn-primary btn-search-help"
+           [routerLink]="['/search-help']"
+           target="_blank">
+            <i class="material-icons md-18">info</i>
+            <span> Search Help</span>
+        </a>
+    </div>
+    <!-- Button Type Filter -->
+    <!-- These are identical to regular filters, but display as buttons. There is only ever one -->
+    <div *ngIf="buttonFilter && buttonFilter.options && buttonFilter.options.length > 0">
+        <p class="mb-1"><b>{{buttonFilter.name}} Filters:</b></p>
+        <div class="form-row">
+            <div class="form-group col-md-8">
+                <div class="btn-group btn-group-toggle">
+                    <div class="btn-group-toggle"
+                         data-toggle="buttons"
+                         *ngFor="let option of buttonFilter.options">
+                        <label class="btn btn-primary" [class.active]="option.active">
+                            <input type="checkbox"
+                                   (click)="toggleFilterOption(buttonFilter, option);"
+                                   [(ngModel)]="option.active"
+                                   autocomplete="off"
+                                   [ngModelOptions]="{standalone: true}">
+                            {{option.name}}
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+<br/>
+<!-- table component -->
+<div *ngIf="showCountAtTop && data.paginationData.pageSize < data.paginationData.totalListItems">
+    <div class="ant-pagination">{{data.paginationData.totalListItems !== 0 ? 'Showing ' + (data.paginationData.pageSize > data.paginationData.totalListItems ? data.paginationData.totalListItems : data.paginationData.pageSize) + ' of ' + data.paginationData.totalListItems : 'No'}} results</div>
+    <br/>
+</div>
 <table class="table">
-  <thead class="thead-light">
+  <thead class="thead-light" *ngIf="data.paginationData.totalListItems > 0 && showTableTemplate">
     <tr class="no-sort">
       <th *ngFor="let entry of columns"
         class="project-table__name-col sortable"

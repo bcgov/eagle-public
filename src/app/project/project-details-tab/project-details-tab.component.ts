@@ -26,9 +26,14 @@ export class ProjectDetailsTabComponent implements OnInit {
   public lists: any[] = [];
   public documentTableColumns: any[] = [
     {
+      name: '★',
+      value: 'isFeatured',
+      width: 'col-1'
+    },
+    {
       name: 'Name',
       value: 'displayName',
-      width: 'col-6'
+      width: 'col-3'
     },
     {
       name: 'Date',
@@ -43,6 +48,11 @@ export class ProjectDetailsTabComponent implements OnInit {
     {
       name: 'Milestone',
       value: 'milestone',
+      width: 'col-2'
+    },
+    {
+      name: 'Phase',
+      value: 'phase',
       width: 'col-2'
     }
   ];
@@ -108,12 +118,7 @@ export class ProjectDetailsTabComponent implements OnInit {
     this.selectedCount = count;
   }
 
-  setColumnSort(column) {
-    if (this.tableParams.sortBy.charAt(0) === '+') {
-      this.tableParams.sortBy = '-' + column;
-    } else {
-      this.tableParams.sortBy = '+' + column;
-    }
+  setColumnSort() {
     this.getFavoriteDocs();
   }
 
@@ -133,7 +138,8 @@ export class ProjectDetailsTabComponent implements OnInit {
               project: document.project,
               isFeatured: document.isFeatured,
               typeString: this.idToList(document.type),
-              milestoneString: this.idToList(document.milestone)
+              milestoneString: this.idToList(document.milestone),
+              projectPhase: this.idToList(document.projectPhase)
             }
           );
         }

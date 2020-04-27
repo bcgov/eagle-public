@@ -27,7 +27,7 @@ export class CertificatesComponent implements OnInit, OnDestroy {
     {
       name: 'Name',
       value: 'displayName',
-      width: 'col-6'
+      width: 'col-4'
     },
     {
       name: 'Date',
@@ -42,6 +42,11 @@ export class CertificatesComponent implements OnInit, OnDestroy {
     {
       name: 'Milestone',
       value: 'milestone',
+      width: 'col-2'
+    },
+    {
+      name: 'Phase',
+      value: 'phase',
       width: 'col-2'
     }
   ];
@@ -112,7 +117,8 @@ export class CertificatesComponent implements OnInit, OnDestroy {
             datePosted: document.datePosted,
             type: document.type,
             milestone: document.milestone,
-            project: document.project
+            project: document.project,
+            projectPhase: document.projectPhase
           }
         );
       });
