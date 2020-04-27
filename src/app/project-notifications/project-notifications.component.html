@@ -13,10 +13,7 @@
   <section class="project-list table-container">
     <div class="container">
         <h4>Project Notifications</h4>
-        <app-table-template (onColumnSort)='setColumnSort($event)'
-                            (onSelectedRow)='updateSelectedRow($event)'
-                            (onPageNumUpdate)='getPaginatedDocs($event)'
-                            [showSearch]="true"
+        <app-table-template [showSearch]="true"
                             [showTableTemplate]="false"
                             (onSearch)='executeSearch($event)'
                             [showAdvancedSearch]="true"
