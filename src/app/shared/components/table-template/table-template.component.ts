@@ -105,7 +105,7 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
             this.filters.forEach(filter => {
               if (filter.id === filterName) {
                 filter.options.forEach(option => {
-                  if (option.hasOwnProperty('code') && option.name === val) {
+                  if (option.hasOwnProperty('code') && option.name.toLowerCase() === val.toLowerCase()) {
                     filter.selectedOptions.push(option);
                   } else if (option.hasOwnProperty('_id') && option._id === val) {
                     filter.selectedOptions.push(option);
@@ -261,7 +261,7 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
       filtersForAPI[filter.id] = '';
       filter.selectedOptions.forEach(option => {
         if (option.hasOwnProperty('code')) {
-          filtersForAPI[filter.id] += option.name + ',';
+          filtersForAPI[filter.id] += filter.id === 'pcp' ? option.code : option.name + ',';
         } else if (option.hasOwnProperty('_id')) {
           filtersForAPI[filter.id] += option._id + ',';
         } else {
