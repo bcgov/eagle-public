@@ -261,7 +261,7 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
       filtersForAPI[filter.id] = '';
       filter.selectedOptions.forEach(option => {
         if (option.hasOwnProperty('code')) {
-          filtersForAPI[filter.id] += filter.id === 'pcp' ? option.code : option.name + ',';
+          filtersForAPI[filter.id] += (filter.id === 'pcp' ? option.code : option.name) + ',';
         } else if (option.hasOwnProperty('_id')) {
           filtersForAPI[filter.id] += option._id + ',';
         } else {
