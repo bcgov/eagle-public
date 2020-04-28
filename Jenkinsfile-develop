@@ -134,43 +134,18 @@ def getChangeLog(pastBuilds) {
   return log;
 }
 
-def nodejsSonarqube () {
+def sonarQubeJenkinsNode () {
   _openshift(env.STAGE_NAME, TOOLSPROJECT) {
-    String sonarLabel = "sonarqube-runner-${UUID.randomUUID().toString()}";
-    podTemplate(
-      label: sonarLabel,
-      name: sonarLabel,
-      serviceAccount: 'jenkins',
-      cloud: 'openshift',
-      slaveConnectTimeout: 300,
-      containers: [
-        containerTemplate(
-          name: 'jnlp',
-          image: 'registry.access.redhat.com/openshift3/jenkins-agent-nodejs-8-rhel7',
-          resourceRequestCpu: '500m',
-          resourceLimitCpu: '1000m',
-          resourceRequestMemory: '2Gi',
-          resourceLimitMemory: '3Gi',
-          workingDir: '/tmp',
-          command: '',
-          args: '${computer.jnlpmac} ${computer.name}',
-        )
-      ]
-    ) {
-      node(sonarLabel) {
+    node('test') {
         checkout scm
         dir('sonar-runner') {
           try {
             // run scan
-            sh("oc extract secret/sonarqube-secrets --to=${env.WORKSPACE}/sonar-runner --confirm")
-            SONARQUBE_URL = sh(returnStdout: true, script: 'cat sonarqube-route-url')
-
             sh "npm install typescript"
-            sh returnStdout: true, script: "./gradlew sonarqube -Dsonar.host.url=${SONARQUBE_URL} -Dsonar. -Dsonar.verbose=true --stacktrace --info"
+            sh returnStdout: true, script: "./gradlew sonarqube -Dsonar.host.url=${SONARQUBE_URL_INT} -Dsonar.verbose=true --stacktrace --info"
 
             // check if sonarqube passed
-            sh("oc extract secret/sonarqube-status-urls --to=${env.WORKSPACE}/sonar-runner --confirm")
-            SONARQUBE_STATUS_URL = sh(returnStdout: true, script: 'cat sonarqube-status-public')
+            SONARQUBE_STATUS_URL = "${SONARQUBE_URL_EXT}/api/qualitygates/project_status?projectKey=org.sonarqube%3Aeagle-public"
 
             boolean firstScan = false;
             def OLD_SONAR_DATE
@@ -187,13 +162,13 @@ def nodejsSonarqube () {
               if ( !sonarqubeReportComplete ( OLD_SONAR_DATE, SONARQUBE_STATUS_URL ) ) {
                 echo "sonarqube report failed to complete, or timed out"
 
-                notifyRocketChat(
-                  "@all The latest build, ${env.BUILD_DISPLAY_NAME} of eagle-public seems to be broken. \n ${env.RUN_DISPLAY_URL}\n Error: \n sonarqube report failed to complete, or timed out : ${SONARQUBE_URL}",
-                  ROCKET_DEPLOY_WEBHOOK
-                )
+                // notifyRocketChat(
+                //   "@all The latest build, ${env.BUILD_DISPLAY_NAME} of eagle-public seems to be broken. \n ${env.RUN_DISPLAY_URL}\n Error: \n sonarqube report failed to complete, or timed out : ${SONARQUBE_URL}",
+                //   ROCKET_DEPLOY_WEBHOOK
+                // )
 
                 currentBuild.result = "FAILURE"
-                exit 1
+                throw new Exception("sonar timed out or failedz")
               }
             } else {
               sleep (30)
@@ -201,37 +176,31 @@ def nodejsSonarqube () {
 
             SONARQUBE_STATUS_JSON = sh(returnStdout: true, script: "curl -w '%{http_code}' '${SONARQUBE_STATUS_URL}'")
             SONARQUBE_STATUS = sonarGetStatus (SONARQUBE_STATUS_JSON)
-
-            // check if sonarqube passed
-            sh("oc extract secret/sonarqube-status-urls --to=${env.WORKSPACE}/sonar-runner --confirm")
-            SONARQUBE_STATUS_URL = sh(returnStdout: true, script: 'cat sonarqube-status-public')
-
+            echo "${SONARQUBE_STATUS}"
             if ( "${SONARQUBE_STATUS}" == "ERROR") {
               echo "Scan Failed"
 
-              notifyRocketChat(
-                "@all The latest build ${env.BUILD_DISPLAY_NAME} of eagle-public seems to be broken. \n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
-                ROCKET_DEPLOY_WEBHOOK
-              )
+              // notifyRocketChat(
+              //   "@all The latest build ${env.BUILD_DISPLAY_NAME} of eagle-public seems to be broken. \n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
+              //   ROCKET_DEPLOY_WEBHOOK
+              // )
 
               currentBuild.result = 'FAILURE'
-              exit 1
             } else {
               echo "Scan Passed"
             }
           } catch (error) {
-            notifyRocketChat(
-              "@all The latest build ${env.BUILD_DISPLAY_NAME} of eagle-public seems to be broken. \n ${env.BUILD_URL}\n Error: \n ${error.message}",
-              ROCKET_DEPLOY_WEBHOOK
-            )
+            // notifyRocketChat(
+            //   "@all The latest build ${env.BUILD_DISPLAY_NAME} of eagle-public seems to be broken. \n ${env.BUILD_URL}\n Error: \n ${error.message}",
+            //   ROCKET_DEPLOY_WEBHOOK
+            // )
             throw error
           } finally {
             echo "Scan Complete"
           }
         }
       }
-    }
-    return true
+      return true;
   }
 }
 
@@ -303,6 +272,8 @@ pipeline {
     DEVPROJECT = "md4m71-dev"
     GIT_BRANCH = sh(returnStdout: true, script: 'git rev-parse --abbrev-ref HEAD').trim()
     PR_NAME = gitBranch.toLowerCase()
+    SONARQUBE_URL_INT = 'http://sonarqube:9000'
+    SONARQUBE_URL_EXT = "https://sonarqube-${TOOLSPROJECT}.pathfinder.gov.bc.ca"
   }
   agent any
   stages {
@@ -314,19 +285,19 @@ pipeline {
       }
     }
 
-    stage('Sonarqube') {
-     steps {
-       script {
-         echo "Running Sonarqube"
-         def result = nodejsSonarqube()
-       }
-     }
-    }
+    // stage('Sonarqube') {
+    //  steps {
+    //    script {
+    //      echo "Running Sonarqube"
+    //      def result = sonarQubeJenkinsNode()
+    //    }
+    //  }
+    // }
 
     stage('Setup PR env') {
       steps {
         script {
-          sh("oc extract secret/rocket-chat-secrets --to=${env.WORKSPACE} --confirm")
+          // sh("oc extract secret/rocket-chat-secrets --to=${env.WORKSPACE} --confirm")
           def existingDeploy = checkForPRDeployment()
           echo "My branch is: ${PR_NAME}"
           if (!existingDeploy) {
@@ -351,13 +322,13 @@ pipeline {
           echo ">>>>>>Changelog: \n ${CHANGELOG}"
           _openshift(env.STAGE_NAME, TOOLSPROJECT) {
             timeout(10) {
-              sh("oc extract secret/rocket-chat-secrets --to=${env.WORKSPACE} --confirm")
-              ROCKET_DEPLOY_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-deploy-webhook')
-              ROCKET_QA_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-qa-webhook')
+              // sh("oc extract secret/rocket-chat-secrets --to=${env.WORKSPACE} --confirm")
+              // ROCKET_DEPLOY_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-deploy-webhook')
+              // ROCKET_QA_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-qa-webhook')
 
               echo "Building eagle-public develop branch"
               // trigger and wait for s2i build to complete
-              def bcObj1 = openshift.selector('bc', "${PR_NAME}-eagle-public-angular")
+              def bcObj1 = openshift.selector('bc', "${PR_NAME}-eagle-public-angular-builder")
               bcObj1.untilEach(1) {
                 return it.object().status.phase == "Complete"
               }
@@ -398,21 +369,21 @@ pipeline {
                 dcObj.rollout().status()
                 echo ">>>> Deployment Complete"
 
-                notifyRocketChat(
-                  "A new version of eagle-public ${PR_NAME} is now in Dev, build: ${env.BUILD_DISPLAY_NAME} \n Changes: \n ${CHANGELOG}",
-                  ROCKET_DEPLOY_WEBHOOK
-                )
-                notifyRocketChat(
-                  "@all A new version of eagle-public is now in Dev and ready for QA. \n Changes to Dev: \n ${CHANGELOG}",
-                  ROCKET_QA_WEBHOOK
-                )
+                // notifyRocketChat(
+                //   "A new version of eagle-public ${PR_NAME} is now in Dev, build: ${env.BUILD_DISPLAY_NAME} \n Changes: \n ${CHANGELOG}",
+                //   ROCKET_DEPLOY_WEBHOOK
+                // )
+                // notifyRocketChat(
+                //   "@all A new version of eagle-public is now in Dev and ready for QA. \n Changes to Dev: \n ${CHANGELOG}",
+                //   ROCKET_QA_WEBHOOK
+                // )
               }
             }
           } catch (error) {
-            notifyRocketChat(
-              "@all The build ${env.BUILD_DISPLAY_NAME} of eagle-public, seems to be broken.\n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
-              ROCKET_DEPLOY_WEBHOOK
-            )
+            // notifyRocketChat(
+            //   "@all The build ${env.BUILD_DISPLAY_NAME} of eagle-public, seems to be broken.\n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
+            //   ROCKET_DEPLOY_WEBHOOK
+            // )
             currentBuild.result = "FAILURE"
             throw new Exception("Deploy failed")
           }
