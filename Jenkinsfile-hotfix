@@ -127,8 +127,8 @@ pipeline {
                 ROCKET_QA_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-qa-webhook')
 
                 echo "Building hotfix-eagle-public hotfix branch"
-                openshiftBuild bldCfg: 'eagle-public-angular', showBuildLogs: 'true'
-                openshiftBuild bldCfg: 'eagle-public-build', showBuildLogs: 'true'
+                openshiftBuild bldCfg: 'hotfix-eagle-public-angular', showBuildLogs: 'true'
+                openshiftBuild bldCfg: 'hotfix-eagle-public-build', showBuildLogs: 'true'
                 echo "Build done"
 
                 echo ">>> Get Image Hash"
