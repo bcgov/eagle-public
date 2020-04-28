@@ -13,10 +13,7 @@
   <section class="project-list table-container">
     <div class="container">
         <h4>Project Notifications</h4>
-        <app-table-template (onColumnSort)='setColumnSort($event)'
-                            (onSelectedRow)='updateSelectedRow($event)'
-                            (onPageNumUpdate)='getPaginatedDocs($event)'
-                            [showSearch]="true"
+        <app-table-template [showSearch]="true"
                             [showTableTemplate]="false"
                             (onSearch)='executeSearch($event)'
                             [showAdvancedSearch]="true"
@@ -81,7 +78,7 @@
                                     </div>
                                     <div class="col-sm-12 col-md-3 pn-info-block">
                                         <label>Notification Trigger</label>
-                                        <p class="value">{{project?.trigger || "-" }}</p>
+                                        <p class="value">{{getTrigger(project) || "-" }}</p>
                                     </div>
                                     <div class="col-sm-12 col-md-3 pn-info-block">
                                         <label>Notification Decision</label>

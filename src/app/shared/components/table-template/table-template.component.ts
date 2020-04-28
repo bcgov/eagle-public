@@ -105,7 +105,7 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
             this.filters.forEach(filter => {
               if (filter.id === filterName) {
                 filter.options.forEach(option => {
-                  if (option.hasOwnProperty('code') && option.name === val) {
+                  if (option.hasOwnProperty('code') && option.name.toLowerCase() === val.toLowerCase()) {
                     filter.selectedOptions.push(option);
                   } else if (option.hasOwnProperty('_id') && option._id === val) {
                     filter.selectedOptions.push(option);
@@ -164,7 +164,7 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
 
   // Table action emits
   sort(property: string) {
-    if (this.data.paginationData.sortBy.charAt(0) === '+') {
+    if (this.data.paginationData.sortBy && this.data.paginationData.sortBy.charAt(0) === '+') {
       this.data.paginationData.sortBy = '-' + property;
     } else {
       this.data.paginationData.sortBy = '+' + property;
@@ -261,7 +261,7 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
       filtersForAPI[filter.id] = '';
       filter.selectedOptions.forEach(option => {
         if (option.hasOwnProperty('code')) {
-          filtersForAPI[filter.id] += option.name + ',';
+          filtersForAPI[filter.id] += (filter.id === 'pcp' ? option.code : option.name) + ',';
         } else if (option.hasOwnProperty('_id')) {
           filtersForAPI[filter.id] += option._id + ',';
         } else {
@@ -429,12 +429,14 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
       let selectedFilters = persistenceObject.filters;
 
       this.filters.forEach(filter => {
-        if (!selectedFilters[filter.id].hasOwnProperty('subfilters')) {
-          this.restoreFilters(selectedFilters[filter.id], filter);
-        } else {
-          filter.collection.forEach(subFilter => {
-            this.restoreFilters(selectedFilters[filter.id].subfilters[subFilter.id], subFilter);
-          });
+        if (selectedFilters[filter.id]) {
+          if (!selectedFilters[filter.id].hasOwnProperty('subfilters')) {
+            this.restoreFilters(selectedFilters[filter.id], filter);
+          } else {
+            filter.collection.forEach(subFilter => {
+              this.restoreFilters(selectedFilters[filter.id].subfilters[subFilter.id], subFilter);
+            });
+          }
         }
       });
       this.keywords = persistenceObject.keywords;

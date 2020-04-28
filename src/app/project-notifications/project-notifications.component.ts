@@ -36,8 +36,8 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
   public filters: FilterObject[] = [];
 
   private typeFilter = new FilterObject('type', 'Project Type', null, Constants.PROJECT_TYPE_COLLECTION, []);
-  private regionFilter = new FilterObject('pcp', 'Region', null, Constants.REGIONS_COLLECTION, []);
-  private pcpFilter = new FilterObject('region', 'Public Comment Period', null, Constants.PCP_COLLECTION, []);
+  private regionFilter = new FilterObject('region', 'Region', null, Constants.REGIONS_COLLECTION, []);
+  private pcpFilter = new FilterObject('pcp', 'Public Comment Period', null, Constants.PCP_COLLECTION, []);
   private decisionFilter = new FilterObject('decision', 'Notification Decision', null, Constants.PROJECT_NOTIFICATION_DECISIONS, []);
 
   constructor(
@@ -103,6 +103,9 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
     this.ngUnsubscribe.complete();
   }
 
+  getTrigger(project) {
+    return project && project.trigger ? project.trigger.replace(/,/g, ', ') : null;
+  }
   getProjectDocuments(project: ProjectNotification) {
     this.searchService.getSearchResults(
       null,

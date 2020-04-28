@@ -118,12 +118,7 @@ export class ProjectDetailsTabComponent implements OnInit {
     this.selectedCount = count;
   }
 
-  setColumnSort(column) {
-    if (this.tableParams.sortBy.charAt(0) === '+') {
-      this.tableParams.sortBy = '-' + column;
-    } else {
-      this.tableParams.sortBy = '+' + column;
-    }
+  setColumnSort() {
     this.getFavoriteDocs();
   }
 
