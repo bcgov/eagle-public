@@ -267,6 +267,12 @@
       "value": "https://eagle-your-openshift-namespace.pathfinder.gov.bc.ca/admin/"
     },
     {
+      "name": "BANNER_COLOUR",
+      "displayName": "Environment banner colour",
+      "description": "This is a visual clue to clarify the environment that you are in at a glance. Default is an empty string for prod. Other examples are local=red, dev=orange, test=green, etc.",
+      "value": ""
+    },
+    {
       "name": "NODEJS_CPU_REQUEST",
       "displayName": "CPU Request",
       "description": "Reserved amount of CPU (in cores) the Node.js container can use.",
