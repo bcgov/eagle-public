@@ -76,6 +76,10 @@
                     "value": "${TAG_NAME}"
                   },
                   {
+                    "name": "BANNER_COLOUR",
+                    "value": "${BANNER_COLOUR}"
+                  },
+                  {
                     "name": "REMOTE_API_PATH",
                     "value": "${REMOTE_API_PATH}"
                   },
