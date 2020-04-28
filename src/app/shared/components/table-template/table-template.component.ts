@@ -164,7 +164,11 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
 
   // Table action emits
   sort(property: string) {
+<<<<<<< HEAD
     if (this.data.paginationData.sortBy && this.data.paginationData.sortBy.charAt(0) === '+') {
+=======
+    if (this.data.paginationData.sortBy.charAt(0) === '+') {
+>>>>>>> c699cf2487b1d36742cac62fc9102756166f756f
       this.data.paginationData.sortBy = '-' + property;
     } else {
       this.data.paginationData.sortBy = '+' + property;
@@ -261,7 +265,11 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
       filtersForAPI[filter.id] = '';
       filter.selectedOptions.forEach(option => {
         if (option.hasOwnProperty('code')) {
+<<<<<<< HEAD
           filtersForAPI[filter.id] += (filter.id === 'pcp' ? option.code : option.name) + ',';
+=======
+          filtersForAPI[filter.id] += option.name + ',';
+>>>>>>> c699cf2487b1d36742cac62fc9102756166f756f
         } else if (option.hasOwnProperty('_id')) {
           filtersForAPI[filter.id] += option._id + ',';
         } else {
@@ -429,6 +437,7 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
       let selectedFilters = persistenceObject.filters;
 
       this.filters.forEach(filter => {
+<<<<<<< HEAD
         if (selectedFilters[filter.id]) {
           if (!selectedFilters[filter.id].hasOwnProperty('subfilters')) {
             this.restoreFilters(selectedFilters[filter.id], filter);
@@ -437,6 +446,14 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
               this.restoreFilters(selectedFilters[filter.id].subfilters[subFilter.id], subFilter);
             });
           }
+=======
+        if (!selectedFilters[filter.id].hasOwnProperty('subfilters')) {
+          this.restoreFilters(selectedFilters[filter.id], filter);
+        } else {
+          filter.collection.forEach(subFilter => {
+            this.restoreFilters(selectedFilters[filter.id].subfilters[subFilter.id], subFilter);
+          });
+>>>>>>> c699cf2487b1d36742cac62fc9102756166f756f
         }
       });
       this.keywords = persistenceObject.keywords;

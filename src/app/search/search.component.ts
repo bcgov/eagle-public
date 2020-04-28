@@ -327,8 +327,11 @@ export class SearchComponent implements OnInit, OnDestroy {
     );
   }
 
+<<<<<<< HEAD
   setColumnSort() {
   }
+=======
+>>>>>>> c699cf2487b1d36742cac62fc9102756166f756f
   ngOnDestroy() {
     // dismiss any open snackbar
     if (this.snackBarRef) { this.snackBarRef.dismiss(); }
