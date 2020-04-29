@@ -12,7 +12,6 @@
                             (onSearch)='executeSearch($event)'
                             [showAdvancedSearch]="true"
                             [filters]="filters"
-                            [persistenceId]="'globalProjSearch'"
                             [searchDisclaimer]="constants.searchDisclaimer">
         </app-table-template>
         <div *ngIf="documents.length === 0">
