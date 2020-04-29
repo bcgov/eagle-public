@@ -215,7 +215,7 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
     // The search package to return to the parent component
     let searchPackage = {
       filterForAPI: newFilters,
-      keywords: this.keywords,
+      keywords: this.keywords ? this.keywords : '',
       paginationData: this.data.paginationData
     }
 
