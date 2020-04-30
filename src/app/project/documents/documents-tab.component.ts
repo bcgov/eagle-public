@@ -287,6 +287,7 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
 
   executeSearch(apiFilters) {
     this.terms.keywords = apiFilters.keywords;
+    this.tableParams.keywords = apiFilters.keywords;
     this.filterForAPI = apiFilters.filterForAPI;
 
     // build filterForUI/URL from the new filterForAPI object
