@@ -5,14 +5,11 @@
     <section class="tab-section" *ngIf="!loading">
         <app-table-template [columns]="documentTableColumns"
                             [data]="documentTableData"
-                            (onColumnSort)='setColumnSort($event)'
                             (onSelectedRow)='updateSelectedRow($event)'
-                            (onPageNumUpdate)='getPaginatedDocs($event)'
                             [showSearch]="true"
                             (onSearch)='executeSearch($event)'
                             [showAdvancedSearch]="true"
                             [filters]="filters"
-                            [persistenceId]="'globalProjSearch'"
                             [searchDisclaimer]="constants.searchDisclaimer">
         </app-table-template>
         <div *ngIf="documents.length === 0">
