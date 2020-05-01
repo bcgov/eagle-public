@@ -237,14 +237,13 @@ def createPRDeployment() {
         fi
         git clone https://github.com/mtcarto/eagle-helper-pods
         cd eagle-helper-pods/openshift/setup-teardown/
-        echo "show env"
-        env
 
         # set project to PR deployment template folder
         find . -name "projectset.config" -exec sed -i -e "s/^\\( *TARGET_PROJECT_SET=*\\)[^ ]*\\(.*\\)*$/\\1PR\\2/" {} \\;
 
         # set unique name (ie. pr-branchName) for pr builds & deployments
         cd params/CUSTOM_SETTINGS/PR
+        find . -name "*.params" -exec sed -i -e "s/pr-placeholder/${PR_FORK}/g" {} \\;
         find . -name "*.params" -exec sed -i -e "s/pr-placeholder/${PR_NAME}/g" {} \\;
         find . -name "*.config" -exec sed -i -e "s/pr-placeholder/${PR_NAME}/g" {} \\;
 
@@ -288,7 +287,8 @@ pipeline {
   environment {
     TOOLSPROJECT = "md4m71-tools"
     DEVPROJECT = "md4m71-dev"
-    PR_NAME = "${env.BRANCH_NAME}"
+    PR_NAME = "${env.BRANCH_NAME}".toLowerCase()
+    PR_FORK = "${env.CHANGE_FORK}"
     SONARQUBE_URL_INT = 'http://sonarqube:9000'
     SONARQUBE_URL_EXT = "https://sonarqube-${TOOLSPROJECT}.pathfinder.gov.bc.ca"
   }
@@ -315,9 +315,8 @@ pipeline {
       steps {
         script {
           // sh("oc extract secret/rocket-chat-secrets --to=${env.WORKSPACE} --confirm")
-          echo "My branch is: ${PR_NAME}"
-          echo "Jenkins says branch: ${env.BRANCH_NAME}"
-          echo "Jenkins says URL: ${env.CHANGE_URL}"
+          echo "Branch to build: ${PR_NAME}"
+          echo "Source fork: ${PR_FORK}"
           if (!checkForPRDeployment()) {
             // env hasn't been created, call setup scripts
             echo "Deploying PR Environment"
