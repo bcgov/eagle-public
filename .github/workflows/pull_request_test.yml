@@ -18,7 +18,7 @@ jobs:
         source_branch: "develop"
         destination_branch: "test"
         pr_title: "Pulling ${{ github.ref }} into TEST"
-        pr_body: ":crown: *An automated PR*  This PR will pull all recent merges from DEVELOP into TEST"
+        pr_body: ":crown: *An automated PR*  This PR will pull all recent merges from DEVELOP into TEST. If you just completed a merge into develop, please wait 8-10 minutes for any build stages to complete before merging this PR."
         pr_label: "auto-pr from dev to test"
         pr_draft: true
         github_token: ${{ secrets.GITHUB_TOKEN }}
