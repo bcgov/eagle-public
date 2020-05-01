@@ -99,6 +99,7 @@ export const AjaxData: Project[] = [
     ],
     commentPeriodForBanner: [],
     projectCAC: true,
+    projectCACPublished: true,
     cacEmail: '',
     nature: 'Unknown nature value'
   }

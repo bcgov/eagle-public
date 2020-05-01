@@ -57,6 +57,7 @@ export class Project {
   nature?: any;
   commentPeriodForBanner: any;
   projectCAC: Boolean;
+  projectCACPublished: Boolean;
   cacEmail: any;
 
   // Permissions
@@ -124,6 +125,7 @@ export class Project {
     this.commentPeriodForBanner           = obj && obj.commentPeriodForBanner           || null;
     this.cacEmail            = obj && obj.cacEmail            || null;
     this.projectCAC          = obj && obj.projectCAC          || null;
+    this.projectCACPublished = obj && obj.projectCACPublished || null;
     this.read                = obj && obj.read                || null;
     this.write               = obj && obj.write               || null;
     this.delete              = obj && obj.delete              || null;
