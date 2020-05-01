@@ -1,0 +1,104 @@
+#!/usr/bin/env groovy
+
+import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
+import java.util.regex.Pattern
+
+/*
+ * Sends a rocket chat notification
+ */
+def notifyRocketChat(text, url) {
+    def rocketChatURL = url
+    def message = text.replaceAll(~/\'/, "")
+    def payload = JsonOutput.toJson([
+      "username":"Jenkins",
+      "icon_url":"https://wiki.jenkins.io/download/attachments/2916393/headshot.png",
+      "text": message
+    ])
+
+    sh("curl -X POST -H 'Content-Type: application/json' --data \'${payload}\' ${rocketChatURL}")
+}
+
+
+pipeline {
+  agent any
+  stages {
+
+
+   stage('Tag Dev as Test'){
+      when {
+        expression { env.CHANGE_TARGET == 'test' }
+      }
+      steps {
+        script {
+          ROCKET_DEPLOY_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-deploy-webhook')
+          ROCKET_QA_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-qa-webhook')
+          try {
+            echo "Backing up..."
+            sh("oc tag esm/eagle-public:test esm/eagle-public:test-backup")
+            sleep 5
+            echo "Tagging Dev as Test..."
+            sh("oc tag esm/eagle-public:dev esm/eagle-public:test")
+            sleep 5
+            // todo update namespace before switching over
+            echo ">>>> Tagging Complete"
+
+            notifyRocketChat(
+              "eagle-public dev has been tagged to test",
+              ROCKET_DEPLOY_WEBHOOK
+            )
+            notifyRocketChat(
+              "@all eagle-public dev has been tagged as test",
+              ROCKET_QA_WEBHOOK
+            )
+          } catch (error) {
+            notifyRocketChat(
+              "@all tagging dev as test has failed",
+              ROCKET_DEPLOY_WEBHOOK
+            )
+            currentBuild.result = "FAILURE"
+            throw new Exception("Deploy failed")
+          }
+        }
+      }
+    }
+
+    stage('Tag Test as Prod'){
+      when {
+        expression { env.CHANGE_TARGET == 'master' }
+      }
+      steps {
+        script {
+          ROCKET_DEPLOY_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-deploy-webhook')
+          ROCKET_QA_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-qa-webhook')
+          try {
+            echo "Backing up..."
+            sh("oc tag esm/eagle-public:prod esm/eagle-public:prod-backup")
+            sleep 5
+            echo "Tagging Test as Prod..."
+            sh("oc tag esm/eagle-public:test esm/eagle-public:prod")
+            sleep 5
+            echo ">>>> Tagging Complete"
+            notifyRocketChat(
+              "eagle-public test has been tagged to Prod",
+              ROCKET_DEPLOY_WEBHOOK
+            )
+            notifyRocketChat(
+              "@all eagle-public test has been tagged to prod",
+              ROCKET_QA_WEBHOOK
+            )
+          } catch (error) {
+            notifyRocketChat(
+              "@all tagging test as prod has failed",
+              ROCKET_DEPLOY_WEBHOOK
+            )
+            currentBuild.result = "FAILURE"
+            throw new Exception("Deploy failed")
+          }
+        }
+      }
+    }
+
+
+  }
+}
