@@ -241,6 +241,7 @@ export class ApiService {
       'legislation',
       'featuredDocuments',
       'projectCAC',
+      'projectCACPublished',
       'cacEmail'
     ];
 
@@ -314,6 +315,7 @@ export class ApiService {
       'delete',
       'featuredDocuments',
       'projectCAC',
+      'projectCACPublished',
       'cacEmail'
     ];
     let queryString = `project/${id}?populate=true`;

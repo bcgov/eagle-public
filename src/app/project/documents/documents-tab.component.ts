@@ -44,7 +44,6 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
   public tableParams: TableParamsObject = new TableParamsObject();
   public terms = new SearchTerms();
 
-  public filterForURL: object = {};
   public filterForAPI: object = {};
   public filterForUI: DocumentFilterObject = new DocumentFilterObject();
 
@@ -168,7 +167,7 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
           }
 
           if (!this.tableParams) {
-            this.tableParams = this.tableTemplateUtils.getParamsFromUrl(params, this.filterForURL);
+            this.tableParams = this.tableTemplateUtils.getParamsFromUrl(params, this.filterForAPI);
           }
 
           if (res.documents && res.documents[0].data.meta && res.documents[0].data.meta.length > 0) {
@@ -268,10 +267,6 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
     );
   }
 
-  setColumnSort() {
-    this.getPaginatedDocs(this.tableParams.currentPage);
-  }
-
   isEnabled(button) {
     switch (button) {
       case 'copyLink':
@@ -287,19 +282,8 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
 
   executeSearch(apiFilters) {
     this.terms.keywords = apiFilters.keywords;
+    this.tableParams.keywords = apiFilters.keywords;
     this.filterForAPI = apiFilters.filterForAPI;
-
-    // build filterForUI/URL from the new filterForAPI object
-    this.createFilterForURL();
-
-    this.getPaginatedDocs(this.tableParams.currentPage);
-  }
-
-  createFilterForURL() {
-    // for each key in filterForAPI
-    Object.keys(this.filterForAPI).forEach(key => {
-      this.filterForURL[key] = this.filterForAPI[key];
-    });
 
     this.filterForUI.milestone = this.filterForAPI['milestone'] ? this.filterForAPI['milestone'].split(',') : null;
     this.filterForUI.documentAuthorType = this.filterForAPI['documentAuthorType'] ? this.filterForAPI['documentAuthorType'].split(',') : null;
@@ -307,6 +291,8 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
     this.filterForUI.projectPhase = this.filterForAPI['projectPhase'] ? this.filterForAPI['projectPhase'].split(',') : null;
     this.filterForUI.datePostedStart = this.filterForAPI['datePostedStart'];
     this.filterForUI.datePostedEnd = this.filterForAPI['datePostedEnd'];
+
+    this.getPaginatedDocs(this.tableParams.currentPage);
   }
 
   getPaginatedDocs(pageNumber) {
@@ -348,11 +334,11 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
         if (res[0].data && res[0].data.meta[0]) {
           this.tableParams.totalListItems = res[0].data.meta[0].searchResultsTotal;
           this.documents = res[0].data.searchResults;
-          this.tableTemplateUtils.updateUrl(this.tableParams.sortBy, this.tableParams.currentPage, this.tableParams.pageSize, this.filterForURL, this.tableParams.keywords);
+          this.tableTemplateUtils.updateUrl(this.tableParams.sortBy, this.tableParams.currentPage, this.tableParams.pageSize, this.filterForAPI, this.tableParams.keywords);
         } else {
           this.documents = [];
           this.tableParams.totalListItems = 0;
-          this.tableTemplateUtils.updateUrl(this.tableParams.sortBy, this.tableParams.currentPage, this.tableParams.pageSize, this.filterForURL, this.tableParams.keywords);
+          this.tableTemplateUtils.updateUrl(this.tableParams.sortBy, this.tableParams.currentPage, this.tableParams.pageSize, this.filterForAPI, this.tableParams.keywords);
         }
 
         this.setDocumentRowData();

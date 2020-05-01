@@ -181,9 +181,12 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   updatePageSize(pageSize) {
+    this.activePageSize = pageSize;
     this.data.paginationData.pageSize = pageSize;
-    this.onPageNumUpdate.emit(pageSize);
-    this.search();
+    // If the user changes the size of the page, we should go
+    // back to the first page, just like if we changed a
+    // query filter/keyword
+    this.updatePageNumber(1);
   }
 
   // Searching and filtering functions
