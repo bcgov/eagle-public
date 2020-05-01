@@ -21,7 +21,7 @@
     <div class="modal-body">
       <section>
         <h3>What is a Community Advisory Committee?</h3>
-        <p>The Community Advisory Committee is a way for interested members of the public to actively participate in and stay informed about an environmental assessment by:</p>
+        <p>The Community Advisory Committee is a way for interested members of the public who are able to advise the Environmental Assessment Office on the potential effects of a project on a community to actively participate in and stay informed about an environmental assessment by:</p>
           <ul>
             <li>learning more about a proposed project;</li>
             <li>staying up to date on the progress of the environmental assessment; and</li>
@@ -31,7 +31,7 @@
       </section>
       <section class="m-b-0">
         <h3>What can I expect as a Community Advisory Committee Member?</h3>
-        <p>The Environmental Assessment Office will provide subscribed Community Advisory Committee members information on the environmental assessment process and the proposed project, including notifications of process milestones, when and where key documents are posted, information on public comment periods and any other engagement opportunities. Members will be invited to provide their input through the public comment periods held throughout the environmental assessment and, depending on the overall interest of Community Advisory Committee members, the Environmental Assessment Office may directly seek the advice of Community Advisory Committee members and establish other engagement opportunities. See the <strong>Community Advisory Committee Guideline</strong> and the <strong>Community Advisory Committee Terms of Reference</strong> for further information.</p>
+        <p>The Environmental Assessment Office will provide Community Advisory Committee members information on the environmental assessment process and the proposed project, including notifications of process milestones, when and where key documents are posted, information on public comment periods and any other engagement opportunities. Members will be invited to provide their input through the public comment periods held throughout the environmental assessment and, depending on the overall interest of Community Advisory Committee members, the Environmental Assessment Office may directly seek the advice of Community Advisory Committee members and establish other engagement opportunities. See the <strong>Community Advisory Committee Guideline</strong> and the <strong>Community Advisory Committee Terms of Reference</strong> for further information.</p>
       </section>
     </div>
     <div class="modal-footer">
@@ -93,17 +93,17 @@
 
             <!-- I live near -->
             <div class="form-group row">
-                <label class="control-label"><input class="mr-1" name="liveNear" type="checkbox" [(ngModel)]="liveNear"/>I live near or use the project area</label>
+                <label class="control-label"><input class="mr-1" name="liveNear" type="checkbox" [(ngModel)]="liveNear"/>I live near or have particular knowledge of the project area</label>
                 <input [hidden]="!liveNear" class="form-control col-12" type="text" name="liveNearInput" id="liveNearInput" [(ngModel)]="liveNearInput" autofocus />
             </div>
             <!-- I am a member of -->
             <div class="form-group row">
-              <label class="control-label"><input class="mr-1" name="memberOf" type="checkbox" [(ngModel)]="memberOf"/>I am a member of a stakeholder organization</label>
+              <label class="control-label"><input class="mr-1" name="memberOf" type="checkbox" [(ngModel)]="memberOf"/>I am a member of an organization with an interest in the project (provide organization name below)</label>
               <input [hidden]="!memberOf" class="form-control col-12" type="text" name="memberOfInput" id="memberOfInput" [(ngModel)]="memberOfInput" autofocus />
             </div>
             <!-- I have knowledge of -->
             <div class="form-group row">
-              <label class="control-label"><input class="mr-1" name="knowledgeOf" type="checkbox" [(ngModel)]="knowledgeOf"/>I have knowledge of issues relevant to the potential project</label>
+              <label class="control-label"><input class="mr-1" name="knowledgeOf" type="checkbox" [(ngModel)]="knowledgeOf"/>I have particular knowledge of issues relevant to the potential project</label>
               <input [hidden]="!knowledgeOf" class="form-control col-12" type="text" name="knowledgeOfInput" id="knowledgeOfInput" [(ngModel)]="knowledgeOfInput" autofocus />
             </div>
             <!-- Additional Notes -->
@@ -124,7 +124,7 @@
             <div class="form-control-container">
               <label class="control-label" >
               <input required type="checkbox" aria-label="Checkbox for row item" name="acknowledged" [(ngModel)]='acknowledged'>
-                By checking this box, I acklowedge that I understand the above text.
+                By checking this box, I acknowledge that I understand the above text.
               </label>
             </div>
             <div class="form-control-container">
