@@ -44,7 +44,6 @@ export class ApiService {
     this.apiPath = (_.isEmpty(remote_api_path)) ? 'http://localhost:3000/api/public' : remote_api_path;
     this.adminUrl = (_.isEmpty(remote_admin_path)) ? 'http://localhost:4200/admin' : remote_admin_path;
     this.env = (_.isEmpty(deployment_env)) ? 'local' : deployment_env;
-    // If we don't see a banner colour set in the environment we should assume no banner is needed.
     this.bannerColour = (_.isEmpty(banner_colour)) ? 'red' : banner_colour;
   }
 
