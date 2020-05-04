@@ -23,7 +23,7 @@ export class ApiService {
   public apiPath: string;
   public adminUrl: string;
   public env: string;  // Could be anything per Openshift environment variables  but generally is one of 'local' | 'dev' | 'test' | 'prod' | 'demo' | 'hotfix'
-  public bannerColour: string;  //
+  public bannerColour: string;  // This is the colour of the banner that you see in the header, and could be anything per Openshift environment variables but must correspond with the css in header.component.scss e.g. red | orange | green | yellow | purple
 
 
   constructor(
@@ -44,7 +44,8 @@ export class ApiService {
     this.apiPath = (_.isEmpty(remote_api_path)) ? 'http://localhost:3000/api/public' : remote_api_path;
     this.adminUrl = (_.isEmpty(remote_admin_path)) ? 'http://localhost:4200/admin' : remote_admin_path;
     this.env = (_.isEmpty(deployment_env)) ? 'local' : deployment_env;
-    this.bannerColour = (_.isEmpty(banner_colour)) ? 'red' : banner_colour;
+    // If we don't see a banner colour set in the environment we should assume no banner is needed.
+    this.bannerColour = (_.isEmpty(banner_colour)) ? ((this.env === 'local') ? 'red' : null) : banner_colour;
   }
 
   handleError(error: any): Observable<any> {
@@ -241,6 +242,7 @@ export class ApiService {
       'legislation',
       'featuredDocuments',
       'projectCAC',
+      'projectCACPublished',
       'cacEmail'
     ];
 
@@ -314,6 +316,7 @@ export class ApiService {
       'delete',
       'featuredDocuments',
       'projectCAC',
+      'projectCACPublished',
       'cacEmail'
     ];
     let queryString = `project/${id}?populate=true`;

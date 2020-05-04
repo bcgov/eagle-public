@@ -5,9 +5,7 @@
     <section class="tab-section" *ngIf="!loading">
         <app-table-template [columns]="documentTableColumns"
                             [data]="documentTableData"
-                            (onColumnSort)='setColumnSort($event)'
                             (onSelectedRow)='updateSelectedRow($event)'
-                            (onPageNumUpdate)='getPaginatedDocs($event)'
                             [showSearch]="true"
                             (onSearch)='executeSearch($event)'
                             [showAdvancedSearch]="true"
