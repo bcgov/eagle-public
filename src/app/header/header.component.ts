@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { ApiService } from 'app/services/api';
+import * as _ from 'lodash';
 
 @Component({
   selector: 'app-header',
@@ -11,6 +12,7 @@ import { ApiService } from 'app/services/api';
 export class HeaderComponent {
   public envName: string;
   public bannerColour: string;
+  public showBanner = false;
 
   constructor(
     public router: Router,
@@ -28,6 +30,9 @@ export class HeaderComponent {
 
     this.envName = this.apiService.env;
     this.bannerColour = this.apiService.bannerColour;
+    if (!_.isEmpty(this.envName) && !_.isEmpty(this.bannerColour)) {
+      this.showBanner = true;
+    }
     console.log(this.bannerColour);
 
   }
