@@ -19,15 +19,65 @@ def notifyRocketChat(text, url) {
     sh("curl -X POST -H 'Content-Type: application/json' --data \'${payload}\' ${rocketChatURL}")
 }
 
+// Print stack trace of error
+@NonCPS
+private static String stackTraceAsString(Throwable t) {
+    StringWriter sw = new StringWriter();
+    t.printStackTrace(new PrintWriter(sw));
+    return sw.toString()
+}
+
+def _openshift(String name, String project, Closure body) {
+  script {
+    openshift.withCluster() {
+      openshift.withProject(project) {
+        echo "Running Stage '${name}'"
+        waitUntil {
+          boolean isDone=false
+          try {
+            body()
+            isDone=true
+            echo "Completed Stage '${name}'"
+          } catch (error) {
+            echo "${stackTraceAsString(error)}"
+            def inputAction = input(
+              message: "This step (${name}) has failed. See related messages:",
+              ok: 'Confirm',
+              parameters: [
+                choice(
+                  name: 'action',
+                  choices: 'Re-run\nIgnore',
+                  description: 'What would you like to do?'
+                )
+              ]
+            )
+            // todo add a call to cleanup if we 'ignore' failure (change ignore to cleanup)
+            if ('Ignore'.equalsIgnoreCase(inputAction)) {
+              notifyRocketChat(
+                "@all The build ${env.BUILD_DISPLAY_NAME} of eagle-public-pr, seems to be broken.\n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
+              ROCKET_DEPLOY_WEBHOOK
+              )
+              isDone=true
+            }
+          }
+          return isDone
+        }
+      }
+    }
+  }
+}
 
 pipeline {
+  environment {
+    TOOLSPROJECT = "md4m71-tools"
+  }
   agent any
   stages {
 
     stage('Build and Tag Dev'){
       when {
         // todo verify this condidtional
-        expression { env.CHANGE_TARGET == 'develop' }
+        expression { env.BRANCH_NAME == 'develop' }
       }
       steps {
         script {
@@ -69,7 +119,7 @@ pipeline {
 
    stage('Tag Dev as Test'){
       when {
-        expression { env.CHANGE_TARGET == 'test' }
+        expression { env.BRANCH_NAME == 'test' }
       }
       steps {
         script {
@@ -107,7 +157,7 @@ pipeline {
 
     stage('Tag Test as Prod'){
       when {
-        expression { env.CHANGE_TARGET == 'master' }
+        expression { env.BRANCH_NAME == 'master' }
       }
       steps {
         script {
@@ -140,7 +190,6 @@ pipeline {
         }
       }
     }
-
 
   }
 }
