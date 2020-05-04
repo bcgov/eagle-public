@@ -11,6 +11,7 @@ import { ApiService } from 'app/services/api';
 export class HeaderComponent {
   public envName: string;
   public bannerColour: string;
+  public showBanner = false;
 
   constructor(
     public router: Router,
@@ -28,6 +29,9 @@ export class HeaderComponent {
 
     this.envName = this.apiService.env;
     this.bannerColour = this.apiService.bannerColour;
+    if (!isEmpty(this.envName) && !isEmpty(this.bannerColour)) {
+      this.showBanner = true;
+    }
     console.log(this.bannerColour);
 
   }
