@@ -230,7 +230,7 @@ def createFullPRDeployment() {
     echo "Configuring deployment scripts"
     try {
       sh '''
-        if [[ -d "eagle-helper-pods" ]]
+        if [ -d "eagle-helper-pods" ]
         then
           echo "stale helper pods checkout, removing it"
           pwd
