@@ -240,10 +240,9 @@ def createFullPRDeployment() {
         git clone https://github.com/mtcarto/eagle-helper-pods
         cd eagle-helper-pods/openshift/setup-teardown/
 
-        # set project to PR deployment template folder
+          # set project to PR deployment template folder
         find . -name "projectset.config" -exec sed -i -e "s/^\\( *TARGET_PROJECT_SET=*\\)[^ ]*\\(.*\\)*$/\\1PR\\2/" {} \\;
 
-        env
           # set unique name (ie. pr-branchName) for pr builds & deployments
         cd params/CUSTOM_SETTINGS/PR
         find . -name "*.config" -exec sed -i -e "s/pr-placeholder/${PR_NAME}/g" {} \\;
@@ -308,7 +307,7 @@ pipeline {
   environment {
     TOOLSPROJECT = "md4m71-tools"
     DEVPROJECT = "md4m71-dev"
-    PR_NAME = "${env.BRANCH_NAME}".toLowerCase()
+    PR_NAME = "${env.CHANGE_BRANCH}".toLowerCase()
     PR_FORK = "${env.CHANGE_FORK}"
     SONARQUBE_URL_INT = 'http://sonarqube:9000'
     SONARQUBE_URL_EXT = "https://sonarqube-${TOOLSPROJECT}.pathfinder.gov.bc.ca"
