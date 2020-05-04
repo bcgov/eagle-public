@@ -113,7 +113,7 @@ export class ApiService {
   //
   // Searching
   //
-  searchKeywords(keys: string, dataset: string, fields: any[], pageNum: number, pageSize: number, projectLegislation: string = null, sortBy: string = null, queryModifier: object = {}, populate = false, secondarySort: string = null, filter: object = {}): Observable<SearchResults[]> {
+  searchKeywords(keys: string, dataset: string, fields: any[], pageNum: number, pageSize: number, projectLegislation: string = null, sortBy: string = null, queryModifier: object = {}, populate = false, secondarySort: string = null, filter: object = {}, fuzzy: boolean = false): Observable<SearchResults[]> {
     projectLegislation = (projectLegislation === '') ? 'default' : projectLegislation;
     let queryString = `search?dataset=${dataset}`;
     if (fields && fields.length > 0) {
@@ -151,6 +151,7 @@ export class ApiService {
       });
     }
     queryString += `&fields=${this.buildValues(fields)}`;
+    queryString += '&fuzzy=' + fuzzy;
     return this.http.get<SearchResults[]>(`${this.apiPath}/${queryString}`, {});
     // if (dataset === 'Project') {
     //   searchResults = searchResults.currentProjectData

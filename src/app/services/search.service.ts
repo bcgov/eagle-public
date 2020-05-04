@@ -41,8 +41,8 @@ export class SearchService {
   getFullList(schema: string): Observable<any> {
     return this.api.getFullDataSet(schema);
   }
-  getSearchResults(keys: string, dataset: string, fields: any[], pageNum: number = 1, pageSize: number = 10, sortBy: string = null, queryModifier: object = {}, populate: boolean = false, secondarySort: string = null, filter: object = {}, projectLegislation: string = ''): Observable<any[]> {
-    const searchResults = this.api.searchKeywords(keys, dataset, fields, pageNum, pageSize, projectLegislation, sortBy, queryModifier, populate, secondarySort, filter)
+  getSearchResults(keys: string, dataset: string, fields: any[], pageNum: number = 1, pageSize: number = 10, sortBy: string = null, queryModifier: object = {}, populate: boolean = false, secondarySort: string = null, filter: object = {}, projectLegislation: string = '', fuzzy: boolean = false): Observable<any[]> {
+    const searchResults = this.api.searchKeywords(keys, dataset, fields, pageNum, pageSize, projectLegislation, sortBy, queryModifier, populate, secondarySort, filter, fuzzy)
       .map(res => {
         let allResults = <any>[];
         res.forEach(item => {
