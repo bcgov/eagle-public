@@ -214,8 +214,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
             true,
             null,
             this.filterForAPI,
-            '',
-            true
+            ''
           );
       })
       .takeUntil(this.ngUnsubscribe)
@@ -327,8 +326,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
         true,
         null,
         this.filterForAPI,
-        '',
-        true
+        ''
       )
       .takeUntil(this.ngUnsubscribe)
       .subscribe((res: any) => {
