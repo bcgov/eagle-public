@@ -1,7 +1,6 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { ApiService } from 'app/services/api';
-import * as _ from 'lodash';
 
 @Component({
   selector: 'app-header',
