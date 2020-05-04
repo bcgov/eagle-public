@@ -24,6 +24,48 @@ pipeline {
   agent any
   stages {
 
+    stage('Build and Tag Dev'){
+      when {
+        // todo verify this condidtional
+        expression { env.CHANGE_TARGET == 'develop' }
+      }
+      steps {
+        script {
+          _openshift(env.STAGE_NAME, TOOLSPROJECT) {
+            timeout(10) {
+              // sh("oc extract secret/rocket-chat-secrets --to=${env.WORKSPACE} --confirm")
+              // ROCKET_DEPLOY_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-deploy-webhook')
+              // ROCKET_QA_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-qa-webhook')
+
+              echo "Building eagle-public develop branch"
+              // trigger and wait for s2i build to complete
+              def bcObj1 = openshift.selector('bc', "eagle-public-angular-builder")
+              bcObj1.untilEach(1) {
+                return it.object().status.phase == "Complete"
+              }
+              //  trigger and wait for nginx image build to complete
+              def bcObj2 = openshift.selector('bc',"eagle-public-build" )
+              bcObj2.untilEach(1) {
+                return it.object().status.phase == "Complete"
+              }
+
+
+              echo "Build done"
+
+              echo ">>> Get Image Hash"
+              // Don't tag with BUILD_ID so the pruner can do it's job; it won't delete tagged images.
+              // Tag the images for deployment based on the image's hash
+              IMAGE_HASH = sh (
+                script: """oc get istag eagle-public:latest -o template --template=\"{{.image.dockerImageReference}}\"|awk -F \":\" \'{print \$3}\'""",
+                returnStdout: true).trim()
+              echo ">> IMAGE_HASH: ${IMAGE_HASH}"
+            }
+
+            openshift.tag("${TOOLSPROJECT}/${PR_NAME}-eagle-public:${IMAGE_HASH}", "${TOOLSPROJECT}/${PR_NAME}-eagle-public:${PR_NAME}")
+          }
+        }
+      }
+    }
 
    stage('Tag Dev as Test'){
       when {
