@@ -30,7 +30,8 @@ export class HeaderComponent {
 
     this.envName = this.apiService.env;
     this.bannerColour = this.apiService.bannerColour;
-    if (!_.isEmpty(this.envName) && !_.isEmpty(this.bannerColour)) {
+    // no-banner-colour-set is the default if no banner colour is defined in the openshift environment variables.
+    if ( this.envName && this.bannerColour && this.bannerColour !== 'no-banner-colour-set') {
       this.showBanner = true;
     }
     console.log(this.bannerColour);
