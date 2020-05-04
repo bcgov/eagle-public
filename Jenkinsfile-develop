@@ -446,4 +446,12 @@ pipeline {
       }
     }
   }
+  post {
+    success {
+      echo 'Build and deploy complete'
+    }
+    failure {
+      echo 'Something went wrong, check deploy and builds'
+    }
+  }
 }
