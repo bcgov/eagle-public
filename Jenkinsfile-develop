@@ -249,23 +249,27 @@ def createFullPRDeployment() {
          # set public vars to pr fork
         cd public
         find . -name "*.config" -exec sed -i -e "s/branch-placeholder/${PR_NAME}/g" {} \\;
+        find . -name "*.config" -exec sed -i -e "s/fork-placeholder/${PR_FORK}/g" {} \\;
         find . -name "*.params" -exec sed -i -e "s/fork-placeholder/${PR_FORK}/g" {} \\;
         find . -name "*.params" -exec sed -i -e "s/pr-placeholder/${PR_NAME}/g" {} \\;
         find . -name "*.params" -exec sed -i -e "s/branch-placeholder/${PR_NAME}/g" {} \\;
 
           # set api, admin to bcgov/develop
         cd ../api
+        find . -name "*.config" -exec sed -i -e "s/branch-placeholder/develop/g" {} \\;
+        find . -name "*.config" -exec sed -i -e "s/fork-placeholder/bcgov/g" {} \\;
         find . -name "*.params" -exec sed -i -e "s/fork-placeholder/bcgov/g" {} \\;
         find . -name "*.params" -exec sed -i -e "s/pr-placeholder/${PR_NAME}/g" {} \\;
         find . -name "*.params" -exec sed -i -e "s/branch-placeholder/develop/g" {} \\;
-        find . -name "*.config" -exec sed -i -e "s/branch-placeholder/develop/g" {} \\;
+
+
 
         cd ../admin
+        find . -name "*.config" -exec sed -i -e "s/branch-placeholder/develop/g" {} \\;
+        find . -name "*.config" -exec sed -i -e "s/fork-placeholder/bcgov/g" {} \\;
         find . -name "*.params" -exec sed -i -e "s/fork-placeholder/bcgov/g" {} \\;
         find . -name "*.params" -exec sed -i -e "s/pr-placeholder/${PR_NAME}/g" {} \\;
         find . -name "*.params" -exec sed -i -e "s/branch-placeholder/develop/g" {} \\;
-        find . -name "*.config" -exec sed -i -e "s/branch-placeholder/develop/g" {} \\;
-
 
         cd ../public/dev
         find . -name "*.params" -exec sed -i -e "s/TAG_NAME=dev/TAG_NAME=${PR_NAME}/g" {} \\;
