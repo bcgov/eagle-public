@@ -285,7 +285,8 @@ export class SearchComponent implements OnInit, OnDestroy {
       true,
       null,
       this.filterForAPI,
-      '')
+      '',
+      true)
       .takeUntil(this.ngUnsubscribe)
       .subscribe((res: any) => {
         if (res && res[0].data && res[0].data.meta.length > 0) {
