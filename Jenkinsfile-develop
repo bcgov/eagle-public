@@ -347,6 +347,13 @@ pipeline {
             createFullPRDeployment()
           } else {
             echo "Deployment for this PR already exists, skipping deploy all"
+            // modify bc to point at proper fork-branch, then continue to build step
+            _openshift(env.STAGE_NAME, TOOLSPROJECT) {
+              openshift.patch(
+                "bc/${PR_NAME}-eagle-public-angular-builder",
+                '\'{"spec":{"source":{"git":{"ref": "${PR_NAME}", "uri": "https://github.com/${PR_FORK}/eagle-public"}}}}\''
+              )
+            }
           }
         }
       }
@@ -371,11 +378,13 @@ pipeline {
               // trigger and wait for s2i build to complete
               def bcObj1 = openshift.selector('bc', "${PR_NAME}-eagle-public-angular-builder")
               bcObj1.untilEach(1) {
+                echo "bc1: ${it.object()}"
                 return it.object().status.phase == "Complete"
               }
               //  trigger and wait for nginx image build to complete
               def bcObj2 = openshift.selector('bc',"${PR_NAME}-eagle-public-build" )
               bcObj2.untilEach(1) {
+                echo "bc2: ${it.object()}"
                 return it.object().status.phase == "Complete"
               }
 
@@ -395,14 +404,14 @@ pipeline {
       }
     }
 
-    stage('Deploy to dev'){
+    stage('Deploy'){
       agent any
       steps {
         script {
           try {
             openshift.withCluster() {
               openshift.withProject(TOOLSPROJECT) {
-                echo "Deploying to dev..."
+                echo "Deploying to dev env..."
                 openshift.tag("${TOOLSPROJECT}/${PR_NAME}-eagle-public:${IMAGE_HASH}", "${TOOLSPROJECT}/${PR_NAME}-eagle-public:${PR_NAME}")
               }
 
@@ -442,12 +451,10 @@ pipeline {
       // }
     // }
 
-    // todo pause for input here?
     stage('Cleanup') {
       steps {
         script {
           echo "Removing pipeline lock and cleaning up deployment"
-          cleanUpLock()
           def inputAction = input(
             message: "Are you ready to cleanup ${PR_NAME} deployment?",
             ok: 'Confirm',
@@ -460,16 +467,18 @@ pipeline {
             ]
           )
           if ('Clean-up'.equalsIgnoreCase(inputAction)) {
+            cleanUpLock()
             sh 'ls'
-            sh '''
-              cd eagle-helper-pods/openshift/setup-teardown/
-              ./teardown-all.sh
-            '''
+            // sh '''
+            //   cd eagle-helper-pods/openshift/setup-teardown/
+            //   ./teardown-all.sh
+            // '''
           }
         }
       }
     }
   }
+  // todo verify cleanup
   post {
     success {
       echo 'Build and deploy complete'
