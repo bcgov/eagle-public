@@ -15,8 +15,11 @@ def notifyRocketChat(text, url) {
       "icon_url":"https://wiki.jenkins.io/download/attachments/2916393/headshot.png",
       "text": message
     ])
-
-    sh("curl -X POST -H 'Content-Type: application/json' --data \'${payload}\' ${rocketChatURL}")
+    try {
+      sh("curl -X POST -H 'Content-Type: application/json' --data \'${payload}\' ${rocketChatURL}")
+    } catch (error) {
+      echo "Error posting Rocket Chat message: ${error}"
+    }
 }
 
 // Print stack trace of error
@@ -82,11 +85,14 @@ pipeline {
       steps {
         script {
           _openshift(env.STAGE_NAME, TOOLSPROJECT) {
-            timeout(10) {
+            timeout(15) {
+              // try {
               // sh("oc extract secret/rocket-chat-secrets --to=${env.WORKSPACE} --confirm")
               // ROCKET_DEPLOY_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-deploy-webhook')
               // ROCKET_QA_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-qa-webhook')
-
+              // } catch (error) {
+              //   echo "Error retrieviing rocket chat token"
+              // }
               echo "Building eagle-public develop branch"
               // trigger and wait for s2i build to complete
               def bcObj1 = openshift.selector('bc', "eagle-public-angular-builder")
