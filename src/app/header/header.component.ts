@@ -33,7 +33,5 @@ export class HeaderComponent {
     if ( this.envName && this.bannerColour && this.bannerColour !== 'no-banner-colour-set') {
       this.showBanner = true;
     }
-    console.log(this.bannerColour);
-
   }
 }
