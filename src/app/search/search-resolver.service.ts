@@ -92,7 +92,8 @@ export class SearchResolver implements Resolve<Observable<object>> {
             true,
             null,
             this.filterForAPI,
-            '');
+            '',
+            true);
         });
     }
   }
