@@ -10,6 +10,8 @@ import { ApiService } from 'app/services/api';
 
 export class HeaderComponent {
   public envName: string;
+  public bannerColour: string;
+  public showBanner = false;
 
   constructor(
     public router: Router,
@@ -25,25 +27,11 @@ export class HeaderComponent {
       browser_alert.hidden = false;
     }
 
-       // Set the environment
-       switch (this.apiService.env) {
-        case 'local':
-          this.envName = 'Local';
-          break;
-        case 'dev':
-          this.envName = 'Development';
-          break;
-        case 'test':
-          this.envName = 'Testing';
-          break;
-        case 'demo':
-          this.envName = 'Demo';
-          break;
-        case 'hotfix':
-          this.envName = 'Hotfix';
-          break;
-        default:
-          this.envName = null;
-      }
+    this.envName = this.apiService.env;
+    this.bannerColour = this.apiService.bannerColour;
+    // no-banner-colour-set is the default if no banner colour is defined in the openshift environment variables.
+    if ( this.envName && this.bannerColour && this.bannerColour !== 'no-banner-colour-set') {
+      this.showBanner = true;
+    }
   }
 }

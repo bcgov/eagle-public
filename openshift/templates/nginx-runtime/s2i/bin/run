@@ -5,6 +5,7 @@ sed "s~%RealIpFrom%~${RealIpFrom:-172.51.0.0/16}~g; s~%IpFilterRules%~${IpFilter
 echo "window.localStorage.setItem('from_public_server--remote_api_path', '${REMOTE_API_PATH:-set-in-project-nginx-runtime}');" > /etc/nginx/publicServerEnvironmentSettings.js;
 echo "window.localStorage.setItem('from_public_server--remote_admin_path', '${REMOTE_ADMIN_PATH:-set-in-project-nginx-runtime}');" >> /etc/nginx/publicServerEnvironmentSettings.js;
 echo "window.localStorage.setItem('from_public_server--deployment_env', '${DEPLOYMENT_ENVIRONMENT:-set-in-project-nginx-runtime}');" >> /etc/nginx/publicServerEnvironmentSettings.js;
+echo "window.localStorage.setItem('from_public_server--banner_colour', '${BANNER_COLOUR:-no-banner-colour-set}');" >> /etc/nginx/publicServerEnvironmentSettings.js;
 
 if [ -n "$HTTP_BASIC_USERNAME" ] && [ -n "$HTTP_BASIC_PASSWORD" ]; then
     echo "---> Generating .htpasswd file"
