@@ -377,12 +377,14 @@ pipeline {
               echo "Building eagle-public develop branch"
               // trigger and wait for s2i build to complete
               def bcObj1 = openshift.selector('bc', "${PR_NAME}-eagle-public-angular-builder")
+              bcObj1.startBuild()
               bcObj1.untilEach(1) {
                 echo "bc1: ${it.object()}"
                 return it.object().status.phase == "Complete"
               }
               //  trigger and wait for nginx image build to complete
               def bcObj2 = openshift.selector('bc',"${PR_NAME}-eagle-public-build" )
+              bcObj2.startBuild()
               bcObj2.untilEach(1) {
                 echo "bc2: ${it.object()}"
                 return it.object().status.phase == "Complete"
