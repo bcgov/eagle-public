@@ -237,9 +237,7 @@ def createFullPRDeployment() {
         if [ -d "eagle-helper-pods" ]
         then
           echo "stale helper pods checkout, removing it"
-          pwd
           rm -rf eagle-helper-pods
-          pwd
         fi
         git clone https://github.com/mtcarto/eagle-helper-pods
         cd eagle-helper-pods/openshift/setup-teardown/
@@ -298,38 +296,40 @@ def createFullPRDeployment() {
 
 def cleanUpPR() {
   openshift.withCluster() {
-  echo "Configuring deployment scripts for teardown"
-  try {
-    sh '''
-      if [ -d "eagle-helper-pods" ]
-      then
-        echo "stale helper pods checkout, removing it"
-        pwd
-        rm -rf eagle-helper-pods
-        pwd
-      fi
-      git clone https://github.com/mtcarto/eagle-helper-pods
-      cd eagle-helper-pods/openshift/setup-teardown/
+    echo "Configuring deployment scripts for teardown"
+    try {
+      sh '''
+        if [ -d "eagle-helper-pods" ]
+        then
+          echo "stale helper pods checkout, removing it"
+          rm -rf eagle-helper-pods
+        fi
+        git clone https://github.com/mtcarto/eagle-helper-pods
+        cd eagle-helper-pods/openshift/setup-teardown/
 
-          # set project to PR deployment template folder
-      find . -name "projectset.config" -exec sed -i "" -e "s/^\( *TARGET_PROJECT_SET=*\)[^ ]*\(.*\)*$/\1PR\2/" {} \;
+            # set project to PR deployment template folder
+        find . -name "projectset.config" -exec sed -i -e "s/^\\( *TARGET_PROJECT_SET=*\\)[^ ]*\\(.*\\)*$/\\1PR\\2/" {} \\;
 
-          # set to unique name (ie. branchName-appName) for pr builds & deployments
-      cd params/CUSTOM_SETTINGS/PR
-      find . -name "*.params" -exec sed -i "" -e "s/pr-placeholder/${PR_NAME}/g" {} \;
-      find . -name "*.config" -exec sed -i "" -e "s/pr-placeholder/${PR_NAME}/g" {} \;
+            # set to unique name (ie. branchName-appName) for pr builds & deployments
+        cd params/CUSTOM_SETTINGS/PR
+        find . -name "*.params" -exec sed -i -e "s/pr-placeholder/${PR_NAME}/g" {} \\;
+        find . -name "*.config" -exec sed -i -e "s/pr-placeholder/${PR_NAME}/g" {} \\;
 
-      # switch back to tools project,
-      oc project ${TOOLSPROJECT}
-    '''
-    echo "deployment scripts configured and PR env created"
-  } catch (error) {
-    //notifyRocketChat(
-    //  "@all The build ${env.BUILD_DISPLAY_NAME} of eagle-admin dev-pr, seems to be broken.\n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
-    //  ROCKET_DEPLOY_WEBHOOK
-    //)
-    currentBuild.result = 'FAILURE'
-    throw new Exception("Full PR env deployment failed")
+        cd ../../../
+        ./teardown-all.sh
+
+            # switch back to tools project,
+        oc project ${TOOLSPROJECT}
+      '''
+      echo "Template scripts configured and PR env removed"
+    } catch (error) {
+      notifyRocketChat(
+       "@all The cleanup ${env.BUILD_DISPLAY_NAME} of eagle ${PR_NAME} deployment may have failed.\n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
+       ROCKET_DEPLOY_WEBHOOK
+      )
+      currentBuild.result = 'FAILURE'
+      throw new Exception("Full PR env teardown failed: ${error}")
+    }
   }
 }
 
@@ -413,48 +413,45 @@ pipeline {
           CHANGELOG = getChangeLog(pastBuilds);
 
           echo ">>>>>>Changelog: \n ${CHANGELOG}"
-          // _openshift(env.STAGE_NAME, TOOLSPROJECT) {
-          openshift.withCluster() {
-            openshift.withProject(TOOLSPROJECT) {
-              echo "skipping build for debug"
-              // timeout(20) {
-              //   // try {
-              //   // sh("oc extract secret/rocket-chat-secrets --to=${env.WORKSPACE} --confirm")
-              //   // ROCKET_DEPLOY_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-deploy-webhook')
-              //   // ROCKET_QA_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-qa-webhook')
-              //   // } catch (error) {
-              //   //   echo "Error retrieving Rocket Chat token"
-              //   // }
-              //   echo "Building eagle-public develop branch"
-              //   // trigger and wait for s2i build to complete
-              //   def bcObj1 = openshift.selector('bc', "${PR_NAME}-eagle-public-angular-builder")
-              //   bcObj1.startBuild()
-              //   echo "bcobj1 latest ver: ${bcObj1}"
-              //   def buildSelector1 = bcObj1.narrow("bc").related("builds")
-              //   echo "${buildSelector1}"
-              //   buildSelector1.untilEach(1) {
-              //     return (it.object().status.phase == "Complete")
-              //   }
-
-              //   //  trigger and wait for nginx image build to complete
-              //   def bcObj2 = openshift.selector('bc',"${PR_NAME}-eagle-public-build" )
-              //   bcObj2.startBuild()
-              //   def buildSelector2 = bcObj2.narrow("bc").related("builds")
-              //   buildSelector2.untilEach(1) {
-              //     return (it.object().status.phase == "Complete")
-              //   }
-
-
-              //   echo "Build done"
-
-              //   echo ">>> Get Image Hash"
-              //   // Don't tag with BUILD_ID so the pruner can do it's job; it won't delete tagged images.
-              //   // Tag the images for deployment based on the image's hash
-              //   IMAGE_HASH = sh (
-              //     script: """oc get istag ${PR_NAME}-eagle-public:latest -o template --template=\"{{.image.dockerImageReference}}\"|awk -F \":\" \'{print \$3}\'""",
-              //     returnStdout: true).trim()
-              //   echo ">> IMAGE_HASH: ${IMAGE_HASH}"
+          _openshift(env.STAGE_NAME, TOOLSPROJECT) {
+            echo "skipping build for debug"
+            timeout(20) {
+              // try {
+              // sh("oc extract secret/rocket-chat-secrets --to=${env.WORKSPACE} --confirm")
+              // ROCKET_DEPLOY_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-deploy-webhook')
+              // ROCKET_QA_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-qa-webhook')
+              // } catch (error) {
+              //   echo "Error retrieving Rocket Chat token"
               // }
+              echo "Building eagle-public develop branch"
+              // trigger and wait for s2i build to complete
+              def bcObj1 = openshift.selector('bc', "${PR_NAME}-eagle-public-angular-builder")
+              bcObj1.startBuild()
+              echo "bcobj1 latest ver: ${bcObj1}"
+              def buildSelector1 = bcObj1.narrow("bc").related("builds")
+              echo "${buildSelector1}"
+              buildSelector1.untilEach(1) {
+                return (it.object().status.phase == "Complete")
+              }
+
+              //  trigger and wait for nginx image build to complete
+              def bcObj2 = openshift.selector('bc',"${PR_NAME}-eagle-public-build" )
+              bcObj2.startBuild()
+              def buildSelector2 = bcObj2.narrow("bc").related("builds")
+              buildSelector2.untilEach(1) {
+                return (it.object().status.phase == "Complete")
+              }
+
+
+              echo "Build done"
+
+              echo ">>> Get Image Hash"
+              // Don't tag with BUILD_ID so the pruner can do it's job; it won't delete tagged images.
+              // Tag the images for deployment based on the image's hash
+              IMAGE_HASH = sh (
+                script: """oc get istag ${PR_NAME}-eagle-public:latest -o template --template=\"{{.image.dockerImageReference}}\"|awk -F \":\" \'{print \$3}\'""",
+                returnStdout: true).trim()
+              echo ">> IMAGE_HASH: ${IMAGE_HASH}"
             }
           }
         }
@@ -563,17 +560,7 @@ pipeline {
           if ('Clean-up'.equalsIgnoreCase(inputAction)) {
             cleanUpLock(lockName)
             cleanUpPR()
-            def inputAction = input(
-            message: "Pause to inspect templates for teardown",
-            ok: 'Confirm',
-            parameters: [
-              choice(
-                name: 'action',
-                choices: 'Clean-up\nIgnore',
-                description: 'What would you like to do?'
-              )
-            ]
-          )
+            echo "Cleanup of ${PR_NAME} deployment is complete"
           }
         }
       }
