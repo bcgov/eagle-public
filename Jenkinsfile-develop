@@ -377,7 +377,7 @@ pipeline {
 
           echo ">>>>>>Changelog: \n ${CHANGELOG}"
           _openshift(env.STAGE_NAME, TOOLSPROJECT) {
-            timeout(15) {
+            timeout(20) {
               // try {
               // sh("oc extract secret/rocket-chat-secrets --to=${env.WORKSPACE} --confirm")
               // ROCKET_DEPLOY_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-deploy-webhook')
