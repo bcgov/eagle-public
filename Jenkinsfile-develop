@@ -409,7 +409,7 @@ pipeline {
               // Don't tag with BUILD_ID so the pruner can do it's job; it won't delete tagged images.
               // Tag the images for deployment based on the image's hash
               IMAGE_HASH = sh (
-                script: """oc get istag eagle-public:latest -o template --template=\"{{.image.dockerImageReference}}\"|awk -F \":\" \'{print \$3}\'""",
+                script: """oc get istag ${PR_NAME}-eagle-public:latest -o template --template=\"{{.image.dockerImageReference}}\"|awk -F \":\" \'{print \$3}\'""",
                 returnStdout: true).trim()
               echo ">> IMAGE_HASH: ${IMAGE_HASH}"
             }
@@ -425,11 +425,13 @@ pipeline {
           try {
             openshift.withCluster() {
               openshift.withProject(TOOLSPROJECT) {
-                echo "Deploying to dev env..."
+                echo "Tagging image"
                 openshift.tag("${TOOLSPROJECT}/${PR_NAME}-eagle-public:${IMAGE_HASH}", "${TOOLSPROJECT}/${PR_NAME}-eagle-public:${PR_NAME}")
+                echo "Tagged ${TOOLSPROJECT}/${PR_NAME}-eagle-public:${IMAGE_HASH} as ${TOOLSPROJECT}/${PR_NAME}-eagle-public:${PR_NAME}"
               }
 
-              openshift.withProject(DEVPROJECT) {
+            openshift.withProject(DEVPROJECT) {
+                echo "Deploying to dev env..."
                 def dcObj = openshift.selector('dc', "${PR_NAME}-eagle-public")
                 dcObj.rollout().status()
                 echo ">>>> Deployment Complete"
@@ -450,7 +452,7 @@ pipeline {
             //   ROCKET_DEPLOY_WEBHOOK
             // )
             currentBuild.result = "FAILURE"
-            throw new Exception("Deploy failed")
+            throw new Exception("Deploy failed: ${error}")
           }
         }
       }
