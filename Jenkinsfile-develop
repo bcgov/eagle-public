@@ -296,6 +296,43 @@ def createFullPRDeployment() {
   }
 }
 
+def cleanUpPR() {
+  openshift.withCluster() {
+  echo "Configuring deployment scripts for teardown"
+  try {
+    sh '''
+      if [ -d "eagle-helper-pods" ]
+      then
+        echo "stale helper pods checkout, removing it"
+        pwd
+        rm -rf eagle-helper-pods
+        pwd
+      fi
+      git clone https://github.com/mtcarto/eagle-helper-pods
+      cd eagle-helper-pods/openshift/setup-teardown/
+
+          # set project to PR deployment template folder
+      find . -name "projectset.config" -exec sed -i "" -e "s/^\( *TARGET_PROJECT_SET=*\)[^ ]*\(.*\)*$/\1PR\2/" {} \;
+
+          # set to unique name (ie. branchName-appName) for pr builds & deployments
+      cd params/CUSTOM_SETTINGS/PR
+      find . -name "*.params" -exec sed -i "" -e "s/pr-placeholder/${PR_NAME}/g" {} \;
+      find . -name "*.config" -exec sed -i "" -e "s/pr-placeholder/${PR_NAME}/g" {} \;
+
+      # switch back to tools project,
+      oc project ${TOOLSPROJECT}
+    '''
+    echo "deployment scripts configured and PR env created"
+  } catch (error) {
+    //notifyRocketChat(
+    //  "@all The build ${env.BUILD_DISPLAY_NAME} of eagle-admin dev-pr, seems to be broken.\n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
+    //  ROCKET_DEPLOY_WEBHOOK
+    //)
+    currentBuild.result = 'FAILURE'
+    throw new Exception("Full PR env deployment failed")
+  }
+}
+
 def cleanUpLock(lockName) {
   def manager = org.jenkins.plugins.lockableresources.LockableResourcesManager.get()
   def resources = manager.getResources().findAll{
@@ -525,12 +562,18 @@ pipeline {
           )
           if ('Clean-up'.equalsIgnoreCase(inputAction)) {
             cleanUpLock(lockName)
-            sh '''
-              pwd
-              ls
-                #   cd eagle-helper-pods/openshift/setup-teardown/
-                # ./teardown-all.sh
-            // '''
+            cleanUpPR()
+            def inputAction = input(
+            message: "Pause to inspect templates for teardown",
+            ok: 'Confirm',
+            parameters: [
+              choice(
+                name: 'action',
+                choices: 'Clean-up\nIgnore',
+                description: 'What would you like to do?'
+              )
+            ]
+          )
           }
         }
       }
