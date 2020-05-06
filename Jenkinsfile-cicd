@@ -85,26 +85,29 @@ pipeline {
       steps {
         script {
           _openshift(env.STAGE_NAME, TOOLSPROJECT) {
-            timeout(15) {
-              // try {
-              // sh("oc extract secret/rocket-chat-secrets --to=${env.WORKSPACE} --confirm")
-              // ROCKET_DEPLOY_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-deploy-webhook')
-              // ROCKET_QA_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-qa-webhook')
-              // } catch (error) {
-              //   echo "Error retrieviing rocket chat token"
-              // }
+            timeout(20) {
+              try {
+                sh("oc extract secret/rocket-chat-secrets --to=${env.WORKSPACE} --confirm")
+                ROCKET_DEPLOY_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-deploy-webhook')
+                ROCKET_QA_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-qa-webhook')
+              } catch (error) {
+                echo "Error retrieviing rocket chat token"
+              }
               echo "Building eagle-public develop branch"
               // trigger and wait for s2i build to complete
               def bcObj1 = openshift.selector('bc', "eagle-public-angular-builder")
               bcObj1.startBuild()
-              bcObj1.untilEach(1) {
-                return it.object().status.phase == "Complete"
+              def buildSelector1 = bcObj1.narrow("bc").related("builds")
+              buildSelector1.untilEach(1) {
+                return (it.object().status.phase == "Complete")
               }
+
               //  trigger and wait for nginx image build to complete
               def bcObj2 = openshift.selector('bc',"eagle-public-build" )
               bcObj2.startBuild()
-              bcObj2.untilEach(1) {
-                return it.object().status.phase == "Complete"
+              def buildSelector2 = bcObj2.narrow("bc").related("builds")
+              buildSelector2.untilEach(1) {
+                return (it.object().status.phase == "Complete")
               }
 
 
@@ -118,8 +121,8 @@ pipeline {
                 returnStdout: true).trim()
               echo ">> IMAGE_HASH: ${IMAGE_HASH}"
             }
-
-            openshift.tag("${TOOLSPROJECT}/${PR_NAME}-eagle-public:${IMAGE_HASH}", "${TOOLSPROJECT}/${PR_NAME}-eagle-public:${PR_NAME}")
+            echo "Tagging latest to dev, hash: ${IMAGE_HASH}"
+            openshift.tag("${TOOLSPROJECT}/eagle-public:latest", "${TOOLSPROJECT}/eagle-public:dev")
           }
         }
       }

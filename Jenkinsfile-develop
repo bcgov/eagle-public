@@ -296,7 +296,7 @@ def createFullPRDeployment() {
   }
 }
 
-def cleanUpLock() {
+def cleanUpLock(lockName) {
   def manager = org.jenkins.plugins.lockableresources.LockableResourcesManager.get()
   def resources = manager.getResources().findAll{
     !it.locked && it.name.equalsIgnoreCase(lockName)
@@ -376,42 +376,48 @@ pipeline {
           CHANGELOG = getChangeLog(pastBuilds);
 
           echo ">>>>>>Changelog: \n ${CHANGELOG}"
-          _openshift(env.STAGE_NAME, TOOLSPROJECT) {
-            timeout(20) {
-              // try {
-              // sh("oc extract secret/rocket-chat-secrets --to=${env.WORKSPACE} --confirm")
-              // ROCKET_DEPLOY_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-deploy-webhook')
-              // ROCKET_QA_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-qa-webhook')
-              // } catch (error) {
-              //   echo "Error retrieving Rocket Chat token"
+          // _openshift(env.STAGE_NAME, TOOLSPROJECT) {
+          openshift.withCluster() {
+            openshift.withProject(TOOLSPROJECT) {
+              echo "skipping build for debug"
+              // timeout(20) {
+              //   // try {
+              //   // sh("oc extract secret/rocket-chat-secrets --to=${env.WORKSPACE} --confirm")
+              //   // ROCKET_DEPLOY_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-deploy-webhook')
+              //   // ROCKET_QA_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-qa-webhook')
+              //   // } catch (error) {
+              //   //   echo "Error retrieving Rocket Chat token"
+              //   // }
+              //   echo "Building eagle-public develop branch"
+              //   // trigger and wait for s2i build to complete
+              //   def bcObj1 = openshift.selector('bc', "${PR_NAME}-eagle-public-angular-builder")
+              //   bcObj1.startBuild()
+              //   echo "bcobj1 latest ver: ${bcObj1}"
+              //   def buildSelector1 = bcObj1.narrow("bc").related("builds")
+              //   echo "${buildSelector1}"
+              //   buildSelector1.untilEach(1) {
+              //     return (it.object().status.phase == "Complete")
+              //   }
+
+              //   //  trigger and wait for nginx image build to complete
+              //   def bcObj2 = openshift.selector('bc',"${PR_NAME}-eagle-public-build" )
+              //   bcObj2.startBuild()
+              //   def buildSelector2 = bcObj2.narrow("bc").related("builds")
+              //   buildSelector2.untilEach(1) {
+              //     return (it.object().status.phase == "Complete")
+              //   }
+
+
+              //   echo "Build done"
+
+              //   echo ">>> Get Image Hash"
+              //   // Don't tag with BUILD_ID so the pruner can do it's job; it won't delete tagged images.
+              //   // Tag the images for deployment based on the image's hash
+              //   IMAGE_HASH = sh (
+              //     script: """oc get istag ${PR_NAME}-eagle-public:latest -o template --template=\"{{.image.dockerImageReference}}\"|awk -F \":\" \'{print \$3}\'""",
+              //     returnStdout: true).trim()
+              //   echo ">> IMAGE_HASH: ${IMAGE_HASH}"
               // }
-              echo "Building eagle-public develop branch"
-              // trigger and wait for s2i build to complete
-              def bcObj1 = openshift.selector('bc', "${PR_NAME}-eagle-public-angular-builder")
-              bcObj1.startBuild()
-              def buildSelector1 = bcObj1.narrow("bc").related("builds")
-              buildSelector1.untilEach(1) {
-                return (it.object().status.phase == "Complete")
-              }
-
-              //  trigger and wait for nginx image build to complete
-              def bcObj2 = openshift.selector('bc',"${PR_NAME}-eagle-public-build" )
-              bcObj2.startBuild()
-              def buildSelector2 = bcObj2.narrow("bc").related("builds")
-              buildSelector2.untilEach(1) {
-                return it.object().status.phase == "Complete"
-              }
-
-
-              echo "Build done"
-
-              echo ">>> Get Image Hash"
-              // Don't tag with BUILD_ID so the pruner can do it's job; it won't delete tagged images.
-              // Tag the images for deployment based on the image's hash
-              IMAGE_HASH = sh (
-                script: """oc get istag ${PR_NAME}-eagle-public:latest -o template --template=\"{{.image.dockerImageReference}}\"|awk -F \":\" \'{print \$3}\'""",
-                returnStdout: true).trim()
-              echo ">> IMAGE_HASH: ${IMAGE_HASH}"
             }
           }
         }
@@ -425,9 +431,9 @@ pipeline {
           try {
             openshift.withCluster() {
               openshift.withProject(TOOLSPROJECT) {
-                echo "Tagging image"
-                openshift.tag("${TOOLSPROJECT}/${PR_NAME}-eagle-public:${IMAGE_HASH}", "${TOOLSPROJECT}/${PR_NAME}-eagle-public:${PR_NAME}")
-                echo "Tagged ${TOOLSPROJECT}/${PR_NAME}-eagle-public:${IMAGE_HASH} as ${TOOLSPROJECT}/${PR_NAME}-eagle-public:${PR_NAME}"
+                echo "Tagging image, latest hash: ${IMAGE_HASH}"
+                openshift.tag("${TOOLSPROJECT}/${PR_NAME}-eagle-public:latest", "${TOOLSPROJECT}/${PR_NAME}-eagle-public:${PR_NAME}")
+                echo "Tagged ${TOOLSPROJECT}/${PR_NAME}-eagle-public:latest as ${TOOLSPROJECT}/${PR_NAME}-eagle-public:${PR_NAME}"
               }
 
             openshift.withProject(DEVPROJECT) {
@@ -518,11 +524,12 @@ pipeline {
             ]
           )
           if ('Clean-up'.equalsIgnoreCase(inputAction)) {
-            cleanUpLock()
-            sh 'ls'
-            // sh '''
-            //   cd eagle-helper-pods/openshift/setup-teardown/
-            //   ./teardown-all.sh
+            cleanUpLock(lockName)
+            sh '''
+              pwd
+              ls
+                #   cd eagle-helper-pods/openshift/setup-teardown/
+                # ./teardown-all.sh
             // '''
           }
         }
