@@ -364,6 +364,11 @@ pipeline {
   agent any
   stages {
     stage('Build Init') {
+      when {
+        expression {
+          PR_NAME != 'develop' || PR_NAME != 'test'
+        }
+      }
       steps {
         script {
           openshift.setLockName(lockName)
@@ -372,15 +377,25 @@ pipeline {
     }
 
     stage('Sonarqube') {
-     steps {
+      when {
+        expression {
+          PR_NAME != 'develop' || PR_NAME != 'test'
+        }
+      }
+      steps {
        script {
          echo "Running Sonarqube"
          def result = sonarQubeJenkinsNode()
-       }
-     }
+        }
+      }
     }
 
     stage('Setup PR env') {
+      when {
+        expression {
+          PR_NAME != 'develop' || PR_NAME != 'test'
+        }
+      }
       steps {
         script {
           try {
@@ -409,6 +424,11 @@ pipeline {
     }
 
     stage('Build') {
+      when {
+        expression {
+          PR_NAME != 'develop' || PR_NAME != 'test'
+        }
+      }
       agent any
       steps {
         script {
@@ -463,6 +483,11 @@ pipeline {
     }
 
     stage('Deploy'){
+      when {
+        expression {
+          PR_NAME != 'develop' || PR_NAME != 'test'
+        }
+      }
       agent any
       steps {
         script {
@@ -503,6 +528,11 @@ pipeline {
     }
 
     stage("Populate Data"){
+      when {
+        expression {
+          PR_NAME != 'develop' || PR_NAME != 'test'
+        }
+      }
       steps {
         script {
           try {
@@ -547,6 +577,11 @@ pipeline {
     // }
 
     stage('Cleanup') {
+      when {
+        expression {
+          PR_NAME != 'develop' || PR_NAME != 'test'
+        }
+      }
       steps {
         script {
           echo "Removing pipeline lock and cleaning up deployment"
