@@ -372,14 +372,14 @@ pipeline {
       }
     }
 
-    // stage('Sonarqube') {
-    //  steps {
-    //    script {
-    //      echo "Running Sonarqube"
-    //      def result = sonarQubeJenkinsNode()
-    //    }
-    //  }
-    // }
+    stage('Sonarqube') {
+     steps {
+       script {
+         echo "Running Sonarqube"
+         def result = sonarQubeJenkinsNode()
+       }
+     }
+    }
 
     stage('Setup PR env') {
       steps {
