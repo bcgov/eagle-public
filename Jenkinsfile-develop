@@ -173,7 +173,7 @@ def sonarQubeJenkinsNode () {
                 echo "sonarqube report failed to complete, or timed out"
 
                 notifyRocketChat(
-                  "@all The latest build, ${env.BUILD_DISPLAY_NAME} of eagle-public seems to be broken. \n ${env.RUN_DISPLAY_URL}\n Error: \n sonarqube report failed to complete, or timed out : ${SONARQUBE_URL}",
+                  "@all The latest build, ${env.BUILD_DISPLAY_NAME} of eagle-public seems to be broken. \n ${env.RUN_DISPLAY_URL}\n Error: \n sonarqube report failed to complete, or timed out : ${SONARQUBE_URL_EXT}",
                   'deploy'
                 )
 
@@ -446,15 +446,18 @@ pipeline {
               } catch (error) {
                 echo "Error retrieving Rocket Chat token"
               }
-              echo "Building eagle-public develop branch"
+              echo "Building eagle-public ${PR_NAME} branch"
               // trigger and wait for s2i build to complete
               def bcObj1 = openshift.selector('bc', "${PR_NAME}-eagle-public-angular-builder")
+              echo "bcObject1 version: ${bcObj1.object().status.lastVersion}"
               bcObj1.startBuild()
-              echo "bcobj1 latest ver: ${bcObj1}"
-              def buildSelector1 = bcObj1.narrow("bc").related("builds")
-              echo "${buildSelector1}"
+              def buildName = "${PR_NAME}-eagle-public-angular-builder-${bcObj1.object().status.lastVersion}"
+              echo "expected name: ${buildName}"
+              def buildSelector1 = openshift.selector('build', buildName)
+
               buildSelector1.untilEach(1) {
-                return (it.object().status.phase == "Complete")
+                def phase = it.object().status.phase
+                return (phase == "Complete" || phase == "Cancelled")
               }
 
               //  trigger and wait for nginx image build to complete
@@ -462,7 +465,8 @@ pipeline {
               bcObj2.startBuild()
               def buildSelector2 = bcObj2.narrow("bc").related("builds")
               buildSelector2.untilEach(1) {
-                return (it.object().status.phase == "Complete")
+                def phase = it.object().status.phase
+                return (phase == "Complete" || phase == "Cancelled")
               }
 
 
