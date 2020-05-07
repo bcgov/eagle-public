@@ -366,7 +366,7 @@ pipeline {
     stage('Build Init') {
       when {
         expression {
-          PR_NAME != 'develop' || PR_NAME != 'test'
+          env.PR_NAME != 'develop' || env.PR_NAME != 'test'
         }
       }
       steps {
@@ -379,7 +379,7 @@ pipeline {
     stage('Sonarqube') {
       when {
         expression {
-          PR_NAME != 'develop' || PR_NAME != 'test'
+          env.PR_NAME != 'develop' || env.PR_NAME != 'test'
         }
       }
       steps {
@@ -393,7 +393,7 @@ pipeline {
     stage('Setup PR env') {
       when {
         expression {
-          PR_NAME != 'develop' || PR_NAME != 'test'
+          env.PR_NAME != 'develop' || env.PR_NAME != 'test'
         }
       }
       steps {
@@ -426,7 +426,7 @@ pipeline {
     stage('Build') {
       when {
         expression {
-          PR_NAME != 'develop' || PR_NAME != 'test'
+          env.PR_NAME != 'develop' || env.PR_NAME != 'test'
         }
       }
       agent any
@@ -438,7 +438,6 @@ pipeline {
 
           echo ">>>>>>Changelog: \n ${CHANGELOG}"
           _openshift(env.STAGE_NAME, TOOLSPROJECT) {
-            echo "skipping build for debug"
             timeout(20) {
               try {
                 sh("oc extract secret/rocket-chat-secrets --to=${env.WORKSPACE} --confirm")
@@ -485,7 +484,7 @@ pipeline {
     stage('Deploy'){
       when {
         expression {
-          PR_NAME != 'develop' || PR_NAME != 'test'
+          env.PR_NAME != 'develop' || env.PR_NAME != 'test'
         }
       }
       agent any
@@ -530,7 +529,7 @@ pipeline {
     stage("Populate Data"){
       when {
         expression {
-          PR_NAME != 'develop' || PR_NAME != 'test'
+          env.PR_NAME != 'develop' || env.PR_NAME != 'test'
         }
       }
       steps {
@@ -579,7 +578,7 @@ pipeline {
     stage('Cleanup') {
       when {
         expression {
-          PR_NAME != 'develop' || PR_NAME != 'test'
+          env.PR_NAME != 'develop' || env.PR_NAME != 'test'
         }
       }
       steps {
