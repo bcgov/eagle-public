@@ -16,6 +16,12 @@ def notifyRocketChat(text, url) {
       "text": message
     ])
     try {
+      def rocketChatURL;
+      if (target == 'deploy') {
+        rocketChatURL = ROCKET_DEPLOY_WEBHOOK
+      } else if (target == 'qa') {
+        rocketChatURL = ROCKET_QA_WEBHOOK
+      }
       sh("curl -X POST -H 'Content-Type: application/json' --data \'${payload}\' ${rocketChatURL}")
     } catch (error) {
       echo "Error posting Rocket Chat message: ${error}"
@@ -54,11 +60,11 @@ def _openshift(String name, String project, Closure body) {
                 )
               ]
             )
-            // todo add a call to cleanup if we 'ignore' failure (change ignore to cleanup)
+
             if ('Ignore'.equalsIgnoreCase(inputAction)) {
               notifyRocketChat(
                 "@all The build ${env.BUILD_DISPLAY_NAME} of eagle-public-pr, seems to be broken.\n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
-              ROCKET_DEPLOY_WEBHOOK
+                'deploy'
               )
               isDone=true
             }
@@ -79,7 +85,6 @@ pipeline {
 
     stage('Build and Tag Dev'){
       when {
-        // todo verify this condidtional
         expression { env.BRANCH_NAME == 'develop' }
       }
       steps {
@@ -123,6 +128,10 @@ pipeline {
             }
             echo "Tagging latest to dev, hash: ${IMAGE_HASH}"
             openshift.tag("${TOOLSPROJECT}/eagle-public:latest", "${TOOLSPROJECT}/eagle-public:dev")
+            notifyRocketChat(
+              "eagle-public latest develop has been built and tagged to dev",
+              'deploy'
+            )
           }
         }
       }
@@ -134,8 +143,13 @@ pipeline {
       }
       steps {
         script {
-          ROCKET_DEPLOY_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-deploy-webhook')
-          ROCKET_QA_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-qa-webhook')
+          try {
+            sh("oc extract secret/rocket-chat-secrets --to=${env.WORKSPACE} --confirm")
+            ROCKET_DEPLOY_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-deploy-webhook')
+            ROCKET_QA_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-qa-webhook')
+          } catch (error) {
+            echo "Error retrieviing rocket chat token"
+          }
           try {
             echo "Backing up..."
             sh("oc tag esm/eagle-public:test esm/eagle-public:test-backup")
@@ -143,21 +157,21 @@ pipeline {
             echo "Tagging Dev as Test..."
             sh("oc tag esm/eagle-public:dev esm/eagle-public:test")
             sleep 5
-            // todo update namespace before switching over
+
             echo ">>>> Tagging Complete"
 
             notifyRocketChat(
               "eagle-public dev has been tagged to test",
-              ROCKET_DEPLOY_WEBHOOK
+              'deploy'
             )
             notifyRocketChat(
               "@all eagle-public dev has been tagged as test",
-              ROCKET_QA_WEBHOOK
+              'qa'
             )
           } catch (error) {
             notifyRocketChat(
               "@all tagging dev as test has failed",
-              ROCKET_DEPLOY_WEBHOOK
+              'deploy'
             )
             currentBuild.result = "FAILURE"
             throw new Exception("Deploy failed")
@@ -172,8 +186,13 @@ pipeline {
       }
       steps {
         script {
-          ROCKET_DEPLOY_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-deploy-webhook')
-          ROCKET_QA_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-qa-webhook')
+          try {
+            sh("oc extract secret/rocket-chat-secrets --to=${env.WORKSPACE} --confirm")
+            ROCKET_DEPLOY_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-deploy-webhook')
+            ROCKET_QA_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-qa-webhook')
+          } catch (error) {
+            echo "Error retrieviing rocket chat token"
+          }
           try {
             echo "Backing up..."
             sh("oc tag esm/eagle-public:prod esm/eagle-public:prod-backup")
@@ -184,16 +203,16 @@ pipeline {
             echo ">>>> Tagging Complete"
             notifyRocketChat(
               "eagle-public test has been tagged to Prod",
-              ROCKET_DEPLOY_WEBHOOK
+              'deploy'
             )
             notifyRocketChat(
               "@all eagle-public test has been tagged to prod",
-              ROCKET_QA_WEBHOOK
+              'qa'
             )
           } catch (error) {
             notifyRocketChat(
               "@all tagging test as prod has failed",
-              ROCKET_DEPLOY_WEBHOOK
+              'deploy'
             )
             currentBuild.result = "FAILURE"
             throw new Exception("Deploy failed")
