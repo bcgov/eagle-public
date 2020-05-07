@@ -8,8 +8,7 @@ import java.util.regex.Pattern
 /*
  * Sends a rocket chat notification
  */
-def notifyRocketChat(text, url) {
-    def rocketChatURL = url
+def notifyRocketChat(text, target) {
     def message = text.replaceAll(~/\'/, "")
     def payload = JsonOutput.toJson([
       "username":"Jenkins",
@@ -17,6 +16,12 @@ def notifyRocketChat(text, url) {
       "text": message
     ])
     try {
+      def rocketChatURL;
+      if (target == 'deploy') {
+        rocketChatURL = ROCKET_DEPLOY_WEBHOOK
+      } else if (target == 'qa') {
+        rocketChatURL = ROCKET_QA_WEBHOOK
+      }
       sh("curl -X POST -H 'Content-Type: application/json' --data \'${payload}\' ${rocketChatURL}")
     } catch (error) {
       echo "Error posting Rocket Chat message: ${error}"
@@ -59,7 +64,7 @@ def _openshift(String name, String project, Closure body) {
             if ('Ignore'.equalsIgnoreCase(inputAction)) {
               notifyRocketChat(
                 "@all The build ${env.BUILD_DISPLAY_NAME} of eagle-public-pr, seems to be broken.\n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
-              ROCKET_DEPLOY_WEBHOOK
+              'deploy'
               )
               isDone=true
             }
@@ -167,10 +172,10 @@ def sonarQubeJenkinsNode () {
               if ( !sonarqubeReportComplete ( OLD_SONAR_DATE, SONARQUBE_STATUS_URL ) ) {
                 echo "sonarqube report failed to complete, or timed out"
 
-                // notifyRocketChat(
-                //   "@all The latest build, ${env.BUILD_DISPLAY_NAME} of eagle-public seems to be broken. \n ${env.RUN_DISPLAY_URL}\n Error: \n sonarqube report failed to complete, or timed out : ${SONARQUBE_URL}",
-                //   ROCKET_DEPLOY_WEBHOOK
-                // )
+                notifyRocketChat(
+                  "@all The latest build, ${env.BUILD_DISPLAY_NAME} of eagle-public seems to be broken. \n ${env.RUN_DISPLAY_URL}\n Error: \n sonarqube report failed to complete, or timed out : ${SONARQUBE_URL}",
+                  'deploy'
+                )
 
                 currentBuild.result = "FAILURE"
                 throw new Exception("sonar timed out or failedz")
@@ -185,20 +190,20 @@ def sonarQubeJenkinsNode () {
             if ( "${SONARQUBE_STATUS}" == "ERROR") {
               echo "Scan Failed"
 
-              // notifyRocketChat(
-              //   "@all The latest build ${env.BUILD_DISPLAY_NAME} of eagle-public seems to be broken. \n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
-              //   ROCKET_DEPLOY_WEBHOOK
-              // )
+              notifyRocketChat(
+                "@all The latest build ${env.BUILD_DISPLAY_NAME} of eagle-public seems to be broken. \n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
+                'deploy'
+              )
 
               currentBuild.result = 'FAILURE'
             } else {
               echo "Scan Passed"
             }
           } catch (error) {
-            // notifyRocketChat(
-            //   "@all The latest build ${env.BUILD_DISPLAY_NAME} of eagle-public seems to be broken. \n ${env.BUILD_URL}\n Error: \n ${error.message}",
-            //   ROCKET_DEPLOY_WEBHOOK
-            // )
+            notifyRocketChat(
+              "@all The latest build ${env.BUILD_DISPLAY_NAME} of eagle-public seems to be broken. \n ${env.BUILD_URL}\n Error: \n ${error.message}",
+              'deploy'
+            )
             throw error
           } finally {
             echo "Scan Complete"
@@ -286,7 +291,7 @@ def createFullPRDeployment() {
     } catch (error) {
       notifyRocketChat(
         "@all The build ${env.BUILD_DISPLAY_NAME} of eagle-public dev-pr, seems to be broken.\n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
-        ROCKET_DEPLOY_WEBHOOK
+        'deploy'
       )
       currentBuild.result = 'FAILURE'
       throw new Exception("Full PR env deployment failed")
@@ -325,7 +330,7 @@ def cleanUpPR() {
     } catch (error) {
       notifyRocketChat(
        "@all The cleanup ${env.BUILD_DISPLAY_NAME} of eagle ${PR_NAME} deployment may have failed.\n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
-       ROCKET_DEPLOY_WEBHOOK
+       'deploy'
       )
       currentBuild.result = 'FAILURE'
       throw new Exception("Full PR env teardown failed: ${error}")
@@ -416,13 +421,13 @@ pipeline {
           _openshift(env.STAGE_NAME, TOOLSPROJECT) {
             echo "skipping build for debug"
             timeout(20) {
-              // try {
-              // sh("oc extract secret/rocket-chat-secrets --to=${env.WORKSPACE} --confirm")
-              // ROCKET_DEPLOY_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-deploy-webhook')
-              // ROCKET_QA_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-qa-webhook')
-              // } catch (error) {
-              //   echo "Error retrieving Rocket Chat token"
-              // }
+              try {
+                sh("oc extract secret/rocket-chat-secrets --to=${env.WORKSPACE} --confirm")
+                ROCKET_DEPLOY_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-deploy-webhook')
+                ROCKET_QA_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-qa-webhook')
+              } catch (error) {
+                echo "Error retrieving Rocket Chat token"
+              }
               echo "Building eagle-public develop branch"
               // trigger and wait for s2i build to complete
               def bcObj1 = openshift.selector('bc', "${PR_NAME}-eagle-public-angular-builder")
@@ -476,21 +481,21 @@ pipeline {
                 dcObj.rollout().status()
                 echo ">>>> Deployment Complete"
 
-                // notifyRocketChat(
-                //   "A new version of eagle-public ${PR_NAME} is now in Dev, build: ${env.BUILD_DISPLAY_NAME} \n Changes: \n ${CHANGELOG}",
-                //   ROCKET_DEPLOY_WEBHOOK
-                // )
-                // notifyRocketChat(
-                //   "@all A new version of eagle-public is now in Dev and ready for QA. \n Changes to Dev: \n ${CHANGELOG}",
-                //   ROCKET_QA_WEBHOOK
-                // )
+                notifyRocketChat(
+                  "A new version of eagle-public ${PR_NAME} is now in Dev, build: ${env.BUILD_DISPLAY_NAME} \n Changes: \n ${CHANGELOG}",
+                  'deploy'
+                )
+                notifyRocketChat(
+                  "@all A new version of eagle-public is now in Dev and ready for QA. \n Changes to Dev: \n ${CHANGELOG}",
+                  'qa'
+                )
               }
             }
           } catch (error) {
-            // notifyRocketChat(
-            //   "@all The build ${env.BUILD_DISPLAY_NAME} of eagle-public, seems to be broken.\n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
-            //   ROCKET_DEPLOY_WEBHOOK
-            // )
+            notifyRocketChat(
+              "@all The build ${env.BUILD_DISPLAY_NAME} of eagle-public, seems to be broken.\n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
+              'deploy'
+            )
             currentBuild.result = "FAILURE"
             throw new Exception("Deploy failed: ${error}")
           }
@@ -522,10 +527,10 @@ pipeline {
               }
             }
           } catch (error) {
-            // notifyRocketChat(
-            //   "@all Data generation failed for the build ${env.BUILD_DISPLAY_NAME} of eagle-api.\n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
-            //   ROCKET_DEPLOY_WEBHOOK
-            // )
+            notifyRocketChat(
+              "@all Data generation failed for the build ${env.BUILD_DISPLAY_NAME} of eagle-api.\n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
+              'deploy'
+            )
             currentBuild.result = "FAILURE"
             throw new Exception("Data generation failed")
           }
@@ -566,7 +571,7 @@ pipeline {
       }
     }
   }
-  // todo verify cleanup
+
   post {
     success {
       echo 'Build and deploy complete'
