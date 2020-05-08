@@ -351,6 +351,7 @@ def cleanUpLock(lockName) {
 
 def CHANGELOG = "No new changes"
 def IMAGE_HASH = "latest"
+def BUILD_DONE_STATUSES = ['Complete', 'Failed', 'Cancelled']
 def lockName = "eagle-public-${env.JOB_NAME}-${env.BUILD_NUMBER}"
 pipeline {
   environment {
@@ -449,24 +450,32 @@ pipeline {
               echo "Building eagle-public ${PR_NAME} branch"
               // trigger and wait for s2i build to complete
               def bcObj1 = openshift.selector('bc', "${PR_NAME}-eagle-public-angular-builder")
-              echo "bcObject1 version: ${bcObj1.object().status.lastVersion}"
               bcObj1.startBuild()
-              def buildName = "${PR_NAME}-eagle-public-angular-builder-${bcObj1.object().status.lastVersion}"
-              echo "expected name: ${buildName}"
-              def buildSelector1 = openshift.selector('build', buildName)
+              def buildName1 = "${PR_NAME}-eagle-public-angular-builder-${bcObj1.object().status.lastVersion}"
+              echo "Angular build name: ${buildName1}"
+              def buildSelector1 = openshift.selector('build', buildName1)
 
               buildSelector1.untilEach(1) {
                 def phase = it.object().status.phase
-                return (phase == "Complete" || phase == "Cancelled")
+                if (phase == 'Failed') {
+                  currentBuild.result = "FAILURE"
+                }
+                return ( BUILD_DONE_STATUSES.contains(phase) )
               }
 
               //  trigger and wait for nginx image build to complete
               def bcObj2 = openshift.selector('bc',"${PR_NAME}-eagle-public-build" )
               bcObj2.startBuild()
-              def buildSelector2 = bcObj2.narrow("bc").related("builds")
+              def buildName2 = "${PR_NAME}-eagle-public-build-${bcObj2.object().status.lastVersion}"
+              echo "Ngix build name: ${buildName2}"
+              def buildSelector2 = openshift.selector('build', buildName2)
+
               buildSelector2.untilEach(1) {
                 def phase = it.object().status.phase
-                return (phase == "Complete" || phase == "Cancelled")
+                if (phase == 'Failed') {
+                  currentBuild.result = "FAILURE"
+                }
+                return ( BUILD_DONE_STATUSES.contains(phase) )
               }
 
 
