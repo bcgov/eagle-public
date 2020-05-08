@@ -277,11 +277,8 @@ def createFullPRDeployment() {
         find . -name "*.params" -exec sed -i -e "s/pr-placeholder/${PR_NAME}/g" {} \\;
         find . -name "*.params" -exec sed -i -e "s/branch-placeholder/develop/g" {} \\;
 
-        cd ../public/dev
-        find . -name "*.params" -exec sed -i -e "s/TAG_NAME=dev/TAG_NAME=${PR_NAME}/g" {} \\;
-
         # create builds and deploys
-        cd ../../../../..
+        cd ../../../..
         ./setup-all.sh
         # switch back to tools project,
         oc project ${TOOLSPROJECT}
@@ -331,7 +328,6 @@ def cleanUpPR() {
        "@all The cleanup ${env.BUILD_DISPLAY_NAME} of eagle ${PR_NAME} deployment may have failed.\n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
        'deploy'
       )
-      currentBuild.result = 'FAILURE'
       throw new Exception("Full PR env teardown failed: ${error}")
     }
   }
@@ -556,12 +552,11 @@ pipeline {
 
                 /* Use the DC to find the pods */
                 def podSelector = openshift.selector("pod", [deployment: "${PR_NAME}-eagle-api-${dcObj.status.latestVersion}"])
-
                 podSelector.withEach {
                     // obtain the pod name and remove "pods/" from the front.
                     def podName = it.name()
                     podName = podName.replaceFirst("pod/", "")
-
+                    // todo add pod ready check
                     // Run a command in the container
                     openshift.exec("-n", "${DEVPROJECT}", podName, "scl", "enable", "rh-nodejs10", '"/opt/app-root/src/generate.sh 20 Static Saved Single"')
                 }
