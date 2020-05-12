@@ -52,7 +52,7 @@
                     [routerLink]="['/p', item.project?._id ]" *ngIf="item.project?._id">
                     Project Info
                   </a>
-                  <a *ngIf="item?.pcp" class="btn btn-sm content-btn-alt" title="View this Public Comment Period"
+                  <a *ngIf="item?.pcp && item?.type === 'Public Comment Period'" class="btn btn-sm content-btn-alt" title="View this Public Comment Period"
                     [routerLink]="['/p', item.project?._id, 'cp', item.pcp ]">
                     Submit/ View Comments
                   </a>
@@ -61,7 +61,7 @@
                     target="_blank">
                     View Document(s)
                   </a>
-                  <a *ngIf="item.documentUrl && item?.notificationName"
+                  <a *ngIf="item.documentUrl && item?.notificationName && item?.type === 'Project Notification Public Comment Period'"
                     class="btn btn-sm content-btn-alt" title="View more information" href="{{item.documentUrl}}"
                     target="_blank">
                     View Project Notification Public Comment Period

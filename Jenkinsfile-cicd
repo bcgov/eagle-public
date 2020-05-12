@@ -8,7 +8,6 @@ import java.util.regex.Pattern
  * Sends a rocket chat notification
  */
 def notifyRocketChat(text, url) {
-    def rocketChatURL = url
     def message = text.replaceAll(~/\'/, "")
     def payload = JsonOutput.toJson([
       "username":"Jenkins",
@@ -102,17 +101,31 @@ pipeline {
               // trigger and wait for s2i build to complete
               def bcObj1 = openshift.selector('bc', "eagle-public-angular-builder")
               bcObj1.startBuild()
-              def buildSelector1 = bcObj1.narrow("bc").related("builds")
+              def buildName1 = "eagle-public-angular-builder-${bcObj1.object().status.lastVersion}"
+              echo "Angular build name: ${buildName1}"
+              def buildSelector1 = openshift.selector('build', buildName1)
+
               buildSelector1.untilEach(1) {
-                return (it.object().status.phase == "Complete")
+                def phase = it.object().status.phase
+                if (phase == 'Failed') {
+                  currentBuild.result = "FAILURE"
+                }
+                return ( BUILD_DONE_STATUSES.contains(phase) )
               }
 
               //  trigger and wait for nginx image build to complete
               def bcObj2 = openshift.selector('bc',"eagle-public-build" )
               bcObj2.startBuild()
-              def buildSelector2 = bcObj2.narrow("bc").related("builds")
+              def buildName2 = "eagle-public-build-${bcObj2.object().status.lastVersion}"
+              echo "Ngix build name: ${buildName2}"
+              def buildSelector2 = openshift.selector('build', buildName2)
+
               buildSelector2.untilEach(1) {
-                return (it.object().status.phase == "Complete")
+                def phase = it.object().status.phase
+                if (phase == 'Failed') {
+                  currentBuild.result = "FAILURE"
+                }
+                return ( BUILD_DONE_STATUSES.contains(phase) )
               }
 
 
