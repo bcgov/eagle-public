@@ -254,7 +254,7 @@ def createFullPRDeployment() {
         find . -name "*.config" -exec sed -i -e "s/pr-placeholder/${PR_NAME}/g" {} \\;
          # set public vars to pr fork
         cd public
-        find . -name "*.config" -exec sed -i -e "s/branch-placeholder/${PR_NAME}/g" {} \\;
+        find . -name "*.config" -exec sed -i -e "s/branch-placeholder/${CHANGE_BRANCH}/g" {} \\;
         find . -name "*.config" -exec sed -i -e "s/fork-placeholder/${PR_FORK}/g" {} \\;
         find . -name "*.params" -exec sed -i -e "s/fork-placeholder/${PR_FORK}/g" {} \\;
         find . -name "*.params" -exec sed -i -e "s/pr-placeholder/${PR_NAME}/g" {} \\;
@@ -420,6 +420,7 @@ pipeline {
       }
     }
 
+    milestone 1
     stage('Build') {
       when {
         expression {
@@ -582,7 +583,7 @@ pipeline {
         // checkout scm
       // }
     // }
-
+    milestone 2
     stage('Cleanup') {
       when {
         expression {
