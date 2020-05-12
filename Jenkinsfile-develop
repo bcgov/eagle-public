@@ -515,11 +515,11 @@ pipeline {
                 echo ">>>> Deployment Complete"
 
                 notifyRocketChat(
-                  "A new version of eagle-public ${PR_NAME} is now in Dev, build: ${env.BUILD_DISPLAY_NAME} \n Changes: \n ${CHANGELOG}",
+                  "A new version of eagle-public ${PR_NAME} is now in Dev, build: ${env.BUILD_DISPLAY_NAME} \n https://eagle-${PR_NAME}-dev.pathfinder.gov.bc.ca/ \nChanges: \n ${CHANGELOG}",
                   'deploy'
                 )
                 notifyRocketChat(
-                  "@all A new version of eagle-public is now in Dev and ready for QA. \n Changes to Dev: \n ${CHANGELOG}",
+                  "@all A new version of eagle-public is now in Dev and ready for QA. \n https://eagle-${PR_NAME}-dev.pathfinder.gov.bc.ca/ \nChanges to Dev: \n ${CHANGELOG}",
                   'qa'
                 )
               }
