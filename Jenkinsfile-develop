@@ -1,5 +1,6 @@
 #!/usr/bin/env groovy
 
+import bcgov.GitHubHelper
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 import java.util.regex.Pattern
@@ -26,6 +27,31 @@ def notifyRocketChat(text, target) {
     } catch (error) {
       echo "Error posting Rocket Chat message: ${error}"
     }
+}
+
+// Create deployment status and pass to Jenkins-GitHub library
+void createDeploymentStatus (String suffix, String status) {
+  def ghDeploymentId = new GitHubHelper().createDeployment(
+    this,
+    "pull/${env.CHANGE_ID}/head",
+    [
+        'environment':"${suffix}",
+        'task':"deploy:pull:${env.CHANGE_ID}"
+    ]
+  )
+
+  new GitHubHelper().createDeploymentStatus(
+    this,
+    ghDeploymentId,
+    "${status}",
+    ['targetUrl':"https://eagle-${PR_NAME}-dev.pathfinder.gov.bc.ca/"]
+  )
+
+  if ('SUCCESS'.equalsIgnoreCase("${status}")) {
+    echo "${suffix} deployment successful!"
+  } else if ('PENDING'.equalsIgnoreCase("${status}")){
+    echo "${suffix} deployment pending."
+  }
 }
 
 // Print stack trace of error
@@ -173,7 +199,7 @@ def sonarQubeJenkinsNode () {
                 echo "sonarqube report failed to complete, or timed out"
 
                 notifyRocketChat(
-                  "@all The latest build, ${env.BUILD_DISPLAY_NAME} of eagle-public seems to be broken. \n ${env.RUN_DISPLAY_URL}\n Error: \n sonarqube report failed to complete, or timed out : ${SONARQUBE_URL}",
+                  "@all The latest build, ${env.BUILD_DISPLAY_NAME} of eagle-public seems to be broken. \n ${env.RUN_DISPLAY_URL}\n Error: \n sonarqube report failed to complete, or timed out : ${SONARQUBE_URL_EXT}",
                   'deploy'
                 )
 
@@ -254,7 +280,7 @@ def createFullPRDeployment() {
         find . -name "*.config" -exec sed -i -e "s/pr-placeholder/${PR_NAME}/g" {} \\;
          # set public vars to pr fork
         cd public
-        find . -name "*.config" -exec sed -i -e "s/branch-placeholder/${PR_NAME}/g" {} \\;
+        find . -name "*.config" -exec sed -i -e "s/branch-placeholder/${CHANGE_BRANCH}/g" {} \\;
         find . -name "*.config" -exec sed -i -e "s/fork-placeholder/${PR_FORK}/g" {} \\;
         find . -name "*.params" -exec sed -i -e "s/fork-placeholder/${PR_FORK}/g" {} \\;
         find . -name "*.params" -exec sed -i -e "s/pr-placeholder/${PR_NAME}/g" {} \\;
@@ -277,11 +303,8 @@ def createFullPRDeployment() {
         find . -name "*.params" -exec sed -i -e "s/pr-placeholder/${PR_NAME}/g" {} \\;
         find . -name "*.params" -exec sed -i -e "s/branch-placeholder/develop/g" {} \\;
 
-        cd ../public/dev
-        find . -name "*.params" -exec sed -i -e "s/TAG_NAME=dev/TAG_NAME=${PR_NAME}/g" {} \\;
-
         # create builds and deploys
-        cd ../../../../..
+        cd ../../../..
         ./setup-all.sh
         # switch back to tools project,
         oc project ${TOOLSPROJECT}
@@ -331,7 +354,6 @@ def cleanUpPR() {
        "@all The cleanup ${env.BUILD_DISPLAY_NAME} of eagle ${PR_NAME} deployment may have failed.\n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
        'deploy'
       )
-      currentBuild.result = 'FAILURE'
       throw new Exception("Full PR env teardown failed: ${error}")
     }
   }
@@ -351,6 +373,7 @@ def cleanUpLock(lockName) {
 
 def CHANGELOG = "No new changes"
 def IMAGE_HASH = "latest"
+def BUILD_DONE_STATUSES = ['Complete', 'Failed', 'Cancelled']
 def lockName = "eagle-public-${env.JOB_NAME}-${env.BUILD_NUMBER}"
 pipeline {
   environment {
@@ -366,7 +389,7 @@ pipeline {
     stage('Build Init') {
       when {
         expression {
-          PR_NAME != 'develop' || PR_NAME != 'test'
+          env.PR_NAME != 'develop' || env.PR_NAME != 'test'
         }
       }
       steps {
@@ -379,7 +402,7 @@ pipeline {
     stage('Sonarqube') {
       when {
         expression {
-          PR_NAME != 'develop' || PR_NAME != 'test'
+          env.PR_NAME != 'develop' || env.PR_NAME != 'test'
         }
       }
       steps {
@@ -393,7 +416,7 @@ pipeline {
     stage('Setup PR env') {
       when {
         expression {
-          PR_NAME != 'develop' || PR_NAME != 'test'
+          env.PR_NAME != 'develop' || env.PR_NAME != 'test'
         }
       }
       steps {
@@ -403,6 +426,7 @@ pipeline {
           } catch (error) {
             echo "Error retrieving Rocket Chat tokens: ${error}"
           }
+          createDeploymentStatus('dev', "PENDING")
           echo "Branch to build: ${PR_NAME}"
           echo "Source fork: ${PR_FORK}"
           if (!checkForPRDeployment()) {
@@ -426,11 +450,12 @@ pipeline {
     stage('Build') {
       when {
         expression {
-          PR_NAME != 'develop' || PR_NAME != 'test'
+          env.PR_NAME != 'develop' || env.PR_NAME != 'test'
         }
       }
       agent any
       steps {
+        milestone 1
         script {
           pastBuilds = []
           buildsSinceLastSuccess(pastBuilds, currentBuild);
@@ -438,7 +463,6 @@ pipeline {
 
           echo ">>>>>>Changelog: \n ${CHANGELOG}"
           _openshift(env.STAGE_NAME, TOOLSPROJECT) {
-            echo "skipping build for debug"
             timeout(20) {
               try {
                 sh("oc extract secret/rocket-chat-secrets --to=${env.WORKSPACE} --confirm")
@@ -447,23 +471,36 @@ pipeline {
               } catch (error) {
                 echo "Error retrieving Rocket Chat token"
               }
-              echo "Building eagle-public develop branch"
+
+              echo "Building eagle-public ${PR_NAME} branch"
               // trigger and wait for s2i build to complete
               def bcObj1 = openshift.selector('bc', "${PR_NAME}-eagle-public-angular-builder")
               bcObj1.startBuild()
-              echo "bcobj1 latest ver: ${bcObj1}"
-              def buildSelector1 = bcObj1.narrow("bc").related("builds")
-              echo "${buildSelector1}"
+              def buildName1 = "${PR_NAME}-eagle-public-angular-builder-${bcObj1.object().status.lastVersion}"
+              echo "Angular build name: ${buildName1}"
+              def buildSelector1 = openshift.selector('build', buildName1)
+
               buildSelector1.untilEach(1) {
-                return (it.object().status.phase == "Complete")
+                def phase = it.object().status.phase
+                if (phase == 'Failed') {
+                  currentBuild.result = "FAILURE"
+                }
+                return ( BUILD_DONE_STATUSES.contains(phase) )
               }
 
               //  trigger and wait for nginx image build to complete
               def bcObj2 = openshift.selector('bc',"${PR_NAME}-eagle-public-build" )
               bcObj2.startBuild()
-              def buildSelector2 = bcObj2.narrow("bc").related("builds")
+              def buildName2 = "${PR_NAME}-eagle-public-build-${bcObj2.object().status.lastVersion}"
+              echo "Ngix build name: ${buildName2}"
+              def buildSelector2 = openshift.selector('build', buildName2)
+
               buildSelector2.untilEach(1) {
-                return (it.object().status.phase == "Complete")
+                def phase = it.object().status.phase
+                if (phase == 'Failed') {
+                  currentBuild.result = "FAILURE"
+                }
+                return ( BUILD_DONE_STATUSES.contains(phase) )
               }
 
 
@@ -485,7 +522,7 @@ pipeline {
     stage('Deploy'){
       when {
         expression {
-          PR_NAME != 'develop' || PR_NAME != 'test'
+          env.PR_NAME != 'develop' || env.PR_NAME != 'test'
         }
       }
       agent any
@@ -503,14 +540,15 @@ pipeline {
                 echo "Deploying to dev env..."
                 def dcObj = openshift.selector('dc', "${PR_NAME}-eagle-public")
                 dcObj.rollout().status()
-                echo ">>>> Deployment Complete"
 
+                echo ">>>> Deployment Complete"
+                createDeploymentStatus('dev', "SUCCESS")
                 notifyRocketChat(
-                  "A new version of eagle-public ${PR_NAME} is now in Dev, build: ${env.BUILD_DISPLAY_NAME} \n Changes: \n ${CHANGELOG}",
+                  "A new version of eagle-public ${PR_NAME} is now in Dev, build: ${env.BUILD_DISPLAY_NAME} \n https://eagle-${PR_NAME}-dev.pathfinder.gov.bc.ca/ \nChanges: \n ${CHANGELOG}",
                   'deploy'
                 )
                 notifyRocketChat(
-                  "@all A new version of eagle-public is now in Dev and ready for QA. \n Changes to Dev: \n ${CHANGELOG}",
+                  "@all A new version of eagle-public is now in Dev and ready for QA. \n https://eagle-${PR_NAME}-dev.pathfinder.gov.bc.ca/ \nChanges to Dev: \n ${CHANGELOG}",
                   'qa'
                 )
               }
@@ -530,7 +568,7 @@ pipeline {
     stage("Populate Data"){
       when {
         expression {
-          PR_NAME != 'develop' || PR_NAME != 'test'
+          env.PR_NAME != 'develop' || env.PR_NAME != 'test'
         }
       }
       steps {
@@ -544,12 +582,11 @@ pipeline {
 
                 /* Use the DC to find the pods */
                 def podSelector = openshift.selector("pod", [deployment: "${PR_NAME}-eagle-api-${dcObj.status.latestVersion}"])
-
                 podSelector.withEach {
                     // obtain the pod name and remove "pods/" from the front.
                     def podName = it.name()
                     podName = podName.replaceFirst("pod/", "")
-
+                    // todo add pod ready check
                     // Run a command in the container
                     openshift.exec("-n", "${DEVPROJECT}", podName, "scl", "enable", "rh-nodejs10", '"/opt/app-root/src/generate.sh 20 Static Saved Single"')
                 }
@@ -579,10 +616,11 @@ pipeline {
     stage('Cleanup') {
       when {
         expression {
-          PR_NAME != 'develop' || PR_NAME != 'test'
+          env.PR_NAME != 'develop' || env.PR_NAME != 'test'
         }
       }
       steps {
+        milestone 2
         script {
           echo "Removing pipeline lock and cleaning up deployment"
           def inputAction = input(
