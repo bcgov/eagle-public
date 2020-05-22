@@ -10,6 +10,10 @@
     }
   }
 
+.btn.inverted:hover {
+    text-transform: none;
+}
+
 // Move somewhere global
 h1 {
     letter-spacing: -0.05rem;
