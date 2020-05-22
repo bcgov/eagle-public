@@ -49,9 +49,6 @@ Run the following two scripts to create your environment
 
 A brief guide to Angular CLI's code scaffolding can be found in [eagle-dev-guides](https://github.com/bcgov/eagle-dev-guides/blob/master/dev_guides/angular_scaffolding.md)
 
-<!-- # Build and Deployment
-
-For dev, test, and production builds on OpenShift/Jenkins see [openshift/README.md](https://github.com/bcgov/eagle-public/blob/master/openshift/README.md) for detailed instructions on how to setup in an OpenShift environment using nginx. -->
 
 ## Testing
 
@@ -62,3 +59,11 @@ Instructions on how running tests unit tests and end-to-end tests can be found i
 ## How to Contribute
 
 Feel free to create pull requests from the default "develop" branch, click here to create one automatically: <https://github.com/bcgov/eagle-public/pull/new/develop>
+
+## Pull Request Pipeline
+
+The EPIC project is built with a Pull Request based pipeline, a full set of builds and deployments will be created in Openshift. In order to link features or related code across eagle repositories (admin, public, and api) the branch names for each PR **MUST** be the same in each of the repositories. A status badge will be updated with a live link when the Pull Request has been built and deployed.
+
+Before closing a pull request the deployment should be cleaned up using the clean-up stage in [Jenkins](https://jenkins-prod-esm.pathfinder.gov.bc.ca/)
+
+A full description and guide to the EPIC pipeline and branching strategy is available in the [eagle-dev-guides](https://github.com/bcgov/eagle-dev-guides/blob/master/dev_guides/pull_request_pipeline.md) repository.
