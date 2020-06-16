@@ -1,6 +1,6 @@
 # eagle-public
 
-Public facing site project for EPIC
+Public facing site project for EPIC - test-epicbcdk
 
 ## Related projects
 
