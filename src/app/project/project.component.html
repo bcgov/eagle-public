@@ -9,7 +9,7 @@
                             <div class="col-md-6">
                                 <h2 class="mb-0">Public Comment Period is {{project.commentPeriodForBanner.commentPeriodStatus}}</h2>
                                 <h5>{{project.commentPeriodForBanner.dateStarted | date: 'MMMM d'}} -
-                                {{project.commentPeriodForBanner.longEndDate.format('MMMM DD @ hh:mm z')}}</h5>
+                                {{project.commentPeriodForBanner.longEndDate.format('MMMM DD @ hh:mm A z')}}</h5>
                             </div>
                             <div class="col-md-6 text-right">
                                 <div *ngIf="project.commentPeriodForBanner.commentPeriodStatus !== Open">
