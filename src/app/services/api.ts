@@ -482,7 +482,8 @@ export class ApiService {
       'instructions',
       'openHouses',
       'project',
-      'relatedDocuments'
+      'relatedDocuments',
+      'commentTip'
     ];
     const queryString = 'commentperiod/' + id + '?fields=' + this.buildValues(fields);
     return this.http.get<CommentPeriod[]>(`${this.apiPath}/${queryString}`, {});
