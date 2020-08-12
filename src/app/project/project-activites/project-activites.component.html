@@ -22,11 +22,8 @@
     </div>
 
     <app-table-template *ngIf="!loading && tableParams.totalListItems != 0"
-                        (checkboxChange)='checkChange($event)'
                         [columns]="tableColumns"
                         [data]="tableData"
-                        (onColumnSort)='setColumnSort($event)'
-                        (onSelectedRow)='updateSelectedRow($event)'
                         (onPageNumUpdate)='getPaginatedDocs($event)'>
     </app-table-template>
   </section>
