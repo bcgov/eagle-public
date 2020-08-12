@@ -40,6 +40,9 @@ export class AddCommentComponent implements OnInit {
   public makePublic: any;
   public commentFiles: any;
   public anonymousName = 'Anonymous';
+  // Has to be the String object as that matches the model.
+  // TODO: update to the string primitive.
+  public commentTip: String;
 
   // CAC
   public nameInput: any;
@@ -71,6 +74,7 @@ export class AddCommentComponent implements OnInit {
     this.submittedCAC = false;
     this.commentFiles = [];
     this.documentAuthorType = null;
+    this.commentTip = this.currentPeriod.commentTip || null;
     this.getLists();
   }
   public publicChecked() {

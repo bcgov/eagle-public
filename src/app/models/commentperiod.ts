@@ -14,6 +14,7 @@ export class CommentPeriod {
   classificationRoles: String;
   classifiedPercent: Number;
   commenterRoles: String;
+  commentTip: String;
   dateAdded: String;
   dateCompleted: Date;
   dateCompletedEst: String;
@@ -67,6 +68,7 @@ export class CommentPeriod {
     this.classificationRoles = obj && obj.classificationRoles || null;
     this.classifiedPercent = obj && obj.classifiedPercent || null;
     this.commenterRoles = obj && obj.commenterRoles || null;
+    this.commentTip = obj && obj.commentTip || null;
     this.dateAdded = obj && obj.dateAdded || null;
     this.dateCompletedEst = obj && obj.dateCompletedEst || null;
     this.dateStartedEst = obj && obj.dateStartedEst || null;

@@ -22,17 +22,31 @@
       <section>
         <h2>How it Works</h2>
         <p>All accepted comments submitted to the Environmental Assessment Office (EAO) will be published online within seven days of receipt. Comments are not accepted if - in EAO’s view - they are profane, abusive or do not relate to the matter being consulted upon as stated in our  <a href="https://www2.gov.bc.ca/assets/gov/environment/natural-resource-stewardship/environmental-assessments/commenting-on-projects/public_comment_policy_v10.pdf" target="_blank">Public Comment Policy [PDF]</a>.</p>
-        <p>EAO forwards all accepted comments to the project proponent so they can be considered during the project's environmental assessment.</p>
-        <p><strong>EAO requires that you provide your city/town</strong> when making a comment. In order to have your name displayed with your comment, you must select the 'Make my Name visible to public' option. All hyperlinks in comments will be converted to plain text. All attachments must be no larger than 10MB and must be a <strong>.png, .pdf, .gif, .jpg, .jpeg, .doc, .docx, .xls, .xlst, .ppt, .rtf, .pptx, .txt</strong> or <strong>.bmp</strong> file.</p>
+        <p>All accepted comments are taken into consideration by EAO.</p>
+        <p><strong>Comment Requirements to Avoid Rejection:</strong></p>
+        <ul>
+          <li>Provide City or Town</li>
+          <li>If you would like your name visible on the public website ensure you select "please make my name visible to the public" on the submission page</li>
+          <li>Do not provide personal or identifying information within your comment if you would like to remain anonymous</li>
+          <li>Do not provide comments that are profane, abusive or do not relate to the matter being consulted upon</li>
+          <li>Attachments must be no larger than 10 MB and must be a .png, .pdf, .gif, .jpg, .jpeg, .doc, .docx, .xls, .xlst, .ppt, .rtf, .pptx, .txt or .bmp file</li>
+        </ul>
+
+        <div>
+          <label class="control-label">
+            <input class="mr-1" name="agreeConditions" type="checkbox" [(ngModel)]="agreeConditions"/>
+            I have read the above and understand what my submission should/shouldn't include
+          </label>
+        </div>
       </section>
-      <section class="m-b-0">
+      <section class="m-b-0 mt-5">
         <h2>Collection Notice</h2>
         <p>Your personal information is collected by the Environmental Assessment Office for the purpose of commenting on the <em>{{project.name}} Project</em> under the authority of s.26(c) of the <a href="http://www.bclaws.ca/Recon/document/ID/freeside/96165_00" target="_blank">Freedom of Information and Protection of Privacy Act</a>. In submitting your comment, you consent to your comment being published online and shared with the proponent. This consent is valid from this date forward and may be revoked by contacting the EAO representative below. Should you have any questions about this collection please contact:</p>
         <p class="m-b-0">Director, Digital Services<br>Environmental Assessment Office<br>836 Yates Street, Victoria, BC<br><a href="mailto: epicsupport.eao@gov.bc.ca">epicsupport.eao@gov.bc.ca</a><br>(250) 356-7441
       </section>
     </div>
     <div class="modal-footer">
-      <button type="button" class="btn btn-primary" (click)="p1_next()">Next</button>
+      <button type="button" class="btn btn-primary" [disabled]="!agreeConditions" (click)="p1_next()">Next</button>
     </div>
   </div>
 </form>
@@ -240,7 +254,11 @@
           </div>
           <div class="form-group">
             <label class="control-label" >Your Comment *</label>
-            <textarea class="form-control" rows="8" name="commentInput" id="commentInput" [(ngModel)]="commentInput" autofocus></textarea>
+            <div *ngIf="commentTip"  class="comment-tip-container">
+              <i class="material-icons">error_outline</i>
+              <p [innerHTML]="commentTip | safeHtml"></p>
+            </div>
+            <textarea class="form-control" rows="8" name="commentInput" id="commentInput" [(ngModel)]="commentInput" autofocus placeholder="Do not provide personal/identifying information within your comment or attachment or it will be rejected as per our policy regulations"></textarea>
           </div>
 
           <app-file-upload [maxFiles]="15" [maxSize]="10" [showInfo]="false" [showList]="false" [files]="commentFiles"
@@ -269,7 +287,7 @@
     <div class="modal-footer">
       <button class="btn btn-light" type="button" (click)="p5_back()">Back</button>
       <!-- enable submission when required fields are entered and when either a file or comment is entered -->
-      <button class="btn btn-primary" type="button" (click)="p5_next()" [disabled]="!commentForm1.form.valid || (!commentInput && (documents && documents.length === 0))">Submit</button>
+      <button class="btn btn-primary" type="button" (click)="p5_next()" [disabled]="!commentForm1.form.valid || (!commentInput && (documents && documents.length === 0)) || submitting">Submit</button>
     </div>
   </div>
 </form>

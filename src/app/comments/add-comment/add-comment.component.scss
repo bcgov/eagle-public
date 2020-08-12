@@ -114,3 +114,21 @@
   background-repeat: no-repeat;
   background-size: 72px;
 }
+
+.comment-tip-container {
+  background-color: $primary;
+  color: #fff;
+  display: flex;
+  padding: 10px;
+  margin-bottom: 10px;
+
+  .material-icons {
+    color: $gold;
+    margin-right: 10px;
+  }
+
+  p {
+    margin-bottom: 0;
+    font-size: .8rem;
+  }
+}
