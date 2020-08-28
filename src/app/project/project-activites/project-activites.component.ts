@@ -112,16 +112,6 @@ export class ProjectActivitesComponent implements OnInit, OnDestroy {
     }
   }
 
-
-  setColumnSort(column) {
-    if (this.tableParams.sortBy.charAt(0) === '+') {
-      this.tableParams.sortBy = '-' + column;
-    } else {
-      this.tableParams.sortBy = '+' + column;
-    }
-    this.getPaginatedDocs(this.tableParams.currentPage);
-  }
-
   getPaginatedDocs(pageNumber) {
     // Go to top of page after clicking to a different page.
     window.scrollTo(0, 0);
@@ -129,7 +119,7 @@ export class ProjectActivitesComponent implements OnInit, OnDestroy {
     const params = this.terms.getParams();
     params['ms'] = new Date().getMilliseconds();
     params['dataset'] = this.terms.dataset;
-    params['currentPage'] = this.tableParams.currentPage = pageNumber;
+    params['currentPage'] = pageNumber || this.tableParams.currentPage;
     params['sortBy'] = this.tableParams.sortBy = '-dateAdded';
     params['keywords'] = this.tableParams.keywords;
     params['pageSize'] = this.tableParams.pageSize = 10;
