@@ -168,12 +168,12 @@ export class ProjectListComponent implements OnInit, OnDestroy {
       .switchMap((res: any) => {
         let params = { ...res };
         // default sort for project list is alphabetical
-        params.sortBy = '+name'
+        params.sortBy = '-score,+name'
 
         this.tableParams = this.tableTemplateUtils.getParamsFromUrl(
           params,
           this.filterForAPI,
-          '+name'
+          '-score,+name'
         );
 
         // check if the filters are in session state, for handling
