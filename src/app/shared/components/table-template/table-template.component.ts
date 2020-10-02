@@ -202,14 +202,15 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
     // if the current filters/keyword does not match previous filter/keyword
     // reset the page and sortBy back to defaults. Persist the changed values
 
-    if ((this.data.paginationData.previousKeyword != null && this.data.paginationData.previousKeyword !== this.keywords) ||
+
+    if ((this.data.paginationData.keywords != null && this.data.paginationData.keywords !== this.keywords) ||
        (this.data.paginationData.previousFilters != null && JSON.stringify(this.data.paginationData.previousFilters) !== JSON.stringify(newFilters))) {
       this.data.paginationData.currentPage = 1;
       // for default searches, also include the score. This will bubble
       // the highest related match up to the top, but will only trigger
       // that behaviour if the user has entered a new search term and if
       // the data supports the score attribute
-      this.data.paginationData.sortBy = '-score,' + this.data.paginationData.defaultSortBy;
+      this.data.paginationData.sortBy = this.data.paginationData.defaultSortBy;
       this.data.paginationData.previousFilters = { ...newFilters };
       this.data.paginationData.previousKeyword = this.keywords;
       // because we're changing the values here, fire an emit
