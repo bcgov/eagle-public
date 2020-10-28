@@ -174,7 +174,6 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   updatePageNumber(pageNum) {
-    console.log(pageNum)
     this.data.paginationData.currentPage = pageNum;
     this.activePage = pageNum;
     this.onPageNumUpdate.emit(pageNum);
