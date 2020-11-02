@@ -203,8 +203,10 @@ export class TableTemplateComponent implements OnInit, OnChanges, OnDestroy {
     // reset the page and sortBy back to defaults. Persist the changed values
 
 
+
     if ((this.data.paginationData.keywords && this.data.paginationData.keywords !== this.keywords) ||
        (this.data.paginationData.previousFilters !== null && JSON.stringify(this.data.paginationData.previousFilters) !== JSON.stringify(newFilters))) {
+
       this.data.paginationData.currentPage = 1;
       // for default searches, also include the score. This will bubble
       // the highest related match up to the top, but will only trigger
