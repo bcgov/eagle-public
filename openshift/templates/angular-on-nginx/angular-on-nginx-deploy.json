@@ -19,7 +19,7 @@
         "creationTimestamp": null,
         "labels": {
           "app": "${GROUP_NAME}",
-          "role": "frontend-public"
+          "role": "${ROLE_NAME}-${GROUP_NAME}"
         },
         "name": "${NAME}"
       },
@@ -44,7 +44,7 @@
             "creationTimestamp": null,
             "labels": {
               "app": "${GROUP_NAME}",
-              "role":"frontend-public",
+              "role":"${ROLE_NAME}-${GROUP_NAME}",
               "deploymentconfig": "${NAME}"
             }
           },
@@ -236,6 +236,12 @@
       "description": "OpenShift cluster private IP range in CIDR notation, used by Nginx ngx_http_realip_module.",
       "required": true,
       "value": "172.51.0.0/16"
+    },
+    {
+      "name": "ROLE_NAME",
+      "displayName": "Role Name",
+      "description": "The name of the 'role' label for the deployment",
+      "value": "frontend-public"
     },
     {
       "name": "AdditionalRealIpFromRules",
