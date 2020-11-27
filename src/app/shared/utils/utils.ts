@@ -90,7 +90,8 @@ export class Utils {
           { legislation: 2018, name: 'Certificate Decision' },
           { legislation: 2002, name: 'Decision' },
           { legislation: 2002, name: 'Certificate Extension' },
-          { legislation: 2018, name: 'Certificate Extension' }
+          { legislation: 2018, name: 'Certificate Extension' },
+          { legislation: 2018, name: 'Transfer of Certificate/Order' }
         ];
         break;
       case Constants.optionalProjectDocTabs.APPLICATION:
