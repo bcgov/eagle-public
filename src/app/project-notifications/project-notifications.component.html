@@ -34,58 +34,29 @@
                             <div class="pn-location-info">
                                 <div class="row">
                                     <div class="col-sm-12 col-md-8">
-                                        <h4>{{(project?.name || '-')}}</h4>
+                                        <h4>{{(project?.name.toUpperCase() || '-')}}</h4>
                                     </div>
                                     <div class="col-sm-12 col-md-4">
                                         <a *ngIf="project?.commentPeriod?.daysRemainingCount > 0" class="btn btn-primary view-pcp-btn"
                                         title="View this Public Comment Period"
                                         [routerLink]="['/pn', project?._id, 'cp', project?.commentPeriod?._id]">
                                         <div class="pcp-indicator pcp-indicator-active"></div>
-                                        View Open Comment Period
+                                        Open Comment Period - View/Submit
                                         </a>
                                         <a *ngIf="project?.commentPeriod?.daysRemainingCount === 0" class="btn btn-primary view-pcp-btn"
                                         title="View this Public Comment Period"
                                         [routerLink]="['/pn', project?._id, 'cp', project?.commentPeriod?._id]">
                                         <div class="pcp-indicator pcp-indicator-inactive"></div>
-                                        View {{project?.commentPeriod?.commentPeriodStatus}} Comment Period
+                                        View Completed Comment Period
                                         </a>
                                     </div>
                                 </div>
                                 <div class="row">
-                                    <div class="col-sm-12 col-md-3 pn-info-block">
-                                    <label>Type</label>
-                                    <p class="value">{{project?.type || "-" }}</p>
-                                    </div>
-                                    <div class="col-sm-12 col-md-3 pn-info-block">
-                                    <label>Location</label>
-                                    <p class="value">{{project?.location || "-" }}</p>
-                                    </div>
-                                    <div class="col-sm-12 col-md-3 pn-info-block">
-                                    <label>Nature</label>
-                                    <p class="value">{{project?.nature || "-" }}</p>
-                                    </div>
-                                    <div class="col-sm-12 col-md-3 pn-info-block">
-                                    <label>Public Comment Period</label>
-                                    <p class="value">{{project?.commentPeriod?.daysRemaining  || "-"}}</p>
-                                    </div>
-                                    <div class="col-sm-12 col-md-3 pn-info-block">
-                                    <label>Sub-Type</label>
-                                    <p class="value">{{project?.subType || "-" }}</p>
-                                    </div>
-                                    <div class="col-sm-12 col-md-3 pn-info-block">
-                                        <label>Region</label>
-                                        <p class="value">{{project?.region || "-" }}</p>
-                                    </div>
-                                    <div class="col-sm-12 col-md-3 pn-info-block">
-                                        <label>Notification Trigger</label>
-                                        <p class="value">{{getTrigger(project) || "-" }}</p>
-                                    </div>
-                                    <div class="col-sm-12 col-md-3 pn-info-block">
-                                        <label>Notification Decision</label>
+                                    <div class="pn-decision">
                                         <a [routerLink]="['/p', project?.associatedProjectId ]" *ngIf="project?.associatedProjectId; else noHyperlink">
-                                        <p class="value">{{ project?.decision }} | {{project?.decisionDate?.toString().split('T')[0] || "-" }} </p>
+                                        <p class="value">Notification Decision - {{ project?.decision }} | {{project?.decisionDate?.toString().split('T')[0] || "-" }} </p>
                                         </a>
-                                        <ng-template #noHyperlink><p class="value">{{ project?.decision }} | {{project?.decisionDate?.toString().split('T')[0] || "-" }} </p></ng-template>
+                                        <ng-template #noHyperlink><p class="value">Notification Decision - {{ project?.decision }} | {{project?.decisionDate?.toString().split('T')[0] || "-" }} </p></ng-template>
                                     </div>
                                 </div>
                                 <div class="row">
@@ -95,12 +66,40 @@
                                     </div>
                                 </div>
                                 <div class="row">
-                                    <button *ngIf="project.documents && project.documents.length > 0"
-                                            class="btn btn-sm content-btn-alt"
-                                            type="button"
-                                            (click)="downloadDocuments(project)">
-                                        <span>View Document(s)</span>
-                                    </button>
+                                    <div class="col-sm-12 col-md-4 pn-info-block">
+                                    <label>Type</label>
+                                    <p class="value">{{project?.type || "-" }}</p>
+                                    </div>
+                                    <div class="col-sm-12 col-md-4 pn-info-block">
+                                    <label>Location</label>
+                                    <p class="value">{{project?.location || "-" }}</p>
+                                    </div>
+                                    <div class="col-sm-12 col-md-4 pn-info-block">
+                                    <label>Proponent</label>
+                                    <p class="value">{{project?.proponent || "-" }}</p>
+                                    </div>
+                                    <div class="col-sm-12 col-md-4 pn-info-block">
+                                    <label>Sub-Type</label>
+                                    <p class="value">{{project?.subType || "-" }}</p>
+                                    </div>
+                                    <div class="col-sm-12 col-md-4 pn-info-block">
+                                        <label>Region</label>
+                                        <p class="value">{{project?.region || "-" }}</p>
+                                    </div>
+                                    <div class="col-sm-12 col-md-4 pn-info-block">
+                                        <label>Notification Trigger</label>
+                                        <p class="value">{{getTrigger(project) || "-" }}</p>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-sm-12 col-md-3">
+                                        <button *ngIf="project.documents && project.documents.length > 0"
+                                                class="btn btn-sm content-btn-alt"
+                                                type="button"
+                                                (click)="downloadDocuments(project)">
+                                            <span>View Documents</span>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                             </div>
