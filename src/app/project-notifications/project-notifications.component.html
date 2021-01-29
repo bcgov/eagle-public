@@ -54,9 +54,12 @@
                                 <div class="row">
                                     <div class="pn-decision">
                                         <a [routerLink]="['/p', project?.associatedProjectId ]" *ngIf="project?.associatedProjectId; else noHyperlink">
-                                        <p class="value">Notification Decision - {{ project?.decision }} | {{project?.decisionDate?.toString().split('T')[0] || "-" }} </p>
+                                        <p class="value" *ngIf="project?.decisionDate; else noDate">Notification Decision - {{ project?.decision }} | {{project?.decisionDate?.toString().split('T')[0] || "-" }} </p>
+                                        <ng-template #noDate><p class="value">Notification Decision - {{ project?.decision }}</p></ng-template>
                                         </a>
-                                        <ng-template #noHyperlink><p class="value">Notification Decision - {{ project?.decision }} | {{project?.decisionDate?.toString().split('T')[0] || "-" }} </p></ng-template>
+                                        <ng-template #noHyperlink><p class="value" *ngIf="project?.decisionDate; else noDate">Notification Decision - {{ project?.decision }} | {{project?.decisionDate?.toString().split('T')[0] || "-" }} </p>
+                                            <ng-template #noDate><p class="value">Notification Decision - {{ project?.decision }}</p></ng-template>
+                                        </ng-template>
                                     </div>
                                 </div>
                                 <div class="row">
