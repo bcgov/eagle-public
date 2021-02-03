@@ -5,7 +5,6 @@ export class ProjectNotification {
   name: String;
   type: String;
   subType: String;
-  nature: String;
   region: String;
   location: String;
   decision: String;
@@ -14,6 +13,7 @@ export class ProjectNotification {
   trigger: String;
   associatedProjectId: string;
   associatedProjectName: string;
+  proponent: String;
   centroid: Array<number>;
   // dynamic attributes
   commentPeriod: CommentPeriod;
@@ -26,7 +26,6 @@ export class ProjectNotification {
     this.name = obj && obj.name || undefined;
     this.type = obj && obj.type || undefined;
     this.subType = obj && obj.subType || undefined;
-    this.nature = obj && obj.nature || undefined;
     this.region = obj && obj.region || undefined;
     this.location = obj && obj.location || undefined;
     this.decision = obj && obj.decision || undefined;
@@ -36,6 +35,8 @@ export class ProjectNotification {
     this.centroid = obj && obj.centroid || [];
     this.associatedProjectId = obj && obj.associatedProjectId || undefined;
     this.associatedProjectName = obj && obj.associatedProjectName || undefined;
+    this.proponent = obj && obj.proponent || undefined;
+
     this.read = obj && obj.read || undefined;
   }
 }
