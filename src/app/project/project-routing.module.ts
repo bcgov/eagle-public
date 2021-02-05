@@ -13,6 +13,7 @@ import { CertificatesResolver } from './certificates/certificates-resolver.servi
 import { AmendmentsResolverService } from './certificates/amendments-resolver.service';
 import { ApplicationResolver } from './certificates/application-resolver.service';
 import { PinsResolverService } from './pins/pins-resolver.service';
+import { FeaturedDocumentsResolverService } from './featured-documents/featured-documents-resolver.service';
 
 const routes: Routes = [
   {
@@ -56,7 +57,8 @@ const routes: Routes = [
     ProjectActivitiesResolver,
     DocumentTableResolver,
     PinsResolverService,
-    ApplicationResolver
+    ApplicationResolver,
+    FeaturedDocumentsResolverService
   ]
 })
 

@@ -1,42 +1,30 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 
-import { TableComponent } from 'app/shared/components/table-template/table.component';
-import { TableObject } from 'app/shared/components/table-template/table-object';
 import { Router } from '@angular/router';
+import { TableRowComponent } from 'app/shared/components/table-template-2/table-row-component';
 
 @Component({
-    selector: 'tbody[app-activities-list-table-rows]',
-    templateUrl: './activities-list-table-rows.component.html',
-    styleUrls: ['./activities-list-table-rows.component.scss']
+  selector: 'tr[app-activities-list-table-rows]',
+  templateUrl: './activities-list-table-rows.component.html',
+  styleUrls: ['./activities-list-table-rows.component.scss']
 })
 
-export class ActivitiesListTableRowsComponent implements OnInit, TableComponent {
-    @Input() data: TableObject;
+export class ActivitiesListTableRowsComponent extends TableRowComponent {
+  constructor(private router: Router) {
+    super();
+  }
 
-    public activities: any;
-    public paginationData: any;
+  goToCP(activity) {
+    this.router.navigate(['p', activity.project._id, 'cp', activity.pcp]);
+  }
 
-    constructor(
-      private router: Router
-    ) { }
-
-    ngOnInit() {
-        // TODO: We need to get the legislation specific data in here to get the project name in the table rows component
-        this.activities = this.data && this.data.data || null;
-        this.paginationData = this.data.paginationData;
+  isSingleDoc(item) {
+    if (item !== ''
+      && item !== null
+    ) {
+      return true;
+    } else {
+      return false;
     }
-
-    goToCP(activity) {
-      this.router.navigate(['p', activity.project._id, 'cp', activity.pcp]);
-    }
-
-    isSingleDoc(item) {
-      if (item !== ''
-         && item !== null
-         ) {
-        return true;
-      } else {
-        return false;
-      }
-    }
+  }
 }
