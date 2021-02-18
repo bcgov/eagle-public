@@ -11,7 +11,7 @@
   <br>
   <div>
     <a *ngIf="isSingleDoc(rowData?.documentUrl) && !rowData?.documentUrl.includes('docs?folder')"
-      class="btn content-btn-alt" href="{{rowData.documentUrl}}" target="_blank">
+      class="btn content-btn-alt" href="{{rowData.documentUrl}}" target="_blank" rel="noopener">
       <span *ngIf="!rowData?.notificationName">View Document(s)</span>
       <span *ngIf="rowData.notificationName">View Project Notification Public Comment Period</span>
     </a>
