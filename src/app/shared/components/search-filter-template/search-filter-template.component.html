@@ -3,14 +3,14 @@
   <div class="row mb-3" *ngIf="title">
     <div class="col">
       <span class="keyword-search-text">{{title}}</span>
-      <i
+      <span
         *ngIf="tooltip"
         class="material-icons align-text-bottom ml-2"
         [matTooltip]="tooltip"
         matTooltipPosition="after"
         aria-label="Icon that displays a tooltip when focused or hovered over">
         help_outline
-      </i>
+      </span>
     </div>
   </div>
 
@@ -26,9 +26,9 @@
                       [disabled]="subsets.selectedSubset.subsetLabel === subset.subsetLabel"
                       (click)="changeSubset(subset)">
                 {{subset.subsetLabel}}
-                <i *ngIf="subsets.selectedSubset === subsets" class="material-icons material-icons align-text-bottom">
+                <span *ngIf="subsets.selectedSubset === subsets" class="material-icons material-icons align-text-bottom">
                   check_circle
-                </i>
+                </span>
               </button>
             </div>
           </div>
@@ -38,12 +38,12 @@
           (aria-label)="keywordWatermark || 'Type keyword to search'" aria-describedby="basic-addon2">
         <div *ngIf="keywordSearchWords && keywordSearchWords.length > 0" class="input-group-append">
           <button class="btn btn-outline-primary" type="button" (click)="clearSearchTerms()">
-            <i class="material-icons align-middle">close</i>
+            <span class="material-icons align-middle">close</span>
           </button>
         </div>
         <div class="input-group-append">
           <button class="btn btn-outline-primary" type="button" (click)="search()">
-            <i class="material-icons align-middle">search</i>
+            <span class="material-icons align-middle">search</span>
           </button>
         </div>
       </div>
@@ -57,7 +57,7 @@
         class="btn btn-primary float-right"
         (click)="toggleAdvancedFilters()">
         {{showAdvancedFilters ? 'Close' : 'Open'}} Advanced Filters
-        <i class="material-icons align-middle">{{showAdvancedFilters ? 'keyboard_arrow_up' : 'keyboard_arrow_down'}}</i>
+        <span class="material-icons align-middle">{{showAdvancedFilters ? 'keyboard_arrow_up' : 'keyboard_arrow_down'}}</span>
       </button>
     </div>
   </div>
