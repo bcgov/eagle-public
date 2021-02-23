@@ -188,6 +188,7 @@ export interface ITableObjectParams {
    * @memberof ITableObjectParams
    */
   totalListItems?: number;
+  tableId?: string;
 }
 /**
  * Main class that should contain all information needed to render a table, and handle pagination, sorting, etc.
@@ -206,13 +207,14 @@ export class TableObject2 {
   public pageSize: number;
   public sortBy: string;
   public totalListItems: number;
+  public tableId: string;
   constructor(params?: ITableObjectParams) {
-    this.options = (params && params.options) || {
+    this.options = (params && params.options) || new Object({
       showHeader: true,
       showPagination: true,
       showPageSizePicker: true,
       showPageCountDisplay: true
-    };
+    });
     this.component = (params && params.component) || null;
     this.columns = (params && params.columns) || [];
     this.items = (params && params.items) || [];
@@ -222,5 +224,6 @@ export class TableObject2 {
     this.pageSize = (params && params.pageSize) || Constants.tableDefaults.DEFAULT_PAGE_SIZE;
     this.sortBy = (params && params.sortBy) || Constants.tableDefaults.DEFAULT_SORT_BY;
     this.totalListItems = (params && params.totalListItems) || 0;
+    this.tableId = (params && params.tableId) || String(Math.floor(Math.random() * 100000));
   }
 }

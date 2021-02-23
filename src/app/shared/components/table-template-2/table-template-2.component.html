@@ -24,7 +24,7 @@
       <pagination-controls
         *ngIf="data.options.showPagination"
         (pageChange)="onUpdatePageNumber($event)"
-        id="table-template-pagination"
+        id="{{this.data.tableId}}"
         autoHide="true"
       ></pagination-controls>
     </div>
@@ -58,7 +58,7 @@
           let item of data.items
             | paginate
               : {
-                  id: 'table-template-pagination',
+                  id: this.data.tableId,
                   itemsPerPage: data.pageSize,
                   currentPage: data.currentPage,
                   totalItems: data.totalListItems
@@ -76,7 +76,7 @@
       <pagination-controls
         *ngIf="data.options.showPagination"
         (pageChange)="onUpdatePageNumber($event)"
-        id="table-template-pagination"
+        id="{{this.data.tableId}}"
         autoHide="true"
       ></pagination-controls>
     </div>

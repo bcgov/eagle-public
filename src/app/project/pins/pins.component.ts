@@ -8,7 +8,6 @@ import { TableTemplate } from 'app/shared/components/table-template-2/table-temp
 import { TableObject2 } from 'app/shared/components/table-template-2/table-object-2';
 import { PinsService } from 'app/services/pins.service';
 import { ITableMessage } from 'app/shared/components/table-template-2/table-row-component';
-import { IPageSizePickerOption } from 'app/shared/components/page-size-picker/page-size-picker.component';
 
 @Component({
   selector: 'app-pins',
@@ -46,6 +45,8 @@ export class PinsComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.currentProject = this.storageService.state.currentProject.data;
 
+    this.tableData.tableId = 'pins-table';
+
     // Hide table controls
     this.tableData.options.showPageCountDisplay = false;
     this.tableData.options.showPageSizePicker = false;
@@ -78,18 +79,11 @@ export class PinsComponent implements OnInit, OnDestroy {
 
   onMessageOut(msg: ITableMessage) {
     switch (msg.label) {
-      case 'rowClicked':
-        break;
-      case 'rowSelected':
-        break;
       case 'columnSort':
         this.setColumnSort(msg.data);
         break;
       case 'pageNum':
         this.onPageNumUpdate(msg.data);
-        break;
-      case 'pageSize':
-        this.onPageSizeUpdate(msg.data);
         break;
       default:
         break;
@@ -107,11 +101,6 @@ export class PinsComponent implements OnInit, OnDestroy {
 
   onPageNumUpdate(pageNumber) {
     this.tableData.currentPage = pageNumber;
-    this.submit();
-  }
-
-  onPageSizeUpdate(pageSize: IPageSizePickerOption) {
-    this.tableData.pageSize = pageSize.value;
     this.submit();
   }
 

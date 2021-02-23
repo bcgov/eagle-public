@@ -51,6 +51,9 @@ export class ProjectActivitesComponent implements OnInit, OnDestroy {
     this.currentProject = this.storageService.state.currentProject.data;
 
     this.tableData.options.showPageCountDisplay = true;
+    this.tableData.options.showPagination = true;
+
+    this.tableData.tableId = 'activities-table';
 
     this.route.queryParamMap.pipe(takeWhile(() => this.alive)).subscribe(data => {
       this.queryParams = { ...data['params'] };
@@ -87,10 +90,6 @@ export class ProjectActivitesComponent implements OnInit, OnDestroy {
 
   onMessageOut(msg: ITableMessage) {
     switch (msg.label) {
-      case 'rowClicked':
-        break;
-      case 'rowSelected':
-        break;
       case 'columnSort':
         this.setColumnSort(msg.data);
         break;
@@ -121,6 +120,7 @@ export class ProjectActivitesComponent implements OnInit, OnDestroy {
 
   onPageSizeUpdate(pageSize: IPageSizePickerOption) {
     this.tableData.pageSize = pageSize.value;
+    this.tableData.currentPage = 1;
     this.submit();
   }
 

@@ -26,7 +26,7 @@ export class TableTemplate2Component implements OnInit, OnChanges, OnDestroy {
 
   constructor(public injector: Injector) { }
 
-  ngOnInit() { }
+  ngOnInit() {}
 
   ngOnChanges(changes: SimpleChanges) {
     // only run when property "data" changed
