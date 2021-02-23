@@ -2,12 +2,13 @@
   width: 100%;
   table-layout: fixed;
 
-  td, th {
+  td,
+  th {
     text-align: left;
     flex: 1;
 
     @media screen and (max-width: 600px) {
-      text-align: left!important;
+      text-align: left !important;
     }
 
     &:first-child {
@@ -28,28 +29,21 @@
   }
 
   thead {
-    background: $table-header-bg;
-    border-bottom: 2px solid #fff;
-
     tr {
       align-items: center;
     }
 
     th {
-      padding: 0.5rem;
-      border-bottom: 3px solid #eee;
-      vertical-align: middle;
-      text-shadow: none;
-      font-size: 0.875rem;
-      font-weight: 600;
+      padding: 0.7rem 0.15rem 0.85rem;
+      border-bottom: 1px solid transparent;
 
       &.sortable {
-        transition: border-color ease-out 0.2s;
+        transition: border-color ease-out 0.1s;
         cursor: pointer;
         user-select: none;
 
         &:hover {
-          border-bottom-color: $table-header-sort-active;
+          border-bottom-color: $table-header-sort-active !important;
         }
 
         &.sort-asc,
@@ -67,11 +61,12 @@
     tr {
       background: $table-row-bg;
 
-      &:nth-child(even){
+      &:nth-child(even) {
         background: $table-alt-row-bg;
-        &:hover {
-          background: #e2f1ff;
-        }
+      }
+
+      &:hover {
+        background: #e2f1ff;
       }
     }
 
@@ -100,7 +95,7 @@ th {
 
     &:before,
     &:after {
-      content: ' ';
+      content: " ";
       position: absolute;
       display: block;
       border-color: $table-sort-icon-color transparent;
@@ -113,7 +108,7 @@ th {
     }
 
     &:after {
-      content: ' ';
+      content: " ";
       bottom: -1px;
       border-width: $table-sort-icon-size $table-sort-icon-size 0 $table-sort-icon-size;
     }
@@ -152,7 +147,7 @@ th {
   .table {
     border: 0;
     thead {
-        background: none;
+      background: none;
     }
   }
 
@@ -163,7 +158,7 @@ th {
   }
 
   .table thead:before {
-    content: 'Sort by:';
+    content: "Sort by:";
     font-weight: bold;
     text-transform: uppercase;
     margin-bottom: 3px;
@@ -216,9 +211,4 @@ th {
     max-width: 50%;
     border-color: #fff;
   }
-
-  .table tbody tr:hover {
-    background: #e2f1ff;
-  }
-
 }

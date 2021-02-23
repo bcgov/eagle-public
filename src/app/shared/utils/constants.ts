@@ -31,7 +31,14 @@ export class Constants {
     DEFAULT_PAGE_SIZE: 10,
     DEFAULT_SORT_BY: '-datePosted',
     DEFAULT_KEYWORDS: '',
-    DEFAULT_SHOW_MORE_INCREMENT: 5
+    DEFAULT_SHOW_MORE_INCREMENT: 5,
+    DEFAULT_DATASET: '',
+    DEFAULT_PAGE_SIZE_OPTIONS: [
+      { displayText: '10', value: 10 },
+      { displayText: '25', value: 25 },
+      { displayText: '50', value: 50 },
+      { displayText: '100', value: 100 }
+    ]
   };
 
   public static readonly PCP_COLLECTION: object[] = [
@@ -72,13 +79,16 @@ export class Constants {
   ];
 
   public static readonly buildToNature: BuildNature[] = [
-    { build: 'new',
+    {
+      build: 'new',
       nature: 'New Construction'
     },
-    { build: 'modification',
+    {
+      build: 'modification',
       nature: 'Modification of Existing'
     },
-    { build: 'dismantling',
+    {
+      build: 'dismantling',
       nature: 'Dismantling or Abandonment'
     },
   ];

@@ -31,6 +31,9 @@ import { PinsTableRowsComponent } from './pins/pins-table-rows/pins-table-rows.c
 
 import { NgSelectModule } from '@ng-select/ng-select';
 import { FormsModule } from '@angular/forms';
+import { FeaturedDocumentsComponent } from './featured-documents/featured-documents.component';
+import { FeaturedDocumentsTableRowsComponent } from './featured-documents/featured-documents-table-rows/featured-documents-table-rows.component';
+import { ActivitiesListTableRowsComponent } from './project-activites/activities-list-table-rows/activities-list-table-rows.component';
 
 @NgModule({
   imports: [
@@ -61,6 +64,9 @@ import { FormsModule } from '@angular/forms';
     PinsComponent,
     ToggleButtonComponent,
     DetailsSidebarComponent,
+    FeaturedDocumentsComponent,
+    FeaturedDocumentsTableRowsComponent,
+    ActivitiesListTableRowsComponent
   ],
   providers: [
     StorageService
@@ -69,7 +75,9 @@ import { FormsModule } from '@angular/forms';
     BecomeAMemberComponent,
     DocumentTableRowsComponent,
     PinsTableRowsComponent,
-    CommentsTableRowsComponent
+    CommentsTableRowsComponent,
+    ActivitiesListTableRowsComponent,
+    FeaturedDocumentsTableRowsComponent
   ]
 })
 

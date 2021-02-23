@@ -23,7 +23,7 @@
           <div *ngIf="project?.status" class="col-sm-12 col-md-3 info-block">
             <label>IAAC Involvement</label>
             <p *ngIf="project.CEAAInvolvement?.name==='None'" class="value">
-                {{project.CEAAInvolvement?.name || "-" }}
+              {{project.CEAAInvolvement?.name || "-" }}
             </p>
             <p *ngIf="project.CEAAInvolvement?.name!=='None'" class="value"><a class="value" target="_blank"
                 href="{{project.CEAALink}}">{{project.CEAAInvolvement?.name || "-" }}</a>
@@ -49,21 +49,8 @@
       </div>
     </div>
     <br>
-    <div class="row" *ngIf="!loading && tableParams.totalListItems != 0">
-        <div class="col-12">
-            <h2>Featured Documents</h2>
-            <app-table-template
-                [columns]="documentTableColumns" [data]="documentTableData" (onColumnSort)='setColumnSort($event)'
-                (onSelectedRow)='updateSelectedRow($event)' [hidePager]="true" [showCountAtTop]="false">
-            </app-table-template>
-        </div>
-    </div>
+    <app-featured-documents></app-featured-documents>
     <app-pins></app-pins>
-    <div class="row">
-      <div class="col-12">
-        <h2>Activities and Updates</h2>
-        <app-project-activites></app-project-activites>
-      </div>
-    </div>
+    <app-project-activites></app-project-activites>
   </section>
 </div>

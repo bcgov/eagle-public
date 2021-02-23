@@ -12,8 +12,8 @@ import { CertificatesResolver } from './certificates/certificates-resolver.servi
 import { CertificatesComponent } from './certificates/certificates.component';
 import { AmendmentsResolverService } from './certificates/amendments-resolver.service';
 import { ApplicationResolver } from './certificates/application-resolver.service';
-import { PinsComponent } from './pins/pins.component';
 import { PinsResolverService } from './pins/pins-resolver.service';
+import { FeaturedDocumentsResolverService } from './featured-documents/featured-documents-resolver.service';
 
 export const ProjectRoutes: Routes = [
   {
@@ -25,7 +25,9 @@ export const ProjectRoutes: Routes = [
     path: 'project-details',
     component: ProjectDetailsTabComponent,
     resolve: {
-      documents: ProjectActivitiesResolver
+      ProjectActivitiesResolver,
+      PinsResolverService,
+      FeaturedDocumentsResolverService
     }
   },
   {
@@ -50,13 +52,6 @@ export const ProjectRoutes: Routes = [
     resolve: {
       documents: ApplicationResolver,
       documentsTableRow: DocumentTableResolver
-    }
-  },
-  {
-    path: 'pins',
-    component: PinsComponent,
-    resolve: {
-      pins: PinsResolverService
     }
   },
   {
