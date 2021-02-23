@@ -40,7 +40,7 @@ export class ProjectActivitesComponent implements OnInit, OnDestroy {
   ];
   constructor(
     private router: Router,
-    public location: Location,
+    private location: Location,
     private route: ActivatedRoute,
     private tableTemplateUtils: TableTemplate,
     private activitiesService: ActivitiesService,
@@ -140,13 +140,16 @@ export class ProjectActivitesComponent implements OnInit, OnDestroy {
 
     encodedParams['keywordsActivities'] = this.queryParams.keywordsActivities ? this.queryParams.keywordsActivities : null;
 
-    this.router.navigate(
-      ['../project-details'],
-      {
-        queryParams: encodedParams,
-        relativeTo: this.route,
-        queryParamsHandling: 'merge'
-      }
+    this.location.replaceState(
+      this.router.serializeUrl(
+        this.router.createUrlTree(
+          ['../project-details'],
+          {
+            queryParams: encodedParams,
+            relativeTo: this.route,
+            queryParamsHandling: 'merge',
+          })
+      )
     );
 
     await this.activitiesService.fetchData(

@@ -1,4 +1,5 @@
 import { Component, OnInit, ChangeDetectorRef, OnDestroy } from '@angular/core';
+import { Location } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { StorageService } from 'app/services/storage.service';
 import { SearchResults } from 'app/models/search';
@@ -34,6 +35,7 @@ export class PinsComponent implements OnInit, OnDestroy {
   ];
   constructor(
     private router: Router,
+    private location: Location,
     private _changeDetectionRef: ChangeDetectorRef,
     private route: ActivatedRoute,
     private storageService: StorageService,
@@ -111,13 +113,16 @@ export class PinsComponent implements OnInit, OnDestroy {
       sortByPins: this.tableData.sortBy,
     };
 
-    this.router.navigate(
-      ['../project-details'],
-      {
-        queryParams: encodedParams,
-        relativeTo: this.route,
-        queryParamsHandling: 'merge'
-      }
+    this.location.replaceState(
+      this.router.serializeUrl(
+        this.router.createUrlTree(
+          ['../project-details'],
+          {
+            queryParams: encodedParams,
+            relativeTo: this.route,
+            queryParamsHandling: 'merge',
+          })
+      )
     );
 
     await this.pinsService.fetchData(this.tableData.currentPage, this.tableData.pageSize, this.tableData.sortBy, this.currentProject._id);
