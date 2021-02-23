@@ -29,6 +29,7 @@ export class TableTemplateUtils {
 
   public getParamsFromUrl(params, filter = null, defaultSortBy = null) {
     let pageSize = params.pageSize || Constants.tableDefaults.DEFAULT_PAGE_SIZE;
+
     let currentPage = params.currentPage ? params.currentPage : Constants.tableDefaults.DEFAULT_CURRENT_PAGE;
     let sortBy = params.sortBy ? params.sortBy : (defaultSortBy ? defaultSortBy : Constants.tableDefaults.DEFAULT_SORT_BY);
     let keywords = params.keywords ? params.keywords : Constants.tableDefaults.DEFAULT_KEYWORDS;

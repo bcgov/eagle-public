@@ -1,7 +1,7 @@
 import { NgModule } from '@angular/core';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { BrowserModule } from '@angular/platform-browser';
-import { MatProgressBarModule } from '@angular/material';
+import { MatAutocompleteModule, MatCheckboxModule, MatChipsModule, MatIconModule, MatProgressBarModule, MatSelectModule, MatSlideToggleModule, MatTooltipModule } from '@angular/material';
 import { MatSnackBarModule } from '@angular/material';
 import { NgxTextOverflowClampModule } from 'ngx-text-overflow-clamp';
 
@@ -25,8 +25,19 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { NgZorroAntdModule, NZ_I18N, en_US } from 'ng-zorro-antd';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { NgxPaginationModule } from 'ngx-pagination';
+import { TableRowDirective } from './components/table-template-2/table-row.directive';
+import { TableTemplate2Component } from './components/table-template-2/table-template-2.component';
+import { PageSizePickerComponent } from './components/page-size-picker/page-size-picker.component';
+import { PageCountDisplayComponent } from './components/page-count-display/page-count-display.component';
+import { InjectComponentService } from './services/inject-component.service';
+import { TableTemplate } from './components/table-template-2/table-template';
+import { AutoCompleteMultiSelectComponent } from './components/autocomplete-multi-select/autocomplete-multi-select.component';
+import { SearchFilterTemplateComponent } from './components/search-filter-template/search-filter-template.component';
+import { CallbackPipe } from './components/autocomplete-multi-select/callback.pipe';
+import { DatePickerComponent } from './components/date-picker/date-picker.component';
 
 @NgModule({
   imports: [
@@ -41,7 +52,16 @@ import { RouterModule } from '@angular/router';
     NgZorroAntdModule,
     TableTemplateModule,
     RouterModule,
-    NgbModule
+    MatAutocompleteModule,
+    MatCheckboxModule,
+    MatSelectModule,
+    MatSlideToggleModule,
+    MatChipsModule,
+    MatIconModule,
+    MatTooltipModule,
+    ReactiveFormsModule,
+    NgbModule,
+    NgxPaginationModule
   ],
   declarations: [
     OrderByPipe,
@@ -54,7 +74,16 @@ import { RouterModule } from '@angular/router';
     TableDirective,
     ListConverterPipe,
     SafeHtmlPipe,
-    OrgNamePipe
+    OrgNamePipe,
+    CallbackPipe,
+
+    TableRowDirective,
+    TableTemplate2Component,
+    PageSizePickerComponent,
+    PageCountDisplayComponent,
+    AutoCompleteMultiSelectComponent,
+    SearchFilterTemplateComponent,
+    DatePickerComponent
   ],
   exports: [
     BrowserModule,
@@ -70,11 +99,22 @@ import { RouterModule } from '@angular/router';
     TableTemplateComponent,
     ListConverterPipe,
     SafeHtmlPipe,
-    OrgNamePipe
+    OrgNamePipe,
+    CallbackPipe,
+
+    TableRowDirective,
+    TableTemplate2Component,
+    PageSizePickerComponent,
+    PageCountDisplayComponent,
+    AutoCompleteMultiSelectComponent,
+    SearchFilterTemplateComponent,
+    DatePickerComponent
   ],
   providers: [
     TableTemplateUtils,
+    TableTemplate,
     Utils,
+    InjectComponentService,
     { provide: NZ_I18N, useValue: en_US }
   ]
 })

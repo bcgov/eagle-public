@@ -1,15 +1,14 @@
 import { Component, OnInit, ChangeDetectorRef, OnDestroy } from '@angular/core';
-import { TableObject } from 'app/shared/components/table-template/table-object';
-import { TableParamsObject } from 'app/shared/components/table-template/table-params-object';
-import { ActivatedRoute } from '@angular/router';
+import { Location } from '@angular/common';
+import { ActivatedRoute, Router } from '@angular/router';
 import { StorageService } from 'app/services/storage.service';
-import { TableTemplateUtils } from 'app/shared/utils/table-template-utils';
-import { Subject } from 'rxjs';
-import { SearchTerms } from 'app/models/search';
+import { SearchResults } from 'app/models/search';
 import { PinsTableRowsComponent } from './pins-table-rows/pins-table-rows.component';
-import { Org } from 'app/models/organization';
-import { ProjectService } from 'app/services/project.service';
-import { DataQueryResponse } from 'app/models/api-response';
+import { takeWhile } from 'rxjs/operators';
+import { TableTemplate } from 'app/shared/components/table-template-2/table-template';
+import { TableObject2 } from 'app/shared/components/table-template-2/table-object-2';
+import { PinsService } from 'app/services/pins.service';
+import { ITableMessage } from 'app/shared/components/table-template-2/table-row-component';
 
 @Component({
   selector: 'app-pins',
@@ -17,14 +16,11 @@ import { DataQueryResponse } from 'app/models/api-response';
   styleUrls: ['./pins.component.scss']
 })
 export class PinsComponent implements OnInit, OnDestroy {
-  public pins = [];
-  private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
-  public tableData: TableObject;
-  public tableParams: TableParamsObject = new TableParamsObject();
-  public currentProject;
-  public typeFilters = [];
-  public terms = new SearchTerms();
+  private currentProject;
+  private alive = true;
   public loading: Boolean = true;
+
+  public tableData: TableObject2 = new TableObject2({ component: PinsTableRowsComponent });
   public tableColumns: any[] = [
     {
       name: 'Nation Name',
@@ -33,118 +29,106 @@ export class PinsComponent implements OnInit, OnDestroy {
     },
     {
       name: 'Location',
-      value: 'location',
+      value: 'province',
       width: 'col-4'
     }
-    // {
-    //   name: 'Link to Nation Information',
-    //   value: 'link',
-    //   width: 'col-3'
-    // }
   ];
   constructor(
+    private router: Router,
+    private location: Location,
     private _changeDetectionRef: ChangeDetectorRef,
     private route: ActivatedRoute,
     private storageService: StorageService,
-    private tableTemplateUtils: TableTemplateUtils,
-    private projectService: ProjectService
+    private tableTemplateUtils: TableTemplate,
+    private pinsService: PinsService
   ) {
   }
 
   ngOnInit() {
-    this.route.params
-    .takeUntil(this.ngUnsubscribe)
-    .subscribe(params => {
-      // Different sort order:
-      this.tableParams = this.tableTemplateUtils.getParamsFromUrl(params, null, '+name');
-      this.tableParams.pageSize = 5;
-    });
-
     this.currentProject = this.storageService.state.currentProject.data;
 
-    this.projectService.getPins(this.currentProject._id, 1, 5, '+name')
-    .takeUntil(this.ngUnsubscribe)
-    .subscribe((res: DataQueryResponse<Org>[]) => {
-      if (res && res.length && res[0].results && res[0].results.length && res[0].total_items) {
-        if (res[0].results && res[0].results.length > 0) {
-          this.tableParams.totalListItems = res[0].total_items.valueOf();
-          this.pins = res;
-        } else {
-          this.tableParams.totalListItems = 0;
-          this.pins = [];
-        }
-        this.loading = false;
-        this.setDocumentRowData();
-        this._changeDetectionRef.detectChanges();
-      }
+    this.tableData.tableId = 'pins-table';
+
+    // Hide table controls
+    this.tableData.options.showPageCountDisplay = false;
+    this.tableData.options.showPageSizePicker = false;
+
+    this.route.queryParamMap.pipe(takeWhile(() => this.alive)).subscribe(data => {
+      // Get params from route, shove into the tableTemplateUtils so that we get a new dataset to work with.
+      this.tableData = this.tableTemplateUtils.updateTableObjectWithUrlParams(data['params'], this.tableData, 'Pins');
+      this.tableData.sortBy = data['params'].sortByPins ? data['params'].sortByPins : '+name';
+      this._changeDetectionRef.detectChanges();
     });
+
+    this.pinsService.getValue()
+      .pipe(takeWhile(() => this.alive))
+      .subscribe((searchResults: SearchResults) => {
+        this.tableData.totalListItems = searchResults.totalSearchCount;
+        if (this.tableData.totalListItems > 0) {
+          this.tableData.items = searchResults.data.map(record => {
+            return { rowData: record };
+          });
+        } else {
+          this.tableData.items = [];
+        }
+
+        this.tableData.columns = this.tableColumns;
+        this.loading = false;
+
+        this._changeDetectionRef.detectChanges();
+      });
   }
 
-
-  setDocumentRowData() {
-    let documentList = [];
-    if (this.pins && this.pins.length > 0 && this.pins[0].results) {
-      this.pins[0].results.forEach(contact => {
-        documentList.push(contact);
-      });
-      this.tableData = new TableObject(
-        PinsTableRowsComponent,
-        documentList,
-        this.tableParams
-        );
+  onMessageOut(msg: ITableMessage) {
+    switch (msg.label) {
+      case 'columnSort':
+        this.setColumnSort(msg.data);
+        break;
+      case 'pageNum':
+        this.onPageNumUpdate(msg.data);
+        break;
+      default:
+        break;
     }
   }
 
   setColumnSort(column) {
-    if (this.tableParams.sortBy.charAt(0) === '+') {
-      this.tableParams.sortBy = '-' + column;
+    if (this.tableData.sortBy.charAt(0) === '+') {
+      this.tableData.sortBy = '-' + column;
     } else {
-      this.tableParams.sortBy = '+' + column;
+      this.tableData.sortBy = '+' + column;
     }
-    this.getPaginated(this.tableParams.currentPage);
+    this.submit();
   }
 
-  getPaginated(pageNumber, reset = false) {
-    this.loading = true;
-    this._changeDetectionRef.detectChanges();
+  onPageNumUpdate(pageNumber) {
+    this.tableData.currentPage = pageNumber;
+    this.submit();
+  }
 
-    const params = this.terms.getParams();
-    params['ms'] = new Date().getMilliseconds();
-    params['dataset'] = this.terms.dataset;
-    params['currentPage'] = this.tableParams.currentPage = pageNumber;
+  async submit() {
+    const encodedParams = {
+      currentPagePins: this.tableData.currentPage,
+      pageSizePins: this.tableData.pageSize,
+      sortByPins: this.tableData.sortBy,
+    };
 
-    if (reset) {
-      this.tableParams.sortBy = '';
-      this.tableParams.pageSize = 10;
-      this.tableParams.keywords = '';
-      this.typeFilters = [];
-    }
+    this.location.replaceState(
+      this.router.serializeUrl(
+        this.router.createUrlTree(
+          ['../project-details'],
+          {
+            queryParams: encodedParams,
+            relativeTo: this.route,
+            queryParamsHandling: 'merge',
+          })
+      )
+    );
 
-    params['sortBy'] = this.tableParams.sortBy;
-    params['pageSize'] = this.tableParams.pageSize;
-    params['keywords'] = this.tableParams.keywords;
-    if (this.typeFilters.length > 0) { params['type'] = this.typeFilters.toString(); }
-
-    this.projectService.getPins(this.currentProject._id, 1, this.tableParams.pageSize, this.tableParams.sortBy)
-    .takeUntil(this.ngUnsubscribe)
-    .subscribe((res: DataQueryResponse<Org>[]) => {
-      if (res && res.length && res[0].results && res[0].results.length && res[0].total_items) {
-        if (res[0].results && res[0].results.length > 0) {
-          this.tableParams.totalListItems = res[0].total_items.valueOf();
-          this.pins = res;
-        } else {
-          this.tableParams.totalListItems = 0;
-          this.pins = [];
-        }
-        this.loading = false;
-        this.setDocumentRowData();
-        this._changeDetectionRef.detectChanges();
-      }
-    });
+    await this.pinsService.fetchData(this.tableData.currentPage, this.tableData.pageSize, this.tableData.sortBy, this.currentProject._id);
   }
 
   ngOnDestroy() {
-    this.ngUnsubscribe.next();
-    this.ngUnsubscribe.complete();
+    this.alive = false;
   }
 }

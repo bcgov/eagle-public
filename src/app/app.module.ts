@@ -44,10 +44,11 @@ import { NewsMultifieldFilterPipe } from 'app/shared/pipes/news-multifield-filte
 import { LegislationComponent } from 'app/legislation/legislation.component';
 import { ProcessComponent } from 'app/process/process.component';
 import { ComplianceOversightComponent } from 'app/compliance-oversight/compliance-oversight.component';
-import { ActivitiesListTableRowsComponent } from './project/project-activites/activities-list-table-rows/activities-list-table-rows.component';
 import { ProjectNotificationsListComponent } from './project-notifications/project-notifications.component';
 import { SearchResolver } from './search/search-resolver.service';
 import { DocSearchTableRowsComponent } from './search/search-documents-table-rows/search-document-table-rows.component';
+import { PinsService } from 'app/services/pins.service';
+import { FeaturedDocumentsService } from './services/featured-documents.service';
 
 
 @NgModule({
@@ -79,7 +80,6 @@ import { DocSearchTableRowsComponent } from './search/search-documents-table-row
     NewsMultifieldFilterPipe,
     NewsListTableRowsComponent,
     ProjectNotificationsListComponent,
-    ActivitiesListTableRowsComponent,
     LegislationComponent,
     ProcessComponent,
     ComplianceOversightComponent,
@@ -90,7 +90,6 @@ import { DocSearchTableRowsComponent } from './search/search-documents-table-row
   ],
   entryComponents: [
     NewsListTableRowsComponent,
-    ActivitiesListTableRowsComponent,
     DocSearchTableRowsComponent,
   ],
   providers: [
@@ -105,7 +104,9 @@ import { DocSearchTableRowsComponent } from './search/search-documents-table-row
     SearchService,
     OrgService,
     FeatureService,
-    SearchResolver
+    PinsService,
+    SearchResolver,
+    FeaturedDocumentsService
   ],
   bootstrap: [
     AppComponent
@@ -114,6 +115,6 @@ import { DocSearchTableRowsComponent } from './search/search-documents-table-row
 
 export class AppModule {
   constructor(applicationRef: ApplicationRef) {
-    Object.defineProperty(applicationRef, '_rootComponents', {get: () => applicationRef['components']});
+    Object.defineProperty(applicationRef, '_rootComponents', { get: () => applicationRef['components'] });
   }
 }
