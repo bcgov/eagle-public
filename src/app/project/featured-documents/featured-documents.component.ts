@@ -1,3 +1,4 @@
+
 import { Component, OnInit, ChangeDetectorRef, OnDestroy } from '@angular/core';
 import { Location } from '@angular/common';
 import { Router, ActivatedRoute, Params } from '@angular/router';
@@ -75,6 +76,8 @@ export class FeaturedDocumentsComponent implements OnInit, OnDestroy {
     this.currentProject = this.storageService.state.currentProject.data;
 
     this.tableData.options.showPageCountDisplay = false;
+    this.tableData.options.showPagination = false;
+    this.tableData.options.showPageSizePicker = false;
 
     this.route.queryParamMap.pipe(takeWhile(() => this.alive)).subscribe(data => {
       this.queryParams = { ...data['params'] };
@@ -91,12 +94,6 @@ export class FeaturedDocumentsComponent implements OnInit, OnDestroy {
       this.tableData.items = searchResults.data.map(record => {
         return { rowData: record };
       });
-
-      if (this.tableData.totalListItems > 10) {
-        this.tableData.options.showPageSizePicker = true;
-      } else {
-        this.tableData.options.showPageSizePicker = false;
-      }
 
       this.tableData.columns = this.tableColumns;
       this.loading = false;
