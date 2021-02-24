@@ -70,7 +70,7 @@ export class FeaturedDocumentsComponent implements OnInit, OnDestroy {
 
     this.tableData.currentPage = 1;
     this.tableData.pageSize = 5;
-    this.tableData.sortBy = '-dateAdded';
+    this.tableData.sortBy = '-datePosted';
 
     this.featuredDocumentsService.getValue().pipe(takeWhile(() => this.alive)).subscribe((searchResults: SearchResults) => {
 
