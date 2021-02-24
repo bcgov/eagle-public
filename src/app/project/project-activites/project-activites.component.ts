@@ -163,7 +163,6 @@ export class ProjectActivitesComponent implements OnInit, OnDestroy {
 
   executeSearch(searchPackage) {
     delete this.queryParams['keywordsActivities'];
-
     // check keyword
     if (searchPackage.keywords) {
       this.queryParams['keywordsActivities'] = searchPackage.keywords;
@@ -171,6 +170,8 @@ export class ProjectActivitesComponent implements OnInit, OnDestroy {
       if (searchPackage.keywordsChanged) {
         this.tableData.sortBy = '-score';
       }
+    } else {
+      this.tableData.sortBy = '-dateAdded';
     }
 
     this.tableData.currentPage = 1;
