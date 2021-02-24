@@ -19,7 +19,7 @@ export class FeaturedDocumentsResolverService implements Resolve<void> {
       '',
       1,
       5,
-      '-dateAdded',
+      '-datePosted',
       projId
     );
   }
