@@ -106,7 +106,7 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
 
     this.configService.lists.pipe(takeWhile(() => this.alive)).subscribe((list) => {
       this.lists = list;
-      this.lists.map(item => {
+      this.lists.forEach(item => {
         if (item.type === 'label') {
           this.milestoneArray.push({ ...item });
         } else if (item.type === 'author') {
