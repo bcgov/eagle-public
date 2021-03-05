@@ -1,5 +1,3 @@
-import { IMutliSelectOption } from '../autocomplete-multi-select/autocomplete-multi-select.component';
-
 /**
  * The filter object is used to define custom filters for the search template
  * the ID is the id used by the API (milestone, etc.). Name is a display name for the UI
@@ -11,7 +9,7 @@ import { IMutliSelectOption } from '../autocomplete-multi-select/autocomplete-mu
  * @export
  * @class FilterObject
  */
- export class FilterObject {
+export class FilterObject {
   /**
    * Creates an instance of FilterObject.
    * @param {string} id ID for the filter object
@@ -71,7 +69,7 @@ export abstract class FilterDefinition {
  * @class DateFilterDefinition
  * @extends {FilterDefinition}
  */
- export class DateFilterDefinition extends FilterDefinition {
+export class DateFilterDefinition extends FilterDefinition {
   /**
    * Creates an instance of DateFilterDefinition.
    * @param {string} startDateId id for the start date item
@@ -183,18 +181,27 @@ export class MultiSelectDefinition extends FilterDefinition {
   public selectedOptionsCount = 0; // count of selected options for UI display
   /**
    * Creates an instance of MultiSelectDefinition.
-   * @param {IMutliSelectOption[]} [options=[]] An array of your multi select options
+   * @param {any[]} [options=[]] An array of your multi select options
    * @param {string} [placeholder='Begin typing to filter'] Placeholder text to display in the typeahead text box
    * @param {string} [subtext='Select all that apply...'] Subtext for the multiselect component
    * @param {boolean} [useChips=false] Flag that indicates whether to show selected items as a chip list
    * @memberof MultiSelectDefinition
    */
   constructor(
-    public options: IMutliSelectOption[] = [],
-    public placeholder: string = 'Begin typing to filter',
-    public subtext: string = 'Select all that apply...',
-    public useChips: boolean = true
-  ) { super(); }
+    public options: any[] = [],
+    public selectedOptions: any[] = [],
+    public group: FilterGroupObject = null,
+    public collection: FilterObject[] = null,
+    public matchId: boolean = false
+  ) {
+    super();
+    // If we have a collection value, empty the options container so the UI doesn't
+    // get confused by trying to create multiple components
+    if (collection) {
+      options = [];
+      selectedOptions = [];
+    }
+  }
 }
 
 /**
@@ -236,4 +243,12 @@ export class SliderToggleFilterDefinition extends FilterDefinition {
     public offOption: OptionItem,
     public onOption: OptionItem
   ) { super(); }
+}
+
+export class FilterGroupObject {
+  constructor(
+    public name: string,
+    public labelPrefix: string,
+    public labelPostfix: string,
+  ) { }
 }

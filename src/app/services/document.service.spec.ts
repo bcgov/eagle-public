@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { ApiService } from './api';
 import { DocumentService } from './document.service';
+import { SearchService } from './search.service';
 
 describe('DocumentService', () => {
   beforeEach(() => {
@@ -13,7 +14,8 @@ describe('DocumentService', () => {
             'handleError'
           ])
         },
-        DocumentService
+        DocumentService,
+        SearchService
       ]
     });
   });

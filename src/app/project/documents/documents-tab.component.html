@@ -1,18 +1,38 @@
 <div class="tab-pane" role="tabpanel">
-    <div class="spinner-container" *ngIf="loading">
+    <div class="spinner-container" *ngIf="loadingLists || loadingTableParams || loadingtableData">
         <div class="spinner-new rotating"></div>
     </div>
-    <section class="tab-section" *ngIf="!loading">
-        <app-table-template [columns]="documentTableColumns"
-                            [data]="documentTableData"
-                            (onSelectedRow)='updateSelectedRow($event)'
-                            [showSearch]="true"
-                            (onSearch)='executeSearch($event)'
-                            [showAdvancedSearch]="true"
-                            [filters]="filters"
-                            [searchDisclaimer]="constants.searchDisclaimer">
-        </app-table-template>
-        <div *ngIf="documents.length === 0">
+
+    <section class="tab-section" *ngIf="!loadingLists && !loadingTableParams && !loadingtableData">
+        <section class="border-bottom mb-4 pt-0 pb-0">
+            <div class="mb-4">
+                <search-filter-template #explorePanel (searchEvent)='executeSearch($event)' title="Keyword Search"
+                    [advancedFilters]="true" [showAdvancedFilters]="showAdvancedFilters" [searchOnFilterChange]="true"
+                    [filters]="filters"
+                    (resetControls)='tableData.sortBy.includes("score") ? tableData.sortBy = "-datePosted" : null'
+                    (toggleFiltersPanelEvent)="showAdvancedFilters = $event.showPanel">
+                </search-filter-template>
+            </div>
+            <div *ngIf="showAdvancedFilters" class="mb-4 underline">
+                <p class="text-muted">
+                    <small>
+                        {{constants.searchDisclaimer}}
+                    </small>
+                </p>
+            </div>
+            <div class="d-flex flex-row-reverse mb-4">
+                <a class="btn btn-primary" [routerLink]="['/search-help']" target="_blank">
+                    <i class="material-icons md-18">info</i>
+                    <span> Search Help</span>
+                </a>
+            </div>
+        </section>
+
+        <lib-table-template-2 *ngIf="tableData.totalListItems > 0" [data]="tableData"
+            (messageOut)="onMessageOut($event)">
+        </lib-table-template-2>
+
+        <div *ngIf="tableData.totalListItems === 0">
             No results found.
         </div>
     </section>

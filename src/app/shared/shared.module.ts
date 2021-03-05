@@ -38,6 +38,7 @@ import { AutoCompleteMultiSelectComponent } from './components/autocomplete-mult
 import { SearchFilterTemplateComponent } from './components/search-filter-template/search-filter-template.component';
 import { CallbackPipe } from './components/autocomplete-multi-select/callback.pipe';
 import { DatePickerComponent } from './components/date-picker/date-picker.component';
+import { AutoCompleteMultiSelect2Component } from './components/autocomplete-multi-select-2/autocomplete-multi-select-2.component';
 
 @NgModule({
   imports: [
@@ -82,6 +83,7 @@ import { DatePickerComponent } from './components/date-picker/date-picker.compon
     PageSizePickerComponent,
     PageCountDisplayComponent,
     AutoCompleteMultiSelectComponent,
+    AutoCompleteMultiSelect2Component,
     SearchFilterTemplateComponent,
     DatePickerComponent
   ],
@@ -107,6 +109,7 @@ import { DatePickerComponent } from './components/date-picker/date-picker.compon
     PageSizePickerComponent,
     PageCountDisplayComponent,
     AutoCompleteMultiSelectComponent,
+    AutoCompleteMultiSelect2Component,
     SearchFilterTemplateComponent,
     DatePickerComponent
   ],
