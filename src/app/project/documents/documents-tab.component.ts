@@ -161,7 +161,6 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
   }
 
   private setFilters() {
-    // this.searchFiltersForm.setValue({ datePostedEnd: this.queryParams.datePostedEnd });
     const docDateFilter = new FilterObject(
       'issuedDate',
       FilterType.DateRange,
