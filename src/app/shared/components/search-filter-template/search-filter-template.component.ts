@@ -47,6 +47,7 @@ export class SearchFilterTemplateComponent implements OnInit, AfterViewInit, OnD
   @Input() filterItemPanelSize = 4;
   @Input() filters: FilterObject[] = [];
   @Input() keywordOverride: '';
+  @Input() searchHelpLinkArray: null;
 
   // Outputs and Emitters
   // searchEvent fires whenever a search is executed. The host component is responsible

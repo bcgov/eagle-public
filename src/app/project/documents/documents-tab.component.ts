@@ -194,7 +194,7 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
         null,
         true
       ),
-      6
+      4
     );
 
     const documentTypeFilter = new FilterObject(
@@ -208,7 +208,7 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
         null,
         true
       ),
-      6
+      4
     );
 
     const projectPhaseFilter = new FilterObject(
@@ -222,7 +222,7 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
         null,
         true
       ),
-      6
+      4
     );
 
     this.filters = [

@@ -6,25 +6,19 @@
     <section class="tab-section" *ngIf="!loadingLists && !loadingTableParams && !loadingtableData">
         <section class="border-bottom mb-4 pt-0 pb-0">
             <div class="mb-4">
-                <search-filter-template #explorePanel (searchEvent)='executeSearch($event)' title="Keyword Search"
-                    [advancedFilters]="true" [showAdvancedFilters]="showAdvancedFilters" [searchOnFilterChange]="true"
-                    [filters]="filters"
+                <search-filter-template #explorePanel (searchEvent)='executeSearch($event)' [advancedFilters]="true"
+                    [showAdvancedFilters]="showAdvancedFilters" [searchOnFilterChange]="true" [filters]="filters"
                     (resetControls)='tableData.sortBy.includes("score") ? tableData.sortBy = "-datePosted" : null'
-                    (toggleFiltersPanelEvent)="showAdvancedFilters = $event.showPanel">
+                    (toggleFiltersPanelEvent)="showAdvancedFilters = $event.showPanel"
+                    [searchHelpLinkArray]='["/search-help"]'>
                 </search-filter-template>
             </div>
-            <div *ngIf="showAdvancedFilters" class="mb-4 underline">
+            <div *ngIf="showAdvancedFilters" class="mb-3 underline">
                 <p class="text-muted">
                     <small>
                         {{constants.searchDisclaimer}}
                     </small>
                 </p>
-            </div>
-            <div class="d-flex flex-row-reverse mb-4">
-                <a class="btn btn-primary" [routerLink]="['/search-help']" target="_blank">
-                    <span class="material-icons md-18">info</span>
-                    <span> Search Help</span>
-                </a>
             </div>
         </section>
 
