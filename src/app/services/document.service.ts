@@ -159,7 +159,8 @@ export class DocumentService {
     pageSize: number = Constants.tableDefaults.DEFAULT_PAGE_SIZE,
     sortBy: string = Constants.tableDefaults.DEFAULT_SORT_BY,
     projId: string = '',
-    filters = {}
+    filters = {},
+    queryModifiers = {}
   ) {
     // Caching for later
     this.fetchDataConfig = {
@@ -170,9 +171,7 @@ export class DocumentService {
       projId: projId,
       filters: filters
     };
-
-    let queryModifiers = { documentSource: 'PROJECT' };
-
+    console.log(queryModifiers);
     let res = null;
     try {
       res = await this.searchService.getSearchResults(

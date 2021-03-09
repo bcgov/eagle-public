@@ -69,7 +69,8 @@ export class DocumentsResolver implements Resolve<void> {
       tableObject.pageSize,
       tableObject.sortBy,
       projId,
-      this.filterForAPI
+      this.filterForAPI,
+      { documentSource: 'PROJECT' }
     );
   }
 }

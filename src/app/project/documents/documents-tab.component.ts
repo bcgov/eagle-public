@@ -130,7 +130,7 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
       if (
         this.queryParams['milestone'] ||
         this.queryParams['documentAuthorType'] ||
-        this.queryParams['documentType'] ||
+        this.queryParams['type'] ||
         this.queryParams['datePostedEnd']
       ) {
         this.showAdvancedFilters = true;
@@ -198,7 +198,7 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
     );
 
     const documentTypeFilter = new FilterObject(
-      'documentType',
+      'type',
       FilterType.MultiSelect,
       'Document Type',
       new MultiSelectDefinition(
@@ -269,7 +269,7 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
     delete this.queryParams['datePostedEnd'];
     delete this.queryParams['milestone'];
     delete this.queryParams['documentAuthorType'];
-    delete this.queryParams['documentType'];
+    delete this.queryParams['type'];
     delete this.queryParams['projectPhase'];
   }
 
@@ -334,10 +334,10 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
     } else {
       params['documentAuthorType'] = null;
     }
-    if (filtersForApi.documentType) {
-      filtersForApi.documentType = filtersForApi.documentType.join();
+    if (filtersForApi.type) {
+      filtersForApi.type = filtersForApi.type.join();
     } else {
-      params['documentType'] = null;
+      params['type'] = null;
     }
     if (filtersForApi.projectPhase) {
       filtersForApi.projectPhase = filtersForApi.projectPhase.join();
@@ -369,7 +369,8 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
       this.tableData.pageSize,
       this.tableData.sortBy,
       this.currentProject._id,
-      filtersForApi
+      filtersForApi,
+      { documentSource: 'PROJECT' }
     );
   }
 
