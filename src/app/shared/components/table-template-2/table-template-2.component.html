@@ -2,7 +2,7 @@
   <div class="table-controls-top">
     <div class="top-left">
       <lib-page-size-picker
-        *ngIf="data.options.showPageSizePicker"
+        *ngIf="data.options.showPageSizePicker && data.totalListItems > 10"
         [isHidden]="false"
         [currentPageSize]="data.pageSize"
         [sizeOptions]="data.pageSizeOptions"

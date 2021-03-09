@@ -75,12 +75,6 @@ export class ProjectActivitesComponent implements OnInit, OnDestroy {
         return { rowData: record };
       });
 
-      if (this.tableData.totalListItems > 10) {
-        this.tableData.options.showPageSizePicker = true;
-      } else {
-        this.tableData.options.showPageSizePicker = false;
-      }
-
       this.tableData.columns = this.tableColumns;
       this.loading = false;
 

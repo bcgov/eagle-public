@@ -11,9 +11,10 @@ import { DocumentTableResolver } from './documents/project-document-table-rows/p
 import { CertificatesResolver } from './certificates/certificates-resolver.service';
 import { CertificatesComponent } from './certificates/certificates.component';
 import { AmendmentsResolverService } from './certificates/amendments-resolver.service';
-import { ApplicationResolver } from './certificates/application-resolver.service';
 import { PinsResolverService } from './pins/pins-resolver.service';
 import { FeaturedDocumentsResolverService } from './featured-documents/featured-documents-resolver.service';
+import { ApplicationComponent } from './application/application.component';
+import { ApplicationResolver } from './application/application-resolver.service';
 
 export const ProjectRoutes: Routes = [
   {
@@ -34,8 +35,7 @@ export const ProjectRoutes: Routes = [
     path: 'certificates',
     component: CertificatesComponent,
     resolve: {
-      documents: CertificatesResolver,
-      documentsTableRow: DocumentTableResolver
+      CertificatesResolver,
     }
   },
   {
@@ -48,10 +48,9 @@ export const ProjectRoutes: Routes = [
   },
   {
     path: 'application',
-    component: CertificatesComponent,
+    component: ApplicationComponent,
     resolve: {
-      documents: ApplicationResolver,
-      documentsTableRow: DocumentTableResolver
+      ApplicationResolver
     }
   },
   {
@@ -62,8 +61,7 @@ export const ProjectRoutes: Routes = [
     path: 'documents',
     component: DocumentsTabComponent,
     resolve: {
-      documents: DocumentsResolver,
-      documentsTableRow: DocumentTableResolver
+      DocumentsResolver
     }
   },
   {

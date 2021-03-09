@@ -169,9 +169,10 @@ export class DocumentService {
       pageSize: pageSize,
       sortBy: sortBy,
       projId: projId,
-      filters: filters
+      filters: filters,
+      queryModifiers: queryModifiers
     };
-    console.log(queryModifiers);
+
     let res = null;
     try {
       res = await this.searchService.getSearchResults(
@@ -183,7 +184,7 @@ export class DocumentService {
         this.fetchDataConfig.sortBy,
         queryModifiers,
         true,
-        null,
+        '',
         filters,
         ''
       ).toPromise();

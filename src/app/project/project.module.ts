@@ -34,6 +34,7 @@ import { FormsModule } from '@angular/forms';
 import { FeaturedDocumentsComponent } from './featured-documents/featured-documents.component';
 import { FeaturedDocumentsTableRowsComponent } from './featured-documents/featured-documents-table-rows/featured-documents-table-rows.component';
 import { ActivitiesListTableRowsComponent } from './project-activites/activities-list-table-rows/activities-list-table-rows.component';
+import { ApplicationComponent } from './application/application.component';
 
 @NgModule({
   imports: [
@@ -66,7 +67,8 @@ import { ActivitiesListTableRowsComponent } from './project-activites/activities
     DetailsSidebarComponent,
     FeaturedDocumentsComponent,
     FeaturedDocumentsTableRowsComponent,
-    ActivitiesListTableRowsComponent
+    ActivitiesListTableRowsComponent,
+    ApplicationComponent
   ],
   providers: [
     StorageService
@@ -77,7 +79,8 @@ import { ActivitiesListTableRowsComponent } from './project-activites/activities
     PinsTableRowsComponent,
     CommentsTableRowsComponent,
     ActivitiesListTableRowsComponent,
-    FeaturedDocumentsTableRowsComponent
+    FeaturedDocumentsTableRowsComponent,
+    ApplicationComponent
   ]
 })
 

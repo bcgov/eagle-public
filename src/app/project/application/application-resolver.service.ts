@@ -9,7 +9,7 @@ import { DocumentService } from 'app/services/document.service';
 import { TableTemplate } from 'app/shared/components/table-template-2/table-template';
 
 @Injectable()
-export class CertificatesResolver implements Resolve<void> {
+export class ApplicationResolver implements Resolve<void> {
   constructor(
     private documentService: DocumentService,
     private tableTemplateUtils: TableTemplate,
@@ -30,7 +30,7 @@ export class CertificatesResolver implements Resolve<void> {
         tableObject.sortBy,
         projId,
         {},
-        this.utils.createProjectTabModifiers(Constants.optionalProjectDocTabs.CERTIFICATE, list)
+        this.utils.createProjectTabModifiers(Constants.optionalProjectDocTabs.APPLICATION, list)
       );
     });
   }
