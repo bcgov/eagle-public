@@ -4,22 +4,13 @@
     </div>
 
     <section class="tab-section" *ngIf="!loadingLists && !loadingTableParams && !loadingtableData">
-        <section class="border-bottom mb-4 pt-0 pb-0">
-            <div class="mb-4">
-                <search-filter-template #explorePanel (searchEvent)='executeSearch($event)' [advancedFilters]="true"
-                    [showAdvancedFilters]="showAdvancedFilters" [searchOnFilterChange]="true" [filters]="filters"
-                    (resetControls)='tableData.sortBy.includes("score") ? tableData.sortBy = "-datePosted" : null'
-                    (toggleFiltersPanelEvent)="showAdvancedFilters = $event.showPanel"
-                    [searchHelpLinkArray]='["/search-help"]'>
-                </search-filter-template>
-            </div>
-            <div *ngIf="showAdvancedFilters" class="mb-3 underline">
-                <p class="text-muted">
-                    <small>
-                        {{constants.searchDisclaimer}}
-                    </small>
-                </p>
-            </div>
+        <section class="mb-4 pt-0 pb-0">
+            <search-filter-template #explorePanel (searchEvent)='executeSearch($event)' [advancedFilters]="true"
+                [showAdvancedFilters]="showAdvancedFilters" [searchOnFilterChange]="true" [filters]="filters"
+                (resetControls)='tableData.sortBy.includes("score") ? tableData.sortBy = "-datePosted" : null'
+                (toggleFiltersPanelEvent)="showAdvancedFilters = $event.showPanel"
+                [searchHelpLinkArray]='["/search-help"]'>
+            </search-filter-template>
         </section>
 
         <lib-table-template-2 *ngIf="tableData.totalListItems > 0" [data]="tableData"
