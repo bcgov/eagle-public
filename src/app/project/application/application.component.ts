@@ -16,11 +16,11 @@ import { Utils } from 'app/shared/utils/utils';
 import { ConfigService } from 'app/services/config.service';
 
 @Component({
-  selector: 'app-certificates',
-  templateUrl: './certificates.component.html',
-  styleUrls: ['./certificates.component.scss']
+  selector: 'app-application',
+  templateUrl: './application.component.html',
+  styleUrls: ['./application.component.scss']
 })
-export class CertificatesComponent implements OnInit, OnDestroy {
+export class ApplicationComponent implements OnInit, OnDestroy {
   public tableParams: TableParamsObject = new TableParamsObject();
   public currentProject;
   public loading: Boolean = true;
@@ -136,7 +136,7 @@ export class CertificatesComponent implements OnInit, OnDestroy {
     this.location.replaceState(
       this.router.serializeUrl(
         this.router.createUrlTree(
-          ['../certificate'],
+          ['../application'],
           {
             queryParams: params,
             relativeTo: this.route,
@@ -151,7 +151,7 @@ export class CertificatesComponent implements OnInit, OnDestroy {
       this.tableData.sortBy,
       this.currentProject._id,
       {},
-      this.utils.createProjectTabModifiers(Constants.optionalProjectDocTabs.CERTIFICATE, this.lists)
+      this.utils.createProjectTabModifiers(Constants.optionalProjectDocTabs.APPLICATION, this.lists)
     );
   }
 

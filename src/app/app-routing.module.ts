@@ -106,7 +106,7 @@ const routes: Routes = [
 @NgModule({
   imports: [RouterModule.forRoot(routes)],
   exports: [RouterModule],
-  providers: [NewsResolver, ProjectNotificationsResolver, ProjectNotificationResolver]
+  providers: [NewsResolver, ProjectNotificationsResolver, ProjectNotificationResolver, DocumentTableResolver]
 })
 
 export class AppRoutingModule { }

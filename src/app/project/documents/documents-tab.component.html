@@ -1,18 +1,23 @@
 <div class="tab-pane" role="tabpanel">
-    <div class="spinner-container" *ngIf="loading">
+    <div class="spinner-container" *ngIf="loadingLists || loadingTableParams || loadingtableData">
         <div class="spinner-new rotating"></div>
     </div>
-    <section class="tab-section" *ngIf="!loading">
-        <app-table-template [columns]="documentTableColumns"
-                            [data]="documentTableData"
-                            (onSelectedRow)='updateSelectedRow($event)'
-                            [showSearch]="true"
-                            (onSearch)='executeSearch($event)'
-                            [showAdvancedSearch]="true"
-                            [filters]="filters"
-                            [searchDisclaimer]="constants.searchDisclaimer">
-        </app-table-template>
-        <div *ngIf="documents.length === 0">
+
+    <section class="tab-section" *ngIf="!loadingLists && !loadingTableParams && !loadingtableData">
+        <section class="mb-4 pt-0 pb-0">
+            <search-filter-template #explorePanel (searchEvent)='executeSearch($event)' [advancedFilters]="true"
+                [showAdvancedFilters]="showAdvancedFilters" [searchOnFilterChange]="true" [filters]="filters"
+                (resetControls)='tableData.sortBy.includes("score") ? tableData.sortBy = "-datePosted" : null'
+                (toggleFiltersPanelEvent)="showAdvancedFilters = $event.showPanel"
+                [searchHelpLinkArray]='["/search-help"]'>
+            </search-filter-template>
+        </section>
+
+        <lib-table-template-2 *ngIf="tableData.totalListItems > 0" [data]="tableData"
+            (messageOut)="onMessageOut($event)">
+        </lib-table-template-2>
+
+        <div *ngIf="tableData.totalListItems === 0">
             No results found.
         </div>
     </section>

@@ -1,10 +1,11 @@
 import { ViewEncapsulation, ChangeDetectionStrategy, OnInit, OnDestroy, Component, Input, EventEmitter, Output, Inject, AfterViewInit } from '@angular/core';
 import { FilterObject, FilterType } from './filter-object';
-import { Router } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { SubsetsObject } from './subset-object';
 import { FormGroup, FormControl } from '@angular/forms';
 import { DOCUMENT } from '@angular/common';
 import { Utils } from 'app/shared/utils/utils';
+import { takeWhile } from 'rxjs/operators';
 
 /**
  * Common template component for NRPTI search filters. The default component will only include a keyword
@@ -46,6 +47,7 @@ export class SearchFilterTemplateComponent implements OnInit, AfterViewInit, OnD
   @Input() filterItemPanelSize = 4;
   @Input() filters: FilterObject[] = [];
   @Input() keywordOverride: '';
+  @Input() searchHelpLinkArray: null;
 
   // Outputs and Emitters
   // searchEvent fires whenever a search is executed. The host component is responsible
@@ -65,6 +67,7 @@ export class SearchFilterTemplateComponent implements OnInit, AfterViewInit, OnD
   public queryParams = {};
   public formGroup: FormGroup; // Helper formGroup for grabbing values from controls
 
+  private alive = true;
   /**
    * Creates an instance of SearchFilterTemplateComponent.
    * @param {Router} router Router used to detect URL params
@@ -72,7 +75,7 @@ export class SearchFilterTemplateComponent implements OnInit, AfterViewInit, OnD
    * @memberof SearchFilterTemplateComponent
    */
   constructor(
-    private router: Router,
+    private route: ActivatedRoute,
     public utils: Utils,
     @Inject(DOCUMENT) _document
   ) { }
@@ -85,33 +88,30 @@ export class SearchFilterTemplateComponent implements OnInit, AfterViewInit, OnD
     // ensure we parse through values from the URL and preselect anything
     // that needs pre-selecting
 
-    if (this.router && this.router.url) {
-      this.router.url.split(';').forEach(filterVal => {
-        if (filterVal.split('=').length === 2) {
-          const filterName = filterVal.split('=')[0];
-          const val = filterVal.split('=')[1];
+    this.route.queryParamMap.pipe(takeWhile(() => this.alive)).subscribe(data => {
+      const filterParams = { ...data['params'] };
+      delete filterParams.currentPage;
+      delete filterParams.pageSize;
+      delete filterParams.sortBy;
 
-          if (val) {
-
-            // we know how to handle keyword and subset, but everything
-            // else will be dynamic
-            if (filterName === 'keywords') {
-              this.keywordSearchWords = val;
-            } else if (filterName === 'subset') {
-              if (this.subsets) {
-                this.subsets.selectedSubset = this.subsets.options.find(subset => subset.subset === val) ||
-                  this.subsets.options[0];
-              }
-            } else {
-              // add all remaining kvp's onto the urlValues object.
-              // We can use these when building the form group to preset
-              // component values
-              urlValues[filterName] = val;
-            }
+      for (const key in filterParams) {
+        // we know how to handle keyword and subset, but everything
+        // else will be dynamic
+        if (key === 'keywords') {
+          this.keywordSearchWords = filterParams[key];
+        } else if (key === 'subset') {
+          if (this.subsets) {
+            this.subsets.selectedSubset = this.subsets.options.find(subset => subset.subset === filterParams[key]) ||
+              this.subsets.options[0];
           }
+        } else {
+          // add all remaining kvp's onto the urlValues object.
+          // We can use these when building the form group to preset
+          // component values
+          urlValues[key] = filterParams[key];
         }
-      });
-    }
+      }
+    });
 
     if (this.keywordOverride) {
       this.keywordSearchWords = this.keywordOverride;
@@ -272,7 +272,7 @@ export class SearchFilterTemplateComponent implements OnInit, AfterViewInit, OnD
             }
           });
         } else {
-          const groupedVals = [];
+          let groupedVals = [];
 
           filter.filterDefinition.options.forEach(option => {
             if (this.formGroup.get(option.id).value) {
@@ -284,13 +284,22 @@ export class SearchFilterTemplateComponent implements OnInit, AfterViewInit, OnD
             searchPackage.filters[filter.id] = groupedVals;
           }
         }
+      } else if (filter.type === FilterType.MultiSelect) {
+        let groupedVals = [];
+        if (filter.filterDefinition.selectedOptions.length > 0) {
+          filter.filterDefinition.selectedOptions.forEach(item => {
+            groupedVals.push(item._id);
+          });
+          searchPackage.filters[filter.id] = groupedVals;
+        } else {
+          delete searchPackage.filters[filter.id];
+        }
       } else {
         if (this.formGroup.get(filter.id).value) {
           searchPackage.filters[filter.id] = this.formGroup.get(filter.id).value;
         }
       }
     });
-
     // and return the package to the host component
     this.searchEvent.emit(searchPackage);
   }
@@ -317,7 +326,7 @@ export class SearchFilterTemplateComponent implements OnInit, AfterViewInit, OnD
     this.formGroup.reset();
     // clear multiSelects && date ranges
     for (const filter of this.filters.filter(f => f.type === FilterType.MultiSelect)) {
-      this.formGroup.get(filter.id).setValue(null);
+      filter.filterDefinition.selectedOptions = [];
     }
     // clear keywords
     this.keywordSearchWords = '';
@@ -368,5 +377,9 @@ export class SearchFilterTemplateComponent implements OnInit, AfterViewInit, OnD
       this.queryParams['keywords'] = this.keywordSearchWords;
       this.search();
     }
+  }
+
+  changeMultiSelect() {
+    this.search();
   }
 }
