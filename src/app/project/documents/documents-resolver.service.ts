@@ -30,26 +30,22 @@ export class DocumentsResolver implements Resolve<void> {
       (keywords = Constants.tableDefaults.DEFAULT_KEYWORDS);
 
     if (params.milestone) {
-      Array.isArray(
-        params.milestone) ?
+      Array.isArray(params.milestone) ?
         (this.filterForAPI['milestone'] = params.milestone.join()) :
         (this.filterForAPI['milestone'] = params.milestone);
     }
     if (params.documentAuthorType) {
-      Array.isArray(
-        params.documentAuthorType) ?
+      Array.isArray(params.documentAuthorType) ?
         (this.filterForAPI['documentAuthorType'] = params.documentAuthorType.join()) :
         (this.filterForAPI['documentAuthorType'] = params.documentAuthorType);
     }
     if (params.documentType) {
-      Array.isArray(
-        params.documentType) ?
+      Array.isArray(params.documentType) ?
         (this.filterForAPI['documentType'] = params.documentType.join()) :
         (this.filterForAPI['documentType'] = params.documentType);
     }
     if (params.projectPhase) {
-      Array.isArray(
-        params.projectPhase) ?
+      Array.isArray(params.projectPhase) ?
         (this.filterForAPI['projectPhase'] = params.projectPhase.join()) :
         (this.filterForAPI['projectPhase'] = params.projectPhase);
     }

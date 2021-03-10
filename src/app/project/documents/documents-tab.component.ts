@@ -319,21 +319,33 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
       params['keywords'] = null;
     }
     if (filtersForApi.milestone) {
+      if (typeof filtersForApi.milestone === 'string') {
+        filtersForApi.milestone = [filtersForApi.milestone]
+      }
       filtersForApi.milestone = filtersForApi.milestone.join();
     } else {
       params['milestone'] = null;
     }
     if (filtersForApi.documentAuthorType) {
+      if (typeof filtersForApi.documentAuthorType === 'string') {
+        filtersForApi.documentAuthorType = [filtersForApi.documentAuthorType]
+      }
       filtersForApi.documentAuthorType = filtersForApi.documentAuthorType.join();
     } else {
       params['documentAuthorType'] = null;
     }
     if (filtersForApi.type) {
+      if (typeof filtersForApi.type === 'string') {
+        filtersForApi.type = [filtersForApi.type]
+      }
       filtersForApi.type = filtersForApi.type.join();
     } else {
       params['type'] = null;
     }
     if (filtersForApi.projectPhase) {
+      if (typeof filtersForApi.projectPhase === 'string') {
+        filtersForApi.projectPhase = [filtersForApi.projectPhase]
+      }
       filtersForApi.projectPhase = filtersForApi.projectPhase.join();
     } else {
       params['projectPhase'] = null;

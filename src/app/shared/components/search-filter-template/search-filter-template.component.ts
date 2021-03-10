@@ -272,7 +272,7 @@ export class SearchFilterTemplateComponent implements OnInit, AfterViewInit, OnD
             }
           });
         } else {
-          const groupedVals = [];
+          let groupedVals = [];
 
           filter.filterDefinition.options.forEach(option => {
             if (this.formGroup.get(option.id).value) {
@@ -285,7 +285,7 @@ export class SearchFilterTemplateComponent implements OnInit, AfterViewInit, OnD
           }
         }
       } else if (filter.type === FilterType.MultiSelect) {
-        const groupedVals = [];
+        let groupedVals = [];
         if (filter.filterDefinition.selectedOptions.length > 0) {
           filter.filterDefinition.selectedOptions.forEach(item => {
             groupedVals.push(item._id);

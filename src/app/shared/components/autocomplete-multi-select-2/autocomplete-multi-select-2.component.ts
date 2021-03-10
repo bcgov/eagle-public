@@ -72,13 +72,9 @@ export class AutoCompleteMultiSelect2Component implements OnInit {
   // neither, then assume a string to string comparison
   public filterCompareWith(item: any, itemToCompare: any) {
     if (item.hasOwnProperty('code')) {
-      return item && itemToCompare
-        ? item.code === itemToCompare.code
-        : item === itemToCompare;
+      return item && itemToCompare ? item.code === itemToCompare.code : item === itemToCompare;
     } else if (item.hasOwnProperty('_id')) {
-      return item && itemToCompare
-        ? item._id === itemToCompare._id
-        : item === itemToCompare;
+      return item && itemToCompare ? item._id === itemToCompare._id : item === itemToCompare;
     } else {
       return item === itemToCompare;
     }
