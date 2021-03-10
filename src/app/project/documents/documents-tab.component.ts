@@ -131,7 +131,8 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
         this.queryParams['milestone'] ||
         this.queryParams['documentAuthorType'] ||
         this.queryParams['type'] ||
-        this.queryParams['datePostedEnd']
+        this.queryParams['datePostedEnd'] ||
+        this.queryParams['projectPhase']
       ) {
         this.showAdvancedFilters = true;
       }
