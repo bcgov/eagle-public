@@ -99,6 +99,7 @@ export class TableTemplate {
     delete params['items'];
     delete params['totalListItems'];
     delete params['pageSizeOptions'];
+    delete params['tableId'];
 
     return params;
   }
