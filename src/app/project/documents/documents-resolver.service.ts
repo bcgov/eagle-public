@@ -28,7 +28,6 @@ export class DocumentsResolver implements Resolve<void> {
     params.keywords ?
       (keywords = params.keywords) :
       (keywords = Constants.tableDefaults.DEFAULT_KEYWORDS);
-    console.log(params)
     if (params.milestone) {
       Array.isArray(params.milestone) ?
         (this.filterForAPI['milestone'] = params.milestone.join()) :
