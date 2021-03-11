@@ -7,7 +7,6 @@ import {
   SimpleChanges,
   OnChanges,
   Injector,
-  OnInit
 } from '@angular/core';
 
 import { TableObject2 } from './table-object-2';
@@ -18,15 +17,13 @@ import { ITableMessage } from './table-row-component';
   templateUrl: './table-template-2.component.html',
   styleUrls: ['./table-template-2.component.scss']
 })
-export class TableTemplate2Component implements OnInit, OnChanges, OnDestroy {
+export class TableTemplate2Component implements OnChanges, OnDestroy {
   @Input() data: TableObject2;
 
   @Input() messageIn: EventEmitter<ITableMessage> = new EventEmitter<ITableMessage>();
   @Output() messageOut: EventEmitter<ITableMessage> = new EventEmitter<ITableMessage>();
 
   constructor(public injector: Injector) { }
-
-  ngOnInit() {}
 
   ngOnChanges(changes: SimpleChanges) {
     // only run when property "data" changed
@@ -40,6 +37,17 @@ export class TableTemplate2Component implements OnInit, OnChanges, OnDestroy {
       this.data.pageSize = changes['data'].currentValue.pageSize;
       this.data.sortBy = changes['data'].currentValue.sortBy;
       this.data.totalListItems = changes['data'].currentValue.totalListItems;
+
+      this.setAllPicker();
+    }
+  }
+
+  private setAllPicker() {
+    if (this.data.options.showAllPicker) {
+      this.data.pageSizeOptions = this.data.pageSizeOptions.filter(obj => {
+        return obj.displayText !== 'Show All';
+      });
+      this.data.pageSizeOptions.push({ displayText: 'Show All', value: this.data.totalListItems });
     }
   }
 

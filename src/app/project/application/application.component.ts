@@ -52,7 +52,7 @@ export class ApplicationComponent implements OnInit, OnDestroy {
     },
     {
       name: 'Phase',
-      value: 'phase',
+      value: 'projectPhase',
       width: 'col-2'
     }
   ];
@@ -80,6 +80,10 @@ export class ApplicationComponent implements OnInit, OnDestroy {
     this.route.queryParamMap.pipe(takeWhile(() => this.alive)).subscribe(data => {
       // Get params from route, shove into the tableTemplateUtils so that we get a new dataset to work with.
       this.tableData = this.tableTemplateUtils.updateTableObjectWithUrlParams(data['params'], this.tableData);
+      if (!data['params'].sortBy) {
+        this.tableData.sortBy = '+sortOrder,-datePosted,+displayName';
+      }
+
       this._changeDetectionRef.detectChanges();
     });
 
@@ -89,6 +93,8 @@ export class ApplicationComponent implements OnInit, OnDestroy {
         return { rowData: record };
       });
       this.tableData.columns = this.tableColumns;
+      this.tableData.options.showAllPicker = true;
+
       this.loading = false;
       this._changeDetectionRef.detectChanges();
     });
@@ -126,6 +132,9 @@ export class ApplicationComponent implements OnInit, OnDestroy {
 
   onPageSizeUpdate(pageSize: IPageSizePickerOption) {
     this.tableData.pageSize = pageSize.value;
+    if (this.tableData.pageSize === this.tableData.totalListItems) {
+      this.loading = true;
+    }
     this.tableData.currentPage = 1;
     this.submit();
   }

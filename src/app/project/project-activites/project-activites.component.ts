@@ -74,8 +74,9 @@ export class ProjectActivitesComponent implements OnInit, OnDestroy {
       this.tableData.items = searchResults.data.map(record => {
         return { rowData: record };
       });
-
       this.tableData.columns = this.tableColumns;
+      this.tableData.options.showAllPicker = true;
+
       this.loading = false;
 
       this._changeDetectionRef.detectChanges();
@@ -114,6 +115,9 @@ export class ProjectActivitesComponent implements OnInit, OnDestroy {
 
   onPageSizeUpdate(pageSize: IPageSizePickerOption) {
     this.tableData.pageSize = pageSize.value;
+    if (this.tableData.pageSize === this.tableData.totalListItems) {
+      this.loading = true;
+    }
     this.tableData.currentPage = 1;
     this.submit();
   }

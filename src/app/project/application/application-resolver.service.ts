@@ -20,8 +20,11 @@ export class ApplicationResolver implements Resolve<void> {
   async resolve(route: ActivatedRouteSnapshot) {
     const params = route.queryParamMap['params'];
     const tableObject = this.tableTemplateUtils.updateTableObjectWithUrlParams(params, new TableObject2());
-    const projId = route.parent.paramMap.get('projId');
+    if (!params.sortBy) {
+      tableObject.sortBy = '+sortOrder,-datePosted,+displayName';
+    }
 
+    const projId = route.parent.paramMap.get('projId');
     await this.configService.lists.toPromise().then(async (list) => {
       await this.documentService.fetchData(
         '',
