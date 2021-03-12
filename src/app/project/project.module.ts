@@ -35,6 +35,7 @@ import { FeaturedDocumentsComponent } from './featured-documents/featured-docume
 import { FeaturedDocumentsTableRowsComponent } from './featured-documents/featured-documents-table-rows/featured-documents-table-rows.component';
 import { ActivitiesListTableRowsComponent } from './project-activites/activities-list-table-rows/activities-list-table-rows.component';
 import { ApplicationComponent } from './application/application.component';
+import { AmendmentsComponent } from './amendments/amendments.component';
 
 @NgModule({
   imports: [
@@ -68,7 +69,8 @@ import { ApplicationComponent } from './application/application.component';
     FeaturedDocumentsComponent,
     FeaturedDocumentsTableRowsComponent,
     ActivitiesListTableRowsComponent,
-    ApplicationComponent
+    ApplicationComponent,
+    AmendmentsComponent
   ],
   providers: [
     StorageService

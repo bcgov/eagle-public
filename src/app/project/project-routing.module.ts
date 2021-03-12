@@ -9,10 +9,10 @@ import { CommentsResolver } from 'app/comments/comments-resolver.service';
 import { DocumentsResolver } from './documents/documents-resolver.service';
 import { ProjectActivitiesResolver } from './project-activites/project-activities-resolver.service';
 import { CertificatesResolver } from './certificates/certificates-resolver.service';
-import { AmendmentsResolverService } from './certificates/amendments-resolver.service';
 import { PinsResolverService } from './pins/pins-resolver.service';
 import { FeaturedDocumentsResolverService } from './featured-documents/featured-documents-resolver.service';
 import { ApplicationResolver } from './application/application-resolver.service';
+import { AmendmentsResolver } from './amendments/amendments-resolver.service';
 
 const routes: Routes = [
   {
@@ -52,7 +52,7 @@ const routes: Routes = [
     CommentsResolver,
     DocumentsResolver,
     CertificatesResolver,
-    AmendmentsResolverService,
+    AmendmentsResolver,
     ProjectActivitiesResolver,
     PinsResolverService,
     ApplicationResolver,
