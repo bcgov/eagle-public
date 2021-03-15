@@ -63,7 +63,7 @@ const routes: Routes = [
     path: 'news',
     component: NewsListComponent,
     resolve: {
-      activities: NewsResolver
+      NewsResolver
     }
   },
   {

@@ -13,7 +13,7 @@ export class PageCountDisplayComponent implements OnChanges {
 
   message = '';
 
-  constructor() {}
+  constructor() { }
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes.firstChange) {
@@ -47,9 +47,9 @@ export class PageCountDisplayComponent implements OnChanges {
       // is 0, which may confuse users.  Tell them to press clear button which will reset the pagination url parameter.
       this.message = 'Unable to display results, please clear and re-try';
     } else {
-      const low = Math.max((this.currentPageNum - 1) * this.currentPageSize + 1, 1);
       const high = Math.min(this.totalItems, this.currentPageNum * this.currentPageSize);
-      this.message = `Showing ${low} - ${high} of ${this.totalItems} results`;
+      this.message = `Showing ${high} of ${this.totalItems} results`;
+
     }
   }
 }

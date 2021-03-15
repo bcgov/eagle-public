@@ -30,10 +30,11 @@ export class ProjectActivitiesResolver implements Resolve<void> {
 
     await this.activitiesService.fetchData(
       keywords,
+      [],
       tableObject.currentPage,
       tableObject.pageSize,
       tableObject.sortBy,
-      projId
+      { project: projId }
     );
   }
 }
