@@ -52,7 +52,7 @@ export class CertificatesComponent implements OnInit, OnDestroy {
     },
     {
       name: 'Phase',
-      value: 'phase',
+      value: 'projectPhase',
       width: 'col-2'
     }
   ];
@@ -89,6 +89,8 @@ export class CertificatesComponent implements OnInit, OnDestroy {
         return { rowData: record };
       });
       this.tableData.columns = this.tableColumns;
+      this.tableData.options.showAllPicker = true;
+
       this.loading = false;
       this._changeDetectionRef.detectChanges();
     });
@@ -116,6 +118,7 @@ export class CertificatesComponent implements OnInit, OnDestroy {
     } else {
       this.tableData.sortBy = '+' + column;
     }
+    this.tableData.currentPage = 1;
     this.submit();
   }
 
@@ -126,6 +129,9 @@ export class CertificatesComponent implements OnInit, OnDestroy {
 
   onPageSizeUpdate(pageSize: IPageSizePickerOption) {
     this.tableData.pageSize = pageSize.value;
+    if (this.tableData.pageSize === this.tableData.totalListItems) {
+      this.loading = true;
+    }
     this.tableData.currentPage = 1;
     this.submit();
   }
