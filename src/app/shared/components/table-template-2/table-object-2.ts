@@ -45,6 +45,8 @@ export interface ITableOptions {
    * @memberof ITableOptions
    */
   showPageCountDisplay?: boolean;
+
+  showAllPicker?: boolean;
 }
 
 /**
@@ -220,7 +222,7 @@ export class TableObject2 {
     this.items = (params && params.items) || [];
     this.dataset = (params && params.dataset) || Constants.tableDefaults.DEFAULT_DATASET;
     this.currentPage = (params && params.currentPage) || Constants.tableDefaults.DEFAULT_CURRENT_PAGE;
-    this.pageSizeOptions = (params && params.pageSizeOptions) || Constants.tableDefaults.DEFAULT_PAGE_SIZE_OPTIONS;
+    this.pageSizeOptions = (params && params.pageSizeOptions) || [...Constants.tableDefaults.DEFAULT_PAGE_SIZE_OPTIONS];
     this.pageSize = (params && params.pageSize) || Constants.tableDefaults.DEFAULT_PAGE_SIZE;
     this.sortBy = (params && params.sortBy) || Constants.tableDefaults.DEFAULT_SORT_BY;
     this.totalListItems = (params && params.totalListItems) || 0;

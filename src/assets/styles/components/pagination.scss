@@ -85,7 +85,8 @@ pagination-template {
 
 .ngx-pagination .current,
 .btn-info {
-    background: #003366 !important;
+    background: rgb(0, 123, 255) !important;
+    border-radius: 6px;
 }
 .ngx-pagination {
     margin-bottom: 0 !important;

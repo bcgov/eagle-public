@@ -67,7 +67,7 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
     },
     {
       name: 'Phase',
-      value: 'phase',
+      value: 'projectPhase',
       width: 'col-2'
     }
   ];
@@ -131,7 +131,8 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
         this.queryParams['milestone'] ||
         this.queryParams['documentAuthorType'] ||
         this.queryParams['type'] ||
-        this.queryParams['datePostedEnd']
+        this.queryParams['datePostedEnd'] ||
+        this.queryParams['projectPhase']
       ) {
         this.showAdvancedFilters = true;
       }
@@ -146,8 +147,9 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
         record['showFeatured'] = true;
         return { rowData: record };
       });
-
       this.tableData.columns = this.tableColumns;
+      this.tableData.options.showAllPicker = true;
+
       this.loadingtableData = false;
 
       this._changeDetectionRef.detectChanges();
@@ -289,6 +291,7 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
     } else {
       this.tableData.sortBy = '+' + column;
     }
+    this.tableData.currentPage = 1;
     this.submit();
   }
 
@@ -299,6 +302,9 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
 
   onPageSizeUpdate(pageSize: IPageSizePickerOption) {
     this.tableData.pageSize = pageSize.value;
+    if (this.tableData.pageSize === this.tableData.totalListItems) {
+      this.loadingtableData = true;
+    }
     this.tableData.currentPage = 1;
     this.submit();
   }

@@ -16,11 +16,11 @@ import { Utils } from 'app/shared/utils/utils';
 import { ConfigService } from 'app/services/config.service';
 
 @Component({
-  selector: 'app-application',
-  templateUrl: './application.component.html',
-  styleUrls: ['./application.component.scss']
+  selector: 'app-amendments',
+  templateUrl: './amendments.component.html',
+  styleUrls: ['./amendments.component.scss']
 })
-export class ApplicationComponent implements OnInit, OnDestroy {
+export class AmendmentsComponent implements OnInit, OnDestroy {
   public tableParams: TableParamsObject = new TableParamsObject();
   public currentProject;
   public loading: Boolean = true;
@@ -80,9 +80,6 @@ export class ApplicationComponent implements OnInit, OnDestroy {
     this.route.queryParamMap.pipe(takeWhile(() => this.alive)).subscribe(data => {
       // Get params from route, shove into the tableTemplateUtils so that we get a new dataset to work with.
       this.tableData = this.tableTemplateUtils.updateTableObjectWithUrlParams(data['params'], this.tableData);
-      if (!data['params'].sortBy) {
-        this.tableData.sortBy = '+sortOrder,-datePosted,+displayName';
-      }
 
       this._changeDetectionRef.detectChanges();
     });
@@ -145,7 +142,7 @@ export class ApplicationComponent implements OnInit, OnDestroy {
     this.location.replaceState(
       this.router.serializeUrl(
         this.router.createUrlTree(
-          ['../application'],
+          ['../amendments'],
           {
             queryParams: params,
             relativeTo: this.route,
@@ -160,7 +157,7 @@ export class ApplicationComponent implements OnInit, OnDestroy {
       this.tableData.sortBy,
       this.currentProject._id,
       {},
-      this.utils.createProjectTabModifiers(Constants.optionalProjectDocTabs.APPLICATION, this.lists)
+      this.utils.createProjectTabModifiers(Constants.optionalProjectDocTabs.AMENDMENT, this.lists)
     );
   }
 
