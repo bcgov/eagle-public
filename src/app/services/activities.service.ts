@@ -129,8 +129,6 @@ export class ActivitiesService {
         )
       );
     }
-    console.log(searchResults);
-
     this.setValue(searchResults);
   }
 }
