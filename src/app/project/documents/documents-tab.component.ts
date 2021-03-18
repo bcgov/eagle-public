@@ -315,7 +315,6 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
     delete this.queryParams.pageNumber;
     delete this.queryParams.pageSize;
 
-    // This allows us to have multiple tables tied to a single page.
     const params = { ...this.queryParams, ...this.tableTemplateUtils.getNavParamsObj(this.tableData) }
 
     const filtersForApi = { ... this.queryParams };

@@ -1,4 +1,5 @@
-<div class="spinner-container" *ngIf="loading">
+<div class="spinner-container"
+  *ngIf="loading">
   <div class="spinner-new rotating"></div>
 </div>
 
@@ -9,31 +10,20 @@
       <p>Use the list below to navigate to individual Projects. Click on any project to go
         directly to its details page.</p>
     </div>
-    <form #f="ngForm" class="search-form ui form" (ngSubmit)="onSubmit()">
-      <div class="input-group main-search-field pb-3">
-        <input class="form-control" type="text" name="keywordInput" placeholder="Enter keywords to search..."
-          id="keywordInput" [(ngModel)]="tableParams.keywords" autofocus />
-        <div class="input-group-append">
-          <!-- prevent searching if input is empty or we're already searching -->
-          <button class="btn btn-primary" type="submit">
-            <span>Search</span>
-          </button>
-        </div>
-      </div>
-      <br>
-    </form>
+    <search-filter-template #explorePanel
+      [keywordOverride]='queryParams.keywords'
+      (searchEvent)='executeSearch($event)'>
+    </search-filter-template>
   </div>
 
-  <section *ngIf="tableParams.totalListItems > 0" class="project-list table-container">
+  <section class="project-list table-container">
     <div class="container">
       <h1>Activities & Updates</h1>
       <br>
-      <app-table-template
-        [columns]="projectTableColumns"
-        [data]="projectTableData"
-        (onColumnSort)='setColumnSort($event)'
-        (onPageNumUpdate)='getPaginatedProjects($event)'>
-      </app-table-template>
+      <lib-table-template-2 *ngIf="tableData.totalListItems > 0"
+        [data]="tableData"
+        (messageOut)="onMessageOut($event)">
+      </lib-table-template-2>
     </div>
   </section>
 </main>
