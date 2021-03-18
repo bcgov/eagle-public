@@ -127,7 +127,7 @@ export class NewsListComponent implements OnInit, OnDestroy {
     this.location.replaceState(
       this.router.serializeUrl(
         this.router.createUrlTree(
-          ['news'],
+          ['/news'],
           {
             queryParams: params,
             relativeTo: this.route,
