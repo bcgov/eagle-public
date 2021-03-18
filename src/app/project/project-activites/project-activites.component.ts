@@ -10,6 +10,7 @@ import { ITableMessage } from 'app/shared/components/table-template-2/table-row-
 import { takeWhile } from 'rxjs/operators';
 import { ActivitiesService } from 'app/services/activities.service';
 import { StorageService } from 'app/services/storage.service';
+import { SearchParamObject } from 'app/services/search.service';
 
 @Component({
   selector: 'app-project-activites',
@@ -60,7 +61,7 @@ export class ProjectActivitesComponent implements OnInit, OnDestroy {
       // Get params from route, shove into the tableTemplateUtils so that we get a new dataset to work with.
       this.tableData = this.tableTemplateUtils.updateTableObjectWithUrlParams(data['params'], this.tableData, 'Activities');
 
-      if (this.tableData.sortBy === '-datePosted') {
+      if (!data['params'].sortBy) {
         this.tableData.sortBy = '-dateAdded';
       }
       this.keywordSearchWords = this.queryParams.keywordsActivities;
@@ -150,14 +151,16 @@ export class ProjectActivitesComponent implements OnInit, OnDestroy {
       )
     );
 
-    await this.activitiesService.fetchData(
+    await this.activitiesService.fetchData(new SearchParamObject(
       this.queryParams.keywordsActivities,
+      'RecentActivity',
       [],
       this.tableData.currentPage,
       this.tableData.pageSize,
       this.tableData.sortBy,
-      { project: this.currentProject._id }
-    );
+      { project: this.currentProject._id },
+      true
+    ));
   }
 
   executeSearch(searchPackage) {

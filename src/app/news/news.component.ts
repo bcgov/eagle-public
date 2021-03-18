@@ -9,6 +9,7 @@ import { IColumnObject, TableObject2 } from 'app/shared/components/table-templat
 import { ITableMessage } from 'app/shared/components/table-template-2/table-row-component';
 import { TableTemplate } from 'app/shared/components/table-template-2/table-template';
 import { takeWhile } from 'rxjs/operators';
+import { SearchParamObject } from 'app/services/search.service';
 
 
 @Component({
@@ -127,7 +128,7 @@ export class NewsListComponent implements OnInit, OnDestroy {
     this.location.replaceState(
       this.router.serializeUrl(
         this.router.createUrlTree(
-          ['news'],
+          ['/news'],
           {
             queryParams: params,
             relativeTo: this.route,
@@ -136,13 +137,16 @@ export class NewsListComponent implements OnInit, OnDestroy {
       )
     );
 
-    await this.activitiesService.fetchData(
+    await this.activitiesService.fetchData(new SearchParamObject(
       this.queryParams.keywords,
+      'RecentActivity',
       [],
       this.tableData.currentPage,
       this.tableData.pageSize,
-      this.tableData.sortBy
-    );
+      this.tableData.sortBy,
+      {},
+      true
+    ));
   }
 
   executeSearch(searchPackage) {
