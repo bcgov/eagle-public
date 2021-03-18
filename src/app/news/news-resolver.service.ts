@@ -1,31 +1,33 @@
 import { Injectable } from '@angular/core';
 import { Resolve, ActivatedRouteSnapshot } from '@angular/router';
-import { Observable } from 'rxjs/Observable';
-
-import { SearchService } from 'app/services/search.service';
-import { TableTemplateUtils } from 'app/shared/utils/table-template-utils';
+import { ActivitiesService } from 'app/services/activities.service';
+import { TableObject2 } from 'app/shared/components/table-template-2/table-object-2';
+import { TableTemplate } from 'app/shared/components/table-template-2/table-template';
+import { Constants } from 'app/shared/utils/constants';
 
 @Injectable()
-export class NewsResolver implements Resolve<Observable<object>> {
+export class NewsResolver implements Resolve<void> {
   constructor(
-    private searchService: SearchService,
-    private tableTemplateUtils: TableTemplateUtils
+    private activitiesService: ActivitiesService,
+    private tableTemplateUtils: TableTemplate
   ) { }
 
-  resolve(route: ActivatedRouteSnapshot): Observable<object> {
-    let tableParams = this.tableTemplateUtils.getParamsFromUrl(route.params);
-    if (tableParams.sortBy === '-datePosted') {
-      tableParams.sortBy = '-dateAdded';
+  async resolve(route: ActivatedRouteSnapshot) {
+    const params = route.queryParamMap['params'];
+    const tableObject = this.tableTemplateUtils.updateTableObjectWithUrlParams(params, new TableObject2(), 'Activities');
+
+    if (tableObject.sortBy === '-datePosted') {
+      tableObject.sortBy = '-dateAdded';
     }
-    return this.searchService.getSearchResults(
-      tableParams.keywords,
-      'RecentActivity',
+
+    await this.activitiesService.fetchData(
+      params.keywords ? params.keywords : Constants.tableDefaults.DEFAULT_KEYWORDS,
       [],
-      tableParams.currentPage,
-      tableParams.pageSize,
-      tableParams.sortBy,
+      tableObject.currentPage,
+      tableObject.pageSize,
+      tableObject.sortBy === '-datePosted' ? '-dateAdded' : tableObject.sortBy,
       {},
-      true,
-      tableParams.sortBy);
+      true
+    );
   }
 }

@@ -152,10 +152,11 @@ export class ProjectActivitesComponent implements OnInit, OnDestroy {
 
     await this.activitiesService.fetchData(
       this.queryParams.keywordsActivities,
+      [],
       this.tableData.currentPage,
       this.tableData.pageSize,
       this.tableData.sortBy,
-      this.currentProject._id
+      { project: this.currentProject._id }
     );
   }
 

@@ -20,10 +20,12 @@ export class ActivitiesService {
 
     this.fetchDataConfig = {
       keywords: Constants.tableDefaults.DEFAULT_KEYWORDS,
+      fields: [],
       currentPage: Constants.tableDefaults.DEFAULT_CURRENT_PAGE,
       pageSize: Constants.tableDefaults.DEFAULT_PAGE_SIZE,
       sortBy: Constants.tableDefaults.DEFAULT_SORT_BY,
-      projId: ''
+      queryModifier: {},
+      populate: true
     }
   }
 
@@ -38,28 +40,34 @@ export class ActivitiesService {
   async refreshData() {
     await this.fetchData(
       this.fetchDataConfig.keywords,
+      this.fetchDataConfig.fields,
       this.fetchDataConfig.currentPage,
       this.fetchDataConfig.pageSize,
       this.fetchDataConfig.sortBy,
-      this.fetchDataConfig.projId
+      this.fetchDataConfig.queryModifier,
+      this.fetchDataConfig.populate
     );
   }
 
   async fetchData(
     keywords: string = Constants.tableDefaults.DEFAULT_KEYWORDS,
+    fields = [],
     currentPage: number = Constants.tableDefaults.DEFAULT_CURRENT_PAGE,
     pageSize: number = Constants.tableDefaults.DEFAULT_PAGE_SIZE,
     sortBy: string = Constants.tableDefaults.DEFAULT_SORT_BY,
-    projId: string = ''
+    queryModifier = {},
+    populate: boolean = true
   ) {
 
     // Caching for later
     this.fetchDataConfig = {
       keywords: keywords,
+      fields: fields,
       currentPage: currentPage,
       pageSize: pageSize,
       sortBy: sortBy,
-      projId: projId
+      queryModifier: queryModifier,
+      populate: populate
     };
 
     let res = null;
@@ -67,12 +75,12 @@ export class ActivitiesService {
       res = await this.searchService.getSearchResults(
         this.fetchDataConfig.keywords,
         'RecentActivity',
-        [],
+        this.fetchDataConfig.fields,
         this.fetchDataConfig.currentPage,
         this.fetchDataConfig.pageSize,
         this.fetchDataConfig.sortBy,
-        this.fetchDataConfig.projId ? { project: this.fetchDataConfig.projId } : null,
-        true
+        this.fetchDataConfig.queryModifier,
+        this.fetchDataConfig.populate
       ).toPromise();
     } catch (error) {
       this.eventService.setError(
