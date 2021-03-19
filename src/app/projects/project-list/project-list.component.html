@@ -1,9 +1,9 @@
 <div class="spinner-container"
-    *ngIf="loading">
+    *ngIf="loadingLists || loadingTableParams || loadingTableData">
     <div class="spinner-new rotating"></div>
 </div>
 
-<main *ngIf="!loading">
+<main *ngIf="!loadingLists && !loadingTableParams && !loadingTableData">
     <div class="container">
         <div class="hero-banner__content">
             <h1>Environmental Assessments in British Columbia</h1>
@@ -23,7 +23,7 @@
 
     <section class="project-list table-container">
         <div class="container">
-            <section *ngIf="!loadingLists && !loadingTableParams && !loadingtableData"
+            <section *ngIf="!loadingLists && !loadingTableParams && !loadingTableData"
                 class="mb-4 pt-0 pb-0">
                 <search-filter-template #explorePanel
                     (searchEvent)='executeSearch($event)'

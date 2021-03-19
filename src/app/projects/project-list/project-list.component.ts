@@ -20,7 +20,7 @@ import { IPageSizePickerOption } from 'app/shared/components/page-size-picker/pa
 import { ITableMessage } from 'app/shared/components/table-template-2/table-row-component';
 import { ProjectService } from 'app/services/project.service';
 import { OrgService } from 'app/services/org.service';
-import { Observable } from 'rxjs';
+import { Org } from 'app/models/organization';
 
 @Component({
   selector: 'app-project-list',
@@ -71,7 +71,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
 
   public loadingLists = true;
   public loadingTableParams = true;
-  public loadingtableData = true;
+  public loadingTableData = true;
 
   public queryParams: Params;
   public tableData: TableObject2 = new TableObject2({ component: ProjectListTableRowsComponent });
@@ -93,15 +93,11 @@ export class ProjectListComponent implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit() {
+    this.orgService.getValue().pipe(takeWhile(() => this.alive)).subscribe((res: Org[]) => {
+      this.configService.lists.pipe(takeWhile(() => this.alive)).subscribe((list) => {
+        this.proponents = res;
 
-    const orgBehaviourSub = this.orgService.getBehaviourSubject();
-    Observable.forkJoin([orgBehaviourSub, this.configService.lists]).pipe(takeWhile(() => this.alive))
-      .subscribe((res) => {
-        // Org
-        this.proponents = res[0];
-
-        // List
-        this.lists = res[1];
+        this.lists = list;
         this.lists.forEach(item => {
           switch (item.type) {
             case 'eaDecisions':
@@ -119,7 +115,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
         this.loadingLists = false;
         this._changeDetectionRef.detectChanges();
       });
-    orgBehaviourSub.complete();
+    });
 
     this.route.queryParamMap.pipe(takeWhile(() => this.alive)).subscribe(data => {
       this.queryParams = { ...data['params'] };
@@ -143,7 +139,6 @@ export class ProjectListComponent implements OnInit, OnDestroy {
       ) {
         this.showAdvancedFilters = true;
       }
-
       this.loadingTableParams = false;
       this._changeDetectionRef.detectChanges();
     });
@@ -156,8 +151,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
       this.tableData.columns = this.tableColumns;
       this.tableData.options.showAllPicker = true;
 
-      this.loadingtableData = false;
-
+      this.loadingTableData = false;
       this._changeDetectionRef.detectChanges();
     });
   }
@@ -360,7 +354,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
   onPageSizeUpdate(pageSize: IPageSizePickerOption) {
     this.tableData.pageSize = pageSize.value;
     if (this.tableData.pageSize === this.tableData.totalListItems) {
-      this.loadingtableData = true;
+      this.loadingTableData = true;
     }
     this.tableData.currentPage = 1;
     this.submit();
