@@ -103,4 +103,35 @@ export class TableTemplate {
 
     return params;
   }
+
+  public getFiltersFromParams(params, filterLabels: Array<string>) {
+    let filterForAPI = {};
+    filterLabels.forEach(filterLabel => {
+      if (params[filterLabel]) {
+        Array.isArray(params[filterLabel]) ?
+          (filterForAPI[filterLabel] = params[filterLabel].join()) :
+          (filterForAPI[filterLabel] = params[filterLabel]);
+      }
+    });
+    return filterForAPI;
+  }
+  public getDateFiltersFromParams(params, filterLabels: Array<string>) {
+    let filterForAPI = {};
+    filterLabels.forEach(filterLabel => {
+      if (params[filterLabel]) {
+        filterForAPI[filterLabel] = params[filterLabel];
+      }
+    });
+    return filterForAPI;
+  }
+
+  // Parameters must be set to null if you want to remove them from url while using router merge.
+  removeFiltersForQueryMerge(params, filterNameList) {
+    let keys = Object.keys(params);
+    filterNameList.forEach(filterName => {
+      if (!keys.includes(filterName)) {
+        params[filterName] = null;
+      }
+    });
+  }
 }

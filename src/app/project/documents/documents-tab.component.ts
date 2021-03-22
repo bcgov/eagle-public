@@ -1,7 +1,6 @@
 import { Component, OnInit, ChangeDetectorRef, OnDestroy } from '@angular/core';
 import { Location } from '@angular/common';
 import { Router, ActivatedRoute, Params } from '@angular/router';
-import { Subject } from 'rxjs';
 import 'rxjs/add/operator/switchMap';
 import 'rxjs/add/operator/takeUntil';
 
@@ -21,6 +20,7 @@ import { DocumentService } from 'app/services/document.service';
 import { takeWhile } from 'rxjs/operators';
 import { DateFilterDefinition, FilterObject, FilterType, MultiSelectDefinition } from 'app/shared/components/search-filter-template/filter-object';
 import { ConfigService } from 'app/services/config.service';
+import { SearchParamObject } from 'app/services/search.service';
 
 @Component({
   selector: 'app-documents',
@@ -74,8 +74,6 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
 
   public currentProject;
 
-  private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
-
   public filters: FilterObject[] = [];
 
   private legislationFilterGroup = { name: 'legislation', labelPrefix: null, labelPostfix: ' Act Terms' };
@@ -89,6 +87,8 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
   private documentTypeArray = [];
   private projectPhaseArray = [];
   public showAdvancedFilters = false;
+  private filtersList = ['milestone', 'documentAuthorType', 'type', 'projectPhase'];
+  private dateFiltersList = ['datePostedStart', 'datePostedEnd'];
 
   constructor(
     private _changeDetectionRef: ChangeDetectorRef,
@@ -131,6 +131,7 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
         this.queryParams['milestone'] ||
         this.queryParams['documentAuthorType'] ||
         this.queryParams['type'] ||
+        this.queryParams['datePostedStart'] ||
         this.queryParams['datePostedEnd'] ||
         this.queryParams['projectPhase']
       ) {
@@ -235,7 +236,7 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
   }
 
   executeSearch(searchPackage) {
-    this.clearQueryParamsFilters();
+    this.clearQueryParamsFilters(this.queryParams);
 
     // check keyword
     if (searchPackage.keywords) {
@@ -259,14 +260,14 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
     this.submit();
   }
 
-  private clearQueryParamsFilters() {
-    delete this.queryParams['keywords'];
-    delete this.queryParams['datePostedStart'];
-    delete this.queryParams['datePostedEnd'];
-    delete this.queryParams['milestone'];
-    delete this.queryParams['documentAuthorType'];
-    delete this.queryParams['type'];
-    delete this.queryParams['projectPhase'];
+  private clearQueryParamsFilters(params) {
+    delete params['keywords'];
+    delete params['datePostedStart'];
+    delete params['datePostedEnd'];
+    delete params['milestone'];
+    delete params['documentAuthorType'];
+    delete params['type'];
+    delete params['projectPhase'];
   }
 
   onMessageOut(msg: ITableMessage) {
@@ -323,72 +324,49 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
     if (!params['keywords']) {
       params['keywords'] = null;
     }
-    if (filtersForApi.milestone) {
-      if (typeof filtersForApi.milestone === 'string') {
-        filtersForApi.milestone = [filtersForApi.milestone]
-      }
-      filtersForApi.milestone = filtersForApi.milestone.join();
-    } else {
-      params['milestone'] = null;
-    }
-    if (filtersForApi.documentAuthorType) {
-      if (typeof filtersForApi.documentAuthorType === 'string') {
-        filtersForApi.documentAuthorType = [filtersForApi.documentAuthorType]
-      }
-      filtersForApi.documentAuthorType = filtersForApi.documentAuthorType.join();
-    } else {
-      params['documentAuthorType'] = null;
-    }
-    if (filtersForApi.type) {
-      if (typeof filtersForApi.type === 'string') {
-        filtersForApi.type = [filtersForApi.type]
-      }
-      filtersForApi.type = filtersForApi.type.join();
-    } else {
-      params['type'] = null;
-    }
-    if (filtersForApi.projectPhase) {
-      if (typeof filtersForApi.projectPhase === 'string') {
-        filtersForApi.projectPhase = [filtersForApi.projectPhase]
-      }
-      filtersForApi.projectPhase = filtersForApi.projectPhase.join();
-    } else {
-      params['projectPhase'] = null;
-    }
-    if (!this.queryParams['datePostedStart']) {
-      params['datePostedStart'] = null
-    }
-    if (!this.queryParams['datePostedEnd']) {
-      params['datePostedEnd'] = null
-    }
+
+    this.clearQueryParamsFilters(params);
+
+    const filtersForAPI = this.tableTemplateUtils.getFiltersFromParams(
+      this.queryParams,
+      this.filtersList
+    );
+
+    const dateFiltersForAPI = this.tableTemplateUtils.getDateFiltersFromParams(
+      this.queryParams,
+      this.dateFiltersList
+    );
+
+    let paramsForMerge = { ...params, ...filtersForAPI, ...dateFiltersForAPI };
+    this.tableTemplateUtils.removeFiltersForQueryMerge(paramsForMerge, this.filtersList.concat(this.dateFiltersList));
 
     this.location.replaceState(
       this.router.serializeUrl(
         this.router.createUrlTree(
           ['../documents'],
           {
-            queryParams: params,
+            queryParams: paramsForMerge,
             relativeTo: this.route,
             queryParamsHandling: 'merge',
           })
       )
     );
 
-    await this.documentService.fetchData(
+    await this.documentService.fetchData(new SearchParamObject(
       this.queryParams.keywords,
+      'Document',
+      [{ 'name': 'project', 'value': this.currentProject._id }],
       this.tableData.currentPage,
       this.tableData.pageSize,
       this.tableData.sortBy,
-      this.currentProject._id,
-      filtersForApi,
-      { documentSource: 'PROJECT' }
-    );
+      { documentSource: 'PROJECT' },
+      true,
+      '',
+      { ...filtersForAPI, ...dateFiltersForAPI }
+    ));
   }
 
   ngOnDestroy() {
-    this.ngUnsubscribe.next();
-    this.ngUnsubscribe.complete();
-
     this.alive = false;
   }
 }

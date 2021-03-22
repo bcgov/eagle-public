@@ -1,9 +1,9 @@
 <div class="spinner-container"
-    *ngIf="loading">
+    *ngIf="loadingLists || loadingTableParams || loadingTableData">
     <div class="spinner-new rotating"></div>
 </div>
 
-<main *ngIf="!loading">
+<main *ngIf="!loadingLists && !loadingTableParams && !loadingTableData">
     <div class="container">
         <div class="hero-banner__content">
             <h1>Environmental Assessments in British Columbia</h1>
@@ -23,14 +23,23 @@
 
     <section class="project-list table-container">
         <div class="container">
-            <app-table-template [columns]="projectTableColumns"
-                [data]="projectTableData"
-                [showSearch]="true"
-                (onSearch)='executeSearch($event)'
-                [showAdvancedSearch]="true"
-                [filters]="filters"
-                [persistenceId]="'globalProjSearch'">
-            </app-table-template>
+            <section *ngIf="!loadingLists && !loadingTableParams && !loadingTableData"
+                class="mb-4 pt-0 pb-0">
+                <search-filter-template #explorePanel
+                    (searchEvent)='executeSearch($event)'
+                    [advancedFilters]="true"
+                    [showAdvancedFilters]="showAdvancedFilters"
+                    [searchOnFilterChange]="true"
+                    [filters]="filters"
+                    (resetControls)='tableData.sortBy.includes("score") ? tableData.sortBy = "-datePosted" : null'
+                    (toggleFiltersPanelEvent)="showAdvancedFilters = $event.showPanel"
+                    [searchHelpLinkArray]='["/search-help"]'>
+                </search-filter-template>
+            </section>
+            <lib-table-template-2 *ngIf="tableData.totalListItems > 0"
+                [data]="tableData"
+                (messageOut)="onMessageOut($event)">
+            </lib-table-template-2>
         </div>
     </section>
 </main>

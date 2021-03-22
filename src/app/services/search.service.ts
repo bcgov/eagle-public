@@ -7,6 +7,8 @@ import * as _ from 'lodash';
 import { ApiService } from './api';
 import { SearchResults } from 'app/models/search';
 import { News } from 'app/models/news';
+import { Constants } from 'app/shared/utils/constants';
+import { EventKeywords, EventObject, EventService } from './event.service';
 
 @Injectable()
 export class SearchService {
@@ -15,6 +17,7 @@ export class SearchService {
 
   constructor(
     private api: ApiService,
+    private eventService: EventService
   ) { }
 
   getItem(_id: string, schema: string): Observable<any> {
@@ -77,4 +80,88 @@ export class SearchService {
       });
     return searchResults;
   }
+
+  async fetchData(searchParamObject: SearchParamObject) {
+    let res = null;
+    try {
+      res = await this.getSearchResults(
+        searchParamObject.keywords,
+        searchParamObject.dataset,
+        searchParamObject.fields,
+        searchParamObject.currentPage,
+        searchParamObject.pageSize,
+        searchParamObject.sortBy,
+        searchParamObject.queryModifiers,
+        searchParamObject.populate,
+        searchParamObject.secondarySort,
+        searchParamObject.filters,
+        searchParamObject.projectLegislation,
+        searchParamObject.fuzzy
+      ).toPromise();
+    } catch (error) {
+      this.eventService.setError(
+        new EventObject(
+          EventKeywords.ERROR,
+          error,
+          searchParamObject.dataset + ' Service'
+        )
+      );
+    }
+
+    // tslint:disable-next-line: prefer-const
+    let searchResults = new SearchResults();
+
+    if (res && res[0] && res[0].data) {
+      if (res[0].data.searchResults) {
+        searchResults.data = res[0].data.searchResults;
+      } else {
+        this.eventService.setError(
+          new EventObject(
+            EventKeywords.ERROR,
+            'Search results were empty.',
+            searchParamObject.dataset + ' Service'
+          )
+        );
+      }
+      if (res[0].data.meta[0] && res[0].data.meta[0].searchResultsTotal) {
+        searchResults.totalSearchCount = res[0].data.meta[0].searchResultsTotal;
+      } else if (res[0].data.meta.lenght === 0) {
+        searchResults.totalSearchCount = 0
+      } else {
+        this.eventService.setError(
+          new EventObject(
+            EventKeywords.ERROR,
+            'Total search results count was not returned.',
+            searchParamObject.dataset + ' Service'
+          )
+        );
+      }
+    } else {
+      this.eventService.setError(
+        new EventObject(
+          EventKeywords.ERROR,
+          'No data was returned from the server.',
+          searchParamObject.dataset + ' Service'
+        )
+      );
+    }
+    return searchResults;
+  }
+}
+
+export class SearchParamObject {
+  constructor(
+    public keywords: string = Constants.tableDefaults.DEFAULT_KEYWORDS,
+    public dataset: string = '',
+    public fields = [],
+    public currentPage: number = Constants.tableDefaults.DEFAULT_CURRENT_PAGE,
+    public pageSize: number = Constants.tableDefaults.DEFAULT_PAGE_SIZE,
+    public sortBy: string = Constants.tableDefaults.DEFAULT_SORT_BY,
+    public queryModifiers = {},
+    public populate: boolean = false,
+    public secondarySort: string = '',
+    public filters = {},
+    public projectLegislation: string = '',
+    public fuzzy: boolean = false
+  ) { }
 }

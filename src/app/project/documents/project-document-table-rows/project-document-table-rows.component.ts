@@ -46,7 +46,7 @@ export class DocumentTableRowsComponent extends TableRowComponent implements OnI
   }
 
   goToItem(item) {
-    let filename = item.documentFileName;
+    let filename = item.documentFileName || item.displayName || item.internalOriginalName;
     let safeName = filename;
     try {
       safeName = this.utils.encodeString(filename, true)

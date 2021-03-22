@@ -54,6 +54,8 @@ export class AutoCompleteMultiSelect2Component implements OnInit {
         this.filter.filterDefinition.options.forEach(option => {
           if (controlValues.includes(option._id)) {
             selectedOptionObjects.push(option);
+          } else if (controlValues.includes(option.code)) {
+            selectedOptionObjects.push(option);
           }
         });
         this.filter.filterDefinition.selectedOptions = selectedOptionObjects;
@@ -63,8 +65,8 @@ export class AutoCompleteMultiSelect2Component implements OnInit {
     }
   }
 
-  onChange(event) {
-    this.changeEvent.emit(event);
+  onChange() {
+    this.changeEvent.emit();
   }
 
   // comparator for filters. We use objects in Constants, or list objects from

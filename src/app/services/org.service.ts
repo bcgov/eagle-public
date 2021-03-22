@@ -3,11 +3,14 @@ import { Observable } from 'rxjs/Observable';
 
 import { ApiService } from './api';
 import { Org } from 'app/models/organization';
+import { BehaviorSubject } from 'rxjs';
 
 @Injectable()
 export class OrgService {
-
-  constructor(private api: ApiService) { }
+  private data: BehaviorSubject<Org[]>;
+  constructor(private api: ApiService) {
+    this.data = new BehaviorSubject<Org[]>([]);
+  }
 
   getByCompanyType(type: string): Observable<Org[]> {
     return this.api.getOrgsByCompanyType(type)
@@ -21,5 +24,18 @@ export class OrgService {
         }
       })
       .catch(this.api.handleError);
+  }
+
+  setValue(value): void {
+    this.data.next(value);
+  }
+
+  getValue(): Observable<Org[]> {
+    return this.data.asObservable();
+  }
+
+  async fetchProponent() {
+    const res = await this.getByCompanyType('Proponent/Certificate Holder').toPromise();
+    this.setValue(res);
   }
 }
