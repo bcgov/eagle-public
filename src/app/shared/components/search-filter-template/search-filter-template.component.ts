@@ -188,7 +188,6 @@ export class SearchFilterTemplateComponent implements OnInit, AfterViewInit, OnD
         }
       } else if (filter.type === FilterType.MultiSelect) {
         groupControls[filter.id] = new FormControl();
-
         if (defaultFormValues[filter.id]) {
           groupControls[filter.id].setValue(decodeURIComponent(defaultFormValues[filter.id]));
         }
@@ -288,7 +287,11 @@ export class SearchFilterTemplateComponent implements OnInit, AfterViewInit, OnD
         let groupedVals = [];
         if (filter.filterDefinition.selectedOptions.length > 0) {
           filter.filterDefinition.selectedOptions.forEach(item => {
-            groupedVals.push(item._id);
+            if (item._id) {
+              groupedVals.push(item._id);
+            } else {
+              groupedVals.push(item.code);
+            }
           });
           searchPackage.filters[filter.id] = groupedVals;
         } else {

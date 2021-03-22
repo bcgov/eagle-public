@@ -14,6 +14,7 @@ import { ITableMessage } from 'app/shared/components/table-template-2/table-row-
 import { Constants } from 'app/shared/utils/constants';
 import { Utils } from 'app/shared/utils/utils';
 import { ConfigService } from 'app/services/config.service';
+import { SearchParamObject } from 'app/services/search.service';
 
 @Component({
   selector: 'app-certificates',
@@ -151,15 +152,15 @@ export class CertificatesComponent implements OnInit, OnDestroy {
           })
       )
     );
-    await this.documentService.fetchData(
+    await this.documentService.fetchData(new SearchParamObject(
       '',
+      'Document',
+      [{ 'name': 'project', 'value': this.currentProject._id }],
       this.tableData.currentPage,
       this.tableData.pageSize,
       this.tableData.sortBy,
-      this.currentProject._id,
-      {},
       this.utils.createProjectTabModifiers(Constants.optionalProjectDocTabs.CERTIFICATE, this.lists)
-    );
+    ));
   }
 
   ngOnDestroy() {

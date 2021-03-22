@@ -2,7 +2,7 @@
   <div class="spinner-new rotating"></div>
 </div>
 
-<div *ngIf="tableData.totalListItems > 0">
+<div *ngIf="!loading && tableData.totalListItems > 0">
   <div class="row">
     <div class="col-12">
       <h2>Featured Documents</h2>

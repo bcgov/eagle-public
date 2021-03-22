@@ -4,8 +4,8 @@ import { Location } from '@angular/common';
 import { SearchResults } from 'app/models/search';
 import { IColumnObject, TableObject2 } from 'app/shared/components/table-template-2/table-object-2';
 import { takeWhile } from 'rxjs/operators';
-import { FeaturedDocumentsTableRowsComponent } from './featured-documents-table-rows/featured-documents-table-rows.component';
-import { FeaturedDocumentsService } from 'app/services/featured-documents.service';
+import { DocumentTableRowsComponent } from '../documents/project-document-table-rows/project-document-table-rows.component';
+import { DocumentService } from 'app/services/document.service';
 
 @Component({
   selector: 'app-featured-documents',
@@ -16,7 +16,7 @@ export class FeaturedDocumentsComponent implements OnInit, OnDestroy {
   public loading = true;
   private alive = true;
 
-  public tableData: TableObject2 = new TableObject2({ component: FeaturedDocumentsTableRowsComponent });
+  public tableData: TableObject2 = new TableObject2({ component: DocumentTableRowsComponent });
   public tableColumns: IColumnObject[] = [
     {
       name: '★',
@@ -50,7 +50,7 @@ export class FeaturedDocumentsComponent implements OnInit, OnDestroy {
     },
     {
       name: 'Phase',
-      value: 'phase',
+      value: 'projectPhase',
       width: 'col-2',
       nosort: true
     }
@@ -58,7 +58,7 @@ export class FeaturedDocumentsComponent implements OnInit, OnDestroy {
 
   constructor(
     public location: Location,
-    private featuredDocumentsService: FeaturedDocumentsService,
+    private documentService: DocumentService,
     private _changeDetectionRef: ChangeDetectorRef) { }
 
   ngOnInit() {
@@ -72,10 +72,10 @@ export class FeaturedDocumentsComponent implements OnInit, OnDestroy {
     this.tableData.pageSize = 5;
     this.tableData.sortBy = '-datePosted';
 
-    this.featuredDocumentsService.getValue().pipe(takeWhile(() => this.alive)).subscribe((searchResults: SearchResults) => {
-
+    this.documentService.getValue().pipe(takeWhile(() => this.alive)).subscribe((searchResults: SearchResults) => {
       this.tableData.totalListItems = searchResults.totalSearchCount;
       this.tableData.items = searchResults.data.map(record => {
+        record['showFeatured'] = true;
         return { rowData: record };
       });
 

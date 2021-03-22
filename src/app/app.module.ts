@@ -48,7 +48,6 @@ import { ProjectNotificationsListComponent } from './project-notifications/proje
 import { SearchResolver } from './search/search-resolver.service';
 import { DocSearchTableRowsComponent } from './search/search-documents-table-rows/search-document-table-rows.component';
 import { PinsService } from 'app/services/pins.service';
-import { FeaturedDocumentsService } from './services/featured-documents.service';
 
 
 @NgModule({
@@ -105,8 +104,7 @@ import { FeaturedDocumentsService } from './services/featured-documents.service'
     OrgService,
     FeatureService,
     PinsService,
-    SearchResolver,
-    FeaturedDocumentsService
+    SearchResolver
   ],
   bootstrap: [
     AppComponent
