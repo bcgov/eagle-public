@@ -84,7 +84,7 @@ export class SearchService {
   async fetchData(searchParamObject: SearchParamObject) {
     let res = null;
 
-    for (var filter in searchParamObject.filters) {
+    for (let filter in searchParamObject.filters) {
       if (searchParamObject.filters[filter] === null || searchParamObject.filters[filter] === undefined) {
         delete searchParamObject.filters[filter];
       }
