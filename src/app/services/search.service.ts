@@ -83,6 +83,13 @@ export class SearchService {
 
   async fetchData(searchParamObject: SearchParamObject) {
     let res = null;
+
+    for (var filter in searchParamObject.filters) {
+      if (searchParamObject.filters[filter] === null || searchParamObject.filters[filter] === undefined) {
+        delete searchParamObject.filters[filter];
+      }
+    }
+
     try {
       res = await this.getSearchResults(
         searchParamObject.keywords,

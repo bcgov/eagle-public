@@ -1,6 +1,5 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
-import { Router, ActivatedRoute, Params } from '@angular/router';
-import { Location } from '@angular/common';
+import { Router, ActivatedRoute, Params, NavigationEnd } from '@angular/router';
 import 'rxjs/add/operator/takeUntil';
 
 import * as _ from 'lodash';
@@ -11,16 +10,15 @@ import { Constants } from 'app/shared/utils/constants';
 import { DateFilterDefinition, FilterObject, FilterType, MultiSelectDefinition } from 'app/shared/components/search-filter-template/filter-object';
 import { ProjectListTableRowsComponent } from './project-list-table-rows/project-list-table-rows.component';
 
-import { SearchParamObject } from 'app/services/search.service';
 import { ConfigService } from 'app/services/config.service';
 import { IColumnObject, TableObject2 } from 'app/shared/components/table-template-2/table-object-2';
 import { takeWhile } from 'rxjs/operators';
 import { TableTemplate } from 'app/shared/components/table-template-2/table-template';
-import { IPageSizePickerOption } from 'app/shared/components/page-size-picker/page-size-picker.component';
 import { ITableMessage } from 'app/shared/components/table-template-2/table-row-component';
 import { ProjectService } from 'app/services/project.service';
 import { OrgService } from 'app/services/org.service';
 import { Org } from 'app/models/organization';
+import { StorageService } from 'app/services/storage.service';
 
 @Component({
   selector: 'app-project-list',
@@ -88,11 +86,22 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     private projectService: ProjectService,
     private orgService: OrgService,
     private configService: ConfigService,
-    private location: Location,
+    private storageService: StorageService,
     private _changeDetectionRef: ChangeDetectorRef
   ) { }
 
   ngOnInit() {
+    this.router.events.pipe(takeWhile(() => this.alive)).subscribe((evt) => {
+      if (!(evt instanceof NavigationEnd)) {
+        return;
+      }
+      const x = this.storageService.state.scrollPosition.data[0] ? this.storageService.state.scrollPosition.data[0] : 0;
+      const y = this.storageService.state.scrollPosition.data[1] ? this.storageService.state.scrollPosition.data[1] : 0;
+      if (x !== 0 || y !== 0) {
+        window.scrollTo(x, y);
+      }
+    });
+
     this.orgService.getValue().pipe(takeWhile(() => this.alive)).subscribe((res: Org[]) => {
       this.configService.lists.pipe(takeWhile(() => this.alive)).subscribe((list) => {
         this.proponents = res;
@@ -280,140 +289,74 @@ export class ProjectListComponent implements OnInit, OnDestroy {
   }
 
   executeSearch(searchPackage) {
-    this.clearQueryParamsFilters(this.queryParams);
-
-    // check keyword
+    let params = {};
     if (searchPackage.keywords) {
-      this.queryParams['keywords'] = searchPackage.keywords;
+      params['keywords'] = searchPackage.keywords;
+      this.projectService.fetchDataConfig.keywords = params['keywords'];
       // always change sortBy to '-score' if keyword search is directly triggered by user
       if (searchPackage.keywordsChanged) {
-        this.tableData.sortBy = '-score';
+        params['sortBy'] = '-score';
+        this.projectService.fetchDataConfig.sortBy = params['sortBy'];
       }
     } else {
-      if (this.tableData.sortBy === '-score') {
-        this.tableData.sortBy = '+name';
-      }
+      params['keywords'] = null;
+      params['sortBy'] = '+name';
+      this.projectService.fetchDataConfig.keywords = '';
+      this.projectService.fetchDataConfig.sortBy = params['sortBy'];
     }
 
-    // check subset
-    if (searchPackage.subset) {
-      this.queryParams['subset'] = [searchPackage.subset];
-    }
-    Object.keys(searchPackage.filters).forEach(filter => {
-      this.queryParams[filter] = searchPackage.filters[filter];
-    });
+    params['currentPage'] = 1;
+    this.projectService.fetchDataConfig.currentPage = params['currentPage'];
 
-    this.tableData.currentPage = 1;
-    this.submit();
-  }
+    let queryFilters = this.tableTemplateUtils.getFiltersFromSearchPackage(searchPackage, this.filtersList, this.dateFiltersList);
+    this.projectService.fetchDataConfig.filters = queryFilters;
 
-  private clearQueryParamsFilters(params) {
-    delete params['keywords'];
-    delete params['type'];
-    delete params['eacDecision'];
-    delete params['decisionDateStart'];
-    delete params['decisionDateEnd'];
-    delete params['pcp'];
-    delete params['proponent'];
-    delete params['region'];
-    delete params['CEAAInvolvement'];
-    delete params['currentPhaseName'];
+    this.storageService.state.scrollPosition = { type: 'scrollPosition', data: [0, 0] };
+
+    this.submit(params, queryFilters);
   }
 
   onMessageOut(msg: ITableMessage) {
+    let params = {};
     switch (msg.label) {
       case 'columnSort':
-        this.setColumnSort(msg.data);
+        if (this.tableData.sortBy.charAt(0) === '+') {
+          params['sortBy'] = '-' + msg.data;
+        } else {
+          params['sortBy'] = '+' + msg.data;
+        }
+        this.projectService.fetchDataConfig.sortBy = params['sortBy'];
         break;
       case 'pageNum':
-        this.onPageNumUpdate(msg.data);
+        params['currentPage'] = msg.data;
+        this.projectService.fetchDataConfig.currentPage = params['currentPage'];
         break;
       case 'pageSize':
-        this.onPageSizeUpdate(msg.data);
+        params['pageSize'] = msg.data.value;
+        if (params['pageSize'] === this.tableData.totalListItems) {
+          this.loadingTableData = true;
+        }
+        params['currentPage'] = 1;
+        this.projectService.fetchDataConfig.pageSize = params['pageSize'];
+        this.projectService.fetchDataConfig.currentPage = params['currentPage'];
+
         break;
       default:
         break;
     }
+    this.submit(params);
   }
 
-  setColumnSort(column) {
-    if (this.tableData.sortBy.charAt(0) === '+') {
-      this.tableData.sortBy = '-' + column;
-    } else {
-      this.tableData.sortBy = '+' + column;
-    }
-    this.tableData.currentPage = 1;
-    this.submit();
-  }
-
-  onPageNumUpdate(pageNumber) {
-    this.tableData.currentPage = pageNumber;
-    this.submit();
-  }
-
-  onPageSizeUpdate(pageSize: IPageSizePickerOption) {
-    this.tableData.pageSize = pageSize.value;
-    if (this.tableData.pageSize === this.tableData.totalListItems) {
-      this.loadingTableData = true;
-    }
-    this.tableData.currentPage = 1;
-    this.submit();
-  }
-
-  async submit() {
-    delete this.queryParams.sortBy;
-    delete this.queryParams.currentPage;
-    delete this.queryParams.pageNumber;
-    delete this.queryParams.pageSize;
-
-    const params = { ...this.queryParams, ...this.tableTemplateUtils.getNavParamsObj(this.tableData) };
-
-    const filtersForApi = { ... this.queryParams };
-    delete filtersForApi['keywords'];
-
-    if (!params['keywords']) {
-      params['keywords'] = null;
-    }
-
-    this.clearQueryParamsFilters(params);
-
-    const filtersForAPI = this.tableTemplateUtils.getFiltersFromParams(
-      this.queryParams,
-      this.filtersList
-    );
-
-    const dateFiltersForAPI = this.tableTemplateUtils.getDateFiltersFromParams(
-      this.queryParams,
-      this.dateFiltersList
-    );
-
-    let paramsForMerge = { ...params, ...filtersForAPI, ...dateFiltersForAPI };
-    this.tableTemplateUtils.removeFiltersForQueryMerge(paramsForMerge, this.filtersList.concat(this.dateFiltersList));
-
-    this.location.replaceState(
-      this.router.serializeUrl(
-        this.router.createUrlTree(
-          ['projects-list'],
-          {
-            queryParams: paramsForMerge,
-            queryParamsHandling: 'merge'
-          })
-      )
-    );
-    await this.projectService.fetchData(new SearchParamObject(
-      this.queryParams.keywords,
-      'Project',
+  submit(params, filters = null) {
+    this.storageService.state.scrollPosition = { type: 'scrollPosition', data: [window.scrollX, window.scrollY] };
+    this.router.navigate(
       [],
-      this.tableData.currentPage,
-      this.tableData.pageSize,
-      this.tableData.sortBy,
-      {},
-      true,
-      null,
-      { ...filtersForAPI, ...dateFiltersForAPI },
-      '',
-      true
-    ));
+      {
+        queryParams: filters ? { ...params, ...filters } : params,
+        relativeTo: this.route,
+        queryParamsHandling: 'merge'
+      });
+    this.projectService.refreshData();
   }
 
   ngOnDestroy() {

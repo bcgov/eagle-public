@@ -1,20 +1,14 @@
 import { Component, OnInit, ChangeDetectorRef, OnDestroy } from '@angular/core';
-import { Location } from '@angular/common';
 import { TableParamsObject } from 'app/shared/components/table-template/table-params-object';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
 import { StorageService } from 'app/services/storage.service';
 import { SearchResults } from 'app/models/search';
 import { IColumnObject, TableObject2 } from 'app/shared/components/table-template-2/table-object-2';
 import { DocumentTableRowsComponent } from '../documents/project-document-table-rows/project-document-table-rows.component';
 import { takeWhile } from 'rxjs/operators';
 import { TableTemplate } from 'app/shared/components/table-template-2/table-template';
-import { IPageSizePickerOption } from 'app/shared/components/page-size-picker/page-size-picker.component';
 import { DocumentService } from 'app/services/document.service';
 import { ITableMessage } from 'app/shared/components/table-template-2/table-row-component';
-import { Constants } from 'app/shared/utils/constants';
-import { Utils } from 'app/shared/utils/utils';
-import { ConfigService } from 'app/services/config.service';
-import { SearchParamObject } from 'app/services/search.service';
 
 @Component({
   selector: 'app-certificates',
@@ -23,10 +17,8 @@ import { SearchParamObject } from 'app/services/search.service';
 })
 export class CertificatesComponent implements OnInit, OnDestroy {
   public tableParams: TableParamsObject = new TableParamsObject();
-  public currentProject;
   public loading: Boolean = true;
 
-  private lists: any[] = [];
   private alive = true;
 
   public tableData: TableObject2 = new TableObject2({ component: DocumentTableRowsComponent });
@@ -59,24 +51,24 @@ export class CertificatesComponent implements OnInit, OnDestroy {
   ];
   constructor(
     private _changeDetectionRef: ChangeDetectorRef,
-    private location: Location,
     private route: ActivatedRoute,
     private router: Router,
     private storageService: StorageService,
     private tableTemplateUtils: TableTemplate,
     private documentService: DocumentService,
-    private utils: Utils,
-    private configService: ConfigService
   ) { }
 
   ngOnInit() {
-    this.currentProject = this.storageService.state.currentProject.data;
-
-    this.configService.lists.pipe(takeWhile(() => this.alive)).subscribe((list) => {
-      this.lists = list;
-      this._changeDetectionRef.detectChanges();
+    this.router.events.pipe(takeWhile(() => this.alive)).subscribe((evt) => {
+      if (!(evt instanceof NavigationEnd)) {
+        return;
+      }
+      const x = this.storageService.state.scrollPosition.data[0] ? this.storageService.state.scrollPosition.data[0] : 0;
+      const y = this.storageService.state.scrollPosition.data[1] ? this.storageService.state.scrollPosition.data[1] : 0;
+      if (x !== 0 || y !== 0) {
+        window.scrollTo(x, y);
+      }
     });
-
 
     this.route.queryParamMap.pipe(takeWhile(() => this.alive)).subscribe(data => {
       // Get params from route, shove into the tableTemplateUtils so that we get a new dataset to work with.
@@ -99,68 +91,48 @@ export class CertificatesComponent implements OnInit, OnDestroy {
   }
 
   onMessageOut(msg: ITableMessage) {
+    let params = {};
     switch (msg.label) {
       case 'columnSort':
-        this.setColumnSort(msg.data);
+        if (this.tableData.sortBy.charAt(0) === '+') {
+          params['sortBy'] = '-' + msg.data;
+        } else {
+          params['sortBy'] = '+' + msg.data;
+        }
+        this.documentService.fetchDataConfig.sortBy = params['sortBy'];
+        // this.storageService.state.scrollPosition = { type: 'scrollPosition', data: [0, 0] };
         break;
       case 'pageNum':
-        this.onPageNumUpdate(msg.data);
+        params['currentPage'] = msg.data;
+        this.documentService.fetchDataConfig.currentPage = params['currentPage'];
+        // this.storageService.state.scrollPosition = { type: 'scrollPosition', data: [0, 0] };
         break;
       case 'pageSize':
-        this.onPageSizeUpdate(msg.data);
+        params['pageSize'] = msg.data.value;
+        if (params['pageSize'] === this.tableData.totalListItems) {
+          this.loading = true;
+        }
+        params['currentPage'] = 1;
+        this.documentService.fetchDataConfig.pageSize = params['pageSize'];
+        this.documentService.fetchDataConfig.currentPage = params['currentPage'];
+
+        this.storageService.state.scrollPosition = { type: 'scrollPosition', data: [window.scrollX, window.scrollY] };
         break;
       default:
         break;
     }
+    this.submit(params);
   }
 
-  setColumnSort(column) {
-    if (this.tableData.sortBy.charAt(0) === '+') {
-      this.tableData.sortBy = '-' + column;
-    } else {
-      this.tableData.sortBy = '+' + column;
-    }
-    this.tableData.currentPage = 1;
-    this.submit();
-  }
-
-  onPageNumUpdate(pageNumber) {
-    this.tableData.currentPage = pageNumber;
-    this.submit();
-  }
-
-  onPageSizeUpdate(pageSize: IPageSizePickerOption) {
-    this.tableData.pageSize = pageSize.value;
-    if (this.tableData.pageSize === this.tableData.totalListItems) {
-      this.loading = true;
-    }
-    this.tableData.currentPage = 1;
-    this.submit();
-  }
-
-  async submit() {
-    const params = this.tableTemplateUtils.getNavParamsObj(this.tableData);
-
-    this.location.replaceState(
-      this.router.serializeUrl(
-        this.router.createUrlTree(
-          ['../certificate'],
-          {
-            queryParams: params,
-            relativeTo: this.route,
-            queryParamsHandling: 'merge',
-          })
-      )
-    );
-    await this.documentService.fetchData(new SearchParamObject(
-      '',
-      'Document',
-      [{ 'name': 'project', 'value': this.currentProject._id }],
-      this.tableData.currentPage,
-      this.tableData.pageSize,
-      this.tableData.sortBy,
-      this.utils.createProjectTabModifiers(Constants.optionalProjectDocTabs.CERTIFICATE, this.lists)
-    ));
+  submit(params, filters = null) {
+    this.router.navigate(
+      [],
+      {
+        queryParams: filters ? { ...params, ...filters } : params,
+        relativeTo: this.route,
+        queryParamsHandling: 'merge'
+      });
+    this.documentService.refreshData();
   }
 
   ngOnDestroy() {

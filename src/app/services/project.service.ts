@@ -27,7 +27,7 @@ interface GetParameters {
 @Injectable()
 export class ProjectService {
   private data: BehaviorSubject<SearchResults>;
-  private fetchDataConfig: any;
+  public fetchDataConfig: any;
 
   private project: Project = null; // for caching
   private projectList: Project[] = [];
@@ -212,7 +212,7 @@ export class ProjectService {
   }
 
   async refreshData() {
-    await this.searchService.fetchData(this.fetchDataConfig);
+    await this.fetchData(this.fetchDataConfig);
   }
 
   async fetchData(searchParamObject: SearchParamObject) {
