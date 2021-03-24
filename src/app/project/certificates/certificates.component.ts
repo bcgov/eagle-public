@@ -100,12 +100,10 @@ export class CertificatesComponent implements OnInit, OnDestroy {
           params['sortBy'] = '+' + msg.data;
         }
         this.documentService.fetchDataConfig.sortBy = params['sortBy'];
-        // this.storageService.state.scrollPosition = { type: 'scrollPosition', data: [0, 0] };
         break;
       case 'pageNum':
         params['currentPage'] = msg.data;
         this.documentService.fetchDataConfig.currentPage = params['currentPage'];
-        // this.storageService.state.scrollPosition = { type: 'scrollPosition', data: [0, 0] };
         break;
       case 'pageSize':
         params['pageSize'] = msg.data.value;
