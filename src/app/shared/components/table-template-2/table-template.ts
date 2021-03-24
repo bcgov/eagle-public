@@ -104,6 +104,31 @@ export class TableTemplate {
     return params;
   }
 
+  public getFiltersFromSearchPackage(searchPackage, filtersList = [], dateFiltersList = []) {
+    let searchPackageFilters = {};
+    Object.keys(searchPackage.filters).forEach(filter => {
+      searchPackageFilters[filter] = searchPackage.filters[filter];
+    });
+    let filtersForAPI = {};
+    if (filtersList.length > 0) {
+      filtersForAPI = this.getFiltersFromParams(
+        searchPackageFilters,
+        filtersList
+      );
+    }
+    let dateFiltersForAPI = {}
+    if (dateFiltersList.length > 0) {
+      dateFiltersForAPI = this.getDateFiltersFromParams(
+        searchPackageFilters,
+        dateFiltersList
+      );
+    }
+    let params = { ...filtersForAPI, ...dateFiltersForAPI };
+    this.removeFiltersForQueryMerge(params, filtersList.concat(dateFiltersList));
+
+    return params;
+  }
+
   public getFiltersFromParams(params, filterLabels: Array<string>) {
     let filterForAPI = {};
     filterLabels.forEach(filterLabel => {

@@ -14,8 +14,8 @@ export class ActivitiesListTableRowsComponent extends TableRowComponent {
     super();
   }
 
-  goToCP(activity) {
-    this.router.navigate(['p', activity.project._id, 'cp', activity.pcp]);
+  goToItem(item) {
+    this.router.navigate(['p', item.project._id, 'cp', item.pcp]);
   }
 
   isSingleDoc(item) {

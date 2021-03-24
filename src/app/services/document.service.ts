@@ -13,7 +13,7 @@ import { SearchParamObject, SearchService } from './search.service';
 @Injectable()
 export class DocumentService {
   private data: BehaviorSubject<SearchResults>;
-  private fetchDataConfig: any;
+  public fetchDataConfig: any;
 
   private document: Document = null;
 
@@ -135,7 +135,7 @@ export class DocumentService {
   }
 
   async refreshData() {
-    await this.searchService.fetchData(this.fetchDataConfig);
+    await this.fetchData(this.fetchDataConfig);
   }
 
   async fetchData(searchParamObject: SearchParamObject) {

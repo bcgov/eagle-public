@@ -10,7 +10,7 @@ import { ApiService } from './api';
 })
 export class PinsService {
   private data: BehaviorSubject<SearchResults>;
-  private fetchDataConfig: any;
+  public fetchDataConfig: any;
 
   constructor(
     private api: ApiService,

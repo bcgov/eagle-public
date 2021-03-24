@@ -8,7 +8,7 @@ import { SearchParamObject, SearchService } from './search.service';
 })
 export class ActivitiesService {
   private data: BehaviorSubject<SearchResults>;
-  private fetchDataConfig: any;
+  public fetchDataConfig: any;
 
   constructor(
     private searchService: SearchService,
@@ -28,12 +28,13 @@ export class ActivitiesService {
   }
 
   async refreshData() {
-    await this.searchService.fetchData(this.fetchDataConfig);
+    await this.fetchData(this.fetchDataConfig);
   }
 
   async fetchData(searchParamObject: SearchParamObject) {
     // Caching for later
     this.fetchDataConfig = searchParamObject;
-    this.setValue(await this.searchService.fetchData(searchParamObject));
+    const res = await this.searchService.fetchData(searchParamObject);
+    this.setValue(res);
   }
 }

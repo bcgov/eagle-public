@@ -1,15 +1,13 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
-import { Location } from '@angular/common';
-import { Router, ActivatedRoute, Params } from '@angular/router';
+import { Router, ActivatedRoute, Params, NavigationEnd } from '@angular/router';
 import { SearchResults } from 'app/models/search';
 import { ActivitiesListTableRowsComponent } from 'app/project/project-activites/activities-list-table-rows/activities-list-table-rows.component';
 import { ActivitiesService } from 'app/services/activities.service';
-import { IPageSizePickerOption } from 'app/shared/components/page-size-picker/page-size-picker.component';
 import { IColumnObject, TableObject2 } from 'app/shared/components/table-template-2/table-object-2';
 import { ITableMessage } from 'app/shared/components/table-template-2/table-row-component';
 import { TableTemplate } from 'app/shared/components/table-template-2/table-template';
 import { takeWhile } from 'rxjs/operators';
-import { SearchParamObject } from 'app/services/search.service';
+import { StorageService } from 'app/services/storage.service';
 
 
 @Component({
@@ -22,7 +20,6 @@ export class NewsListComponent implements OnInit, OnDestroy {
   public loading = true;
   private alive = true;
   public queryParams: Params;
-  public keywordSearchWords: string;
 
   public tableData: TableObject2 = new TableObject2({ component: ActivitiesListTableRowsComponent });
   public tableColumns: IColumnObject[] = [
@@ -41,15 +38,26 @@ export class NewsListComponent implements OnInit, OnDestroy {
   ];
   constructor(
     private router: Router,
-    private location: Location,
     private route: ActivatedRoute,
     private tableTemplateUtils: TableTemplate,
     private activitiesService: ActivitiesService,
+    private storageService: StorageService,
     private _changeDetectionRef: ChangeDetectorRef) { }
 
   ngOnInit() {
     this.tableData.options.showPageCountDisplay = true;
     this.tableData.options.showPagination = true;
+
+    this.router.events.pipe(takeWhile(() => this.alive)).subscribe((evt) => {
+      if (!(evt instanceof NavigationEnd)) {
+        return;
+      }
+      const x = this.storageService.state.scrollPosition.data[0] ? this.storageService.state.scrollPosition.data[0] : 0;
+      const y = this.storageService.state.scrollPosition.data[1] ? this.storageService.state.scrollPosition.data[1] : 0;
+      if (x !== 0 || y !== 0) {
+        window.scrollTo(x, y);
+      }
+    });
 
     this.route.queryParamMap.pipe(takeWhile(() => this.alive)).subscribe(data => {
       this.queryParams = { ...data['params'] };
@@ -59,8 +67,6 @@ export class NewsListComponent implements OnInit, OnDestroy {
       if (this.tableData.sortBy === '-datePosted') {
         this.tableData.sortBy = '-dateAdded';
       }
-      this.keywordSearchWords = this.queryParams.keywords;
-
       this._changeDetectionRef.detectChanges();
     });
 
@@ -79,91 +85,70 @@ export class NewsListComponent implements OnInit, OnDestroy {
   }
 
   onMessageOut(msg: ITableMessage) {
+    let params = {};
     switch (msg.label) {
       case 'columnSort':
-        this.setColumnSort(msg.data);
+        if (this.tableData.sortBy.charAt(0) === '+') {
+          params['sortBy'] = '-' + msg.data;
+        } else {
+          params['sortBy'] = '+' + msg.data;
+        }
+        this.activitiesService.fetchDataConfig.sortBy = params['sortBy'];
+        this.storageService.state.scrollPosition = { type: 'scrollPosition', data: [0, 0] };
         break;
       case 'pageNum':
-        this.onPageNumUpdate(msg.data);
+        params['currentPage'] = msg.data;
+        this.activitiesService.fetchDataConfig.currentPage = params['currentPage'];
+        this.storageService.state.scrollPosition = { type: 'scrollPosition', data: [0, 0] };
         break;
       case 'pageSize':
-        this.onPageSizeUpdate(msg.data);
+        params['pageSize'] = msg.data.value;
+        if (params['pageSize'] === this.tableData.totalListItems) {
+          this.loading = true;
+        }
+        params['currentPage'] = 1;
+        this.activitiesService.fetchDataConfig.pageSize = params['pageSize'];
+        this.activitiesService.fetchDataConfig.currentPage = params['currentPage'];
+
+        this.storageService.state.scrollPosition = { type: 'scrollPosition', data: [window.scrollX, window.scrollY] };
         break;
       default:
         break;
     }
+    this.submit(params);
   }
 
-  setColumnSort(column) {
-    if (this.tableData.sortBy.charAt(0) === '+') {
-      this.tableData.sortBy = '-' + column;
-    } else {
-      this.tableData.sortBy = '+' + column;
-    }
-    this.submit();
-  }
-
-  onPageNumUpdate(pageNumber) {
-    this.tableData.currentPage = pageNumber;
-    this.submit();
-  }
-
-  onPageSizeUpdate(pageSize: IPageSizePickerOption) {
-    this.tableData.pageSize = pageSize.value;
-    if (this.tableData.pageSize === this.tableData.totalListItems) {
-      this.loading = true;
-    }
-    this.tableData.currentPage = 1;
-    this.submit();
-  }
-
-  async submit() {
-    delete this.queryParams.sortBy;
-    delete this.queryParams.currentPage;
-    delete this.queryParams.pageNumber;
-    delete this.queryParams.pageSize;
-
-    const params = { ...this.queryParams, ...this.tableTemplateUtils.getNavParamsObj(this.tableData) }
-
-    this.location.replaceState(
-      this.router.serializeUrl(
-        this.router.createUrlTree(
-          ['/news'],
-          {
-            queryParams: params,
-            relativeTo: this.route,
-            queryParamsHandling: 'merge',
-          })
-      )
-    );
-
-    await this.activitiesService.fetchData(new SearchParamObject(
-      this.queryParams.keywords,
-      'RecentActivity',
+  submit(params) {
+    this.router.navigate(
       [],
-      this.tableData.currentPage,
-      this.tableData.pageSize,
-      this.tableData.sortBy,
-      {},
-      true
-    ));
+      {
+        queryParams: params,
+        relativeTo: this.route,
+        queryParamsHandling: 'merge'
+      });
+    this.activitiesService.refreshData();
   }
 
   executeSearch(searchPackage) {
-    delete this.queryParams['keywords'];
-    // check keyword
+    let params = {};
     if (searchPackage.keywords) {
-      this.queryParams['keywords'] = searchPackage.keywords;
+      params['keywords'] = searchPackage.keywords;
+      this.activitiesService.fetchDataConfig.keywords = params['keywords'];
       // always change sortBy to '-score' if keyword search is directly triggered by user
       if (searchPackage.keywordsChanged) {
-        this.tableData.sortBy = '-score';
+        params['sortBy'] = '-score';
+        this.activitiesService.fetchDataConfig.sortBy = params['sortBy'];
       }
     } else {
-      this.tableData.sortBy = '-dateAdded';
+      params['keywords'] = null;
+      params['sortBy'] = '-dateAdded';
+      this.activitiesService.fetchDataConfig.keywords = '';
+      this.activitiesService.fetchDataConfig.sortBy = params['sortBy'];
     }
-
-    this.tableData.currentPage = 1;
-    this.submit();
+    params['currentPage'] = 1;
+    this.activitiesService.fetchDataConfig.currentPage = params['currentPage'];
+    this.storageService.state.scrollPosition = { type: 'scrollPosition', data: [0, 0] };
+    this.submit(params);
   }
 
   ngOnDestroy() {
