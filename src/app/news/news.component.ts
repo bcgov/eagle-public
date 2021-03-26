@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
-import { Router, ActivatedRoute, Params, NavigationEnd } from '@angular/router';
+import { Router, ActivatedRoute, Params } from '@angular/router';
 import { SearchResults } from 'app/models/search';
 import { ActivitiesListTableRowsComponent } from 'app/project/project-activites/activities-list-table-rows/activities-list-table-rows.component';
 import { ActivitiesService } from 'app/services/activities.service';
@@ -7,8 +7,6 @@ import { IColumnObject, TableObject2 } from 'app/shared/components/table-templat
 import { ITableMessage } from 'app/shared/components/table-template-2/table-row-component';
 import { TableTemplate } from 'app/shared/components/table-template-2/table-template';
 import { takeWhile } from 'rxjs/operators';
-import { StorageService } from 'app/services/storage.service';
-
 
 @Component({
   selector: 'app-news',
@@ -41,23 +39,11 @@ export class NewsListComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private tableTemplateUtils: TableTemplate,
     private activitiesService: ActivitiesService,
-    private storageService: StorageService,
     private _changeDetectionRef: ChangeDetectorRef) { }
 
   ngOnInit() {
     this.tableData.options.showPageCountDisplay = true;
     this.tableData.options.showPagination = true;
-
-    this.router.events.pipe(takeWhile(() => this.alive)).subscribe((evt) => {
-      if (!(evt instanceof NavigationEnd)) {
-        return;
-      }
-      const x = this.storageService.state.scrollPosition.data[0] ? this.storageService.state.scrollPosition.data[0] : 0;
-      const y = this.storageService.state.scrollPosition.data[1] ? this.storageService.state.scrollPosition.data[1] : 0;
-      if (x !== 0 || y !== 0) {
-        window.scrollTo(x, y);
-      }
-    });
 
     this.route.queryParamMap.pipe(takeWhile(() => this.alive)).subscribe(data => {
       this.queryParams = { ...data['params'] };
@@ -94,12 +80,10 @@ export class NewsListComponent implements OnInit, OnDestroy {
           params['sortBy'] = '+' + msg.data;
         }
         this.activitiesService.fetchDataConfig.sortBy = params['sortBy'];
-        this.storageService.state.scrollPosition = { type: 'scrollPosition', data: [0, 0] };
         break;
       case 'pageNum':
         params['currentPage'] = msg.data;
         this.activitiesService.fetchDataConfig.currentPage = params['currentPage'];
-        this.storageService.state.scrollPosition = { type: 'scrollPosition', data: [0, 0] };
         break;
       case 'pageSize':
         params['pageSize'] = msg.data.value;
@@ -109,8 +93,6 @@ export class NewsListComponent implements OnInit, OnDestroy {
         params['currentPage'] = 1;
         this.activitiesService.fetchDataConfig.pageSize = params['pageSize'];
         this.activitiesService.fetchDataConfig.currentPage = params['currentPage'];
-
-        this.storageService.state.scrollPosition = { type: 'scrollPosition', data: [window.scrollX, window.scrollY] };
         break;
       default:
         break;
@@ -147,7 +129,6 @@ export class NewsListComponent implements OnInit, OnDestroy {
     }
     params['currentPage'] = 1;
     this.activitiesService.fetchDataConfig.currentPage = params['currentPage'];
-    this.storageService.state.scrollPosition = { type: 'scrollPosition', data: [0, 0] };
     this.submit(params);
   }
 

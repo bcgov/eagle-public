@@ -1,7 +1,6 @@
 import { Component, OnInit, ChangeDetectorRef, OnDestroy } from '@angular/core';
 import { TableParamsObject } from 'app/shared/components/table-template/table-params-object';
-import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
-import { StorageService } from 'app/services/storage.service';
+import { ActivatedRoute, Router } from '@angular/router';
 import { SearchResults } from 'app/models/search';
 import { IColumnObject, TableObject2 } from 'app/shared/components/table-template-2/table-object-2';
 import { DocumentTableRowsComponent } from '../documents/project-document-table-rows/project-document-table-rows.component';
@@ -53,23 +52,11 @@ export class CertificatesComponent implements OnInit, OnDestroy {
     private _changeDetectionRef: ChangeDetectorRef,
     private route: ActivatedRoute,
     private router: Router,
-    private storageService: StorageService,
     private tableTemplateUtils: TableTemplate,
     private documentService: DocumentService,
   ) { }
 
   ngOnInit() {
-    this.router.events.pipe(takeWhile(() => this.alive)).subscribe((evt) => {
-      if (!(evt instanceof NavigationEnd)) {
-        return;
-      }
-      const x = this.storageService.state.scrollPosition.data[0] ? this.storageService.state.scrollPosition.data[0] : 0;
-      const y = this.storageService.state.scrollPosition.data[1] ? this.storageService.state.scrollPosition.data[1] : 0;
-      if (x !== 0 || y !== 0) {
-        window.scrollTo(x, y);
-      }
-    });
-
     this.route.queryParamMap.pipe(takeWhile(() => this.alive)).subscribe(data => {
       // Get params from route, shove into the tableTemplateUtils so that we get a new dataset to work with.
       this.tableData = this.tableTemplateUtils.updateTableObjectWithUrlParams(data['params'], this.tableData);
@@ -113,8 +100,6 @@ export class CertificatesComponent implements OnInit, OnDestroy {
         params['currentPage'] = 1;
         this.documentService.fetchDataConfig.pageSize = params['pageSize'];
         this.documentService.fetchDataConfig.currentPage = params['currentPage'];
-
-        this.storageService.state.scrollPosition = { type: 'scrollPosition', data: [window.scrollX, window.scrollY] };
         break;
       default:
         break;

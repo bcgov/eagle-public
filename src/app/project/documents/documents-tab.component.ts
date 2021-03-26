@@ -1,5 +1,5 @@
 import { Component, OnInit, ChangeDetectorRef, OnDestroy } from '@angular/core';
-import { Router, ActivatedRoute, Params, NavigationEnd } from '@angular/router';
+import { Router, ActivatedRoute, Params } from '@angular/router';
 import 'rxjs/add/operator/switchMap';
 import 'rxjs/add/operator/takeUntil';
 
@@ -9,7 +9,6 @@ import { SearchResults } from 'app/models/search';
 
 import { DocumentTableRowsComponent } from './project-document-table-rows/project-document-table-rows.component';
 
-import { StorageService } from 'app/services/storage.service';
 import { Constants } from 'app/shared/utils/constants';
 import { TableTemplate } from 'app/shared/components/table-template-2/table-template';
 import { IColumnObject, TableObject2 } from 'app/shared/components/table-template-2/table-object-2';
@@ -32,9 +31,7 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
 
   public loadingLists = true;
   public loadingTableParams = true;
-  public loadingtableData = true;
-
-  public readonly constants = Constants;
+  public loadingTableData = true;
 
   public tableColumns: IColumnObject[] = [
     {
@@ -85,29 +82,18 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
   public showAdvancedFilters = false;
   private filtersList = ['milestone', 'documentAuthorType', 'type', 'projectPhase'];
   private dateFiltersList = ['datePostedStart', 'datePostedEnd'];
+  private initialLoad = true;
 
   constructor(
     private _changeDetectionRef: ChangeDetectorRef,
     private route: ActivatedRoute,
     private router: Router,
-    private storageService: StorageService,
     private tableTemplateUtils: TableTemplate,
     private documentService: DocumentService,
     private configService: ConfigService
   ) { }
 
   ngOnInit() {
-    this.router.events.pipe(takeWhile(() => this.alive)).subscribe((evt) => {
-      if (!(evt instanceof NavigationEnd)) {
-        return;
-      }
-      const x = this.storageService.state.scrollPosition.data[0] ? this.storageService.state.scrollPosition.data[0] : 0;
-      const y = this.storageService.state.scrollPosition.data[1] ? this.storageService.state.scrollPosition.data[1] : 0;
-      if (x !== 0 || y !== 0) {
-        window.scrollTo(x, y);
-      }
-    });
-
     this.configService.lists.pipe(takeWhile(() => this.alive)).subscribe((list) => {
       this.lists = list;
       this.lists.forEach(item => {
@@ -132,14 +118,16 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
       this.tableData = this.tableTemplateUtils.updateTableObjectWithUrlParams(data['params'], this.tableData);
 
       if (
-        this.queryParams['milestone'] ||
-        this.queryParams['documentAuthorType'] ||
-        this.queryParams['type'] ||
-        this.queryParams['datePostedStart'] ||
-        this.queryParams['datePostedEnd'] ||
-        this.queryParams['projectPhase']
+        this.initialLoad && (
+          this.queryParams['milestone'] ||
+          this.queryParams['documentAuthorType'] ||
+          this.queryParams['type'] ||
+          this.queryParams['datePostedStart'] ||
+          this.queryParams['datePostedEnd'] ||
+          this.queryParams['projectPhase'])
       ) {
         this.showAdvancedFilters = true;
+        this.initialLoad = false;
       }
 
       this.loadingTableParams = false;
@@ -155,7 +143,7 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
       this.tableData.columns = this.tableColumns;
       this.tableData.options.showAllPicker = true;
 
-      this.loadingtableData = false;
+      this.loadingTableData = false;
 
       this._changeDetectionRef.detectChanges();
     });
@@ -262,8 +250,6 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
     let queryFilters = this.tableTemplateUtils.getFiltersFromSearchPackage(searchPackage, this.filtersList, this.dateFiltersList);
     this.documentService.fetchDataConfig.filters = queryFilters;
 
-    this.storageService.state.scrollPosition = { type: 'scrollPosition', data: [0, 0] };
-
     this.submit(params, queryFilters);
   }
 
@@ -277,23 +263,19 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
           params['sortBy'] = '+' + msg.data;
         }
         this.documentService.fetchDataConfig.sortBy = params['sortBy'];
-        this.storageService.state.scrollPosition = { type: 'scrollPosition', data: [0, 0] };
         break;
       case 'pageNum':
         params['currentPage'] = msg.data;
         this.documentService.fetchDataConfig.currentPage = params['currentPage'];
-        this.storageService.state.scrollPosition = { type: 'scrollPosition', data: [0, 0] };
         break;
       case 'pageSize':
         params['pageSize'] = msg.data.value;
         if (params['pageSize'] === this.tableData.totalListItems) {
-          this.loadingtableData = true;
+          this.loadingTableData = true;
         }
         params['currentPage'] = 1;
         this.documentService.fetchDataConfig.pageSize = params['pageSize'];
         this.documentService.fetchDataConfig.currentPage = params['currentPage'];
-
-        this.storageService.state.scrollPosition = { type: 'scrollPosition', data: [window.scrollX, window.scrollY] };
         break;
       default:
         break;
@@ -309,6 +291,7 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
         relativeTo: this.route,
         queryParamsHandling: 'merge'
       });
+    this.loadingTableData = true;
     this.documentService.refreshData();
   }
 

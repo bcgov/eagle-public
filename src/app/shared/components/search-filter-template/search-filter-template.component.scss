@@ -1,9 +1,9 @@
-$select-badge-hover-bg:            #d0ebff;
+$select-badge-hover-bg: #d0ebff;
 $select-badge-active-border-color: #74c0fc;
-$select-badge-active-bg:           #a5d8ff;
-$gray9:                         #212529;
-$gray7:                         #495057;
-$gray2:                         #e9ecef;
+$select-badge-active-bg: #a5d8ff;
+$gray9: #212529;
+$gray7: #495057;
+$gray2: #e9ecef;
 
 .select-badge {
   position: relative;
@@ -116,4 +116,9 @@ $gray2:                         #e9ecef;
 
 .end-date-padding {
   padding-left: 30px;
+}
+
+.disable-div {
+  pointer-events: none;
+  opacity: 0.5;
 }

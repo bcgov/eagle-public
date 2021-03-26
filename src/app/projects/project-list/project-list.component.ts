@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
-import { Router, ActivatedRoute, Params, NavigationEnd } from '@angular/router';
+import { Router, ActivatedRoute, Params } from '@angular/router';
 import 'rxjs/add/operator/takeUntil';
 
 import * as _ from 'lodash';
@@ -18,7 +18,6 @@ import { ITableMessage } from 'app/shared/components/table-template-2/table-row-
 import { ProjectService } from 'app/services/project.service';
 import { OrgService } from 'app/services/org.service';
 import { Org } from 'app/models/organization';
-import { StorageService } from 'app/services/storage.service';
 
 @Component({
   selector: 'app-project-list',
@@ -76,6 +75,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
   public showAdvancedFilters = false;
   public filters: FilterObject[] = [];
   private proponents = [];
+  private initialLoad = true;
 
   private legislationFilterGroup = { name: 'legislation', labelPrefix: null, labelPostfix: ' Act Terms' };
 
@@ -86,22 +86,10 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     private projectService: ProjectService,
     private orgService: OrgService,
     private configService: ConfigService,
-    private storageService: StorageService,
     private _changeDetectionRef: ChangeDetectorRef
   ) { }
 
   ngOnInit() {
-    this.router.events.pipe(takeWhile(() => this.alive)).subscribe((evt) => {
-      if (!(evt instanceof NavigationEnd)) {
-        return;
-      }
-      const x = this.storageService.state.scrollPosition.data[0] ? this.storageService.state.scrollPosition.data[0] : 0;
-      const y = this.storageService.state.scrollPosition.data[1] ? this.storageService.state.scrollPosition.data[1] : 0;
-      if (x !== 0 || y !== 0) {
-        window.scrollTo(x, y);
-      }
-    });
-
     this.orgService.getValue().pipe(takeWhile(() => this.alive)).subscribe((res: Org[]) => {
       this.configService.lists.pipe(takeWhile(() => this.alive)).subscribe((list) => {
         this.proponents = res;
@@ -136,17 +124,19 @@ export class ProjectListComponent implements OnInit, OnDestroy {
       }
 
       if (
-        this.queryParams['type'] ||
-        this.queryParams['eacDecision'] ||
-        this.queryParams['decisionDateStart'] ||
-        this.queryParams['decisionDateEnd'] ||
-        this.queryParams['pcp'] ||
-        this.queryParams['proponent'] ||
-        this.queryParams['region'] ||
-        this.queryParams['CEAAInvolvement'] ||
-        this.queryParams['currentPhaseName']
+        this.initialLoad && (
+          this.queryParams['type'] ||
+          this.queryParams['eacDecision'] ||
+          this.queryParams['decisionDateStart'] ||
+          this.queryParams['decisionDateEnd'] ||
+          this.queryParams['pcp'] ||
+          this.queryParams['proponent'] ||
+          this.queryParams['region'] ||
+          this.queryParams['CEAAInvolvement'] ||
+          this.queryParams['currentPhaseName'])
       ) {
         this.showAdvancedFilters = true;
+        this.initialLoad = false;
       }
       this.loadingTableParams = false;
       this._changeDetectionRef.detectChanges();
@@ -311,8 +301,6 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     let queryFilters = this.tableTemplateUtils.getFiltersFromSearchPackage(searchPackage, this.filtersList, this.dateFiltersList);
     this.projectService.fetchDataConfig.filters = queryFilters;
 
-    this.storageService.state.scrollPosition = { type: 'scrollPosition', data: [0, 0] };
-
     this.submit(params, queryFilters);
   }
 
@@ -348,7 +336,6 @@ export class ProjectListComponent implements OnInit, OnDestroy {
   }
 
   submit(params, filters = null) {
-    this.storageService.state.scrollPosition = { type: 'scrollPosition', data: [window.scrollX, window.scrollY] };
     this.router.navigate(
       [],
       {
@@ -356,6 +343,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
         relativeTo: this.route,
         queryParamsHandling: 'merge'
       });
+    this.loadingTableData = true;
     this.projectService.refreshData();
   }
 

@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef, OnDestroy } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, OnDestroy, ViewChild, ElementRef } from '@angular/core';
 import { Router, ActivatedRoute, Params } from '@angular/router';
 import { SearchResults } from 'app/models/search';
 import { ActivitiesListTableRowsComponent } from './activities-list-table-rows/activities-list-table-rows.component';
@@ -15,6 +15,7 @@ import { StorageService } from 'app/services/storage.service';
   styleUrls: ['./project-activites.component.scss']
 })
 export class ProjectActivitesComponent implements OnInit, OnDestroy {
+  @ViewChild('activitiesHeader', { static: true }) activitiesHeader: ElementRef;
   private alive = true;
 
   public loading = true;
@@ -118,7 +119,10 @@ export class ProjectActivitesComponent implements OnInit, OnDestroy {
   }
 
   submit(params) {
-    this.storageService.state.scrollPosition = { type: 'scrollPosition', data: [window.scrollX, window.scrollY] };
+    this.storageService.state.scrollPosition = {
+      type: 'scrollPosition',
+      data: [window.scrollX, this.activitiesHeader.nativeElement.offsetTop - (this.activitiesHeader.nativeElement.clientHeight * 2)]
+    };
     this.router.navigate(
       [],
       {
