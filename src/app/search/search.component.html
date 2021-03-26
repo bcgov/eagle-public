@@ -39,7 +39,8 @@
                     <div *ngIf="loadingLists || loadingTableParams || loadingTableData">
                         <div class="text-center">
                             <img class="rotating"
-                                src="/assets/images/spinner.png">
+                                src="/assets/images/spinner.png"
+                                als="loading spinner">
                         </div>
                     </div>
                     <lib-table-template-2 *ngIf="tableData.totalListItems > 0 && !loadingTableData"
