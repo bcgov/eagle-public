@@ -18,7 +18,8 @@ export class ApplicationResolver implements Resolve<void> {
     private utils: Utils
   ) { }
 
-  async resolve(route: ActivatedRouteSnapshot) {
+  resolve(route: ActivatedRouteSnapshot) {
+    this.documentService.clearValue();
     const params = route.queryParamMap['params'];
     const tableObject = this.tableTemplateUtils.updateTableObjectWithUrlParams(params, new TableObject2());
     if (!params.sortBy) {
@@ -26,8 +27,8 @@ export class ApplicationResolver implements Resolve<void> {
     }
 
     const projId = route.parent.paramMap.get('projId');
-    await this.configService.lists.toPromise().then(async (list) => {
-      await this.documentService.fetchData(new SearchParamObject(
+    this.configService.lists.toPromise().then(async (list) => {
+      this.documentService.fetchData(new SearchParamObject(
         '',
         'Document',
         [{ 'name': 'project', 'value': projId }],

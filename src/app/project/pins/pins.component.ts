@@ -58,17 +58,20 @@ export class PinsComponent implements OnInit, OnDestroy {
     this.pinsService.getValue()
       .pipe(takeWhile(() => this.alive))
       .subscribe((searchResults: SearchResults) => {
-        this.tableData.totalListItems = searchResults.totalSearchCount;
-        if (this.tableData.totalListItems > 0) {
-          this.tableData.items = searchResults.data.map(record => {
-            return { rowData: record };
-          });
-        } else {
-          this.tableData.items = [];
+        if (searchResults.data !== 0) {
+          this.tableData.totalListItems = searchResults.totalSearchCount;
+          if (this.tableData.totalListItems > 0) {
+            this.tableData.items = searchResults.data.map(record => {
+              return { rowData: record };
+            });
+          } else {
+            this.tableData.items = [];
+          }
+          this.tableData.columns = this.tableColumns;
+
+          this.loading = false;
+          this._changeDetectionRef.detectChanges();
         }
-        this.tableData.columns = this.tableColumns;
-        this.loading = false;
-        this._changeDetectionRef.detectChanges();
       });
   }
 

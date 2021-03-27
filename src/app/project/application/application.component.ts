@@ -68,16 +68,18 @@ export class ApplicationComponent implements OnInit, OnDestroy {
     });
 
     this.documentService.getValue().pipe(takeWhile(() => this.alive)).subscribe((searchResults: SearchResults) => {
-      this.tableData.totalListItems = searchResults.totalSearchCount;
-      this.tableData.items = searchResults.data.map(record => {
-        record.showFeatured = false;
-        return { rowData: record };
-      });
-      this.tableData.columns = this.tableColumns;
-      this.tableData.options.showAllPicker = true;
+      if (searchResults.data !== 0) {
+        this.tableData.totalListItems = searchResults.totalSearchCount;
+        this.tableData.items = searchResults.data.map(record => {
+          record.showFeatured = false;
+          return { rowData: record };
+        });
+        this.tableData.columns = this.tableColumns;
+        this.tableData.options.showAllPicker = true;
 
-      this.loading = false;
-      this._changeDetectionRef.detectChanges();
+        this.loading = false;
+        this._changeDetectionRef.detectChanges();
+      }
     });
   }
 

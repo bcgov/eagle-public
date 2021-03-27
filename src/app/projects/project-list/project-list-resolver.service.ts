@@ -20,8 +20,9 @@ export class ProjectListResolver implements Resolve<void> {
     private tableTemplateUtils: TableTemplate
   ) { }
 
-  async resolve(route: ActivatedRouteSnapshot) {
-    await this.orgService.fetchProponent();
+  resolve(route: ActivatedRouteSnapshot) {
+    this.projectService.clearValue();
+    this.orgService.fetchProponent();
 
     const params = route.queryParamMap['params'];
     const tableObject = this.tableTemplateUtils.updateTableObjectWithUrlParams(params, new TableObject2());
@@ -45,7 +46,7 @@ export class ProjectListResolver implements Resolve<void> {
       ['decisionDateStart', 'decisionDateEnd']
     );
 
-    await this.projectService.fetchData(new SearchParamObject(
+    this.projectService.fetchData(new SearchParamObject(
       keywords,
       'Project',
       [],

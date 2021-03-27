@@ -211,6 +211,10 @@ export class ProjectService {
     return this.data.asObservable();
   }
 
+  clearValue(): void {
+    this.setValue(new SearchResults);
+  }
+
   async refreshData() {
     await this.fetchData(this.fetchDataConfig);
   }

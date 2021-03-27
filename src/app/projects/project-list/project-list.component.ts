@@ -91,27 +91,29 @@ export class ProjectListComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.orgService.getValue().pipe(takeWhile(() => this.alive)).subscribe((res: Org[]) => {
-      this.configService.lists.pipe(takeWhile(() => this.alive)).subscribe((list) => {
-        this.proponents = res;
+      if (res) {
+        this.configService.lists.pipe(takeWhile(() => this.alive)).subscribe((list) => {
+          this.proponents = res;
 
-        this.lists = list;
-        this.lists.forEach(item => {
-          switch (item.type) {
-            case 'eaDecisions':
-              this.eaDecisionArray.push({ ...item });
-              break;
-            case 'ceaaInvolvements':
-              this.iaacArray.push({ ...item });
-              break;
-            case 'projectPhase':
-              this.phaseArray.push({ ...item });
-              break;
-          }
+          this.lists = list;
+          this.lists.forEach(item => {
+            switch (item.type) {
+              case 'eaDecisions':
+                this.eaDecisionArray.push({ ...item });
+                break;
+              case 'ceaaInvolvements':
+                this.iaacArray.push({ ...item });
+                break;
+              case 'projectPhase':
+                this.phaseArray.push({ ...item });
+                break;
+            }
+          });
+          this.setFilters();
+          this.loadingLists = false;
+          this._changeDetectionRef.detectChanges();
         });
-        this.setFilters();
-        this.loadingLists = false;
-        this._changeDetectionRef.detectChanges();
-      });
+      }
     });
 
     this.route.queryParamMap.pipe(takeWhile(() => this.alive)).subscribe(data => {
@@ -143,15 +145,17 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     });
 
     this.projectService.getValue().pipe(takeWhile(() => this.alive)).subscribe((searchResults: SearchResults) => {
-      this.tableData.totalListItems = searchResults.totalSearchCount;
-      this.tableData.items = searchResults.data.map(record => {
-        return { rowData: record };
-      });
-      this.tableData.columns = this.tableColumns;
-      this.tableData.options.showAllPicker = true;
+      if (searchResults.data !== 0) {
+        this.tableData.totalListItems = searchResults.totalSearchCount;
+        this.tableData.items = searchResults.data.map(record => {
+          return { rowData: record };
+        });
+        this.tableData.columns = this.tableColumns;
+        this.tableData.options.showAllPicker = true;
 
-      this.loadingTableData = false;
-      this._changeDetectionRef.detectChanges();
+        this.loadingTableData = false;
+        this._changeDetectionRef.detectChanges();
+      }
     });
   }
 
