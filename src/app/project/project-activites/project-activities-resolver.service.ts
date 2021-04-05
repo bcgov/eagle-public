@@ -14,7 +14,8 @@ export class ProjectActivitiesResolver implements Resolve<void> {
     private tableTemplateUtils: TableTemplate
   ) { }
 
-  async resolve(route: ActivatedRouteSnapshot) {
+  resolve(route: ActivatedRouteSnapshot) {
+    this.activitiesService.clearValue();
     const params = route.queryParamMap['params'];
     const tableObject = this.tableTemplateUtils.updateTableObjectWithUrlParams(params, new TableObject2(), 'Activities');
 
@@ -29,7 +30,7 @@ export class ProjectActivitiesResolver implements Resolve<void> {
 
     const projId = route.parent.paramMap.get('projId');
 
-    await this.activitiesService.fetchData(new SearchParamObject(
+    this.activitiesService.fetchData(new SearchParamObject(
       keywords,
       'RecentActivity',
       [],

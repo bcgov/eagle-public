@@ -2,11 +2,11 @@
     role="tabpanel">
     <section class="tab-section">
         <div class="spinner-container"
-            *ngIf="loadingLists || loadingTableParams || loadingtableData">
+            *ngIf="loadingLists || loadingTableParams">
             <div class="spinner-new rotating"></div>
         </div>
 
-        <section *ngIf="!loadingLists && !loadingTableParams && !loadingtableData"
+        <section *ngIf="!loadingLists && !loadingTableParams"
             class="mb-4 pt-0 pb-0">
             <search-filter-template #explorePanel
                 (searchEvent)='executeSearch($event)'
@@ -16,7 +16,8 @@
                 [filters]="filters"
                 (resetControls)='tableData.sortBy.includes("score") ? tableData.sortBy = "-datePosted" : null'
                 (toggleFiltersPanelEvent)="showAdvancedFilters = $event.showPanel"
-                [searchHelpLinkArray]='["/search-help"]'>
+                [searchHelpLinkArray]='["/search-help"]'
+                [searching]='loadingTableData'>
             </search-filter-template>
         </section>
 

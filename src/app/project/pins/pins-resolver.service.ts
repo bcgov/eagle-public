@@ -10,12 +10,13 @@ export class PinsResolverService implements Resolve<void> {
     private pinsService: PinsService
   ) { }
 
-  async resolve(route: ActivatedRouteSnapshot) {
+  resolve(route: ActivatedRouteSnapshot) {
+    this.pinsService.clearValue();
     const params = route.queryParamMap['params'];
     const projectId = route.parent.paramMap.get('projId');
     const pageNum = params.currentPagePins ? params.currentPagePins : Constants.tableDefaults.DEFAULT_CURRENT_PAGE;
     const pageSize = params.pageSizePins ? params.pageSizePins : Constants.tableDefaults.DEFAULT_PAGE_SIZE;
     const sortBy = params.sortByPins ? params.sortByPins : '+name';
-    await this.pinsService.fetchData(pageNum, pageSize, sortBy, projectId);
+    this.pinsService.fetchData(pageNum, pageSize, sortBy, projectId);
   }
 }

@@ -31,6 +31,10 @@ export class ActivitiesService {
     await this.fetchData(this.fetchDataConfig);
   }
 
+  clearValue(): void {
+    this.setValue(new SearchResults);
+  }
+
   async fetchData(searchParamObject: SearchParamObject) {
     // Caching for later
     this.fetchDataConfig = searchParamObject;
