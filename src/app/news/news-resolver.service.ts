@@ -13,7 +13,8 @@ export class NewsResolver implements Resolve<void> {
     private tableTemplateUtils: TableTemplate
   ) { }
 
-  async resolve(route: ActivatedRouteSnapshot) {
+  resolve(route: ActivatedRouteSnapshot) {
+    this.activitiesService.clearValue();
     const params = route.queryParamMap['params'];
     const tableObject = this.tableTemplateUtils.updateTableObjectWithUrlParams(params, new TableObject2(), 'Activities');
 
@@ -21,7 +22,7 @@ export class NewsResolver implements Resolve<void> {
       tableObject.sortBy = '-dateAdded';
     }
 
-    await this.activitiesService.fetchData(new SearchParamObject(
+    this.activitiesService.fetchData(new SearchParamObject(
       params.keywords ? params.keywords : Constants.tableDefaults.DEFAULT_KEYWORDS,
       'RecentActivity',
       [],

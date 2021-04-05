@@ -19,7 +19,8 @@ export class DocumentsResolver implements Resolve<void> {
     private tableTemplateUtils: TableTemplate
   ) { }
 
-  async resolve(route: ActivatedRouteSnapshot) {
+  resolve(route: ActivatedRouteSnapshot) {
+    this.documentService.clearValue();
     const params = route.queryParamMap['params'];
     const tableObject = this.tableTemplateUtils.updateTableObjectWithUrlParams(params, new TableObject2());
 
@@ -40,7 +41,7 @@ export class DocumentsResolver implements Resolve<void> {
 
     const projId = route.parent.paramMap.get('projId');
 
-    await this.documentService.fetchData(new SearchParamObject(
+    this.documentService.fetchData(new SearchParamObject(
       keywords,
       'Document',
       [{ 'name': 'project', 'value': projId }],

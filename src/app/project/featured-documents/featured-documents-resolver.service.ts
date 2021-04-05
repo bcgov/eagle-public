@@ -10,9 +10,10 @@ export class FeaturedDocumentsResolverService implements Resolve<void> {
     private documentService: DocumentService
   ) { }
 
-  async resolve(route: ActivatedRouteSnapshot) {
+  resolve(route: ActivatedRouteSnapshot) {
+    this.documentService.clearValue();
     const projId = route.parent.paramMap.get('projId');
-    await this.documentService.fetchData(new SearchParamObject(
+    this.documentService.fetchData(new SearchParamObject(
       '',
       'Document',
       [{ 'name': 'project', 'value': projId }],

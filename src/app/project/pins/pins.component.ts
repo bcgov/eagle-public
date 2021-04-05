@@ -1,5 +1,4 @@
 import { Component, OnInit, ChangeDetectorRef, OnDestroy } from '@angular/core';
-import { Location } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { StorageService } from 'app/services/storage.service';
 import { SearchResults } from 'app/models/search';
@@ -16,7 +15,6 @@ import { ITableMessage } from 'app/shared/components/table-template-2/table-row-
   styleUrls: ['./pins.component.scss']
 })
 export class PinsComponent implements OnInit, OnDestroy {
-  private currentProject;
   private alive = true;
   public loading: Boolean = true;
 
@@ -35,7 +33,6 @@ export class PinsComponent implements OnInit, OnDestroy {
   ];
   constructor(
     private router: Router,
-    private location: Location,
     private _changeDetectionRef: ChangeDetectorRef,
     private route: ActivatedRoute,
     private storageService: StorageService,
@@ -45,8 +42,6 @@ export class PinsComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    this.currentProject = this.storageService.state.currentProject.data;
-
     this.tableData.tableId = 'pins-table';
 
     // Hide table controls
@@ -63,69 +58,54 @@ export class PinsComponent implements OnInit, OnDestroy {
     this.pinsService.getValue()
       .pipe(takeWhile(() => this.alive))
       .subscribe((searchResults: SearchResults) => {
-        this.tableData.totalListItems = searchResults.totalSearchCount;
-        if (this.tableData.totalListItems > 0) {
-          this.tableData.items = searchResults.data.map(record => {
-            return { rowData: record };
-          });
-        } else {
-          this.tableData.items = [];
+        if (searchResults.data !== 0) {
+          this.tableData.totalListItems = searchResults.totalSearchCount;
+          if (this.tableData.totalListItems > 0) {
+            this.tableData.items = searchResults.data.map(record => {
+              return { rowData: record };
+            });
+          } else {
+            this.tableData.items = [];
+          }
+          this.tableData.columns = this.tableColumns;
+
+          this.loading = false;
+          this._changeDetectionRef.detectChanges();
         }
-
-        this.tableData.columns = this.tableColumns;
-        this.loading = false;
-
-        this._changeDetectionRef.detectChanges();
       });
   }
 
   onMessageOut(msg: ITableMessage) {
+    let params = {};
     switch (msg.label) {
       case 'columnSort':
-        this.setColumnSort(msg.data);
+        if (this.tableData.sortBy.charAt(0) === '+') {
+          params['sortByPins'] = '-' + msg.data;
+        } else {
+          params['sortByPins'] = '+' + msg.data;
+        }
+        this.pinsService.fetchDataConfig.sortBy = params['sortByPins'];
         break;
       case 'pageNum':
-        this.onPageNumUpdate(msg.data);
+        params['currentPagePins'] = msg.data;
+        this.pinsService.fetchDataConfig.currentPage = params['currentPagePins'];
         break;
       default:
         break;
     }
+    this.submit(params);
   }
 
-  setColumnSort(column) {
-    if (this.tableData.sortBy.charAt(0) === '+') {
-      this.tableData.sortBy = '-' + column;
-    } else {
-      this.tableData.sortBy = '+' + column;
-    }
-    this.submit();
-  }
-
-  onPageNumUpdate(pageNumber) {
-    this.tableData.currentPage = pageNumber;
-    this.submit();
-  }
-
-  async submit() {
-    const encodedParams = {
-      currentPagePins: this.tableData.currentPage,
-      pageSizePins: this.tableData.pageSize,
-      sortByPins: this.tableData.sortBy,
-    };
-
-    this.location.replaceState(
-      this.router.serializeUrl(
-        this.router.createUrlTree(
-          ['../project-details'],
-          {
-            queryParams: encodedParams,
-            relativeTo: this.route,
-            queryParamsHandling: 'merge',
-          })
-      )
-    );
-
-    await this.pinsService.fetchData(this.tableData.currentPage, this.tableData.pageSize, this.tableData.sortBy, this.currentProject._id);
+  submit(params) {
+    this.storageService.state.scrollPosition = { type: 'scrollPosition', data: [window.scrollX, window.scrollY] };
+    this.router.navigate(
+      [],
+      {
+        queryParams: params,
+        relativeTo: this.route,
+        queryParamsHandling: 'merge'
+      });
+    this.pinsService.refreshData();
   }
 
   ngOnDestroy() {

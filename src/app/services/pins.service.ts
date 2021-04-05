@@ -10,7 +10,7 @@ import { ApiService } from './api';
 })
 export class PinsService {
   private data: BehaviorSubject<SearchResults>;
-  private fetchDataConfig: any;
+  public fetchDataConfig: any;
 
   constructor(
     private api: ApiService,
@@ -77,6 +77,8 @@ export class PinsService {
     if (res && res[0]) {
       if (res[0].results) {
         searchResults.data = res[0].results;
+      } else if (res[0].total_items === 0) {
+        searchResults.data = [];
       } else {
         this.eventService.setError(
           new EventObject(
@@ -107,5 +109,9 @@ export class PinsService {
       );
     }
     this.setValue(searchResults);
+  }
+
+  clearValue(): void {
+    this.setValue(new SearchResults);
   }
 }

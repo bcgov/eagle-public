@@ -1,5 +1,4 @@
 import { Component, OnInit, ChangeDetectorRef, OnDestroy } from '@angular/core';
-import { Location } from '@angular/common';
 import { Router, ActivatedRoute, Params } from '@angular/router';
 import 'rxjs/add/operator/switchMap';
 import 'rxjs/add/operator/takeUntil';
@@ -10,17 +9,14 @@ import { SearchResults } from 'app/models/search';
 
 import { DocumentTableRowsComponent } from './project-document-table-rows/project-document-table-rows.component';
 
-import { StorageService } from 'app/services/storage.service';
 import { Constants } from 'app/shared/utils/constants';
 import { TableTemplate } from 'app/shared/components/table-template-2/table-template';
 import { IColumnObject, TableObject2 } from 'app/shared/components/table-template-2/table-object-2';
-import { IPageSizePickerOption } from 'app/shared/components/page-size-picker/page-size-picker.component';
 import { ITableMessage } from 'app/shared/components/table-template-2/table-row-component';
 import { DocumentService } from 'app/services/document.service';
 import { takeWhile } from 'rxjs/operators';
 import { DateFilterDefinition, FilterObject, FilterType, MultiSelectDefinition } from 'app/shared/components/search-filter-template/filter-object';
 import { ConfigService } from 'app/services/config.service';
-import { SearchParamObject } from 'app/services/search.service';
 
 @Component({
   selector: 'app-documents',
@@ -35,9 +31,7 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
 
   public loadingLists = true;
   public loadingTableParams = true;
-  public loadingtableData = true;
-
-  public readonly constants = Constants;
+  public loadingTableData = true;
 
   public tableColumns: IColumnObject[] = [
     {
@@ -72,7 +66,6 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
     }
   ];
 
-  public currentProject;
 
   public filters: FilterObject[] = [];
 
@@ -89,21 +82,18 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
   public showAdvancedFilters = false;
   private filtersList = ['milestone', 'documentAuthorType', 'type', 'projectPhase'];
   private dateFiltersList = ['datePostedStart', 'datePostedEnd'];
+  private initialLoad = true;
 
   constructor(
     private _changeDetectionRef: ChangeDetectorRef,
     private route: ActivatedRoute,
     private router: Router,
-    private storageService: StorageService,
     private tableTemplateUtils: TableTemplate,
-    private location: Location,
     private documentService: DocumentService,
     private configService: ConfigService
   ) { }
 
   ngOnInit() {
-    this.currentProject = this.storageService.state.currentProject.data;
-
     this.configService.lists.pipe(takeWhile(() => this.alive)).subscribe((list) => {
       this.lists = list;
       this.lists.forEach(item => {
@@ -128,14 +118,16 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
       this.tableData = this.tableTemplateUtils.updateTableObjectWithUrlParams(data['params'], this.tableData);
 
       if (
-        this.queryParams['milestone'] ||
-        this.queryParams['documentAuthorType'] ||
-        this.queryParams['type'] ||
-        this.queryParams['datePostedStart'] ||
-        this.queryParams['datePostedEnd'] ||
-        this.queryParams['projectPhase']
+        this.initialLoad && (
+          this.queryParams['milestone'] ||
+          this.queryParams['documentAuthorType'] ||
+          this.queryParams['type'] ||
+          this.queryParams['datePostedStart'] ||
+          this.queryParams['datePostedEnd'] ||
+          this.queryParams['projectPhase'])
       ) {
         this.showAdvancedFilters = true;
+        this.initialLoad = false;
       }
 
       this.loadingTableParams = false;
@@ -143,17 +135,19 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
     });
 
     this.documentService.getValue().pipe(takeWhile(() => this.alive)).subscribe((searchResults: SearchResults) => {
-      this.tableData.totalListItems = searchResults.totalSearchCount;
-      this.tableData.items = searchResults.data.map(record => {
-        record['showFeatured'] = true;
-        return { rowData: record };
-      });
-      this.tableData.columns = this.tableColumns;
-      this.tableData.options.showAllPicker = true;
+      if (searchResults.data !== 0) {
+        this.tableData.totalListItems = searchResults.totalSearchCount;
+        this.tableData.items = searchResults.data.map(record => {
+          record['showFeatured'] = true;
+          return { rowData: record };
+        });
+        this.tableData.columns = this.tableColumns;
+        this.tableData.options.showAllPicker = true;
 
-      this.loadingtableData = false;
+        this.loadingTableData = false;
 
-      this._changeDetectionRef.detectChanges();
+        this._changeDetectionRef.detectChanges();
+      }
     });
   }
 
@@ -236,134 +230,71 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
   }
 
   executeSearch(searchPackage) {
-    this.clearQueryParamsFilters(this.queryParams);
-
-    // check keyword
+    let params = {};
     if (searchPackage.keywords) {
-      this.queryParams['keywords'] = searchPackage.keywords;
+      params['keywords'] = searchPackage.keywords;
+      this.documentService.fetchDataConfig.keywords = params['keywords'];
       // always change sortBy to '-score' if keyword search is directly triggered by user
       if (searchPackage.keywordsChanged) {
-        this.tableData.sortBy = '-score';
+        params['sortBy'] = '-score';
+        this.documentService.fetchDataConfig.sortBy = params['sortBy'];
       }
+    } else {
+      params['keywords'] = null;
+      params['sortBy'] = Constants.tableDefaults.DEFAULT_SORT_BY;
+      this.documentService.fetchDataConfig.keywords = '';
+      this.documentService.fetchDataConfig.sortBy = params['sortBy'];
     }
 
-    // check subset
-    if (searchPackage.subset) {
-      this.queryParams['subset'] = [searchPackage.subset];
-    }
+    params['currentPage'] = 1;
+    this.documentService.fetchDataConfig.currentPage = params['currentPage'];
 
-    Object.keys(searchPackage.filters).forEach(filter => {
-      this.queryParams[filter] = searchPackage.filters[filter];
-    });
+    let queryFilters = this.tableTemplateUtils.getFiltersFromSearchPackage(searchPackage, this.filtersList, this.dateFiltersList);
+    this.documentService.fetchDataConfig.filters = queryFilters;
 
-    this.tableData.currentPage = 1;
-    this.submit();
-  }
-
-  private clearQueryParamsFilters(params) {
-    delete params['keywords'];
-    delete params['datePostedStart'];
-    delete params['datePostedEnd'];
-    delete params['milestone'];
-    delete params['documentAuthorType'];
-    delete params['type'];
-    delete params['projectPhase'];
+    this.submit(params, queryFilters);
   }
 
   onMessageOut(msg: ITableMessage) {
+    let params = {};
     switch (msg.label) {
       case 'columnSort':
-        this.setColumnSort(msg.data);
+        if (this.tableData.sortBy.charAt(0) === '+') {
+          params['sortBy'] = '-' + msg.data;
+        } else {
+          params['sortBy'] = '+' + msg.data;
+        }
+        this.documentService.fetchDataConfig.sortBy = params['sortBy'];
         break;
       case 'pageNum':
-        this.onPageNumUpdate(msg.data);
+        params['currentPage'] = msg.data;
+        this.documentService.fetchDataConfig.currentPage = params['currentPage'];
         break;
       case 'pageSize':
-        this.onPageSizeUpdate(msg.data);
+        params['pageSize'] = msg.data.value;
+        if (params['pageSize'] === this.tableData.totalListItems) {
+          this.loadingTableData = true;
+        }
+        params['currentPage'] = 1;
+        this.documentService.fetchDataConfig.pageSize = params['pageSize'];
+        this.documentService.fetchDataConfig.currentPage = params['currentPage'];
         break;
       default:
         break;
     }
+    this.submit(params);
   }
 
-  setColumnSort(column) {
-    if (this.tableData.sortBy.charAt(0) === '+') {
-      this.tableData.sortBy = '-' + column;
-    } else {
-      this.tableData.sortBy = '+' + column;
-    }
-    this.tableData.currentPage = 1;
-    this.submit();
-  }
-
-  onPageNumUpdate(pageNumber) {
-    this.tableData.currentPage = pageNumber;
-    this.submit();
-  }
-
-  onPageSizeUpdate(pageSize: IPageSizePickerOption) {
-    this.tableData.pageSize = pageSize.value;
-    if (this.tableData.pageSize === this.tableData.totalListItems) {
-      this.loadingtableData = true;
-    }
-    this.tableData.currentPage = 1;
-    this.submit();
-  }
-
-  async submit() {
-    delete this.queryParams.sortBy;
-    delete this.queryParams.currentPage;
-    delete this.queryParams.pageNumber;
-    delete this.queryParams.pageSize;
-
-    const params = { ...this.queryParams, ...this.tableTemplateUtils.getNavParamsObj(this.tableData) }
-
-    const filtersForApi = { ... this.queryParams };
-    delete filtersForApi['keywords'];
-
-    if (!params['keywords']) {
-      params['keywords'] = null;
-    }
-
-    this.clearQueryParamsFilters(params);
-
-    const filtersForAPI = this.tableTemplateUtils.getFiltersFromParams(
-      this.queryParams,
-      this.filtersList
-    );
-
-    const dateFiltersForAPI = this.tableTemplateUtils.getDateFiltersFromParams(
-      this.queryParams,
-      this.dateFiltersList
-    );
-
-    let paramsForMerge = { ...params, ...filtersForAPI, ...dateFiltersForAPI };
-    this.tableTemplateUtils.removeFiltersForQueryMerge(paramsForMerge, this.filtersList.concat(this.dateFiltersList));
-
-    this.location.replaceState(
-      this.router.serializeUrl(
-        this.router.createUrlTree(
-          ['../documents'],
-          {
-            queryParams: paramsForMerge,
-            relativeTo: this.route,
-            queryParamsHandling: 'merge',
-          })
-      )
-    );
-
-    await this.documentService.fetchData(new SearchParamObject(
-      this.queryParams.keywords,
-      'Document',
-      [{ 'name': 'project', 'value': this.currentProject._id }],
-      this.tableData.currentPage,
-      this.tableData.pageSize,
-      this.tableData.sortBy,
-      { documentSource: 'PROJECT' },
-      true,
-      '',
-      { ...filtersForAPI, ...dateFiltersForAPI }
-    ));
+  submit(params, filters = null) {
+    this.router.navigate(
+      [],
+      {
+        queryParams: filters ? { ...params, ...filters } : params,
+        relativeTo: this.route,
+        queryParamsHandling: 'merge'
+      });
+    this.loadingTableData = true;
+    this.documentService.refreshData();
   }
 
   ngOnDestroy() {

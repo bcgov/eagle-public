@@ -34,6 +34,10 @@ export class OrgService {
     return this.data.asObservable();
   }
 
+  clearValue(): void {
+    this.setValue(null);
+  }
+
   async fetchProponent() {
     const res = await this.getByCompanyType('Proponent/Certificate Holder').toPromise();
     this.setValue(res);

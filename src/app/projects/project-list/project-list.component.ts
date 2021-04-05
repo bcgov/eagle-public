@@ -1,6 +1,5 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { Router, ActivatedRoute, Params } from '@angular/router';
-import { Location } from '@angular/common';
 import 'rxjs/add/operator/takeUntil';
 
 import * as _ from 'lodash';
@@ -11,12 +10,10 @@ import { Constants } from 'app/shared/utils/constants';
 import { DateFilterDefinition, FilterObject, FilterType, MultiSelectDefinition } from 'app/shared/components/search-filter-template/filter-object';
 import { ProjectListTableRowsComponent } from './project-list-table-rows/project-list-table-rows.component';
 
-import { SearchParamObject } from 'app/services/search.service';
 import { ConfigService } from 'app/services/config.service';
 import { IColumnObject, TableObject2 } from 'app/shared/components/table-template-2/table-object-2';
 import { takeWhile } from 'rxjs/operators';
 import { TableTemplate } from 'app/shared/components/table-template-2/table-template';
-import { IPageSizePickerOption } from 'app/shared/components/page-size-picker/page-size-picker.component';
 import { ITableMessage } from 'app/shared/components/table-template-2/table-row-component';
 import { ProjectService } from 'app/services/project.service';
 import { OrgService } from 'app/services/org.service';
@@ -78,6 +75,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
   public showAdvancedFilters = false;
   public filters: FilterObject[] = [];
   private proponents = [];
+  private initialLoad = true;
 
   private legislationFilterGroup = { name: 'legislation', labelPrefix: null, labelPostfix: ' Act Terms' };
 
@@ -88,33 +86,34 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     private projectService: ProjectService,
     private orgService: OrgService,
     private configService: ConfigService,
-    private location: Location,
     private _changeDetectionRef: ChangeDetectorRef
   ) { }
 
   ngOnInit() {
     this.orgService.getValue().pipe(takeWhile(() => this.alive)).subscribe((res: Org[]) => {
-      this.configService.lists.pipe(takeWhile(() => this.alive)).subscribe((list) => {
-        this.proponents = res;
+      if (res) {
+        this.configService.lists.pipe(takeWhile(() => this.alive)).subscribe((list) => {
+          this.proponents = res;
 
-        this.lists = list;
-        this.lists.forEach(item => {
-          switch (item.type) {
-            case 'eaDecisions':
-              this.eaDecisionArray.push({ ...item });
-              break;
-            case 'ceaaInvolvements':
-              this.iaacArray.push({ ...item });
-              break;
-            case 'projectPhase':
-              this.phaseArray.push({ ...item });
-              break;
-          }
+          this.lists = list;
+          this.lists.forEach(item => {
+            switch (item.type) {
+              case 'eaDecisions':
+                this.eaDecisionArray.push({ ...item });
+                break;
+              case 'ceaaInvolvements':
+                this.iaacArray.push({ ...item });
+                break;
+              case 'projectPhase':
+                this.phaseArray.push({ ...item });
+                break;
+            }
+          });
+          this.setFilters();
+          this.loadingLists = false;
+          this._changeDetectionRef.detectChanges();
         });
-        this.setFilters();
-        this.loadingLists = false;
-        this._changeDetectionRef.detectChanges();
-      });
+      }
     });
 
     this.route.queryParamMap.pipe(takeWhile(() => this.alive)).subscribe(data => {
@@ -127,32 +126,36 @@ export class ProjectListComponent implements OnInit, OnDestroy {
       }
 
       if (
-        this.queryParams['type'] ||
-        this.queryParams['eacDecision'] ||
-        this.queryParams['decisionDateStart'] ||
-        this.queryParams['decisionDateEnd'] ||
-        this.queryParams['pcp'] ||
-        this.queryParams['proponent'] ||
-        this.queryParams['region'] ||
-        this.queryParams['CEAAInvolvement'] ||
-        this.queryParams['currentPhaseName']
+        this.initialLoad && (
+          this.queryParams['type'] ||
+          this.queryParams['eacDecision'] ||
+          this.queryParams['decisionDateStart'] ||
+          this.queryParams['decisionDateEnd'] ||
+          this.queryParams['pcp'] ||
+          this.queryParams['proponent'] ||
+          this.queryParams['region'] ||
+          this.queryParams['CEAAInvolvement'] ||
+          this.queryParams['currentPhaseName'])
       ) {
         this.showAdvancedFilters = true;
+        this.initialLoad = false;
       }
       this.loadingTableParams = false;
       this._changeDetectionRef.detectChanges();
     });
 
     this.projectService.getValue().pipe(takeWhile(() => this.alive)).subscribe((searchResults: SearchResults) => {
-      this.tableData.totalListItems = searchResults.totalSearchCount;
-      this.tableData.items = searchResults.data.map(record => {
-        return { rowData: record };
-      });
-      this.tableData.columns = this.tableColumns;
-      this.tableData.options.showAllPicker = true;
+      if (searchResults.data !== 0) {
+        this.tableData.totalListItems = searchResults.totalSearchCount;
+        this.tableData.items = searchResults.data.map(record => {
+          return { rowData: record };
+        });
+        this.tableData.columns = this.tableColumns;
+        this.tableData.options.showAllPicker = true;
 
-      this.loadingTableData = false;
-      this._changeDetectionRef.detectChanges();
+        this.loadingTableData = false;
+        this._changeDetectionRef.detectChanges();
+      }
     });
   }
 
@@ -280,140 +283,72 @@ export class ProjectListComponent implements OnInit, OnDestroy {
   }
 
   executeSearch(searchPackage) {
-    this.clearQueryParamsFilters(this.queryParams);
-
-    // check keyword
+    let params = {};
     if (searchPackage.keywords) {
-      this.queryParams['keywords'] = searchPackage.keywords;
+      params['keywords'] = searchPackage.keywords;
+      this.projectService.fetchDataConfig.keywords = params['keywords'];
       // always change sortBy to '-score' if keyword search is directly triggered by user
       if (searchPackage.keywordsChanged) {
-        this.tableData.sortBy = '-score';
+        params['sortBy'] = '-score';
+        this.projectService.fetchDataConfig.sortBy = params['sortBy'];
       }
     } else {
-      if (this.tableData.sortBy === '-score') {
-        this.tableData.sortBy = '+name';
-      }
+      params['keywords'] = null;
+      params['sortBy'] = '+name';
+      this.projectService.fetchDataConfig.keywords = '';
+      this.projectService.fetchDataConfig.sortBy = params['sortBy'];
     }
 
-    // check subset
-    if (searchPackage.subset) {
-      this.queryParams['subset'] = [searchPackage.subset];
-    }
-    Object.keys(searchPackage.filters).forEach(filter => {
-      this.queryParams[filter] = searchPackage.filters[filter];
-    });
+    params['currentPage'] = 1;
+    this.projectService.fetchDataConfig.currentPage = params['currentPage'];
 
-    this.tableData.currentPage = 1;
-    this.submit();
-  }
+    let queryFilters = this.tableTemplateUtils.getFiltersFromSearchPackage(searchPackage, this.filtersList, this.dateFiltersList);
+    this.projectService.fetchDataConfig.filters = queryFilters;
 
-  private clearQueryParamsFilters(params) {
-    delete params['keywords'];
-    delete params['type'];
-    delete params['eacDecision'];
-    delete params['decisionDateStart'];
-    delete params['decisionDateEnd'];
-    delete params['pcp'];
-    delete params['proponent'];
-    delete params['region'];
-    delete params['CEAAInvolvement'];
-    delete params['currentPhaseName'];
+    this.submit(params, queryFilters);
   }
 
   onMessageOut(msg: ITableMessage) {
+    let params = {};
     switch (msg.label) {
       case 'columnSort':
-        this.setColumnSort(msg.data);
+        if (this.tableData.sortBy.charAt(0) === '+') {
+          params['sortBy'] = '-' + msg.data;
+        } else {
+          params['sortBy'] = '+' + msg.data;
+        }
+        this.projectService.fetchDataConfig.sortBy = params['sortBy'];
         break;
       case 'pageNum':
-        this.onPageNumUpdate(msg.data);
+        params['currentPage'] = msg.data;
+        this.projectService.fetchDataConfig.currentPage = params['currentPage'];
         break;
       case 'pageSize':
-        this.onPageSizeUpdate(msg.data);
+        params['pageSize'] = msg.data.value;
+        if (params['pageSize'] === this.tableData.totalListItems) {
+          this.loadingTableData = true;
+        }
+        params['currentPage'] = 1;
+        this.projectService.fetchDataConfig.pageSize = params['pageSize'];
+        this.projectService.fetchDataConfig.currentPage = params['currentPage'];
+
         break;
       default:
         break;
     }
+    this.submit(params);
   }
 
-  setColumnSort(column) {
-    if (this.tableData.sortBy.charAt(0) === '+') {
-      this.tableData.sortBy = '-' + column;
-    } else {
-      this.tableData.sortBy = '+' + column;
-    }
-    this.tableData.currentPage = 1;
-    this.submit();
-  }
-
-  onPageNumUpdate(pageNumber) {
-    this.tableData.currentPage = pageNumber;
-    this.submit();
-  }
-
-  onPageSizeUpdate(pageSize: IPageSizePickerOption) {
-    this.tableData.pageSize = pageSize.value;
-    if (this.tableData.pageSize === this.tableData.totalListItems) {
-      this.loadingTableData = true;
-    }
-    this.tableData.currentPage = 1;
-    this.submit();
-  }
-
-  async submit() {
-    delete this.queryParams.sortBy;
-    delete this.queryParams.currentPage;
-    delete this.queryParams.pageNumber;
-    delete this.queryParams.pageSize;
-
-    const params = { ...this.queryParams, ...this.tableTemplateUtils.getNavParamsObj(this.tableData) };
-
-    const filtersForApi = { ... this.queryParams };
-    delete filtersForApi['keywords'];
-
-    if (!params['keywords']) {
-      params['keywords'] = null;
-    }
-
-    this.clearQueryParamsFilters(params);
-
-    const filtersForAPI = this.tableTemplateUtils.getFiltersFromParams(
-      this.queryParams,
-      this.filtersList
-    );
-
-    const dateFiltersForAPI = this.tableTemplateUtils.getDateFiltersFromParams(
-      this.queryParams,
-      this.dateFiltersList
-    );
-
-    let paramsForMerge = { ...params, ...filtersForAPI, ...dateFiltersForAPI };
-    this.tableTemplateUtils.removeFiltersForQueryMerge(paramsForMerge, this.filtersList.concat(this.dateFiltersList));
-
-    this.location.replaceState(
-      this.router.serializeUrl(
-        this.router.createUrlTree(
-          ['projects-list'],
-          {
-            queryParams: paramsForMerge,
-            queryParamsHandling: 'merge'
-          })
-      )
-    );
-    await this.projectService.fetchData(new SearchParamObject(
-      this.queryParams.keywords,
-      'Project',
+  submit(params, filters = null) {
+    this.router.navigate(
       [],
-      this.tableData.currentPage,
-      this.tableData.pageSize,
-      this.tableData.sortBy,
-      {},
-      true,
-      null,
-      { ...filtersForAPI, ...dateFiltersForAPI },
-      '',
-      true
-    ));
+      {
+        queryParams: filters ? { ...params, ...filters } : params,
+        relativeTo: this.route,
+        queryParamsHandling: 'merge'
+      });
+    this.loadingTableData = true;
+    this.projectService.refreshData();
   }
 
   ngOnDestroy() {
