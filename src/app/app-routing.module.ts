@@ -47,7 +47,7 @@ const routes: Routes = [
     path: 'project-notifications',
     component: ProjectNotificationsListComponent,
     resolve: {
-      projectNotifications: ProjectNotificationsResolver
+      ProjectNotificationsResolver
     }
   },
   {

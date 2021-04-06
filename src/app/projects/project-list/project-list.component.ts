@@ -165,7 +165,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
       FilterType.MultiSelect,
       'Project Type',
       new MultiSelectDefinition(
-        Constants.PROJECT_TYPE_COLLECTION,
+        Constants.TEMPORARY_PROJECT_TYPE,
         [],
         null,
         null,

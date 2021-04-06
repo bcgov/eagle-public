@@ -1,18 +1,15 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
-import { Router, ActivatedRoute } from '@angular/router';
+import { Router, ActivatedRoute, Params } from '@angular/router';
 import { Constants } from 'app/shared/utils/constants';
-import 'rxjs/add/operator/takeUntil';
-import { Subject } from 'rxjs/Subject';
-import * as _ from 'lodash';
+import { SearchResults, } from 'app/models/search';
+import { IColumnObject, TableObject2 } from 'app/shared/components/table-template-2/table-object-2';
+import { ProjectNotificationsTableRowsComponent } from './project-notifications-table-rows/project-notifications-table-rows.component';
+import { TableTemplate } from 'app/shared/components/table-template-2/table-template';
+import { first, takeWhile } from 'rxjs/operators';
+import { FilterObject, FilterType, MultiSelectDefinition } from 'app/shared/components/search-filter-template/filter-object';
+import { ITableMessage } from 'app/shared/components/table-template-2/table-row-component';
+import { TableService } from 'app/services/table.service';
 import { ProjectNotification } from 'app/models/projectNotification';
-import { SearchTerms } from 'app/models/search';
-import { TableObject } from 'app/shared/components/table-template/table-object';
-import { TableParamsObject } from 'app/shared/components/table-template/table-params-object';
-import { TableTemplateUtils } from 'app/shared/utils/table-template-utils';
-import { FilterObject } from 'app/shared/components/table-template/filter-object';
-import { SearchService } from 'app/services/search.service';
-import { ApiService } from 'app/services/api';
-import { MatSnackBar } from '@angular/material';
 import { CommentPeriodService } from 'app/services/commentperiod.service';
 
 @Component({
@@ -22,174 +19,228 @@ import { CommentPeriodService } from 'app/services/commentperiod.service';
 })
 
 export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
-  private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
-  public loading = true;
-  public tableData: TableObject;
-  public tableParams: TableParamsObject = new TableParamsObject();
-  public terms = new SearchTerms();
-  public showAdvancedSearch = true;
-  public filterForAPI: object = {};
+  private alive = true;
+  private filtersList = ['type', 'region', 'pcp', 'decision'];
+  private tableId = 'notificationProject'
 
-  public projectNotifications: Array<ProjectNotification> = [];
-  public readonly constants = Constants;
+  public tableColumns: IColumnObject[] = [
+    {
+      name: 'Project Notifications',
+      value: '',
+      width: 'col-12',
+      nosort: true
+    }
+  ];
 
+  public loadingLists = true;
+  public loadingTableParams = true;
+  public loadingTableData = true;
+
+  public queryParams: Params;
+  public tableData: TableObject2 = new TableObject2({ component: ProjectNotificationsTableRowsComponent });
+  public showAdvancedFilters = false;
   public filters: FilterObject[] = [];
+  private initialLoad = true;
 
-  private typeFilter = new FilterObject('type', 'Project Type', null, Constants.PROJECT_TYPE_COLLECTION, []);
-  private regionFilter = new FilterObject('region', 'Region', null, Constants.REGIONS_COLLECTION, []);
-  private pcpFilter = new FilterObject('pcp', 'Public Comment Period', null, Constants.PCP_COLLECTION, []);
-  private decisionFilter = new FilterObject('decision', 'Notification Decision', null, Constants.PROJECT_NOTIFICATION_DECISIONS, []);
 
   constructor(
-    private _changeDetectionRef: ChangeDetectorRef,
-    private route: ActivatedRoute,
     private router: Router,
-    private tableTemplateUtils: TableTemplateUtils,
-    private searchService: SearchService,
-    private api: ApiService,
-    public snackBar: MatSnackBar,
-    private commentPeriodService: CommentPeriodService
-  ) {
-    this.filters.push(this.typeFilter);
-    this.filters.push(this.regionFilter);
-    this.filters.push(this.pcpFilter);
-    this.filters.push(this.decisionFilter);
-  }
+    private route: ActivatedRoute,
+    private tableTemplateUtils: TableTemplate,
+    private tableService: TableService,
+    private commentPeriodService: CommentPeriodService,
+    private _changeDetectionRef: ChangeDetectorRef
+  ) { }
 
   ngOnInit() {
-    this.route.params
-      .takeUntil(this.ngUnsubscribe)
-      .subscribe(params => {
-        this.tableParams = this.tableTemplateUtils.getParamsFromUrl(params);
-        if (this.tableParams.sortBy === '-datePosted') {
-          this.tableParams.sortBy = '-startDate';
-          this.tableTemplateUtils.updateUrl(this.tableParams.sortBy, this.tableParams.currentPage, this.tableParams.pageSize, null, this.tableParams.keywords);
-        }
+    this.setFilters();
+    this.loadingLists = false;
+    this._changeDetectionRef.detectChanges();
+
+    this.route.queryParamMap.pipe(takeWhile(() => this.alive)).subscribe(data => {
+      this.queryParams = { ...data['params'] };
+      // Get params from route, shove into the tableTemplateUtils so that we get a new dataset to work with.
+      this.tableData = this.tableTemplateUtils.updateTableObjectWithUrlParams(data['params'], this.tableData);
+
+      if (!data['params'].sortBy) {
+        this.tableData.sortBy = '-_id';
+      }
+
+      if (
+        this.initialLoad && (
+          this.queryParams['type'] ||
+          this.queryParams['region'] ||
+          this.queryParams['pcp'] ||
+          this.queryParams['decision'])
+      ) {
+        this.showAdvancedFilters = true;
+        this.initialLoad = false;
+      }
+      this.loadingTableParams = false;
+      this._changeDetectionRef.detectChanges();
+    });
+
+    this.tableService.getValue(this.tableId).pipe(takeWhile(() => this.alive)).subscribe((searchResults: SearchResults) => {
+      if (searchResults.data !== 0) {
+        this.tableData.totalListItems = searchResults.totalSearchCount;
+        this.tableData.items = searchResults.data.map(record => {
+          this.getProjectCommentPeriod(record);
+          return { rowData: record };
+        });
+        this.tableData.columns = this.tableColumns;
+        this.tableData.options.showAllPicker = true;
+
+        this.loadingTableData = false;
         this._changeDetectionRef.detectChanges();
+      }
+    });
+  }
 
-        this.route.data
-          .takeUntil(this.ngUnsubscribe)
-          .subscribe((res: any) => {
-            if (res.projectNotifications[0].data) {
-              if (res.projectNotifications[0].data.searchResults.length > 0) {
-                this.tableParams.totalListItems = res.projectNotifications[0].data.meta[0].searchResultsTotal;
-                this.projectNotifications = res.projectNotifications[0].data.searchResults;
+  private setFilters() {
+    const typeFilter = new FilterObject(
+      'type',
+      FilterType.MultiSelect,
+      'Project Type',
+      new MultiSelectDefinition(
+        Constants.TEMPORARY_PROJECT_TYPE,
+        [],
+        null,
+        null,
+        true
+      ),
+      4
+    );
 
-                // load projetNotification comment periods and document refs
-                this.projectNotifications.forEach(projectNotification => {
-                  projectNotification['commentPeriod'] = null;
-                  this.getProjectCommentPeriod(projectNotification);
-                  this.getProjectDocuments(projectNotification);
-                });
+    const regionFilter = new FilterObject(
+      'region',
+      FilterType.MultiSelect,
+      'Region',
+      new MultiSelectDefinition(
+        Constants.REGIONS_COLLECTION,
+        [],
+        null,
+        null,
+        true
+      ),
+      4
+    );
 
-              } else {
-                this.tableParams.totalListItems = 0;
-                this.projectNotifications = [];
-              }
+    const pcpFilter = new FilterObject(
+      'pcp',
+      FilterType.MultiSelect,
+      'Public Comment Period',
+      new MultiSelectDefinition(
+        Constants.PCP_COLLECTION,
+        [],
+        null,
+        null,
+        true
+      ),
+      4
+    );
 
-              this.loading = false;
+    const decisionFilter = new FilterObject(
+      'decision',
+      FilterType.MultiSelect,
+      'Notification Decision',
+      new MultiSelectDefinition(
+        Constants.PROJECT_NOTIFICATION_DECISIONS,
+        [],
+        null,
+        null,
+        true
+      ),
+      4
+    );
+
+    this.filters = [
+      typeFilter,
+      regionFilter,
+      pcpFilter,
+      decisionFilter
+    ];
+  }
+
+  navSearchHelp() {
+    this.router.navigate(['/search-help']);
+  }
+
+  executeSearch(searchPackage) {
+    let params = {};
+    if (searchPackage.keywords) {
+      params['keywords'] = searchPackage.keywords;
+      this.tableService.data[this.tableId].cachedConfig.keywords = params['keywords'];
+      // always change sortBy to '-score' if keyword search is directly triggered by user
+      if (searchPackage.keywordsChanged) {
+        params['sortBy'] = '-score';
+        this.tableService.data[this.tableId].cachedConfig.sortBy = params['sortBy'];
+      }
+    } else {
+      params['keywords'] = null;
+      params['sortBy'] = '-_id';
+      this.tableService.data[this.tableId].cachedConfig.keywords = '';
+      this.tableService.data[this.tableId].cachedConfig.sortBy = params['sortBy'];
+    }
+
+    params['currentPage'] = 1;
+    this.tableService.data[this.tableId].cachedConfig.currentPage = params['currentPage'];
+
+    let queryFilters = this.tableTemplateUtils.getFiltersFromSearchPackage(searchPackage, this.filtersList);
+    this.tableService.data[this.tableId].cachedConfig.filters = queryFilters;
+
+    this.submit(params, queryFilters);
+  }
+
+  onMessageOut(msg: ITableMessage) {
+    let params = {};
+    switch (msg.label) {
+      case 'pageNum':
+        params['currentPage'] = msg.data;
+        this.tableService.data[this.tableId].cachedConfig.currentPage = params['currentPage'];
+        break;
+      case 'pageSize':
+        params['pageSize'] = msg.data.value;
+        if (params['pageSize'] === this.tableData.totalListItems) {
+          this.loadingTableData = true;
+        }
+        params['currentPage'] = 1;
+        this.tableService.data[this.tableId].cachedConfig.pageSize = params['pageSize'];
+        this.tableService.data[this.tableId].cachedConfig.currentPage = params['currentPage'];
+        break;
+      default:
+        break;
+    }
+    this.submit(params);
+  }
+
+  submit(params, filters = null) {
+    this.router.navigate(
+      [],
+      {
+        queryParams: filters ? { ...params, ...filters } : params,
+        relativeTo: this.route,
+        queryParamsHandling: 'merge'
+      });
+    this.loadingTableData = true;
+    this.tableService.refreshData(this.tableId);
+  }
+
+  getProjectCommentPeriod(project: ProjectNotification) {
+    this.commentPeriodService.getAllByProjectId(project._id)
+      .pipe(first())
+      .subscribe((res: any) => {
+        if (res && res.data) {
+          res.data.forEach(cp => {
+            if (!project['commentPeriod'] || (project['commentPeriod'] && cp.daysRemainingCount > project['commentPeriod'].daysRemainingCount)) {
+              project['commentPeriod'] = cp;
               this._changeDetectionRef.detectChanges();
-            } else {
-              alert('Uh-oh, couldn\'t load notification projects');
-              // activity not found --> navigate back to search
-              this.router.navigate(['/']);
             }
           });
+        }
       });
   }
 
   ngOnDestroy() {
-    this.ngUnsubscribe.next();
-    this.ngUnsubscribe.complete();
-  }
-
-  getTrigger(project) {
-    return project && project.trigger ? project.trigger.replace(/,/g, ', ') : null;
-  }
-  getProjectDocuments(project: ProjectNotification) {
-    this.searchService.getSearchResults(
-      null,
-      'Document',
-      [],
-      1,
-      1000,
-      null,
-      { documentSource: 'PROJECT-NOTIFICATION', project: project._id })
-      .takeUntil(this.ngUnsubscribe)
-      .subscribe((res: any) => {
-        if (res[0] && res[0].data && res[0].data.searchResults) {
-          project.documents = res[0].data.searchResults;
-          this._changeDetectionRef.detectChanges();
-        }
-      });
-  }
-  getProjectCommentPeriod(project: ProjectNotification) {
-    this.commentPeriodService.getAllByProjectId(project._id)
-    .takeUntil(this.ngUnsubscribe)
-    .subscribe((res: any) => {
-      if (res && res.data) {
-        res.data.forEach(cp => {
-          if (!project['commentPeriod'] || (project['commentPeriod'] && cp.daysRemainingCount > project['commentPeriod'].daysRemainingCount)) {
-            project['commentPeriod'] = cp;
-            this._changeDetectionRef.detectChanges();
-          }
-        });
-      }
-    });
-  }
-
-  downloadDocuments(project) {
-    project.documents.forEach(doc => {
-      this.api.downloadDocument(doc)
-      .then(() => {
-         // Turn this into a toast
-         this.snackBar.open('Downloading document');
-         window.setTimeout(() => this.snackBar.dismiss(), 2000)
-       })
-       .catch(() => {
-         this.snackBar.open('Error opening document! Please try again later');
-         window.setTimeout(() => this.snackBar.dismiss(), 2000)
-       })
-     });
-  }
-
-  executeSearch(apiFilters) {
-    this.terms.keywords = apiFilters.keywords;
-    this.tableParams.keywords = apiFilters.keywords;
-    this.filterForAPI = apiFilters.filterForAPI;
-
-    this.search();
-  }
-
-  search() {
-    this.searchService.getSearchResults(
-      this.tableParams.keywords,
-      'ProjectNotification',
-      null,
-      1,
-      10000,
-      '-_id',
-      this.filterForAPI
-    )
-    .takeUntil(this.ngUnsubscribe)
-    .subscribe((res: any) => {
-      this.tableParams.totalListItems = 0;
-      this.projectNotifications = [];
-
-      if (res[0] && res[0].data && res[0].data.searchResults.length > 0) {
-        this.tableParams.totalListItems = res[0].data.meta[0].searchResultsTotal;
-        this.projectNotifications = res[0].data.searchResults;
-
-        // load projetNotification comment periods and document refs
-        this.projectNotifications.forEach(projectNotification => {
-          projectNotification['commentPeriod'] = null;
-          this.getProjectCommentPeriod(projectNotification);
-          this.getProjectDocuments(projectNotification);
-        });
-      }
-
-      this.loading = false;
-      this._changeDetectionRef.detectChanges();
-    });
+    this.alive = false;
   }
 }

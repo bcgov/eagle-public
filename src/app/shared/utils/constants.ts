@@ -60,6 +60,21 @@ export class Constants {
     { code: 'waterManagement', name: 'Water Management' }
   ];
 
+  // TODO: At the moment, filters use the type name to communicate with the api.
+  // This will be removed when project type code is put in the root of the project
+  public static readonly TEMPORARY_PROJECT_TYPE = [
+    { code: 'Energy-Electricity', name: 'Energy-Electricity' },
+    { code: 'Energy-Petroleum & Natural Gas', name: 'Energy-Petroleum & Natural Gas' },
+    { code: 'Food Processing', name: 'Food Processing' },
+    { code: 'Industrial', name: 'Industrial' },
+    { code: 'Mines', name: 'Mines' },
+    { code: 'Other', name: 'Other' },
+    { code: 'Tourist Destination Resorts', name: 'Tourist Destination Resorts' },
+    { code: 'Transportation', name: 'Transportation' },
+    { code: 'Waste Disposal', name: 'Waste Disposal' },
+    { code: 'Water Management', name: 'Water Management' }
+  ];
+
   public static readonly REGIONS_COLLECTION: Array<object> = [
     { code: 'Cariboo', name: 'Cariboo' },
     { code: 'Kootenay', name: 'Kootenay' },

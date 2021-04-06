@@ -1,117 +1,47 @@
-<div class="spinner-container" *ngIf="loading">
-  <div class="spinner-new rotating"></div>
+<div class="spinner-container"
+    *ngIf="loadingLists || loadingTableParams">
+    <div class="spinner-new rotating"></div>
 </div>
 
-<main *ngIf="!loading">
-  <div class="container">
-    <div class="hero-banner__content">
-      <h1>Project Notifications in British Columbia</h1>
-      <p>Use the list below to navigate Project Notifications. A Project Notification is required if a proposed project meets the notification thresholds in the Reviewable Projects Regulation, indicating that while the project is not automatically reviewable, it may have the potential to cause adverse effects and warrants further review to determine if the project requires an Environmental Assessment. <a href='https://www2.gov.bc.ca/gov/content?id=5BFEC629E95E4D60A69DB7575BC78B33' target='_blank'>Learn More</a></p>
-    </div>
-  </div>
-
-  <section class="project-list table-container">
+<main *ngIf="!loadingLists && !loadingTableParams">
     <div class="container">
-        <h4>Project Notifications</h4>
-        <app-table-template [showSearch]="true"
-                            [showTableTemplate]="false"
-                            (onSearch)='executeSearch($event)'
-                            [showAdvancedSearch]="true"
-                            [filters]="filters"
-                            [persistenceId]="'globalPNSearch'">
-        </app-table-template>
-        <div *ngIf="projectNotifications.length === 0">
-            <p>
-                There are currently no Project Notifications
-            </p>
+        <div class="hero-banner__content">
+            <h1>Project Notifications in British Columbia</h1>
+            <div class="h4 sub-text">Use the list below to navigate Project Notifications. A Project Notification is
+                required if
+                a proposed
+                project meets the notification thresholds in the Reviewable Projects Regulation, indicating that while
+                the project is not automatically reviewable, it may have the potential to cause adverse effects and
+                warrants further review to determine if the project requires an Environmental Assessment.
+                <a href='https://www2.gov.bc.ca/gov/content?id=5BFEC629E95E4D60A69DB7575BC78B33'
+                    target='_blank'>Learn More</a>
+            </div>
+
         </div>
-        <div *ngIf="projectNotifications.length !== 0">
-            <div class="app-details" *ngFor="let project of projectNotifications">
-                <div class="card">
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-12">
-                            <div class="pn-location-info">
-                                <div class="row">
-                                    <div class="col-sm-12 col-md-6">
-                                        <h4>{{(project?.name.toUpperCase() || '-')}}</h4>
-                                    </div>
-                                    <div class="col-sm-12 col-md-6">
-                                        <a *ngIf="project?.commentPeriod?.daysRemainingCount > 0" class="btn btn-primary view-pcp-btn"
-                                        title="View this Public Comment Period"
-                                        [routerLink]="['/pn', project?._id, 'cp', project?.commentPeriod?._id]">
-                                        <div class="pcp-indicator pcp-indicator-active"></div>
-                                        Open Comment Period - View/Submit
-                                        </a>
-                                        <a *ngIf="project?.commentPeriod?.daysRemainingCount === 0" class="btn btn-primary view-pcp-btn"
-                                        title="View this Public Comment Period"
-                                        [routerLink]="['/pn', project?._id, 'cp', project?.commentPeriod?._id]">
-                                        <div class="pcp-indicator pcp-indicator-inactive"></div>
-                                        View Completed Comment Period
-                                        </a>
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="pn-decision">
-                                        <a [routerLink]="['/p', project?.associatedProjectId ]" *ngIf="project?.associatedProjectId; else noHyperlink">
-                                        <p class="value" *ngIf="project?.decisionDate; else noDate">Notification Decision - {{ project?.decision }} | {{project?.decisionDate?.toString().split('T')[0] || "-" }} </p>
-                                        <ng-template #noDate><p class="value">Notification Decision - {{ project?.decision }}</p></ng-template>
-                                        </a>
-                                        <ng-template #noHyperlink><p class="value" *ngIf="project?.decisionDate; else noDate">Notification Decision - {{ project?.decision }} | {{project?.decisionDate?.toString().split('T')[0] || "-" }} </p>
-                                            <ng-template #noDate><p class="value">Notification Decision - {{ project?.decision }}</p></ng-template>
-                                        </ng-template>
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="pn-info-block">
-                                        <label>Description:</label>
-                                        <p class="value" [innerHTML]="(project?.description || '-') | newlines"></p>
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="col-sm-12 col-md-4 pn-info-block">
-                                    <label>Type</label>
-                                    <p class="value">{{project?.type || "-" }}</p>
-                                    </div>
-                                    <div class="col-sm-12 col-md-4 pn-info-block">
-                                    <label>Location</label>
-                                    <p class="value">{{project?.location || "-" }}</p>
-                                    </div>
-                                    <div class="col-sm-12 col-md-4 pn-info-block">
-                                    <label>Proponent</label>
-                                    <p class="value">{{project?.proponent || "-" }}</p>
-                                    </div>
-                                    <div class="col-sm-12 col-md-4 pn-info-block">
-                                    <label>Sub-Type</label>
-                                    <p class="value">{{project?.subType || "-" }}</p>
-                                    </div>
-                                    <div class="col-sm-12 col-md-4 pn-info-block">
-                                        <label>Region</label>
-                                        <p class="value">{{project?.region || "-" }}</p>
-                                    </div>
-                                    <div class="col-sm-12 col-md-4 pn-info-block">
-                                        <label>Notification Trigger</label>
-                                        <p class="value">{{getTrigger(project) || "-" }}</p>
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="col-sm-12 col-md-3">
-                                        <button *ngIf="project.documents && project.documents.length > 0"
-                                                class="btn btn-sm content-btn-alt"
-                                                type="button"
-                                                (click)="downloadDocuments(project)">
-                                            <span>View Documents</span>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <br/>
+    </div>
+
+    <section class="project-list table-container">
+        <div class="container">
+            <section class="mb-4 pb-0">
+                <search-filter-template #explorePanel
+                    (searchEvent)='executeSearch($event)'
+                    [advancedFilters]="true"
+                    [showAdvancedFilters]="showAdvancedFilters"
+                    [searchOnFilterChange]="true"
+                    [filters]="filters"
+                    (resetControls)='tableData.sortBy.includes("score") ? tableData.sortBy = "-datePosted" : null'
+                    (toggleFiltersPanelEvent)="showAdvancedFilters = $event.showPanel"
+                    [searchHelpLinkArray]='["/search-help"]'
+                    [searching]="loadingTableData">
+                </search-filter-template>
+            </section>
+            <lib-table-template-2 *ngIf="tableData.totalListItems > 0"
+                [data]="tableData"
+                (messageOut)="onMessageOut($event)">
+            </lib-table-template-2>
+            <div *ngIf="tableData.totalListItems === 0">
+                No results were found.
             </div>
         </div>
-    </div>
     </section>
 </main>
