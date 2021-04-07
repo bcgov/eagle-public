@@ -25,7 +25,6 @@ export class TableService {
       behaviorSubject: new BehaviorSubject({ data: 0 }),
       cachedConfig: new SearchParamObject()
     }
-    console.log('initting!!', this.data);
   }
 
   setValue(tableId, value): void {
