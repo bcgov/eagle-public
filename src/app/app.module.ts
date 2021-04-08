@@ -48,6 +48,7 @@ import { ProjectNotificationsListComponent } from './project-notifications/proje
 import { SearchResolver } from './search/search-resolver.service';
 import { DocSearchTableRowsComponent } from './search/search-documents-table-rows/search-document-table-rows.component';
 import { PinsService } from 'app/services/pins.service';
+import { ProjectNotificationsTableRowsComponent } from './project-notifications/project-notifications-table-rows/project-notifications-table-rows.component';
 
 
 @NgModule({
@@ -86,10 +87,12 @@ import { PinsService } from 'app/services/pins.service';
     SearchHelpComponent,
     CACUnsubscribeComponent,
     DocSearchTableRowsComponent,
+    ProjectNotificationsTableRowsComponent
   ],
   entryComponents: [
     NewsListTableRowsComponent,
     DocSearchTableRowsComponent,
+    ProjectNotificationsTableRowsComponent
   ],
   providers: [
     ConfigService,
