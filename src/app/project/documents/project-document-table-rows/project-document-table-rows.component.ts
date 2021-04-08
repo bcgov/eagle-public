@@ -1,62 +1,37 @@
-import { Component, Input, Output, OnInit, OnDestroy, EventEmitter, ChangeDetectorRef } from '@angular/core';
-import { Subject } from 'rxjs';
-import { TableComponent } from 'app/shared/components/table-template/table.component';
-import { TableObject } from 'app/shared/components/table-template/table-object';
-import { Router, ActivatedRoute } from '@angular/router';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Utils } from 'app/shared/utils/utils';
+import { TableRowComponent } from 'app/shared/components/table-template-2/table-row-component';
+import { ConfigService } from 'app/services/config.service';
+import { takeWhile } from 'rxjs/operators';
+import { Router } from '@angular/router';
 
 @Component({
-  selector: 'tbody[app-document-table-rows]',
+  selector: 'tr[app-document-table-rows]',
   templateUrl: './project-document-table-rows.component.html',
   styleUrls: ['./project-document-table-rows.component.scss']
 })
 
-export class DocumentTableRowsComponent implements OnInit, OnDestroy, TableComponent {
-  private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
-  @Input() data: TableObject;
-  @Output() selectedCount: EventEmitter<any> = new EventEmitter();
-
-  public documents: any;
-  public paginationData: any;
-  public showFeatured = true;
+export class DocumentTableRowsComponent extends TableRowComponent implements OnInit, OnDestroy {
   private lists: any[] = [];
-
+  private alive = true;
   public currentUrl: String = '';
 
   constructor(
-    private _changeDetectionRef: ChangeDetectorRef,
-    private route: ActivatedRoute,
-    private router: Router,
-    private utils: Utils
+    private configService: ConfigService,
+    private utils: Utils,
+    private router: Router
   ) {
+    super();
     let currRoute = this.router.url.split(';')[0];
     this.currentUrl = currRoute.substring(currRoute.lastIndexOf('/') + 1);
-   }
+  }
 
   ngOnInit() {
-    this.documents = this.data.data;
-    this.paginationData = this.data.paginationData;
-    if (this.data.extraData) {
-      this.showFeatured = this.data.extraData.showFeatured;
-    }
-
-    this.route.data
-      .takeUntil(this.ngUnsubscribe)
-      .subscribe((res: any) => {
-        if (res) {
-          if (res.documentsTableRow && res.documentsTableRow.length > 0) {
-            this.lists = res.documentsTableRow[0].searchResults;
-          } else if (res.documents && res.documents.length > 0) {
-            this.lists = res.documents[0].data.searchResults;
-          } else {
-            alert('Uh-oh, couldn\'t load list');
-            this.lists = [];
-          }
-          this._changeDetectionRef.detectChanges();
-        }
-      });
+    this.configService.lists.pipe(takeWhile(() => this.alive)).subscribe((list) => {
+      this.lists = list;
+    });
   }
-  // idToList is replacement for list-converter.pipe.ts, add it is because this.config.list doesn't always load properly
+
   idToList(id: string) {
     if (!id) {
       return '-';
@@ -69,20 +44,9 @@ export class DocumentTableRowsComponent implements OnInit, OnDestroy, TableCompo
       return '-';
     }
   }
-  selectItem(item) {
-    item.checkbox = !item.checkbox;
-
-    let count = 0;
-    this.documents.map(doc => {
-      if (doc.checkbox === true) {
-        count++;
-      }
-    });
-    this.selectedCount.emit(count);
-  }
 
   goToItem(item) {
-    let filename = item.documentFileName;
+    let filename = item.documentFileName || item.displayName || item.internalOriginalName;
     let safeName = filename;
     try {
       safeName = this.utils.encodeString(filename, true)
@@ -91,8 +55,8 @@ export class DocumentTableRowsComponent implements OnInit, OnDestroy, TableCompo
     }
     window.open('/api/public/document/' + item._id + '/download/' + safeName, '_blank');
   }
+
   ngOnDestroy() {
-    this.ngUnsubscribe.next();
-    this.ngUnsubscribe.complete();
+    this.alive = false;
   }
 }

@@ -1,27 +1,24 @@
-<tr
-  *ngFor="let activity of activities">
-  <td scope="row" data-label="Headline" class="col-10">
-    <div>
-      <span class="font-weight-bold">{{activity.project.name || '-'}}</span>
-      <span *ngIf="activity.notificationName" class="font-weight-bold">{{activity.notificationName}}</span>
-      <br>
-      <span>{{activity.headline || '-'}}</span>
-      <br>
-      <br>
-      <span [innerHtml]="activity.content"></span>
-    </div>
+<td scope="row" data-label="Headline" class="col-10">
+  <div>
+    <span class="font-weight-bold">{{rowData.project.name || '-'}}</span>
+    <span *ngIf="rowData.notificationName" class="font-weight-bold">{{rowData.notificationName}}</span>
     <br>
-    <div>
-      <a *ngIf="isSingleDoc(activity?.documentUrl) && !activity?.documentUrl.includes('docs?folder')"
-        class="btn content-btn-alt" href="{{activity.documentUrl}}">
-        <span *ngIf="!activity?.notificationName">View Document(s)</span>
-        <span *ngIf="activity.notificationName">View Project Notification Public Comment Period</span>
-      </a>
-      <button *ngIf="activity?.pcp"
-        class="btn content-btn-alt" (click)="goToCP(activity)">
-        <span>Submit/ View Comment(s)</span>
-      </button>
-    </div>
-  </td>
-  <td scope="row" data-label="Date" class="col-2">{{activity.dateAdded | date:'longDate'}}</td>
-</tr>
+    <span>{{rowData.headline || '-'}}</span>
+    <br>
+    <br>
+    <span [innerHtml]="rowData.content"></span>
+  </div>
+  <br>
+  <div>
+    <a *ngIf="isSingleDoc(rowData?.documentUrl) && !rowData?.documentUrl.includes('docs?folder')"
+      class="btn content-btn-alt" href="{{rowData.documentUrl}}" target="_blank" rel="noopener">
+      <span *ngIf="!rowData?.notificationName">View Document(s)</span>
+      <span *ngIf="rowData.notificationName">View Project Notification Public Comment Period</span>
+    </a>
+    <button *ngIf="rowData?.pcp"
+      class="btn content-btn-alt" (click)="goToItem(rowData)">
+      <span>Submit/ View Comment(s)</span>
+    </button>
+  </div>
+</td>
+<td scope="row" data-label="Date" class="col-2">{{rowData.dateAdded | date:'longDate'}}</td>

@@ -1,6 +1,7 @@
 @import "~assets/styles/base/base.scss";
 
 .project-list {
+  margin-bottom: 50px;
   &__options {
     @include flex(0 0 auto);
     padding: 1rem 0rem;

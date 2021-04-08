@@ -31,7 +31,14 @@ export class Constants {
     DEFAULT_PAGE_SIZE: 10,
     DEFAULT_SORT_BY: '-datePosted',
     DEFAULT_KEYWORDS: '',
-    DEFAULT_SHOW_MORE_INCREMENT: 5
+    DEFAULT_SHOW_MORE_INCREMENT: 5,
+    DEFAULT_DATASET: '',
+    DEFAULT_PAGE_SIZE_OPTIONS: [
+      { displayText: '10', value: 10 },
+      { displayText: '25', value: 25 },
+      { displayText: '50', value: 50 },
+      { displayText: '100', value: 100 }
+    ]
   };
 
   public static readonly PCP_COLLECTION: object[] = [
@@ -53,6 +60,21 @@ export class Constants {
     { code: 'waterManagement', name: 'Water Management' }
   ];
 
+  // TODO: At the moment, filters use the type name to communicate with the api.
+  // This will be removed when project type code is put in the root of the project
+  public static readonly TEMPORARY_PROJECT_TYPE = [
+    { code: 'Energy-Electricity', name: 'Energy-Electricity' },
+    { code: 'Energy-Petroleum & Natural Gas', name: 'Energy-Petroleum & Natural Gas' },
+    { code: 'Food Processing', name: 'Food Processing' },
+    { code: 'Industrial', name: 'Industrial' },
+    { code: 'Mines', name: 'Mines' },
+    { code: 'Other', name: 'Other' },
+    { code: 'Tourist Destination Resorts', name: 'Tourist Destination Resorts' },
+    { code: 'Transportation', name: 'Transportation' },
+    { code: 'Waste Disposal', name: 'Waste Disposal' },
+    { code: 'Water Management', name: 'Water Management' }
+  ];
+
   public static readonly REGIONS_COLLECTION: Array<object> = [
     { code: 'Cariboo', name: 'Cariboo' },
     { code: 'Kootenay', name: 'Kootenay' },
@@ -72,13 +94,16 @@ export class Constants {
   ];
 
   public static readonly buildToNature: BuildNature[] = [
-    { build: 'new',
+    {
+      build: 'new',
       nature: 'New Construction'
     },
-    { build: 'modification',
+    {
+      build: 'modification',
       nature: 'Modification of Existing'
     },
-    { build: 'dismantling',
+    {
+      build: 'dismantling',
       nature: 'Dismantling or Abandonment'
     },
   ];

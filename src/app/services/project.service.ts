@@ -11,11 +11,11 @@ import { Project } from 'app/models/project';
 import { ApiService } from './api';
 import { CommentPeriod } from 'app/models/commentperiod';
 import { Org } from 'app/models/organization';
-import { ISearchResults } from 'app/models/search';
+import { ISearchResults, SearchResults } from 'app/models/search';
 import { flatMap } from 'rxjs/operators';
 import { of } from 'rxjs/internal/observable/of';
-import { forkJoin } from 'rxjs';
-import { SearchService } from './search.service';
+import { BehaviorSubject, forkJoin } from 'rxjs';
+import { SearchParamObject, SearchService } from './search.service';
 import { Utils } from 'app/shared/utils/utils';
 import { DataQueryResponse } from 'app/models/api-response';
 
@@ -26,6 +26,9 @@ interface GetParameters {
 
 @Injectable()
 export class ProjectService {
+  private data: BehaviorSubject<SearchResults>;
+  public fetchDataConfig: any;
+
   private project: Project = null; // for caching
   private projectList: Project[] = [];
 
@@ -33,12 +36,17 @@ export class ProjectService {
   constructor(
     private api: ApiService,
     private searchService: SearchService,
-    private utils: Utils
-  ) { }
+    private utils: Utils,
+  ) {
+    this.data = new BehaviorSubject<SearchResults>(new SearchResults);
+
+    this.fetchDataConfig = new SearchParamObject();
+    this.fetchDataConfig.dataset = 'Project';
+  }
 
   // get just the projects (for fast mapping)
   getAll(pageNum: number = 0, pageSize: number = 1000000): Observable<Project[]> {
-      return this.searchService.getSearchResults('', 'Project', null, pageNum, pageSize, '', {}, true, '',  {}, '')
+    return this.searchService.getSearchResults('', 'Project', null, pageNum, pageSize, '', {}, true, '', {}, '')
       .map((res: ISearchResults<Project>[]) => {
         if (res) {
           const results = this.utils.extractFromSearchResults(res);
@@ -91,17 +99,17 @@ export class ProjectService {
           if (projects[0] && projects[0].commentPeriodForBanner && projects[0].commentPeriodForBanner.length === 1) {
             projects[0].commentPeriodForBanner = new CommentPeriod(projects[0].commentPeriodForBanner[0]);
           } else if (projects[0] && projects[0].commentPeriodForBanner && projects[0].commentPeriodForBanner.length > 1) {
-              let now = new Date
-              let currentDate = now.toISOString();
-              // Default to the same comment period we're using currently in case one is not active
-              let finalCommentPeriod = new CommentPeriod(projects[0].commentPeriodForBanner[0]);
-              for (let commentPeriod in projects[0].commentPeriodForBanner) {
-                if (Date.parse(projects[0].commentPeriodForBanner[commentPeriod].dateCompleted) > Date.parse(currentDate)
-                && Date.parse(projects[0].commentPeriodForBanner[commentPeriod].dateStarted)  < Date.parse(currentDate) ) {
-                    finalCommentPeriod = new CommentPeriod(projects[0].commentPeriodForBanner[commentPeriod]);
-                }
+            let now = new Date
+            let currentDate = now.toISOString();
+            // Default to the same comment period we're using currently in case one is not active
+            let finalCommentPeriod = new CommentPeriod(projects[0].commentPeriodForBanner[0]);
+            for (let commentPeriod in projects[0].commentPeriodForBanner) {
+              if (Date.parse(projects[0].commentPeriodForBanner[commentPeriod].dateCompleted) > Date.parse(currentDate)
+                && Date.parse(projects[0].commentPeriodForBanner[commentPeriod].dateStarted) < Date.parse(currentDate)) {
+                finalCommentPeriod = new CommentPeriod(projects[0].commentPeriodForBanner[commentPeriod]);
               }
-              projects[0].commentPeriodForBanner = finalCommentPeriod
+            }
+            projects[0].commentPeriodForBanner = finalCommentPeriod
           } else {
             projects[0].commentPeriodForBanner = null;
           }
@@ -193,5 +201,27 @@ export class ProjectService {
   cacRemoveMember(projectId: String, meta: any): Observable<any> {
     return this.api.cacRemoveMember(projectId, meta)
       .catch(error => this.api.handleError(error));
+  }
+
+  setValue(value): void {
+    this.data.next(value);
+  }
+
+  getValue(): Observable<SearchResults> {
+    return this.data.asObservable();
+  }
+
+  clearValue(): void {
+    this.setValue(new SearchResults);
+  }
+
+  async refreshData() {
+    await this.fetchData(this.fetchDataConfig);
+  }
+
+  async fetchData(searchParamObject: SearchParamObject) {
+    // Caching for later
+    this.fetchDataConfig = searchParamObject;
+    this.setValue(await this.searchService.fetchData(searchParamObject));
   }
 }

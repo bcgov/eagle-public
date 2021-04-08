@@ -1,75 +1,33 @@
-import { Component, OnInit, ChangeDetectorRef, ChangeDetectionStrategy, OnDestroy, ViewEncapsulation } from '@angular/core';
-import { MatSnackBarRef, SimpleSnackBar, MatSnackBar } from '@angular/material';
-import { Router, ActivatedRoute } from '@angular/router';
-
-import { Subject } from 'rxjs/Subject';
-
-import 'rxjs/add/operator/switchMap';
-import 'rxjs/add/operator/takeUntil';
-
-import * as _ from 'lodash';
-
-import { Document } from 'app/models/document';
-
-import { SearchTerms } from 'app/models/search';
-
-import { ApiService } from 'app/services/api';
-import { SearchService } from 'app/services/search.service';
-
+import { Component, OnInit, ChangeDetectorRef, OnDestroy } from '@angular/core';
+import { Router, ActivatedRoute, Params } from '@angular/router';
+import { SearchResults } from 'app/models/search';
+import { ConfigService } from 'app/services/config.service';
+import { DocumentService } from 'app/services/document.service';
+import { DateFilterDefinition, FilterObject, FilterType, MultiSelectDefinition } from 'app/shared/components/search-filter-template/filter-object';
+import { IColumnObject, TableObject2 } from 'app/shared/components/table-template-2/table-object-2';
+import { ITableMessage } from 'app/shared/components/table-template-2/table-row-component';
+import { TableTemplate } from 'app/shared/components/table-template-2/table-template';
 import { Constants } from 'app/shared/utils/constants';
-
+import { takeWhile } from 'rxjs/operators';
 import { DocSearchTableRowsComponent } from './search-documents-table-rows/search-document-table-rows.component';
-import { TableObject } from 'app/shared/components/table-template/table-object';
-import { FilterObject } from 'app/shared/components/table-template/filter-object';
-import { TableParamsObject } from 'app/shared/components/table-template/table-params-object';
-import { TableTemplateUtils } from 'app/shared/utils/table-template-utils';
-import { StorageService } from 'app/services/storage.service';
-
-class SearchFilterObject {
-  constructor(
-    // Document
-    public milestone: Array<string> = [],
-    public datePostedStart: object = {},
-    public datePostedEnd: object = {},
-    public type: Array<string> = [],
-    public documentAuthorType: Array<string> = [],
-    public projectPhase: Array<string> = []
-
-  ) { }
-}
 
 @Component({
   selector: 'app-search',
   templateUrl: './search.component.html',
   styleUrls: ['./search.component.scss'],
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  encapsulation: ViewEncapsulation.None
 })
 
 
 export class SearchComponent implements OnInit, OnDestroy {
-  public documents: Document[] = null;
+  private lists: any[] = [];
 
-  public loading = true;
+  public queryParams: Params;
 
-  public tableParams: TableParamsObject = new TableParamsObject();
-  public terms = new SearchTerms();
+  public loadingLists = true;
+  public loadingTableParams = true;
+  public loadingTableData = true;
 
-  public filterForAPI: object = {};
-  public filterForUI: SearchFilterObject = new SearchFilterObject();
-  public currentSearch: object = {};
-  public categorizedQuery: any[] = [];
-
-  public showAdvancedSearch = true;
-  public hasUncategorizedDocs = false;
-  public readonly constants = Constants;
-
-  public filters: FilterObject[] = [];
-
-  public searchDisclaimer = Constants.docSearchDisclaimer;
-
-  public documentTableData: TableObject;
-  public documentTableColumns: any[] = [
+  public tableColumns: IColumnObject[] = [
     {
       name: 'Document Name',
       value: 'displayName',
@@ -103,239 +61,237 @@ export class SearchComponent implements OnInit, OnDestroy {
     },
   ];
 
-  private snackBarRef: MatSnackBarRef<SimpleSnackBar> = null;
-  private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
+
+  public filters: FilterObject[] = [];
 
   private legislationFilterGroup = { name: 'legislation', labelPrefix: null, labelPostfix: ' Act Terms' };
 
-  private milestoneFilter = new FilterObject('milestone', 'Milestone', null, [], [], this.legislationFilterGroup);
-  private docDateFilter = new FilterObject('datePosted', 'Document Date', { startDateId: 'datePostedStart', endDateId: 'datePostedEnd' }, [], [], this.legislationFilterGroup);
-  private authorTypeFilter = new FilterObject('documentAuthorType', 'Document Author', null, [], [], this.legislationFilterGroup);
-  private docTypeFilter = new FilterObject('type', 'Document Type', null, [], [], this.legislationFilterGroup);
-  private projectPhaseFilter = new FilterObject('projectPhase', 'Project Phase', null, [], [], this.legislationFilterGroup);
+  public tableData: TableObject2 = new TableObject2({ component: DocSearchTableRowsComponent });
+
+  private alive = true;
+
+  private milestoneArray = [];
+  private documentAuthorTypeArray = [];
+  private documentTypeArray = [];
+  private projectPhaseArray = [];
+  public showAdvancedFilters = false;
+  private filtersList = ['milestone', 'documentAuthorType', 'type', 'projectPhase'];
+  private dateFiltersList = ['datePostedStart', 'datePostedEnd'];
+  private initialLoad = true;
 
   constructor(
-    public snackBar: MatSnackBar,
     private _changeDetectionRef: ChangeDetectorRef,
-    public api: ApiService,
-    private storageService: StorageService,
-    public searchService: SearchService,
-    private router: Router,
     private route: ActivatedRoute,
-    private tableTemplateUtils: TableTemplateUtils,
-  ) {
-      // inject filters into table template
-      this.filters.push(this.milestoneFilter);
-      this.filters.push(this.docDateFilter);
-      this.filters.push(this.authorTypeFilter);
-      this.filters.push(this.docTypeFilter);
-      this.filters.push(this.projectPhaseFilter);
-
-    // prebake for table
-    this.documentTableData = new TableObject(
-      DocSearchTableRowsComponent,
-      [],
-      this.tableParams
-    );
-   }
+    private router: Router,
+    private tableTemplateUtils: TableTemplate,
+    private documentService: DocumentService,
+    private configService: ConfigService
+  ) { }
 
   ngOnInit() {
-    let params = null;
-    this.route.params
-      .switchMap((res: any) => {
-        params = { ...res };
-        return this.route.data;
-      })
-      .takeUntil(this.ngUnsubscribe)
-      .subscribe((res: any) => {
-        if (res) {
-          // Get the lists first
-          if (res.documentsTableRows && res.documentsTableRows.length > 0) {
-
-            res.documentsTableRows[0].searchResults.map(item => {
-              if (item.type === 'label') {
-                this.milestoneFilter.options.push({ ...item });
-              } else if (item.type === 'doctype') {
-                this.docTypeFilter.options.push({ ...item });
-              } else if (item.type === 'author') {
-                this.authorTypeFilter.options.push({ ...item });
-              } else if (item.type === 'projectPhase') {
-                this.projectPhaseFilter.options.push({ ...item });
-              }
-            });
-
-            // Sort by legislation.
-            this.milestoneFilter.options = _.sortBy(this.milestoneFilter.options, ['legislation']);
-            this.authorTypeFilter.options = _.sortBy(this.authorTypeFilter.options, ['legislation']);
-            this.docTypeFilter.options = _.sortBy(this.docTypeFilter.options, ['legislation', 'listOrder']);
-            this.projectPhaseFilter.options = _.sortBy(this.projectPhaseFilter.options, ['legislation']);
-          }
-
-          // reload query params from storage
-          if (this.storageService.state.search) {
-              this.tableParams = this.storageService.state.search.tableParams;
-              this.categorizedQuery = this.storageService.state.search.categorizedQuery
-          }
-
-          // set default params or load from url
-          if (_.isEqual(this.tableParams, new TableParamsObject())) {
-            this.tableParams = this.tableTemplateUtils.getParamsFromUrl(params, this.filterForAPI);
-            this.terms.keywords = this.tableParams.keywords;
-          }
-
-          if (res.documents && res.documents[0].data && res.documents[0].data.meta.length > 0) {
-            this.tableParams.totalListItems = res.documents[0].data.meta[0].searchResultsTotal;
-            this.documents = res.documents[0].data.searchResults;
-          } else {
-            if (!this.tableParams) {
-              this.tableParams = new TableParamsObject(10, 1, 0, '-name', null);
-            }
-            this.tableParams.totalListItems = 0;
-            this.documents = [];
-          }
-
-          // If the route has configs specified in the URL
-          // automatically select them in the components
-          this.router.url.split(';').forEach(filterVal => {
-            if (filterVal.split('=').length === 2) {
-              let filterName = filterVal.split('=')[0];
-              let val = filterVal.split('=')[1];
-
-              if (val && val !== 'null' && val.length !== 0) {
-                if (!['currentPage', 'pageSize', 'sortBy', 'ms', 'keywords'].includes(filterName)) {
-                  this.filterForAPI[filterName] = val;
-                }
-              }
-            }
-          });
-
-          this.loading = false;
-          this.setRowData();
-          this._changeDetectionRef.detectChanges();
-        } else {
-          this.loading = false;
-          this.snackBarRef = this.snackBar.open('Error search documents ...', 'RETRY');
-          this.snackBarRef.onAction().subscribe(() => this.getPaginated(1));
-          this.router.navigate(['/search']);
-          this.loading = false;
-          this._changeDetectionRef.detectChanges();
+    this.configService.lists.pipe(takeWhile(() => this.alive)).subscribe((list) => {
+      this.lists = list;
+      this.lists.forEach(item => {
+        if (item.type === 'label') {
+          this.milestoneArray.push({ ...item });
+        } else if (item.type === 'author') {
+          this.documentAuthorTypeArray.push({ ...item });
+        } else if (item.type === 'doctype') {
+          this.documentTypeArray.push({ ...item });
+        } else if (item.type === 'projectPhase') {
+          this.projectPhaseArray.push({ ...item });
         }
       });
-  }
-
-  isCategorizedQuery() {
-    const categorizedFilters = ['documentAuthorType', 'milestone', 'projectPhase', 'type'];
-    let isCategorized = false;
-    Object.keys(this.filterForAPI).forEach(key => {
-      if (categorizedFilters.includes(key)) {
-        isCategorized = true;
-      }
+      this.setFilters();
+      this.loadingLists = false;
+      this._changeDetectionRef.detectChanges();
     });
 
-    if (isCategorized) {
-      this.categorizedQuery = [{ name: 'categorized', value: true }];
-    }
+    this.route.queryParamMap.pipe(takeWhile(() => this.alive)).subscribe(data => {
+      this.queryParams = { ...data['params'] };
+      // Get params from route, shove into the tableTemplateUtils so that we get a new dataset to work with.
+      this.tableData = this.tableTemplateUtils.updateTableObjectWithUrlParams(data['params'], this.tableData);
 
-    if (this.storageService && this.storageService.state.search) {
-      this.storageService.state.search.categorizedQuery = this.categorizedQuery;
-    }
-  }
+      if (
+        this.initialLoad && (
+          this.queryParams['milestone'] ||
+          this.queryParams['documentAuthorType'] ||
+          this.queryParams['type'] ||
+          this.queryParams['datePostedStart'] ||
+          this.queryParams['datePostedEnd'] ||
+          this.queryParams['projectPhase'])
+      ) {
+        this.showAdvancedFilters = true;
+        this.initialLoad = false;
+      }
 
-  executeSearch(apiFilters) {
-    this.terms.keywords = apiFilters.keywords;
-    this.tableParams.keywords = apiFilters.keywords;
-    this.filterForAPI = apiFilters.filterForAPI;
+      this.loadingTableParams = false;
+      this._changeDetectionRef.detectChanges();
+    });
 
-    // build filterForUI/URL from the new filterForAPI object
-    this.filterForUI.milestone = this.filterForAPI['milestone'] ? this.filterForAPI['milestone'].split(',') : null;
-    this.filterForUI.documentAuthorType = this.filterForAPI['documentAuthorType'] ? this.filterForAPI['documentAuthorType'].split(',') : null;
-    this.filterForUI.type = this.filterForAPI['type'] ? this.filterForAPI['type'].split(',') : null;
-    this.filterForUI.projectPhase = this.filterForAPI['projectPhase'] ? this.filterForAPI['projectPhase'].split(',') : null;
-    this.filterForUI.datePostedStart = this.filterForAPI['datePostedStart'];
-    this.filterForUI.datePostedEnd = this.filterForAPI['datePostedEnd'];
+    this.documentService.getValue().pipe(takeWhile(() => this.alive)).subscribe((searchResults: SearchResults) => {
+      if (searchResults.data !== 0) {
+        this.tableData.totalListItems = searchResults.totalSearchCount;
+        this.tableData.items = searchResults.data.map(record => {
+          return { rowData: record };
+        });
+        this.tableData.columns = this.tableColumns;
+        this.tableData.options.showAllPicker = true;
 
-    this.getPaginated(this.tableParams.currentPage);
-  }
+        this.loadingTableData = false;
 
-  getPaginated(pageNumber) {
-    this.tableParams = this.tableTemplateUtils.updateTableParams(this.tableParams, pageNumber, this.tableParams.sortBy);
-
-    let queryModifiers = { documentSource: 'PROJECT' };
-
-    if (this.storageService && this.storageService.state.search) {
-      this.storageService.state.search.tableParams = this.tableParams;
-    }
-
-    this.isCategorizedQuery();
-    this.tableParams.keywords = this.terms.keywords;
-
-    if (this.storageService && this.storageService.state) {
-      this.storageService.state.search = {};
-      this.storageService.state.search.categorizedQuery = this.categorizedQuery;
-    }
-
-    this.searchService.getSearchResults(
-      this.terms.keywords,
-      'Document',
-      this.categorizedQuery,
-      pageNumber,
-      this.tableParams.pageSize,
-      this.tableParams.sortBy,
-      queryModifiers,
-      true,
-      null,
-      this.filterForAPI,
-      '',
-      true)
-      .takeUntil(this.ngUnsubscribe)
-      .subscribe((res: any) => {
-        if (res && res[0].data && res[0].data.meta.length > 0) {
-          this.tableParams.totalListItems = res[0].data.meta[0].searchResultsTotal;
-          this.documents = res[0].data.searchResults;
-          this.tableTemplateUtils.updateUrl(this.tableParams.sortBy, this.tableParams.currentPage, this.tableParams.pageSize, this.filterForAPI, this.tableParams.keywords);
-        } else {
-          this.tableParams.totalListItems = 0;
-          this.documents = [];
-        }
-        this.setRowData();
         this._changeDetectionRef.detectChanges();
-      });
+      }
+    });
   }
 
-  setRowData() {
-    let documentList = [];
-    if (this.documents && this.documents.length > 0) {
-      this.documents.forEach(document => {
-        if (document) {
-          documentList.push(
-            {
-              documentFileName: document.documentFileName || document.displayName || document.internalOriginalName,
-              displayName: document.displayName,
-              datePosted: document.datePosted,
-              type: document.type,
-              milestone: document.milestone,
-              _id: document._id,
-              project: document.project,
-              projectPhase: document.projectPhase
-            }
-          );
-        }
-      });
-    }
-    this.documentTableData = new TableObject(
-      DocSearchTableRowsComponent,
-      documentList,
-      this.tableParams
+  private setFilters() {
+    const docDateFilter = new FilterObject(
+      'issuedDate',
+      FilterType.DateRange,
+      '', // if you include a name, it will add a label to the date range filter.
+      new DateFilterDefinition('datePostedStart', 'Start Date', 'datePostedEnd', 'End Date'),
+      6
     );
+
+    const milestoneFilter = new FilterObject(
+      'milestone',
+      FilterType.MultiSelect,
+      'Milestone',
+      new MultiSelectDefinition(
+        this.milestoneArray,
+        [],
+        this.legislationFilterGroup,
+        null,
+        true
+      ),
+      6
+    );
+
+    const documentAuthorTypeFilter = new FilterObject(
+      'documentAuthorType',
+      FilterType.MultiSelect,
+      'Document Author',
+      new MultiSelectDefinition(
+        this.documentAuthorTypeArray,
+        [],
+        this.legislationFilterGroup,
+        null,
+        true
+      ),
+      4
+    );
+
+    const documentTypeFilter = new FilterObject(
+      'type',
+      FilterType.MultiSelect,
+      'Document Type',
+      new MultiSelectDefinition(
+        this.documentTypeArray,
+        [],
+        this.legislationFilterGroup,
+        null,
+        true
+      ),
+      4
+    );
+
+    const projectPhaseFilter = new FilterObject(
+      'projectPhase',
+      FilterType.MultiSelect,
+      'Project Phase',
+      new MultiSelectDefinition(
+        this.projectPhaseArray,
+        [],
+        this.legislationFilterGroup,
+        null,
+        true
+      ),
+      4
+    );
+
+    this.filters = [
+      docDateFilter,
+      milestoneFilter,
+      documentAuthorTypeFilter,
+      documentTypeFilter,
+      projectPhaseFilter
+    ];
   }
 
-  setColumnSort() {
+  navSearchHelp() {
+    this.router.navigate(['/search-help']);
   }
+
+  executeSearch(searchPackage) {
+    let params = {};
+    if (searchPackage.keywords) {
+      params['keywords'] = searchPackage.keywords;
+      this.documentService.fetchDataConfig.keywords = params['keywords'];
+      // always change sortBy to '-score' if keyword search is directly triggered by user
+      if (searchPackage.keywordsChanged) {
+        params['sortBy'] = '-score';
+        this.documentService.fetchDataConfig.sortBy = params['sortBy'];
+      }
+    } else {
+      params['keywords'] = null;
+      params['sortBy'] = Constants.tableDefaults.DEFAULT_SORT_BY;
+      this.documentService.fetchDataConfig.keywords = '';
+      this.documentService.fetchDataConfig.sortBy = params['sortBy'];
+    }
+
+    params['currentPage'] = 1;
+    this.documentService.fetchDataConfig.currentPage = params['currentPage'];
+
+    let queryFilters = this.tableTemplateUtils.getFiltersFromSearchPackage(searchPackage, this.filtersList, this.dateFiltersList);
+    this.documentService.fetchDataConfig.filters = queryFilters;
+
+    this.submit(params, queryFilters);
+  }
+
+  onMessageOut(msg: ITableMessage) {
+    let params = {};
+    switch (msg.label) {
+      case 'columnSort':
+        if (this.tableData.sortBy.charAt(0) === '+') {
+          params['sortBy'] = '-' + msg.data;
+        } else {
+          params['sortBy'] = '+' + msg.data;
+        }
+        this.documentService.fetchDataConfig.sortBy = params['sortBy'];
+        break;
+      case 'pageNum':
+        params['currentPage'] = msg.data;
+        this.documentService.fetchDataConfig.currentPage = params['currentPage'];
+        break;
+      case 'pageSize':
+        params['pageSize'] = msg.data.value;
+        if (params['pageSize'] === this.tableData.totalListItems) {
+          this.loadingTableData = true;
+        }
+        params['currentPage'] = 1;
+        this.documentService.fetchDataConfig.pageSize = params['pageSize'];
+        this.documentService.fetchDataConfig.currentPage = params['currentPage'];
+        break;
+      default:
+        break;
+    }
+    this.submit(params);
+  }
+
+  submit(params, filters = null) {
+    this.router.navigate(
+      [],
+      {
+        queryParams: filters ? { ...params, ...filters } : params,
+        relativeTo: this.route,
+        queryParamsHandling: 'merge'
+      });
+    this.loadingTableData = true;
+    this.documentService.refreshData();
+  }
+
   ngOnDestroy() {
-    // dismiss any open snackbar
-    if (this.snackBarRef) { this.snackBarRef.dismiss(); }
-
-    this.ngUnsubscribe.next();
-    this.ngUnsubscribe.complete();
+    this.alive = false;
   }
 }

@@ -155,4 +155,36 @@ export class Utils {
     });
     return matchedItems;
   }
+
+  public convertJSDateToNGBDate(jSDate: Date) {
+    if (!jSDate) {
+      return null;
+    }
+
+    return {
+      year: jSDate.getFullYear(),
+      month: jSDate.getMonth() + 1,
+      day: jSDate.getDate()
+    };
+  }
+
+  public convertJSDateToString(jSDate: Date) {
+    if (!jSDate) {
+      return null;
+    }
+
+    return `${jSDate.getFullYear()}-${jSDate.getMonth() + 1}-${jSDate.getDate()}`;
+  }
+
+  public convertFormGroupNGBDateToJSDate(nGBDate, nGBTime = null) {
+    if (!nGBDate) {
+      return null;
+    }
+
+    if (nGBTime === null) {
+      return new Date(nGBDate.year, nGBDate.month - 1, nGBDate.day);
+    } else {
+      return new Date(nGBDate.year, nGBDate.month - 1, nGBDate.day, nGBTime.hour, nGBTime.minute);
+    }
+  }
 }

@@ -66,7 +66,8 @@ pagination-template {
         flex-direction: row;
         justify-content: space-between;
 
-        a, button {
+        a,
+        button {
             min-width: 2.5rem;
         }
     }
@@ -80,4 +81,13 @@ pagination-template {
         margin-right: 0;
         margin-left: auto;
     }
+}
+
+.ngx-pagination .current,
+.btn-info {
+    background: rgb(0, 123, 255) !important;
+    border-radius: 6px;
+}
+.ngx-pagination {
+    margin-bottom: 0 !important;
 }

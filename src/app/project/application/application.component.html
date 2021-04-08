@@ -1,0 +1,15 @@
+<section class="tab-section">
+  <div class="spinner-container"
+    *ngIf="loading">
+    <div class="spinner-new rotating"></div>
+  </div>
+  <div *ngIf="!loading && tableData.totalListItems !== 0">
+    <lib-table-template-2 *ngIf="tableData.totalListItems > 0"
+      [data]="tableData"
+      (messageOut)="onMessageOut($event)">
+    </lib-table-template-2>
+  </div>
+  <div *ngIf="tableData.totalListItems === 0">
+    There are no application documents associated with this project.
+  </div>
+</section>

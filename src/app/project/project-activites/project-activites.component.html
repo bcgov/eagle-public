@@ -1,30 +1,25 @@
-<div class="tab-pane" role="tabpanel">
-  <form #f="ngForm" class="search-form ui form" (ngSubmit)="onSubmit()">
-    <div class="input-group main-search-field pb-3">
-      <input class="form-control" type="text" name="keywordInput" placeholder="Enter keywords to search..."
-        id="keywordInput" [(ngModel)]="tableParams.keywords" autofocus />
-      <div class="input-group-append">
-        <!-- prevent searching if input is empty or we're already searching -->
-        <button class="btn btn-primary" type="submit">
-          <span>Search</span>
-        </button>
-      </div>
-    </div>
-  </form>
+<div class="spinner-container" *ngIf="loading">
+  <div class="spinner-new rotating"></div>
+</div>
 
-  <div class="spinner-container" *ngIf="loading">
-    <div class="spinner-new rotating"></div>
+<h2 #activitiesHeader>Activities and Updates</h2>
+
+<section>
+  <search-filter-template
+    #explorePanel
+    [keywordOverride]='queryParams.keywordsActivities'
+    (searchEvent)='executeSearch($event)'>
+  </search-filter-template>
+</section>
+
+<section class="tab-section">
+  <div *ngIf="tableData.totalListItems === 0">
+    No recent activities.
   </div>
 
-  <section class="tab-section" *ngIf="!loading">
-    <div *ngIf="recentActivities.length === 0">
-      No recent activities.
-    </div>
-
-    <app-table-template *ngIf="!loading && tableParams.totalListItems != 0"
-                        [columns]="tableColumns"
-                        [data]="tableData"
-                        (onPageNumUpdate)='getPaginatedDocs($event)'>
-    </app-table-template>
-  </section>
-</div>
+  <lib-table-template-2
+    *ngIf="!loading && tableData.totalListItems > 0"
+    [data]="tableData"
+    (messageOut)="onMessageOut($event)">
+  </lib-table-template-2>
+</section>

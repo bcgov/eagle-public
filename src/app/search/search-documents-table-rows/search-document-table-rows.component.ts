@@ -1,61 +1,32 @@
-import { Component, Input, Output, OnInit, OnDestroy, EventEmitter, ChangeDetectorRef } from '@angular/core';
-import { Subject } from 'rxjs';
-import { TableComponent } from 'app/shared/components/table-template/table.component';
-import { TableObject } from 'app/shared/components/table-template/table-object';
-import { ActivatedRoute } from '@angular/router';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Utils } from 'app/shared/utils/utils';
-import { MatSnackBarRef, SimpleSnackBar, MatSnackBar } from '@angular/material';
+import { TableRowComponent } from 'app/shared/components/table-template-2/table-row-component';
+import { ConfigService } from 'app/services/config.service';
+import { takeWhile } from 'rxjs/operators';
 
 @Component({
-  selector: 'tbody[app-document-table-rows]',
+  selector: 'tr[app-document-table-rows]',
   templateUrl: './search-document-table-rows.component.html',
   styleUrls: ['./search-document-table-rows.component.scss']
 })
 
-export class DocSearchTableRowsComponent implements OnInit, OnDestroy, TableComponent {
-  @Input() data: TableObject;
-  @Output() selectedCount: EventEmitter<any> = new EventEmitter();
-
-  private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
-
-  public documents: any;
-  public paginationData: any;
-  public showFeatured = true;
+export class DocSearchTableRowsComponent extends TableRowComponent implements OnInit, OnDestroy {
   private lists: any[] = [];
-
-  private snackBarRef: MatSnackBarRef<SimpleSnackBar> = null;
+  private alive = true;
 
   constructor(
-    public snackBar: MatSnackBar,
-    private _changeDetectionRef: ChangeDetectorRef,
-    private route: ActivatedRoute,
+    public configService: ConfigService,
     private utils: Utils
-  ) { }
+  ) {
+    super();
+  }
 
   ngOnInit() {
-    this.documents = this.data.data;
-    this.paginationData = this.data.paginationData;
-    if (this.data.extraData) {
-      this.showFeatured = this.data.extraData.showFeatured;
-    }
-
-    this.route.data
-      .takeUntil(this.ngUnsubscribe)
-      .subscribe((res: any) => {
-        if (res) {
-          if (res.documentsTableRows && res.documentsTableRows.length > 0) {
-            this.lists = res.documentsTableRows[0].searchResults;
-          } else if (res.documents && res.documents.length > 0) {
-            this.lists = res.documents[0].data.searchResults;
-          } else {
-            this.snackBar.open('Error loading document list');
-            window.setTimeout(() => this.snackBar.dismiss(), 2000)
-          }
-          this._changeDetectionRef.detectChanges();
-        }
-      });
+    this.configService.lists.pipe(takeWhile(() => this.alive)).subscribe((list) => {
+      this.lists = list;
+    });
   }
-  // idToList is replacement for list-converter.pipe.ts, add it is because this.config.list doesn't always load properly
+
   idToList(id: string) {
     if (!id) {
       return '-';
@@ -70,7 +41,7 @@ export class DocSearchTableRowsComponent implements OnInit, OnDestroy, TableComp
   }
 
   goToItem(item) {
-    let filename = item.documentFileName;
+    let filename = item.documentFileName || item.displayName || item.internalOriginalName;
     let safeName = filename;
     try {
       safeName = this.utils.encodeString(filename, true)
@@ -85,8 +56,6 @@ export class DocSearchTableRowsComponent implements OnInit, OnDestroy, TableComp
   }
 
   ngOnDestroy() {
-    if (this.snackBarRef) { this.snackBarRef.dismiss(); }
-    this.ngUnsubscribe.next();
-    this.ngUnsubscribe.complete();
+    this.alive = false;
   }
 }

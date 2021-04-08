@@ -1,20 +1,15 @@
-<div *ngIf="pins.length !== 0 && !loading">
+<div class="spinner-container" *ngIf="loading">
+    <div class="spinner-new rotating"></div>
+</div>
+
+<div *ngIf="tableData.totalListItems > 0">
     <div class="row">
         <div class="col-12">
-            <div *ngIf="pins.length > 0 && !loading">
-                <h2>Participating Indigenous Nations</h2>
-                <app-table-template *ngIf="!loading && tableParams.totalListItems != 0"
-                                    (checkboxChange)='checkChange($event)'
-                                    [columns]="tableColumns"
-                                    [data]="tableData"
-                                    (onColumnSort)='setColumnSort($event)'
-                                    (onSelectedRow)='updateSelectedRow($event)'
-                                    (onPageNumUpdate)='getPaginated($event)'
-                                    [showMoreLoader]="true"
-                                    [hidePager]="true"
-                                    [showCountAtTop]="false">
-                </app-table-template>
-            </div>
+            <h2>Participating Indigenous Nations</h2>
+            <lib-table-template-2
+                [data]="tableData"
+                (messageOut)="onMessageOut($event)">
+            </lib-table-template-2>
         </div>
     </div>
     <br />

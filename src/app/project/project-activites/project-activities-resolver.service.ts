@@ -1,32 +1,44 @@
 import { Injectable } from '@angular/core';
 import { Resolve, ActivatedRouteSnapshot } from '@angular/router';
-import { Observable } from 'rxjs/Observable';
 
-import { SearchService } from 'app/services/search.service';
-import { TableTemplateUtils } from 'app/shared/utils/table-template-utils';
+import { ActivitiesService } from 'app/services/activities.service';
+import { SearchParamObject } from 'app/services/search.service';
+import { TableObject2 } from 'app/shared/components/table-template-2/table-object-2';
+import { TableTemplate } from 'app/shared/components/table-template-2/table-template';
+import { Constants } from 'app/shared/utils/constants';
 
 @Injectable()
-export class ProjectActivitiesResolver implements Resolve<Observable<object>> {
+export class ProjectActivitiesResolver implements Resolve<void> {
   constructor(
-    private searchService: SearchService,
-    private tableTemplateUtils: TableTemplateUtils
+    private activitiesService: ActivitiesService,
+    private tableTemplateUtils: TableTemplate
   ) { }
 
-  resolve(route: ActivatedRouteSnapshot): Observable<object> {
-    let tableParams = this.tableTemplateUtils.getParamsFromUrl(route.params);
-    if (tableParams.sortBy === '-datePosted') {
-      tableParams.sortBy = '-dateAdded';
+  resolve(route: ActivatedRouteSnapshot) {
+    this.activitiesService.clearValue();
+    const params = route.queryParamMap['params'];
+    const tableObject = this.tableTemplateUtils.updateTableObjectWithUrlParams(params, new TableObject2(), 'Activities');
+
+    if (!params.sortBy) {
+      tableObject.sortBy = '-dateAdded';
     }
+
+    let keywords = '';
+    params.keywordsActivities ?
+      (keywords = params.keywordsActivities) :
+      (keywords = Constants.tableDefaults.DEFAULT_KEYWORDS);
+
     const projId = route.parent.paramMap.get('projId');
-    return this.searchService.getSearchResults(
-      tableParams.keywords,
+
+    this.activitiesService.fetchData(new SearchParamObject(
+      keywords,
       'RecentActivity',
       [],
-      tableParams.currentPage,
-      tableParams.pageSize,
-      tableParams.sortBy,
+      tableObject.currentPage,
+      tableObject.pageSize,
+      tableObject.sortBy,
       { project: projId },
-      true,
-      tableParams.sortBy);
+      true
+    ));
   }
 }

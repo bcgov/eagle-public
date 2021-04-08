@@ -6,12 +6,26 @@ import 'rxjs/add/observable/of';
 
 import { ApiService } from './api';
 import { Document } from 'app/models/document';
+import { BehaviorSubject } from 'rxjs';
+import { SearchResults } from 'app/models/search';
+import { SearchParamObject, SearchService } from './search.service';
 
 @Injectable()
 export class DocumentService {
+  private data: BehaviorSubject<SearchResults>;
+  public fetchDataConfig: any;
+
   private document: Document = null;
 
-  constructor(private api: ApiService) { }
+  constructor(
+    private searchService: SearchService,
+    private api: ApiService
+  ) {
+    this.data = new BehaviorSubject<SearchResults>(new SearchResults);
+
+    this.fetchDataConfig = new SearchParamObject();
+    this.fetchDataConfig.dataset = 'Document';
+  }
 
   // get a specific document by its id
   getByMultiId(ids: Array<String>): Observable<Document[]> {
@@ -110,5 +124,27 @@ export class DocumentService {
         }
       })
       .catch(this.api.handleError);
+  }
+
+  setValue(value): void {
+    this.data.next(value);
+  }
+
+  getValue(): Observable<SearchResults> {
+    return this.data.asObservable();
+  }
+
+  clearValue(): void {
+    this.setValue(new SearchResults);
+  }
+
+  async refreshData() {
+    await this.fetchData(this.fetchDataConfig);
+  }
+
+  async fetchData(searchParamObject: SearchParamObject) {
+    // Caching for later
+    this.fetchDataConfig = searchParamObject;
+    this.setValue(await this.searchService.fetchData(searchParamObject));
   }
 }
