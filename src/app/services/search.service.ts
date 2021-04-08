@@ -169,6 +169,7 @@ export class SearchParamObject {
     public secondarySort: string = '',
     public filters = {},
     public projectLegislation: string = '',
-    public fuzzy: boolean = false
+    public fuzzy: boolean = false,
+    public tableId: string = ''
   ) { }
 }
