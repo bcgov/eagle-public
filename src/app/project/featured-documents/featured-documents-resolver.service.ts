@@ -1,19 +1,22 @@
 import { Injectable } from '@angular/core';
 import { Resolve, ActivatedRouteSnapshot } from '@angular/router';
-import { DocumentService } from 'app/services/document.service';
 
 import { SearchParamObject } from 'app/services/search.service';
+import { TableService } from 'app/services/table.service';
 
 @Injectable()
 export class FeaturedDocumentsResolverService implements Resolve<void> {
+  private tableId = 'featuredDocuments';
   constructor(
-    private documentService: DocumentService
+    private tableService: TableService
   ) { }
 
   resolve(route: ActivatedRouteSnapshot) {
-    this.documentService.clearValue();
+    this.tableService.clearTable(this.tableId);
     const projId = route.parent.paramMap.get('projId');
-    this.documentService.fetchData(new SearchParamObject(
+    this.tableService.initTableData(this.tableId);
+    this.tableService.fetchData(new SearchParamObject(
+      this.tableId,
       '',
       'Document',
       [{ 'name': 'project', 'value': projId }],

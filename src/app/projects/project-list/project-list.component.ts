@@ -15,9 +15,9 @@ import { IColumnObject, TableObject2 } from 'app/shared/components/table-templat
 import { takeWhile } from 'rxjs/operators';
 import { TableTemplate } from 'app/shared/components/table-template-2/table-template';
 import { ITableMessage } from 'app/shared/components/table-template-2/table-row-component';
-import { ProjectService } from 'app/services/project.service';
 import { OrgService } from 'app/services/org.service';
 import { Org } from 'app/models/organization';
+import { TableService } from 'app/services/table.service';
 
 @Component({
   selector: 'app-project-list',
@@ -32,6 +32,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
   private phaseArray = [];
   private filtersList = ['type', 'eacDecision', 'decisionDateStart', 'decisionDateEnd', 'pcp', 'proponent', 'region', 'CEAAInvolvement', 'currentPhaseName'];
   private dateFiltersList = ['decisionDateStart', 'decisionDateEnd'];
+  private tableId = 'projectList';
 
   public tableColumns: IColumnObject[] = [
     {
@@ -83,7 +84,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     private router: Router,
     private route: ActivatedRoute,
     private tableTemplateUtils: TableTemplate,
-    private projectService: ProjectService,
+    private tableService: TableService,
     private orgService: OrgService,
     private configService: ConfigService,
     private _changeDetectionRef: ChangeDetectorRef
@@ -144,7 +145,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
       this._changeDetectionRef.detectChanges();
     });
 
-    this.projectService.getValue().pipe(takeWhile(() => this.alive)).subscribe((searchResults: SearchResults) => {
+    this.tableService.getValue(this.tableId).pipe(takeWhile(() => this.alive)).subscribe((searchResults: SearchResults) => {
       if (searchResults.data !== 0) {
         this.tableData.totalListItems = searchResults.totalSearchCount;
         this.tableData.items = searchResults.data.map(record => {
@@ -286,24 +287,24 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     let params = {};
     if (searchPackage.keywords) {
       params['keywords'] = searchPackage.keywords;
-      this.projectService.fetchDataConfig.keywords = params['keywords'];
+      this.tableService.data[this.tableId].cachedConfig.keywords = params['keywords'];
       // always change sortBy to '-score' if keyword search is directly triggered by user
       if (searchPackage.keywordsChanged) {
         params['sortBy'] = '-score';
-        this.projectService.fetchDataConfig.sortBy = params['sortBy'];
+        this.tableService.data[this.tableId].cachedConfig.sortBy = params['sortBy'];
       }
     } else {
       params['keywords'] = null;
       params['sortBy'] = '+name';
-      this.projectService.fetchDataConfig.keywords = '';
-      this.projectService.fetchDataConfig.sortBy = params['sortBy'];
+      this.tableService.data[this.tableId].cachedConfig.keywords = '';
+      this.tableService.data[this.tableId].cachedConfig.sortBy = params['sortBy'];
     }
 
     params['currentPage'] = 1;
-    this.projectService.fetchDataConfig.currentPage = params['currentPage'];
+    this.tableService.data[this.tableId].cachedConfig.currentPage = params['currentPage'];
 
     let queryFilters = this.tableTemplateUtils.getFiltersFromSearchPackage(searchPackage, this.filtersList, this.dateFiltersList);
-    this.projectService.fetchDataConfig.filters = queryFilters;
+    this.tableService.data[this.tableId].cachedConfig.filters = queryFilters;
 
     this.submit(params, queryFilters);
   }
@@ -317,11 +318,11 @@ export class ProjectListComponent implements OnInit, OnDestroy {
         } else {
           params['sortBy'] = '+' + msg.data;
         }
-        this.projectService.fetchDataConfig.sortBy = params['sortBy'];
+        this.tableService.data[this.tableId].cachedConfig.sortBy = params['sortBy'];
         break;
       case 'pageNum':
         params['currentPage'] = msg.data;
-        this.projectService.fetchDataConfig.currentPage = params['currentPage'];
+        this.tableService.data[this.tableId].cachedConfig.currentPage = params['currentPage'];
         break;
       case 'pageSize':
         params['pageSize'] = msg.data.value;
@@ -329,9 +330,8 @@ export class ProjectListComponent implements OnInit, OnDestroy {
           this.loadingTableData = true;
         }
         params['currentPage'] = 1;
-        this.projectService.fetchDataConfig.pageSize = params['pageSize'];
-        this.projectService.fetchDataConfig.currentPage = params['currentPage'];
-
+        this.tableService.data[this.tableId].cachedConfig.pageSize = params['pageSize'];
+        this.tableService.data[this.tableId].cachedConfig.currentPage = params['currentPage'];
         break;
       default:
         break;
@@ -348,7 +348,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
         queryParamsHandling: 'merge'
       });
     this.loadingTableData = true;
-    this.projectService.refreshData();
+    this.tableService.refreshData(this.tableId);
   }
 
   ngOnDestroy() {
