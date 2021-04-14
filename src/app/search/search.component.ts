@@ -2,7 +2,7 @@ import { Component, OnInit, ChangeDetectorRef, OnDestroy } from '@angular/core';
 import { Router, ActivatedRoute, Params } from '@angular/router';
 import { SearchResults } from 'app/models/search';
 import { ConfigService } from 'app/services/config.service';
-import { DocumentService } from 'app/services/document.service';
+import { TableService } from 'app/services/table.service';
 import { DateFilterDefinition, FilterObject, FilterType, MultiSelectDefinition } from 'app/shared/components/search-filter-template/filter-object';
 import { IColumnObject, TableObject2 } from 'app/shared/components/table-template-2/table-object-2';
 import { ITableMessage } from 'app/shared/components/table-template-2/table-row-component';
@@ -19,6 +19,7 @@ import { DocSearchTableRowsComponent } from './search-documents-table-rows/searc
 
 
 export class SearchComponent implements OnInit, OnDestroy {
+  private tableId = 'search';
   private lists: any[] = [];
 
   public queryParams: Params;
@@ -84,7 +85,7 @@ export class SearchComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private tableTemplateUtils: TableTemplate,
-    private documentService: DocumentService,
+    private tableService: TableService,
     private configService: ConfigService
   ) { }
 
@@ -129,7 +130,7 @@ export class SearchComponent implements OnInit, OnDestroy {
       this._changeDetectionRef.detectChanges();
     });
 
-    this.documentService.getValue().pipe(takeWhile(() => this.alive)).subscribe((searchResults: SearchResults) => {
+    this.tableService.getValue(this.tableId).pipe(takeWhile(() => this.alive)).subscribe((searchResults: SearchResults) => {
       if (searchResults.data !== 0) {
         this.tableData.totalListItems = searchResults.totalSearchCount;
         this.tableData.items = searchResults.data.map(record => {
@@ -227,24 +228,24 @@ export class SearchComponent implements OnInit, OnDestroy {
     let params = {};
     if (searchPackage.keywords) {
       params['keywords'] = searchPackage.keywords;
-      this.documentService.fetchDataConfig.keywords = params['keywords'];
+      this.tableService.data[this.tableId].cachedConfig.keywords = params['keywords'];
       // always change sortBy to '-score' if keyword search is directly triggered by user
       if (searchPackage.keywordsChanged) {
         params['sortBy'] = '-score';
-        this.documentService.fetchDataConfig.sortBy = params['sortBy'];
+        this.tableService.data[this.tableId].cachedConfig.sortBy = params['sortBy'];
       }
     } else {
       params['keywords'] = null;
       params['sortBy'] = Constants.tableDefaults.DEFAULT_SORT_BY;
-      this.documentService.fetchDataConfig.keywords = '';
-      this.documentService.fetchDataConfig.sortBy = params['sortBy'];
+      this.tableService.data[this.tableId].cachedConfig.keywords = '';
+      this.tableService.data[this.tableId].cachedConfig.sortBy = params['sortBy'];
     }
 
     params['currentPage'] = 1;
-    this.documentService.fetchDataConfig.currentPage = params['currentPage'];
+    this.tableService.data[this.tableId].cachedConfig.currentPage = params['currentPage'];
 
     let queryFilters = this.tableTemplateUtils.getFiltersFromSearchPackage(searchPackage, this.filtersList, this.dateFiltersList);
-    this.documentService.fetchDataConfig.filters = queryFilters;
+    this.tableService.data[this.tableId].cachedConfig.filters = queryFilters;
 
     this.submit(params, queryFilters);
   }
@@ -258,11 +259,11 @@ export class SearchComponent implements OnInit, OnDestroy {
         } else {
           params['sortBy'] = '+' + msg.data;
         }
-        this.documentService.fetchDataConfig.sortBy = params['sortBy'];
+        this.tableService.data[this.tableId].cachedConfig.sortBy = params['sortBy'];
         break;
       case 'pageNum':
         params['currentPage'] = msg.data;
-        this.documentService.fetchDataConfig.currentPage = params['currentPage'];
+        this.tableService.data[this.tableId].cachedConfig.currentPage = params['currentPage'];
         break;
       case 'pageSize':
         params['pageSize'] = msg.data.value;
@@ -270,8 +271,8 @@ export class SearchComponent implements OnInit, OnDestroy {
           this.loadingTableData = true;
         }
         params['currentPage'] = 1;
-        this.documentService.fetchDataConfig.pageSize = params['pageSize'];
-        this.documentService.fetchDataConfig.currentPage = params['currentPage'];
+        this.tableService.data[this.tableId].cachedConfig.pageSize = params['pageSize'];
+        this.tableService.data[this.tableId].cachedConfig.currentPage = params['currentPage'];
         break;
       default:
         break;
@@ -288,7 +289,7 @@ export class SearchComponent implements OnInit, OnDestroy {
         queryParamsHandling: 'merge'
       });
     this.loadingTableData = true;
-    this.documentService.refreshData();
+    this.tableService.refreshData(this.tableId);
   }
 
   ngOnDestroy() {

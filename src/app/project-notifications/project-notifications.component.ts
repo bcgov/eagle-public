@@ -21,7 +21,7 @@ import { CommentPeriodService } from 'app/services/commentperiod.service';
 export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
   private alive = true;
   private filtersList = ['type', 'region', 'pcp', 'decision'];
-  private tableId = 'notificationProject'
+  private tableId = 'notificationProject';
 
   public tableColumns: IColumnObject[] = [
     {

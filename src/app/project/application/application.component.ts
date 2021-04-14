@@ -6,8 +6,8 @@ import { IColumnObject, TableObject2 } from 'app/shared/components/table-templat
 import { DocumentTableRowsComponent } from '../documents/project-document-table-rows/project-document-table-rows.component';
 import { takeWhile } from 'rxjs/operators';
 import { TableTemplate } from 'app/shared/components/table-template-2/table-template';
-import { DocumentService } from 'app/services/document.service';
 import { ITableMessage } from 'app/shared/components/table-template-2/table-row-component';
+import { TableService } from 'app/services/table.service';
 
 @Component({
   selector: 'app-application',
@@ -15,6 +15,8 @@ import { ITableMessage } from 'app/shared/components/table-template-2/table-row-
   styleUrls: ['./application.component.scss']
 })
 export class ApplicationComponent implements OnInit, OnDestroy {
+  private tableId = 'application';
+
   public tableParams: TableParamsObject = new TableParamsObject();
   public loading: Boolean = true;
 
@@ -53,7 +55,7 @@ export class ApplicationComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private tableTemplateUtils: TableTemplate,
-    private documentService: DocumentService,
+    private tableService: TableService,
   ) { }
 
   ngOnInit() {
@@ -67,7 +69,7 @@ export class ApplicationComponent implements OnInit, OnDestroy {
       this._changeDetectionRef.detectChanges();
     });
 
-    this.documentService.getValue().pipe(takeWhile(() => this.alive)).subscribe((searchResults: SearchResults) => {
+    this.tableService.getValue(this.tableId).pipe(takeWhile(() => this.alive)).subscribe((searchResults: SearchResults) => {
       if (searchResults.data !== 0) {
         this.tableData.totalListItems = searchResults.totalSearchCount;
         this.tableData.items = searchResults.data.map(record => {
@@ -92,11 +94,11 @@ export class ApplicationComponent implements OnInit, OnDestroy {
         } else {
           params['sortBy'] = '+' + msg.data;
         }
-        this.documentService.fetchDataConfig.sortBy = params['sortBy'];
+        this.tableService.data[this.tableId].cachedConfig.sortBy = params['sortBy'];
         break;
       case 'pageNum':
         params['currentPage'] = msg.data;
-        this.documentService.fetchDataConfig.currentPage = params['currentPage'];
+        this.tableService.data[this.tableId].cachedConfig.currentPage = params['currentPage'];
         break;
       case 'pageSize':
         params['pageSize'] = msg.data.value;
@@ -104,8 +106,8 @@ export class ApplicationComponent implements OnInit, OnDestroy {
           this.loading = true;
         }
         params['currentPage'] = 1;
-        this.documentService.fetchDataConfig.pageSize = params['pageSize'];
-        this.documentService.fetchDataConfig.currentPage = params['currentPage'];
+        this.tableService.data[this.tableId].cachedConfig.pageSize = params['pageSize'];
+        this.tableService.data[this.tableId].cachedConfig.currentPage = params['currentPage'];
 
         break;
       default:
@@ -122,7 +124,7 @@ export class ApplicationComponent implements OnInit, OnDestroy {
         relativeTo: this.route,
         queryParamsHandling: 'merge'
       });
-    this.documentService.refreshData();
+    this.tableService.refreshData(this.tableId);
   }
 
   ngOnDestroy() {

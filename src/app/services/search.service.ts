@@ -158,6 +158,7 @@ export class SearchService {
 
 export class SearchParamObject {
   constructor(
+    public tableId: string = '',
     public keywords: string = Constants.tableDefaults.DEFAULT_KEYWORDS,
     public dataset: string = '',
     public fields = [],
@@ -169,7 +170,6 @@ export class SearchParamObject {
     public secondarySort: string = '',
     public filters = {},
     public projectLegislation: string = '',
-    public fuzzy: boolean = false,
-    public tableId: string = ''
+    public fuzzy: boolean = false
   ) { }
 }

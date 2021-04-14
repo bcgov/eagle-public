@@ -5,21 +5,22 @@ import { ConfigService } from 'app/services/config.service';
 import { Utils } from 'app/shared/utils/utils';
 import { Constants } from 'app/shared/utils/constants';
 import { TableObject2 } from 'app/shared/components/table-template-2/table-object-2';
-import { DocumentService } from 'app/services/document.service';
 import { TableTemplate } from 'app/shared/components/table-template-2/table-template';
 import { SearchParamObject } from 'app/services/search.service';
+import { TableService } from 'app/services/table.service';
 
 @Injectable()
 export class ApplicationResolver implements Resolve<void> {
+  private tableId = 'application';
   constructor(
-    private documentService: DocumentService,
+    private tableService: TableService,
     private tableTemplateUtils: TableTemplate,
     private configService: ConfigService,
     private utils: Utils
   ) { }
 
   resolve(route: ActivatedRouteSnapshot) {
-    this.documentService.clearValue();
+    this.tableService.clearTable(this.tableId);
     const params = route.queryParamMap['params'];
     const tableObject = this.tableTemplateUtils.updateTableObjectWithUrlParams(params, new TableObject2());
     if (!params.sortBy) {
@@ -27,8 +28,10 @@ export class ApplicationResolver implements Resolve<void> {
     }
 
     const projId = route.parent.paramMap.get('projId');
+    this.tableService.initTableData(this.tableId);
     this.configService.lists.toPromise().then(async (list) => {
-      this.documentService.fetchData(new SearchParamObject(
+      this.tableService.fetchData(new SearchParamObject(
+        this.tableId,
         '',
         'Document',
         [{ 'name': 'project', 'value': projId }],

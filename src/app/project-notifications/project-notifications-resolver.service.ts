@@ -8,7 +8,7 @@ import { TableService } from 'app/services/table.service';
 
 @Injectable()
 export class ProjectNotificationsResolver implements Resolve<void> {
-  private tableId = 'notificationProject'
+  private tableId = 'notificationProject';
   constructor(
     private tableService: TableService,
     private tableTemplateUtils: TableTemplate
@@ -36,6 +36,7 @@ export class ProjectNotificationsResolver implements Resolve<void> {
 
     this.tableService.initTableData(this.tableId);
     this.tableService.fetchData(new SearchParamObject(
+      this.tableId,
       keywords,
       'ProjectNotification',
       [],
@@ -43,12 +44,7 @@ export class ProjectNotificationsResolver implements Resolve<void> {
       tableObject.pageSize,
       tableObject.sortBy,
       filtersForAPI,
-      true,
-      null,
-      {},
-      '',
-      false,
-      this.tableId
+      true
     ));
   }
 }
