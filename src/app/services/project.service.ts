@@ -11,11 +11,11 @@ import { Project } from 'app/models/project';
 import { ApiService } from './api';
 import { CommentPeriod } from 'app/models/commentperiod';
 import { Org } from 'app/models/organization';
-import { ISearchResults, SearchResults } from 'app/models/search';
+import { ISearchResults } from 'app/models/search';
 import { flatMap } from 'rxjs/operators';
 import { of } from 'rxjs/internal/observable/of';
-import { BehaviorSubject, forkJoin } from 'rxjs';
-import { SearchParamObject, SearchService } from './search.service';
+import { forkJoin } from 'rxjs';
+import { SearchService } from './search.service';
 import { Utils } from 'app/shared/utils/utils';
 import { DataQueryResponse } from 'app/models/api-response';
 
@@ -26,9 +26,6 @@ interface GetParameters {
 
 @Injectable()
 export class ProjectService {
-  private data: BehaviorSubject<SearchResults>;
-  public fetchDataConfig: any;
-
   private project: Project = null; // for caching
   private projectList: Project[] = [];
 
@@ -37,12 +34,7 @@ export class ProjectService {
     private api: ApiService,
     private searchService: SearchService,
     private utils: Utils,
-  ) {
-    this.data = new BehaviorSubject<SearchResults>(new SearchResults);
-
-    this.fetchDataConfig = new SearchParamObject();
-    this.fetchDataConfig.dataset = 'Project';
-  }
+  ) { }
 
   // get just the projects (for fast mapping)
   getAll(pageNum: number = 0, pageSize: number = 1000000): Observable<Project[]> {
@@ -201,27 +193,5 @@ export class ProjectService {
   cacRemoveMember(projectId: String, meta: any): Observable<any> {
     return this.api.cacRemoveMember(projectId, meta)
       .catch(error => this.api.handleError(error));
-  }
-
-  setValue(value): void {
-    this.data.next(value);
-  }
-
-  getValue(): Observable<SearchResults> {
-    return this.data.asObservable();
-  }
-
-  clearValue(): void {
-    this.setValue(new SearchResults);
-  }
-
-  async refreshData() {
-    await this.fetchData(this.fetchDataConfig);
-  }
-
-  async fetchData(searchParamObject: SearchParamObject) {
-    // Caching for later
-    this.fetchDataConfig = searchParamObject;
-    this.setValue(await this.searchService.fetchData(searchParamObject));
   }
 }

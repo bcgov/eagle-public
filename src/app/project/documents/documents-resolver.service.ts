@@ -5,22 +5,22 @@ import 'rxjs/add/operator/switchMap';
 
 import * as _ from 'lodash';
 
-import { DocumentService } from 'app/services/document.service';
 import { Constants } from 'app/shared/utils/constants';
 import { TableTemplate } from 'app/shared/components/table-template-2/table-template';
 import { TableObject2 } from 'app/shared/components/table-template-2/table-object-2';
 import { SearchParamObject } from 'app/services/search.service';
+import { TableService } from 'app/services/table.service';
 
 @Injectable()
 export class DocumentsResolver implements Resolve<void> {
-
+  private tableId = 'documentsTab';
   constructor(
-    private documentService: DocumentService,
+    private tableService: TableService,
     private tableTemplateUtils: TableTemplate
   ) { }
 
   resolve(route: ActivatedRouteSnapshot) {
-    this.documentService.clearValue();
+    this.tableService.clearTable(this.tableId);
     const params = route.queryParamMap['params'];
     const tableObject = this.tableTemplateUtils.updateTableObjectWithUrlParams(params, new TableObject2());
 
@@ -41,7 +41,9 @@ export class DocumentsResolver implements Resolve<void> {
 
     const projId = route.parent.paramMap.get('projId');
 
-    this.documentService.fetchData(new SearchParamObject(
+    this.tableService.initTableData(this.tableId);
+    this.tableService.fetchData(new SearchParamObject(
+      this.tableId,
       keywords,
       'Document',
       [{ 'name': 'project', 'value': projId }],

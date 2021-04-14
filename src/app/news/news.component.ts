@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { Router, ActivatedRoute, Params } from '@angular/router';
 import { SearchResults } from 'app/models/search';
 import { ActivitiesListTableRowsComponent } from 'app/project/project-activites/activities-list-table-rows/activities-list-table-rows.component';
-import { ActivitiesService } from 'app/services/activities.service';
+import { TableService } from 'app/services/table.service';
 import { IColumnObject, TableObject2 } from 'app/shared/components/table-template-2/table-object-2';
 import { ITableMessage } from 'app/shared/components/table-template-2/table-row-component';
 import { TableTemplate } from 'app/shared/components/table-template-2/table-template';
@@ -15,6 +15,7 @@ import { takeWhile } from 'rxjs/operators';
 })
 
 export class NewsListComponent implements OnInit, OnDestroy {
+  private tableId = 'news';
   public loading = true;
   private alive = true;
   public queryParams: Params;
@@ -38,7 +39,7 @@ export class NewsListComponent implements OnInit, OnDestroy {
     private router: Router,
     private route: ActivatedRoute,
     private tableTemplateUtils: TableTemplate,
-    private activitiesService: ActivitiesService,
+    private tableService: TableService,
     private _changeDetectionRef: ChangeDetectorRef) { }
 
   ngOnInit() {
@@ -56,7 +57,7 @@ export class NewsListComponent implements OnInit, OnDestroy {
       this._changeDetectionRef.detectChanges();
     });
 
-    this.activitiesService.getValue().pipe(takeWhile(() => this.alive)).subscribe((searchResults: SearchResults) => {
+    this.tableService.getValue(this.tableId).pipe(takeWhile(() => this.alive)).subscribe((searchResults: SearchResults) => {
       if (searchResults.data !== 0) {
         this.tableData.totalListItems = searchResults.totalSearchCount;
         this.tableData.items = searchResults.data.map(record => {
@@ -81,11 +82,11 @@ export class NewsListComponent implements OnInit, OnDestroy {
         } else {
           params['sortBy'] = '+' + msg.data;
         }
-        this.activitiesService.fetchDataConfig.sortBy = params['sortBy'];
+        this.tableService.data[this.tableId].cachedConfig.sortBy = params['sortBy'];
         break;
       case 'pageNum':
         params['currentPage'] = msg.data;
-        this.activitiesService.fetchDataConfig.currentPage = params['currentPage'];
+        this.tableService.data[this.tableId].cachedConfig.currentPage = params['currentPage'];
         break;
       case 'pageSize':
         params['pageSize'] = msg.data.value;
@@ -93,8 +94,8 @@ export class NewsListComponent implements OnInit, OnDestroy {
           this.loading = true;
         }
         params['currentPage'] = 1;
-        this.activitiesService.fetchDataConfig.pageSize = params['pageSize'];
-        this.activitiesService.fetchDataConfig.currentPage = params['currentPage'];
+        this.tableService.data[this.tableId].cachedConfig.pageSize = params['pageSize'];
+        this.tableService.data[this.tableId].cachedConfig.currentPage = params['currentPage'];
         break;
       default:
         break;
@@ -110,27 +111,27 @@ export class NewsListComponent implements OnInit, OnDestroy {
         relativeTo: this.route,
         queryParamsHandling: 'merge'
       });
-    this.activitiesService.refreshData();
+    this.tableService.refreshData(this.tableId);
   }
 
   executeSearch(searchPackage) {
     let params = {};
     if (searchPackage.keywords) {
       params['keywords'] = searchPackage.keywords;
-      this.activitiesService.fetchDataConfig.keywords = params['keywords'];
+      this.tableService.data[this.tableId].cachedConfig.keywords = params['keywords'];
       // always change sortBy to '-score' if keyword search is directly triggered by user
       if (searchPackage.keywordsChanged) {
         params['sortBy'] = '-score';
-        this.activitiesService.fetchDataConfig.sortBy = params['sortBy'];
+        this.tableService.data[this.tableId].cachedConfig.sortBy = params['sortBy'];
       }
     } else {
       params['keywords'] = null;
       params['sortBy'] = '-dateAdded';
-      this.activitiesService.fetchDataConfig.keywords = '';
-      this.activitiesService.fetchDataConfig.sortBy = params['sortBy'];
+      this.tableService.data[this.tableId].cachedConfig.keywords = '';
+      this.tableService.data[this.tableId].cachedConfig.sortBy = params['sortBy'];
     }
     params['currentPage'] = 1;
-    this.activitiesService.fetchDataConfig.currentPage = params['currentPage'];
+    this.tableService.data[this.tableId].cachedConfig.currentPage = params['currentPage'];
     this.submit(params);
   }
 

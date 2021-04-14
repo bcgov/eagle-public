@@ -3,21 +3,22 @@ import { Resolve, ActivatedRouteSnapshot } from '@angular/router';
 
 import 'rxjs/add/operator/switchMap';
 
-import { DocumentService } from 'app/services/document.service';
 import { TableTemplate } from 'app/shared/components/table-template-2/table-template';
 import { SearchParamObject } from 'app/services/search.service';
 import { Constants } from 'app/shared/utils/constants';
 import { TableObject2 } from 'app/shared/components/table-template-2/table-object-2';
+import { TableService } from 'app/services/table.service';
 
 @Injectable()
 export class SearchResolver implements Resolve<void> {
+  private tableId = 'search';
   constructor(
-    private documentService: DocumentService,
+    private tableService: TableService,
     private tableTemplateUtils: TableTemplate
   ) { }
 
   resolve(route: ActivatedRouteSnapshot) {
-    this.documentService.clearValue();
+    this.tableService.clearTable(this.tableId);
     const params = route.queryParamMap['params'];
     const tableObject = this.tableTemplateUtils.updateTableObjectWithUrlParams(params, new TableObject2());
 
@@ -36,7 +37,9 @@ export class SearchResolver implements Resolve<void> {
       ['datePostedStart', 'datePostedEnd']
     );
 
-    this.documentService.fetchData(new SearchParamObject(
+    this.tableService.initTableData(this.tableId);
+    this.tableService.fetchData(new SearchParamObject(
+      this.tableId,
       keywords,
       'Document',
       [],
