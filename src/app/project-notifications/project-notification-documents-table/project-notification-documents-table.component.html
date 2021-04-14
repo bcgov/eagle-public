@@ -1,0 +1,10 @@
+<div *ngIf="tableData.totalListItems > 0">
+    <lib-table-template-2 [data]="tableData"
+        (messageOut)="onMessageOut($event)">
+    </lib-table-template-2>
+</div>
+<div *ngIf="tableData.totalListItems === 0">
+    <p>
+        This notification project has no documents.
+    </p>
+</div>

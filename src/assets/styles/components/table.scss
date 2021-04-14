@@ -64,12 +64,7 @@
       &:nth-child(even) {
         background: $table-alt-row-bg;
       }
-
-      &:hover {
-        background: #e2f1ff;
-      }
     }
-
     td {
       padding: 1.25rem 0.5rem;
       vertical-align: top;
@@ -78,6 +73,13 @@
 
   + pagination-template {
     margin-top: 2rem;
+  }
+}
+tbody.highlight {
+  tr {
+    &:hover {
+      background: #e2f1ff;
+    }
   }
 }
 

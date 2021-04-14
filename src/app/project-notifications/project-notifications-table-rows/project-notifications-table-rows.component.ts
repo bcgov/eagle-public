@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 import { MatSnackBar } from '@angular/material';
 
 import { ApiService } from 'app/services/api';
@@ -10,15 +10,12 @@ import { TableRowComponent } from 'app/shared/components/table-template-2/table-
   styleUrls: ['./project-notifications-table-rows.component.scss']
 })
 
-export class ProjectNotificationsTableRowsComponent extends TableRowComponent implements OnInit {
+export class ProjectNotificationsTableRowsComponent extends TableRowComponent {
   constructor(
     private api: ApiService,
     public snackBar: MatSnackBar,
   ) {
     super();
-  }
-
-  ngOnInit() {
   }
 
   downloadDocuments(project) {

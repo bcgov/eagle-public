@@ -49,6 +49,9 @@ import { SearchResolver } from './search/search-resolver.service';
 import { DocSearchTableRowsComponent } from './search/search-documents-table-rows/search-document-table-rows.component';
 import { PinsService } from 'app/services/pins.service';
 import { ProjectNotificationsTableRowsComponent } from './project-notifications/project-notifications-table-rows/project-notifications-table-rows.component';
+import { MatTabsModule } from '@angular/material';
+import { ProjectNotificationDocumentsTableComponent } from './project-notifications/project-notification-documents-table/project-notification-documents-table.component';
+import { ProjectNotificationDocumentsTableRowsComponent } from './project-notifications/project-notification-documents-table-rows/project-notification-documents-table-rows.component';
 
 
 @NgModule({
@@ -62,6 +65,7 @@ import { ProjectNotificationsTableRowsComponent } from './project-notifications/
     SharedModule,
     ProjectModule,
     ProjectsModule,
+    MatTabsModule,
     AppRoutingModule, // <-- module import order matters - https://angular.io/guide/router#module-import-order-matters
     NgSelectModule,
     NgxPageScrollCoreModule.forRoot({
@@ -87,12 +91,15 @@ import { ProjectNotificationsTableRowsComponent } from './project-notifications/
     SearchHelpComponent,
     CACUnsubscribeComponent,
     DocSearchTableRowsComponent,
-    ProjectNotificationsTableRowsComponent
+    ProjectNotificationsTableRowsComponent,
+    ProjectNotificationDocumentsTableComponent,
+    ProjectNotificationDocumentsTableRowsComponent,
   ],
   entryComponents: [
     NewsListTableRowsComponent,
     DocSearchTableRowsComponent,
-    ProjectNotificationsTableRowsComponent
+    ProjectNotificationsTableRowsComponent,
+    ProjectNotificationDocumentsTableRowsComponent
   ],
   providers: [
     ConfigService,

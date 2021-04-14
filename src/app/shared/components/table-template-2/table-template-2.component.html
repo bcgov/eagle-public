@@ -1,5 +1,5 @@
 <div class="table-template">
-  <div class="row mb-3">
+  <div class="row mb-3" *ngIf="data.options.showTopControls">
     <div class="col-md-6 text-md-left">
       <lib-page-count-display *ngIf="data.options.showPageCountDisplay"
         [isHidden]="false"
@@ -37,12 +37,12 @@
         </th>
       </tr>
     </thead>
-    <tbody>
+    <tbody [ngClass]="data.options.disableRowHighlight ? '' : 'highlight'">
       <ng-container *ngFor="
           let item of data.items
             | paginate
               : {
-                  id: this.data.tableId,
+                  id: data.tableId,
                   itemsPerPage: data.pageSize,
                   currentPage: data.currentPage,
                   totalItems: data.totalListItems
@@ -67,8 +67,9 @@
       <div class="col-md-6 text-md-right">
         <pagination-controls *ngIf="data.options.showPagination"
           (pageChange)="onUpdatePageNumber($event)"
-          id="{{this.data.tableId}}"
-          autoHide="true"></pagination-controls>
+          id="{{data.tableId}}"
+          autoHide="true"
+          responsive="true"></pagination-controls>
       </div>
     </div>
   </div>
