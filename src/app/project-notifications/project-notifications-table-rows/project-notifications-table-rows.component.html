@@ -8,6 +8,7 @@
           <div class="col-sm-12 col-md-6">
             <h4>{{(rowData.name.toUpperCase() || '-')}}</h4>
           </div>
+          <!-- TODO: Set up as its own component -->
           <div class="col-sm-12 col-md-6">
             <a *ngIf="rowData.commentPeriod?.daysRemainingCount > 0"
               class="btn btn-primary view-pcp-btn"
