@@ -72,7 +72,7 @@
   </div>
 
   <div class="row mt-2">
-    <div class="col-6">
+    <div class="col-sm-12 col-md-6 text-md-left text-center mb-md-0 mb-3">
       <span *ngIf="searchHelpLinkArray">
         <a class="btn btn-primary"
           [routerLink]="searchHelpLinkArray"
@@ -83,7 +83,7 @@
       </span>
     </div>
     <!-- Advanced Filters toggle -->
-    <div class="col-6 text-right">
+    <div class="col-sm-12 col-md-6 text-md-right text-center">
       <span *ngIf="advancedFilters">
         <button class="btn btn-primary"
           (click)="toggleAdvancedFilters()">
@@ -112,7 +112,7 @@
         <p>{{advancedFilterText}}</p>
       </div>
       <div class="row"
-      [ngClass]="searching ? 'disable-div' : ''">
+        [ngClass]="searching ? 'disable-div' : ''">
         <!-- for each filter, create a block for each filter type -->
         <div [class]="'pb-1 filter-panel col-md-' + (filter.itemPanelSize ? filter.itemPanelSize : filterItemPanelSize)"
           *ngFor="let filter of filters">

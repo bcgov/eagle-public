@@ -52,6 +52,7 @@ import { ProjectNotificationsTableRowsComponent } from './project-notifications/
 import { MatTabsModule } from '@angular/material';
 import { ProjectNotificationDocumentsTableComponent } from './project-notifications/project-notification-documents-table/project-notification-documents-table.component';
 import { ProjectNotificationDocumentsTableRowsComponent } from './project-notifications/project-notification-documents-table-rows/project-notification-documents-table-rows.component';
+import { ProjectNotificationDocumentsTableDetailsComponent } from './project-notifications/project-notification-documents-table-details/project-notification-documents-table-details.component';
 
 
 @NgModule({
@@ -94,6 +95,7 @@ import { ProjectNotificationDocumentsTableRowsComponent } from './project-notifi
     ProjectNotificationsTableRowsComponent,
     ProjectNotificationDocumentsTableComponent,
     ProjectNotificationDocumentsTableRowsComponent,
+    ProjectNotificationDocumentsTableDetailsComponent
   ],
   entryComponents: [
     NewsListTableRowsComponent,

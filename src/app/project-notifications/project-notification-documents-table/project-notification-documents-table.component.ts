@@ -6,6 +6,7 @@ import { ITableMessage } from 'app/shared/components/table-template-2/table-row-
 import { ProjectNotificationDocumentsTableRowsComponent } from '../project-notification-documents-table-rows/project-notification-documents-table-rows.component';
 import { TableService } from 'app/services/table.service';
 import { SearchParamObject } from 'app/services/search.service';
+import { BreakpointObserver, Breakpoints, MediaMatcher } from '@angular/cdk/layout';
 
 @Component({
     selector: 'app-project-notification-documents-table',
@@ -14,11 +15,29 @@ import { SearchParamObject } from 'app/services/search.service';
 })
 export class ProjectNotificationDocumentsTableComponent implements OnInit, OnDestroy {
     @Input() tableId: string;
+    @Input() header: string;
 
     private alive = true;
     public loading: Boolean = true;
 
     public tableData: TableObject2 = new TableObject2({ component: ProjectNotificationDocumentsTableRowsComponent });
+    private mobileTableColumns: any[] = [
+        {
+            name: 'Name',
+            value: 'displayName',
+            width: 'col-6'
+        },
+        {
+            name: 'Date',
+            value: 'datePosted',
+            width: 'col-3'
+        },
+        {
+            name: 'Author',
+            value: 'documentAuthor',
+            width: 'col-3'
+        }
+    ];
     public tableColumns: any[] = [
         {
             name: 'Document Name',
@@ -38,11 +57,34 @@ export class ProjectNotificationDocumentsTableComponent implements OnInit, OnDes
     ];
     constructor(
         private _changeDetectionRef: ChangeDetectorRef,
-        private tableService: TableService
+        private tableService: TableService,
+        private breakpointObserver: BreakpointObserver,
+        private mediaMatcher: MediaMatcher
     ) {
     }
 
     async ngOnInit() {
+        this.breakpointObserver.observe([
+            Breakpoints.Tablet
+        ])
+            .pipe(takeWhile(() => this.alive))
+            .subscribe(result => {
+                if (result.matches) {
+                    this.tableData.columns = this.mobileTableColumns;
+                    this._changeDetectionRef.detectChanges();
+                }
+            });
+        this.breakpointObserver.observe([
+            Breakpoints.Web
+        ])
+            .pipe(takeWhile(() => this.alive))
+            .subscribe(result => {
+                if (result.matches) {
+                    this.tableData.columns = this.tableColumns;
+                    this._changeDetectionRef.detectChanges();
+                }
+            });
+
         this.tableData.tableId = this.tableId;
         this.tableData.pageSize = 5;
         this.tableData.options.showPageSizePicker = false;
@@ -76,7 +118,8 @@ export class ProjectNotificationDocumentsTableComponent implements OnInit, OnDes
                     } else {
                         this.tableData.items = [];
                     }
-                    this.tableData.columns = this.tableColumns;
+                    const mediaQueryList = this.mediaMatcher.matchMedia(Breakpoints.Web);
+                    this.tableData.columns = mediaQueryList.matches ? this.tableColumns : this.mobileTableColumns;
 
                     this.loading = false;
                     this._changeDetectionRef.detectChanges();

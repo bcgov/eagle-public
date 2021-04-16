@@ -18,7 +18,7 @@ export class ProjectNotificationDocumentsTableRowsComponent extends TableRowComp
         private configService: ConfigService,
         private utils: Utils
     ) {
-        super()
+        super();
     }
     ngOnInit() {
         this.configService.lists.pipe(takeWhile(() => this.alive)).subscribe((list) => {

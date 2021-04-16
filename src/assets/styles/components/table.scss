@@ -7,18 +7,18 @@
     text-align: left;
     flex: 1;
 
-    @media screen and (max-width: 600px) {
+    @media screen and (max-width: 767px) {
       text-align: left !important;
     }
 
     &:first-child {
-      @media screen and (min-width: 600px) {
+      @media screen and (min-width: 767px) {
         padding-left: 1rem;
       }
     }
 
     &:last-child {
-      @media screen and (min-width: 600px) {
+      @media screen and (min-width: 767px) {
         padding-right: 1rem;
       }
     }
@@ -145,7 +145,7 @@ th {
   }
 }
 
-@media screen and (max-width: 600px) {
+@media screen and (max-width: 767px) {
   .table {
     border: 0;
     thead {
@@ -213,4 +213,8 @@ th {
     max-width: 50%;
     border-color: #fff;
   }
+}
+
+.ngx-pagination {
+  padding-left: 0px !important;
 }
