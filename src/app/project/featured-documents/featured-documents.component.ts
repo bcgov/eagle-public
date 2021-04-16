@@ -5,7 +5,7 @@ import { SearchResults } from 'app/models/search';
 import { IColumnObject, TableObject2 } from 'app/shared/components/table-template-2/table-object-2';
 import { takeWhile } from 'rxjs/operators';
 import { DocumentTableRowsComponent } from '../documents/project-document-table-rows/project-document-table-rows.component';
-import { DocumentService } from 'app/services/document.service';
+import { TableService } from 'app/services/table.service';
 
 @Component({
   selector: 'app-featured-documents',
@@ -15,6 +15,7 @@ import { DocumentService } from 'app/services/document.service';
 export class FeaturedDocumentsComponent implements OnInit, OnDestroy {
   public loading = true;
   private alive = true;
+  private tableId = 'featuredDocuments';
 
   public tableData: TableObject2 = new TableObject2({ component: DocumentTableRowsComponent });
   public tableColumns: IColumnObject[] = [
@@ -58,7 +59,7 @@ export class FeaturedDocumentsComponent implements OnInit, OnDestroy {
 
   constructor(
     public location: Location,
-    private documentService: DocumentService,
+    private tableService: TableService,
     private _changeDetectionRef: ChangeDetectorRef) { }
 
   ngOnInit() {
@@ -72,7 +73,7 @@ export class FeaturedDocumentsComponent implements OnInit, OnDestroy {
     this.tableData.pageSize = 5;
     this.tableData.sortBy = '-datePosted';
 
-    this.documentService.getValue().pipe(takeWhile(() => this.alive)).subscribe((searchResults: SearchResults) => {
+    this.tableService.getValue(this.tableId).pipe(takeWhile(() => this.alive)).subscribe((searchResults: SearchResults) => {
       if (searchResults.data !== 0) {
         this.tableData.totalListItems = searchResults.totalSearchCount;
         this.tableData.items = searchResults.data.map(record => {

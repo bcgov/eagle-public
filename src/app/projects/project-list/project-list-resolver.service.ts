@@ -8,20 +8,21 @@ import * as _ from 'lodash';
 import { Constants } from 'app/shared/utils/constants';
 import { TableTemplate } from 'app/shared/components/table-template-2/table-template';
 import { TableObject2 } from 'app/shared/components/table-template-2/table-object-2';
-import { ProjectService } from 'app/services/project.service';
 import { SearchParamObject } from 'app/services/search.service';
 import { OrgService } from 'app/services/org.service';
+import { TableService } from 'app/services/table.service';
 
 @Injectable()
 export class ProjectListResolver implements Resolve<void> {
+  private tableId = 'projectList';
   constructor(
-    private projectService: ProjectService,
+    private tableService: TableService,
     private orgService: OrgService,
     private tableTemplateUtils: TableTemplate
   ) { }
 
   resolve(route: ActivatedRouteSnapshot) {
-    this.projectService.clearValue();
+    this.tableService.clearTable(this.tableId);
     this.orgService.fetchProponent();
 
     const params = route.queryParamMap['params'];
@@ -46,7 +47,9 @@ export class ProjectListResolver implements Resolve<void> {
       ['decisionDateStart', 'decisionDateEnd']
     );
 
-    this.projectService.fetchData(new SearchParamObject(
+    this.tableService.initTableData(this.tableId);
+    this.tableService.fetchData(new SearchParamObject(
+      this.tableId,
       keywords,
       'Project',
       [],
