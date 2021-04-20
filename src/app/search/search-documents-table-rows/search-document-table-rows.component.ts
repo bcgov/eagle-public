@@ -32,16 +32,16 @@ export class DocSearchTableRowsComponent extends TableRowComponent implements On
       return '-';
     }
     // Grab the item from the constant lists, returning the name field of the object.
-    let item = this.lists.filter(listItem => listItem._id === id);
-    if (item.length !== 0) {
-      return item[0].name;
+    const items = this.lists.filter(listItem => listItem._id === id);
+    if (items.length !== 0) {
+      return items[0].name;
     } else {
       return '-';
     }
   }
 
   goToItem(item) {
-    let filename = item.documentFileName || item.displayName || item.internalOriginalName;
+    const filename = item.documentFileName || item.displayName || item.internalOriginalName;
     let safeName = filename;
     try {
       safeName = this.utils.encodeString(filename, true)
