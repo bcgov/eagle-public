@@ -53,6 +53,10 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit() {
+    this.tableData.tableId = this.tableId;
+    this.tableData.options.disableRowHighlight = true;
+    this.tableData.options.showHeader = false;
+
     this.setFilters();
     this.loadingLists = false;
     this._changeDetectionRef.detectChanges();

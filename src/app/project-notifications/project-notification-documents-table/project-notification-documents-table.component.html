@@ -1,0 +1,22 @@
+<div class="mt-5 px-3">
+    <div *ngIf="header"
+        class="row mb-3">
+        <div class="col-12">
+            <h4>{{(header)}}</h4>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-12">
+            <div *ngIf="tableData.totalListItems > 0">
+                <lib-table-template-2 [data]="tableData"
+                    (messageOut)="onMessageOut($event)">
+                </lib-table-template-2>
+            </div>
+            <div *ngIf="tableData.totalListItems === 0">
+                <p>
+                    This notification project has no documents.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>

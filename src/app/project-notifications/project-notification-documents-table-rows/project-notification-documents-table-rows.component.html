@@ -1,0 +1,12 @@
+<td data-label="Document Name"
+    (click)="goToItem(rowData)"
+    scope="row"
+    class="col-6">{{rowData.displayName}}</td>
+<td data-label="Date"
+    (click)="goToItem(rowData)"
+    scope="row"
+    class="col-3">{{rowData.datePosted | date:'longDate'}}</td>
+<td data-label="Document Author"
+    (click)="goToItem(rowData)"
+    scope="row"
+    class="col-3">{{idToList(rowData.documentAuthor)}}</td>
