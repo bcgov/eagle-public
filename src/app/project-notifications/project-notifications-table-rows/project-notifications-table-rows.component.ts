@@ -1,5 +1,5 @@
 import { BreakpointObserver, Breakpoints, MediaMatcher } from '@angular/cdk/layout';
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewEncapsulation } from '@angular/core';
 
 import { TableRowComponent } from 'app/shared/components/table-template-2/table-row-component';
 import { takeWhile } from 'rxjs/operators';
@@ -7,7 +7,8 @@ import { takeWhile } from 'rxjs/operators';
 @Component({
   selector: 'tr[app-project-notifications-table-rows]',
   templateUrl: './project-notifications-table-rows.component.html',
-  styleUrls: ['./project-notifications-table-rows.component.scss']
+  styleUrls: ['./project-notifications-table-rows.component.scss'],
+  encapsulation: ViewEncapsulation.None
 })
 
 export class ProjectNotificationsTableRowsComponent extends TableRowComponent implements OnInit, OnDestroy {
