@@ -56,6 +56,7 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
     this.tableData.tableId = this.tableId;
     this.tableData.options.disableRowHighlight = true;
     this.tableData.options.showHeader = false;
+    this.tableData.options.rowSpacing = 25;
 
     this.setFilters();
     this.loadingLists = false;
