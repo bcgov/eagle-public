@@ -47,6 +47,12 @@ export interface ITableOptions {
   showPageCountDisplay?: boolean;
 
   showAllPicker?: boolean;
+
+  disableRowHighlight?: boolean;
+
+  showTopControls?: boolean;
+
+  rowSpacing?: number;
 }
 
 /**
@@ -215,7 +221,10 @@ export class TableObject2 {
       showHeader: true,
       showPagination: true,
       showPageSizePicker: true,
-      showPageCountDisplay: true
+      showPageCountDisplay: true,
+      disableRowHighlight: false,
+      showTopControls: true,
+      rowSpacing: 0
     });
     this.component = (params && params.component) || null;
     this.columns = (params && params.columns) || [];

@@ -1,0 +1,77 @@
+<div class="mt-5 px-3">
+    <div class="row mb-1">
+        <div class="col-md-12 col-lg-6">
+            <h4>{{(rowData.name.toUpperCase() || '-')}}</h4>
+        </div>
+        <div class="col-md-12 col-lg-6 text-lg-right">
+            <a *ngIf="rowData.commentPeriod?.daysRemainingCount > 0"
+                class="btn btn-primary view-pcp-btn"
+                title="View this Public Comment Period"
+                [routerLink]="['/pn', rowData._id, 'cp', rowData.commentPeriod?._id]">
+                <div class="pcp-indicator pcp-indicator-active"></div>
+                Open Comment Period - View/Submit
+            </a>
+            <a *ngIf="rowData.commentPeriod?.daysRemainingCount === 0"
+                class="btn btn-primary view-pcp-btn"
+                title="View this Public Comment Period"
+                [routerLink]="['/pn', rowData._id, 'cp', rowData.commentPeriod?._id]">
+                <div class="pcp-indicator pcp-indicator-inactive"></div>
+                View Completed Comment Period
+            </a>
+        </div>
+    </div>
+    <div class="row mb-4">
+        <div class="pn-decision">
+            <a [routerLink]="['/p', rowData.associatedProjectId ]"
+                *ngIf="rowData.associatedProjectId; else noHyperlink">
+                <p class="value"
+                    *ngIf="rowData.decisionDate; else noDate">Notification Decision - {{ rowData.decision }} |
+                    {{rowData.decisionDate?.toString().split('T')[0] || "-" }} </p>
+                <ng-template #noDate>
+                    <p class="value">Notification Decision - {{ rowData.decision }}</p>
+                </ng-template>
+            </a>
+            <ng-template #noHyperlink>
+                <p class="value"
+                    *ngIf="rowData.decisionDate; else noDate">Notification Decision - {{ rowData.decision }} |
+                    {{rowData.decisionDate?.toString().split('T')[0] || "-" }} </p>
+                <ng-template #noDate>
+                    <p class="value">Notification Decision - {{ rowData.decision }}</p>
+                </ng-template>
+            </ng-template>
+        </div>
+    </div>
+    <div class="row mb-4">
+        <div class="col-12 pn-info-block">
+            <label>Description:</label>
+            <p class="value"
+                [innerHTML]="(rowData.description || '-') | newlines"></p>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm-12 col-md-4 pn-info-block">
+            <label>Type</label>
+            <p class="value">{{rowData.type || "-" }}</p>
+        </div>
+        <div class="col-sm-12 col-md-4 pn-info-block">
+            <label>Location</label>
+            <p class="value">{{rowData.location || "-" }}</p>
+        </div>
+        <div class="col-sm-12 col-md-4 pn-info-block">
+            <label>Proponent</label>
+            <p class="value">{{rowData.proponent || "-" }}</p>
+        </div>
+        <div class="col-sm-12 col-md-4 pn-info-block">
+            <label>Sub-Type</label>
+            <p class="value">{{rowData.subType || "-" }}</p>
+        </div>
+        <div class="col-sm-12 col-md-4 pn-info-block">
+            <label>Region</label>
+            <p class="value">{{rowData.region || "-" }}</p>
+        </div>
+        <div class="col-sm-12 col-md-4 pn-info-block">
+            <label>Notification Trigger</label>
+            <p class="value">{{getTrigger(rowData) || "-" }}</p>
+        </div>
+    </div>
+</div>

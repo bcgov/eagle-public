@@ -1,6 +1,7 @@
 <div class="table-template">
-  <div class="row mb-3">
-    <div class="col-md-6 text-md-left">
+  <div class="row mb-3"
+    *ngIf="data.options.showTopControls">
+    <div class="col-md-12 col-lg-6 text-lg-left text-center mb-lg-0 mb-3">
       <lib-page-count-display *ngIf="data.options.showPageCountDisplay"
         [isHidden]="false"
         [currentPageNum]="data.currentPage"
@@ -8,7 +9,7 @@
         [totalItems]="data.totalListItems"
         id="table-template-page-count-display"></lib-page-count-display>
     </div>
-    <div class="col-md-6 text-md-right">
+    <div class="col-md-12 col-lg-6 text-lg-right text-center">
       <pagination-controls *ngIf="data.options.showPagination"
         (pageChange)="onUpdatePageNumber($event)"
         id="{{this.data.tableId}}"
@@ -37,12 +38,12 @@
         </th>
       </tr>
     </thead>
-    <tbody>
+    <tbody [ngClass]="data.options.disableRowHighlight ? '' : 'highlight'">
       <ng-container *ngFor="
           let item of data.items
             | paginate
               : {
-                  id: this.data.tableId,
+                  id: data.tableId,
                   itemsPerPage: data.pageSize,
                   currentPage: data.currentPage,
                   totalItems: data.totalListItems
@@ -51,12 +52,14 @@
         [libTableRow]="item"
         [tableData]="data"
         [messageIn]="messageIn"
-        (messageOut)="onMessageOut($event)"></ng-container>
+        (messageOut)="onMessageOut($event)">
+        <div [style.margin-bottom.px]="data.options.rowSpacing"></div>
+        </ng-container>
     </tbody>
   </table>
   <div class="table-controls-bottom">
     <div class="row">
-      <div class="col-md-6 text-md-left">
+      <div class="col-md-12 col-lg-6 text-lg-left text-center mb-lg-0 mb-3">
         <lib-page-size-picker *ngIf="data.options.showPageSizePicker && data.totalListItems > 10"
           [isHidden]="false"
           [currentPageSize]="data.pageSize"
@@ -64,11 +67,12 @@
           (pageSizeChosen)="onUpdatePageSize($event)"
           id="table-template-page-size-picker"></lib-page-size-picker>
       </div>
-      <div class="col-md-6 text-md-right">
+      <div class="col-md-12 col-lg-6 text-lg-right text-center">
         <pagination-controls *ngIf="data.options.showPagination"
           (pageChange)="onUpdatePageNumber($event)"
-          id="{{this.data.tableId}}"
-          autoHide="true"></pagination-controls>
+          id="{{data.tableId}}"
+          autoHide="true"
+          responsive="true"></pagination-controls>
       </div>
     </div>
   </div>

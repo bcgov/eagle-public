@@ -7,18 +7,18 @@
     text-align: left;
     flex: 1;
 
-    @media screen and (max-width: 600px) {
+    @media screen and (max-width: 767px) {
       text-align: left !important;
     }
 
     &:first-child {
-      @media screen and (min-width: 600px) {
+      @media screen and (min-width: 767px) {
         padding-left: 1rem;
       }
     }
 
     &:last-child {
-      @media screen and (min-width: 600px) {
+      @media screen and (min-width: 767px) {
         padding-right: 1rem;
       }
     }
@@ -64,12 +64,7 @@
       &:nth-child(even) {
         background: $table-alt-row-bg;
       }
-
-      &:hover {
-        background: #e2f1ff;
-      }
     }
-
     td {
       padding: 1.25rem 0.5rem;
       vertical-align: top;
@@ -78,6 +73,13 @@
 
   + pagination-template {
     margin-top: 2rem;
+  }
+}
+tbody.highlight {
+  tr {
+    &:hover {
+      background: #e2f1ff;
+    }
   }
 }
 
@@ -143,7 +145,7 @@ th {
   }
 }
 
-@media screen and (max-width: 600px) {
+@media screen and (max-width: 767px) {
   .table {
     border: 0;
     thead {
@@ -211,4 +213,8 @@ th {
     max-width: 50%;
     border-color: #fff;
   }
+}
+
+.ngx-pagination {
+  padding-left: 0px !important;
 }

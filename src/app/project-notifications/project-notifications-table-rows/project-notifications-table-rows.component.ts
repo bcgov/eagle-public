@@ -1,42 +1,52 @@
-import { Component, OnInit } from '@angular/core';
-import { MatSnackBar } from '@angular/material';
+import { BreakpointObserver, Breakpoints, MediaMatcher } from '@angular/cdk/layout';
+import { Component, OnDestroy, OnInit, ViewEncapsulation } from '@angular/core';
 
-import { ApiService } from 'app/services/api';
 import { TableRowComponent } from 'app/shared/components/table-template-2/table-row-component';
+import { takeWhile } from 'rxjs/operators';
 
 @Component({
   selector: 'tr[app-project-notifications-table-rows]',
   templateUrl: './project-notifications-table-rows.component.html',
-  styleUrls: ['./project-notifications-table-rows.component.scss']
+  styleUrls: ['./project-notifications-table-rows.component.scss'],
+  encapsulation: ViewEncapsulation.None
 })
 
-export class ProjectNotificationsTableRowsComponent extends TableRowComponent implements OnInit {
+export class ProjectNotificationsTableRowsComponent extends TableRowComponent implements OnInit, OnDestroy {
+  public isMobile = false;
+  private alive = true;
+
   constructor(
-    private api: ApiService,
-    public snackBar: MatSnackBar,
+    private breakpointObserver: BreakpointObserver,
+    private mediaMatcher: MediaMatcher
   ) {
     super();
   }
 
   ngOnInit() {
+    const mediaQueryList = this.mediaMatcher.matchMedia(Breakpoints.Web);
+    this.isMobile = !mediaQueryList.matches;
+
+    this.breakpointObserver.observe([
+      Breakpoints.Tablet
+    ])
+      .pipe(takeWhile(() => this.alive))
+      .subscribe(result => {
+        if (result.matches) {
+          this.isMobile = true;
+        }
+      });
+    this.breakpointObserver.observe([
+      Breakpoints.Web
+    ])
+      .pipe(takeWhile(() => this.alive))
+      .subscribe(result => {
+        if (result.matches) {
+          this.isMobile = false;
+        }
+      });
   }
 
-  downloadDocuments(project) {
-    project.documents.forEach(doc => {
-      this.api.downloadDocument(doc)
-        .then(() => {
-          // Turn this into a toast
-          this.snackBar.open('Downloading document');
-          window.setTimeout(() => this.snackBar.dismiss(), 2000)
-        })
-        .catch(() => {
-          this.snackBar.open('Error opening document! Please try again later');
-          window.setTimeout(() => this.snackBar.dismiss(), 2000)
-        })
-    });
-  }
-
-  getTrigger(project) {
-    return project && project.trigger ? project.trigger.replace(/,/g, ', ') : null;
+  ngOnDestroy() {
+    this.alive = false;
   }
 }
