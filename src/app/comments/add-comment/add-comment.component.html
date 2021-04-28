@@ -21,23 +21,16 @@
     <div class="modal-body">
       <section>
         <h2>How it Works</h2>
-        <p>All accepted comments submitted to the Environmental Assessment Office (EAO) will be published online within seven days of receipt. Comments are not accepted if - in EAO’s view - they are profane, abusive or do not relate to the matter being consulted upon as stated in our  <a href="https://www2.gov.bc.ca/assets/gov/environment/natural-resource-stewardship/environmental-assessments/commenting-on-projects/public_comment_policy_v10.pdf" target="_blank">Public Comment Policy [PDF]</a>.</p>
+        <p>All accepted comments submitted to the Environmental Assessment Office (EAO) will be published online within seven days of receipt. Comments are not accepted if - in the EAO’s view - they are profane, abusive or do not relate to the matter being consulted upon as stated in our  <a href="https://www2.gov.bc.ca/assets/gov/environment/natural-resource-stewardship/environmental-assessments/commenting-on-projects/public_comment_policy_v10.pdf" target="_blank">Public Comment Policy [PDF]</a>.</p>
         <p>All accepted comments are taken into consideration by EAO.</p>
-        <p><strong>Comment Requirements to Avoid Rejection:</strong></p>
+        <p><strong>To ensure your comment meets EAO's requirements:</strong></p>
         <ul>
-          <li>Provide City or Town</li>
-          <li>If you would like your name visible on the public website ensure you select "please make my name visible to the public" on the submission page</li>
-          <li>Do not provide personal or identifying information within your comment if you would like to remain anonymous</li>
-          <li>Do not provide comments that are profane, abusive or do not relate to the matter being consulted upon</li>
+          <li>Provide your location (City or Town)</li>
+          <li>Identify if you would like to remain anonymous or display your name publicly</li>
+          <li>Comments <strong><u>must not</u></strong> contain personal or otherwise identifying information of yourself or any other individuals <strong><u>in the text of the submission and/or attachments</u></strong> (e.g. home/work address, email address, telephone number)</li>
+          <li>Comments that contain profanity, abusive or intolerant language or does not relate to the matter being consulted upon, will not be accepted</li>
           <li>Attachments must be no larger than 10 MB and must be a .png, .pdf, .gif, .jpg, .jpeg, .doc, .docx, .xls, .xlst, .ppt, .rtf, .pptx, .txt or .bmp file</li>
-        </ul>
-
-        <div>
-          <label class="control-label">
-            <input class="mr-1" name="agreeConditions" type="checkbox" [(ngModel)]="agreeConditions"/>
-            I have read the above and understand what my submission should/shouldn't include
-          </label>
-        </div>
+        </ul>        
       </section>
       <section class="m-b-0 mt-5">
         <h2>Collection Notice</h2>
@@ -46,6 +39,12 @@
       </section>
     </div>
     <div class="modal-footer">
+      <div>
+        <label class="control-label">
+          <input class="mr-1" name="agreeConditions" type="checkbox" [(ngModel)]="agreeConditions"/>
+          I have read the above and understand what my submission should/shouldn't include
+        </label>
+      </div>
       <button type="button" class="btn btn-primary" [disabled]="!agreeConditions" (click)="p1_next()">Next</button>
     </div>
   </div>
@@ -224,43 +223,18 @@
     <div class="modal-body">
       <fieldset>
           <div class="form-group">
-            <label class="control-label">Name *</label>
-            <div class="form-control-container">
-              <input required class="form-control" type="text" name="nameInput" id="nameInput" [(ngModel)]="contactName" autofocus [disabled]="!makePublic"/>
-            </div>
-          </div>
-          <div class="form-group">
-            <label class="control-label" >
-              <input type="checkbox" aria-label="Checkbox for row item" name="anonymous" [(ngModel)]='makePublic' (ngModelChange)="publicChecked()">
-              Please make my name visible to the public.
-            </label>
-            <div >
-              All comments are submitted anonymously by default. Checking this option will display your Name on the public site.
-            </div>
-          </div>
-          <div class="form-group" *ngIf="project.projectCAC && project.projectCACPublished">
-            <label class="control-label" >
-              <input type="checkbox" aria-label="Checkbox for row item" name="submittedCAC" [(ngModel)]='submittedCAC'>
-              I'm a Community Advisory Committee Member.
-            </label>
-            <div class="btn btn-link mb-1" (click)="learnMore()">
-              <span class="float-right">Learn More</span>
-            </div>
-          </div>
-          <div class="form-group">
             <label class="control-label" >Location *</label>
             <input required class="form-control" type="text" name="locationInput" placeholder="IE: City, Province, etc."
               id="locationInput" [(ngModel)]="locationInput" autofocus />
           </div>
           <div class="form-group">
-            <label class="control-label" >Your Comment *</label>
+            <label class="control-label" >Your Comment Submission*</label>
             <div *ngIf="commentTip"  class="comment-tip-container">
               <i class="material-icons">error_outline</i>
               <p [innerHTML]="commentTip | safeHtml"></p>
             </div>
-            <textarea class="form-control" rows="8" name="commentInput" id="commentInput" [(ngModel)]="commentInput" autofocus placeholder="Do not provide personal/identifying information within your comment or attachment or it will be rejected as per our policy regulations"></textarea>
+            <textarea class="form-control" rows="8" name="commentInput" id="commentInput" [(ngModel)]="commentInput" autofocus placeholder="Comments must not contain personal or otherwise identifying information of yourself or any other individuals within your text submission and/or attachment (e.g. home/work address, email address, telephone number)."></textarea>
           </div>
-
           <app-file-upload [maxFiles]="15" [maxSize]="10" [showInfo]="false" [showList]="false" [files]="commentFiles"
                            (filesChange)="addFiles($event); commentFiles = []"></app-file-upload>
           <ul class="doc-list mb-3" *ngIf="documents && documents.length > 0">
@@ -282,7 +256,33 @@
           <div *ngIf="documents && documents.length === 0">
             <p>No attached files.</p>
           </div>
-      </fieldset>
+          <div class="form-group">
+            <label class="control-label">Name <em>(All comments are submitted anonymously by default.)</em></label>            
+          </div>
+          <div class="form-group">
+            <label class="control-label" >
+              <input type="checkbox" aria-label="Checkbox for row item" name="anonymous" [(ngModel)]='makePublic' (ngModelChange)="publicChecked()">
+              Please make my name visible to the public.
+            </label>
+            <div >
+              <em>If you would like to add and display your name on the public website ensure you <u>select "Please make my name visible to the public"</u></em>
+            </div>
+          </div>
+          <div class="form-group">            
+            <div class="form-control-container">
+              <input required class="form-control" type="text" name="nameInput" id="nameInput" [(ngModel)]="contactName" autofocus [disabled]="!makePublic"/>
+            </div>
+          </div>
+          <div class="form-group" *ngIf="project.projectCAC && project.projectCACPublished">
+            <label class="control-label" >
+              <input type="checkbox" aria-label="Checkbox for row item" name="submittedCAC" [(ngModel)]='submittedCAC'>
+              I'm a Community Advisory Committee Member.
+            </label>
+            <div class="btn btn-link mb-1" (click)="learnMore()">
+              <span class="float-right">Learn More</span>
+            </div>
+          </div>
+        </fieldset>
     </div>
     <div class="modal-footer">
       <button class="btn btn-light" type="button" (click)="p5_back()">Back</button>
