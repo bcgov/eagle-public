@@ -4,19 +4,25 @@
             <h4>{{(rowData.name.toUpperCase() || '-')}}</h4>
         </div>
         <div class="col-md-12 col-lg-6 text-lg-right">
-            <a *ngIf="rowData.commentPeriod?.daysRemainingCount > 0"
+            <a *ngIf="rowData.commentPeriod?.commentPeriodStatus === 'Open'"
                 class="btn btn-primary view-pcp-btn"
                 title="View this Public Comment Period"
                 [routerLink]="['/pn', rowData._id, 'cp', rowData.commentPeriod?._id]">
                 <div class="pcp-indicator pcp-indicator-active"></div>
                 Open Comment Period - View/Submit
             </a>
-            <a *ngIf="rowData.commentPeriod?.daysRemainingCount === 0"
+            <a *ngIf="rowData.commentPeriod?.commentPeriodStatus === 'Closed'"
                 class="btn btn-primary view-pcp-btn"
                 title="View this Public Comment Period"
                 [routerLink]="['/pn', rowData._id, 'cp', rowData.commentPeriod?._id]">
                 <div class="pcp-indicator pcp-indicator-inactive"></div>
                 View Completed Comment Period
+            </a>
+            <a *ngIf="rowData.commentPeriod?.commentPeriodStatus === 'Pending' || !rowData.commentPeriod?.commentPeriodStatus"
+                class="btn btn-primary view-pcp-btn"
+                title="View this Public Comment Period">
+                <div class="pcp-indicator pcp-indicator-pending"></div>
+                Comment Period Pending
             </a>
         </div>
     </div>

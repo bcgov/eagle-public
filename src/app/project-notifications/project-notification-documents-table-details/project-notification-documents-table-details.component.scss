@@ -28,6 +28,10 @@ h4 {
 .view-pcp-btn {
     background: #003366;
     color: white;
+
+    &:hover{
+        color:white;
+    }
 }
 
 .pcp-indicator {
@@ -45,6 +49,10 @@ h4 {
 
 .pcp-indicator-inactive {
     background: #d20e0ebf;
+}
+
+.pcp-indicator-pending {
+    background: #fcba19;
 }
 
 .pn-info-block {
