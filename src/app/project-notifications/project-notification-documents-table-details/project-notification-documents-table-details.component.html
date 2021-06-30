@@ -16,7 +16,7 @@
                 <div class="pcp-indicator pcp-indicator-inactive"></div>
                 View Completed Comment Period
             </a>
-            <a *ngIf="rowData.commentPeriod?.commentPeriodStatus === 'Pending' || rowData.commentPeriod?.commentPeriodStatus"
+            <a *ngIf="rowData.commentPeriod?.commentPeriodStatus === 'Pending' || !rowData.commentPeriod?.commentPeriodStatus"
                 class="btn btn-primary view-pcp-btn" title="View this Public Comment Period">
                 <div class="pcp-indicator pcp-indicator-pending"></div>
                 Comment Period Pending
