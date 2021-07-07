@@ -1,12 +1,12 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { Router, ActivatedRoute, Params } from '@angular/router';
 import { SearchResults } from 'app/models/search';
-import { ActivitiesListTableRowsComponent } from 'app/project/project-activites/activities-list-table-rows/activities-list-table-rows.component';
 import { TableService } from 'app/services/table.service';
 import { IColumnObject, TableObject2 } from 'app/shared/components/table-template-2/table-object-2';
 import { ITableMessage } from 'app/shared/components/table-template-2/table-row-component';
 import { TableTemplate } from 'app/shared/components/table-template-2/table-template';
 import { takeWhile } from 'rxjs/operators';
+import { NewsListTableRowsComponent } from './news-list-table-rows/news-list-table-rows.component';
 
 @Component({
   selector: 'app-news',
@@ -19,8 +19,9 @@ export class NewsListComponent implements OnInit, OnDestroy {
   public loading = true;
   private alive = true;
   public queryParams: Params;
+  private isSearch = false;
 
-  public tableData: TableObject2 = new TableObject2({ component: ActivitiesListTableRowsComponent });
+  public tableData: TableObject2 = new TableObject2({ component: NewsListTableRowsComponent });
   public tableColumns: IColumnObject[] = [
     {
       name: 'Headline',
@@ -32,7 +33,7 @@ export class NewsListComponent implements OnInit, OnDestroy {
       name: 'Date',
       value: 'dateAdded',
       width: 'col-2',
-      nosort: true
+      nosort: false
     }
   ];
   constructor(
@@ -54,6 +55,7 @@ export class NewsListComponent implements OnInit, OnDestroy {
       if (this.tableData.sortBy === '-datePosted') {
         this.tableData.sortBy = '-dateAdded';
       }
+
       this._changeDetectionRef.detectChanges();
     });
 
@@ -67,20 +69,31 @@ export class NewsListComponent implements OnInit, OnDestroy {
         this.tableData.options.showAllPicker = true;
 
         this.loading = false;
-
         this._changeDetectionRef.detectChanges();
       }
     });
+  }
+
+  sortDateDescending(): ITableMessage {
+    return {
+      label: 'columnSort',
+      data: 'dateAdded'
+    }
   }
 
   onMessageOut(msg: ITableMessage) {
     let params = {};
     switch (msg.label) {
       case 'columnSort':
-        if (this.tableData.sortBy.charAt(0) === '+') {
+        if (this.isSearch) {
           params['sortBy'] = '-' + msg.data;
+          this.isSearch = false;
         } else {
-          params['sortBy'] = '+' + msg.data;
+          if (this.tableData.sortBy.charAt(0) === '+') {
+            params['sortBy'] = '-' + msg.data;
+          } else {
+            params['sortBy'] = '+' + msg.data;
+          }
         }
         this.tableService.data[this.tableId].cachedConfig.sortBy = params['sortBy'];
         break;
@@ -115,6 +128,7 @@ export class NewsListComponent implements OnInit, OnDestroy {
   }
 
   executeSearch(searchPackage) {
+    this.isSearch = true;
     let params = {};
     if (searchPackage.keywords) {
       params['keywords'] = searchPackage.keywords;
@@ -133,6 +147,7 @@ export class NewsListComponent implements OnInit, OnDestroy {
     params['currentPage'] = 1;
     this.tableService.data[this.tableId].cachedConfig.currentPage = params['currentPage'];
     this.submit(params);
+    this.onMessageOut(this.sortDateDescending());
   }
 
   ngOnDestroy() {

@@ -1,8 +1,7 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 
-import { TableComponent } from 'app/shared/components/table-template/table.component';
-import { TableObject } from 'app/shared/components/table-template/table-object';
 import { Router } from '@angular/router';
+import { TableRowComponent } from 'app/shared/components/table-template-2/table-row-component';
 
 @Component({
     selector: 'tbody[app-news-list-table-rows]',
@@ -10,20 +9,11 @@ import { Router } from '@angular/router';
     styleUrls: ['./news-list-table-rows.component.scss']
 })
 
-export class NewsListTableRowsComponent implements OnInit, TableComponent {
-    @Input() data: TableObject;
-
-    public activities: any;
-    public paginationData: any;
-
+export class NewsListTableRowsComponent extends TableRowComponent {
     constructor(
-      private router: Router
-    ) { }
+      private router: Router,
+    ) { super(); }
 
-    ngOnInit() {
-        this.activities = this.data.data;
-        this.paginationData = this.data.paginationData;
-    }
 
     goToCP(activity) {
       this.router.navigate(['p', activity.project._id, 'cp', activity.pcp]);
