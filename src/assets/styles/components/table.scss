@@ -58,6 +58,7 @@
   }
 
   tbody {
+    display: block !important;
     tr {
       background: $table-row-bg;
 
