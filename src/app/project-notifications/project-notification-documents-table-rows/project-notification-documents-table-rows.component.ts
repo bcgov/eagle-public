@@ -6,7 +6,7 @@ import { Utils } from 'app/shared/utils/utils';
 import { takeWhile } from 'rxjs/operators';
 
 @Component({
-    selector: 'tr[app-project-notification-documents-table-rows]',
+    selector: 'app-project-notification-documents-table-rows',
     templateUrl: './project-notification-documents-table-rows.component.html',
     styleUrls: ['./project-notification-documents-table-rows.component.scss']
 })
