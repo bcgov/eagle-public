@@ -1,8 +1,11 @@
 <tr>
-  <td scope="row" data-label="Headline">
-    <div class="col-10">
+  <td scope="row"
+    data-label="Headline">
+    <div class="col-10"
+      tabindex="0">
       <span class="font-weight-bold">{{rowData.project?.name}}</span>
-      <span *ngIf="rowData.notificationName" class="font-weight-bold">{{rowData.notificationName}}</span>
+      <span *ngIf="rowData.notificationName"
+        class="font-weight-bold">{{rowData.notificationName}}</span>
       <br>
       <span>{{rowData.headline || '-'}}</span>
       <br>
@@ -10,19 +13,26 @@
       <span [innerHtml]="rowData.content"></span>
       <br>
       <br>
-      <a *ngIf="rowData.project && rowData.project._id" class="btn content-btn-alt mr-1"
+      <a *ngIf="rowData.project && rowData.project._id"
+        class="btn content-btn-alt mr-1"
         [routerLink]="['/p', rowData.project._id ]">
         <span>Project Info</span>
       </a>
       <a *ngIf="isSingleDoc(rowData?.documentUrl) && !rowData?.documentUrl.includes('docs?folder')"
-        class="btn content-btn-alt mr-1" href="{{rowData.documentUrl}}">
+        class="btn content-btn-alt mr-1"
+        href="{{rowData.documentUrl}}">
         <span *ngIf="!rowData?.notificationName">View Document(s)</span>
         <span *ngIf="rowData.notificationName">View Project Notification Public Comment Period</span>
       </a>
-      <button *ngIf="rowData?.pcp" class="btn content-btn-alt" (click)="goToCP(rowData)">
+      <button *ngIf="rowData?.pcp"
+        class="btn content-btn-alt"
+        (click)="goToCP(rowData)">
         <span>Submit/ View Comment(s)</span>
       </button>
     </div>
   </td>
-  <td scope="row" data-label="Date" class="col-2">{{rowData.dateAdded | date:'longDate'}}</td>
+  <td scope="row"
+    data-label="Date"
+    class="col-2"
+    tabindex="0">{{rowData.dateAdded | date:'longDate'}}</td>
 </tr>

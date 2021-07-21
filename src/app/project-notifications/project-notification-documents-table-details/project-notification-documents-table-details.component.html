@@ -1,33 +1,39 @@
 <div class="mt-5 px-3">
-    <div class="row mb-1">
+    <div class="row mb-1"
+        tabindex="0">
         <div class="col-md-12 col-lg-6">
             <h4>{{(rowData.name.toUpperCase() || '-')}}</h4>
         </div>
         <div class="col-md-12 col-lg-6 text-lg-right">
-            <a *ngIf="rowData.commentPeriod?.commentPeriodStatus === 'Open'" class="btn btn-primary view-pcp-btn"
+            <a *ngIf="rowData.commentPeriod?.commentPeriodStatus === 'Open'"
+                class="btn btn-primary view-pcp-btn"
                 title="View this Public Comment Period"
                 [routerLink]="['/pn', rowData._id, 'cp', rowData.commentPeriod?._id]">
                 <div class="pcp-indicator pcp-indicator-active"></div>
                 Open Comment Period - View/Submit
             </a>
-            <a *ngIf="rowData.commentPeriod?.commentPeriodStatus === 'Closed'" class="btn btn-primary view-pcp-btn"
+            <a *ngIf="rowData.commentPeriod?.commentPeriodStatus === 'Closed'"
+                class="btn btn-primary view-pcp-btn"
                 title="View this Public Comment Period"
                 [routerLink]="['/pn', rowData._id, 'cp', rowData.commentPeriod?._id]">
                 <div class="pcp-indicator pcp-indicator-inactive"></div>
                 View Completed Comment Period
             </a>
             <a *ngIf="rowData.commentPeriod?.commentPeriodStatus === 'Pending' || !rowData.commentPeriod?.commentPeriodStatus"
-                class="btn btn-primary view-pcp-btn" title="View this Public Comment Period">
+                class="btn btn-primary view-pcp-btn"
+                title="View this Public Comment Period">
                 <div class="pcp-indicator pcp-indicator-pending"></div>
                 Comment Period Pending
             </a>
         </div>
     </div>
-    <div class="row mb-4">
+    <div class="row mb-4"
+        tabindex="0">
         <div class="pn-decision">
             <a [routerLink]="['/p', rowData.associatedProjectId ]"
                 *ngIf="rowData.associatedProjectId; else noHyperlink">
-                <p class="value" *ngIf="rowData.decisionDate; else noDate">Notification Decision - {{ rowData.decision
+                <p class="value"
+                    *ngIf="rowData.decisionDate; else noDate">Notification Decision - {{ rowData.decision
                     }} |
                     {{rowData.decisionDate?.toString().split('T')[0] || "-" }} </p>
                 <ng-template #noDate>
@@ -35,7 +41,8 @@
                 </ng-template>
             </a>
             <ng-template #noHyperlink>
-                <p class="value" *ngIf="rowData.decisionDate; else noDate">Notification Decision - {{ rowData.decision
+                <p class="value"
+                    *ngIf="rowData.decisionDate; else noDate">Notification Decision - {{ rowData.decision
                     }} |
                     {{rowData.decisionDate?.toString().split('T')[0] || "-" }} </p>
                 <ng-template #noDate>
@@ -44,13 +51,16 @@
             </ng-template>
         </div>
     </div>
-    <div class="row mb-4">
+    <div class="row mb-4"
+        tabindex="0">
         <div class="col-12 pn-info-block">
             <label>Description:</label>
-            <p class="value" [innerHTML]="(rowData.description || '-') | newlines"></p>
+            <p class="value"
+                [innerHTML]="(rowData.description || '-') | newlines"></p>
         </div>
     </div>
-    <div class="row">
+    <div class="row"
+        tabindex="0">
         <div class="col-sm-12 col-md-4 pn-info-block">
             <label>Type</label>
             <p class="value">{{rowData.type || "-" }}</p>

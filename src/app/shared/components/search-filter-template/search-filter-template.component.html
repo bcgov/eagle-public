@@ -121,7 +121,7 @@
             <label *ngIf="filter.name && filter.name.length > 0"
               class="control-label font-weight-bold">{{filter.name}}</label>
             <div class="row">
-              <div class="col-xl-6 start-date-padding">
+              <div class="col-md-6 start-date-padding">
                 <label (for)="filter.filterDefinition.filterId"
                   class="control-label font-weight-bold">{{filter.filterDefinition.startDateLabel}}</label>
                 <lib-date-picker [id]="filter.filterDefinition.startDateId"
@@ -131,7 +131,7 @@
                   [maxDate]="filter.filterDefinition.maxDate">
                 </lib-date-picker>
               </div>
-              <div class="col-xl-6 end-date-padding">
+              <div class="col-md-6 end-date-padding">
                 <label (for)="filter.filterDefinition.endDateId"
                   class="control-label font-weight-bold">{{filter.filterDefinition.endDateLabel}}</label>
                 <lib-date-picker [id]="filter.filterDefinition.endDateId"

@@ -11,6 +11,8 @@
         <div *ngIf="commentPeriods.length > 0">
             <div class="d-flex justify-content-between list-group-item"
                  *ngFor="let commentPeriod of commentPeriods"
+                 tabindex="0"
+                 (keyup.enter)=goToCP(commentPeriod)
                  (click)=goToCP(commentPeriod)>
                 <div *ngIf="commentPeriod.commentPeriodStatus">
                     <label class="title">{{commentPeriod.commentPeriodStatus}}</label>

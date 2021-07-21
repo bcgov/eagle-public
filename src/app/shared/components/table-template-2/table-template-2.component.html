@@ -22,9 +22,12 @@
     <thead class="thead-light"
       *ngIf="data.options.showHeader">
       <tr>
-        <th *ngFor="let entry of data.columns"
+        <th tabindex="0"
+          [attr.aria-label]="'Column header ' + entry.name + (!entry.nosort ? 'sortable' : '')"
+          *ngFor="let entry of data.columns"
           id="table-template-header"
           class="project-table__name-col"
+          (keyup.enter)="!entry.nosort && onSort(entry.value)"
           (click)="!entry.nosort && onSort(entry.value)"
           [ngClass]="[entry.width, !entry.nosort ? 'sortable' : '']">
           {{ entry.name }}
@@ -54,7 +57,7 @@
         [messageIn]="messageIn"
         (messageOut)="onMessageOut($event)">
         <div [style.margin-bottom.px]="data.options.rowSpacing"></div>
-        </ng-container>
+      </ng-container>
     </tbody>
   </table>
   <div class="table-controls-bottom">
