@@ -23,6 +23,7 @@
       *ngIf="data.options.showHeader">
       <tr>
         <th tabindex="0"
+          [attr.aria-label]="'Column header ' + entry.name + (!entry.nosort ? 'sortable' : '')"
           *ngFor="let entry of data.columns"
           id="table-template-header"
           class="project-table__name-col"
