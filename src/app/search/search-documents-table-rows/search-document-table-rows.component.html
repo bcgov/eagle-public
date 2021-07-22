@@ -1,22 +1,35 @@
 <td data-label="Name"
   (click)="goToItem(rowData)"
-  class="col-4">
+  (keyup.enter)="goToItem(rowData)"
+  class="col-4"
+  tabindex="0">
   {{rowData.displayName}}
 </td>
 <td data-label="ProjectName"
+  [attr.aria-label]="'Link to project' + rowData.project.name"
   (click)="goToProject(rowData)"
-  class="col-2 btn-link">{{rowData.project.name}}</td>
+  (keyup.enter)="goToProject(rowData)"
+  class="col-2 btn-link"
+  tabindex="0">{{rowData.project.name}}</td>
 <td data-label="Date"
   (click)="goToItem(rowData)"
-  class="col-2">
+  class="col-2"
+  tabindex="0">
   <div *ngIf="rowData.datePosted !== '1900-01-01T08:00:00.000Z'">{{rowData.datePosted | date:'longDate'}}</div>
 </td>
 <td data-label="Type"
   (click)="goToItem(rowData)"
-  class="col-2">{{idToList(rowData.type)}}</td>
+  (keyup.enter)="goToItem(rowData)"
+  class="col-2"
+  tabindex="0">{{idToList(rowData.type)}}</td>
 <td data-label="Milestone"
   (click)="goToItem(rowData)"
-  class="col-2">{{idToList(rowData.milestone)}}</td>
+  (keyup.enter)="goToItem(rowData)"
+  class="col-2"
+  tabindex="0">{{idToList(rowData.milestone)}}</td>
 <td data-label="Download"
   (click)="goToItem(rowData)"
-  class="col-1 d-flex justify-content-center"><span class="material-icons">cloud_download</span></td>
+  (keyup.enter)="goToItem(rowData)"
+  class="col-1 d-flex justify-content-center"><span class="material-icons"
+    tabindex="0"
+    [attr.aria-label]="'Download document button'">cloud_download</span></td>

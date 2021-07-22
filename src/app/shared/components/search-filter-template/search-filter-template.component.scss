@@ -112,10 +112,16 @@ $gray2: #e9ecef;
 
 .start-date-padding {
   padding-right: 30px;
+  @media (max-width: 767px) {
+    padding-right: 15px;
+  }
 }
 
 .end-date-padding {
   padding-left: 30px;
+  @media (max-width: 767px) {
+    padding-left: 15px;
+  }
 }
 
 .disable-div {
