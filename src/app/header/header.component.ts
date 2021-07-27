@@ -12,6 +12,8 @@ export class HeaderComponent {
   public envName: string;
   public bannerColour: string;
   public showBanner = false;
+  public projectInfoFocused = false;
+  public eaProcessFocused = false;
 
   constructor(
     public router: Router,
@@ -30,8 +32,31 @@ export class HeaderComponent {
     this.envName = this.apiService.env;
     this.bannerColour = this.apiService.bannerColour;
     // no-banner-colour-set is the default if no banner colour is defined in the openshift environment variables.
-    if ( this.envName && this.bannerColour && this.bannerColour !== 'no-banner-colour-set') {
+    if (this.envName && this.bannerColour && this.bannerColour !== 'no-banner-colour-set') {
       this.showBanner = true;
+    }
+  }
+
+  onProjectInfoFocus() {
+
+  }
+
+  onEAProcessFocused() {
+
+  }
+
+  onFocus(element) {
+    switch (element) {
+      case 'projectInfo':
+        this.projectInfoFocused = true;
+        this.eaProcessFocused = false;
+        break;
+      case 'eaProcess':
+        this.eaProcessFocused = true;
+        this.projectInfoFocused = false;
+        break;
+      default:
+        break;
     }
   }
 }
