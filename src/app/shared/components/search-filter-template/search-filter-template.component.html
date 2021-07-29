@@ -45,7 +45,7 @@
           (keyup.enter)="search()"
           [(ngModel)]="keywordSearchWords"
           [placeholder]="keywordWatermark || 'Type keyword to search'"
-          (aria-label)="keywordWatermark || 'Type keyword to search'"
+          [attr.aria-label]="keywordWatermark || 'Type keyword to search'"
           aria-describedby="basic-addon2">
         <div *ngIf="keywordSearchWords && keywordSearchWords.length > 0"
           class="input-group-append">
@@ -121,9 +121,10 @@
             <label *ngIf="filter.name && filter.name.length > 0"
               class="control-label font-weight-bold">{{filter.name}}</label>
             <div class="row">
-              <div class="col-xl-6 start-date-padding">
+              <div class="col-md-6 start-date-padding">
                 <label (for)="filter.filterDefinition.filterId"
-                  class="control-label font-weight-bold">{{filter.filterDefinition.startDateLabel}}</label>
+                  class="control-label font-weight-bold"
+                  tabindex="0">{{filter.filterDefinition.startDateLabel}}</label>
                 <lib-date-picker [id]="filter.filterDefinition.startDateId"
                   [control]="formGroup.get(filter.filterDefinition.startDateId)"
                   [reset]="resetControls"
@@ -131,9 +132,10 @@
                   [maxDate]="filter.filterDefinition.maxDate">
                 </lib-date-picker>
               </div>
-              <div class="col-xl-6 end-date-padding">
+              <div class="col-md-6 end-date-padding">
                 <label (for)="filter.filterDefinition.endDateId"
-                  class="control-label font-weight-bold">{{filter.filterDefinition.endDateLabel}}</label>
+                  class="control-label font-weight-bold"
+                  tabindex="0">{{filter.filterDefinition.endDateLabel}}</label>
                 <lib-date-picker [id]="filter.filterDefinition.endDateId"
                   [control]="formGroup.get(filter.filterDefinition.endDateId)"
                   [reset]="resetControls"
@@ -148,6 +150,7 @@
             <label class="control-label font-weight-bold"
               *ngIf="filter.name && filter.name.length > 0">{{filter.name}}</label>
             <mat-select class="border rounded px-2 py-2"
+              [aria-label]="filter.name + 'dropdown'"
               [formControlName]="filter.id"
               [multiple]="filter.filterDefinition.multiselect">
               <mat-option *ngFor="let option of filter.filterDefinition.options"
@@ -159,7 +162,7 @@
           <div *ngIf="filter.type === FilterType.MultiSelect">
             <label class="control-label font-weight-bold"
               *ngIf="filter.name && filter.name.length > 0"
-              for="activityTypeFilter">{{filter.name}}</label>
+              for="activityTypeFilter" tabindex="0">{{filter.name}}</label>
             <app-autocomplete-multi-select-2 [filter]="filter"
               (changeEvent)="changeMultiSelect()"
               [control]="formGroup.get(filter.id)">

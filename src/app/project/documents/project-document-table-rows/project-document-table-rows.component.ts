@@ -6,7 +6,7 @@ import { takeWhile } from 'rxjs/operators';
 import { Router } from '@angular/router';
 
 @Component({
-  selector: 'tr[app-document-table-rows]',
+  selector: 'app-document-table-rows',
   templateUrl: './project-document-table-rows.component.html',
   styleUrls: ['./project-document-table-rows.component.scss']
 })
