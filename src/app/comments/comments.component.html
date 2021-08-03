@@ -9,12 +9,12 @@
         <div class="hero-banner__content">
           <h1>{{project?.name || '-'}}</h1>
           <div class="header-section mb-4" *ngIf="commentPeriod !== null && commentPeriod._id == commentPeriod._id">
-            <h3>
+            <h2>
               {{commentPeriodHeader}}
-            </h3>
-            <h3>
+            </h2>
+            <h2>
               {{commentPeriod.dateStarted | date:'mediumDate'}} - {{commentPeriod.longEndDate.format('MMMM DD @ hh:mm A z')}}
-            </h3>
+            </h2>
             <div *ngIf="commentPeriod.informationLabel !== null">
               <div id="instructions" [innerHTML]="commentPeriod.instructions  | safeHtml"></div>
               <br>
@@ -67,7 +67,8 @@
               </ul>
             </div>
           </div>
-          <div class="open-houses value mt-4" *ngIf="commentPeriod && commentPeriod.openHouses && commentPeriod.openHouses.length > 0">
+          <div class="open-houses value mt-4"
+            *ngIf="commentPeriod && commentPeriod.openHouses && commentPeriod.openHouses.length > 0">
             <div class="card">
               <div class="card-header">
                 Open Houses
