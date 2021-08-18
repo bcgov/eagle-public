@@ -1,0 +1,17 @@
+name: Build Dev
+
+on: [pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@v2
+    - name: Use Node.js 10
+      uses: actions/setup-node@v2
+      with:
+        node-version: '10.x'
+    - name: npm install, build
+      run: |
+        npm install
+        npm run build
