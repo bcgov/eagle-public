@@ -38,7 +38,9 @@ export class ApplicationResolver implements Resolve<void> {
         tableObject.currentPage,
         tableObject.pageSize,
         tableObject.sortBy,
-        this.utils.createProjectTabModifiers(Constants.optionalProjectDocTabs.APPLICATION, list)
+        this.utils.createProjectTabModifiers(Constants.optionalProjectDocTabs.APPLICATION, list),
+        false,
+        '+displayName'
       ));
     });
   }
