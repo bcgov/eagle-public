@@ -26,6 +26,7 @@ export class CertificatesResolver implements Resolve<void> {
     const projId = route.parent.paramMap.get('projId');
 
     this.tableService.initTableData(this.tableId);
+
     this.configService.lists.toPromise().then(async (list) => {
       this.tableService.fetchData(new SearchParamObject(
         this.tableId,
@@ -35,7 +36,9 @@ export class CertificatesResolver implements Resolve<void> {
         tableObject.currentPage,
         tableObject.pageSize,
         tableObject.sortBy,
-        this.utils.createProjectTabModifiers(Constants.optionalProjectDocTabs.CERTIFICATE, list)
+        this.utils.createProjectTabModifiers(Constants.optionalProjectDocTabs.CERTIFICATE, list),
+        false,
+        '+displayName'
       ));
     });
   }
