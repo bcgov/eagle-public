@@ -52,7 +52,7 @@ export class DocumentsResolver implements Resolve<void> {
       tableObject.sortBy,
       { documentSource: 'PROJECT' },
       true,
-      '',
+      '+displayName',
       { ...filtersForAPI, ...dateFiltersForAPI }
     ));
   }

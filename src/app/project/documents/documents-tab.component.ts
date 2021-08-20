@@ -265,6 +265,13 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
         } else {
           params['sortBy'] = '+' + msg.data;
         }
+
+        if (params['sortBy'].includes('displayName')) {
+          this.tableService.data[this.tableId].cachedConfig.secondarySort = '';
+        } else {
+          this.tableService.data[this.tableId].cachedConfig.secondarySort = '+displayName';
+        }
+
         this.tableService.data[this.tableId].cachedConfig.sortBy = params['sortBy'];
         break;
       case 'pageNum':
