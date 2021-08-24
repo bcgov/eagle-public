@@ -1,0 +1,41 @@
+name: Create Test Promotion
+
+on:
+  push:
+    tags: ["v[0-9].[0-9]+.[0-9]+-rc*"]
+
+jobs:
+  create-pr:
+    name: Create Pull Request
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          ref: "promotion/test"
+      - name: Get Tag
+        id: get-tag
+        run: echo "::set-output name=TAG::${GITHUB_REF/refs\/tags\//}"
+      - name: Update state.json
+        id: update-state
+        run: |
+          echo $(jq '.commit="${{ github.event.head_commit.id }}" | .tag="${{ steps.get-tag.outputs.TAG }}"' state.json) > state.json
+          STATE=$(cat state.json)
+          echo "STATE=$STATE" >> $GITHUB_ENV
+      # Commit state.json changes and create pull request
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v3
+        with:
+          commit-message: ${{ steps.get-tag.outputs.TAG }}
+          committer: GitHub <noreply@github.com>
+          author: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
+          branch: promotion/${{ steps.get-tag.outputs.TAG }}
+          delete-branch: true
+          title: "Deploy ${{ steps.get-tag.outputs.TAG }} to TEST"
+          body: ${{ env.STATE }}
+          labels: |
+            pipeline
+            test
+            ${{ steps.get-tag.outputs.TAG }}
+            automated pr
+          draft: true
