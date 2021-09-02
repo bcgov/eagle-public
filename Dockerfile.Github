@@ -1,0 +1,5 @@
+FROM image-registry.apps.silver.devops.gov.bc.ca/6cdc9e-tools/eagle-public-nginx-runtime
+
+COPY dist /tmp/app/dist
+
+CMD  /usr/libexec/s2i/run
