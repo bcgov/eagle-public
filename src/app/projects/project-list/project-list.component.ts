@@ -1,36 +1,36 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef } from "@angular/core";
-import { Router, ActivatedRoute, Params } from "@angular/router";
-import "rxjs/add/operator/takeUntil";
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Router, ActivatedRoute, Params } from '@angular/router';
+import 'rxjs/add/operator/takeUntil';
 
-import * as _ from "lodash";
+import * as _ from 'lodash';
 
-import { SearchResults } from "app/models/search";
+import { SearchResults } from 'app/models/search';
 
-import { Constants } from "app/shared/utils/constants";
+import { Constants } from 'app/shared/utils/constants';
 import {
   DateFilterDefinition,
   FilterObject,
   FilterType,
   MultiSelectDefinition,
-} from "app/shared/components/search-filter-template/filter-object";
-import { ProjectListTableRowsComponent } from "./project-list-table-rows/project-list-table-rows.component";
+} from 'app/shared/components/search-filter-template/filter-object';
+import { ProjectListTableRowsComponent } from './project-list-table-rows/project-list-table-rows.component';
 
-import { ConfigService } from "app/services/config.service";
+import { ConfigService } from 'app/services/config.service';
 import {
   IColumnObject,
   TableObject2,
-} from "app/shared/components/table-template-2/table-object-2";
-import { takeWhile } from "rxjs/operators";
-import { TableTemplate } from "app/shared/components/table-template-2/table-template";
-import { ITableMessage } from "app/shared/components/table-template-2/table-row-component";
-import { OrgService } from "app/services/org.service";
-import { Org } from "app/models/organization";
-import { TableService } from "app/services/table.service";
+} from 'app/shared/components/table-template-2/table-object-2';
+import { takeWhile } from 'rxjs/operators';
+import { TableTemplate } from 'app/shared/components/table-template-2/table-template';
+import { ITableMessage } from 'app/shared/components/table-template-2/table-row-component';
+import { OrgService } from 'app/services/org.service';
+import { Org } from 'app/models/organization';
+import { TableService } from 'app/services/table.service';
 
 @Component({
-  selector: "app-project-list",
-  templateUrl: "./project-list.component.html",
-  styleUrls: ["./project-list.component.scss"],
+  selector: 'app-project-list',
+  templateUrl: './project-list.component.html',
+  styleUrls: ['./project-list.component.scss'],
 })
 export class ProjectListComponent implements OnInit, OnDestroy {
   private lists: any[] = [];
@@ -39,49 +39,49 @@ export class ProjectListComponent implements OnInit, OnDestroy {
   private iaacArray = [];
   private phaseArray = [];
   private filtersList = [
-    "type",
-    "eacDecision",
-    "decisionDateStart",
-    "decisionDateEnd",
-    "pcp",
-    "proponent",
-    "region",
-    "CEAAInvolvement",
-    "currentPhaseName",
+    'type',
+    'eacDecision',
+    'decisionDateStart',
+    'decisionDateEnd',
+    'pcp',
+    'proponent',
+    'region',
+    'CEAAInvolvement',
+    'currentPhaseName',
   ];
-  private dateFiltersList = ["decisionDateStart", "decisionDateEnd"];
-  private tableId = "projectList";
+  private dateFiltersList = ['decisionDateStart', 'decisionDateEnd'];
+  private tableId = 'projectList';
 
   public tableColumns: IColumnObject[] = [
     {
-      name: "Name",
-      value: "name",
-      width: "col-2",
+      name: 'Name',
+      value: 'name',
+      width: 'col-2',
     },
     {
-      name: "Proponent",
-      value: "proponent.name",
-      width: "col-2",
+      name: 'Proponent',
+      value: 'proponent.name',
+      width: 'col-2',
     },
     {
-      name: "Type",
-      value: "type",
-      width: "col-2",
+      name: 'Type',
+      value: 'type',
+      width: 'col-2',
     },
     {
-      name: "Region",
-      value: "region",
-      width: "col-2",
+      name: 'Region',
+      value: 'region',
+      width: 'col-2',
     },
     {
-      name: "Phase",
-      value: "currentPhaseName",
-      width: "col-2",
+      name: 'Phase',
+      value: 'currentPhaseName',
+      width: 'col-2',
     },
     {
-      name: "Decision",
-      value: "eacDecision",
-      width: "col-2",
+      name: 'Decision',
+      value: 'eacDecision',
+      width: 'col-2',
     },
   ];
 
@@ -99,9 +99,9 @@ export class ProjectListComponent implements OnInit, OnDestroy {
   private initialLoad = true;
 
   private legislationFilterGroup = {
-    name: "legislation",
+    name: 'legislation',
     labelPrefix: null,
-    labelPostfix: " Act Terms",
+    labelPostfix: ' Act Terms',
   };
 
   constructor(
@@ -128,13 +128,13 @@ export class ProjectListComponent implements OnInit, OnDestroy {
               this.lists = list;
               this.lists.forEach((item) => {
                 switch (item.type) {
-                  case "eaDecisions":
+                  case 'eaDecisions':
                     this.eaDecisionArray.push({ ...item });
                     break;
-                  case "ceaaInvolvements":
+                  case 'ceaaInvolvements':
                     this.iaacArray.push({ ...item });
                     break;
-                  case "projectPhase":
+                  case 'projectPhase':
                     this.phaseArray.push({ ...item });
                     break;
                 }
@@ -149,28 +149,28 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     this.route.queryParamMap
       .pipe(takeWhile(() => this.alive))
       .subscribe((data) => {
-        this.queryParams = { ...data["params"] };
+        this.queryParams = { ...data['params'] };
         // Get params from route, shove into the tableTemplateUtils so that we get a new dataset to work with.
         this.tableData = this.tableTemplateUtils.updateTableObjectWithUrlParams(
-          data["params"],
+          data['params'],
           this.tableData
         );
 
-        if (!data["params"].sortBy) {
-          this.tableData.sortBy = "+name";
+        if (!data['params'].sortBy) {
+          this.tableData.sortBy = '+name';
         }
 
         if (
           this.initialLoad &&
-          (this.queryParams["type"] ||
-            this.queryParams["eacDecision"] ||
-            this.queryParams["decisionDateStart"] ||
-            this.queryParams["decisionDateEnd"] ||
-            this.queryParams["pcp"] ||
-            this.queryParams["proponent"] ||
-            this.queryParams["region"] ||
-            this.queryParams["CEAAInvolvement"] ||
-            this.queryParams["currentPhaseName"])
+          (this.queryParams['type'] ||
+            this.queryParams['eacDecision'] ||
+            this.queryParams['decisionDateStart'] ||
+            this.queryParams['decisionDateEnd'] ||
+            this.queryParams['pcp'] ||
+            this.queryParams['proponent'] ||
+            this.queryParams['region'] ||
+            this.queryParams['CEAAInvolvement'] ||
+            this.queryParams['currentPhaseName'])
         ) {
           this.showAdvancedFilters = true;
           this.initialLoad = false;
@@ -193,12 +193,12 @@ export class ProjectListComponent implements OnInit, OnDestroy {
 
           this.loadingTableData = false;
           this._changeDetectionRef.detectChanges();
-          let seachInput = document.getElementById("search-input");
+          let seachInput = document.getElementById('search-input');
           if (seachInput !== null) {
             seachInput.scrollIntoView({
-              behavior: "smooth",
-              block: "start",
-              inline: "nearest",
+              behavior: 'smooth',
+              block: 'start',
+              inline: 'nearest',
             });
             seachInput = null;
           }
@@ -238,12 +238,12 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     const decisionDateFilter = new FilterObject(
       "issuedDate",
       FilterType.DateRange,
-      "", // if you include a name, it will add a label to the date range filter.
+      '', // if you include a name, it will add a label to the date range filter.
       new DateFilterDefinition(
-        "decisionDateStart",
-        "Decision Start",
-        "decisionDateEnd",
-        "Decision End"
+        'decisionDateStart',
+        'Decision Start',
+        'decisionDateEnd',
+        'Decision End'
       ),
       8
     );
@@ -251,7 +251,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     const pcpFilter = new FilterObject(
       "pcp",
       FilterType.MultiSelect,
-      "Public Comment Period",
+      'Public Comment Period',
       new MultiSelectDefinition(Constants.PCP_COLLECTION, [], null, null, true),
       4
     );
@@ -259,7 +259,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     const proponentFilter = new FilterObject(
       "proponent",
       FilterType.MultiSelect,
-      "Proponent",
+      'Proponent',
       new MultiSelectDefinition(this.proponents, [], null, null, true),
       4
     );
@@ -325,26 +325,26 @@ export class ProjectListComponent implements OnInit, OnDestroy {
   executeSearch(searchPackage) {
     let params = {};
     if (searchPackage.keywords) {
-      params["keywords"] = searchPackage.keywords;
+      params['keywords'] = searchPackage.keywords;
       this.tableService.data[this.tableId].cachedConfig.keywords =
-        params["keywords"];
+        params['keywords'];
       // always change sortBy to '-score' if keyword search is directly triggered by user
       if (searchPackage.keywordsChanged) {
-        params["sortBy"] = "-score";
+        params['sortBy'] = '-score';
         this.tableService.data[this.tableId].cachedConfig.sortBy =
-          params["sortBy"];
+          params['sortBy'];
       }
     } else {
-      params["keywords"] = null;
-      params["sortBy"] = "+name";
-      this.tableService.data[this.tableId].cachedConfig.keywords = "";
+      params['keywords'] = null;
+      params['sortBy'] = '+name';
+      this.tableService.data[this.tableId].cachedConfig.keywords = '';
       this.tableService.data[this.tableId].cachedConfig.sortBy =
-        params["sortBy"];
+        params['sortBy'];
     }
 
-    params["currentPage"] = 1;
+    params['currentPage'] = 1;
     this.tableService.data[this.tableId].cachedConfig.currentPage =
-      params["currentPage"];
+      params['currentPage'];
 
     let queryFilters = this.tableTemplateUtils.getFiltersFromSearchPackage(
       searchPackage,
@@ -366,23 +366,23 @@ export class ProjectListComponent implements OnInit, OnDestroy {
           params["sortBy"] = "+" + msg.data;
         }
         this.tableService.data[this.tableId].cachedConfig.sortBy =
-          params["sortBy"];
+          params['sortBy'];
         break;
-      case "pageNum":
-        params["currentPage"] = msg.data;
+      case 'pageNum':
+        params['currentPage'] = msg.data;
         this.tableService.data[this.tableId].cachedConfig.currentPage =
-          params["currentPage"];
+          params['currentPage'];
         break;
       case "pageSize":
         params["pageSize"] = msg.data.value;
         if (params["pageSize"] === this.tableData.totalListItems) {
           this.loadingTableData = true;
         }
-        params["currentPage"] = 1;
+        params['currentPage'] = 1;
         this.tableService.data[this.tableId].cachedConfig.pageSize =
-          params["pageSize"];
+          params['pageSize'];
         this.tableService.data[this.tableId].cachedConfig.currentPage =
-          params["currentPage"];
+          params['currentPage'];
         break;
       default:
         break;
@@ -394,7 +394,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     this.router.navigate([], {
       queryParams: filters ? { ...params, ...filters } : params,
       relativeTo: this.route,
-      queryParamsHandling: "merge",
+      queryParamsHandling: 'merge',
     });
     this.loadingTableData = true;
     this.tableService.refreshData(this.tableId);

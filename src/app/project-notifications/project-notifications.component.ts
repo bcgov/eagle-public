@@ -1,28 +1,28 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef } from "@angular/core";
-import { Router, ActivatedRoute, Params } from "@angular/router";
-import { Constants } from "app/shared/utils/constants";
-import { SearchResults } from "app/models/search";
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Router, ActivatedRoute, Params } from '@angular/router';
+import { Constants } from 'app/shared/utils/constants';
+import { SearchResults } from 'app/models/search';
 import {
   IColumnObject,
   TableObject2,
-} from "app/shared/components/table-template-2/table-object-2";
-import { ProjectNotificationsTableRowsComponent } from "./project-notifications-table-rows/project-notifications-table-rows.component";
-import { TableTemplate } from "app/shared/components/table-template-2/table-template";
-import { first, takeWhile } from "rxjs/operators";
+} from 'app/shared/components/table-template-2/table-object-2';
+import { ProjectNotificationsTableRowsComponent } from './project-notifications-table-rows/project-notifications-table-rows.component';
+import { TableTemplate } from 'app/shared/components/table-template-2/table-template';
+import { first, takeWhile } from 'rxjs/operators';
 import {
   FilterObject,
   FilterType,
   MultiSelectDefinition,
-} from "app/shared/components/search-filter-template/filter-object";
-import { ITableMessage } from "app/shared/components/table-template-2/table-row-component";
-import { TableService } from "app/services/table.service";
-import { ProjectNotification } from "app/models/projectNotification";
-import { CommentPeriodService } from "app/services/commentperiod.service";
+} from 'app/shared/components/search-filter-template/filter-object';
+import { ITableMessage } from 'app/shared/components/table-template-2/table-row-component';
+import { TableService } from 'app/services/table.service';
+import { ProjectNotification } from 'app/models/projectNotification';
+import { CommentPeriodService } from 'app/services/commentperiod.service';
 
 @Component({
-  selector: "app-project-notifications",
-  templateUrl: "./project-notifications.component.html",
-  styleUrls: ["./project-notifications.component.scss"],
+  selector: 'app-project-notifications',
+  templateUrl: './project-notifications.component.html',
+  styleUrls: ['./project-notifications.component.scss'],
 })
 export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
   private alive = true;
@@ -31,9 +31,9 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
 
   public tableColumns: IColumnObject[] = [
     {
-      name: "Project Notifications",
-      value: "",
-      width: "col-12",
+      name: 'Project Notifications',
+      value: '',
+      width: 'col-12',
       nosort: true,
     },
   ];
@@ -72,23 +72,23 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
     this.route.queryParamMap
       .pipe(takeWhile(() => this.alive))
       .subscribe((data) => {
-        this.queryParams = { ...data["params"] };
+        this.queryParams = { ...data['params'] };
         // Get params from route, shove into the tableTemplateUtils so that we get a new dataset to work with.
         this.tableData = this.tableTemplateUtils.updateTableObjectWithUrlParams(
-          data["params"],
+          data['params'],
           this.tableData
         );
 
-        if (!data["params"].sortBy) {
-          this.tableData.sortBy = "-_id";
+        if (!data['params'].sortBy) {
+          this.tableData.sortBy = '-_id';
         }
 
         if (
           this.initialLoad &&
-          (this.queryParams["type"] ||
-            this.queryParams["region"] ||
-            this.queryParams["pcp"] ||
-            this.queryParams["decision"])
+          (this.queryParams['type'] ||
+            this.queryParams['region'] ||
+            this.queryParams['pcp'] ||
+            this.queryParams['decision'])
         ) {
           this.showAdvancedFilters = true;
           this.initialLoad = false;
@@ -112,12 +112,12 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
 
           this.loadingTableData = false;
           this._changeDetectionRef.detectChanges();
-          let seachInput = document.getElementById("search-input");
+          let seachInput = document.getElementById('search-input');
           if (seachInput !== null) {
             seachInput.scrollIntoView({
-              behavior: "smooth",
-              block: "start",
-              inline: "nearest",
+              behavior: 'smooth',
+              block: 'start',
+              inline: 'nearest',
             });
             seachInput = null;
           }
@@ -157,7 +157,7 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
     const pcpFilter = new FilterObject(
       "pcp",
       FilterType.MultiSelect,
-      "Public Comment Period",
+      'Public Comment Period',
       new MultiSelectDefinition(Constants.PCP_COLLECTION, [], null, null, true),
       4
     );
@@ -186,26 +186,26 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
   executeSearch(searchPackage) {
     let params = {};
     if (searchPackage.keywords) {
-      params["keywords"] = searchPackage.keywords;
+      params['keywords'] = searchPackage.keywords;
       this.tableService.data[this.tableId].cachedConfig.keywords =
-        params["keywords"];
+        params['keywords'];
       // always change sortBy to '-score' if keyword search is directly triggered by user
       if (searchPackage.keywordsChanged) {
-        params["sortBy"] = "-score";
+        params['sortBy'] = '-score';
         this.tableService.data[this.tableId].cachedConfig.sortBy =
-          params["sortBy"];
+          params['sortBy'];
       }
     } else {
-      params["keywords"] = null;
-      params["sortBy"] = "-_id";
-      this.tableService.data[this.tableId].cachedConfig.keywords = "";
+      params['keywords'] = null;
+      params['sortBy'] = '-_id';
+      this.tableService.data[this.tableId].cachedConfig.keywords = '';
       this.tableService.data[this.tableId].cachedConfig.sortBy =
-        params["sortBy"];
+        params['sortBy'];
     }
 
-    params["currentPage"] = 1;
+    params['currentPage'] = 1;
     this.tableService.data[this.tableId].cachedConfig.currentPage =
-      params["currentPage"];
+      params['currentPage'];
 
     let queryFilters = this.tableTemplateUtils.getFiltersFromSearchPackage(
       searchPackage,
@@ -219,21 +219,21 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
   onMessageOut(msg: ITableMessage) {
     let params = {};
     switch (msg.label) {
-      case "pageNum":
-        params["currentPage"] = msg.data;
+      case 'pageNum':
+        params['currentPage'] = msg.data;
         this.tableService.data[this.tableId].cachedConfig.currentPage =
-          params["currentPage"];
+          params['currentPage'];
         break;
       case "pageSize":
         params["pageSize"] = msg.data.value;
         if (params["pageSize"] === this.tableData.totalListItems) {
           this.loadingTableData = true;
         }
-        params["currentPage"] = 1;
+        params['currentPage'] = 1;
         this.tableService.data[this.tableId].cachedConfig.pageSize =
-          params["pageSize"];
+          params['pageSize'];
         this.tableService.data[this.tableId].cachedConfig.currentPage =
-          params["currentPage"];
+          params['currentPage'];
         break;
       default:
         break;
@@ -245,7 +245,7 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
     this.router.navigate([], {
       queryParams: filters ? { ...params, ...filters } : params,
       relativeTo: this.route,
-      queryParamsHandling: "merge",
+      queryParamsHandling: 'merge',
     });
     this.loadingTableData = true;
     this.tableService.refreshData(this.tableId);
@@ -259,12 +259,12 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
         if (res && res.data) {
           res.data.forEach((cp) => {
             if (
-              !project["commentPeriod"] ||
-              (project["commentPeriod"] &&
+              !project['commentPeriod'] ||
+              (project['commentPeriod'] &&
                 cp.daysRemainingCount >
-                  project["commentPeriod"].daysRemainingCount)
+                  project['commentPeriod'].daysRemainingCount)
             ) {
-              project["commentPeriod"] = cp;
+              project['commentPeriod'] = cp;
               this._changeDetectionRef.detectChanges();
             }
           });
