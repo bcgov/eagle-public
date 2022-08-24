@@ -2,14 +2,20 @@
     <div class="container">
         <div class="hero-banner__content">
             <h1>Environmental Assessments in British Columbia</h1>
-            <p>Use the search below to find documents across all Projects. Click on a row or download button to download
-                the document. Click on the project name to view the project.</p>
+            <p>
+                Use the search below to find documents across all Projects.
+                Click on a row or download button to download the document.
+                Click on the project name to view the project.
+            </p>
             <div class="hero-banner__actions">
                 <div class="hero-banner__actions-buttons">
-                    <a class="btn slide-l-btn hero-btn inverted"
+                    <a
+                        class="btn slide-l-btn hero-btn inverted"
                         href="/projects-list"
-                        [routerLink]="['/projects-list']">
-                        <i class="material-icons">list</i><span>List of Projects</span>
+                        [routerLink]="['/projects-list']"
+                    >
+                        <i class="material-icons">list</i
+                        ><span>List of Projects</span>
                     </a>
                 </div>
             </div>
@@ -20,33 +26,62 @@
             <div class="container-fluid-padding">
                 <h1 class="pb-2">Search Documents Across All Projects</h1>
 
-                <section *ngIf="!loadingLists && !loadingTableParams"
-                    class="mb-4 pt-0 pb-0">
-                    <search-filter-template #explorePanel
-                        (searchEvent)='executeSearch($event)'
+                <section
+                    *ngIf="!loadingLists && !loadingTableParams"
+                    class="mb-4 pt-0 pb-0"
+                >
+                    <search-filter-template
+                        #explorePanel
+                        (searchEvent)="executeSearch($event)"
                         [advancedFilters]="true"
                         [showAdvancedFilters]="showAdvancedFilters"
                         [searchOnFilterChange]="true"
                         [filters]="filters"
-                        (resetControls)='tableData.sortBy.includes("score") ? tableData.sortBy = "-datePosted" : null'
-                        (toggleFiltersPanelEvent)="showAdvancedFilters = $event.showPanel"
-                        [searchHelpLinkArray]='["/search-help"]'
-                        [searching]="loadingTableData">
+                        (resetControls)="
+                            tableData.sortBy.includes('score')
+                                ? (tableData.sortBy = '-datePosted')
+                                : null
+                        "
+                        (toggleFiltersPanelEvent)="
+                            showAdvancedFilters = $event.showPanel
+                        "
+                        [searchHelpLinkArray]="['/search-help']"
+                        [searching]="loadingTableData"
+                    >
                     </search-filter-template>
                 </section>
 
                 <section>
-                    <div *ngIf="loadingLists || loadingTableParams || loadingTableData">
+                    <div
+                        *ngIf="
+                            loadingLists ||
+                            loadingTableParams ||
+                            loadingTableData
+                        "
+                    >
                         <div class="text-center">
-                            <img class="rotating"
+                            <img
+                                class="rotating"
                                 src="/assets/images/spinner.png"
-                                alt="loading spinner">
+                                alt="loading spinner"
+                            />
                         </div>
                     </div>
-                    <lib-table-template-2 *ngIf="tableData.totalListItems > 0 && !loadingTableData"
+                    <lib-table-template-2
+                        *ngIf="
+                            tableData.totalListItems > 0 && !loadingTableData
+                        "
                         [data]="tableData"
-                        (messageOut)="onMessageOut($event)">
+                        (messageOut)="onMessageOut($event)"
+                    >
                     </lib-table-template-2>
+                    <div
+                        *ngIf="
+                            tableData.totalListItems === 0 && !loadingTableData
+                        "
+                    >
+                        No results found.
+                    </div>
                 </section>
             </div>
         </div>
