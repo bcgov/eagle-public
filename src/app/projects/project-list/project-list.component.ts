@@ -26,6 +26,7 @@ import { ITableMessage } from 'app/shared/components/table-template-2/table-row-
 import { OrgService } from 'app/services/org.service';
 import { Org } from 'app/models/organization';
 import { TableService } from 'app/services/table.service';
+import * as moment from 'moment-timezone';
 
 @Component({
   selector: 'app-project-list',
@@ -103,6 +104,8 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     labelPrefix: null,
     labelPostfix: ' Act Terms',
   };
+
+  public documentSearchQueryParams = { datePostedStart: moment().add(-10, 'year').format('YYYY-MM-DD') };
 
   constructor(
     private router: Router,

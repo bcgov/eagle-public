@@ -61,7 +61,7 @@ export class ProjectListResolver implements Resolve<void> {
       null,
       { ...filtersForAPI, ...dateFiltersForAPI },
       '',
-      true
+      false
     ));
   }
 }
