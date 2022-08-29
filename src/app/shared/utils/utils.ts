@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { ISearchResults } from 'app/models/search';
 import { Constants } from './constants';
+import * as moment from 'moment-timezone';
 
 const encode = encodeURIComponent;
 window['encodeURIComponent'] = (component: string) => {
@@ -186,5 +187,11 @@ export class Utils {
     } else {
       return new Date(nGBDate.year, nGBDate.month - 1, nGBDate.day, nGBTime.hour, nGBTime.minute);
     }
+  }
+  public convertFormGroupNGBDateToMomentDate(nGBDate) {
+    if (!nGBDate) {
+      return null;
+    }
+    return moment().set({ 'year': nGBDate.year, 'month': nGBDate.month - 1, 'date': nGBDate.day })
   }
 }
