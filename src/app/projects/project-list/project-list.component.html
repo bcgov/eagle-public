@@ -14,8 +14,8 @@
                 <div class="hero-banner__actions-buttons">
                     <a
                         class="btn slide-l-btn hero-btn inverted"
-                        href="/search"
                         [routerLink]="['/search']"
+                        [queryParams]="documentSearchQueryParams"
                     >
                         <i class="material-icons">search</i
                         ><span>Search All Documents</span>

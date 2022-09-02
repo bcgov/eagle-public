@@ -59,22 +59,20 @@ export class ProjectListResolver implements Resolve<void> {
     );
 
     this.tableService.initTableData(this.tableId);
-    this.tableService.fetchData(
-      new SearchParamObject(
-        this.tableId,
-        keywords,
-        'Project',
-        [],
-        tableObject.currentPage,
-        tableObject.pageSize,
-        tableObject.sortBy,
-        {},
-        true,
-        null,
-        { ...filtersForAPI, ...dateFiltersForAPI },
-        '',
-        true
-      )
-    );
+    this.tableService.fetchData(new SearchParamObject(
+      this.tableId,
+      keywords,
+      'Project',
+      [],
+      tableObject.currentPage,
+      tableObject.pageSize,
+      tableObject.sortBy,
+      {},
+      true,
+      null,
+      { ...filtersForAPI, ...dateFiltersForAPI },
+      '',
+      false
+    ));
   }
 }
