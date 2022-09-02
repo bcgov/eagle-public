@@ -92,6 +92,7 @@
                   {
                     "name": "SURVEY_URL",
                     "value": "${SURVEY_URL}"
+                  }
                   },
                   {
                     "name": "SHOW_SURVEY_BANNER",
