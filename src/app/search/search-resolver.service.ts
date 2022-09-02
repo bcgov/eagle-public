@@ -15,22 +15,28 @@ export class SearchResolver implements Resolve<void> {
   constructor(
     private tableService: TableService,
     private tableTemplateUtils: TableTemplate
-  ) { }
+  ) {}
 
   resolve(route: ActivatedRouteSnapshot) {
     this.tableService.clearTable(this.tableId);
     const params = route.queryParamMap['params'];
-    const tableObject = this.tableTemplateUtils.updateTableObjectWithUrlParams(params, new TableObject2());
+    const tableObject = this.tableTemplateUtils.updateTableObjectWithUrlParams(
+      params,
+      new TableObject2()
+    );
 
     let keywords = '';
-    params.keywords ?
-      (keywords = params.keywords) :
-      (keywords = Constants.tableDefaults.DEFAULT_KEYWORDS);
+    params.keywords
+      ? (keywords = params.keywords)
+      : (keywords = Constants.tableDefaults.DEFAULT_KEYWORDS);
 
-    const filtersForAPI = this.tableTemplateUtils.getFiltersFromParams(
-      params,
-      ['milestone', 'documentAuthorType', 'type', 'projectPhase']
-    );
+    const filtersForAPI = this.tableTemplateUtils.getFiltersFromParams(params, [
+      'milestone',
+      'documentAuthorType',
+      'type',
+      'projectPhase',
+      'changedInLast30days',
+    ]);
 
     const dateFiltersForAPI = this.tableTemplateUtils.getDateFiltersFromParams(
       params,
@@ -38,20 +44,22 @@ export class SearchResolver implements Resolve<void> {
     );
 
     this.tableService.initTableData(this.tableId);
-    this.tableService.fetchData(new SearchParamObject(
-      this.tableId,
-      keywords,
-      'Document',
-      [],
-      tableObject.currentPage,
-      tableObject.pageSize,
-      tableObject.sortBy,
-      { documentSource: 'PROJECT' },
-      true,
-      '',
-      { ...filtersForAPI, ...dateFiltersForAPI },
-      '',
-      true
-    ));
+    this.tableService.fetchData(
+      new SearchParamObject(
+        this.tableId,
+        keywords,
+        'Document',
+        [],
+        tableObject.currentPage,
+        tableObject.pageSize,
+        tableObject.sortBy,
+        { documentSource: 'PROJECT' },
+        true,
+        '',
+        { ...filtersForAPI, ...dateFiltersForAPI },
+        '',
+        true
+      )
+    );
   }
 }
