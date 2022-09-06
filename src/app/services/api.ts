@@ -144,7 +144,7 @@ export class ApiService {
       let safeItem;
       Object.keys(filter).map(key => {
         let filterValue = filter[key];
-        if(filterValue.split === undefined) {
+        if (filterValue.split === undefined) {
           filterValue = filterValue.toString();
         }
         filterValue.split(',').map(item => {
