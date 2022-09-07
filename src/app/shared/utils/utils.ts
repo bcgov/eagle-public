@@ -194,9 +194,9 @@ export class Utils {
     }
     return moment().set({ 'year': nGBDate.year, 'month': nGBDate.month - 1, 'date': nGBDate.day })
   }
-  public createUniqueCollection(inputList, inputItem, uniqCondition=undefined) {
-    if(!uniqCondition) {
-      uniqCondition = (inputItem, p) => p.name === inputItem.name;
+  public createUniqueCollection(inputList, inputItem, uniqCondition = undefined) {
+    if (!uniqCondition) {
+      uniqCondition = (input, p) => p.name === input.name;
     }
     if (!inputList.some(p => (uniqCondition(inputItem, p)))) {
       inputList.push(inputItem);

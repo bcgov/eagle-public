@@ -4,10 +4,12 @@ import { SearchResults } from 'app/models/search';
 import { ConfigService } from 'app/services/config.service';
 import { TableService } from 'app/services/table.service';
 import {
+  // CheckOrRadioFilterDefinition,
   DateFilterDefinition,
   FilterObject,
   FilterType,
   MultiSelectDefinition,
+  // OptionItem,
 } from 'app/shared/components/search-filter-template/filter-object';
 import {
   IColumnObject,
@@ -87,6 +89,7 @@ export class SearchComponent implements OnInit, OnDestroy {
     'documentAuthorType',
     'type',
     'projectPhase',
+    'changedInLast30days',
   ];
   private dateFiltersList = ['datePostedStart', 'datePostedEnd'];
   private initialLoad = true;
@@ -108,13 +111,13 @@ export class SearchComponent implements OnInit, OnDestroy {
         this.lists = list;
         this.lists.forEach((item) => {
           if (item.type === 'label') {
-            this.utils.createUniqueCollection(this.milestoneArray,item);
+            this.utils.createUniqueCollection(this.milestoneArray, item);
           } else if (item.type === 'author') {
-            this.utils.createUniqueCollection(this.documentAuthorTypeArray,item);            
+            this.utils.createUniqueCollection(this.documentAuthorTypeArray, item);
           } else if (item.type === 'doctype') {
-            this.utils.createUniqueCollection(this.documentTypeArray,item);
+            this.utils.createUniqueCollection(this.documentTypeArray, item);
           } else if (item.type === 'projectPhase') {
-            this.projectPhaseArray = this.utils.createUniqueCollection(this.projectPhaseArray,item);
+            this.projectPhaseArray = this.utils.createUniqueCollection(this.projectPhaseArray, item);
           }
         });
         this.setFilters();
@@ -247,12 +250,22 @@ export class SearchComponent implements OnInit, OnDestroy {
       4
     );
 
+    // const changeInLast30daysFilter = new FilterObject(
+    //   'changedInLast30days',
+    //   FilterType.Checkbox,
+    //   'Changed In Last 30 Days',
+    //   new CheckOrRadioFilterDefinition([
+    //     new OptionItem('changedInLast30days', 'Changed In Last 30 Days'),
+    //   ])
+    // );
+
     this.filters = [
       docDateFilter,
       milestoneFilter,
       documentAuthorTypeFilter,
       documentTypeFilter,
-      projectPhaseFilter,
+      projectPhaseFilter
+      // changeInLast30daysFilter,
     ];
   }
 
