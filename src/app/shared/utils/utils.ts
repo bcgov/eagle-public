@@ -194,4 +194,13 @@ export class Utils {
     }
     return moment().set({ 'year': nGBDate.year, 'month': nGBDate.month - 1, 'date': nGBDate.day })
   }
+  public createUniqueCollection(inputList, inputItem, uniqCondition=undefined) {
+    if(!uniqCondition) {
+      uniqCondition = (inputItem, p) => p.name === inputItem.name;
+    }
+    if (!inputList.some(p => (uniqCondition(inputItem, p)))) {
+      inputList.push(inputItem);
+    }
+    return inputList;
+  }
 }

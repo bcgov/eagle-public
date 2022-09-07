@@ -18,6 +18,7 @@ import { TableTemplate } from 'app/shared/components/table-template-2/table-temp
 import { Constants } from 'app/shared/utils/constants';
 import { takeWhile } from 'rxjs/operators';
 import { DocSearchTableRowsComponent } from './search-documents-table-rows/search-document-table-rows.component';
+import { Utils } from '../shared/utils/utils';
 
 @Component({
   selector: 'app-search',
@@ -70,12 +71,6 @@ export class SearchComponent implements OnInit, OnDestroy {
 
   public filters: FilterObject[] = [];
 
-  private legislationFilterGroup = {
-    name: 'legislation',
-    labelPrefix: null,
-    labelPostfix: ' Act Terms',
-  };
-
   public tableData: TableObject2 = new TableObject2({
     component: DocSearchTableRowsComponent,
   });
@@ -102,7 +97,8 @@ export class SearchComponent implements OnInit, OnDestroy {
     private router: Router,
     private tableTemplateUtils: TableTemplate,
     private tableService: TableService,
-    private configService: ConfigService
+    private configService: ConfigService,
+    private utils: Utils
   ) {}
 
   ngOnInit() {
@@ -112,13 +108,13 @@ export class SearchComponent implements OnInit, OnDestroy {
         this.lists = list;
         this.lists.forEach((item) => {
           if (item.type === 'label') {
-            this.milestoneArray.push({ ...item });
+            this.utils.createUniqueCollection(this.milestoneArray,item);
           } else if (item.type === 'author') {
-            this.documentAuthorTypeArray.push({ ...item });
+            this.utils.createUniqueCollection(this.documentAuthorTypeArray,item);            
           } else if (item.type === 'doctype') {
-            this.documentTypeArray.push({ ...item });
+            this.utils.createUniqueCollection(this.documentTypeArray,item);
           } else if (item.type === 'projectPhase') {
-            this.projectPhaseArray.push({ ...item });
+            this.projectPhaseArray = this.utils.createUniqueCollection(this.projectPhaseArray,item);
           }
         });
         this.setFilters();
@@ -202,7 +198,7 @@ export class SearchComponent implements OnInit, OnDestroy {
       new MultiSelectDefinition(
         this.milestoneArray,
         [],
-        this.legislationFilterGroup,
+        null,
         null,
         true
       ),
@@ -216,7 +212,7 @@ export class SearchComponent implements OnInit, OnDestroy {
       new MultiSelectDefinition(
         this.documentAuthorTypeArray,
         [],
-        this.legislationFilterGroup,
+        null,
         null,
         true
       ),
@@ -230,7 +226,7 @@ export class SearchComponent implements OnInit, OnDestroy {
       new MultiSelectDefinition(
         this.documentTypeArray,
         [],
-        this.legislationFilterGroup,
+        null,
         null,
         true
       ),
@@ -244,7 +240,7 @@ export class SearchComponent implements OnInit, OnDestroy {
       new MultiSelectDefinition(
         this.projectPhaseArray,
         [],
-        this.legislationFilterGroup,
+        null,
         null,
         true
       ),
