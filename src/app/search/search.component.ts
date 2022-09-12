@@ -4,12 +4,12 @@ import { SearchResults } from 'app/models/search';
 import { ConfigService } from 'app/services/config.service';
 import { TableService } from 'app/services/table.service';
 import {
-  CheckOrRadioFilterDefinition,
+  // CheckOrRadioFilterDefinition,
   DateFilterDefinition,
   FilterObject,
   FilterType,
   MultiSelectDefinition,
-  OptionItem,
+  // OptionItem,
 } from 'app/shared/components/search-filter-template/filter-object';
 import {
   IColumnObject,
@@ -20,6 +20,7 @@ import { TableTemplate } from 'app/shared/components/table-template-2/table-temp
 import { Constants } from 'app/shared/utils/constants';
 import { takeWhile } from 'rxjs/operators';
 import { DocSearchTableRowsComponent } from './search-documents-table-rows/search-document-table-rows.component';
+import { Utils } from '../shared/utils/utils';
 
 @Component({
   selector: 'app-search',
@@ -72,12 +73,6 @@ export class SearchComponent implements OnInit, OnDestroy {
 
   public filters: FilterObject[] = [];
 
-  private legislationFilterGroup = {
-    name: 'legislation',
-    labelPrefix: null,
-    labelPostfix: ' Act Terms',
-  };
-
   public tableData: TableObject2 = new TableObject2({
     component: DocSearchTableRowsComponent,
   });
@@ -105,7 +100,8 @@ export class SearchComponent implements OnInit, OnDestroy {
     private router: Router,
     private tableTemplateUtils: TableTemplate,
     private tableService: TableService,
-    private configService: ConfigService
+    private configService: ConfigService,
+    private utils: Utils
   ) {}
 
   ngOnInit() {
@@ -115,13 +111,13 @@ export class SearchComponent implements OnInit, OnDestroy {
         this.lists = list;
         this.lists.forEach((item) => {
           if (item.type === 'label') {
-            this.milestoneArray.push({ ...item });
+            this.utils.createUniqueCollection(this.milestoneArray, item);
           } else if (item.type === 'author') {
-            this.documentAuthorTypeArray.push({ ...item });
+            this.utils.createUniqueCollection(this.documentAuthorTypeArray, item);
           } else if (item.type === 'doctype') {
-            this.documentTypeArray.push({ ...item });
+            this.utils.createUniqueCollection(this.documentTypeArray, item);
           } else if (item.type === 'projectPhase') {
-            this.projectPhaseArray.push({ ...item });
+            this.projectPhaseArray = this.utils.createUniqueCollection(this.projectPhaseArray, item);
           }
         });
         this.setFilters();
@@ -205,7 +201,7 @@ export class SearchComponent implements OnInit, OnDestroy {
       new MultiSelectDefinition(
         this.milestoneArray,
         [],
-        this.legislationFilterGroup,
+        null,
         null,
         true
       ),
@@ -219,7 +215,7 @@ export class SearchComponent implements OnInit, OnDestroy {
       new MultiSelectDefinition(
         this.documentAuthorTypeArray,
         [],
-        this.legislationFilterGroup,
+        null,
         null,
         true
       ),
@@ -233,7 +229,7 @@ export class SearchComponent implements OnInit, OnDestroy {
       new MultiSelectDefinition(
         this.documentTypeArray,
         [],
-        this.legislationFilterGroup,
+        null,
         null,
         true
       ),
@@ -247,29 +243,29 @@ export class SearchComponent implements OnInit, OnDestroy {
       new MultiSelectDefinition(
         this.projectPhaseArray,
         [],
-        this.legislationFilterGroup,
+        null,
         null,
         true
       ),
       4
     );
 
-    const changeInLast30daysFilter = new FilterObject(
-      'changedInLast30days',
-      FilterType.Checkbox,
-      'Changed In Last 30 Days',
-      new CheckOrRadioFilterDefinition([
-        new OptionItem('changedInLast30days', 'Changed In Last 30 Days'),
-      ])
-    );
+    // const changeInLast30daysFilter = new FilterObject(
+    //   'changedInLast30days',
+    //   FilterType.Checkbox,
+    //   'Changed In Last 30 Days',
+    //   new CheckOrRadioFilterDefinition([
+    //     new OptionItem('changedInLast30days', 'Changed In Last 30 Days'),
+    //   ])
+    // );
 
     this.filters = [
       docDateFilter,
       milestoneFilter,
       documentAuthorTypeFilter,
       documentTypeFilter,
-      projectPhaseFilter,
-      changeInLast30daysFilter,
+      projectPhaseFilter
+      // changeInLast30daysFilter,
     ];
   }
 
