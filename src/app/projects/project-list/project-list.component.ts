@@ -8,12 +8,12 @@ import { SearchResults } from 'app/models/search';
 
 import { Constants } from 'app/shared/utils/constants';
 import {
-  // CheckOrRadioFilterDefinition,
+  CheckOrRadioFilterDefinition,
   DateFilterDefinition,
   FilterObject,
   FilterType,
   MultiSelectDefinition,
-  // OptionItem,
+  OptionItem,
 } from 'app/shared/components/search-filter-template/filter-object';
 import { ProjectListTableRowsComponent } from './project-list-table-rows/project-list-table-rows.component';
 
@@ -29,7 +29,6 @@ import { OrgService } from 'app/services/org.service';
 import { Org } from 'app/models/organization';
 import { TableService } from 'app/services/table.service';
 import * as moment from 'moment-timezone';
-import { Utils } from '../../shared/utils/utils';
 
 @Component({
   selector: 'app-project-list',
@@ -103,6 +102,12 @@ export class ProjectListComponent implements OnInit, OnDestroy {
   private proponents = [];
   private initialLoad = true;
 
+  private legislationFilterGroup = {
+    name: 'legislation',
+    labelPrefix: null,
+    labelPostfix: ' Act Terms',
+  };
+
   public documentSearchQueryParams = { datePostedStart: moment().add(-10, 'year').format('YYYY-MM-DD') };
 
   constructor(
@@ -112,8 +117,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     private tableService: TableService,
     private orgService: OrgService,
     private configService: ConfigService,
-    private _changeDetectionRef: ChangeDetectorRef,
-    private utils: Utils
+    private _changeDetectionRef: ChangeDetectorRef
   ) {}
 
   ngOnInit() {
@@ -131,13 +135,13 @@ export class ProjectListComponent implements OnInit, OnDestroy {
               this.lists.forEach((item) => {
                 switch (item.type) {
                   case 'eaDecisions':
-                    this.utils.createUniqueCollection(this.eaDecisionArray, item);
+                    this.eaDecisionArray.push({ ...item });
                     break;
                   case 'ceaaInvolvements':
-                    this.utils.createUniqueCollection(this.iaacArray, item);
+                    this.iaacArray.push({ ...item });
                     break;
                   case 'projectPhase':
-                    this.utils.createUniqueCollection(this.phaseArray, item);
+                    this.phaseArray.push({ ...item });
                     break;
                 }
               });
@@ -231,7 +235,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
       new MultiSelectDefinition(
         this.eaDecisionArray,
         [],
-        null,
+        this.legislationFilterGroup,
         null,
         true
       ),
@@ -288,7 +292,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
       new MultiSelectDefinition(
         this.iaacArray,
         [],
-        null,
+        this.legislationFilterGroup,
         null,
         true
       ),
@@ -302,21 +306,21 @@ export class ProjectListComponent implements OnInit, OnDestroy {
       new MultiSelectDefinition(
         this.phaseArray,
         [],
-        null,
+        this.legislationFilterGroup,
         null,
         true
       ),
       4
     );
 
-    // const changeInLast30daysFilter = new FilterObject(
-    //   'changedInLast30days',
-    //   FilterType.Checkbox,
-    //   'Changed In Last 30 Days',
-    //   new CheckOrRadioFilterDefinition([
-    //     new OptionItem('changedInLast30days', 'Changed In Last 30 Days'),
-    //   ])
-    // );
+    const changeInLast30daysFilter = new FilterObject(
+      'changedInLast30days',
+      FilterType.Checkbox,
+      'Changed In Last 30 Days',
+      new CheckOrRadioFilterDefinition([
+        new OptionItem('changedInLast30days', 'Changed In Last 30 Days'),
+      ])
+    );
 
     this.filters = [
       eacDecisionFilter,
@@ -326,8 +330,8 @@ export class ProjectListComponent implements OnInit, OnDestroy {
       proponentFilter,
       regionFilter,
       iaacFilter,
-      currentPhaseNameFilter
-      // changeInLast30daysFilter,
+      currentPhaseNameFilter,
+      changeInLast30daysFilter,
     ];
   }
 
