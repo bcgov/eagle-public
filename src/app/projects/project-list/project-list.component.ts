@@ -29,6 +29,7 @@ import { OrgService } from 'app/services/org.service';
 import { Org } from 'app/models/organization';
 import { TableService } from 'app/services/table.service';
 import * as moment from 'moment-timezone';
+import { FavoriteService } from 'app/services/favorite.service';
 
 @Component({
   selector: 'app-project-list',
@@ -52,6 +53,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     'CEAAInvolvement',
     'currentPhaseName',
     'changedInLast30days',
+    'favoritesOnly'
   ];
   private dateFiltersList = ['decisionDateStart', 'decisionDateEnd'];
   private tableId = 'projectList';
@@ -87,6 +89,12 @@ export class ProjectListComponent implements OnInit, OnDestroy {
       value: 'eacDecision',
       width: 'col-2',
     },
+    {
+      name: 'Favorite',
+      value: '',
+      width: 'col-1',
+      nosort: true,
+    },
   ];
 
   public loadingLists = true;
@@ -117,7 +125,9 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     private tableService: TableService,
     private orgService: OrgService,
     private configService: ConfigService,
-    private _changeDetectionRef: ChangeDetectorRef
+    private _changeDetectionRef: ChangeDetectorRef,
+    public favoriteService: FavoriteService,
+
   ) {}
 
   ngOnInit() {
@@ -197,7 +207,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
           });
           this.tableData.columns = this.tableColumns;
           this.tableData.options.showAllPicker = true;
-
+          this.onUpdateFavorites();
           this.loadingTableData = false;
           this._changeDetectionRef.detectChanges();
           let seachInput = document.getElementById('search-input');
@@ -322,6 +332,15 @@ export class ProjectListComponent implements OnInit, OnDestroy {
       ])
     );
 
+    const favoritesOnlyFilter = new FilterObject(
+      'favoritesOnly',
+      FilterType.Checkbox,
+      'Favorites Only',
+      new CheckOrRadioFilterDefinition([
+        new OptionItem('favoritesOnly', 'Favorites Only'),
+      ])
+    );
+
     this.filters = [
       eacDecisionFilter,
       decisionDateFilter,
@@ -332,6 +351,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
       iaacFilter,
       currentPhaseNameFilter,
       changeInLast30daysFilter,
+      favoritesOnlyFilter
     ];
   }
 
@@ -419,5 +439,9 @@ export class ProjectListComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.alive = false;
+  }
+
+  onUpdateFavorites() {
+    this.favoriteService.fetchData([{name: 'type', value: 'Project'}, {name: 'field', value: '_id'}], null, 1000);
   }
 }
