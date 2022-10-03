@@ -14,8 +14,8 @@
     &:active,
     &:focus,
     &:hover {
-      border-color: $gold;
-      background: darken($gold, 8%);
+      // border-color: $gold;
+      background: darken($primary, 8%);
       text-transform: uppercase;
       font-weight: 700;
     }
