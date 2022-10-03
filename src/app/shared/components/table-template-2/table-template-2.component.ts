@@ -22,7 +22,7 @@ export class TableTemplate2Component implements OnChanges, OnDestroy {
 
   @Input() messageIn: EventEmitter<ITableMessage> = new EventEmitter<ITableMessage>();
   @Output() messageOut: EventEmitter<ITableMessage> = new EventEmitter<ITableMessage>();
-  @Output() updateFavorites: EventEmitter<ITableMessage> = new EventEmitter<ITableMessage>();
+  @Output() updateFavourites: EventEmitter<ITableMessage> = new EventEmitter<ITableMessage>();
 
   constructor(public injector: Injector) { }
 
@@ -68,8 +68,8 @@ export class TableTemplate2Component implements OnChanges, OnDestroy {
     this.messageOut.emit({ label: 'pageSize', data: pageSize });
   }
 
-  onUpdateFavorites(data) {
-    this.updateFavorites.emit(data);
+  onUpdateFavourites(data) {
+    this.updateFavourites.emit(data);
   }
 
   ngOnDestroy() { }
