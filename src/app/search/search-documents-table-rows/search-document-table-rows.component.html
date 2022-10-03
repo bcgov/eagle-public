@@ -1,35 +1,80 @@
-<td data-label="Name"
+<td
+  data-label="Name"
   (click)="goToItem(rowData)"
   (keyup.enter)="goToItem(rowData)"
   class="col-4"
-  tabindex="0">
-  {{rowData.displayName}}
+  tabindex="0"
+>
+  {{ rowData.displayName }}
 </td>
-<td data-label="ProjectName"
+<td
+  data-label="ProjectName"
   [attr.aria-label]="'Link to project' + rowData.project.name"
   (click)="goToProject(rowData)"
   (keyup.enter)="goToProject(rowData)"
   class="col-2 btn-link"
-  tabindex="0">{{rowData.project.name}}</td>
-<td data-label="Date"
-  (click)="goToItem(rowData)"
-  class="col-2"
-  tabindex="0">
-  <div *ngIf="rowData.datePosted !== '1900-01-01T08:00:00.000Z'">{{rowData.datePosted | date:'longDate'}}</div>
+  tabindex="0"
+>
+  {{ rowData.project.name }}
 </td>
-<td data-label="Type"
+<td data-label="Date" (click)="goToItem(rowData)" class="col-2" tabindex="0">
+  <div *ngIf="rowData.datePosted !== '1900-01-01T08:00:00.000Z'">
+    {{ rowData.datePosted | date: 'longDate' }}
+  </div>
+</td>
+<td
+  data-label="Type"
   (click)="goToItem(rowData)"
   (keyup.enter)="goToItem(rowData)"
   class="col-2"
-  tabindex="0">{{idToList(rowData.type)}}</td>
-<td data-label="Milestone"
+  tabindex="0"
+>
+  {{ idToList(rowData.type) }}
+</td>
+<td
+  data-label="Milestone"
   (click)="goToItem(rowData)"
   (keyup.enter)="goToItem(rowData)"
   class="col-2"
-  tabindex="0">{{idToList(rowData.milestone)}}</td>
-<td data-label="Download"
+  tabindex="0"
+>
+  {{ idToList(rowData.milestone) }}
+</td>
+<td
+  data-label="Download"
   (click)="goToItem(rowData)"
   (keyup.enter)="goToItem(rowData)"
-  class="col-1 d-flex justify-content-center"><span class="material-icons"
+  class="col-1 d-flex justify-content-center"
+>
+  <span
+    class="material-icons"
     tabindex="0"
-    [attr.aria-label]="'Download document button'">cloud_download</span></td>
+    [attr.aria-label]="'Download document button'"
+    >cloud_download</span
+  >
+</td>
+<td
+  *ngIf="favoriteService.isFavorite(rowData._id)"
+  data-label="Favorite"
+  (click)="removeFavorite(rowData)"
+  class="col-1 d-flex justify-content-center"
+>
+  <span
+    class="material-icons"
+    tabindex="0"
+    [attr.aria-label]="'Remove favorite button'"
+    >favorite</span
+  >
+</td>
+<td
+  *ngIf="!favoriteService.isFavorite(rowData._id)"
+  data-label="Favorite"
+  (click)="addToFavorite(rowData)"
+  class="col-1 d-flex justify-content-center"
+>
+  <span
+    class="material-icons"
+    tabindex="0"
+    [attr.aria-label]="'Add to favorite button'"
+    >favorite_border</span>
+</td>

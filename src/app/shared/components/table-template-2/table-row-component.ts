@@ -60,4 +60,12 @@ export class TableRowComponent {
    * @memberof TableRowComponent
    */
   @Input() messageIn: EventEmitter<ITableMessage> = new EventEmitter<ITableMessage>();
+
+  /**
+   * An Output() for generically emitting events from child to parent.
+   *
+   * @type {EventEmitter<ITableMessage>}
+   * @memberof TableRowComponent
+   */
+  @Output() updateFavorites: EventEmitter<ITableMessage> = new EventEmitter<ITableMessage>();
 }
