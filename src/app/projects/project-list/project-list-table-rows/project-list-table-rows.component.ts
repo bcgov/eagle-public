@@ -2,7 +2,7 @@ import { Component, EventEmitter, Output } from '@angular/core';
 
 import { Router } from '@angular/router';
 import { ApiService } from 'app/services/api';
-import { FavoriteService } from 'app/services/favorite.service';
+import { FavouriteService } from 'app/services/favourite.service';
 import { ITableMessage, TableRowComponent } from 'app/shared/components/table-template-2/table-row-component';
 
 @Component({
@@ -12,12 +12,12 @@ import { ITableMessage, TableRowComponent } from 'app/shared/components/table-te
 })
 
 export class ProjectListTableRowsComponent extends TableRowComponent {
-    @Output() updateFavorites: EventEmitter<ITableMessage> = new EventEmitter<ITableMessage>();
+    @Output() updateFavourites: EventEmitter<ITableMessage> = new EventEmitter<ITableMessage>();
 
     constructor(
         private router: Router,
         public apiService: ApiService,
-        public favoriteService: FavoriteService,
+        public favouriteService: FavouriteService,
     ) {
         super();
     }
@@ -26,21 +26,21 @@ export class ProjectListTableRowsComponent extends TableRowComponent {
         this.router.navigate([`p/${project._id}/project-details`]);
     }
 
-    public addToFavorite(item, type: string = 'Project') {
-      this.apiService.addFavorite(item, type)
+    public addToFavourite(item, type: string = 'Project') {
+      this.apiService.addFavourite(item, type)
         .then(() => {
-          this.updateFavorites.emit({data: {type}, label: 'Update Favorite'});
+          this.updateFavourites.emit({data: {type}, label: 'Update Favourite'});
         }).catch((err) => {
-          console.log('error adding favorite', err)
+          console.log('error adding favourite', err)
         });
     }
 
-    public removeFavorite(item) {
-      this.apiService.removeFavorite(item)
+    public removeFavourite(item) {
+      this.apiService.removeFavourite(item)
         .then(() => {
-          this.updateFavorites.emit({data: {type: 'Project'}, label: 'Update Favorite'});
+          this.updateFavourites.emit({data: {type: 'Project'}, label: 'Update Favourite'});
         }).catch((err) => {
-          console.log('error removing favorite', err)
+          console.log('error removing favourite', err)
         });
     }
 }

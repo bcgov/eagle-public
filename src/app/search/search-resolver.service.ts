@@ -37,7 +37,7 @@ export class SearchResolver implements Resolve<void> {
       'type',
       'projectPhase',
       'changedInLast30days',
-      'favoritesOnly'
+      'favouritesOnly'
     ]);
 
     const dateFiltersForAPI = this.tableTemplateUtils.getDateFiltersFromParams(
