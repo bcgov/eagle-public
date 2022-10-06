@@ -1,7 +1,7 @@
 <header class="app-header"
   id="header"
   [ngClass]="{
-    'app-header--flex': (router.url.startsWith('/projects')),
+    'app-header--flex': (router.url.startsWith('/project') || router.url.startsWith('/search')),
     'app-header--solid': (router.url.startsWith('/p/'))}">
   <nav class="navbar navbar-expand-md justify-content-between">
     <a class="navbar-brand"
