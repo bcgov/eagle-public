@@ -67,5 +67,5 @@ export class TableRowComponent {
    * @type {EventEmitter<ITableMessage>}
    * @memberof TableRowComponent
    */
-  @Output() updateFavorites: EventEmitter<ITableMessage> = new EventEmitter<ITableMessage>();
+  @Output() updateFavourites: EventEmitter<ITableMessage> = new EventEmitter<ITableMessage>();
 }
