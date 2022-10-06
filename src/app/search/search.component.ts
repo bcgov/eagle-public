@@ -268,9 +268,9 @@ export class SearchComponent implements OnInit, OnDestroy {
     const changeInLast30daysFilter = new FilterObject(
       'changedInLast30days',
       FilterType.Checkbox,
-      'Changed In Last 30 Days',
+      'Posted In Last 30 Days',
       new CheckOrRadioFilterDefinition([
-        new OptionItem('changedInLast30days', 'Changed In Last 30 Days'),
+        new OptionItem('changedInLast30days', 'Posted In Last 30 Days'),
       ])
     );
 
@@ -382,6 +382,6 @@ export class SearchComponent implements OnInit, OnDestroy {
   }
 
   onUpdateFavourites() {
-    this.favouriteService.fetchData([{name: 'type', value: 'Document'}, {name: 'fields[]', value: ['_id']}], null, 1000);
+    this.favouriteService.fetchData([{name: 'type', value: 'Document'}], null, 1000);
   }
 }

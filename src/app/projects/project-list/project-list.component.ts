@@ -326,9 +326,9 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     const changeInLast30daysFilter = new FilterObject(
       'changedInLast30days',
       FilterType.Checkbox,
-      'Changed In Last 30 Days',
+      'Updated In Last 30 Days',
       new CheckOrRadioFilterDefinition([
-        new OptionItem('changedInLast30days', 'Changed In Last 30 Days'),
+        new OptionItem('changedInLast30days', 'Updated In Last 30 Days'),
       ])
     );
 
@@ -442,6 +442,6 @@ export class ProjectListComponent implements OnInit, OnDestroy {
   }
 
   onUpdateFavourites() {
-    this.favouriteService.fetchData([{name: 'type', value: 'Project'}, {name: 'field', value: '_id'}], null, 1000);
+    this.favouriteService.fetchData([{name: 'type', value: 'Project'}], null, 1000);
   }
 }

@@ -82,6 +82,4 @@ export class DocSearchTableRowsComponent extends TableRowComponent implements On
   ngOnDestroy() {
     this.alive = false;
   }
-
-
 }
