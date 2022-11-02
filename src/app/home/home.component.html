@@ -4,29 +4,58 @@
       <div class="hero-banner__content">
         <span tabindex="0">
           <h1>Environmental Assessments</h1>
-          <p>British Columbia's environmental assessment process provides opportunities for Indigenous Nations,
-            government
-            agencies and the public to influence the outcome of environmental assessments in British Columbia.</p>
+          <p>
+            British Columbia's environmental assessment process provides
+            opportunities for Indigenous Nations, government agencies and the
+            public to influence the outcome of environmental assessments in
+            British Columbia.
+          </p>
         </span>
         <div class="hero-banner__actions">
           <div class="hero-banner__actions-buttons">
-            <a class="btn slide-l-btn hero-btn inverted"
+            <a
+              class="btn slide-l-btn hero-btn inverted"
               href="/projects"
-              [routerLink]="['/projects']">
-              <i class="material-icons">list</i><span>Find Environmental Assessment Projects</span>
+              [routerLink]="['/projects']"
+            >
+              <i class="material-icons">list</i
+              ><span>Find Environmental Assessment Projects</span>
             </a>
-            <a class="btn slide-l-btn hero-btn inverted"
+            <a
+              class="btn slide-l-btn hero-btn inverted"
               href="/projects-list"
-              [routerLink]="['/projects-list']">
+              [routerLink]="['/projects-list']"
+            >
               <i class="material-icons">list</i><span>List of Projects</span>
             </a>
-            <a class="btn slide-l-btn hero-btn inverted ml-4"
+            <a
+              class="btn slide-l-btn hero-btn inverted ml-4"
               href="/project-notifications"
-              [routerLink]="['/project-notifications']">
-              <i class="material-icons">list</i><span>Project Notifications</span>
+              [routerLink]="['/project-notifications']"
+            >
+              <i class="material-icons">list</i
+              ><span>Project Notifications</span>
             </a>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="survey-banner" *ngIf="surveyUrl">
+  <div class="container">
+    <div class="container-inner">
+      <h5>
+        Can you take a few minutes to help us improve our public engagements?
+      </h5>
+      <div class="survey-content">
+        <p>
+          We are working on creating a better way to listen and respond to
+          your comments and feedback on EAO projects. Please take a few
+          minutes to answer a short survey about our Modern Engagement Tool.
+          The survey takes 5-7 minutes.
+        </p>
+        <a class="survey-link" href={{surveyUrl}} target="_blank">Share your thoughts</a>
       </div>
     </div>
   </div>
@@ -35,58 +64,78 @@
 <main>
   <div id="anchor-point">
     <section class="container">
-      <h2 tabindex="0"
-        class="mb-4">Recent Activities & Updates</h2>
+      <h2 tabindex="0" class="mb-4">Recent Activities & Updates</h2>
       <div class="home-news-feed">
-
-        <table class="table"
-          id="tableTop"
-          *ngIf="results">
+        <table class="table" id="tableTop" *ngIf="results">
           <tbody *ngFor="let item of results">
-            <tr *ngIf="item.active == true"
-              tabindex="0">
+            <tr *ngIf="item.active == true" tabindex="0">
               <td>
                 <div class="title-container">
                   <h3 class="title-container__title">
-                    <span class="font-weight-bold"
-                      *ngIf="item.project">
-                      {{item.project?.name}}
+                    <span class="font-weight-bold" *ngIf="item.project">
+                      {{ item.project?.name }}
                     </span>
-                    <span *ngIf="item.notificationName"
-                      class="font-weight-bold">{{item.notificationName}}</span>
-                    <span class="home-news-feed__headline">{{item.headline}}</span>
+                    <span
+                      *ngIf="item.notificationName"
+                      class="font-weight-bold"
+                      >{{ item.notificationName }}</span
+                    >
+                    <span class="home-news-feed__headline">{{
+                      item.headline
+                    }}</span>
                   </h3>
-                  <span class="title-container__date">{{item.dateAdded | date:'longDate'}}</span>
+                  <span class="title-container__date">{{
+                    item.dateAdded | date: 'longDate'
+                  }}</span>
                 </div>
                 <div>
-                  <div class="activity-content"
-                    [innerHTML]="item.content"></div>
+                  <div
+                    class="activity-content"
+                    [innerHTML]="item.content"
+                  ></div>
                 </div>
                 <div>
-                  <a class="btn btn-sm content-btn-alt"
-                    title="View more information about {{item.project.name}}"
-                    [routerLink]="['/p', item.project?._id ]"
-                    *ngIf="item.project?._id">
+                  <a
+                    class="btn btn-sm content-btn-alt"
+                    title="View more information about {{ item.project.name }}"
+                    [routerLink]="['/p', item.project?._id]"
+                    *ngIf="item.project?._id"
+                  >
                     Project Info
                   </a>
-                  <a *ngIf="item?.pcp && item?.type === 'Public Comment Period'"
+                  <a
+                    *ngIf="item?.pcp && item?.type === 'Public Comment Period'"
                     class="btn btn-sm content-btn-alt"
                     title="View this Public Comment Period"
-                    [routerLink]="['/p', item.project?._id, 'cp', item.pcp ]">
+                    [routerLink]="['/p', item.project?._id, 'cp', item.pcp]"
+                  >
                     Submit/ View Comments
                   </a>
-                  <a *ngIf="item.documentUrl && !item?.documentUrl.includes('docs?folder') && !item?.notificationName"
+                  <a
+                    *ngIf="
+                      item.documentUrl &&
+                      !item?.documentUrl.includes('docs?folder') &&
+                      !item?.notificationName
+                    "
                     class="btn btn-sm content-btn-alt"
                     title="View more information"
-                    href="{{item.documentUrl}}"
-                    target="_blank">
+                    href="{{ item.documentUrl }}"
+                    target="_blank"
+                  >
                     View Document(s)
                   </a>
-                  <a *ngIf="item.documentUrl && item?.notificationName && item?.type === 'Project Notification Public Comment Period'"
+                  <a
+                    *ngIf="
+                      item.documentUrl &&
+                      item?.notificationName &&
+                      item?.type ===
+                        'Project Notification Public Comment Period'
+                    "
                     class="btn btn-sm content-btn-alt"
                     title="View more information"
-                    href="{{item.documentUrl}}"
-                    target="_blank">
+                    href="{{ item.documentUrl }}"
+                    target="_blank"
+                  >
                     View Project Notification Public Comment Period
                   </a>
                 </div>
@@ -95,58 +144,74 @@
           </tbody>
         </table>
         <div class="news-block-more">
-          <a class="btn slide-r-btn content-btn-alt"
+          <a
+            class="btn slide-r-btn content-btn-alt"
             href="/news"
-            [routerLink]="['/news']">
+            [routerLink]="['/news']"
+          >
             <span>View All Activities & Updates</span>
             <i class="material-icons">&#xE5C8;</i>
           </a>
         </div>
       </div>
     </section>
-    <hr>
+    <hr />
     <div class="bg-faded">
       <section class="container">
         <h2 tabindex="0">About the B.C. Environmental Assessment Process...</h2>
-        <p tabindex="0">Learn more about how the Environmental Assessment Office neutrally administers a process that is
-          predictable,
-          transparent, timely, procedurally fair, and holds all participants accountable.</p>
+        <p tabindex="0">
+          Learn more about how the Environmental Assessment Office neutrally
+          administers a process that is predictable, transparent, timely,
+          procedurally fair, and holds all participants accountable.
+        </p>
         <div class="row feature-blocks">
           <div class="col-md-4">
-            <div tabindex="0"
-              class="feature-block">
+            <div tabindex="0" class="feature-block">
               <h3>Legislation</h3>
-              <p>Learn about the legislation and regulations that apply to environmental assessments in the province of
-                British Columbia.</p>
-              <a class="btn btn-sm inverted"
+              <p>
+                Learn about the legislation and regulations that apply to
+                environmental assessments in the province of British Columbia.
+              </p>
+              <a
+                class="btn btn-sm inverted"
                 href="/legislation"
                 [routerLink]="['/legislation']"
-                aria-label="Learn more about legislation">Learn More</a>
+                aria-label="Learn more about legislation"
+                >Learn More</a
+              >
             </div>
           </div>
           <div class="col-md-4">
-            <div tabindex="0"
-              class="feature-block">
+            <div tabindex="0" class="feature-block">
               <h3>Process & Procedures</h3>
-              <p>Learn more about how the Environmental Assessment Office neutrally administers a process that holds all
-                participants accountable.</p>
-              <a class="btn btn-sm inverted"
+              <p>
+                Learn more about how the Environmental Assessment Office
+                neutrally administers a process that holds all participants
+                accountable.
+              </p>
+              <a
+                class="btn btn-sm inverted"
                 href="/process"
                 [routerLink]="['/process']"
-                aria-label="Learn more about process and procedures">Learn More</a>
+                aria-label="Learn more about process and procedures"
+                >Learn More</a
+              >
             </div>
           </div>
-          <div tabindex="0"
-            class="col-md-4">
+          <div tabindex="0" class="col-md-4">
             <div class="feature-block">
               <h3>Compliance Oversight</h3>
-              <p>Learn about how we collaborate with other agencies to coordinate oversight of environmental assessment
-                projects.</p>
-              <a class="btn btn-sm inverted"
+              <p>
+                Learn about how we collaborate with other agencies to coordinate
+                oversight of environmental assessment projects.
+              </p>
+              <a
+                class="btn btn-sm inverted"
                 href="/compliance-oversight"
                 [routerLink]="['/compliance-oversight']"
-                aria-label="Learn more about compliance oversight">Learn
-                More</a>
+                aria-label="Learn more about compliance oversight"
+                >Learn More</a
+              >
             </div>
           </div>
         </div>
