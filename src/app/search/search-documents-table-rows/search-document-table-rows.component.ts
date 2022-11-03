@@ -1,8 +1,10 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, Output, EventEmitter } from '@angular/core';
 import { Utils } from 'app/shared/utils/utils';
-import { TableRowComponent } from 'app/shared/components/table-template-2/table-row-component';
+import { ITableMessage, TableRowComponent } from 'app/shared/components/table-template-2/table-row-component';
 import { ConfigService } from 'app/services/config.service';
 import { takeWhile } from 'rxjs/operators';
+import { ApiService } from 'app/services/api';
+import { FavouriteService } from 'app/services/favourite.service';
 
 @Component({
   selector: 'tr[app-document-table-rows]',
@@ -13,9 +15,13 @@ import { takeWhile } from 'rxjs/operators';
 export class DocSearchTableRowsComponent extends TableRowComponent implements OnInit, OnDestroy {
   private lists: any[] = [];
   private alive = true;
+  @Output() updateFavourites: EventEmitter<ITableMessage> = new EventEmitter<ITableMessage>();
+
 
   constructor(
     public configService: ConfigService,
+    public apiService: ApiService,
+    public favouriteService: FavouriteService,
     private utils: Utils
   ) {
     super();
@@ -53,6 +59,24 @@ export class DocSearchTableRowsComponent extends TableRowComponent implements On
 
   goToProject(item) {
     window.open('/p/' + item.project._id + '/project-details');
+  }
+
+  public addToFavourite(item, type: string = 'Document') {
+    this.apiService.addFavourite(item, type)
+      .then(() => {
+        this.updateFavourites.emit({data: {type}, label: 'Update Favourite'});
+      }).catch((err) => {
+        console.log('error adding favourite', err)
+      });
+  }
+
+  public removeFavourite(item) {
+    this.apiService.removeFavourite(item)
+      .then(() => {
+        this.updateFavourites.emit({data: {type: 'Document'}, label: 'Update Favourite'});
+      }).catch((err) => {
+        console.log('error removing favourite', err)
+      });
   }
 
   ngOnDestroy() {

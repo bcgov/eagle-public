@@ -19,28 +19,40 @@ export class ProjectListResolver implements Resolve<void> {
     private tableService: TableService,
     private orgService: OrgService,
     private tableTemplateUtils: TableTemplate
-  ) { }
+  ) {}
 
   resolve(route: ActivatedRouteSnapshot) {
     this.tableService.clearTable(this.tableId);
     this.orgService.fetchProponent();
 
     const params = route.queryParamMap['params'];
-    const tableObject = this.tableTemplateUtils.updateTableObjectWithUrlParams(params, new TableObject2());
+    const tableObject = this.tableTemplateUtils.updateTableObjectWithUrlParams(
+      params,
+      new TableObject2()
+    );
 
     if (!params.sortBy) {
       tableObject.sortBy = '+name';
     }
 
     let keywords = '';
-    params.keywords ?
-      (keywords = params.keywords) :
-      (keywords = Constants.tableDefaults.DEFAULT_KEYWORDS);
+    params.keywords
+      ? (keywords = params.keywords)
+      : (keywords = Constants.tableDefaults.DEFAULT_KEYWORDS);
 
-    const filtersForAPI = this.tableTemplateUtils.getFiltersFromParams(
-      params,
-      ['type', 'eacDecision', 'decisionDateStart', 'decisionDateEnd', 'pcp', 'proponent', 'region', 'CEAAInvolvement', 'currentPhaseName']
-    );
+    const filtersForAPI = this.tableTemplateUtils.getFiltersFromParams(params, [
+      'type',
+      'eacDecision',
+      'decisionDateStart',
+      'decisionDateEnd',
+      'pcp',
+      'proponent',
+      'region',
+      'CEAAInvolvement',
+      'currentPhaseName',
+      'changedInLast30days',
+      'favouritesOnly',
+    ]);
 
     const dateFiltersForAPI = this.tableTemplateUtils.getDateFiltersFromParams(
       params,
@@ -61,7 +73,7 @@ export class ProjectListResolver implements Resolve<void> {
       null,
       { ...filtersForAPI, ...dateFiltersForAPI },
       '',
-      true
+      false
     ));
   }
 }

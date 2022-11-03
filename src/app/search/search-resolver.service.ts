@@ -8,6 +8,7 @@ import { SearchParamObject } from 'app/services/search.service';
 import { Constants } from 'app/shared/utils/constants';
 import { TableObject2 } from 'app/shared/components/table-template-2/table-object-2';
 import { TableService } from 'app/services/table.service';
+import * as moment from 'moment-timezone';
 
 @Injectable()
 export class SearchResolver implements Resolve<void> {
@@ -15,22 +16,29 @@ export class SearchResolver implements Resolve<void> {
   constructor(
     private tableService: TableService,
     private tableTemplateUtils: TableTemplate
-  ) { }
+  ) {}
 
   resolve(route: ActivatedRouteSnapshot) {
     this.tableService.clearTable(this.tableId);
     const params = route.queryParamMap['params'];
-    const tableObject = this.tableTemplateUtils.updateTableObjectWithUrlParams(params, new TableObject2());
+    const tableObject = this.tableTemplateUtils.updateTableObjectWithUrlParams(
+      params,
+      new TableObject2()
+    );
 
     let keywords = '';
-    params.keywords ?
-      (keywords = params.keywords) :
-      (keywords = Constants.tableDefaults.DEFAULT_KEYWORDS);
+    params.keywords
+      ? (keywords = params.keywords)
+      : (keywords = Constants.tableDefaults.DEFAULT_KEYWORDS);
 
-    const filtersForAPI = this.tableTemplateUtils.getFiltersFromParams(
-      params,
-      ['milestone', 'documentAuthorType', 'type', 'projectPhase']
-    );
+    const filtersForAPI = this.tableTemplateUtils.getFiltersFromParams(params, [
+      'milestone',
+      'documentAuthorType',
+      'type',
+      'projectPhase',
+      'changedInLast30days',
+      'favouritesOnly'
+    ]);
 
     const dateFiltersForAPI = this.tableTemplateUtils.getDateFiltersFromParams(
       params,
@@ -49,7 +57,7 @@ export class SearchResolver implements Resolve<void> {
       { documentSource: 'PROJECT' },
       true,
       '',
-      { ...filtersForAPI, ...dateFiltersForAPI },
+      { ...filtersForAPI, ...dateFiltersForAPI, datePostedStart: moment().add(-10, 'year').format('YYYY-MM-DD') },
       '',
       true
     ));
