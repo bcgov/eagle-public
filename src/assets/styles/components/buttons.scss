@@ -62,14 +62,14 @@ main {
   border-radius: 0.2rem;
   transition: all ease-out 0.2s;
 
-  i, em {
+  i {
     vertical-align: middle;
   }
-  img, i, em, span {
+  img, i, span {
     transition: all ease-out 0.2s;
   }
 
-  img, i, em {
+  img, i {
     opacity: 0;
   }
 
@@ -81,7 +81,7 @@ main {
   &:focus {
     text-decoration: none;
 
-    img, i, em,  span {
+    img, i, span {
       opacity: 1;
       transform: translateX(0);
     }
@@ -101,7 +101,7 @@ main {
 }
 
 .slide-l-btn {
-  img, i, em {
+  img, i {
     margin-right: 0.25rem;
     transform: translateX(-20px);
   }
@@ -115,11 +115,11 @@ main {
 @media (max-device-width: 1024px) {
   .slide-r-btn,
   .slide-l-btn {
-    img, i, em, span {
+    img, i, span {
       transform: translateX(0);
     }
 
-    img, i, em {
+    img, i {
       opacity: 1;
     }
   }
