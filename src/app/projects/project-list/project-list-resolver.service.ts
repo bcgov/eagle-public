@@ -51,7 +51,7 @@ export class ProjectListResolver implements Resolve<void> {
       'CEAAInvolvement',
       'currentPhaseName',
       'changedInLast30days',
-      'favouritesOnly',
+      'favoritesOnly',
     ]);
 
     const dateFiltersForAPI = this.tableTemplateUtils.getDateFiltersFromParams(

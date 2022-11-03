@@ -26,7 +26,7 @@ export class TableRowDirective implements OnInit, OnChanges, OnDestroy {
 
   @Input() messageIn: EventEmitter<ITableMessage> = new EventEmitter<ITableMessage>();
   @Output() messageOut: EventEmitter<ITableMessage> = new EventEmitter<ITableMessage>();
-  @Output() updateFavourites: EventEmitter<ITableMessage> = new EventEmitter<ITableMessage>();
+  @Output() updateFavorites: EventEmitter<ITableMessage> = new EventEmitter<ITableMessage>();
 
   private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
 
@@ -83,9 +83,9 @@ export class TableRowDirective implements OnInit, OnChanges, OnDestroy {
       componentInstance.messageIn.emit(msg);
     });
 
-    // subscribe to the components updateFavourite events and forward them to table template
-    componentInstance.updateFavourites.pipe(takeUntil(this.ngUnsubscribe)).subscribe(msg => {
-      this.updateFavourites.emit(msg);
+    // subscribe to the components updateFavorite events and forward them to table template
+    componentInstance.updateFavorites.pipe(takeUntil(this.ngUnsubscribe)).subscribe(msg => {
+      this.updateFavorites.emit(msg);
     });
   }
 

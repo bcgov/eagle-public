@@ -54,27 +54,27 @@
   >
 </td>
 <td
-  *ngIf="favouriteService.isFavourite(rowData._id)"
-  data-label="Favourite"
-  (click)="removeFavourite(rowData)"
+  *ngIf="favoriteService.isFavorite(rowData._id)"
+  data-label="Favorite"
+  (click)="removeFavorite(rowData)"
   class="col-1 d-flex justify-content-center"
 >
   <span
     class="material-icons"
     tabindex="0"
-    [attr.aria-label]="'Remove favourite button'"
+    [attr.aria-label]="'Remove favorite button'"
     >favorite</span
   >
 </td>
 <td
-  *ngIf="!favouriteService.isFavourite(rowData._id)"
-  data-label="Favourite"
-  (click)="addToFavourite(rowData)"
+  *ngIf="!favoriteService.isFavorite(rowData._id)"
+  data-label="Favorite"
+  (click)="addToFavorite(rowData)"
   class="col-1 d-flex justify-content-center"
 >
   <span
     class="material-icons"
     tabindex="0"
-    [attr.aria-label]="'Add to favourite button'"
+    [attr.aria-label]="'Add to favorite button'"
     >favorite_border</span>
 </td>

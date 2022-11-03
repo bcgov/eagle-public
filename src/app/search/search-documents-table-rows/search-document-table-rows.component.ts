@@ -4,7 +4,7 @@ import { ITableMessage, TableRowComponent } from 'app/shared/components/table-te
 import { ConfigService } from 'app/services/config.service';
 import { takeWhile } from 'rxjs/operators';
 import { ApiService } from 'app/services/api';
-import { FavouriteService } from 'app/services/favourite.service';
+import { FavoriteService } from 'app/services/favorite.service';
 
 @Component({
   selector: 'tr[app-document-table-rows]',
@@ -15,13 +15,13 @@ import { FavouriteService } from 'app/services/favourite.service';
 export class DocSearchTableRowsComponent extends TableRowComponent implements OnInit, OnDestroy {
   private lists: any[] = [];
   private alive = true;
-  @Output() updateFavourites: EventEmitter<ITableMessage> = new EventEmitter<ITableMessage>();
+  @Output() updateFavorites: EventEmitter<ITableMessage> = new EventEmitter<ITableMessage>();
 
 
   constructor(
     public configService: ConfigService,
     public apiService: ApiService,
-    public favouriteService: FavouriteService,
+    public favoriteService: FavoriteService,
     private utils: Utils
   ) {
     super();
@@ -61,25 +61,27 @@ export class DocSearchTableRowsComponent extends TableRowComponent implements On
     window.open('/p/' + item.project._id + '/project-details');
   }
 
-  public addToFavourite(item, type: string = 'Document') {
-    this.apiService.addFavourite(item, type)
+  public addToFavorite(item, type: string = 'Document') {
+    this.apiService.addFavorite(item, type)
       .then(() => {
-        this.updateFavourites.emit({data: {type}, label: 'Update Favourite'});
+        this.updateFavorites.emit({data: {type}, label: 'Update Favorite'});
       }).catch((err) => {
-        console.log('error adding favourite', err)
+        console.log('error adding favorite', err)
       });
   }
 
-  public removeFavourite(item) {
-    this.apiService.removeFavourite(item)
+  public removeFavorite(item) {
+    this.apiService.removeFavorite(item)
       .then(() => {
-        this.updateFavourites.emit({data: {type: 'Document'}, label: 'Update Favourite'});
+        this.updateFavorites.emit({data: {type: 'Document'}, label: 'Update Favorite'});
       }).catch((err) => {
-        console.log('error removing favourite', err)
+        console.log('error removing favorite', err)
       });
   }
 
   ngOnDestroy() {
     this.alive = false;
   }
+
+
 }

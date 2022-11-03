@@ -29,7 +29,7 @@ import { OrgService } from 'app/services/org.service';
 import { Org } from 'app/models/organization';
 import { TableService } from 'app/services/table.service';
 import * as moment from 'moment-timezone';
-import { FavouriteService } from 'app/services/favourite.service';
+import { FavoriteService } from 'app/services/favorite.service';
 
 @Component({
   selector: 'app-project-list',
@@ -53,7 +53,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     'CEAAInvolvement',
     'currentPhaseName',
     'changedInLast30days',
-    'favouritesOnly'
+    'favoritesOnly'
   ];
   private dateFiltersList = ['decisionDateStart', 'decisionDateEnd'];
   private tableId = 'projectList';
@@ -90,7 +90,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
       width: 'col-2',
     },
     {
-      name: 'Favourite',
+      name: 'Favorite',
       value: '',
       width: 'col-1',
       nosort: true,
@@ -126,7 +126,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     private orgService: OrgService,
     private configService: ConfigService,
     private _changeDetectionRef: ChangeDetectorRef,
-    public favouriteService: FavouriteService,
+    public favoriteService: FavoriteService,
 
   ) {}
 
@@ -207,7 +207,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
           });
           this.tableData.columns = this.tableColumns;
           this.tableData.options.showAllPicker = true;
-          this.onUpdateFavourites();
+          this.onUpdateFavorites();
           this.loadingTableData = false;
           this._changeDetectionRef.detectChanges();
           let seachInput = document.getElementById('search-input');
@@ -326,18 +326,18 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     const changeInLast30daysFilter = new FilterObject(
       'changedInLast30days',
       FilterType.Checkbox,
-      'Updated In Last 30 Days',
+      'Changed In Last 30 Days',
       new CheckOrRadioFilterDefinition([
-        new OptionItem('changedInLast30days', 'Updated In Last 30 Days'),
+        new OptionItem('changedInLast30days', 'Changed In Last 30 Days'),
       ])
     );
 
-    const favouritesOnlyFilter = new FilterObject(
-      'favouritesOnly',
+    const favoritesOnlyFilter = new FilterObject(
+      'favoritesOnly',
       FilterType.Checkbox,
-      'Favourites Only',
+      'Favorites Only',
       new CheckOrRadioFilterDefinition([
-        new OptionItem('favouritesOnly', 'Favourites Only'),
+        new OptionItem('favoritesOnly', 'Favorites Only'),
       ])
     );
 
@@ -351,7 +351,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
       iaacFilter,
       currentPhaseNameFilter,
       changeInLast30daysFilter,
-      favouritesOnlyFilter
+      favoritesOnlyFilter
     ];
   }
 
@@ -441,7 +441,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     this.alive = false;
   }
 
-  onUpdateFavourites() {
-    this.favouriteService.fetchData([{name: 'type', value: 'Project'}], null, 1000);
+  onUpdateFavorites() {
+    this.favoriteService.fetchData([{name: 'type', value: 'Project'}, {name: 'field', value: '_id'}], null, 1000);
   }
 }

@@ -684,19 +684,19 @@ export class ApiService {
     return values.replace(/\|$/, '');
   }
 
-  public async addFavourite(
+  public async addFavorite(
     obj: Document | Project,
     type: string
   ): Promise<void> {
     const payload = { objId: obj._id, type: type };
-    const queryString = `favourites`;
+    const queryString = `favorites`;
     return this.http
       .post<void>(`${this.apiPath}/${queryString}`, payload, {})
       .toPromise();
   }
 
-  public async removeFavourite(obj: Document | Project): Promise<void> {
-    const queryString = `favourites/${obj._id}`;
+  public async removeFavorite(obj: Document | Project): Promise<void> {
+    const queryString = `favorites/${obj._id}`;
     return this.http
       .delete<void>(`${this.apiPath}/${queryString}`, {})
       .toPromise();

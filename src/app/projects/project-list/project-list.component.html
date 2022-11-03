@@ -3,25 +3,28 @@
 </div>
 
 <main *ngIf="!loadingLists && !loadingTableParams">
-    <div class="hero-banner">
-        <div class="container">
-            <div class="hero-banner__content">
-                <h1>Environmental Assessments in British Columbia</h1>
-                <p>
-                    Use the list below to navigate to individual Projects. Click on
-                    any project to go directly to its details page.
-                </p>
-                <div class="hero-banner__actions">
-                    <div class="hero-banner__actions-buttons">
-                        <a class="btn slide-l-btn hero-btn inverted" [routerLink]="['/search']"
-                            [queryParams]="documentSearchQueryParams">
-                            <em class="material-icons">search</em><span>Search All Documents</span>
-                        </a>
-                    </div>
+    <div class="container">
+        <div class="hero-banner__content">
+            <h1>Environmental Assessments in British Columbia</h1>
+            <p>
+                Use the list below to navigate to individual Projects. Click on
+                any project to go directly to its details page.
+            </p>
+            <div class="hero-banner__actions">
+                <div class="hero-banner__actions-buttons">
+                    <a
+                        class="btn slide-l-btn hero-btn inverted"
+                        [routerLink]="['/search']"
+                        [queryParams]="documentSearchQueryParams"
+                    >
+                        <i class="material-icons">search</i
+                        ><span>Search All Documents</span>
+                    </a>
                 </div>
             </div>
         </div>
     </div>
+
     <section class="project-list table-container">
         <div class="container">
             <section class="mb-4 pt-0 pb-0" id="table-container-section">
@@ -50,7 +53,7 @@
                 *ngIf="tableData.totalListItems > 0"
                 [data]="tableData"
                 (messageOut)="onMessageOut($event)"
-                (updateFavourites)="onUpdateFavourites($event)"
+                (updateFavorites)="onUpdateFavorites($event)"
             >
             </lib-table-template-2>
         </div>
