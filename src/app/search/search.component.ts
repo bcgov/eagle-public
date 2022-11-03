@@ -2,7 +2,6 @@ import { Component, OnInit, ChangeDetectorRef, OnDestroy } from '@angular/core';
 import { Router, ActivatedRoute, Params } from '@angular/router';
 import { SearchResults } from 'app/models/search';
 import { ConfigService } from 'app/services/config.service';
-import { FavoriteService } from 'app/services/favorite.service';
 import { TableService } from 'app/services/table.service';
 import {
   CheckOrRadioFilterDefinition,
@@ -69,12 +68,6 @@ export class SearchComponent implements OnInit, OnDestroy {
       width: 'col-1',
       nosort: true,
     },
-    {
-      name: 'Favorite',
-      value: '',
-      width: 'col-1',
-      nosort: true,
-    },
   ];
 
   public filters: FilterObject[] = [];
@@ -102,7 +95,6 @@ export class SearchComponent implements OnInit, OnDestroy {
     'type',
     'projectPhase',
     'changedInLast30days',
-    'favoritesOnly'
   ];
   private dateFiltersList = ['datePostedStart', 'datePostedEnd'];
   private initialLoad = true;
@@ -113,8 +105,7 @@ export class SearchComponent implements OnInit, OnDestroy {
     private router: Router,
     private tableTemplateUtils: TableTemplate,
     private tableService: TableService,
-    private configService: ConfigService,
-    public favoriteService: FavoriteService,
+    private configService: ConfigService
   ) {}
 
   ngOnInit() {
@@ -174,8 +165,6 @@ export class SearchComponent implements OnInit, OnDestroy {
           this.tableData.items = searchResults.data.map((record) => {
             return { rowData: record };
           });
-          this.onUpdateFavorites();
-
           this.tableData.columns = this.tableColumns;
           this.tableData.options.showAllPicker = true;
 
@@ -274,15 +263,6 @@ export class SearchComponent implements OnInit, OnDestroy {
       ])
     );
 
-    const favoritesOnlyFilter = new FilterObject(
-      'favoritesOnly',
-      FilterType.Checkbox,
-      'Favorites Only',
-      new CheckOrRadioFilterDefinition([
-        new OptionItem('favoritesOnly', 'Favorites Only'),
-      ])
-    );
-
     this.filters = [
       docDateFilter,
       milestoneFilter,
@@ -290,7 +270,6 @@ export class SearchComponent implements OnInit, OnDestroy {
       documentTypeFilter,
       projectPhaseFilter,
       changeInLast30daysFilter,
-      favoritesOnlyFilter,
     ];
   }
 
@@ -299,7 +278,6 @@ export class SearchComponent implements OnInit, OnDestroy {
   }
 
   executeSearch(searchPackage) {
-
     let params = {};
     if (searchPackage.keywords) {
       params['keywords'] = searchPackage.keywords;
@@ -379,9 +357,5 @@ export class SearchComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.alive = false;
-  }
-
-  onUpdateFavorites() {
-    this.favoriteService.fetchData([{name: 'type', value: 'Document'}, {name: 'fields[]', value: ['_id']}], null, 1000);
   }
 }

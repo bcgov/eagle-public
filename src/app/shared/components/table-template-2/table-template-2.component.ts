@@ -22,13 +22,12 @@ export class TableTemplate2Component implements OnChanges, OnDestroy {
 
   @Input() messageIn: EventEmitter<ITableMessage> = new EventEmitter<ITableMessage>();
   @Output() messageOut: EventEmitter<ITableMessage> = new EventEmitter<ITableMessage>();
-  @Output() updateFavorites: EventEmitter<ITableMessage> = new EventEmitter<ITableMessage>();
 
   constructor(public injector: Injector) { }
 
   ngOnChanges(changes: SimpleChanges) {
     // only run when property "data" changed
-    if (!changes.firstChange && changes['data'] && changes['data'].currentValue) {
+    if (!changes.firstChange && changes['data'].currentValue) {
       this.data.options = changes['data'].currentValue.options;
       this.data.items = changes['data'].currentValue.items;
       this.data.columns = changes['data'].currentValue.columns;
@@ -66,10 +65,6 @@ export class TableTemplate2Component implements OnChanges, OnDestroy {
 
   onUpdatePageSize(pageSize) {
     this.messageOut.emit({ label: 'pageSize', data: pageSize });
-  }
-
-  onUpdateFavorites(data) {
-    this.updateFavorites.emit(data);
   }
 
   ngOnDestroy() { }
