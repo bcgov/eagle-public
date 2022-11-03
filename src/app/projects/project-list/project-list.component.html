@@ -1,4 +1,5 @@
-<div class="spinner-container" *ngIf="loadingLists || loadingTableParams">
+<div class="spinner-container"
+    *ngIf="loadingLists || loadingTableParams">
     <div class="spinner-new rotating"></div>
 </div>
 
@@ -6,19 +7,14 @@
     <div class="container">
         <div class="hero-banner__content">
             <h1>Environmental Assessments in British Columbia</h1>
-            <p>
-                Use the list below to navigate to individual Projects. Click on
-                any project to go directly to its details page.
-            </p>
+            <p>Use the list below to navigate to individual Projects. Click on any project to go
+                directly to its details page.</p>
             <div class="hero-banner__actions">
                 <div class="hero-banner__actions-buttons">
-                    <a
-                        class="btn slide-l-btn hero-btn inverted"
+                    <a class="btn slide-l-btn hero-btn inverted"
                         href="/search"
-                        [routerLink]="['/search']"
-                    >
-                        <i class="material-icons">search</i
-                        ><span>Search All Documents</span>
+                        [routerLink]="['/search']">
+                        <i class="material-icons">search</i><span>Search All Documents</span>
                     </a>
                 </div>
             </div>
@@ -27,33 +23,22 @@
 
     <section class="project-list table-container">
         <div class="container">
-            <section class="mb-4 pt-0 pb-0" id="table-container-section">
-                <search-filter-template
-                    #explorePanel
-                    (searchEvent)="executeSearch($event)"
+            <section class="mb-4 pt-0 pb-0">
+                <search-filter-template #explorePanel
+                    (searchEvent)='executeSearch($event)'
                     [advancedFilters]="true"
                     [showAdvancedFilters]="showAdvancedFilters"
                     [searchOnFilterChange]="true"
                     [filters]="filters"
-                    (resetControls)="
-                        tableData.sortBy.includes('score')
-                            ? (tableData.sortBy = '-datePosted')
-                            : null
-                    "
-                    (toggleFiltersPanelEvent)="
-                        showAdvancedFilters = $event.showPanel
-                    "
-                    [searchHelpLinkArray]="['/search-help']"
-                    [searching]="loadingTableData"
-                >
+                    (resetControls)='tableData.sortBy.includes("score") ? tableData.sortBy = "-datePosted" : null'
+                    (toggleFiltersPanelEvent)="showAdvancedFilters = $event.showPanel"
+                    [searchHelpLinkArray]='["/search-help"]'
+                    [searching]="loadingTableData">
                 </search-filter-template>
             </section>
-            <div *ngIf="tableData.totalListItems === 0">No results found.</div>
-            <lib-table-template-2
-                *ngIf="tableData.totalListItems > 0"
+            <lib-table-template-2 *ngIf="tableData.totalListItems > 0"
                 [data]="tableData"
-                (messageOut)="onMessageOut($event)"
-            >
+                (messageOut)="onMessageOut($event)">
             </lib-table-template-2>
         </div>
     </section>
