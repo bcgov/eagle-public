@@ -158,14 +158,14 @@ export class SearchFilterTemplateComponent implements OnInit, AfterViewInit, OnD
           const date = new Date(defaultFormValues[filter.filterDefinition.startDateId]);
 
           groupControls[filter.filterDefinition.startDateId]
-            .setValue({ year: date.getFullYear(), day: date.getDate(), month: date.getMonth() + 1 });
+            .setValue({ year: date.getFullYear(), day: date.getDay(), month: date.getMonth() });
         }
 
         if (defaultFormValues[filter.filterDefinition.endDateId]) {
           const date = new Date(defaultFormValues[filter.filterDefinition.endDateId]);
 
           groupControls[filter.filterDefinition.endDateId]
-            .setValue({ year: date.getFullYear(), day: date.getDate(), month: date.getMonth() + 1 });
+            .setValue({ year: date.getFullYear(), day: date.getDay(), month: date.getMonth() });
         }
       } else if (filter.type === FilterType.Checkbox) {
         if (!filter.filterDefinition.grouped) {
@@ -257,12 +257,12 @@ export class SearchFilterTemplateComponent implements OnInit, AfterViewInit, OnD
 
         if (this.formGroup.get(dateFilter.startDateId).value) {
           searchPackage.filters[dateFilter.startDateId] =
-            this.utils.convertFormGroupNGBDateToMomentDate(this.formGroup.get(dateFilter.startDateId).value).format('YYYY-MM-DD');
+            this.utils.convertFormGroupNGBDateToJSDate(this.formGroup.get(dateFilter.startDateId).value).toISOString();
         }
 
         if (this.formGroup.get(dateFilter.endDateId).value) {
           searchPackage.filters[dateFilter.endDateId] =
-            this.utils.convertFormGroupNGBDateToMomentDate(this.formGroup.get(dateFilter.endDateId).value).format('YYYY-MM-DD');
+            this.utils.convertFormGroupNGBDateToJSDate(this.formGroup.get(dateFilter.endDateId).value).toISOString();
         }
       } else if (filter.type === FilterType.Checkbox) {
         if (!filter.filterDefinition.grouped) {
