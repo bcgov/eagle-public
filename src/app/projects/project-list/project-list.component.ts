@@ -8,12 +8,10 @@ import { SearchResults } from 'app/models/search';
 
 import { Constants } from 'app/shared/utils/constants';
 import {
-  CheckOrRadioFilterDefinition,
   DateFilterDefinition,
   FilterObject,
   FilterType,
   MultiSelectDefinition,
-  OptionItem,
 } from 'app/shared/components/search-filter-template/filter-object';
 import { ProjectListTableRowsComponent } from './project-list-table-rows/project-list-table-rows.component';
 
@@ -51,7 +49,6 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     'region',
     'CEAAInvolvement',
     'currentPhaseName',
-    'changedInLast30days',
   ];
   private dateFiltersList = ['decisionDateStart', 'decisionDateEnd'];
   private tableId = 'projectList';
@@ -176,8 +173,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
             this.queryParams['proponent'] ||
             this.queryParams['region'] ||
             this.queryParams['CEAAInvolvement'] ||
-            this.queryParams['currentPhaseName'] ||
-            this.queryParams['changedInLast30days'])
+            this.queryParams['currentPhaseName'])
         ) {
           this.showAdvancedFilters = true;
           this.initialLoad = false;
@@ -313,15 +309,6 @@ export class ProjectListComponent implements OnInit, OnDestroy {
       4
     );
 
-    const changeInLast30daysFilter = new FilterObject(
-      'changedInLast30days',
-      FilterType.Checkbox,
-      'Changed In Last 30 Days',
-      new CheckOrRadioFilterDefinition([
-        new OptionItem('changedInLast30days', 'Changed In Last 30 Days'),
-      ])
-    );
-
     this.filters = [
       eacDecisionFilter,
       decisionDateFilter,
@@ -331,7 +318,6 @@ export class ProjectListComponent implements OnInit, OnDestroy {
       regionFilter,
       iaacFilter,
       currentPhaseNameFilter,
-      changeInLast30daysFilter,
     ];
   }
 

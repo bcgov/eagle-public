@@ -143,11 +143,7 @@ export class ApiService {
     if (filter !== {}) {
       let safeItem;
       Object.keys(filter).map(key => {
-        let filterValue = filter[key];
-        if (filterValue.split === undefined) {
-          filterValue = filterValue.toString();
-        }
-        filterValue.split(',').map(item => {
+        filter[key].split(',').map(item => {
           if (item.includes('&')) {
             safeItem = this.utils.encodeString(item, true);
           } else {
