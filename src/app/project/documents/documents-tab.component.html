@@ -23,8 +23,7 @@
 
         <lib-table-template-2 *ngIf="tableData.totalListItems > 0"
             [data]="tableData"
-            (messageOut)="onMessageOut($event)"
-            (updateFavourites)="onUpdateFavourites($event)">
+            (messageOut)="onMessageOut($event)">
         </lib-table-template-2>
 
         <div *ngIf="tableData.totalListItems === 0">
