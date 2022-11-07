@@ -93,6 +93,11 @@
                     "name": "SURVEY_URL",
                     "value": "${SURVEY_URL}"
                   }
+                  },
+                  {
+                    "name": "SHOW_SURVEY_BANNER",
+                    "value": "${SHOW_SURVEY_BANNER}"
+                  }
                 ],
                 "resources": {
                   "requests": {
@@ -316,6 +321,12 @@
       "name": "SURVEY_URL",
       "displayName": "Survey URL",
       "description": "Link to public survey",
+      "value": ""
+    }
+    {
+      "name": "SHOW_SURVEY_BANNER",
+      "displayName": "Show survey URL",
+      "description": "Boolean toggle to show or hide survey banner",
       "value": ""
     }
   ]

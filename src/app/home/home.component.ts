@@ -16,6 +16,7 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   public showNotificationProjects = false;
   public surveyUrl: string;
+  public showSurveyBanner: boolean;
 
   constructor(
     private _changeDetectionRef: ChangeDetectorRef,
@@ -36,6 +37,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       this.showNotificationProjects = true;
     }
     this.surveyUrl = this.apiService.surveyUrl;
+    this.showSurveyBanner = this.apiService.showSurveyBanner;
   }
 
   ngOnDestroy() {

@@ -42,20 +42,23 @@
     </div>
   </div>
 </div>
-<div class="survey-banner" *ngIf="surveyUrl">
+<div class="survey-banner" *ngIf="showSurveyBanner">
   <div class="container">
     <div class="container-inner">
       <h5>
-        Can you take a few minutes to help us improve our public engagements?
+        Can you take a few minutes to help us improve how we get input from the
+        public?
       </h5>
       <div class="survey-content">
         <p>
-          We are working on creating a better way to listen and respond to
-          your comments and feedback on EAO projects. Please take a few
-          minutes to answer a short survey about our Modern Engagement Tool.
-          The survey takes 5-7 minutes.
+          We are creating a better way to listen and respond to public feedback
+          during the environmental assessment process. Please fill out our short
+          5-10 minute survey to help us design a better online platform for
+          hearing what you think about projects under review.
         </p>
-        <a class="survey-link" href={{surveyUrl}} target="_blank">Share your thoughts</a>
+        <a class="survey-link" href="{{ surveyUrl }}" target="_blank"
+          >Share your thoughts</a
+        >
       </div>
     </div>
   </div>
