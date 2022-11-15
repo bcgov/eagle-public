@@ -143,11 +143,7 @@ export class ApiService {
     if (filter !== {}) {
       let safeItem;
       Object.keys(filter).map(key => {
-        let filterValue = filter[key];
-        if (filterValue.split === undefined) {
-          filterValue = filterValue.toString();
-        }
-        filterValue.split(',').map(item => {
+        filter[key].split(',').map(item => {
           if (item.includes('&')) {
             safeItem = this.utils.encodeString(item, true);
           } else {
@@ -157,9 +153,8 @@ export class ApiService {
         });
       });
     }
-    // queryString += `&fields=${this.buildValues(fields)}`;
+    queryString += `&fields=${this.buildValues(fields)}`;
     queryString += '&fuzzy=' + fuzzy;
-    queryString = encodeURI(queryString);
     return this.http.get<SearchResults[]>(`${this.apiPath}/${queryString}`, {});
     // if (dataset === 'Project') {
     //   searchResults = searchResults.currentProjectData
@@ -682,23 +677,5 @@ export class ApiService {
     });
     // trim the last |
     return values.replace(/\|$/, '');
-  }
-
-  public async addFavourite(
-    obj: Document | Project,
-    type: string
-  ): Promise<void> {
-    const payload = { objId: obj._id, type: type };
-    const queryString = `favourites`;
-    return this.http
-      .post<void>(`${this.apiPath}/${queryString}`, payload, {})
-      .toPromise();
-  }
-
-  public async removeFavourite(obj: Document | Project): Promise<void> {
-    const queryString = `favourites/${obj._id}`;
-    return this.http
-      .delete<void>(`${this.apiPath}/${queryString}`, {})
-      .toPromise();
   }
 }

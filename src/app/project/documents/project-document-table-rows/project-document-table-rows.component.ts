@@ -4,8 +4,6 @@ import { TableRowComponent } from 'app/shared/components/table-template-2/table-
 import { ConfigService } from 'app/services/config.service';
 import { takeWhile } from 'rxjs/operators';
 import { Router } from '@angular/router';
-import { FavouriteService } from 'app/services/favourite.service';
-import { ApiService } from 'app/services/api';
 
 @Component({
   selector: 'app-document-table-rows',
@@ -21,9 +19,7 @@ export class DocumentTableRowsComponent extends TableRowComponent implements OnI
   constructor(
     private configService: ConfigService,
     private utils: Utils,
-    private router: Router,
-    public apiService: ApiService,
-    public favouriteService: FavouriteService,
+    private router: Router
   ) {
     super();
     let currRoute = this.router.url.split(';')[0];
@@ -58,24 +54,6 @@ export class DocumentTableRowsComponent extends TableRowComponent implements OnI
       console.log('error:', e);
     }
     window.open('/api/public/document/' + item._id + '/download/' + safeName, '_blank');
-  }
-
-  public addToFavourite(item, type: string = 'Document') {
-    this.apiService.addFavourite(item, type)
-      .then(() => {
-        this.updateFavourites.emit({data: {type}, label: 'Update Favourite'});
-      }).catch((err) => {
-        console.log('error adding favourite', err)
-      });
-  }
-
-  public removeFavourite(item) {
-    this.apiService.removeFavourite(item)
-      .then(() => {
-        this.updateFavourites.emit({data: {type: 'Document'}, label: 'Update Favourite'});
-      }).catch((err) => {
-        console.log('error removing favourite', err)
-      });
   }
 
   ngOnDestroy() {
