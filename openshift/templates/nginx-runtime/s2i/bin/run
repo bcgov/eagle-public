@@ -6,6 +6,8 @@ echo "window.localStorage.setItem('from_public_server--remote_api_path', '${REMO
 echo "window.localStorage.setItem('from_public_server--remote_admin_path', '${REMOTE_ADMIN_PATH:-set-in-project-nginx-runtime}');" >> /etc/nginx/publicServerEnvironmentSettings.js;
 echo "window.localStorage.setItem('from_public_server--deployment_env', '${DEPLOYMENT_ENVIRONMENT:-set-in-project-nginx-runtime}');" >> /etc/nginx/publicServerEnvironmentSettings.js;
 echo "window.localStorage.setItem('from_public_server--banner_colour', '${BANNER_COLOUR:-no-banner-colour-set}');" >> /etc/nginx/publicServerEnvironmentSettings.js;
+echo "window.localStorage.setItem('from_public_server--survey_url', '${SURVEY_URL:null}');" >> /etc/nginx/publicServerEnvironmentSettings.js;
+echo "window.localStorage.setItem('from_public_server--show_survey_banner', '${SHOW_SURVEY_BANNER:false}');" >> /etc/nginx/publicServerEnvironmentSettings.js;
 
 if [ -n "$HTTP_BASIC_USERNAME" ] && [ -n "$HTTP_BASIC_PASSWORD" ]; then
     echo "---> Generating .htpasswd file"

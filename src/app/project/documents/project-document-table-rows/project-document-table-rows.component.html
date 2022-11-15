@@ -34,29 +34,4 @@
         (click)="goToItem(rowData)"
         scope="row"
         class="col-2">{{idToList(rowData.projectPhase)}}</td>
-    <td
-        *ngIf="favouriteService.isFavourite(rowData._id)"
-        data-label="Favourite"
-        (click)="removeFavourite(rowData)"
-        class="col-1 d-flex justify-content-center"
-      >
-        <span
-          class="material-icons"
-          tabindex="0"
-          [attr.aria-label]="'Remove favourite button'"
-          >favorite</span
-        >
-      </td>
-      <td
-        *ngIf="!favouriteService.isFavourite(rowData._id)"
-        data-label="Favourite"
-        (click)="addToFavourite(rowData)"
-        class="col-1 d-flex justify-content-center"
-      >
-        <span
-          class="material-icons"
-          tabindex="0"
-          [attr.aria-label]="'Add to favourite button'"
-          >favorite_border</span>
-      </td>
 </tr>

@@ -1,4 +1,4 @@
-@import "~assets/styles/base/base.scss";
+@import '~assets/styles/base/base.scss';
 
 :host {
   @include flex(1 1 auto);
@@ -56,11 +56,11 @@ main {
 }
 
 .btn.inverted {
-    text-transform: none;
+  text-transform: none;
 }
 
 .hero-btn:focus {
-    color: #003d57;
+  color: #003d57;
 }
 
 @media (max-width: 767px) {
@@ -71,5 +71,41 @@ main {
 
   .hero-banner__version {
     margin-top: -0.3rem;
+  }
+}
+
+.survey-banner {
+  background-color: #f2bd46;
+  min-height: 135px;
+
+  .container {
+    padding-top: 0;
+    min-height: auto;
+  }
+
+  .container-inner {
+    padding: 1rem 3rem;
+  }
+  h5 {
+    margin-bottom: 1rem;
+  }
+
+  .survey-content {
+    display: flex;
+    gap: .5rem;
+  }
+
+  .survey-link {
+    background-color: #003366;
+    border: 1px solid #707070;
+    color: #fff;
+    width: 221px;
+    height: 40px;
+    border-radius: 4px;
+    white-space: nowrap;
+    padding: .5rem 1rem;
+    margin-bottom: 1rem;
+    margin-top: auto;
+    text-decoration: none;
   }
 }

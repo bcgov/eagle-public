@@ -14,11 +14,9 @@ import { TableTemplate } from 'app/shared/components/table-template-2/table-temp
 import { IColumnObject, TableObject2 } from 'app/shared/components/table-template-2/table-object-2';
 import { ITableMessage } from 'app/shared/components/table-template-2/table-row-component';
 import { takeWhile } from 'rxjs/operators';
-import { CheckOrRadioFilterDefinition, DateFilterDefinition, FilterObject, FilterType, MultiSelectDefinition, OptionItem } from 'app/shared/components/search-filter-template/filter-object';
+import { DateFilterDefinition, FilterObject, FilterType, MultiSelectDefinition } from 'app/shared/components/search-filter-template/filter-object';
 import { ConfigService } from 'app/services/config.service';
 import { TableService } from 'app/services/table.service';
-import { FavouriteService } from 'app/services/favourite.service';
-import { ApiService } from 'app/services/api';
 
 @Component({
   selector: 'app-documents',
@@ -66,12 +64,6 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
       name: 'Phase',
       value: 'projectPhase',
       width: 'col-2'
-    },
-    {
-      name: 'Favourite',
-      value: '',
-      width: 'col-1',
-      nosort: true,
     }
   ];
 
@@ -89,7 +81,7 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
   private documentTypeArray = [];
   private projectPhaseArray = [];
   public showAdvancedFilters = false;
-  private filtersList = ['milestone', 'documentAuthorType', 'type', 'projectPhase', 'favouritesOnly'];
+  private filtersList = ['milestone', 'documentAuthorType', 'type', 'projectPhase'];
   private dateFiltersList = ['datePostedStart', 'datePostedEnd'];
   private initialLoad = true;
 
@@ -99,9 +91,7 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
     private router: Router,
     private tableTemplateUtils: TableTemplate,
     private tableService: TableService,
-    private configService: ConfigService,
-    public api: ApiService,
-    public favouriteService: FavouriteService
+    private configService: ConfigService
   ) { }
 
   ngOnInit() {
@@ -120,7 +110,6 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
       });
       this.setFilters();
       this.loadingLists = false;
-      this.onUpdateFavourites();
       this._changeDetectionRef.detectChanges();
     });
 
@@ -228,22 +217,12 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
       4
     );
 
-    const favouritesOnlyFilter = new FilterObject(
-      'favouritesOnly',
-      FilterType.Checkbox,
-      'Favourites Only',
-      new CheckOrRadioFilterDefinition([
-        new OptionItem('favouritesOnly', 'Favourites Only'),
-      ])
-    );
-
     this.filters = [
       docDateFilter,
       milestoneFilter,
       documentAuthorTypeFilter,
       documentTypeFilter,
-      projectPhaseFilter,
-      favouritesOnlyFilter
+      projectPhaseFilter
     ];
   }
 
@@ -328,9 +307,5 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.alive = false;
-  }
-
-  onUpdateFavourites() {
-    this.favouriteService.fetchData([{name: 'type', value: 'Document'}], null, 1000);
   }
 }

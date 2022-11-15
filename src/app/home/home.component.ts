@@ -15,6 +15,8 @@ export class HomeComponent implements OnInit, OnDestroy {
   results: News[];
 
   public showNotificationProjects = false;
+  public surveyUrl: string;
+  public showSurveyBanner: boolean;
 
   constructor(
     private _changeDetectionRef: ChangeDetectorRef,
@@ -34,6 +36,8 @@ export class HomeComponent implements OnInit, OnDestroy {
     if (this.apiService.env === 'demo') {
       this.showNotificationProjects = true;
     }
+    this.surveyUrl = this.apiService.surveyUrl;
+    this.showSurveyBanner = this.apiService.showSurveyBanner;
   }
 
   ngOnDestroy() {

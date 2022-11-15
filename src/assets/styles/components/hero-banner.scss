@@ -1,12 +1,9 @@
 @import "~assets/styles/base/base.scss";
 
-.container-inner {
-  padding: 3rem;
-}
 .hero-banner {
   position: relative;
   background-color: rgba($header-bg, 1);
-  background-image: url("/assets/images/epic_coastal_banner-min.jpg");
+  background-image: url("/assets/images/prc-hero-banner-img.jpg");
   background-position: center bottom;
   background-size: 350%;
   box-shadow: 0 0 4rem #00264d inset;
@@ -36,18 +33,13 @@
   }
 }
 
-.hero-btn {
-  background-color: white;
-}
 .hero-banner__content {
-  // padding-top: 2rem;
-  // padding-bottom: 2rem;
-  padding: 1rem;
+  padding-top: 2rem;
+  padding-bottom: 2rem;
   vertical-align: middle;
-  color: #000000;
+  color: #fff;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: rgb(242, 242, 242, 0.8);
 
   h1 {
     margin-bottom: 1.15rem;
@@ -75,7 +67,7 @@
   }
   @media (max-width: 767px) {
     .btn {
-      em {
+      i {
         display: none;
       }
       span {
@@ -97,15 +89,14 @@
 
 .hero-banner__actions-buttons {
   .btn {
-    border: 2px solid #003366;
+    border: 2px solid #e9a603;
     padding: 0.5rem;
     text-transform: none;
     font-size: 1rem;
     font-weight: 900;
     cursor: pointer;
-    color: #003366;
+    color: #e9a603;
     margin-bottom: 10px;
-    background: #FFFFFF;
 
     @media (min-width: 400px) {
       &:first-of-type {
@@ -114,7 +105,7 @@
     }
 
     &:hover {
-      color: #FFFFFF;
+      color: #036;
     }
 
     + span {
@@ -150,9 +141,8 @@
   }
 
   .hero-banner__content {
-    // padding-top: 8rem;
-    // padding-bottom: 6rem;
-    padding: 1rem;
+    padding-top: 8rem;
+    padding-bottom: 6rem;
 
     h1 {
       line-height: 2.8rem;

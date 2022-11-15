@@ -24,7 +24,8 @@ export class ApiService {
   public adminUrl: string;
   public env: string;  // Could be anything per Openshift environment variables  but generally is one of 'local' | 'dev' | 'test' | 'prod' | 'demo' | 'hotfix'
   public bannerColour: string;  // This is the colour of the banner that you see in the header, and could be anything per Openshift environment variables but must correspond with the css in header.component.scss e.g. red | orange | green | yellow | purple
-
+  public surveyUrl: string; // This is the URL pointing to the public survey for feedback.
+  public showSurveyBanner: boolean; // This is the toggle to show or hide the survey banner.
 
   constructor(
     private http: HttpClient,
@@ -40,11 +41,15 @@ export class ApiService {
     const remote_admin_path = window.localStorage.getItem('from_public_server--remote_admin_path');
     const deployment_env = window.localStorage.getItem('from_public_server--deployment_env');
     const banner_colour = window.localStorage.getItem('from_public_server--banner_colour');
+    const survey_url = window.localStorage.getItem('from_public_server--survey_url');
+    const show_survey_banner = window.localStorage.getItem('from_public_server--show_survey_banner');
 
     this.apiPath = (_.isEmpty(remote_api_path)) ? 'http://localhost:3000/api/public' : remote_api_path;
     this.adminUrl = (_.isEmpty(remote_admin_path)) ? 'http://localhost:4200/admin' : remote_admin_path;
     this.env = (_.isEmpty(deployment_env)) ? 'local' : deployment_env;
     this.bannerColour = (_.isEmpty(banner_colour)) ? 'red' : banner_colour;
+    this.surveyUrl = (_.isEmpty(survey_url) || survey_url === null || survey_url === 'null') ? null : survey_url;
+    this.showSurveyBanner = (_.isEmpty(show_survey_banner) || show_survey_banner === null || show_survey_banner === 'null') ? false : true;
   }
 
   handleError(error: any): Observable<any> {
@@ -143,11 +148,7 @@ export class ApiService {
     if (filter !== {}) {
       let safeItem;
       Object.keys(filter).map(key => {
-        let filterValue = filter[key];
-        if (filterValue.split === undefined) {
-          filterValue = filterValue.toString();
-        }
-        filterValue.split(',').map(item => {
+        filter[key].split(',').map(item => {
           if (item.includes('&')) {
             safeItem = this.utils.encodeString(item, true);
           } else {
@@ -157,9 +158,8 @@ export class ApiService {
         });
       });
     }
-    // queryString += `&fields=${this.buildValues(fields)}`;
+    queryString += `&fields=${this.buildValues(fields)}`;
     queryString += '&fuzzy=' + fuzzy;
-    queryString = encodeURI(queryString);
     return this.http.get<SearchResults[]>(`${this.apiPath}/${queryString}`, {});
     // if (dataset === 'Project') {
     //   searchResults = searchResults.currentProjectData
@@ -682,23 +682,5 @@ export class ApiService {
     });
     // trim the last |
     return values.replace(/\|$/, '');
-  }
-
-  public async addFavourite(
-    obj: Document | Project,
-    type: string
-  ): Promise<void> {
-    const payload = { objId: obj._id, type: type };
-    const queryString = `favourites`;
-    return this.http
-      .post<void>(`${this.apiPath}/${queryString}`, payload, {})
-      .toPromise();
-  }
-
-  public async removeFavourite(obj: Document | Project): Promise<void> {
-    const queryString = `favourites/${obj._id}`;
-    return this.http
-      .delete<void>(`${this.apiPath}/${queryString}`, {})
-      .toPromise();
   }
 }

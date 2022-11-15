@@ -55,9 +55,7 @@
         [libTableRow]="item"
         [tableData]="data"
         [messageIn]="messageIn"
-        (messageOut)="onMessageOut($event)"
-        (updateFavourites)="onUpdateFavourites($event)"
-        >
+        (messageOut)="onMessageOut($event)">
         <div [style.margin-bottom.px]="data.options.rowSpacing"></div>
       </ng-container>
     </tbody>
