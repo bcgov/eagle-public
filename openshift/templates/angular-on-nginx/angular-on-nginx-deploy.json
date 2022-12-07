@@ -88,15 +88,6 @@
                   {
                     "name": "REMOTE_ADMIN_PATH",
                     "value": "${REMOTE_ADMIN_PATH}"
-                  },
-                  {
-                    "name": "SURVEY_URL",
-                    "value": "${SURVEY_URL}"
-                  }
-                  },
-                  {
-                    "name": "SHOW_SURVEY_BANNER",
-                    "value": "${SHOW_SURVEY_BANNER}"
                   }
                 ],
                 "resources": {
@@ -316,18 +307,6 @@
       "displayName": "Memory Limit",
       "description": "Maximum amount of memory the Node.js container can use.",
       "value": "100Mi"
-    },
-    {
-      "name": "SURVEY_URL",
-      "displayName": "Survey URL",
-      "description": "Link to public survey",
-      "value": ""
-    }
-    {
-      "name": "SHOW_SURVEY_BANNER",
-      "displayName": "Show survey URL",
-      "description": "Boolean toggle to show or hide survey banner",
-      "value": ""
     }
   ]
 }

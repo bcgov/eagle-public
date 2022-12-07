@@ -1,4 +1,4 @@
-@import '~assets/styles/base/base.scss';
+@import "~assets/styles/base/base.scss";
 
 // Pulls the sidebar to the left for larger screens.
 @media (min-width: 768px) {
@@ -11,20 +11,16 @@
     left: 0;
     margin: 60px 0 60px 0;
     padding: 20px 30px 90px 30px;
+
   }
 }
 
 .side-banner {
   background-color: #003366;
-  transition: margin-left 0.5s;
+  transition: margin-left .5s;
 
   &.closed {
     margin-left: -30% !important;
-  }
-
-  .hero-banner__content {
-    background-color: inherit;
-    color: #fff;
   }
 
   div {
@@ -51,7 +47,7 @@
     text-transform: uppercase;
   }
 
-  .ea-decision {
+.ea-decision {
     color: white;
     font-size: 1rem;
     border: 2px solid white;
@@ -62,45 +58,44 @@
   }
 
   .basic-info {
-    width: 100%;
+      width: 100%;
 
-    .info-block {
-      p,
-      a {
-        font-size: small;
-        color: white;
+      .info-block {
+        p, a {
+            font-size: small;
+            color: white;
+        }
       }
-    }
 
-    @media (min-width: 767px) {
-      display: inline-block;
-    }
-
-    > div {
-      padding: 0 0 0 0;
-      max-width: 100%;
-
-      .hyperlink {
-        text-decoration: underline;
+      @media (min-width: 767px) {
+        display: inline-block;
       }
-    }
 
-    hr {
-      background-color: grey;
-      margin: 30px 0 20px 0;
-    }
+      > div {
+        padding: 0 0 0 0;
+        max-width: 100%;
 
-    label {
-      font-weight: bold;
-      color: #fcba18;
-      font-size: 1rem;
-      padding-bottom: 5px;
-    }
+        .hyperlink {
+          text-decoration: underline;
+        }
+      }
 
-    p {
-      font-size: 1rem;
-      display: block;
-    }
+      hr {
+        background-color: grey ;
+        margin: 30px 0 20px 0;
+      }
+
+      label {
+        font-weight: bold;
+        color: #fcba18;
+        font-size: 1rem;
+        padding-bottom: 5px;
+      }
+
+      p {
+        font-size: 1rem;
+        display: block;
+      }
   }
 
   .legislation-button {
@@ -132,26 +127,26 @@
     color: black;
 
     .container {
-      position: relative;
-      @media (min-width: 400px) {
-        padding-right: 280px;
-      }
+        position: relative;
+        @media (min-width: 400px) {
+            padding-right: 280px;
+        }
     }
 
     .map-container {
-      padding: 10px 0 10px 0;
-      display: block;
-      position: relative;
-      overflow: hidden;
+        padding: 10px 0 10px 0;
+        display: block;
+        position: relative;
+        overflow: hidden;
     }
 
     .map {
-      position: relative;
-      min-height: 250px;
-      height: 250px;
-      outline: none;
-      touch-action: none;
-      background-color: $map-bg;
+        position: relative;
+        min-height: 250px;
+        height: 250px;
+        outline: none;
+        touch-action: none;
+        background-color: $map-bg;
     }
   }
 
@@ -165,10 +160,11 @@
   }
 
   button {
+
     // hide button on mobile
     @media (max-width: 768px) {
-      visibility: hidden;
-      position: relative;
+        visibility: hidden;
+        position: relative;
     }
 
     position: absolute;
@@ -189,6 +185,4 @@
       font-size: 2.2rem;
     }
   }
-
-
 }
