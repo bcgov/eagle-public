@@ -168,14 +168,14 @@ export class SearchComponent implements OnInit, OnDestroy {
           this.loadingTableData = false;
 
           this._changeDetectionRef.detectChanges();
-          let seachInput = document.getElementById('search-input');
-          if (seachInput !== null) {
-            seachInput.scrollIntoView({
+          let searchTitle = document.getElementById('search-title');
+          if (searchTitle !== null) {
+            searchTitle.scrollIntoView({
               behavior: 'smooth',
               block: 'start',
               inline: 'nearest',
             });
-            seachInput = null;
+            searchTitle = null;
           }
         }
       });
