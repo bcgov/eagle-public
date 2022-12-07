@@ -8,6 +8,7 @@ import { SearchParamObject } from 'app/services/search.service';
 import { Constants } from 'app/shared/utils/constants';
 import { TableObject2 } from 'app/shared/components/table-template-2/table-object-2';
 import { TableService } from 'app/services/table.service';
+import * as moment from 'moment-timezone';
 
 @Injectable()
 export class SearchResolver implements Resolve<void> {
@@ -49,7 +50,7 @@ export class SearchResolver implements Resolve<void> {
       { documentSource: 'PROJECT' },
       true,
       '',
-      { ...filtersForAPI, ...dateFiltersForAPI },
+      { ...filtersForAPI, ...dateFiltersForAPI, datePostedStart: moment().add(-10, 'year').format('YYYY-MM-DD') },
       '',
       true
     ));

@@ -3,8 +3,16 @@ import { Router, ActivatedRoute, Params } from '@angular/router';
 import { SearchResults } from 'app/models/search';
 import { ConfigService } from 'app/services/config.service';
 import { TableService } from 'app/services/table.service';
-import { DateFilterDefinition, FilterObject, FilterType, MultiSelectDefinition } from 'app/shared/components/search-filter-template/filter-object';
-import { IColumnObject, TableObject2 } from 'app/shared/components/table-template-2/table-object-2';
+import {
+  DateFilterDefinition,
+  FilterObject,
+  FilterType,
+  MultiSelectDefinition,
+} from 'app/shared/components/search-filter-template/filter-object';
+import {
+  IColumnObject,
+  TableObject2,
+} from 'app/shared/components/table-template-2/table-object-2';
 import { ITableMessage } from 'app/shared/components/table-template-2/table-row-component';
 import { TableTemplate } from 'app/shared/components/table-template-2/table-template';
 import { Constants } from 'app/shared/utils/constants';
@@ -16,8 +24,6 @@ import { DocSearchTableRowsComponent } from './search-documents-table-rows/searc
   templateUrl: './search.component.html',
   styleUrls: ['./search.component.scss'],
 })
-
-
 export class SearchComponent implements OnInit, OnDestroy {
   private tableId = 'search';
   private lists: any[] = [];
@@ -32,27 +38,27 @@ export class SearchComponent implements OnInit, OnDestroy {
     {
       name: 'Document Name',
       value: 'displayName',
-      width: 'col-4'
+      width: 'col-4',
     },
     {
       name: 'Project',
       value: 'project.name',
-      width: 'col-2'
+      width: 'col-2',
     },
     {
       name: 'Date',
       value: 'datePosted',
-      width: 'col-2'
+      width: 'col-2',
     },
     {
       name: 'Type',
       value: 'type',
-      width: 'col-2'
+      width: 'col-2',
     },
     {
       name: 'Milestone',
       value: 'milestone',
-      width: 'col-2'
+      width: 'col-2',
     },
     {
       name: 'Download',
@@ -62,12 +68,17 @@ export class SearchComponent implements OnInit, OnDestroy {
     },
   ];
 
-
   public filters: FilterObject[] = [];
 
-  private legislationFilterGroup = { name: 'legislation', labelPrefix: null, labelPostfix: ' Act Terms' };
+  private legislationFilterGroup = {
+    name: 'legislation',
+    labelPrefix: null,
+    labelPostfix: ' Act Terms',
+  };
 
-  public tableData: TableObject2 = new TableObject2({ component: DocSearchTableRowsComponent });
+  public tableData: TableObject2 = new TableObject2({
+    component: DocSearchTableRowsComponent,
+  });
 
   private alive = true;
 
@@ -76,7 +87,12 @@ export class SearchComponent implements OnInit, OnDestroy {
   private documentTypeArray = [];
   private projectPhaseArray = [];
   public showAdvancedFilters = false;
-  private filtersList = ['milestone', 'documentAuthorType', 'type', 'projectPhase'];
+  private filtersList = [
+    'milestone',
+    'documentAuthorType',
+    'type',
+    'projectPhase',
+  ];
   private dateFiltersList = ['datePostedStart', 'datePostedEnd'];
   private initialLoad = true;
 
@@ -87,63 +103,82 @@ export class SearchComponent implements OnInit, OnDestroy {
     private tableTemplateUtils: TableTemplate,
     private tableService: TableService,
     private configService: ConfigService
-  ) { }
+  ) {}
 
   ngOnInit() {
-    this.configService.lists.pipe(takeWhile(() => this.alive)).subscribe((list) => {
-      this.lists = list;
-      this.lists.forEach(item => {
-        if (item.type === 'label') {
-          this.milestoneArray.push({ ...item });
-        } else if (item.type === 'author') {
-          this.documentAuthorTypeArray.push({ ...item });
-        } else if (item.type === 'doctype') {
-          this.documentTypeArray.push({ ...item });
-        } else if (item.type === 'projectPhase') {
-          this.projectPhaseArray.push({ ...item });
+    this.configService.lists
+      .pipe(takeWhile(() => this.alive))
+      .subscribe((list) => {
+        this.lists = list;
+        this.lists.forEach((item) => {
+          if (item.type === 'label') {
+            this.milestoneArray.push({ ...item });
+          } else if (item.type === 'author') {
+            this.documentAuthorTypeArray.push({ ...item });
+          } else if (item.type === 'doctype') {
+            this.documentTypeArray.push({ ...item });
+          } else if (item.type === 'projectPhase') {
+            this.projectPhaseArray.push({ ...item });
+          }
+        });
+        this.setFilters();
+        this.loadingLists = false;
+        this._changeDetectionRef.detectChanges();
+      });
+
+    this.route.queryParamMap
+      .pipe(takeWhile(() => this.alive))
+      .subscribe((data) => {
+        this.queryParams = { ...data['params'] };
+        // Get params from route, shove into the tableTemplateUtils so that we get a new dataset to work with.
+        this.tableData = this.tableTemplateUtils.updateTableObjectWithUrlParams(
+          data['params'],
+          this.tableData
+        );
+
+        if (
+          this.initialLoad &&
+          (this.queryParams['milestone'] ||
+            this.queryParams['documentAuthorType'] ||
+            this.queryParams['type'] ||
+            this.queryParams['datePostedStart'] ||
+            this.queryParams['datePostedEnd'] ||
+            this.queryParams['projectPhase'])
+        ) {
+          this.showAdvancedFilters = true;
+          this.initialLoad = false;
+        }
+
+        this.loadingTableParams = false;
+        this._changeDetectionRef.detectChanges();
+      });
+
+    this.tableService
+      .getValue(this.tableId)
+      .pipe(takeWhile(() => this.alive))
+      .subscribe((searchResults: SearchResults) => {
+        if (searchResults.data !== 0) {
+          this.tableData.totalListItems = searchResults.totalSearchCount;
+          this.tableData.items = searchResults.data.map((record) => {
+            return { rowData: record };
+          });
+          this.tableData.columns = this.tableColumns;
+          this.tableData.options.showAllPicker = true;
+
+          this.loadingTableData = false;
+
+          this._changeDetectionRef.detectChanges();
+          let seachInput = document.getElementById('search-input');
+          if (seachInput !== null) {
+            seachInput.scrollIntoView({
+              behavior: 'smooth',
+              block: 'start',
+              inline: 'nearest',
+            });
+            seachInput = null;
+          }
         }
       });
-      this.setFilters();
-      this.loadingLists = false;
-      this._changeDetectionRef.detectChanges();
-    });
-
-    this.route.queryParamMap.pipe(takeWhile(() => this.alive)).subscribe(data => {
-      this.queryParams = { ...data['params'] };
-      // Get params from route, shove into the tableTemplateUtils so that we get a new dataset to work with.
-      this.tableData = this.tableTemplateUtils.updateTableObjectWithUrlParams(data['params'], this.tableData);
-
-      if (
-        this.initialLoad && (
-          this.queryParams['milestone'] ||
-          this.queryParams['documentAuthorType'] ||
-          this.queryParams['type'] ||
-          this.queryParams['datePostedStart'] ||
-          this.queryParams['datePostedEnd'] ||
-          this.queryParams['projectPhase'])
-      ) {
-        this.showAdvancedFilters = true;
-        this.initialLoad = false;
-      }
-
-      this.loadingTableParams = false;
-      this._changeDetectionRef.detectChanges();
-    });
-
-    this.tableService.getValue(this.tableId).pipe(takeWhile(() => this.alive)).subscribe((searchResults: SearchResults) => {
-      if (searchResults.data !== 0) {
-        this.tableData.totalListItems = searchResults.totalSearchCount;
-        this.tableData.items = searchResults.data.map(record => {
-          return { rowData: record };
-        });
-        this.tableData.columns = this.tableColumns;
-        this.tableData.options.showAllPicker = true;
-
-        this.loadingTableData = false;
-
-        this._changeDetectionRef.detectChanges();
-      }
-    });
   }
 
   private setFilters() {
@@ -151,7 +186,12 @@ export class SearchComponent implements OnInit, OnDestroy {
       'issuedDate',
       FilterType.DateRange,
       '', // if you include a name, it will add a label to the date range filter.
-      new DateFilterDefinition('datePostedStart', 'Start Date', 'datePostedEnd', 'End Date'),
+      new DateFilterDefinition(
+        'datePostedStart',
+        'Start Date',
+        'datePostedEnd',
+        'End Date'
+      ),
       6
     );
 
@@ -216,7 +256,7 @@ export class SearchComponent implements OnInit, OnDestroy {
       milestoneFilter,
       documentAuthorTypeFilter,
       documentTypeFilter,
-      projectPhaseFilter
+      projectPhaseFilter,
     ];
   }
 
@@ -228,23 +268,31 @@ export class SearchComponent implements OnInit, OnDestroy {
     let params = {};
     if (searchPackage.keywords) {
       params['keywords'] = searchPackage.keywords;
-      this.tableService.data[this.tableId].cachedConfig.keywords = params['keywords'];
+      this.tableService.data[this.tableId].cachedConfig.keywords =
+        params['keywords'];
       // always change sortBy to '-score' if keyword search is directly triggered by user
       if (searchPackage.keywordsChanged) {
         params['sortBy'] = '-score';
-        this.tableService.data[this.tableId].cachedConfig.sortBy = params['sortBy'];
+        this.tableService.data[this.tableId].cachedConfig.sortBy =
+          params['sortBy'];
       }
     } else {
       params['keywords'] = null;
       params['sortBy'] = Constants.tableDefaults.DEFAULT_SORT_BY;
       this.tableService.data[this.tableId].cachedConfig.keywords = '';
-      this.tableService.data[this.tableId].cachedConfig.sortBy = params['sortBy'];
+      this.tableService.data[this.tableId].cachedConfig.sortBy =
+        params['sortBy'];
     }
 
     params['currentPage'] = 1;
-    this.tableService.data[this.tableId].cachedConfig.currentPage = params['currentPage'];
+    this.tableService.data[this.tableId].cachedConfig.currentPage =
+      params['currentPage'];
 
-    let queryFilters = this.tableTemplateUtils.getFiltersFromSearchPackage(searchPackage, this.filtersList, this.dateFiltersList);
+    let queryFilters = this.tableTemplateUtils.getFiltersFromSearchPackage(
+      searchPackage,
+      this.filtersList,
+      this.dateFiltersList
+    );
     this.tableService.data[this.tableId].cachedConfig.filters = queryFilters;
 
     this.submit(params, queryFilters);
@@ -259,11 +307,13 @@ export class SearchComponent implements OnInit, OnDestroy {
         } else {
           params['sortBy'] = '+' + msg.data;
         }
-        this.tableService.data[this.tableId].cachedConfig.sortBy = params['sortBy'];
+        this.tableService.data[this.tableId].cachedConfig.sortBy =
+          params['sortBy'];
         break;
       case 'pageNum':
         params['currentPage'] = msg.data;
-        this.tableService.data[this.tableId].cachedConfig.currentPage = params['currentPage'];
+        this.tableService.data[this.tableId].cachedConfig.currentPage =
+          params['currentPage'];
         break;
       case 'pageSize':
         params['pageSize'] = msg.data.value;
@@ -271,8 +321,10 @@ export class SearchComponent implements OnInit, OnDestroy {
           this.loadingTableData = true;
         }
         params['currentPage'] = 1;
-        this.tableService.data[this.tableId].cachedConfig.pageSize = params['pageSize'];
-        this.tableService.data[this.tableId].cachedConfig.currentPage = params['currentPage'];
+        this.tableService.data[this.tableId].cachedConfig.pageSize =
+          params['pageSize'];
+        this.tableService.data[this.tableId].cachedConfig.currentPage =
+          params['currentPage'];
         break;
       default:
         break;
@@ -281,13 +333,11 @@ export class SearchComponent implements OnInit, OnDestroy {
   }
 
   submit(params, filters = null) {
-    this.router.navigate(
-      [],
-      {
-        queryParams: filters ? { ...params, ...filters } : params,
-        relativeTo: this.route,
-        queryParamsHandling: 'merge'
-      });
+    this.router.navigate([], {
+      queryParams: filters ? { ...params, ...filters } : params,
+      relativeTo: this.route,
+      queryParamsHandling: 'merge',
+    });
     this.loadingTableData = true;
     this.tableService.refreshData(this.tableId);
   }
