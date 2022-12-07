@@ -211,9 +211,9 @@ export class ProjectListComponent implements OnInit, OnDestroy {
 
   private setFilters() {
     const projectTypeFilter = new FilterObject(
-      "type",
+      'type',
       FilterType.MultiSelect,
-      "Project Type",
+      'Project Type',
       new MultiSelectDefinition(
         Constants.TEMPORARY_PROJECT_TYPE,
         [],
@@ -225,9 +225,9 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     );
 
     const eacDecisionFilter = new FilterObject(
-      "eacDecision",
+      'eacDecision',
       FilterType.MultiSelect,
-      "EA Decision",
+      'EA Decision',
       new MultiSelectDefinition(
         this.eaDecisionArray,
         [],
@@ -239,7 +239,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     );
 
     const decisionDateFilter = new FilterObject(
-      "issuedDate",
+      'issuedDate',
       FilterType.DateRange,
       '', // if you include a name, it will add a label to the date range filter.
       new DateFilterDefinition(
@@ -252,7 +252,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     );
 
     const pcpFilter = new FilterObject(
-      "pcp",
+      'pcp',
       FilterType.MultiSelect,
       'Public Comment Period',
       new MultiSelectDefinition(Constants.PCP_COLLECTION, [], null, null, true),
@@ -260,7 +260,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     );
 
     const proponentFilter = new FilterObject(
-      "proponent",
+      'proponent',
       FilterType.MultiSelect,
       'Proponent',
       new MultiSelectDefinition(this.proponents, [], null, null, true),
@@ -268,9 +268,9 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     );
 
     const regionFilter = new FilterObject(
-      "region",
+      'region',
       FilterType.MultiSelect,
-      "Region",
+      'Region',
       new MultiSelectDefinition(
         Constants.REGIONS_COLLECTION,
         [],
@@ -282,9 +282,9 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     );
 
     const iaacFilter = new FilterObject(
-      "CEAAInvolvement",
+      'CEAAInvolvement',
       FilterType.MultiSelect,
-      "IAAC Involvement",
+      'IAAC Involvement',
       new MultiSelectDefinition(
         this.iaacArray,
         [],
@@ -296,9 +296,9 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     );
 
     const currentPhaseNameFilter = new FilterObject(
-      "currentPhaseName",
+      'currentPhaseName',
       FilterType.MultiSelect,
-      "Project Phase",
+      'Project Phase',
       new MultiSelectDefinition(
         this.phaseArray,
         [],
@@ -322,7 +322,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
   }
 
   navSearchHelp() {
-    this.router.navigate(["/search-help"]);
+    this.router.navigate(['/search-help']);
   }
 
   executeSearch(searchPackage) {
@@ -362,11 +362,11 @@ export class ProjectListComponent implements OnInit, OnDestroy {
   onMessageOut(msg: ITableMessage) {
     let params = {};
     switch (msg.label) {
-      case "columnSort":
-        if (this.tableData.sortBy.charAt(0) === "+") {
-          params["sortBy"] = "-" + msg.data;
+      case 'columnSort':
+        if (this.tableData.sortBy.charAt(0) === '+') {
+          params['sortBy'] = '-' + msg.data;
         } else {
-          params["sortBy"] = "+" + msg.data;
+          params['sortBy'] = '+' + msg.data;
         }
         this.tableService.data[this.tableId].cachedConfig.sortBy =
           params['sortBy'];
@@ -376,9 +376,9 @@ export class ProjectListComponent implements OnInit, OnDestroy {
         this.tableService.data[this.tableId].cachedConfig.currentPage =
           params['currentPage'];
         break;
-      case "pageSize":
-        params["pageSize"] = msg.data.value;
-        if (params["pageSize"] === this.tableData.totalListItems) {
+      case 'pageSize':
+        params['pageSize'] = msg.data.value;
+        if (params['pageSize'] === this.tableData.totalListItems) {
           this.loadingTableData = true;
         }
         params['currentPage'] = 1;

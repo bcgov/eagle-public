@@ -26,8 +26,8 @@ import { CommentPeriodService } from 'app/services/commentperiod.service';
 })
 export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
   private alive = true;
-  private filtersList = ["type", "region", "pcp", "decision"];
-  private tableId = "notificationProject";
+  private filtersList = ['type', 'region', 'pcp', 'decision'];
+  private tableId = 'notificationProject';
 
   public tableColumns: IColumnObject[] = [
     {
@@ -127,9 +127,9 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
 
   private setFilters() {
     const typeFilter = new FilterObject(
-      "type",
+      'type',
       FilterType.MultiSelect,
-      "Project Type",
+      'Project Type',
       new MultiSelectDefinition(
         Constants.TEMPORARY_PROJECT_TYPE,
         [],
@@ -141,9 +141,9 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
     );
 
     const regionFilter = new FilterObject(
-      "region",
+      'region',
       FilterType.MultiSelect,
-      "Region",
+      'Region',
       new MultiSelectDefinition(
         Constants.REGIONS_COLLECTION,
         [],
@@ -155,7 +155,7 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
     );
 
     const pcpFilter = new FilterObject(
-      "pcp",
+      'pcp',
       FilterType.MultiSelect,
       'Public Comment Period',
       new MultiSelectDefinition(Constants.PCP_COLLECTION, [], null, null, true),
@@ -163,9 +163,9 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
     );
 
     const decisionFilter = new FilterObject(
-      "decision",
+      'decision',
       FilterType.MultiSelect,
-      "Notification Decision",
+      'Notification Decision',
       new MultiSelectDefinition(
         Constants.PROJECT_NOTIFICATION_DECISIONS,
         [],
@@ -180,7 +180,7 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
   }
 
   navSearchHelp() {
-    this.router.navigate(["/search-help"]);
+    this.router.navigate(['/search-help']);
   }
 
   executeSearch(searchPackage) {
@@ -224,9 +224,9 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
         this.tableService.data[this.tableId].cachedConfig.currentPage =
           params['currentPage'];
         break;
-      case "pageSize":
-        params["pageSize"] = msg.data.value;
-        if (params["pageSize"] === this.tableData.totalListItems) {
+      case 'pageSize':
+        params['pageSize'] = msg.data.value;
+        if (params['pageSize'] === this.tableData.totalListItems) {
           this.loadingTableData = true;
         }
         params['currentPage'] = 1;

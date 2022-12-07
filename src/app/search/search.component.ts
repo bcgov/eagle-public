@@ -20,12 +20,12 @@ import { takeWhile } from 'rxjs/operators';
 import { DocSearchTableRowsComponent } from './search-documents-table-rows/search-document-table-rows.component';
 
 @Component({
-  selector: "app-search",
-  templateUrl: "./search.component.html",
-  styleUrls: ["./search.component.scss"],
+  selector: 'app-search',
+  templateUrl: './search.component.html',
+  styleUrls: ['./search.component.scss'],
 })
 export class SearchComponent implements OnInit, OnDestroy {
-  private tableId = "search";
+  private tableId = 'search';
   private lists: any[] = [];
 
   public queryParams: Params;
@@ -61,9 +61,9 @@ export class SearchComponent implements OnInit, OnDestroy {
       width: 'col-2',
     },
     {
-      name: "Download",
-      value: "",
-      width: "col-1",
+      name: 'Download',
+      value: '',
+      width: 'col-1',
       nosort: true,
     },
   ];
@@ -183,7 +183,7 @@ export class SearchComponent implements OnInit, OnDestroy {
 
   private setFilters() {
     const docDateFilter = new FilterObject(
-      "issuedDate",
+      'issuedDate',
       FilterType.DateRange,
       '', // if you include a name, it will add a label to the date range filter.
       new DateFilterDefinition(
@@ -196,9 +196,9 @@ export class SearchComponent implements OnInit, OnDestroy {
     );
 
     const milestoneFilter = new FilterObject(
-      "milestone",
+      'milestone',
       FilterType.MultiSelect,
-      "Milestone",
+      'Milestone',
       new MultiSelectDefinition(
         this.milestoneArray,
         [],
@@ -210,9 +210,9 @@ export class SearchComponent implements OnInit, OnDestroy {
     );
 
     const documentAuthorTypeFilter = new FilterObject(
-      "documentAuthorType",
+      'documentAuthorType',
       FilterType.MultiSelect,
-      "Document Author",
+      'Document Author',
       new MultiSelectDefinition(
         this.documentAuthorTypeArray,
         [],
@@ -224,9 +224,9 @@ export class SearchComponent implements OnInit, OnDestroy {
     );
 
     const documentTypeFilter = new FilterObject(
-      "type",
+      'type',
       FilterType.MultiSelect,
-      "Document Type",
+      'Document Type',
       new MultiSelectDefinition(
         this.documentTypeArray,
         [],
@@ -238,9 +238,9 @@ export class SearchComponent implements OnInit, OnDestroy {
     );
 
     const projectPhaseFilter = new FilterObject(
-      "projectPhase",
+      'projectPhase',
       FilterType.MultiSelect,
-      "Project Phase",
+      'Project Phase',
       new MultiSelectDefinition(
         this.projectPhaseArray,
         [],
@@ -261,7 +261,7 @@ export class SearchComponent implements OnInit, OnDestroy {
   }
 
   navSearchHelp() {
-    this.router.navigate(["/search-help"]);
+    this.router.navigate(['/search-help']);
   }
 
   executeSearch(searchPackage) {
@@ -301,11 +301,11 @@ export class SearchComponent implements OnInit, OnDestroy {
   onMessageOut(msg: ITableMessage) {
     let params = {};
     switch (msg.label) {
-      case "columnSort":
-        if (this.tableData.sortBy.charAt(0) === "+") {
-          params["sortBy"] = "-" + msg.data;
+      case 'columnSort':
+        if (this.tableData.sortBy.charAt(0) === '+') {
+          params['sortBy'] = '-' + msg.data;
         } else {
-          params["sortBy"] = "+" + msg.data;
+          params['sortBy'] = '+' + msg.data;
         }
         this.tableService.data[this.tableId].cachedConfig.sortBy =
           params['sortBy'];
@@ -315,9 +315,9 @@ export class SearchComponent implements OnInit, OnDestroy {
         this.tableService.data[this.tableId].cachedConfig.currentPage =
           params['currentPage'];
         break;
-      case "pageSize":
-        params["pageSize"] = msg.data.value;
-        if (params["pageSize"] === this.tableData.totalListItems) {
+      case 'pageSize':
+        params['pageSize'] = msg.data.value;
+        if (params['pageSize'] === this.tableData.totalListItems) {
           this.loadingTableData = true;
         }
         params['currentPage'] = 1;
