@@ -13,28 +13,15 @@
         </span>
         <div class="hero-banner__actions">
           <div class="hero-banner__actions-buttons">
-            <a
-              class="btn slide-l-btn hero-btn inverted"
-              href="/projects"
-              [routerLink]="['/projects']"
-            >
-              <i class="material-icons">list</i
-              ><span>Find Environmental Assessment Projects</span>
+            <a class="btn slide-l-btn hero-btn inverted" href="/projects" [routerLink]="['/projects']">
+              <i class="material-icons">list</i><span>Find Environmental Assessment Projects</span>
             </a>
-            <a
-              class="btn slide-l-btn hero-btn inverted"
-              href="/projects-list"
-              [routerLink]="['/projects-list']"
-            >
+            <a class="btn slide-l-btn hero-btn inverted" href="/projects-list" [routerLink]="['/projects-list']">
               <i class="material-icons">list</i><span>List of Projects</span>
             </a>
-            <a
-              class="btn slide-l-btn hero-btn inverted ml-4"
-              href="/project-notifications"
-              [routerLink]="['/project-notifications']"
-            >
-              <i class="material-icons">list</i
-              ><span>Project Notifications</span>
+            <a class="btn slide-l-btn hero-btn inverted ml-4" href="/project-notifications"
+              [routerLink]="['/project-notifications']">
+              <i class="material-icons">list</i><span>Project Notifications</span>
             </a>
           </div>
         </div>
@@ -42,7 +29,7 @@
     </div>
   </div>
 </div>
-<div class="survey-banner"  *ngIf="showSurveyBanner">
+<div class="survey-banner" *ngIf="showSurveyBanner">
   <div class="container">
     <div class="container-inner">
       <h5>
@@ -56,14 +43,14 @@
           5-10 minute survey to help us design a better online platform for
           hearing what you think about projects under review.
         </p>
-        <a class="survey-link" href="{{ surveyUrl }}" target="_blank"
-          >Share your thoughts</a
-        >
+        <a class="survey-link" href="{{ surveyUrl }}" target="_blank">Share your thoughts</a>
       </div>
     </div>
   </div>
 </div>
-
+<div class="engagement-banner">
+  <engagement-tiles-wc></engagement-tiles-wc>
+</div>
 <main>
   <div id="anchor-point">
     <section class="container">
@@ -78,67 +65,42 @@
                     <span class="font-weight-bold" *ngIf="item.project">
                       {{ item.project?.name }}
                     </span>
-                    <span
-                      *ngIf="item.notificationName"
-                      class="font-weight-bold"
-                      >{{ item.notificationName }}</span
-                    >
+                    <span *ngIf="item.notificationName" class="font-weight-bold">{{ item.notificationName }}</span>
                     <span class="home-news-feed__headline">{{
                       item.headline
-                    }}</span>
+                      }}</span>
                   </h3>
                   <span class="title-container__date">{{
                     item.dateAdded | date: 'longDate'
-                  }}</span>
+                    }}</span>
                 </div>
                 <div>
-                  <div
-                    class="activity-content"
-                    [innerHTML]="item.content"
-                  ></div>
+                  <div class="activity-content" [innerHTML]="item.content"></div>
                 </div>
                 <div>
-                  <a
-                    class="btn btn-sm content-btn-alt"
-                    title="View more information about {{ item.project.name }}"
-                    [routerLink]="['/p', item.project?._id]"
-                    *ngIf="item.project?._id"
-                  >
+                  <a class="btn btn-sm content-btn-alt" title="View more information about {{ item.project.name }}"
+                    [routerLink]="['/p', item.project?._id]" *ngIf="item.project?._id">
                     Project Info
                   </a>
-                  <a
-                    *ngIf="item?.pcp && item?.type === 'Public Comment Period'"
-                    class="btn btn-sm content-btn-alt"
-                    title="View this Public Comment Period"
-                    [routerLink]="['/p', item.project?._id, 'cp', item.pcp]"
-                  >
+                  <a *ngIf="item?.pcp && item?.type === 'Public Comment Period'" class="btn btn-sm content-btn-alt"
+                    title="View this Public Comment Period" [routerLink]="['/p', item.project?._id, 'cp', item.pcp]">
                     Submit/ View Comments
                   </a>
-                  <a
-                    *ngIf="
+                  <a *ngIf="
                       item.documentUrl &&
                       !item?.documentUrl.includes('docs?folder') &&
                       !item?.notificationName
-                    "
-                    class="btn btn-sm content-btn-alt"
-                    title="View more information"
-                    href="{{ item.documentUrl }}"
-                    target="_blank"
-                  >
+                    " class="btn btn-sm content-btn-alt" title="View more information" href="{{ item.documentUrl }}"
+                    target="_blank">
                     View Document(s)
                   </a>
-                  <a
-                    *ngIf="
+                  <a *ngIf="
                       item.documentUrl &&
                       item?.notificationName &&
                       item?.type ===
                         'Project Notification Public Comment Period'
-                    "
-                    class="btn btn-sm content-btn-alt"
-                    title="View more information"
-                    href="{{ item.documentUrl }}"
-                    target="_blank"
-                  >
+                    " class="btn btn-sm content-btn-alt" title="View more information" href="{{ item.documentUrl }}"
+                    target="_blank">
                     View Project Notification Public Comment Period
                   </a>
                 </div>
@@ -147,11 +109,7 @@
           </tbody>
         </table>
         <div class="news-block-more">
-          <a
-            class="btn slide-r-btn content-btn-alt"
-            href="/news"
-            [routerLink]="['/news']"
-          >
+          <a class="btn slide-r-btn content-btn-alt" href="/news" [routerLink]="['/news']">
             <span>View All Activities & Updates</span>
             <i class="material-icons">&#xE5C8;</i>
           </a>
@@ -175,13 +133,8 @@
                 Learn about the legislation and regulations that apply to
                 environmental assessments in the province of British Columbia.
               </p>
-              <a
-                class="btn btn-sm inverted"
-                href="/legislation"
-                [routerLink]="['/legislation']"
-                aria-label="Learn more about legislation"
-                >Learn More</a
-              >
+              <a class="btn btn-sm inverted" href="/legislation" [routerLink]="['/legislation']"
+                aria-label="Learn more about legislation">Learn More</a>
             </div>
           </div>
           <div class="col-md-4">
@@ -192,13 +145,8 @@
                 neutrally administers a process that holds all participants
                 accountable.
               </p>
-              <a
-                class="btn btn-sm inverted"
-                href="/process"
-                [routerLink]="['/process']"
-                aria-label="Learn more about process and procedures"
-                >Learn More</a
-              >
+              <a class="btn btn-sm inverted" href="/process" [routerLink]="['/process']"
+                aria-label="Learn more about process and procedures">Learn More</a>
             </div>
           </div>
           <div tabindex="0" class="col-md-4">
@@ -208,13 +156,8 @@
                 Learn about how we collaborate with other agencies to coordinate
                 oversight of environmental assessment projects.
               </p>
-              <a
-                class="btn btn-sm inverted"
-                href="/compliance-oversight"
-                [routerLink]="['/compliance-oversight']"
-                aria-label="Learn more about compliance oversight"
-                >Learn More</a
-              >
+              <a class="btn btn-sm inverted" href="/compliance-oversight" [routerLink]="['/compliance-oversight']"
+                aria-label="Learn more about compliance oversight">Learn More</a>
             </div>
           </div>
         </div>

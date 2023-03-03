@@ -47,7 +47,8 @@
               "node_modules/moment/min/moment.min.js",
               "node_modules/leaflet/dist/leaflet.js",
               "node_modules/leaflet.markercluster/dist/leaflet.markercluster.js",
-              "src/assets/js/utils.js"
+              "src/assets/js/utils.js",
+              "src/assets/js/met-wc/met-web-component.0.1.0.js"
             ]
           },
           "configurations": {
