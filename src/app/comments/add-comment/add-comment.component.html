@@ -225,7 +225,7 @@
           <div class="form-group">
             <label class="control-label" >Location *</label>
             <input required class="form-control" type="text" name="locationInput" placeholder="IE: City, Province, etc."
-              id="locationInput" [(ngModel)]="locationInput" autofocus />
+              id="locationInput" maxlength="50" [(ngModel)]="locationInput" autofocus />
           </div>
           <div class="form-group">
             <label class="control-label" >Your Comment Submission*</label>
@@ -270,7 +270,7 @@
           </div>
           <div class="form-group">            
             <div class="form-control-container">
-              <input required class="form-control" type="text" name="nameInput" id="nameInput" [(ngModel)]="contactName" autofocus [disabled]="!makePublic"/>
+              <input required class="form-control" type="text" name="nameInput" maxlength="50" id="nameInput" [(ngModel)]="contactName" autofocus [disabled]="!makePublic"/>
             </div>
           </div>
           <div class="form-group" *ngIf="project.projectCAC && project.projectCACPublished">
