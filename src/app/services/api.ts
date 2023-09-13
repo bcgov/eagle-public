@@ -33,7 +33,7 @@ export class ApiService {
   ) {
     // const currentUser = JSON.parse(window.localStorage.getItem('currentUser'));
     // this.token = currentUser && currentUser.token;
-    this.isMS = window.navigator.msSaveOrOpenBlob ? true : false;
+    this.isMS = !!window.navigator.msSaveOrOpenBlob;
 
     // The following items are loaded by a file that is only present on cluster builds.
     // Locally, this will be empty and local defaults will be used.
@@ -49,7 +49,7 @@ export class ApiService {
     this.env = (_.isEmpty(deployment_env)) ? 'local' : deployment_env;
     this.bannerColour = (_.isEmpty(banner_colour)) ? 'red' : banner_colour;
     this.surveyUrl = (_.isEmpty(survey_url) || survey_url === null || survey_url === 'null') ? null : survey_url;
-    this.showSurveyBanner = (_.isEmpty(show_survey_banner) || show_survey_banner === null || show_survey_banner === 'null') ? false : true;
+    this.showSurveyBanner = !_.isEmpty(show_survey_banner) && !!show_survey_banner && show_survey_banner !== 'null';
   }
 
   handleError(error: any): Observable<any> {
@@ -138,26 +138,22 @@ export class ApiService {
     if (sortBy !== null) { queryString += `&sortBy=${sortBy}`; }
     if (secondarySort !== null) { queryString += `&sortBy=${secondarySort}`; }
     if (populate !== null) { queryString += `&populate=${populate}`; }
-    if (queryModifier !== {}) {
-      Object.keys(queryModifier).forEach(key => {
-        queryModifier[key].split(',').forEach(item => {
-          queryString += `&and[${key}]=${item}`;
-        });
+    Object.keys(queryModifier).forEach(key => {
+      queryModifier[key].split(',').forEach(item => {
+        queryString += `&and[${key}]=${item}`;
       });
-    }
-    if (filter !== {}) {
-      let safeItem;
-      Object.keys(filter).map(key => {
-        filter[key].split(',').map(item => {
-          if (item.includes('&')) {
-            safeItem = this.utils.encodeString(item, true);
-          } else {
-            safeItem = item;
-          }
-          queryString += `&and[${key}]=${safeItem}`;
-        });
+    });
+    let safeItem;
+    Object.keys(filter).map(key => {
+      filter[key].split(',').map(item => {
+        if (item.includes('&')) {
+          safeItem = this.utils.encodeString(item, true);
+        } else {
+          safeItem = item;
+        }
+        queryString += `&and[${key}]=${safeItem}`;
       });
-    }
+    });
     queryString += `&fields=${this.buildValues(fields)}`;
     queryString += '&fuzzy=' + fuzzy;
     return this.http.get<SearchResults[]>(`${this.apiPath}/${queryString}`, {});
@@ -468,13 +464,11 @@ export class ApiService {
       'project',
       'dateStarted',
       'dateCompleted',
-      'instructions'
+      'instructions',
+      'isMet',
+      'metURL',
     ];
-    // TODO: May want to pass this as a parameter in the future.
-    const sort = '&sortBy=-dateStarted';
-
-    let queryString = 'commentperiod?project=' + projId + '&fields=' + this.buildValues(fields) + '&';
-    if (sort !== null) { queryString += `sortBy=${sort}&`; }
+    const queryString = `commentperiod?project=${projId}&sortBy=-dateStarted&fields=${this.buildValues(fields)}`;
     return this.http.get<Object>(`${this.apiPath}/${queryString}`, {});
   }
 

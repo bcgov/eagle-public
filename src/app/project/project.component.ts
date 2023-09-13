@@ -362,7 +362,11 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   public goToViewComments() {
-    this.router.navigate(['/p', this.project._id, 'cp', this.project.commentPeriodForBanner._id, 'details']);
+    if (this.project.commentPeriodForBanner.isMet && this.project.commentPeriodForBanner.metURL) {
+      window.open(this.project.commentPeriodForBanner.metURL, '_blank');
+    } else {
+      this.router.navigate(['/p', this.project._id, 'cp', this.project.commentPeriodForBanner._id, 'details']);
+    }
   }
 
   public handleSidebarToggle(event) {
