@@ -25,11 +25,11 @@ export class CommentPeriod {
   informationLabel: String;
   instructions: String;
   isClassified: Boolean;
-  isMet: Boolean;
+  isMet: boolean;
   isPublished: Boolean;
   isResolved: Boolean;
   isVetted: String;
-  metURL: String;
+  metURL: string;
   milestone: String;
   openCommentPeriod: String;
   openHouses: String;

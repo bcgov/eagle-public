@@ -56,7 +56,7 @@
           5-10 minute survey to help us design a better online platform for
           hearing what you think about projects under review.
         </p>
-        <a class="survey-link" href="{{ surveyUrl }}" target="_blank"
+        <a class="survey-link" href="{{ surveyUrl }}" rel="noopener" target="_blank"
           >Share your thoughts</a
         >
       </div>
@@ -127,6 +127,7 @@
                     "
                     class="btn btn-sm content-btn-alt"
                     href="{{ item.pcp.metURL }}"
+                    rel="noopener"
                     target="_blank"
                     title="View this Public Comment Period"
                   >
@@ -139,9 +140,10 @@
                       !item?.notificationName
                     "
                     class="btn btn-sm content-btn-alt"
-                    title="View more information"
                     href="{{ item.documentUrl }}"
+                    rel="noopener"
                     target="_blank"
+                    title="View more information"
                   >
                     View Document(s)
                   </a>
@@ -153,9 +155,10 @@
                         'Project Notification Public Comment Period'
                     "
                     class="btn btn-sm content-btn-alt"
-                    title="View more information"
                     href="{{ item.documentUrl }}"
+                    rel="noopener"
                     target="_blank"
+                    title="View more information"
                   >
                     View Project Notification Public Comment Period
                   </a>
