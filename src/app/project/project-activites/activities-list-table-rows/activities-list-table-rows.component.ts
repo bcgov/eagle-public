@@ -14,8 +14,12 @@ export class ActivitiesListTableRowsComponent extends TableRowComponent {
     super();
   }
 
-  goToItem(item) {
-    this.router.navigate(['p', item.project._id, 'cp', item.pcp]);
+  goToCP(activity) {
+    if (activity.pcp.isMet && activity.pcp.metURL) {
+      window.open(activity.pcp.metURL, '_blank');
+    } else {
+      this.router.navigate(['p', activity.project._id, 'cp', activity.pcp._id]);
+    }
   }
 
   isSingleDoc(item) {

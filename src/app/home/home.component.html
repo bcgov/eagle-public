@@ -107,10 +107,28 @@
                     Project Info
                   </a>
                   <a
-                    *ngIf="item?.pcp && item?.type === 'Public Comment Period'"
+                    *ngIf="
+                      item.pcp &&
+                      item.type === 'Public Comment Period' &&
+                      (!item.pcp.isMet || !item.pcp.metURL)
+                    "
                     class="btn btn-sm content-btn-alt"
                     title="View this Public Comment Period"
-                    [routerLink]="['/p', item.project?._id, 'cp', item.pcp]"
+                    [routerLink]="['/p', item.project?._id, 'cp', item.pcp._id]"
+                  >
+                    Submit/ View Comments
+                  </a>
+                  <a
+                    *ngIf="
+                      item.pcp &&
+                      item.type === 'Public Comment Period' &&
+                      item.pcp.isMet &&
+                      item.pcp.metURL
+                    "
+                    class="btn btn-sm content-btn-alt"
+                    href="{{ item.pcp.metURL }}"
+                    target="_blank"
+                    title="View this Public Comment Period"
                   >
                     Submit/ View Comments
                   </a>

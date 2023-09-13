@@ -468,13 +468,11 @@ export class ApiService {
       'project',
       'dateStarted',
       'dateCompleted',
-      'instructions'
+      'instructions',
+      'isMet',
+      'metURL',
     ];
-    // TODO: May want to pass this as a parameter in the future.
-    const sort = '&sortBy=-dateStarted';
-
-    let queryString = 'commentperiod?project=' + projId + '&fields=' + this.buildValues(fields) + '&';
-    if (sort !== null) { queryString += `sortBy=${sort}&`; }
+    const queryString = `commentperiod?project=${projId}&sortBy=-dateStarted&fields=${this.buildValues(fields)}`;
     return this.http.get<Object>(`${this.apiPath}/${queryString}`, {});
   }
 
