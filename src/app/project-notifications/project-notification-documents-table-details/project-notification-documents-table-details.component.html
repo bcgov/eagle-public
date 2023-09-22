@@ -5,17 +5,53 @@
             <h4>{{(rowData.name.toUpperCase() || '-')}}</h4>
         </div>
         <div class="col-md-12 col-lg-6 text-lg-right">
-            <a *ngIf="rowData.commentPeriod?.commentPeriodStatus === 'Open'"
+            <a *ngIf="
+                    rowData.commentPeriod?.commentPeriodStatus === 'Open' &&
+                    (!rowData.commentPeriod?.isMet || !rowData.commentPeriod?.metURL)
+                "
                 class="btn btn-primary view-pcp-btn"
                 title="View this Public Comment Period"
-                [routerLink]="['/pn', rowData._id, 'cp', rowData.commentPeriod?._id]">
+                [routerLink]="['/pn', rowData._id, 'cp', rowData.commentPeriod?._id]"
+            >
                 <div class="pcp-indicator pcp-indicator-active"></div>
                 Open Comment Period - View/Submit
             </a>
-            <a *ngIf="rowData.commentPeriod?.commentPeriodStatus === 'Closed'"
+            <a *ngIf="
+                    rowData.commentPeriod?.commentPeriodStatus === 'Open' &&
+                    rowData.commentPeriod?.isMet &&
+                    !rowData.commentPeriod?.metURL
+                "
+                class="btn btn-primary view-pcp-btn"
+                href="{{ rowData.commentPeriod.metURL }}"
+                rel="noopener"
+                target="_blank"
+                title="View this Public Comment Period"
+            >
+                <div class="pcp-indicator pcp-indicator-active"></div>
+                Open Comment Period - View/Submit
+            </a>
+            <a *ngIf="
+                    rowData.commentPeriod?.commentPeriodStatus === 'Closed' &&
+                    (!rowData.commentPeriod?.isMet || !rowData.commentPeriod?.metURL)
+                "
                 class="btn btn-primary view-pcp-btn"
                 title="View this Public Comment Period"
-                [routerLink]="['/pn', rowData._id, 'cp', rowData.commentPeriod?._id]">
+                [routerLink]="['/pn', rowData._id, 'cp', rowData.commentPeriod?._id]"
+            >
+                <div class="pcp-indicator pcp-indicator-inactive"></div>
+                View Completed Comment Period
+            </a>
+            <a *ngIf="
+                    rowData.commentPeriod?.commentPeriodStatus === 'Closed' &&
+                    rowData.commentPeriod?.isMet &&
+                    !rowData.commentPeriod?.metURL
+                "
+                class="btn btn-primary view-pcp-btn"
+                href="{{ rowData.commentPeriod.metURL }}"
+                rel="noopener"
+                target="_blank"
+                title="View this Public Comment Period"
+            >
                 <div class="pcp-indicator pcp-indicator-inactive"></div>
                 View Completed Comment Period
             </a>

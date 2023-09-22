@@ -16,7 +16,11 @@ export class NewsListTableRowsComponent extends TableRowComponent {
 
 
     goToCP(activity) {
-      this.router.navigate(['p', activity.project._id, 'cp', activity.pcp]);
+      if (activity.pcp.isMet && activity.pcp.metURL) {
+        window.open(activity.pcp.metURL, '_blank');
+      } else {
+        this.router.navigate(['p', activity.project._id, 'cp', activity.pcp._id]);
+      }
     }
 
     isSingleDoc(item) {

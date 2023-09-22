@@ -58,7 +58,11 @@ export class CommentingTabComponent implements OnInit, OnDestroy {
   }
 
   goToCP(commentPeriod) {
-    this.router.navigate(['p', this.currentProject._id, 'cp', commentPeriod._id]);
+    if (commentPeriod.isMet && commentPeriod.metURL) {
+      window.open(commentPeriod.metURL, '_blank');
+    } else {
+      this.router.navigate(['p', this.currentProject._id, 'cp', commentPeriod._id]);
+    }
   }
 
   getCommentPeriods(projectId) {

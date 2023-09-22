@@ -35,7 +35,7 @@
       <section class="m-b-0 mt-5">
         <h2>Collection Notice</h2>
         <p>Your personal information is collected by the Environmental Assessment Office for the purpose of commenting on the <em>{{project.name}} Project</em> under the authority of s.26(c) of the <a href="http://www.bclaws.ca/Recon/document/ID/freeside/96165_00" target="_blank">Freedom of Information and Protection of Privacy Act</a>. In submitting your comment, you consent to your comment being published online and shared with the proponent. This consent is valid from this date forward and may be revoked by contacting the EAO representative below. Should you have any questions about this collection please contact:</p>
-        <p class="m-b-0">Director, Digital Services<br>Environmental Assessment Office<br>836 Yates Street, Victoria, BC<br><a href="mailto: epicsupport.eao@gov.bc.ca">epicsupport.eao@gov.bc.ca</a><br>(250) 356-7441
+        <p class="m-b-0">Director, Digital Services<br>Environmental Assessment Office<br>836 Yates Street, Victoria, BC<br><a href="mailto: EAO.EPICsystem@gov.bc.ca">EAO.EPICsystem@gov.bc.ca</a><br>(250) 356-7441
       </section>
     </div>
     <div class="modal-footer">
@@ -165,7 +165,7 @@
             <ul class="font-italic understandText m-0">Director, Digital Services</ul>
             <ul class="font-italic understandText m-0">Environmental Assessment Office</ul>
             <ul class="font-italic understandText m-0">836 Yates Street, Victoria, BC</ul>
-            <ul class="font-italic understandText m-0">epicsupport.eao@gov.bc.ca</ul>
+            <ul class="font-italic understandText m-0">EAO.EPICsystem@gov.bc.ca</ul>
             <ul class="font-italic understandText m-0 mb-2">(250) 356-7441</ul>
           <div class="form-control-container">
             <label class="control-label" >
@@ -225,7 +225,7 @@
           <div class="form-group">
             <label class="control-label" >Location *</label>
             <input required class="form-control" type="text" name="locationInput" placeholder="IE: City, Province, etc."
-              id="locationInput" [(ngModel)]="locationInput" autofocus />
+              id="locationInput" maxlength="50" [(ngModel)]="locationInput" autofocus />
           </div>
           <div class="form-group">
             <label class="control-label" >Your Comment Submission*</label>
@@ -270,7 +270,7 @@
           </div>
           <div class="form-group">            
             <div class="form-control-container">
-              <input required class="form-control" type="text" name="nameInput" id="nameInput" [(ngModel)]="contactName" autofocus [disabled]="!makePublic"/>
+              <input required class="form-control" type="text" name="nameInput" maxlength="50" id="nameInput" [(ngModel)]="contactName" autofocus [disabled]="!makePublic"/>
             </div>
           </div>
           <div class="form-group" *ngIf="project.projectCAC && project.projectCACPublished">
