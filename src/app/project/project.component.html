@@ -4,7 +4,7 @@
            <details-sidebar [project]="project" (onSidebarToggle)="handleSidebarToggle($event)"></details-sidebar>
             <div class="content">
                 <div *ngIf="project.commentPeriodForBanner" class="pcp-banner col-sm-12 {{ !sidebarOpen && 'closed' }}">
-                    <div *ngIf="project.commentPeriodForBanner.isMet" class="container">
+                    <div *ngIf="project.commentPeriodForBanner.isMet">
                         <engagement-banner-wc [attr.engagementurl]="project.commentPeriodForBanner.metURL"></engagement-banner-wc>
                     </div>
                     <div *ngIf="!project.commentPeriodForBanner.isMet" class="container">
