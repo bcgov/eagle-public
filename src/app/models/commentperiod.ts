@@ -45,6 +45,8 @@ export class CommentPeriod {
   vettedPercent: Number;
   vettingRoles: String;
   daysRemainingCount: number;
+  isMet: boolean;
+  metURL: String;
 
   longEndDate: moment.Moment;
   // Permissions
@@ -95,6 +97,8 @@ export class CommentPeriod {
     this.userCan = obj && obj.userCan || null;
     this.vettedPercent = obj && obj.vettedPercent || null;
     this.vettingRoles = obj && obj.vettingRoles || null;
+    this.isMet = obj && obj.isMet || false;
+    this.metURL = obj && obj.metURL || null;
 
     this.read = obj && obj.read || null;
     this.write = obj && obj.write || null;
