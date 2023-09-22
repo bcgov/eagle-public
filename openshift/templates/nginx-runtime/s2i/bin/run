@@ -8,7 +8,6 @@ echo "window.localStorage.setItem('from_public_server--deployment_env', '${DEPLO
 echo "window.localStorage.setItem('from_public_server--banner_colour', '${BANNER_COLOUR:-no-banner-colour-set}');" >> /etc/nginx/publicServerEnvironmentSettings.js;
 echo "window.localStorage.setItem('from_public_server--survey_url', '${SURVEY_URL:null}');" >> /etc/nginx/publicServerEnvironmentSettings.js;
 echo "window.localStorage.setItem('from_public_server--show_survey_banner', '${SHOW_SURVEY_BANNER:false}');" >> /etc/nginx/publicServerEnvironmentSettings.js;
-echo "window.localStorage.setItem('met-api-url', '${MET_API_URL:null}');" >> /etc/nginx/publicServerEnvironmentSettings.js;
 
 if [ -n "$HTTP_BASIC_USERNAME" ] && [ -n "$HTTP_BASIC_PASSWORD" ]; then
     echo "---> Generating .htpasswd file"
