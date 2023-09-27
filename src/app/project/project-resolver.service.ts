@@ -14,8 +14,8 @@ export class ProjectResolver implements Resolve<Object> {
     // force-reload so we always have latest data
     let start = new Date();
     let end = new Date();
-    start.setDate(start.getDate() - 7);
-    end.setDate(end.getDate() + 7);
+    start.setDate(start.getDate() - 21);
+    end.setDate(end.getDate() + 14);
     return this.projectService.getById(projId, false, start.toISOString(), end.toISOString())
       .catch(() => { return Observable.of(null); });
   }
