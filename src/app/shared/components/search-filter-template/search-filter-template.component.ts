@@ -315,6 +315,11 @@ export class SearchFilterTemplateComponent implements OnInit, AfterViewInit, OnD
   // hides and displays the advanced filters
   // Emits an event on the toggleFiltersPanelEvent emitter
   toggleAdvancedFilters() {
+    //@ts-ignore
+    if (window.hj) {
+      //@ts-ignore
+      window.hj('event', 'SEARCH_TOGGLED');
+    }
     this.showAdvancedFilters = !this.showAdvancedFilters;
     this.toggleFiltersPanelEvent.emit({ showPanel: this.showAdvancedFilters });
   }
@@ -327,6 +332,11 @@ export class SearchFilterTemplateComponent implements OnInit, AfterViewInit, OnD
    */
   clearFilters() {
     // reset the form group, doesn't appear to reset multiselects, or date ranges
+    //@ts-ignore
+    if (window.hj) {
+      //@ts-ignore
+      window.hj('event', 'FILTERS_CLEARED');
+    }
     this.formGroup.reset();
     // clear multiSelects && date ranges
     for (const filter of this.filters.filter(f => f.type === FilterType.MultiSelect)) {
@@ -384,6 +394,11 @@ export class SearchFilterTemplateComponent implements OnInit, AfterViewInit, OnD
   }
 
   changeMultiSelect() {
+    //@ts-ignore
+    if (window.hj) {
+      //@ts-ignore
+      window.hj('event', 'CHANGE_MULTISELECT');
+    }
     this.search();
   }
 }
