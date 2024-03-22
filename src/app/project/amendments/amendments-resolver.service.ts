@@ -23,7 +23,6 @@ export class AmendmentsResolver implements Resolve<void> {
     this.tableService.clearTable(this.tableId);
     const params = route.queryParamMap['params'];
     const tableObject = this.tableTemplateUtils.updateTableObjectWithUrlParams(params, new TableObject2());
-
     const projId = route.parent.paramMap.get('projId');
     this.tableService.initTableData(this.tableId);
     this.configService.lists.toPromise().then(async (list) => {
@@ -35,7 +34,9 @@ export class AmendmentsResolver implements Resolve<void> {
         tableObject.currentPage,
         tableObject.pageSize,
         tableObject.sortBy,
-        this.utils.createProjectTabModifiers(Constants.optionalProjectDocTabs.AMENDMENT, list)
+        this.utils.createProjectTabModifiers(Constants.optionalProjectDocTabs.AMENDMENT, list),
+        false,
+        '+displayName'
       ));
     });
   }

@@ -103,7 +103,8 @@ export class ProjectNotificationDocumentsTableComponent implements OnInit, OnDes
             5,
             '-datePosted',
             { documentSource: 'PROJECT-NOTIFICATION' },
-            true
+            true,
+            '+displayName'
         ));
 
         this.tableService.getValue(this.tableId)

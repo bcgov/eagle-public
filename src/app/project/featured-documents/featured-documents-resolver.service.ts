@@ -23,7 +23,9 @@ export class FeaturedDocumentsResolverService implements Resolve<void> {
       1,
       5,
       '-datePosted',
-      { documentSource: 'PROJECT', isFeatured: 'true' }
+      { documentSource: 'PROJECT', isFeatured: 'true' },
+      false,
+      '+displayName'
     ));
   }
 }
