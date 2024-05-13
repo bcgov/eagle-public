@@ -55,9 +55,27 @@
                 <div class="pcp-indicator pcp-indicator-inactive"></div>
                 View Completed Comment Period
             </a>
-            <a *ngIf="rowData.commentPeriod?.commentPeriodStatus === 'Pending' || !rowData.commentPeriod?.commentPeriodStatus"
+            <a *ngIf="
+                    rowData.commentPeriod?.commentPeriodStatus === 'Pending' &&
+                    rowData.commentPeriod?.isMet &&
+                    rowData.commentPeriod?.metURL
+                "
                 class="btn btn-primary view-pcp-btn"
-                title="View this Public Comment Period">
+                href="{{ rowData.commentPeriod.metURL }}"
+                rel="noopener"
+                target="_blank"
+                title="View this Public Comment Period"
+            >
+                <div class="pcp-indicator pcp-indicator-pending"></div>
+                View Pending Comment Period
+            </a>
+            <a *ngIf="
+                (rowData.commentPeriod?.commentPeriodStatus === 'Pending' &&
+                !rowData.commentPeriod?.isMet) ||
+                !rowData.commentPeriod?.commentPeriodStatus"
+                class="btn btn-primary view-pcp-btn"
+                title="View this Public Comment Period"
+            >
                 <div class="pcp-indicator pcp-indicator-pending"></div>
                 Comment Period Pending
             </a>
