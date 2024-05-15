@@ -19,7 +19,7 @@
             <a *ngIf="
                     rowData.commentPeriod?.commentPeriodStatus === 'Open' &&
                     rowData.commentPeriod?.isMet &&
-                    !rowData.commentPeriod?.metURL
+                    rowData.commentPeriod?.metURL
                 "
                 class="btn btn-primary view-pcp-btn"
                 href="{{ rowData.commentPeriod.metURL }}"
