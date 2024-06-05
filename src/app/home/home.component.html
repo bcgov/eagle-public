@@ -109,10 +109,10 @@
                       (!item.pcp.isMet || !item.pcp.metURL)
                     "
                     class="btn btn-sm content-btn-alt"
-                    title="View this Public Comment Period"
+                    title="View this Engagement"
                     [routerLink]="['/p', item.project?._id, 'cp', item.pcp._id]"
                   >
-                    Submit/ View Comments
+                    View Engagement
                   </a>
                   <a
                     *ngIf="
@@ -125,9 +125,9 @@
                     href="{{ item.pcp.metURL }}"
                     rel="noopener"
                     target="_blank"
-                    title="View this Public Comment Period"
+                    title="View this Engagement"
                   >
-                    Submit/ View Comments
+                    View Engagement
                   </a>
                   <a
                     *ngIf="
