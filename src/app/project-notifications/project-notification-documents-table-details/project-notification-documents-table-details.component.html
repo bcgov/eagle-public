@@ -70,9 +70,8 @@
                 View Pending Comment Period
             </a>
             <a *ngIf="
-                (rowData.commentPeriod?.commentPeriodStatus === 'Pending' &&
-                !rowData.commentPeriod?.isMet) ||
-                !rowData.commentPeriod?.commentPeriodStatus"
+                rowData.commentPeriod?.commentPeriodStatus === 'Pending' &&
+                !rowData.commentPeriod?.isMet"
                 class="btn btn-primary view-pcp-btn"
                 title="View this Public Comment Period"
             >

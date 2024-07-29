@@ -120,7 +120,10 @@ export class CommentPeriod {
       const dateStarted = moment(obj.dateStarted);
       const dateCompleted = moment(obj.dateCompleted);
 
-      if (moment(now).isBetween(dateStarted, dateCompleted)) {
+      if (moment(now).isBefore(dateStarted)) {
+        this.commentPeriodStatus = 'Pending';
+        this.daysRemaining = 'Pending';
+      } else if (moment(now).isBetween(dateStarted, dateCompleted)) {
         this.commentPeriodStatus = 'Open';
         this.daysRemainingCount = dateCompleted.diff(moment(now), 'days');
         this.daysRemaining = this.daysRemainingCount === 0 ? 'Final Day' : this.daysRemainingCount + (this.daysRemainingCount === 1 ? ' Day ' : ' Days ') + 'Remaining';
@@ -128,8 +131,8 @@ export class CommentPeriod {
         this.commentPeriodStatus = 'Closed';
         this.daysRemaining = 'Completed';
       } else {
-        this.commentPeriodStatus = 'Pending';
-        this.daysRemaining = 'Pending';
+        this.commentPeriodStatus = 'None';
+        this.daysRemaining = 'None';
       }
     }
 
