@@ -71,7 +71,9 @@
               <td>
                 <div class="title-container">
                   <h3 class="title-container__title">
-                    <span class="font-weight-bold" *ngIf="item.project">
+                    <span 
+                      class="font-weight-bold" 
+                      *ngIf="item.project">
                       {{ item.project?.name }}
                     </span>
                     <span
@@ -79,6 +81,11 @@
                       class="font-weight-bold"
                       >{{ item.notificationName }}</span
                     >
+                    <span 
+                    class="font-weight-bold" 
+                    *ngIf="item.projectNotification">
+                    {{ item.projectNotification?.name }}
+                  </span>
                     <span class="home-news-feed__headline">{{
                       item.headline
                     }}</span>
@@ -95,10 +102,17 @@
                 </div>
                 <div>
                   <a
+                  *ngIf="item.type === 'Project Notification News'"
+                  class="btn btn-sm content-btn-alt"
+                  title="View Projects Notifications Page"
+                  href="/project-notifications"
+                  >View Project Notifications Page
+                  </a>
+                  <a
                     class="btn btn-sm content-btn-alt"
                     title="View more information about {{ item.project.name }}"
                     [routerLink]="['/p', item.project?._id]"
-                    *ngIf="item.project?._id"
+                    *ngIf="item.type !== 'Project Notification News' && item.project?._id"
                   >
                     Project Info
                   </a>
