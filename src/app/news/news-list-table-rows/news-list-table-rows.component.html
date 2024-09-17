@@ -13,11 +13,16 @@
       <span [innerHtml]="rowData.content"></span>
       <br>
       <br>
-      <a *ngIf="rowData.project && rowData.project._id"
+      <a *ngIf="rowData.project && rowData.project._id && rowData.type !== 'Project Notification News'"
         class="btn content-btn-alt mr-1"
         [routerLink]="['/p', rowData.project._id ]">
         <span>Project Info</span>
       </a>
+      <a *ngIf="rowData.project && rowData.project._id && rowData.type === 'Project Notification News'"
+      class="btn content-btn-alt mr-1"
+      href="/project-notifications">
+      <span>View Project Notifications Page</span>
+    </a>
       <a *ngIf="isSingleDoc(rowData?.documentUrl) && !rowData?.documentUrl.includes('docs?folder')"
         class="btn content-btn-alt mr-1"
         href="{{rowData.documentUrl}}">
