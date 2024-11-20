@@ -316,6 +316,7 @@
             justify-content: flex-start;
 
             .flex-item {
+                flex: 0 0 25%;
                 p, a {
                     font-size: small;
                 }
