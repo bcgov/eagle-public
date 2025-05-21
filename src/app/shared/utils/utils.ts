@@ -103,6 +103,7 @@ export class Utils {
         ];
         milestones = [
           { legislation: 2002, name: 'Application Review' },
+          { legislation: 2018, name: 'EAC Application' },
           { legislation: 2018, name: 'Revised EAC Application' },
         ];
 
