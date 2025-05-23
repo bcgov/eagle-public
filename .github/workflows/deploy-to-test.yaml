@@ -27,6 +27,13 @@ jobs:
         id: read-hash
         run: echo "::set-output name=SHA::`jq -r '.commit' state.json`"
 
+      - name: Install OpenShift CLI
+        run: |
+          curl -LO "https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-client-linux.tar.gz"
+          tar -xvzf openshift-client-linux.tar.gz
+          sudo mv oc /usr/local/bin/
+          rm -f openshift-client-linux.tar.gz
+
       - name: Log into OpenShift
         uses: redhat-actions/oc-login@v1
         with:
