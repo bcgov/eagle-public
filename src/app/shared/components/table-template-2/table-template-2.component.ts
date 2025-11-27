@@ -47,7 +47,10 @@ export class TableTemplate2Component implements OnChanges, OnDestroy {
       this.data.pageSizeOptions = this.data.pageSizeOptions.filter(obj => {
         return obj.displayText !== 'Show All';
       });
-      this.data.pageSizeOptions.push({ displayText: 'Show All', value: this.data.totalListItems });
+      // Only show "Show All" if there are 500 or fewer items
+      if (this.data.totalListItems <= 500) {
+        this.data.pageSizeOptions.push({ displayText: 'Show All', value: this.data.totalListItems });
+      }
     }
   }
 
