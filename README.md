@@ -1,48 +1,43 @@
 # eagle-public
 
-Public facing site project for EPIC
+Public facing site for the Environmental Assessment Office (EAO) EPIC application.
 
-## Related projects
+## Related Projects
 
 Eagle is a revision name of the EAO EPIC application suite.
 
 These projects comprise EAO EPIC:
 
-* <https://github.com/bcgov/eagle-api>
-* <https://github.com/bcgov/eagle-public>
-* <https://github.com/bcgov/eagle-admin>
-* <https://github.com/bcgov/eagle-mobile-inspections>
-* <https://github.com/bcgov/eagle-reports>
-* <https://github.com/bcgov/eagle-helper-pods>
-* <https://github.com/bcgov/eagle-dev-guides>
+- [eagle-api](https://github.com/bcgov/eagle-api)
+- [eagle-public](https://github.com/bcgov/eagle-public)
+- [eagle-admin](https://github.com/bcgov/eagle-admin)
+- [eagle-mobile-inspections](https://github.com/bcgov/eagle-mobile-inspections)
+- [eagle-reports](https://github.com/bcgov/eagle-reports)
+- [eagle-helper-pods](https://github.com/bcgov/eagle-helper-pods)
+- [eagle-dev-guides](https://github.com/bcgov/eagle-dev-guides)
 
 ## Prerequisites
 
-Note: The following commands work in MacOS bash (not zsh which now default in Catalina). The scripts are currently not fully working in Windows and Linux, so you may need to look at the source of the scripts and manually apply the commands in a right order.
+**Note:** The following commands work in macOS bash (not zsh which is now default in Catalina). The scripts are currently not fully working in Windows and Linux, so you may need to look at the source of the scripts and manually apply the commands in the correct order.
 
-Run the following two scripts to create your environment
-
-```bash
-#!/bin/bash
-.\install_prerequisites.sh
-```
+Run the following scripts to set up your environment:
 
 ```bash
-#!/bin/bash
-.\setup_project.sh
+./install_prerequisites.sh
+./setup_project.sh
 ```
 
-## Fork, Build and Run
+## Build and Run
 
-1. After installing Node and Yarn, you can fork or straight download a copy of this application to start your own app.
-2. Run `npm start` to start the webpack server to run the application on port 4300.
+1. After installing Node and Yarn, clone or download this repository.
+2. Run `npm start` to start the development server on port 4300.
 
-    Go to <http://localhost:4300> to verify that the application is running.
+   Navigate to <http://localhost:4300> to verify that the application is running.
 
-    :bulb: To change the default port, open `.angular-cli.json`, change the value on `defaults.serve.port`.
+   💡 **Tip:** To change the default port, modify the `defaults.serve.port` value in `.angular-cli.json`.
 
-3. Run `npm run build` to build the project. The build artifacts will be stored in the `dist/` directory. Use the `-prod` flag for a production build, like so: `ng serve --prod` to run in production mode.
-4. Run `npm run lint` to lint your app code using `TSLint`.
+3. Run `npm run build` to build the project. The build artifacts will be stored in the `dist/` directory. Use the `--prod` flag for a production build: `npm run build -- --prod`
+4. Run `npm run lint` to lint your code using TSLint.
 
 ## CI/CD Pipeline
 
