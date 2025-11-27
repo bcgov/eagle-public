@@ -19,7 +19,7 @@ jobs:
       COMMIT_SHA: ${{ steps.read-hash.outputs.SHA }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           ref: "promotion/test"
 
@@ -35,7 +35,7 @@ jobs:
           rm -f openshift-client-linux.tar.gz
 
       - name: Log into OpenShift
-        uses: redhat-actions/oc-login@v1
+        uses: redhat-actions/oc-login@v1.3
         with:
           openshift_server_url: ${{ secrets.OPENSHIFT_URL }}
           openshift_token: ${{ secrets.OPENSHIFT_TOKEN }}
@@ -57,7 +57,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           ref: "test"
       - run: |
@@ -71,7 +71,7 @@ jobs:
     steps:
       # Update promotion/prod-pr with new commit hash
       - name: Checkout promotion/prod
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           ref: "${{ env.PROD_PROMO_BRANCH }}"
       - name: Update state.json
