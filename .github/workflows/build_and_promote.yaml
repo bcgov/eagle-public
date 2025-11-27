@@ -50,7 +50,7 @@ jobs:
   
       - name: Get Short SHA
         id: short-sha
-        run: echo "::set-output name=SHA::$(git rev-parse --short HEAD)"
+        run: echo "SHA=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v2

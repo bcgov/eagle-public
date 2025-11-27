@@ -23,7 +23,7 @@ jobs:
 
       - name: Retrieve previous commit hash
         id: read-hash
-        run: echo "::set-output name=SHA::`jq -r '.commit' state.json`"
+        run: echo "SHA=$(jq -r '.commit' state.json)" >> $GITHUB_OUTPUT
 
       - name: Install OpenShift CLI
         run: |
