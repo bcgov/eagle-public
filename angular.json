@@ -36,9 +36,7 @@
               "node_modules/leaflet.markercluster/dist/MarkerCluster.css",
               "node_modules/leaflet.markercluster/dist/MarkerCluster.Default.css",
               "src/assets/fonts/BCSans.css",
-              "src/styles.scss",
-              "src/ant-design-custom.less"
-
+              "src/styles.scss"
             ],
             "scripts": [
               "node_modules/jquery/dist/jquery.min.js",

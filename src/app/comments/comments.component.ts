@@ -4,17 +4,15 @@ import { Subject } from 'rxjs/Subject';
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { MatSnackBar } from '@angular/material';
 import { CommentPeriod } from 'app/models/commentperiod';
-import { Comment } from 'app/models/comment';
 
 import { CommentService } from 'app/services/comment.service';
 import { AddCommentComponent } from './add-comment/add-comment.component';
 import { Project } from 'app/models/project';
 import { DocumentService } from 'app/services/document.service';
 import { ApiService } from 'app/services/api';
-import { TableParamsObject } from 'app/shared/components/table-template/table-params-object';
-import { TableObject } from 'app/shared/components/table-template/table-object';
-import { TableTemplateUtils } from 'app/shared/utils/table-template-utils';
 import { CommentsTableRowsComponent } from 'app/comments/comments-table-rows/comments-table-rows.component';
+import { TableObject2 } from 'app/shared/components/table-template-2/table-object-2';
+import { ITableMessage } from 'app/shared/components/table-template-2/table-row-component';
 
 @Component({
   selector: 'app-comments',
@@ -27,18 +25,15 @@ export class CommentsComponent implements OnInit, OnDestroy {
   public loadingDoc = false;
   public commentPeriod: CommentPeriod;
   public project: Project;
-  public comments: Comment[];
+  public comments: any[]; // Changed from Comment[] to allow expanded property
   public commentPeriodDocs;
 
-  public commentTableData: TableObject;
+  public tableData: TableObject2 = new TableObject2({ component: CommentsTableRowsComponent });
   public commentPeriodHeader: String;
 
   private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
   private commentPeriodId = null;
   private ngbModal: NgbModalRef = null;
-
-  public tableParams: TableParamsObject = new TableParamsObject();
-  public commentTableColumns = [];
 
   public type = 'PROJECT';
 
@@ -50,15 +45,20 @@ export class CommentsComponent implements OnInit, OnDestroy {
     private documentService: DocumentService,
     private _changeDetectionRef: ChangeDetectorRef,
     private modalService: NgbModal,
-    private router: Router,
-    private tableTemplateUtils: TableTemplateUtils
+    private router: Router
   ) { }
 
   ngOnInit() {
-    // Get page size and current page from url
-    this.route.params.subscribe(params => {
-      this.tableParams = this.tableTemplateUtils.getParamsFromUrl(params);
-    });
+    // Initialize table options
+    this.tableData.options.showPageCountDisplay = true;
+    this.tableData.options.showPagination = true;
+    this.tableData.options.showPageSizePicker = true;
+    this.tableData.options.showTopControls = true;
+    this.tableData.options.showHeader = false;
+    this.tableData.options.disableRowHighlight = true;
+    this.tableData.currentPage = 1;
+    this.tableData.pageSize = 10;
+    this.tableData.totalListItems = 0;
 
     // get data from route resolver
     this.route.data
@@ -94,20 +94,36 @@ export class CommentsComponent implements OnInit, OnDestroy {
                 });
             }
             this.commentPeriodId = this.commentPeriod._id;
-            this.commentService.getByPeriodId(this.commentPeriodId, this.tableParams.currentPage, this.tableParams.pageSize, true)
+            this.commentService.getByPeriodId(this.commentPeriodId, this.tableData.currentPage, this.tableData.pageSize, true)
               .takeUntil(this.ngUnsubscribe)
-              .subscribe((res: any) => {
+              .subscribe(async (res: any) => {
                 this.comments = res.currentComments;
-                this.tableParams.totalListItems = res.totalCount;
-                this.commentTableColumns = [
-                  {
-                    name: `Showing ${this.comments.length} comments out of ${this.tableParams.totalListItems}:`,
-                    value: 'comment',
-                    width: 'no-sort',
-                    nosort: true
-                  },
-                ];
-                this.setCommentRowData();
+                this.tableData.totalListItems = res.totalCount;
+                
+                // Initialize expanded property and load documents for each comment
+                for (let comment of this.comments) {
+                  comment.expanded = false;
+                  if (comment.documents && comment.documents.length > 0) {
+                    // Load document details
+                    let documents = [];
+                    for (let docId of comment.documents) {
+                      try {
+                        const doc = await this.api.getDocument(docId).toPromise();
+                        if (doc && doc[0]) {
+                          documents.push(doc[0]);
+                        }
+                      } catch (error) {
+                        console.error('Error loading document:', error);
+                      }
+                    }
+                    comment.documents = documents;
+                  }
+                }
+                
+                // Wrap comments in rowData object for table-template-2
+                this.tableData.items = this.comments.map(comment => {
+                  return { rowData: comment };
+                });
 
                 this.loading = false;
                 this._changeDetectionRef.detectChanges();
@@ -123,21 +139,13 @@ export class CommentsComponent implements OnInit, OnDestroy {
   }
 
 
-  setCommentRowData() {
-    this.commentTableData = new TableObject(
-      CommentsTableRowsComponent,
-      this.comments,
-      this.tableParams
-    );
-  }
-
-  setColumnSort(column) {
-    if (this.tableParams.sortBy.charAt(0) === '+') {
-      this.tableParams.sortBy = '-' + column;
-    } else {
-      this.tableParams.sortBy = '+' + column;
+  onMessageOut(msg: ITableMessage) {
+    // Handle table messages like pagination
+    if (msg.label === 'pageNum') {
+      this.getPaginatedComments(msg.data);
+    } else if (msg.label === 'pageSize') {
+      this.onUpdatePageSize(msg.data.value);
     }
-    this.getPaginatedComments(this.tableParams.currentPage);
   }
 
   public downloadDocument(document) {
@@ -188,21 +196,52 @@ export class CommentsComponent implements OnInit, OnDestroy {
 
   getPaginatedComments(pageNumber) {
     // Go to top of page after clicking to a different page.
-    // window.scrollTo(0, 0);
+    window.scrollTo(0, 0);
     this.loading = true;
 
-    this.tableParams = this.tableTemplateUtils.updateTableParams(this.tableParams, pageNumber, this.tableParams.sortBy);
+    this.tableData.currentPage = pageNumber;
 
-    this.commentService.getByPeriodId(this.commentPeriodId, this.tableParams.currentPage, this.tableParams.pageSize, true)
+    this.commentService.getByPeriodId(this.commentPeriodId, this.tableData.currentPage, this.tableData.pageSize, true)
       .takeUntil(this.ngUnsubscribe)
-      .subscribe((res: any) => {
-        this.tableParams.totalListItems = res.totalCount;
+      .subscribe(async (res: any) => {
+        this.tableData.totalListItems = res.totalCount;
         this.comments = res.currentComments;
-        this.tableTemplateUtils.updateUrl(this.tableParams.sortBy, this.tableParams.currentPage, this.tableParams.pageSize);
-        this.setCommentRowData();
+        
+        // Initialize expanded property and load documents for each comment
+        for (let comment of this.comments) {
+          comment.expanded = false;
+          if (comment.documents && comment.documents.length > 0) {
+            // Load document details
+            let documents = [];
+            for (let docId of comment.documents) {
+              try {
+                const doc = await this.api.getDocument(docId).toPromise();
+                if (doc && doc[0]) {
+                  documents.push(doc[0]);
+                }
+              } catch (error) {
+                console.error('Error loading document:', error);
+              }
+            }
+            comment.documents = documents;
+          }
+        }
+
+        // Wrap comments in rowData object for table-template-2
+        this.tableData.items = this.comments.map(comment => {
+          return { rowData: comment };
+        });
+
         this.loading = false;
         this._changeDetectionRef.detectChanges();
       });
+  }
+
+  onUpdatePageSize(newPageSize: number) {
+    this.tableData.pageSize = Number(newPageSize);
+    this.tableData.currentPage = 1; // Reset to first page when changing page size
+    this.getPaginatedComments(1);
+    this._changeDetectionRef.detectChanges();
   }
 
   ngOnDestroy() {
