@@ -99,7 +99,7 @@ export class CommentsComponent implements OnInit, OnDestroy {
               .subscribe(async (res: any) => {
                 this.comments = res.currentComments;
                 this.tableData.totalListItems = res.totalCount;
-                
+
                 // Initialize expanded property and load documents for each comment
                 for (let comment of this.comments) {
                   comment.expanded = false;
@@ -119,7 +119,7 @@ export class CommentsComponent implements OnInit, OnDestroy {
                     comment.documents = documents;
                   }
                 }
-                
+
                 // Wrap comments in rowData object for table-template-2
                 this.tableData.items = this.comments.map(comment => {
                   return { rowData: comment };
@@ -206,7 +206,7 @@ export class CommentsComponent implements OnInit, OnDestroy {
       .subscribe(async (res: any) => {
         this.tableData.totalListItems = res.totalCount;
         this.comments = res.currentComments;
-        
+
         // Initialize expanded property and load documents for each comment
         for (let comment of this.comments) {
           comment.expanded = false;
