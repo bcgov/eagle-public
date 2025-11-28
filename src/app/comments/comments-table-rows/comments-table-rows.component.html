@@ -1,39 +1,39 @@
-<tr
-  *ngFor="let comment of comments"
-  class="clickable-row">
-  <td data-label="Comment" scope="row" class="col-12">
+<tr class="border">
+  <td class="col-12 p-3">
     <div class="d-flex w-100 justify-content-between">
       <div class="pb-3">
-        <div *ngIf="comment.author && comment.Anonymous !== true">
+        <div *ngIf="rowData.author && rowData.Anonymous !== true">
           <b>
-            <span>{{comment.author}}</span>
-            <span *ngIf="comment.location">, {{comment.location}}</span>
+            <span>{{rowData.author}}</span>
+            <span *ngIf="rowData.location">, {{rowData.location}}</span>
           </b>
         </div>
-        <div *ngIf="comment.author == null || comment.Anonymous">
+        <div *ngIf="rowData.author == null || rowData.Anonymous">
           <b>
             <span>Anonymous</span>
           </b>
         </div>
       </div>
       <div>
-        {{(comment.dateAdded | date:'longDate') || "-"}}
+        {{(rowData.dateAdded | date:'longDate') || "-"}}
       </div>
     </div>
     <div>
-      <div *ngIf="comment.comment && comment.comment.length > 120">
-        <p *ngIf="comment.comment && comment.expanded == true">
-          {{comment.comment}}
+      <div *ngIf="rowData.comment && rowData.comment.length > 120">
+        <p *ngIf="rowData.comment && rowData.expanded == true">
+          {{rowData.comment}}
         </p>
-        <p *ngIf="comment.expanded == false">
-          {{comment.comment.substr(0, 120)}} ...
+        <p *ngIf="rowData.expanded == false">
+          {{rowData.comment.substr(0, 120)}} ...
         </p>
-        <button class="clickable" (click)="toggle(comment)">{{comment.buttonName}}</button>
+        <button class="btn btn-link clickable p-0" (click)="toggle(rowData)">
+          {{rowData.expanded ? 'Read Less' : 'Read More'}}
+        </button>
       </div>
-      <p *ngIf="comment.comment && comment.comment.length <= 120">{{comment.comment}}</p>
+      <p *ngIf="rowData.comment && rowData.comment.length <= 120">{{rowData.comment}}</p>
     </div>
-    <div class="pb-3" *ngIf="comment.documents.length > 0">
-        <div class="attachment" *ngFor="let file of comment.documents" (click)="openAttachment(file)">
+    <div class="pb-3" *ngIf="rowData.documents && rowData.documents.length > 0">
+        <div class="attachment clickable" *ngFor="let file of rowData.documents" (click)="openAttachment(file)">
             <div *ngIf="file && file.internalOriginalName">
             <i class="material-icons">
                 attach_file

@@ -1,5 +1,5 @@
 import { Component, OnInit, ChangeDetectorRef, OnDestroy } from '@angular/core';
-import { TableParamsObject } from 'app/shared/components/table-template/table-params-object';
+// TableParamsObject removed - using simple object instead
 import { ActivatedRoute, Router } from '@angular/router';
 import { StorageService } from 'app/services/storage.service';
 import { SearchResults } from 'app/models/search';
@@ -18,7 +18,7 @@ import { TableService } from 'app/services/table.service';
 export class AmendmentsComponent implements OnInit, OnDestroy {
   private tableId = 'amendments';
 
-  public tableParams: TableParamsObject = new TableParamsObject();
+  public tableParams: any = { totalListItems: 0, currentPage: 1, pageSize: 10, sortBy: '' };
   public currentProject;
   public loading: Boolean = true;
 

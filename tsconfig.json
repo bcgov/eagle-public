@@ -23,7 +23,7 @@
     "noUnusedParameters": true  /* Report errors on unused parameters. */
   },
   "angularCompilerOptions": {
-    "enableIvy": false          /* Must be false until we replace ng-zorro https://github.com/NG-ZORRO/ng-zorro-antd/issues/3975 */
+    "enableIvy": false  /* Disabled: ngx-page-scroll v7 not compatible with Ivy. Will enable after Angular 9+ upgrade */
   }
 }
 

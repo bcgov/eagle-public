@@ -1,5 +1,5 @@
 import { Component, OnInit, ChangeDetectorRef, OnDestroy } from '@angular/core';
-import { TableParamsObject } from 'app/shared/components/table-template/table-params-object';
+// TableParamsObject removed - using simple object instead
 import { ActivatedRoute, Router } from '@angular/router';
 import { SearchResults } from 'app/models/search';
 import { IColumnObject, TableObject2 } from 'app/shared/components/table-template-2/table-object-2';
@@ -16,7 +16,7 @@ import { TableService } from 'app/services/table.service';
 })
 export class CertificatesComponent implements OnInit, OnDestroy {
   private tableId = 'certificates';
-  public tableParams: TableParamsObject = new TableParamsObject();
+  public tableParams: any = { totalListItems: 0, currentPage: 1, pageSize: 10, sortBy: '' };
   public loading: Boolean = true;
 
   private alive = true;

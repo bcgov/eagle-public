@@ -1,7 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpResponse } from '@angular/common/http';
-import { Observable } from 'rxjs/Observable';
-import { throwError } from 'rxjs';
+import { Observable, throwError } from 'rxjs';
 import { map } from 'rxjs/operators';
 import * as _ from 'lodash';
 
@@ -44,7 +43,7 @@ export class ApiService {
     const survey_url = window.localStorage.getItem('from_public_server--survey_url');
     const show_survey_banner = window.localStorage.getItem('from_public_server--show_survey_banner');
 
-    this.apiPath = (_.isEmpty(remote_api_path)) ? 'http://localhost:3000/api/public' : remote_api_path;
+    this.apiPath = (_.isEmpty(remote_api_path)) ? 'https://eagle-dev.apps.silver.devops.gov.bc.ca/api/public' : remote_api_path;
     this.adminUrl = (_.isEmpty(remote_admin_path)) ? 'http://localhost:4200/admin' : remote_admin_path;
     this.env = (_.isEmpty(deployment_env)) ? 'local' : deployment_env;
     this.bannerColour = (_.isEmpty(banner_colour)) ? 'red' : banner_colour;
