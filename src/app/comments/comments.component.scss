@@ -1,35 +1,29 @@
 @import "~assets/styles/base/base.scss";
 
 :host {
-    @include flex(1 1 auto);
-    display: block;
-    background: $bg-default;
-}
+  @include flex(1 1 auto);
+  display: block;
+  background: $bg-default;
 
-@media (min-width: 768px) {
-    :host {
-        padding-top: 4.2rem;
-    }
+  @media (min-width: 768px) {
+    padding-top: 4.2rem;
+  }
 }
 
 .comments {
-    background-color: #fff;
+  background-color: #fff;
+  padding-top: 30px;
+  padding-bottom: 30px;
 
-    .header-section{
-        margin-top: 20px;
-        overflow-y: auto;
-        font-size: medium;
-        padding: 1rem;
-        border: 1px #ccc solid;
-        border-radius: 5px;
-        color: #fff;
-        background-color: #003366;
-    }
-}
-
-.banner {
-  background-color: #003366;
-  color: white;
+  .header-section {
+    margin-top: 20px;
+    padding: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    color: #fff;
+    background-color: #003366;
+    overflow-y: auto;
+  }
 }
 
 .project {
@@ -45,213 +39,64 @@
     h1 {
       display: inline-block;
     }
-    .desc {
-      margin: 0 0 30px;
-    }
-    .proj-status {
-      display: inline-block;
-      font-size: 1.2rem;
-      font-weight: 700;
-      margin: 0 0 8px 10px;
-      color: #fcba18;
-      text-transform: uppercase;
-    }
+
     .ea-decision {
+      display: inline-block;
+      margin: 30px 0;
+      padding: 3px 10px;
+      border: 2px solid #fcba18;
       color: #fcba18;
       font-size: 1rem;
-      border: 2px solid #fcba18;
-      padding: 3px 10px;
       font-weight: bold;
-      display: inline-block;
-      margin-bottom: 45px;
     }
+
     .basic-info {
+      margin-bottom: 30px;
+
       @media (min-width: 767px) {
         display: flex;
       }
 
       > div {
-        padding: 0px 15px 0 0;
+        padding-right: 15px;
         margin-right: 15px;
+
         @media (min-width: 767px) {
           border-right: 1px solid #46617b;
         }
+
         &:last-of-type {
           border-right: none;
         }
       }
+
       label {
         font-weight: bold;
         color: #fcba18;
         font-size: 1rem;
+        margin-right: 0.5rem;
       }
+
       p {
         font-size: 1rem;
         display: inline-block;
       }
     }
+
     .hero-banner__content {
       padding-top: 3rem;
+      padding-bottom: 1rem;
+    }
+
+    .inverted {
+      @media (max-width: 1600px) {
+        margin-bottom: 2rem;
+      }
     }
   }
 
-  main {
-    font-size: .9rem;
-
-    section {
-      word-wrap: break-word;
-      padding: 1rem 0;
-
-      .row {
-        margin-right: -16px;
-        margin-left: -16px;
-        @media (max-width: 767px) {
-          display: block;
-          font-size: 1rem;
-          .value,
-          p {
-            font-size: 1rem;
-          }
-          .col-6 {
-            max-width: 100%;
-            margin-bottom: 12px;
-          }
-        }
-      }
-    }
-    .proj-status,
-    .shape-id {
-      font-size: 1.2rem;
-      font-weight: bold;
-      color: $primary;
-      margin-bottom: 5px;
-    }
-    .col-6 {
-      margin-bottom: 2px;
-    }
-    label {
-      font-weight: bold;
-      color: $primary;
-      margin-bottom: 0;
-      line-height: 1.2;
-    }
-    .value {
-      font-size: .8rem;
-      line-height: 1.25;
-      margin-bottom: 5px;
-      margin-left: 10px;
-    }
-    .organization-item {
-      margin-top: 0;
-      color: #fff;
-      background-color: #38598a;
-      border-radius: 4px 4px 0 0;
-      padding: 7px 10px;
-      width: 100%;
-      text-align: center;
-      p {
-        font-size: 1.2rem;
-        font-weight: bold;
-        margin-bottom: 0;
-      }
-    }
-    .project-item {
-      &__commenting {
-        background-color: #ddd;
-        margin-bottom: 8px;
-        padding: 7px 1rem;
-      }
-    }
-    .location-info {
-      @media (min-width: 991px) {
-        position: absolute;
-        right: 0;
-        top: 50%;
-        transform: translateY(-50%);
-        width: 550px;
-      }
-      border: 2px solid #003365;
-      padding: 35px 40px 40px;
-      h2 {
-        background: #fff;
-        color: #003364;
-        @media (min-width: 991px) {
-          padding: 0 8px;
-          position: absolute;
-          top: -25px;
-          left: 30px;
-        }
-      }
-      label,
-      p {
-        font-size: 1rem;
-      }
-    }
-
-    .shape-info-item {
-      hr {
-          margin: 1rem 0;
-      }
-    }
-    .nav-tabs {
-      background: none;
-    }
-    .project-tabs {
-      background: #f7f8fa;
-    }
-    .nav-tabs .nav-link.active {
-      background: #f7f8fa;
-    }
-  }
-
-  aside {
-    display: flex;
-    flex-direction: column;
-    margin-top: 0;
-    button {
-      margin-bottom: 1rem;
-    }
-    >section {
-      position: relative;
-      background-color: #fff;
-      padding: 1rem;
-      border-radius: 5px;
-      min-height: 20rem;
-      box-shadow: 0.1rem 0.1rem 0.5rem rgba(0, 0, 0, 0.15);
-
-      ul.nav-tabs {
-        margin-bottom: 1.5rem;
-      }
-    }
-  }
-  section.people {
-    background: #3f668c;
-    color: white;
-
-    a {
-      color: #FCBA19;
-    }
-
-    h3 {
-      margin-bottom: .5rem;
-      letter-spacing: -.02rem;
-      font-size: 1rem;
-      font-weight: 700;
-    }
-    p {
-      font-size: 1rem;
-      i {
-        vertical-align: bottom;
-      }
-    }
-    .flex-container {
-      @media (min-width: 991px) {
-        display: flex;
-        .inner-col {
-          flex: 32%;
-        }
-      }
-    }
+  .list-group-item {
+    color: #000;
   }
 }
 
@@ -259,73 +104,58 @@
   cursor: pointer;
 }
 
-@media (max-width: 991px) {
-  .project {
-    main {
-      margin-bottom: 1rem;
-    }
-  }
-}
-
-// Document List
 .doc-list {
   color: black;
-  margin-top: 1rem;
-  margin-bottom: 0;
+  margin: 0;
   padding: 0;
 
   li {
     @include flex-box();
     @include flex-direction(row);
     background: #f7f8fa;
+    border-bottom: 1px solid #dee2e6;
+    transition: background-color 0.15s ease-in-out;
+
+    &:first-child {
+      margin-top: 0.5rem;
+    }
+
+    &:hover {
+      background-color: rgba(0, 0, 0, 0.075);
+    }
+
+    &:last-child {
+      border-bottom: none;
+    }
 
     + li {
-      margin-top: 2px;
+      margin-top: 0;
     }
   }
 
   .cell {
     padding: 0.25rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
 
-    // Text Content
     &__txt-content {
-      margin-top: 0.5rem;
       display: inline-block;
-      white-space: nowrap;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
     }
 
-    // Icon Column
     &.icon {
       @include flex(0 0 auto);
       padding-left: 0.75rem;
       padding-right: 0;
 
       i {
-        margin-top: 0.5rem;
         font-size: 1.35rem;
         color: #999;
-        cursor: default;
       }
     }
 
-    // Name Column
     &.name {
       @include flex(1 1 auto);
       font-size: 0.875rem;
     }
-
-    // Actions Column
-    &.actions {
-      @include flex(0 0 auto);
-    }
-  }
-}
-
-.open-houses {
-  color: black;
-  span {
-    font-size: 14px;
   }
 }

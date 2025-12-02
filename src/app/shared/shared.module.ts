@@ -12,17 +12,12 @@ import { ObjectFilterPipe } from 'app/shared/pipes/object-filter.pipe';
 import { VarDirective } from 'app/shared/utils/ng-var.directive';
 import { DragMoveDirective } from 'app/shared/utils/drag-move.directive';
 
-import { TableTemplateComponent } from 'app/shared/components/table-template/table-template.component';
 import { ListConverterPipe } from './pipes/list-converter.pipe';
 import { SafeHtmlPipe } from './pipes/safe-html-converter.pipe';
 import { OrgNamePipe } from './pipes/org-name.pipe';
-import { TableTemplateUtils } from './utils/table-template-utils';
-import { TableDirective } from './components/table-template/table.directive';
-import { TableTemplateModule } from './components/table-template/table-template.modules'
 import { PublishedPipe } from 'app/shared/pipes/published.pipe';
 import { Utils } from './utils/utils';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { NgZorroAntdModule, NZ_I18N, en_US } from 'ng-zorro-antd';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -50,8 +45,6 @@ import { AutoCompleteMultiSelect2Component } from './components/autocomplete-mul
     MatSnackBarModule,
     NgxTextOverflowClampModule,
     BrowserAnimationsModule,
-    NgZorroAntdModule,
-    TableTemplateModule,
     RouterModule,
     MatAutocompleteModule,
     MatCheckboxModule,
@@ -71,8 +64,6 @@ import { AutoCompleteMultiSelect2Component } from './components/autocomplete-mul
     PublishedPipe,
     VarDirective,
     DragMoveDirective,
-    TableTemplateComponent,
-    TableDirective,
     ListConverterPipe,
     SafeHtmlPipe,
     OrgNamePipe,
@@ -92,13 +83,13 @@ import { AutoCompleteMultiSelect2Component } from './components/autocomplete-mul
     MatProgressBarModule,
     MatSnackBarModule,
     NgxTextOverflowClampModule,
+    NgxPaginationModule,
     OrderByPipe,
     NewlinesPipe,
     ObjectFilterPipe,
     PublishedPipe,
     VarDirective,
     DragMoveDirective,
-    TableTemplateComponent,
     ListConverterPipe,
     SafeHtmlPipe,
     OrgNamePipe,
@@ -114,11 +105,9 @@ import { AutoCompleteMultiSelect2Component } from './components/autocomplete-mul
     DatePickerComponent
   ],
   providers: [
-    TableTemplateUtils,
     TableTemplate,
     Utils,
-    InjectComponentService,
-    { provide: NZ_I18N, useValue: en_US }
+    InjectComponentService
   ]
 })
 

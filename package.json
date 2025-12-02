@@ -41,7 +41,6 @@
     "lodash": "~4.17.11",
     "moment": "2.21.0",
     "moment-timezone": "0.5.35",
-    "ng-zorro-antd": "8.5.2",
     "ng2-bootstrap-modal": "~1.0.1",
     "ngx-chips": "2.1.0",
     "ngx-cookie-service": "1.0.10",
