@@ -4,8 +4,6 @@ import { AppComponent } from './app.component';
 
 import { HeaderComponent } from './header/header.component';
 import { FooterComponent } from './footer/footer.component';
-import { NgxPageScrollModule } from 'ngx-page-scroll';
-import { CookieService } from 'ngx-cookie-service';
 import { ApiService } from 'app/services/api';
 import { ConfigService } from 'app/services/config.service';
 
@@ -18,10 +16,6 @@ describe('AppComponent', () => {
     init() {},
   };
 
-  const cookieServiceStub = {
-    get() { return true; }
-  };
-
   beforeEach(async(() => {
     TestBed.configureTestingModule({
       declarations: [
@@ -31,11 +25,9 @@ describe('AppComponent', () => {
       ],
       imports: [
         RouterTestingModule,
-        NgxPageScrollModule,
       ],
       providers: [
         { provide: ApiService, useValue: apiServiceStub },
-        { provide: CookieService, useValue: cookieServiceStub },
         { provide: ConfigService, useValue: configServiceStub }
       ]
     }).compileComponents();
