@@ -4,9 +4,9 @@ import { SearchResults } from 'app/models/search';
 import { ConfigService } from 'app/services/config.service';
 import { TableService } from 'app/services/table.service';
 import { DateFilterDefinition, FilterObject, FilterType, MultiSelectDefinition } from 'app/shared/components/search-filter-template/filter-object';
-import { IColumnObject, TableObject2 } from 'app/shared/components/table-template-2/table-object-2';
-import { ITableMessage } from 'app/shared/components/table-template-2/table-row-component';
-import { TableTemplate } from 'app/shared/components/table-template-2/table-template';
+import { IColumnObject, TableObject } from 'app/shared/components/table-template/table-object';
+import { ITableMessage } from 'app/shared/components/table-template/table-row-component';
+import { TableTemplate } from 'app/shared/components/table-template/table-template';
 import { Constants } from 'app/shared/utils/constants';
 import { takeWhile } from 'rxjs/operators';
 import { DocSearchTableRowsComponent } from './search-documents-table-rows/search-document-table-rows.component';
@@ -67,7 +67,7 @@ export class SearchComponent implements OnInit, OnDestroy {
 
   private legislationFilterGroup = { name: 'legislation', labelPrefix: null, labelPostfix: ' Act Terms' };
 
-  public tableData: TableObject2 = new TableObject2({ component: DocSearchTableRowsComponent });
+  public tableData: TableObject = new TableObject({ component: DocSearchTableRowsComponent });
 
   private alive = true;
 

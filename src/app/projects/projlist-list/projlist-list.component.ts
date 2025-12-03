@@ -1,5 +1,4 @@
 import { Component, OnInit, OnChanges, OnDestroy, Input, Output, EventEmitter, SimpleChanges, ElementRef } from '@angular/core';
-import * as _ from 'lodash';
 
 import { Project } from 'app/models/project';
 import { CommentPeriodService } from 'app/services/commentperiod.service';
@@ -51,7 +50,7 @@ export class ProjlistListComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   public toggleCurrentApp(item: Project) {
-    const index = _.findIndex(this.projects, { _id: item._id });
+    const index = this.projects.findIndex(p => p._id === item._id);
     if (index >= 0) {
       if (!this.isCurrentApp(item)) {
         this.currentApp = item; // set

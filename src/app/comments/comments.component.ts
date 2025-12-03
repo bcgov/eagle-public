@@ -12,8 +12,8 @@ import { Project } from 'app/models/project';
 import { DocumentService } from 'app/services/document.service';
 import { ApiService } from 'app/services/api';
 import { CommentsTableRowsComponent } from 'app/comments/comments-table-rows/comments-table-rows.component';
-import { TableObject2 } from 'app/shared/components/table-template-2/table-object-2';
-import { ITableMessage } from 'app/shared/components/table-template-2/table-row-component';
+import { TableObject } from 'app/shared/components/table-template/table-object';
+import { ITableMessage } from 'app/shared/components/table-template/table-row-component';
 
 @Component({
   selector: 'app-comments',
@@ -29,7 +29,7 @@ export class CommentsComponent implements OnInit, OnDestroy {
   public comments: any[]; // Changed from Comment[] to allow expanded property
   public commentPeriodDocs;
 
-  public tableData: TableObject2 = new TableObject2({ component: CommentsTableRowsComponent });
+  public tableData: TableObject = new TableObject({ component: CommentsTableRowsComponent });
   public commentPeriodHeader: String;
 
   private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();

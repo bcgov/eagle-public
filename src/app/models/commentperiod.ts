@@ -1,4 +1,4 @@
-import * as moment from 'moment-timezone';
+import { DateTime } from 'luxon';
 import { Project } from './project';
 
 
@@ -48,7 +48,7 @@ export class CommentPeriod {
   vettingRoles: String;
   daysRemainingCount: number;
 
-  longEndDate: moment.Moment;
+  longEndDate: DateTime;
   // Permissions
   read: Array<String> = [];
   write: Array<String> = [];
@@ -116,18 +116,18 @@ export class CommentPeriod {
 
     // get comment period days remaining and determine commentPeriodStatus of the period
     if (obj && obj.dateStarted && obj.dateCompleted) {
-      const now = new Date();
-      const dateStarted = moment(obj.dateStarted);
-      const dateCompleted = moment(obj.dateCompleted);
+      const now = DateTime.now();
+      const dateStarted = DateTime.fromJSDate(new Date(obj.dateStarted));
+      const dateCompleted = DateTime.fromJSDate(new Date(obj.dateCompleted));
 
-      if (moment(now).isBefore(dateStarted)) {
+      if (now < dateStarted) {
         this.commentPeriodStatus = 'Pending';
         this.daysRemaining = 'Pending';
-      } else if (moment(now).isBetween(dateStarted, dateCompleted)) {
+      } else if (now >= dateStarted && now <= dateCompleted) {
         this.commentPeriodStatus = 'Open';
-        this.daysRemainingCount = dateCompleted.diff(moment(now), 'days');
+        this.daysRemainingCount = Math.floor(dateCompleted.diff(now, 'days').days);
         this.daysRemaining = this.daysRemainingCount === 0 ? 'Final Day' : this.daysRemainingCount + (this.daysRemainingCount === 1 ? ' Day ' : ' Days ') + 'Remaining';
-      } else if (moment(now).isAfter(dateCompleted)) {
+      } else if (now > dateCompleted) {
         this.commentPeriodStatus = 'Closed';
         this.daysRemaining = 'Completed';
       } else {
@@ -136,6 +136,6 @@ export class CommentPeriod {
       }
     }
 
-    this.longEndDate = moment.tz(this.dateCompleted, moment.tz.guess());
+    this.longEndDate = DateTime.fromJSDate(this.dateCompleted).setZone('local');
   }
 }

@@ -2,9 +2,9 @@ import { Component, OnInit, ChangeDetectorRef, OnDestroy, ViewChild, ElementRef 
 import { Router, ActivatedRoute, Params } from '@angular/router';
 import { SearchResults } from 'app/models/search';
 import { ActivitiesListTableRowsComponent } from './activities-list-table-rows/activities-list-table-rows.component';
-import { IColumnObject, TableObject2 } from 'app/shared/components/table-template-2/table-object-2';
-import { TableTemplate } from 'app/shared/components/table-template-2/table-template';
-import { ITableMessage } from 'app/shared/components/table-template-2/table-row-component';
+import { IColumnObject, TableObject } from 'app/shared/components/table-template/table-object';
+import { TableTemplate } from 'app/shared/components/table-template/table-template';
+import { ITableMessage } from 'app/shared/components/table-template/table-row-component';
 import { takeWhile } from 'rxjs/operators';
 import { StorageService } from 'app/services/storage.service';
 import { TableService } from 'app/services/table.service';
@@ -22,7 +22,7 @@ export class ProjectActivitesComponent implements OnInit, OnDestroy {
   public loading = true;
   public queryParams: Params;
 
-  public tableData: TableObject2 = new TableObject2({ component: ActivitiesListTableRowsComponent });
+  public tableData: TableObject = new TableObject({ component: ActivitiesListTableRowsComponent });
   public tableColumns: IColumnObject[] = [
     {
       name: 'Headline',

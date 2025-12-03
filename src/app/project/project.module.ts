@@ -2,7 +2,6 @@ import { NgModule, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { RouterModule } from '@angular/router';
-import { TagInputModule } from 'ngx-chips';
 
 // modules
 import { SharedModule } from 'app/shared/shared.module';
@@ -41,7 +40,6 @@ import { AmendmentsComponent } from './amendments/amendments.component';
     CommonModule,
     NgbModule,
     RouterModule,
-    TagInputModule,
     SharedModule,
     CommentsModule,
     ProjectRoutingModule,

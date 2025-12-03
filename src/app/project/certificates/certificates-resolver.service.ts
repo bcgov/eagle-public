@@ -4,8 +4,8 @@ import { Resolve, ActivatedRouteSnapshot } from '@angular/router';
 import { ConfigService } from 'app/services/config.service';
 import { Utils } from 'app/shared/utils/utils';
 import { Constants } from 'app/shared/utils/constants';
-import { TableObject2 } from 'app/shared/components/table-template-2/table-object-2';
-import { TableTemplate } from 'app/shared/components/table-template-2/table-template';
+import { TableObject } from 'app/shared/components/table-template/table-object';
+import { TableTemplate } from 'app/shared/components/table-template/table-template';
 import { SearchParamObject } from 'app/services/search.service';
 import { TableService } from 'app/services/table.service';
 
@@ -22,7 +22,7 @@ export class CertificatesResolver implements Resolve<void> {
   async resolve(route: ActivatedRouteSnapshot) {
     this.tableService.clearTable(this.tableId);
     const params = route.queryParamMap['params'];
-    const tableObject = this.tableTemplateUtils.updateTableObjectWithUrlParams(params, new TableObject2());
+    const tableObject = this.tableTemplateUtils.updateTableObjectWithUrlParams(params, new TableObject());
     const projId = route.parent.paramMap.get('projId');
 
     this.tableService.initTableData(this.tableId);

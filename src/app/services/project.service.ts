@@ -1,7 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable, of, forkJoin } from 'rxjs';
 import { map, catchError, mergeMap, flatMap } from 'rxjs/operators';
-import * as _ from 'lodash';
 
 import { Project } from 'app/models/project';
 import { ApiService } from './api';

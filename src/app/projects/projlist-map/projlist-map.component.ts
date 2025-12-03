@@ -3,7 +3,6 @@ import { ApplicationRef, ElementRef, SimpleChanges, Injector, ComponentFactoryRe
 import { Subject } from 'rxjs';
 import 'leaflet';
 import 'leaflet.markercluster';
-import * as _ from 'lodash';
 
 import { Project } from 'app/models/project';
 import { ProjectService } from 'app/services/project.service';
@@ -223,8 +222,12 @@ export class ProjlistMapComponent implements AfterViewInit, OnChanges, OnDestroy
       // console.log('map: got filtered apps from filters component');
       // console.log('# filtered apps =', this.projects.length);
 
-      const deletedApps = _.difference(changes.projects.previousValue, changes.projects.currentValue) as Array<Project>;
-      const addedApps = _.difference(changes.projects.currentValue, changes.projects.previousValue) as Array<Project>;
+      // Use Set for O(n) performance instead of O(n²)
+      const currentSet = new Set(changes.projects.currentValue);
+      const previousSet = new Set(changes.projects.previousValue);
+
+      const deletedApps = changes.projects.previousValue.filter(p => !currentSet.has(p)) as Array<Project>;
+      const addedApps = changes.projects.currentValue.filter(p => !previousSet.has(p)) as Array<Project>;
 
       // (re)draw the matching apps
       this.drawMap(deletedApps, addedApps);
@@ -251,7 +254,13 @@ export class ProjlistMapComponent implements AfterViewInit, OnChanges, OnDestroy
    * Actual function executes no more than once every 250ms.
    */
   // tslint:disable-next-line:member-ordering
-  private setVisibleDebounced = _.debounce(this.setVisible, 250);
+  private setVisibleDebounced = (() => {
+    let timeoutId: any;
+    return () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => this.setVisible(), 250);
+    };
+  })();
 
   /**
    * NB: Call setVisibleDebounced() instead!
@@ -266,7 +275,7 @@ export class ProjlistMapComponent implements AfterViewInit, OnChanges, OnDestroy
     // update visibility for apps with markers only
     // ie, leave apps without markers 'visible' (as initialized)
     for (const marker of this.markerList) {
-      const app = _.find(this.projects, { _id: marker.projectId });
+      const app = this.projects.find(p => p._id === (marker as any).projectId);
       if (app) {
         const markerLatLng = marker.getLatLng();
         // app is visible if map contains its marker
@@ -318,7 +327,7 @@ export class ProjlistMapComponent implements AfterViewInit, OnChanges, OnDestroy
 
     // remove deleted apps from list and map
     deletedApps.forEach(app => {
-      const markerIndex = _.findIndex(this.markerList, { projectId: app._id });
+      const markerIndex = this.markerList.findIndex(m => (m as any).projectId === app._id);
       if (markerIndex >= 0) {
         const markers = this.markerList.splice(markerIndex, 1);
         this.markerClusterGroup.removeLayer(markers[0]);
@@ -408,7 +417,7 @@ export class ProjlistMapComponent implements AfterViewInit, OnChanges, OnDestroy
 
     // set icon on new marker
     if (show) {
-      const marker = _.find(this.markerList, { projectId: app._id });
+      const marker = this.markerList.find(m => (m as any).projectId === app._id);
       if (marker) {
         this.currentMarker = marker;
         marker.setIcon(markerIconYellowLg);

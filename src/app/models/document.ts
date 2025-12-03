@@ -1,5 +1,3 @@
-import * as _ from 'lodash';
-
 export class Document {
   _id: string;
   project: string;

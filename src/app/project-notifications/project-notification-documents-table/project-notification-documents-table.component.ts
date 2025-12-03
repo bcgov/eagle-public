@@ -1,8 +1,8 @@
 import { Component, OnInit, ChangeDetectorRef, OnDestroy, Input } from '@angular/core';
 import { SearchResults } from 'app/models/search';
 import { takeWhile } from 'rxjs/operators';
-import { TableObject2 } from 'app/shared/components/table-template-2/table-object-2';
-import { ITableMessage } from 'app/shared/components/table-template-2/table-row-component';
+import { TableObject } from 'app/shared/components/table-template/table-object';
+import { ITableMessage } from 'app/shared/components/table-template/table-row-component';
 import { ProjectNotificationDocumentsTableRowsComponent } from '../project-notification-documents-table-rows/project-notification-documents-table-rows.component';
 import { TableService } from 'app/services/table.service';
 import { SearchParamObject } from 'app/services/search.service';
@@ -20,7 +20,7 @@ export class ProjectNotificationDocumentsTableComponent implements OnInit, OnDes
     private alive = true;
     public loading: Boolean = true;
 
-    public tableData: TableObject2 = new TableObject2({ component: ProjectNotificationDocumentsTableRowsComponent });
+    public tableData: TableObject = new TableObject({ component: ProjectNotificationDocumentsTableRowsComponent });
     private mobileTableColumns: any[] = [
         {
             name: 'Name',

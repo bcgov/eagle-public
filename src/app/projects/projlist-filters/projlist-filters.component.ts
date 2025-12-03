@@ -3,8 +3,7 @@ import { ActivatedRoute, Router, ParamMap, Params } from '@angular/router';
 import { Location } from '@angular/common';
 import { Observable, Subject } from 'rxjs';
 import { map, debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
-import * as _ from 'lodash';
-import * as moment from 'moment';
+import { DateTime } from 'luxon';
 
 import { Constants } from 'app/shared/utils/constants';
 import { Project } from 'app/models/project';
@@ -34,8 +33,8 @@ export class ProjlistFiltersComponent implements OnInit, OnChanges, OnDestroy {
   @Input() projects: Array<Project> = []; // from projects component
   @Output() updateMatching = new EventEmitter(); // to projects component
 
-  readonly minDate = moment('2018-03-23').toDate(); // first app created
-  readonly maxDate = moment().toDate(); // today
+  readonly minDate = DateTime.fromISO('2018-03-23').toJSDate(); // first app created
+  readonly maxDate = DateTime.now().toJSDate(); // today
 
   public projectTypes: Array<any> = [];
   public projectRegions: Array<any> = [];
@@ -166,7 +165,8 @@ export class ProjlistFiltersComponent implements OnInit, OnChanges, OnDestroy {
   public ngOnChanges(changes: SimpleChanges) {
     if (changes.projects && !changes.projects.firstChange && changes.projects.currentValue) {
 
-      this.applicantKeys = _.sortedUniq(_.compact(this.projects.map(app => app.name ? app.name.toUpperCase() : null)).sort());
+      const names = this.projects.map(app => app.name ? app.name.toUpperCase() : null).filter(name => name != null).sort();
+      this.applicantKeys = Array.from(new Set(names));
 
       // (re)apply filtering
       this.internalApplyAllFilters(false);
@@ -377,11 +377,11 @@ export class ProjlistFiltersComponent implements OnInit, OnChanges, OnDestroy {
     }
 
     if (this.publishFromFilter) {
-      params['publishFrom'] = moment(this.publishFromFilter).format('YYYY-MM-DD');
+      params['publishFrom'] = DateTime.fromJSDate(this.publishFromFilter).toFormat('yyyy-MM-dd');
     }
 
     if (this.publishToFilter) {
-      params['publishTo'] = moment(this.publishToFilter).format('YYYY-MM-DD');
+      params['publishTo'] = DateTime.fromJSDate(this.publishToFilter).toFormat('yyyy-MM-dd');
     }
 
     // change browser URL without reloading page (so any query params are saved in history)
@@ -450,8 +450,8 @@ export class ProjlistFiltersComponent implements OnInit, OnChanges, OnDestroy {
       this.clFileFilter = this.paramMap.get('clFile') ? +this.paramMap.get('clFile') : null;
       this.dispIdFilter = this.paramMap.get('dispId') ? +this.paramMap.get('dispId') : null;
       this.purposeFilter = this.paramMap.get('purpose');
-      this.publishFromFilter = this.paramMap.get('publishFrom') ? moment(this.paramMap.get('publishFrom')).toDate() : null;
-      this.publishToFilter = this.paramMap.get('publishTo') ? moment(this.paramMap.get('publishTo')).toDate() : null;
+      this.publishFromFilter = this.paramMap.get('publishFrom') ? DateTime.fromISO(this.paramMap.get('publishFrom')).toJSDate() : null;
+      this.publishToFilter = this.paramMap.get('publishTo') ? DateTime.fromISO(this.paramMap.get('publishTo')).toJSDate() : null;
 
       // Handle filters.
       const setRegions = this.paramMap.get('regions');
@@ -586,15 +586,27 @@ export class ProjlistFiltersComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   public regionHasChanges(): boolean {
-    return !_.isEqual(this._regionFilter, this.regionFilter);
+    return this.arraysNotEqual(this._regionFilter, this.regionFilter);
   }
 
   public cpStatusHasChanges(): boolean {
-    return !_.isEqual(this._cpStatusFilters, this.cpStatusFilters);
+    return this.arraysNotEqual(this._cpStatusFilters, this.cpStatusFilters);
   }
 
   public appStatusHasChanges(): boolean {
-    return !_.isEqual(this._appStatusFilters, this.appStatusFilters);
+    return this.arraysNotEqual(this._appStatusFilters, this.appStatusFilters);
+  }
+
+  private arraysNotEqual(arr1: any[], arr2: any[]): boolean {
+    if (arr1.length !== arr2.length) {
+      return true;
+    }
+    for (let i = 0; i < arr1.length; i++) {
+      if (arr1[i] !== arr2[i]) {
+        return true;
+      }
+    }
+    return false;
   }
 
   public onShowHideClick() {

@@ -2,12 +2,12 @@ import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { Router, ActivatedRoute, Params } from '@angular/router';
 import { Constants } from 'app/shared/utils/constants';
 import { SearchResults, } from 'app/models/search';
-import { IColumnObject, TableObject2 } from 'app/shared/components/table-template-2/table-object-2';
+import { IColumnObject, TableObject } from 'app/shared/components/table-template/table-object';
 import { ProjectNotificationsTableRowsComponent } from './project-notifications-table-rows/project-notifications-table-rows.component';
-import { TableTemplate } from 'app/shared/components/table-template-2/table-template';
+import { TableTemplate } from 'app/shared/components/table-template/table-template';
 import { first, takeWhile } from 'rxjs/operators';
 import { FilterObject, FilterType, MultiSelectDefinition } from 'app/shared/components/search-filter-template/filter-object';
-import { ITableMessage } from 'app/shared/components/table-template-2/table-row-component';
+import { ITableMessage } from 'app/shared/components/table-template/table-row-component';
 import { TableService } from 'app/services/table.service';
 import { ProjectNotification } from 'app/models/projectNotification';
 import { CommentPeriodService } from 'app/services/commentperiod.service';
@@ -37,7 +37,7 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
   public loadingTableData = true;
 
   public queryParams: Params;
-  public tableData: TableObject2 = new TableObject2({ component: ProjectNotificationsTableRowsComponent });
+  public tableData: TableObject = new TableObject({ component: ProjectNotificationsTableRowsComponent });
   public showAdvancedFilters = false;
   public filters: FilterObject[] = [];
   private initialLoad = true;

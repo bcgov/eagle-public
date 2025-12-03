@@ -2,9 +2,9 @@ import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { Router, ActivatedRoute, Params } from '@angular/router';
 import { SearchResults } from 'app/models/search';
 import { TableService } from 'app/services/table.service';
-import { IColumnObject, TableObject2 } from 'app/shared/components/table-template-2/table-object-2';
-import { ITableMessage } from 'app/shared/components/table-template-2/table-row-component';
-import { TableTemplate } from 'app/shared/components/table-template-2/table-template';
+import { IColumnObject, TableObject } from 'app/shared/components/table-template/table-object';
+import { ITableMessage } from 'app/shared/components/table-template/table-row-component';
+import { TableTemplate } from 'app/shared/components/table-template/table-template';
 import { takeWhile } from 'rxjs/operators';
 import { NewsListTableRowsComponent } from './news-list-table-rows/news-list-table-rows.component';
 
@@ -21,7 +21,7 @@ export class NewsListComponent implements OnInit, OnDestroy {
   public queryParams: Params;
   private isSearch = false;
 
-  public tableData: TableObject2 = new TableObject2({ component: NewsListTableRowsComponent });
+  public tableData: TableObject = new TableObject({ component: NewsListTableRowsComponent });
   public tableColumns: IColumnObject[] = [
     {
       name: 'Headline',

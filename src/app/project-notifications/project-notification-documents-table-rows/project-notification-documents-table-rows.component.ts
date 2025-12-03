@@ -1,7 +1,7 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ConfigService } from 'app/services/config.service';
 
-import { TableRowComponent } from 'app/shared/components/table-template-2/table-row-component';
+import { TableRowComponent } from 'app/shared/components/table-template/table-row-component';
 import { Utils } from 'app/shared/utils/utils';
 import { takeWhile } from 'rxjs/operators';
 

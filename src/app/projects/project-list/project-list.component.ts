@@ -1,8 +1,6 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { Router, ActivatedRoute, Params } from '@angular/router';
 
-import * as _ from 'lodash';
-
 import { SearchResults } from 'app/models/search';
 
 import { Constants } from 'app/shared/utils/constants';
@@ -10,10 +8,10 @@ import { DateFilterDefinition, FilterObject, FilterType, MultiSelectDefinition }
 import { ProjectListTableRowsComponent } from './project-list-table-rows/project-list-table-rows.component';
 
 import { ConfigService } from 'app/services/config.service';
-import { IColumnObject, TableObject2 } from 'app/shared/components/table-template-2/table-object-2';
+import { IColumnObject, TableObject } from 'app/shared/components/table-template/table-object';
 import { takeWhile } from 'rxjs/operators';
-import { TableTemplate } from 'app/shared/components/table-template-2/table-template';
-import { ITableMessage } from 'app/shared/components/table-template-2/table-row-component';
+import { TableTemplate } from 'app/shared/components/table-template/table-template';
+import { ITableMessage } from 'app/shared/components/table-template/table-row-component';
 import { OrgService } from 'app/services/org.service';
 import { Org } from 'app/models/organization';
 import { TableService } from 'app/services/table.service';
@@ -71,7 +69,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
   public loadingTableData = true;
 
   public queryParams: Params;
-  public tableData: TableObject2 = new TableObject2({ component: ProjectListTableRowsComponent });
+  public tableData: TableObject = new TableObject({ component: ProjectListTableRowsComponent });
   public showAdvancedFilters = false;
   public filters: FilterObject[] = [];
   private proponents = [];

@@ -304,7 +304,7 @@ pipeline {
           } catch (error) {
             echo "Error retrieving keycloak parameters, message: ${error}"
           }
-          sh "npm i axios@^0.19.2 lodash@^4.17.19"
+          sh "npm i axios@^0.19.2"
         }
       }
     }

@@ -1,16 +1,14 @@
 import { Component, OnInit, ChangeDetectorRef, OnDestroy } from '@angular/core';
 import { Router, ActivatedRoute, Params } from '@angular/router';
 
-import * as _ from 'lodash';
-
 import { SearchResults } from 'app/models/search';
 
 import { DocumentTableRowsComponent } from './project-document-table-rows/project-document-table-rows.component';
 
 import { Constants } from 'app/shared/utils/constants';
-import { TableTemplate } from 'app/shared/components/table-template-2/table-template';
-import { IColumnObject, TableObject2 } from 'app/shared/components/table-template-2/table-object-2';
-import { ITableMessage } from 'app/shared/components/table-template-2/table-row-component';
+import { TableTemplate } from 'app/shared/components/table-template/table-template';
+import { IColumnObject, TableObject } from 'app/shared/components/table-template/table-object';
+import { ITableMessage } from 'app/shared/components/table-template/table-row-component';
 import { takeWhile } from 'rxjs/operators';
 import { DateFilterDefinition, FilterObject, FilterType, MultiSelectDefinition } from 'app/shared/components/search-filter-template/filter-object';
 import { ConfigService } from 'app/services/config.service';
@@ -70,7 +68,7 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
 
   private legislationFilterGroup = { name: 'legislation', labelPrefix: null, labelPostfix: ' Act Terms' };
 
-  public tableData: TableObject2 = new TableObject2({ component: DocumentTableRowsComponent });
+  public tableData: TableObject = new TableObject({ component: DocumentTableRowsComponent });
 
   private alive = true;
 

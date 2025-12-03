@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 
-import { TableRowComponent } from 'app/shared/components/table-template-2/table-row-component';
+import { TableRowComponent } from 'app/shared/components/table-template/table-row-component';
 
 @Component({
   selector: 'tr[app-pins-table-rows]',

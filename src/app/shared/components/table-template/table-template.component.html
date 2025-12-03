@@ -42,16 +42,7 @@
       </tr>
     </thead>
     <tbody [ngClass]="data.options.disableRowHighlight ? '' : 'highlight'">
-      <ng-container *ngFor="
-          let item of data.items
-            | paginate
-              : {
-                  id: data.tableId,
-                  itemsPerPage: data.pageSize,
-                  currentPage: data.currentPage,
-                  totalItems: data.totalListItems
-                }
-        "
+      <ng-container *ngFor="let item of data.items | paginate: { id: data.tableId, itemsPerPage: data.pageSize, currentPage: data.currentPage, totalItems: data.totalListItems }"
         [libTableRow]="item"
         [tableData]="data"
         [messageIn]="messageIn"

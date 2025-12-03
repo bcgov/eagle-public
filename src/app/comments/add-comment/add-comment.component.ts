@@ -8,7 +8,6 @@ import { Document } from 'app/models/document';
 import { CommentPeriod } from 'app/models/commentperiod';
 import { CommentService } from 'app/services/comment.service';
 import { DocumentService } from 'app/services/document.service';
-import * as moment from 'moment-timezone';
 import { Project } from 'app/models/project';
 import { ConfigService } from 'app/services/config.service';
 import { ProjectService } from 'app/services/project.service';
@@ -225,8 +224,8 @@ export class AddCommentComponent implements OnInit {
           formData.append('documentFileName', file.name);
           formData.append('internalOriginalName', file.name);
           formData.append('documentSource', 'COMMENT');
-          formData.append('dateUploaded', moment().toISOString());
-          // formData.append('datePosted', moment());
+          formData.append('dateUploaded', new Date().toISOString());
+          // formData.append('datePosted', new Date());
           formData.append('upfile', file);
           this.progressBufferValue += 100 * file.size / this.totalSize;
 

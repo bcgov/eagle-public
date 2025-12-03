@@ -9,16 +9,16 @@ import {
   Injector,
 } from '@angular/core';
 
-import { TableObject2 } from './table-object-2';
+import { TableObject } from './table-object';
 import { ITableMessage } from './table-row-component';
 
 @Component({
-  selector: 'lib-table-template-2',
-  templateUrl: './table-template-2.component.html',
-  styleUrls: ['./table-template-2.component.scss']
+  selector: 'lib-table-template',
+  templateUrl: './table-template.component.html',
+  styleUrls: ['./table-template.component.scss']
 })
-export class TableTemplate2Component implements OnChanges, OnDestroy {
-  @Input() data: TableObject2;
+export class TableTemplateComponent implements OnChanges, OnDestroy {
+  @Input() data: TableObject;
 
   @Input() messageIn: EventEmitter<ITableMessage> = new EventEmitter<ITableMessage>();
   @Output() messageOut: EventEmitter<ITableMessage> = new EventEmitter<ITableMessage>();

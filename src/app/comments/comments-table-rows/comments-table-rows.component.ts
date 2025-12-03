@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { TableRowComponent } from 'app/shared/components/table-template-2/table-row-component';
+import { TableRowComponent } from 'app/shared/components/table-template/table-row-component';
 import { ApiService } from 'app/services/api';
 
 @Component({

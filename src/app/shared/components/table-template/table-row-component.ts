@@ -1,4 +1,4 @@
-import { TableObject2 } from './table-object-2';
+import { TableObject } from './table-object';
 import { EventEmitter, Output, Input } from '@angular/core';
 
 /**
@@ -41,10 +41,10 @@ export class TableRowComponent {
   /**
    * A copy of the table data.
    *
-   * @type {TableObject2}
+   * @type {TableObject}
    * @memberof TableRowComponent
    */
-  @Input() tableData: TableObject2;
+  @Input() tableData: TableObject;
   /**
    * An Output() for generically emitting events from child to parent.
    *
