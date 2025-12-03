@@ -598,9 +598,13 @@ export class ProjlistFiltersComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   private arraysNotEqual(arr1: any[], arr2: any[]): boolean {
-    if (arr1.length !== arr2.length) return true;
+    if (arr1.length !== arr2.length) {
+      return true;
+    }
     for (let i = 0; i < arr1.length; i++) {
-      if (arr1[i] !== arr2[i]) return true;
+      if (arr1[i] !== arr2[i]) {
+        return true;
+      }
     }
     return false;
   }

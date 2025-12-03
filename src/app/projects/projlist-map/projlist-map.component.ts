@@ -225,7 +225,7 @@ export class ProjlistMapComponent implements AfterViewInit, OnChanges, OnDestroy
       // Use Set for O(n) performance instead of O(n²)
       const currentSet = new Set(changes.projects.currentValue);
       const previousSet = new Set(changes.projects.previousValue);
-      
+
       const deletedApps = changes.projects.previousValue.filter(p => !currentSet.has(p)) as Array<Project>;
       const addedApps = changes.projects.currentValue.filter(p => !previousSet.has(p)) as Array<Project>;
 
