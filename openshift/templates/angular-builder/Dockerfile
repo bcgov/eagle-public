@@ -1,1 +1,1 @@
-FROM centos/nodejs-6-centos7
+FROM centos/nodejs-12-centos7

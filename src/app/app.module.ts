@@ -45,7 +45,7 @@ import { SearchResolver } from './search/search-resolver.service';
 import { DocSearchTableRowsComponent } from './search/search-documents-table-rows/search-document-table-rows.component';
 import { PinsService } from 'app/services/pins.service';
 import { ProjectNotificationsTableRowsComponent } from './project-notifications/project-notifications-table-rows/project-notifications-table-rows.component';
-import { MatTabsModule } from '@angular/material';
+import { MatTabsModule } from '@angular/material/tabs';
 import { ProjectNotificationDocumentsTableComponent } from './project-notifications/project-notification-documents-table/project-notification-documents-table.component';
 import { ProjectNotificationDocumentsTableRowsComponent } from './project-notifications/project-notification-documents-table-rows/project-notification-documents-table-rows.component';
 import { ProjectNotificationDocumentsTableDetailsComponent } from './project-notifications/project-notification-documents-table-details/project-notification-documents-table-details.component';
