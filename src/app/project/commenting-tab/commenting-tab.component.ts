@@ -1,8 +1,8 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { trigger, style, transition, animate } from '@angular/animations';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subject } from 'rxjs/Subject';
-import 'rxjs/add/operator/takeUntil';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 import { Project } from 'app/models/project';
 import { CommentPeriodService } from 'app/services/commentperiod.service';
@@ -39,7 +39,7 @@ export class CommentingTabComponent implements OnInit, OnDestroy {
   ngOnInit() {
     // get project
     this.route.parent.data
-      .takeUntil(this.ngUnsubscribe)
+      .pipe(takeUntil(this.ngUnsubscribe))
       .subscribe(
         (data: { project:  Project }) => {
           const results = data.project
@@ -67,7 +67,7 @@ export class CommentingTabComponent implements OnInit, OnDestroy {
 
   getCommentPeriods(projectId) {
     this.commentPeriodService.getAllByProjectId(projectId)
-      .takeUntil(this.ngUnsubscribe)
+      .pipe(takeUntil(this.ngUnsubscribe))
       .subscribe((res: any) => {
         if (res.data) {
           this.commentPeriods = res.data;

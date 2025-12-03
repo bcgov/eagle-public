@@ -1,8 +1,7 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
-import { Observable } from 'rxjs/Observable';
-import 'rxjs/add/operator/toPromise';
-import 'rxjs/add/observable/forkJoin';
+import { Observable, forkJoin } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 import { Comment } from 'app/models/comment';
 import { Document } from 'app/models/document';
@@ -235,15 +234,17 @@ export class AddCommentComponent implements OnInit {
           // see https://stackoverflow.com/questions/37158928/angular-2-http-progress-bar
           // see https://angular.io/guide/http#listening-to-progress-events
           observables.push(this.documentService.add(formData)
-            .map((document: Document) => {
-              this.progressValue += 100 * file.size / this.totalSize;
-              return document;
-            })
+            .pipe(
+              map((document: Document) => {
+                this.progressValue += 100 * file.size / this.totalSize;
+                return document;
+              })
+            )
           );
         });
 
         // execute all uploads in parallel
-        return Observable.forkJoin(observables).toPromise();
+        return forkJoin(observables).toPromise();
       })
       .then(() => {
         this.submitting = false;

@@ -1,12 +1,8 @@
 import { Component, OnInit, OnChanges, OnDestroy, Input, Output, EventEmitter, SimpleChanges, ElementRef } from '@angular/core';
 import { ActivatedRoute, Router, ParamMap, Params } from '@angular/router';
 import { Location } from '@angular/common';
-import { Observable } from 'rxjs/Observable';
-import { Subject } from 'rxjs/Subject';
-import 'rxjs/add/operator/debounceTime';
-import 'rxjs/add/operator/distinctUntilChanged';
-import 'rxjs/add/operator/map';
-import 'rxjs/add/operator/takeUntil';
+import { Observable, Subject } from 'rxjs';
+import { map, debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 import * as _ from 'lodash';
 import * as moment from 'moment';
 
@@ -100,18 +96,22 @@ export class ProjlistFiltersComponent implements OnInit, OnChanges, OnDestroy {
   //
   public applicantSearch = (text$: Observable<string>) =>
     text$
-      .debounceTime(200)
-      .distinctUntilChanged()
-      .map(term => term.length < 1 ? []
-        : this.applicantKeys.filter(key => key.indexOf(this._applicantFilter.toUpperCase()) > -1) // .slice(0, 10)
+      .pipe(
+        debounceTime(200),
+        distinctUntilChanged(),
+        map(term => term.length < 1 ? []
+          : this.applicantKeys.filter(key => key.indexOf(this._applicantFilter.toUpperCase()) > -1) // .slice(0, 10)
+        )
       );
 
   public purposeSearch = (text$: Observable<string>) =>
     text$
-      .debounceTime(200)
-      .distinctUntilChanged()
-      .map(term => term.length < 1 ? []
-        : this.purposeKeys.filter(key => key.indexOf(this._purposeFilter.toUpperCase()) > -1) // .slice(0, 10)
+      .pipe(
+        debounceTime(200),
+        distinctUntilChanged(),
+        map(term => term.length < 1 ? []
+          : this.purposeKeys.filter(key => key.indexOf(this._purposeFilter.toUpperCase()) > -1) // .slice(0, 10)
+        )
       );
 
   constructor(
@@ -131,7 +131,7 @@ export class ProjlistFiltersComponent implements OnInit, OnChanges, OnDestroy {
 
   public ngOnInit() {
     this.configService.lists
-    .switchMap(list => {
+    .pipe(switchMap(list => {
       list.forEach(item => {
         switch (item.type) {
           case 'region':
@@ -146,7 +146,7 @@ export class ProjlistFiltersComponent implements OnInit, OnChanges, OnDestroy {
       this.projectTypes = Constants.PROJECT_TYPE_COLLECTION;
 
       return this.route.queryParamMap;
-    })
+    }))
     .subscribe(paramMap => {
         this.paramMap = paramMap;
 

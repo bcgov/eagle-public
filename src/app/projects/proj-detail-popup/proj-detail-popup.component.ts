@@ -3,7 +3,8 @@ import { Project } from 'app/models/project';
 import { ProjectService } from 'app/services/project.service';
 import { CommentPeriodService } from 'app/services/commentperiod.service';
 import { CommentPeriod } from 'app/models/commentperiod';
-import { Subject } from 'rxjs/Subject';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 
 @Component({
@@ -26,7 +27,7 @@ export class ProjDetailPopupComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.commentPeriodService.getAllByProjectId(this.proj._id)
-      .takeUntil(this.ngUnsubscribe)
+      .pipe(takeUntil(this.ngUnsubscribe))
       .subscribe((data: any) => {
         if (data && data.length > 0 && data[0]) {
           this.commentPeriodStatus = data[0].commentPeriodStatus;

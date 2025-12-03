@@ -1,5 +1,5 @@
 import { Project } from 'app/models/project';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { SearchResults } from 'app/models/search';
 
 export const AjaxData: Project[] = [
@@ -147,7 +147,7 @@ const searchDocsResultsData = {
 
 export class SearchResultsStub {
   public getFullList(): Observable<any> {
-    return Observable.of(listsData)
+    return of(listsData)
   }
 
   public getSearchResults(): Observable<any> {
@@ -155,7 +155,7 @@ export class SearchResultsStub {
     let docSearchResults = new SearchResults();
     docSearchResults.data = searchDocsResultsData;
     resultsArr.push(docSearchResults);
-    return Observable.of(resultsArr)
+    return of(resultsArr)
   }
 }
 

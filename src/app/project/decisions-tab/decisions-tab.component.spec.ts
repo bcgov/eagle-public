@@ -5,7 +5,6 @@ import { VarDirective } from 'app/shared/utils/ng-var.directive';
 import { RouterTestingModule } from '@angular/router/testing';
 import { ApiService } from 'app/services/api';
 import { ProjectService } from 'app/services/project.service';
-import 'rxjs/add/observable/of';
 import { Project } from 'app/models/project';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ActivatedRouteStub } from 'app/spec/helpers';
