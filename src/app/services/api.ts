@@ -56,8 +56,8 @@ export class ApiService {
     return throwError(error);
   }
 
-  getFullDataSet(dataSet: string): Observable<any> {
-    return this.http.get<any>(`${this.apiPath}/search?pageSize=1000&dataset=${dataSet}`, {});
+  getFullDataSet(dataSet: string, pageSize: number = 250): Observable<any> {
+    return this.http.get<any>(`${this.apiPath}/search?pageSize=${pageSize}&dataset=${dataSet}`, {});
   }
 
   public async downloadDocument(document: Document): Promise<void> {

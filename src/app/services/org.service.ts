@@ -41,6 +41,10 @@ export class OrgService {
   }
 
   async fetchProponent() {
+    // Only fetch if data hasn't been loaded yet
+    if (this.data.value && this.data.value.length > 0) {
+      return;
+    }
     const res = await this.getByCompanyType('Proponent/Certificate Holder').toPromise();
     this.setValue(res);
   }

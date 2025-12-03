@@ -222,8 +222,12 @@ export class ProjlistMapComponent implements AfterViewInit, OnChanges, OnDestroy
       // console.log('map: got filtered apps from filters component');
       // console.log('# filtered apps =', this.projects.length);
 
-      const deletedApps = changes.projects.previousValue.filter(p => !changes.projects.currentValue.includes(p)) as Array<Project>;
-      const addedApps = changes.projects.currentValue.filter(p => !changes.projects.previousValue.includes(p)) as Array<Project>;
+      // Use Set for O(n) performance instead of O(n²)
+      const currentSet = new Set(changes.projects.currentValue);
+      const previousSet = new Set(changes.projects.previousValue);
+      
+      const deletedApps = changes.projects.previousValue.filter(p => !currentSet.has(p)) as Array<Project>;
+      const addedApps = changes.projects.currentValue.filter(p => !previousSet.has(p)) as Array<Project>;
 
       // (re)draw the matching apps
       this.drawMap(deletedApps, addedApps);

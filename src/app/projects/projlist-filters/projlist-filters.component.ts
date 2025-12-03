@@ -586,15 +586,23 @@ export class ProjlistFiltersComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   public regionHasChanges(): boolean {
-    return JSON.stringify(this._regionFilter) !== JSON.stringify(this.regionFilter);
+    return this.arraysNotEqual(this._regionFilter, this.regionFilter);
   }
 
   public cpStatusHasChanges(): boolean {
-    return JSON.stringify(this._cpStatusFilters) !== JSON.stringify(this.cpStatusFilters);
+    return this.arraysNotEqual(this._cpStatusFilters, this.cpStatusFilters);
   }
 
   public appStatusHasChanges(): boolean {
-    return JSON.stringify(this._appStatusFilters) !== JSON.stringify(this.appStatusFilters);
+    return this.arraysNotEqual(this._appStatusFilters, this.appStatusFilters);
+  }
+
+  private arraysNotEqual(arr1: any[], arr2: any[]): boolean {
+    if (arr1.length !== arr2.length) return true;
+    for (let i = 0; i < arr1.length; i++) {
+      if (arr1[i] !== arr2[i]) return true;
+    }
+    return false;
   }
 
   public onShowHideClick() {

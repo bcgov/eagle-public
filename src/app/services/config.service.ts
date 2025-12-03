@@ -36,7 +36,9 @@ export class ConfigService {
 
   get lists(): Observable<any> {
     if (this._lists.length === 0) {
-      return this.api.getFullDataSet('List')
+      // Fetch all list items (milestone, document types, authors, project phases)
+      // Backend has ~200 items total, so 250 provides headroom
+      return this.api.getFullDataSet('List', 250)
         .pipe(
           map(res => {
             if (res) {
