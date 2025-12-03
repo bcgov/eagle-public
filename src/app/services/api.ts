@@ -2,7 +2,6 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { map } from 'rxjs/operators';
-import * as _ from 'lodash';
 
 import { Project } from 'app/models/project';
 import { Feature } from 'app/models/feature';
@@ -43,12 +42,12 @@ export class ApiService {
     const survey_url = window.localStorage.getItem('from_public_server--survey_url');
     const show_survey_banner = window.localStorage.getItem('from_public_server--show_survey_banner');
 
-    this.apiPath = (_.isEmpty(remote_api_path)) ? 'https://eagle-dev.apps.silver.devops.gov.bc.ca/api/public' : remote_api_path;
-    this.adminUrl = (_.isEmpty(remote_admin_path)) ? 'http://localhost:4200/admin' : remote_admin_path;
-    this.env = (_.isEmpty(deployment_env)) ? 'local' : deployment_env;
-    this.bannerColour = (_.isEmpty(banner_colour)) ? 'red' : banner_colour;
-    this.surveyUrl = (_.isEmpty(survey_url) || survey_url === null || survey_url === 'null') ? null : survey_url;
-    this.showSurveyBanner = !_.isEmpty(show_survey_banner) && !!show_survey_banner && show_survey_banner !== 'null';
+    this.apiPath = (!remote_api_path) ? 'https://eagle-dev.apps.silver.devops.gov.bc.ca/api/public' : remote_api_path;
+    this.adminUrl = (!remote_admin_path) ? 'http://localhost:4200/admin' : remote_admin_path;
+    this.env = (!deployment_env) ? 'local' : deployment_env;
+    this.bannerColour = (!banner_colour) ? 'red' : banner_colour;
+    this.surveyUrl = (!survey_url || survey_url === null || survey_url === 'null') ? null : survey_url;
+    this.showSurveyBanner = !!show_survey_banner && show_survey_banner !== 'null';
   }
 
   handleError(error: any): Observable<any> {
@@ -670,7 +669,7 @@ export class ApiService {
   //
   private buildValues(collection: any[]): string {
     let values = '';
-    _.each(collection, function (a) {
+    collection.forEach(function (a) {
       values += a + '|';
     });
     // trim the last |
