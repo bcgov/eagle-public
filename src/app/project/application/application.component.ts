@@ -2,11 +2,11 @@ import { Component, OnInit, ChangeDetectorRef, OnDestroy } from '@angular/core';
 // TableParamsObject removed - using simple object instead
 import { ActivatedRoute, Router } from '@angular/router';
 import { SearchResults } from 'app/models/search';
-import { IColumnObject, TableObject2 } from 'app/shared/components/table-template-2/table-object-2';
+import { IColumnObject, TableObject } from 'app/shared/components/table-template/table-object';
 import { DocumentTableRowsComponent } from '../documents/project-document-table-rows/project-document-table-rows.component';
 import { takeWhile } from 'rxjs/operators';
-import { TableTemplate } from 'app/shared/components/table-template-2/table-template';
-import { ITableMessage } from 'app/shared/components/table-template-2/table-row-component';
+import { TableTemplate } from 'app/shared/components/table-template/table-template';
+import { ITableMessage } from 'app/shared/components/table-template/table-row-component';
 import { TableService } from 'app/services/table.service';
 
 @Component({
@@ -22,7 +22,7 @@ export class ApplicationComponent implements OnInit, OnDestroy {
 
   private alive = true;
 
-  public tableData: TableObject2 = new TableObject2({ component: DocumentTableRowsComponent });
+  public tableData: TableObject = new TableObject({ component: DocumentTableRowsComponent });
   public tableColumns: IColumnObject[] = [
     {
       name: 'Name',

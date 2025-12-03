@@ -20,10 +20,10 @@
     <div class="container">
       <h1>Activities & Updates</h1>
       <br>
-      <lib-table-template-2 *ngIf="tableData.totalListItems > 0"
+      <lib-table-template *ngIf="tableData.totalListItems > 0"
         [data]="tableData"
         (messageOut)="onMessageOut($event)">
-      </lib-table-template-2>
+      </lib-table-template>
     </div>
   </section>
 </main>

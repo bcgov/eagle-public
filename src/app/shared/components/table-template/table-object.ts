@@ -204,7 +204,7 @@ export interface ITableObjectParams {
  * @export
  * @class TableObject
  */
-export class TableObject2 {
+export class TableObject {
   public options: ITableOptions;
   public component: Type<TableRowComponent>;
   public columns: IColumnObject[];

@@ -1,6 +1,5 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
-import { CookieService } from 'ngx-cookie-service';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
@@ -21,7 +20,6 @@ export class AppComponent implements OnInit, OnDestroy {
 
   constructor(
     public router: Router,
-    private cookieService: CookieService,
     private api: ApiService
   ) {
     // ref: https://stackoverflow.com/questions/5899783/detect-safari-using-jquery
@@ -32,14 +30,17 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    this.loggedIn = this.cookieService.get('loggedIn');
-
     this.router.events
     .pipe(takeUntil(this.ngUnsubscribe))
     .subscribe(() => {
       document.body.scrollTop = 0;
       document.documentElement.scrollTop = 0;
     });
+  }
+
+  scrollToTop(event: Event) {
+    event.preventDefault();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   ngOnDestroy() {

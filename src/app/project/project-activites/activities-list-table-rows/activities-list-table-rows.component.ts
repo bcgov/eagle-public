@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 
 import { Router } from '@angular/router';
-import { TableRowComponent } from 'app/shared/components/table-template-2/table-row-component';
+import { TableRowComponent } from 'app/shared/components/table-template/table-row-component';
 
 @Component({
   selector: 'tr[app-activities-list-table-rows]',

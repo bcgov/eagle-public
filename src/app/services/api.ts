@@ -668,6 +668,9 @@ export class ApiService {
   // Local helpers
   //
   private buildValues(collection: any[]): string {
+    if (!collection || collection.length === 0) {
+      return '';
+    }
     let values = '';
     collection.forEach(function (a) {
       values += a + '|';

@@ -17,9 +17,9 @@
     No recent activities.
   </div>
 
-  <lib-table-template-2
+  <lib-table-template
     *ngIf="!loading && tableData.totalListItems > 0"
     [data]="tableData"
     (messageOut)="onMessageOut($event)">
-  </lib-table-template-2>
+  </lib-table-template>
 </section>

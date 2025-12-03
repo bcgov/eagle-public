@@ -1,7 +1,7 @@
 import { BreakpointObserver, Breakpoints, MediaMatcher } from '@angular/cdk/layout';
 import { Component, OnDestroy, OnInit, ViewEncapsulation } from '@angular/core';
 
-import { TableRowComponent } from 'app/shared/components/table-template-2/table-row-component';
+import { TableRowComponent } from 'app/shared/components/table-template/table-row-component';
 import { takeWhile } from 'rxjs/operators';
 
 @Component({

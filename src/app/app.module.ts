@@ -4,10 +4,6 @@ import { BrowserModule } from '@angular/platform-browser';
 import { FormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
-import { NgxPageScrollCoreModule } from 'ngx-page-scroll-core';
-import { NgxPageScrollModule } from 'ngx-page-scroll';
-import { BootstrapModalModule } from 'ng2-bootstrap-modal';
-import { CookieService } from 'ngx-cookie-service';
 
 // modules
 import { SharedModule } from 'app/shared/shared.module';
@@ -62,17 +58,12 @@ import { ProjectNotificationDocumentsTableDetailsComponent } from './project-not
     FormsModule,
     HttpClientModule,
     NgbModule,
-    BootstrapModalModule,
     SharedModule,
     ProjectModule,
     ProjectsModule,
     MatTabsModule,
     AppRoutingModule, // <-- module import order matters - https://angular.io/guide/router#module-import-order-matters
-    NgSelectModule,
-    NgxPageScrollCoreModule.forRoot({
-      scrollOffset: 50
-    }),
-    NgxPageScrollModule
+    NgSelectModule
   ],
   declarations: [
     AppComponent,
@@ -105,7 +96,6 @@ import { ProjectNotificationDocumentsTableDetailsComponent } from './project-not
   ],
   providers: [
     ConfigService,
-    CookieService,
     ApiService,
     ProjectService,
     CommentService,

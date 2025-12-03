@@ -43,10 +43,10 @@
                                 alt="loading spinner">
                         </div>
                     </div>
-                    <lib-table-template-2 *ngIf="tableData.totalListItems > 0 && !loadingTableData"
+                    <lib-table-template *ngIf="tableData.totalListItems > 0 && !loadingTableData"
                         [data]="tableData"
                         (messageOut)="onMessageOut($event)">
-                    </lib-table-template-2>
+                    </lib-table-template>
                 </section>
             </div>
         </div>

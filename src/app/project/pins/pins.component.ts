@@ -4,10 +4,10 @@ import { StorageService } from 'app/services/storage.service';
 import { SearchResults } from 'app/models/search';
 import { PinsTableRowsComponent } from './pins-table-rows/pins-table-rows.component';
 import { takeWhile } from 'rxjs/operators';
-import { TableTemplate } from 'app/shared/components/table-template-2/table-template';
-import { TableObject2 } from 'app/shared/components/table-template-2/table-object-2';
+import { TableTemplate } from 'app/shared/components/table-template/table-template';
+import { TableObject } from 'app/shared/components/table-template/table-object';
 import { PinsService } from 'app/services/pins.service';
-import { ITableMessage } from 'app/shared/components/table-template-2/table-row-component';
+import { ITableMessage } from 'app/shared/components/table-template/table-row-component';
 
 @Component({
   selector: 'app-pins',
@@ -18,7 +18,7 @@ export class PinsComponent implements OnInit, OnDestroy {
   private alive = true;
   public loading: Boolean = true;
 
-  public tableData: TableObject2 = new TableObject2({ component: PinsTableRowsComponent });
+  public tableData: TableObject = new TableObject({ component: PinsTableRowsComponent });
   public tableColumns: any[] = [
     {
       name: 'Nation Name',

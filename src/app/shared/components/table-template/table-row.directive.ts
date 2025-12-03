@@ -11,7 +11,7 @@ import {
   OnDestroy,
   ComponentRef
 } from '@angular/core';
-import { IRowObject, TableObject2 } from './table-object-2';
+import { IRowObject, TableObject } from './table-object';
 import { TableRowComponent, ITableMessage } from './table-row-component';
 import { InjectComponentService } from '../../services/inject-component.service';
 import { Subject } from 'rxjs';
@@ -22,7 +22,7 @@ import { takeUntil } from 'rxjs/operators';
 })
 export class TableRowDirective implements OnInit, OnChanges, OnDestroy {
   @Input('libTableRow') rowObject: IRowObject;
-  @Input() tableData: TableObject2;
+  @Input() tableData: TableObject;
 
   @Input() messageIn: EventEmitter<ITableMessage> = new EventEmitter<ITableMessage>();
   @Output() messageOut: EventEmitter<ITableMessage> = new EventEmitter<ITableMessage>();

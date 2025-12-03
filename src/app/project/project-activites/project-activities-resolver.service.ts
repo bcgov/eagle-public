@@ -3,8 +3,8 @@ import { Resolve, ActivatedRouteSnapshot } from '@angular/router';
 
 import { SearchParamObject } from 'app/services/search.service';
 import { TableService } from 'app/services/table.service';
-import { TableObject2 } from 'app/shared/components/table-template-2/table-object-2';
-import { TableTemplate } from 'app/shared/components/table-template-2/table-template';
+import { TableObject } from 'app/shared/components/table-template/table-object';
+import { TableTemplate } from 'app/shared/components/table-template/table-template';
 import { Constants } from 'app/shared/utils/constants';
 
 @Injectable()
@@ -19,7 +19,7 @@ export class ProjectActivitiesResolver implements Resolve<void> {
     this.tableService.clearTable(this.tableId);
 
     const params = route.queryParamMap['params'];
-    const tableObject = this.tableTemplateUtils.updateTableObjectWithUrlParams(params, new TableObject2(), 'Activities');
+    const tableObject = this.tableTemplateUtils.updateTableObjectWithUrlParams(params, new TableObject(), 'Activities');
 
     if (!params.sortBy) {
       tableObject.sortBy = '-dateAdded';

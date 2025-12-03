@@ -1,13 +1,13 @@
 import { Injectable } from '@angular/core';
 import { Router, Params } from '@angular/router';
-import { TableObject2 } from './table-object-2';
+import { TableObject } from './table-object';
 import { Constants } from '../../utils/constants';
 
 @Injectable()
 export class TableTemplate {
   constructor(private router: Router) { }
 
-  public updateTableObjectWithUrlParams(routeParams: Params, tableObject: TableObject2, suffix: string = '') {
+  public updateTableObjectWithUrlParams(routeParams: Params, tableObject: TableObject, suffix: string = '') {
     Object.keys(routeParams).forEach(item => {
       if (
         !routeParams ||
@@ -55,7 +55,7 @@ export class TableTemplate {
    *   the ones from tableOject will take precedence. (optional)
    * @memberof TableTemplate
    */
-  public navigateUsingParams(tableObject: TableObject2, path: any[], additionalParams: object = {}) {
+  public navigateUsingParams(tableObject: TableObject, path: any[], additionalParams: object = {}) {
     if (!tableObject) {
       throw Error('Navigation Object cannot be null.');
     }
@@ -77,7 +77,7 @@ export class TableTemplate {
    * @returns
    * @memberof TableTemplate
    */
-  public getNavParamsObj(tableObject: TableObject2, additionalParams: object = {}) {
+  public getNavParamsObj(tableObject: TableObject, additionalParams: object = {}) {
     const params = { ...additionalParams };
 
     Object.keys(tableObject).forEach(item => {

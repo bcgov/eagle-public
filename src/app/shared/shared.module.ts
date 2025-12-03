@@ -3,7 +3,6 @@ import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { BrowserModule } from '@angular/platform-browser';
 import { MatAutocompleteModule, MatCheckboxModule, MatChipsModule, MatIconModule, MatProgressBarModule, MatSelectModule, MatSlideToggleModule, MatTooltipModule } from '@angular/material';
 import { MatSnackBarModule } from '@angular/material';
-import { NgxTextOverflowClampModule } from 'ngx-text-overflow-clamp';
 
 import { OrderByPipe } from 'app/shared/pipes/order-by.pipe';
 import { NewlinesPipe } from 'app/shared/pipes/newlines.pipe';
@@ -23,12 +22,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { NgxPaginationModule } from 'ngx-pagination';
-import { TableRowDirective } from './components/table-template-2/table-row.directive';
-import { TableTemplate2Component } from './components/table-template-2/table-template-2.component';
+import { TableRowDirective } from './components/table-template/table-row.directive';
+import { TableTemplateComponent } from './components/table-template/table-template.component';
 import { PageSizePickerComponent } from './components/page-size-picker/page-size-picker.component';
 import { PageCountDisplayComponent } from './components/page-count-display/page-count-display.component';
 import { InjectComponentService } from './services/inject-component.service';
-import { TableTemplate } from './components/table-template-2/table-template';
+import { TableTemplate } from './components/table-template/table-template';
 import { AutoCompleteMultiSelectComponent } from './components/autocomplete-multi-select/autocomplete-multi-select.component';
 import { SearchFilterTemplateComponent } from './components/search-filter-template/search-filter-template.component';
 import { CallbackPipe } from './components/autocomplete-multi-select/callback.pipe';
@@ -43,7 +42,6 @@ import { AutoCompleteMultiSelect2Component } from './components/autocomplete-mul
     NgSelectModule,
     MatProgressBarModule,
     MatSnackBarModule,
-    NgxTextOverflowClampModule,
     BrowserAnimationsModule,
     RouterModule,
     MatAutocompleteModule,
@@ -70,7 +68,7 @@ import { AutoCompleteMultiSelect2Component } from './components/autocomplete-mul
     CallbackPipe,
 
     TableRowDirective,
-    TableTemplate2Component,
+    TableTemplateComponent,
     PageSizePickerComponent,
     PageCountDisplayComponent,
     AutoCompleteMultiSelectComponent,
@@ -82,7 +80,6 @@ import { AutoCompleteMultiSelect2Component } from './components/autocomplete-mul
     BrowserModule,
     MatProgressBarModule,
     MatSnackBarModule,
-    NgxTextOverflowClampModule,
     NgxPaginationModule,
     OrderByPipe,
     NewlinesPipe,
@@ -96,7 +93,7 @@ import { AutoCompleteMultiSelect2Component } from './components/autocomplete-mul
     CallbackPipe,
 
     TableRowDirective,
-    TableTemplate2Component,
+    TableTemplateComponent,
     PageSizePickerComponent,
     PageCountDisplayComponent,
     AutoCompleteMultiSelectComponent,
