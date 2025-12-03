@@ -1,7 +1,5 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
-import 'rxjs/add/operator/toPromise';
-import 'rxjs/add/observable/forkJoin';
 
 import { ProjectService } from 'app/services/project.service';
 import { Project } from 'app/models/project';

@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Resolve, ActivatedRouteSnapshot } from '@angular/router';
-import { Observable } from 'rxjs/Observable';
+import { Observable, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 
 import { ProjectService } from 'app/services/project.service';
 
@@ -17,6 +18,8 @@ export class ProjectResolver implements Resolve<Object> {
     start.setDate(start.getDate() - 21);
     end.setDate(end.getDate() + 14);
     return this.projectService.getById(projId, false, start.toISOString(), end.toISOString())
-      .catch(() => { return Observable.of(null); });
+      .pipe(
+        catchError(() => of(null))
+      );
   }
 }

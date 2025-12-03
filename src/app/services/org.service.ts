@@ -1,9 +1,9 @@
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs/Observable';
+import { Observable, BehaviorSubject } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
 
 import { ApiService } from './api';
 import { Org } from 'app/models/organization';
-import { BehaviorSubject } from 'rxjs';
 
 @Injectable()
 export class OrgService {
@@ -14,16 +14,18 @@ export class OrgService {
 
   getByCompanyType(type: string): Observable<Org[]> {
     return this.api.getOrgsByCompanyType(type)
-      .map((res: any) => {
-        if (res) {
-          const orgs = res;
-          orgs.forEach((org, index) => {
-            orgs[index] = new Org(org);
-          });
-          return orgs;
-        }
-      })
-      .catch(this.api.handleError);
+      .pipe(
+        map((res: any) => {
+          if (res) {
+            const orgs = res;
+            orgs.forEach((org, index) => {
+              orgs[index] = new Org(org);
+            });
+            return orgs;
+          }
+        }),
+        catchError(this.api.handleError)
+      );
   }
 
   setValue(value): void {

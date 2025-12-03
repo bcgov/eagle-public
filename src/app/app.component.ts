@@ -1,8 +1,8 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { CookieService } from 'ngx-cookie-service';
-import { Subject } from 'rxjs/Subject';
-import 'rxjs/add/operator/takeUntil';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 import { ApiService } from 'app/services/api';
 
@@ -35,7 +35,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.loggedIn = this.cookieService.get('loggedIn');
 
     this.router.events
-    .takeUntil(this.ngUnsubscribe)
+    .pipe(takeUntil(this.ngUnsubscribe))
     .subscribe(() => {
       document.body.scrollTop = 0;
       document.documentElement.scrollTop = 0;

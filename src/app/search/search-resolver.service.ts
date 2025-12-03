@@ -1,8 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Resolve, ActivatedRouteSnapshot } from '@angular/router';
 
-import 'rxjs/add/operator/switchMap';
-
 import { TableTemplate } from 'app/shared/components/table-template-2/table-template';
 import { SearchParamObject } from 'app/services/search.service';
 import { Constants } from 'app/shared/utils/constants';

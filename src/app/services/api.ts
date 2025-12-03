@@ -32,7 +32,7 @@ export class ApiService {
   ) {
     // const currentUser = JSON.parse(window.localStorage.getItem('currentUser'));
     // this.token = currentUser && currentUser.token;
-    this.isMS = !!window.navigator.msSaveOrOpenBlob;
+    this.isMS = !!(window.navigator as any).msSaveOrOpenBlob;
 
     // The following items are loaded by a file that is only present on cluster builds.
     // Locally, this will be empty and local defaults will be used.
@@ -74,7 +74,7 @@ export class ApiService {
     let filename = document.displayName;
     filename = this.utils.encodeString(filename, false)
     if (this.isMS) {
-      window.navigator.msSaveBlob(blob, filename);
+      (window.navigator as any).msSaveBlob(blob, filename);
     } else {
       const url = window.URL.createObjectURL(blob);
       const a = window.document.createElement('a');

@@ -1,6 +1,7 @@
 import { Component, OnInit, ChangeDetectorRef, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subject } from 'rxjs/Subject';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { MatSnackBar } from '@angular/material';
 import { CommentPeriod } from 'app/models/commentperiod';
@@ -62,7 +63,7 @@ export class CommentsComponent implements OnInit, OnDestroy {
 
     // get data from route resolver
     this.route.data
-      .takeUntil(this.ngUnsubscribe)
+      .pipe(takeUntil(this.ngUnsubscribe))
       .subscribe(
         (data: { commentPeriod: CommentPeriod, project: Project }) => {
 
@@ -87,7 +88,7 @@ export class CommentsComponent implements OnInit, OnDestroy {
 
             if (this.commentPeriod.relatedDocuments && this.commentPeriod.relatedDocuments.length > 0) {
               this.documentService.getByMultiId(this.commentPeriod.relatedDocuments)
-                .takeUntil(this.ngUnsubscribe)
+                .pipe(takeUntil(this.ngUnsubscribe))
                 .subscribe(docs => {
                   this.commentPeriodDocs = docs;
                   this._changeDetectionRef.detectChanges();
@@ -95,7 +96,7 @@ export class CommentsComponent implements OnInit, OnDestroy {
             }
             this.commentPeriodId = this.commentPeriod._id;
             this.commentService.getByPeriodId(this.commentPeriodId, this.tableData.currentPage, this.tableData.pageSize, true)
-              .takeUntil(this.ngUnsubscribe)
+              .pipe(takeUntil(this.ngUnsubscribe))
               .subscribe(async (res: any) => {
                 this.comments = res.currentComments;
                 this.tableData.totalListItems = res.totalCount;
@@ -202,7 +203,7 @@ export class CommentsComponent implements OnInit, OnDestroy {
     this.tableData.currentPage = pageNumber;
 
     this.commentService.getByPeriodId(this.commentPeriodId, this.tableData.currentPage, this.tableData.pageSize, true)
-      .takeUntil(this.ngUnsubscribe)
+      .pipe(takeUntil(this.ngUnsubscribe))
       .subscribe(async (res: any) => {
         this.tableData.totalListItems = res.totalCount;
         this.comments = res.currentComments;

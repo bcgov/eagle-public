@@ -1,11 +1,8 @@
 import { Component, OnInit, OnDestroy, Renderer2, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { MatSnackBarRef, SimpleSnackBar, MatSnackBar } from '@angular/material';
 import { Router, NavigationEnd } from '@angular/router';
-import { Subject } from 'rxjs/Subject';
-import { Observable } from 'rxjs/Observable';
-import 'rxjs/add/operator/takeUntil';
-import 'rxjs/add/operator/concat';
-import 'rxjs/add/operator/finally';
+import { Subject, Observable, concat } from 'rxjs';
+import { takeUntil, finalize } from 'rxjs/operators';
 import * as L from 'leaflet';
 import * as _ from 'lodash';
 
@@ -64,7 +61,7 @@ export class ProjectsComponent implements OnInit, OnDestroy {
 
     // add a class to the body tag here to limit the height of the viewport when on the Projects page
     this.router.events
-      .takeUntil(this.ngUnsubscribe)
+      .pipe(takeUntil(this.ngUnsubscribe))
       .subscribe((event) => {
         if (event instanceof NavigationEnd) {
           this.renderer.removeClass(document.body, 'no-scroll');
@@ -99,7 +96,7 @@ export class ProjectsComponent implements OnInit, OnDestroy {
       this.allApps = []; // empty the list
 
       this.projectService.getCount()
-        .takeUntil(this.ngUnsubscribe)
+        .pipe(takeUntil(this.ngUnsubscribe))
         .subscribe(count => {
           // prepare 'pages' of gets
           const observables: Array<Observable<Project[]>> = [];
@@ -108,14 +105,16 @@ export class ProjectsComponent implements OnInit, OnDestroy {
           }
 
           // get all observables sequentially
-          Observable.of([] as Project[]).concat(...observables)
-            .takeUntil(this.ngUnsubscribe)
-            .finally(() => {
-              this.snackBarRef.dismiss();
-              this.isLoading = false;
-              console.log('got', this.allApps.length, 'apps in', (new Date()).getTime() - start, 'ms');
-            })
-            .subscribe(projects => {
+          concat(...observables)
+            .pipe(
+              takeUntil(this.ngUnsubscribe),
+              finalize(() => {
+                this.snackBarRef.dismiss();
+                this.isLoading = false;
+                console.log('got', this.allApps.length, 'apps in', (new Date()).getTime() - start, 'ms');
+              })
+            )
+            .subscribe((projects: any) => {
               this.allApps = _.concat(this.allApps, projects);
               // filter component gets all apps
               this.filterApps = this.allApps;

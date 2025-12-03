@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import * as L from 'leaflet';
 import { ApiService } from 'app/services/api';
 import { Observable, of } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
 
 //
 // This service/class provides a centralized place to persist config values
@@ -36,14 +37,16 @@ export class ConfigService {
   get lists(): Observable<any> {
     if (this._lists.length === 0) {
       return this.api.getFullDataSet('List')
-        .map(res => {
-          if (res) {
-            this._lists = res[0].searchResults;
-            return this._lists;
-          }
-          return null;
-        })
-        .catch(error => this.api.handleError(error));
+        .pipe(
+          map(res => {
+            if (res) {
+              this._lists = res[0].searchResults;
+              return this._lists;
+            }
+            return null;
+          }),
+          catchError(error => this.api.handleError(error))
+        );
     } else {
       return of(this._lists);
     }

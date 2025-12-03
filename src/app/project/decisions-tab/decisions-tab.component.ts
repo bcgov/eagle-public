@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subject } from 'rxjs/Subject';
-import 'rxjs/add/operator/takeUntil';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 import { Project } from 'app/models/project';
 import { ApiService } from 'app/services/api';
@@ -25,7 +25,7 @@ export class DecisionsTabComponent implements OnInit, OnDestroy {
   ngOnInit() {
     // get project
     this.route.parent.data
-      .takeUntil(this.ngUnsubscribe)
+      .pipe(takeUntil(this.ngUnsubscribe))
       .subscribe(
         (data: { project: Project }) => {
           if (data.project) {

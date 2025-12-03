@@ -1,7 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Resolve, ActivatedRouteSnapshot } from '@angular/router';
 
-import 'rxjs/add/operator/switchMap';
 
 import * as _ from 'lodash';
 

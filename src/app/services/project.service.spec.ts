@@ -3,8 +3,7 @@ import { ProjectService } from './project.service';
 import { ApiService } from 'app/services/api';
 import { DecisionService } from './decision.service';
 import { FeatureService } from './feature.service';
-import 'rxjs/add/observable/of';
-import { Observable } from 'rxjs/Observable';
+import { of } from 'rxjs';
 import { Project } from 'app/models/project';
 import { Decision } from 'app/models/decision';
 import { Feature } from 'app/models/feature';
@@ -23,7 +22,7 @@ describe('ProjectService', () => {
           return [{_id: id, status: 'ACCEPTED'}];
         }
       };
-      return Observable.of(response);
+      return of(response);
     },
 
     getProjects() {
@@ -35,7 +34,7 @@ describe('ProjectService', () => {
           ];
         }
       };
-      return Observable.of(response);
+      return of(response);
     },
 
     getCountProjects() {
@@ -50,7 +49,7 @@ describe('ProjectService', () => {
           }
         }
       };
-      return Observable.of(response);
+      return of(response);
     },
 
     handleError(error: any) {
@@ -61,11 +60,11 @@ describe('ProjectService', () => {
   const searchServiceStub = {
     getSearchResults(projectData: Project[]) {
       // Just returning the ajax project for now
-      return Observable.of(projectData);
+      return of(projectData);
     },
     // Returning null for now on the getItem call
     getItem(string: String) {
-      return Observable.of({data: string})
+      return of({data: string})
     }
   };
 
@@ -83,7 +82,7 @@ describe('ProjectService', () => {
   }
   const decisionServiceStub = {
     getByProjectId() {
-      return Observable.of(new Decision({_id: 'IIIII'}));
+      return of(new Decision({_id: 'IIIII'}));
     }
   };
 
@@ -93,7 +92,7 @@ describe('ProjectService', () => {
         new Feature({id: 'FFFFF', properties: { TENURE_AREA_IN_HECTARES: 12 }}),
         new Feature({id: 'GGGGG', properties: { TENURE_AREA_IN_HECTARES: 13 }})
       ];
-      return Observable.of(features);
+      return of(features);
     }
   };
 
@@ -127,7 +126,7 @@ describe('ProjectService', () => {
       const response = freshProjectArray;
 
       spyOn(apiService, 'getProject')
-        .and.returnValue(Observable.of(response));
+        .and.returnValue(of(response));
     });
 
     describe('when an project has been cached', () => {

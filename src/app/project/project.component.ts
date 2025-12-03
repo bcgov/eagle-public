@@ -1,7 +1,7 @@
 import { Component, OnInit, Renderer2, ChangeDetectorRef, OnDestroy, AfterViewInit, ElementRef } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subject } from 'rxjs/Subject';
-import 'rxjs/add/operator/takeUntil';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import * as L from 'leaflet';
 
@@ -119,7 +119,7 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
         true,
         ''
       )
-      .takeUntil(this.ngUnsubscribe)
+      .pipe(takeUntil(this.ngUnsubscribe))
       .subscribe((res: any) => {
         // Display tab if there are results.
         if (res[0].data.searchResults.length) {
@@ -134,7 +134,7 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
   ngOnInit() {
     // get data from route resolver
     this.route.data
-      .takeUntil(this.ngUnsubscribe)
+      .pipe(takeUntil(this.ngUnsubscribe))
       .subscribe(
         (data: { project: Project }) => {
           const results = data ?  data.project : null;

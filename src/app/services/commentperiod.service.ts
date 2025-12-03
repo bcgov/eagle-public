@@ -1,8 +1,6 @@
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs/Observable';
-import 'rxjs/add/operator/map';
-import 'rxjs/add/operator/catch';
-import 'rxjs/add/observable/of';
+import { Observable } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
 
 import { ApiService } from './api';
 import { CommentPeriod } from 'app/models/commentperiod';
@@ -31,39 +29,43 @@ export class CommentPeriodService {
   // get all comment periods for the specified application id
   getAllByProjectId(projId: string): Observable<Object> {
     return this.api.getPeriodsByProjId(projId)
-      .map((res: any) => {
-        if (res) {
-          const periods: Array<CommentPeriod> = [];
-          if (!res || res.length === 0) {
-            return periods;
+      .pipe(
+        map((res: any) => {
+          if (res) {
+            const periods: Array<CommentPeriod> = [];
+            if (!res || res.length === 0) {
+              return periods;
+            }
+            res.forEach(cp => {
+              periods.push(new CommentPeriod(cp));
+            });
+            return { totalCount: res.length, data: periods };
           }
-          res.forEach(cp => {
-            periods.push(new CommentPeriod(cp));
-          });
-          return { totalCount: res.length, data: periods };
-        }
-        return {};
-      })
-      .catch(error => this.api.handleError(error));
+          return {};
+        }),
+        catchError(error => this.api.handleError(error))
+      );
   }
 
   // get a specific comment period by its id
   getById(periodId: string): Observable<CommentPeriod> {
     return this.api.getPeriod(periodId)
-      .map((res: any) => {
-        if (res) {
-          const periods = res;
-          // return the first (only) comment period
-          return periods.length > 0 ? new CommentPeriod(periods[0]) : null;
-        }
-      })
-      .map((period: CommentPeriod) => {
-        if (!period) { return null as CommentPeriod; }
+      .pipe(
+        map((res: any) => {
+          if (res) {
+            const periods = res;
+            // return the first (only) comment period
+            return periods.length > 0 ? new CommentPeriod(periods[0]) : null;
+          }
+        }),
+        map((period: CommentPeriod) => {
+          if (!period) { return null as CommentPeriod; }
 
-        this.commentPeriod = period;
-        return this.commentPeriod;
-      })
-      .catch(this.api.handleError);
+          this.commentPeriod = period;
+          return this.commentPeriod;
+        }),
+        catchError(this.api.handleError)
+      );
   }
   // returns first period - multiple comment periods are currently not supported
   getCurrent(periods: CommentPeriod[]): CommentPeriod {

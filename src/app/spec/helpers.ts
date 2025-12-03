@@ -1,10 +1,9 @@
-import { Observable } from 'rxjs/Observable';
-import 'rxjs/add/observable/of';
+import { of } from 'rxjs';
 
 
 export class ActivatedRouteStub {
   public parent = {
-    data: Observable.of({})
+    data: of({})
   };
 
   constructor(initialData) {
@@ -12,7 +11,7 @@ export class ActivatedRouteStub {
   }
 
   public setParentData(data: {}) {
-    this.parent.data = Observable.of(data);
+    this.parent.data = of(data);
   }
 }
 

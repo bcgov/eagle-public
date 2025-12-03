@@ -1,10 +1,6 @@
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs/Observable';
-import { flatMap } from 'rxjs/operators';
-import { of, forkJoin } from 'rxjs';
-import 'rxjs/add/operator/toPromise';
-import 'rxjs/add/operator/map';
-import 'rxjs/add/operator/catch';
+import { Observable, of, forkJoin } from 'rxjs';
+import { map, catchError, flatMap } from 'rxjs/operators';
 import * as _ from 'lodash';
 
 import { ApiService } from './api';
@@ -23,34 +19,38 @@ export class CommentService {
   // get count of projects
   getCountById(commentPeriodId: string): Observable<number> {
     return this.api.getCountCommentsById(commentPeriodId)
-      .catch(error => this.api.handleError(error));
+      .pipe(
+        catchError(error => this.api.handleError(error))
+      );
   }
 
   // get all comments for the specified comment period id
   // (without documents)
   getByPeriodId(periodId: string, pageNum: number = null, pageSize: number = null, getCount: boolean = false): Observable<Object> {
     return this.api.getCommentsByPeriodId(pageNum ? pageNum - 1 : pageNum, pageSize, getCount, periodId)
-      .map((res: any) => {
-        if (res) {
-          const comments = res.body;
-          comments.forEach((comment, i) => {
-            comments[i] = new Comment(comment);
-          });
-          const commentsDataSet = {
-            totalCount: res.headers.get('x-total-count'),
-            currentComments: comments as Comment[]
-          };
-          return commentsDataSet;
-        }
-      })
-      .catch(this.api.handleError);
+      .pipe(
+        map((res: any) => {
+          if (res) {
+            const comments = res.body;
+            comments.forEach((comment, i) => {
+              comments[i] = new Comment(comment);
+            });
+            const commentsDataSet = {
+              totalCount: res.headers.get('x-total-count'),
+              currentComments: comments as Comment[]
+            };
+            return commentsDataSet;
+          }
+        }),
+        catchError(this.api.handleError)
+      );
   }
 
   // get a specific comment by its id
   // (including documents)
   getById(commentId: string, forceReload: boolean = false): Observable<Comment> {
     if (this.comment && this.comment._id === commentId && !forceReload) {
-      return Observable.of(this.comment);
+      return of(this.comment);
     }
 
     // first get the comment data
@@ -67,9 +67,9 @@ export class CommentService {
         }
         // now get the rest of the data for this project
         return this._getExtraAppData(new Comment(comments[0]));
-      })
-    )
-    .catch(error => this.api.handleError(error));
+      }),
+      catchError(error => this.api.handleError(error))
+    );
   }
 
   add(orig: Comment): Observable<Comment> {
@@ -80,18 +80,22 @@ export class CommentService {
     delete comment._id;
 
     return this.api.addComment(comment)
-      .map((res: Comment) => {
-        return res ? new Comment(res) : null;
-      })
-      .catch(this.api.handleError);
+      .pipe(
+        map((res: Comment) => {
+          return res ? new Comment(res) : null;
+        }),
+        catchError(this.api.handleError)
+      );
   }
 
   private _getExtraAppData(comment: Comment): Observable<Comment> {
     return forkJoin(
       this.documentService.getByMultiId(comment.documents)
-    ).map(payloads => {
-      comment.documentsList = payloads[0];
-      return comment;
-    });
+    ).pipe(
+      map(payloads => {
+        comment.documentsList = payloads[0];
+        return comment;
+      })
+    );
   }
 }

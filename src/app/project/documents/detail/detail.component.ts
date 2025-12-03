@@ -1,6 +1,7 @@
 import { Component, OnInit, ChangeDetectorRef, OnDestroy } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { Document } from 'app/models/document';
 import { Project } from 'app/models/project';
 import { ApiService } from 'app/services/api';
@@ -28,7 +29,7 @@ export class DocumentDetailComponent implements OnInit, OnDestroy {
     this.currentProject = this.storageService.state.currentProject.data;
 
     this.route.data
-      .takeUntil(this.ngUnsubscribe)
+      .pipe(takeUntil(this.ngUnsubscribe))
       .subscribe((res: any) => {
         this.document = res.document;
         this._changeDetectionRef.detectChanges();
