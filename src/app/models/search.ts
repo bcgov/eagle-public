@@ -1,5 +1,4 @@
 import { Params } from '@angular/router';
-import * as _ from 'lodash';
 
 import { NgbDateStruct } from '@ng-bootstrap/ng-bootstrap';
 

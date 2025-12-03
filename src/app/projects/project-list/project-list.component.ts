@@ -1,8 +1,6 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { Router, ActivatedRoute, Params } from '@angular/router';
 
-import * as _ from 'lodash';
-
 import { SearchResults } from 'app/models/search';
 
 import { Constants } from 'app/shared/utils/constants';

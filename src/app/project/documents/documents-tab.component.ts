@@ -1,8 +1,6 @@
 import { Component, OnInit, ChangeDetectorRef, OnDestroy } from '@angular/core';
 import { Router, ActivatedRoute, Params } from '@angular/router';
 
-import * as _ from 'lodash';
-
 import { SearchResults } from 'app/models/search';
 
 import { DocumentTableRowsComponent } from './project-document-table-rows/project-document-table-rows.component';

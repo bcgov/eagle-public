@@ -1,7 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable, of, forkJoin } from 'rxjs';
 import { map, catchError, flatMap } from 'rxjs/operators';
-import * as _ from 'lodash';
 
 import { ApiService } from './api';
 import { Comment } from 'app/models/comment';
@@ -74,7 +73,7 @@ export class CommentService {
 
   add(orig: Comment): Observable<Comment> {
     // make a (deep) copy of the passed-in comment so we don't change it
-    const comment = _.cloneDeep(orig);
+    const comment = JSON.parse(JSON.stringify(orig));
 
     // ID must not exist on POST
     delete comment._id;

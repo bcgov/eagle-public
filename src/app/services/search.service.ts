@@ -1,7 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
-import * as _ from 'lodash';
 
 import { ApiService } from './api';
 import { SearchResults } from 'app/models/search';

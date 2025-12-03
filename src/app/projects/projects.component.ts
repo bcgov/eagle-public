@@ -4,7 +4,6 @@ import { Router, NavigationEnd } from '@angular/router';
 import { Subject, Observable, concat } from 'rxjs';
 import { takeUntil, finalize } from 'rxjs/operators';
 import * as L from 'leaflet';
-import * as _ from 'lodash';
 
 import { Project } from 'app/models/project';
 import { ProjectService } from 'app/services/project.service';
@@ -115,7 +114,7 @@ export class ProjectsComponent implements OnInit, OnDestroy {
               })
             )
             .subscribe((projects: any) => {
-              this.allApps = _.concat(this.allApps, projects);
+              this.allApps = this.allApps.concat(projects);
               // filter component gets all apps
               this.filterApps = this.allApps;
             }, error => {

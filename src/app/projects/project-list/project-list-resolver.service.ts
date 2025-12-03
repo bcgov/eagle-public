@@ -1,9 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Resolve, ActivatedRouteSnapshot } from '@angular/router';
 
-
-import * as _ from 'lodash';
-
 import { Constants } from 'app/shared/utils/constants';
 import { TableTemplate } from 'app/shared/components/table-template/table-template';
 import { TableObject } from 'app/shared/components/table-template/table-object';

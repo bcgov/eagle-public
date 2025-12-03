@@ -11,7 +11,7 @@
         
         <div class="header-section" *ngIf="commentPeriod !== null && commentPeriod._id == commentPeriod._id">
           <h2>{{commentPeriodHeader}}</h2>
-          <h2>{{commentPeriod.dateStarted | date:'mediumDate'}} - {{commentPeriod.longEndDate.format('MMMM DD @ hh:mm A z')}}</h2>
+          <h2>{{commentPeriod.dateStarted | date:'mediumDate'}} - {{commentPeriod.longEndDate.toFormat('MMMM dd @ hh:mm a ZZZZ')}}</h2>
           
           <div *ngIf="commentPeriod.informationLabel !== null">
             <div id="instructions" [innerHTML]="commentPeriod.instructions  | safeHtml"></div>
