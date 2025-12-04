@@ -5,7 +5,7 @@
   "scripts": {
     "ng": "ng",
     "prestart": "",
-    "start": "ng serve -o",
+    "start": "NODE_OPTIONS=--no-deprecation ng serve -o",
     "build": "ng build --prod --configuration=production",
     "pretest": "",
     "test": "echo 'Test suite should be run with \"`npm run tests` or npm `run tests-ci`\"'",
