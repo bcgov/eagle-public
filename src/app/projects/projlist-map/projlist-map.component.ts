@@ -11,10 +11,10 @@ import { ProjDetailPopupComponent } from 'app/projects/proj-detail-popup/proj-de
 
 declare module 'leaflet' {
   export interface FeatureGroup<P = any> {
-    projectId: number;
+    projectId: string;
   }
   export interface Marker<P = any> {
-    projectId: number;
+    projectId: string;
   }
 }
 
