@@ -1,0 +1,158 @@
+<header class="app-header"
+  id="header"
+  [class.app-header--flex]="router.url.startsWith('/projects')"
+  [class.app-header--solid]="router.url.startsWith('/p/')">
+  <nav class="navbar navbar-expand-md justify-content-between">
+    <a class="navbar-brand"
+      title="Environmental Assessment Office Project Information Centre"
+      tabindex="0"
+      routerLink="/home">
+      <span class="navbar-brand__title">EPIC</span>
+    </a>
+    <button class="navbar-toggler"
+      tabindex="0"
+      type="button"
+      title="Toggle Main Navigation"
+      data-bs-toggle="collapse"
+      data-bs-target="#mainNav"
+      aria-controls="navbarText"
+      aria-expanded="false"
+      aria-label="Toggle navigation">
+      <i class="material-icons">menu</i>
+      <span>MENU</span>
+    </button>
+    <div class="collapse navbar-collapse"
+      id="mainNav">
+      <ul class="navbar-nav">
+        <li class="nav-item">
+          <a class="nav-link"
+            routerLink="/projects"
+            title="Find EAO Projects in British Columbia"
+            (click)="closeMenus()">
+            <span>Map View</span>
+          </a>
+        </li>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle"
+            id="searchProjects"
+            data-bs-toggle="dropdown"
+            (click)="projectInfoFocused.set(false)"
+            (focus)="toggleDropdown('projectInfo')"
+            aria-haspopup="true"
+            aria-expanded="false">
+            <span>Project Information</span><span class="caret"></span>
+          </a>
+          <div class="dropdown-menu dropdown-menu-right"
+            [class.show]="projectInfoFocused()"
+            aria-labelledby="searchProjects">
+            <a class="dropdown-item"
+              [routerLink]="['/projects-list']"
+              title="List Projects"
+              (click)="closeMenus()">
+              <div class="dd-item-header">
+                <span class="icon align-middle"><i class="material-icons">list</i></span>
+                <strong>List of Projects</strong>
+              </div>
+              <span class="dd-item-desc">Access all information relating to projects that have been involved with an
+                environmental assessment in British Columbia</span>
+            </a>
+            <a class="dropdown-item"
+              [routerLink]="['/project-notifications']"
+              title="Project Notifications"
+              (click)="closeMenus()">
+              <div class="dd-item-header">
+                <span class="icon align-middle"><i class="material-icons">view_list</i></span>
+                <strong>List of Project Notifications</strong>
+              </div>
+              <span class="dd-item-desc">Access information related to Project Notifications</span>
+            </a>
+            <a class="dropdown-item"
+              [routerLink]="['/search']"
+              title="Search Documents"
+              (click)="closeMenus()">
+              <div class="dd-item-header">
+                <span class="icon align-middle"><i class="material-icons">search</i></span>
+                <strong>All Documents</strong>
+              </div>
+              <span class="dd-item-desc">Access a list of all documents associated with any projects involved with an
+                environmental assessment in British Columbia</span>
+            </a>
+          </div>
+
+        </li>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle"
+            id="aboutMMTI"
+            data-bs-toggle="dropdown"
+            (click)="eaProcessFocused.set(false)"
+            (focus)="toggleDropdown('eaProcess')"
+            aria-haspopup="true"
+            aria-expanded="false">
+            <span>The EA Process</span><span class="caret"></span>
+          </a>
+          <div class="dropdown-menu dropdown-menu-right"
+            [class.show]="eaProcessFocused()"
+            aria-labelledby="aboutMMTI">
+            <a class="dropdown-item"
+              [routerLink]="['/legislation']"
+              (click)="closeMenus()">
+              <strong>Legislation</strong>
+              <span class="dd-item-desc">Learn about the legislation and regulations that apply to environmental
+                assessments in the province of British Columbia.</span>
+            </a>
+            <a class="dropdown-item"
+              [routerLink]="['/process']"
+              (click)="closeMenus()">
+              <strong>Process & Procedures</strong>
+              <span class="dd-item-desc">Learn more about how the Environmental Assessment Office neutrally administers
+                a process that holds all participants accountable.</span>
+            </a>
+            <a class="dropdown-item"
+              [routerLink]="['/compliance-oversight']"
+              (click)="closeMenus()">
+              <strong>Compliance Oversight</strong>
+              <span class="dd-item-desc">Learn about how we collaborate with other agencies to coordinate oversight of
+                environmental assessment projects.</span>
+            </a>
+            <a class="dropdown-item"
+              href="https://www2.gov.bc.ca/gov/content?id=525CA0BFCC5441C2B8FABCCF7B14004D"
+              target="_blank"
+              rel="noopener"
+              (click)="closeMenus()">
+              <strong>Dispute Resolution</strong>
+              <span class="dd-item-desc">Learn about dispute resolution between First Nations and the Province.</span>
+            </a>
+          </div>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link"
+            routerLink="/contact"
+            title="Contact Us"
+            (click)="closeMenus()">
+            <span>Contact Us</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+  <div [hidden]="true"
+    class="alert alert-danger alert-dismissible"
+    id="browser-alert">
+    <i class="material-icons">error</i><strong> Attention: </strong>This website is not supported by Internet Explorer
+    and Microsoft Edge, please use Google Chrome or Firefox.
+    <button type="button"
+      class="btn-close"
+      data-bs-dismiss="alert"
+      aria-label="Close">
+    </button>
+  </div>
+</header>
+@if (showBanner()) {
+  <div class="env-banner"
+    tabindex="0"
+    [class]="bannerColour()">
+    This is the&nbsp;<strong>{{envName()}}</strong>&nbsp;environment. The content you are viewing is not final and
+    subject to change.
+  </div>
+}
+

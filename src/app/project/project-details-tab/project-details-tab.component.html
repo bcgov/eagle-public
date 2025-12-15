@@ -1,0 +1,76 @@
+<div class="tab-pane" role="tabpanel">
+  <section class="tab-section">
+    <div class="row">
+      <div class="col-12">
+        <div class="location-info">
+          <p class="desc" [innerHTML]="(project?.description || '-') | newlines"></p>
+          <div class="col-sm-12 col-md-3 info-block">
+            <label>Proponent</label>
+            <p class="value">{{project?.proponent?.name || "-" }}</p>
+          </div>
+          <div class="col-sm-12 col-md-3 info-block">
+            <label>Type</label>
+            <p class="value">{{project?.type || "-" }}</p>
+          </div>
+          <div class="col-sm-12 col-md-3 info-block">
+            <label>Sub-type</label>
+            <p class="value">{{project?.sector || "-" }}</p>
+          </div>
+          <div class="col-sm-12 col-md-3 info-block">
+            <label>Nature</label>
+            <p class="value">{{project?.nature || "No nature description available" }}</p>
+          </div>
+          @if (project?.status) {
+            <div class="col-sm-12 col-md-3 info-block">
+              <label>IAAC Involvement</label>
+              @if (project.CEAAInvolvement?.name==='None') {
+                <p class="value">
+                  {{project.CEAAInvolvement?.name || "-" }}
+                </p>
+              }
+              @if (project.CEAAInvolvement?.name!=='None') {
+                <p class="value"><a class="value" target="_blank"
+                    href="{{project.CEAALink}}">{{project.CEAAInvolvement?.name || "-" }}</a>
+                </p>
+              }
+            </div>
+          }
+          @if (project?.status) {
+            <div class="col-sm-12 col-md-3 info-block">
+              <label>Project Status</label>
+              <p class="value">{{project?.status || "-"}}</p>
+            </div>
+          }
+          @if (project?.eacDecision) {
+            <div class="col-sm-12 col-md-3 info-block">
+              <label>EAC Status</label>
+              @if (project?.decisionDate) {
+                <p class="value">{{project.eacDecision?.name || '-'}} |
+                  {{project?.decisionDate | date: 'longDate'}}</p>
+              }
+              @if (!project?.decisionDate) {
+                <p class="value">{{project.eacDecision?.name || '-'}}</p>
+              }
+            </div>
+          }
+          @if (project?.operational) {
+            <div class="col-sm-12 col-md-3 info-block">
+              <label>Active Phase</label>
+              @if (project?.operational?.date) {
+                <p class="value">{{project?.operational?.label || '-'}} |
+                  {{project?.operational?.date | date: 'longDate'}}</p>
+              }
+              @if (!project?.operational?.date) {
+                <p class="value">{{project?.operational?.label || '-'}}</p>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+    <br>
+    <app-featured-documents></app-featured-documents>
+    <app-pins></app-pins>
+    <app-project-activites></app-project-activites>
+  </section>
+</div>

@@ -1,0 +1,155 @@
+@if (minNgbDate() && maxNgbDate()) {
+  <div class="date-input" [ngClass]="{ 'is-invalid': isValidate() && !isValidDate(ngbDate()) }">
+    <input 
+      class="form-control"
+      type="text"
+      placeholder="YYYY-MM-DD"
+      name="ngbDatepicker"
+      navigation="select"
+      ngbDatepicker
+      #d="ngbDatepicker"
+      [firstDayOfWeek]="7"
+      [(ngModel)]="ngbDate"
+      (ngModelChange)="onDateChange($event)"
+      [minDate]="minNgbDate()!"
+      [maxDate]="maxNgbDate()!"
+      [disabled]="isDisabled()"
+      aria-label="Date input text field. Please follow the pattern YYYY-MM-DD." />
+    
+    <button 
+      class="date-input__calendar-btn form-control"
+      (click)="d.toggle()"
+      type="button"
+      title="Select a Date"
+      [disabled]="isDisabled()"
+      [hidden]="isDisabled()"
+      tabindex="-1">
+      <span class="material-icons md-18">date_range</span>
+    </button>
+    
+    <button 
+      class="date-input__clear-btn btn btn-icon"
+      [hidden]="!ngbDate() || isDisabled()"
+      (click)="clearDate()"
+      title="Clear Date"
+      aria-label="Clear date button">
+      <span class="material-icons md-18">close</span>
+    </button>
+  </div>
+} @else if (minNgbDate()) {
+  <div class="date-input" [ngClass]="{ 'is-invalid': isValidate() && !isValidDate(ngbDate()) }">
+    <input 
+      class="form-control"
+      type="text"
+      placeholder="YYYY-MM-DD"
+      name="ngbDatepicker"
+      navigation="select"
+      ngbDatepicker
+      #d="ngbDatepicker"
+      [firstDayOfWeek]="7"
+      [(ngModel)]="ngbDate"
+      (ngModelChange)="onDateChange($event)"
+      [minDate]="minNgbDate()!"
+      [disabled]="isDisabled()"
+      aria-label="Date input text field. Please follow the pattern YYYY-MM-DD." />
+    
+    <button 
+      class="date-input__calendar-btn form-control"
+      (click)="d.toggle()"
+      type="button"
+      title="Select a Date"
+      [disabled]="isDisabled()"
+      [hidden]="isDisabled()"
+      tabindex="-1">
+      <span class="material-icons md-18">date_range</span>
+    </button>
+    
+    <button 
+      class="date-input__clear-btn btn btn-icon"
+      [hidden]="!ngbDate() || isDisabled()"
+      (click)="clearDate()"
+      title="Clear Date"
+      aria-label="Clear date button">
+      <span class="material-icons md-18">close</span>
+    </button>
+  </div>
+} @else if (maxNgbDate()) {
+  <div class="date-input" [ngClass]="{ 'is-invalid': isValidate() && !isValidDate(ngbDate()) }">
+    <input 
+      class="form-control"
+      type="text"
+      placeholder="YYYY-MM-DD"
+      name="ngbDatepicker"
+      navigation="select"
+      ngbDatepicker
+      #d="ngbDatepicker"
+      [firstDayOfWeek]="7"
+      [(ngModel)]="ngbDate"
+      (ngModelChange)="onDateChange($event)"
+      [maxDate]="maxNgbDate()!"
+      [disabled]="isDisabled()"
+      aria-label="Date input text field. Please follow the pattern YYYY-MM-DD." />
+    
+    <button 
+      class="date-input__calendar-btn form-control"
+      (click)="d.toggle()"
+      type="button"
+      title="Select a Date"
+      [disabled]="isDisabled()"
+      [hidden]="isDisabled()"
+      tabindex="-1">
+      <span class="material-icons md-18">date_range</span>
+    </button>
+    
+    <button 
+      class="date-input__clear-btn btn btn-icon"
+      [hidden]="!ngbDate() || isDisabled()"
+      (click)="clearDate()"
+      title="Clear Date"
+      aria-label="Clear date button">
+      <span class="material-icons md-18">close</span>
+    </button>
+  </div>
+} @else {
+  <div class="date-input" [ngClass]="{ 'is-invalid': isValidate() && !isValidDate(ngbDate()) }">
+    <input 
+      class="form-control"
+      type="text"
+      placeholder="YYYY-MM-DD"
+      name="ngbDatepicker"
+      navigation="select"
+      ngbDatepicker
+      #d="ngbDatepicker"
+      [firstDayOfWeek]="7"
+      [(ngModel)]="ngbDate"
+      (ngModelChange)="onDateChange($event)"
+      [disabled]="isDisabled()"
+      aria-label="Date input text field. Please follow the pattern YYYY-MM-DD." />
+    
+    <button 
+      class="date-input__calendar-btn form-control"
+      (click)="d.toggle()"
+      type="button"
+      title="Select a Date"
+      [disabled]="isDisabled()"
+      [hidden]="isDisabled()"
+      tabindex="-1">
+      <span class="material-icons md-18">date_range</span>
+    </button>
+    
+    <button 
+      class="date-input__clear-btn btn btn-icon"
+      [hidden]="!ngbDate() || isDisabled()"
+      (click)="clearDate()"
+      title="Clear Date"
+      aria-label="Clear date button">
+      <span class="material-icons md-18">close</span>
+    </button>
+  </div>
+}
+
+@if (isValidate() && !isValidDate(ngbDate())) {
+  <div class="invalid-feedback bg-danger">
+    Enter a valid date
+  </div>
+}

@@ -1,0 +1,286 @@
+<div>
+  <!-- Header Row -->
+  @if (title()) {
+    <div class="row mb-3">
+      <div class="col">
+        <span class="keyword-search-text">{{title()}}</span>
+        @if (tooltip()) {
+          <span class="material-icons align-text-bottom ml-2"
+            [matTooltip]="tooltip()!"
+            matTooltipPosition="after"
+            aria-label="Icon that displays a tooltip when focused or hovered over">
+            help_outline
+          </span>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Filter toggles dropdown, keyword textbox, clear button -->
+  <div class="row">
+    <div class="col">
+      <div class="input-group mb-3">
+        @if (subsets(); as subsetsValue) {
+          <div ngbDropdown class="input-group-prepend">
+            <button class="btn btn-outline-secondary"
+              id="dropdown"
+              ngbDropdownToggle>
+              {{ subsetsValue.selectedSubset !== null ?
+                subsetsValue.selectedSubset.subsetLabel : subsetsValue.defaultSubset!.subsetLabel }}
+            </button>
+            <div ngbDropdownMenu aria-labelledby="dropdown">
+              @for (subset of subsetsValue.options; track subset.subset) {
+                <button ngbDropdownItem
+                  [disabled]="subsetsValue.selectedSubset!.subsetLabel === subset.subsetLabel"
+                  (click)="changeSubset(subset)">
+                  {{subset.subsetLabel}}
+                  @if (subsetsValue.selectedSubset === subset) {
+                    <span class="material-icons material-icons align-text-bottom">
+                      check_circle
+                    </span>
+                  }
+                </button>
+              }
+            </div>
+          </div>
+        }
+        <input type="text"
+          class="form-control data-hj-allow"
+          (keyup.enter)="search()"
+          [ngModel]="keywordSearchWords()"
+          (ngModelChange)="keywordSearchWords.set($event)"
+          [placeholder]="keywordWatermark() || 'Type keyword to search'"
+          [attr.aria-label]="keywordWatermark() || 'Type keyword to search'"
+          aria-describedby="basic-addon2">
+        @if (keywordSearchWords() && keywordSearchWords().length > 0) {
+          <div class="input-group-append">
+            <button class="btn btn-outline-primary"
+              type="button"
+              (click)="clearSearchTerms()">
+              <span class="material-icons align-middle">close</span>
+            </button>
+          </div>
+        }
+        <div class="input-group-append">
+          <button class="btn btn-warning"
+            type="button"
+            (click)="search()"
+            [disabled]="searching()">
+            @if (!searching()) {
+              <span class="material-icons align-middle">search</span>
+            }
+            @if (searching()) {
+              <span class="spinner rotating align-middle"></span>
+            }
+            <span class="ps-1">{{searching() ? 'Searching...' : 'Search'}}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row mt-2">
+    <div class="col-sm-12 col-md-6 text-md-left text-center mb-md-0 mb-3">
+      @if (searchHelpLinkArray()) {
+        <a class="btn btn-primary"
+          [routerLink]="searchHelpLinkArray()!"
+          target="_blank"
+          rel="noopener">
+          <span class="material-icons md-18">info</span>
+          <span> Search Help</span>
+        </a>
+      }
+    </div>
+    <!-- Advanced Filters toggle -->
+    <div class="col-sm-12 col-md-6 text-md-right text-center">
+      @if (advancedFilters()) {
+        <button class="btn btn-primary"
+          (click)="toggleAdvancedFilters()">
+          {{showFiltersPanel() ? 'Close' : 'Open'}} Advanced Filters
+          <span class="material-icons align-middle">
+            {{showFiltersPanel() ? 'keyboard_arrow_up' : 'keyboard_arrow_down'}}
+          </span>
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- advanced filters panel -->
+  @if (advancedFilters()) {
+    <div id="advancedFilterPanel"
+      class="row mt-3 border-bottom"
+      [hidden]="!showFiltersPanel()">
+      <form class="filter-form"
+        [formGroup]="formGroup"
+        novalidate>
+        @if (advancedFilterTitle() && advancedFilterTitle()!.length > 0) {
+          <div class="row filter-header">
+            <h3>{{advancedFilterTitle()}}</h3>
+          </div>
+        }
+        @if (advancedFilterText() && advancedFilterText()!.length > 0) {
+          <div class="row filter-header">
+            <p>{{advancedFilterText()}}</p>
+          </div>
+        }
+        <div class="row"
+          [ngClass]="searching() ? 'disable-div' : ''">
+          <!-- for each filter, create a block for each filter type -->
+          @for (filter of filters(); track filter.id) {
+            <div [class]="'pb-1 filter-panel col-md-' + (filter.itemPanelSize ? filter.itemPanelSize : filterItemPanelSize())">
+              <!-- Date range filter-->
+              @if (filter.type === FilterType.DateRange) {
+                <div>
+                  @if (filter.name && filter.name.length > 0) {
+                    <label class="control-label font-weight-bold">{{filter.name}}</label>
+                  }
+                  <div class="row">
+                    <div class="col-md-6 start-date-padding">
+                      <label [for]="filter.filterDefinition.filterId"
+                        class="control-label font-weight-bold"
+                        tabindex="0">{{filter.filterDefinition.startDateLabel}}</label>
+                      <lib-date-picker [id]="filter.filterDefinition.startDateId"
+                        [control]="$any(formGroup.get(filter.filterDefinition.startDateId))"
+                        [minDate]="filter.filterDefinition.minDate"
+                        [maxDate]="filter.filterDefinition.maxDate">
+                      </lib-date-picker>
+                    </div>
+                    <div class="col-md-6 end-date-padding">
+                      <label [for]="filter.filterDefinition.endDateId"
+                        class="control-label font-weight-bold"
+                        tabindex="0">{{filter.filterDefinition.endDateLabel}}</label>
+                      <lib-date-picker [id]="filter.filterDefinition.endDateId"
+                        [control]="$any(formGroup.get(filter.filterDefinition.endDateId))"
+                        [minDate]="filter.filterDefinition.minDate"
+                        [maxDate]="filter.filterDefinition.maxDate">
+                      </lib-date-picker>
+                    </div>
+                  </div>
+                </div>
+              }
+              <!-- dropdown filter -->
+              @if (filter.type === FilterType.Dropdown) {
+                <div>
+                  @if (filter.name && filter.name.length > 0) {
+                    <label class="control-label font-weight-bold">{{filter.name}}</label>
+                  }
+                  <mat-select class="border rounded px-2 py-2"
+                    [aria-label]="filter.name + 'dropdown'"
+                    [formControlName]="filter.id"
+                    [multiple]="filter.filterDefinition.multiselect">
+                    @for (option of filter.filterDefinition.options; track option) {
+                      <mat-option [value]="option">{{option}}</mat-option>
+                    }
+                  </mat-select>
+                </div>
+              }
+              <!-- multi select filter -->
+              @if (filter.type === FilterType.MultiSelect) {
+                <div>
+                  @if (filter.name && filter.name.length > 0) {
+                    <label class="control-label font-weight-bold"
+                      for="activityTypeFilter" tabindex="0">{{filter.name}}</label>
+                  }
+                  <app-autocomplete-multi-select-2 [filter]="filter"
+                    (changeEvent)="changeMultiSelect()"
+                    [control]="$any(formGroup.get(filter.id))">
+                  </app-autocomplete-multi-select-2>
+                </div>
+              }
+              <!-- radio button filter -->
+              @if (filter.type === FilterType.RadioPicker) {
+                <div>
+                  @if (filter.name && filter.name.length > 0) {
+                    <label class="control-label font-weight-bold">{{filter.name}}</label>
+                  }
+                  <div class="row">
+                    @for (radio of filter.filterDefinition.options; track radio.id) {
+                      <div class="col-xl-5">
+                        <div class="radio">
+                          <input type="radio"
+                            [id]="radio.id"
+                            [value]="radio.value"
+                            [formControlName]="filter.id"
+                            [name]="filter.id" />
+                          <label class="radio-label"
+                            [for]="radio.id">{{radio.label}}</label>
+                        </div>
+                      </div>
+                    }
+                    <div class="col-xl-1">
+                      @if (formGroup.get(filter.id)!.value) {
+                        <span class="clear-button"
+                          (click)="resetFilter(filter.id)">
+                          <svg class="bi bi-x-circle"
+                            width="1em"
+                            height="1em"
+                            viewBox="0 0 16 16"
+                            fill="currentColor"
+                            xmlns="http://www.w3.org/2000/svg">
+                            <path fill-rule="evenodd"
+                              d="M8 15A7 7 0 1 0 8 1a7 7 0 0 0 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z" />
+                            <path fill-rule="evenodd"
+                              d="M11.854 4.146a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708-.708l7-7a.5.5 0 0 1 .708 0z" />
+                            <path fill-rule="evenodd"
+                              d="M4.146 4.146a.5.5 0 0 0 0 .708l7 7a.5.5 0 0 0 .708-.708l-7-7a.5.5 0 0 0-.708 0z" />
+                          </svg>
+                        </span>
+                      }
+                    </div>
+                  </div>
+                </div>
+              }
+              <!-- check box filter -->
+              @if (filter.type === FilterType.Checkbox) {
+                <div>
+                  @if (filter.name && filter.name.length > 0) {
+                    <label class="control-label font-weight-bold">{{filter.name}}</label>
+                  }
+                  <div class="row">
+                    @for (box of filter.filterDefinition.options; track box.id) {
+                      <div class="col-xl-3">
+                        <mat-checkbox [id]="box.id"
+                          (unchecked)="!box.isChecked"
+                          [name]="box.id"
+                          [formControlName]="box.id">
+                          {{box.label}}
+                        </mat-checkbox>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+              <!-- Slider toggle -->
+              @if (filter.type === FilterType.SliderToggle) {
+                <div>
+                  @if (filter.name && filter.name.length > 0) {
+                    <label class="control-label font-weight-bold">{{filter.name}}</label>
+                  }
+                  <div class="row slide-toggle-margin">
+                    <mat-slide-toggle [name]="filter.name"
+                      [id]="filter.id"
+                      [formControlName]="filter.id"
+                      [checked]="filter.filterDefinition.onOption.isChecked">
+                      @if (formGroup.get(filter.id)!.value) {
+                        {{ filter.filterDefinition.onOption.label }}
+                      } @else {
+                        {{ filter.filterDefinition.offOption.label }}
+                      }
+                    </mat-slide-toggle>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </form>
+      <section class="mb-3 reset-button">
+        <button class="btn btn-primary float-end"
+          (click)="clearFilters()"
+          [disabled]="searching()">
+          Reset Filters
+        </button>
+      </section>
+    </div>
+  }
+</div>

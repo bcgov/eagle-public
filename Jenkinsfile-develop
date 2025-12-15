@@ -1,0 +1,237 @@
+#!/usr/bin/env groovy
+
+import bcgov.GitHubHelper
+import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
+import java.util.regex.Pattern
+
+/*
+ * Sends a rocket chat notification
+ */
+def notifyRocketChat(text, target) {
+    def message = text.replaceAll(~/\'/, "")
+    def payload = JsonOutput.toJson([
+      "username":"Jenkins",
+      "icon_url":"https://wiki.jenkins.io/download/attachments/2916393/headshot.png",
+      "text": message
+    ])
+    try {
+      def rocketChatURL;
+      if (target == 'deploy') {
+        rocketChatURL = ROCKET_DEPLOY_WEBHOOK
+      } else if (target == 'qa') {
+        rocketChatURL = ROCKET_QA_WEBHOOK
+      }
+      sh("curl -X POST -H 'Content-Type: application/json' --data \'${payload}\' ${rocketChatURL}")
+    } catch (error) {
+      echo "Error posting Rocket Chat message: ${error}"
+    }
+}
+
+// Create deployment status and pass to Jenkins-GitHub library
+void createDeploymentStatus (String suffix, String status) {
+  try {
+    def ghDeploymentId = new GitHubHelper().createDeployment(
+      this,
+      "pull/${env.CHANGE_ID}/head",
+      [
+          'environment':"${suffix}",
+          'task':"deploy:pull:${env.CHANGE_ID}"
+      ]
+    )
+
+    new GitHubHelper().createDeploymentStatus(
+      this,
+      ghDeploymentId,
+      "${status}",
+      ['targetUrl':"https://eagle-${PR_NAME}-dev.${OCPHOST}/"]
+    )
+
+    if ('SUCCESS'.equalsIgnoreCase("${status}")) {
+      echo "${suffix} deployment successful!"
+    } else if ('PENDING'.equalsIgnoreCase("${status}")){
+      echo "${suffix} deployment pending."
+    }
+  } catch (error) {
+    echo "Unable to update Github deployment status: ${error}"
+  }
+}
+
+// Print stack trace of error
+@NonCPS
+private static String stackTraceAsString(Throwable t) {
+    StringWriter sw = new StringWriter();
+    t.printStackTrace(new PrintWriter(sw));
+    return sw.toString()
+}
+
+def _openshift(String name, String project, Closure body) {
+  script {
+    openshift.withCluster() {
+      openshift.withProject(project) {
+        echo "Running Stage '${name}'"
+        waitUntil {
+          boolean isDone=false
+          try {
+            body()
+            isDone=true
+            echo "Completed Stage '${name}'"
+          } catch (error) {
+            echo "${stackTraceAsString(error)}"
+            def inputAction = input(
+              message: "This step (${name}) has failed. See related messages:",
+              ok: 'Confirm',
+              parameters: [
+                choice(
+                  name: 'action',
+                  choices: 'Re-run\nIgnore',
+                  description: 'What would you like to do?'
+                )
+              ]
+            )
+
+            if ('Ignore'.equalsIgnoreCase(inputAction)) {
+              notifyRocketChat(
+                "@all The build ${env.BUILD_DISPLAY_NAME} of eagle-public-pr, seems to be broken.\n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
+              'deploy'
+              )
+              isDone=true
+            }
+          }
+          return isDone
+        }
+      }
+    }
+  }
+}
+
+def BUILD_DONE_STATUSES = ['Complete', 'Failed', 'Cancelled']
+
+def CHANGELOG = "No new changes"
+def JOBNAME = "eagle-public"
+def PR_NAME = "eagle-public-pr-${CHANGE_ID}"
+def PR_FORK = "${env.CHANGE_FORK}"
+def PROJECTSET = "eagle-public-pr"
+
+pipeline {
+  environment {
+    TOOLSPROJECT = "${TOOLS_NAMESPACE ?: '6cdc9e-tools'}"
+    DEVPROJECT = "${DEV_NAMESPACE ?: '6cdc9e-dev'}"
+    TESTPROJECT = "${TEST_NAMESPACE ?: '6cdc9e-test'}"
+    PRODPROJECT = "${PROD_NAMESPACE ?: '6cdc9e-prod'}"
+    OCPHOST = "${OCP_HOST ?: 'apps.silver.devops.gov.bc.ca'}"
+  }
+  agent any
+  
+  stages {
+    
+    stage('Check for Deployment') {
+      steps {
+        script {
+          echo "Checking for PR deployment: ${PR_NAME}"
+          def hasDeployment = checkForPRDeployment()
+          
+          if (!hasDeployment) {
+            echo "No existing PR deployment found. Creating new deployment..."
+            // This would call createFullPRDeployment() if needed
+            // For now, we'll skip this for simplicity
+          } else {
+            echo "PR deployment exists. Proceeding with build and deploy."
+          }
+        }
+      }
+    }
+
+    stage('Build Angular 21 App') {
+      steps {
+        script {
+          _openshift(env.STAGE_NAME, TOOLSPROJECT) {
+            timeout(20) {
+              try {
+                sh("oc extract secret/rocket-chat-secrets --to=${env.WORKSPACE} --confirm")
+                ROCKET_DEPLOY_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-deploy-webhook')
+                ROCKET_QA_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-qa-webhook')
+              } catch (error) {
+                echo "Error retrieving rocket chat token"
+              }
+
+              echo "Building ${PR_NAME} from fork ${PR_FORK}, branch ${CHANGE_BRANCH}"
+              
+              // Trigger Angular builder
+              def bcObj1 = openshift.selector('bc', "${PR_NAME}-eagle-public-angular-builder")
+              bcObj1.startBuild("--wait")
+              
+              // Trigger runtime image build
+              def bcObj2 = openshift.selector('bc', "${PR_NAME}-eagle-public-build")
+              bcObj2.startBuild("--wait")
+              
+              echo "Build completed successfully"
+              
+              // Get image hash for tagging
+              IMAGE_HASH = sh (
+                script: """oc get istag ${PR_NAME}-eagle-public:latest -o template --template=\"{{.image.dockerImageReference}}\"|awk -F \":\" \'{print \$3}\'""",
+                returnStdout: true).trim()
+              echo "Image Hash: ${IMAGE_HASH}"
+            }
+          }
+        }
+      }
+    }
+
+    stage('Deploy to Dev') {
+      steps {
+        script {
+          _openshift(env.STAGE_NAME, DEVPROJECT) {
+            createDeploymentStatus("dev", "PENDING")
+            
+            echo "Tagging ${PR_NAME} image to dev"
+            openshift.tag("${TOOLSPROJECT}/${PR_NAME}-eagle-public:latest", 
+                         "${TOOLSPROJECT}/${PR_NAME}-eagle-public:dev")
+            
+            // Wait for deployment to complete
+            timeout(10) {
+              def dc = openshift.selector('dc', "${PR_NAME}-eagle-public")
+              dc.rollout().status("--watch=true")
+            }
+            
+            createDeploymentStatus("dev", "SUCCESS")
+            
+            notifyRocketChat(
+              "eagle-public PR #${CHANGE_ID} (Angular 21) has been deployed to dev: https://eagle-${PR_NAME}-dev.${OCPHOST}/",
+              'deploy'
+            )
+          }
+        }
+      }
+    }
+
+  }
+}
+
+def checkForPRDeployment() {
+  def dcCount = 0
+  _openshift("Check Deployment", TOOLSPROJECT) {
+    try {
+      dcCount = openshift.selector('bc', "${PR_NAME}-eagle-public-build").count()
+    } catch (error) {
+      echo "No deployment found: ${error.message}"
+      dcCount = 0
+    }
+  }
+  return dcCount > 0
+}
+
+@NonCPS
+def getChangeLog(pastBuilds) {
+  def log = ""
+  for (int x = 0; x < pastBuilds.size(); x++) {
+    for (int i = 0; i < pastBuilds[x].changeSets.size(); i++) {
+      def entries = pastBuilds[x].changeSets[i].items
+      for (int j = 0; j < entries.length; j++) {
+        def entry = entries[j]
+        log += "* ${entry.msg} by ${entry.author} \n"
+      }
+    }
+  }
+  return log
+}

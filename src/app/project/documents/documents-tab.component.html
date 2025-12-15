@@ -1,0 +1,39 @@
+<div class="tab-pane" role="tabpanel">
+  <section class="tab-section">
+    @if (loadingLists() || loadingTableParams()) {
+      <div class="spinner-container">
+        <div class="spinner-new rotating"></div>
+      </div>
+    }
+
+    @if (!loadingLists() && !loadingTableParams()) {
+      <section class="mb-4 pt-0 pb-0">
+        <search-filter-template
+          #explorePanel
+          (searchEvent)="executeSearch($event)"
+          [advancedFilters]="true"
+          [showAdvancedFilters]="showAdvancedFilters()"
+          [searchOnFilterChange]="true"
+          [filters]="filters()"
+          (resetControls)="onResetControls()"
+          (toggleFiltersPanelEvent)="onToggleFiltersPanel($event)"
+          [searchHelpLinkArray]="['/search-help']"
+          [searching]="loadingTableData()">
+        </search-filter-template>
+      </section>
+    }
+
+    @if (tableData().totalListItems > 0) {
+      <lib-table-template
+        [data]="tableData()"
+        (messageOut)="onMessageOut($event)">
+      </lib-table-template>
+    }
+
+    @if (tableData().totalListItems === 0) {
+      <div>
+        No results found.
+      </div>
+    }
+  </section>
+</div>

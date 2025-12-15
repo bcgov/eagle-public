@@ -1,0 +1,167 @@
+@import "../../assets/styles/base/base.css";
+
+:host {
+  flex: 1 1 auto;
+  display: block;
+  background: #fff;
+}
+
+@media (min-width: 768px) {
+  :host {
+    padding-top: 4.2rem;
+  }
+}
+
+.comments {
+  background-color: #fff;
+  padding-top: 30px;
+  padding-bottom: 30px;
+
+  .header-section {
+    margin-top: 20px;
+    padding: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    color: #fff;
+    background-color: #003366;
+    overflow-y: auto;
+  }
+}
+
+.project {
+  background: #fff;
+
+  .container {
+    @media (max-width: 767px) {
+      padding: 1rem;
+    }
+  }
+
+  .hero-banner-alt {
+    h1 {
+      display: inline-block;
+    }
+
+    .ea-decision {
+      display: inline-block;
+      margin: 30px 0;
+      padding: 3px 10px;
+      border: 2px solid #fcba18;
+      color: #fcba18;
+      font-size: 1rem;
+      font-weight: bold;
+    }
+
+    .basic-info {
+      margin-bottom: 30px;
+    }
+
+    @media (min-width: 767px) {
+      .basic-info {
+        display: flex;
+      }
+    }
+
+    .basic-info > div {
+      padding-right: 15px;
+      margin-right: 15px;
+    }
+
+    @media (min-width: 767px) {
+      .basic-info > div {
+        border-right: 1px solid #46617b;
+      }
+    }
+
+    .basic-info > div:last-of-type {
+      border-right: none;
+    }
+
+    .basic-info label {
+      font-weight: bold;
+      color: #fcba18;
+      font-size: 1rem;
+      margin-right: 0.5rem;
+    }
+
+    .basic-info p {
+      font-size: 1rem;
+      display: inline-block;
+    }
+
+    .hero-banner__content {
+      padding-top: 3rem;
+      padding-bottom: 1rem;
+    }
+
+    .inverted {
+      @media (max-width: 1600px) {
+        margin-bottom: 2rem;
+      }
+    }
+  }
+
+  .list-group-item {
+    color: #000;
+  }
+}
+
+.clickable-row {
+  cursor: pointer;
+}
+
+.doc-list {
+  color: black;
+  margin: 0;
+  padding: 0;
+}
+
+.doc-list li {
+  display: flex;
+  flex-direction: row;
+  background: #f7f8fa;
+  border-bottom: 1px solid #dee2e6;
+  transition: background-color 0.15s ease-in-out;
+}
+
+.doc-list li:first-child {
+  margin-top: 0.5rem;
+}
+
+.doc-list li:hover {
+  background-color: rgba(0, 0, 0, 0.075);
+}
+
+.doc-list li:last-child {
+  border-bottom: none;
+}
+
+.doc-list li + li {
+  margin-top: 0;
+}
+
+.doc-list .cell {
+  padding: 0.25rem;
+}
+
+.doc-list .cell__txt-content {
+  display: inline-block;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.doc-list .cell.icon {
+  flex: 0 0 auto;
+  padding-left: 0.75rem;
+  padding-right: 0;
+}
+
+.doc-list .cell.icon i {
+  font-size: 1.35rem;
+  color: #999;
+}
+
+.doc-list .cell.name {
+  flex: 1 1 auto;
+  font-size: 0.875rem;
+}

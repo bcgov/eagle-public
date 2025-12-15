@@ -1,0 +1,19 @@
+<td scope="row" class="col-12 pt-4 pn-location-info">
+  <span>
+    <mat-tab-group>
+      <mat-tab [label]="isMobile() ? 'Details' : 'Project Notification Details'">
+        <div class="tab-section">
+          <app-project-notification-documents-table-details [rowData]="rowData">
+          </app-project-notification-documents-table-details>
+        </div>
+      </mat-tab>
+      <mat-tab label="Documents">
+        <div class="tab-section">
+          <app-project-notification-documents-table [header]="rowData.name.toUpperCase() || '-'"
+            [tableId]="rowData._id">
+          </app-project-notification-documents-table>
+        </div>
+      </mat-tab>
+    </mat-tab-group>
+  </span>
+</td>

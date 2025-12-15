@@ -1,0 +1,39 @@
+/* TODO: Convert from SCSS - autocomplete-multi-select.component.scss */
+
+.mat-chip-list-wrapper-override {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.multi-box-width {
+  flex: 1;
+  min-width: 200px;
+}
+
+.chip-text-style {
+  font-size: 0.875rem;
+}
+
+.multi-select-option {
+  padding: 0 !important;
+}
+
+.no-pointer-events {
+  pointer-events: none;
+}
+
+.py-0 {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.px-3 {
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
+}
+
+.p-0 {
+  padding: 0 !important;
+}

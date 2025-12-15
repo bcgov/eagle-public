@@ -1,0 +1,59 @@
+/* Bootstrap 5.3 CSS Variable Overrides for EAGLE Design System */
+
+:root {
+  /* Primary Colors - Map EAGLE colors to Bootstrap semantic colors */
+  --bs-primary: #003366; /* EAGLE primary blue */
+  --bs-primary-rgb: 0, 51, 102;
+  
+  --bs-secondary: #38598a; /* EAGLE secondary blue */
+  --bs-secondary-rgb: 56, 89, 138;
+  
+  --bs-warning: #fcba19; /* EAGLE gold/yellow */
+  --bs-warning-rgb: 252, 186, 25;
+  
+  --bs-light: #f7f8fa; /* EAGLE light background */
+  --bs-light-rgb: 247, 248, 250;
+  
+  --bs-dark: #003366; /* Same as primary */
+  --bs-dark-rgb: 0, 51, 102;
+  
+  /* Body defaults */
+  --bs-body-color: #494949; /* EAGLE font color */
+  --bs-body-bg: #fff;
+  
+  /* Transitions */
+  --bs-transition: color 0.2s ease-in-out, background-color 0.2s ease-in-out, border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  
+  /* Links */
+  --bs-link-color: #1a5a96;
+  --bs-link-hover-color: #003366;
+  --bs-link-decoration: none;
+  
+  /* Borders */
+  --bs-border-color: #ddd;
+  --bs-border-color-translucent: rgba(221, 221, 221, 0.5);
+  --bs-border-radius: 0.25rem;
+  --bs-border-radius-sm: 0.2rem;
+  --bs-border-radius-lg: 0.3rem;
+  
+  /* Form controls */
+  --bs-form-control-bg: #fff;
+  --bs-form-control-border-color: #ddd;
+  --bs-form-control-focus-border-color: #5091cd;
+  
+  /* Buttons */
+  --bs-btn-border-radius: 0.25rem;
+  --bs-btn-transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  
+  /* Cards */
+  --bs-card-border-width: 0;
+  --bs-card-border-color: transparent;
+  --bs-card-cap-bg: #003367;
+  --bs-card-cap-color: #fff;
+  
+  /* Tables */
+  --bs-table-bg: #f7f8fa;
+  --bs-table-striped-bg: #f4f4f4;
+  --bs-table-hover-bg: #ddd;
+  --bs-table-border-color: transparent;
+}

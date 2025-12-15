@@ -1,0 +1,23 @@
+.comment-div {
+  .show-less {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+  }
+}
+
+.comment {
+  height: 30px;
+}
+
+.attachment {
+  cursor: pointer;
+}
+
+.clickable {
+  background: none;
+  border: none;
+  font-weight: bold;
+  padding: 0;
+  -webkit-appearance: none;
+}

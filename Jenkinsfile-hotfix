@@ -1,0 +1,216 @@
+#!/usr/bin/env groovy
+
+import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
+import java.util.regex.Pattern
+
+/*
+ * Sends a rocket chat notification
+ */
+def notifyRocketChat(text, url) {
+    def rocketChatURL = url
+    def message = text.replaceAll(~/\'/, "")
+    def payload = JsonOutput.toJson([
+      "username":"Jenkins",
+      "icon_url":"https://wiki.jenkins.io/download/attachments/2916393/headshot.png",
+      "text": message
+    ])
+
+    sh("curl -X POST -H 'Content-Type: application/json' --data \'${payload}\' ${rocketChatURL}")
+}
+
+// Print stack trace of error
+@NonCPS
+private static String stackTraceAsString(Throwable t) {
+    StringWriter sw = new StringWriter();
+    t.printStackTrace(new PrintWriter(sw));
+    return sw.toString()
+}
+
+def _openshift(String name, String project, Closure body) {
+  script {
+    openshift.withCluster() {
+      openshift.withProject(project) {
+        echo "Running Stage '${name}'"
+        waitUntil {
+          boolean isDone=false
+          try {
+            body()
+            isDone=true
+            echo "Completed Stage '${name}'"
+          } catch (error) {
+            echo "${stackTraceAsString(error)}"
+            def inputAction = input(
+              message: "This step (${name}) has failed. See related messages:",
+              ok: 'Confirm',
+              parameters: [
+                choice(
+                  name: 'action',
+                  choices: 'Re-run\nIgnore',
+                  description: 'What would you like to do?'
+                )
+              ]
+            )
+            if ('Ignore'.equalsIgnoreCase(inputAction)) {
+              isDone=true
+            }
+          }
+          return isDone
+        }
+      }
+    }
+  }
+}
+
+@NonCPS
+def getChangeLog(pastBuilds) {
+  def log = ""
+  for (int x = 0; x < pastBuilds.size(); x++) {
+    for (int i = 0; i < pastBuilds[x].changeSets.size(); i++) {
+      def entries = pastBuilds[x].changeSets[i].items
+      for (int j = 0; j < entries.length; j++) {
+        def entry = entries[j]
+        log += "* ${entry.msg} by ${entry.author} \n"
+      }
+    }
+  }
+  return log
+}
+
+def CHANGELOG = "No new changes"
+def BUILD_DONE_STATUSES = ['Complete', 'Failed', 'Cancelled']
+
+pipeline {
+  environment {
+    TOOLSPROJECT = "${TOOLS_NAMESPACE ?: '6cdc9e-tools'}"
+    PRODPROJECT = "${PROD_NAMESPACE ?: '6cdc9e-prod'}"
+  }
+  agent any
+  
+  stages {
+
+    stage('Build Hotfix') {
+      when {
+        expression { 
+          return env.BRANCH_NAME ==~ /^hotfix.*$/
+        }
+      }
+      steps {
+        script {
+          _openshift(env.STAGE_NAME, TOOLSPROJECT) {
+            timeout(20) {
+              try {
+                sh("oc extract secret/rocket-chat-secrets --to=${env.WORKSPACE} --confirm")
+                ROCKET_DEPLOY_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-deploy-webhook')
+              } catch (error) {
+                echo "Error retrieving rocket chat token"
+              }
+
+              echo "Building eagle-public hotfix branch: ${env.BRANCH_NAME}"
+              
+              // Trigger and wait for Angular builder
+              def bcObj1 = openshift.selector('bc', "eagle-public-angular-builder")
+              bcObj1.startBuild()
+              def buildName1 = "eagle-public-angular-builder-${bcObj1.object().status.lastVersion}"
+              echo "Angular 21 hotfix build name: ${buildName1}"
+              def buildSelector1 = openshift.selector('build', buildName1)
+
+              buildSelector1.untilEach(1) {
+                def phase = it.object().status.phase
+                if (phase == 'Failed') {
+                  currentBuild.result = "FAILURE"
+                }
+                return ( BUILD_DONE_STATUSES.contains(phase) )
+              }
+
+              // Trigger and wait for runtime image build
+              def bcObj2 = openshift.selector('bc', "eagle-public-build")
+              bcObj2.startBuild()
+              def buildName2 = "eagle-public-build-${bcObj2.object().status.lastVersion}"
+              echo "Nginx hotfix build name: ${buildName2}"
+              def buildSelector2 = openshift.selector('build', buildName2)
+
+              buildSelector2.untilEach(1) {
+                def phase = it.object().status.phase
+                if (phase == 'Failed') {
+                  currentBuild.result = "FAILURE"
+                }
+                return ( BUILD_DONE_STATUSES.contains(phase) )
+              }
+
+              echo "Hotfix build completed"
+
+              // Get image hash
+              IMAGE_HASH = sh (
+                script: """oc get istag eagle-public:latest -o template --template=\"{{.image.dockerImageReference}}\"|awk -F \":\" \'{print \$3}\'""",
+                returnStdout: true).trim()
+              echo "Image Hash: ${IMAGE_HASH}"
+              
+              // Tag as hotfix
+              echo "Tagging latest to hotfix"
+              openshift.tag("${TOOLSPROJECT}/eagle-public:latest", "${TOOLSPROJECT}/eagle-public:hotfix")
+              
+              notifyRocketChat(
+                "eagle-public hotfix ${env.BRANCH_NAME} (Angular 21) has been built and tagged",
+                ROCKET_DEPLOY_WEBHOOK
+              )
+            }
+          }
+        }
+      }
+    }
+
+    stage('Tag Hotfix as Prod') {
+      when {
+        expression { 
+          return env.BRANCH_NAME ==~ /^hotfix.*$/
+        }
+      }
+      steps {
+        script {
+          def isApproved = input(
+            message: 'Deploy hotfix to production?',
+            ok: 'Deploy',
+            submitter: 'authenticated'
+          )
+          
+          if (isApproved) {
+            _openshift(env.STAGE_NAME, TOOLSPROJECT) {
+              try {
+                sh("oc extract secret/rocket-chat-secrets --to=${env.WORKSPACE} --confirm")
+                ROCKET_DEPLOY_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-deploy-webhook')
+              } catch (error) {
+                echo "Error retrieving rocket chat token"
+              }
+              
+              try {
+                echo "Backing up production..."
+                sh("oc tag ${TOOLSPROJECT}/eagle-public:prod ${TOOLSPROJECT}/eagle-public:prod-backup-hotfix")
+                sleep 5
+                
+                echo "Tagging hotfix as prod..."
+                sh("oc tag ${TOOLSPROJECT}/eagle-public:hotfix ${TOOLSPROJECT}/eagle-public:prod")
+                sleep 5
+                
+                echo "Hotfix deployed to production"
+                
+                notifyRocketChat(
+                  "@all eagle-public hotfix ${env.BRANCH_NAME} has been deployed to PRODUCTION",
+                  ROCKET_DEPLOY_WEBHOOK
+                )
+              } catch (error) {
+                notifyRocketChat(
+                  "@all hotfix deployment to production FAILED: ${error.message}",
+                  ROCKET_DEPLOY_WEBHOOK
+                )
+                currentBuild.result = "FAILURE"
+                throw new Exception("Hotfix deployment failed")
+              }
+            }
+          }
+        }
+      }
+    }
+
+  }
+}

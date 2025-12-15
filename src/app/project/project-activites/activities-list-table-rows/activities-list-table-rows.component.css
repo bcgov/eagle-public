@@ -1,0 +1,23 @@
+.active-flag {
+  background: #5BB75C;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 3px 8px 4px;
+  border-radius: 5px;
+  font-size: .8rem;
+}
+
+.inactive-flag {
+  background: red;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 3px 8px 4px;
+  border-radius: 5px;
+  font-size: .8rem;
+}
+
+.fixedWidth {
+  width: 100px;
+}

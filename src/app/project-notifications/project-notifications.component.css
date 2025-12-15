@@ -1,0 +1,16 @@
+.project-list__options {
+  flex: 0 0 auto;
+  padding: 1rem 0rem;
+}
+
+.project-list__options mat-slide-toggle {
+  white-space: normal;
+}
+
+.table-container {
+  background-color: white;
+}
+
+.sub-text {
+  line-height: 150%;
+}

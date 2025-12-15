@@ -1,0 +1,96 @@
+<div class="project">
+    <main>
+        <div class="project-info">
+           <details-sidebar [project]="project()" (onSidebarToggle)="handleSidebarToggle($event)"></details-sidebar>
+            <div class="content">
+                @if (project()?.commentPeriodForBanner) {
+                    <div class="pcp-banner col-sm-12" [class.closed]="!sidebarOpen()">
+                        @if (project()!.commentPeriodForBanner!.isMet) {
+                            <div>
+                                <engagement-banner-wc [attr.engagementurl]="project()!.commentPeriodForBanner!.metURL"></engagement-banner-wc>
+                            </div>
+                        }
+                        @if (!project()!.commentPeriodForBanner!.isMet) {
+                            <div class="container">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h2 class="mb-0">Public Comment Period is {{project()!.commentPeriodForBanner!.commentPeriodStatus}}</h2>
+                                        <h5>{{project()!.commentPeriodForBanner!.dateStarted | date: 'MMMM d'}} -
+                                        {{project()!.commentPeriodForBanner!.longEndDate.toFormat('MMMM dd @ hh:mm a ZZZZ')}}</h5>
+                                    </div>
+                                    <div class="col-md-6 text-end">
+                                        @if (project()!.commentPeriodForBanner!.commentPeriodStatus !== 'Open') {
+                                            <div>
+                                                <button type="button" class="btn content-btn-dark" (click)="goToViewComments()">
+                                                    View Comment Period
+                                                </button>
+                                                &nbsp;
+                                                @if (project()!.commentPeriodForBanner!.commentPeriodStatus === 'Open') {
+                                                    <button class="btn content-btn-dark" (click)="addComment()" type="button">Submit Comment</button>
+                                                }
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        @if (project()!.commentPeriodForBanner!.informationLabel) {
+                                            <p class="mb-0 info">
+                                                This Public Comment Period is regarding the <b>{{project()!.commentPeriodForBanner!.informationLabel}}</b>
+                                            </p>
+                                        }
+                                        @if (project()!.commentPeriodForBanner!.informationLabel == null) {
+                                            <div class="mb-0 info">
+                                                <div id="instructions" [innerHTML]="project()!.commentPeriodForBanner!.instructions | safeHtml"></div>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+
+                <div class="main-content col-sm-12" [class.col-md-8]="sidebarOpen()" [class.wide]="!sidebarOpen()">
+                    <section class="project-tabs">
+                    <div class="container">
+                        <div class="tab-container">
+                        <div role="navigation">
+                            <ul class="nav-tabs" role="tablist">
+                            @for (tabLink of tabLinks(); track tabLink.link) {
+                                @if (tabLink.display === true) {
+                                    <li class="nav-item" role="presentation">
+                                        <a class="nav-link" role="tab" [routerLink]="tabLink.link" [replaceUrl]="true"
+                                        routerLinkActive="active">{{tabLink.label}}</a>
+                                    </li>
+                                }
+                            }
+                            </ul>
+                        </div>
+                        <router-outlet></router-outlet>
+                        </div>
+                    </div>
+                    </section>
+                </div>
+            </div>
+
+            <section class="people" [class.open]="sidebarOpen()" [class.closed]="!sidebarOpen()">
+                <div class="container">
+                        <h2>Contact Us</h2>
+                        <div class="flex-container">
+                            <div class="flex-item">
+                                <h3>Project Assessment Team</h3>
+                                <p class="value"><i class="material-icons mr-3" role="presentation">email</i><a
+                                    href="mailto:eao.operations@gov.bc.ca">EAO.operations@gov.bc.ca</a></p>
+                            </div>
+                            <div class="flex-item">
+                                <h3>Compliance & Enforcement</h3>
+                                <p class="value"><i class="material-icons me-3" role="presentation">email</i><a href="mailTo:eao.compliance@gov.bc.ca">EAO.compliance@gov.bc.ca</a></p>
+                                <p class="value"><i class="material-icons me-3" role="presentation">phone</i>250-387-0131</p>
+                            </div>
+                        </div>
+                    </div>
+            </section>
+        </div>
+    </main>
+</div>

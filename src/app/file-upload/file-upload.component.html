@@ -1,0 +1,45 @@
+<div draggable="true" [class]="dragDropClass() + ' dragDropStyling'">
+  <div class="row">
+    <div class="col-md-12 text-center">
+      <a href="javascript:void(0)" (click)="file.click()">
+        <i class="material-icons">file_upload</i>
+        Drop files to attach, or browse.
+        <br>
+      </a>
+      <span class="fileInfo">Accepted file types: {{fileExt()}}
+      <br>
+      Individual file size limit: {{maxSize()}}MB</span>
+      <input type="file" #file [multiple]="(maxFiles() > 1)" (click)="file.value = ''" value="" (change)="onFileChange($event)" style="display:none" />
+    </div>
+  </div>
+</div>
+
+@if (showList() && files().length > 0) {
+  <div class="files-list">
+    <ul>
+      @for (f of files(); track f.name) {
+        <li>
+          <span class="name">{{f.name}}</span>
+          <span class="value">
+            <button type="button" class="btn btn-danger btn-xs" (click)="removeFile(f)" title="Remove this file">
+              <i class="material-icons">clear</i>
+              <span>Remove</span>
+            </button>
+          </span>
+        </li>
+      }
+    </ul>
+  </div>
+}
+
+@if (errors().length > 0) {
+  <div class="errors-list">
+    <ul>
+      @for (err of errors(); track err) {
+        <li>
+          <i class="material-icons">error</i>&nbsp;{{err}}
+        </li>
+      }
+    </ul>
+  </div>
+}

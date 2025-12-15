@@ -1,0 +1,63 @@
+/* TODO: Convert from SCSS - search-filter-template.component.scss */
+
+.keyword-search-text {
+  font-size: 1.25rem;
+  font-weight: 500;
+}
+
+.filter-form {
+  width: 100%;
+}
+
+.filter-panel {
+  padding-bottom: 0.5rem;
+}
+
+.start-date-padding {
+  padding-right: 0.5rem;
+}
+
+.end-date-padding {
+  padding-left: 0.5rem;
+}
+
+.reset-button {
+  width: 100%;
+}
+
+.disable-div {
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.clear-button {
+  cursor: pointer;
+  color: #dc3545;
+}
+
+.slide-toggle-margin {
+  margin-left: 1rem;
+}
+
+.spinner {
+  display: inline-block;
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid #3498db;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.filter-header h3 {
+  margin-bottom: 1rem;
+}
+
+.filter-header p {
+  margin-bottom: 1rem;
+}

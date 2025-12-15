@@ -1,0 +1,18 @@
+/* App Root Layout */
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+@media (min-width: 768px) {
+  :host:not(:has(app-projects)) {
+    padding-top: 95px; /* Account for fixed header (65px) + banner (~30px) */
+  }
+}
+
+/* Main Content Area */
+.app-content {
+  flex: 1 0 auto;
+  background-color: var(--bs-light, #f7f8fa);
+}

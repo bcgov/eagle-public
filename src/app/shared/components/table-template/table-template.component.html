@@ -1,0 +1,67 @@
+<div class="table-template">
+  @if (data.options.showTopControls) {
+  <div class="row mb-3">
+    <div class="col-md-12 col-lg-6 text-lg-left text-center mb-lg-0 mb-3">
+      @if (data.options.showPageCountDisplay) {
+      <lib-page-count-display [isHidden]="false" [currentPageNum]="data.currentPage" [currentPageSize]="data.pageSize"
+        [totalItems]="data.totalListItems" id="table-template-page-count-display" />
+      }
+    </div>
+    <div class="col-md-12 col-lg-6 text-lg-right text-center">
+      @if (data.options.showPagination) {
+      <pagination-controls (pageChange)="onUpdatePageNumber($event)" [id]="data.tableId" [autoHide]="true"
+        [responsive]="true" />
+      }
+    </div>
+  </div>
+  }
+
+  <table class="table" aria-label="table-template">
+    @if (data.options.showHeader) {
+    <thead class="thead-light">
+      <tr>
+        @for (entry of data.columns; track entry.value) {
+        <th tabindex="0" [attr.aria-label]="'Column header ' + entry.name + (!entry.nosort ? ' sortable' : '')"
+          id="table-template-header" class="project-table__name-col"
+          (keyup.enter)="!entry.nosort && onSort(entry.value!)" (click)="!entry.nosort && onSort(entry.value!)"
+          [ngClass]="[entry.width, !entry.nosort ? 'sortable' : '']">
+          {{ entry.name }}
+          @if (entry.nosort !== true) {
+          <i class="sort" [ngClass]="{
+                    'sort-asc': data.sortBy.slice(1) == entry.value && data.sortBy.charAt(0) === '+',
+                    'sort-desc': data.sortBy.slice(1) == entry.value && data.sortBy.charAt(0) === '-'
+                  }" aria-hidden="true"></i>
+          }
+        </th>
+        }
+      </tr>
+    </thead>
+    }
+
+    <tbody [ngClass]="data.options.disableRowHighlight ? '' : 'highlight'">
+      @for (item of data.items | paginate: { id: data.tableId, itemsPerPage: data.pageSize, currentPage:
+      data.currentPage, totalItems: data.totalListItems }; track item.rowData?._id || $index) {
+      <ng-container [libTableRow]="item" [tableData]="data" [messageIn]="messageIn" (messageOut)="onMessageOut($event)">
+        <div [style.margin-bottom.px]="data.options.rowSpacing"></div>
+      </ng-container>
+      }
+    </tbody>
+  </table>
+
+  <div class="table-controls-bottom">
+    <div class="row">
+      <div class="col-md-12 col-lg-6 text-lg-left text-center mb-lg-0 mb-3">
+        @if (data.options.showPageSizePicker && data.totalListItems > 10) {
+        <lib-page-size-picker [isHidden]="false" [currentPageSize]="data.pageSize" [sizeOptions]="data.pageSizeOptions"
+          (pageSizeChosen)="onUpdatePageSize($event)" id="table-template-page-size-picker" />
+        }
+      </div>
+      <div class="col-md-12 col-lg-6 text-lg-right text-center">
+        @if (data.options.showPagination) {
+        <pagination-controls (pageChange)="onUpdatePageNumber($event)" [id]="data.tableId" [autoHide]="true"
+          [responsive]="true" />
+        }
+      </div>
+    </div>
+  </div>
+</div>

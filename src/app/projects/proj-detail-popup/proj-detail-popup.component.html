@@ -1,0 +1,47 @@
+@if (proj) {
+  <div class="popup-content">
+    <div class="popup-title">
+      <span class="client-name__label">Project</span>
+      <span class="client-name__value">{{proj.name || '-'}}</span>
+    </div>
+    <div class="popup-body">
+      <div class="app-details">
+        <div class="meta-container">
+          <ul>
+            @if (proj.description) {
+              <li class="app-description">
+                <div class="value" [innerHTML]="proj.description"></div>
+              </li>
+            }
+            <li>
+              <span class="key">Decision:</span>
+              <span class="value">{{proj.eacDecision?.name || '-'}}</span>
+            </li>
+            <li>
+              <!-- Phase object not ready -->
+              <span class="key">Phase:</span>
+              <span class="value">{{proj.currentPhaseName?.name || '-'}}</span>
+            </li>
+            <li>
+              <span class="key">Location:</span>
+              <span class="value">{{proj.location || '-'}}</span>
+            </li>
+            @if (commentPeriodStatus()) {
+              <li>
+                <span class="key">Comment Period Status:</span>
+                <span class="value">{{commentPeriodStatus()}}</span>
+              </li>
+            }
+          </ul>
+        </div>
+
+        <hr>
+
+        <a class="app-link btn btn-primary" [routerLink]="['/p', proj._id]" title="View more information about this project">
+          View Project Details
+        </a>
+      </div>
+    </div>
+  </div>
+}
+

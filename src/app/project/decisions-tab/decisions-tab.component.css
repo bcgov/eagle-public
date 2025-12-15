@@ -1,0 +1,21 @@
+.tab-section {
+    overflow-y: auto;
+    font-size: medium;
+    >div {
+        margin: 1em;
+    }
+    .status {
+        text-align: right;
+        font-size: large;
+        font-weight: bold;
+    }
+    .title {
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: var(--primary-color);
+        margin-bottom: 5px;
+    }
+    a {
+        display: inline-flex;
+    }
+}

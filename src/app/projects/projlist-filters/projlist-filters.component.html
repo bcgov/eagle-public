@@ -1,0 +1,91 @@
+<div class="app-filters__container d-flex flex-column">
+  <div class="search-container" id="applist-filters">
+    <div class="additional-filters">
+      <label class="header-label" for="applicantInput">Search Environmental Assessment Projects</label>
+      <div class="search-box position-relative">
+        <input type="text" class="form-control gtm-filter-applicant" placeholder="Start typing a project name" id="applicantInput"
+        [(ngModel)]="applicantFilter" name="applicantFilter"
+        (ngModelChange)="onSearchChange($event)"
+        [ngbTypeahead]="applicantSearch" [focusFirst]="false"
+        [disabled]="loading()">
+        @if (applicantFilter) {
+          <button type="button" class="btn-clear" (click)="clearSearch()" aria-label="Clear search" [disabled]="loading()">
+            <i class="material-icons">close</i>
+          </button>
+        }
+      </div>
+      <div class="toggle-container">
+        <div class="toggle-btn" (click)="loading() ? null : toggleFilters()" [class.disabled]="loading()">
+          <span>{{ showFilters ? 'Hide' : 'Show' }} Advanced Filters</span>
+          <i class="material-icons">{{ showFilters ? 'keyboard_arrow_up' : 'keyboard_arrow_down' }}</i>
+        </div>
+      </div>
+      @if (showFilters) {
+        <div class="filters-container">
+          <div class="filter-container">
+            <label for="type">
+              Project Type
+            </label>
+            <div class="filter-select">
+              <ng-select
+                  id="type"
+                  name="type"
+                  multiple="true"
+                  bindLabel="name"
+                  placeholder="Type Project Type"
+                  [items]="projectTypes"
+                  [closeOnSelect]="false"
+                  [(ngModel)]="typeFilter"
+                  (change)="applyAllFilters()"
+                  [disabled]="loading()"
+              >
+              </ng-select>
+            </div>
+          </div>
+          <div class="filter-container">
+            <label for="region">
+              Region
+            </label>
+            <div class="filter-select">
+              <ng-select
+                  id="region"
+                  name="region"
+                  multiple="true"
+                  bindLabel="name"
+                  placeholder="Type Project Region"
+                  [items]="projectRegions"
+                  [closeOnSelect]="false"
+                  [(ngModel)]="regionFilter"
+                  (change)="applyRegionFilters()"
+                  [disabled]="loading()"
+              >
+              </ng-select>
+            </div>
+          </div>
+          <div class="filter-container">
+            <label for="phase">
+              Project Phase
+            </label>
+            <div class="filter-select">
+              <ng-select
+                  id="phase"
+                  name="phase"
+                  multiple="true"
+                  bindLabel="name"
+                  groupBy="legislation"
+                  placeholder="Type Project Phase"
+                  [items]="projectPhases"
+                  [closeOnSelect]="false"
+                  [markFirst]="false"
+                  [(ngModel)]="phaseFilter"
+                  (change)="applyAllFilters()"
+                  [disabled]="loading()"
+              >
+              </ng-select>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+</div>

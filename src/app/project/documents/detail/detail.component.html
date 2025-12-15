@@ -1,0 +1,82 @@
+<nav class="action-container">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item">
+      <a [routerLink]="['/projects']">All Projects</a>
+    </li>
+    @if (currentProject(); as project) {
+      <li class="breadcrumb-item">
+        <a [routerLink]="['/p', project._id]">{{project.name}}</a>
+      </li>
+      <li class="breadcrumb-item active" aria-current="page">
+        <a [routerLink]="['/p', project._id, 'project-documents']">Documents</a>
+      </li>
+    }
+    <li class="breadcrumb-item active" aria-current="page">Document Details</li>
+  </ol>
+  <div ngbDropdown placement="bottom-right" class="d-inline-block">
+    <button class="btn btn-primary" id="actionDropdown" ngbDropdownToggle>Actions</button>
+    <div class="dropdown-menu" aria-labelledby="actionDropdown" ngbDropdownMenu>
+      <button class="dropdown-item" (click)="onEdit()">Edit</button>
+      @if (document(); as menuDoc) {
+        <button class="dropdown-item" (click)="api.openDocument(menuDoc)">Open</button>
+        <button class="dropdown-item" (click)="api.downloadDocument(menuDoc)">Download</button>
+      }
+    </div>
+  </div>
+</nav>
+@if (document(); as doc) {
+  <main class="container-fluid-padding">
+    <h1>Details</h1>
+    <section>
+      <div class="label-pair">
+        <h3 for="displayName">Display Name: </h3>
+        <p id="displayName">{{doc.displayName || '-'}}</p>
+      </div>
+      <div class="label-pair">
+        <h3 for="documentFileName">Filename: </h3>
+        <p id="documentFileName">{{doc.documentFileName || '-'}}</p>
+      </div>
+      <div class="label-pair">
+        <h3 for="description">Description: </h3>
+        <p id="description">{{doc.description || '-'}}</p>
+      </div>
+      <div class="label-pair">
+        <h3 for="tags">Labels: </h3>
+        @for (label of doc.labels; track label) {
+          <div>
+            <button class="me-2 badge rounded-pill badge-info">{{label}}</button>
+          </div>
+        }
+      </div>
+    </section>
+    <section>
+      <div class="label-pair">
+        <h3 for="type">Type: </h3>
+        <p id="type">{{doc.type | listConverter}}</p>
+      </div>
+      <div class="label-pair">
+        <h3 for="dateUploaded">Upload Date: </h3>
+        <p id="dateUploaded">{{doc.dateUploaded | date}}</p>
+      </div>
+      @if (doc.datePosted) {
+        <div class="label-pair">
+          <h3 for="datePosted">Document Date: </h3>
+          <p id="datePosted">{{doc.datePosted | date:'longDate'}}</p>
+        </div>
+      }
+      <div class="label-pair">
+        <h3 for="documentAuthor">Author: </h3>
+        <p id="documentAuthor">{{doc.documentAuthor | listConverter}}</p>
+      </div>
+      <div class="label-pair">
+        <h3 for="milestone">Milestone: </h3>
+        <p id="milestone">{{doc.milestone | listConverter}}</p>
+      </div>
+      <div class="label-pair">
+        <h3 for="documentFileSize">Filesize: </h3>
+        <p id="documentFileSize">{{doc.documentFileSize || '-'}}</p>
+      </div>
+    </section>
+  </main>
+}
+

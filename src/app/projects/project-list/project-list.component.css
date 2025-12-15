@@ -1,0 +1,297 @@
+.project-list {
+  margin-bottom: 50px;
+}
+
+.project-list__options {
+  flex: 0 0 auto;
+  padding: 1rem 0rem;
+}
+
+.project-list__options mat-slide-toggle {
+  white-space: normal;
+}
+
+.clickable-row {
+  cursor: pointer;
+}
+
+.btn.inverted {
+  text-transform: none;
+}
+
+.project-table .accordion__collapse-header {
+  background: transparent;
+}
+
+.project-table__project-details {
+  font-size: 0.85rem;
+}
+
+.project-table__project-details--links {
+  padding-top: 1.5rem;
+}
+
+.project-table__project-details--description {
+  margin-bottom: 1.25rem;
+}
+
+.project-table__project-details--description p {
+  margin: 0;
+  line-height: calc(0.85rem * 1.5);
+  font-size: 0.85rem;
+}
+
+.project-table__project-details--list li {
+  align-items: start;
+}
+
+.project-table__project-details--list li + li {
+  border-top: 1px solid white;
+}
+
+.project-table__project-details--list .name,
+.project-table__project-details--list .value {
+  margin: 0;
+  padding: 0.25rem 0.75rem;
+  width: 50%;
+}
+
+.project-table__project-details--list .name {
+  font-weight: bold;
+}
+
+@media (max-width: 767px) {
+  .project-table {
+    table-layout: auto;
+  }
+  
+  .project-table thead {
+    display: block;
+    width: 100%;
+  }
+  
+  .project-table thead tr {
+    display: flex;
+  }
+  
+  .project-table thead th {
+    border-top: none;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+  
+  .project-table thead th.project-table__name-col {
+    flex: 1 1 auto;
+  }
+  
+  .project-table__cl_file-col {
+    width: 25%;
+  }
+  
+  .project-table__purpose-col {
+    display: none;
+  }
+  
+  .project-table__region-col {
+    display: none;
+  }
+  
+  .project-table__status-col {
+    width: 30%;
+  }
+  
+  .project-table__commenting-col {
+    display: none;
+  }
+  
+  .project-table__project-details--links .btn {
+    width: 100%;
+  }
+  
+  .project-table__project-details--links .btn + .btn {
+    margin-top: 0.5rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .project-table__cl_file-col {
+    width: 12.5%;
+  }
+  
+  .project-table__purpose-col {
+    width: 25%;
+  }
+  
+  .project-table__region-col {
+    width: 12.5%;
+  }
+  
+  .project-table__status-col {
+    width: 14%;
+  }
+  
+  .project-table__commenting-col {
+    width: 16%;
+  }
+  
+  .project-table__project-details {
+    font-size: 0.9375rem;
+  }
+  
+  .project-table__project-details--description p {
+    line-height: calc(0.9375rem * 1.5);
+    font-size: 0.9375rem;
+  }
+  
+  .project-table__project-details--list {
+    list-style-type: none;
+  }
+  
+  .project-table__project-details--list .name {
+    width: 15rem;
+  }
+  
+  .project-table__project-details--list .value {
+    width: auto;
+  }
+  
+  .project-table__project-details--links .btn + .btn {
+    margin-left: 0.5rem;
+  }
+}
+
+.table-container {
+  background-color: white;
+}
+
+.search-area {
+  background-color: white;
+  border: 1px solid lightgray;
+}
+
+.main-search-field {
+  margin-left: 0px;
+  padding: 8px;
+}
+
+.show-advanced-search-button .btn {
+  float: right;
+  margin-right: 8px !important;
+  width: 200px;
+}
+
+.advanced-search {
+  position: relative;
+}
+
+.advanced-search hr {
+  margin-top: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.advanced-search .project-filter {
+  margin-left: 15px;
+  margin-top: 10px;
+  margin-right: 15px;
+  margin-bottom: 10px;
+}
+
+.advanced-search .filter-border {
+  border: solid 1px lightgray;
+  padding: 15px;
+  min-width: 155px;
+}
+
+.advanced-search .type-filters {
+  margin-left: 8px;
+}
+
+.advanced-search .decision-filters {
+  margin-left: 172px;
+}
+
+.advanced-search .pcp-filters {
+  margin-left: 335px;
+}
+
+.advanced-search .pcp-filters .filter-border {
+  min-width: 230px;
+}
+
+.advanced-search .more-filters {
+  margin-left: 8px;
+  margin-right: 8px;
+}
+
+.advanced-search .more-filters .sub-filters {
+  margin-left: 0px;
+}
+
+.advanced-search .more-filters .sub-filters hr {
+  margin-left: -1rem;
+}
+
+.advanced-search .btn {
+  margin: 8px 0px 8px 8px;
+}
+
+.advanced-search .type-btn {
+  width: 155px;
+}
+
+.advanced-search .decision-btn {
+  width: 155px;
+}
+
+.advanced-search .pcp-btn {
+  width: 230px;
+}
+
+.advanced-search .calendar {
+  margin: 0px;
+}
+
+.advanced-search .date {
+  margin-left: 0px;
+}
+
+.advanced-search .date-range {
+  margin-left: -15px;
+  margin-top: 15px;
+}
+
+.advanced-search .date-range .form-control {
+  z-index: 0px !important;
+}
+
+.advanced-search .form-check label {
+  padding-left: 0.25rem;
+  font-size: 1rem;
+}
+
+.advanced-search .search-button {
+  position: absolute;
+  right: 8px;
+  bottom: -8px;
+}
+
+.results {
+  color: black;
+}
+
+.btn-group-toggle > .btn {
+  margin-bottom: 0;
+  background: none;
+  color: #13477b;
+  border: 1px solid #858b99;
+  font-weight: 600;
+}
+
+.btn-group-toggle > .btn:hover {
+  background: #fcb118;
+}
+
+.btn-group-toggle > .btn.active {
+  background: #235383;
+  color: #fff;
+}

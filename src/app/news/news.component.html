@@ -1,0 +1,35 @@
+@if (loading()) {
+  <div class="spinner-container">
+    <div class="spinner-new rotating"></div>
+  </div>
+}
+
+@if (!loading()) {
+  <main>
+    <div class="container">
+      <div class="hero-banner__content">
+        <h1>Environmental Assessments in British Columbia</h1>
+        <p>Use the list below to navigate to individual Projects. Click on any project to go
+          directly to its details page.</p>
+      </div>
+      <!-- TODO: search-filter-template component not yet migrated -->
+      <!-- <search-filter-template #explorePanel
+        [keywordOverride]='queryParams().keywords'
+        (searchEvent)='executeSearch($event)'>
+      </search-filter-template> -->
+    </div>
+
+    <section class="project-list table-container">
+      <div class="container">
+        <h1>Activities & Updates</h1>
+        <br>
+        @if (tableData().totalListItems > 0) {
+          <lib-table-template 
+            [data]="tableData()"
+            (messageOut)="onMessageOut($event)">
+          </lib-table-template>
+        }
+      </div>
+    </section>
+  </main>
+}

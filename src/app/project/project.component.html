@@ -1,0 +1,29 @@
+<div class="project-container">
+  @if (loading()) {
+    <div class="spinner-border" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+  } @else if (project()) {
+    <div class="project-header">
+      <h1>{{ project()?.name }}</h1>
+    </div>
+
+    <nav class="project-tabs">
+      @for (tab of tabLinks(); track tab.link) {
+        @if (tab.display) {
+          <a [routerLink]="[tab.link]" routerLinkActive="active" class="tab-link">
+            {{ tab.label }}
+          </a>
+        }
+      }
+    </nav>
+
+    <div class="project-content">
+      <router-outlet></router-outlet>
+    </div>
+  } @else {
+    <div class="alert alert-warning">
+      Project not found
+    </div>
+  }
+</div>

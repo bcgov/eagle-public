@@ -1,0 +1,59 @@
+<tr class="border">
+  <td class="col-12 p-3">
+    <div class="d-flex w-100 justify-content-between">
+      <div class="pb-3">
+        @if (rowData().author && rowData().Anonymous !== true) {
+          <b>
+            <span>{{rowData().author}}</span>
+            @if (rowData().location) {
+              <span>, {{rowData().location}}</span>
+            }
+          </b>
+        }
+        @if (rowData().author == null || rowData().Anonymous) {
+          <b>
+            <span>Anonymous</span>
+          </b>
+        }
+      </div>
+      <div>
+        {{(rowData().dateAdded | date:'longDate') || "-"}}
+      </div>
+    </div>
+    <div>
+      @if (rowData().comment && rowData().comment.length > 120) {
+        @if (rowData().expanded == true) {
+          <p>
+            {{rowData().comment}}
+          </p>
+        }
+        @if (rowData().expanded == false) {
+          <p>
+            {{rowData().comment.substr(0, 120)}} ...
+          </p>
+        }
+        <button class="btn btn-link clickable p-0" (click)="toggle(rowData())">
+          {{rowData().expanded ? 'Read Less' : 'Read More'}}
+        </button>
+      }
+      @if (rowData().comment && rowData().comment.length <= 120) {
+        <p>{{rowData().comment}}</p>
+      }
+    </div>
+    @if (rowData().documents && rowData().documents.length > 0) {
+      <div class="pb-3">
+        @for (file of rowData().documents; track file) {
+          <div class="attachment clickable" (click)="openAttachment(file)">
+            @if (file && file.internalOriginalName) {
+              <div>
+                <i class="material-icons">
+                  attach_file
+                </i>{{file.internalOriginalName}}
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+  </td>
+</tr>

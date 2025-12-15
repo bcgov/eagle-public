@@ -1,0 +1,17 @@
+@if (loading()) {
+  <div class="spinner-container">
+    <div class="spinner-new rotating"></div>
+  </div>
+}
+
+@if (!loading() && tableData().totalListItems > 0) {
+  <div>
+    <div class="row">
+      <div class="col-12">
+        <h2>Featured Documents</h2>
+        <lib-table-template [data]="tableData()"></lib-table-template>
+      </div>
+    </div>
+    <br />
+  </div>
+}

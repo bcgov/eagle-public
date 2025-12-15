@@ -1,0 +1,10 @@
+# OpenShift S2I compatible Dockerfile for Angular 21
+# This uses the BC Gov nginx runtime image
+
+FROM image-registry.apps.silver.devops.gov.bc.ca/6cdc9e-tools/eagle-public-nginx-runtime
+
+# Copy the built Angular application
+COPY dist/eagle-public/browser /tmp/app/dist
+
+# Run the S2I runtime
+CMD /usr/libexec/s2i/run

@@ -1,1 +1,66 @@
 /* You can add global styles to this file, and also import other style files */
+
+/* Leaflet CSS */
+@import "leaflet/dist/leaflet.css";
+@import "leaflet.markercluster/dist/MarkerCluster.css";
+@import "leaflet.markercluster/dist/MarkerCluster.Default.css";
+
+/* Bootstrap CSS Variable Overrides - Must come before other styles */
+@import url("assets/styles/themes/bootstrap-override.css");
+
+/* Base */
+@import url("assets/styles/base/base.css");
+
+/* Transitions */
+@import url("assets/styles/base/transitions.css");
+
+/* Accessibility */
+@import url("assets/styles/base/accessibility.css");
+
+/* Helpers */
+@import url("assets/styles/base/helpers.css");
+
+/* Layout */
+@import url("assets/styles/layout/layout.css");
+
+/* Typography */
+@import url("assets/styles/base/typography.css");
+
+/* Material Icons */
+@import url("assets/styles/base/material-icons.css");
+
+/* Components */
+@import url("assets/styles/components/accordion.css");
+@import url("assets/styles/components/aside.css");
+@import url("assets/styles/components/badge.css");
+@import url("assets/styles/components/buttons.css");
+@import url("assets/styles/components/card.css");
+@import url("assets/styles/components/feature-block.css");
+@import url("assets/styles/components/form-elements.css");
+@import url("assets/styles/components/hero-banner.css");
+@import url("assets/styles/components/leaflet.css");
+@import url("assets/styles/components/lists.css");
+@import url("assets/styles/components/modal.css");
+@import url("assets/styles/components/multi-select.css");
+@import url("assets/styles/components/pagination.css");
+@import url("assets/styles/components/spinner.css");
+@import url("assets/styles/components/tab-nav.css");
+@import url("assets/styles/components/table.css");
+
+/* ng-select theme */
+@import url("@ng-select/ng-select/themes/default.theme.css");
+
+/* Global Content Styles */
+.content-wrapper {
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--bs-body-color, #494949);
+}
+
+.content-wrapper p {
+  margin-bottom: 0;
+}
+
+.content-wrapper p + p {
+  margin-top: 1.5rem;
+}

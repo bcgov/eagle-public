@@ -1,0 +1,26 @@
+<div class="mt-5 px-3">
+  @if (header()) {
+    <div class="row mb-3">
+      <div class="col-12">
+        <h4>{{header()}}</h4>
+      </div>
+    </div>
+  }
+  <div class="row">
+    <div class="col-12">
+      @if (tableData.totalListItems > 0) {
+        <div>
+          <lib-table-template [data]="tableData" (messageOut)="onMessageOut($event)">
+          </lib-table-template>
+        </div>
+      }
+      @if (tableData.totalListItems === 0) {
+        <div>
+          <p>
+            This notification project has no documents.
+          </p>
+        </div>
+      }
+    </div>
+  </div>
+</div>

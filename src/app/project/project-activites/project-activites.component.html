@@ -1,0 +1,30 @@
+@if (loading) {
+  <div class="spinner-container">
+    <div class="spinner-new rotating"></div>
+  </div>
+}
+
+<h2 #activitiesHeader>Activities and Updates</h2>
+
+<section>
+  <search-filter-template
+    #explorePanel
+    [keywordOverride]='queryParams["keywordsActivities"]'
+    (searchEvent)='executeSearch($event)'>
+  </search-filter-template>
+</section>
+
+<section class="tab-section">
+  @if (tableData.totalListItems === 0) {
+    <div>
+      No recent activities.
+    </div>
+  }
+
+  @if (!loading && tableData.totalListItems > 0) {
+    <lib-table-template
+      [data]="tableData"
+      (messageOut)="onMessageOut($event)">
+    </lib-table-template>
+  }
+</section>
