@@ -3,39 +3,50 @@ import { inject } from '@angular/core';
 
 import { TableService } from 'app/services/table.service';
 import { OrgService } from 'app/services/org.service';
-// import { TableTemplate } from 'app/shared/components/table-template/table-template';
+import { TableTemplate } from 'app/shared/components/table-template/table-template';
 import { SearchParamObject } from 'app/services/search.service';
 import { Constants } from 'app/shared/utils/constants';
+import { TableObject } from 'app/shared/components/table-template/table-object';
+import { PROJECT_LIST_TABLE_ID, FILTER_LIST, DATE_FILTER_LIST } from 'app/projects/project-list/project-list.constants';
 
-// TODO: Complete implementation after TableTemplate migration
 export const projectListResolver: ResolveFn<void> = (route): void => {
   const tableService = inject(TableService);
   const orgService = inject(OrgService);
-  // const tableTemplateUtils = inject(TableTemplate);
+  const tableTemplateUtils = inject(TableTemplate);
   
-  const tableId = 'projectList';
-  tableService.clearTable(tableId);
+  // Clear and initialize table
+  tableService.clearTable(PROJECT_LIST_TABLE_ID);
+  tableService.initTableData(PROJECT_LIST_TABLE_ID);
+  
+  // Fetch proponents
   orgService.fetchProponent();
   
-  // const tableObject = tableTemplateUtils.updateTableObjectWithUrlParams(params, new TableObject());
+  // Parse URL parameters more efficiently
+  const queryParamMap = route.queryParamMap;
+  const params: Record<string, string | null> = {};
+  for (const key of queryParamMap.keys) {
+    params[key] = queryParamMap.get(key);
+  }
   
-  const sortBy = route.queryParamMap.get('sortBy') || '+name';
-  const keywords = route.queryParamMap.get('keywords') || Constants.tableDefaults.DEFAULT_KEYWORDS;
+  // Create table object from URL params
+  const tableObject = tableTemplateUtils.updateTableObjectWithUrlParams(params, new TableObject());
   
-  // TODO: Implement filtersForAPI and dateFiltersForAPI after TableTemplate migration
+  // Build filters from URL params using constants
+  const filtersForAPI = tableTemplateUtils.getFiltersFromParams(params, FILTER_LIST);
+  const dateFiltersForAPI = tableTemplateUtils.getDateFiltersFromParams(params, DATE_FILTER_LIST);
   
-  tableService.initTableData(tableId);
+  // Fetch initial data
   tableService.fetchData(new SearchParamObject(
-    tableId,
-    keywords,
+    PROJECT_LIST_TABLE_ID,
+    params['keywords'] || Constants.tableDefaults.DEFAULT_KEYWORDS,
     'Project',
     [],
-    1, // tableObject.currentPage,
-    10, // tableObject.pageSize,
-    sortBy,
+    tableObject.currentPage,
+    tableObject.pageSize,
+    tableObject.sortBy || '+name',
     {},
     true,
     '',
-    {} // filters
+    { ...filtersForAPI, ...dateFiltersForAPI }
   ));
 };

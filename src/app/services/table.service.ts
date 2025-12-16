@@ -6,9 +6,6 @@ import { SearchParamObject, SearchService } from './search.service';
   providedIn: 'root'
 })
 
-// TODO: Migrate all services to use this universal table service.
-// Data allows for multiple pieces of data to be cached.
-// This means id and iteration version is required.
 export class TableService {
   public data: Record<string, any>;
 
@@ -18,13 +15,11 @@ export class TableService {
     this.data = {};
   }
 
-  // You need to init the table before fetchData.
-  // This allows our component to subscribe before data is provided.
-  initTableData(tableId: string) {
+  initTableData(tableId: string): void {
     this.data[tableId] = {
       behaviorSubject: new BehaviorSubject({ data: 0 }),
       cachedConfig: new SearchParamObject()
-    }
+    };
   }
 
   setValue(tableId: string, value: any): void {
@@ -35,7 +30,18 @@ export class TableService {
     return this.data[tableId].behaviorSubject.asObservable();
   }
 
-  async refreshData(tableId: string) {
+  // Encapsulated methods for cache access
+  getCache(tableId: string): SearchParamObject {
+    return this.data[tableId]?.cachedConfig;
+  }
+
+  updateCache(tableId: string, updates: Partial<SearchParamObject>): void {
+    if (this.data[tableId]?.cachedConfig) {
+      Object.assign(this.data[tableId].cachedConfig, updates);
+    }
+  }
+
+  async refreshData(tableId: string): Promise<void> {
     await this.fetchData(this.data[tableId].cachedConfig);
   }
 
@@ -49,13 +55,13 @@ export class TableService {
     }
   }
 
-  async fetchData(searchParamObject: SearchParamObject) {
+  async fetchData(searchParamObject: SearchParamObject): Promise<void> {
     const res = await this.searchService.fetchData(searchParamObject);
     this.data[searchParamObject.tableId].cachedConfig = searchParamObject;
     this.setValue(searchParamObject.tableId, res);
   }
 
-  private checkIfTableDataExists(tableId: string) {
-    return Object.keys(this.data).includes(tableId)
+  private checkIfTableDataExists(tableId: string): boolean {
+    return Object.keys(this.data).includes(tableId);
   }
 }

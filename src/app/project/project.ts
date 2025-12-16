@@ -151,6 +151,9 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
             this.project.set(results);
             this.storageService.state.currentProject = { type: 'currentProject', data: results };
             this.renderer.removeClass(document.body, 'no-scroll');
+            
+            // Initialize map after project data is loaded
+            setTimeout(() => this.initMap(), 0);
           } else {
             alert('Uh-oh, couldn\'t load project');
             this.router.navigate(['/projects']);
@@ -173,6 +176,25 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   ngAfterViewInit() {
+    // Map initialization moved to ngOnInit after project data loads
+  }
+
+  private initMap() {
+    // Check if map element exists
+    const mapElement = document.getElementById('map');
+    if (!mapElement) {
+      console.warn('Map element not found, retrying...');
+      setTimeout(() => this.initMap(), 100);
+      return;
+    }
+
+    // Check if project has valid centroid
+    const proj = this.project();
+    if (!proj || !proj.centroid || proj.centroid.length !== 2) {
+      console.log('No valid centroid for map display');
+      return;
+    }
+
     const self = this;
 
     const resetViewControl = L.Control.extend({
@@ -257,8 +279,8 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
 
     this.map.scrollWheelZoom.disable();
 
-    const proj = this.project();
-    if (proj) {
+    // Add marker if project has valid centroid
+    if (proj && proj.centroid && proj.centroid.length === 2) {
       const markerIconYellow = L.icon({
         iconUrl: 'assets/images/marker-icon-yellow.svg',
         iconSize: [36, 36],
@@ -270,7 +292,9 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
       const marker = L.marker(L.latLng(proj.centroid[1], proj.centroid[0]), { title: title })
         .setIcon(markerIconYellow);
       this.map.addLayer(marker);
+      this.appFG.addLayer(marker);
     }
+    
     this.map.addLayer(this.appFG);
 
     this.fixMap();

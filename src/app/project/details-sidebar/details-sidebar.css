@@ -25,13 +25,13 @@
   .hero-banner__content {
     background-color: inherit;
     color: #fff;
-  }
 
-  div {
-    padding: 6px 8px 6px 6px;
-    text-decoration: none;
-    font-size: 20px;
-    display: block;
+    > div {
+      padding: 6px 8px 6px 6px;
+      text-decoration: none;
+      font-size: 20px;
+      display: block;
+    }
   }
 
   h1 {
@@ -130,29 +130,30 @@
     position: relative;
     height: 250px;
     color: black;
+  }
 
-    .container {
-      position: relative;
-      @media (min-width: 400px) {
-        padding-right: 280px;
-      }
+  .map-item .container {
+    position: relative;
+    @media (min-width: 400px) {
+      padding-right: 280px;
     }
+  }
 
-    .map-container {
-      padding: 10px 0 10px 0;
-      display: block;
-      position: relative;
-      overflow: hidden;
-    }
+  .map-item .map-container {
+    padding: 0;
+    display: block;
+    position: relative;
+    overflow: hidden;
+    height: 250px;
+  }
 
-    .map {
-      position: relative;
-      min-height: 250px;
-      height: 250px;
-      outline: none;
-      touch-action: none;
-      background-color: var(--map-bg);
-    }
+  .map-item .map {
+    position: relative;
+    min-height: 250px;
+    height: 250px;
+    width: 100%;
+    outline: none;
+    background-color: #ddd;
   }
 
   .map-item__no-results {

@@ -1,10 +1,10 @@
-@if (loadingLists || loadingTableParams) {
+@if (loadingLists() || loadingTableParams()) {
   <div class="spinner-container">
     <div class="spinner-new rotating"></div>
   </div>
 }
 
-@if (!loadingLists && !loadingTableParams) {
+@if (!loadingLists() && !loadingTableParams()) {
   <main>
     <app-hero-banner
       title="Environmental Assessments in British Columbia"
@@ -23,18 +23,18 @@
           <search-filter-template #explorePanel
             (searchEvent)='executeSearch($event)'
             [advancedFilters]="true"
-            [showAdvancedFilters]="showAdvancedFilters"
+            [showAdvancedFilters]="showAdvancedFilters()"
             [searchOnFilterChange]="true"
-            [filters]="filters"
-            (resetControls)='tableData.sortBy.includes("score") ? tableData.sortBy = "-datePosted" : null'
-            (toggleFiltersPanelEvent)="showAdvancedFilters = $event.showPanel"
+            [filters]="filters()"
+            (resetControls)='tableData().sortBy.includes("score") ? tableData().sortBy = "-datePosted" : null'
+            (toggleFiltersPanelEvent)="showAdvancedFilters.set($event.showPanel)"
             [searchHelpLinkArray]='["/search-help"]'
-            [searching]="loadingTableData">
+            [searching]="loadingTableData()">
           </search-filter-template>
         </section>
-        @if (tableData.totalListItems > 0) {
+        @if (tableData().totalListItems > 0) {
           <lib-table-template
-            [data]="tableData"
+            [data]="tableData()"
             (messageOut)="onMessageOut($event)">
           </lib-table-template>
         }

@@ -64,3 +64,44 @@
 .content-wrapper p + p {
   margin-top: 1.5rem;
 }
+
+/* Shared Table Styles */
+.table-template .table {
+  box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 0.25rem;
+  overflow: hidden;
+}
+
+.table-container .project-table {
+  table-layout: auto;
+}
+
+.table-container .project-table thead {
+  display: block;
+  width: 100%;
+}
+
+.table-container .project-table thead tr {
+  display: flex;
+}
+
+.table-container .project-table thead th {
+  border-top: none;
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+}
+
+.clickable-row {
+  cursor: pointer;
+}
+
+.clickable-row:hover {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+/* Responsive table columns */
+@media (max-width: 767px) {
+  .table-container .project-table thead th.project-table__name-col {
+    flex: 1 1 auto;
+  }
+}

@@ -29,7 +29,7 @@ import { ProjectListComponent } from './projects/project-list/project-list.compo
 import { ProjectNotificationsListComponent } from './project-notifications/project-notifications.component';
 import { CommentsComponent } from './comments/comments.component';
 import { SearchComponent } from './search/search.component';
-import { ProjectComponent } from './project/project.component';
+import { ProjectComponent } from './project/project';
 import { ProjectDetailsTabComponent } from './project/project-details-tab/project-details-tab.component';
 import { CertificatesComponent } from './project/certificates/certificates.component';
 import { AmendmentsComponent } from './project/amendments/amendments.component';

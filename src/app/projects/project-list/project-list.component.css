@@ -1,11 +1,11 @@
-
-/* Override hero banner background for projects list */
+/* Hero banner background override */
 :host ::ng-deep .hero-banner {
   background-image: url('/assets/images/hero-banner.jpg');
   background-size: cover;
   background-position: center;
 }
 
+/* Project list specific styles */
 .project-list__options {
   flex: 0 0 auto;
   padding: 1rem 0rem;
@@ -13,10 +13,6 @@
 
 .project-list__options mat-slide-toggle {
   white-space: normal;
-}
-
-.clickable-row {
-  cursor: pointer;
 }
 
 .btn.inverted {
@@ -64,30 +60,8 @@
   font-weight: bold;
 }
 
+/* Responsive styles */
 @media (max-width: 767px) {
-  .project-table {
-    table-layout: auto;
-  }
-  
-  .project-table thead {
-    display: block;
-    width: 100%;
-  }
-  
-  .project-table thead tr {
-    display: flex;
-  }
-  
-  .project-table thead th {
-    border-top: none;
-    padding-left: 0.75rem;
-    padding-right: 0.75rem;
-  }
-  
-  .project-table thead th.project-table__name-col {
-    flex: 1 1 auto;
-  }
-  
   .project-table__cl_file-col {
     width: 25%;
   }
@@ -162,131 +136,4 @@
   .project-table__project-details--links .btn + .btn {
     margin-left: 0.5rem;
   }
-}
-
-.main-search-field {
-  margin-left: 0px;
-  padding: 8px;
-}
-
-.show-advanced-search-button .btn {
-  float: right;
-  margin-right: 8px !important;
-  width: 200px;
-}
-
-.advanced-search {
-  position: relative;
-}
-
-.advanced-search hr {
-  margin-top: 1rem;
-  margin-bottom: 0.75rem;
-}
-
-.advanced-search .project-filter {
-  margin-left: 15px;
-  margin-top: 10px;
-  margin-right: 15px;
-  margin-bottom: 10px;
-}
-
-.advanced-search .filter-border {
-  border: solid 1px lightgray;
-  padding: 15px;
-  min-width: 155px;
-}
-
-.advanced-search .type-filters {
-  margin-left: 8px;
-}
-
-.advanced-search .decision-filters {
-  margin-left: 172px;
-}
-
-.advanced-search .pcp-filters {
-  margin-left: 335px;
-}
-
-.advanced-search .pcp-filters .filter-border {
-  min-width: 230px;
-}
-
-.advanced-search .more-filters {
-  margin-left: 8px;
-  margin-right: 8px;
-}
-
-.advanced-search .more-filters .sub-filters {
-  margin-left: 0px;
-}
-
-.advanced-search .more-filters .sub-filters hr {
-  margin-left: -1rem;
-}
-
-.advanced-search .btn {
-  margin: 8px 0px 8px 8px;
-}
-
-.advanced-search .type-btn {
-  width: 155px;
-}
-
-.advanced-search .decision-btn {
-  width: 155px;
-}
-
-.advanced-search .pcp-btn {
-  width: 230px;
-}
-
-.advanced-search .calendar {
-  margin: 0px;
-}
-
-.advanced-search .date {
-  margin-left: 0px;
-}
-
-.advanced-search .date-range {
-  margin-left: -15px;
-  margin-top: 15px;
-}
-
-.advanced-search .date-range .form-control {
-  z-index: 0px !important;
-}
-
-.advanced-search .form-check label {
-  padding-left: 0.25rem;
-  font-size: 1rem;
-}
-
-.advanced-search .search-button {
-  position: absolute;
-  right: 8px;
-  bottom: -8px;
-}
-
-.results {
-  color: black;
-}
-
-.btn-group-toggle > .btn {
-  margin-bottom: 0;
-  background: none;
-  color: #13477b;
-  border: 1px solid #858b99;
-  font-weight: 600;
-}
-
-.btn-group-toggle > .btn:hover {
-  background: #fcb118;
-}
-
-.btn-group-toggle > .btn.active {
-  background: #235383;
-  color: #fff;
 }
