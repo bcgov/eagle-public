@@ -1,7 +1,7 @@
-import { Component, ChangeDetectionStrategy, inject } from '@angular/core';
+import { Component, ChangeDetectionStrategy, EventEmitter, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
-import { TableRowComponent } from 'app/shared/components/table-template/table-row-component';
+import { TableRowComponent, ITableMessage } from 'app/shared/components/table-template/table-row-component';
 
 @Component({
   selector: 'tbody[app-news-list-table-rows]',
@@ -15,8 +15,8 @@ export class NewsListTableRowsComponent implements TableRowComponent {
 
   rowData: any;
   tableData: any;
-  messageIn: any;
-  messageOut: any;
+  messageIn = new EventEmitter<ITableMessage>();
+  messageOut = new EventEmitter<ITableMessage>();
 
   goToCP(activity: any): void {
     if (activity.pcp?.isMet && activity.pcp?.metURL) {

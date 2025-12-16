@@ -1,134 +1,123 @@
-th {
-  text-align: left;
-  flex: 1;
-}
-
-td {
-  text-align: left;
-  flex: 1;
-}
+/* Table styling - Simple and direct overrides */
 
 .table {
   width: 100%;
+  background-color: #F7F8FA;
+  margin-bottom: 2rem;
+}
+
+/* Table template specific styles with flex layout */
+.table-template .table {
   table-layout: fixed;
 }
 
-.table tr {
-  align-items: center;
+.table-template .table thead tr {
   display: flex;
+  align-items: center;
 }
 
-.table td {
-  overflow: hidden;
+.table-template .table thead th {
+  flex: 1 1 0;
+  min-width: 0;
 }
 
+.table-template .table tbody tr {
+  display: flex;
+  align-items: stretch;
+  min-height: 3rem;
+}
+
+.table-template .table tbody tr td {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+/* Header styling */
 .table thead {
-  background: var(--table-header-bg);
-  border-bottom: 2px solid var(--white);
+  background-color: #E9ECEF;
 }
 
 .table thead tr {
-  background: #e8eff5;
-  align-items: flex-start;
+  background-color: #E9ECEF;
 }
 
 .table thead th {
-  padding: 0.5rem;
-  border-bottom: 3px solid var(--lightgray);
-  vertical-align: middle;
-  text-shadow: none;
+  padding: 0.75rem 0.5rem;
   font-size: 0.875rem;
   font-weight: 600;
+  color: #212529;
+  background-color: #E9ECEF;
+  border: none;
+  text-align: left;
+  cursor: default;
 }
 
 .table thead th.sortable {
-  transition: border-color ease-out 0.2s;
   cursor: pointer;
   user-select: none;
+  border-bottom: 3px solid #E9ECEF;
 }
 
-.table thead th.sortable:hover {
-  border-bottom-color: var(--table-header-sort-active);
+.table thead th.sortable:hover,
+.table thead th.sortable:has(.sort-asc),
+.table thead th.sortable:has(.sort-desc) {
+  border-bottom-color: #fcba19;
 }
 
-.table thead th.sortable.sort-asc,
-.table thead th.sortable.sort-desc {
-  color: #007bff;
-  border-bottom-color: #007bff;
-  background: transparent;
-  text-shadow: none;
+/* Sort indicators */
+.sort {
+  display: inline-block;
+  width: 0;
+  height: 0;
+  margin-left: 0.5rem;
+  vertical-align: middle;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
 }
 
-.table tbody td {
-  padding: 0.6rem 0.15rem;
-  vertical-align: top;
-  border-top: none;
+.sort-asc {
+  border-bottom: 4px solid #212529;
 }
 
-.table+pagination-template {
-  margin-top: 1rem;
+.sort-desc {
+  border-top: 4px solid #212529;
 }
 
-.table tr:nth-child(even) {
-  background: #f5f9fd;
+/* Body styling */
+.table tbody {
+  background-color: #F7F8FA;
 }
 
-@media (width <=600px) {
-  .table {
-    border: 0;
-  }
-
-  .table tr {
-    display: block;
-    margin-bottom: 20px;
-    border-bottom: 2px solid var(--bs-primary, var(--primary));
-    padding-bottom: 12px;
-  }
-
-  .table thead tr {
-    display: flex;
-    flex-wrap: wrap;
-    border-bottom: none;
-  }
-
-  .table thead::before {
-    content: 'Sort by:';
-    font-weight: bold;
-    text-transform: uppercase;
-    margin-bottom: 3px;
-    display: block;
-  }
-
-  .table tbody td {
-    border-bottom: 1px solid #ddd;
-    display: block;
-    width: 100%;
-    max-width: 100%;
-    min-height: 34px;
-  }
-
-  .table td::before {
-    content: attr(data-label);
-    float: left;
-    font-weight: bold;
-    text-transform: uppercase;
-    padding-right: 10px;
-  }
-
-  .table td:last-child {
-    border-bottom: 0;
-  }
-
-  .table thead th.sortable {
-    transition: border-color ease-out 0.2s;
-    cursor: pointer;
-    flex: 50%;
-    user-select: none;
-    max-width: 50%;
-    border-color: #fff;
-  }
+.table tbody tr {
+  background-color: #F7F8FA;
+  transition: background-color 0.2s ease-in-out;
 }
 
-table .status-container {
-  text-align: right;
+.table-template .table tbody tr {
+  border-bottom: 2px solid #E9ECEF;
+}
+
+.table tbody tr td {
+  background-color: #F7F8FA;
+  padding: 0.75rem 0.5rem;
+  border: none;
+  text-align: left;
+  overflow: hidden;
+  transition: background-color 0.2s ease-in-out;
+}
+
+/* Hover state */
+.table tbody tr:hover {
+  background-color: #e2f1ff;
+}
+
+.table tbody tr:hover td {
+  background-color: #e2f1ff;
+}
+
+/* Only project list table rows should be clickable */
+.table-template .table tbody tr:hover td {
+  cursor: pointer;
 }

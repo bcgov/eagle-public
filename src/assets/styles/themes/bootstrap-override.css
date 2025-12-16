@@ -45,6 +45,15 @@
   --bs-btn-border-radius: 0.25rem;
   --bs-btn-transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
   
+  /* Primary Button Colors */
+  --bs-btn-primary-bg: #003366;
+  --bs-btn-primary-border-color: #003366;
+  --bs-btn-primary-hover-bg: #002244;
+  --bs-btn-primary-hover-border-color: #002244;
+  --bs-btn-primary-active-bg: #001122;
+  --bs-btn-primary-active-border-color: #001122;
+  --bs-btn-primary-color: #fff;
+  
   /* Cards */
   --bs-card-border-width: 0;
   --bs-card-border-color: transparent;
@@ -56,4 +65,8 @@
   --bs-table-striped-bg: #f4f4f4;
   --bs-table-hover-bg: #ddd;
   --bs-table-border-color: transparent;
+  
+  /* Table Header */
+  --bs-table-head-bg: #003366;
+  --bs-table-head-color: #fff;
 }

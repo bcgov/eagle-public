@@ -1,13 +1,13 @@
 <div class="table-template">
   @if (data.options.showTopControls) {
-  <div class="row mb-3">
-    <div class="col-md-12 col-lg-6 text-lg-left text-center mb-lg-0 mb-3">
+  <div class="row mb-2">
+    <div class="col-sm-12 col-md-6 text-md-start text-center mb-md-0 mb-3">
       @if (data.options.showPageCountDisplay) {
       <lib-page-count-display [isHidden]="false" [currentPageNum]="data.currentPage" [currentPageSize]="data.pageSize"
         [totalItems]="data.totalListItems" id="table-template-page-count-display" />
       }
     </div>
-    <div class="col-md-12 col-lg-6 text-lg-right text-center">
+    <div class="col-sm-12 col-md-6 text-md-end text-center">
       @if (data.options.showPagination) {
       <pagination-controls (pageChange)="onUpdatePageNumber($event)" [id]="data.tableId" [autoHide]="true"
         [responsive]="true" />
@@ -18,7 +18,7 @@
 
   <table class="table" aria-label="table-template">
     @if (data.options.showHeader) {
-    <thead class="thead-light">
+    <thead>
       <tr>
         @for (entry of data.columns; track entry.value) {
         <th tabindex="0" [attr.aria-label]="'Column header ' + entry.name + (!entry.nosort ? ' sortable' : '')"
@@ -48,15 +48,15 @@
     </tbody>
   </table>
 
-  <div class="table-controls-bottom">
+  <div class="table-controls-bottom mb-4">
     <div class="row">
-      <div class="col-md-12 col-lg-6 text-lg-left text-center mb-lg-0 mb-3">
+      <div class="col-sm-12 col-md-6 text-md-start text-center mb-md-0 mb-3">
         @if (data.options.showPageSizePicker && data.totalListItems > 10) {
         <lib-page-size-picker [isHidden]="false" [currentPageSize]="data.pageSize" [sizeOptions]="data.pageSizeOptions"
           (pageSizeChosen)="onUpdatePageSize($event)" id="table-template-page-size-picker" />
         }
       </div>
-      <div class="col-md-12 col-lg-6 text-lg-right text-center">
+      <div class="col-sm-12 col-md-6 text-md-end text-center">
         @if (data.options.showPagination) {
         <pagination-controls (pageChange)="onUpdatePageNumber($event)" [id]="data.tableId" [autoHide]="true"
           [responsive]="true" />

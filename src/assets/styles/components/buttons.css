@@ -2,6 +2,22 @@
 /* Note: Bootstrap provides base .btn, .btn-primary, .btn-secondary, etc. */
 /* This file contains only EAGLE-specific button variants and animations */
 
+/* Override Bootstrap primary button colors - BC Gov Blue */
+.btn-primary {
+  --bs-btn-bg: #38598a;
+  --bs-btn-border-color: #38598a;
+  --bs-btn-hover-bg: #2d4770;
+  --bs-btn-hover-border-color: #2d4770;
+  --bs-btn-active-bg: #1f3456;
+  --bs-btn-active-border-color: #1f3456;
+  --bs-btn-disabled-bg: #38598a;
+  --bs-btn-disabled-border-color: #38598a;
+  --bs-btn-color: #fff;
+  --bs-btn-hover-color: #fff;
+  --bs-btn-active-color: #fff;
+  --bs-btn-disabled-color: #fff;
+}
+
 /* EAGLE Inverted Button (Hero Banner) */
 .btn.inverted {
   color: var(--white);

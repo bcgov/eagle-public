@@ -102,7 +102,7 @@ export class SearchFilterTemplateComponent implements OnInit, AfterViewInit, OnD
     // Initialize showFiltersPanel from input
     effect(() => {
       this.showFiltersPanel.set(this.showAdvancedFilters());
-    }, { allowSignalWrites: true });
+    });
   }
 
   ngOnDestroy(): void {
@@ -282,6 +282,8 @@ export class SearchFilterTemplateComponent implements OnInit, AfterViewInit, OnD
       filters: {} as Record<string, any>
     };
 
+    console.log('Search called with keywords:', this.keywordSearchWords(), 'searchPackage:', searchPackage);
+
     this.previousKeywords = this.keywordSearchWords();
 
     // loop through form filter objects, pull out the values
@@ -412,7 +414,9 @@ export class SearchFilterTemplateComponent implements OnInit, AfterViewInit, OnD
    * @memberof SearchFilterTemplateComponent
    */
   clearSearchTerms() {
+    console.log('clearSearchTerms called, current value:', this.keywordSearchWords());
     this.keywordSearchWords.set('');
+    console.log('After clearing, value:', this.keywordSearchWords());
     this.search();
   }
 

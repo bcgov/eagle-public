@@ -1,9 +1,9 @@
-import { Component, OnDestroy, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnDestroy, OnInit, EventEmitter, inject, ChangeDetectionStrategy } from '@angular/core';
 import { Router } from '@angular/router';
 import { takeWhile } from 'rxjs/operators';
 import { DatePipe } from '@angular/common';
 import { Utils } from '../../../shared/utils/utils';
-import { TableRowComponent } from '../../../shared/components/table-template/table-row-component';
+import { TableRowComponent, ITableMessage } from '../../../shared/components/table-template/table-row-component';
 import { ConfigService } from '../../../services/config.service';
 
 @Component({
@@ -21,8 +21,8 @@ export class DocumentTableRowsComponent implements TableRowComponent, OnInit, On
   // TableRowComponent properties
   rowData: any;
   tableData: any;
-  messageOut: any;
-  messageIn: any;
+  messageOut = new EventEmitter<ITableMessage>();
+  messageIn = new EventEmitter<ITableMessage>();
 
   private lists: any[] = [];
   private alive = true;

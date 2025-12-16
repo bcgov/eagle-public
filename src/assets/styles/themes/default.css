@@ -75,7 +75,7 @@
 
     /* Pagination Control */
     --pgn-btn-bg: var(--lightgray);
-    --pgn-btn-active-bg: #5091cd;
+    --pgn-btn-active-bg: #38598a;
     --pgn-btn-active-color: var(--white);
     --pgn-btn-border: 1px solid #ccc;
     --pgn-btn-color: var(--black);
@@ -99,15 +99,13 @@
     --tab-active-bg: var(--white);
 
     /* Tables */
-    --table-header-bg: var(--white);
-    --table-header-hover-bg: #ddd;
-    --table-header-sort-active: #5091cd;
+    --table-header-bg: #003366;
+    --table-header-color: #fff;
+    --table-header-border: #002952;
+    --table-header-hover-border: #fcba19;
+    --table-header-sort-color: #fcba19;
     --table-row-bg: #f7f8fa;
-    --table-row-border: 3px solid var(--white);
-    --table-alt-row-bg: #f4f4f4;
-    --table-sort-icon-color: #ccc;
-    --table-sort-icon-active-color: var(--black);
-    --table-sort-icon-size: 0.25rem;
+    --table-row-hover-bg: #e8eaed;
 
     /* Modal */
     --modal-bg: var(--white);

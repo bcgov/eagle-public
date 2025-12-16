@@ -94,7 +94,7 @@ export class AutoCompleteMultiSelectComponent implements OnInit, OnDestroy {
     effect(() => {
       this.updatedPaceholderText.set(this.placeholderText());
       this.currentOptions.set(this.options());
-    }, { allowSignalWrites: true });
+    });
   }
 
   ngOnInit() {

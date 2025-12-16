@@ -1,7 +1,7 @@
-import { Component, OnInit, OnDestroy, inject, signal, input } from '@angular/core';
+import { Component, OnInit, OnDestroy, EventEmitter, inject, signal, input } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { Utils } from 'app/shared/utils/utils';
-import { TableRowComponent } from 'app/shared/components/table-template/table-row-component';
+import { TableRowComponent, ITableMessage } from 'app/shared/components/table-template/table-row-component';
 import { TableObject } from 'app/shared/components/table-template/table-object';
 import { ConfigService } from 'app/services/config.service';
 import { takeWhile } from 'rxjs/operators';
@@ -23,8 +23,8 @@ export class DocSearchTableRowsComponent implements TableRowComponent, OnInit, O
   // Required by TableRowComponent interface
   rowData: any;
   tableData!: TableObject;
-  messageOut: any;
-  messageIn: any;
+  messageOut = new EventEmitter<ITableMessage>();
+  messageIn = new EventEmitter<ITableMessage>();
 
   lists = signal<any[]>([]);
 

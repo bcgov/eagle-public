@@ -1,8 +1,8 @@
-import { Component, inject } from '@angular/core';
+import { Component, EventEmitter, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { DatePipe } from '@angular/common';
-import { TableRowComponent } from 'app/shared/components/table-template/table-row-component';
+import { TableRowComponent, ITableMessage } from 'app/shared/components/table-template/table-row-component';
 import { TableObject } from 'app/shared/components/table-template/table-object';
 
 @Component({
@@ -17,8 +17,8 @@ export class ActivitiesListTableRowsComponent implements TableRowComponent {
   // TableRowComponent interface properties
   rowData: any;
   tableData!: TableObject;
-  messageOut: any;
-  messageIn: any;
+  messageOut = new EventEmitter<ITableMessage>();
+  messageIn = new EventEmitter<ITableMessage>();
 
   goToCP(activity: any) {
     if (activity.pcp.isMet && activity.pcp.metURL) {

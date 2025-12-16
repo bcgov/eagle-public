@@ -1,5 +1,9 @@
-.project-list {
-  margin-bottom: 50px;
+
+/* Override hero banner background for projects list */
+:host ::ng-deep .hero-banner {
+  background-image: url('/assets/images/hero-banner.jpg');
+  background-size: cover;
+  background-position: center;
 }
 
 .project-list__options {
@@ -158,15 +162,6 @@
   .project-table__project-details--links .btn + .btn {
     margin-left: 0.5rem;
   }
-}
-
-.table-container {
-  background-color: white;
-}
-
-.search-area {
-  background-color: white;
-  border: 1px solid lightgray;
 }
 
 .main-search-field {

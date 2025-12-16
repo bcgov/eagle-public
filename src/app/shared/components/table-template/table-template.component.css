@@ -1,1 +1,15 @@
 /* Table template styles - base styles imported from global CSS */
+.table-template {
+  margin-top: 2rem;
+}
+
+/* Align top controls with search bar above */
+.table-template > .row:first-child {
+  padding-left: 0;
+  padding-right: 0;
+}
+}
+
+.table-controls-bottom {
+  margin-top: 1.5rem;
+}

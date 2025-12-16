@@ -20,9 +20,9 @@
 .current {
   padding: 0.1875rem 0.625rem;
   color: #fefefe;
-  background: rgb(0, 123, 255);
+  background: #38598a;
   border-radius: 6px;
-  border-color: rgb(0, 123, 255);
+  border-color: #38598a;
   cursor: default;
 }
 

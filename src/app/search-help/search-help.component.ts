@@ -1,11 +1,12 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { HeroBannerComponent } from 'app/shared/hero-banner/hero-banner.component';
 
 @Component({
   selector: 'app-search-help',
   templateUrl: './search-help.component.html',
   styleUrl: './search-help.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule]
+  imports: [HeroBannerComponent],
+  standalone: true
 })
 export class SearchHelpComponent {}

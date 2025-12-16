@@ -124,6 +124,8 @@ export class ApiService {
   // Searching
   //
   searchKeywords(keys: string, dataset: string, fields: any[], pageNum: number, pageSize: number, projectLegislation: string = '', sortBy: string | null = null, queryModifier: Record<string, string> = {}, populate = false, secondarySort: string | null = null, filter: Record<string, string> = {}, fuzzy: boolean = false): Observable<SearchResults[]> {
+    console.log('API.searchKeywords called with keys:', keys, 'filter:', filter);
+    
     projectLegislation = (projectLegislation === '') ? 'default' : projectLegislation;
     let queryString = `search?dataset=${dataset}`;
     if (fields && fields.length > 0) {
@@ -158,6 +160,9 @@ export class ApiService {
     });
     queryString += `&fields=${this.buildValues(fields)}`;
     queryString += '&fuzzy=' + fuzzy;
+    
+    console.log('API call URL:', `${this.apiPath}/${queryString}`);
+    
     return this.http.get<SearchResults[]>(`${this.apiPath}/${queryString}`, {});
     // if (dataset === 'Project') {
     //   searchResults = searchResults.currentProjectData

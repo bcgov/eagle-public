@@ -24,15 +24,15 @@ export class DateInputComponent {
   constructor() {
     effect(() => {
       this.ngbDate.set(this.dateToNgbDate(this.date()));
-    }, { allowSignalWrites: true });
+    });
 
     effect(() => {
       this.minNgbDate.set(this.dateToNgbDate(this.minDate()));
-    }, { allowSignalWrites: true });
+    });
 
     effect(() => {
       this.maxNgbDate.set(this.dateToNgbDate(this.maxDate()));
-    }, { allowSignalWrites: true });
+    });
   }
 
   onDateChg(ngbDate: NgbDateStruct) {

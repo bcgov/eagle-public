@@ -16,12 +16,13 @@ import { Org } from 'app/models/organization';
 import { TableService } from 'app/services/table.service';
 import { TableTemplateComponent } from 'app/shared/components/table-template/table-template.component';
 import { SearchFilterTemplateComponent } from 'app/shared/components/search-filter-template/search-filter-template.component';
+import { HeroBannerComponent } from 'app/shared/hero-banner/hero-banner.component';
 
 @Component({
   selector: 'app-project-list',
   templateUrl: './project-list.component.html',
   styleUrls: ['./project-list.component.css'],
-  imports: [CommonModule, RouterLink, TableTemplateComponent, SearchFilterTemplateComponent],
+  imports: [CommonModule, RouterLink, TableTemplateComponent, SearchFilterTemplateComponent, HeroBannerComponent],
   standalone: true
 })
 export class ProjectListComponent implements OnInit, OnDestroy {
@@ -146,7 +147,18 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     });
 
     this.tableService.getValue(this.tableId).pipe(takeWhile(() => this.alive)).subscribe((searchResults: any) => {
+      console.log('tableService.getValue subscription received:', searchResults);
       if (searchResults.data !== 0) {
+        console.log('Setting tableData with', searchResults.data?.length, 'items, total:', searchResults.totalSearchCount);
+        
+        // Create new reference for OnPush change detection
+        this.tableData = new TableObject({ 
+          component: ProjectListTableRowsComponent,
+          pageSize: this.tableData.pageSize,
+          currentPage: this.tableData.currentPage,
+          sortBy: this.tableData.sortBy
+        });
+        
         this.tableData.totalListItems = searchResults.totalSearchCount;
         this.tableData.items = searchResults.data.map((record: any) => {
           return { rowData: record };
@@ -284,6 +296,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
   }
 
   executeSearch(searchPackage: any) {
+    console.log('executeSearch received:', searchPackage);
     let params: any = {};
     if (searchPackage.keywords) {
       params['keywords'] = searchPackage.keywords;
@@ -294,6 +307,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
         this.tableService.data[this.tableId].cachedConfig.sortBy = params['sortBy'];
       }
     } else {
+      // Set keywords to null to remove it from URL when using queryParamsHandling: 'merge'
       params['keywords'] = null;
       params['sortBy'] = '+name';
       this.tableService.data[this.tableId].cachedConfig.keywords = '';
@@ -304,8 +318,15 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     this.tableService.data[this.tableId].cachedConfig.currentPage = params['currentPage'];
 
     let queryFilters = this.tableTemplateUtils.getFiltersFromSearchPackage(searchPackage, this.filtersList, this.dateFiltersList);
-    this.tableService.data[this.tableId].cachedConfig.filters = queryFilters;
+    
+    // Filter out null values from the filters before storing in cache (for API calls)
+    // but keep them for URL params (for query merging)
+    const apiFilters = Object.fromEntries(
+      Object.entries(queryFilters).filter(([_, value]) => value != null)
+    );
+    this.tableService.data[this.tableId].cachedConfig.filters = apiFilters;
 
+    console.log('Calling submit with params:', params, 'filters:', queryFilters);
     this.submit(params, queryFilters);
   }
 
@@ -340,10 +361,12 @@ export class ProjectListComponent implements OnInit, OnDestroy {
   }
 
   submit(params: any, filters: any = null) {
+    const finalParams = filters ? { ...params, ...filters } : params;
+    console.log('submit called - navigating with params:', finalParams);
     this.router.navigate(
       [],
       {
-        queryParams: filters ? { ...params, ...filters } : params,
+        queryParams: finalParams,
         relativeTo: this.route,
         queryParamsHandling: 'merge'
       });

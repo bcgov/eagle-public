@@ -37,12 +37,15 @@
 
 .date-input__clear-btn {
   position: absolute;
-  top: 0.28rem;
+  top: 50%;
+  transform: translateY(-50%);
   right: 0.32em;
-  bottom: 0.28rem;
   padding: 0.15rem;
   color: var(--gray7);
   background-color: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .date-input__clear-btn:active,

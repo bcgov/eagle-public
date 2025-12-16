@@ -1,6 +1,6 @@
-import { Component, inject } from '@angular/core';
+import { Component, EventEmitter, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { TableRowComponent } from 'app/shared/components/table-template/table-row-component';
+import { TableRowComponent, ITableMessage } from 'app/shared/components/table-template/table-row-component';
 import { TableObject } from 'app/shared/components/table-template/table-object';
 
 @Component({
@@ -13,6 +13,6 @@ export class PinsTableRowsComponent implements TableRowComponent {
   // TableRowComponent interface properties
   rowData: any;
   tableData!: TableObject;
-  messageOut: any;
-  messageIn: any;
+  messageOut = new EventEmitter<ITableMessage>();
+  messageIn = new EventEmitter<ITableMessage>();
 }
