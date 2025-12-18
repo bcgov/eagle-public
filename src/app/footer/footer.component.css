@@ -1,12 +1,7 @@
 .app-footer {
   background: var(--footer-bg);
   color: var(--footer-color);
-  flex-shrink: 0;
   position: relative;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  z-index: 10;
 }
 
 .app-footer .container {

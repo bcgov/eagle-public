@@ -1,10 +1,10 @@
-<div class="project">
+<div class="project" [attr.data-sidebar-state]="sidebarOpen() ? 'open' : 'closed'">
     <main>
         <div class="project-info">
            <details-sidebar [project]="project()" (onSidebarToggle)="handleSidebarToggle($event)"></details-sidebar>
             <div class="content">
                 @if (project()?.commentPeriodForBanner) {
-                    <div class="pcp-banner col-sm-12" [class.closed]="!sidebarOpen()">
+                    <div class="pcp-banner col-sm-12">
                         @if (project()!.commentPeriodForBanner!.isMet) {
                             <div>
                                 <engagement-banner-wc [attr.engagementurl]="project()!.commentPeriodForBanner!.metURL"></engagement-banner-wc>
@@ -74,7 +74,7 @@
                 </div>
             </div>
 
-            <section class="people" [class.open]="sidebarOpen()" [class.closed]="!sidebarOpen()">
+            <section class="people">
                 <div class="container">
                         <h2>Contact Us</h2>
                         <div class="flex-container">

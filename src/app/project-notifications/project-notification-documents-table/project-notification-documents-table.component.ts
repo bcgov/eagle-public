@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef, OnDestroy, ChangeDetectionStrategy, inject, input, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, inject, input, signal, effect } from '@angular/core';
 import { BreakpointObserver, Breakpoints, MediaMatcher } from '@angular/cdk/layout';
 import { takeWhile } from 'rxjs/operators';
 import { CommonModule } from '@angular/common';
@@ -22,14 +22,14 @@ export class ProjectNotificationDocumentsTableComponent implements OnInit, OnDes
   header = input.required<string>();
 
   private tableService = inject(TableService);
-  private _changeDetectionRef = inject(ChangeDetectorRef);
   private breakpointObserver = inject(BreakpointObserver);
   private mediaMatcher = inject(MediaMatcher);
 
   private alive = true;
+  private tableSignal = this.tableService.getTableSignal('');
   loading = signal(true);
 
-  tableData: TableObject = new TableObject();
+  tableData = signal<TableObject>(new TableObject());
   
   private mobileTableColumns: any[] = [
     {
@@ -67,13 +67,46 @@ export class ProjectNotificationDocumentsTableComponent implements OnInit, OnDes
     }
   ];
 
+  constructor() {
+    // Watch for table data changes from service
+    effect(() => {
+      const tableId = this.tableId();
+      if (tableId) {
+        // Update signal reference when tableId changes
+        this.tableSignal = this.tableService.getTableSignal(tableId);
+      }
+    });
+
+    effect(() => {
+      const searchResults = this.tableSignal();
+      
+      if (searchResults && searchResults.data && searchResults.data !== 0) {
+        const updatedTableData = this.tableData();
+        updatedTableData.totalListItems = searchResults.totalSearchCount;
+        if (updatedTableData.totalListItems > 0) {
+          updatedTableData.items = searchResults.data.map((record: any) => {
+            return { rowData: record };
+          });
+        } else {
+          updatedTableData.items = [];
+        }
+        const mediaQueryList = this.mediaMatcher.matchMedia(Breakpoints.Web);
+        updatedTableData.columns = mediaQueryList.matches ? this.tableColumns : this.mobileTableColumns;
+
+        this.tableData.set(updatedTableData);
+        this.loading.set(false);
+      }
+    });
+  }
+
   async ngOnInit() {
     this.breakpointObserver.observe([Breakpoints.Tablet])
       .pipe(takeWhile(() => this.alive))
       .subscribe(result => {
         if (result.matches) {
-          this.tableData.columns = this.mobileTableColumns;
-          this._changeDetectionRef.detectChanges();
+          const updatedTableData = this.tableData();
+          updatedTableData.columns = this.mobileTableColumns;
+          this.tableData.set(updatedTableData);
         }
       });
 
@@ -81,20 +114,22 @@ export class ProjectNotificationDocumentsTableComponent implements OnInit, OnDes
       .pipe(takeWhile(() => this.alive))
       .subscribe(result => {
         if (result.matches) {
-          this.tableData.columns = this.tableColumns;
-          this._changeDetectionRef.detectChanges();
+          const updatedTableData = this.tableData();
+          updatedTableData.columns = this.tableColumns;
+          this.tableData.set(updatedTableData);
         }
       });
 
-    this.tableData.tableId = this.tableId();
-    this.tableData.pageSize = 5;
-    this.tableData.options.showPageSizePicker = false;
-    this.tableData.options.showPageCountDisplay = false;
-    this.tableData.options.showAllPicker = false;
-    this.tableData.options.showPagination = true;
-    this.tableData.options.showTopControls = false;
+    const currentTableData = this.tableData();
+    currentTableData.tableId = this.tableId();
+    currentTableData.pageSize = 5;
+    currentTableData.options.showPageSizePicker = false;
+    currentTableData.options.showPageCountDisplay = false;
+    currentTableData.options.showAllPicker = false;
+    currentTableData.options.showPagination = true;
+    currentTableData.options.showTopControls = false;
+    this.tableData.set(currentTableData);
 
-    this.tableService.initTableData(this.tableId());
     await this.tableService.fetchData(new SearchParamObject(
       this.tableId(),
       '',
@@ -107,53 +142,41 @@ export class ProjectNotificationDocumentsTableComponent implements OnInit, OnDes
       true,
       '+displayName'
     ));
-
-    this.tableService.getValue(this.tableId())
-      .pipe(takeWhile(() => this.alive))
-      .subscribe((searchResults: any) => {
-        if (searchResults.data !== 0) {
-          this.tableData.totalListItems = searchResults.totalSearchCount;
-          if (this.tableData.totalListItems > 0) {
-            this.tableData.items = searchResults.data.map((record: any) => {
-              return { rowData: record };
-            });
-          } else {
-            this.tableData.items = [];
-          }
-          const mediaQueryList = this.mediaMatcher.matchMedia(Breakpoints.Web);
-          this.tableData.columns = mediaQueryList.matches ? this.tableColumns : this.mobileTableColumns;
-
-          this.loading.set(false);
-          this._changeDetectionRef.detectChanges();
-        }
-      });
   }
 
   onMessageOut(msg: ITableMessage) {
-    let params: any = {};
+    const currentTableData = this.tableData();
+    
     switch (msg.label) {
       case 'columnSort':
-        if (this.tableData.sortBy.charAt(0) === '+') {
-          params['sortBy'] = '-' + msg.data;
-        } else {
-          params['sortBy'] = '+' + msg.data;
-        }
-        this.tableService.data[this.tableId()].cachedConfig.sortBy = params['sortBy'];
-        this.tableData.sortBy = params['sortBy'];
+        currentTableData.sortBy = currentTableData.sortBy.charAt(0) === '+' 
+          ? '-' + msg.data 
+          : '+' + msg.data;
+        this.tableData.set(currentTableData);
         break;
       case 'pageNum':
-        params['currentPage'] = msg.data;
-        this.tableService.data[this.tableId()].cachedConfig.currentPage = params['currentPage'];
-        this.tableData.currentPage = params['currentPage'];
-        break;
-      default:
+        currentTableData.currentPage = msg.data;
+        this.tableData.set(currentTableData);
         break;
     }
+    
     this.submit();
   }
 
   submit() {
-    this.tableService.refreshData(this.tableId());
+    const currentTableData = this.tableData();
+    this.tableService.fetchData(new SearchParamObject(
+      this.tableId(),
+      '',
+      'Document',
+      [{ 'name': 'project', 'value': this.tableId() }],
+      currentTableData.currentPage,
+      currentTableData.pageSize,
+      currentTableData.sortBy,
+      { documentSource: 'PROJECT-NOTIFICATION' },
+      true,
+      '+displayName'
+    ));
   }
 
   ngOnDestroy() {

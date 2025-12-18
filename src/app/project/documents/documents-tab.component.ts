@@ -1,7 +1,8 @@
-import { Component, OnInit, ChangeDetectorRef, OnDestroy, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, signal, effect, ChangeDetectionStrategy } from '@angular/core';
 import { Router, ActivatedRoute, Params } from '@angular/router';
 import { takeWhile } from 'rxjs/operators';
 import { SearchResults } from '../../models/search';
+import { SearchParamObject } from '../../services/search.service';
 import { DocumentTableRowsComponent } from './project-document-table-rows/project-document-table-rows.component';
 import { Constants } from '../../shared/utils/constants';
 import { TableTemplate } from '../../shared/components/table-template/table-template';
@@ -18,10 +19,10 @@ import { SearchFilterTemplateComponent } from '../../shared/components/search-fi
   templateUrl: './documents-tab.component.html',
   styleUrls: ['./documents-tab.component.css'],
   imports: [TableTemplateComponent, SearchFilterTemplateComponent],
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  standalone: true
 })
 export class DocumentsTabComponent implements OnInit, OnDestroy {
-  private readonly changeDetectorRef = inject(ChangeDetectorRef);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly tableTemplateUtils = inject(TableTemplate);
@@ -29,9 +30,11 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
   private readonly configService = inject(ConfigService);
 
   private readonly tableId = 'documentsTab';
+  private readonly tableSignal = this.tableService.getTableSignal(this.tableId);
   private alive = true;
   private lists: any[] = [];
   private initialLoad = true;
+  private projId = '';
 
   private readonly milestoneArray: any[] = [];
   private readonly documentAuthorTypeArray: any[] = [];
@@ -83,7 +86,31 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
 
   private readonly legislationFilterGroup = { name: 'legislation', labelPrefix: '', labelPostfix: ' Act Terms' };
 
+  constructor() {
+    // Watch for table data changes from service
+    effect(() => {
+      const searchResults = this.tableSignal();
+      
+      if (searchResults && searchResults.data && searchResults.data !== 0) {
+        const currentTableData = this.tableData();
+        currentTableData.totalListItems = searchResults.totalSearchCount;
+        currentTableData.items = searchResults.data.map((record: any) => {
+          record['showFeatured'] = true;
+          return { rowData: record };
+        });
+        currentTableData.columns = this.tableColumns;
+        currentTableData.options.showAllPicker = true;
+
+        this.tableData.set(currentTableData);
+        this.loadingTableData.set(false);
+      }
+    });
+  }
+
   ngOnInit() {
+    // Get project ID from parent route
+    this.projId = this.route.parent?.snapshot.params['projId'] || '';
+
     this.configService.lists.pipe(takeWhile(() => this.alive)).subscribe((list) => {
       this.lists = list;
       this.lists.forEach(item => {
@@ -99,7 +126,6 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
       });
       this.setFilters();
       this.loadingLists.set(false);
-      this.changeDetectorRef.detectChanges();
     });
 
     this.route.queryParamMap.pipe(takeWhile(() => this.alive)).subscribe(data => {
@@ -121,24 +147,35 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
       }
 
       this.loadingTableParams.set(false);
-      this.changeDetectorRef.detectChanges();
-    });
 
-    this.tableService.getValue(this.tableId).pipe(takeWhile(() => this.alive)).subscribe((searchResults: any) => {
-      if (searchResults.data !== 0) {
-        const currentTableData = this.tableData();
-        currentTableData.totalListItems = searchResults.totalSearchCount;
-        currentTableData.items = searchResults.data.map((record: any) => {
-          record['showFeatured'] = true;
-          return { rowData: record };
-        });
-        currentTableData.columns = this.tableColumns;
-        currentTableData.options.showAllPicker = true;
-
-        this.tableData.set(currentTableData);
-        this.loadingTableData.set(false);
-        this.changeDetectorRef.detectChanges();
-      }
+      // Build filters object from query params
+      const filters: Record<string, string> = {};
+      this.filtersList.forEach(filterKey => {
+        if (this.queryParams[filterKey]) {
+          filters[filterKey] = this.queryParams[filterKey];
+        }
+      });
+      this.dateFiltersList.forEach(filterKey => {
+        if (this.queryParams[filterKey]) {
+          filters[filterKey] = this.queryParams[filterKey];
+        }
+      });
+      
+      // Fetch data with current params
+      const currentTableData = this.tableData();
+      this.tableService.fetchData(new SearchParamObject(
+        this.tableId,
+        this.queryParams['keywords'] || '',
+        'Document',
+        [],
+        currentTableData.currentPage,
+        currentTableData.pageSize,
+        currentTableData.sortBy,
+        { project: this.projId },
+        true,
+        currentTableData.sortBy.includes('displayName') ? '' : '+displayName',
+        filters
+      ));
     });
   }
 
@@ -224,23 +261,17 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
     let params: any = {};
     if (searchPackage.keywords) {
       params['keywords'] = searchPackage.keywords;
-      this.tableService.data[this.tableId].cachedConfig.keywords = params['keywords'];
       if (searchPackage.keywordsChanged) {
         params['sortBy'] = '-score';
-        this.tableService.data[this.tableId].cachedConfig.sortBy = params['sortBy'];
       }
     } else {
       params['keywords'] = null;
       params['sortBy'] = Constants.tableDefaults.DEFAULT_SORT_BY;
-      this.tableService.data[this.tableId].cachedConfig.keywords = '';
-      this.tableService.data[this.tableId].cachedConfig.sortBy = params['sortBy'];
     }
 
     params['currentPage'] = 1;
-    this.tableService.data[this.tableId].cachedConfig.currentPage = params['currentPage'];
 
     let queryFilters = this.tableTemplateUtils.getFiltersFromSearchPackage(searchPackage, this.filtersList, this.dateFiltersList);
-    this.tableService.data[this.tableId].cachedConfig.filters = queryFilters;
 
     this.submit(params, queryFilters);
   }
@@ -256,18 +287,9 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
         } else {
           params['sortBy'] = '+' + msg.data;
         }
-
-        if (params['sortBy'].includes('displayName')) {
-          this.tableService.data[this.tableId].cachedConfig.secondarySort = '';
-        } else {
-          this.tableService.data[this.tableId].cachedConfig.secondarySort = '+displayName';
-        }
-
-        this.tableService.data[this.tableId].cachedConfig.sortBy = params['sortBy'];
         break;
       case 'pageNum':
         params['currentPage'] = msg.data;
-        this.tableService.data[this.tableId].cachedConfig.currentPage = params['currentPage'];
         break;
       case 'pageSize':
         params['pageSize'] = msg.data.value;
@@ -275,10 +297,6 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
           this.loadingTableData.set(true);
         }
         params['currentPage'] = 1;
-        this.tableService.data[this.tableId].cachedConfig.pageSize = params['pageSize'];
-        this.tableService.data[this.tableId].cachedConfig.currentPage = params['currentPage'];
-        break;
-      default:
         break;
     }
     this.submit(params);
@@ -293,7 +311,6 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
         queryParamsHandling: 'merge'
       });
     this.loadingTableData.set(true);
-    this.tableService.refreshData(this.tableId);
   }
 
   onToggleFiltersPanel(event: { showPanel: boolean }) {

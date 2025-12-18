@@ -1,10 +1,9 @@
-import { Component, OnInit, ChangeDetectorRef, OnDestroy, inject, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Router } from '@angular/router';
-import { StorageService } from '../../services/storage.service';
-import { SearchResults } from '../../models/search';
-import { IColumnObject, TableObject } from '../../shared/components/table-template/table-object';
+import { Component, OnInit, OnDestroy, inject, signal, effect, ChangeDetectionStrategy } from '@angular/core';
+import { ActivatedRoute, Router, Params } from '@angular/router';
 import { takeWhile } from 'rxjs/operators';
+import { SearchParamObject } from '../../services/search.service';
+import { IColumnObject, TableObject } from '../../shared/components/table-template/table-object';
+import { DocumentTableRowsComponent } from '../documents/project-document-table-rows/project-document-table-rows.component';
 import { TableTemplate } from '../../shared/components/table-template/table-template';
 import { ITableMessage } from '../../shared/components/table-template/table-row-component';
 import { TableService } from '../../services/table.service';
@@ -12,28 +11,26 @@ import { TableTemplateComponent } from '../../shared/components/table-template/t
 
 @Component({
   selector: 'app-amendments',
-  imports: [CommonModule, TableTemplateComponent],
   templateUrl: './amendments.component.html',
   styleUrls: ['./amendments.component.css'],
+  imports: [TableTemplateComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true
 })
 export class AmendmentsComponent implements OnInit, OnDestroy {
-  private _changeDetectionRef = inject(ChangeDetectorRef);
-  private route = inject(ActivatedRoute);
-  private router = inject(Router);
-  private storageService = inject(StorageService);
-  private tableTemplateUtils = inject(TableTemplate);
-  private tableService = inject(TableService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly tableTemplateUtils = inject(TableTemplate);
+  private readonly tableService = inject(TableService);
 
-  private tableId = 'amendments';
-  public tableParams: any = { totalListItems: 0, currentPage: 1, pageSize: 10, sortBy: '' };
-  public currentProject: any;
-  public loading = true;
+  private readonly tableId = 'amendments';
   private alive = true;
+  private projId = '';
 
-  public tableData: TableObject = new TableObject();
-  public tableColumns: IColumnObject[] = [
+  public readonly loading = signal(true);
+  public readonly tableData = signal<TableObject>(new TableObject({ component: DocumentTableRowsComponent }));
+  
+  public readonly tableColumns: IColumnObject[] = [
     {
       name: 'Name',
       value: 'displayName',
@@ -61,73 +58,105 @@ export class AmendmentsComponent implements OnInit, OnDestroy {
     }
   ];
 
-  ngOnInit() {
-    this.currentProject = this.storageService.state.currentProject.data;
-    this.route.queryParamMap.pipe(takeWhile(() => this.alive)).subscribe(data => {
-      // Get params from route, shove into the tableTemplateUtils so that we get a new dataset to work with.
-      const params: any = {};
-      data.keys.forEach(key => params[key] = data.get(key));
-      this.tableData = this.tableTemplateUtils.updateTableObjectWithUrlParams(params, this.tableData);
+  constructor() {
+    // Watch for table data changes from service
+    const tableSignal = this.tableService.getTableSignal(this.tableId);
+    effect(() => {
+      const searchResults = tableSignal();
+      
+      if (searchResults && searchResults.data) {
+        const currentTableData = this.tableData();
+        const newTableData = new TableObject({
+          component: DocumentTableRowsComponent,
+          pageSize: currentTableData.pageSize,
+          currentPage: currentTableData.currentPage,
+          sortBy: currentTableData.sortBy
+        });
 
-      this._changeDetectionRef.detectChanges();
-    });
-
-    this.tableService.getValue(this.tableId).pipe(takeWhile(() => this.alive)).subscribe((searchResults: any) => {
-      if (searchResults.data !== 0) {
-        this.tableData.totalListItems = searchResults.totalSearchCount;
-        this.tableData.items = searchResults.data.map((record: any) => {
+        newTableData.totalListItems = searchResults.totalSearchCount;
+        newTableData.items = searchResults.data.map((record: any) => {
           record.showFeatured = false;
           return { rowData: record };
         });
-        this.tableData.columns = this.tableColumns;
-        this.tableData.options.showAllPicker = true;
+        newTableData.columns = this.tableColumns;
+        newTableData.options.showAllPicker = true;
 
-        this.loading = false;
-        this._changeDetectionRef.detectChanges();
+        this.tableData.set(newTableData);
+        this.loading.set(false);
       }
     });
   }
 
+  ngOnInit() {
+    // Get project ID from parent route
+    this.projId = this.route.parent?.snapshot.params['projId'] || '';
+
+    // Subscribe to query params and fetch data
+    this.route.queryParamMap.pipe(takeWhile(() => this.alive)).subscribe(data => {
+      const updatedTableData = this.tableTemplateUtils.updateTableObjectWithUrlParams(data as any, this.tableData());
+      this.tableData.set(updatedTableData);
+
+      // Determine secondary sort
+      const secondarySort = updatedTableData.sortBy.includes('displayName') ? '' : '+displayName';
+
+      // Fetch data with current params
+      this.tableService.fetchData(new SearchParamObject(
+        this.tableId,
+        '',
+        'Document',
+        [{ 'name': 'project', 'value': this.projId }],
+        updatedTableData.currentPage,
+        updatedTableData.pageSize,
+        updatedTableData.sortBy,
+        { documentSource: 'PROJECT', type: 'amendment' },
+        true,
+        secondarySort
+      ));
+    });
+  }
+
   onMessageOut(msg: ITableMessage) {
-    let params: any = {};
+    const params: Params = {};
+    const currentTableData = this.tableData();
+    const currentParams = this.route.snapshot.queryParams;
+    
     switch (msg.label) {
       case 'columnSort':
-        if (this.tableData.sortBy.charAt(0) === '+') {
-          params['sortBy'] = '-' + msg.data;
-        } else {
-          params['sortBy'] = '+' + msg.data;
-        }
-        this.tableService.data[this.tableId].cachedConfig.sortBy = params['sortBy'];
+        params['sortBy'] = this.toggleSortDirection(msg.data);
+        params['currentPage'] = 1;
         break;
       case 'pageNum':
         params['currentPage'] = msg.data;
-        this.tableService.data[this.tableId].cachedConfig.currentPage = params['currentPage'];
         break;
       case 'pageSize':
         params['pageSize'] = msg.data.value;
-        if (params['pageSize'] === this.tableData.totalListItems) {
-          this.loading = true;
-        }
         params['currentPage'] = 1;
-        this.tableService.data[this.tableId].cachedConfig.pageSize = params['pageSize'];
-        this.tableService.data[this.tableId].cachedConfig.currentPage = params['currentPage'];
-        break;
-      default:
+        if (params['pageSize'] === currentTableData.totalListItems) {
+          this.loading.set(true);
+        }
         break;
     }
-    this.submit(params, null);
+    
+    this.submit({ ...currentParams, ...params });
   }
 
-  submit(params: any, filters: any = null) {
-    this.router.navigate(
-      [],
-      {
-        queryParams: filters ? { ...params, ...filters } : params,
-        relativeTo: this.route,
-        queryParamsHandling: 'merge'
-      });
-    this.loading = true;
-    this.tableService.refreshData(this.tableId);
+  private toggleSortDirection(field: string): string {
+    const currentSort = this.tableData().sortBy;
+    
+    // If we're sorting by the same field, toggle direction
+    if (currentSort?.includes(field)) {
+      return (currentSort?.[0] === '+' ? '-' : '+') + field;
+    }
+    
+    // Default to descending for new field
+    return '-' + field;
+  }
+
+  submit(params: Params) {
+    this.router.navigate([], {
+      queryParams: params,
+      relativeTo: this.route
+    });
   }
 
   ngOnDestroy() {

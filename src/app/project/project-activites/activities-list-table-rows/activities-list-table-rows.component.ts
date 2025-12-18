@@ -9,7 +9,8 @@ import { TableObject } from 'app/shared/components/table-template/table-object';
   selector: 'tr[app-activities-list-table-rows]',
   templateUrl: './activities-list-table-rows.component.html',
   styleUrls: ['./activities-list-table-rows.component.css'],
-  imports: [CommonModule, DatePipe]
+  imports: [CommonModule, DatePipe],
+  standalone: true
 })
 export class ActivitiesListTableRowsComponent implements TableRowComponent {
   private router = inject(Router);

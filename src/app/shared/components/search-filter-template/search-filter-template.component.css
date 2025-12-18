@@ -52,7 +52,6 @@
   transform: translateY(-50%);
   padding: 0.25rem;
   color: #6c757d;
-  z-index: 10;
   display: flex;
   align-items: center;
   justify-content: center;

@@ -65,7 +65,8 @@ export interface IMutliSelectOption {
     MatCheckboxModule,
     MatIconModule,
     MatInputModule
-  ]
+  ],
+  standalone: true
 })
 export class AutoCompleteMultiSelectComponent implements OnInit, OnDestroy {
   private _changeDetectionRef = inject(ChangeDetectorRef);

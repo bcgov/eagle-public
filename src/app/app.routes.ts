@@ -3,18 +3,7 @@ import {
   projectResolver,
   commentPeriodResolver,
   projectNotificationResolver,
-  newsResolver,
-  projectListResolver,
-  projectNotificationsResolver,
-  searchResolver,
-  documentsResolver,
-  documentTableResolver,
-  certificatesResolver,
-  amendmentsResolver,
-  applicationResolver,
-  projectActivitiesResolver,
-  pinsResolver,
-  featuredDocumentsResolver
+  documentTableResolver
 } from './resolvers';
 import { HomeComponent } from './home/home.component';
 import { ContactComponent } from './contact/contact.component';
@@ -55,18 +44,12 @@ export const routes: Routes = [
   },
   {
     path: 'projects-list',
-    component: ProjectListComponent,
-    resolve: {
-      projectList: projectListResolver
-    }
+    component: ProjectListComponent
   },
   
   {
     path: 'project-notifications',
-    component: ProjectNotificationsListComponent,
-    resolve: {
-      projectNotifications: projectNotificationsResolver
-    }
+    component: ProjectNotificationsListComponent
   },
   
   {
@@ -85,10 +68,7 @@ export const routes: Routes = [
   
   {
     path: 'news',
-    component: NewsListComponent,
-    resolve: {
-      news: newsResolver
-    }
+    component: NewsListComponent
   },
   
   {
@@ -110,7 +90,6 @@ export const routes: Routes = [
     path: 'search',
     component: SearchComponent,
     resolve: {
-      documents: searchResolver,
       documentsTableRows: documentTableResolver
     }
   },
@@ -150,33 +129,19 @@ export const routes: Routes = [
       },
       {
         path: 'project-details',
-        component: ProjectDetailsTabComponent,
-        resolve: {
-          projectActivities: projectActivitiesResolver,
-          pins: pinsResolver,
-          featuredDocuments: featuredDocumentsResolver
-        }
+        component: ProjectDetailsTabComponent
       },
       {
         path: 'certificates',
-        component: CertificatesComponent,
-        resolve: {
-          certificates: certificatesResolver
-        }
+        component: CertificatesComponent
       },
       {
         path: 'amendments',
-        component: AmendmentsComponent,
-        resolve: {
-          amendments: amendmentsResolver
-        }
+        component: AmendmentsComponent
       },
       {
         path: 'application',
-        component: ApplicationComponent,
-        resolve: {
-          application: applicationResolver
-        }
+        component: ApplicationComponent
       },
       {
         path: 'commenting',
@@ -184,10 +149,7 @@ export const routes: Routes = [
       },
       {
         path: 'documents',
-        component: DocumentsTabComponent,
-        resolve: {
-          documents: documentsResolver
-        }
+        component: DocumentsTabComponent
       },
       {
         path: 'decisions',

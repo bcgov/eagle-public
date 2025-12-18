@@ -1,20 +1,20 @@
 <section class="tab-section">
-  @if (loading) {
+  @if (loading()) {
     <div class="spinner-container">
       <div class="spinner-new rotating"></div>
     </div>
   }
-  @if (!loading && tableData.totalListItems !== 0) {
+  @if (!loading() && tableData().totalListItems !== 0) {
     <div>
-      @if (tableData.totalListItems > 0) {
+      @if (tableData().totalListItems > 0) {
         <lib-table-template
-          [data]="tableData"
+          [data]="tableData()"
           (messageOut)="onMessageOut($event)">
         </lib-table-template>
       }
     </div>
   }
-  @if (tableData.totalListItems === 0) {
+  @if (tableData().totalListItems === 0) {
     <div>
       There are no amendment documents associated with this project.
     </div>

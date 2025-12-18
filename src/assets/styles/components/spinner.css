@@ -52,7 +52,6 @@
   inset: 0;
   padding: 5%;
   background: var(--spinner-bg);
-  z-index: 60;
 
   /* to keep above everything else */
   transition: all linear 0.5s;
@@ -78,7 +77,6 @@
 
 .spinner-container.full-screen {
   position: fixed;
-  z-index: 60;
 
   /* to keep above everything else */
 }

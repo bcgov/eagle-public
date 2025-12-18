@@ -1,11 +1,11 @@
-import { Component, OnInit, ChangeDetectorRef, OnDestroy, inject, signal, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, OnDestroy, inject, signal, ChangeDetectionStrategy, effect } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
-import { takeWhile } from 'rxjs/operators';
 import { SearchResults } from '../../models/search';
 import { IColumnObject, TableObject } from '../../shared/components/table-template/table-object';
 import { DocumentTableRowsComponent } from '../documents/project-document-table-rows/project-document-table-rows.component';
 import { TableService } from '../../services/table.service';
 import { TableTemplateComponent } from '../../shared/components/table-template/table-template.component';
+import { SearchParamObject } from '../../services/search.service';
 
 @Component({
   selector: 'app-featured-documents',
@@ -18,13 +18,36 @@ import { TableTemplateComponent } from '../../shared/components/table-template/t
 export class FeaturedDocumentsComponent implements OnInit, OnDestroy {
   public readonly location = inject(Location);
   private readonly tableService = inject(TableService);
-  private readonly changeDetectorRef = inject(ChangeDetectorRef);
 
   private readonly tableId = 'featuredDocuments';
   private alive = true;
+  private readonly tableSignal = this.tableService.getTableSignal(this.tableId);
 
   public readonly loading = signal(true);
   public readonly tableData = signal<TableObject>(new TableObject({ component: DocumentTableRowsComponent }));
+
+  constructor() {
+    effect(() => {
+      const searchResults = this.tableSignal();
+      // Only process when we have actual API results (not initial null value)
+      if (searchResults !== null && searchResults !== undefined) {
+        const updatedTableData = this.tableData();
+        if (searchResults.data && Array.isArray(searchResults.data) && searchResults.data.length > 0) {
+          updatedTableData.totalListItems = searchResults.totalSearchCount;
+          updatedTableData.items = searchResults.data.map((record: any) => {
+            record['showFeatured'] = true;
+            return { rowData: record };
+          });
+          updatedTableData.columns = this.tableColumns;
+        } else {
+          updatedTableData.totalListItems = 0;
+          updatedTableData.items = [];
+        }
+        this.tableData.set(updatedTableData);
+        this.loading.set(false);
+      }
+    });
+  }
   
   public readonly tableColumns: IColumnObject[] = [
     {
@@ -76,21 +99,18 @@ export class FeaturedDocumentsComponent implements OnInit, OnDestroy {
     currentTableData.sortBy = '-datePosted';
     this.tableData.set(currentTableData);
 
-    this.tableService.getValue(this.tableId).pipe(takeWhile(() => this.alive)).subscribe((searchResults: any) => {
-      if (searchResults.data !== 0) {
-        const updatedTableData = this.tableData();
-        updatedTableData.totalListItems = searchResults.totalSearchCount;
-        updatedTableData.items = searchResults.data.map((record: any) => {
-          record['showFeatured'] = true;
-          return { rowData: record };
-        });
-        updatedTableData.columns = this.tableColumns;
-        
-        this.tableData.set(updatedTableData);
-        this.loading.set(false);
-        this.changeDetectorRef.detectChanges();
-      }
-    });
+    this.tableService.fetchData(new SearchParamObject(
+      this.tableId,
+      '',
+      'Document',
+      [],
+      1,
+      5,
+      '-datePosted',
+      { isFeatured: 'true' },
+      false,
+      ''
+    ));
   }
 
   ngOnDestroy() {

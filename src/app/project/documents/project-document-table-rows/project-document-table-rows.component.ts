@@ -11,7 +11,8 @@ import { ConfigService } from '../../../services/config.service';
   templateUrl: './project-document-table-rows.component.html',
   styleUrls: ['./project-document-table-rows.component.css'],
   imports: [DatePipe],
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  standalone: true
 })
 export class DocumentTableRowsComponent implements TableRowComponent, OnInit, OnDestroy {
   private readonly configService = inject(ConfigService);

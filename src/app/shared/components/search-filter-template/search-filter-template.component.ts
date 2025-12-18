@@ -95,8 +95,13 @@ export class SearchFilterTemplateComponent implements OnInit, AfterViewInit, OnD
   public queryParams: Record<string, any> = {};
   public formGroup!: FormGroup; // Helper formGroup for grabbing values from controls
   public showFiltersPanel = signal(false);
+  
+  // Simple signal to track if any filters are active
+  public hasActiveFilters = signal(false);
 
   private alive = true;
+  private skipNextSearch = false;
+  private valueChangesSubscription?: any;
 
   constructor() {
     // Initialize showFiltersPanel from input
@@ -138,6 +143,11 @@ export class SearchFilterTemplateComponent implements OnInit, AfterViewInit, OnD
           // component values
           urlValues[key] = filterParams[key];
         }
+      }
+      
+      // Update hasActiveFilters whenever URL params change
+      if (this.formGroup) {
+        this.updateHasActiveFilters();
       }
     });
 
@@ -186,14 +196,14 @@ export class SearchFilterTemplateComponent implements OnInit, AfterViewInit, OnD
           const date = new Date(defaultFormValues[filter.filterDefinition.startDateId]);
 
           groupControls[filter.filterDefinition.startDateId]
-            .setValue({ year: date.getFullYear(), day: date.getDay(), month: date.getMonth() });
+            .setValue({ year: date.getFullYear(), day: date.getDate(), month: date.getMonth() + 1 });
         }
 
         if (defaultFormValues[filter.filterDefinition.endDateId]) {
           const date = new Date(defaultFormValues[filter.filterDefinition.endDateId]);
 
           groupControls[filter.filterDefinition.endDateId]
-            .setValue({ year: date.getFullYear(), day: date.getDay(), month: date.getMonth() });
+            .setValue({ year: date.getFullYear(), day: date.getDate(), month: date.getMonth() + 1 });
         }
       } else if (filter.type === FilterType.Checkbox) {
         if (!filter.filterDefinition.grouped) {
@@ -236,12 +246,21 @@ export class SearchFilterTemplateComponent implements OnInit, AfterViewInit, OnD
     });
 
     this.formGroup = new FormGroup(groupControls);
-    this.formGroup.valueChanges.subscribe(val => {
+    this.valueChangesSubscription = this.formGroup.valueChanges.subscribe(val => {
       this.filterChange.emit(val);
+      // Update hasActiveFilters whenever form changes
+      this.updateHasActiveFilters();
+      if (this.skipNextSearch) {
+        this.skipNextSearch = false;
+        return;
+      }
       if (this.searchOnFilterChange()) {
         this.search();
       }
     });
+    
+    // Check initial state after form is built
+    this.updateHasActiveFilters();
   }
 
   ngAfterViewInit() {
@@ -272,8 +291,6 @@ export class SearchFilterTemplateComponent implements OnInit, AfterViewInit, OnD
    * @memberof SearchFilterTemplateComponent
    */
   search() {
-    // Create a search package containing the users search
-    // filters
     const subsetsValue = this.subsets();
     const searchPackage = {
       keywords: this.keywordSearchWords(),
@@ -281,8 +298,6 @@ export class SearchFilterTemplateComponent implements OnInit, AfterViewInit, OnD
       subset: subsetsValue ? subsetsValue.selectedSubset!.subset : null,
       filters: {} as Record<string, any>
     };
-
-    console.log('Search called with keywords:', this.keywordSearchWords(), 'searchPackage:', searchPackage);
 
     this.previousKeywords = this.keywordSearchWords();
 
@@ -329,7 +344,7 @@ export class SearchFilterTemplateComponent implements OnInit, AfterViewInit, OnD
         }
       } else if (filter.type === FilterType.MultiSelect) {
         const groupedVals: string[] = [];
-        if (filter.filterDefinition.selectedOptions.length > 0) {
+        if (filter.filterDefinition.selectedOptions && filter.filterDefinition.selectedOptions.length > 0) {
           filter.filterDefinition.selectedOptions.forEach((item: any) => {
             if (item._id) {
               groupedVals.push(item._id);
@@ -347,6 +362,10 @@ export class SearchFilterTemplateComponent implements OnInit, AfterViewInit, OnD
         }
       }
     });
+    
+    // Update the reset button state
+    this.updateHasActiveFilters();
+    
     // and return the package to the host component
     this.searchEvent.emit(searchPackage);
   }
@@ -368,34 +387,71 @@ export class SearchFilterTemplateComponent implements OnInit, AfterViewInit, OnD
   }
 
   /**
-   * Clears all filter components on the search form,
-   * including keyword and subset selections
-   *
-   * @memberof SearchFilterTemplateComponent
+   * Clears all filter components and resets to default state
    */
   clearFilters() {
-    // reset the form group, doesn't appear to reset multiselects, or date ranges
     // @ts-ignore
     if (window.hj) {
       // @ts-ignore
       window.hj('event', 'FILTERS_CLEARED');
     }
+    
+    // Unsubscribe from valueChanges to prevent ANY firings during ALL reset operations
+    if (this.valueChangesSubscription) {
+      this.valueChangesSubscription.unsubscribe();
+    }
+    
+    // Reset form
     this.formGroup.reset();
-    // clear multiSelects && date ranges
+    
+    // Clear multi-select filters
     for (const filter of this.filters().filter(f => f.type === FilterType.MultiSelect)) {
       filter.filterDefinition.selectedOptions = [];
     }
-    // clear keywords
+    
+    // Clear date range filters explicitly
+    for (const filter of this.filters().filter(f => f.type === FilterType.DateRange)) {
+      const startControl = this.formGroup.get(filter.filterDefinition.startDateId);
+      const endControl = this.formGroup.get(filter.filterDefinition.endDateId);
+      if (startControl) startControl.setValue(null);
+      if (endControl) endControl.setValue(null);
+    }
+    
+    // Clear keywords
     this.keywordSearchWords.set('');
-    // reset the subset settings
+    this.previousKeywords = '';
+    
+    // Reset subset
     const subsetsValue = this.subsets();
     if (subsetsValue) {
-      this.changeSubset(subsetsValue.defaultSubset!);
+      subsetsValue.selectedSubset = subsetsValue.defaultSubset!;
     }
-    // emit to the host that the form was reset
+    
+    // NOW re-subscribe to valueChanges after all changes are done
+    this.valueChangesSubscription = this.formGroup.valueChanges.subscribe(val => {
+      this.filterChange.emit(val);
+      // Update hasActiveFilters whenever form changes
+      this.updateHasActiveFilters();
+      if (this.skipNextSearch) {
+        this.skipNextSearch = false;
+        return;
+      }
+      if (this.searchOnFilterChange()) {
+        this.search();
+      }
+    });
+    
+    // Update hasActiveFilters after clearing (should be false)
+    this.hasActiveFilters.set(false);
+    
+    // Emit single search event with empty filters
     this.resetControls.emit();
-    // rerun the search
-    this.search();
+    this.searchEvent.emit({
+      keywords: '',
+      keywordsChanged: false,
+      subset: subsetsValue ? subsetsValue.defaultSubset!.subset : null,
+      filters: {}
+    });
   }
 
   // Resets a specific filter
@@ -418,6 +474,55 @@ export class SearchFilterTemplateComponent implements OnInit, AfterViewInit, OnD
     this.keywordSearchWords.set('');
     console.log('After clearing, value:', this.keywordSearchWords());
     this.search();
+  }
+
+  /**
+   * Check if any filters are currently active and update the signal
+   */
+  private updateHasActiveFilters(): void {
+    let hasFilters = false;
+    
+    // Check keywords
+    if (this.keywordSearchWords()) {
+      hasFilters = true;
+    }
+    
+    // Check filter definitions for multi-select filters (they store data in selectedOptions)
+    if (!hasFilters) {
+      for (const filter of this.filters()) {
+        if (filter.type === FilterType.MultiSelect && 
+            filter.filterDefinition.selectedOptions && 
+            filter.filterDefinition.selectedOptions.length > 0) {
+          hasFilters = true;
+          break;
+        }
+      }
+    }
+    
+    // Check form controls for any non-empty values (date ranges, checkboxes, etc)
+    if (!hasFilters && this.formGroup) {
+      const formValues = this.formGroup.value;
+      for (const key in formValues) {
+        const value = formValues[key];
+        if (value) {
+          if (Array.isArray(value) && value.length > 0) {
+            hasFilters = true;
+            break;
+          } else if (typeof value === 'object' && value !== null && Object.keys(value).length > 0) {
+            hasFilters = true;
+            break;
+          } else if (typeof value === 'string' && value.trim() !== '') {
+            hasFilters = true;
+            break;
+          } else if (typeof value === 'boolean' && value === true) {
+            hasFilters = true;
+            break;
+          }
+        }
+      }
+    }
+    
+    this.hasActiveFilters.set(hasFilters);
   }
 
   /**

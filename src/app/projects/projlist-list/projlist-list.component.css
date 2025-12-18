@@ -54,7 +54,6 @@
   height: 100%;
   padding: 1rem;
   background: #fff;
-  z-index: 2;
 
   + .no-results {
     display: none;

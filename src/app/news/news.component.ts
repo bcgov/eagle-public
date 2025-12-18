@@ -1,9 +1,9 @@
-import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, signal, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, signal, inject, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, ActivatedRoute, Params } from '@angular/router';
 import { takeWhile } from 'rxjs/operators';
 
-import { SearchResults } from 'app/models/search';
+import { SearchParamObject } from 'app/services/search.service';
 import { TableService } from 'app/services/table.service';
 import { IColumnObject, TableObject } from 'app/shared/components/table-template/table-object';
 import { ITableMessage } from 'app/shared/components/table-template/table-row-component';
@@ -16,7 +16,8 @@ import { NewsListTableRowsComponent } from './news-list-table-rows/news-list-tab
   templateUrl: './news.component.html',
   styleUrl: './news.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, TableTemplateComponent]
+  imports: [CommonModule, TableTemplateComponent],
+  standalone: true
 })
 export class NewsListComponent implements OnInit, OnDestroy {
   private router = inject(Router);
@@ -26,10 +27,8 @@ export class NewsListComponent implements OnInit, OnDestroy {
 
   private tableId = 'news';
   private alive = true;
-  private isSearch = false;
 
   loading = signal<boolean>(true);
-  queryParams = signal<Params>({});
   tableData = signal<TableObject>(new TableObject({ component: NewsListTableRowsComponent }));
   
   tableColumns: IColumnObject[] = [
@@ -47,15 +46,38 @@ export class NewsListComponent implements OnInit, OnDestroy {
     }
   ];
 
-  ngOnInit(): void {
-    const currentTableData = this.tableData();
-    currentTableData.options.showPageCountDisplay = true;
-    currentTableData.options.showPagination = true;
-    this.tableData.set(currentTableData);
+  constructor() {
+    // Watch for table data changes from service
+    const tableSignal = this.tableService.getTableSignal(this.tableId);
+    effect(() => {
+      const searchResults = tableSignal();
+      
+      if (searchResults && searchResults.data) {
+        const currentTableData = this.tableData();
+        const newTableData = new TableObject({
+          component: NewsListTableRowsComponent,
+          pageSize: currentTableData.pageSize,
+          currentPage: currentTableData.currentPage,
+          sortBy: currentTableData.sortBy
+        });
 
+        newTableData.totalListItems = searchResults.totalSearchCount;
+        newTableData.items = searchResults.data.map((record: any) => ({ rowData: record }));
+        newTableData.columns = this.tableColumns;
+        newTableData.options.showPageCountDisplay = true;
+        newTableData.options.showPagination = true;
+        newTableData.options.showAllPicker = true;
+
+        this.tableData.set(newTableData);
+        this.loading.set(false);
+      }
+    });
+  }
+
+  ngOnInit(): void {
+    // Subscribe to query params and fetch data
     this.route.queryParamMap.pipe(takeWhile(() => this.alive)).subscribe(data => {
       const params = (data as any)['params'] || {};
-      this.queryParams.set({ ...params });
       
       let updatedTableData = this.tableTemplateUtils.updateTableObjectWithUrlParams(params, this.tableData());
 
@@ -64,100 +86,64 @@ export class NewsListComponent implements OnInit, OnDestroy {
       }
 
       this.tableData.set(updatedTableData);
+
+      // Fetch data with current params
+      this.tableService.fetchData(new SearchParamObject(
+        this.tableId,
+        params['keywords'] || '',
+        'RecentActivity',
+        [],
+        updatedTableData.currentPage,
+        updatedTableData.pageSize,
+        updatedTableData.sortBy,
+        {},
+        true
+      ));
     });
-
-    this.tableService.getValue(this.tableId).pipe(takeWhile(() => this.alive)).subscribe((searchResults: any) => {
-      if (searchResults.data !== 0) {
-        const currentTableData = this.tableData();
-        currentTableData.totalListItems = searchResults.totalSearchCount;
-        currentTableData.items = searchResults.data.map((record: any) => {
-          return { rowData: record };
-        });
-        currentTableData.columns = this.tableColumns;
-        currentTableData.options.showAllPicker = true;
-
-        this.tableData.set(currentTableData);
-        this.loading.set(false);
-      }
-    });
-  }
-
-  sortDateDescending(): ITableMessage {
-    return {
-      label: 'columnSort',
-      data: 'dateAdded'
-    };
   }
 
   onMessageOut(msg: ITableMessage): void {
-    const params: Record<string, any> = {};
+    const params: Params = {};
     const currentTableData = this.tableData();
+    const currentParams = this.route.snapshot.queryParams;
     
     switch (msg.label) {
       case 'columnSort':
-        if (this.isSearch) {
-          params['sortBy'] = '-' + msg.data;
-          this.isSearch = false;
-        } else {
-          if (currentTableData.sortBy.charAt(0) === '+') {
-            params['sortBy'] = '-' + msg.data;
-          } else {
-            params['sortBy'] = '+' + msg.data;
-          }
-        }
-        this.tableService.data[this.tableId].cachedConfig.sortBy = params['sortBy'];
+        params['sortBy'] = this.toggleSortDirection(msg.data);
+        params['currentPage'] = 1;
         break;
       case 'pageNum':
         params['currentPage'] = msg.data;
-        this.tableService.data[this.tableId].cachedConfig.currentPage = params['currentPage'];
         break;
       case 'pageSize':
         params['pageSize'] = msg.data.value;
+        params['currentPage'] = 1;
         if (params['pageSize'] === currentTableData.totalListItems) {
           this.loading.set(true);
         }
-        params['currentPage'] = 1;
-        this.tableService.data[this.tableId].cachedConfig.pageSize = params['pageSize'];
-        this.tableService.data[this.tableId].cachedConfig.currentPage = params['currentPage'];
-        break;
-      default:
         break;
     }
-    this.submit(params);
-  }
-
-  submit(params: Record<string, any>): void {
-    this.router.navigate(
-      [],
-      {
-        queryParams: params,
-        relativeTo: this.route,
-        queryParamsHandling: 'merge'
-      });
-    this.tableService.refreshData(this.tableId);
-  }
-
-  executeSearch(searchPackage: any): void {
-    this.isSearch = true;
-    const params: Record<string, any> = {};
     
-    if (searchPackage.keywords) {
-      params['keywords'] = searchPackage.keywords;
-      this.tableService.data[this.tableId].cachedConfig.keywords = params['keywords'];
-      if (searchPackage.keywordsChanged) {
-        params['sortBy'] = '-score';
-        this.tableService.data[this.tableId].cachedConfig.sortBy = params['sortBy'];
-      }
-    } else {
-      params['keywords'] = null;
-      params['sortBy'] = '-dateAdded';
-      this.tableService.data[this.tableId].cachedConfig.keywords = '';
-      this.tableService.data[this.tableId].cachedConfig.sortBy = params['sortBy'];
+    this.submit({ ...currentParams, ...params });
+  }
+
+  private toggleSortDirection(field: string): string {
+    const currentSort = this.tableData().sortBy;
+    
+    // If we're sorting by the same field, toggle direction
+    if (currentSort?.includes(field)) {
+      return (currentSort?.[0] === '+' ? '-' : '+') + field;
     }
-    params['currentPage'] = 1;
-    this.tableService.data[this.tableId].cachedConfig.currentPage = params['currentPage'];
-    this.submit(params);
-    this.onMessageOut(this.sortDateDescending());
+    
+    // Default to descending for new field
+    return '-' + field;
+  }
+
+  submit(params: Params): void {
+    this.router.navigate([], {
+      queryParams: params,
+      relativeTo: this.route
+    });
   }
 
   ngOnDestroy(): void {

@@ -36,19 +36,19 @@
 
 /* Header styling */
 .table thead {
-  background-color: #E9ECEF;
+  background-color: var(--table-header-bg);
 }
 
 .table thead tr {
-  background-color: #E9ECEF;
+  background-color: var(--table-header-bg);
 }
 
 .table thead th {
   padding: 0.75rem 0.5rem;
   font-size: 0.875rem;
   font-weight: 600;
-  color: #212529;
-  background-color: #E9ECEF;
+  color: var(--table-header-color);
+  background-color: var(--table-header-bg);
   border: none;
   text-align: left;
   cursor: default;
@@ -57,13 +57,13 @@
 .table thead th.sortable {
   cursor: pointer;
   user-select: none;
-  border-bottom: 3px solid #E9ECEF;
+  border-bottom: 3px solid var(--table-header-bg);
 }
 
 .table thead th.sortable:hover,
 .table thead th.sortable:has(.sort-asc),
 .table thead th.sortable:has(.sort-desc) {
-  border-bottom-color: #fcba19;
+  border-bottom-color: var(--table-header-hover-border);
 }
 
 /* Sort indicators */
@@ -78,29 +78,29 @@
 }
 
 .sort-asc {
-  border-bottom: 4px solid #212529;
+  border-bottom: 4px solid var(--table-header-sort-color);
 }
 
 .sort-desc {
-  border-top: 4px solid #212529;
+  border-top: 4px solid var(--table-header-sort-color);
 }
 
 /* Body styling */
 .table tbody {
-  background-color: #F7F8FA;
+  background-color: var(--table-row-bg);
 }
 
 .table tbody tr {
-  background-color: #F7F8FA;
+  background-color: var(--table-row-bg);
   transition: background-color 0.2s ease-in-out;
 }
 
 .table-template .table tbody tr {
-  border-bottom: 2px solid #E9ECEF;
+  border-bottom: 2px solid var(--table-border-color);
 }
 
 .table tbody tr td {
-  background-color: #F7F8FA;
+  background-color: var(--table-row-bg);
   padding: 0.75rem 0.5rem;
   border: none;
   text-align: left;

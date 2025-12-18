@@ -276,7 +276,7 @@
       <section class="mb-3 reset-button">
         <button class="btn btn-primary float-end"
           (click)="clearFilters()"
-          [disabled]="searching()">
+          [disabled]="searching() || !hasActiveFilters()">
           Reset Filters
         </button>
       </section>

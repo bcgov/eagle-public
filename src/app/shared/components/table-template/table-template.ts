@@ -3,43 +3,32 @@ import { Router, Params } from '@angular/router';
 import { TableObject } from './table-object';
 import { Constants } from '../../utils/constants';
 
+const EXCLUDED_NAV_PARAMS = ['columns', 'component', 'options', 'items', 'totalListItems', 'pageSizeOptions', 'tableId'] as const;
+
 @Injectable({ providedIn: 'root' })
 export class TableTemplate {
   private router = inject(Router);
 
-  public updateTableObjectWithUrlParams(routeParams: Params, tableObject: TableObject, suffix: string = ''): TableObject {
-    Object.keys(routeParams).forEach(item => {
-      if (
-        !routeParams ||
-        routeParams[item] === undefined ||
-        routeParams[item] === null ||
-        routeParams[item].length === 0
-      ) {
-        // console.log('skipping:', item);
-      } else {
-        switch (item) {
-          case `currentPage${suffix}`:
-          case `pageSize${suffix}`:
-            (tableObject as any)[item.replace(suffix, '')] = +routeParams[item];
-            break;
-          case `sortBy${suffix}`:
-            (tableObject as any)[item.replace(suffix, '')] = routeParams[item];
-            break;
-          default:
-            break;
-        }
+  public updateTableObjectWithUrlParams(routeParams: Params, tableObject: TableObject, suffix = ''): TableObject {
+    for (const [key, value] of Object.entries(routeParams)) {
+      // Skip if value is null, undefined, or empty string
+      if (value == null || value === '') {
+        continue;
       }
-    });
 
-    if (!tableObject.pageSize) {
-      tableObject.pageSize = Constants.tableDefaults.DEFAULT_PAGE_SIZE;
+      const cleanKey = suffix ? key.replace(suffix, '') : key;
+
+      if (key === `currentPage${suffix}` || key === `pageSize${suffix}`) {
+        (tableObject as Record<string, any>)[cleanKey] = +value;
+      } else if (key === `sortBy${suffix}`) {
+        (tableObject as Record<string, any>)[cleanKey] = value;
+      }
     }
-    if (!tableObject.currentPage) {
-      tableObject.currentPage = Constants.tableDefaults.DEFAULT_CURRENT_PAGE;
-    }
-    if (!tableObject.sortBy) {
-      tableObject.sortBy = Constants.tableDefaults.DEFAULT_SORT_BY;
-    }
+
+    // Apply defaults using nullish coalescing
+    tableObject.pageSize ??= Constants.tableDefaults.DEFAULT_PAGE_SIZE;
+    tableObject.currentPage ??= Constants.tableDefaults.DEFAULT_CURRENT_PAGE;
+    tableObject.sortBy ??= Constants.tableDefaults.DEFAULT_SORT_BY;
 
     return tableObject;
   }
@@ -71,93 +60,50 @@ export class TableTemplate {
   /**
    * Builds a query param object from the known table object params, and any optional additional params.
    *
-   * @param {TableObject} tableObject table object where standard table template query parameters will be take from.
-   * @param {object} [additionalParams={}] additional query parameters to include. If duplicate parameters are found,
-   *   the ones from tableOject will take precedence. (optional)
-   * @returns
-   * @memberof TableTemplate
+   * @param tableObject table object where standard table template query parameters will be taken from
+   * @param additionalParams additional query parameters to include (tableObject takes precedence)
+   * @returns navigation parameters object
    */
-  public getNavParamsObj(tableObject: TableObject, additionalParams: object = {}): any {
-    const params: any = { ...additionalParams };
+  public getNavParamsObj(tableObject: TableObject, additionalParams: Record<string, any> = {}): Record<string, any> {
+    const params: Record<string, any> = { ...additionalParams };
 
-    Object.keys(tableObject).forEach(item => {
-      if (
-        !tableObject ||
-        (tableObject as any)[item] === undefined ||
-        (tableObject as any)[item] === null ||
-        (tableObject as any)[item].length === 0
-      ) {
-        // console.log('skipping:', item);
-      } else {
-        params[item] = (tableObject as any)[item];
+    // Build params directly, excluding specific properties
+    for (const [key, value] of Object.entries(tableObject)) {
+      if (value != null && value !== '' && !EXCLUDED_NAV_PARAMS.includes(key as any)) {
+        params[key] = value;
       }
-    });
-
-    delete params['columns'];
-    delete params['component'];
-    delete params['options'];
-    delete params['items'];
-    delete params['totalListItems'];
-    delete params['pageSizeOptions'];
-    delete params['tableId'];
+    }
 
     return params;
   }
 
-  public getFiltersFromSearchPackage(searchPackage: any, filtersList: string[] = [], dateFiltersList: string[] = []): any {
-    let searchPackageFilters: any = {};
-    Object.keys(searchPackage.filters).forEach(filter => {
-      searchPackageFilters[filter] = searchPackage.filters[filter];
-    });
-    let filtersForAPI: any = {};
-    if (filtersList.length > 0) {
-      filtersForAPI = this.getFiltersFromParams(
-        searchPackageFilters,
-        filtersList
-      );
+  public getFiltersFromSearchPackage(
+    searchPackage: { filters: Record<string, any> },
+    filtersList: string[] = [],
+    dateFiltersList: string[] = []
+  ): Record<string, any> {
+    const allFilters = [...filtersList, ...dateFiltersList];
+    const extracted = this.getFiltersFromParams(searchPackage.filters, allFilters);
+    
+    // Set missing filters to null for URL merge (removes them from URL)
+    const params: Record<string, any> = {};
+    for (const filterName of allFilters) {
+      params[filterName] = extracted[filterName] ?? null;
     }
-    let dateFiltersForAPI: any = {}
-    if (dateFiltersList.length > 0) {
-      dateFiltersForAPI = this.getDateFiltersFromParams(
-        searchPackageFilters,
-        dateFiltersList
-      );
-    }
-    let params = { ...filtersForAPI, ...dateFiltersForAPI };
-    this.removeFiltersForQueryMerge(params, filtersList.concat(dateFiltersList));
-
+    
     return params;
   }
 
-  public getFiltersFromParams(params: any, filterLabels: Array<string>): any {
-    let filterForAPI: any = {};
-    filterLabels.forEach(filterLabel => {
-      if (params[filterLabel]) {
-        Array.isArray(params[filterLabel]) ?
-          (filterForAPI[filterLabel] = params[filterLabel].join()) :
-          (filterForAPI[filterLabel] = params[filterLabel]);
+  public getFiltersFromParams(params: Record<string, any>, filterLabels: string[]): Record<string, any> {
+    const filterForAPI: Record<string, any> = {};
+    
+    for (const filterLabel of filterLabels) {
+      const value = params[filterLabel];
+      if (value != null) {
+        filterForAPI[filterLabel] = Array.isArray(value) ? value.join() : value;
       }
-    });
+    }
+    
     return filterForAPI;
-  }
-  
-  public getDateFiltersFromParams(params: any, filterLabels: Array<string>): any {
-    let filterForAPI: any = {};
-    filterLabels.forEach(filterLabel => {
-      if (params[filterLabel]) {
-        filterForAPI[filterLabel] = params[filterLabel];
-      }
-    });
-    return filterForAPI;
-  }
-
-  // Parameters must be set to null if you want to remove them from url while using router merge.
-  removeFiltersForQueryMerge(params: any, filterNameList: string[]) {
-    let keys = Object.keys(params);
-    filterNameList.forEach(filterName => {
-      if (!keys.includes(filterName)) {
-        params[filterName] = null;
-      }
-    });
   }
 }

@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef, signal, computed, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, computed, inject } from '@angular/core';
 import { Router, ActivatedRoute, Params } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
@@ -10,10 +10,12 @@ import { IColumnObject, TableObject } from 'app/shared/components/table-template
 import { ITableMessage } from 'app/shared/components/table-template/table-row-component';
 import { TableTemplate } from 'app/shared/components/table-template/table-template';
 import { Constants } from 'app/shared/utils/constants';
-import { takeWhile } from 'rxjs/operators';
+import { takeWhile, skip } from 'rxjs/operators';
+import { toObservable } from '@angular/core/rxjs-interop';
 import { DocSearchTableRowsComponent } from './search-documents-table-rows/search-document-table-rows.component';
 import { SearchFilterTemplateComponent } from 'app/shared/components/search-filter-template/search-filter-template.component';
 import { TableTemplateComponent } from 'app/shared/components/table-template/table-template.component';
+import { SearchParamObject } from 'app/services/search.service';
 
 @Component({
   selector: 'app-search',
@@ -37,7 +39,6 @@ export class SearchComponent implements OnInit, OnDestroy {
   private tableTemplateUtils = inject(TableTemplate);
   private tableService = inject(TableService);
   private configService = inject(ConfigService);
-  private changeDetectorRef = inject(ChangeDetectorRef);
 
   queryParams = signal<Params>({});
   loadingLists = signal(true);
@@ -89,7 +90,8 @@ export class SearchComponent implements OnInit, OnDestroy {
   private projectPhaseArray = signal<any[]>([]);
   private filtersList = ['milestone', 'documentAuthorType', 'type', 'projectPhase'];
   private dateFiltersList = ['datePostedStart', 'datePostedEnd'];
-  private initialLoad = true;
+  private tableSignal = this.tableService.getTableSignal(this.tableId);
+  private tableSignal$ = toObservable(this.tableSignal);
 
   isLoading = computed(() => 
     this.loadingLists() || this.loadingTableParams() || this.loadingTableData()
@@ -99,7 +101,30 @@ export class SearchComponent implements OnInit, OnDestroy {
     this.tableData().totalListItems > 0 && !this.loadingTableData()
   );
 
+  constructor() {}
+
   ngOnInit() {
+    // Watch table signal for updates
+    this.tableSignal$
+      .pipe(
+        takeWhile(() => this.alive),
+        skip(1)
+      )
+      .subscribe(searchResults => {
+        if (searchResults && searchResults.data && searchResults.data !== 0) {
+          const currentTableData = this.tableData();
+          currentTableData.totalListItems = searchResults.totalSearchCount;
+          currentTableData.items = searchResults.data.map((record: any) => {
+            return { rowData: record };
+          });
+          currentTableData.columns = this.tableColumns();
+          currentTableData.options.showAllPicker = true;
+
+          this.tableData.set(currentTableData);
+          this.loadingTableData.set(false);
+        }
+      });
+
     this.configService.lists.pipe(takeWhile(() => this.alive)).subscribe((list: any[]) => {
       this.lists = list;
       const milestones: any[] = [];
@@ -126,7 +151,6 @@ export class SearchComponent implements OnInit, OnDestroy {
 
       this.setFilters();
       this.loadingLists.set(false);
-      this.changeDetectorRef.detectChanges();
     });
 
     this.route.queryParamMap.pipe(takeWhile(() => this.alive)).subscribe((data: any) => {
@@ -136,42 +160,32 @@ export class SearchComponent implements OnInit, OnDestroy {
       });
       this.queryParams.set(params);
       
-      // Get params from route, shove into the tableTemplateUtils so that we get a new dataset to work with.
       const updatedTableData = this.tableTemplateUtils.updateTableObjectWithUrlParams(params, this.tableData());
       this.tableData.set(updatedTableData);
 
-      if (
-        this.initialLoad && (
-          params['milestone'] ||
-          params['documentAuthorType'] ||
-          params['type'] ||
-          params['datePostedStart'] ||
-          params['datePostedEnd'] ||
-          params['projectPhase'])
-      ) {
+      // Show advanced filters if any filter params are present
+      if (this.hasFilterParams(params)) {
         this.showAdvancedFilters.set(true);
-        this.initialLoad = false;
       }
+
+      const currentTableData = this.tableData();
+      const allFilters = [...this.filtersList, ...this.dateFiltersList];
+      const filters = this.tableTemplateUtils.getFiltersFromParams(params, allFilters);
+
+      this.tableService.fetchData(new SearchParamObject(
+        this.tableId,
+        params['keywords'] || '',
+        'Document',
+        [],
+        currentTableData.currentPage,
+        currentTableData.pageSize,
+        currentTableData.sortBy,
+        filters,
+        false,
+        ''
+      ));
 
       this.loadingTableParams.set(false);
-      this.changeDetectorRef.detectChanges();
-    });
-
-    this.tableService.getValue(this.tableId).pipe(takeWhile(() => this.alive)).subscribe((searchResults: any) => {
-      if (searchResults.data !== 0) {
-        const currentTableData = this.tableData();
-        currentTableData.totalListItems = searchResults.totalSearchCount;
-        currentTableData.items = searchResults.data.map((record: any) => {
-          return { rowData: record };
-        });
-        currentTableData.columns = this.tableColumns();
-        currentTableData.options.showAllPicker = true;
-
-        this.tableData.set(currentTableData);
-        this.loadingTableData.set(false);
-
-        this.changeDetectorRef.detectChanges();
-      }
     });
   }
 
@@ -179,7 +193,7 @@ export class SearchComponent implements OnInit, OnDestroy {
     const docDateFilter = new FilterObject(
       'issuedDate',
       FilterType.DateRange,
-      '', // if you include a name, it will add a label to the date range filter.
+      '',
       new DateFilterDefinition('datePostedStart', 'Start Date', 'datePostedEnd', 'End Date'),
       6
     );
@@ -249,6 +263,11 @@ export class SearchComponent implements OnInit, OnDestroy {
     ]);
   }
 
+  private hasFilterParams(params: any): boolean {
+    return this.filtersList.some(filter => params[filter]) || 
+           this.dateFiltersList.some(filter => params[filter]);
+  }
+
   navSearchHelp() {
     this.router.navigate(['/search-help']);
   }
@@ -257,24 +276,17 @@ export class SearchComponent implements OnInit, OnDestroy {
     let params: any = {};
     if (searchPackage.keywords) {
       params['keywords'] = searchPackage.keywords;
-      this.tableService.data[this.tableId].cachedConfig.keywords = params['keywords'];
-      // always change sortBy to '-score' if keyword search is directly triggered by user
       if (searchPackage.keywordsChanged) {
         params['sortBy'] = '-score';
-        this.tableService.data[this.tableId].cachedConfig.sortBy = params['sortBy'];
       }
     } else {
       params['keywords'] = null;
       params['sortBy'] = Constants.tableDefaults.DEFAULT_SORT_BY;
-      this.tableService.data[this.tableId].cachedConfig.keywords = '';
-      this.tableService.data[this.tableId].cachedConfig.sortBy = params['sortBy'];
     }
 
     params['currentPage'] = 1;
-    this.tableService.data[this.tableId].cachedConfig.currentPage = params['currentPage'];
 
     let queryFilters = this.tableTemplateUtils.getFiltersFromSearchPackage(searchPackage, this.filtersList, this.dateFiltersList);
-    this.tableService.data[this.tableId].cachedConfig.filters = queryFilters;
 
     this.submit(params, queryFilters);
   }
@@ -285,16 +297,10 @@ export class SearchComponent implements OnInit, OnDestroy {
     
     switch (msg.label) {
       case 'columnSort':
-        if (currentTableData.sortBy.charAt(0) === '+') {
-          params['sortBy'] = '-' + msg.data;
-        } else {
-          params['sortBy'] = '+' + msg.data;
-        }
-        this.tableService.data[this.tableId].cachedConfig.sortBy = params['sortBy'];
+        params['sortBy'] = this.toggleSortDirection(msg.data);
         break;
       case 'pageNum':
         params['currentPage'] = msg.data;
-        this.tableService.data[this.tableId].cachedConfig.currentPage = params['currentPage'];
         break;
       case 'pageSize':
         params['pageSize'] = msg.data.value;
@@ -302,13 +308,20 @@ export class SearchComponent implements OnInit, OnDestroy {
           this.loadingTableData.set(true);
         }
         params['currentPage'] = 1;
-        this.tableService.data[this.tableId].cachedConfig.pageSize = params['pageSize'];
-        this.tableService.data[this.tableId].cachedConfig.currentPage = params['currentPage'];
         break;
       default:
         break;
     }
     this.submit(params);
+  }
+
+  private toggleSortDirection(column: string): string {
+    const currentTableData = this.tableData();
+    if (currentTableData.sortBy.charAt(0) === '+') {
+      return '-' + column;
+    } else {
+      return '+' + column;
+    }
   }
 
   submit(params: any, filters: any = null) {
@@ -320,7 +333,6 @@ export class SearchComponent implements OnInit, OnDestroy {
         queryParamsHandling: 'merge'
       });
     this.loadingTableData.set(true);
-    this.tableService.refreshData(this.tableId);
   }
 
   onToggleFiltersPanel(event: any) {

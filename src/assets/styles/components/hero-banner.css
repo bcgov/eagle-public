@@ -11,12 +11,12 @@
 
 .hero-banner .container {
   min-height: 20rem;
-  max-width: 1140px;
 }
 
 @media (max-width: 767px) {
   .hero-banner .container {
-    padding: 2rem 1rem 2.5rem;
+    padding-top: 2rem;
+    padding-bottom: 2.5rem;
   }
 }
 

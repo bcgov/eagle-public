@@ -1,10 +1,11 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef, ChangeDetectionStrategy, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, signal, inject, effect } from '@angular/core';
 import { Router, ActivatedRoute, Params } from '@angular/router';
 import { takeWhile, first } from 'rxjs/operators';
 import { CommonModule } from '@angular/common';
 
 import { Constants } from '../shared/utils/constants';
 import { SearchResults } from '../models/search';
+import { SearchParamObject } from '../services/search.service';
 import { IColumnObject, TableObject } from '../shared/components/table-template/table-object';
 import { ProjectNotificationsTableRowsComponent } from './project-notifications-table-rows/project-notifications-table-rows.component';
 import { TableTemplate } from '../shared/components/table-template/table-template';
@@ -45,37 +46,59 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
   showAdvancedFilters = signal(false);
 
   queryParams: Params = {};
-  tableData: TableObject = new TableObject({ component: ProjectNotificationsTableRowsComponent });
+  tableData = signal<TableObject>(new TableObject({ component: ProjectNotificationsTableRowsComponent }));
   filters: FilterObject[] = [];
 
-  constructor(
-    private router: Router,
-    private route: ActivatedRoute,
-    private tableTemplateUtils: TableTemplate,
-    private tableService: TableService,
-    private commentPeriodService: CommentPeriodService,
-    private _changeDetectionRef: ChangeDetectorRef
-  ) {}
+  private router = inject(Router);
+  private route = inject(ActivatedRoute);
+  private tableTemplateUtils = inject(TableTemplate);
+  private tableService = inject(TableService);
+  private commentPeriodService = inject(CommentPeriodService);
+  private readonly tableSignal = this.tableService.getTableSignal(this.tableId);
+
+  constructor() {
+    // Watch for table data changes from service
+    effect(() => {
+      const searchResults = this.tableSignal();
+      
+      if (searchResults && searchResults.data && searchResults.data !== 0) {
+        const updatedTableData = this.tableData();
+        updatedTableData.totalListItems = searchResults.totalSearchCount;
+        updatedTableData.items = searchResults.data.map((record: any) => {
+          this.getProjectCommentPeriod(record);
+          return { rowData: record };
+        });
+        updatedTableData.columns = this.tableColumns;
+        updatedTableData.options.showAllPicker = true;
+
+        this.tableData.set(updatedTableData);
+        this.loadingTableData.set(false);
+      }
+    });
+  }
 
   ngOnInit() {
-    this.tableData.tableId = this.tableId;
-    this.tableData.options.disableRowHighlight = true;
-    this.tableData.options.showHeader = false;
-    this.tableData.options.rowSpacing = 25;
+    const currentTableData = this.tableData();
+    currentTableData.tableId = this.tableId;
+    currentTableData.options.disableRowHighlight = true;
+    currentTableData.options.showHeader = false;
+    currentTableData.options.rowSpacing = 25;
+    this.tableData.set(currentTableData);
 
     this.setFilters();
     this.loadingLists.set(false);
-    this._changeDetectionRef.detectChanges();
 
     this.route.queryParamMap.pipe(takeWhile(() => this.alive)).subscribe(data => {
       const params: any = {};
       data.keys.forEach(key => params[key] = data.get(key));
       this.queryParams = { ...params };
-      this.tableData = this.tableTemplateUtils.updateTableObjectWithUrlParams(params, this.tableData);
+      const updatedTableData = this.tableTemplateUtils.updateTableObjectWithUrlParams(params, this.tableData());
 
       if (!params.sortBy) {
-        this.tableData.sortBy = '-_id';
+        updatedTableData.sortBy = '-_id';
       }
+
+      this.tableData.set(updatedTableData);
 
       if (
         this.initialLoad && (
@@ -88,22 +111,30 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
         this.initialLoad = false;
       }
       this.loadingTableParams.set(false);
-      this._changeDetectionRef.detectChanges();
-    });
 
-    this.tableService.getValue(this.tableId).pipe(takeWhile(() => this.alive)).subscribe((searchResults: any) => {
-      if (searchResults.data !== 0) {
-        this.tableData.totalListItems = searchResults.totalSearchCount;
-        this.tableData.items = searchResults.data.map((record: any) => {
-          this.getProjectCommentPeriod(record);
-          return { rowData: record };
-        });
-        this.tableData.columns = this.tableColumns;
-        this.tableData.options.showAllPicker = true;
-
-        this.loadingTableData.set(false);
-        this._changeDetectionRef.detectChanges();
-      }
+      // Build filters object from query params
+      const filters: Record<string, string> = {};
+      this.filtersList.forEach(filterKey => {
+        if (this.queryParams[filterKey]) {
+          filters[filterKey] = this.queryParams[filterKey];
+        }
+      });
+      
+      // Fetch data with current params
+      const currentTableData = this.tableData();
+      this.tableService.fetchData(new SearchParamObject(
+        this.tableId,
+        this.queryParams['keywords'] || '',
+        'ProjectNotification',
+        [],
+        currentTableData.currentPage,
+        currentTableData.pageSize,
+        currentTableData.sortBy,
+        {},
+        true,
+        '',
+        filters
+      ));
     });
   }
 
@@ -176,27 +207,30 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
     this.router.navigate(['/search-help']);
   }
 
+  onResetControls() {
+    // Reset sort to default if it was a score-based sort
+    const currentTableData = this.tableData();
+    if (currentTableData.sortBy.includes('score')) {
+      currentTableData.sortBy = '-datePosted';
+      this.tableData.set(currentTableData);
+    }
+  }
+
   executeSearch(searchPackage: any) {
     let params: any = {};
     if (searchPackage.keywords) {
       params['keywords'] = searchPackage.keywords;
-      this.tableService.data[this.tableId].cachedConfig.keywords = params['keywords'];
       if (searchPackage.keywordsChanged) {
         params['sortBy'] = '-score';
-        this.tableService.data[this.tableId].cachedConfig.sortBy = params['sortBy'];
       }
     } else {
       params['keywords'] = null;
       params['sortBy'] = '-_id';
-      this.tableService.data[this.tableId].cachedConfig.keywords = '';
-      this.tableService.data[this.tableId].cachedConfig.sortBy = params['sortBy'];
     }
 
     params['currentPage'] = 1;
-    this.tableService.data[this.tableId].cachedConfig.currentPage = params['currentPage'];
 
     let queryFilters = this.tableTemplateUtils.getFiltersFromSearchPackage(searchPackage, this.filtersList);
-    this.tableService.data[this.tableId].cachedConfig.filters = queryFilters;
 
     this.submit(params, queryFilters);
   }
@@ -206,18 +240,13 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
     switch (msg.label) {
       case 'pageNum':
         params['currentPage'] = msg.data;
-        this.tableService.data[this.tableId].cachedConfig.currentPage = params['currentPage'];
         break;
       case 'pageSize':
         params['pageSize'] = msg.data.value;
-        if (params['pageSize'] === this.tableData.totalListItems) {
+        if (params['pageSize'] === this.tableData().totalListItems) {
           this.loadingTableData.set(true);
         }
         params['currentPage'] = 1;
-        this.tableService.data[this.tableId].cachedConfig.pageSize = params['pageSize'];
-        this.tableService.data[this.tableId].cachedConfig.currentPage = params['currentPage'];
-        break;
-      default:
         break;
     }
     this.submit(params);
@@ -232,7 +261,6 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
         queryParamsHandling: 'merge'
       });
     this.loadingTableData.set(true);
-    this.tableService.refreshData(this.tableId);
   }
 
   getProjectCommentPeriod(project: ProjectNotification) {
@@ -243,7 +271,6 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
           res.data.forEach((cp: any) => {
             if (!project['commentPeriod'] || (project['commentPeriod'] && cp.daysRemainingCount > project['commentPeriod'].daysRemainingCount)) {
               project['commentPeriod'] = cp;
-              this._changeDetectionRef.detectChanges();
             }
           });
         }

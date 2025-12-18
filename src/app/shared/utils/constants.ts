@@ -33,6 +33,7 @@ export class Constants {
     DEFAULT_KEYWORDS: '',
     DEFAULT_SHOW_MORE_INCREMENT: 5,
     DEFAULT_DATASET: '',
+    MAX_SHOW_ALL_ITEMS: 500,
     DEFAULT_PAGE_SIZE_OPTIONS: [
       { displayText: '10', value: 10 },
       { displayText: '25', value: 25 },

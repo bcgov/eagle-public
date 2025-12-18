@@ -69,4 +69,66 @@
   /* Table Header */
   --bs-table-head-bg: #003366;
   --bs-table-head-color: #fff;
+  
+  /* Container max-widths - Override Bootstrap's responsive breakpoints */
+  --bs-breakpoint-sm: 540px;
+  --bs-breakpoint-md: 720px;
+  --bs-breakpoint-lg: 960px;
+  --bs-breakpoint-xl: 1100px;
+  --bs-breakpoint-xxl: 1100px;
+}
+
+/* Override Bootstrap container max-widths */
+.container,
+.container-sm,
+.container-md,
+.container-lg,
+.container-xl,
+.container-xxl {
+  max-width: 1100px;
+}
+
+@media (min-width: 576px) {
+  .container,
+  .container-sm {
+    max-width: 1100px;
+  }
+}
+
+@media (min-width: 768px) {
+  .container,
+  .container-sm,
+  .container-md {
+    max-width: 1100px;
+  }
+}
+
+@media (min-width: 992px) {
+  .container,
+  .container-sm,
+  .container-md,
+  .container-lg {
+    max-width: 1100px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .container,
+  .container-sm,
+  .container-md,
+  .container-lg,
+  .container-xl {
+    max-width: 1100px;
+  }
+}
+
+@media (min-width: 1400px) {
+  .container,
+  .container-sm,
+  .container-md,
+  .container-lg,
+  .container-xl,
+  .container-xxl {
+    max-width: 1100px;
+  }
 }

@@ -66,6 +66,13 @@ export class DatePickerComponent implements OnInit, OnDestroy {
     if (resetSubject) {
       resetSubject.pipe(takeUntil(this.ngUnsubscribe)).subscribe(() => this.clearDate());
     }
+    
+    // Subscribe to control value changes to sync ngbDate
+    this.control().valueChanges
+      .pipe(takeUntil(this.ngUnsubscribe))
+      .subscribe(value => {
+        this.ngbDate.set(value || null);
+      });
   }
 
   onDateChange(ngbDate: NgbDateStruct) {

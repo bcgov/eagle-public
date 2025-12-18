@@ -10,6 +10,7 @@ import {
   ElementRef,
   Injector,
   ViewContainerRef,
+  ViewChild,
   inject
 } from '@angular/core';
 import { Subject } from 'rxjs';
@@ -50,6 +51,8 @@ const markerIconYellowLg = L.icon({
   standalone: true
 })
 export class ProjlistMapComponent implements AfterViewInit, OnDestroy {
+  @ViewChild('mapContainer', { static: true }) mapContainer!: ElementRef<HTMLDivElement>;
+  
   projects = input<Project[]>([]);
   applist = input<any>();
   appfilters = input<any>();
@@ -113,14 +116,25 @@ export class ProjlistMapComponent implements AfterViewInit, OnDestroy {
   }
 
   readonly defaultBounds = L.latLngBounds([48, -139], [60, -114]);
+  readonly bcCenter: L.LatLngExpression = [54, -126.5];
+  readonly defaultZoom = 6;
 
   ngAfterViewInit() {
+    if (!this.mapContainer?.nativeElement) {
+      console.error('Map container not found');
+      return;
+    }
+
+    this.initializeMap();
+  }
+
+  private initializeMap(): void {
+    const mapElement = this.mapContainer.nativeElement;
     const self = this;
 
+    // Create reset view control
     const resetViewControl = L.Control.extend({
-      options: {
-        position: 'bottomright'
-      },
+      options: { position: 'bottomright' },
       onAdd: function () {
         const element = L.DomUtil.create('button');
         element.title = 'Reset view';
@@ -133,77 +147,91 @@ export class ProjlistMapComponent implements AfterViewInit, OnDestroy {
       },
     });
 
-    const Esri_OceanBasemap = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Ocean_Basemap/MapServer/tile/{z}/{y}/{x}', {
-      attribution: 'Tiles &copy; Esri &mdash; Sources: GEBCO, NOAA, CHS, OSU, UNH, CSUMB, National Geographic, DeLorme, NAVTEQ, and Esri',
-      maxZoom: 13,
-      noWrap: true
-    });
-    const Esri_NatGeoWorldMap = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/{z}/{y}/{x}', {
-      attribution: 'Tiles &copy; Esri &mdash; National Geographic, Esri, DeLorme, NAVTEQ, UNEP-WCMC, USGS, NASA, ESA, METI, NRCAN, GEBCO, NOAA, iPC',
-      maxZoom: 16,
-      noWrap: true
-    });
-    const World_Topo_Map = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
-      attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ, TomTom, Intermap, iPC, USGS, FAO, NPS, NRCAN, GeoBase, Kadaster NL, Ordnance Survey, Esri Japan, METI, Esri China (Hong Kong), and the GIS User Community',
-      maxZoom: 16,
-      noWrap: true
-    });
-    const World_Imagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-      attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
-      maxZoom: 17,
-      noWrap: true
-    });
+    // Define base layers
+    const baseLayers = this.createBaseLayers();
 
-    this.map = L.map('map', {
+    // Initialize map centered on BC
+    this.map = L.map(mapElement, {
+      center: this.bcCenter,
+      zoom: this.defaultZoom,
       zoomControl: false,
       maxBounds: L.latLngBounds(L.latLng(-90, -180), L.latLng(90, 180)),
+      maxZoom: 17,
+      minZoom: 4,
       zoomSnap: 0.1,
       attributionControl: false
     });
 
+    // Add event listeners
     this.map.on('moveend', () => this.updateVisibleProjects());
-
-    this.map.addLayer(this.markerClusterGroup);
-
-    const baseLayers: { [key: string]: L.TileLayer } = {
-      'Ocean Base': Esri_OceanBasemap,
-      'Nat Geo World Map': Esri_NatGeoWorldMap,
-      'World Topographic': World_Topo_Map,
-      'World Imagery': World_Imagery
-    };
-    L.control.layers(baseLayers, undefined, { position: 'topright' }).addTo(this.map);
-    L.control.attribution({position: 'bottomright'}).addTo(this.map);
-    L.control.scale({ position: 'bottomleft' }).addTo(this.map);
-    L.control.zoom({ position: 'bottomright' }).addTo(this.map);
-    this.map.addControl(new resetViewControl());
-
-    for (const key of Object.keys(baseLayers)) {
-      if (key === this.configService.baseLayerName) {
-        this.map.addLayer(baseLayers[key]);
-        break;
-      }
-    }
-
     this.map.on('baselayerchange', (e: L.LayersControlEvent) => {
       this.configService.baseLayerName = e.name;
     });
 
-    this.fixMap();
+    // Add marker cluster group
+    this.map.addLayer(this.markerClusterGroup);
+
+    // Add default base layer
+    const defaultLayer = baseLayers[this.configService.baseLayerName] || baseLayers['World Topographic'];
+    this.map.addLayer(defaultLayer);
+
+    // Add map controls
+    L.control.layers(baseLayers, undefined, { position: 'topright' }).addTo(this.map);
+    L.control.attribution({ position: 'bottomright' }).addTo(this.map);
+    L.control.scale({ position: 'bottomleft' }).addTo(this.map);
+    L.control.zoom({ position: 'bottomright' }).addTo(this.map);
+    this.map.addControl(new resetViewControl());
+
+    // Initialize map with proper sizing
+    setTimeout(() => {
+      if (this.map) {
+        this.map.invalidateSize();
+        this.fixMap();
+      }
+    }, 100);
   }
 
-  private fixMap() {
-    if (this.elementRef.nativeElement.offsetParent) {
-      this.fitBounds();
-      // Center the view after fitting bounds
-      if (this.map) {
-        const center = this.map.getCenter();
-        this.centerMap(center);
-      }
+  private createBaseLayers(): { [key: string]: L.TileLayer } {
+    return {
+      'Ocean Base': L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Ocean_Basemap/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri',
+        maxZoom: 13,
+        noWrap: true
+      }),
+      'Nat Geo World Map': L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri',
+        maxZoom: 16,
+        noWrap: true
+      }),
+      'World Topographic': L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri',
+        maxZoom: 16,
+        noWrap: true
+      }),
+      'World Imagery': L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri',
+        maxZoom: 17,
+        noWrap: true
+      })
+    };
+  }
+
+  private fixMap(): void {
+    if (!this.elementRef.nativeElement.offsetParent) {
+      setTimeout(() => this.fixMap(), 50);
+      return;
+    }
+
+    if (this.map) {
+      this.map.invalidateSize();
       this.isInitialized = true;
-      // Initial draw of markers
       this.redrawAllMarkers(this.projects());
-    } else {
-      setTimeout(this.fixMap.bind(this), 50);
+    }
+  }
+
+  private resetView(): void {
+    if (this.map) {
+      this.map.setView(this.bcCenter, this.defaultZoom);
     }
   }
 
@@ -214,14 +242,10 @@ export class ProjlistMapComponent implements AfterViewInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  private resetView(): void {
-    this.fitBounds();
-  }
-
   private visibilityUpdateTimeout?: ReturnType<typeof setTimeout>;
 
   /**
-   * Debounced version of updateVisibleProjects
+   * Debounced version to update which projects are visible in the current map bounds
    */
   private updateVisibleProjects = (): void => {
     clearTimeout(this.visibilityUpdateTimeout);
@@ -256,16 +280,19 @@ export class ProjlistMapComponent implements AfterViewInit, OnDestroy {
   }
 
   private fitBounds(bounds: L.LatLngBounds | null = null): void {
+    if (!this.map) return;
+    
     const appfiltersValue = this.appfilters();
     const fitBoundsOptions: L.FitBoundsOptions = {
       paddingTopLeft: L.point(0, appfiltersValue?.clientHeight || 0),
-      animate: false
+      animate: false,
+      maxZoom: 13
     };
 
     if (bounds && bounds.isValid()) {
-      this.map!.fitBounds(bounds, fitBoundsOptions);
+      this.map.fitBounds(bounds, fitBoundsOptions);
     } else {
-      this.map!.fitBounds(this.defaultBounds, fitBoundsOptions);
+      this.map.fitBounds(this.defaultBounds, fitBoundsOptions);
     }
   }
 
@@ -311,6 +338,7 @@ export class ProjlistMapComponent implements AfterViewInit, OnDestroy {
     const popupOptions = {
       className: 'map-popup-content',
       autoPan: false, // Disable Leaflet's auto-pan, we'll handle centering manually
+      offset: L.point(0, -35), // Offset popup upward to appear above marker
       autoPanPaddingTopLeft: L.point(mapHeight < 800 ? 2 : 80, mapHeight < 800 ? 100 : 200),
       autoPanPaddingBottomRight: L.point(mapHeight < 800 ? 2 : 80, 30)
     };

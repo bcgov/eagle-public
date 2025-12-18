@@ -27,10 +27,10 @@
           [ngClass]="[entry.width, !entry.nosort ? 'sortable' : '']">
           {{ entry.name }}
           @if (entry.nosort !== true) {
-          <i class="sort" [ngClass]="{
-                    'sort-asc': data.sortBy.slice(1) == entry.value && data.sortBy.charAt(0) === '+',
-                    'sort-desc': data.sortBy.slice(1) == entry.value && data.sortBy.charAt(0) === '-'
-                  }" aria-hidden="true"></i>
+          <i class="sort" 
+             [class.sort-asc]="isSortedAsc(entry.value!)"
+             [class.sort-desc]="isSortedDesc(entry.value!)"
+             aria-hidden="true"></i>
           }
         </th>
         }
@@ -38,9 +38,8 @@
     </thead>
     }
 
-    <tbody [ngClass]="data.options.disableRowHighlight ? '' : 'highlight'">
-      @for (item of data.items | paginate: { id: data.tableId, itemsPerPage: data.pageSize, currentPage:
-      data.currentPage, totalItems: data.totalListItems }; track item.rowData?._id || $index) {
+    <tbody [class.highlight]="!data.options.disableRowHighlight">
+      @for (item of data.items | paginate: {id: data.tableId, itemsPerPage: data.pageSize, currentPage: data.currentPage, totalItems: data.totalListItems}; track trackByRowId($index, item)) {
       <ng-container [libTableRow]="item" [tableData]="data" [messageIn]="messageIn" (messageOut)="onMessageOut($event)">
         <div [style.margin-bottom.px]="data.options.rowSpacing"></div>
       </ng-container>

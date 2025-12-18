@@ -8,7 +8,8 @@ import { TableRowComponent, ITableMessage } from 'app/shared/components/table-te
   templateUrl: './news-list-table-rows.component.html',
   styleUrl: './news-list-table-rows.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, RouterModule]
+  imports: [CommonModule, RouterModule],
+  standalone: true
 })
 export class NewsListTableRowsComponent implements TableRowComponent {
   private router = inject(Router);

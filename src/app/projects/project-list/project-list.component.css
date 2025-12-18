@@ -3,6 +3,7 @@
   background-image: url('/assets/images/hero-banner.jpg');
   background-size: cover;
   background-position: center;
+  margin-bottom: 3rem;
 }
 
 /* Project list specific styles */

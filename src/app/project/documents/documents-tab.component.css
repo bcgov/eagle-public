@@ -113,7 +113,6 @@ input[type="text"]:focus {
 }
 
 .advanced-search .date-range .form-control {
-  z-index: 0px !important;
 }
 
 .advanced-search .form-check label {

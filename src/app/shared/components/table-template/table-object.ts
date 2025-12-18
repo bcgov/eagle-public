@@ -218,7 +218,8 @@ export class TableObject {
   public tableId!: string;
   
   constructor(params?: ITableObjectParams) {
-    this.options = (params && params.options) || {
+    // Use nullish coalescing for cleaner null/undefined checks
+    this.options = params?.options ?? {
       showHeader: true,
       showPagination: true,
       showPageSizePicker: true,
@@ -227,15 +228,15 @@ export class TableObject {
       showTopControls: true,
       rowSpacing: 0
     };
-    this.component = (params && params.component) || null;
-    this.columns = (params && params.columns) || [];
-    this.items = (params && params.items) || [];
-    this.dataset = (params && params.dataset) || Constants.tableDefaults.DEFAULT_DATASET;
-    this.currentPage = (params && params.currentPage) || Constants.tableDefaults.DEFAULT_CURRENT_PAGE;
-    this.pageSizeOptions = (params && params.pageSizeOptions) || [...Constants.tableDefaults.DEFAULT_PAGE_SIZE_OPTIONS];
-    this.pageSize = (params && params.pageSize) || Constants.tableDefaults.DEFAULT_PAGE_SIZE;
-    this.sortBy = (params && params.sortBy) || Constants.tableDefaults.DEFAULT_SORT_BY;
-    this.totalListItems = (params && params.totalListItems) || 0;
-    this.tableId = (params && params.tableId) || String(Math.floor(Math.random() * 100000));
+    this.component = params?.component ?? null;
+    this.columns = params?.columns ?? [];
+    this.items = params?.items ?? [];
+    this.dataset = params?.dataset ?? Constants.tableDefaults.DEFAULT_DATASET;
+    this.currentPage = params?.currentPage ?? Constants.tableDefaults.DEFAULT_CURRENT_PAGE;
+    this.pageSizeOptions = params?.pageSizeOptions ?? [...Constants.tableDefaults.DEFAULT_PAGE_SIZE_OPTIONS];
+    this.pageSize = params?.pageSize ?? Constants.tableDefaults.DEFAULT_PAGE_SIZE;
+    this.sortBy = params?.sortBy ?? Constants.tableDefaults.DEFAULT_SORT_BY;
+    this.totalListItems = params?.totalListItems ?? 0;
+    this.tableId = params?.tableId ?? crypto.randomUUID();
   }
 }

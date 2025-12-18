@@ -10,6 +10,11 @@
     --black: #000;
     --lightgray: #eee;
 
+    /* Layout */
+    --header-height: 4.2rem;
+    --header-total-height: 4.2rem;
+    --sidebar-width: 30%;
+
     /* Background Colors */
     --bg-dark: var(--primary);
     --bg-dark-color: var(--white);
@@ -99,13 +104,14 @@
     --tab-active-bg: var(--white);
 
     /* Tables */
-    --table-header-bg: #003366;
+    --table-header-bg: #38598a;
     --table-header-color: #fff;
-    --table-header-border: #002952;
+    --table-header-border: #2d4a6f;
     --table-header-hover-border: #fcba19;
-    --table-header-sort-color: #fcba19;
-    --table-row-bg: #f7f8fa;
+    --table-header-sort-color: #fff;
+    --table-row-bg: #E9ECEF;
     --table-row-hover-bg: #e8eaed;
+    --table-border-color: #CED4DA;
 
     /* Modal */
     --modal-bg: var(--white);

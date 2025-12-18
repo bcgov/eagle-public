@@ -1,32 +1,23 @@
 @import "../../assets/styles/base/base.css";
 
-app-projects:host {
-  position: absolute;
-  top: 65px; /* Account for mobile header height */
-  right: 0;
-  bottom: var(--footer-height, 2rem);
-  left: 0;
-}
-
-@media (min-width: 768px) {
-  app-projects:host {
-    top: 95px; /* Account for fixed header (65px) + banner (~30px) */
-  }
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  height: 100%;
 }
 
 .projects-view {
   display: flex;
   flex-flow: column nowrap;
-  position: absolute;
-  width: 100%;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
 }
 
 /* Project Filters */
 .app-filters {
   flex: 0 0 auto;
   display: block;
-  z-index: 14;
   box-shadow: 0.1rem 0.1rem 1rem rgba(0, 0, 0, 0.15);
 }
 
@@ -48,7 +39,6 @@ app-projects:host {
   right: 0;
   bottom: 0;
   left: 3rem;
-  z-index: 12;
   transform: translateX(-100%) translateX(-3rem);
   transition: transform ease-out 0.2s;
   border-top: 1px solid #ddd;
@@ -73,7 +63,6 @@ app-projects:host {
   padding: 0;
   width: 40px;
   height: 3rem;
-  z-index: 13;
   box-shadow: 0.1rem 0.1rem 0.5rem rgba(0,0,0,0.25);
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
@@ -102,8 +91,17 @@ app-projects:host {
 
 /* Container for the List and Map components */
 .app-list-map-container {
-  flex: 1 1 auto;
+  flex: 1;
   position: relative;
+  min-height: 0; /* Important for flexbox children */
+}
+
+.app-map {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
 }
 
 /* Project List Open / Closed State */
@@ -113,7 +111,6 @@ app-projects:host {
 }
 
 .app-list-open .overlay {
-  z-index: 11;
   opacity: 1;
   transform: translateX(0);
 }

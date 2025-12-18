@@ -219,15 +219,30 @@
   right: 1rem;
   padding: 0.5rem;
   opacity: 0;
-  border-color: var(--gold);
-  background: var(--gold);
+  pointer-events: none;
+  border: 2px solid var(--gold);
+  background-color: var(--gold);
+  color: var(--primary);
   transform: translateY(1rem);
   transition: all ease-out 0.2s;
 }
 
 .scroll-top-btn.visible {
   opacity: 1;
+  pointer-events: auto;
   transform: translateY(0);
+}
+
+.scroll-top-btn.visible:hover,
+.scroll-top-btn.visible:focus {
+  background-color: var(--gold);
+  border-color: var(--gold);
+  color: var(--primary);
+  filter: brightness(0.9);
+}
+
+.scroll-top-btn .material-icons {
+  color: var(--primary);
 }
 
 /* Submit button */

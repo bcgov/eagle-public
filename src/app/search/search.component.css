@@ -227,7 +227,6 @@ form {
         margin-left: -15px;
 
         .form-control {
-            z-index: 0px !important;
         }
     }
 

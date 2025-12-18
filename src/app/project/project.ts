@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, AfterViewInit, ElementRef, signal, computed, ChangeDetectionStrategy, inject, Renderer2, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit, ElementRef, signal, computed, ChangeDetectionStrategy, inject, Renderer2, CUSTOM_ELEMENTS_SCHEMA, HostListener } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { Subject } from 'rxjs';
@@ -31,7 +31,7 @@ import { SafeHtmlPipe } from '../shared/pipes/safe-html-converter.pipe';
     SafeHtmlPipe
   ],
   templateUrl: './project.html',
-  styleUrls: ['./project-lg-md.css', './project-sm.css'],
+  styleUrl: './project.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   standalone: true
@@ -179,6 +179,14 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
     // Map initialization moved to ngOnInit after project data loads
   }
 
+  @HostListener('window:resize', ['$event'])
+  onResize(event?: Event) {
+    if (this.map) {
+      this.map.invalidateSize();
+      this.fitBounds(this.appFG.getBounds());
+    }
+  }
+
   private initMap() {
     // Check if map element exists
     const mapElement = document.getElementById('map');
@@ -250,7 +258,8 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
     this.map = L.map('map', {
       zoomControl: false,
       maxBounds: L.latLngBounds(L.latLng(-90, -180), L.latLng(90, 180)),
-      zoomSnap: .1
+      zoomSnap: .1,
+      attributionControl: false
     });
 
     this.map.addControl(new resetViewControl());
@@ -303,6 +312,11 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
   private fixMap() {
     if (this.elementRef.nativeElement.offsetParent) {
       this.fitBounds(this.appFG.getBounds());
+      // Invalidate map size after container is properly rendered
+      setTimeout(() => {
+        this.map?.invalidateSize();
+        this.fitBounds(this.appFG.getBounds());
+      }, 100);
     } else {
       setTimeout(this.fixMap.bind(this), 50);
     }
@@ -311,7 +325,9 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
   public fitBounds(bounds: L.LatLngBounds | null = null) {
     const fitBoundsOptions: L.FitBoundsOptions = {
       animate: false,
-      paddingBottomRight: [0, 35]
+      paddingBottomRight: [0, 35],
+      padding: [50, 50],
+      maxZoom: 8
     };
 
     if (bounds && bounds.isValid()) {

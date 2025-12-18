@@ -15,9 +15,6 @@ export class HeaderComponent implements OnInit {
   private apiService = inject(ApiService);
   private platformId = inject(PLATFORM_ID);
   public router = inject(Router);
-
-  projectInfoFocused = signal<boolean>(false);
-  eaProcessFocused = signal<boolean>(false);
   
   envName = signal<string>('');
   bannerColour = signal<string>('');
@@ -33,17 +30,14 @@ export class HeaderComponent implements OnInit {
     this.showBanner.set(env === 'local' || (!!env && hasValidColor));
   }
 
-  toggleDropdown(dropdown: 'projectInfo' | 'eaProcess'): void {
-    this.projectInfoFocused.set(dropdown === 'projectInfo');
-    this.eaProcessFocused.set(dropdown === 'eaProcess');
-  }
-
   closeMenus(): void {
-    this.projectInfoFocused.set(false);
-    this.eaProcessFocused.set(false);
-    
     if (isPlatformBrowser(this.platformId)) {
-      document.getElementById('mainNav')?.classList.remove('show');
+      const mainNav = document.getElementById('mainNav');
+      mainNav?.classList.remove('show');
+      
+      // Close any open Bootstrap dropdowns
+      const dropdowns = document.querySelectorAll('.dropdown-menu.show');
+      dropdowns.forEach(dropdown => dropdown.classList.remove('show'));
     }
   }
 }

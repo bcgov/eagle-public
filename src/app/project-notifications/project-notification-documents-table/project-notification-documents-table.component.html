@@ -8,13 +8,13 @@
   }
   <div class="row">
     <div class="col-12">
-      @if (tableData.totalListItems > 0) {
+      @if (tableData().totalListItems > 0) {
         <div>
-          <lib-table-template [data]="tableData" (messageOut)="onMessageOut($event)">
+          <lib-table-template [data]="tableData()" (messageOut)="onMessageOut($event)">
           </lib-table-template>
         </div>
       }
-      @if (tableData.totalListItems === 0) {
+      @if (tableData().totalListItems === 0) {
         <div>
           <p>
             This notification project has no documents.

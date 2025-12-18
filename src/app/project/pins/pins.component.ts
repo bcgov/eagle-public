@@ -51,6 +51,10 @@ export class PinsComponent implements OnInit, OnDestroy {
     this.tableData.options.showPageCountDisplay = false;
     this.tableData.options.showPageSizePicker = false;
 
+    // Get project ID from parent route
+    const projId = this.route.parent?.snapshot.params['projId'] || '';
+    this.pinsService.fetchDataConfig.projId = projId;
+
     this.route.queryParamMap.pipe(takeWhile(() => this.alive)).subscribe(data => {
       // Get params from route, shove into the tableTemplateUtils so that we get a new dataset to work with.
       const params: any = {};
@@ -63,9 +67,9 @@ export class PinsComponent implements OnInit, OnDestroy {
     this.pinsService.getValue()
       .pipe(takeWhile(() => this.alive))
       .subscribe((searchResults: SearchResults) => {
-        if (searchResults.data !== 0) {
-          this.tableData.totalListItems = searchResults.totalSearchCount;
-          if (this.tableData.totalListItems > 0) {
+        if (searchResults && searchResults.data !== null && searchResults.data !== undefined) {
+          this.tableData.totalListItems = searchResults.totalSearchCount || 0;
+          if (Array.isArray(searchResults.data) && searchResults.data.length > 0) {
             this.tableData.items = searchResults.data.map((record: any) => {
               return { rowData: record };
             });
@@ -78,6 +82,9 @@ export class PinsComponent implements OnInit, OnDestroy {
           this._changeDetectionRef.detectChanges();
         }
       });
+
+    // Trigger initial data fetch
+    this.pinsService.refreshData();
   }
 
   onMessageOut(msg: ITableMessage) {

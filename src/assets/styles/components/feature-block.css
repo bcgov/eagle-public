@@ -65,8 +65,6 @@
 
 .feature-block p {
   margin-bottom: 1.5rem;
-  font-size: 0.875rem;
-  line-height: 1.4rem;
 }
 
 .feature-block .btn {
@@ -78,7 +76,6 @@
 .feature-block .watermark {
   position: absolute;
   inset: 0;
-  z-index: 40;
   background-color: rgb(var(--feature-block-bg), 0.8);
   text-align: center;
 }
@@ -151,7 +148,7 @@
 }
 
 .feature-card .feature-block {
-  padding: 2rem 1.5rem !important;
+  padding: 2rem 1.5rem;
   width: 100%;
 }
 

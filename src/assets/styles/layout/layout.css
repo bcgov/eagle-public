@@ -90,9 +90,8 @@ div.content {
 /* Container */
 .container {
   margin: 0 auto;
-  /* Need to override bootstrap responsive behaviour for the container class here to ensure we aren't squeezing the interface unneccessarily */
-  max-width: 1140px !important;
-  padding: 1.5rem;
+  padding-top: 1.5rem;
+  padding-bottom: 1.5rem;
 
   section {
     &.last {
@@ -199,7 +198,6 @@ main {
   padding: 10px 10px 12px 38px;
   position: fixed;
   transition: .25s all;
-  z-index: 4;
   height: 70px;
 
   button[type="cancel"] {
@@ -342,7 +340,6 @@ hr {
   /* flex omitted */
   position: relative;
   box-shadow: 0 0 0.5rem rgba(0, 0, 0, 0.15);
-  z-index: 40;
 }
 
 .top-container .container {

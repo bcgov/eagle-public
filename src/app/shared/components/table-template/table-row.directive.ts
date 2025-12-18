@@ -38,12 +38,21 @@ export class TableRowDirective implements OnInit, OnChanges, OnDestroy {
   }
 
   ngOnChanges(changes: SimpleChanges) {
-    if (!changes['firstChange'] && changes['tableData'] && changes['tableData'].currentValue) {
-      this.tableData = changes['tableData'].currentValue;
-      this.rowObject = this.tableData.items.find(element => element.rowData._id === this.rowObject.rowData._id)!;
-
-      this.loadComponent();
+    const tableDataChange = changes['tableData'];
+    if (tableDataChange?.firstChange || !tableDataChange?.currentValue) {
+      return;
     }
+
+    this.tableData = tableDataChange.currentValue;
+    
+    // Find updated row data - the items array contains only current page items
+    const updatedRow = this.tableData.items.find(element => element.rowData._id === this.rowObject.rowData._id);
+    if (updatedRow) {
+      this.rowObject = updatedRow;
+    }
+    
+    // Always reload component when table data changes (pagination, sorting, etc.)
+    this.loadComponent();
   }
 
   /**
@@ -57,12 +66,13 @@ export class TableRowDirective implements OnInit, OnChanges, OnDestroy {
       return;
     }
     
-    const tableComponentRef: ComponentRef<any> = this.injectComponentService.injectComponentIntoView(
+    this.viewContainerRef.clear();
+    const componentRef = this.injectComponentService.injectComponentIntoView(
       this.viewContainerRef,
       component
     );
 
-    this.setRowComponentData(tableComponentRef.instance);
+    this.setRowComponentData(componentRef.instance);
   }
 
   /**
