@@ -9,9 +9,11 @@
     --white: #fff;
     --black: #000;
     --lightgray: #eee;
+    --blue-dark: #002663;
 
     /* Layout */
     --header-height: 4.2rem;
+    --env-banner-height: 0rem;
     --header-total-height: 4.2rem;
     --sidebar-width: 30%;
 

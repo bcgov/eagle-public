@@ -1,14 +1,19 @@
 <div class="app-filters__container d-flex flex-column">
-  <div class="search-container" id="applist-filters">
+  <button class="mobile-search-toggle" (click)="toggleSearchMobile()" aria-label="Toggle search">
+    <i class="material-icons">{{ showSearchMobile() ? 'close' : 'search' }}</i>
+  </button>
+  <div class="search-container" [class.show-mobile]="showSearchMobile()" id="applist-filters">
     <div class="additional-filters">
-      <label class="header-label" for="applicantInput">Search Environmental Assessment Projects</label>
+      <div class="mobile-header">
+        <label class="header-label" for="applicantInput">Search Environmental Assessment Projects</label>
+        <button type="button" class="btn-close" (click)="toggleSearchMobile()" aria-label="Close search"></button>
+      </div>
       <div class="search-box position-relative">
         <input type="text" class="form-control gtm-filter-applicant" placeholder="Start typing a project name" id="applicantInput"
-        [(ngModel)]="applicantFilter" name="applicantFilter"
-        (ngModelChange)="onSearchChange($event)"
-        [ngbTypeahead]="applicantSearch" [focusFirst]="false"
+        [ngModel]="applicant()" 
+        (ngModelChange)="applicant.set($event); applyFilters()"
         [disabled]="loading()">
-        @if (applicantFilter) {
+        @if (applicant()) {
           <button type="button" class="btn-clear" (click)="clearSearch()" aria-label="Clear search" [disabled]="loading()">
             <i class="material-icons">close</i>
           </button>
@@ -35,8 +40,8 @@
                   placeholder="Type Project Type"
                   [items]="projectTypes"
                   [closeOnSelect]="false"
-                  [(ngModel)]="typeFilter"
-                  (change)="applyAllFilters()"
+                  [ngModel]="types()"
+                  (ngModelChange)="types.set($event); applyFilters()"
                   [disabled]="loading()"
               >
               </ng-select>
@@ -55,8 +60,8 @@
                   placeholder="Type Project Region"
                   [items]="projectRegions"
                   [closeOnSelect]="false"
-                  [(ngModel)]="regionFilter"
-                  (change)="applyRegionFilters()"
+                  [ngModel]="regions()"
+                  (ngModelChange)="regions.set($event); applyFilters()"
                   [disabled]="loading()"
               >
               </ng-select>
@@ -77,8 +82,8 @@
                   [items]="projectPhases"
                   [closeOnSelect]="false"
                   [markFirst]="false"
-                  [(ngModel)]="phaseFilter"
-                  (change)="applyAllFilters()"
+                  [ngModel]="phases()"
+                  (ngModelChange)="phases.set($event); applyFilters()"
                   [disabled]="loading()"
               >
               </ng-select>

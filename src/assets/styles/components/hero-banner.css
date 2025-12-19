@@ -15,8 +15,8 @@
 
 @media (max-width: 767px) {
   .hero-banner .container {
-    padding-top: 2rem;
-    padding-bottom: 2.5rem;
+    padding-top: 1rem;
+    padding-bottom: 1rem;
   }
 }
 
@@ -27,6 +27,13 @@
   color: #fff;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+@media (max-width: 767px) {
+  .hero-banner__content {
+    padding-top: 2rem;
+    padding-bottom: 1rem;
+  }
 }
 
 .hero-banner__content h1 {
@@ -84,7 +91,9 @@
   font-weight: 700;
   cursor: pointer;
   color: var(--bs-warning, var(--gold));
-  background: transparent;
+  background: rgba(0, 38, 77, 0.3);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 .hero-banner__actions .btn:hover,

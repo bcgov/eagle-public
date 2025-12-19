@@ -21,23 +21,22 @@
     <div class="app-list__scroll-container">
       <ul class="app-list__list">
         @for (item of loadedApps(); track item._id) {
-          @if (item.isVisible) {
-            <li class="app-card list-group-item" [class.active]="isCurrentApp(item)"
-              (click)="toggleCurrentApp(item);$event.stopPropagation();">
+          <li class="app-card list-group-item" [class.active]="isCurrentApp(item)"
+            (click)="toggleCurrentApp(item);$event.stopPropagation();">
 
-              <!-- Project Details -->
-              <ul class="app-card__details">
-                <li>
-                  <span class="key">Applicant</span>
-                  <span class="value client-name">{{item.client || 'Unknown Client'}}</span>
-                </li>
-                <li>
-                  <span class="key">Purpose / Subpurpose</span>
-                  <!-- TODO: Need a better way of handling values that are not available - see also below -->
-                  <span class="value">
-                    @if (item.purpose || item.subpurpose) {
-                      <span>{{item.purpose | titlecase}} / {{item.subpurpose | titlecase}}</span>
-                    }
+            <!-- Project Details -->
+            <ul class="app-card__details">
+              <li>
+                <span class="key">Applicant</span>
+                <span class="value client-name">{{item.client || 'Unknown Client'}}</span>
+              </li>
+              <li>
+                <span class="key">Purpose / Subpurpose</span>
+                <!-- TODO: Need a better way of handling values that are not available - see also below -->
+                <span class="value">
+                  @if (item.purpose || item.subpurpose) {
+                    <span>{{item.purpose | titlecase}} / {{item.subpurpose | titlecase}}</span>
+                  }
                     @if (!item.purpose || !item.subpurpose) {
                       <span>Not Available</span>
                     }
@@ -58,9 +57,6 @@
                 </li>
               </ul>
 
-              <!-- FOR TESTING -->
-              <!-- <div class="mt-3 font-weight-bold" *ngIf="item.features && item.features.length === 0">THIS APPLICATION HAS NO SHAPES</div> -->
-
               <!-- Project Card Actions -->
               <div class="app-card__actions d-flex justify-content-between">
                 <div class="badges">
@@ -70,22 +66,22 @@
                       'badge-secondary': commentPeriodService.isNotOpen(item.currentPeriod),
                       'badge-danger': commentPeriodService.isClosed(item.currentPeriod),
                       'badge-success': commentPeriodService.isOpen(item.currentPeriod)}">
-                      <span>{{item.cpStatus}}</span>
-                      @if (commentPeriodService.isNotStarted(item.currentPeriod)) {
-                        <span class="date">
-                          :&nbsp;{{item.currentPeriod.startDate | date:'mediumDate'}}
-                        </span>
-                      }
-                      @if (commentPeriodService.isClosed(item.currentPeriod)) {
-                        <span class="date">
-                          :&nbsp;{{item.currentPeriod.endDate | date:'mediumDate'}}
-                        </span>
-                      }
-                      @if (commentPeriodService.isOpen(item.currentPeriod)) {
-                        <span class="date">
-                          :&nbsp;{{item.currentPeriod.startDate | date:'MMM d'}} - {{item.currentPeriod.endDate | date:'MMM d'}}
-                        </span>
-                      }
+                    <span>{{item.cpStatus}}</span>
+                    @if (commentPeriodService.isNotStarted(item.currentPeriod)) {
+                      <span class="date">
+                        :&nbsp;{{item.currentPeriod.startDate | date:'mediumDate'}}
+                      </span>
+                    }
+                    @if (commentPeriodService.isClosed(item.currentPeriod)) {
+                      <span class="date">
+                        :&nbsp;{{item.currentPeriod.endDate | date:'mediumDate'}}
+                      </span>
+                    }
+                    @if (commentPeriodService.isOpen(item.currentPeriod)) {
+                      <span class="date">
+                        :&nbsp;{{item.currentPeriod.startDate | date:'MMM d'}} - {{item.currentPeriod.endDate | date:'MMM d'}}
+                      </span>
+                    }
                   </div>
                 </div>
                 <a class="app-details-link btn" (click)="$event.stopPropagation()" [routerLink]="['/a', item._id]" title="Go to project details">
@@ -93,7 +89,6 @@
                 </a>
               </div>
             </li>
-          }
         }
       </ul>
 

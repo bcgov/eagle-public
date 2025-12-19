@@ -264,7 +264,6 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
 
     this.map.addControl(new resetViewControl());
     L.control.zoom({ position: 'topleft' }).addTo(this.map);
-    L.control.scale({ position: 'bottomright' }).addTo(this.map);
 
     const baseLayers = {
       'Ocean Base': Esri_OceanBasemap,

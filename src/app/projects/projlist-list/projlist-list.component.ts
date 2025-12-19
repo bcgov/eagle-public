@@ -1,4 +1,4 @@
-import { Component, ElementRef, ChangeDetectionStrategy, input, output, signal, effect, untracked, inject } from '@angular/core';
+import { Component, ElementRef, ChangeDetectionStrategy, input, output, signal, computed, effect, untracked, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 
@@ -29,28 +29,32 @@ export class ProjlistListComponent {
   public loading = signal<boolean>(false);
   private numToLoad = signal<number>(0);
 
+  // Computed signal for loaded projects (no mutation)
+  public loadedApps = computed(() => {
+    const projects = this.projects();
+    const limit = this.numToLoad();
+    return projects.slice(0, limit);
+  });
+
   get clientWidth(): number {
     return this.elementRef.nativeElement.firstElementChild?.clientWidth ?? 0;
   }
 
   constructor() {
-    // Watch for project changes using effect
-    let isFirstRun = true;
+    // Initialize with first page of results
     effect(() => {
       const currentProjects = this.projects();
-      if (isFirstRun || currentProjects.length === 0) {
-        isFirstRun = false;
-        return;
-      }
-
+      
       untracked(() => {
         // Clear current selection if the selected app is no longer in the list
         if (this.currentApp && !currentProjects.some(p => p._id === this.currentApp?._id)) {
           this.currentApp = null;
         }
         
-        this.numToLoad.set(this.configService.listPageSize);
-        this.setLoaded();
+        // Initialize page size if not set
+        if (this.numToLoad() === 0 && currentProjects.length > 0) {
+          this.numToLoad.set(this.configService.listPageSize);
+        }
       });
     });
   }
@@ -69,10 +73,6 @@ export class ProjlistListComponent {
     }
   }
 
-  public loadedApps(): Project[] {
-    return this.projects().filter(a => a.isLoaded);
-  }
-
   public appsWithShapes(): Project[] {
     return this.projects().filter(a => a.centroid?.length === 2);
   }
@@ -83,15 +83,5 @@ export class ProjlistListComponent {
 
   public loadMore() {
     this.numToLoad.update(n => n + this.configService.listPageSize);
-    this.setLoaded();
-  }
-
-  private setLoaded() {
-    // set first 'n' apps as 'loaded'
-    const projects = this.projects();
-    const limit = this.numToLoad();
-    for (let i = 0; i < projects.length; i++) {
-      projects[i].isLoaded = (i < limit);
-    }
   }
 }

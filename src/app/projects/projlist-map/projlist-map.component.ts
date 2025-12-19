@@ -1,6 +1,7 @@
 import {
   Component,
   AfterViewInit,
+  OnInit,
   OnDestroy,
   input,
   output,
@@ -11,15 +12,17 @@ import {
   Injector,
   ViewContainerRef,
   ViewChild,
-  inject
+  inject,
+  computed
 } from '@angular/core';
 import { Subject } from 'rxjs';
 import * as L from 'leaflet';
 import 'leaflet.markercluster';
 
 import { Project } from '../../models/project';
-import { ProjectService } from '../../services/project.service';
 import { ConfigService } from '../../services/config.service';
+import { MapStateService } from '../../services/map-state.service';
+import { LoggingService } from '../../services/logging.service';
 import { ProjDetailPopupComponent } from '../proj-detail-popup/proj-detail-popup.component';
 
 declare module 'leaflet' {
@@ -35,13 +38,15 @@ const markerIconYellow = L.icon({
   iconUrl: 'assets/images/marker-icon-yellow.svg',
   iconSize: [36, 36],
   iconAnchor: [18, 36],
-  tooltipAnchor: [16, -28]
+  tooltipAnchor: [16, -28],
+  className: 'marker-icon-transition'
 });
 
 const markerIconYellowLg = L.icon({
   iconUrl: 'assets/images/marker-icon-yellow-lg.svg',
   iconSize: [48, 48],
   iconAnchor: [24, 48],
+  className: 'marker-icon-transition'
 });
 
 @Component({
@@ -56,80 +61,195 @@ export class ProjlistMapComponent implements AfterViewInit, OnDestroy {
   projects = input<Project[]>([]);
   applist = input<any>();
   appfilters = input<any>();
-  updateVisible = output<void>();
   reloadApps = output<void>();
 
   private elementRef = inject(ElementRef);
   public configService = inject(ConfigService);
+  private mapStateService = inject(MapStateService);
   private injector = inject(Injector);
   private viewContainerRef = inject(ViewContainerRef);
+  private logger = inject(LoggingService);
 
   private map: L.Map | null = null;
-  private markerList: L.Marker[] = [];
-  private currentMarker: L.Marker | null = null;
-  private markerClusterGroup = L.markerClusterGroup({
-    showCoverageOnHover: false,
-    maxClusterRadius: 40,
-  });
+  private markerClusterGroup!: L.MarkerClusterGroup;
   public loading = signal(false);
   private destroy$ = new Subject<void>();
-  private isInitialized = false;
-  private hasAutoOpenedPopup = false;
+  private resizeObserver?: ResizeObserver;
+  private fitBoundsTimeout?: ReturnType<typeof setTimeout>;
+  private lastAutoOpenedProjectId: string | null = null;
+  
+  // Popup component instance for reuse
+  private popupComponentRef: any = null;
 
   constructor() {
-    // Watch for project changes and redraw all markers
+    // Watch for project changes and update markers, then auto-reposition
     effect(() => {
       const currentProjects = this.projects();
       
-      // Skip if map not initialized
-      if (!this.isInitialized || !this.map) {
+      // Wait for map to be initialized
+      if (!this.map || !this.markerClusterGroup) {
         return;
       }
 
-      // Use untracked to prevent reactive cycles
       untracked(() => {
-        this.redrawAllMarkers(currentProjects);
+        this.updateMarkers(currentProjects);
+        
+        // Auto-reposition map to show all markers (debounced)
+        clearTimeout(this.fitBoundsTimeout);
+        this.fitBoundsTimeout = setTimeout(() => {
+          if (this.markerClusterGroup) {
+            const bounds = this.markerClusterGroup.getBounds();
+            if (bounds.isValid()) {
+              this.fitBounds(bounds);
+            }
+          }
+        }, 100);
       });
+    });
+    
+    // Watch for active popup changes to highlight marker
+    effect(() => {
+      const activeProjectId = this.mapStateService.activePopupProject();
+      
+      untracked(() => {
+        this.highlightMarker(activeProjectId);
+      });
+    });
+    
+    // Auto-open popup when exactly one marker visible
+    effect(() => {
+      const shouldAutoOpen = this.mapStateService.shouldAutoOpenPopup();
+      const singleVisible = this.mapStateService.singleVisibleProject();
+      
+      if (shouldAutoOpen && singleVisible) {
+        untracked(() => {
+          // Don't auto-open if user just closed this same popup
+          if (this.lastAutoOpenedProjectId === singleVisible.projectId) {
+            return;
+          }
+          
+          // Find the project object
+          const project = this.projects().find(p => p._id === singleVisible.projectId);
+          if (project) {
+            this.lastAutoOpenedProjectId = singleVisible.projectId;
+            const isMobile = window.innerWidth <= 768;
+            this.createProjectPopup(project, singleVisible.marker, isMobile);
+          }
+        });
+      }
+      
+      // Reset auto-open tracking when no single visible marker
+      if (!singleVisible) {
+        untracked(() => {
+          this.lastAutoOpenedProjectId = null;
+        });
+      }
     });
   }
 
-  /**
-   * Clear all markers and redraw from scratch
-   */
-  private redrawAllMarkers(projects: Project[]): void {
-    // Clear existing markers
-    this.markerClusterGroup.clearLayers();
-    this.markerList = [];
-    this.currentMarker = null;
-    this.hasAutoOpenedPopup = false; // Reset auto-open flag when redrawing
+  ngAfterViewInit(): void {
+    // Wait for container to have dimensions before initializing
+    this.waitForContainer();
+  }
 
-    // Add markers for all projects
+  /**
+   * Incrementally update markers based on project changes.
+   * Reuses existing markers when possible instead of full redraw.
+   */
+  private updateMarkers(projects: Project[]): void {
+    if (!this.map || !this.markerClusterGroup) {
+      return;
+    }
+    
+    const currentMarkers = this.mapStateService.getAllMarkers();
+    const projectIds = new Set(projects.filter(p => this.hasValidCentroid(p)).map(p => p._id));
+    
+    // Remove markers for projects no longer in the list
+    currentMarkers.forEach((markerState, projectId) => {
+      if (!projectIds.has(projectId)) {
+        this.markerClusterGroup.removeLayer(markerState.marker);
+        this.mapStateService.removeMarker(projectId);
+      }
+    });
+
+    let newMarkersAdded = 0;
+    // Add or update markers for current projects
     projects.forEach(project => {
-      if (project.centroid?.length === 2) {
-        const marker = this.createMarker(project);
-        this.markerList.push(marker);
-        this.markerClusterGroup.addLayer(marker);
+      if (this.hasValidCentroid(project)) {
+        const existingMarker = this.mapStateService.getMarker(project._id);
+        
+        if (!existingMarker) {
+          // Create new marker
+          const marker = this.createMarker(project);
+          this.mapStateService.setMarker(project._id, marker, true);
+          this.markerClusterGroup.addLayer(marker);
+          newMarkersAdded++;
+        } else {
+          // Update existing marker position if needed
+          const newLatLng = L.latLng(project.centroid[1], project.centroid[0]);
+          if (!existingMarker.getLatLng().equals(newLatLng)) {
+            existingMarker.setLatLng(newLatLng);
+          }
+        }
       }
     });
 
     this.updateVisibleProjects();
   }
 
-  readonly defaultBounds = L.latLngBounds([48, -139], [60, -114]);
-  readonly bcCenter: L.LatLngExpression = [54, -126.5];
-  readonly defaultZoom = 6;
+  /**
+   * Check if project has valid centroid coordinates
+   */
+  private hasValidCentroid(project: Project): boolean {
+    return project.centroid?.length === 2;
+  }
 
-  ngAfterViewInit() {
-    if (!this.mapContainer?.nativeElement) {
-      console.error('Map container not found');
+  readonly defaultBounds = L.latLngBounds([48, -139], [60, -114]);
+  // Center of BC coordinates
+  readonly bcCenter: L.LatLngExpression = [55.5, -125.5];
+  readonly defaultZoom = 5.7;
+
+  /**
+   * Wait for map container to have dimensions before initializing
+   * This prevents Leaflet from initializing with height: 0
+   * Ref: https://github.com/Leaflet/Leaflet/issues/4835
+   */
+  private waitForContainer(): void {
+    const container = this.mapContainer?.nativeElement;
+    if (!container) {
+      this.logger.error('Map container not found', 'ProjlistMapComponent');
       return;
     }
 
-    this.initializeMap();
+    // Check if container has dimensions
+    const rect = container.getBoundingClientRect();
+    if (rect.height > 0 && rect.width > 0) {
+      this.initializeMap();
+    } else {
+      // Wait a bit and try again
+      setTimeout(() => this.waitForContainer(), 50);
+    }
   }
 
   private initializeMap(): void {
-    const mapElement = this.mapContainer.nativeElement;
+    const mapElement = this.mapContainer?.nativeElement;
+    if (!mapElement) {
+      this.logger.error('Map container not found', 'ProjlistMapComponent');
+      return;
+    }
+
+    // Create fresh marker cluster group
+    this.markerClusterGroup = L.markerClusterGroup({
+      showCoverageOnHover: false,
+      maxClusterRadius: 80,
+      spiderfyOnMaxZoom: true,
+      zoomToBoundsOnClick: true,
+      disableClusteringAtZoom: 18,
+      removeOutsideVisibleBounds: true,
+      animate: true,
+      animateAddingMarkers: false
+    });
+
     const self = this;
 
     // Create reset view control
@@ -162,42 +282,67 @@ export class ProjlistMapComponent implements AfterViewInit, OnDestroy {
       attributionControl: false
     });
 
+    // Store map reference in state service
+    this.mapStateService.setMap(this.map);
+
     // Add event listeners
-    this.map.on('moveend', () => this.updateVisibleProjects());
+    this.map.on('moveend', () => {
+      if (this.map) {
+        this.mapStateService.updateBounds(this.map.getBounds());
+      }
+      this.updateVisibleProjects();
+    });
+    
     this.map.on('baselayerchange', (e: L.LayersControlEvent) => {
       this.configService.baseLayerName = e.name;
+      this.mapStateService.setBaseLayer(e.name);
     });
 
     // Add marker cluster group
     this.map.addLayer(this.markerClusterGroup);
 
     // Add default base layer
-    const defaultLayer = baseLayers[this.configService.baseLayerName] || baseLayers['World Topographic'];
+    const savedLayerName = this.configService.baseLayerName;
+    const defaultLayer = baseLayers[savedLayerName] || baseLayers['World Topographic'];
     this.map.addLayer(defaultLayer);
+    this.mapStateService.setBaseLayer(savedLayerName || 'World Topographic');
 
     // Add map controls
-    L.control.layers(baseLayers, undefined, { position: 'topright' }).addTo(this.map);
-    L.control.attribution({ position: 'bottomright' }).addTo(this.map);
     L.control.scale({ position: 'bottomleft' }).addTo(this.map);
+    L.control.layers(baseLayers, undefined, { position: 'bottomleft' }).addTo(this.map);
     L.control.zoom({ position: 'bottomright' }).addTo(this.map);
     this.map.addControl(new resetViewControl());
 
-    // Initialize map with proper sizing
-    setTimeout(() => {
+    // Set up ResizeObserver to handle container size changes
+    this.setupResizeObserver();
+
+    // Initialize bounds
+    this.mapStateService.updateBounds(this.map.getBounds());
+    
+    // Use whenReady to ensure map is fully initialized before adding markers
+    this.map.whenReady(() => {
       if (this.map) {
-        this.map.invalidateSize();
-        this.fixMap();
+        this.map.invalidateSize(true);
       }
-    }, 100);
+      
+      // Trigger marker update now that map is ready
+      const currentProjects = this.projects();
+      this.updateMarkers(currentProjects);
+      
+      // Auto-reposition after markers are added
+      setTimeout(() => {
+        if (this.markerClusterGroup) {
+          const bounds = this.markerClusterGroup.getBounds();
+          if (bounds.isValid()) {
+            this.fitBounds(bounds);
+          }
+        }
+      }, 100);
+    });
   }
 
   private createBaseLayers(): { [key: string]: L.TileLayer } {
     return {
-      'Ocean Base': L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Ocean_Basemap/MapServer/tile/{z}/{y}/{x}', {
-        attribution: 'Tiles &copy; Esri',
-        maxZoom: 13,
-        noWrap: true
-      }),
       'Nat Geo World Map': L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/{z}/{y}/{x}', {
         attribution: 'Tiles &copy; Esri',
         maxZoom: 16,
@@ -216,17 +361,18 @@ export class ProjlistMapComponent implements AfterViewInit, OnDestroy {
     };
   }
 
-  private fixMap(): void {
-    if (!this.elementRef.nativeElement.offsetParent) {
-      setTimeout(() => this.fixMap(), 50);
+  private setupResizeObserver(): void {
+    if (typeof ResizeObserver === 'undefined' || !this.mapContainer?.nativeElement) {
       return;
     }
 
-    if (this.map) {
-      this.map.invalidateSize();
-      this.isInitialized = true;
-      this.redrawAllMarkers(this.projects());
-    }
+    this.resizeObserver = new ResizeObserver(() => {
+      if (this.map) {
+        this.map.invalidateSize(true);
+      }
+    });
+
+    this.resizeObserver.observe(this.mapContainer.nativeElement);
   }
 
   private resetView(): void {
@@ -237,7 +383,26 @@ export class ProjlistMapComponent implements AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     clearTimeout(this.visibilityUpdateTimeout);
-    this.map?.remove();
+    this.resizeObserver?.disconnect();
+    
+    // Clean up popup component
+    if (this.popupComponentRef) {
+      this.popupComponentRef.destroy();
+      this.popupComponentRef = null;
+    }
+    
+    // Clear marker cluster group
+    this.markerClusterGroup?.clearLayers();
+    
+    // Clean up map
+    if (this.map) {
+      this.map.remove();
+      this.map = null;
+    }
+    
+    // Reset service state for clean initialization next time
+    this.mapStateService.reset();
+    
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -253,30 +418,31 @@ export class ProjlistMapComponent implements AfterViewInit, OnDestroy {
   };
 
   /**
-   * Update which projects are visible in the current map bounds
+   * Update which projects are visible in the current map bounds.
+   * Uses MapStateService to track visibility without mutating Project objects.
    */
   private updateProjectVisibility(): void {
-    const mapBounds = this.map!.getBounds();
+    if (!this.map) return;
+    
+    const mapBounds = this.map.getBounds();
     const projectsList = this.projects();
+    const markers = this.mapStateService.getAllMarkers();
+    
+    let visibleCount = 0;
+    let singleVisibleMarker: { project: Project; marker: L.Marker } | null = null;
 
-    for (const marker of this.markerList) {
-      const project = projectsList.find(p => p._id === (marker as any).projectId);
+    markers.forEach((markerState, projectId) => {
+      const project = projectsList.find(p => p._id === projectId);
       if (project) {
-        project.isVisible = mapBounds.contains(marker.getLatLng());
-
-        // Auto-open popup if only one marker is visible (but only once)
-        if (this.markerList.length === 1 && project.isVisible && !this.hasAutoOpenedPopup) {
-          if (!marker.getPopup()) {
-            this.createProjectPopup(project, marker);
-          }
-          marker.openPopup();
-          this.hasAutoOpenedPopup = true;
+        const isVisible = mapBounds.contains(markerState.marker.getLatLng());
+        this.mapStateService.setMarkerVisibility(projectId, isVisible);
+        
+        if (isVisible) {
+          visibleCount++;
+          singleVisibleMarker = { project, marker: markerState.marker };
         }
       }
-    }
-
-    // Notify parent component (wrapped in untracked to prevent reactive cycles)
-    untracked(() => this.updateVisible.emit());
+    });
   }
 
   private fitBounds(bounds: L.LatLngBounds | null = null): void {
@@ -316,85 +482,106 @@ export class ProjlistMapComponent implements AfterViewInit, OnDestroy {
    * Handle marker click event
    */
   private onMarkerClick(project: Project, event: L.LeafletMouseEvent): void {
-    this.createProjectPopup(project, event.target as L.Marker);
+    // Close search panel on mobile when clicking a marker
+    const isMobile = window.innerWidth <= 768;
+    if (isMobile) {
+      const filters = this.appfilters();
+      if (filters && filters.showSearchMobile()) {
+        filters.toggleSearchMobile();
+      }
+    }
+    
+    this.createProjectPopup(project, event.target as L.Marker, isMobile);
   }
 
   /**
-   * Create and display a popup for a project marker
+   * Create and display a popup for a project marker.
+   * Reuses a single popup component instance for better performance.
    */
-  private createProjectPopup(project: Project, marker: L.Marker): void {
-    // Close popup if already open
+  private createProjectPopup(project: Project, marker: L.Marker, isMobile: boolean = false): void {
     const existingPopup = marker.getPopup();
+    
+    // If popup is already open, close it
     if (existingPopup?.isOpen()) {
       marker.closePopup();
-      return;
+      return; // closePopup() is called by the 'remove' event listener
     }
 
-    // Update list selection
+    // Update state - this will trigger marker highlighting via effect
+    this.mapStateService.openPopup(project._id);
     this.applist()?.toggleCurrentApp(project);
 
     // Determine popup padding based on map size
     const mapHeight = this.map!.getSize().y;
     const popupOptions = {
       className: 'map-popup-content',
-      autoPan: false, // Disable Leaflet's auto-pan, we'll handle centering manually
-      offset: L.point(0, -35), // Offset popup upward to appear above marker
+      autoPan: false,
+      offset: L.point(0, -30),
       autoPanPaddingTopLeft: L.point(mapHeight < 800 ? 2 : 80, mapHeight < 800 ? 100 : 200),
-      autoPanPaddingBottomRight: L.point(mapHeight < 800 ? 2 : 80, 30)
+      autoPanPaddingBottomRight: L.point(mapHeight < 800 ? 2 : 80, 30),
+      closeButton: true
     };
 
-    // Create popup component
-    this.viewContainerRef.clear();
-    const compRef = this.viewContainerRef.createComponent(ProjDetailPopupComponent, { injector: this.injector });
-    compRef.instance.proj = project;
+    // Create or reuse popup component
+    if (!this.popupComponentRef) {
+      this.popupComponentRef = this.viewContainerRef.createComponent(
+        ProjDetailPopupComponent, 
+        { injector: this.injector }
+      );
+    }
     
-    const popupElement = document.createElement('div');
-    popupElement.appendChild(compRef.location.nativeElement);
+    // Update component with project data
+    this.popupComponentRef.instance.proj = project;
+    this.popupComponentRef.changeDetectorRef.detectChanges();
 
+    // Create new popup instance with fresh content reference
     const popup = L.popup(popupOptions)
       .setLatLng(marker.getLatLng())
-      .setContent(popupElement)
+      .setContent(this.popupComponentRef.location.nativeElement)
       .on('remove', () => {
-        // Clear selection and reset marker icon
         this.applist()?.toggleCurrentApp(project);
-        this.resetMarkerIcon(marker);
-        marker.unbindPopup();
+        this.mapStateService.closePopup();
       });
 
+    // Unbind old popup if exists, then bind new one
+    if (existingPopup) {
+      marker.unbindPopup();
+    }
+    
     marker.bindPopup(popup).openPopup();
 
-    // Center map on marker after popup opens
-    setTimeout(() => this.centerMap(marker.getLatLng()), 0);
+    // Position map for popup visibility
+    setTimeout(() => {
+      if (isMobile) {
+        this.positionMapForMobilePopup(marker.getLatLng());
+      } else {
+        this.centerMap(marker.getLatLng());
+      }
+    }, 0);
   }
 
   /**
-   * Highlight or unhighlight a project marker
+   * Called from parent when hovering over list items.
+   * No longer affects marker highlighting - markers only enlarge when popup is open.
    */
   onHighlightProject(project: Project, show: boolean): void {
-    // Reset previous marker
-    this.resetMarkerIcon();
-
-    // Highlight new marker
-    if (show) {
-      const marker = this.markerList.find(m => (m as any).projectId === project._id);
-      if (marker) {
-        this.currentMarker = marker;
-        marker.setIcon(markerIconYellowLg);
-      }
-    }
+    // Intentionally empty - decoupled from marker highlighting
+    // Marker size only changes when popup is active
   }
 
   /**
-   * Reset marker icon to default
+   * Highlight marker for active popup, reset all others to normal size
    */
-  private resetMarkerIcon(marker?: L.Marker): void {
-    const markerToReset = marker || this.currentMarker;
-    if (markerToReset) {
-      markerToReset.setIcon(markerIconYellow);
-      if (!marker) {
-        this.currentMarker = null;
+  private highlightMarker(activeProjectId: string | null): void {
+    const markers = this.mapStateService.getAllMarkers();
+    
+    markers.forEach((markerState, id) => {
+      if (activeProjectId && id === activeProjectId) {
+        markerState.marker.setIcon(markerIconYellowLg);
+      } else {
+        markerState.marker.setIcon(markerIconYellow);
       }
-    }
+    });
   }
 
   /**
@@ -402,6 +589,23 @@ export class ProjlistMapComponent implements AfterViewInit, OnDestroy {
    */
   resetMap(): void {
     this.fitBounds();
+  }
+
+  /**
+   * Position map so popup appears near top on mobile
+   */
+  private positionMapForMobilePopup(latlng: L.LatLng): void {
+    if (!this.map) return;
+    
+    const mapHeight = this.map.getSize().y;
+    let point = this.map.latLngToLayerPoint(latlng);
+    
+    // Offset to position marker popup near top of screen
+    // This pushes the marker down so the popup shows at the top
+    const verticalOffset = mapHeight * 0.35; // 35% from top
+    point = point.subtract([0, verticalOffset]);
+    
+    this.map.panTo(this.map.layerPointToLatLng(point), { animate: true, duration: 0.3 });
   }
 
   /**

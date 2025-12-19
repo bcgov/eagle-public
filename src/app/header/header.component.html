@@ -1,16 +1,10 @@
-<header class="app-header" id="header" [class.app-header--flex]="router.url.startsWith('/projects')"
-  [class.app-header--solid]="router.url.startsWith('/p/')">
+<header class="app-header" id="header" [class.app-header--flex]="currentUrl().startsWith('/projects')"
+  [class.app-header--solid]="currentUrl().startsWith('/p/')">
   <nav class="navbar navbar-expand-md justify-content-between">
     <a class="navbar-brand" title="Environmental Assessment Office Project Information Centre" tabindex="0"
       routerLink="/home">
       <span class="navbar-brand__title">EPIC</span>
     </a>
-    @if (showBanner()) {
-    <div class="env-banner" tabindex="0" [class]="bannerColour()">
-      This is the&nbsp;<strong>{{envName()}}</strong>&nbsp;environment. The content you are viewing is not final and
-      subject to change.
-    </div>
-    }
     <button class="navbar-toggler" tabindex="0" type="button" title="Toggle Main Navigation" data-bs-toggle="collapse"
       data-bs-target="#mainNav" aria-controls="navbarText" aria-expanded="false" aria-label="Toggle navigation">
       <i class="material-icons">menu</i>
@@ -93,4 +87,10 @@
       </ul>
     </div>
   </nav>
+  @if (showBanner()) {
+  <div class="env-banner" tabindex="0" [class]="bannerColour()">
+    This is the&nbsp;<strong>{{envName()}}</strong>&nbsp;environment. The content you are viewing is not final and
+    subject to change.
+  </div>
+  }
 </header>

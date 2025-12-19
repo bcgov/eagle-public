@@ -73,8 +73,6 @@ export class Project {
   write?: Array<String> = [];
   delete?: Array<String> = [];
 
-  isMatches?: Boolean = true;
-  isVisible?: Boolean = true;
   isLoaded?: Boolean = false;
 
   featuredDocuments?: Array<Document> = [];

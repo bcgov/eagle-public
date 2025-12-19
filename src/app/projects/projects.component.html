@@ -1,9 +1,7 @@
 <div class="projects-view" [class.app-list-open]="configService.isApplistListVisible" [class.app-list-closed]="!configService.isApplistListVisible">
   <h1 class="visually-hidden">Find Environmental Assessment Projects in British Columbia</h1>
 
-  <app-projlist-filters class="app-filters" #appfilters
-    [projects]="filterApps()"
-    (updateMatching)="updateMatching()">
+  <app-projlist-filters class="app-filters" #appfilters>
   </app-projlist-filters>
 
   <div class="app-list-map-container">
@@ -21,7 +19,6 @@
       [projects]="mapApps()"
       [applist]="applist"
       [appfilters]="appfilters"
-      (updateVisible)="updateVisible()"
       (reloadApps)="reloadApps()">
     </app-projlist-map>
   </div>

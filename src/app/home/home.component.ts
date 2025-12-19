@@ -6,6 +6,7 @@ import { takeUntil } from 'rxjs/operators';
 
 import { SearchService } from 'app/services/search.service';
 import { ApiService } from 'app/services/api';
+import { LoggingService } from 'app/services/logging.service';
 import { News } from 'app/models/news';
 import { HeroBannerComponent, HeroBannerAction } from '../shared/hero-banner/hero-banner.component';
 import { InfoCardComponent, InfoCardButton } from '../shared/info-card/info-card.component';
@@ -21,6 +22,7 @@ import { InfoCardComponent, InfoCardButton } from '../shared/info-card/info-card
 export class HomeComponent implements OnInit, OnDestroy {
   private searchService = inject(SearchService);
   private apiService = inject(ApiService);
+  private logger = inject(LoggingService);
   private destroy$ = new Subject<boolean>();
 
   results = signal<News[]>([]);
@@ -88,7 +90,7 @@ export class HomeComponent implements OnInit, OnDestroy {
           this.loading.set(false);
         },
         error: (err) => {
-          console.error('Error loading recent activities:', err);
+          this.logger.error('Error loading recent activities', 'HomeComponent', err);
           this.results.set([]);
           this.loading.set(false);
         }

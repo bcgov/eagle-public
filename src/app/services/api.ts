@@ -13,6 +13,7 @@ import { Org } from 'app/models/organization';
 import { Decision } from 'app/models/decision';
 import { User } from 'app/models/user';
 import { Utils } from 'app/shared/utils/utils';
+import { LoggingService } from './logging.service';
 
 @Injectable({providedIn:'root'})
 export class ApiService {
@@ -27,7 +28,8 @@ export class ApiService {
 
   constructor(
     private http: HttpClient,
-    private utils: Utils
+    private utils: Utils,
+    private logger: LoggingService
   ) {
     // const currentUser = JSON.parse(window.localStorage.getItem('currentUser'));
     // this.token = currentUser && currentUser.token;
@@ -52,7 +54,7 @@ export class ApiService {
 
   handleError(error: any): Observable<any> {
     const reason = error.message ? error.message : (error.status ? `${error.status} - ${error.statusText}` : 'Server error');
-    console.log('API error =', reason);
+    this.logger.error(`API error: ${reason}`, 'ApiService', error);
     return throwError(error);
   }
 
@@ -124,7 +126,7 @@ export class ApiService {
   // Searching
   //
   searchKeywords(keys: string, dataset: string, fields: any[], pageNum: number, pageSize: number, projectLegislation: string = '', sortBy: string | null = null, queryModifier: Record<string, string> = {}, populate = false, secondarySort: string | null = null, filter: Record<string, string> = {}, fuzzy: boolean = false): Observable<SearchResults[]> {
-    console.log('API.searchKeywords called with keys:', keys, 'filter:', filter);
+    this.logger.debug(`API.searchKeywords called with keys: ${keys}`, 'ApiService', { filter });
     
     projectLegislation = (projectLegislation === '') ? 'default' : projectLegislation;
     let queryString = `search?dataset=${dataset}`;
@@ -161,9 +163,10 @@ export class ApiService {
     queryString += `&fields=${this.buildValues(fields)}`;
     queryString += '&fuzzy=' + fuzzy;
     
-    console.log('API call URL:', `${this.apiPath}/${queryString}`);
+    const fullUrl = `${this.apiPath}/${queryString}`;
+    this.logger.trace(`API call URL: ${fullUrl}`, 'ApiService');
     
-    return this.http.get<SearchResults[]>(`${this.apiPath}/${queryString}`, {});
+    return this.http.get<SearchResults[]>(fullUrl, {});
     // if (dataset === 'Project') {
     //   searchResults = searchResults.currentProjectData
     // }

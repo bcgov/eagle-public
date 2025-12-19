@@ -1,9 +1,10 @@
 import { Component, ChangeDetectionStrategy, OnInit, OnDestroy, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterOutlet } from '@angular/router';
+import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
 import { HeaderComponent } from './header/header.component';
 import { FooterComponent } from './footer/footer.component';
 import { StorageService } from './services/storage.service';
+import { filter } from 'rxjs/operators';
 
 @Component({
   selector: 'app-root',
@@ -15,13 +16,25 @@ import { StorageService } from './services/storage.service';
 })
 export class App implements OnInit, OnDestroy {
   private storageService = inject(StorageService);
+  public router = inject(Router);
   
   title = 'EPIC - Environmental Assessment Office';
   showScrollButton = signal(false);
+  currentUrl = signal<string>('');
 
   ngOnInit(): void {
     // Start preloading projects in the background
     this.storageService.preloadProjects();
+    
+    // Initialize current URL
+    this.currentUrl.set(this.router.url);
+    
+    // Update URL on navigation
+    this.router.events
+      .pipe(filter(event => event instanceof NavigationEnd))
+      .subscribe(() => {
+        this.currentUrl.set(this.router.url);
+      });
     
     // Listen for scroll events to show/hide scroll-to-top button
     window.addEventListener('scroll', this.handleScroll);

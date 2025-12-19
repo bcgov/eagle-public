@@ -4,6 +4,23 @@
   position: relative;
 }
 
+/* Hide footer on mobile when on /projects route */
+@media (max-width: 768px) {
+  :host(.hide-mobile-projects) .app-footer {
+    display: none !important;
+  }
+}
+
+footer.app-footer--sm {
+  display: block;
+}
+
+@media (max-width: 768px) {
+  footer.app-footer--sm {
+    display: none !important;
+  }
+}
+
 .app-footer .container {
   padding-top: 0.75rem;
   padding-right: 1.5rem;

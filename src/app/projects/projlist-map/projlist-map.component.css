@@ -35,6 +35,11 @@
   opacity: 0.6;
 }
 
+/* Smooth marker icon transitions */
+::ng-deep .marker-icon-transition {
+  transition: all 0.2s ease-out;
+}
+
 /* Map Control Customization */
 ::ng-deep .leaflet-container a.leaflet-popup-close-button {
   top: 0.5rem;
@@ -99,8 +104,20 @@
   font-size: 0.75rem;
 }
 
+::ng-deep .leaflet-control-layers {
+  z-index: 1003 !important;
+}
+
+::ng-deep .leaflet-control-zoom {
+  z-index: 1003 !important;
+}
+
+::ng-deep .leaflet-control-scale {
+  margin-bottom: 10px !important;
+}
+
 ::ng-deep .leaflet-bottom.leaflet-left {
-  bottom: 4.25rem;
+  bottom: 0;
 }
 
 ::ng-deep .map-reset-control {
@@ -119,42 +136,6 @@
 
 ::ng-deep .map-reset-control:hover {
   background: #f4f4f4;
-}
-
-@media (min-width: 377px) {
-  ::ng-deep .leaflet-bottom.leaflet-left {
-    bottom: 3.5rem;
-  }
-
-  ::ng-deep .leaflet-control-attribution {
-    height: 3.25rem;
-  }
-}
-
-@media (min-width: 570px) {
-  ::ng-deep .leaflet-bottom.leaflet-left {
-    bottom: 2.75rem;
-  }
-
-  ::ng-deep .leaflet-control-attribution {
-    height: 2.5rem;
-  }
-}
-
-@media (min-width: 1085px) {
-  ::ng-deep .leaflet-bottom.leaflet-left {
-    bottom: 2rem;
-  }
-
-  ::ng-deep .leaflet-control-attribution {
-    height: auto;
-  }
-}
-
-@media (min-width: 1175px) {
-  ::ng-deep .leaflet-bottom.leaflet-left {
-    bottom: 0;
-  }
 }
 
 @media (min-width: 1024px) {

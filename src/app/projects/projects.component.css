@@ -2,9 +2,7 @@
 
 :host {
   display: flex;
-  flex-direction: column;
   flex: 1;
-  height: 100%;
 }
 
 .projects-view {
@@ -16,18 +14,27 @@
 
 /* Project Filters */
 .app-filters {
-  flex: 0 0 auto;
-  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
   box-shadow: 0.1rem 0.1rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+@media (min-width: 768px) {
+  .app-filters {
+    top: calc(var(--header-total-height) + 1rem);
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    width: 48rem;
+    box-shadow: 0.1rem 0.1rem 0.5rem rgba(0,0,0,0.25);
+  }
 }
 
 @media (min-width: 1200px) {
   .app-filters {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 48rem;
-    box-shadow: 0.1rem 0.1rem 0.5rem rgba(0,0,0,0.25);
     transition: left ease-out 0.2s;
   }
 }

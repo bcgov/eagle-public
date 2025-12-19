@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import * as L from 'leaflet';
 import { ApiService } from 'app/services/api';
 import { Observable, of } from 'rxjs';
-import { map, catchError } from 'rxjs/operators';
+import { map, catchError, shareReplay } from 'rxjs/operators';
 
 //
 // This service/class provides a centralized place to persist config values
@@ -17,6 +17,7 @@ export class ConfigService {
   private _isApplistFiltersVisible = false;
   private _listPageSize = 10;
   private _lists = [];
+  private _lists$: Observable<any> | null = null;
 
   // TODO: store these in URL instead
   private _baseLayerName = 'World Topographic'; // NB: must match a valid base layer name
@@ -35,23 +36,31 @@ export class ConfigService {
   }
 
   get lists(): Observable<any> {
-    if (this._lists.length === 0) {
-      // Fetch all list items (milestone, document types, authors, project phases)
-      // Backend has ~200 items total, so 250 provides headroom
-      return this.api.getFullDataSet('List', 250)
-        .pipe(
-          map(res => {
-            if (res) {
-              this._lists = res[0].searchResults;
-              return this._lists;
-            }
-            return null;
-          }),
-          catchError(error => this.api.handleError(error))
-        );
-    } else {
+    // If already loaded, return cached array
+    if (this._lists.length > 0) {
       return of(this._lists);
     }
+    
+    // If request is in-flight, return the shared observable
+    if (this._lists$) {
+      return this._lists$;
+    }
+    
+    // Create new request and cache it
+    this._lists$ = this.api.getFullDataSet('List', 250)
+      .pipe(
+        map(res => {
+          if (res) {
+            this._lists = res[0].searchResults;
+            return this._lists;
+          }
+          return null;
+        }),
+        catchError(error => this.api.handleError(error)),
+        shareReplay(1) // Share the result with all subscribers
+      );
+    
+    return this._lists$;
   }
 
   get isApplistListVisible(): boolean { return this._isApplistListVisible; }

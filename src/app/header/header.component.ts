@@ -1,7 +1,8 @@
-import { Component, ChangeDetectionStrategy, signal, inject, OnInit, PLATFORM_ID } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, inject, OnInit, PLATFORM_ID, effect, Renderer2 } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
-import { Router, RouterModule } from '@angular/router';
+import { Router, RouterModule, NavigationEnd } from '@angular/router';
 import { ApiService } from '../services/api';
+import { filter } from 'rxjs/operators';
 
 @Component({
   selector: 'app-header',
@@ -14,11 +15,44 @@ import { ApiService } from '../services/api';
 export class HeaderComponent implements OnInit {
   private apiService = inject(ApiService);
   private platformId = inject(PLATFORM_ID);
+  private renderer = inject(Renderer2);
   public router = inject(Router);
   
   envName = signal<string>('');
   bannerColour = signal<string>('');
   showBanner = signal<boolean>(false);
+  currentUrl = signal<string>('');
+
+  constructor() {
+    // Update CSS variable when header size changes (includes banner when visible)
+    effect(() => {
+      // Track the banner signal to re-run when it changes
+      this.showBanner();
+      
+      if (isPlatformBrowser(this.platformId)) {
+        this.updateHeaderHeight();
+      }
+    });
+
+    // Recalculate on route changes
+    if (isPlatformBrowser(this.platformId)) {
+      this.currentUrl.set(this.router.url);
+      this.router.events
+        .pipe(filter(event => event instanceof NavigationEnd))
+        .subscribe(() => {
+          this.currentUrl.set(this.router.url);
+          this.updateHeaderHeight();
+        });
+    }
+  }
+
+  private updateHeaderHeight(): void {
+    setTimeout(() => {
+      const headerElement = document.querySelector('.app-header') as HTMLElement;
+      const totalHeight = headerElement ? `${headerElement.offsetHeight}px` : '0px';
+      document.documentElement.style.setProperty('--header-total-height', totalHeight);
+    }, 0);
+  }
 
   ngOnInit(): void {
     const { env, bannerColour } = this.apiService;

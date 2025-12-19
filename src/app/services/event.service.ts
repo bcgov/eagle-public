@@ -1,5 +1,6 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
+import { LoggingService } from './logging.service';
 
 export enum EventKeywords {
   ERROR = 'err',
@@ -36,6 +37,7 @@ this.eventService.setError(
   providedIn: 'root'
 })
 export class EventService {
+  private logger = inject(LoggingService);
   private errorEvent: BehaviorSubject<EventObject>;
   private infoEvent: BehaviorSubject<EventObject>;
   private debugEvent: BehaviorSubject<EventObject>;
@@ -48,6 +50,8 @@ export class EventService {
 
   setError(value: EventObject): void {
     this.errorEvent.next(value);
+    // Automatically log errors to LoggingService
+    this.logger.error(value.message, value.eventSource || 'EventService');
   }
 
   getError(): Observable<EventObject> {
@@ -56,6 +60,8 @@ export class EventService {
 
   setInfo(value: EventObject): void {
     this.infoEvent.next(value);
+    // Automatically log info to LoggingService
+    this.logger.info(value.message, value.eventSource || 'EventService');
   }
 
   getInfo(): Observable<EventObject> {
@@ -64,6 +70,8 @@ export class EventService {
 
   setDebug(value: EventObject): void {
     this.debugEvent.next(value);
+    // Automatically log debug to LoggingService
+    this.logger.debug(value.message, value.eventSource || 'EventService');
   }
 
   getDebug(): Observable<EventObject> {

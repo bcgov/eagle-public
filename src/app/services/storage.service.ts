@@ -1,17 +1,21 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { tap } from 'rxjs/operators';
+import { Observable, of, Subject } from 'rxjs';
+import { tap, take, filter } from 'rxjs/operators';
 import { Project } from '../models/project';
 import { ProjectService } from './project.service';
+import { LoggingService } from './logging.service';
 
 @Injectable({ providedIn: 'root' })
 export class StorageService {
     private currentState: any;
     private projectService = inject(ProjectService);
+    private logger = inject(LoggingService);
     
     // Project cache signals
     private cachedProjects = signal<Project[]>([]);
     private isPreloading = signal(false);
     private preloadComplete = signal(false);
+    private preloadComplete$ = new Subject<Project[]>();
 
     constructor() {
         this.currentState = {};
@@ -34,7 +38,7 @@ export class StorageService {
         this.projectService.getCount()
             .pipe(
                 tap(count => {
-                    console.log(`Preloading ${count} projects in background...`);
+                    this.logger.info(`Preloading ${count} projects in background...`, 'StorageService');
                 })
             )
             .subscribe({
@@ -48,18 +52,21 @@ export class StorageService {
                                 this.cachedProjects.set(projectsWithMatches);
                                 this.preloadComplete.set(true);
                                 this.isPreloading.set(false);
-                                console.log(`Preloaded ${projects.length} projects successfully`);
+                                this.logger.info(`Preloaded ${projects.length} projects successfully`, 'StorageService');
+                                this.preloadComplete$.next(projectsWithMatches);
+                                this.preloadComplete$.complete();
                             })
                         )
                         .subscribe({
                             error: (error) => {
-                                console.error('Error preloading projects:', error);
+                                this.logger.error('Error preloading projects', 'StorageService', error);
                                 this.isPreloading.set(false);
+                                this.preloadComplete$.error(error);
                             }
                         });
                 },
                 error: (error) => {
-                    console.error('Error getting project count:', error);
+                    this.logger.error('Error getting project count', 'StorageService', error);
                     this.isPreloading.set(false);
                 }
             });
@@ -70,6 +77,36 @@ export class StorageService {
      */
     getCachedProjects(): Project[] | null {
         return this.preloadComplete() ? this.cachedProjects() : null;
+    }
+
+    /**
+     * Get an Observable that emits cached projects when available
+     * - Immediately emits if already cached
+     * - Waits for preload to complete if in progress
+     * - Returns empty if no preload in progress
+     */
+    getCachedProjects$(): Observable<Project[] | null> {
+        // If already cached, return immediately
+        if (this.preloadComplete()) {
+            return of(this.cachedProjects());
+        }
+        
+        // If preload is in progress, wait for it
+        if (this.isPreloading()) {
+            return this.preloadComplete$.pipe(take(1));
+        }
+        
+        // No cache and no preload in progress
+        return of(null);
+    }
+
+    /**
+     * Manually cache projects (e.g., after loading in ProjectsComponent)
+     */
+    cacheProjects(projects: Project[]): void {
+        this.cachedProjects.set(projects);
+        this.preloadComplete.set(true);
+        this.logger.info(`Cached ${projects.length} projects`, 'StorageService');
     }
 
     /**

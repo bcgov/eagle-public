@@ -1,132 +1,225 @@
 @import "../../../assets/styles/base/base.css";
 
+/* Mobile Search Toggle Button */
+.mobile-search-toggle {
+  display: none;
+  position: fixed;
+  top: calc(var(--header-total-height) + 10px);
+  right: 10px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--gold, #fcba19) !important;
+  color: var(--primary, #036) !important;
+  border: none;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
 
+.mobile-search-toggle:hover {
+  background: var(--gold, #fcba19) !important;
+  transform: scale(1.1);
+  opacity: 0.9;
+}
 
+.mobile-search-toggle i {
+  font-size: 24px;
+  line-height: 56px;
+}
 
-
-.app-filters__container {
-
-  &.open {
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
-  }
-
-  .btn,
-  .form-control {
-    height: 2.3rem;
-    font-size: 0.75rem;
+@media (max-width: 768px) {
+  .mobile-search-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .search-container {
-    padding: .75rem 1.4rem .2rem;
-    color: var(--bs-primary, var(--primary));
-    position: relative;
-    font-weight: 700;
-    border-radius: 0px;
+    display: none;
+    padding: 1rem;
+    position: fixed;
+    top: var(--header-total-height);
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1010;
+    overflow-y: auto;
     background: var(--bs-white, #fff);
-
-    @media (max-width: 768px) {
-      padding: .75rem .75rem .2rem;
-    }
-
-    .header-label {
-      font-size: 1.3rem;
-      font-weight: 700;
-      margin-bottom: .25rem;
-      letter-spacing: -.025em;
-      color: var(--bs-primary, var(--primary));
-
-      @media (max-width: 768px) {
-        font-size: 1rem;
-        font-weight: 600;
-        text-align: center;
-      }
-    }
-
-    .gtm-filter-applicant {
-      padding: .7rem;
-      padding-right: 45px;
-      border-radius: 2px;
-      box-shadow: none;
-      -webkit-appearance: none;
-      appearance: none;
-      border: 2px solid #c6d0da;
-      font-size: 1rem;
-      font-weight: 400;
-      height: 50px;
-      &:focus {
-        box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb, 0, 51, 102), 0.25);
-        border-color: var(--bs-form-control-focus-border-color, var(--fc-focus-border-color));
-      }
-    }
-
-    .btn-clear {
-      position: absolute;
-      right: 10px;
-      top: 50%;
-      transform: translateY(-50%);
-      background: transparent;
-      border: none;
-      padding: 4px;
-      cursor: pointer;
-      color: #6c757d;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      
-      &:hover {
-        color: var(--bs-primary, var(--primary));
-      }
-      
-      i {
-        font-size: 20px;
-      }
-    }
-
-    .btn {
-      border-radius: 0 4px 4px 0;
-      font-size: 1rem;
-      min-width: 140px;
-      height: 50px;
-      background: var(--bs-warning, var(--gold));
-      color: var(--bs-primary, var(--primary));
-      border: none;
-      font-weight: bold;
-      padding: .5rem 1.4rem .6rem;
-
-      i {
-        vertical-align: top;
-        margin-top: 2px;
-        margin-right: 4px;
-        font-size: 20px;
-      }
-    }
   }
 
-  legend {
-    margin-bottom: 0.5rem;
+  .search-container.show-mobile {
+    display: block;
   }
+}
+
+.mobile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.mobile-header .btn-close {
+  display: none;
+  margin-left: 1rem;
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+
+  .mobile-header {
+    display: flex;
+    align-items: flex-start;
+  }
+
+  .mobile-header .btn-close {
+    display: block;
+  }
+
+  .mobile-header .header-label {
+    margin-bottom: 0;
+    flex: 1;
+    text-align: left;
+    font-size: 0.95rem;
+  }
+
+  .mobile-header .header-label-full {
+    display: none;
+  }
+
+  .mobile-header .header-label-short {
+    display: inline;
+  }
+}
+
+/* Filters Container */
+.app-filters__container {
+  position: relative;
+}
+
+.app-filters__container.open {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+}
+
+.app-filters__container .btn,
+.app-filters__container .form-control {
+  height: 2.3rem;
+  font-size: 0.75rem;
 }
 
 @media (min-width: 1200px) {
   .app-filters__container {
     font-size: 0.9375rem;
+  }
 
-    &.open {
-      height: 30rem;
-    }
+  .app-filters__container.open {
+    height: 30rem;
+  }
 
-    .btn,
-    .form-control {
-      height: 2.5rem;
-      font-size: 0.9375rem;
-    }
+  .app-filters__container .btn,
+  .app-filters__container .form-control {
+    height: 2.5rem;
+    font-size: 0.9375rem;
   }
 }
 
+/* Search Container */
+.search-container {
+  padding: 0.75rem 1.4rem 0.2rem;
+  color: var(--bs-primary, var(--primary));
+  position: relative;
+  font-weight: 700;
+  border-radius: 0;
+  background: var(--bs-white, #fff);
+}
+
+.search-container .header-label {
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+  letter-spacing: -0.025em;
+  color: var(--bs-primary, var(--primary));
+}
+
+@media (max-width: 768px) {
+  .search-container .header-label {
+    font-size: 1rem;
+    font-weight: 600;
+    text-align: left;
+  }
+}
+
+.search-container .gtm-filter-applicant {
+  padding: 0.7rem;
+  padding-right: 45px;
+  border-radius: 2px;
+  box-shadow: none;
+  -webkit-appearance: none;
+  appearance: none;
+  border: 1px solid #c6d0da;
+  font-size: 1rem;
+  font-weight: 400;
+  height: 50px;
+}
+
+.search-container .gtm-filter-applicant:focus {
+  outline: none;
+  border-color: #5091cd;
+  box-shadow: 0 0 8px rgba(80, 145, 205, 0.4);
+}
+
+.search-container .btn-clear {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: #6c757d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.search-container .btn-clear:hover {
+  color: var(--bs-primary, var(--primary));
+}
+
+.search-container .btn-clear i {
+  font-size: 20px;
+}
+
+.search-container .btn {
+  border-radius: 0 4px 4px 0;
+  font-size: 1rem;
+  min-width: 140px;
+  height: 50px;
+  background: var(--bs-warning, var(--gold));
+  color: var(--bs-primary, var(--primary));
+  border: none;
+  font-weight: bold;
+  padding: 0.5rem 1.4rem 0.6rem;
+}
+
+.search-container .btn i {
+  vertical-align: top;
+  margin-top: 2px;
+  margin-right: 4px;
+  font-size: 20px;
+}
+
+.app-filters__container legend {
+  margin-bottom: 0.5rem;
+}
+
+/* Filter Headers */
 .app-filters__header {
   flex: 0 0 auto;
   padding: 0.75rem;
@@ -142,95 +235,80 @@
   font-size: 1.5rem;
 }
 
+/* Filter Body */
 .app-filters__body {
   flex: 1 1 auto;
   padding: 1rem;
   overflow-x: hidden;
   overflow-y: scroll;
   border-top: 1px solid var(--bs-border-color, #ddd);
+}
 
-  fieldset {
-    + fieldset {
-      margin-top: 1rem;
-      padding-top: 1.25rem;
-      border-top: 1px solid #ddd;
-    }
-  }
+.app-filters__body fieldset + fieldset {
+  margin-top: 1rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid #ddd;
+}
 
-  .form-check {
-    .form-check-input {
-      margin-top: 0.3rem;
-    }
-  }
+.app-filters__body .form-check .form-check-input {
+  margin-top: 0.3rem;
 }
 
 /* Filter Actions Bar */
 .filter-actions-bar {
   position: relative;
+}
 
-  .form-control {
-    padding: 0.5rem;
+.filter-actions-bar .form-control {
+  padding: 0.5rem;
+}
+
+.filter-actions-bar .dropdown-toggle {
+  padding: 0.5rem;
+}
+
+.filter-actions-bar .dropdown-menu {
+  width: 14rem;
+  padding: 0.75rem;
+}
+
+.filter-actions-bar .filter-control + .filter-control {
+  margin-left: 0.25rem;
+}
+
+@media (min-width: 768px) {
+  .filter-action-bar .dropdown-toggle {
+    padding: 0.5rem 0.75rem;
   }
 
-  .dropdown-toggle {
-    padding: 0.5rem;
-  }
-
-  .dropdown-menu {
-    width: 14rem;
+  .filter-action-bar .form-control {
     padding: 0.75rem;
   }
+}
 
-  .filter-control {
-    + .filter-control {
-      margin-left: 0.25rem;
-    }
-  }
+/* Filter Controls */
+.filter-control .dropdown-menu .form-check-label {
+  vertical-align: top;
+  line-height: 1rem;
+  font-size: 0.75rem;
+}
+
+.filter-control .dropdown-menu .form-check-label .form-check-input {
+  margin-top: 0.1rem;
+}
+
+.filter-control .dropdown-button-bar {
+  text-align: right;
 }
 
 @media (min-width: 768px) {
-  .filter-action-bar {
-    .dropdown-toggle {
-      padding: 0.5rem 0.75rem;
-    }
-
-    .form-control {
-      padding: 0.75rem;
-    }
-  }
-}
-
-/* Filter Actions Bar Controls */
-.filter-control {
-  .dropdown-menu {
-    .form-check-label {
-      vertical-align: top;
-      line-height: 1rem;
-      font-size: 0.75rem;
-
-      .form-check-input {
-        margin-top: 0.1rem;
-      }
-    }
+  .filter-control .dropdown-menu .form-check-label {
+    line-height: 1.25rem;
+    font-size: 0.9375rem;
   }
 
-  .dropdown-button-bar {
-    text-align: right;
-  }
-}
-
-@media (min-width: 768px) {
-  .filter-control {
-    .dropdown-menu {
-      .form-check-label {
-        line-height: 1.25rem;
-        font-size: 0.9375rem;
-
-        input {
-          margin-top: 0.25rem;
-        }
-      }
-    }
+  .filter-control .dropdown-menu .form-check-label input {
+    margin-top: 0.25rem;
   }
 }
 
@@ -241,20 +319,20 @@
   border-left: 1px solid #ddd;
 }
 
+/* Additional Filters */
 .additional-filters {
   font-size: 0.9375rem;
-
-  label {
-    font-weight: bold;
-  }
 }
 
-/* Typeahead Input */
+.additional-filters label {
+  font-weight: bold;
+}
+
+/* Typeahead */
 .typeahead-container {
-  position: relative; /* Need this here to ensure the typeaheads are bound to their parent */
+  position: relative;
 }
 
-/* Style ng-select dropdown */
 .typeahead-container .dropdown-menu {
   right: 0;
   overflow-y: scroll;
@@ -269,7 +347,6 @@
   width: 2.5rem;
   height: 2.3rem;
   font-size: 24px !important;
-
 }
 
 /* EAO Projects Input */
@@ -287,79 +364,96 @@
 .date-range {
   display: flex;
   flex-wrap: wrap;
-
-  .form-group {
-    display: inline-block;
-    vertical-align: top;
-  }
-
-  .spacer {
-    margin-top: 0.75rem;
-    display: inline-block;
-    width: 3rem;
-    text-align: center;
-    font-weight: 700;
-  }
 }
 
-@media (max-width: 768px){
+.date-range .form-group {
+  display: inline-block;
+  vertical-align: top;
+}
+
+.date-range .spacer {
+  margin-top: 0.75rem;
+  display: inline-block;
+  width: 3rem;
+  text-align: center;
+  font-weight: 700;
+}
+
+@media (max-width: 768px) {
   .date-range {
     flex-direction: column;
+  }
 
-    .spacer {
-      margin-top: 0.5rem;
-      margin-bottom: 0.5rem;
-      width: 100%;
-    }
+  .date-range .spacer {
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+    width: 100%;
   }
 }
 
+/* Search Box */
 .search-box {
   display: flex;
   align-items: center;
 }
 
+/* Toggle Container */
 .toggle-container {
   display: flex;
   justify-content: flex-end;
   margin: 5px 0;
-
-  .toggle-btn {
-    font-size: 14px;
-    display: inline-flex;
-    align-items: center;
-
-    &:hover {
-      cursor: pointer;
-      color: #03509c;
-    }
-    
-    &.disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-      pointer-events: none;
-    }
-  }
 }
 
+.toggle-container .toggle-btn {
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.toggle-container .toggle-btn:hover {
+  cursor: pointer;
+  color: #03509c;
+}
+
+.toggle-container .toggle-btn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Filters Container */
 .filters-container {
   display: flex;
   justify-content: space-between;
   margin: 10px 0;
 }
 
+@media (max-width: 768px) {
+  .filters-container {
+    flex-direction: column;
+  }
+}
+
+/* Filter Container */
 .filter-container {
   margin: 0 5px;
   font-weight: normal;
   flex-grow: 1;
   flex-basis: 33.33%;
+}
 
-  .filter-select {
-    color: black;
+@media (max-width: 768px) {
+  .filter-container {
+    margin: 5px 0;
+    flex-basis: 100%;
   }
+}
 
-  label {
-    font-size: inherit;
-    margin-bottom: 0;
-  }
+.filter-container .filter-select {
+  color: black;
+}
+
+.filter-container label {
+  font-size: inherit;
+  margin-bottom: 0;
 }

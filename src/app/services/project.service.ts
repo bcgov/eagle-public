@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable, of, forkJoin } from 'rxjs';
-import { map, catchError, mergeMap, flatMap } from 'rxjs/operators';
+import { map, catchError, mergeMap, flatMap, shareReplay } from 'rxjs/operators';
 
 import { Project } from 'app/models/project';
 import { ApiService } from './api';
@@ -20,6 +20,8 @@ interface GetParameters {
 export class ProjectService {
   private project: Project | null = null; // for caching
   private projectList: Project[] = [];
+  private cachedCount: number | null = null;
+  private count$: Observable<number> | null = null;
 
 
   constructor(
@@ -52,10 +54,28 @@ export class ProjectService {
 
   // get count of projects
   getCount(): Observable<number> {
-    return this.api.getCountProjects()
+    // Return cached count if available
+    if (this.cachedCount !== null) {
+      return of(this.cachedCount);
+    }
+    
+    // Return in-flight request if one exists
+    if (this.count$) {
+      return this.count$;
+    }
+    
+    // Create new request and cache it
+    this.count$ = this.api.getCountProjects()
       .pipe(
-        catchError(error => this.api.handleError(error))
+        map(count => {
+          this.cachedCount = count;
+          return count;
+        }),
+        catchError(error => this.api.handleError(error)),
+        shareReplay(1)
       );
+    
+    return this.count$;
   }
 
   // get all projects and related data

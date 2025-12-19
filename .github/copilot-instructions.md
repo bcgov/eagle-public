@@ -55,6 +55,28 @@ You are an expert in TypeScript, Angular, and scalable web application developme
 - Use the `providedIn: 'root'` option for singleton services
 - Use the `inject()` function instead of constructor injection
 
+## Logging
+
+- NEVER use `console.log`, `console.error`, `console.warn`, `console.info`, or `console.debug` directly
+- ALWAYS use the `LoggingService` for all logging operations
+- Import and inject `LoggingService` from `app/services/logging.service`
+- Available methods:
+  - `logger.error(message, source?, data?)` - For errors (shown in all environments)
+  - `logger.warn(message, source?, data?)` - For warnings (shown in dev/test)
+  - `logger.info(message, source?, data?)` - For informational messages (shown in dev/test)
+  - `logger.debug(message, source?, data?)` - For debug messages (shown in dev/local only)
+  - `logger.trace(message, source?, data?)` - For very verbose tracing (shown in dev/local only)
+- Always provide a source string (component/service name) for better log traceability
+- Production environment (`env=prod`) only shows ERROR level logs
+- Example usage:
+  ```typescript
+  private logger = inject(LoggingService);
+  
+  this.logger.error('Failed to load projects', 'ProjectsComponent', error);
+  this.logger.info('Loaded 336 projects', 'StorageService');
+  this.logger.debug('Cache hit for URL', 'HttpCache');
+  ```
+
 ## Development Environment
 
 - This project runs in a Debian LXC container accessed via VS Code Remote Explorer from Windows

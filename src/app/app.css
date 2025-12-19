@@ -15,4 +15,9 @@
   background-color: var(--bs-light, #f7f8fa);
   display: flex;
   flex-direction: column;
+  padding-top: var(--header-total-height, 0px);
+}
+
+.app-content.projects-route {
+  padding-top: 0;
 }

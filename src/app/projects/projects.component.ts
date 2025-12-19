@@ -1,8 +1,7 @@
 import { Component, OnInit, OnDestroy, Renderer2, ViewChild, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, NavigationEnd } from '@angular/router';
-import { MatSnackBar, MatSnackBarRef, SimpleSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { Subject, Observable, concat } from 'rxjs';
+import { Subject, Observable } from 'rxjs';
 import { takeUntil, finalize } from 'rxjs/operators';
 import * as L from 'leaflet';
 
@@ -10,11 +9,13 @@ import { Project } from 'app/models/project';
 import { ProjectService } from 'app/services/project.service';
 import { ConfigService } from 'app/services/config.service';
 import { StorageService } from 'app/services/storage.service';
+import { ProjectFilterService } from 'app/services/project-filter.service';
+import { MapStateService } from 'app/services/map-state.service';
+import { FilterStateService } from 'app/services/filter-state.service';
+import { LoggingService } from 'app/services/logging.service';
 import { ProjlistFiltersComponent } from './projlist-filters/projlist-filters.component';
 import { ProjlistListComponent } from './projlist-list/projlist-list.component';
 import { ProjlistMapComponent } from './projlist-map/projlist-map.component';
-
-const PAGE_SIZE = 100;
 
 @Component({
   selector: 'app-projects',
@@ -22,7 +23,6 @@ const PAGE_SIZE = 100;
   styleUrls: ['./projects.component.css'],
   imports: [
     CommonModule,
-    MatSnackBarModule,
     ProjlistFiltersComponent,
     ProjlistListComponent,
     ProjlistMapComponent
@@ -34,21 +34,38 @@ export class ProjectsComponent implements OnInit, OnDestroy {
   @ViewChild('applist', { static: true }) applist!: ProjlistListComponent;
   @ViewChild('appfilters', { static: true }) appfilters!: ProjlistFiltersComponent;
 
-  private snackBar = inject(MatSnackBar);
   private router = inject(Router);
   private projectService = inject(ProjectService);
   public configService = inject(ConfigService);
   private renderer = inject(Renderer2);
   private storageService = inject(StorageService);
+  private filterService = inject(ProjectFilterService);
+  private filterStateService = inject(FilterStateService);
+  private mapStateService = inject(MapStateService);
+  private logger = inject(LoggingService);
 
-  private snackBarRef: MatSnackBarRef<SimpleSnackBar> | null = null;
   private isLoading = signal<boolean>(false);
   
-  // Project data signals
+  // Project data signals - immutable state management
   public allApps = signal<Project[]>([]);
-  public filterApps = signal<Project[]>([]);
-  public mapApps = computed(() => this.filterApps().filter(a => a.isMatches === true));
-  public listApps = computed(() => this.mapApps().filter(a => a.isVisible));
+  
+  // Filtered projects (matches filter criteria)
+  public filterApps = computed(() => this.filterService.filterProjects(this.allApps()));
+  
+  // Projects visible on map (matches filters AND in map bounds)
+  public mapApps = computed(() => this.filterApps());
+  
+  // Projects visible in list (visible on map)
+  public listApps = computed(() => {
+    const filtered = this.filterApps();
+    const bounds = this.mapStateService.currentBounds();
+    
+    if (!bounds) {
+      return filtered;
+    }
+    
+    return filtered.filter(project => this.mapStateService.isProjectInBounds(project));
+  });
   
   private destroy$ = new Subject<void>();
 
@@ -77,64 +94,67 @@ export class ProjectsComponent implements OnInit, OnDestroy {
       L.DomEvent.disableScrollPropagation(applist_filters);
     }
 
-    // Check if projects are already cached
-    const cachedProjects = this.storageService.getCachedProjects();
-    
-    if (cachedProjects && cachedProjects.length > 0) {
-      // Use cached projects immediately
-      console.log(`Using ${cachedProjects.length} cached projects`);
-      this.allApps.set(cachedProjects);
-      this.filterApps.set(this.allApps());
-    } else {
-      // Load projects normally if not cached
-      this.getApps();
-    }
+    // Show loading state while waiting for projects
+    this.setLoadingState(true);
+
+    // Wait for StorageService preload (started in app.ts), then use cache or fallback to direct load
+    // Expected HTTP calls on first load:
+    // 1. HEAD /api/public/project - get project count for preload
+    // 2. GET /api/public/search?dataset=Project - preload all projects
+    // 3. GET /api/public/search?dataset=List - load metadata (regions, types, etc.) for filters
+    this.storageService.getCachedProjects$()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (cachedProjects) => {
+          if (cachedProjects && cachedProjects.length > 0) {
+            // Use cached projects (from preload or previous load)
+            this.logger.info(`Using ${cachedProjects.length} cached projects`, 'ProjectsComponent');
+            this.allApps.set(cachedProjects);
+            this.setLoadingState(false);
+          } else {
+            // No cache available and no preload in progress - load projects
+            this.getApps();
+          }
+        },
+        error: () => {
+          // Preload failed, load projects normally
+          this.getApps();
+        }
+      });
   }
 
   private getApps() {
     const start = Date.now();
     this.setLoadingState(true);
-    this.allApps.set([]);
 
     this.projectService.getCount()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (count) => {
-          const totalPages = Math.ceil(count / PAGE_SIZE);
-          const observables: Observable<Project[]>[] = Array.from(
-            { length: totalPages },
-            (_, i) => this.projectService.getAllFull(i + 1, PAGE_SIZE)
-          );
-
-          concat(...observables)
+          // Load all projects in a single optimized batch
+          this.projectService.getAllFull(1, count)
             .pipe(
               takeUntil(this.destroy$),
               finalize(() => {
                 this.setLoadingState(false);
-                console.log(`Loaded ${this.allApps().length} projects in ${Date.now() - start}ms`);
-                // Apply filters after all projects are loaded
-                this.filterApps.set(this.allApps());
+                this.logger.info(`Loaded ${this.allApps().length} projects in ${Date.now() - start}ms`, 'ProjectsComponent');
               })
             )
             .subscribe({
               next: (projects: Project[]) => {
-                // Initialize projects with isMatches = true so they show initially
-                projects.forEach(p => {
-                  if (p.isMatches === undefined) p.isMatches = true;
-                });
-                this.allApps.update(apps => [...apps, ...projects]);
-                // Don't update filterApps here - wait until all projects are loaded
+                this.allApps.set(projects);
+                
+                // Cache projects for future use
+                this.storageService.cacheProjects(projects);
               },
               error: (error) => {
-                console.error('Error loading projects:', error);
-                this.snackBar.open('Failed to load projects', 'Dismiss', { duration: 5000 });
+                this.logger.error('Error loading projects', 'ProjectsComponent', error);
                 this.router.navigate(['/']);
               }
             });
         },
         error: (error) => {
-          console.error('Error counting projects:', error);
-          this.snackBar.open('Failed to count projects', 'Dismiss', { duration: 5000 });
+          this.logger.error('Error counting projects', 'ProjectsComponent', error);
           this.router.navigate(['/']);
           this.setLoadingState(false);
         }
@@ -154,27 +174,10 @@ export class ProjectsComponent implements OnInit, OnDestroy {
     }
   }
 
-  /**
-   * Event handler called when filters component updates list of matching apps.
-   */
-  public updateMatching() {
-    // Trigger computed signal recalculation by creating new array reference
-    // This is necessary because computed signals don't detect object property mutations
-    this.filterApps.set([...this.filterApps()]);
-    this.appmap.resetMap();
-  }
+
 
   /**
-   * Event handler called when map component updates list of visible apps.
-   */
-  public updateVisible() {
-    // The map component mutates isVisible on project objects.
-    // The listApps computed signal will automatically reflect these changes
-    // when the list component accesses it. No action needed here.
-  }
-
-  /**
-   * Event handler called when map component reset button is clicked.
+   * Reload all projects from the server
    */
   public reloadApps() {
     this.getApps();
@@ -195,6 +198,9 @@ export class ProjectsComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    // Don't clear filters - let them persist for better UX
+    // Users expect their search/filters to remain when navigating back
+    
     this.destroy$.next();
     this.destroy$.complete();
   }
