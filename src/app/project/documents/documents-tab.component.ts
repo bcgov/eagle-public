@@ -44,9 +44,6 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
   private readonly dateFiltersList = ['datePostedStart', 'datePostedEnd'];
 
   public queryParams: Params = {};
-  public readonly loadingLists = signal(true);
-  public readonly loadingTableParams = signal(true);
-  public readonly loadingTableData = signal(true);
   public readonly showAdvancedFilters = signal(false);
   public readonly filters = signal<FilterObject[]>([]);
   public readonly tableData = signal<TableObject>(new TableObject({ component: DocumentTableRowsComponent }));
@@ -102,7 +99,6 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
         currentTableData.options.showAllPicker = true;
 
         this.tableData.set(currentTableData);
-        this.loadingTableData.set(false);
       }
     });
   }
@@ -125,7 +121,6 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
         }
       });
       this.setFilters();
-      this.loadingLists.set(false);
     });
 
     this.route.queryParamMap.pipe(takeWhile(() => this.alive)).subscribe(data => {
@@ -145,8 +140,6 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
         this.showAdvancedFilters.set(true);
         this.initialLoad = false;
       }
-
-      this.loadingTableParams.set(false);
 
       // Build filters object from query params
       const filters: Record<string, string> = {};
@@ -293,9 +286,6 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
         break;
       case 'pageSize':
         params['pageSize'] = msg.data.value;
-        if (params['pageSize'] === currentTableData.totalListItems) {
-          this.loadingTableData.set(true);
-        }
         params['currentPage'] = 1;
         break;
     }
@@ -310,7 +300,6 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
         relativeTo: this.route,
         queryParamsHandling: 'merge'
       });
-    this.loadingTableData.set(true);
   }
 
   onToggleFiltersPanel(event: { showPanel: boolean }) {

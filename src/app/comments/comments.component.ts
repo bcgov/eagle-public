@@ -11,6 +11,7 @@ import { AddCommentComponent } from './add-comment/add-comment.component';
 import { Project } from '../models/project';
 import { DocumentService } from '../services/document.service';
 import { ApiService } from '../services/api';
+import { LoadingStateService } from '../services/loading-state.service';
 import { CommentsTableRowsComponent } from './comments-table-rows/comments-table-rows.component';
 import { TableObject } from '../shared/components/table-template/table-object';
 import { TableTemplateComponent } from '../shared/components/table-template/table-template.component';
@@ -31,10 +32,10 @@ export class CommentsComponent implements OnInit, OnDestroy {
   private changeDetectionRef = inject(ChangeDetectorRef);
   private modalService = inject(NgbModal);
   private router = inject(Router);
+  private loadingState = inject(LoadingStateService);
 
-  loading = signal(true);
-  commentsLoading = signal(true);
-  loadingDoc = signal(false);
+  loading = this.loadingState.getOperationState('comments');
+  commentsLoading = this.loadingState.getOperationState('comments-list');
   commentPeriod = signal<CommentPeriod | null>(null);
   project = signal<Project | null>(null);
   comments = signal<any[]>([]);
@@ -129,7 +130,6 @@ export class CommentsComponent implements OnInit, OnDestroy {
                   return { rowData: comment };
                 });
 
-                this.loading.set(false);
                 this.changeDetectionRef.detectChanges();
               });
 
@@ -152,15 +152,12 @@ export class CommentsComponent implements OnInit, OnDestroy {
   }
 
   downloadDocument(document: any) {
-    this.loadingDoc.set(true);
     this.api.downloadDocument(document)
       .then(() => {
-        this.loadingDoc.set(false);
         this.snackBar.open('Downloading document');
         window.setTimeout(() => this.snackBar.dismiss(), 2000);
       })
       .catch(() => {
-        this.loadingDoc.set(false);
         this.snackBar.open('Error opening document! Please try again later');
         window.setTimeout(() => this.snackBar.dismiss(), 2000);
       });
@@ -197,7 +194,6 @@ export class CommentsComponent implements OnInit, OnDestroy {
   getPaginatedComments(pageNumber: number) {
     // Go to top of page after clicking to a different page.
     window.scrollTo(0, 0);
-    this.loading.set(true);
 
     this.tableData.currentPage = pageNumber;
 
@@ -236,7 +232,6 @@ export class CommentsComponent implements OnInit, OnDestroy {
           return { rowData: comment };
         });
 
-        this.loading.set(false);
         this.changeDetectionRef.detectChanges();
       });
   }

@@ -3,20 +3,25 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ProjectService } from 'app/services/project.service';
+import { LoadingStateService } from 'app/services/loading-state.service';
+import { LoggingService } from 'app/services/logging.service';
 
 @Component({
   selector: 'app-cac-unsubscribe',
   templateUrl: './cac-unsubscribe.component.html',
   styleUrl: './cac-unsubscribe.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule]
+  imports: [CommonModule, FormsModule],
+  standalone: true
 })
 export class CACUnsubscribeComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private projectService = inject(ProjectService);
   private router = inject(Router);
+  private loadingState = inject(LoadingStateService);
+  private logger = inject(LoggingService);
 
-  loading = signal<boolean>(false);
+  loading = this.loadingState.getOperationState('cac-unsubscribe');
   success = signal<boolean>(false);
   emailInput = signal<string>('');
   projectName = signal<string>('');
@@ -33,22 +38,19 @@ export class CACUnsubscribeComponent implements OnInit {
   }
 
   unsubscribe(): void {
-    this.loading.set(true);
-    
     this.projectService.cacRemoveMember(this.projectId(), {
       email: this.emailInput(),
       projId: this.projectId()
     })
-    .toPromise()
-    .then((res: any) => {
-      console.log('Success:', res);
-      this.loading.set(false);
-      this.success.set(true);
-    })
-    .catch(error => {
-      console.log('error', error);
-      this.loading.set(false);
-      alert('Uh-oh, error submitting information');
+    .subscribe({
+      next: (res) => {
+        this.logger.info('Successfully unsubscribed from CAC', 'CACUnsubscribeComponent', res);
+        this.success.set(true);
+      },
+      error: (error) => {
+        this.logger.error('Error unsubscribing from CAC', 'CACUnsubscribeComponent', error);
+        alert('Uh-oh, error submitting information');
+      }
     });
   }
 }

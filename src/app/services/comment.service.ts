@@ -5,6 +5,7 @@ import { map, catchError, flatMap } from 'rxjs/operators';
 import { ApiService } from './api';
 import { Comment } from 'app/models/comment';
 import { DocumentService } from './document.service';
+import { LoadingStateService } from './loading-state.service';
 
 @Injectable({providedIn:'root'})
 export class CommentService {
@@ -13,6 +14,7 @@ export class CommentService {
   constructor(
     private api: ApiService,
     private documentService: DocumentService,
+    private loadingState: LoadingStateService
   ) { }
 
   // get count of projects
@@ -26,6 +28,9 @@ export class CommentService {
   // get all comments for the specified comment period id
   // (without documents)
   getByPeriodId(periodId: string, pageNum: number | null = null, pageSize: number | null = null, getCount: boolean = false): Observable<Object> {
+    const loadingId = pageNum && pageNum > 1 ? 'comments-list' : 'comments';
+    this.loadingState.startLoading(loadingId, pageNum ? `Loading page ${pageNum}` : 'Loading comments');
+    
     return this.api.getCommentsByPeriodId(pageNum ? pageNum - 1 : null, pageSize, getCount, periodId)
       .pipe(
         map((res: any) => {
@@ -38,11 +43,16 @@ export class CommentService {
               totalCount: res.headers.get('x-total-count'),
               currentComments: comments as Comment[]
             };
+            this.loadingState.stopLoading(loadingId);
             return commentsDataSet;
           }
+          this.loadingState.stopLoading(loadingId);
           return null;
         }),
-        catchError(this.api.handleError)
+        catchError(error => {
+          this.loadingState.stopLoading(loadingId);
+          return this.api.handleError(error);
+        })
       );
   }
 

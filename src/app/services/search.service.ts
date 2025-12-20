@@ -7,6 +7,8 @@ import { SearchResults } from 'app/models/search';
 import { News } from 'app/models/news';
 import { Constants } from 'app/shared/utils/constants';
 import { EventKeywords, EventObject, EventService } from './event.service';
+import { LoadingStateService } from './loading-state.service';
+import { LoggingService } from './logging.service';
 
 @Injectable({providedIn:'root'})
 export class SearchService {
@@ -15,10 +17,14 @@ export class SearchService {
 
   constructor(
     private api: ApiService,
-    private eventService: EventService
+    private eventService: EventService,
+    private loadingState: LoadingStateService,
+    private logger: LoggingService
   ) { }
 
   getItem(_id: string, schema: string): Observable<any> {
+    const loadingId = `search-item-${_id}`;
+    this.loadingState.startLoading(loadingId, 'Loading item');
     const searchResults = this.api.getItem(_id, schema)
       .pipe(
         map(res => {
@@ -27,6 +33,7 @@ export class SearchService {
             const r = new SearchResults({ type: item._schemaName, data: item });
             allResults.push(r);
           });
+          this.loadingState.stopLoading(loadingId);
           if (allResults.length === 1) {
             return allResults[0];
           } else {
@@ -34,6 +41,7 @@ export class SearchService {
           }
         }),
         catchError(() => {
+          this.loadingState.stopLoading(loadingId);
           this.isError = true;
           // if call fails, return null results
           return of(null as unknown as SearchResults);
@@ -66,6 +74,7 @@ export class SearchService {
   }
 
   getTopNewsItems() {
+    this.loadingState.startLoading('home', 'Loading recent activities');
     const searchResults = this.api.getTopNewsItems()
       .pipe(
         map(res => {
@@ -77,10 +86,12 @@ export class SearchService {
               allResults.push(r);
             });
           }
+          this.loadingState.stopLoading('home');
           return allResults;
         }),
         catchError((error) => {
-          console.error('Error fetching top news items:', error);
+          this.logger.error('Error fetching top news items', 'SearchService', error);
+          this.loadingState.stopLoading('home');
           this.isError = true;
           // if call fails, return empty array
           return of([]);
@@ -90,18 +101,19 @@ export class SearchService {
   }
 
   async fetchData(searchParamObject: SearchParamObject) {
+    // SearchService manages loading state because it makes the actual API calls
+    const loadingId = `table-${searchParamObject.tableId}`;
+    this.loadingState.startLoading(loadingId, `Loading ${searchParamObject.dataset} data`);
     let res = null;
 
-    console.log('SearchService.fetchData called with:', searchParamObject);
+    this.logger.debug('SearchService.fetchData called', 'SearchService', searchParamObject);
 
+    // Remove null/undefined filters
     for (let filter in searchParamObject.filters) {
       if (searchParamObject.filters[filter] === null || searchParamObject.filters[filter] === undefined) {
         delete searchParamObject.filters[filter];
       }
     }
-
-    console.log('After filtering nulls, filters:', searchParamObject.filters);
-    console.log('Keywords:', searchParamObject.keywords);
 
     try {
       res = await this.getSearchResults(
@@ -119,6 +131,7 @@ export class SearchService {
         searchParamObject.fuzzy
       ).toPromise();
     } catch (error) {
+      this.loadingState.stopLoading(loadingId);
       this.eventService.setError(
         new EventObject(
           EventKeywords.ERROR,
@@ -165,6 +178,7 @@ export class SearchService {
         )
       );
     }
+    this.loadingState.stopLoading(loadingId);
     return searchResults;
   }
 }

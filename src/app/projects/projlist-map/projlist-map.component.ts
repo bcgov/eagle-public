@@ -23,6 +23,7 @@ import { Project } from '../../models/project';
 import { ConfigService } from '../../services/config.service';
 import { MapStateService } from '../../services/map-state.service';
 import { LoggingService } from '../../services/logging.service';
+import { LoadingStateService } from '../../services/loading-state.service';
 import { ProjDetailPopupComponent } from '../proj-detail-popup/proj-detail-popup.component';
 
 declare module 'leaflet' {
@@ -69,10 +70,17 @@ export class ProjlistMapComponent implements AfterViewInit, OnDestroy {
   private injector = inject(Injector);
   private viewContainerRef = inject(ViewContainerRef);
   private logger = inject(LoggingService);
+  private loadingState = inject(LoadingStateService);
 
   private map: L.Map | null = null;
   private markerClusterGroup!: L.MarkerClusterGroup;
-  public loading = signal(false);
+  // Map loading state - observes loading states from services that make API calls
+  // - storage-preload: StorageService background preload
+  // - projects-full-page-1: ProjectService.getAllFull() when cache not available
+  public loading = computed(() => 
+    this.loadingState.getOperationState('storage-preload')() || 
+    this.loadingState.getOperationState('projects-full-page-1')()
+  );
   private destroy$ = new Subject<void>();
   private resizeObserver?: ResizeObserver;
   private fitBoundsTimeout?: ReturnType<typeof setTimeout>;
@@ -629,11 +637,5 @@ export class ProjlistMapComponent implements AfterViewInit, OnDestroy {
     this.map.panTo(this.map.layerPointToLatLng(point));
   }
 
-  onLoadStart(): void {
-    this.loading.set(true);
-  }
 
-  onLoadEnd(): void {
-    this.loading.set(false);
-  }
 }

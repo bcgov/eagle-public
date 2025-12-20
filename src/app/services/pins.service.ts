@@ -4,6 +4,7 @@ import { EventKeywords, EventObject, EventService } from './event.service';
 import { SearchResults } from 'app/models/search';
 import { Constants } from 'app/shared/utils/constants';
 import { ApiService } from './api';
+import { LoadingStateService } from './loading-state.service';
 
 @Injectable({
   providedIn: 'root'
@@ -14,7 +15,8 @@ export class PinsService {
 
   constructor(
     private api: ApiService,
-    private eventService: EventService
+    private eventService: EventService,
+    private loadingState: LoadingStateService
   ) {
     this.data = new BehaviorSubject<SearchResults>(new SearchResults);
 
@@ -49,6 +51,8 @@ export class PinsService {
     sortBy: string = Constants.tableDefaults.DEFAULT_SORT_BY,
     projId: string = ''
   ) {
+    const loadingId = `pins-${projId || 'all'}-page-${currentPage}`;
+    this.loadingState.startLoading(loadingId, 'Loading pins');
 
     // Caching for later
     this.fetchDataConfig = {
@@ -62,6 +66,7 @@ export class PinsService {
     try {
       res = await this.api.getProjectPins(projId, currentPage, pageSize, sortBy).toPromise();
     } catch (error) {
+      this.loadingState.stopLoading(loadingId);
       this.eventService.setError(
         new EventObject(
           EventKeywords.ERROR,
@@ -108,6 +113,7 @@ export class PinsService {
         )
       );
     }
+    this.loadingState.stopLoading(loadingId);
     this.setValue(searchResults);
   }
 

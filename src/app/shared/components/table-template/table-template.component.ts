@@ -34,6 +34,7 @@ import { Constants } from '../../utils/constants';
 })
 export class TableTemplateComponent implements OnChanges, OnDestroy {
   @Input() data!: TableObject;
+  @Input() loading = false;
 
   @Input() messageIn: EventEmitter<ITableMessage> = new EventEmitter<ITableMessage>();
   @Output() messageOut: EventEmitter<ITableMessage> = new EventEmitter<ITableMessage>();

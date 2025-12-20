@@ -4,13 +4,19 @@ import { map, catchError } from 'rxjs/operators';
 
 import { ApiService } from './api';
 import { Feature } from 'app/models/feature';
+import { LoadingStateService } from './loading-state.service';
 
 @Injectable({providedIn:'root'})
 export class FeatureService {
 
-  constructor(private api: ApiService) { }
+  constructor(
+    private api: ApiService,
+    private loadingState: LoadingStateService
+  ) { }
 
   getByDTID(tantalisId: number): Observable<Feature[]> {
+    const loadingId = `features-dtid-${tantalisId}`;
+    this.loadingState.startLoading(loadingId, 'Loading features');
     return this.api.getFeaturesByTantalisId(tantalisId)
       .pipe(
         map((res: any) => {
@@ -18,13 +24,19 @@ export class FeatureService {
           features.forEach((feature: any, index: number) => {
             feature[index] = new Feature(feature);
           });
+          this.loadingState.stopLoading(loadingId);
           return features;
         }),
-        catchError(this.api.handleError)
+        catchError(error => {
+          this.loadingState.stopLoading(loadingId);
+          return this.api.handleError(error);
+        })
       );
   }
 
   getByApplicationId(applicationId: string): Observable<Feature[]> {
+    const loadingId = `features-app-${applicationId}`;
+    this.loadingState.startLoading(loadingId, 'Loading features');
     return this.api.getFeaturesByApplicationId(applicationId)
       .pipe(
         map((res: any) => {
@@ -32,9 +44,13 @@ export class FeatureService {
           features.forEach((feature: any, index: number) => {
             feature[index] = new Feature(feature);
           });
+          this.loadingState.stopLoading(loadingId);
           return features;
         }),
-        catchError(this.api.handleError)
+        catchError(error => {
+          this.loadingState.stopLoading(loadingId);
+          return this.api.handleError(error);
+        })
       );
   }
 

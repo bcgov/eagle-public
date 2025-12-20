@@ -1,6 +1,6 @@
 <header class="app-header" id="header" [class.app-header--flex]="currentUrl().startsWith('/projects')"
   [class.app-header--solid]="currentUrl().startsWith('/p/')">
-  <nav class="navbar navbar-expand-md justify-content-between">
+  <nav class="navbar navbar-expand-md justify-content-between" [class.navbar-loading]="loadingState.isLoading()">
     <a class="navbar-brand" title="Environmental Assessment Office Project Information Centre" tabindex="0"
       routerLink="/home">
       <span class="navbar-brand__title">EPIC</span>

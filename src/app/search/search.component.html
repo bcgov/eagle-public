@@ -20,30 +20,20 @@
             <div class="container-fluid-padding">
                 <h1 class="pb-2">Search Documents Across All Projects</h1>
 
-                @if (!loadingLists() && !loadingTableParams()) {
-                    <section class="mb-4 pt-0 pb-0">
-                        <search-filter-template #explorePanel
-                            (searchEvent)='executeSearch($event)'
-                            [advancedFilters]="true"
-                            [showAdvancedFilters]="showAdvancedFilters()"
-                            [searchOnFilterChange]="true"
-                            [filters]="filters()"
-                            (resetControls)='resetSortByIfScore()'
-                            (toggleFiltersPanelEvent)="onToggleFiltersPanel($event)"
-                            [searchHelpLinkArray]='["/search-help"]'
-                            [searching]="loadingTableData()">
-                        </search-filter-template>
-                    </section>
-                }
+                <section class="mb-4 pt-0 pb-0">
+                    <search-filter-template #explorePanel
+                        (searchEvent)='executeSearch($event)'
+                        [advancedFilters]="true"
+                        [showAdvancedFilters]="showAdvancedFilters()"
+                        [searchOnFilterChange]="true"
+                        [filters]="filters()"
+                        (resetControls)='resetSortByIfScore()'
+                        (toggleFiltersPanelEvent)="onToggleFiltersPanel($event)"
+                        [searchHelpLinkArray]='["/search-help"]'>
+                    </search-filter-template>
+                </section>
 
                 <section>
-                    @if (isLoading()) {
-                        <div class="text-center">
-                            <img class="rotating"
-                                src="/assets/images/spinner.png"
-                                alt="loading spinner">
-                        </div>
-                    }
                     @if (hasResults()) {
                         <lib-table-template
                             [data]="tableData()"

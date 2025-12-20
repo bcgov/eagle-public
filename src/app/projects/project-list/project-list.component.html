@@ -1,12 +1,5 @@
-@if (loadingLists() || loadingTableParams()) {
-  <div class="spinner-container">
-    <div class="spinner-new rotating"></div>
-  </div>
-}
-
-@if (!loadingLists() && !loadingTableParams()) {
-  <main>
-    <app-hero-banner
+<main>
+  <app-hero-banner
       title="Environmental Assessments in British Columbia"
       description="Use the list below to navigate to individual Projects. Click on any project to go directly to its details page."
       [actions]="[{
@@ -31,13 +24,11 @@
             [searching]="loadingTableData()">
           </search-filter-template>
         </section>
-        @if (tableData().totalListItems > 0) {
-          <lib-table-template
-            [data]="tableData()"
-            (messageOut)="onMessageOut($event)">
-          </lib-table-template>
-        }
+        <lib-table-template
+          [data]="tableData()"
+          [loading]="loadingTableData()"
+          (messageOut)="onMessageOut($event)">
+        </lib-table-template>
       </div>
     </section>
   </main>
-}

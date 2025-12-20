@@ -1,11 +1,11 @@
 <div class="tab-pane" role="tabpanel">
-    @if (loading) {
+    @if (loading()) {
       <div class="spinner-container">
         <div class="spinner-new rotating"></div>
       </div>
     }
 
-    @if (!loading) {
+    @if (!loading()) {
       <section class="tab-section">
         @if (commentPeriods.length < 1) {
           <div>

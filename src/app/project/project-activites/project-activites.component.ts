@@ -10,6 +10,7 @@ import { ITableMessage } from 'app/shared/components/table-template/table-row-co
 import { StorageService } from 'app/services/storage.service';
 import { TableService } from 'app/services/table.service';
 import { SearchParamObject } from 'app/services/search.service';
+import { LoadingStateService } from 'app/services/loading-state.service';
 import { TableTemplateComponent } from 'app/shared/components/table-template/table-template.component';
 import { SearchFilterTemplateComponent } from 'app/shared/components/search-filter-template/search-filter-template.component';
 
@@ -28,13 +29,14 @@ export class ProjectActivitesComponent implements OnInit, OnDestroy {
   private tableTemplateUtils = inject(TableTemplate);
   private tableService = inject(TableService);
   private storageService = inject(StorageService);
+  private loadingState = inject(LoadingStateService);
 
   private alive = true;
   private readonly tableId = 'projectActivities';
   private projId = '';
   private tableSignal = this.tableService.getTableSignal(this.tableId);
 
-  public loading = signal(true);
+  public loading = this.loadingState.getOperationState('table-projectActivities');
   public queryParams: Params = {};
 
   public tableData = signal<TableObject>(new TableObject({ component: ActivitiesListTableRowsComponent }));
@@ -73,7 +75,6 @@ export class ProjectActivitesComponent implements OnInit, OnDestroy {
           updatedTableData.items = [];
         }
         this.tableData.set(updatedTableData);
-        this.loading.set(false);
       }
     });
   }
@@ -124,9 +125,6 @@ export class ProjectActivitesComponent implements OnInit, OnDestroy {
         break;
       case 'pageSize':
         params['pageSizeActivities'] = msg.data.value;
-        if (params['pageSizeActivities'] === this.tableData().totalListItems) {
-          this.loading.set(true);
-        }
         params['currentPageActivities'] = 1;
         break;
     }

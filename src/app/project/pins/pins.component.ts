@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, inject, computed } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { takeWhile } from 'rxjs/operators';
@@ -11,6 +11,7 @@ import { TableObject } from 'app/shared/components/table-template/table-object';
 import { PinsService } from 'app/services/pins.service';
 import { ITableMessage } from 'app/shared/components/table-template/table-row-component';
 import { TableTemplateComponent } from 'app/shared/components/table-template/table-template.component';
+import { LoadingStateService } from 'app/services/loading-state.service';
 
 @Component({
   selector: 'app-pins',
@@ -26,9 +27,13 @@ export class PinsComponent implements OnInit, OnDestroy {
   private storageService = inject(StorageService);
   private tableTemplateUtils = inject(TableTemplate);
   private pinsService = inject(PinsService);
+  private loadingState = inject(LoadingStateService);
 
   private alive = true;
-  public loading = true;
+  private projId = '';
+  public loading = computed(() => 
+    this.loadingState.getOperationState(`pins-${this.projId || 'all'}-page-${this.pinsService.fetchDataConfig.currentPage}`)()
+  );
 
   public tableData: TableObject = new TableObject({ component: PinsTableRowsComponent });
   public tableColumns: any[] = [
@@ -52,8 +57,8 @@ export class PinsComponent implements OnInit, OnDestroy {
     this.tableData.options.showPageSizePicker = false;
 
     // Get project ID from parent route
-    const projId = this.route.parent?.snapshot.params['projId'] || '';
-    this.pinsService.fetchDataConfig.projId = projId;
+    this.projId = this.route.parent?.snapshot.params['projId'] || '';
+    this.pinsService.fetchDataConfig.projId = this.projId;
 
     this.route.queryParamMap.pipe(takeWhile(() => this.alive)).subscribe(data => {
       // Get params from route, shove into the tableTemplateUtils so that we get a new dataset to work with.
@@ -78,7 +83,6 @@ export class PinsComponent implements OnInit, OnDestroy {
           }
           this.tableData.columns = this.tableColumns;
 
-          this.loading = false;
           this._changeDetectionRef.detectChanges();
         }
       });

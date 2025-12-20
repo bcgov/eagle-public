@@ -19,6 +19,7 @@ import { TableTemplateComponent } from 'app/shared/components/table-template/tab
 import { SearchFilterTemplateComponent } from 'app/shared/components/search-filter-template/search-filter-template.component';
 import { HeroBannerComponent } from 'app/shared/hero-banner/hero-banner.component';
 import { ConfigService } from 'app/services/config.service';
+import { LoadingStateService } from 'app/services/loading-state.service';
 
 @Component({
   selector: 'app-project-list',
@@ -35,17 +36,19 @@ export class ProjectListComponent implements OnInit, OnDestroy {
   private tableService = inject(TableService);
   private orgService = inject(OrgService);
   private configService = inject(ConfigService);
+  private loadingState = inject(LoadingStateService);
   private destroyRef = inject(DestroyRef);
 
   // Signals for component state
-  readonly loadingTableParams = signal(true);
-  readonly loadingTableData = signal(true);
   readonly showAdvancedFilters = signal(false);
   readonly filters = signal<FilterObject[]>([]);
   readonly tableData = signal<TableObject>(new TableObject({ 
     component: ProjectListTableRowsComponent,
     sortBy: '+name'
   }));
+  
+  // Use loading state from service instead of local signal
+  readonly loadingTableData = this.loadingState.getOperationState(`table-${PROJECT_LIST_TABLE_ID}`);
   
   // Computed signals for loading state
   private listsLoaded = signal(false);
@@ -91,8 +94,9 @@ export class ProjectListComponent implements OnInit, OnDestroy {
           newTableData.options.showAllPicker = true;
 
           this.tableData.set(newTableData);
-          this.loadingTableData.set(false);
         }
+        
+        // Loading state is now managed by TableService
       });
     
     // Fetch proponents for filter options
@@ -189,7 +193,6 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     }
 
     this.tableData.set(updatedTable);
-    this.loadingTableParams.set(false);
     
     // Fetch data with new params
     const allFilterKeys = [...FILTER_LIST, ...DATE_FILTER_LIST];
@@ -221,9 +224,6 @@ export class ProjectListComponent implements OnInit, OnDestroy {
   executeSearch(searchPackage: any): void {
     const hasKeywords = searchPackage.keywords?.trim();
     
-    // Set loading state for searches
-    this.loadingTableData.set(true);
-    
     // Get current params to preserve sorting and other state
     const currentParams = this.route.snapshot.queryParams;
     
@@ -231,8 +231,12 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     const params: Params = {
       currentPage: 1,
       keywords: hasKeywords || null,
-      // Only change sortBy if keywords changed, otherwise preserve current sort
-      sortBy: (hasKeywords && searchPackage.keywordsChanged) ? '-score' : (currentParams['sortBy'] || '+name')
+      // When searching with keywords, sort by relevance (-score)
+      // When clearing search, reset to default ascending name (+name)
+      // When keywords haven't changed, preserve current sort
+      sortBy: hasKeywords 
+        ? (searchPackage.keywordsChanged ? '-score' : (currentParams['sortBy'] || '+name'))
+        : '+name'
     };
     
     // Get filters for URL (with null values to clear)
@@ -242,8 +246,11 @@ export class ProjectListComponent implements OnInit, OnDestroy {
       DATE_FILTER_LIST
     );
     
-    // Navigate - resolver will fetch with these params
-    this.submit({ ...params, ...filters });
+    const newParams = { ...params, ...filters };
+    
+    // Always submit - loading state is managed by TableService
+    // Navigation and fetchData will handle everything
+    this.submit(newParams);
   }
 
   onMessageOut(msg: ITableMessage): void {
@@ -251,10 +258,10 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     // Merge with current query params to preserve filters
     const currentParams = this.route.snapshot.queryParams;
     
-    // Set loading state for pagination/sorting/page size changes
-    this.loadingTableData.set(true);
+    const newParams = { ...currentParams, ...params };
     
-    this.submit({ ...currentParams, ...params });
+    // Always submit - loading state is managed by TableService
+    this.submit(newParams);
   }
 
   private buildTableMessageParams(msg: ITableMessage): Params {

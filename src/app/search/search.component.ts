@@ -41,9 +41,6 @@ export class SearchComponent implements OnInit, OnDestroy {
   private configService = inject(ConfigService);
 
   queryParams = signal<Params>({});
-  loadingLists = signal(true);
-  loadingTableParams = signal(true);
-  loadingTableData = signal(true);
   showAdvancedFilters = signal(false);
 
   tableColumns = signal<IColumnObject[]>([
@@ -93,12 +90,8 @@ export class SearchComponent implements OnInit, OnDestroy {
   private tableSignal = this.tableService.getTableSignal(this.tableId);
   private tableSignal$ = toObservable(this.tableSignal);
 
-  isLoading = computed(() => 
-    this.loadingLists() || this.loadingTableParams() || this.loadingTableData()
-  );
-
   hasResults = computed(() => 
-    this.tableData().totalListItems > 0 && !this.loadingTableData()
+    this.tableData().totalListItems > 0
   );
 
   constructor() {}
@@ -121,7 +114,6 @@ export class SearchComponent implements OnInit, OnDestroy {
           currentTableData.options.showAllPicker = true;
 
           this.tableData.set(currentTableData);
-          this.loadingTableData.set(false);
         }
       });
 
@@ -150,7 +142,6 @@ export class SearchComponent implements OnInit, OnDestroy {
       this.projectPhaseArray.set(phases);
 
       this.setFilters();
-      this.loadingLists.set(false);
     });
 
     this.route.queryParamMap.pipe(takeWhile(() => this.alive)).subscribe((data: any) => {
@@ -184,8 +175,6 @@ export class SearchComponent implements OnInit, OnDestroy {
         false,
         ''
       ));
-
-      this.loadingTableParams.set(false);
     });
   }
 
@@ -304,9 +293,6 @@ export class SearchComponent implements OnInit, OnDestroy {
         break;
       case 'pageSize':
         params['pageSize'] = msg.data.value;
-        if (params['pageSize'] === currentTableData.totalListItems) {
-          this.loadingTableData.set(true);
-        }
         params['currentPage'] = 1;
         break;
       default:
@@ -332,7 +318,6 @@ export class SearchComponent implements OnInit, OnDestroy {
         relativeTo: this.route,
         queryParamsHandling: 'merge'
       });
-    this.loadingTableData.set(true);
   }
 
   onToggleFiltersPanel(event: any) {

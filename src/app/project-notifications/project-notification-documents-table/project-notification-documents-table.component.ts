@@ -7,6 +7,7 @@ import { TableObject } from '../../shared/components/table-template/table-object
 import { ITableMessage } from '../../shared/components/table-template/table-row-component';
 import { TableService } from '../../services/table.service';
 import { SearchParamObject } from '../../services/search.service';
+import { LoadingStateService } from '../../services/loading-state.service';
 import { TableTemplateComponent } from '../../shared/components/table-template/table-template.component';
 
 @Component({
@@ -24,10 +25,11 @@ export class ProjectNotificationDocumentsTableComponent implements OnInit, OnDes
   private tableService = inject(TableService);
   private breakpointObserver = inject(BreakpointObserver);
   private mediaMatcher = inject(MediaMatcher);
+  private loadingState = inject(LoadingStateService);
 
   private alive = true;
   private tableSignal = this.tableService.getTableSignal('');
-  loading = signal(true);
+  loading = this.loadingState.getOperationState('project-notification-docs');
 
   tableData = signal<TableObject>(new TableObject());
   
@@ -94,7 +96,6 @@ export class ProjectNotificationDocumentsTableComponent implements OnInit, OnDes
         updatedTableData.columns = mediaQueryList.matches ? this.tableColumns : this.mobileTableColumns;
 
         this.tableData.set(updatedTableData);
-        this.loading.set(false);
       }
     });
   }

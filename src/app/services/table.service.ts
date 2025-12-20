@@ -1,17 +1,19 @@
-import { Injectable, signal, WritableSignal } from '@angular/core';
+import { Injectable, signal, WritableSignal, inject } from '@angular/core';
 import { SearchParamObject, SearchService } from './search.service';
 
 /**
  * Signal-based table data service.
  * Each table is identified by a unique tableId and has its own signal for data updates.
+ * Loading state is managed through LoadingStateService (in SearchService).
  */
 @Injectable({
   providedIn: 'root'
 })
 export class TableService {
   private tables = new Map<string, WritableSignal<any>>();
+  private searchService = inject(SearchService);
 
-  constructor(private searchService: SearchService) {}
+  constructor() {}
 
   /**
    * Get or create a signal for a table
@@ -24,12 +26,22 @@ export class TableService {
   }
 
   /**
-   * Fetch data for a table and update its signal
+   * Fetch data for a table and update its signal.
+   * Note: Loading state is managed by SearchService since it makes the actual API calls.
    */
   async fetchData(searchParamObject: SearchParamObject): Promise<void> {
     const tableSignal = this.getTableSignal(searchParamObject.tableId);
-    const res = await this.searchService.fetchData(searchParamObject);
-    tableSignal.set(res);
+    
+    try {
+      const res = await this.searchService.fetchData(searchParamObject);
+      // Always trigger an update by creating a new object reference
+      // This ensures subscribers are notified even if data is identical
+      tableSignal.set({ ...res, _timestamp: Date.now() });
+    } catch (error) {
+      // On error, still update signal to show empty state
+      tableSignal.set({ data: [], totalSearchCount: 0, error: true, _timestamp: Date.now() });
+      throw error;
+    }
   }
 
   /**

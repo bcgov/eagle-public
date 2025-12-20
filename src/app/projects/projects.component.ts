@@ -13,6 +13,7 @@ import { ProjectFilterService } from 'app/services/project-filter.service';
 import { MapStateService } from 'app/services/map-state.service';
 import { FilterStateService } from 'app/services/filter-state.service';
 import { LoggingService } from 'app/services/logging.service';
+import { LoadingStateService } from 'app/services/loading-state.service';
 import { ProjlistFiltersComponent } from './projlist-filters/projlist-filters.component';
 import { ProjlistListComponent } from './projlist-list/projlist-list.component';
 import { ProjlistMapComponent } from './projlist-map/projlist-map.component';
@@ -43,8 +44,7 @@ export class ProjectsComponent implements OnInit, OnDestroy {
   private filterStateService = inject(FilterStateService);
   private mapStateService = inject(MapStateService);
   private logger = inject(LoggingService);
-
-  private isLoading = signal<boolean>(false);
+  private loadingState = inject(LoadingStateService);
   
   // Project data signals - immutable state management
   public allApps = signal<Project[]>([]);
@@ -94,9 +94,6 @@ export class ProjectsComponent implements OnInit, OnDestroy {
       L.DomEvent.disableScrollPropagation(applist_filters);
     }
 
-    // Show loading state while waiting for projects
-    this.setLoadingState(true);
-
     // Wait for StorageService preload (started in app.ts), then use cache or fallback to direct load
     // Expected HTTP calls on first load:
     // 1. HEAD /api/public/project - get project count for preload
@@ -110,7 +107,6 @@ export class ProjectsComponent implements OnInit, OnDestroy {
             // Use cached projects (from preload or previous load)
             this.logger.info(`Using ${cachedProjects.length} cached projects`, 'ProjectsComponent');
             this.allApps.set(cachedProjects);
-            this.setLoadingState(false);
           } else {
             // No cache available and no preload in progress - load projects
             this.getApps();
@@ -123,9 +119,8 @@ export class ProjectsComponent implements OnInit, OnDestroy {
       });
   }
 
-  private getApps() {
+  private getApps(): void {
     const start = Date.now();
-    this.setLoadingState(true);
 
     this.projectService.getCount()
       .pipe(takeUntil(this.destroy$))
@@ -136,15 +131,12 @@ export class ProjectsComponent implements OnInit, OnDestroy {
             .pipe(
               takeUntil(this.destroy$),
               finalize(() => {
-                this.setLoadingState(false);
                 this.logger.info(`Loaded ${this.allApps().length} projects in ${Date.now() - start}ms`, 'ProjectsComponent');
               })
             )
             .subscribe({
               next: (projects: Project[]) => {
                 this.allApps.set(projects);
-                
-                // Cache projects for future use
                 this.storageService.cacheProjects(projects);
               },
               error: (error) => {
@@ -156,48 +148,35 @@ export class ProjectsComponent implements OnInit, OnDestroy {
         error: (error) => {
           this.logger.error('Error counting projects', 'ProjectsComponent', error);
           this.router.navigate(['/']);
-          this.setLoadingState(false);
         }
       });
   }
 
-  private setLoadingState(loading: boolean) {
-    this.isLoading.set(loading);
-    if (loading) {
-      this.appfilters.onLoadStart();
-      this.appmap.onLoadStart();
-      this.applist.onLoadStart();
-    } else {
-      this.appfilters.onLoadEnd();
-      this.appmap.onLoadEnd();
-      this.applist.onLoadEnd();
-    }
-  }
 
 
 
   /**
    * Reload all projects from the server
    */
-  public reloadApps() {
+  public reloadApps(): void {
     this.getApps();
   }
 
   /**
    * Event handler called when list component selects or unselects an app.
    */
-  public highlightProject(app: Project, show: boolean) {
+  public highlightProject(app: Project, show: boolean): void {
     this.appmap.onHighlightProject(app, show);
   }
 
   /**
    * Called when list component visibility is toggled.
    */
-  public toggleAppList() {
+  public toggleAppList(): void {
     this.configService.isApplistListVisible = !this.configService.isApplistListVisible;
   }
 
-  ngOnDestroy() {
+  ngOnDestroy(): void {
     // Don't clear filters - let them persist for better UX
     // Users expect their search/filters to remain when navigating back
     

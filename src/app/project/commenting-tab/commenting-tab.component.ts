@@ -7,6 +7,7 @@ import { takeUntil } from 'rxjs/operators';
 import { Project } from '../../models/project';
 import { CommentPeriodService } from '../../services/commentperiod.service';
 import { CommentPeriod } from '../../models/commentperiod';
+import { LoadingStateService } from '../../services/loading-state.service';
 
 @Component({
   selector: 'app-commenting-tab',
@@ -14,15 +15,17 @@ import { CommentPeriod } from '../../models/commentperiod';
   templateUrl: './commenting-tab.component.html',
   styleUrls: ['./commenting-tab.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  standalone: true
 })
 export class CommentingTabComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   public commentPeriodService = inject(CommentPeriodService);
   private _changeDetectionRef = inject(ChangeDetectorRef);
+  private loadingState = inject(LoadingStateService);
 
   public currentProject: Project | null = null;
-  public loading = true;
+  public loading = this.loadingState.getOperationState('commenting-tab');
   public commentPeriods: Array<CommentPeriod> = [];
   private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
 
@@ -43,7 +46,6 @@ export class CommentingTabComponent implements OnInit, OnDestroy {
             // project not found --> navigate back to project list
             this.router.navigate(['/projects']);
           }
-          this.loading = false;
           this._changeDetectionRef.detectChanges();
         }
       );

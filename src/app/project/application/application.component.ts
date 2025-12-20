@@ -8,6 +8,7 @@ import { TableTemplate } from '../../shared/components/table-template/table-temp
 import { ITableMessage } from '../../shared/components/table-template/table-row-component';
 import { TableService } from '../../services/table.service';
 import { TableTemplateComponent } from '../../shared/components/table-template/table-template.component';
+import { LoadingStateService } from '../../services/loading-state.service';
 
 @Component({
   selector: 'app-application',
@@ -22,12 +23,13 @@ export class ApplicationComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly tableTemplateUtils = inject(TableTemplate);
   private readonly tableService = inject(TableService);
+  private readonly loadingState = inject(LoadingStateService);
 
   private readonly tableId = 'application';
   private alive = true;
   private projId = '';
 
-  public readonly loading = signal(true);
+  public readonly loading = this.loadingState.getOperationState('table-application');
   public readonly tableData = signal<TableObject>(new TableObject({ component: DocumentTableRowsComponent }));
   
   public readonly tableColumns: IColumnObject[] = [
@@ -82,7 +84,6 @@ export class ApplicationComponent implements OnInit, OnDestroy {
         newTableData.options.showAllPicker = true;
 
         this.tableData.set(newTableData);
-        this.loading.set(false);
       }
     });
   }
@@ -131,9 +132,6 @@ export class ApplicationComponent implements OnInit, OnDestroy {
       case 'pageSize':
         params['pageSize'] = msg.data.value;
         params['currentPage'] = 1;
-        if (params['pageSize'] === currentTableData.totalListItems) {
-          this.loading.set(true);
-        }
         break;
     }
     

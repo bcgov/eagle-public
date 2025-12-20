@@ -3,6 +3,7 @@ import * as L from 'leaflet';
 import { ApiService } from 'app/services/api';
 import { Observable, of } from 'rxjs';
 import { map, catchError, shareReplay } from 'rxjs/operators';
+import { LoadingStateService } from './loading-state.service';
 
 //
 // This service/class provides a centralized place to persist config values
@@ -23,7 +24,10 @@ export class ConfigService {
   private _baseLayerName = 'World Topographic'; // NB: must match a valid base layer name
   private _mapBounds: L.LatLngBounds | null = null;
 
-  constructor(private api: ApiService) { }
+  constructor(
+    private api: ApiService,
+    private loadingState: LoadingStateService
+  ) { }
 
   // called by app constructor
   public init() {
@@ -47,16 +51,23 @@ export class ConfigService {
     }
     
     // Create new request and cache it
+    const loadingId = 'config-lists';
+    this.loadingState.startLoading(loadingId, 'Loading configuration');
     this._lists$ = this.api.getFullDataSet('List', 250)
       .pipe(
         map(res => {
           if (res) {
             this._lists = res[0].searchResults;
+            this.loadingState.stopLoading(loadingId);
             return this._lists;
           }
+          this.loadingState.stopLoading(loadingId);
           return null;
         }),
-        catchError(error => this.api.handleError(error)),
+        catchError(error => {
+          this.loadingState.stopLoading(loadingId);
+          return this.api.handleError(error);
+        }),
         shareReplay(1) // Share the result with all subscribers
       );
     

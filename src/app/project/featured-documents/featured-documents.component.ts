@@ -6,6 +6,7 @@ import { DocumentTableRowsComponent } from '../documents/project-document-table-
 import { TableService } from '../../services/table.service';
 import { TableTemplateComponent } from '../../shared/components/table-template/table-template.component';
 import { SearchParamObject } from '../../services/search.service';
+import { LoadingStateService } from '../../services/loading-state.service';
 
 @Component({
   selector: 'app-featured-documents',
@@ -18,12 +19,13 @@ import { SearchParamObject } from '../../services/search.service';
 export class FeaturedDocumentsComponent implements OnInit, OnDestroy {
   public readonly location = inject(Location);
   private readonly tableService = inject(TableService);
+  private readonly loadingState = inject(LoadingStateService);
 
   private readonly tableId = 'featuredDocuments';
   private alive = true;
   private readonly tableSignal = this.tableService.getTableSignal(this.tableId);
 
-  public readonly loading = signal(true);
+  public readonly loading = this.loadingState.getOperationState('table-featuredDocuments');
   public readonly tableData = signal<TableObject>(new TableObject({ component: DocumentTableRowsComponent }));
 
   constructor() {
@@ -44,7 +46,6 @@ export class FeaturedDocumentsComponent implements OnInit, OnDestroy {
           updatedTableData.items = [];
         }
         this.tableData.set(updatedTableData);
-        this.loading.set(false);
       }
     });
   }

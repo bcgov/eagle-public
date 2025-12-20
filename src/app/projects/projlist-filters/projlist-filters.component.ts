@@ -9,6 +9,7 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import { Constants } from '../../shared/utils/constants';
 import { ConfigService } from '../../services/config.service';
 import { FilterStateService } from '../../services/filter-state.service';
+import { LoadingStateService } from '../../services/loading-state.service';
 
 @Component({
   selector: 'app-projlist-filters',
@@ -22,8 +23,9 @@ export class ProjlistFiltersComponent implements OnInit, OnDestroy {
   private configService = inject(ConfigService);
   private filterState = inject(FilterStateService);
   private elementRef = inject(ElementRef);
+  private loadingState = inject(LoadingStateService);
 
-  public loading = signal(false);
+  public loading = this.loadingState.getOperationState('projlist-filters');
 
   readonly minDate = DateTime.fromISO('2018-03-23').toJSDate();
   readonly maxDate = DateTime.now().toJSDate();
@@ -205,14 +207,5 @@ export class ProjlistFiltersComponent implements OnInit, OnDestroy {
     this.configService.isApplistFiltersVisible = !this.configService.isApplistFiltersVisible;
   }
 
-  /**
-   * Loading state
-   */
-  public onLoadStart(): void {
-    this.loading.set(true);
-  }
 
-  public onLoadEnd(): void {
-    this.loading.set(false);
-  }
 }

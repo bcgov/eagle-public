@@ -5,6 +5,7 @@ import { RouterModule } from '@angular/router';
 import { Project } from 'app/models/project';
 import { CommentPeriodService } from 'app/services/commentperiod.service';
 import { ConfigService } from 'app/services/config.service';
+import { LoadingStateService } from 'app/services/loading-state.service';
 import { VarDirective } from '../../shared/utils/ng-var.directive';
 
 @Component({
@@ -24,9 +25,10 @@ export class ProjlistListComponent {
   public commentPeriodService = inject(CommentPeriodService); // used in template
   public configService = inject(ConfigService);
   private elementRef = inject(ElementRef);
+  private loadingState = inject(LoadingStateService);
 
   private currentApp: Project | null = null; // for selecting app in list
-  public loading = signal<boolean>(false);
+  public loading = this.loadingState.getOperationState('projlist-list');
   private numToLoad = signal<number>(0);
 
   // Computed signal for loaded projects (no mutation)
@@ -77,9 +79,7 @@ export class ProjlistListComponent {
     return this.projects().filter(a => a.centroid?.length === 2);
   }
 
-  public onLoadStart() { this.loading.set(true); }
 
-  public onLoadEnd() { this.loading.set(false); }
 
   public loadMore() {
     this.numToLoad.update(n => n + this.configService.listPageSize);

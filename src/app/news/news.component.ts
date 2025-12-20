@@ -5,6 +5,7 @@ import { takeWhile } from 'rxjs/operators';
 
 import { SearchParamObject } from 'app/services/search.service';
 import { TableService } from 'app/services/table.service';
+import { LoadingStateService } from 'app/services/loading-state.service';
 import { IColumnObject, TableObject } from 'app/shared/components/table-template/table-object';
 import { ITableMessage } from 'app/shared/components/table-template/table-row-component';
 import { TableTemplate } from 'app/shared/components/table-template/table-template';
@@ -24,11 +25,12 @@ export class NewsListComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private tableTemplateUtils = inject(TableTemplate);
   private tableService = inject(TableService);
+  private loadingState = inject(LoadingStateService);
 
   private tableId = 'news';
   private alive = true;
 
-  loading = signal<boolean>(true);
+  loading = this.loadingState.getOperationState('table-news');
   tableData = signal<TableObject>(new TableObject({ component: NewsListTableRowsComponent }));
   
   tableColumns: IColumnObject[] = [
@@ -69,7 +71,6 @@ export class NewsListComponent implements OnInit, OnDestroy {
         newTableData.options.showAllPicker = true;
 
         this.tableData.set(newTableData);
-        this.loading.set(false);
       }
     });
   }
@@ -118,9 +119,6 @@ export class NewsListComponent implements OnInit, OnDestroy {
       case 'pageSize':
         params['pageSize'] = msg.data.value;
         params['currentPage'] = 1;
-        if (params['pageSize'] === currentTableData.totalListItems) {
-          this.loading.set(true);
-        }
         break;
     }
     

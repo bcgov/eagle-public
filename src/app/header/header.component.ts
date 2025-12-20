@@ -1,7 +1,8 @@
-import { Component, ChangeDetectionStrategy, signal, inject, OnInit, PLATFORM_ID, effect, Renderer2 } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, inject, OnInit, PLATFORM_ID, effect, Renderer2, computed } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Router, RouterModule, NavigationEnd } from '@angular/router';
 import { ApiService } from '../services/api';
+import { LoadingStateService } from '../services/loading-state.service';
 import { filter } from 'rxjs/operators';
 
 @Component({
@@ -17,6 +18,9 @@ export class HeaderComponent implements OnInit {
   private platformId = inject(PLATFORM_ID);
   private renderer = inject(Renderer2);
   public router = inject(Router);
+  
+  // Public access to loading state service
+  public loadingState = inject(LoadingStateService);
   
   envName = signal<string>('');
   bannerColour = signal<string>('');

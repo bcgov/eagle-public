@@ -135,24 +135,28 @@
                   }
                   <div class="row">
                     <div class="col-md-6 start-date-padding">
-                      <label [for]="filter.filterDefinition.filterId"
+                      <label [for]="filter.filterDefinition.startDateId"
                         class="control-label font-weight-bold"
                         tabindex="0">{{filter.filterDefinition.startDateLabel}}</label>
-                      <lib-date-picker [id]="filter.filterDefinition.startDateId"
-                        [control]="$any(formGroup.get(filter.filterDefinition.startDateId))"
-                        [minDate]="filter.filterDefinition.minDate"
-                        [maxDate]="filter.filterDefinition.maxDate">
-                      </lib-date-picker>
+                      @if (formGroup.get(filter.filterDefinition.startDateId); as startControl) {
+                        <lib-date-picker [id]="filter.filterDefinition.startDateId"
+                          [control]="$any(startControl)"
+                          [minDate]="filter.filterDefinition.minDate"
+                          [maxDate]="filter.filterDefinition.maxDate">
+                        </lib-date-picker>
+                      }
                     </div>
                     <div class="col-md-6 end-date-padding">
                       <label [for]="filter.filterDefinition.endDateId"
                         class="control-label font-weight-bold"
                         tabindex="0">{{filter.filterDefinition.endDateLabel}}</label>
-                      <lib-date-picker [id]="filter.filterDefinition.endDateId"
-                        [control]="$any(formGroup.get(filter.filterDefinition.endDateId))"
-                        [minDate]="filter.filterDefinition.minDate"
-                        [maxDate]="filter.filterDefinition.maxDate">
-                      </lib-date-picker>
+                      @if (formGroup.get(filter.filterDefinition.endDateId); as endControl) {
+                        <lib-date-picker [id]="filter.filterDefinition.endDateId"
+                          [control]="$any(endControl)"
+                          [minDate]="filter.filterDefinition.minDate"
+                          [maxDate]="filter.filterDefinition.maxDate">
+                        </lib-date-picker>
+                      }
                     </div>
                   </div>
                 </div>

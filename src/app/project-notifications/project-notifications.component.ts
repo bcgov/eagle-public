@@ -40,9 +40,6 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
     }
   ];
 
-  loadingLists = signal(true);
-  loadingTableParams = signal(true);
-  loadingTableData = signal(true);
   showAdvancedFilters = signal(false);
 
   queryParams: Params = {};
@@ -72,7 +69,6 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
         updatedTableData.options.showAllPicker = true;
 
         this.tableData.set(updatedTableData);
-        this.loadingTableData.set(false);
       }
     });
   }
@@ -86,7 +82,6 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
     this.tableData.set(currentTableData);
 
     this.setFilters();
-    this.loadingLists.set(false);
 
     this.route.queryParamMap.pipe(takeWhile(() => this.alive)).subscribe(data => {
       const params: any = {};
@@ -110,7 +105,6 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
         this.showAdvancedFilters.set(true);
         this.initialLoad = false;
       }
-      this.loadingTableParams.set(false);
 
       // Build filters object from query params
       const filters: Record<string, string> = {};
@@ -243,9 +237,6 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
         break;
       case 'pageSize':
         params['pageSize'] = msg.data.value;
-        if (params['pageSize'] === this.tableData().totalListItems) {
-          this.loadingTableData.set(true);
-        }
         params['currentPage'] = 1;
         break;
     }
@@ -260,7 +251,6 @@ export class ProjectNotificationsListComponent implements OnInit, OnDestroy {
         relativeTo: this.route,
         queryParamsHandling: 'merge'
       });
-    this.loadingTableData.set(true);
   }
 
   getProjectCommentPeriod(project: ProjectNotification) {

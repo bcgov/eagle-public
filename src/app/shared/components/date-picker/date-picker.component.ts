@@ -15,6 +15,7 @@ import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { Utils } from '../../utils/utils';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
+import { LoggingService } from 'app/services/logging.service';
 
 @Component({
   selector: 'lib-date-picker',
@@ -35,6 +36,7 @@ export class DatePickerComponent implements OnInit, OnDestroy {
 
   private ngUnsubscribe = new Subject<boolean>();
   private utils = inject(Utils);
+  private logger = inject(LoggingService);
 
   public ngbDate = signal<NgbDateStruct | null>(null);
   public minNgbDate = signal<NgbDateStruct | undefined>(undefined);
@@ -60,7 +62,15 @@ export class DatePickerComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    this.ngbDate.set(this.control().value || null);
+    const ctrl = this.control();
+    if (!ctrl) {
+      // This can happen if formGroup.get() returns null in the parent template
+      // Log as debug since the component handles this gracefully
+      this.logger.debug('DatePicker control is null - parent may not have registered this form control yet', 'DatePickerComponent');
+      return;
+    }
+    
+    this.ngbDate.set(ctrl.value || null);
     
     const resetSubject = this.reset();
     if (resetSubject) {
@@ -68,7 +78,7 @@ export class DatePickerComponent implements OnInit, OnDestroy {
     }
     
     // Subscribe to control value changes to sync ngbDate
-    this.control().valueChanges
+    ctrl.valueChanges
       .pipe(takeUntil(this.ngUnsubscribe))
       .subscribe(value => {
         this.ngbDate.set(value || null);
@@ -76,15 +86,21 @@ export class DatePickerComponent implements OnInit, OnDestroy {
   }
 
   onDateChange(ngbDate: NgbDateStruct) {
-    this.control().setValue(ngbDate);
-    this.control().markAsDirty();
+    const ctrl = this.control();
+    if (!ctrl) return;
+    
+    ctrl.setValue(ngbDate);
+    ctrl.markAsDirty();
     this.ngbDate.set(ngbDate);
   }
 
   clearDate() {
+    const ctrl = this.control();
     this.ngbDate.set(null);
-    this.control().setValue(null);
-    this.control().markAsDirty();
+    if (!ctrl) return;
+    
+    ctrl.setValue(null);
+    ctrl.markAsDirty();
   }
 
   public isValidDate(date: NgbDateStruct | null): boolean {

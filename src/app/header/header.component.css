@@ -41,6 +41,7 @@
   padding: 0;
   background-color: var(--header-bg);
   border-bottom: 2px solid var(--gold);
+  position: relative;
 }
 
 /* Logo & Title */

@@ -4,16 +4,18 @@ import { tap, take, filter } from 'rxjs/operators';
 import { Project } from '../models/project';
 import { ProjectService } from './project.service';
 import { LoggingService } from './logging.service';
+import { LoadingStateService } from './loading-state.service';
 
 @Injectable({ providedIn: 'root' })
 export class StorageService {
     private currentState: any;
     private projectService = inject(ProjectService);
     private logger = inject(LoggingService);
+    private loadingState = inject(LoadingStateService);
     
     // Project cache signals
     private cachedProjects = signal<Project[]>([]);
-    private isPreloading = signal(false);
+    private isPreloading = this.loadingState.getOperationState('storage-preload');
     private preloadComplete = signal(false);
     private preloadComplete$ = new Subject<Project[]>();
 
@@ -32,7 +34,7 @@ export class StorageService {
             return;
         }
 
-        this.isPreloading.set(true);
+        this.loadingState.startLoading('storage-preload', 'Preloading projects');
         
         // Get count first to know how many projects to load
         this.projectService.getCount()
@@ -51,7 +53,7 @@ export class StorageService {
                                 const projectsWithMatches = projects.map(p => ({ ...p, isMatches: true }));
                                 this.cachedProjects.set(projectsWithMatches);
                                 this.preloadComplete.set(true);
-                                this.isPreloading.set(false);
+                                this.loadingState.stopLoading('storage-preload');
                                 this.logger.info(`Preloaded ${projects.length} projects successfully`, 'StorageService');
                                 this.preloadComplete$.next(projectsWithMatches);
                                 this.preloadComplete$.complete();
@@ -60,14 +62,14 @@ export class StorageService {
                         .subscribe({
                             error: (error) => {
                                 this.logger.error('Error preloading projects', 'StorageService', error);
-                                this.isPreloading.set(false);
+                                this.loadingState.stopLoading('storage-preload');
                                 this.preloadComplete$.error(error);
                             }
                         });
                 },
                 error: (error) => {
                     this.logger.error('Error getting project count', 'StorageService', error);
-                    this.isPreloading.set(false);
+                    this.loadingState.stopLoading('storage-preload');
                 }
             });
     }

@@ -77,6 +77,68 @@ You are an expert in TypeScript, Angular, and scalable web application developme
   this.logger.debug('Cache hit for URL', 'HttpCache');
   ```
 
+## Loading State Management
+
+- ALL loading state management MUST be handled by the `LoadingStateService`
+- **Services that make API calls own loading state - components and other services only observe it**
+- NEVER manage loading state in components (no local `loading` properties)
+- CRITICAL: The service that makes the actual API call MUST manage the loading state
+  - Example: `SearchService.fetchData()` makes API calls, so it manages `table-{tableId}` loading state
+  - Example: `TableService.fetchData()` only orchestrates, so it does NOT manage loading state
+  - This ensures loading state starts BEFORE any data access, preventing "flash of empty state"
+- Pattern for services that make API calls:
+  - Call `startLoading(operationId, description)` IMMEDIATELY before API calls
+  - Call `stopLoading(operationId)` in both success and error paths
+  - Use RxJS operators: `map()` or `tap()` for success, `catchError()` for errors
+  - For async/await: Use try/catch with stopLoading in catch block AND after successful response
+  - Always use unique operation IDs (e.g., 'home', 'document-{id}', 'table-{tableId}')
+  - For table data: Use `table-{tableId}` pattern (e.g., 'table-projectList')
+- Pattern for components:
+  - Inject `LoadingStateService` as public: `public loadingState = inject(LoadingStateService)`
+  - Subscribe to loading state: `loading = this.loadingState.getOperationState('operation-id')`
+  - Use in templates: `@if (loading())` (remember to call the signal function)
+  - For dynamic IDs, use computed: `computed(() => this.loadingState.getOperationState(\`op-${id}\`)())`
+- NEVER call `startLoading` or `stopLoading` from components
+- Example service implementation (RxJS):
+  ```typescript
+  getById(id: string): Observable<Project> {
+    this.loadingState.startLoading(`project-${id}`, 'Loading project');
+    return this.api.getProject(id).pipe(
+      map(data => {
+        this.loadingState.stopLoading(`project-${id}`);
+        return data;
+      }),
+      catchError(error => {
+        this.loadingState.stopLoading(`project-${id}`);
+        throw error;
+      })
+    );
+  }
+  ```
+- Example service implementation (async/await):
+  ```typescript
+  async fetchData(searchParamObject: SearchParamObject) {
+    const loadingId = `table-${searchParamObject.tableId}`;
+    this.loadingState.startLoading(loadingId, 'Loading data');
+    try {
+      const res = await this.api.search(searchParamObject).toPromise();
+      // Process res...
+      this.loadingState.stopLoading(loadingId);
+      return result;
+    } catch (error) {
+      this.loadingState.stopLoading(loadingId);
+      throw error;
+    }
+  }
+  ```
+- Example component usage:
+  ```typescript
+  export class ProjectComponent {
+    public loadingState = inject(LoadingStateService);
+    loading = this.loadingState.getOperationState('project-list');
+  }
+  ```
+
 ## Development Environment
 
 - This project runs in a Debian LXC container accessed via VS Code Remote Explorer from Windows

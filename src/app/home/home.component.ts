@@ -7,6 +7,7 @@ import { takeUntil } from 'rxjs/operators';
 import { SearchService } from 'app/services/search.service';
 import { ApiService } from 'app/services/api';
 import { LoggingService } from 'app/services/logging.service';
+import { LoadingStateService } from 'app/services/loading-state.service';
 import { News } from 'app/models/news';
 import { HeroBannerComponent, HeroBannerAction } from '../shared/hero-banner/hero-banner.component';
 import { InfoCardComponent, InfoCardButton } from '../shared/info-card/info-card.component';
@@ -23,12 +24,13 @@ export class HomeComponent implements OnInit, OnDestroy {
   private searchService = inject(SearchService);
   private apiService = inject(ApiService);
   private logger = inject(LoggingService);
+  private loadingState = inject(LoadingStateService);
   private destroy$ = new Subject<boolean>();
 
   results = signal<News[]>([]);
   surveyUrl = signal<string>('');
   showSurveyBanner = signal<boolean>(false);
-  loading = signal<boolean>(true);
+  loading = this.loadingState.getOperationState('home');
 
   readonly heroBannerTitle = 'Environmental Assessments';
   readonly heroBannerDescription = "British Columbia's environmental assessment process provides opportunities for Indigenous Nations, government agencies and the public to influence the outcome of environmental assessments in British Columbia.";
@@ -81,18 +83,15 @@ export class HomeComponent implements OnInit, OnDestroy {
   ];
 
   ngOnInit(): void {
-    this.loading.set(true);
     this.searchService.getTopNewsItems()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (res: News[]) => {
           this.results.set(res || []);
-          this.loading.set(false);
         },
         error: (err) => {
           this.logger.error('Error loading recent activities', 'HomeComponent', err);
           this.results.set([]);
-          this.loading.set(false);
         }
       });
 
