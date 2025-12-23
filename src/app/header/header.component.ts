@@ -1,9 +1,10 @@
-import { Component, ChangeDetectionStrategy, signal, inject, OnInit, PLATFORM_ID, effect, Renderer2, computed } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, inject, OnInit, OnDestroy, PLATFORM_ID, effect } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Router, RouterModule, NavigationEnd } from '@angular/router';
 import { ApiService } from '../services/api';
 import { LoadingStateService } from '../services/loading-state.service';
-import { filter } from 'rxjs/operators';
+import { filter, fromEvent } from 'rxjs';
+import { debounceTime } from 'rxjs/operators';
 
 @Component({
   selector: 'app-header',
@@ -13,10 +14,9 @@ import { filter } from 'rxjs/operators';
   imports: [CommonModule, RouterModule],
   standalone: true
 })
-export class HeaderComponent implements OnInit {
+export class HeaderComponent implements OnInit, OnDestroy {
   private apiService = inject(ApiService);
   private platformId = inject(PLATFORM_ID);
-  private renderer = inject(Renderer2);
   public router = inject(Router);
   
   // Public access to loading state service
@@ -26,20 +26,20 @@ export class HeaderComponent implements OnInit {
   bannerColour = signal<string>('');
   showBanner = signal<boolean>(false);
   currentUrl = signal<string>('');
+  
+  private resizeSubscription: any = null;
 
   constructor() {
-    // Update CSS variable when header size changes (includes banner when visible)
+    // Update header height when banner visibility changes
     effect(() => {
-      // Track the banner signal to re-run when it changes
       this.showBanner();
-      
       if (isPlatformBrowser(this.platformId)) {
         this.updateHeaderHeight();
       }
     });
 
-    // Recalculate on route changes
     if (isPlatformBrowser(this.platformId)) {
+      // Track current URL and update header height on navigation
       this.currentUrl.set(this.router.url);
       this.router.events
         .pipe(filter(event => event instanceof NavigationEnd))
@@ -47,6 +47,11 @@ export class HeaderComponent implements OnInit {
           this.currentUrl.set(this.router.url);
           this.updateHeaderHeight();
         });
+      
+      // Update header height on window resize
+      this.resizeSubscription = fromEvent(window, 'resize')
+        .pipe(debounceTime(100))
+        .subscribe(() => this.updateHeaderHeight());
     }
   }
 
@@ -66,6 +71,10 @@ export class HeaderComponent implements OnInit {
     
     const hasValidColor = !!bannerColour && bannerColour !== 'no-banner-colour-set';
     this.showBanner.set(env === 'local' || (!!env && hasValidColor));
+  }
+  
+  ngOnDestroy(): void {
+    this.resizeSubscription?.unsubscribe();
   }
 
   closeMenus(): void {

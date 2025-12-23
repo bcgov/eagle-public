@@ -127,7 +127,13 @@
     height: 250px;
     padding-top: 10px;
     margin-top: 20px;
-    margin-bottom: 30px;
+    margin-bottom: 0;
+  }
+
+  @media (min-width: 768px) {
+    .map-wrapper {
+      margin-bottom: 30px;
+    }
   }
 
   .map-item {
@@ -221,6 +227,7 @@ button.btn.icon-btn.sidebar-toggle {
     overflow-x: hidden;
     transition: margin-left 0.5s ease;
     z-index: 100;
+    box-shadow: 4px 0 12px rgba(0, 0, 0, 0.15);
   }
 
   .side-banner.closed {

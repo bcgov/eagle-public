@@ -225,6 +225,7 @@
   color: var(--primary);
   transform: translateY(1rem);
   transition: all ease-out 0.2s;
+  z-index: 200;
 }
 
 .scroll-top-btn.visible {

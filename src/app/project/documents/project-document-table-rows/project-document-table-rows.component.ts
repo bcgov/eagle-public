@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, EventEmitter, inject, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnDestroy, OnInit, EventEmitter, inject, ChangeDetectionStrategy, signal, ChangeDetectorRef } from '@angular/core';
 import { Router } from '@angular/router';
 import { takeWhile } from 'rxjs/operators';
 import { DatePipe } from '@angular/common';
@@ -18,6 +18,7 @@ export class DocumentTableRowsComponent implements TableRowComponent, OnInit, On
   private readonly configService = inject(ConfigService);
   private readonly utils = inject(Utils);
   private readonly router = inject(Router);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   // TableRowComponent properties
   rowData: any;
@@ -25,42 +26,39 @@ export class DocumentTableRowsComponent implements TableRowComponent, OnInit, On
   messageOut = new EventEmitter<ITableMessage>();
   messageIn = new EventEmitter<ITableMessage>();
 
-  private lists: any[] = [];
+  private lists = signal<any[]>([]);
   private alive = true;
-  public currentUrl: string = '';
+  public currentUrl: string;
 
   constructor() {
-    let currRoute = this.router.url.split(';')[0];
+    const currRoute = this.router.url.split(';')[0];
     this.currentUrl = currRoute.substring(currRoute.lastIndexOf('/') + 1);
   }
 
   ngOnInit() {
     this.configService.lists.pipe(takeWhile(() => this.alive)).subscribe((list) => {
-      this.lists = list;
+      if (list && list.length > 0) {
+        this.lists.set(list);
+        // Trigger change detection when lists are loaded
+        this.cdr.markForCheck();
+      }
     });
   }
 
-  idToList(id: string) {
-    if (!id) {
-      return '-';
-    }
-    const items = this.lists.filter(listItem => listItem._id === id);
-    if (items.length !== 0) {
-      return items[0].name;
-    } else {
-      return '-';
-    }
+  idToList(id: string): string {
+    if (!id) return '-';
+    
+    const currentLists = this.lists();
+    if (!currentLists?.length) return '-';
+    
+    const item = currentLists.find(listItem => listItem._id === id);
+    return item?.name ?? '-';
   }
 
-  goToItem(item: any) {
+  goToItem(item: any): void {
     const filename = item.documentFileName || item.displayName || item.internalOriginalName;
-    let safeName = filename;
-    try {
-      safeName = this.utils.encodeString(filename, true);
-    } catch (e) {
-      console.log('error:', e);
-    }
-    window.open('/api/public/document/' + item._id + '/download/' + safeName, '_blank');
+    const safeName = this.utils.encodeString(filename, true);
+    window.open(`/api/public/document/${item._id}/download/${safeName}`, '_blank');
   }
 
   ngOnDestroy() {

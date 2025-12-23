@@ -13,6 +13,7 @@
     display: grid;
     grid-template-columns: var(--sidebar-width) 1fr;
     min-height: calc(100vh - var(--header-total-height));
+    transition: grid-template-columns 0.5s ease;
   }
 
   .project .project-info:has(.side-banner.closed) {
@@ -22,11 +23,17 @@
 
 /* People/Contact section */
 .project .people {
-  padding: 2rem 1rem;
-  background-color: var(--bs-light);
+  padding: 3rem 1rem 3rem;
+  background-color: var(--table-row-bg);
 }
 
-.project .people h2,
-.project .people h3 {
+.project .people h2 {
   color: #003364;
+}
+
+@media (min-width: 768px) {
+  .project .people .contact-divider {
+    border-left: 1px solid #adb5bd;
+    padding-left: 2rem;
+  }
 }

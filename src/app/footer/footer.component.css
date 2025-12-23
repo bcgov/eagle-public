@@ -2,6 +2,7 @@
   background: var(--footer-bg);
   color: var(--footer-color);
   position: relative;
+  z-index: 150;
 }
 
 /* Hide footer on mobile when on /projects route */
