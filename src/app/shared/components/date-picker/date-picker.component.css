@@ -21,10 +21,15 @@
   text-align: right;
   cursor: pointer;
   transition: all ease-out 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 0.75rem;
 }
 
-.date-input__calendar-btn i {
-  margin-top: 0.2rem;
+/* Remove margin from icon since we're using flexbox */
+.date-input__calendar-btn .material-icons {
+  margin: 0;
 }
 
 .date-input__calendar-btn:active,

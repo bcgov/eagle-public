@@ -98,12 +98,12 @@
     /* Tab Navigation */
     --tab-color: #38598a;
     --tab-nav-border-color: #ddd;
-    --tab-nav-bg: var(--white);
+    --tab-nav-bg: #f7f8fa;
     --tab-hover-bg: var(--lightgray);
     --tab-sm-active-color: var(--white);
     --tab-sm-bg: var(--lightgray);
     --tab-sm-active-bg: #38598a;
-    --tab-active-bg: var(--white);
+    --tab-active-bg: #f7f8fa;
 
     /* Tables */
     --table-header-bg: #38598a;

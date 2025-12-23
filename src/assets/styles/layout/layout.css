@@ -350,7 +350,7 @@ hr {
 .bottom-container {
   /* flex omitted */
   overflow-y: scroll;
-  background: white;
+  background: #f7f8fa;
 }
 
 ol.breadcrumb {

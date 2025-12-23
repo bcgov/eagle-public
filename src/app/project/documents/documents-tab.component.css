@@ -27,7 +27,7 @@ input[type="text"]:focus {
 }
 
 .search-area {
-  background-color: white;
+  background-color: transparent;
   border: 1px solid lightgray;
 }
 
@@ -110,9 +110,6 @@ input[type="text"]:focus {
 
 .advanced-search .date-range {
   margin-left: -15px;
-}
-
-.advanced-search .date-range .form-control {
 }
 
 .advanced-search .form-check label {

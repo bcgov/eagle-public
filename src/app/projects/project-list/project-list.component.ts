@@ -168,7 +168,9 @@ export class ProjectListComponent implements OnInit, OnDestroy {
         startDateId: config.dateConfig.startId,
         startDateLabel: config.dateConfig.startLabel,
         endDateId: config.dateConfig.endId,
-        endDateLabel: config.dateConfig.endLabel
+        endDateLabel: config.dateConfig.endLabel,
+        minDate: new Date('1900-01-01'),
+        maxDate: new Date()
       };
     } else {
       definition = {

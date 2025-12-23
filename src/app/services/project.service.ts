@@ -179,7 +179,11 @@ export class ProjectService {
             tap(() => this.loadingState.stopLoading(loadingId))
           );
         }),
-        catchError(error => this.api.handleError(error))
+        catchError(error => {
+          this.loadingState.stopLoading(loadingId);
+          return this.api.handleError(error);
+        }),
+        shareReplay(1)
       );
   }
 
@@ -200,6 +204,24 @@ export class ProjectService {
   }
 
   private _getExtraAppData(project: Project, { getresponsibleEPD = false, getprojectLead = false }: GetParameters): Observable<Project> {
+    // Check if both roles are the same person to avoid duplicate API calls
+    const sameUser = getresponsibleEPD && getprojectLead && 
+                     project.responsibleEPDId && project.projectLeadId &&
+                     project.responsibleEPDId.toString() === project.projectLeadId.toString();
+    
+    if (sameUser) {
+      // Fetch user data once and assign to both roles
+      return this.searchService.getItem(project.responsibleEPDId.toString(), 'User')
+        .pipe(
+          map(payload => {
+            project.responsibleEPDObj = payload.data;
+            project.projectLeadObj = payload.data;
+            return project;
+          })
+        );
+    }
+    
+    // Different users or only one role needed - use forkJoin
     return forkJoin(
       getresponsibleEPD ? this.searchService.getItem(project.responsibleEPDId.toString(), 'User') : of(null),
       getprojectLead ? this.searchService.getItem(project.projectLeadId.toString(), 'User') : of(null)

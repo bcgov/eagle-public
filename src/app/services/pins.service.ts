@@ -93,7 +93,7 @@ export class PinsService {
           )
         );
       }
-      if (res[0].total_items) {
+      if (res[0].total_items !== undefined && res[0].total_items !== null) {
         searchResults.totalSearchCount = res[0].total_items;
       } else {
         this.eventService.setError(

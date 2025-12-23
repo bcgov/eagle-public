@@ -156,10 +156,10 @@ export class SearchService {
           )
         );
       }
-      if (res[0].data.meta[0] && res[0].data.meta[0].searchResultsTotal) {
+      if (res[0].data.meta[0] && res[0].data.meta[0].searchResultsTotal !== undefined && res[0].data.meta[0].searchResultsTotal !== null) {
         searchResults.totalSearchCount = res[0].data.meta[0].searchResultsTotal;
-      } else if (res[0].data.meta.lenght === 0) {
-        searchResults.totalSearchCount = 0
+      } else if (res[0].data.meta.length === 0) {
+        searchResults.totalSearchCount = 0;
       } else {
         this.eventService.setError(
           new EventObject(

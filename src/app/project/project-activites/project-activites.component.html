@@ -4,15 +4,13 @@
   </div>
 }
 
-<h2 #activitiesHeader>Activities and Updates</h2>
+<h3 #activitiesHeader>Activities and Updates</h3>
 
-<section>
-  <search-filter-template
-    #explorePanel
-    [keywordOverride]='queryParams["keywordsActivities"]'
-    (searchEvent)='executeSearch($event)'>
-  </search-filter-template>
-</section>
+<search-filter-template
+  #explorePanel
+  [keywordOverride]='queryParams["keywordsActivities"]'
+  (searchEvent)='executeSearch($event)'>
+</search-filter-template>
 
 <section class="tab-section">
   @if (tableData().totalListItems === 0) {

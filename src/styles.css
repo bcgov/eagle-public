@@ -57,6 +57,7 @@ body {
   margin: 0;
   padding: 0;
   font-family: 'BCSans', 'Noto Sans', Arial, sans-serif;
+  background-color: #f7f8fa;
 }
 
 /* Global Content Styles */
@@ -79,25 +80,80 @@ body {
   box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.1);
   border-radius: 0.25rem;
   overflow: hidden;
-}
-
-.table-container .project-table {
-  table-layout: auto;
-}
-
-.table-container .project-table thead {
-  display: block;
+  table-layout: fixed;
   width: 100%;
+  border-collapse: collapse !important;
+  border-spacing: 0 !important;
 }
 
-.table-container .project-table thead tr {
-  display: flex;
+.table-template .table thead,
+.table-template .table tbody,
+.table-template .table thead tr,
+.table-template .table tbody tr {
+  padding: 0 !important;
+  margin: 0 !important;
 }
 
-.table-container .project-table thead th {
+.table-template .table thead th {
   border-top: none;
-  padding-left: 0.75rem;
-  padding-right: 0.75rem;
+  border-bottom: 2px solid #dee2e6;
+  padding: 0.75rem !important;
+  vertical-align: middle !important;
+  line-height: 1.5 !important;
+  font-size: 14px !important;
+  display: table-cell !important;
+}
+
+.table-template .table tbody td {
+  padding: 0.75rem !important;
+  vertical-align: middle !important;
+  line-height: 1.5 !important;
+  font-size: 14px !important;
+  display: table-cell !important;
+}
+
+/* Bootstrap column width mapping for tables */
+/* Reset Bootstrap flex properties for table cells */
+.table-template .table th[class*="col-"],
+.table-template .table td[class*="col-"] {
+  flex: none !important;
+  display: table-cell !important;
+}
+
+/* Column width definitions */
+.table-template .table col.col-1 {
+  width: 8.33% !important;
+}
+.table-template .table th.col-1,
+.table-template .table td.col-1 {
+  width: 8.33% !important;
+  min-width: 8.33% !important;
+  max-width: 8.33% !important;
+  display: table-cell !important;
+}
+
+/* Center align star column content */
+.table-template .table th.col-1,
+.table-template .table td.col-1 {
+  text-align: center !important;
+}
+
+.table-template .table col.col-2,
+.table-template .table th.col-2,
+.table-template .table td.col-2 {
+  width: 16.67% !important;
+  min-width: 16.67% !important;
+  max-width: 16.67% !important;
+  display: table-cell !important;
+}
+
+.table-template .table col.col-3,
+.table-template .table th.col-3,
+.table-template .table td.col-3 {
+  width: 25% !important;
+  min-width: 25% !important;
+  max-width: 25% !important;
+  display: table-cell !important;
 }
 
 .clickable-row {
@@ -106,11 +162,4 @@ body {
 
 .clickable-row:hover {
   background-color: rgba(0, 0, 0, 0.02);
-}
-
-/* Responsive table columns */
-@media (max-width: 767px) {
-  .table-container .project-table thead th.project-table__name-col {
-    flex: 1 1 auto;
-  }
 }

@@ -1,143 +1,32 @@
 @import url("../../assets/styles/base/base.css");
 
-/* ============================================
-   Custom Variables & Grid Layout
-   ============================================ */
+.project .project-tabs .nav-tabs {
+  padding-top: 4rem;
+  max-width: 1100px;
+  margin-inline: auto;
+  padding-inline: 2rem;
+}
 
-/* Grid layout for project info with sidebar */
+/* Grid layout for sidebar and content */
 @media (min-width: 768px) {
   .project .project-info {
     display: grid;
     grid-template-columns: var(--sidebar-width) 1fr;
-    grid-template-rows: 1fr;
     min-height: calc(100vh - var(--header-total-height));
-    width: 100%;
   }
 
-  .project .project-info > details-sidebar {
-    min-width: 0;
-    max-width: 100%;
-    overflow: hidden;
-  }
-
-  .project .project-info > .content {
-    min-width: 0;
-  }
-
-  /* Collapse sidebar column when closed */
   .project .project-info:has(.side-banner.closed) {
     grid-template-columns: 0 1fr;
   }
 }
 
-/* ============================================
-   Sidebar State Management
-   ============================================ */
-
-@media (min-width: 768px) {
-  .project {
-    transition: padding-left .5s;
-  }
-
-  /* Closed state adjustments */
-  .project[data-sidebar-state="closed"] {
-    padding-left: 20px;
-  }
-
-  /* PCP Banner adjustments for sidebar state */
-  .project .pcp-banner {
-    padding-top: 60px;
-    padding-left: 40px;
-    margin-bottom: -60px;
-  }
-
-  /* People section - open state */
-  .project[data-sidebar-state="open"] .people .container {
-    padding-left: 33%;
-    padding-right: 20px;
-    max-width: 100%;
-    margin: 0;
-  }
-
-  /* People section - closed state */
-  .project[data-sidebar-state="closed"] .people {
-    padding-left: 20px;
-  }
-
-  .project[data-sidebar-state="closed"] .people .container {
-    padding-left: 15px;
-  }
+/* People/Contact section */
+.project .people {
+  padding: 2rem 1rem;
+  background-color: var(--bs-light);
 }
 
-@media (min-width: 1200px) {
-  .project[data-sidebar-state="closed"] {
-    padding-left: 20px;
-  }
-
-  .project[data-sidebar-state="closed"] .container {
-    padding-left: 15px;
-  }
-
-  .project[data-sidebar-state="open"] .container {
-    padding-left: 33%;
-    padding-right: 20px;
-    max-width: 100%;
-    margin: 0;
-  }
+.project .people h2,
+.project .people h3 {
+  color: #003364;
 }
-
-/* ============================================
-   Component-Specific Overrides
-   (Everything else uses Bootstrap utilities)
-   ============================================ */
-
-/* Project-specific styling that can't be done with Bootstrap */
-.project main {
-  overflow-x: hidden;
-}
-
-@media (min-width: 768px) {
-  .project main .content {
-    min-height: calc(100vh - 69px - 311px);
-  }
-
-  .project main .main-content {
-    padding: 80px 40px 0 40px;
-  }
-}
-
-/* Location info box (custom positioned element) */
-@media (min-width: 991px) {
-  .project main .location-info {
-    position: absolute;
-    right: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 550px;
-  }
-
-  .project main .location-info h2 {
-    padding: 0 8px;
-    position: absolute;
-    top: -25px;
-    left: 30px;
-  }
-}
-
-/* Organization item badge (custom design) */
-.organization-item {
-  margin-top: 0;
-  color: #fff;
-  background-color: #38598a;
-  border-radius: 4px 4px 0 0;
-  padding: 7px 10px;
-  width: 100%;
-  text-align: center;
-}
-
-.organization-item p {
-  font-size: 1.2rem;
-  font-weight: bold;
-  margin-bottom: 0;
-}
-

@@ -20,6 +20,7 @@ import { SearchService } from '../services/search.service';
 import { Utils } from '../shared/utils/utils';
 import { DetailsSidebarComponent } from './details-sidebar/details-sidebar';
 import { SafeHtmlPipe } from '../shared/pipes/safe-html-converter.pipe';
+import { LoggingService } from '../services/logging.service';
 
 @Component({
   selector: 'app-project',
@@ -34,6 +35,9 @@ import { SafeHtmlPipe } from '../shared/pipes/safe-html-converter.pipe';
   styleUrl: './project.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
+  host: {
+    '(window:resize)': 'onResize($event)'
+  },
   standalone: true
 })
 export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
@@ -45,6 +49,7 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
   private renderer = inject(Renderer2);
   private utils = inject(Utils);
   private searchService = inject(SearchService);
+  private logger = inject(LoggingService);
   public configService = inject(ConfigService);
   public projectService = inject(ProjectService);
   public commentPeriodService = inject(CommentPeriodService);
@@ -179,7 +184,6 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
     // Map initialization moved to ngOnInit after project data loads
   }
 
-  @HostListener('window:resize', ['$event'])
   onResize(event?: Event) {
     if (this.map) {
       this.map.invalidateSize();
@@ -191,7 +195,7 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
     // Check if map element exists
     const mapElement = document.getElementById('map');
     if (!mapElement) {
-      console.warn('Map element not found, retrying...');
+      this.logger.warn('Map element not found, retrying...', 'ProjectComponent');
       setTimeout(() => this.initMap(), 100);
       return;
     }
@@ -199,7 +203,7 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
     // Check if project has valid centroid
     const proj = this.project();
     if (!proj || !proj.centroid || proj.centroid.length !== 2) {
-      console.log('No valid centroid for map display');
+      this.logger.info('No valid centroid for map display', 'ProjectComponent');
       return;
     }
 
@@ -350,7 +354,7 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
 
   public learnMore() {
     // TODO: Migrate BecomeAMemberComponent
-    console.log('Learn more functionality requires BecomeAMemberComponent migration');
+    this.logger.info('Learn more functionality requires BecomeAMemberComponent migration', 'ProjectComponent');
     // this.ngbModal = this.modalService.open(BecomeAMemberComponent, { backdrop: 'static', size: 'lg' });
     // const proj = this.project();
     // if (proj) {
@@ -368,7 +372,7 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
 
   public addComment() {
     // TODO: Migrate AddCommentComponent
-    console.log('Add comment functionality requires AddCommentComponent migration');
+    this.logger.info('Add comment functionality requires AddCommentComponent migration', 'ProjectComponent');
     // const proj = this.project();
     // if (proj?.commentPeriodForBanner) {
     //   this.ngbModal = this.modalService.open(AddCommentComponent, { backdrop: 'static', size: 'lg' });

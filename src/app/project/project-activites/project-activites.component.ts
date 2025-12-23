@@ -96,8 +96,10 @@ export class ProjectActivitesComponent implements OnInit, OnDestroy {
       
       const updatedTableData = this.tableTemplateUtils.updateTableObjectWithUrlParams(params, this.tableData(), 'Activities');
 
-      if (!params.sortBy) {
+      if (!params.sortByActivities) {
         updatedTableData.sortBy = '-dateAdded';
+      } else {
+        updatedTableData.sortBy = params.sortByActivities;
       }
 
       this.tableData.set(updatedTableData);

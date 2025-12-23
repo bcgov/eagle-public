@@ -51,45 +51,47 @@
                     </div>
                 }
 
-                <div class="main-content col-sm-12" [class.col-md-8]="sidebarOpen()" [class.wide]="!sidebarOpen()">
+                <div class="main-content">
                     <section class="project-tabs">
-                    <div class="container">
-                        <div class="tab-container">
-                        <div role="navigation">
-                            <ul class="nav-tabs" role="tablist">
-                            @for (tabLink of tabLinks(); track tabLink.link) {
-                                @if (tabLink.display === true) {
-                                    <li class="nav-item" role="presentation">
-                                        <a class="nav-link" role="tab" [routerLink]="tabLink.link" [replaceUrl]="true"
-                                        routerLinkActive="active">{{tabLink.label}}</a>
-                                    </li>
-                                }
+                        <ul class="nav-tabs" role="tablist">
+                        @for (tabLink of tabLinks(); track tabLink.link) {
+                            @if (tabLink.display === true) {
+                                <li class="nav-item" role="presentation">
+                                    <a class="nav-link" 
+                                       role="tab" 
+                                       [routerLink]="tabLink.link" 
+                                       [replaceUrl]="true"
+                                       routerLinkActive="active" 
+                                       [attr.id]="tabLink.link === 'project-details' ? 'project-details-tab' : null" 
+                                       [attr.aria-controls]="tabLink.link === 'project-details' ? 'project-details-panel' : null">
+                                        {{tabLink.label}}
+                                    </a>
+                                </li>
                             }
-                            </ul>
+                        }
+                        </ul>
+                        <div class="tab-content">
+                            <router-outlet></router-outlet>
                         </div>
-                        <router-outlet></router-outlet>
-                        </div>
-                    </div>
                     </section>
                 </div>
             </div>
 
             <section class="people">
                 <div class="container">
-                        <h2>Contact Us</h2>
-                        <div class="flex-container">
-                            <div class="flex-item">
-                                <h3>Project Assessment Team</h3>
-                                <p class="value"><i class="material-icons mr-3" role="presentation">email</i><a
-                                    href="mailto:eao.operations@gov.bc.ca">EAO.operations@gov.bc.ca</a></p>
-                            </div>
-                            <div class="flex-item">
-                                <h3>Compliance & Enforcement</h3>
-                                <p class="value"><i class="material-icons me-3" role="presentation">email</i><a href="mailTo:eao.compliance@gov.bc.ca">EAO.compliance@gov.bc.ca</a></p>
-                                <p class="value"><i class="material-icons me-3" role="presentation">phone</i>250-387-0131</p>
-                            </div>
+                    <h2>Contact Us</h2>
+                    <div class="d-flex flex-column gap-3">
+                        <div>
+                            <h3>Project Assessment Team</h3>
+                            <p><i class="material-icons me-2" aria-hidden="true">email</i><a href="mailto:eao.operations@gov.bc.ca">EAO.operations@gov.bc.ca</a></p>
+                        </div>
+                        <div>
+                            <h3>Compliance & Enforcement</h3>
+                            <p><i class="material-icons me-2" aria-hidden="true">email</i><a href="mailto:eao.compliance@gov.bc.ca">EAO.compliance@gov.bc.ca</a></p>
+                            <p><i class="material-icons me-2" aria-hidden="true">phone</i>250-387-0131</p>
                         </div>
                     </div>
+                </div>
             </section>
         </div>
     </main>

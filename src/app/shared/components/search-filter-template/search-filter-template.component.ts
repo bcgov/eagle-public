@@ -108,6 +108,14 @@ export class SearchFilterTemplateComponent implements OnInit, AfterViewInit, OnD
     effect(() => {
       this.showFiltersPanel.set(this.showAdvancedFilters());
     });
+
+    // Rebuild form when filters change
+    effect(() => {
+      const currentFilters = this.filters();
+      if (currentFilters && currentFilters.length > 0 && this.advancedFilters()) {
+        this.buildFormComponents();
+      }
+    });
   }
 
   ngOnDestroy(): void {

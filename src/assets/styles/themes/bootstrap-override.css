@@ -19,7 +19,8 @@
   
   /* Body defaults */
   --bs-body-color: #494949; /* EAGLE font color */
-  --bs-body-bg: #fff;
+  --bs-body-bg: #f7f8fa; /* EAGLE light background */
+  --bs-body-bg-rgb: 247, 248, 250;
   
   /* Transitions */
   --bs-transition: color 0.2s ease-in-out, background-color 0.2s ease-in-out, border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
