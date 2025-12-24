@@ -8,8 +8,16 @@ td:hover {
 
 .featured-star {
   color: #ffc107;
+  font-size: 1.5rem;
 }
 
 .un-featured-star {
   color: #6a6a6a;
+}
+
+/* Mobile card layout - remove extra styling since it's in global CSS */
+@media (max-width: 768px) {
+  .featured-star {
+    font-size: 1.75rem;
+  }
 }

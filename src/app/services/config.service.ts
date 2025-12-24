@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
 import * as L from 'leaflet';
 import { ApiService } from 'app/services/api';
-import { Observable, of } from 'rxjs';
-import { map, catchError, shareReplay } from 'rxjs/operators';
+import { Observable, ReplaySubject } from 'rxjs';
+import { map, catchError, take } from 'rxjs/operators';
 import { LoadingStateService } from './loading-state.service';
 
 //
@@ -18,7 +18,7 @@ export class ConfigService {
   private _isApplistFiltersVisible = false;
   private _listPageSize = 10;
   private _lists = [];
-  private _lists$: Observable<any> | null = null;
+  private _lists$ = new ReplaySubject<any>(1);
 
   // TODO: store these in URL instead
   private _baseLayerName = 'World Topographic'; // NB: must match a valid base layer name
@@ -27,34 +27,17 @@ export class ConfigService {
   constructor(
     private api: ApiService,
     private loadingState: LoadingStateService
-  ) { }
-
-  // called by app constructor
-  public init() {
-    // FUTURE: load settings from window.localStorage ?
+  ) {
+    this.initializeLists();
   }
 
-  // called by app constructor - for future use
-  public destroy() {
-    // FUTURE: save settings to window.localStorage ?
-  }
-
-  get lists(): Observable<any> {
-    // If already loaded, return cached array
-    if (this._lists.length > 0) {
-      return of(this._lists);
-    }
-    
-    // If request is in-flight, return the shared observable
-    if (this._lists$) {
-      return this._lists$;
-    }
-    
-    // Create new request and cache it
+  private initializeLists(): void {
     const loadingId = 'config-lists';
     this.loadingState.startLoading(loadingId, 'Loading configuration');
-    this._lists$ = this.api.getFullDataSet('List', 250)
+    
+    this.api.getFullDataSet('List', 250)
       .pipe(
+        take(1),
         map(res => {
           if (res) {
             this._lists = res[0].searchResults;
@@ -67,11 +50,25 @@ export class ConfigService {
         catchError(error => {
           this.loadingState.stopLoading(loadingId);
           return this.api.handleError(error);
-        }),
-        shareReplay(1) // Share the result with all subscribers
-      );
-    
-    return this._lists$;
+        })
+      )
+      .subscribe(lists => {
+        this._lists$.next(lists);
+      });
+  }
+
+  // called by app constructor
+  public init() {
+    // FUTURE: load settings from window.localStorage ?
+  }
+
+  // called by app constructor - for future use
+  public destroy() {
+    // FUTURE: save settings to window.localStorage ?
+  }
+
+  get lists(): Observable<any> {
+    return this._lists$.asObservable();
   }
 
   get isApplistListVisible(): boolean { return this._isApplistListVisible; }

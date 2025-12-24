@@ -6,7 +6,7 @@
   background-image: url("/assets/images/prc-hero-banner-img.jpg");
   background-position: center bottom;
   background-size: 350%;
-  box-shadow: 0 0 4rem #00264d inset;
+  box-shadow: 0 0 4rem #00264d inset, 0 0.1rem 0.5rem rgb(158 158 158 / 24%);
 }
 
 .hero-banner .container {

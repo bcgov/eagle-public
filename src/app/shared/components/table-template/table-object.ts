@@ -197,6 +197,13 @@ export interface ITableObjectParams {
    */
   totalListItems?: number;
   tableId?: string;
+  /**
+   * Additional data to pass to table rows (e.g., lists, configuration).
+   *
+   * @type {any}
+   * @memberof ITableObjectParams
+   */
+  data?: any;
 }
 /**
  * Main class that should contain all information needed to render a table, and handle pagination, sorting, etc.
@@ -216,6 +223,7 @@ export class TableObject {
   public sortBy!: string;
   public totalListItems!: number;
   public tableId!: string;
+  public data?: any;
   
   constructor(params?: ITableObjectParams) {
     // Use nullish coalescing for cleaner null/undefined checks
@@ -238,5 +246,6 @@ export class TableObject {
     this.sortBy = params?.sortBy ?? Constants.tableDefaults.DEFAULT_SORT_BY;
     this.totalListItems = params?.totalListItems ?? 0;
     this.tableId = params?.tableId ?? crypto.randomUUID();
+    this.data = params?.data ?? null;
   }
 }

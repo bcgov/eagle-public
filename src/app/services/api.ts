@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { map, shareReplay, finalize } from 'rxjs/operators';
 
 import { Project } from 'app/models/project';
 import { Feature } from 'app/models/feature';
@@ -58,8 +58,24 @@ export class ApiService {
     return throwError(error);
   }
 
+  private pendingRequests = new Map<string, Observable<any>>();
+
   getFullDataSet(dataSet: string, pageSize: number = 250): Observable<any> {
-    return this.http.get<any>(`${this.apiPath}/search?pageSize=${pageSize}&dataset=${dataSet}`, {});
+    const cacheKey = `${dataSet}-${pageSize}`;
+    
+    // Return cached in-flight request if one exists
+    if (this.pendingRequests.has(cacheKey)) {
+      return this.pendingRequests.get(cacheKey)!;
+    }
+    
+    // Create new request with automatic cleanup
+    const request$ = this.http.get<any>(`${this.apiPath}/search?pageSize=${pageSize}&dataset=${dataSet}`, {}).pipe(
+      finalize(() => this.pendingRequests.delete(cacheKey)),
+      shareReplay(1)
+    );
+    
+    this.pendingRequests.set(cacheKey, request$);
+    return request$;
   }
 
   public async downloadDocument(document: Document): Promise<void> {

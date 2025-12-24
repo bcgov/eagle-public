@@ -1,5 +1,13 @@
 @import "../../assets/styles/base/base.css";
 
+/* Hero banner background override */
+:host ::ng-deep .hero-banner {
+  background-image: url('/assets/images/hero-banner.jpg');
+  background-size: cover;
+  background-position: center;
+  margin-bottom: 3rem;
+}
+
 .search-list__options {
     flex: 0 0 auto;
     padding: 1rem 0rem;
