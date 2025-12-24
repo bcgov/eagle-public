@@ -22,18 +22,16 @@ export class ProjectDetailsTabComponent implements OnInit, OnDestroy {
   public configService = inject(ConfigService);
   private router = inject(Router);
 
-  public project: any;
+  // Use the reactive signal from storageService
+  public project = this.storageService.currentProject;
   private alive = true;
 
   ngOnInit() {
-    this.project = this.storageService.state.currentProject.data;
-
     this.router.events.pipe(takeWhile(() => this.alive)).subscribe((evt) => {
       if (!(evt instanceof NavigationEnd)) {
         return;
       }
-      const x = this.storageService.state.scrollPosition.data[0] ? this.storageService.state.scrollPosition.data[0] : 0;
-      const y = this.storageService.state.scrollPosition.data[1] ? this.storageService.state.scrollPosition.data[1] : 0;
+      const [x = 0, y = 0] = this.storageService.state.scrollPosition?.data || [0, 0];
       if (x !== 0 || y !== 0) {
         window.scrollTo(x, y);
       }

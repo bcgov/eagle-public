@@ -13,6 +13,7 @@ import { Project } from '../../models/project';
 import { ConfigService } from '../../services/config.service';
 import { ProjectService } from '../../services/project.service';
 import { FileUploadComponent } from '../../file-upload/file-upload.component';
+import { LoggingService } from '../../services/logging.service';
 
 @Component({
   selector: 'app-add-comment',
@@ -27,6 +28,7 @@ export class AddCommentComponent implements OnInit {
   private projectService = inject(ProjectService);
   private documentService = inject(DocumentService);
   private config = inject(ConfigService);
+  private logger = inject(LoggingService);
 
   currentPeriod = input<CommentPeriod>();
   project = input<Project>();
@@ -174,13 +176,13 @@ export class AddCommentComponent implements OnInit {
       const proj = this.project();
       if (proj) {
         const res = await this.projectService.cacSignUp(proj, signUpObject).toPromise();
-        console.log('Success:', res);
+        this.logger.info('CAC sign-up submitted successfully', 'AddCommentComponent');
         this.submitting.set(false);
         this.submittedCAC.set(true);
         this.currentPage.update(page => page + 1);
       }
     } catch (error) {
-      console.log('error', error);
+      this.logger.error('Error submitting CAC sign-up', 'AddCommentComponent', error);
       alert('Uh-oh, error submitting information');
       this.submitting.set(false);
     }
@@ -267,7 +269,7 @@ export class AddCommentComponent implements OnInit {
       this.submitting.set(false);
       this.currentPage.update(page => page + 1);
     } catch (error) {
-      console.log('error', error);
+      this.logger.error('Error submitting comment', 'AddCommentComponent', error);
       alert('Uh-oh, error submitting comment');
       this.submitting.set(false);
     }

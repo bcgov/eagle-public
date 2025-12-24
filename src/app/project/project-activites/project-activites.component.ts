@@ -36,7 +36,7 @@ export class ProjectActivitesComponent implements OnInit, OnDestroy {
   private projId = '';
   private tableSignal = this.tableService.getTableSignal(this.tableId);
 
-  public loading = this.loadingState.getOperationState('table-projectActivities');
+  public loading = this.loadingState.isLoading;
   public queryParams: Params = {};
 
   public tableData = signal<TableObject>(new TableObject({ component: ActivitiesListTableRowsComponent }));
@@ -96,11 +96,7 @@ export class ProjectActivitesComponent implements OnInit, OnDestroy {
       
       const updatedTableData = this.tableTemplateUtils.updateTableObjectWithUrlParams(params, this.tableData(), 'Activities');
 
-      if (!params.sortByActivities) {
-        updatedTableData.sortBy = '-dateAdded';
-      } else {
-        updatedTableData.sortBy = params.sortByActivities;
-      }
+      updatedTableData.sortBy = params.sortByActivities || '-dateAdded';
 
       this.tableData.set(updatedTableData);
       
@@ -120,7 +116,7 @@ export class ProjectActivitesComponent implements OnInit, OnDestroy {
   }
 
   onMessageOut(msg: ITableMessage) {
-    let params: any = {};
+    const params: any = {};
     switch (msg.label) {
       case 'pageNum':
         params['currentPageActivities'] = msg.data;
@@ -134,32 +130,25 @@ export class ProjectActivitesComponent implements OnInit, OnDestroy {
   }
 
   executeSearch(searchPackage: any) {
-    let params: any = {};
-    if (searchPackage.keywords) {
-      params['keywordsActivities'] = searchPackage.keywords;
-      if (searchPackage.keywordsChanged) {
-        params['sortByActivities'] = '-score';
-      }
-    } else {
-      params['keywordsActivities'] = null;
-      params['sortByActivities'] = '-dateAdded';
-    }
-    params['currentPageActivities'] = 1;
+    const params: any = {
+      keywordsActivities: searchPackage.keywords || null,
+      sortByActivities: searchPackage.keywords && searchPackage.keywordsChanged ? '-score' : '-dateAdded',
+      currentPageActivities: 1
+    };
     this.submit(params);
   }
 
   submit(params: any) {
-    this.storageService.state.scrollPosition = {
+    const headerElement = this.activitiesHeader.nativeElement;
+    this.storageService.state = {
       type: 'scrollPosition',
-      data: [window.scrollX, this.activitiesHeader.nativeElement.offsetTop - (this.activitiesHeader.nativeElement.clientHeight * 2)]
+      data: [window.scrollX, headerElement.offsetTop - (headerElement.clientHeight * 2)]
     };
-    this.router.navigate(
-      [],
-      {
-        queryParams: params,
-        relativeTo: this.route,
-        queryParamsHandling: 'merge'
-      });
+    this.router.navigate([], {
+      queryParams: params,
+      relativeTo: this.route,
+      queryParamsHandling: 'merge'
+    });
   }
 
   ngOnDestroy() {

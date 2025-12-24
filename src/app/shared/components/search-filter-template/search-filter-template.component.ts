@@ -478,9 +478,7 @@ export class SearchFilterTemplateComponent implements OnInit, AfterViewInit, OnD
    * @memberof SearchFilterTemplateComponent
    */
   clearSearchTerms() {
-    console.log('clearSearchTerms called, current value:', this.keywordSearchWords());
     this.keywordSearchWords.set('');
-    console.log('After clearing, value:', this.keywordSearchWords());
     this.search();
   }
 

@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
-import { map, shareReplay, finalize } from 'rxjs/operators';
+import { map, finalize } from 'rxjs/operators';
 
 import { Project } from 'app/models/project';
 import { Feature } from 'app/models/feature';
@@ -58,24 +58,8 @@ export class ApiService {
     return throwError(error);
   }
 
-  private pendingRequests = new Map<string, Observable<any>>();
-
   getFullDataSet(dataSet: string, pageSize: number = 250): Observable<any> {
-    const cacheKey = `${dataSet}-${pageSize}`;
-    
-    // Return cached in-flight request if one exists
-    if (this.pendingRequests.has(cacheKey)) {
-      return this.pendingRequests.get(cacheKey)!;
-    }
-    
-    // Create new request with automatic cleanup
-    const request$ = this.http.get<any>(`${this.apiPath}/search?pageSize=${pageSize}&dataset=${dataSet}`, {}).pipe(
-      finalize(() => this.pendingRequests.delete(cacheKey)),
-      shareReplay(1)
-    );
-    
-    this.pendingRequests.set(cacheKey, request$);
-    return request$;
+    return this.http.get<any>(`${this.apiPath}/search?pageSize=${pageSize}&dataset=${dataSet}`, {});
   }
 
   public async downloadDocument(document: Document): Promise<void> {
@@ -112,15 +96,14 @@ export class ApiService {
     } else {
       filename = document.documentFileName;
     }
-    console.log(document);
+    this.logger.debug('Opening document', 'ApiService', { document });
     let safeName = '';
     try {
       safeName = this.utils.encodeString(filename || '', true);
     } catch (e) {
-      // fall through
-      console.log('error', e);
+      this.logger.warn('Failed to encode document filename', 'ApiService', e);
     }
-    console.log('safeName', safeName);
+    this.logger.debug('Opening document with safe name', 'ApiService', { safeName });
     window.open('/api/public/document/' + document._id + '/download/' + safeName, '_blank');
   }
 
@@ -159,7 +142,7 @@ export class ApiService {
     if (projectLegislation !== '') { queryString += `&projectLegislation=${projectLegislation}`; }
     if (sortBy !== null) { queryString += `&sortBy=${sortBy}`; }
     if (secondarySort !== null) { queryString += `&sortBy=${secondarySort}`; }
-    if (populate !== null) { queryString += `&populate=${populate}`; }
+    queryString += `&populate=${populate}`;
     Object.keys(queryModifier).forEach((key: string) => {
       queryModifier[key].split(',').forEach((item: string) => {
         queryString += `&and[${key}]=${item}`;
@@ -351,83 +334,6 @@ export class ApiService {
     if (cpEnd !== null) { queryString += `&cpEnd[until]=${cpEnd}`; }
     queryString += `&fields=${this.buildValues(fields)}`;
     return this.http.get<Project[]>(`${this.apiPath}/${queryString}`, {});
-  }
-  // TODO: delete these "Applications" calls, cruft.
-  //
-  // Applications
-  //
-  getCountApplications(): Observable<number> {
-    const queryString = `application`;
-    return this.http.head<HttpResponse<Object>>(`${this.apiPath}/${queryString}`, { observe: 'response' })
-      .pipe(
-        map(res => {
-          // retrieve the count from the response headers
-          return parseInt(res.headers.get('x-total-count') || '0', 10);
-        })
-      );
-  }
-
-  getApplications(pageNum: number, pageSize: number, regions: string[], cpStatuses: string[], appStatuses: string[], applicant: string,
-    clFile: string, dispId: string, purpose: string): Observable<Object> {
-    const fields = [
-      'agency',
-      'areaHectares',
-      'businessUnit',
-      'centroid',
-      'cl_file',
-      'client',
-      'description',
-      'legalDescription',
-      'location',
-      'name',
-      'publishDate',
-      'purpose',
-      'status',
-      'subpurpose',
-      'subtype',
-      'tantalisID',
-      'tenureStage',
-      'type'
-    ];
-
-    let queryString = 'application?';
-    if (pageNum !== null) { queryString += `pageNum=${pageNum}&`; }
-    if (pageSize !== null) { queryString += `pageSize=${pageSize}&`; }
-    if (regions !== null && regions.length > 0) { queryString += `regions=${this.buildValues(regions)}&`; }
-    if (cpStatuses !== null && cpStatuses.length > 0) { queryString += `cpStatuses=${this.buildValues(cpStatuses)}&`; }
-    if (appStatuses !== null && appStatuses.length > 0) { queryString += `statuses=${this.buildValues(appStatuses)}&`; }
-    if (applicant !== null) { queryString += `client=${applicant}&`; }
-    if (clFile !== null) { queryString += `cl_file=${clFile}&`; }
-    if (dispId !== null) { queryString += `tantalisId=${dispId}&`; }
-    if (purpose !== null) { queryString += `purpose=${purpose}&`; }
-    queryString += `fields=${this.buildValues(fields)}`;
-
-    return this.http.get<Object>(`${this.apiPath}/${queryString}`, {});
-  }
-
-  getApplication(id: string): Observable<Object> {
-    const fields = [
-      'agency',
-      'areaHectares',
-      'businessUnit',
-      'centroid',
-      'cl_file',
-      'client',
-      'description',
-      'legalDescription',
-      'location',
-      'name',
-      'publishDate',
-      'purpose',
-      'status',
-      'subpurpose',
-      'subtype',
-      'tantalisID',
-      'tenureStage',
-      'type'
-    ];
-    const queryString = 'application/' + id + '?fields=' + this.buildValues(fields);
-    return this.http.get<Object>(`${this.apiPath}/${queryString}`, {});
   }
 
   //

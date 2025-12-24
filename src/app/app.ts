@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
 import { HeaderComponent } from './header/header.component';
 import { FooterComponent } from './footer/footer.component';
-import { StorageService } from './services/storage.service';
 import { ConfigService } from './services/config.service';
 import { filter } from 'rxjs/operators';
 
@@ -16,7 +15,6 @@ import { filter } from 'rxjs/operators';
   standalone: true
 })
 export class App implements OnInit, OnDestroy {
-  private storageService = inject(StorageService);
   private configService = inject(ConfigService);
   public router = inject(Router);
   
@@ -25,12 +23,9 @@ export class App implements OnInit, OnDestroy {
   currentUrl = signal<string>('');
 
   ngOnInit(): void {
-    // Initialize config service and eagerly load lists to avoid race conditions
+    // Initialize config service
     this.configService.init();
     this.configService.lists.subscribe();
-    
-    // Start preloading projects in the background
-    this.storageService.preloadProjects();
     
     // Track current URL for route-specific styling
     this.currentUrl.set(this.router.url);

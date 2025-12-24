@@ -1,5 +1,6 @@
-import { Component, OnInit, ChangeDetectorRef, OnDestroy, inject, signal, ChangeDetectionStrategy, effect } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, signal, ChangeDetectionStrategy, effect } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
+import { ActivatedRoute } from '@angular/router';
 import { SearchResults } from '../../models/search';
 import { IColumnObject, TableObject } from '../../shared/components/table-template/table-object';
 import { DocumentTableRowsComponent } from '../documents/project-document-table-rows/project-document-table-rows.component';
@@ -16,13 +17,14 @@ import { LoadingStateService } from '../../services/loading-state.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true
 })
-export class FeaturedDocumentsComponent implements OnInit, OnDestroy {
+export class FeaturedDocumentsComponent implements OnInit {
   public readonly location = inject(Location);
+  private readonly route = inject(ActivatedRoute);
   private readonly tableService = inject(TableService);
   private readonly loadingState = inject(LoadingStateService);
 
   private readonly tableId = 'featuredDocuments';
-  private alive = true;
+  private projId = '';
   private readonly tableSignal = this.tableService.getTableSignal(this.tableId);
 
   public readonly loading = this.loadingState.getOperationState('table-featuredDocuments');
@@ -100,11 +102,14 @@ export class FeaturedDocumentsComponent implements OnInit, OnDestroy {
     currentTableData.sortBy = '-datePosted';
     this.tableData.set(currentTableData);
 
+    // Get project ID from parent route
+    this.projId = this.route.parent?.snapshot.params['projId'] || '';
+
     this.tableService.fetchData(new SearchParamObject(
       this.tableId,
       '',
       'Document',
-      [],
+      [{ name: 'project', value: this.projId }],
       1,
       5,
       '-datePosted',
@@ -112,9 +117,5 @@ export class FeaturedDocumentsComponent implements OnInit, OnDestroy {
       false,
       ''
     ));
-  }
-
-  ngOnDestroy() {
-    this.alive = false;
   }
 }

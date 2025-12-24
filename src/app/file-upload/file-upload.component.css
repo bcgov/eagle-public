@@ -19,8 +19,8 @@
 
 .file-upload input:hover + .file-upload__target,
 .file-upload input:focus + .file-upload__target {
-  color: #5091cd;
-  border-color: #5091cd;
+  color: var(--primary);
+  border-color: var(--primary);
 }
 
 .file-upload__target {

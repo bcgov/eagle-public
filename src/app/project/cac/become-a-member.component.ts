@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { ProjectService } from '../../services/project.service';
 import { Project } from '../../models/project';
+import { LoggingService } from '../../services/logging.service';
 
 @Component({
   selector: 'app-become-a-member',
@@ -14,6 +15,7 @@ import { Project } from '../../models/project';
 })
 export class BecomeAMemberComponent {
   private projectService = inject(ProjectService);
+  private logger = inject(LoggingService);
   public activeModal = inject(NgbActiveModal);
   
   project = input.required<Project>();
@@ -55,11 +57,11 @@ export class BecomeAMemberComponent {
 
     try {
       const res = await this.projectService.cacSignUp(this.project(), signUpObject).toPromise();
-      console.log('Success:', res);
+      this.logger.info('CAC sign-up submitted successfully', 'BecomeAMemberComponent');
       this.submitting.set(false);
       this.currentPage.set(3);
     } catch (error) {
-      console.log('error', error);
+      this.logger.error('Error submitting CAC sign-up', 'BecomeAMemberComponent', error);
       alert('Uh-oh, error submitting information');
       this.submitting.set(false);
     }

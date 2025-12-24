@@ -15,6 +15,7 @@ import { LoadingStateService } from '../services/loading-state.service';
 import { CommentsTableRowsComponent } from './comments-table-rows/comments-table-rows.component';
 import { TableObject } from '../shared/components/table-template/table-object';
 import { TableTemplateComponent } from '../shared/components/table-template/table-template.component';
+import { LoggingService } from '../services/logging.service';
 
 @Component({
   selector: 'app-comments',
@@ -33,6 +34,7 @@ export class CommentsComponent implements OnInit, OnDestroy {
   private modalService = inject(NgbModal);
   private router = inject(Router);
   private loadingState = inject(LoadingStateService);
+  private logger = inject(LoggingService);
 
   loading = this.loadingState.getOperationState('comments');
   commentsLoading = this.loadingState.getOperationState('comments-list');
@@ -116,7 +118,7 @@ export class CommentsComponent implements OnInit, OnDestroy {
                           documents.push(doc[0]);
                         }
                       } catch (error) {
-                        console.error('Error loading document:', error);
+                        this.logger.error('Error loading document', 'CommentsComponent', error);
                       }
                     }
                     comment.documents = documents;
@@ -173,10 +175,10 @@ export class CommentsComponent implements OnInit, OnDestroy {
       // check result
       this.ngbModal.result.then(
         value => {
-          console.log(`Success, value = ${value}`);
+          this.logger.debug('Modal closed with success', 'CommentsComponent', { value });
         },
         reason => {
-          console.log(`Cancelled, reason = ${reason}`);
+          this.logger.debug('Modal cancelled', 'CommentsComponent', { reason });
         }
       );
     }
@@ -218,7 +220,7 @@ export class CommentsComponent implements OnInit, OnDestroy {
                   documents.push(doc[0]);
                 }
               } catch (error) {
-                console.error('Error loading document:', error);
+                this.logger.error('Error loading document', 'CommentsComponent', error);
               }
             }
             comment.documents = documents;

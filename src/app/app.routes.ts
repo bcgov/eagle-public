@@ -1,10 +1,4 @@
 import { Routes } from '@angular/router';
-import {
-  projectResolver,
-  commentPeriodResolver,
-  projectNotificationResolver,
-  documentTableResolver
-} from './resolvers';
 import { HomeComponent } from './home/home.component';
 import { ContactComponent } from './contact/contact.component';
 import { LegislationComponent } from './legislation/legislation.component';
@@ -59,11 +53,7 @@ export const routes: Routes = [
   },
   {
     path: 'pn/:projId/cp/:commentPeriodId/details',
-    component: CommentsComponent,
-    resolve: {
-      commentPeriod: commentPeriodResolver,
-      project: projectNotificationResolver
-    }
+    component: CommentsComponent
   },
   
   {
@@ -88,10 +78,7 @@ export const routes: Routes = [
   
   {
     path: 'search',
-    component: SearchComponent,
-    resolve: {
-      documentsTableRows: documentTableResolver
-    }
+    component: SearchComponent
   },
   
   {
@@ -107,20 +94,13 @@ export const routes: Routes = [
   },
   {
     path: 'p/:projId/cp/:commentPeriodId/details',
-    component: CommentsComponent,
-    resolve: {
-      commentPeriod: commentPeriodResolver,
-      project: projectResolver
-    }
+    component: CommentsComponent
   },
   
   // Project detail routes with tabs
   {
     path: 'p/:projId',
     component: ProjectComponent,
-    resolve: {
-      project: projectResolver
-    },
     children: [
       {
         path: '',

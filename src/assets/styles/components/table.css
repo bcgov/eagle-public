@@ -149,7 +149,7 @@
     padding: 1.25rem;
     border: 1px solid #dee2e6;
     border-bottom: 1px solid #dee2e6;
-    border-radius: 8px;
+    border-radius: 2px;
     background-color: #E9ECEF;
   }
 
@@ -211,7 +211,7 @@
     color: #fff;
     line-height: 1.3;
     background-color: #38598a !important;
-    border-radius: 8px 8px 0 0;
+    border-radius: 2px 2px 0 0;
   }
 
   .table-template td[data-label="Name"]::before {

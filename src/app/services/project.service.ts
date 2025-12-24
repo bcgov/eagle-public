@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable, of, forkJoin } from 'rxjs';
-import { map, catchError, mergeMap, flatMap, shareReplay, tap } from 'rxjs/operators';
+import { map, catchError, mergeMap, flatMap, tap } from 'rxjs/operators';
 
 import { Project } from 'app/models/project';
 import { ApiService } from './api';
@@ -86,8 +86,7 @@ export class ProjectService {
         catchError(error => {
           this.loadingState.stopLoading(loadingId);
           return this.api.handleError(error);
-        }),
-        shareReplay(1)
+        })
       );
     
     return this.count$;
@@ -182,8 +181,7 @@ export class ProjectService {
         catchError(error => {
           this.loadingState.stopLoading(loadingId);
           return this.api.handleError(error);
-        }),
-        shareReplay(1)
+        })
       );
   }
 

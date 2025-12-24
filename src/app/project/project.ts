@@ -1,8 +1,8 @@
-import { Component, OnInit, OnDestroy, AfterViewInit, ElementRef, signal, computed, ChangeDetectionStrategy, inject, Renderer2, CUSTOM_ELEMENTS_SCHEMA, HostListener } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit, ElementRef, signal, ChangeDetectionStrategy, inject, Renderer2, CUSTOM_ELEMENTS_SCHEMA, effect } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { takeUntil, take } from 'rxjs/operators';
 import { NgbModal, NgbModalRef, NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import * as L from 'leaflet';
 
@@ -56,16 +56,68 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
 
   public project = signal<Project | null>(null);
   public period = signal<CommentPeriod | null>(null);
+  public commentPeriod = signal<CommentPeriod | null>(null);
   private ngbModal: NgbModalRef | null = null;
   public legislationLink = signal<string>('');
   public sidebarOpen = signal(true);
+  private tabLinksInitialized = false;
 
-  public commentPeriod = signal<CommentPeriod | null>(null);
   public map: L.Map | null = null;
   public appFG = L.featureGroup();
   readonly defaultBounds = L.latLngBounds([48, -139], [60, -114]);
 
   private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
+
+  constructor() {
+    // Initialize tab links when project data loads
+    effect(() => {
+      const proj = this.project();
+      if (proj?._id) {
+        this.initTabLinks();
+        
+        // Set legislation link based on year
+        const legislationYear = proj.legislation.includes('2002') ? '2002' 
+          : proj.legislation.includes('1996') ? '1996' 
+          : '2018';
+        
+        const legislationLinks: Record<string, string> = {
+          '2002': Constants.legislationLinks.ENVIRONMENTAL_ASSESSMENT_ACT_2002_LINK,
+          '1996': Constants.legislationLinks.ENVIRONMENTAL_ASSESSMENT_ACT_1996_LINK,
+          '2018': Constants.legislationLinks.ENVIRONMENTAL_ASSESSMENT_ACT_2018_LINK
+        };
+        
+        this.legislationLink.set(legislationLinks[legislationYear]);
+      }
+    });
+  }
+
+  private loadProject(projId: string) {
+    const start = new Date();
+    const end = new Date();
+    start.setDate(start.getDate() - 21);
+    end.setDate(end.getDate() + 14);
+    
+    this.projectService.getById(projId, false, start.toISOString(), end.toISOString())
+      .pipe(takeUntil(this.ngUnsubscribe))
+      .subscribe({
+        next: (project) => {
+          if (project) {
+            this.project.set(project);
+            this.storageService.state = { type: 'currentProject', data: project };
+            this.renderer.removeClass(document.body, 'no-scroll');
+            setTimeout(() => this.initMap(), 0);
+          } else {
+            this.handleProjectLoadError();
+          }
+        },
+        error: () => this.handleProjectLoadError()
+      });
+  }
+
+  private handleProjectLoadError() {
+    alert('Uh-oh, couldn\'t load project');
+    this.router.navigate(['/projects']);
+  }
 
   public tabLinks = signal<Array<any>>([
     {
@@ -147,37 +199,15 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   ngOnInit() {
-    this.route.data
+    // Get project ID from route params
+    this.route.paramMap
       .pipe(takeUntil(this.ngUnsubscribe))
-      .subscribe(
-        (data: any) => {
-          const results = data?.project || null;
-          if (results) {
-            this.project.set(results);
-            this.storageService.state.currentProject = { type: 'currentProject', data: results };
-            this.renderer.removeClass(document.body, 'no-scroll');
-            
-            // Initialize map after project data is loaded
-            setTimeout(() => this.initMap(), 0);
-          } else {
-            alert('Uh-oh, couldn\'t load project');
-            this.router.navigate(['/projects']);
-          }
+      .subscribe(params => {
+        const projId = params.get('projId');
+        if (projId) {
+          this.loadProject(projId);
         }
-      );
-
-    this.initTabLinks();
-
-    const proj = this.project();
-    if (proj) {
-      if (proj.legislation.includes('2002')) {
-        this.legislationLink.set(Constants.legislationLinks.ENVIRONMENTAL_ASSESSMENT_ACT_2002_LINK);
-      } else if (proj.legislation.includes('1996')) {
-        this.legislationLink.set(Constants.legislationLinks.ENVIRONMENTAL_ASSESSMENT_ACT_1996_LINK);
-      } else {
-        this.legislationLink.set(Constants.legislationLinks.ENVIRONMENTAL_ASSESSMENT_ACT_2018_LINK);
-      }
-    }
+      });
   }
 
   ngAfterViewInit() {
@@ -341,7 +371,16 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   initTabLinks(): void {
-    this.configService.lists.subscribe(list => {
+    // Only initialize once per component instance
+    if (this.tabLinksInitialized) {
+      return;
+    }
+    this.tabLinksInitialized = true;
+
+    this.configService.lists.pipe(
+      take(1),
+      takeUntil(this.ngUnsubscribe)
+    ).subscribe(list => {
       const currentTabs = this.tabLinks();
       currentTabs.forEach(tabLink => {
         if (!tabLink.display && tabLink.key !== Constants.optionalProjectDocTabs.UNSUBSCRIBE_CAC) {

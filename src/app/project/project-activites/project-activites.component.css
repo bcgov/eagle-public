@@ -1,1 +1,6 @@
-/* Empty CSS file */
+/* Ensure loading spinner is centered in the content area */
+::ng-deep .spinner-border {
+  margin-left: auto;
+  margin-right: auto;
+  display: block;
+}

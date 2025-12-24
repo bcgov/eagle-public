@@ -5,66 +5,66 @@
       <div class="row">
         <div class="col-12">
         <div class="location-info">
-          <p class="desc mb-3" [innerHTML]="(project?.description || '-') | newlines"></p>
+          <p class="desc mb-3" [innerHTML]="(project()?.description?.toString() || '-') | newlines"></p>
           <dl class="row g-3">
             <div class="col-sm-6 col-md-4 col-lg-3">
               <dt class="fw-bold text-primary mb-0 lh-sm">Proponent</dt>
-              <dd class="mb-1">{{project?.proponent?.name || "-" }}</dd>
+              <dd class="mb-1">{{project()?.proponent?.name || "-" }}</dd>
             </div>
             <div class="col-sm-6 col-md-4 col-lg-3">
               <dt class="fw-bold text-primary mb-0 lh-sm">Type</dt>
-              <dd class="mb-1">{{project?.type || "-" }}</dd>
+              <dd class="mb-1">{{project()?.type || "-" }}</dd>
             </div>
             <div class="col-sm-6 col-md-4 col-lg-3">
               <dt class="fw-bold text-primary mb-0 lh-sm">Sub-type</dt>
-              <dd class="mb-1">{{project?.sector || "-" }}</dd>
+              <dd class="mb-1">{{project()?.sector || "-" }}</dd>
             </div>
             <div class="col-sm-6 col-md-4 col-lg-3">
               <dt class="fw-bold text-primary mb-0 lh-sm">Nature</dt>
-              <dd class="mb-1">{{project?.nature || "No nature description available" }}</dd>
+              <dd class="mb-1">{{project()?.nature || "No nature description available" }}</dd>
             </div>
-            @if (project?.status) {
+            @if (project()?.status) {
               <div class="col-sm-6 col-md-4 col-lg-3">
                 <dt class="fw-bold text-primary mb-0 lh-sm">IAAC Involvement</dt>
-                @if (project.CEAAInvolvement?.name==='None') {
+                @if (project()?.CEAAInvolvement?.name==='None') {
                   <dd class="mb-1">
-                    {{project.CEAAInvolvement?.name || "-" }}
+                    {{project()?.CEAAInvolvement?.name || "-" }}
                   </dd>
                 }
-                @if (project.CEAAInvolvement?.name!=='None') {
+                @if (project()?.CEAAInvolvement?.name!=='None') {
                   <dd class="mb-1"><a target="_blank"
-                      href="{{project.CEAALink}}">{{project.CEAAInvolvement?.name || "-" }}</a>
+                      href="{{project()?.CEAALink}}">{{project()?.CEAAInvolvement?.name || "-" }}</a>
                   </dd>
                 }
               </div>
             }
-            @if (project?.status) {
+            @if (project()?.status) {
               <div class="col-sm-6 col-md-4 col-lg-3">
                 <dt class="fw-bold text-primary mb-0 lh-sm">Project Status</dt>
-                <dd class="mb-1">{{project?.status || "-"}}</dd>
+                <dd class="mb-1">{{project()?.status || "-"}}</dd>
               </div>
             }
-            @if (project?.eacDecision) {
+            @if (project()?.eacDecision) {
               <div class="col-sm-6 col-md-4 col-lg-3">
                 <dt class="fw-bold text-primary mb-0 lh-sm">EAC Status</dt>
-                @if (project?.decisionDate) {
-                  <dd class="mb-1">{{project.eacDecision?.name || '-'}} |
-                    {{project?.decisionDate | date: 'longDate'}}</dd>
+                @if (project()?.decisionDate) {
+                  <dd class="mb-1">{{project()?.eacDecision?.name || '-'}} |
+                    {{project()?.decisionDate?.toString() | date: 'longDate'}}</dd>
                 }
-                @if (!project?.decisionDate) {
-                  <dd class="mb-1">{{project.eacDecision?.name || '-'}}</dd>
+                @if (!project()?.decisionDate) {
+                  <dd class="mb-1">{{project()?.eacDecision?.name || '-'}}</dd>
                 }
               </div>
             }
-            @if (project?.operational) {
+            @if (project()?.operational) {
               <div class="col-sm-6 col-md-4 col-lg-3">
                 <dt class="fw-bold text-primary mb-0 lh-sm">Active Phase</dt>
-                @if (project?.operational?.date) {
-                  <dd class="mb-1">{{project?.operational?.label || '-'}} |
-                    {{project?.operational?.date | date: 'longDate'}}</dd>
+                @if (project()?.operational?.date) {
+                  <dd class="mb-1">{{project()?.operational?.label || '-'}} |
+                    {{project()?.operational?.date?.toString() | date: 'longDate'}}</dd>
                 }
-                @if (!project?.operational?.date) {
-                  <dd class="mb-1">{{project?.operational?.label || '-'}}</dd>
+                @if (!project()?.operational?.date) {
+                  <dd class="mb-1">{{project()?.operational?.label || '-'}}</dd>
                 }
               </div>
             }

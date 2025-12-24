@@ -18,13 +18,21 @@ export class StorageService {
     private isPreloading = this.loadingState.getOperationState('storage-preload');
     private preloadComplete = signal(false);
     private preloadComplete$ = new Subject<Project[]>();
+    
+    // Current project signal for reactive access
+    public currentProject = signal<Project | null>(null);
 
     constructor() {
         this.currentState = {};
     }
 
     get state(): any { return this.currentState; }
-    set state(state: any) { this.currentState[state.type] = state.data; }
+    set state(state: any) { 
+        this.currentState[state.type] = state.data;
+        if (state.type === 'currentProject') {
+            this.currentProject.set(state.data);
+        }
+    }
 
     /**
      * Start preloading projects in the background
