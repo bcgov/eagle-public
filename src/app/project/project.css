@@ -1,5 +1,28 @@
 @import url("../../assets/styles/base/base.css");
 
+/* Main layout - sticky footer with flexbox */
+.project {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - var(--header-total-height) - var(--footer-height));
+}
+
+.project main,
+.project .content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.project .content {
+  position: relative; /* For spinner positioning */
+}
+
+.project .main-content {
+  flex: 1; /* Pushes Contact Us section to bottom */
+}
+
+/* Tab navigation */
 .project .project-tabs .nav-tabs {
   padding-top: 4rem;
   max-width: 1100px;
@@ -7,36 +30,29 @@
   padding-inline: 2rem;
 }
 
-/* Grid layout for sidebar and content */
-@media (min-width: 768px) {
-  .project .project-info {
-    display: grid;
-    grid-template-columns: var(--sidebar-width) 1fr;
-    min-height: calc(100vh - var(--header-total-height));
-    transition: grid-template-columns 0.5s ease;
-  }
-
-  .project .project-info:has(.side-banner.closed) {
-    grid-template-columns: 0 1fr;
-  }
-}
-
-/* People/Contact section */
+/* Contact Us section */
 .project .people {
-  padding: 3rem 1rem 3rem;
+  padding: 3rem 1rem;
   background-color: var(--table-row-bg);
-}
-
-/* Make content area a positioning context for spinners */
-.project .content {
-  position: relative;
 }
 
 .project .people h2 {
   color: #003364;
 }
 
+/* Desktop-specific styles */
 @media (min-width: 768px) {
+  .project .project-info {
+    display: grid;
+    grid-template-columns: var(--sidebar-width) 1fr;
+    flex: 1;
+    transition: grid-template-columns 0.5s ease;
+  }
+
+  .project .project-info:has(.side-banner.closed) {
+    grid-template-columns: 0 1fr;
+  }
+
   .project .people .contact-divider {
     border-left: 1px solid #adb5bd;
     padding-left: 2rem;

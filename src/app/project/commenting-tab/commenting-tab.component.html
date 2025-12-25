@@ -7,15 +7,15 @@
 
     @if (!loading()) {
       <section class="tab-section">
-        @if (commentPeriods.length < 1) {
+        @if (commentPeriods().length < 1) {
           <div>
             No comment periods are currently scheduled for this project.
           </div>
         }
 
-        @if (commentPeriods.length > 0) {
+        @if (commentPeriods().length > 0) {
           <div>
-            @for (commentPeriod of commentPeriods; track commentPeriod._id) {
+            @for (commentPeriod of commentPeriods(); track commentPeriod._id) {
               <div class="d-flex justify-content-between list-group-item"
                    tabindex="0"
                    (keyup.enter)="goToCP(commentPeriod)"

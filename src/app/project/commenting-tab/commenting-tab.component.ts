@@ -1,13 +1,13 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef, inject, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, ChangeDetectionStrategy, effect, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Router } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
-import { Project } from '../../models/project';
 import { CommentPeriodService } from '../../services/commentperiod.service';
 import { CommentPeriod } from '../../models/commentperiod';
 import { LoadingStateService } from '../../services/loading-state.service';
+import { StorageService } from '../../services/storage.service';
 
 @Component({
   selector: 'app-commenting-tab',
@@ -18,44 +18,37 @@ import { LoadingStateService } from '../../services/loading-state.service';
   standalone: true
 })
 export class CommentingTabComponent implements OnInit, OnDestroy {
-  private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private storageService = inject(StorageService);
   public commentPeriodService = inject(CommentPeriodService);
-  private _changeDetectionRef = inject(ChangeDetectorRef);
   private loadingState = inject(LoadingStateService);
 
-  public currentProject: Project | null = null;
+  // Use the reactive signal from storageService
+  public project = this.storageService.currentProject;
   public loading = this.loadingState.getOperationState('commenting-tab');
-  public commentPeriods: Array<CommentPeriod> = [];
+  public commentPeriods = signal<Array<CommentPeriod>>([]);
   private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
+  private loadedProjectId: string | null = null;
 
-  ngOnInit() {
-    // get project
-    this.route.parent?.data
-      .pipe(takeUntil(this.ngUnsubscribe))
-      .subscribe(
-        (data: any) => {
-          const results = data.project;
-          if (results) {
-            this.currentProject = results;
-            if (this.currentProject) {
-              this.getCommentPeriods(this.currentProject._id);
-            }
-          } else {
-            alert('Uh-oh, couldn\'t load project');
-            // project not found --> navigate back to project list
-            this.router.navigate(['/projects']);
-          }
-          this._changeDetectionRef.detectChanges();
-        }
-      );
+  constructor() {
+    // Load comment periods when project is available
+    effect(() => {
+      const project = this.project();
+      if (project?._id && project._id !== this.loadedProjectId) {
+        this.loadedProjectId = project._id;
+        this.getCommentPeriods(project._id);
+      }
+    });
   }
 
+  ngOnInit() {}
+
   goToCP(commentPeriod: CommentPeriod) {
+    const project = this.project();
     if (commentPeriod.isMet && commentPeriod.metURL) {
       window.open(commentPeriod.metURL, '_blank');
-    } else {
-      this.router.navigate(['p', this.currentProject!._id, 'cp', commentPeriod._id]);
+    } else if (project?._id) {
+      this.router.navigate(['p', project._id, 'cp', commentPeriod._id]);
     }
   }
 
@@ -64,11 +57,11 @@ export class CommentingTabComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.ngUnsubscribe))
       .subscribe((res: any) => {
         if (res.data) {
-          this.commentPeriods = res.data;
-          this.commentPeriods.forEach(element => {
+          const periods = res.data.map((element: CommentPeriod) => {
             const match = element.instructions ? element.instructions.match(/Comment Period on the (.*?) for /) : null;
-            element.instructions = match ? match[1] : '';
+            return { ...element, instructions: match ? match[1] : '' };
           });
+          this.commentPeriods.set(periods);
         }
       });
   }
