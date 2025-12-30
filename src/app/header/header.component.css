@@ -144,6 +144,17 @@
   background-color: transparent;
 }
 
+/* Add border under Contact Us on mobile */
+@media (max-width: 991px) {
+  .nav-item:first-child .nav-link {
+    border-top: 2px solid var(--gold);
+  }
+  
+  .nav-item:has(.nav-link[href="/contact"]) {
+    border-bottom: 2px solid var(--gold);
+  }
+}
+
 .nav-link span {
   font-size: 1rem;
   font-weight: normal;

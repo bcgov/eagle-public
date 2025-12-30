@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject, ChangeDetectionStrategy, effect, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, ChangeDetectionStrategy, effect, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { Subject } from 'rxjs';
@@ -21,14 +21,19 @@ export class CommentingTabComponent implements OnInit, OnDestroy {
   private router = inject(Router);
   private storageService = inject(StorageService);
   public commentPeriodService = inject(CommentPeriodService);
-  private loadingState = inject(LoadingStateService);
+  public loadingState = inject(LoadingStateService);
 
   // Use the reactive signal from storageService
   public project = this.storageService.currentProject;
-  public loading = this.loadingState.getOperationState('commenting-tab');
   public commentPeriods = signal<Array<CommentPeriod>>([]);
   private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
   private loadedProjectId: string | null = null;
+
+  // Computed loading state based on current project
+  public loading = computed(() => {
+    const project = this.project();
+    return project?._id ? this.loadingState.getOperationState(`commentperiods-${project._id}`)() : false;
+  });
 
   constructor() {
     // Load comment periods when project is available

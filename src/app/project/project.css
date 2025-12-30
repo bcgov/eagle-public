@@ -1,25 +1,33 @@
 @import url("../../assets/styles/base/base.css");
 
+/* Host element must participate in flex layout */
+:host {
+  display: flex;
+  flex: 1;
+}
+
 /* Main layout - sticky footer with flexbox */
 .project {
   display: flex;
   flex-direction: column;
-  min-height: calc(100vh - var(--header-total-height) - var(--footer-height));
+  flex: 1;
 }
 
-.project main,
-.project .content {
+.project main {
   display: flex;
   flex-direction: column;
   flex: 1;
 }
 
 .project .content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
   position: relative; /* For spinner positioning */
 }
 
 .project .main-content {
-  flex: 1; /* Pushes Contact Us section to bottom */
+  flex: 1;
 }
 
 /* Tab navigation */
@@ -30,10 +38,31 @@
   padding-inline: 2rem;
 }
 
+/* Mobile-specific styles */
+@media (max-width: 767px) {
+  .project .project-tabs .nav-tabs {
+    max-width: 100%;
+    padding-inline: 0;
+    padding-top: 0;
+  }
+  
+  /* Hide sidebar on mobile */
+  .project .project-info details-sidebar {
+    display: none;
+  }
+  
+  /* Prevent viewport overflow on mobile */
+  .project .project-info {
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+}
+
 /* Contact Us section */
 .project .people {
   padding: 3rem 1rem;
   background-color: var(--table-row-bg);
+  margin-top: auto;
 }
 
 .project .people h2 {
@@ -48,9 +77,18 @@
     flex: 1;
     transition: grid-template-columns 0.5s ease;
   }
-
+  
   .project .project-info:has(.side-banner.closed) {
     grid-template-columns: 0 1fr;
+  }
+  
+  .project .project-info .side-banner {
+    align-self: flex-start;
+  }
+  
+  .project .project-info .content {
+    flex: 1;
+    min-width: 0;
   }
 
   .project .people .contact-divider {

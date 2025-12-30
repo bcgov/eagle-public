@@ -173,6 +173,10 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
       const projectId = this.project()?._id;
       if (!projectId) return;
       
+      // Only fetch if tab is not already displayed
+      const tab = this.tabLinks().find(docTab => docTab.key === key);
+      if (tab?.display) return;
+      
       this.searchService.getSearchResults(
         '',
         'Document',
@@ -184,7 +188,7 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
         true,
         ''
       )
-      .pipe(takeUntil(this.ngUnsubscribe))
+      .pipe(take(1))
       .subscribe((res: any) => {
         if (res[0].data.searchResults.length) {
           const currentTabs = this.tabLinks();
@@ -204,7 +208,7 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
       .pipe(takeUntil(this.ngUnsubscribe))
       .subscribe(params => {
         const projId = params.get('projId');
-        if (projId) {
+        if (projId && this.project()?._id !== projId) {
           this.loadProject(projId);
         }
       });

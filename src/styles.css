@@ -58,6 +58,8 @@ body {
   padding: 0;
   font-family: 'BCSans', 'Noto Sans', Arial, sans-serif;
   background-color: #f7f8fa;
+  overflow-x: hidden;
+  max-width: 100%;
 }
 
 /* Global Content Styles */

@@ -104,7 +104,8 @@
     --tab-sm-active-color: var(--white);
     --tab-sm-bg: var(--lightgray);
     --tab-sm-active-bg: #38598a;
-    --tab-active-bg: #f7f8fa;
+    --tab-active-bg: #38598a;
+    --tab-active-color: var(--white);
 
     /* Tables */
     --table-header-bg: #38598a;
