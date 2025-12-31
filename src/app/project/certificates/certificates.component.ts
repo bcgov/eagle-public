@@ -1,6 +1,7 @@
-import { Component, OnInit, OnDestroy, inject, signal, effect, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, Router, Params } from '@angular/router';
 import { takeWhile } from 'rxjs/operators';
+import { toObservable } from '@angular/core/rxjs-interop';
 import { SearchParamObject } from '../../services/search.service';
 import { IColumnObject, TableObject } from '../../shared/components/table-template/table-object';
 import { DocumentTableRowsComponent } from '../documents/project-document-table-rows/project-document-table-rows.component';
@@ -9,6 +10,9 @@ import { ITableMessage } from '../../shared/components/table-template/table-row-
 import { TableService } from '../../services/table.service';
 import { TableTemplateComponent } from '../../shared/components/table-template/table-template.component';
 import { LoadingStateService } from '../../services/loading-state.service';
+import { ConfigService } from '../../services/config.service';
+import { Utils } from '../../shared/utils/utils';
+import { Constants } from '../../shared/utils/constants';
 
 @Component({
   selector: 'app-certificates',
@@ -24,13 +28,17 @@ export class CertificatesComponent implements OnInit, OnDestroy {
   private readonly tableTemplateUtils = inject(TableTemplate);
   private readonly tableService = inject(TableService);
   private readonly loadingState = inject(LoadingStateService);
+  private readonly configService = inject(ConfigService);
+  private readonly utils = inject(Utils);
 
   private readonly tableId = 'certificates';
   private alive = true;
   private projId = '';
+  private lists: any[] = [];
 
   public readonly loading = this.loadingState.getOperationState('table-certificates');
   public readonly tableData = signal<TableObject>(new TableObject({ component: DocumentTableRowsComponent }));
+  private readonly tableSignal$ = toObservable(this.tableService.getTableSignal(this.tableId));
   
   public readonly tableColumns: IColumnObject[] = [
     {
@@ -60,11 +68,12 @@ export class CertificatesComponent implements OnInit, OnDestroy {
     }
   ];
 
-  constructor() {
+  ngOnInit() {
+    // Get project ID from parent route
+    this.projId = this.route.parent?.snapshot.params['projId'] || '';
+
     // Watch for table data changes from service
-    const tableSignal = this.tableService.getTableSignal(this.tableId);
-    effect(() => {
-      const searchResults = tableSignal();
+    this.tableSignal$.pipe(takeWhile(() => this.alive)).subscribe(searchResults => {
       
       if (searchResults && searchResults.data) {
         const currentTableData = this.tableData();
@@ -86,40 +95,57 @@ export class CertificatesComponent implements OnInit, OnDestroy {
         this.tableData.set(newTableData);
       }
     });
-  }
 
-  ngOnInit() {
-    // Get project ID from parent route
-    this.projId = this.route.parent?.snapshot.params['projId'] || '';
+    // Load config lists and trigger initial fetch
+    this.configService.lists.pipe(takeWhile(() => this.alive)).subscribe(list => {
+      this.lists = list;
+      this.fetchDataWithCurrentParams();
+    });
 
     // Subscribe to query params and fetch data
-    this.route.queryParamMap.pipe(takeWhile(() => this.alive)).subscribe(data => {
-      const updatedTableData = this.tableTemplateUtils.updateTableObjectWithUrlParams(data as any, this.tableData());
-      this.tableData.set(updatedTableData);
-
-      // Determine secondary sort
-      const secondarySort = updatedTableData.sortBy.includes('displayName') ? '' : '+displayName';
-
-      // Fetch data with current params
-      this.tableService.fetchData(new SearchParamObject(
-        this.tableId,
-        '',
-        'Document',
-        [{ 'name': 'project', 'value': this.projId }],
-        updatedTableData.currentPage,
-        updatedTableData.pageSize,
-        updatedTableData.sortBy,
-        { documentSource: 'PROJECT', type: 'certificate' },
-        true,
-        secondarySort
-      ));
+    this.route.queryParamMap.pipe(takeWhile(() => this.alive)).subscribe(() => {
+      if (this.lists.length > 0) {
+        this.fetchDataWithCurrentParams();
+      }
     });
+  }
+
+  private fetchDataWithCurrentParams() {
+    const currentParams = this.route.snapshot.queryParamMap;
+    const queryParams = { ...(currentParams as any)['params'] };
+    
+    const updatedTableData = this.tableTemplateUtils.updateTableObjectWithUrlParams(
+      queryParams,
+      this.tableData()
+    );
+    
+    // Set default sort if not provided
+    if (!queryParams['sortBy']) {
+      updatedTableData.sortBy = '-datePosted';
+    }
+    
+    this.tableData.set(updatedTableData);
+
+    // Determine secondary sort
+    const secondarySort = updatedTableData.sortBy.includes('displayName') ? '' : '+displayName';
+
+    // Fetch data with current params
+    this.tableService.fetchData(new SearchParamObject(
+      this.tableId,
+      '',
+      'Document',
+      [{ 'name': 'project', 'value': this.projId }],
+      updatedTableData.currentPage,
+      updatedTableData.pageSize,
+      updatedTableData.sortBy,
+      this.utils.createProjectTabModifiers(Constants.optionalProjectDocTabs.CERTIFICATE, this.lists),
+      false,
+      secondarySort
+    ));
   }
 
   onMessageOut(msg: ITableMessage) {
     const params: Params = {};
-    const currentTableData = this.tableData();
-    const currentParams = this.route.snapshot.queryParams;
     
     switch (msg.label) {
       case 'columnSort':
@@ -135,7 +161,7 @@ export class CertificatesComponent implements OnInit, OnDestroy {
         break;
     }
     
-    this.submit({ ...currentParams, ...params });
+    this.submit({ ...this.route.snapshot.queryParams, ...params });
   }
 
   private toggleSortDirection(field: string): string {

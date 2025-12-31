@@ -1,7 +1,8 @@
-import { Component, OnInit, OnDestroy, ViewChild, ElementRef, inject, signal, effect } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, ElementRef, inject, signal } from '@angular/core';
 import { Router, ActivatedRoute, Params } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { takeWhile } from 'rxjs/operators';
+import { toObservable } from '@angular/core/rxjs-interop';
 
 import { ActivitiesListTableRowsComponent } from './activities-list-table-rows/activities-list-table-rows.component';
 import { IColumnObject, TableObject } from 'app/shared/components/table-template/table-object';
@@ -22,7 +23,7 @@ import { SearchFilterTemplateComponent } from 'app/shared/components/search-filt
   standalone: true
 })
 export class ProjectActivitesComponent implements OnInit, OnDestroy {
-  @ViewChild('activitiesHeader', { static: true }) activitiesHeader!: ElementRef;
+  @ViewChild('activitiesHeader', { static: false }) activitiesHeader?: ElementRef;
 
   private router = inject(Router);
   private route = inject(ActivatedRoute);
@@ -34,7 +35,7 @@ export class ProjectActivitesComponent implements OnInit, OnDestroy {
   private alive = true;
   private readonly tableId = 'projectActivities';
   private projId = '';
-  private tableSignal = this.tableService.getTableSignal(this.tableId);
+  private readonly tableSignal$ = toObservable(this.tableService.getTableSignal(this.tableId));
 
   public loading = this.loadingState.isLoading;
   public queryParams: Params = {};
@@ -55,39 +56,38 @@ export class ProjectActivitesComponent implements OnInit, OnDestroy {
     }
   ];
 
-  constructor() {
+  ngOnInit() {
+    // Get project ID from parent route
+    this.projId = this.route.parent?.snapshot.params['projId'] || '';
+
     // Watch for table data changes from service
-    effect(() => {
-      const searchResults = this.tableSignal();
-      
+    this.tableSignal$.pipe(takeWhile(() => this.alive)).subscribe(searchResults => {
       // Only process when we have actual API results (not initial null value)
       if (searchResults !== null && searchResults !== undefined) {
-        const updatedTableData = this.tableData();
+        const currentTableData = this.tableData();
+        // Create new TableObject to ensure change detection with OnPush
+        const updatedTableData = new TableObject({
+          component: ActivitiesListTableRowsComponent,
+          pageSize: currentTableData.pageSize,
+          currentPage: currentTableData.currentPage,
+          sortBy: currentTableData.sortBy,
+          tableId: 'activities-table'
+        });
+        
         if (searchResults.data && Array.isArray(searchResults.data) && searchResults.data.length > 0) {
           updatedTableData.totalListItems = searchResults.totalSearchCount;
           updatedTableData.items = searchResults.data.map((record: any) => {
             return { rowData: record };
           });
           updatedTableData.columns = this.tableColumns;
-          updatedTableData.options.showAllPicker = true;
         } else {
           updatedTableData.totalListItems = 0;
           updatedTableData.items = [];
         }
+        updatedTableData.options.showAllPicker = true;
         this.tableData.set(updatedTableData);
       }
     });
-  }
-
-  ngOnInit() {
-    // Get project ID from parent route
-    this.projId = this.route.parent?.snapshot.params['projId'] || '';
-
-    const currentTableData = this.tableData();
-    currentTableData.options.showPageCountDisplay = true;
-    currentTableData.options.showPagination = true;
-    currentTableData.tableId = 'activities-table';
-    this.tableData.set(currentTableData);
 
     this.route.queryParamMap.pipe(takeWhile(() => this.alive)).subscribe(data => {
       const params: any = {};
@@ -139,11 +139,13 @@ export class ProjectActivitesComponent implements OnInit, OnDestroy {
   }
 
   submit(params: any) {
-    const headerElement = this.activitiesHeader.nativeElement;
-    this.storageService.state = {
-      type: 'scrollPosition',
-      data: [window.scrollX, headerElement.offsetTop - (headerElement.clientHeight * 2)]
-    };
+    if (this.activitiesHeader?.nativeElement) {
+      const headerElement = this.activitiesHeader.nativeElement;
+      this.storageService.state = {
+        type: 'scrollPosition',
+        data: [window.scrollX, headerElement.offsetTop - (headerElement.clientHeight * 2)]
+      };
+    }
     this.router.navigate([], {
       queryParams: params,
       relativeTo: this.route,

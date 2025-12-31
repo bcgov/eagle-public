@@ -16,6 +16,7 @@
   </div>
   }
 
+  <div [class.table-loading]="loading && data.items.length > 0">
   @if (loading && data.items.length === 0) {
     <div class="text-center my-5">
       <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
@@ -77,4 +78,6 @@
   </div>
   }
   }
+  </div>
 </div>
+

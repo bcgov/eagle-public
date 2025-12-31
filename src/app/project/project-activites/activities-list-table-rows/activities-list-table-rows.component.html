@@ -11,10 +11,10 @@
     <span>{{rowData.headline || '-'}}</span>
     <br>
     <br>
-    <span [innerHtml]="rowData.content"></span>
+    <span [innerHtml]="getSafeHtml(rowData.content)"></span>
   </div>
   <br>
-  <div>
+  <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
     @if (isSingleDoc(rowData?.documentUrl) && !rowData?.documentUrl.includes('docs?folder')) {
       <a class="btn content-btn-alt"
         [href]="rowData.documentUrl"
@@ -40,3 +40,4 @@
   data-label="Date"
   class="col-2"
   tabindex="0">{{rowData.dateAdded | date:'longDate'}}</td>
+

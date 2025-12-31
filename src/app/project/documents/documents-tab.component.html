@@ -14,17 +14,17 @@
         </search-filter-template>
       </section>
 
-    @if (tableData().totalListItems > 0) {
-      <lib-table-template
-        [data]="tableData()"
-        (messageOut)="onMessageOut($event)">
-      </lib-table-template>
-    }
-
-    @if (tableData().totalListItems === 0) {
+    @if (!loading() && tableData().totalListItems === 0) {
       <div>
         No results found.
       </div>
+    } @else {
+      <lib-table-template
+        [data]="tableData()"
+        [loading]="loading()"
+        (messageOut)="onMessageOut($event)">
+      </lib-table-template>
     }
   </section>
 </div>
+

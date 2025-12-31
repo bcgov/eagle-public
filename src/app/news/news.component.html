@@ -23,9 +23,14 @@
       <div class="container">
         <h1>Activities & Updates</h1>
         <br>
-        @if (tableData().totalListItems > 0) {
+        @if (!loading() && tableData().totalListItems === 0) {
+          <div class="text-center my-5">
+            <p class="text-muted">No activities found</p>
+          </div>
+        } @else {
           <lib-table-template 
             [data]="tableData()"
+            [loading]="loading()"
             (messageOut)="onMessageOut($event)">
           </lib-table-template>
         }
@@ -33,3 +38,4 @@
     </section>
   </main>
 }
+

@@ -2,6 +2,7 @@ import { Component, EventEmitter, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { DatePipe } from '@angular/common';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { TableRowComponent, ITableMessage } from 'app/shared/components/table-template/table-row-component';
 import { TableObject } from 'app/shared/components/table-template/table-object';
 
@@ -14,6 +15,7 @@ import { TableObject } from 'app/shared/components/table-template/table-object';
 })
 export class ActivitiesListTableRowsComponent implements TableRowComponent {
   private router = inject(Router);
+  private sanitizer = inject(DomSanitizer);
 
   // TableRowComponent interface properties
   rowData: any;
@@ -29,11 +31,11 @@ export class ActivitiesListTableRowsComponent implements TableRowComponent {
     }
   }
 
-  isSingleDoc(item: any) {
-    if (item !== '' && item !== null) {
-      return true;
-    } else {
-      return false;
-    }
+  isSingleDoc(item: any): boolean {
+    return item !== '' && item !== null;
+  }
+
+  getSafeHtml(content: string): SafeHtml {
+    return this.sanitizer.bypassSecurityTrustHtml(content || '');
   }
 }

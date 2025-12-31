@@ -12,6 +12,7 @@ import { ITableMessage } from '../../shared/components/table-template/table-row-
 import { DateFilterDefinition, FilterObject, FilterType, MultiSelectDefinition } from '../../shared/components/search-filter-template/filter-object';
 import { ConfigService } from '../../services/config.service';
 import { TableService } from '../../services/table.service';
+import { LoadingStateService } from '../../services/loading-state.service';
 import { TableTemplateComponent } from '../../shared/components/table-template/table-template.component';
 import { SearchFilterTemplateComponent } from '../../shared/components/search-filter-template/search-filter-template.component';
 import { LoggingService } from '../../services/logging.service';
@@ -29,6 +30,7 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly tableTemplateUtils = inject(TableTemplate);
   private readonly tableService = inject(TableService);
+  private readonly loadingState = inject(LoadingStateService);
   private readonly configService = inject(ConfigService);
   private readonly logger = inject(LoggingService);
 
@@ -46,6 +48,7 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
   private readonly dateFiltersList = ['datePostedStart', 'datePostedEnd'];
 
   public queryParams: Params = {};
+  public readonly loading = this.loadingState.getOperationState('table-documentsTab');
   public readonly showAdvancedFilters = signal(false);
   public readonly filters = signal<FilterObject[]>([]);
   public readonly tableData = signal<TableObject>(new TableObject({ 
@@ -87,10 +90,7 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
   ];
 
   private readonly legislationFilterGroup = { name: 'legislation', labelPrefix: '', labelPostfix: ' Act Terms' };
-  
   private readonly tableSignal$ = toObservable(this.tableService.getTableSignal(this.tableId));
-
-  constructor() {}
 
   ngOnInit() {
     // Get project ID from parent route

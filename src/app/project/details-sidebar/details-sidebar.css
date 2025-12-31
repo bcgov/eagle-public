@@ -13,170 +13,114 @@
   height: 100%;
 }
 
-/* Mobile styles (default) */
+/* Sidebar */
 .side-banner {
   background-color: #003366;
   transition: margin-left 0.5s ease;
   position: relative;
-
-  &.closed {
-    margin-left: calc(-1 * var(--sidebar-width));
-  }
-
-  .hero-banner__content {
-    background-color: inherit;
-    color: #fff;
-    padding: 0;
-
-    > div {
-      padding: 6px 8px 6px 6px;
-      text-decoration: none;
-      font-size: 20px;
-      display: block;
-    }
-  }
-
-  h1 {
-    display: inline-block;
-    margin-top: 15px;
-  }
-
-  .desc {
-    margin: 0 0 30px;
-  }
-
-  .proj-status {
-    display: inline-block;
-    font-size: 1.2rem;
-    font-weight: 700;
-    margin: 0 0 8px 10px;
-    color: #fcba18;
-    text-transform: uppercase;
-  }
-
-  .ea-decision {
-    color: white;
-    font-size: 1rem;
-    border: 2px solid white;
-    padding: 5px 10px;
-    font-weight: bold;
-    display: inline-block;
-    margin: 5px 0 15px 0;
-  }
-
-  .basic-info {
-    width: 100%;
-
-    .info-block {
-      p,
-      a {
-        font-size: small;
-        color: white;
-      }
-    }
-
-    @media (min-width: 767px) {
-      display: inline-block;
-    }
-
-    > div {
-      padding: 0 0 0 0;
-      max-width: 100%;
-
-      .hyperlink {
-        text-decoration: underline;
-      }
-    }
-
-    hr {
-      background-color: grey;
-      margin: 30px 0 20px 0;
-    }
-
-    label {
-      font-weight: bold;
-      color: #fcba18;
-      font-size: 1rem;
-      padding-bottom: 5px;
-    }
-
-    p {
-      font-size: 1rem;
-      display: block;
-    }
-  }
-
-  .legislation-button {
-    margin-top: 20px;
-
-    label {
-      font-weight: bold;
-      color: #fcba18;
-      font-size: 1rem;
-    }
-
-    p {
-      font-size: 1rem;
-      display: block;
-      margin-left: 1px;
-    }
-  }
-
-  .map-wrapper {
-    width: 100%;
-    height: 250px;
-    padding-top: 10px;
-    margin-top: 20px;
-    margin-bottom: 0;
-  }
-
-  @media (min-width: 768px) {
-    .map-wrapper {
-      margin-bottom: 30px;
-    }
-  }
-
-  .map-item {
-    position: relative;
-    height: 250px;
-    color: black;
-  }
-
-  .map-item .container {
-    position: relative;
-    @media (min-width: 400px) {
-      padding-right: 280px;
-    }
-  }
-
-  .map-item .map-container {
-    padding: 0;
-    display: block;
-    position: relative;
-    overflow: hidden;
-    height: 250px;
-    min-height: 250px;
-  }
-
-  .map-item .map {
-    position: relative;
-    min-height: 250px;
-    height: 250px !important;
-    width: 100% !important;
-    outline: none;
-    background-color: #ddd;
-  }
-
-  .map-item__no-results {
-    text-align: center;
-    position: absolute;
-    background: grey;
-    width: 100%;
-    height: 250px;
-  }
 }
 
-/* Toggle button - positioned outside sidebar container */
+.side-banner.closed {
+  margin-left: calc(-1 * var(--sidebar-width));
+}
+
+.side-banner .hero-banner__content {
+  background-color: inherit;
+  color: #fff;
+  padding: 0;
+}
+
+.side-banner .hero-banner__content > div {
+  padding: 6px 8px 6px 6px;
+  text-decoration: none;
+  font-size: 20px;
+  display: block;
+}
+
+.side-banner .ea-decision {
+  color: white;
+  font-size: 1rem;
+  border: 2px solid white;
+  padding: 5px 10px;
+  font-weight: bold;
+  display: inline-block;
+  margin: 5px 0 15px 0;
+}
+
+/* Basic info section */
+.side-banner .basic-info {
+  width: 100%;
+}
+
+.side-banner .basic-info .info-block p,
+.side-banner .basic-info .info-block a {
+  font-size: small;
+  color: white;
+}
+
+.side-banner .basic-info > div {
+  padding: 0;
+  max-width: 100%;
+}
+
+.side-banner .basic-info .hyperlink {
+  text-decoration: underline;
+}
+
+.side-banner .basic-info label {
+  font-weight: bold;
+  color: #fcba18;
+  font-size: 1rem;
+  padding-bottom: 5px;
+}
+
+.side-banner .basic-info p {
+  font-size: 1rem;
+  display: block;
+}
+
+/* Map */
+.side-banner .map-wrapper {
+  width: 100%;
+  height: 250px;
+  padding-top: 10px;
+  margin-top: 20px;
+  margin-bottom: 0;
+}
+
+.side-banner .map-item {
+  position: relative;
+  height: 250px;
+  color: black;
+}
+
+.side-banner .map-item .map-container {
+  padding: 0;
+  display: block;
+  position: relative;
+  overflow: hidden;
+  height: 250px;
+  min-height: 250px;
+}
+
+.side-banner .map-item .map {
+  position: relative;
+  min-height: 250px;
+  height: 250px !important;
+  width: 100% !important;
+  outline: none;
+  background-color: #ddd;
+}
+
+.side-banner .map-item__no-results {
+  text-align: center;
+  position: absolute;
+  background: grey;
+  width: 100%;
+  height: 250px;
+}
+
+/* Toggle button */
 button.btn.icon-btn.sidebar-toggle {
   position: fixed !important;
   left: var(--sidebar-width) !important;
@@ -195,27 +139,23 @@ button.btn.icon-btn.sidebar-toggle {
   cursor: pointer !important;
   transition: left 0.5s ease !important;
   z-index: 110;
-
-  .icon {
-    color: #fff !important;
-    font-size: 2.2rem !important;
-  }
 }
 
-/* Move button to left when sidebar is closed */
+button.btn.icon-btn.sidebar-toggle .icon {
+  color: #fff !important;
+  font-size: 2.2rem !important;
+}
+
 .side-banner.closed ~ button.btn.icon-btn.sidebar-toggle {
   left: 0 !important;
 }
 
-/* Show button on desktop */
+/* Desktop styles */
 @media (min-width: 1074px) {
   button.btn.icon-btn.sidebar-toggle {
     display: flex !important;
   }
-}
 
-/* Desktop styles - Grid-based sidebar */
-@media (min-width: 1074px) {
   .side-banner {
     width: var(--sidebar-width);
     position: fixed;
@@ -232,5 +172,9 @@ button.btn.icon-btn.sidebar-toggle {
 
   .side-banner.closed {
     margin-left: calc(-1 * var(--sidebar-width));
+  }
+
+  .side-banner .map-wrapper {
+    margin-bottom: 30px;
   }
 }

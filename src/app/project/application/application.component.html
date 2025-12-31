@@ -12,23 +12,16 @@
     </search-filter-template>
   </section>
 
-  @if (loading()) {
-    <div class="spinner-container">
-      <div class="spinner-new rotating"></div>
-    </div>
-  }
-  
-  @if (!loading() && tableData().totalListItems > 0) {
-    <lib-table-template
-      [data]="tableData()"
-      (messageOut)="onMessageOut($event)">
-    </lib-table-template>
-  }
-  
   @if (!loading() && tableData().totalListItems === 0) {
     <div>
       There are no application documents associated with this project.
     </div>
+  } @else {
+    <lib-table-template
+      [data]="tableData()"
+      [loading]="loading()"
+      (messageOut)="onMessageOut($event)">
+    </lib-table-template>
   }
 </section>
 
