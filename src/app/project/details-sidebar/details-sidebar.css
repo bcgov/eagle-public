@@ -208,14 +208,14 @@ button.btn.icon-btn.sidebar-toggle {
 }
 
 /* Show button on desktop */
-@media (min-width: 768px) {
+@media (min-width: 1074px) {
   button.btn.icon-btn.sidebar-toggle {
     display: flex !important;
   }
 }
 
 /* Desktop styles - Grid-based sidebar */
-@media (min-width: 768px) {
+@media (min-width: 1074px) {
   .side-banner {
     width: var(--sidebar-width);
     position: fixed;

@@ -10,8 +10,8 @@
   list-style: none;
 }
 
-/* Mobile horizontal scroll */
-@media (max-width: 767px) {
+/* Tablet and mobile horizontal scroll */
+@media (max-width: 1073px) {
   .nav-tabs {
     overflow-x: auto;
     overflow-y: hidden;
@@ -80,7 +80,7 @@
   min-height: 400px;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 1073px) {
   .tab-content {
     padding: 1rem 0.5rem;
   }
