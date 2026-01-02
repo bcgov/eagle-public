@@ -33,7 +33,6 @@ import { ProjlistMapComponent } from './projlist-map/projlist-map.component';
 export class ProjectsComponent implements OnInit, OnDestroy {
   @ViewChild('appmap', { static: true }) appmap!: ProjlistMapComponent;
   @ViewChild('applist', { static: true }) applist!: ProjlistListComponent;
-  @ViewChild('appfilters', { static: true }) appfilters!: ProjlistFiltersComponent;
 
   private router = inject(Router);
   private projectService = inject(ProjectService);
@@ -44,7 +43,6 @@ export class ProjectsComponent implements OnInit, OnDestroy {
   private filterStateService = inject(FilterStateService);
   private mapStateService = inject(MapStateService);
   private logger = inject(LoggingService);
-  private loadingState = inject(LoadingStateService);
   
   // Project data signals - immutable state management
   public allApps = signal<Project[]>([]);
@@ -94,11 +92,7 @@ export class ProjectsComponent implements OnInit, OnDestroy {
       L.DomEvent.disableScrollPropagation(applist_filters);
     }
 
-    // Wait for StorageService preload (started in app.ts), then use cache or fallback to direct load
-    // Expected HTTP calls on first load:
-    // 1. HEAD /api/public/project - get project count for preload
-    // 2. GET /api/public/search?dataset=Project - preload all projects
-    // 3. GET /api/public/search?dataset=List - load metadata (regions, types, etc.) for filters
+    // Wait for StorageService preload, then use cache or fallback to direct load
     this.storageService.getCachedProjects$()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
@@ -122,63 +116,32 @@ export class ProjectsComponent implements OnInit, OnDestroy {
   private getApps(): void {
     const start = Date.now();
 
-    this.projectService.getCount()
-      .pipe(takeUntil(this.destroy$))
+    this.projectService.getAllFull(1, 1000000)
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => {
+          this.logger.info(`Loaded ${this.allApps().length} projects in ${Date.now() - start}ms`, 'ProjectsComponent');
+        })
+      )
       .subscribe({
-        next: (count) => {
-          // Load all projects in a single optimized batch
-          this.projectService.getAllFull(1, count)
-            .pipe(
-              takeUntil(this.destroy$),
-              finalize(() => {
-                this.logger.info(`Loaded ${this.allApps().length} projects in ${Date.now() - start}ms`, 'ProjectsComponent');
-              })
-            )
-            .subscribe({
-              next: (projects: Project[]) => {
-                this.allApps.set(projects);
-                this.storageService.cacheProjects(projects);
-              },
-              error: (error) => {
-                this.logger.error('Error loading projects', 'ProjectsComponent', error);
-                this.router.navigate(['/']);
-              }
-            });
+        next: (projects: Project[]) => {
+          this.allApps.set(projects);
+          this.storageService.cacheProjects(projects);
         },
         error: (error) => {
-          this.logger.error('Error counting projects', 'ProjectsComponent', error);
+          this.logger.error('Error loading projects', 'ProjectsComponent', error);
           this.router.navigate(['/']);
         }
       });
   }
 
-
-
-
-  /**
-   * Reload all projects from the server
-   */
-  public reloadApps(): void {
-    this.getApps();
-  }
-
-  /**
-   * Event handler called when list component selects or unselects an app.
-   */
-  public highlightProject(app: Project, show: boolean): void {
-    this.appmap.onHighlightProject(app, show);
-  }
-
-  /**
-   * Called when list component visibility is toggled.
-   */
   public toggleAppList(): void {
     this.configService.isApplistListVisible = !this.configService.isApplistListVisible;
   }
 
   ngOnDestroy(): void {
-    // Don't clear filters - let them persist for better UX
-    // Users expect their search/filters to remain when navigating back
+    // Clear filters and reset state when leaving the page
+    this.filterStateService.clearAll();
     
     this.destroy$.next();
     this.destroy$.complete();

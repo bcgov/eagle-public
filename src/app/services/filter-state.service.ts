@@ -166,51 +166,7 @@ export class FilterStateService {
     this.location.replaceState(urlTree.toString());
   }
 
-  // Setters for each filter type
-  setRegions(regions: string[]): void {
-    this.regions.set(regions);
-    this.syncToUrl();
-  }
 
-  setPhases(phases: string[]): void {
-    this.phases.set(phases);
-    this.syncToUrl();
-  }
-
-  setTypes(types: string[]): void {
-    this.types.set(types);
-    this.syncToUrl();
-  }
-
-  setApplicant(applicant: string | null): void {
-    this.applicant.set(applicant);
-    this.syncToUrl();
-  }
-
-  setClFile(clFile: string | null): void {
-    this.clFile.set(clFile);
-    this.syncToUrl();
-  }
-
-  setDispId(dispId: string | null): void {
-    this.dispId.set(dispId);
-    this.syncToUrl();
-  }
-
-  setPurpose(purpose: string | null): void {
-    this.purpose.set(purpose);
-    this.syncToUrl();
-  }
-
-  setPublishFrom(date: Date | null): void {
-    this.publishFrom.set(date);
-    this.syncToUrl();
-  }
-
-  setPublishTo(date: Date | null): void {
-    this.publishTo.set(date);
-    this.syncToUrl();
-  }
 
   /**
    * Clear all filters

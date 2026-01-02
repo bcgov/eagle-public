@@ -11,16 +11,15 @@
       <div class="search-box position-relative">
         <input type="text" class="form-control gtm-filter-applicant" placeholder="Start typing a project name" id="applicantInput"
         [ngModel]="applicant()" 
-        (ngModelChange)="applicant.set($event); applyFilters()"
-        [disabled]="loading()">
+        (ngModelChange)="applicant.set($event); applyFilters()">
         @if (applicant()) {
-          <button type="button" class="btn-clear" (click)="clearSearch()" aria-label="Clear search" [disabled]="loading()">
+          <button type="button" class="btn-clear" (click)="clearSearch()" aria-label="Clear search">
             <i class="material-icons">close</i>
           </button>
         }
       </div>
       <div class="toggle-container">
-        <div class="toggle-btn" (click)="loading() ? null : toggleFilters()" [class.disabled]="loading()">
+        <div class="toggle-btn" (click)="toggleFilters()">
           <span>{{ showFilters ? 'Hide' : 'Show' }} Advanced Filters</span>
           <i class="material-icons">{{ showFilters ? 'keyboard_arrow_up' : 'keyboard_arrow_down' }}</i>
         </div>
@@ -42,7 +41,6 @@
                   [closeOnSelect]="false"
                   [ngModel]="types()"
                   (ngModelChange)="types.set($event); applyFilters()"
-                  [disabled]="loading()"
               >
               </ng-select>
             </div>
@@ -62,7 +60,6 @@
                   [closeOnSelect]="false"
                   [ngModel]="regions()"
                   (ngModelChange)="regions.set($event); applyFilters()"
-                  [disabled]="loading()"
               >
               </ng-select>
             </div>
@@ -84,7 +81,6 @@
                   [markFirst]="false"
                   [ngModel]="phases()"
                   (ngModelChange)="phases.set($event); applyFilters()"
-                  [disabled]="loading()"
               >
               </ng-select>
             </div>

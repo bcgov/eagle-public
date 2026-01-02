@@ -38,6 +38,11 @@ export class ProjlistListComponent {
     return projects.slice(0, limit);
   });
 
+  // Computed signal for projects with valid coordinates
+  public appsWithShapes = computed(() => {
+    return this.projects().filter(a => a.centroid?.length === 2);
+  });
+
   get clientWidth(): number {
     return this.elementRef.nativeElement.firstElementChild?.clientWidth ?? 0;
   }
@@ -74,12 +79,6 @@ export class ProjlistListComponent {
       this.setCurrentApp.emit(item);
     }
   }
-
-  public appsWithShapes(): Project[] {
-    return this.projects().filter(a => a.centroid?.length === 2);
-  }
-
-
 
   public loadMore() {
     this.numToLoad.update(n => n + this.configService.listPageSize);

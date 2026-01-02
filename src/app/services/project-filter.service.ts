@@ -62,20 +62,19 @@ export class ProjectFilterService {
 
     // Type filter - match by type code
     if (filters.types.length > 0) {
-      // Assuming project.type is the type name, need to match against filter codes
-      const typeMatch = filters.types.some(typeCode => {
-        // For simplicity, check if type matches
-        return project.type === typeCode || project.type?.toString().toLowerCase().includes(typeCode.toLowerCase());
-      });
+      const projectType = project.type?.toString().toLowerCase() || '';
+      const typeMatch = filters.types.some(typeCode => 
+        projectType === typeCode.toLowerCase() || projectType.includes(typeCode.toLowerCase())
+      );
       if (!typeMatch) {
         return false;
       }
     }
 
-    // Applicant filter (case-insensitive substring match)
+    // Applicant filter (case-insensitive substring match on project name)
     if (filters.applicant) {
-      const applicantName = project.proponent?.name?.toLowerCase() || '';
-      if (!applicantName.includes(filters.applicant.toLowerCase())) {
+      const projectName = project.name?.toLowerCase() || '';
+      if (!projectName.includes(filters.applicant.toLowerCase())) {
         return false;
       }
     }
@@ -139,41 +138,5 @@ export class ProjectFilterService {
   getVisibleProjects(projects: Project[]): Project[] {
     const filtered = this.filterProjects(projects);
     return filtered.filter(project => this.mapState.isProjectInBounds(project));
-  }
-
-  /**
-   * Create a computed signal that filters projects
-   */
-  createFilteredProjectsSignal(projectsSignal: () => Project[]) {
-    return computed(() => {
-      const projects = projectsSignal();
-      const filters = this.filterState.allFilters();
-      return projects.filter(project => this.projectMatchesFilters(project, filters));
-    });
-  }
-
-  /**
-   * Create a computed signal for map-visible projects
-   */
-  createVisibleProjectsSignal(projectsSignal: () => Project[]) {
-    return computed(() => {
-      const projects = projectsSignal();
-      const filters = this.filterState.allFilters();
-      const bounds = this.mapState.currentBounds();
-      
-      if (!bounds) {
-        return [];
-      }
-
-      return projects.filter(project => {
-        // Must match filters
-        if (!this.projectMatchesFilters(project, filters)) {
-          return false;
-        }
-        
-        // Must be in map bounds
-        return this.mapState.isProjectInBounds(project);
-      });
-    });
   }
 }

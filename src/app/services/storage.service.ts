@@ -43,101 +43,54 @@ export class StorageService {
         }
 
         this.loadingState.startLoading('storage-preload', 'Preloading projects');
+        this.logger.info('Preloading projects in background...', 'StorageService');
         
-        // Get count first to know how many projects to load
-        this.projectService.getCount()
+        this.projectService.getAllFull(1, 1000000)
             .pipe(
-                tap(count => {
-                    this.logger.info(`Preloading ${count} projects in background...`, 'StorageService');
+                tap(projects => {
+                    // Initialize isMatches property for each project
+                    const projectsWithMatches = projects.map(p => ({ ...p, isMatches: true }));
+                    this.cachedProjects.set(projectsWithMatches);
+                    this.preloadComplete.set(true);
+                    this.loadingState.stopLoading('storage-preload');
+                    this.logger.info(`Preloaded ${projects.length} projects successfully`, 'StorageService');
+                    this.preloadComplete$.next(projectsWithMatches);
+                    this.preloadComplete$.complete();
                 })
             )
             .subscribe({
-                next: (count) => {
-                    // Load all projects in one batch
-                    this.projectService.getAllFull(1, count)
-                        .pipe(
-                            tap(projects => {
-                                // Initialize isMatches property for each project
-                                const projectsWithMatches = projects.map(p => ({ ...p, isMatches: true }));
-                                this.cachedProjects.set(projectsWithMatches);
-                                this.preloadComplete.set(true);
-                                this.loadingState.stopLoading('storage-preload');
-                                this.logger.info(`Preloaded ${projects.length} projects successfully`, 'StorageService');
-                                this.preloadComplete$.next(projectsWithMatches);
-                                this.preloadComplete$.complete();
-                            })
-                        )
-                        .subscribe({
-                            error: (error) => {
-                                this.logger.error('Error preloading projects', 'StorageService', error);
-                                this.loadingState.stopLoading('storage-preload');
-                                this.preloadComplete$.error(error);
-                            }
-                        });
-                },
                 error: (error) => {
-                    this.logger.error('Error getting project count', 'StorageService', error);
+                    this.logger.error('Error preloading projects', 'StorageService', error);
                     this.loadingState.stopLoading('storage-preload');
+                    this.preloadComplete$.error(error);
                 }
             });
-    }
-
-    /**
-     * Get cached projects if available, otherwise return null
-     */
-    getCachedProjects(): Project[] | null {
-        return this.preloadComplete() ? this.cachedProjects() : null;
     }
 
     /**
      * Get an Observable that emits cached projects when available
      * - Immediately emits if already cached
      * - Waits for preload to complete if in progress
-     * - Returns empty if no preload in progress
+     * - Returns null if no cache and no preload in progress
      */
     getCachedProjects$(): Observable<Project[] | null> {
-        // If already cached, return immediately
         if (this.preloadComplete()) {
             return of(this.cachedProjects());
         }
         
-        // If preload is in progress, wait for it
         if (this.isPreloading()) {
             return this.preloadComplete$.pipe(take(1));
         }
         
-        // No cache and no preload in progress
         return of(null);
     }
 
     /**
-     * Manually cache projects (e.g., after loading in ProjectsComponent)
+     * Cache projects after loading
      */
     cacheProjects(projects: Project[]): void {
         this.cachedProjects.set(projects);
         this.preloadComplete.set(true);
         this.logger.info(`Cached ${projects.length} projects`, 'StorageService');
-    }
-
-    /**
-     * Check if projects are cached and ready
-     */
-    isCacheReady(): boolean {
-        return this.preloadComplete();
-    }
-
-    /**
-     * Check if currently preloading
-     */
-    isPreloadingProjects(): boolean {
-        return this.isPreloading();
-    }
-
-    /**
-     * Clear the project cache
-     */
-    clearProjectCache(): void {
-        this.cachedProjects.set([]);
-        this.preloadComplete.set(false);
     }
 }

@@ -9,7 +9,6 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import { Constants } from '../../shared/utils/constants';
 import { ConfigService } from '../../services/config.service';
 import { FilterStateService } from '../../services/filter-state.service';
-import { LoadingStateService } from '../../services/loading-state.service';
 
 @Component({
   selector: 'app-projlist-filters',
@@ -23,9 +22,6 @@ export class ProjlistFiltersComponent implements OnInit, OnDestroy {
   private configService = inject(ConfigService);
   private filterState = inject(FilterStateService);
   private elementRef = inject(ElementRef);
-  private loadingState = inject(LoadingStateService);
-
-  public loading = this.loadingState.getOperationState('projlist-filters');
 
   readonly minDate = DateTime.fromISO('2018-03-23').toJSDate();
   readonly maxDate = DateTime.now().toJSDate();
@@ -51,19 +47,16 @@ export class ProjlistFiltersComponent implements OnInit, OnDestroy {
 
   private destroy$ = new Subject<void>();
 
-  // Expose filter state service for template
   get filterCount(): number {
     const filters = this.filterState.allFilters();
-    let count = 0;
-    count += filters.regions.length;
-    count += filters.phases.length;
-    count += filters.types.length;
-    if (filters.applicant) count++;
-    if (filters.clFile) count++;
-    if (filters.dispId) count++;
-    if (filters.publishFrom) count++;
-    if (filters.publishTo) count++;
-    return count;
+    return filters.regions.length + 
+           filters.phases.length + 
+           filters.types.length +
+           (filters.applicant ? 1 : 0) +
+           (filters.clFile ? 1 : 0) +
+           (filters.dispId ? 1 : 0) +
+           (filters.publishFrom ? 1 : 0) +
+           (filters.publishTo ? 1 : 0);
   }
 
   get clientHeight(): number {
@@ -107,24 +100,14 @@ export class ProjlistFiltersComponent implements OnInit, OnDestroy {
   private syncFromService(): void {
     const filters = this.filterState.allFilters();
     
-    // Map filter IDs back to objects for ng-select
-    this.regions.set(
-      filters.regions
-        .map(id => this.projectRegions.find(r => r._id === id))
-        .filter(Boolean)
-    );
+    // Helper to map IDs to objects, filtering out any not found
+    const mapToObjects = <T extends { _id?: string; code?: string }>(ids: string[], collection: T[], key: '_id' | 'code'): T[] => {
+      return ids.map(id => collection.find(item => item[key] === id)).filter((item): item is T => !!item);
+    };
     
-    this.phases.set(
-      filters.phases
-        .map(id => this.projectPhases.find(p => p._id === id))
-        .filter(Boolean)
-    );
-    
-    this.types.set(
-      filters.types
-        .map(code => this.projectTypes.find(t => t.code === code))
-        .filter(Boolean)
-    );
+    this.regions.set(mapToObjects(filters.regions, this.projectRegions, '_id'));
+    this.phases.set(mapToObjects(filters.phases, this.projectPhases, '_id'));
+    this.types.set(mapToObjects(filters.types, this.projectTypes, 'code'));
     
     this.applicant.set(filters.applicant || '');
     this.clFile.set(filters.clFile || '');
@@ -132,7 +115,6 @@ export class ProjlistFiltersComponent implements OnInit, OnDestroy {
     this.publishFrom.set(filters.publishFrom);
     this.publishTo.set(filters.publishTo);
     
-    // Show filters if any are active
     this.showFilters = this.filterState.hasActiveFilters();
   }
 
@@ -140,16 +122,20 @@ export class ProjlistFiltersComponent implements OnInit, OnDestroy {
    * Apply current filter values to FilterStateService
    */
   public applyFilters(): void {
+    const applicantValue = this.applicant().trim();
+    const clFileValue = this.clFile().trim();
+    const dispIdValue = this.dispId().trim();
+    
     this.filterState.updateFilters({
       regions: this.regions().map((r: any) => r._id),
       phases: this.phases().map((p: any) => p._id),
       types: this.types().map((t: any) => t.code),
-      applicant: this.applicant().trim() || null,
-      clFile: this.clFile().trim() || null,
-      dispId: this.dispId().trim() || null,
+      applicant: applicantValue || null,
+      clFile: clFileValue || null,
+      dispId: dispIdValue || null,
       publishFrom: this.publishFrom(),
       publishTo: this.publishTo(),
-      purpose: null // Not currently used
+      purpose: null
     });
   }
 
@@ -157,34 +143,8 @@ export class ProjlistFiltersComponent implements OnInit, OnDestroy {
    * Clear all filters
    */
   public clearAllFilters(): void {
-    this.regions.set([]);
-    this.phases.set([]);
-    this.types.set([]);
-    this.applicant.set('');
-    this.clFile.set('');
-    this.dispId.set('');
-    this.publishFrom.set(null);
-    this.publishTo.set(null);
-    
     this.filterState.clearAll();
-  }
-
-  /**
-   * Clear specific filter types
-   */
-  public clearRegionFilters(): void {
-    this.regions.set([]);
-    this.applyFilters();
-  }
-
-  public clearPhaseFilters(): void {
-    this.phases.set([]);
-    this.applyFilters();
-  }
-
-  public clearTypeFilters(): void {
-    this.types.set([]);
-    this.applyFilters();
+    this.syncFromService();
   }
 
   public clearSearch(): void {
@@ -192,19 +152,12 @@ export class ProjlistFiltersComponent implements OnInit, OnDestroy {
     this.applyFilters();
   }
 
-  /**
-   * UI toggle methods
-   */
   public toggleFilters(): void {
     this.showFilters = !this.showFilters;
   }
 
   public toggleSearchMobile(): void {
     this.showSearchMobile.set(!this.showSearchMobile());
-  }
-
-  public onShowHideClick(): void {
-    this.configService.isApplistFiltersVisible = !this.configService.isApplistFiltersVisible;
   }
 
 
