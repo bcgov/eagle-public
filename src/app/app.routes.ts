@@ -134,10 +134,6 @@ export const routes: Routes = [
       {
         path: 'decisions',
         component: DecisionsTabComponent
-      },
-      {
-        path: 'cp',
-        component: CommentsComponent
       }
     ]
   },

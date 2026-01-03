@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, inject, signal, OnInit, OnDestroy, ChangeDetectorRef, ViewEncapsulation } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject } from 'rxjs';
@@ -6,6 +6,8 @@ import { takeUntil } from 'rxjs/operators';
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { CommentPeriod } from '../models/commentperiod';
+import { CommentPeriodService } from '../services/commentperiod.service';
+import { ProjectService } from '../services/project.service';
 import { CommentService } from '../services/comment.service';
 import { AddCommentComponent } from './add-comment/add-comment.component';
 import { Project } from '../models/project';
@@ -22,13 +24,16 @@ import { LoggingService } from '../services/logging.service';
   imports: [CommonModule, TableTemplateComponent],
   templateUrl: './comments.component.html',
   styleUrls: ['./comments.component.css'],
+  encapsulation: ViewEncapsulation.None,
   standalone: true
 })
 export class CommentsComponent implements OnInit, OnDestroy {
   private snackBar = inject(MatSnackBar);
-  private api = inject(ApiService);
   private route = inject(ActivatedRoute);
+  private api = inject(ApiService);
   private commentService = inject(CommentService);
+  private commentPeriodService = inject(CommentPeriodService);
+  private projectService = inject(ProjectService);
   private documentService = inject(DocumentService);
   private changeDetectionRef = inject(ChangeDetectorRef);
   private modalService = inject(NgbModal);
@@ -37,13 +42,12 @@ export class CommentsComponent implements OnInit, OnDestroy {
   private logger = inject(LoggingService);
 
   loading = this.loadingState.getOperationState('comments');
-  commentsLoading = this.loadingState.getOperationState('comments-list');
   commentPeriod = signal<CommentPeriod | null>(null);
   project = signal<Project | null>(null);
   comments = signal<any[]>([]);
   commentPeriodDocs = signal<any[]>([]);
   
-  tableData = new TableObject({ component: CommentsTableRowsComponent });
+  tableData = signal<TableObject>(new TableObject({ component: CommentsTableRowsComponent }));
   commentPeriodHeader = signal('');
 
   private ngUnsubscribe = new Subject<boolean>();
@@ -54,94 +58,166 @@ export class CommentsComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     // Initialize table options
-    this.tableData.options.showPageCountDisplay = true;
-    this.tableData.options.showPagination = true;
-    this.tableData.options.showPageSizePicker = true;
-    this.tableData.options.showTopControls = true;
-    this.tableData.options.showHeader = false;
-    this.tableData.options.disableRowHighlight = true;
-    this.tableData.currentPage = 1;
-    this.tableData.pageSize = 10;
-    this.tableData.totalListItems = 0;
+    const initialTableData = this.tableData();
+    initialTableData.options.showPageCountDisplay = true;
+    initialTableData.options.showPagination = true;
+    initialTableData.options.showPageSizePicker = true;
+    initialTableData.options.showTopControls = true;
+    initialTableData.options.showHeader = false;
+    initialTableData.options.disableRowHighlight = true;
+    initialTableData.currentPage = 1;
+    initialTableData.pageSize = 10;
+    initialTableData.totalListItems = 0;
+    this.tableData.set(initialTableData);
 
-    // get data from route resolver
-    this.route.data
+    // Load data from route params (modern pattern - no resolvers)
+    this.route.paramMap
       .pipe(takeUntil(this.ngUnsubscribe))
-      .subscribe(
-        (data: any) => {
-
-        if (data.project && (data.project as any)[0]) {
-          this.type.set('PROJECT-NOTIFICATION');
-          this.project.set((data.project as any)[0].data.searchResults[0]);
-        } else {
-          this.type.set('PROJECT');
-          this.project.set(data.project ? data.project : null);
+      .subscribe(params => {
+        const projId = params.get('projId');
+        const commentPeriodId = params.get('commentPeriodId');
+        
+        if (!projId || !commentPeriodId) {
+          this.logger.error('Missing route parameters', 'CommentsComponent', { projId, commentPeriodId });
+          this.router.navigate(['/projects']);
+          return;
         }
 
-          if (data.commentPeriod) {
-            this.commentPeriod.set(data.commentPeriod);
-            const period = data.commentPeriod;
+        // Determine if this is a project notification by checking the URL
+        const isProjectNotification = this.router.url.includes('/pn/');
+        this.type.set(isProjectNotification ? 'PROJECT-NOTIFICATION' : 'PROJECT');
+
+        // Load project data
+        this.projectService.getById(projId)
+          .pipe(takeUntil(this.ngUnsubscribe))
+          .subscribe({
+            next: (project) => {
+              this.project.set(project);
+            },
+            error: (error) => {
+              this.logger.error('Error loading project', 'CommentsComponent', error);
+            }
+          });
+
+        // Load comment period data
+        this.commentPeriodService.getById(commentPeriodId)
+          .pipe(takeUntil(this.ngUnsubscribe))
+          .subscribe({
+            next: (period) => {
+              if (!period) {
+                this.snackBar.open('Comment period not found', 'Close', { duration: 3000 });
+                this.router.navigate(['/projects']);
+                return;
+              }
+
+              this.commentPeriod.set(period);
+              this.commentPeriodId = period._id;
+              
+              if (period.commentPeriodStatus === 'Closed') {
+                this.commentPeriodHeader.set('Public Comment Period is Now Closed');
+              } else if (period.commentPeriodStatus === 'Pending') {
+                this.commentPeriodHeader.set('Public Comment Period is Pending');
+              } else if (period.commentPeriodStatus === 'Open') {
+                this.commentPeriodHeader.set('Public Comment Period is Now Open');
+              }
+
+              if (period.relatedDocuments && period.relatedDocuments.length > 0) {
+                this.documentService.getByMultiId(period.relatedDocuments)
+                  .pipe(takeUntil(this.ngUnsubscribe))
+                  .subscribe(docs => {
+                    this.commentPeriodDocs.set(docs);
+                    this.changeDetectionRef.detectChanges();
+                  });
+              }
+
+              this.loadComments();
+            },
+            error: (error) => {
+              this.logger.error('Error loading comment period', 'CommentsComponent', error);
+              this.snackBar.open('Failed to load comment period', 'Close', { duration: 3000 });
+              this.router.navigate(['/projects']);
+            }
+          });
+      });
+  }
+
+  private loadComments() {
+    if (!this.commentPeriodId) return;
+
+    const currentTableData = this.tableData();
+    this.commentService.getByPeriodId(this.commentPeriodId, currentTableData.currentPage, currentTableData.pageSize, true)
+      .pipe(takeUntil(this.ngUnsubscribe))
+      .subscribe(async (res: any) => {
+        const currentComments = res.currentComments;
+
+        // Initialize expanded property
+        currentComments.forEach((comment: any) => {
+          comment.expanded = false;
+        });
+
+        // Collect all document IDs from all comments
+        const allDocIds: string[] = [];
+        const commentDocMap = new Map<string, string[]>(); // Map comment index to its document IDs
+
+        currentComments.forEach((comment: any, index: number) => {
+          if (comment.documents && comment.documents.length > 0) {
+            const docIds = comment.documents.map((doc: any) => {
+              // Handle both string IDs and objects with _id property
+              return typeof doc === 'string' ? doc : (doc._id || doc);
+            });
+            commentDocMap.set(index.toString(), docIds);
+            allDocIds.push(...docIds);
+          }
+        });
+
+        // Load all documents in a single batch request
+        if (allDocIds.length > 0) {
+          try {
+            const allDocs = await this.documentService.getByMultiId(allDocIds).toPromise();
             
-            if (period.commentPeriodStatus === 'Closed') {
-              this.commentPeriodHeader.set('Public Comment Period is Now Closed');
-            } else if (period.commentPeriodStatus === 'Pending') {
-              this.commentPeriodHeader.set('Public Comment Period is Pending');
-            } else if (period.commentPeriodStatus === 'Open') {
-              this.commentPeriodHeader.set('Public Comment Period is Now Open');
-            }
+            // Create a map of document ID to document object for quick lookup
+            const docMap = new Map<string, any>();
+            allDocs?.forEach((doc: any) => {
+              if (doc && doc._id) {
+                docMap.set(doc._id, doc);
+              }
+            });
 
-            if (period.relatedDocuments && period.relatedDocuments.length > 0) {
-              this.documentService.getByMultiId(period.relatedDocuments)
-                .pipe(takeUntil(this.ngUnsubscribe))
-                .subscribe(docs => {
-                  this.commentPeriodDocs.set(docs);
-                  this.changeDetectionRef.detectChanges();
-                });
-            }
-            this.commentPeriodId = period._id;
-            this.commentService.getByPeriodId(this.commentPeriodId!, this.tableData.currentPage, this.tableData.pageSize, true)
-              .pipe(takeUntil(this.ngUnsubscribe))
-              .subscribe(async (res: any) => {
-                const currentComments = res.currentComments;
-                this.tableData.totalListItems = res.totalCount;
-
-                // Initialize expanded property and load documents for each comment
-                for (let comment of currentComments) {
-                  comment.expanded = false;
-                  if (comment.documents && comment.documents.length > 0) {
-                    // Load document details
-                    let documents = [];
-                    for (let docId of comment.documents) {
-                      try {
-                        const doc = await this.api.getDocument(docId).toPromise();
-                        if (doc && doc[0]) {
-                          documents.push(doc[0]);
-                        }
-                      } catch (error) {
-                        this.logger.error('Error loading document', 'CommentsComponent', error);
-                      }
-                    }
-                    comment.documents = documents;
-                  }
-                }
-
-                this.comments.set(currentComments);
-
-                // Wrap comments in rowData object for table-template-2
-                this.tableData.items = currentComments.map((comment: any) => {
-                  return { rowData: comment };
-                });
-
-                this.changeDetectionRef.detectChanges();
-              });
-
-          } else {
-            alert('Uh-oh, couldn\'t load comment period');
-            // project not found --> navigate back to project list
-            this.router.navigate(['/projects']);
+            // Assign documents back to their respective comments
+            currentComments.forEach((comment: any, index: number) => {
+              const docIds = commentDocMap.get(index.toString());
+              if (docIds) {
+                comment.documents = docIds
+                  .map(id => docMap.get(id))
+                  .filter(doc => doc !== undefined);
+              }
+            });
+          } catch (error) {
+            this.logger.error('Error loading documents for comments', 'CommentsComponent', error);
+            currentComments.forEach((comment: any) => {
+              if (comment.documents) {
+                comment.documents = [];
+              }
+            });
           }
         }
-      );
+
+        this.comments.set(currentComments);
+
+        // Create new TableObject with updated data
+        const currentTableData = this.tableData();
+        const newTableData = new TableObject({ component: CommentsTableRowsComponent });
+        newTableData.options = currentTableData.options;
+        newTableData.currentPage = currentTableData.currentPage;
+        newTableData.pageSize = currentTableData.pageSize;
+        newTableData.totalListItems = res.totalCount;
+        newTableData.items = currentComments.map((comment: any) => ({ rowData: comment }));
+
+        this.logger.debug(`Loaded ${currentComments.length} comments, tableData.items length: ${newTableData.items.length}, totalListItems: ${newTableData.totalListItems}`, 'CommentsComponent');
+
+        this.tableData.set(newTableData);
+        this.changeDetectionRef.detectChanges();
+      });
   }
 
   onMessageOut(msg: any) {
@@ -194,53 +270,17 @@ export class CommentsComponent implements OnInit, OnDestroy {
   }
 
   getPaginatedComments(pageNumber: number) {
-    // Go to top of page after clicking to a different page.
-    window.scrollTo(0, 0);
-
-    this.tableData.currentPage = pageNumber;
-
-    if (!this.commentPeriodId) return;
-
-    this.commentService.getByPeriodId(this.commentPeriodId, this.tableData.currentPage, this.tableData.pageSize, true)
-      .pipe(takeUntil(this.ngUnsubscribe))
-      .subscribe(async (res: any) => {
-        this.tableData.totalListItems = res.totalCount;
-        const currentComments = res.currentComments;
-
-        // Initialize expanded property and load documents for each comment
-        for (let comment of currentComments) {
-          comment.expanded = false;
-          if (comment.documents && comment.documents.length > 0) {
-            // Load document details
-            let documents = [];
-            for (let docId of comment.documents) {
-              try {
-                const doc = await this.api.getDocument(docId).toPromise();
-                if (doc && doc[0]) {
-                  documents.push(doc[0]);
-                }
-              } catch (error) {
-                this.logger.error('Error loading document', 'CommentsComponent', error);
-              }
-            }
-            comment.documents = documents;
-          }
-        }
-
-        this.comments.set(currentComments);
-
-        // Wrap comments in rowData object for table-template-2
-        this.tableData.items = currentComments.map((comment: any) => {
-          return { rowData: comment };
-        });
-
-        this.changeDetectionRef.detectChanges();
-      });
+    const currentTableData = this.tableData();
+    currentTableData.currentPage = pageNumber;
+    this.tableData.set(currentTableData);
+    this.loadComments();
   }
 
   onUpdatePageSize(newPageSize: number) {
-    this.tableData.pageSize = Number(newPageSize);
-    this.tableData.currentPage = 1; // Reset to first page when changing page size
+    const currentTableData = this.tableData();
+    currentTableData.pageSize = Number(newPageSize);
+    currentTableData.currentPage = 1; // Reset to first page when changing page size
+    this.tableData.set(currentTableData);
     this.getPaginatedComments(1);
     this.changeDetectionRef.detectChanges();
   }

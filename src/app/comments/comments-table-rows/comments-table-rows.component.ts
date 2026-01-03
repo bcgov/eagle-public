@@ -1,33 +1,48 @@
-import { Component, inject, input, output, EventEmitter } from '@angular/core';
+import { Component, inject, EventEmitter, AfterViewInit, ElementRef, ChangeDetectorRef, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../../services/api';
 import { TableRowComponent, ITableMessage } from '../../shared/components/table-template/table-row-component';
 import { TableObject } from '../../shared/components/table-template/table-object';
 
 @Component({
-  selector: 'tbody[app-comments-table-rows]',
+  selector: 'tr[app-comments-table-rows]',
   imports: [CommonModule],
   templateUrl: './comments-table-rows.component.html',
   styleUrls: ['./comments-table-rows.component.css'],
-  standalone: true
+  standalone: true,
+  host: {
+    'class': 'border',
+    '[style.cursor]': '"default"'
+  }
 })
-export class CommentsTableRowsComponent implements TableRowComponent {
+export class CommentsTableRowsComponent implements TableRowComponent, AfterViewInit {
   private api = inject(ApiService);
+  private elementRef = inject(ElementRef);
+  private cdr = inject(ChangeDetectorRef);
   
-  rowData = input<any>();
-  tableData!: TableObject;
+  rowData: any;
+  tableData: any;
   messageOut = new EventEmitter<ITableMessage>();
   messageIn = new EventEmitter<ITableMessage>();
+  hasOverflow = signal(false);
+
+  ngAfterViewInit() {
+    setTimeout(() => {
+      const truncatedP = this.elementRef.nativeElement.querySelector('.comment-truncated');
+      if (!truncatedP) return;
+      
+      // Temporarily disable line-clamp to measure full height
+      truncatedP.style.webkitLineClamp = 'unset';
+      const fullHeight = truncatedP.scrollHeight;
+      truncatedP.style.webkitLineClamp = '';
+      
+      this.hasOverflow.set(fullHeight > truncatedP.clientHeight);
+    }, 0);
+  }
 
   toggle(comment: any) {
     comment.expanded = !comment.expanded;
 
-    // CHANGE THE NAME OF THE BUTTON.
-    if (comment.expanded) {
-      comment.buttonName = 'Read Less';
-    } else {
-      comment.buttonName = 'Read More';
-    }
   }
 
   openAttachment(file: any) {

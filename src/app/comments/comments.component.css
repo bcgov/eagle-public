@@ -1,107 +1,182 @@
-@import "../../assets/styles/base/base.css";
-
-:host {
-  flex: 1 1 auto;
-  display: block;
-  background: transparent;
-}
-
-@media (min-width: 768px) {
-  :host {
-    padding-top: 4.2rem;
-  }
-}
-
-.comments {
-  background-color: transparent;
-  padding-block: 30px;
-
-  .header-section {
-    margin-top: 20px;
-    padding: 1rem;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    color: #fff;
-    background-color: #003366;
-    overflow-y: auto;
-  }
-}
-
 .project {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
   background: transparent;
+}
 
-  .container {
-    @media (max-width: 767px) {
-      padding: 1rem;
-    }
+.project .hero-banner-alt {
+  background-color: #fff;
+  padding-top: 30px;
+  padding-bottom: 30px;
+}
+
+.project .hero-banner-alt .header-section {
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  color: #fff;
+  background-color: transparent;
+  overflow-y: auto;
+  line-height: 1.6;
+}
+
+.project .hero-banner-alt .hero-banner__content > h2 {
+  margin-bottom: 0.5rem !important;
+  line-height: 1.4;
+  color: #fff;
+}
+
+.project .hero-banner-alt .hero-banner__content > h2:last-of-type {
+  margin-bottom: 2rem !important;
+}
+
+.project .hero-banner-alt .comment-period-divider {
+  border: none;
+  border-top: 2px solid #fcba18;
+  margin: 1rem 0 1.5rem 0;
+  opacity: 1;
+}
+
+.project .hero-banner-alt .header-section > div {
+  margin-top: 0;
+}
+
+.project .hero-banner-alt .header-section h4 {
+  margin-top: 0;
+  margin-bottom: 1.5rem !important;
+  line-height: 1.4;
+}
+
+.project .hero-banner-alt .header-section p {
+  margin-bottom: 1.5rem;
+  line-height: 1.7;
+}
+
+.project .hero-banner-alt .header-section p:last-of-type {
+  margin-bottom: 0;
+}
+
+.project .hero-banner-alt .header-section #instructions {
+  margin-bottom: 1.5rem;
+  line-height: 1.7;
+}
+
+.project .hero-banner-alt .header-section #instructions h4 {
+  margin-top: 0;
+  margin-bottom: 1.5rem !important;
+}
+
+.project .hero-banner-alt .header-section #instructions p {
+  margin-bottom: 1.5rem;
+  font-size: 1.2rem;
+}
+
+.project .hero-banner-alt .header-section #instructions p:last-child {
+  margin-bottom: 1.5rem;
+}
+
+.project .hero-banner-alt .header-section br {
+  display: block;
+  content: "";
+  margin-top: 0.5rem;
+}
+
+@media (max-width: 767px) {
+  .project .container {
+    padding: 1rem;
   }
+}
 
-  .hero-banner-alt {
-    h1 {
-      display: inline-block;
-    }
+.project .hero-banner-alt {
+  position: relative;
+  background-color: #003366;
+  color: #fff;
+}
 
-    .ea-decision {
-      display: inline-block;
-      margin-block: 30px;
-      padding: 3px 10px;
-      border: 2px solid #fcba18;
-      color: #fcba18;
-      font-size: 1rem;
-      font-weight: bold;
-    }
+.project .hero-banner-alt h1 {
+  display: inline-block;
+  color: #fff;
+  margin-bottom: 0.75rem;
+}
 
-    .basic-info {
-      margin-bottom: 30px;
-    }
+.project .hero-banner-alt .ea-decision {
+  display: inline-block;
+  margin: 1.5rem 0 5px 0;
+  padding: 3px 10px;
+  border: 2px solid #fcba18;
+  color: #fcba18;
+  font-size: 1rem;
+  font-weight: bold;
+}
 
-    @media (min-width: 767px) {
-      .basic-info {
-        display: flex;
-      }
-    }
+.project .hero-banner-alt .basic-info {
+  margin-bottom: 30px;
+  margin-top: 2.5rem;
+}
 
-    .basic-info > div {
-      padding-inline-end: 15px;
-      margin-inline-end: 15px;
-    }
-
-    @media (min-width: 767px) {
-      .basic-info > div {
-        border-inline-end: 1px solid #46617b;
-      }
-    }
-
-    .basic-info > div:last-of-type {
-      border-inline-end: none;
-    }
-
-    .basic-info label {
-      font-weight: bold;
-      color: #fcba18;
-      font-size: 1rem;
-      margin-inline-end: 0.5rem;
-    }
-
-    .basic-info p {
-      font-size: 1rem;
-      display: inline-block;
-    }
-
-    .hero-banner__content {
-      padding-block: 3rem 1rem;
-    }
-
-    .inverted {
-      @media (max-width: 1600px) {
-        margin-bottom: 2rem;
-      }
-    }
+@media (min-width: 767px) {
+  .project .hero-banner-alt .basic-info {
+    display: flex;
   }
+}
 
-  .list-group-item {
-    color: #000;
+.project .hero-banner-alt .basic-info > div {
+  padding-right: 15px;
+  margin-right: 15px;
+}
+
+@media (min-width: 767px) {
+  .project .hero-banner-alt .basic-info > div {
+    border-right: 1px solid #46617b;
   }
+}
+
+.project .hero-banner-alt .basic-info > div:last-of-type {
+  border-right: none;
+}
+
+.project .hero-banner-alt .basic-info label {
+  font-weight: bold;
+  color: #fcba18;
+  font-size: 1rem;
+  margin-right: 0.5rem;
+}
+
+.project .hero-banner-alt .basic-info p {
+  font-size: 1rem;
+  display: inline-block;
+}
+
+.project .hero-banner-alt .hero-banner__content {
+  padding-top: 5rem;
+  padding-bottom: 0;
+}
+
+@media (max-width: 767px) {
+  .project .hero-banner-alt .hero-banner__content {
+    padding-top: 2rem;
+    padding-bottom: 0;
+  }
+}
+
+.project .hero-banner-alt .inverted {
+  margin-top: 2rem;
+  margin-bottom: 2rem;
+}
+
+.project .card-header {
+  background-color: #38598a;
+  color: #fff;
+  font-weight: bold;
+  padding: 0.75rem 1.25rem;
+  border: none;
+}
+
+.project .list-group-item {
+  color: #000;
 }
 
 .clickable-row {
@@ -113,29 +188,32 @@
   margin: 0;
   padding: 0;
   list-style: none;
+  background-color: #fff;
 }
 
 .doc-list li {
   display: flex;
+  flex-direction: row;
+  align-items: center;
   background: #f7f8fa;
   border-bottom: 1px solid #dee2e6;
   transition: background-color 0.15s ease-in-out;
 }
 
-.doc-list li:first-child {
-  margin-top: 0.5rem;
-}
-
 .doc-list li:hover {
-  background-color: rgba(0, 0, 0, 0.075);
+  background-color: #E2F1FF;
 }
 
 .doc-list li:last-child {
   border-bottom: none;
 }
 
+.doc-list li + li {
+  margin-top: 0;
+}
+
 .doc-list .cell {
-  padding: 0.25rem;
+  padding: 0.5rem 0.25rem;
 }
 
 .doc-list .cell__txt-content {
@@ -146,8 +224,10 @@
 
 .doc-list .cell.icon {
   flex: 0 0 auto;
-  padding-inline-start: 0.75rem;
-  padding-inline-end: 0;
+  display: flex;
+  align-items: center;
+  padding-left: 0.75rem;
+  padding-right: 0;
 }
 
 .doc-list .cell.icon i {
@@ -158,4 +238,10 @@
 .doc-list .cell.name {
   flex: 1 1 auto;
   font-size: 0.875rem;
+}
+
+/* Comments table container */
+.comments {
+  margin-top: 2rem;
+  margin-bottom: 2rem;
 }
