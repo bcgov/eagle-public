@@ -1,4 +1,4 @@
-import { Component, OnInit, input, output, signal, ChangeDetectionStrategy, inject } from '@angular/core';
+import { Component, input, output, signal, computed, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 import { Project } from '../../models/project';
@@ -12,25 +12,24 @@ import { Constants } from '../../shared/utils/constants';
   changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true
 })
-export class DetailsSidebarComponent implements OnInit {
+export class DetailsSidebarComponent {
   project = input.required<Project | null>();
   onSidebarToggle = output<{ open: boolean }>();
 
   public sidebarOpen = signal(true);
-  public legislationLink = signal<string>('');
-
-  ngOnInit() {
+  
+  public legislationLink = computed(() => {
     const proj = this.project();
-    if (proj) {
-      if (proj.legislation.includes('2002')) {
-        this.legislationLink.set(Constants.legislationLinks.ENVIRONMENTAL_ASSESSMENT_ACT_2002_LINK);
-      } else if (proj.legislation.includes('1996')) {
-        this.legislationLink.set(Constants.legislationLinks.ENVIRONMENTAL_ASSESSMENT_ACT_1996_LINK);
-      } else {
-        this.legislationLink.set(Constants.legislationLinks.ENVIRONMENTAL_ASSESSMENT_ACT_2018_LINK);
-      }
+    if (!proj) return '';
+    
+    if (proj.legislation.includes('2002')) {
+      return Constants.legislationLinks.ENVIRONMENTAL_ASSESSMENT_ACT_2002_LINK;
+    } else if (proj.legislation.includes('1996')) {
+      return Constants.legislationLinks.ENVIRONMENTAL_ASSESSMENT_ACT_1996_LINK;
+    } else {
+      return Constants.legislationLinks.ENVIRONMENTAL_ASSESSMENT_ACT_2018_LINK;
     }
-  }
+  });
 
   toggleSidebar() {
     this.sidebarOpen.update(open => !open);
