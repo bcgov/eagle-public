@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, signal, inject, effect } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, signal, inject, effect, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, ActivatedRoute, Params } from '@angular/router';
 import { takeWhile } from 'rxjs/operators';
@@ -11,13 +11,15 @@ import { ITableMessage } from 'app/shared/components/table-template/table-row-co
 import { TableTemplate } from 'app/shared/components/table-template/table-template';
 import { TableTemplateComponent } from 'app/shared/components/table-template/table-template.component';
 import { NewsListTableRowsComponent } from './news-list-table-rows/news-list-table-rows.component';
+import { HeroBannerComponent } from 'app/shared/hero-banner/hero-banner.component';
+import { SearchFilterTemplateComponent } from 'app/shared/components/search-filter-template/search-filter-template.component';
 
 @Component({
   selector: 'app-news',
   templateUrl: './news.component.html',
   styleUrl: './news.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, TableTemplateComponent],
+  imports: [CommonModule, TableTemplateComponent, HeroBannerComponent, SearchFilterTemplateComponent],
   standalone: true
 })
 export class NewsListComponent implements OnInit, OnDestroy {
@@ -36,7 +38,7 @@ export class NewsListComponent implements OnInit, OnDestroy {
   tableColumns: IColumnObject[] = [
     {
       name: 'Headline',
-      value: 'headine',
+      value: 'headline',
       width: 'col-10',
       nosort: true
     },
@@ -54,8 +56,10 @@ export class NewsListComponent implements OnInit, OnDestroy {
     effect(() => {
       const searchResults = tableSignal();
       
-      if (searchResults && searchResults.data) {
-        const currentTableData = this.tableData();
+      // Only process if we have valid data and it's not the initial null state
+      if (searchResults && searchResults.data && searchResults.totalSearchCount !== undefined) {
+        // Use untracked to read current tableData without creating a dependency
+        const currentTableData = untracked(() => this.tableData());
         const newTableData = new TableObject({
           component: NewsListTableRowsComponent,
           pageSize: currentTableData.pageSize,
@@ -146,5 +150,20 @@ export class NewsListComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.alive = false;
+  }
+
+  executeSearch(searchEvent: any): void {
+    const params: Params = {
+      ...this.route.snapshot.queryParams,
+      currentPage: 1
+    };
+    
+    if (searchEvent.keywords) {
+      params['keywords'] = searchEvent.keywords;
+    } else {
+      delete params['keywords'];
+    }
+    
+    this.submit(params);
   }
 }

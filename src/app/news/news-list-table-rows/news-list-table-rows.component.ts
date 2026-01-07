@@ -20,9 +20,7 @@ export class NewsListTableRowsComponent implements TableRowComponent {
   messageOut = new EventEmitter<ITableMessage>();
 
   goToCP(activity: any): void {
-    if (activity.pcp?.isMet && activity.pcp?.metURL) {
-      window.open(activity.pcp.metURL, '_blank', 'noopener');
-    } else if (activity.project?._id && activity.pcp?._id) {
+    if (activity.project?._id && activity.pcp?._id) {
       this.router.navigate(['p', activity.project._id, 'cp', activity.pcp._id]);
     }
   }

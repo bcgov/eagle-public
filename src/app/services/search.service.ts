@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { Observable, of, lastValueFrom } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 
 import { ApiService } from './api';
@@ -103,6 +103,7 @@ export class SearchService {
   async fetchData(searchParamObject: SearchParamObject) {
     // SearchService manages loading state because it makes the actual API calls
     const loadingId = `table-${searchParamObject.tableId}`;
+    this.logger.debug(`Starting loading for ${loadingId}`, 'SearchService');
     this.loadingState.startLoading(loadingId, `Loading ${searchParamObject.dataset} data`);
     let res = null;
 
@@ -116,21 +117,26 @@ export class SearchService {
     }
 
     try {
-      res = await this.getSearchResults(
-        searchParamObject.keywords,
-        searchParamObject.dataset,
-        searchParamObject.fields,
-        searchParamObject.currentPage,
-        searchParamObject.pageSize,
-        searchParamObject.sortBy,
-        searchParamObject.queryModifiers,
-        searchParamObject.populate,
-        searchParamObject.secondarySort,
-        searchParamObject.filters,
-        searchParamObject.projectLegislation,
-        searchParamObject.fuzzy
-      ).toPromise();
+      res = await lastValueFrom(
+        this.getSearchResults(
+          searchParamObject.keywords,
+          searchParamObject.dataset,
+          searchParamObject.fields,
+          searchParamObject.currentPage,
+          searchParamObject.pageSize,
+          searchParamObject.sortBy,
+          searchParamObject.queryModifiers,
+          searchParamObject.populate,
+          searchParamObject.secondarySort,
+          searchParamObject.filters,
+          searchParamObject.projectLegislation,
+          searchParamObject.fuzzy
+        )
+      );
+      
+      this.logger.debug(`Promise resolved for ${loadingId}`, 'SearchService', { res });
     } catch (error) {
+      this.logger.error(`Error in fetchData for ${loadingId}`, 'SearchService', error);
       this.loadingState.stopLoading(loadingId);
       this.eventService.setError(
         new EventObject(
@@ -139,10 +145,19 @@ export class SearchService {
           searchParamObject.dataset + ' Service'
         )
       );
+      // Return empty results on error
+      return new SearchResults();
     }
 
     // tslint:disable-next-line: prefer-const
     let searchResults = new SearchResults();
+
+    this.logger.debug(`Processing response for ${loadingId}`, 'SearchService', { 
+      hasRes: !!res, 
+      resLength: res?.length,
+      res0Keys: res?.[0] ? Object.keys(res[0]) : [],
+      res0DataKeys: res?.[0]?.data ? Object.keys(res[0].data) : []
+    });
 
     if (res && res[0] && res[0].data) {
       if (res[0].data.searchResults) {
@@ -156,9 +171,9 @@ export class SearchService {
           )
         );
       }
-      if (res[0].data.meta[0] && res[0].data.meta[0].searchResultsTotal !== undefined && res[0].data.meta[0].searchResultsTotal !== null) {
+      if (res[0].data.meta && res[0].data.meta[0] && res[0].data.meta[0].searchResultsTotal !== undefined && res[0].data.meta[0].searchResultsTotal !== null) {
         searchResults.totalSearchCount = res[0].data.meta[0].searchResultsTotal;
-      } else if (res[0].data.meta.length === 0) {
+      } else if (res[0].data.meta && res[0].data.meta.length === 0) {
         searchResults.totalSearchCount = 0;
       } else {
         this.eventService.setError(
@@ -178,6 +193,7 @@ export class SearchService {
         )
       );
     }
+    this.logger.debug(`Stopping loading for ${loadingId}`, 'SearchService', { totalCount: searchResults.totalSearchCount, dataLength: searchResults.data?.length });
     this.loadingState.stopLoading(loadingId);
     return searchResults;
   }

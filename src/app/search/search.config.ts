@@ -12,7 +12,7 @@ export const SEARCH_TABLE_COLUMNS: IColumnObject[] = [
   {
     name: 'Document Name',
     value: 'displayName',
-    width: 'col-4'
+    width: 'col-3'
   },
   {
     name: 'Project',
@@ -35,7 +35,7 @@ export const SEARCH_TABLE_COLUMNS: IColumnObject[] = [
     width: 'col-2'
   },
   {
-    name: 'Download',
+    name: '\u00A0',
     value: '',
     width: 'col-1',
     nosort: true,
@@ -45,10 +45,10 @@ export const SEARCH_TABLE_COLUMNS: IColumnObject[] = [
 export const SEARCH_FILTER_LIST = ['milestone', 'documentAuthorType', 'type', 'projectPhase'];
 export const SEARCH_DATE_FILTER_LIST = ['datePostedStart', 'datePostedEnd'];
 
-const LEGISLATION_FILTER_GROUP = { 
-  name: 'legislation', 
-  labelPrefix: '', 
-  labelPostfix: ' Act Terms' 
+const LEGISLATION_FILTER_GROUP = {
+  name: 'legislation',
+  labelPrefix: '',
+  labelPostfix: ' Act Terms'
 };
 
 /**
@@ -156,8 +156,8 @@ export function createSearchConfig(): TableListConfig {
     datasetType: 'Document',
     defaultSort: '-datePosted',
     heroBanner: {
-      title: 'Environmental Assessments in British Columbia',
-      description: 'Use the search below to find documents across all Projects. Click on a row or download button to download the document. Click on the project name to view the project.',
+      title: 'Search All Documents',
+      description: 'Search through all documents from the Environmental Assessment Office. Click on a project name to view the project details page, or click the download button to download a document.',
       actions: [{
         label: 'List of Projects',
         icon: 'list',
@@ -167,6 +167,9 @@ export function createSearchConfig(): TableListConfig {
     },
     tableColumns: SEARCH_TABLE_COLUMNS,
     tableRowComponent: DocSearchTableRowsComponent,
+    tableOptions: {
+      disableRowHighlight: true
+    },
     filterList: SEARCH_FILTER_LIST,
     dateFilterList: SEARCH_DATE_FILTER_LIST,
     filterDataSource: configService.lists,

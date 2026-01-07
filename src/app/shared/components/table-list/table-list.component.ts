@@ -67,7 +67,8 @@ export class TableListComponent implements OnInit, OnDestroy {
     // Initialize table data with correct configuration
     this.tableData.set(new TableObject({
       component: cfg.tableRowComponent,
-      sortBy: cfg.defaultSort
+      sortBy: cfg.defaultSort,
+      options: cfg.tableOptions
     }));
 
     // Watch table signal for updates (using injector context)

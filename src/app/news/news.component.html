@@ -1,41 +1,23 @@
-@if (loading()) {
-  <div class="spinner-container">
-    <div class="spinner-new rotating"></div>
-  </div>
-}
+<main>
+  <app-hero-banner [title]="'Activities & Updates'"
+    [description]="'Find activities and updates for environmental assessment projects in British Columbia. Click on the project info button to view the project details page.'"
+    [backgroundImage]="'/assets/images/hero-banner.jpg'">
+  </app-hero-banner>
 
-@if (!loading()) {
-  <main>
+  <section class="project-list table-container">
     <div class="container">
-      <div class="hero-banner__content">
-        <h1>Environmental Assessments in British Columbia</h1>
-        <p>Use the list below to navigate to individual Projects. Click on any project to go
-          directly to its details page.</p>
+      <section class="mb-4 pt-0 pb-0">
+        <search-filter-template (searchEvent)='executeSearch($event)' [searching]="loading()">
+        </search-filter-template>
+      </section>
+      @if (!loading() && tableData().totalListItems === 0) {
+      <div class="text-center my-5">
+        <p class="text-muted">No activities found</p>
       </div>
-      <!-- TODO: search-filter-template component not yet migrated -->
-      <!-- <search-filter-template #explorePanel
-        [keywordOverride]='queryParams().keywords'
-        (searchEvent)='executeSearch($event)'>
-      </search-filter-template> -->
+      } @else {
+      <lib-table-template [data]="tableData()" [loading]="loading()" (messageOut)="onMessageOut($event)">
+      </lib-table-template>
+      }
     </div>
-
-    <section class="project-list table-container">
-      <div class="container">
-        <h1>Activities & Updates</h1>
-        <br>
-        @if (!loading() && tableData().totalListItems === 0) {
-          <div class="text-center my-5">
-            <p class="text-muted">No activities found</p>
-          </div>
-        } @else {
-          <lib-table-template 
-            [data]="tableData()"
-            [loading]="loading()"
-            (messageOut)="onMessageOut($event)">
-          </lib-table-template>
-        }
-      </div>
-    </section>
-  </main>
-}
-
+  </section>
+</main>

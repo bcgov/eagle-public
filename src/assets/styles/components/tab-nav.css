@@ -115,6 +115,13 @@ body:has(.tab-arrow-right) {
 
 .tab-pane {
   background-color: transparent;
+  padding-inline: 1rem;
+}
+
+@media (min-width: 769px) {
+  .tab-pane {
+    padding-inline: 1.5rem;
+  }
 }
 
 .tab-section {

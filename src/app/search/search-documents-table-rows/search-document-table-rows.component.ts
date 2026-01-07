@@ -1,5 +1,6 @@
 import { Component, OnDestroy, EventEmitter, inject } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
+import { Router } from '@angular/router';
 import { Utils } from 'app/shared/utils/utils';
 import { TableRowComponent, ITableMessage } from 'app/shared/components/table-template/table-row-component';
 import { TableObject } from 'app/shared/components/table-template/table-object';
@@ -17,6 +18,7 @@ import { TableObject } from 'app/shared/components/table-template/table-object';
 })
 export class DocSearchTableRowsComponent implements TableRowComponent, OnDestroy {
   private alive = true;
+  private router = inject(Router);
   private utils = inject(Utils);
 
   // Required by TableRowComponent interface
@@ -43,7 +45,9 @@ export class DocSearchTableRowsComponent implements TableRowComponent, OnDestroy
   }
 
   goToProject(item: any) {
-    window.open(`/p/${item.project._id}/project-details`);
+    if (item?.project?._id) {
+      this.router.navigate(['/p', item.project._id, 'project-details']);
+    }
   }
 
   ngOnDestroy() {

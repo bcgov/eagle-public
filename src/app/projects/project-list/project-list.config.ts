@@ -86,8 +86,8 @@ export function createProjectListConfig(): TableListConfig {
     datasetType: 'Project',
     defaultSort: '+name',
     heroBanner: {
-      title: 'Environmental Assessments in British Columbia',
-      description: 'Use the list below to navigate to individual Projects. Click on any project to go directly to its details page.',
+      title: 'Search Environmental Assessment Projects',
+      description: 'Search and filter all environmental assessment projects in British Columbia. Click on a project row to view its details page.',
       backgroundImage: '/assets/images/hero-banner.jpg',
       actions: [{
         label: 'Search All Documents',
