@@ -1,10 +1,4 @@
 @media (min-width: 768px) {
-    .tab-pane,
-    .tab-section {
-        background-color: #f7f8fa;
-        min-height: 400px;
-    }
-
     h2,
     h3 {
         color: #003364;

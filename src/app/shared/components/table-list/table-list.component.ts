@@ -141,6 +141,11 @@ export class TableListComponent implements OnInit, OnDestroy {
     newTableData.columns = cfg.tableColumns;
     newTableData.options.showAllPicker = true;
     
+    // Apply custom table options from config
+    if (cfg.tableOptions) {
+      Object.assign(newTableData.options, cfg.tableOptions);
+    }
+    
     // Pass filter data (lists) to table rows via data property
     newTableData.data = {
       lists: this.filterData || []

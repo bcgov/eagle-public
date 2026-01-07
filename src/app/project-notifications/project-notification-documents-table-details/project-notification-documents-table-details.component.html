@@ -1,89 +1,31 @@
-<div class="mt-5 px-3">
-  <div class="row mb-1" tabindex="0">
-    <div class="col-md-12 col-lg-6">
+<div>
+  <div class="row mb-3 mt-2" tabindex="0">
+    <div class="col-12">
       <h4>{{rowData().name?.toUpperCase() || '-'}}</h4>
     </div>
-    <div class="col-md-12 col-lg-6 text-lg-right">
-      @if (rowData().commentPeriod?.commentPeriodStatus === 'Open' && (!rowData().commentPeriod?.isMet || !rowData().commentPeriod?.metURL)) {
-        <a class="btn btn-primary view-pcp-btn"
-          title="View this Public Comment Period"
-          [routerLink]="['/pn', rowData()._id, 'cp', rowData().commentPeriod?._id]">
-          <div class="pcp-indicator pcp-indicator-active"></div>
-          Open Comment Period - View/Submit
-        </a>
-      }
-      @if (rowData().commentPeriod?.commentPeriodStatus === 'Open' && rowData().commentPeriod?.isMet && rowData().commentPeriod?.metURL) {
-        <a class="btn btn-primary view-pcp-btn"
-          [href]="rowData().commentPeriod.metURL"
-          rel="noopener"
-          target="_blank"
-          title="View this Public Comment Period">
-          <div class="pcp-indicator pcp-indicator-active"></div>
-          Open Comment Period - View/Submit
-        </a>
-      }
-      @if (rowData().commentPeriod?.commentPeriodStatus === 'Closed' && (!rowData().commentPeriod?.isMet || !rowData().commentPeriod?.metURL)) {
-        <a class="btn btn-primary view-pcp-btn"
-          title="View this Public Comment Period"
-          [routerLink]="['/pn', rowData()._id, 'cp', rowData().commentPeriod?._id]">
-          <div class="pcp-indicator pcp-indicator-inactive"></div>
-          View Completed Comment Period
-        </a>
-      }
-      @if (rowData().commentPeriod?.commentPeriodStatus === 'Closed' && rowData().commentPeriod?.isMet && rowData().commentPeriod?.metURL) {
-        <a class="btn btn-primary view-pcp-btn"
-          [href]="rowData().commentPeriod.metURL"
-          rel="noopener"
-          target="_blank"
-          title="View this Public Comment Period">
-          <div class="pcp-indicator pcp-indicator-inactive"></div>
-          View Completed Comment Period
-        </a>
-      }
-      @if (rowData().commentPeriod?.commentPeriodStatus === 'Pending' && rowData().commentPeriod?.isMet && rowData().commentPeriod?.metURL) {
-        <a class="btn btn-primary view-pcp-btn"
-          [href]="rowData().commentPeriod.metURL"
-          rel="noopener"
-          target="_blank"
-          title="View this Public Comment Period">
-          <div class="pcp-indicator pcp-indicator-pending"></div>
-          View Pending Comment Period
-        </a>
-      }
-      @if (rowData().commentPeriod?.commentPeriodStatus === 'Pending' && !rowData().commentPeriod?.isMet) {
-        <a class="btn btn-primary view-pcp-btn"
-          title="View this Public Comment Period">
-          <div class="pcp-indicator pcp-indicator-pending"></div>
-          Comment Period Pending
-        </a>
-      }
-    </div>
   </div>
+  
   <div class="row mb-4" tabindex="0">
-    <div class="pn-decision">
-      @if (rowData().associatedProjectId) {
-        <a [routerLink]="['/p', rowData().associatedProjectId]">
-          @if (rowData().decisionDate) {
-            <p class="value">Notification Decision - {{ rowData().decision }} | {{rowData().decisionDate?.toString().split('T')[0] || "-"}}</p>
-          } @else {
-            <p class="value">Notification Decision - {{ rowData().decision }}</p>
-          }
-        </a>
-      } @else {
-        @if (rowData().decisionDate) {
-          <p class="value">Notification Decision - {{ rowData().decision }} | {{rowData().decisionDate?.toString().split('T')[0] || "-"}}</p>
+    <div class="col-12">
+      <div class="pn-decision">
+        @if (rowData().associatedProjectId) {
+          <a [routerLink]="['/p', rowData().associatedProjectId]">
+            <p class="value">{{ decisionText() }}</p>
+          </a>
         } @else {
-          <p class="value">Notification Decision - {{ rowData().decision }}</p>
+          <p class="value">{{ decisionText() }}</p>
         }
-      }
+      </div>
     </div>
   </div>
+
   <div class="row mb-4" tabindex="0">
     <div class="col-12 pn-info-block">
       <label>Description:</label>
       <p class="value" [innerHTML]="(rowData().description || '-') | newlines"></p>
     </div>
   </div>
+  
   <div class="row" tabindex="0">
     <div class="col-sm-12 col-md-4 pn-info-block">
       <label>Type</label>
@@ -107,7 +49,9 @@
     </div>
     <div class="col-sm-12 col-md-4 pn-info-block">
       <label>Notification Trigger</label>
-      <p class="value">{{getTrigger(rowData()) || "-"}}</p>
+      <p class="value">{{ getTrigger(rowData()) || '-' }}</p>
     </div>
   </div>
 </div>
+
+

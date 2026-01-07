@@ -24,10 +24,6 @@
                                                 <button type="button" class="btn content-btn-dark" (click)="goToViewComments()">
                                                     View Comment Period
                                                 </button>
-                                                &nbsp;
-                                                @if (project()!.commentPeriodForBanner!.commentPeriodStatus === 'Open') {
-                                                    <button class="btn content-btn-dark" (click)="addComment()" type="button">Submit Comment</button>
-                                                }
                                             </div>
                                         }
                                     </div>
@@ -53,24 +49,26 @@
 
                 <div class="main-content">
                     <section class="project-tabs">
-                        <ul class="nav-tabs" role="tablist">
-                        @for (tabLink of tabLinks(); track tabLink.link) {
-                            @if (tabLink.display === true) {
-                                <li class="nav-item" role="presentation">
-                                    <a class="nav-link" 
-                                       role="tab" 
-                                       [routerLink]="tabLink.link" 
-                                       [replaceUrl]="true"
-                                       routerLinkActive="active" 
-                                       [attr.id]="tabLink.link === 'project-details' ? 'project-details-tab' : null" 
-                                       [attr.aria-controls]="tabLink.link === 'project-details' ? 'project-details-panel' : null">
-                                        {{tabLink.label}}
-                                    </a>
-                                </li>
+                        <div class="tabs-container">
+                            <ul class="nav-tabs" role="tablist">
+                            @for (tabLink of tabLinks(); track tabLink.link) {
+                                @if (tabLink.display === true) {
+                                    <li class="nav-item" role="presentation">
+                                        <a class="nav-link" 
+                                           role="tab" 
+                                           [routerLink]="tabLink.link" 
+                                           [replaceUrl]="true"
+                                           routerLinkActive="active" 
+                                           [attr.id]="tabLink.link === 'project-details' ? 'project-details-tab' : null" 
+                                           [attr.aria-controls]="tabLink.link === 'project-details' ? 'project-details-panel' : null">
+                                            {{tabLink.label}}
+                                        </a>
+                                    </li>
+                                }
                             }
-                        }
-                        </ul>
-                        <div class="tab-content">
+                            </ul>
+                        </div>
+                        <div class="tab-content container">
                             <router-outlet></router-outlet>
                         </div>
                     </section>
@@ -97,3 +95,4 @@
         </div>
     </main>
 </div>
+

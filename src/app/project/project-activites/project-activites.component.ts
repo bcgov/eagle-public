@@ -30,14 +30,14 @@ export class ProjectActivitesComponent implements OnInit, OnDestroy {
   private tableTemplateUtils = inject(TableTemplate);
   private tableService = inject(TableService);
   private storageService = inject(StorageService);
-  private loadingState = inject(LoadingStateService);
 
   private alive = true;
   private readonly tableId = 'projectActivities';
   private projId = '';
   private readonly tableSignal$ = toObservable(this.tableService.getTableSignal(this.tableId));
 
-  public loading = this.loadingState.isLoading;
+  public loadingState = inject(LoadingStateService);
+  public loading = this.loadingState.getOperationState('table-projectActivities');
   public queryParams: Params = {};
 
   public tableData = signal<TableObject>(new TableObject({ component: ActivitiesListTableRowsComponent }));

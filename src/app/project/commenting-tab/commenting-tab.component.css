@@ -1,11 +1,3 @@
-.tab-section {
-  padding: 0;
-}
-
-.container {
-  padding: 1rem;
-}
-
 .list-group-item {
   padding: 1rem;
   border-top: 2px solid var(--table-border-color);

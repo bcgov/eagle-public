@@ -1,5 +1,5 @@
-.active-flag {
-  background: #5bb75c;
+.active-flag,
+.inactive-flag {
   color: #fff;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -8,14 +8,12 @@
   font-size: 0.8rem;
 }
 
+.active-flag {
+  background: #5bb75c;
+}
+
 .inactive-flag {
-  background: red;
-  color: #fff;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 3px 8px 4px;
-  border-radius: 5px;
-  font-size: 0.8rem;
+  background: #d32f2f;
 }
 
 h4 {
@@ -57,6 +55,7 @@ h4 {
 .pn-info-block {
   padding: 10px 10px 10px 15px;
   vertical-align: top;
+  overflow-wrap: break-word;
 }
 
 .pn-info-block p,
@@ -80,10 +79,12 @@ label {
 }
 
 .pn-decision {
-  background: #4c81af;
-  border-radius: 6px;
-  margin-left: 10px;
-  margin-top: 10px;
+  background: #5475a7;
+  border-radius: 4px;
+  padding: 8px 16px;
+  margin: 0;
+  max-width: 100%;
+  overflow-wrap: break-word;
 }
 
 .pn-decision p,
@@ -93,10 +94,9 @@ label {
 }
 
 .pn-decision .value {
-  padding: 5px 10px 2px 10px;
-  font-weight: bold;
+  padding: 0;
+  margin: 0;
+  font-weight: 700;
+  font-size: 1rem;
 }
 
-.tab-section {
-  min-height: 500px;
-}

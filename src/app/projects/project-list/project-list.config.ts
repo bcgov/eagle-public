@@ -88,6 +88,7 @@ export function createProjectListConfig(): TableListConfig {
     heroBanner: {
       title: 'Environmental Assessments in British Columbia',
       description: 'Use the list below to navigate to individual Projects. Click on any project to go directly to its details page.',
+      backgroundImage: '/assets/images/hero-banner.jpg',
       actions: [{
         label: 'Search All Documents',
         icon: 'search',

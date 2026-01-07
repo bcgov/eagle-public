@@ -111,17 +111,22 @@
   transition: background-color 0.2s ease-in-out;
 }
 
-/* Hover state */
-.table tbody tr:hover {
+/* Project notifications row - add padding around entire content */
+.table tbody tr td.pn-location-info {
+  padding: 1.5rem;
+}
+
+/* Hover state - only for tables with highlight class */
+.table tbody.highlight tr:hover {
   background-color: #e2f1ff;
 }
 
-.table tbody tr:hover td {
-  background-color: #e2f1ff;
+.table tbody.highlight tr:hover td {
+  background-color: #e2f1ff !important;
 }
 
 /* Only project list table rows should be clickable */
-.table-template .table tbody tr:hover td {
+.table-template .table tbody.highlight tr:hover td {
   cursor: pointer;
 }
 
@@ -153,7 +158,7 @@
     background-color: #E9ECEF;
   }
 
-  .table-template .table tbody tr:hover {
+  .table-template .table tbody.highlight tr:hover {
     background-color: #e2f1ff;
   }
 
@@ -189,12 +194,12 @@
     text-align: left;
   }
 
-  .table-template .table tbody tr:hover td {
+  .table-template .table tbody.highlight tr:hover td {
     background-color: transparent;
   }
 
   /* Keep Name header background on hover */
-  .table-template .table tbody tr:hover td[data-label="Name"] {
+  .table-template .table tbody.highlight tr:hover td[data-label="Name"] {
     background-color: #38598a !important;
   }
 

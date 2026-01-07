@@ -1,5 +1,6 @@
-.tab-section {
-  min-height: 500px;
+:host {
+  display: block;
+  width: 100%;
 }
 
 h4 {

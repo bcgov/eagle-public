@@ -1,87 +1,156 @@
-.nav-tabs {
-  display: flex;
-  flex-flow: row nowrap;
-  margin-bottom: 0;
-  border-bottom: 2px solid var(--tab-nav-border-color);
-  background-color: var(--tab-nav-bg);
-  max-width: 1100px;
-  margin-inline: auto;
-  padding-inline: 1rem;
-  list-style: none;
+/* Global Tab Navigation Styles - Application Standard */
+
+/* Tabs container - reusable wrapper for tab systems */
+.tabs-container {
+  width: 100%;
+  background-color: transparent;
+  position: relative;
+  overflow: visible;
 }
 
-/* Tablet and mobile horizontal scroll */
-@media (max-width: 1073px) {
-  .nav-tabs {
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-    scroll-behavior: smooth;
-    scrollbar-width: thin;
-    max-width: 100%;
-    padding-inline: 0;
-    margin-top: 1.5rem;
-  }
-  
-  .nav-tabs::-webkit-scrollbar {
-    height: 3px;
-  }
-  
-  .nav-tabs::-webkit-scrollbar-track {
-    background: var(--tab-nav-bg);
-  }
-  
-  .nav-tabs::-webkit-scrollbar-thumb {
-    background: var(--tab-nav-border-color);
-    border-radius: 3px;
-  }
-  
-  .nav-tabs .nav-item:first-child .nav-link {
-    padding-left: 0.75rem;
-  }
-  
-  .nav-tabs .nav-item:last-child .nav-link {
-    padding-right: 1rem;
-  }
+/* Tab arrow buttons */
+.tab-arrow {
+  position: absolute;
+  top: 0;
+  bottom: 2px;
+  width: 40px;
+  background: linear-gradient(to right, rgba(255,255,255,0.95), rgba(255,255,255,0.95));
+  border: none;
+  font-size: 2rem;
+  color: #494949;
+  cursor: pointer;
+  z-index: 10;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.tab-arrow:hover {
+  background: linear-gradient(to right, rgba(206,212,218,0.95), rgba(206,212,218,0.95));
+}
+
+.tab-arrow-left {
+  left: 0;
+  box-shadow: 2px 0 4px rgba(0,0,0,0.1);
+}
+
+.tab-arrow-right {
+  right: 0;
+  box-shadow: -2px 0 4px rgba(0,0,0,0.1);
+  /* Account for scrollbar on desktop */
+  margin-right: env(safe-area-inset-right, 0);
+}
+
+/* Desktop: account for scrollbar */
+body:has(.tab-arrow-right) {
+  --scrollbar-width: 15px;
+}
+
+/* Use JavaScript to dynamically position based on scrollbar */
+
+/* Tab navigation bar */
+.nav-tabs {
+  width: 100%;
+  border: none;
+  border-bottom: 2px solid #CED4DA;
+  background-color: transparent;
+  margin: 0;
+  padding: 0;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  list-style: none;
+  display: flex;
+  scroll-behavior: smooth;
 }
 
 .nav-tabs .nav-item {
-  margin-bottom: -2px;
-  list-style: none;
-  flex-shrink: 0;
+  margin: 0;
+  display: flex;
+  align-items: stretch;
 }
 
 .nav-tabs .nav-link {
-  border: none;
-  text-align: center;
-  transition: all 0.2s ease-in;
-  padding: 0.75rem;
-  border-radius: 0;
+  color: #494949;
+  font-weight: 700;
   background-color: transparent;
-  font-weight: bold;
+  border: none;
+  border-bottom: 3px solid transparent;
+  border-radius: 0;
+  padding: 0.75rem 1.5rem;
+  line-height: 1;
+  font-size: 1rem;
+  transition: all 0.2s ease-in-out;
+  display: flex;
+  align-items: center;
 }
 
 .nav-tabs .nav-link:hover {
-  background-color: var(--tab-hover-bg);
-  box-shadow: inset 0 -2px 0 var(--tab-nav-border-color);
+  background-color: #CED4DA;
+  border-bottom: 3px solid transparent;
 }
 
 .nav-tabs .nav-link.active {
-  color: var(--tab-active-color) !important;
-  background-color: var(--tab-active-bg);
-  box-shadow:
-    inset 0 2px 0 var(--tab-nav-border-color),
-    inset 2px 0 0 var(--tab-nav-border-color),
-    inset -2px 0 0 var(--tab-nav-border-color);
+  color: #494949 !important;
+  background-color: transparent;
+  border: none;
+  border-bottom: 3px solid #fcba19;
+  box-shadow: none;
 }
 
+.nav-tabs .nav-link.active:hover {
+  color: #494949 !important;
+}
+
+.nav-tabs .nav-link:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+/* Tab content area */
 .tab-content {
-  padding: 2rem;
-  min-height: 400px;
+  padding: 0;
+  margin-top: 1.5rem;
 }
 
+.tab-pane {
+  background-color: transparent;
+}
+
+.tab-section {
+  background-color: transparent;
+  min-height: 500px;
+  overflow-x: hidden;
+  overflow-y: visible;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+  .tabs-container {
+    padding-left: 0;
+    padding-right: 0;
+    overflow: visible;
+  }
+
+  .nav-tabs {
+    overflow-x: auto;
+    overflow-y: hidden;
+    flex-wrap: nowrap;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    /* Hide scrollbar but keep functionality */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .nav-tabs::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Legacy tablet/mobile styles - kept for backwards compatibility */
 @media (max-width: 1073px) {
-  .tab-content {
-    padding: 1rem 0.5rem;
+  .nav-tabs {
+    max-width: 100%;
   }
 }

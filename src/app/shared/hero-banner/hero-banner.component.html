@@ -1,4 +1,4 @@
-<div class="hero-banner">
+<div class="hero-banner" [style.backgroundImage]="backgroundStyle()">
   <div class="container">
     <div class="container-inner">
       <div class="hero-banner__content">
@@ -25,7 +25,8 @@
                   [href]="action.href"
                   [target]="action.target || '_self'"
                   [rel]="action.rel || ''"
-                  [title]="action.title || action.label">
+                  [title]="action.title || action.label"
+                  (click)="onExternalLinkClick($event)">
                   @if (action.icon) {
                     <i class="material-icons">{{ action.icon }}</i>
                   }
@@ -39,3 +40,4 @@
     </div>
   </div>
 </div>
+

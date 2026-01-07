@@ -1,6 +1,6 @@
 import { Type } from '@angular/core';
 import { Observable } from 'rxjs';
-import { IColumnObject } from '../table-template/table-object';
+import { IColumnObject, ITableOptions } from '../table-template/table-object';
 import { FilterObject } from '../search-filter-template/filter-object';
 import { HeroBannerAction } from 'app/shared/hero-banner/hero-banner.component';
 
@@ -11,8 +11,8 @@ export interface TableListConfig {
   /** Unique identifier for the table (used for loading state and table service) */
   tableId: string;
   
-  /** Type of dataset being displayed ('Project' or 'Document') */
-  datasetType: 'Project' | 'Document';
+  /** Type of dataset being displayed ('Project', 'Document', or 'ProjectNotification') */
+  datasetType: 'Project' | 'Document' | 'ProjectNotification';
   
   /** Default sort field with direction (e.g., '+name', '-datePosted') */
   defaultSort: string;
@@ -22,6 +22,7 @@ export interface TableListConfig {
     title: string;
     description: string;
     actions: HeroBannerAction[];
+    backgroundImage?: string;
   };
   
   /** Table column definitions */
@@ -47,4 +48,7 @@ export interface TableListConfig {
   
   /** Optional: Function to initialize any required services/data fetching */
   initializeData?: () => void;
+  
+  /** Optional: Table display options */
+  tableOptions?: Partial<ITableOptions>;
 }

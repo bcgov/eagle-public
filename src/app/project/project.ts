@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy, AfterViewInit, ElementRef, signal, ChangeDetectionStrategy, inject, Renderer2, CUSTOM_ELEMENTS_SCHEMA, effect } from '@angular/core';
-import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule, NavigationEnd } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { Subject } from 'rxjs';
 import { takeUntil, take } from 'rxjs/operators';
@@ -12,9 +12,6 @@ import { ProjectService } from '../services/project.service';
 import { CommentPeriodService } from '../services/commentperiod.service';
 import { StorageService } from '../services/storage.service';
 import { CommentPeriod } from '../models/commentperiod';
-// TODO: Migrate these components
-// import { AddCommentComponent } from '../comments/add-comment/add-comment';
-// import { BecomeAMemberComponent } from './cac/become-a-member';
 import { Constants } from '../shared/utils/constants';
 import { SearchService } from '../services/search.service';
 import { Utils } from '../shared/utils/utils';
@@ -60,7 +57,7 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
   private ngbModal: NgbModalRef | null = null;
   public legislationLink = signal<string>('');
   public sidebarOpen = signal(true);
-  private tabLinksInitialized = false;
+  private checkTabArrowsFn: (() => void) | null = null;
 
   public map: L.Map | null = null;
   public appFG = L.featureGroup();
@@ -87,6 +84,9 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
         };
         
         this.legislationLink.set(legislationLinks[legislationYear]);
+        
+        // Re-check tab arrows after tabs are updated
+        setTimeout(() => this.checkTabArrowsVisibility(), 100);
       }
     });
   }
@@ -212,10 +212,105 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
           this.loadProject(projId);
         }
       });
+    
+    // Re-check tab arrows when route changes
+    this.router.events
+      .pipe(takeUntil(this.ngUnsubscribe))
+      .subscribe(event => {
+        if (event instanceof NavigationEnd) {
+          setTimeout(() => this.checkTabArrowsVisibility(), 100);
+        }
+      });
   }
 
   ngAfterViewInit() {
-    // Map initialization moved to ngOnInit after project data loads
+    // Initialize tab navigation arrows for overflow
+    this.initTabArrows();
+  }
+
+  private initTabArrows() {
+    const tabsContainer = document.querySelector('.tabs-container') as HTMLElement;
+    const navTabs = document.querySelector('.nav-tabs') as HTMLElement;
+    if (!tabsContainer || !navTabs) {
+      setTimeout(() => this.initTabArrows(), 100);
+      return;
+    }
+    
+    // Avoid creating duplicate arrows
+    if (tabsContainer.querySelector('.tab-arrow')) {
+      return;
+    }
+
+    const { leftArrow, rightArrow } = this.createArrowElements(tabsContainer);
+    const checkArrows = this.createScrollChecker(navTabs, leftArrow, rightArrow);
+    this.setupArrowHandlers(navTabs, leftArrow, rightArrow, checkArrows);
+  }
+
+  private createArrowElements(container: HTMLElement) {
+    const leftArrow = document.createElement('button');
+    leftArrow.className = 'tab-arrow tab-arrow-left';
+    leftArrow.innerHTML = '&#8249;';
+    leftArrow.setAttribute('aria-label', 'Scroll tabs left');
+    leftArrow.type = 'button';
+
+    const rightArrow = document.createElement('button');
+    rightArrow.className = 'tab-arrow tab-arrow-right';
+    rightArrow.innerHTML = '&#8250;';
+    rightArrow.setAttribute('aria-label', 'Scroll tabs right');
+    rightArrow.type = 'button';
+
+    container.appendChild(leftArrow);
+    container.appendChild(rightArrow);
+
+    return { leftArrow, rightArrow };
+  }
+
+  private createScrollChecker(navTabs: HTMLElement, leftArrow: HTMLButtonElement, rightArrow: HTMLButtonElement) {
+    const adjustArrowPosition = () => {
+      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+      rightArrow.style.right = scrollbarWidth > 0 ? `${scrollbarWidth}px` : '0px';
+    };
+
+    const checkArrows = () => {
+      const hasOverflow = navTabs.scrollWidth > navTabs.clientWidth;
+      const isAtStart = navTabs.scrollLeft <= 1;
+      const isAtEnd = navTabs.scrollLeft >= navTabs.scrollWidth - navTabs.clientWidth - 1;
+      
+      leftArrow.style.display = hasOverflow && !isAtStart ? 'flex' : 'none';
+      rightArrow.style.display = hasOverflow && !isAtEnd ? 'flex' : 'none';
+      
+      adjustArrowPosition();
+    };
+    
+    this.checkTabArrowsFn = checkArrows;
+    return checkArrows;
+  }
+
+  private setupArrowHandlers(navTabs: HTMLElement, leftArrow: HTMLButtonElement, rightArrow: HTMLButtonElement, checkArrows: () => void) {
+    leftArrow.addEventListener('click', () => {
+      navTabs.scrollBy({ left: -200, behavior: 'smooth' });
+      setTimeout(checkArrows, 100);
+    });
+
+    rightArrow.addEventListener('click', () => {
+      navTabs.scrollBy({ left: 200, behavior: 'smooth' });
+      setTimeout(checkArrows, 100);
+    });
+
+    navTabs.addEventListener('scroll', checkArrows);
+    
+    // Use ResizeObserver for responsive checking
+    const resizeObserver = new ResizeObserver(() => checkArrows());
+    resizeObserver.observe(navTabs);
+    
+    // Initial check
+    setTimeout(() => checkArrows(), 0);
+  }
+
+  private checkTabArrowsVisibility() {
+    if (this.checkTabArrowsFn) {
+      this.checkTabArrowsFn();
+    }
   }
 
   onResize(event?: Event) {
@@ -375,12 +470,6 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   initTabLinks(): void {
-    // Only initialize once per component instance
-    if (this.tabLinksInitialized) {
-      return;
-    }
-    this.tabLinksInitialized = true;
-
     this.configService.lists.pipe(
       take(1),
       takeUntil(this.ngUnsubscribe)
@@ -393,44 +482,6 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
         }
       });
     });
-  }
-
-  public learnMore() {
-    // TODO: Migrate BecomeAMemberComponent
-    this.logger.info('Learn more functionality requires BecomeAMemberComponent migration', 'ProjectComponent');
-    // this.ngbModal = this.modalService.open(BecomeAMemberComponent, { backdrop: 'static', size: 'lg' });
-    // const proj = this.project();
-    // if (proj) {
-    //   (this.ngbModal.componentInstance as BecomeAMemberComponent).project = proj;
-    // }
-    // this.ngbModal.result.then(
-    //   value => {
-    //     console.log(`Success, value = ${value}`);
-    //   },
-    //   reason => {
-    //     console.log(`Cancelled, reason = ${reason}`);
-    //   }
-    // );
-  }
-
-  public addComment() {
-    // TODO: Migrate AddCommentComponent
-    this.logger.info('Add comment functionality requires AddCommentComponent migration', 'ProjectComponent');
-    // const proj = this.project();
-    // if (proj?.commentPeriodForBanner) {
-    //   this.ngbModal = this.modalService.open(AddCommentComponent, { backdrop: 'static', size: 'lg' });
-    //   const instance = this.ngbModal.componentInstance as AddCommentComponent;
-    //   instance.currentPeriod = proj.commentPeriodForBanner;
-    //   instance.project = proj;
-    //   this.ngbModal.result.then(
-    //     value => {
-    //       console.log(`Success, value = ${value}`);
-    //     },
-    //     reason => {
-    //       console.log(`Cancelled, reason = ${reason}`);
-    //     }
-    //   );
-    // }
   }
 
   public goToViewComments() {

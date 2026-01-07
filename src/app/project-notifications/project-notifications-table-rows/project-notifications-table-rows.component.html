@@ -1,19 +1,61 @@
-<td scope="row" class="col-12 pt-4 pn-location-info">
-  <span>
-    <mat-tab-group>
-      <mat-tab [label]="isMobile() ? 'Details' : 'Project Notification Details'">
+<td scope="row" class="pn-location-info">
+  <div class="pn-content-wrapper">
+    <div class="tabs-container">
+    <ul class="nav nav-tabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button 
+          class="nav-link" 
+          [class.active]="activeTab() === 'details'"
+          (click)="setActiveTab('details')"
+          type="button" 
+          role="tab"
+          [attr.aria-selected]="activeTab() === 'details'">
+          @if (isMobile()) {
+            Details
+          } @else {
+            Project Notification Details
+          }
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button 
+          class="nav-link" 
+          [class.active]="activeTab() === 'documents'"
+          (click)="setActiveTab('documents')"
+          type="button" 
+          role="tab"
+          [attr.aria-selected]="activeTab() === 'documents'">
+          Documents
+        </button>
+      </li>
+    </ul>
+    <div class="tab-content">
+      <div 
+        class="tab-pane fade" 
+        [class.show]="activeTab() === 'details'"
+        [class.active]="activeTab() === 'details'"
+        role="tabpanel">
         <div class="tab-section">
           <app-project-notification-documents-table-details [rowData]="rowData">
           </app-project-notification-documents-table-details>
         </div>
-      </mat-tab>
-      <mat-tab label="Documents">
-        <div class="tab-section">
-          <app-project-notification-documents-table [header]="rowData.name.toUpperCase() || '-'"
-            [tableId]="rowData._id">
-          </app-project-notification-documents-table>
-        </div>
-      </mat-tab>
-    </mat-tab-group>
-  </span>
+      </div>
+      <div 
+        class="tab-pane fade" 
+        [class.show]="activeTab() === 'documents'"
+        [class.active]="activeTab() === 'documents'"
+        role="tabpanel">
+        @if (documentsTabLoaded()) {
+          <div class="tab-section">
+            <app-project-notification-documents-table [header]="rowData.name.toUpperCase() || '-'"
+              [tableId]="rowData._id"
+              backgroundColor="transparent"
+              rowBackgroundColor="#F7F8FA">
+            </app-project-notification-documents-table>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+  </div>
 </td>

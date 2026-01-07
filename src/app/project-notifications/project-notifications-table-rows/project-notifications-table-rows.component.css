@@ -1,8 +1,11 @@
-.tab-section {
-  min-height: 500px;
+/* Component-specific styles - tab styles are now global in /assets/styles/components/tab-nav.css */
+
+.pn-content-wrapper {
+  padding: 1.5rem;
 }
 
-.mat-tab-label {
-  color: black;
-  font-weight: 700;
+@media (max-width: 768px) {
+  .pn-content-wrapper {
+    padding: 3%;
+  }
 }

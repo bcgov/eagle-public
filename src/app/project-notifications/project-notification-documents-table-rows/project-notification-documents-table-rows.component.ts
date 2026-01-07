@@ -6,13 +6,14 @@ import { ConfigService } from '../../services/config.service';
 import { TableRowComponent, ITableMessage } from '../../shared/components/table-template/table-row-component';
 import { TableObject } from '../../shared/components/table-template/table-object';
 import { Utils } from '../../shared/utils/utils';
+import { LoggingService } from '../../services/logging.service';
 
 @Component({
   selector: 'app-project-notification-documents-table-rows',
   templateUrl: './project-notification-documents-table-rows.component.html',
-  styleUrls: ['./project-notification-documents-table-rows.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule, DatePipe],
+  standalone: true,
   host: {
     '(keyup.enter)': 'goToItem(rowData)',
     'tabindex': '0'
@@ -26,6 +27,7 @@ export class ProjectNotificationDocumentsTableRowsComponent implements TableRowC
   
   private configService = inject(ConfigService);
   private utils = inject(Utils);
+  private logger = inject(LoggingService);
 
   private lists: any[] = [];
   private alive = true;
@@ -54,7 +56,8 @@ export class ProjectNotificationDocumentsTableRowsComponent implements TableRowC
     try {
       safeName = this.utils.encodeString(filename, true);
     } catch (e) {
-      console.log('error:', e);
+      this.logger.error('Error encoding filename', 'ProjectNotificationsTableRows', e);
+      safeName = filename; // Fallback to original filename
     }
     window.open('/api/public/document/' + item._id + '/download/' + safeName, '_blank');
   }

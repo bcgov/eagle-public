@@ -1,10 +1,9 @@
 <div class="tab-pane" role="tabpanel" aria-labelledby="project-details-tab" id="project-details-panel" tabindex="0">
   <h2 class="visually-hidden">Project Details</h2>
   <section class="tab-section">
-    <div class="container">
-      <div class="row">
-        <div class="col-12">
-        <div class="location-info">
+    <div class="row">
+      <div class="col-12">
+      <div class="location-info">
           <p class="desc mb-3" [innerHTML]="(project()?.description?.toString() || '-') | newlines"></p>
           <dl class="row g-3">
             <div class="col-sm-6 col-md-4 col-lg-3">
@@ -70,14 +69,12 @@
             }
           </dl>
         </div>
-        </div>
       </div>
     </div>
     <br>
-    <div class="container">
-      <app-featured-documents></app-featured-documents>
-      <app-pins></app-pins>
-      <app-project-activites></app-project-activites>
-    </div>
+    <app-featured-documents></app-featured-documents>
+    <app-pins></app-pins>
+    <app-project-activites></app-project-activites>
   </section>
 </div>
+
