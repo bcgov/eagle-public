@@ -1,25 +1,15 @@
-/* EAGLE Custom Button Styles */
-/* Note: Bootstrap provides base .btn, .btn-primary, .btn-secondary, etc. */
-/* This file contains only EAGLE-specific button variants and animations */
+/**
+ * EAGLE Custom Button Styles
+ * 
+ * Note: BC Gov standard buttons (primary, outline-primary) are in bcgov-bootstrap-theme.css
+ * This file contains only EAGLE-specific button variants and animations
+ */
 
-/* Override Bootstrap primary button colors - BC Gov Blue */
-.btn-primary {
-  --bs-btn-bg: #38598a;
-  --bs-btn-border-color: #38598a;
-  --bs-btn-hover-bg: #2d4770;
-  --bs-btn-hover-border-color: #2d4770;
-  --bs-btn-active-bg: #1f3456;
-  --bs-btn-active-border-color: #1f3456;
-  --bs-btn-disabled-bg: #38598a;
-  --bs-btn-disabled-border-color: #38598a;
-  --bs-btn-color: #fff;
-  --bs-btn-hover-color: #fff;
-  --bs-btn-active-color: #fff;
-  --bs-btn-disabled-color: #fff;
-}
+/* === EAGLE-SPECIFIC BUTTON VARIANTS === */
 
-/* EAGLE Inverted Button (Hero Banner) */
-.btn.inverted {
+/* EAGLE Inverted Button (Hero Banner) - transparent with white border */
+.btn.inverted,
+.feature-block .btn.inverted {
   color: var(--white);
   border: 2px solid var(--white);
   background: transparent;
@@ -35,29 +25,65 @@
   color: var(--white);
 }
 
-/* Button icon alignment */
-.btn i {
+/* Feature Block Button - Different hover state */
+.feature-block .btn.inverted:active,
+.feature-block .btn.inverted:focus,
+.feature-block .btn.inverted:hover {
+  border-color: var(--white);
+  background: var(--white);
+  color: var(--bs-primary);
+}
+
+/* Hero Banner Button - Common styles for hero banner action buttons */
+.hero-banner-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  border: 2px solid var(--bs-warning);
+  border-radius: 0.2rem;
+  text-transform: none;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.5;
+  color: var(--bs-warning);
+  background: var(--hero-btn-overlay);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: all ease-out 0.2s;
+}
+
+.hero-banner-btn:hover,
+.hero-banner-btn:focus {
+  color: var(--bc-blue);
+  background: var(--bs-warning);
+  border-color: var(--bs-warning);
+  text-decoration: none;
+}
+
+.hero-banner-btn i,
+.hero-banner-btn .material-icons {
+  font-size: 1.25rem;
+  line-height: 1;
   vertical-align: middle;
 }
 
-.btn-icon i {
-  margin-top: -0.1rem;
+.hero-banner-btn span {
+  line-height: 1.5;
+  vertical-align: middle;
 }
 
-/* EAGLE Inverted variant (alternative name) */
-.btn-inverted {
-  background: var(--gold);
-  text-transform: uppercase;
-  font-size: 0.9375rem;
-  font-weight: 700;
-}
-
-/* Slide animation buttons */
+/* Slide animation buttons - used in hero banners and feature blocks */
 .slide-r-btn,
 .slide-l-btn {
-  padding: 0.5rem;
+  padding: 0.5rem 1.75rem;
   border-radius: 0.2rem;
   transition: all ease-out 0.2s;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
 }
 
 .slide-r-btn img,
@@ -69,77 +95,81 @@
   transition: all ease-out 0.2s;
 }
 
+/* Right slide button - icon on right */
 .slide-r-btn img,
 .slide-r-btn i {
+  position: absolute;
+  right: 0.5rem;
   opacity: 0;
-  margin-left: 0.25rem;
-  transform: translateX(20px);
-}
-
-.content-btn-alt i {
-  margin-top: -0.2rem;
-  margin-left: -0.2rem;
+  width: 0;
+  margin: 0;
+  overflow: hidden;
 }
 
 .slide-r-btn span {
   display: inline-block;
-  margin-left: 0.25rem;
-  transform: translateX(12px);
-}
-
-.slide-l-btn img,
-.slide-l-btn i {
-  opacity: 0;
-  margin-right: 0.25rem;
-  transform: translateX(-20px);
-}
-
-.slide-l-btn span {
-  display: inline-block;
-  margin-right: 0.25rem;
-  transform: translateX(-12px);
+  margin: 0;
 }
 
 .slide-r-btn:hover img,
 .slide-r-btn:focus img,
 .slide-r-btn:hover i,
-.slide-r-btn:focus i,
+.slide-r-btn:focus i {
+  opacity: 1;
+  width: auto;
+  margin-left: 0.5rem;
+}
+
 .slide-r-btn:hover span,
-.slide-r-btn:focus span,
+.slide-r-btn:focus span {
+  transform: translateX(-0.75rem);
+}
+
+/* Left slide button - icon on left */
+.slide-l-btn img,
+.slide-l-btn i {
+  position: absolute;
+  left: 0.5rem;
+  opacity: 0;
+  width: 0;
+  margin: 0;
+  overflow: hidden;
+}
+
+.slide-l-btn span {
+  display: inline-block;
+  margin: 0;
+}
+
 .slide-l-btn:hover img,
 .slide-l-btn:focus img,
 .slide-l-btn:hover i,
-.slide-l-btn:focus i,
+.slide-l-btn:focus i {
+  opacity: 1;
+  width: auto;
+  margin-right: 0.5rem;
+}
+
 .slide-l-btn:hover span,
 .slide-l-btn:focus span {
-  opacity: 1;
-  transform: translateX(0);
+  transform: translateX(0.75rem);
   text-decoration: none;
 }
 
-@media (width <=1024px) {
+/* Remove slide animation on mobile/tablet */
+@media (width <= 1024px) {
   .slide-r-btn img,
   .slide-r-btn i,
   .slide-r-btn span,
   .slide-l-btn img,
   .slide-l-btn i,
   .slide-l-btn span {
+    opacity: 1;
     transform: translateX(0);
   }
-
-  .slide-r-btn img,
-  .slide-r-btn i,
-  .slide-l-btn img,
-  .slide-l-btn i {
-    opacity: 1;
-  }
 }
 
-/* Content buttons */
-.content-btns {
-  margin-top: 3rem;
-}
-
+/* Content Button - Light grey with shadow */
 .content-btn {
   padding: 0.5rem;
   background: var(--lightgray);
@@ -151,65 +181,29 @@
     0 3px 1px -2px rgb(0 0 0 / 20%);
 }
 
-.content-btn:focus,
-.content-btn:hover {
+.content-btn:hover,
+.content-btn:focus {
   border-color: var(--gold);
   background: var(--gold);
 }
 
-.content-btn:not([href], [tabindex]) {
-  color: var(--link-color);
-}
-
-.content-btn-alt {
-  padding: 0.35rem 1rem;
-  color: var(--bs-primary, #007bff);
-  border: 2px solid var(--bs-primary, #007bff);
-  background: transparent;
-  font-size: 0.85rem;
-  font-weight: 700;
-}
-
-.content-btn-alt:focus,
-.content-btn-alt:hover {
-  color: var(--white);
-  border-color: var(--bs-primary, #007bff);
-  background: var(--bs-primary, #007bff);
-}
-
-.content-btn-alt.danger {
-  color: var(--bs-danger, #dc3545);
-  border-color: var(--bs-danger, #dc3545);
-}
-
-.content-btn-alt.danger:focus,
-.content-btn-alt.danger:hover {
-  color: var(--white);
-  border-color: var(--bs-danger, #dc3545);
-  background: var(--bs-danger, #dc3545);
-}
-
+/* Content Button Dark - Solid dark button */
 .content-btn-dark {
   padding: 0.5rem 1rem;
   color: var(--white);
-  border: 2px solid var(--bs-primary, #003366);
-  background: var(--bs-primary, #003366);
+  border: 2px solid var(--bs-primary);
+  background: var(--bs-primary);
   font-size: 0.875rem;
   font-weight: 700;
   text-decoration: none;
 }
 
-.content-btn-dark:focus,
-.content-btn-dark:hover {
+.content-btn-dark:hover,
+.content-btn-dark:focus {
   color: var(--white);
-  border-color: #38598a;
-  background: #38598a;
+  border-color: var(--bs-secondary);
+  background: var(--bs-secondary);
   text-decoration: none;
-}
-
-.page-bottom-btn {
-  display: inline-block;
-  margin: 0.5rem 0.5rem 0.5rem 0;
 }
 
 /* Scroll to top button */
@@ -217,7 +211,12 @@
   position: fixed;
   bottom: 1rem;
   right: 1rem;
-  padding: 0.5rem;
+  width: 3rem;
+  height: 3rem;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   opacity: 0;
   pointer-events: none;
   border: 2px solid var(--gold);
@@ -246,20 +245,12 @@
   color: var(--primary);
 }
 
-/* Submit button */
-.submit-btn {
-  border-color: var(--gold);
-  background: var(--gold);
-  font-size: 0.9375rem;
-  font-weight: 700;
-}
-
-/* Icon button */
+/* Icon button - minimal button with icon only */
 .btn-icon {
   min-width: 2.5rem !important;
   padding: 0.35rem 0;
   overflow: hidden;
-  color: #808080;
+  color: var(--btn-disabled-color);
   background: transparent;
   transition: all ease-out 0.2s;
   cursor: pointer;

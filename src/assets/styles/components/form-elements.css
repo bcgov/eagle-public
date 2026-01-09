@@ -1,19 +1,17 @@
 /* EAGLE Form Element Overrides */
-/* Note: Bootstrap provides base form controls */
+/* Note: BC Gov theme provides base form controls */
 /* This file contains only EAGLE-specific customizations */
 
-.form-control {
-  border-color: var(--fc-border-color);
-  background: var(--fc-bg);
-  font-size: 0.9375rem;
+/* Placeholder styling for all inputs */
+::placeholder {
+  color: var(--fc-placeholder-color, var(--bs-secondary-color));
+  opacity: 1;
 }
 
-.form-control:focus {
-  border-color: var(--fc-focus-border-color);
-}
-
+/* Only override specific properties, not the entire form-control */
 input.form-control {
   height: var(--fc-height);
+  font-size: 0.9375rem;
 }
 
 input[type="text"],
@@ -59,7 +57,7 @@ textarea {
 fieldset + fieldset {
   margin-top: 2.5rem;
   padding-top: 2rem;
-  border-top: 1px solid var(--bs-border-color, #ddd);
+  border-top: 1px solid var(--bs-border-color);
 }
 
 legend {
@@ -75,7 +73,7 @@ label {
 
 /* Input Group */
 .input-group-append .btn-icon {
-  border-color: var(--bs-border-color, #ccc);
+  border-color: var(--bs-border-color);
 }
 
 /* EAGLE Custom Validation Styles */
@@ -95,7 +93,7 @@ label {
   width: 1rem;
   height: 1rem;
   border-right: 0.5rem solid transparent;
-  border-bottom: 0.5rem solid var(--bs-danger, #dc3545);
+  border-bottom: 0.5rem solid var(--bs-danger);
   border-left: 0.5rem solid transparent;
 }
 
@@ -104,13 +102,13 @@ label {
 }
 
 .form-control.is-invalid {
-  border-color: var(--bs-danger, #dc3545);
+  border-color: var(--bs-danger);
 }
 
 .input-group.is-invalid .form-control {
-  border-color: var(--bs-danger, #dc3545);
+  border-color: var(--bs-danger);
 }
 
 .input-group.is-invalid .input-group-append .btn-icon {
-  border-color: var(--bs-danger, #dc3545);
+  border-color: var(--bs-danger);
 }

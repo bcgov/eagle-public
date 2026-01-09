@@ -148,7 +148,7 @@
 
 .loading-spinner {
   text-align: center;
-  color: #003366;
+  color: var(--bc-blue);
 }
 
 .loading-spinner p {

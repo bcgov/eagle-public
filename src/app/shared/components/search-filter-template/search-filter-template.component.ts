@@ -2,19 +2,14 @@ import { ChangeDetectionStrategy, OnInit, OnDestroy, Component, input, output, i
 import { CommonModule, DOCUMENT } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormGroup, FormControl } from '@angular/forms';
 import { ActivatedRoute, RouterModule } from '@angular/router';
-import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatSelectModule } from '@angular/material/select';
-import { MatCheckboxModule } from '@angular/material/checkbox';
-import { MatSlideToggleModule } from '@angular/material/slide-toggle';
-import { MatOptionModule } from '@angular/material/core';
-import { NgbDropdownModule } from '@ng-bootstrap/ng-bootstrap';
+import { NgbTooltip } from '@ng-bootstrap/ng-bootstrap';
 import { takeWhile } from 'rxjs/operators';
 
 import { FilterObject, FilterType } from './filter-object';
 import { SubsetsObject } from './subset-object';
 import { Utils } from 'app/shared/utils/utils';
 import { DatePickerComponent } from '../date-picker/date-picker.component';
-import { AutoCompleteMultiSelect2Component } from '../autocomplete-multi-select-2/autocomplete-multi-select-2.component';
+import { AutoCompleteMultiSelectComponent } from '../autocomplete-multi-select/autocomplete-multi-select.component';
 
 /**
  * Common template component for NRPTI search filters. The default component will only include a keyword
@@ -43,14 +38,9 @@ import { AutoCompleteMultiSelect2Component } from '../autocomplete-multi-select-
     FormsModule,
     ReactiveFormsModule,
     RouterModule,
-    MatTooltipModule,
-    MatSelectModule,
-    MatOptionModule,
-    MatCheckboxModule,
-    MatSlideToggleModule,
-    NgbDropdownModule,
+    NgbTooltip,
     DatePickerComponent,
-    AutoCompleteMultiSelect2Component
+    AutoCompleteMultiSelectComponent
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true
@@ -317,16 +307,38 @@ export class SearchFilterTemplateComponent implements OnInit, AfterViewInit, OnD
 
         const startDateControl = this.formGroup.get(dateFilter.startDateId);
         if (startDateControl?.value) {
-          const convertedStartDate = this.utils.convertFormGroupNGBDateToJSDate(startDateControl.value);
-          if (convertedStartDate) {
+          // Handle both ISO string format and NgbDateStruct format
+          const value = startDateControl.value;
+          let convertedStartDate: Date | null = null;
+          
+          if (typeof value === 'string') {
+            // Value is already an ISO string from the date picker
+            convertedStartDate = new Date(value);
+          } else if (value && typeof value === 'object' && 'year' in value) {
+            // Value is NgbDateStruct
+            convertedStartDate = this.utils.convertFormGroupNGBDateToJSDate(value);
+          }
+          
+          if (convertedStartDate && !isNaN(convertedStartDate.getTime())) {
             searchPackage.filters[dateFilter.startDateId] = convertedStartDate.toISOString();
           }
         }
 
         const endDateControl = this.formGroup.get(dateFilter.endDateId);
         if (endDateControl?.value) {
-          const convertedEndDate = this.utils.convertFormGroupNGBDateToJSDate(endDateControl.value);
-          if (convertedEndDate) {
+          // Handle both ISO string format and NgbDateStruct format
+          const value = endDateControl.value;
+          let convertedEndDate: Date | null = null;
+          
+          if (typeof value === 'string') {
+            // Value is already an ISO string from the date picker
+            convertedEndDate = new Date(value);
+          } else if (value && typeof value === 'object' && 'year' in value) {
+            // Value is NgbDateStruct
+            convertedEndDate = this.utils.convertFormGroupNGBDateToJSDate(value);
+          }
+          
+          if (convertedEndDate && !isNaN(convertedEndDate.getTime())) {
             searchPackage.filters[dateFilter.endDateId] = convertedEndDate.toISOString();
           }
         }

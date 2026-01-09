@@ -16,7 +16,6 @@ import { LoadingStateService } from 'app/services/loading-state.service';
 @Component({
   selector: 'app-pins',
   templateUrl: './pins.component.html',
-  styleUrls: ['./pins.component.css'],
   imports: [CommonModule, TableTemplateComponent],
   standalone: true
 })

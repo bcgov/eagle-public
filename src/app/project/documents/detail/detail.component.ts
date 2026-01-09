@@ -3,7 +3,6 @@ import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { DatePipe } from '@angular/common';
-import { NgbDropdownModule } from '@ng-bootstrap/ng-bootstrap';
 import { Document } from '../../../models/document';
 import { Project } from '../../../models/project';
 import { ApiService } from '../../../services/api';
@@ -14,7 +13,7 @@ import { ListConverterPipe } from '../../../shared/pipes/list-converter.pipe';
   selector: 'app-detail',
   templateUrl: './detail.component.html',
   styleUrls: ['./detail.component.css'],
-  imports: [RouterLink, DatePipe, ListConverterPipe, NgbDropdownModule],
+  imports: [RouterLink, DatePipe, ListConverterPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true
 })

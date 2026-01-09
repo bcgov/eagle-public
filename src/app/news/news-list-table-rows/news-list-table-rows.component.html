@@ -18,19 +18,19 @@
       <br>
       <br>
       @if (rowData.project?._id && rowData.type !== 'Project Notification News') {
-        <a class="btn content-btn-alt me-1"
+        <a class="btn btn-sm btn-outline-primary me-1"
           [routerLink]="['/p', rowData.project._id ]">
           <span>Project Info</span>
         </a>
       }
       @if (rowData.project?._id && rowData.type === 'Project Notification News') {
-        <a class="btn content-btn-alt me-1"
+        <a class="btn btn-sm btn-outline-primary me-1"
           href="/project-notifications">
           <span>View Project Notifications Page</span>
         </a>
       }
       @if (isSingleDoc(rowData?.documentUrl) && rowData?.documentUrl && !rowData.documentUrl.includes('docs?folder')) {
-        <a class="btn content-btn-alt me-1"
+        <a class="btn btn-sm btn-outline-primary me-1"
           [href]="rowData.documentUrl"
           target="_blank"
           rel="noopener">
@@ -43,7 +43,7 @@
         </a>
       }
       @if (rowData?.pcp) {
-        <button class="btn content-btn-alt"
+        <button class="btn btn-sm btn-outline-primary"
           (click)="goToCP(rowData)">
           <span>View Engagement</span>
         </button>

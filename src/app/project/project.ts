@@ -3,7 +3,6 @@ import { ActivatedRoute, Router, RouterModule, NavigationEnd } from '@angular/ro
 import { CommonModule } from '@angular/common';
 import { Subject } from 'rxjs';
 import { takeUntil, take } from 'rxjs/operators';
-import { NgbModal, NgbModalRef, NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import * as L from 'leaflet';
 
 import { Project } from '../models/project';
@@ -24,7 +23,6 @@ import { LoggingService } from '../services/logging.service';
   imports: [
     CommonModule,
     RouterModule,
-    NgbModule,
     DetailsSidebarComponent,
     SafeHtmlPipe
   ],
@@ -42,7 +40,6 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
   private storageService = inject(StorageService);
   private elementRef = inject(ElementRef);
   private router = inject(Router);
-  private modalService = inject(NgbModal);
   private renderer = inject(Renderer2);
   private utils = inject(Utils);
   private searchService = inject(SearchService);
@@ -54,7 +51,6 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
   public project = signal<Project | null>(null);
   public period = signal<CommentPeriod | null>(null);
   public commentPeriod = signal<CommentPeriod | null>(null);
-  private ngbModal: NgbModalRef | null = null;
   public legislationLink = signal<string>('');
   public sidebarOpen = signal(true);
   private checkTabArrowsFn: (() => void) | null = null;
@@ -498,9 +494,6 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   ngOnDestroy() {
-    if (this.ngbModal) {
-      this.ngbModal.dismiss('component destroyed');
-    }
     if (this.map) {
       this.map.remove();
     }

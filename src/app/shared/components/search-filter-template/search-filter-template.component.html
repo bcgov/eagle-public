@@ -1,4 +1,4 @@
-<div>
+<div class="search-filter-wrapper">
   <!-- Header Row -->
   @if (title()) {
     <div class="row mb-3">
@@ -6,8 +6,8 @@
         <span class="keyword-search-text">{{title()}}</span>
         @if (tooltip()) {
           <span class="material-icons align-text-bottom ml-2"
-            [matTooltip]="tooltip()!"
-            matTooltipPosition="after"
+            [ngbTooltip]="tooltip()!"
+            placement="end"
             aria-label="Icon that displays a tooltip when focused or hovered over">
             help_outline
           </span>
@@ -16,101 +16,115 @@
     </div>
   }
 
-  <!-- Filter toggles dropdown, keyword textbox, clear button -->
-  <div class="row">
-    <div class="col">
-      <div class="input-group mb-3">
-        @if (subsets(); as subsetsValue) {
-          <div ngbDropdown>
-            <button class="btn btn-outline-secondary"
-              id="dropdown"
-              ngbDropdownToggle>
-              {{ subsetsValue.selectedSubset !== null ?
-                subsetsValue.selectedSubset.subsetLabel : subsetsValue.defaultSubset!.subsetLabel }}
-            </button>
-            <div ngbDropdownMenu aria-labelledby="dropdown">
-              @for (subset of subsetsValue.options; track subset.subset) {
-                <button ngbDropdownItem
-                  [disabled]="subsetsValue.selectedSubset!.subsetLabel === subset.subsetLabel"
-                  (click)="changeSubset(subset)">
-                  {{subset.subsetLabel}}
-                  @if (subsetsValue.selectedSubset === subset) {
-                    <span class="material-icons material-icons align-text-bottom">
-                      check_circle
-                    </span>
-                  }
-                </button>
-              }
+  <!-- Search bar section -->
+  <div class="search-bar-section mb-4">
+    <div class="row">
+      <div class="col">
+        <div class="input-group">
+          @if (subsets(); as subsetsValue) {
+            <div class="dropdown">
+              <button class="btn btn-outline-secondary dropdown-toggle"
+                type="button"
+                id="dropdown"
+                data-bs-toggle="dropdown"
+                aria-expanded="false">
+                @if (subsetsValue.selectedSubset !== null) {
+                  {{ subsetsValue.selectedSubset.subsetLabel }}
+                } @else {
+                  {{ subsetsValue.defaultSubset!.subsetLabel }}
+                }
+              </button>
+              <ul class="dropdown-menu" aria-labelledby="dropdown">
+                @for (subset of subsetsValue.options; track subset.subset) {
+                  <li>
+                    <button class="dropdown-item"
+                      type="button"
+                      [disabled]="subsetsValue.selectedSubset!.subsetLabel === subset.subsetLabel"
+                      (click)="changeSubset(subset)">
+                      {{ subset.subsetLabel }}
+                      @if (subsetsValue.selectedSubset === subset) {
+                        <span class="material-icons material-icons align-text-bottom">
+                          check_circle
+                        </span>
+                      }
+                    </button>
+                  </li>
+                }
+              </ul>
             </div>
+          }
+          <div class="search-input-wrapper position-relative">
+            <input type="text"
+              class="form-control data-hj-allow"
+              (keyup.enter)="search()"
+              [ngModel]="keywordSearchWords()"
+              (ngModelChange)="keywordSearchWords.set($event)"
+              [placeholder]="keywordWatermark() || 'Type keyword to search'"
+              [attr.aria-label]="keywordWatermark() || 'Type keyword to search'"
+              aria-describedby="basic-addon2">
+            @if (keywordSearchWords() && keywordSearchWords().length > 0) {
+              <button class="search-clear-btn btn btn-link"
+                type="button"
+                title="Clear search"
+                (click)="clearSearchTerms()">
+                <span class="material-icons">close</span>
+              </button>
+            }
           </div>
-        }
-        <div class="search-input-wrapper position-relative">
-          <input type="text"
-            class="form-control data-hj-allow"
-            (keyup.enter)="search()"
-            [ngModel]="keywordSearchWords()"
-            (ngModelChange)="keywordSearchWords.set($event)"
-            [placeholder]="keywordWatermark() || 'Type keyword to search'"
-            [attr.aria-label]="keywordWatermark() || 'Type keyword to search'"
-            aria-describedby="basic-addon2">
-          @if (keywordSearchWords() && keywordSearchWords().length > 0) {
-            <button class="search-clear-btn btn btn-link"
-              type="button"
-              title="Clear search"
-              (click)="clearSearchTerms()">
-              <span class="material-icons">close</span>
-            </button>
-          }
+          <button class="btn btn-warning"
+            type="button"
+            (click)="search()"
+            [disabled]="searching()">
+            @if (!searching()) {
+              <span class="material-icons">search</span>
+            }
+            @if (searching()) {
+              <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+            }
+            <span class="ms-2">{{searching() ? 'Searching...' : 'Search'}}</span>
+          </button>
         </div>
-        <button class="btn btn-warning"
-          type="button"
-          (click)="search()"
-          [disabled]="searching()">
-          @if (!searching()) {
-            <span class="material-icons">search</span>
-          }
-          @if (searching()) {
-            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-          }
-          <span class="ms-2">{{searching() ? 'Searching...' : 'Search'}}</span>
-        </button>
       </div>
     </div>
   </div>
 
+  <!-- Action buttons section -->
   @if (searchHelpLinkArray() || advancedFilters()) {
-  <div class="row mt-3">
-    <div class="col-sm-12 col-md-6 text-md-start text-center mb-md-0 mb-3">
-      @if (searchHelpLinkArray()) {
-        <a class="btn btn-primary d-inline-flex align-items-center"
-          [routerLink]="searchHelpLinkArray()!"
-          target="_blank"
-          rel="noopener">
-          <span class="material-icons">info</span>
-          <span class="ms-2">Search Help</span>
-        </a>
-      }
-    </div>
-    <!-- Advanced Filters toggle -->
-    <div class="col-sm-12 col-md-6 text-md-end text-center">
-      @if (advancedFilters()) {
-        <button class="btn btn-primary"
-          (click)="toggleAdvancedFilters()">
-          {{showFiltersPanel() ? 'Close' : 'Open'}} Advanced Filters
-          <span class="material-icons align-middle">
-            {{showFiltersPanel() ? 'keyboard_arrow_up' : 'keyboard_arrow_down'}}
-          </span>
-        </button>
-      }
+  <div class="action-buttons-section">
+    <div class="row">
+      <div class="col-sm-12 col-md-6 text-md-start text-center mb-md-0 mb-3">
+        @if (searchHelpLinkArray()) {
+          <a class="btn btn-primary d-inline-flex align-items-center"
+            [routerLink]="searchHelpLinkArray()!"
+            target="_blank"
+            rel="noopener">
+            <span class="material-icons">info</span>
+            <span class="ms-2">Search Help</span>
+          </a>
+        }
+      </div>
+      <!-- Advanced Filters toggle -->
+      <div class="col-sm-12 col-md-6 text-md-end text-center">
+        @if (advancedFilters()) {
+          <button class="btn btn-primary"
+            (click)="toggleAdvancedFilters()">
+            {{showFiltersPanel() ? 'Close' : 'Open'}} Advanced Filters
+            <span class="material-icons align-middle">
+              {{showFiltersPanel() ? 'keyboard_arrow_up' : 'keyboard_arrow_down'}}
+            </span>
+          </button>
+        }
+      </div>
     </div>
   </div>
   }
 
-  <!-- advanced filters panel -->
+  <!-- Advanced filters panel section -->
   @if (advancedFilters()) {
-    <div id="advancedFilterPanel"
-      class="row mt-3 border-bottom"
-      [hidden]="!showFiltersPanel()">
+    <div class="advanced-filters-section">
+      <div id="advancedFilterPanel"
+        class="row border-bottom pb-3"
+        [hidden]="!showFiltersPanel()">
       <form class="filter-form"
         [formGroup]="formGroup"
         novalidate>
@@ -169,14 +183,17 @@
                   @if (filter.name && filter.name.length > 0) {
                     <label class="control-label font-weight-bold">{{filter.name}}</label>
                   }
-                  <mat-select class="border rounded px-2 py-2"
-                    [aria-label]="filter.name + 'dropdown'"
+                  <select class="form-select"
+                    [attr.aria-label]="filter.name + ' dropdown'"
                     [formControlName]="filter.id"
-                    [multiple]="filter.filterDefinition.multiselect">
-                    @for (option of filter.filterDefinition.options; track option) {
-                      <mat-option [value]="option">{{option}}</mat-option>
+                    [attr.multiple]="filter.filterDefinition.multiselect ? true : null">
+                    @if (!filter.filterDefinition.multiselect) {
+                      <option value="">Select an option</option>
                     }
-                  </mat-select>
+                    @for (option of filter.filterDefinition.options; track option) {
+                      <option [value]="option">{{option}}</option>
+                    }
+                  </select>
                 </div>
               }
               <!-- multi select filter -->
@@ -186,10 +203,10 @@
                     <label class="control-label font-weight-bold"
                       for="activityTypeFilter" tabindex="0">{{filter.name}}</label>
                   }
-                  <app-autocomplete-multi-select-2 [filter]="filter"
+                  <app-autocomplete-multi-select [filter]="filter"
                     (changeEvent)="changeMultiSelect()"
                     [control]="$any(formGroup.get(filter.id))">
-                  </app-autocomplete-multi-select-2>
+                  </app-autocomplete-multi-select>
                 </div>
               }
               <!-- radio button filter -->
@@ -244,12 +261,16 @@
                   <div class="row">
                     @for (box of filter.filterDefinition.options; track box.id) {
                       <div class="col-xl-3">
-                        <mat-checkbox [id]="box.id"
-                          (unchecked)="!box.isChecked"
-                          [name]="box.id"
-                          [formControlName]="box.id">
-                          {{box.label}}
-                        </mat-checkbox>
+                        <div class="form-check">
+                          <input class="form-check-input" 
+                            type="checkbox"
+                            [id]="box.id"
+                            [name]="box.id"
+                            [formControlName]="box.id">
+                          <label class="form-check-label" [for]="box.id">
+                            {{box.label}}
+                          </label>
+                        </div>
                       </div>
                     }
                   </div>
@@ -262,16 +283,22 @@
                     <label class="control-label font-weight-bold">{{filter.name}}</label>
                   }
                   <div class="row slide-toggle-margin">
-                    <mat-slide-toggle [name]="filter.name"
-                      [id]="filter.id"
-                      [formControlName]="filter.id"
-                      [checked]="filter.filterDefinition.onOption.isChecked">
-                      @if (formGroup.get(filter.id)!.value) {
-                        {{ filter.filterDefinition.onOption.label }}
-                      } @else {
-                        {{ filter.filterDefinition.offOption.label }}
-                      }
-                    </mat-slide-toggle>
+                    <div class="form-check form-switch">
+                      <input class="form-check-input" 
+                        type="checkbox"
+                        role="switch"
+                        [id]="filter.id"
+                        [name]="filter.name"
+                        [formControlName]="filter.id"
+                        [checked]="filter.filterDefinition.onOption.isChecked">
+                      <label class="form-check-label" [for]="filter.id">
+                        @if (formGroup.get(filter.id)!.value) {
+                          {{ filter.filterDefinition.onOption.label }}
+                        } @else {
+                          {{ filter.filterDefinition.offOption.label }}
+                        }
+                      </label>
+                    </div>
                   </div>
                 </div>
               }
@@ -279,13 +306,14 @@
           }
         </div>
       </form>
-      <section class="mb-3 reset-button">
+      <div class="reset-button-container">
         <button class="btn btn-primary float-end"
           (click)="clearFilters()"
           [disabled]="searching() || !hasActiveFilters()">
           Reset Filters
         </button>
-      </section>
+      </div>
+    </div>
     </div>
   }
 </div>

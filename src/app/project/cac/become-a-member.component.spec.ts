@@ -1,39 +1,39 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { BecomeAMemberComponent } from './become-a-member.component';
-import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
+import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { ProjectService } from '../../services/project.service';
 import { Project } from '../../models/project';
 
 describe('BecomeAMemberComponent', () => {
   let component: BecomeAMemberComponent;
   let fixture: ComponentFixture<BecomeAMemberComponent>;
-  let mockActiveModal: any;
+  let mockDialogRef: any;
   let mockProjectService: any;
+  let mockProject: Project;
 
   beforeEach(() => {
-    mockActiveModal = {
-      close: vi.fn(),
-      dismiss: vi.fn()
+    mockDialogRef = {
+      close: vi.fn()
     };
 
     mockProjectService = {
       addMember: vi.fn()
     };
 
+    mockProject = new Project({ _id: '123', name: 'Test Project' });
+
     TestBed.configureTestingModule({
       imports: [BecomeAMemberComponent],
       providers: [
-        { provide: NgbActiveModal, useValue: mockActiveModal },
+        { provide: MatDialogRef, useValue: mockDialogRef },
+        { provide: MAT_DIALOG_DATA, useValue: { project: mockProject } },
         { provide: ProjectService, useValue: mockProjectService }
       ]
     });
 
     fixture = TestBed.createComponent(BecomeAMemberComponent);
     component = fixture.componentInstance;
-    
-    const mockProject = new Project({ _id: '123', name: 'Test Project' });
-    fixture.componentRef.setInput('project', mockProject);
     
     fixture.detectChanges();
   });

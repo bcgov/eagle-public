@@ -77,7 +77,7 @@ function buildSearchFilters(lists: any[]): FilterObject[] {
     FilterType.DateRange,
     '',
     new DateFilterDefinition('datePostedStart', 'Start Date', 'datePostedEnd', 'End Date'),
-    6
+    8
   );
 
   const milestoneFilter = new FilterObject(
@@ -91,7 +91,7 @@ function buildSearchFilters(lists: any[]): FilterObject[] {
       null,
       true
     ),
-    6
+    4
   );
 
   const documentAuthorTypeFilter = new FilterObject(

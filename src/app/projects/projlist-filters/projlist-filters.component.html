@@ -31,10 +31,10 @@
               Project Type
             </label>
             <div class="filter-select">
-              <ng-select
+              <app-custom-multi-select
                   id="type"
                   name="type"
-                  multiple="true"
+                  [multiple]="true"
                   bindLabel="name"
                   placeholder="Type Project Type"
                   [items]="projectTypes"
@@ -42,7 +42,7 @@
                   [ngModel]="types()"
                   (ngModelChange)="types.set($event); applyFilters()"
               >
-              </ng-select>
+              </app-custom-multi-select>
             </div>
           </div>
           <div class="filter-container">
@@ -50,10 +50,10 @@
               Region
             </label>
             <div class="filter-select">
-              <ng-select
+              <app-custom-multi-select
                   id="region"
                   name="region"
-                  multiple="true"
+                  [multiple]="true"
                   bindLabel="name"
                   placeholder="Type Project Region"
                   [items]="projectRegions"
@@ -61,7 +61,7 @@
                   [ngModel]="regions()"
                   (ngModelChange)="regions.set($event); applyFilters()"
               >
-              </ng-select>
+              </app-custom-multi-select>
             </div>
           </div>
           <div class="filter-container">
@@ -69,12 +69,12 @@
               Project Phase
             </label>
             <div class="filter-select">
-              <ng-select
+              <app-custom-multi-select
                   id="phase"
                   name="phase"
-                  multiple="true"
+                  [multiple]="true"
                   bindLabel="name"
-                  groupBy="legislation"
+                  [groupBy]="'legislation'"
                   placeholder="Type Project Phase"
                   [items]="projectPhases"
                   [closeOnSelect]="false"
@@ -82,7 +82,7 @@
                   [ngModel]="phases()"
                   (ngModelChange)="phases.set($event); applyFilters()"
               >
-              </ng-select>
+              </app-custom-multi-select>
             </div>
           </div>
         </div>

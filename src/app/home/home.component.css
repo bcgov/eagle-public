@@ -1,15 +1,7 @@
 /* Home Component Styles */
 /* Inherits background from .app-content */
 
-/* Hero Banner Button Styles */
-.hero-banner__actions .btn {
-  border: 2px solid #fcba19;
-  color: #fcba19;
-}
-
-.hero-banner__actions .btn:hover {
-  color: #036;
-}
+/* Hero banner button styles are now in assets/styles/components/buttons.css as .hero-banner-btn */
 
 .hero-banner__version {
   margin-top: -0.25rem;
@@ -66,7 +58,7 @@ main p {
 
 /* Survey Banner Styles */
 .survey-banner {
-  background-color: #FCBA19;
+  background-color: var(--bs-warning);
   padding: 1.5rem 0;
 }
 
@@ -92,7 +84,7 @@ main p {
 }
 
 .survey-banner .survey-link {
-  background-color: #003366;
+  background-color: var(--bc-blue);
   color: #fff;
   padding: 0.75rem 1.5rem;
   border-radius: 4px;

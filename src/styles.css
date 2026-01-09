@@ -10,40 +10,28 @@
 @import "leaflet.markercluster/dist/MarkerCluster.css";
 @import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 
-/* Bootstrap CSS Variable Overrides - Must come before other styles */
+/* BC Gov Bootstrap Theme - Reusable across projects */
+@import url("assets/styles/themes/bcgov-bootstrap-theme.css");
+
+/* EAGLE Project-Specific Overrides */
 @import url("assets/styles/themes/bootstrap-override.css");
 
 /* EAGLE Theme Variables */
 @import url("assets/styles/themes/default.css");
 
 /* Base */
-@import url("assets/styles/base/base.css");
-@import url("assets/styles/base/transitions.css");
 @import url("assets/styles/base/accessibility.css");
-@import url("assets/styles/base/helpers.css");
 @import url("assets/styles/base/typography.css");
 @import url("assets/styles/base/material-icons.css");
 
 /* Components */
-@import url("assets/styles/components/accordion.css");
-@import url("assets/styles/components/aside.css");
-@import url("assets/styles/components/badge.css");
 @import url("assets/styles/components/buttons.css");
-@import url("assets/styles/components/card.css");
+@import url("assets/styles/components/datepicker.css");
 @import url("assets/styles/components/feature-block.css");
 @import url("assets/styles/components/form-elements.css");
-@import url("assets/styles/components/hero-banner.css");
 @import url("assets/styles/components/leaflet.css");
-@import url("assets/styles/components/lists.css");
-@import url("assets/styles/components/modal.css");
-@import url("assets/styles/components/multi-select.css");
-@import url("assets/styles/components/pagination.css");
-@import url("assets/styles/components/spinner.css");
 @import url("assets/styles/components/tab-nav.css");
 @import url("assets/styles/components/table.css");
-
-/* ng-select theme */
-@import url("@ng-select/ng-select/themes/default.theme.css");
 
 /* === CSS RULES START HERE === */
 
@@ -75,113 +63,4 @@ body {
 
 .content-wrapper p + p {
   margin-top: 1.5rem;
-}
-
-/* Shared Table Styles */
-.table-template .table {
-  box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.1);
-  border-radius: 0.25rem;
-  overflow: hidden;
-  table-layout: fixed;
-  width: 100%;
-  border-collapse: collapse !important;
-  border-spacing: 0 !important;
-}
-
-.table-template .table thead,
-.table-template .table tbody,
-.table-template .table thead tr,
-.table-template .table tbody tr {
-  padding: 0 !important;
-  margin: 0 !important;
-}
-
-.table-template .table thead th {
-  border-top: none;
-  border-bottom: 2px solid #dee2e6;
-  padding: 0.75rem !important;
-  vertical-align: middle !important;
-  line-height: 1.5 !important;
-  font-size: 14px !important;
-  display: table-cell !important;
-}
-
-.table-template .table tbody td {
-  padding: 0.75rem !important;
-  vertical-align: middle !important;
-  line-height: 1.5 !important;
-  font-size: 14px !important;
-  display: table-cell !important;
-}
-
-/* Bootstrap column width mapping for tables */
-/* Reset Bootstrap flex properties for table cells */
-.table-template .table th[class*="col-"],
-.table-template .table td[class*="col-"] {
-  flex: none !important;
-  display: table-cell !important;
-}
-
-/* Column width definitions - Desktop only */
-@media (min-width: 769px) {
-  .table-template .table col.col-1 {
-    width: 8.33%;
-  }
-  .table-template .table th.col-1,
-  .table-template .table td.col-1 {
-    width: 8.33%;
-    min-width: 8.33%;
-    max-width: 8.33%;
-    display: table-cell;
-  }
-
-  /* Center align star column content */
-  .table-template .table th.col-1,
-  .table-template .table td.col-1 {
-    text-align: center;
-  }
-
-  .table-template .table col.col-2,
-  .table-template .table th.col-2,
-  .table-template .table td.col-2 {
-    width: 16.67%;
-    min-width: 16.67%;
-    max-width: 16.67%;
-    display: table-cell;
-  }
-
-  .table-template .table col.col-3,
-  .table-template .table th.col-3,
-  .table-template .table td.col-3 {
-    width: 25%;
-    min-width: 25%;
-    max-width: 25%;
-    display: table-cell;
-  }
-}
-
-.clickable-row {
-  cursor: pointer;
-}
-
-.clickable-row:hover {
-  background-color: rgba(0, 0, 0, 0.02);
-}
-/* Mobile: Override column widths and force block layout */
-@media (max-width: 768px) {
-  .table-template .table col.col-1,
-  .table-template .table col.col-2,
-  .table-template .table col.col-3,
-  .table-template .table th.col-1,
-  .table-template .table th.col-2,
-  .table-template .table th.col-3,
-  .table-template .table td.col-1,
-  .table-template .table td.col-2,
-  .table-template .table td.col-3 {
-    display: block !important;
-    width: 100% !important;
-    min-width: 100% !important;
-    max-width: 100% !important;
-    text-align: left !important;
-  }
 }

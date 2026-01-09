@@ -1,0 +1,25 @@
+@if (totalPages() > 1) {
+<nav [attr.aria-label]="ariaLabel()">
+  <ul class="pagination justify-content-center justify-content-md-end mb-0">
+    <li class="page-item" [class.disabled]="isPreviousDisabled()">
+      <a class="page-link" (click)="onPageChange(currentPage() - 1)">&laquo;</a>
+    </li>
+
+    @for (page of pageNumbers(); track $index) {
+      @if (isEllipsis(page)) {
+        <li class="page-item disabled">
+          <span class="page-link">…</span>
+        </li>
+      } @else {
+        <li class="page-item" [class.active]="page === currentPage()">
+          <a class="page-link" (click)="onPageChange(asPageNumber(page))">{{ page }}</a>
+        </li>
+      }
+    }
+
+    <li class="page-item" [class.disabled]="isNextDisabled()">
+      <a class="page-link" (click)="onPageChange(currentPage() + 1)">&raquo;</a>
+    </li>
+  </ul>
+</nav>
+}

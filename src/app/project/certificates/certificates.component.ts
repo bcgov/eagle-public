@@ -17,7 +17,6 @@ import { Constants } from '../../shared/utils/constants';
 @Component({
   selector: 'app-certificates',
   templateUrl: './certificates.component.html',
-  styleUrls: ['./certificates.component.css'],
   imports: [TableTemplateComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true

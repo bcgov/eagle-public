@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { DateTime } from 'luxon';
-import { NgSelectModule } from '@ng-select/ng-select';
+import { CustomMultiSelectComponent } from '../../shared/components/custom-multi-select/custom-multi-select.component';
 
 import { Constants } from '../../shared/utils/constants';
 import { ConfigService } from '../../services/config.service';
@@ -15,7 +15,7 @@ import { FilterStateService } from '../../services/filter-state.service';
   templateUrl: './projlist-filters.component.html',
   styleUrls: ['./projlist-filters.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, NgSelectModule],
+  imports: [CommonModule, FormsModule, CustomMultiSelectComponent],
   standalone: true
 })
 export class ProjlistFiltersComponent implements OnInit, OnDestroy {

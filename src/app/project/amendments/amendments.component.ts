@@ -19,7 +19,6 @@ import { Constants } from '../../shared/utils/constants';
 @Component({
   selector: 'app-amendments',
   templateUrl: './amendments.component.html',
-  styleUrls: ['./amendments.component.css'],
   imports: [TableTemplateComponent, SearchFilterTemplateComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true

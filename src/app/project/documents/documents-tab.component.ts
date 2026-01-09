@@ -20,7 +20,6 @@ import { LoggingService } from '../../services/logging.service';
 @Component({
   selector: 'app-documents',
   templateUrl: './documents-tab.component.html',
-  styleUrls: ['./documents-tab.component.css'],
   imports: [TableTemplateComponent, SearchFilterTemplateComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true
@@ -199,7 +198,7 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
       FilterType.DateRange,
       '',
       new DateFilterDefinition('datePostedStart', 'Start Date', 'datePostedEnd', 'End Date'),
-      6
+      8
     );
 
     const milestoneFilter = new FilterObject(
@@ -213,7 +212,7 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
         null,
         true
       ),
-      6
+      4
     );
 
     const documentAuthorTypeFilter = new FilterObject(

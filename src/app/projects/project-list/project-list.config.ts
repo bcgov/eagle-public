@@ -19,10 +19,10 @@ function buildProjectListFilters(data: { orgs: any[]; lists: any[] }): FilterObj
 
   lists.forEach((item: any) => {
     switch (item.type) {
-      case 'eaDecision':
+      case 'eaDecisions':
         eaDecisions.push({ ...item });
         break;
-      case 'CEAA':
+      case 'ceaaInvolvements':
         iaacInvolvements.push({ ...item });
         break;
       case 'projectPhase':
@@ -45,7 +45,7 @@ function createFilter(
   phases: any[]
 ): FilterObject {
   const dynamicOptions: Record<string, any[]> = {
-    'eaDecision': eaDecisions,
+    'eacDecision': eaDecisions,
     'CEAAInvolvement': iaacInvolvements,
     'currentPhaseName': phases,
     'proponent': proponents

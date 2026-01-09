@@ -29,8 +29,7 @@ import { CommonModule } from '@angular/common';
   templateUrl: './page-size-picker.component.html',
   styleUrls: ['./page-size-picker.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule],
-  standalone: true
+  imports: [CommonModule]
 })
 export class PageSizePickerComponent {
   isDisabled = input(false);

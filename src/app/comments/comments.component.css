@@ -35,7 +35,7 @@
 
 .project .hero-banner-alt .comment-period-divider {
   border: none;
-  border-top: 2px solid #fcba18;
+  border-top: 2px solid var(--bs-warning);
   margin: 1rem 0 1.5rem 0;
   opacity: 1;
 }
@@ -74,10 +74,6 @@
   font-size: 1.2rem;
 }
 
-.project .hero-banner-alt .header-section #instructions p:last-child {
-  margin-bottom: 1.5rem;
-}
-
 .project .hero-banner-alt .header-section br {
   display: block;
   content: "";
@@ -92,7 +88,7 @@
 
 .project .hero-banner-alt {
   position: relative;
-  background-color: #003366;
+  background-color: var(--bc-blue);
   color: #fff;
 }
 
@@ -104,10 +100,10 @@
 
 .project .hero-banner-alt .ea-decision {
   display: inline-block;
-  margin: 1.5rem 0 5px 0;
+  margin: 0 0 5px 0;
   padding: 3px 10px;
-  border: 2px solid #fcba18;
-  color: #fcba18;
+  border: 2px solid var(--bs-warning);
+  color: var(--bs-warning);
   font-size: 1rem;
   font-weight: bold;
 }
@@ -130,7 +126,7 @@
 
 @media (min-width: 767px) {
   .project .hero-banner-alt .basic-info > div {
-    border-right: 1px solid #46617b;
+    border-right: 1px solid rgba(255, 255, 255, 0.3);
   }
 }
 
@@ -140,7 +136,7 @@
 
 .project .hero-banner-alt .basic-info label {
   font-weight: bold;
-  color: #fcba18;
+  color: var(--bs-warning);
   font-size: 1rem;
   margin-right: 0.5rem;
 }
@@ -168,7 +164,7 @@
 }
 
 .project .card-header {
-  background-color: #38598a;
+  background-color: var(--bs-primary);
   color: #fff;
   font-weight: bold;
   padding: 0.75rem 1.25rem;
@@ -244,4 +240,16 @@
 .comments {
   margin-top: 2rem;
   margin-bottom: 2rem;
+}
+
+/* Mobile: Full width submit button */
+@media (max-width: 768px) {
+  .comments .mb-3 {
+    margin-left: 0;
+    margin-right: 0;
+  }
+  
+  .comments .mb-3 button {
+    width: 100%;
+  }
 }

@@ -4,6 +4,6 @@
 }
 
 h4 {
-  color: #003366;
+  color: var(--bc-blue);
   font-weight: bold;
 }

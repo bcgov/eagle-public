@@ -6,7 +6,6 @@ import { InfoCardComponent, InfoCardButton } from '../shared/info-card/info-card
 @Component({
   selector: 'app-contact',
   templateUrl: './contact.component.html',
-  styleUrl: './contact.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule, HeroBannerComponent, InfoCardComponent],
   standalone: true

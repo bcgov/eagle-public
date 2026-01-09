@@ -5,7 +5,6 @@ import { HeroBannerComponent, HeroBannerAction } from '../shared/hero-banner/her
 @Component({
   selector: 'app-process',
   templateUrl: './process.component.html',
-  styleUrl: './process.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule, HeroBannerComponent],
   standalone: true

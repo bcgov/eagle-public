@@ -14,7 +14,6 @@ export interface InfoCardButton {
 @Component({
   selector: 'app-info-card',
   templateUrl: './info-card.component.html',
-  styleUrls: ['./info-card.component.css'],
   imports: [RouterLink],
   standalone: true
 })

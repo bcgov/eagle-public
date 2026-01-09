@@ -11,7 +11,7 @@
             @for (action of actions(); track action.label) {
               @if (action.routerLink) {
                 <a 
-                  class="btn slide-l-btn" 
+                  class="btn hero-banner-btn slide-l-btn" 
                   [routerLink]="action.routerLink"
                   [title]="action.title || action.label">
                   @if (action.icon) {
@@ -21,7 +21,7 @@
                 </a>
               } @else if (action.href) {
                 <a 
-                  class="btn slide-l-btn" 
+                  class="btn hero-banner-btn slide-l-btn" 
                   [href]="action.href"
                   [target]="action.target || '_self'"
                   [rel]="action.rel || ''"

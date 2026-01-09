@@ -1,5 +1,27 @@
 /* TODO: Convert from SCSS - search-filter-template.component.scss */
 
+/* Section spacing structure */
+.search-filter-wrapper {
+  margin-bottom: 3rem;
+}
+
+.search-bar-section {
+  margin-bottom: 2rem;
+}
+
+.action-buttons-section {
+  margin-bottom: 2rem;
+}
+
+.advanced-filters-section {
+  margin-bottom: 1.5rem;
+}
+
+.reset-button-container {
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
 .keyword-search-text {
   font-size: 1.25rem;
   font-weight: 500;
@@ -112,7 +134,7 @@
 
 .disable-div {
   pointer-events: none;
-  opacity: 0.6;
+  /* opacity: 0.6; */ /* Removed: filters should remain visible during loading */
 }
 
 .clear-button {

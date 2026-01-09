@@ -643,7 +643,9 @@ export class ProjlistMapComponent implements AfterViewInit, OnDestroy {
     if (!this.map) return;
 
     const isMobile = this.isMobile();
-    const offset = isMobile ? 0 : this.calculatePopupOffset();
+    // Apply offset for both mobile and desktop to prevent popup cutoff
+    // Mobile needs more offset due to the popup card appearing above the marker
+    const offset = isMobile ? 150 : this.calculatePopupOffset();
     const markerPoint = this.map.latLngToContainerPoint(marker.getLatLng());
     const targetPoint = L.point(markerPoint.x, markerPoint.y - offset);
     const targetLatLng = this.map.containerPointToLatLng(targetPoint);

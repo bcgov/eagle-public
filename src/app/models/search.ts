@@ -1,7 +1,5 @@
 import { Params } from '@angular/router';
 
-import { NgbDateStruct } from '@ng-bootstrap/ng-bootstrap';
-
 export class SearchResults {
   _schemaName: string;
   data: any;
@@ -27,8 +25,8 @@ export interface ISearchResult<T> {
 
 export class SearchTerms {
   keywords: string; // comma- or space-delimited list
-  dateStart: NgbDateStruct;
-  dateEnd: NgbDateStruct;
+  dateStart: string | null;
+  dateEnd: string | null;
   dataset: string;
   currentPage: number;
   sortBy: string;
@@ -53,10 +51,10 @@ export class SearchTerms {
       params['keywords'] = this.keywords;
     }
     if (this.dateStart) {
-      params['datestart'] = this.getDateParam(this.dateStart);
+      params['datestart'] = this.dateStart;
     }
     if (this.dateEnd) {
-      params['dateend'] = this.getDateParam(this.dateEnd);
+      params['dateend'] = this.dateEnd;
     }
     if (this.currentPage) {
       params['currentPage'] = this.currentPage;
@@ -69,21 +67,5 @@ export class SearchTerms {
     }
 
     return params;
-  }
-
-  private getDateParam(date: NgbDateStruct): string {
-    let dateParam = date.year + '-';
-
-    if (date.month < 10) {
-      dateParam += '0';
-    }
-    dateParam += date.month + '-';
-
-    if (date.day < 10) {
-      dateParam += '0';
-    }
-    dateParam += date.day;
-
-    return dateParam;
   }
 }

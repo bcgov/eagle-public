@@ -1,16 +1,20 @@
 <div class="table-template">
   @if (data.options.showTopControls) {
-  <div class="row mb-2">
-    <div class="col-sm-12 col-md-6 text-md-start text-center mb-md-0 mb-3">
+  <div class="row">
+    <div class="col-12 col-md-6 text-center text-md-start mb-3 mb-md-0">
       @if (data.options.showPageCountDisplay) {
       <lib-page-count-display [isHidden]="false" [currentPageNum]="data.currentPage" [currentPageSize]="data.pageSize"
         [totalItems]="data.totalListItems" id="table-template-page-count-display" />
       }
     </div>
-    <div class="col-sm-12 col-md-6 text-md-end text-center">
-      @if (data.options.showPagination) {
-      <pagination-controls (pageChange)="onUpdatePageNumber($event)" [id]="data.tableId" [autoHide]="true"
-        [responsive]="true" />
+    <div class="col-12 col-md-6 text-center text-md-end">
+      @if (shouldShowPagination()) {
+      <lib-pagination 
+        [currentPage]="data.currentPage"
+        [pageSize]="data.pageSize"
+        [totalItems]="data.totalListItems"
+        [ariaLabel]="'Table pagination'"
+        (pageChange)="onUpdatePageNumber($event)" />
       }
     </div>
   </div>
@@ -51,7 +55,7 @@
     }
 
     <tbody [class.highlight]="!data.options.disableRowHighlight">
-      @for (item of data.items | paginate: {id: data.tableId, itemsPerPage: data.pageSize, currentPage: data.currentPage, totalItems: data.totalListItems}; track trackByRowId($index, item)) {
+      @for (item of paginatedItems(); track trackByRowId($index, item)) {
       <ng-container [libTableRow]="item" [tableData]="data" [messageIn]="messageIn" (messageOut)="onMessageOut($event)">
       </ng-container>
       }
@@ -61,16 +65,20 @@
   @if (data.items.length > 0 || !loading) {
   <div class="table-controls-bottom mb-4">
     <div class="row">
-      <div class="col-sm-12 col-md-6 text-md-start text-center mb-md-0 mb-3">
+      <div class="col-12 col-md-6 text-center text-md-start mb-3 mb-md-0">
         @if (data.options.showPageSizePicker && data.totalListItems > 10) {
         <lib-page-size-picker [isHidden]="false" [currentPageSize]="data.pageSize" [sizeOptions]="data.pageSizeOptions"
           (pageSizeChosen)="onUpdatePageSize($event)" id="table-template-page-size-picker" />
         }
       </div>
-      <div class="col-sm-12 col-md-6 text-md-end text-center">
-        @if (data.options.showPagination) {
-        <pagination-controls (pageChange)="onUpdatePageNumber($event)" [id]="data.tableId" [autoHide]="true"
-          [responsive]="true" />
+      <div class="col-12 col-md-6 text-center text-md-end">
+        @if (shouldShowPagination()) {
+        <lib-pagination 
+          [currentPage]="data.currentPage"
+          [pageSize]="data.pageSize"
+          [totalItems]="data.totalListItems"
+          [ariaLabel]="'Table pagination'"
+          (pageChange)="onUpdatePageNumber($event)" />
         }
       </div>
     </div>

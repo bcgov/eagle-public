@@ -5,7 +5,6 @@ import { HeroBannerComponent, HeroBannerAction } from '../shared/hero-banner/her
 @Component({
   selector: 'app-compliance-oversight',
   templateUrl: './compliance-oversight.component.html',
-  styleUrl: './compliance-oversight.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule, HeroBannerComponent],
   standalone: true

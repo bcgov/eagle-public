@@ -1,17 +1,24 @@
-/* Table template styles - base styles imported from global CSS */
+/* Table template component-specific layout styles */
+/* Note: Table rendering styles are in global CSS (assets/styles/components/table.css) */
+
+/* === COMPONENT LAYOUT === */
+
 .table-template {
   margin-top: 1rem;
 }
 
-/* Align top controls with search bar above */
-.table-template > .row:first-child {
+/* Top and bottom controls spacing */
+.table-template > :first-child {
   padding-left: 0;
   padding-right: 0;
+  margin-bottom: 1.5rem;
 }
 
 .table-controls-bottom {
   margin-top: 1.5rem;
 }
+
+/* === LOADING STATE === */
 
 /* Frost/freeze table during loading */
 .table-loading {

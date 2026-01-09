@@ -1,5 +1,4 @@
 import { Component, ChangeDetectionStrategy, input, output, effect, signal } from '@angular/core';
-import { NgbDateStruct, NgbDatepickerModule, NgbInputDatepicker } from '@ng-bootstrap/ng-bootstrap';
 import { FormsModule } from '@angular/forms';
 
 @Component({
@@ -7,7 +6,7 @@ import { FormsModule } from '@angular/forms';
   templateUrl: './date-input.component.html',
   styleUrls: ['./date-input.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgbDatepickerModule, FormsModule],
+  imports: [FormsModule],
   standalone: true
 })
 export class DateInputComponent {
@@ -17,38 +16,34 @@ export class DateInputComponent {
   maxDate = input<Date | null>(null);
   dateChange = output<Date | null>();
 
-  ngbDate = signal<NgbDateStruct | null>(null);
-  minNgbDate = signal<NgbDateStruct | null>(null);
-  maxNgbDate = signal<NgbDateStruct | null>(null);
+  dateString = signal<string>('');
+  minDateString = signal<string>('');
+  maxDateString = signal<string>('');
 
   constructor() {
     effect(() => {
-      this.ngbDate.set(this.dateToNgbDate(this.date()));
+      this.dateString.set(this.dateToISO(this.date()));
     });
 
     effect(() => {
-      this.minNgbDate.set(this.dateToNgbDate(this.minDate()));
+      this.minDateString.set(this.dateToISO(this.minDate()));
     });
 
     effect(() => {
-      this.maxNgbDate.set(this.dateToNgbDate(this.maxDate()));
+      this.maxDateString.set(this.dateToISO(this.maxDate()));
     });
   }
 
-  onDateChg(ngbDate: NgbDateStruct) {
-    this.ngbDate.set(ngbDate);
-    this.dateChange.emit(ngbDate ? this.ngbDateToDate(ngbDate) : null);
+  onDateChg(dateStr: string) {
+    this.dateString.set(dateStr);
+    this.dateChange.emit(dateStr ? new Date(dateStr) : null);
   }
 
-  isValidDate(date: NgbDateStruct | null): boolean {
-    return (date !== null && !isNaN(date.year) && !isNaN(date.month) && !isNaN(date.day));
+  isValidDate(date: string): boolean {
+    return date !== '' && !isNaN(Date.parse(date));
   }
 
-  private dateToNgbDate(date: Date | null): NgbDateStruct | null {
-    return date ? { year: date.getFullYear(), month: date.getMonth() + 1, day: date.getDate() } : null;
-  }
-
-  private ngbDateToDate(date: NgbDateStruct): Date {
-    return new Date(date.year, date.month - 1, date.day);
+  private dateToISO(date: Date | null): string {
+    return date ? date.toISOString().split('T')[0] : '';
   }
 }

@@ -4,7 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { ToastService } from '../services/toast.service';
 import { CommentPeriod } from '../models/commentperiod';
 import { CommentPeriodService } from '../services/commentperiod.service';
 import { ProjectService } from '../services/project.service';
@@ -28,7 +28,7 @@ import { LoggingService } from '../services/logging.service';
   standalone: true
 })
 export class CommentsComponent implements OnInit, OnDestroy {
-  private snackBar = inject(MatSnackBar);
+  private toastService = inject(ToastService);
   private route = inject(ActivatedRoute);
   private api = inject(ApiService);
   private commentService = inject(CommentService);
@@ -105,7 +105,7 @@ export class CommentsComponent implements OnInit, OnDestroy {
           .subscribe({
             next: (period) => {
               if (!period) {
-                this.snackBar.open('Comment period not found', 'Close', { duration: 3000 });
+                this.toastService.show('Comment period not found', '', { duration: 3000, type: 'error' });
                 this.router.navigate(['/projects']);
                 return;
               }
@@ -134,7 +134,7 @@ export class CommentsComponent implements OnInit, OnDestroy {
             },
             error: (error) => {
               this.logger.error('Error loading comment period', 'CommentsComponent', error);
-              this.snackBar.open('Failed to load comment period', 'Close', { duration: 3000 });
+              this.toastService.show('Failed to load comment period', '', { duration: 3000, type: 'error' });
               this.router.navigate(['/projects']);
             }
           });
@@ -232,12 +232,10 @@ export class CommentsComponent implements OnInit, OnDestroy {
   downloadDocument(document: any) {
     this.api.downloadDocument(document)
       .then(() => {
-        this.snackBar.open('Downloading document');
-        window.setTimeout(() => this.snackBar.dismiss(), 2000);
+        this.toastService.show('Downloading document', '', { duration: 2000, type: 'info' });
       })
       .catch(() => {
-        this.snackBar.open('Error opening document! Please try again later');
-        window.setTimeout(() => this.snackBar.dismiss(), 2000);
+        this.toastService.show('Error opening document! Please try again later', '', { duration: 2000, type: 'error' });
       });
   }
 
@@ -245,7 +243,7 @@ export class CommentsComponent implements OnInit, OnDestroy {
     if (this.commentPeriodId) {
       // open modal
       this.ngbModal = this.modalService.open(AddCommentComponent, { backdrop: 'static', size: 'lg' });
-      // set input parameter
+      // set input parameters
       (this.ngbModal.componentInstance as any).currentPeriod = this.commentPeriod();
       (this.ngbModal.componentInstance as any).project = this.project();
       // check result

@@ -13,15 +13,21 @@
     }
     <li class="breadcrumb-item active" aria-current="page">Document Details</li>
   </ol>
-  <div ngbDropdown placement="bottom-right" class="d-inline-block">
-    <button class="btn btn-primary" id="actionDropdown" ngbDropdownToggle>Actions</button>
-    <div class="dropdown-menu" aria-labelledby="actionDropdown" ngbDropdownMenu>
-      <button class="dropdown-item" (click)="onEdit()">Edit</button>
-      @if (document(); as menuDoc) {
-        <button class="dropdown-item" (click)="api.openDocument(menuDoc)">Open</button>
-        <button class="dropdown-item" (click)="api.downloadDocument(menuDoc)">Download</button>
+  <div class="dropdown d-inline-block">
+    <button class="btn btn-primary dropdown-toggle"
+      type="button"
+      id="actionDropdown"
+      data-bs-toggle="dropdown"
+      aria-expanded="false">
+      Actions
+    </button>
+    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actionDropdown">
+      <li><button class="dropdown-item" type="button" (click)="onEdit()">Edit</button></li>
+      @if (document()) {
+        <li><button class="dropdown-item" type="button" (click)="api.openDocument(document()!)">Open</button></li>
+        <li><button class="dropdown-item" type="button" (click)="api.downloadDocument(document()!)">Download</button></li>
       }
-    </div>
+    </ul>
   </div>
 </nav>
 @if (document(); as doc) {

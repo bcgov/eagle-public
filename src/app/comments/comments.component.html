@@ -27,12 +27,7 @@
                   <p>{{commentPeriod()!.informationLabel}}</p>
                 }
               </div>
-              
-              <div class="d-flex justify-content-end">
-                @if (commentPeriod()!.commentPeriodStatus === 'Open') {
-                  <button class="btn btn-light" (click)="addComment()" type="button">Submit Comment</button>
-                }
-              </div>
+
             </div>
           }
 
@@ -103,6 +98,12 @@
   </div>
 
   <div class="container comments">
+    @if (commentPeriod() && commentPeriod()!.commentPeriodStatus === 'Open') {
+      <div class="mb-3 d-flex justify-content-end">
+        <button class="btn btn-warning" (click)="addComment()" type="button">Submit Comment</button>
+      </div>
+    }
+    
     @if (tableData().totalListItems > 0) {
       <div>
         <lib-table-template 

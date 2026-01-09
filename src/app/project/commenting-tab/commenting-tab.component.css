@@ -14,9 +14,7 @@
   background-color: rgba(0, 123, 255, 0.05);
 }
 
-.list-group-item:hover .badge {
-  background-color: #003366;
-}
+
 
 .title {
   font-size: 1.2rem;
@@ -31,6 +29,5 @@
 }
 
 .badge {
-  background-color: #38598a;
-  transition: background-color 0.2s ease-in;
+  white-space: nowrap;
 }

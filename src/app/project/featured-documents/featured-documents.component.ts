@@ -12,7 +12,6 @@ import { LoadingStateService } from '../../services/loading-state.service';
 @Component({
   selector: 'app-featured-documents',
   templateUrl: './featured-documents.component.html',
-  styleUrls: ['./featured-documents.component.css'],
   imports: [CommonModule, TableTemplateComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true

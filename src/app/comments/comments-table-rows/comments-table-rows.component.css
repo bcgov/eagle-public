@@ -2,6 +2,12 @@
   cursor: default !important;
 }
 
+/* Override flex from global table.css - we want vertical stacking */
+:host td {
+  display: block !important;
+  align-items: flex-start !important;
+}
+
 :host * {
   cursor: default !important;
 }
@@ -27,11 +33,30 @@
   align-items: center;
   color: #1a5a96;
   text-decoration: none;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  min-width: 0;
 }
 
 .mt-2 {
   padding-top: 0.75rem;
   border-top: 1px solid #dee2e6;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.mt-2 .attachment {
+  flex: 0 0 100%;
+  max-width: 100%;
+}
+
+/* Desktop: 2 per row */
+@media (min-width: 769px) {
+  .mt-2 .attachment {
+    flex: 0 0 calc(50% - 0.25rem);
+    max-width: calc(50% - 0.25rem);
+  }
 }
 
 .clickable {
@@ -41,4 +66,10 @@
   padding: 0;
   -webkit-appearance: none;
   cursor: pointer;
+}
+/* Mobile: secondary background */
+@media (max-width: 768px) {
+  :host td {
+    background-color: var(--bs-secondary-bg) !important;
+  }
 }

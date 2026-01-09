@@ -1,0 +1,441 @@
+/**
+ * BC Gov Bootstrap 5.3 Theme
+ * Version: 1.0.0
+ * 
+ * A reusable theme for BC Government projects using Bootstrap 5.3+
+ * Provides standard BC Gov branding including:
+ * - BC Gov color palette
+ * - BCSans typography
+ * - Bootstrap component overrides
+ * - Standard button styles
+ * 
+ * Usage:
+ * 1. Import Bootstrap CSS first
+ * 2. Import this theme file
+ * 3. Import project-specific customizations
+ * 
+ * Dependencies:
+ * - Bootstrap 5.3+ CSS
+ * - BCSans font files
+ */
+
+:root {
+  /* ========================================
+     BC GOV COLOR SYSTEM
+     ======================================== */
+  
+  /* Primary BC Gov Colors */
+  --bc-blue: #003366;           /* BC Gov official blue - headers, branding */
+  --bc-blue-interactive: #38598a; /* Interactive elements - buttons, links */
+  --bc-blue-light: #5091cd;     /* Lighter blue for hover states */
+  --bc-blue-dark: #002663;      /* Darker blue for depth */
+  --bc-gold: #fcba19;           /* BC Gold - accent color */
+  
+  /* Neutrals */
+  --bc-gray: #494949;           /* Body text */
+  --bc-gray-medium: #666;       /* Secondary text */
+  --bc-gray-light: #f7f8fa;     /* Light backgrounds */
+  --bc-gray-border: #ced4da;    /* Borders - darker for better visibility */
+  --bc-gray-hover: #e8eaed;     /* Hover backgrounds */
+  
+  /* ========================================
+     BOOTSTRAP SEMANTIC COLOR MAPPING
+     ======================================== */
+  
+  /* Map BC Gov colors to Bootstrap semantic colors */
+  --bs-primary: var(--bc-blue-interactive);
+  --bs-primary-rgb: 56, 89, 138;
+  --bs-primary-text-emphasis: #1c2c45;
+  --bs-primary-bg-subtle: #d9e1ea;
+  --bs-primary-border-subtle: #b3c3d5;
+  
+  --bs-secondary: var(--bc-blue);
+  --bs-secondary-rgb: 0, 51, 102;
+  --bs-secondary-text-emphasis: #001a33;
+  --bs-secondary-bg-subtle: #ccd6e0;
+  --bs-secondary-border-subtle: #99adc2;
+  
+  --bs-warning: var(--bc-gold);
+  --bs-warning-rgb: 252, 186, 25;
+  --bs-warning-text-emphasis: #7e5d0d;
+  --bs-warning-bg-subtle: #fef3d9;
+  --bs-warning-border-subtle: #fde7b3;
+  
+  --bs-light: var(--bc-gray-light);
+  --bs-light-rgb: 247, 248, 250;
+  --bs-light-text-emphasis: var(--bc-gray);
+  --bs-light-bg-subtle: #fcfcfd;
+  --bs-light-border-subtle: #e3e4e6;
+  
+  --bs-dark: var(--bc-blue);
+  --bs-dark-rgb: 0, 51, 102;
+  --bs-dark-text-emphasis: #1a1a1a;
+  --bs-dark-bg-subtle: #ccd6e0;
+  --bs-dark-border-subtle: #99adc2;
+  
+  /* ========================================
+     TYPOGRAPHY
+     ======================================== */
+  
+  --bs-font-sans-serif: BCSans, "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --bs-body-font-family: var(--bs-font-sans-serif);
+  --bs-font-family-base: var(--bs-font-sans-serif);
+  
+  /* ========================================
+     BODY DEFAULTS
+     ======================================== */
+  
+  --bs-body-color: var(--bc-gray);
+  --bs-body-color-rgb: 73, 73, 73;
+  --bs-body-bg: var(--bc-gray-light);
+  --bs-body-bg-rgb: 247, 248, 250;
+  
+  --bs-secondary-color: var(--bc-gray-medium);
+  --bs-secondary-color-rgb: 102, 102, 102;
+  --bs-secondary-bg: #e9ecef;
+  --bs-secondary-bg-rgb: 233, 236, 239;
+  
+  --bs-tertiary-color: rgba(73, 73, 73, 0.5);
+  --bs-tertiary-color-rgb: 73, 73, 73;
+  --bs-tertiary-bg: #f8f9fa;
+  --bs-tertiary-bg-rgb: 248, 249, 250;
+  
+  /* ========================================
+     LINKS
+     ======================================== */
+  
+  --bs-link-color: #1a5a96;
+  --bs-link-hover-color: var(--bc-blue);
+  --bs-link-decoration: none;
+  
+  /* ========================================
+     BORDERS & SHAPES
+     ======================================== */
+  
+  --bs-border-color: var(--bc-gray-border);
+  --bs-border-color-translucent: rgba(221, 221, 221, 0.5);
+  --bs-border-radius: 0.25rem;
+  --bs-border-radius-sm: 0.2rem;
+  --bs-border-radius-lg: 0.3rem;
+  
+  /* ========================================
+     TRANSITIONS
+     ======================================== */
+  
+  --bs-transition: color 0.2s ease-in-out, background-color 0.2s ease-in-out, border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  
+  /* ========================================
+     BUTTONS
+     ======================================== */
+  
+  --bs-btn-border-radius: 0.25rem;
+  --bs-btn-font-weight: 600;
+  --bs-btn-transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  --bs-btn-padding-x: 0.75rem;
+  --bs-btn-padding-y: 0.375rem;
+  --bs-btn-font-size: 0.9375rem;
+  --bs-btn-line-height: 1.5;
+  
+  /* Primary Button States */
+  --bs-btn-primary-color: #fff;
+  --bs-btn-primary-bg: var(--bc-blue-interactive);
+  --bs-btn-primary-border-color: var(--bc-blue-interactive);
+  --bs-btn-primary-hover-color: #fff;
+  --bs-btn-primary-hover-bg: #2b4777;
+  --bs-btn-primary-hover-border-color: #2b4777;
+  --bs-btn-primary-active-color: #fff;
+  --bs-btn-primary-active-bg: var(--bc-blue);
+  --bs-btn-primary-active-border-color: var(--bc-blue);
+  --bs-btn-primary-focus-shadow-rgb: 56, 89, 138;
+  --bs-btn-primary-disabled-color: #fff;
+  --bs-btn-primary-disabled-bg: #7a8ba8;
+  --bs-btn-primary-disabled-border-color: #7a8ba8;
+  
+  /* Outline Primary Button States */
+  --bs-btn-outline-primary-color: var(--bc-blue);
+  --bs-btn-outline-primary-border-color: var(--bc-blue);
+  --bs-btn-outline-primary-hover-color: #fff;
+  --bs-btn-outline-primary-hover-bg: var(--bc-blue);
+  --bs-btn-outline-primary-hover-border-color: var(--bc-blue);
+  --bs-btn-outline-primary-active-color: #fff;
+  --bs-btn-outline-primary-active-bg: var(--bc-blue);
+  --bs-btn-outline-primary-active-border-color: var(--bc-blue);
+  --bs-btn-outline-primary-disabled-color: #99adc2;
+  --bs-btn-outline-primary-disabled-border-color: #99adc2;
+  
+  /* ========================================
+     FORMS
+     ======================================== */
+  
+  --bs-form-control-bg: #fff;
+  --bs-form-control-border-color: var(--bc-gray-border);
+  --bs-form-control-focus-border-color: var(--bc-blue-light);
+  
+  /* ========================================
+     CARDS
+     ======================================== */
+  
+  --bs-card-border-width: 0;
+  --bs-card-border-color: transparent;
+  --bs-card-cap-bg: var(--bc-blue);
+  --bs-card-cap-color: #fff;
+  
+  /* ========================================
+     TABLES
+     ======================================== */
+  
+  --bs-table-bg: #E9ECEF;
+  --bs-table-striped-bg: #f4f4f4;
+  --bs-table-hover-bg: var(--bc-gray-hover);
+  --bs-table-border-color: #CED4DA;
+  --bs-table-head-bg: var(--bc-blue-interactive);
+  --bs-table-head-color: #fff;
+  
+  /* ========================================
+     PAGINATION
+     ======================================== */
+  
+  --bc-pagination-bg: #eee;
+  --bc-pagination-active-bg: var(--bc-blue-interactive);
+  --bc-pagination-active-color: #fff;
+  --bc-pagination-border: 1px solid #ccc;
+  --bc-pagination-color: #000;
+}
+
+/* ========================================
+   BUTTON OVERRIDES
+   Uses increased specificity to override Bootstrap's compiled CSS
+   ======================================== */
+
+/* Base button transitions */
+.btn {
+  transition: color 0.2s ease-in-out, background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+}
+
+/* Primary Button - BC Gov Interactive Blue */
+.btn.btn-primary {
+  background-color: var(--bs-primary);
+  border-color: var(--bs-primary);
+  color: var(--bs-btn-primary-color);
+}
+
+.btn.btn-primary:hover,
+.btn.btn-primary:focus {
+  background-color: var(--bs-btn-primary-hover-bg);
+  border-color: var(--bs-btn-primary-hover-border-color);
+  color: var(--bs-btn-primary-hover-color);
+}
+
+.btn.btn-primary:active,
+.btn.btn-primary.active {
+  background-color: var(--bs-btn-primary-active-bg);
+  border-color: var(--bs-btn-primary-active-border-color);
+  color: var(--bs-btn-primary-active-color);
+}
+
+/* Outline Primary Button - BC Gov Dark Blue */
+.btn.btn-outline-primary {
+  color: var(--bs-btn-outline-primary-color);
+  border-color: var(--bs-btn-outline-primary-border-color);
+  background-color: transparent;
+}
+
+.btn.btn-outline-primary:hover,
+.btn.btn-outline-primary:focus,
+.btn.btn-outline-primary:active,
+.btn.btn-outline-primary.active {
+  color: var(--bs-btn-outline-primary-hover-color);
+  background-color: var(--bs-btn-outline-primary-hover-bg);
+  border-color: var(--bs-btn-outline-primary-hover-border-color);
+}
+
+/* ========================================
+   LINK OVERRIDES
+   Global link styling using BC Gov colors
+   ======================================== */
+
+a {
+  color: var(--bs-link-color);
+  text-decoration: var(--bs-link-decoration);
+  transition: color 0.2s ease-in-out;
+}
+
+a:hover,
+a:focus {
+  color: var(--bs-link-hover-color);
+  text-decoration: underline;
+}
+
+a:active {
+  color: var(--bc-blue-dark);
+}
+
+/* Exception: Nav tabs should not have underlines */
+.nav-tabs a,
+.nav-tabs a:hover,
+.nav-tabs a:focus {
+  text-decoration: none;
+}
+
+/* ========================================
+   CARD COMPONENT OVERRIDES
+   ======================================== */
+
+.card-header {
+  padding: 0.5rem 1rem;
+  color: var(--bs-card-cap-color);
+  background: var(--bs-card-cap-bg);
+  font-size: 0.875rem;
+  font-weight: 700;
+  box-shadow: 0.1rem 0.1rem 0.5rem rgb(158 158 158 / 24%);
+  border: none;
+}
+
+.card-body {
+  border: none;
+  padding: 1rem;
+}
+
+/* ========================================
+   LIST GROUP OVERRIDES
+   ======================================== */
+
+.list-group-item {
+  border: none;
+}
+
+.list-group-item:nth-child(odd) {
+  background: var(--bc-gray-light);
+}
+
+.list-group-item:nth-child(even) {
+  background: #f4f4f4;
+}
+
+/* ========================================
+   MODAL OVERRIDES
+   ======================================== */
+
+.modal-header {
+  background-color: #fff;
+}
+
+.modal-header .modal-title {
+  font-weight: 700;
+}
+
+.modal-dialog {
+  max-width: 800px;
+}
+
+.modal-body {
+  background-color: var(--bs-body-bg);
+}
+
+.modal-body textarea {
+  width: 100%;
+  min-height: 80px;
+  resize: vertical;
+}
+
+.modal-footer {
+  background-color: #fff;
+}
+
+/* ========================================
+   PAGINATION COMPONENT
+   ======================================== */
+
+.pagination .page-link {
+  color: var(--bc-pagination-color);
+  background-color: var(--bc-pagination-bg);
+  border: var(--bc-pagination-border);
+  cursor: pointer;
+}
+
+.pagination .page-link:hover {
+  color: var(--bc-pagination-color);
+  background-color: var(--bs-border-color);
+  border-color: var(--bs-border-color);
+}
+
+.pagination .page-item.active .page-link {
+  color: var(--bc-pagination-active-color);
+  background-color: var(--bc-pagination-active-bg);
+  border-color: var(--bc-pagination-active-bg);
+}
+
+.pagination .page-item.disabled .page-link {
+  pointer-events: none;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* ========================================
+   FORM CONTROLS
+   Using increased specificity to override Bootstrap compiled CSS
+   ======================================== */
+
+input.form-control,
+select.form-control,
+textarea.form-control {
+  display: block;
+  width: 100%;
+  padding: 0.375rem 0.75rem;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--bs-body-color);
+  background-color: var(--bs-form-control-bg);
+  border: 1px solid var(--bs-form-control-border-color);
+  border-radius: var(--bs-border-radius);
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+input.form-control:focus,
+select.form-control:focus,
+textarea.form-control:focus {
+  color: var(--bs-body-color);
+  background-color: var(--bs-form-control-bg);
+  border-color: var(--bs-form-control-focus-border-color);
+  outline: 0;
+  box-shadow: 0 0 0 0.25rem rgba(80, 145, 205, 0.25);
+}
+
+/* ========================================
+   UTILITY CLASSES
+   ======================================== */
+
+/* BC Gov branded backgrounds */
+.bg-bc-blue {
+  background-color: var(--bc-blue) !important;
+  color: #fff;
+}
+
+.bg-bc-blue-interactive {
+  background-color: var(--bc-blue-interactive) !important;
+  color: #fff;
+}
+
+.bg-bc-gold {
+  background-color: var(--bc-gold) !important;
+  color: var(--bc-blue);
+}
+
+/* BC Gov text colors */
+.text-bc-blue {
+  color: var(--bc-blue) !important;
+}
+
+.text-bc-gold {
+  color: var(--bc-gold) !important;
+}
+
+/* BC Gov border colors */
+.border-bc-blue {
+  border-color: var(--bc-blue) !important;
+}
+
+.border-bc-gold {
+  border-color: var(--bc-gold) !important;
+}

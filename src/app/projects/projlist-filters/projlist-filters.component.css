@@ -1,4 +1,8 @@
-@import "../../../assets/styles/base/base.css";
+/* Project Filters */
+:host {
+  display: block;
+  z-index: 1000;
+}
 
 /* Mobile Search Toggle Button */
 .mobile-search-toggle {
@@ -15,6 +19,7 @@
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
   cursor: pointer;
   transition: all 0.3s ease;
+  z-index: 1002;
 }
 
 .mobile-search-toggle:hover {

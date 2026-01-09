@@ -5,7 +5,6 @@ import { HeroBannerComponent, HeroBannerAction } from '../shared/hero-banner/her
 @Component({
   selector: 'app-legislation',
   templateUrl: './legislation.component.html',
-  styleUrl: './legislation.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule, HeroBannerComponent],
   standalone: true

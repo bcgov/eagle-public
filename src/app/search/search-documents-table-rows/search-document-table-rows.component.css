@@ -1,5 +1,4 @@
-@import "../../../assets/styles/base/base.css";
-
+/* Download icon styles */
 .download-icon {
     color: var(--font-color);
     cursor: pointer;
@@ -10,6 +9,6 @@
     transform: scale(1.1);
 }
 
-td[data-label="ProjectName"]:hover {
-    color: var(--gold) !important;
+.download-icon-wrap {
+    padding: 0;
 }

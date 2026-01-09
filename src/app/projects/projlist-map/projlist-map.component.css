@@ -33,6 +33,7 @@
 .map-container.loading #map {
   filter: blur(2px);
   opacity: 0.6;
+  pointer-events: none;
 }
 
 /* Smooth marker icon transitions */

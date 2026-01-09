@@ -1,4 +1,3 @@
-@import "../../assets/styles/base/base.css";
 
 /* Hero banner background override */
 :host ::ng-deep .hero-banner {
@@ -103,8 +102,8 @@ form {
     button {
         min-width: 10rem;
         font-weight: 700;
-        background: #fcba18;
-        color: #003367;
+        background: var(--bs-warning);
+        color: var(--bc-blue);
         border: none;
 
         .material-icons {
@@ -250,8 +249,8 @@ form {
 
         min-width: 10rem;
         font-weight: 700;
-        background: #fcba18;
-        color: #003367;
+        background: var(--bs-warning);
+        color: var(--bc-blue);
         border: none;
 
         .material-icons {

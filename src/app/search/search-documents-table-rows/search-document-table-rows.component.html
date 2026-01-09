@@ -3,12 +3,15 @@
   {{rowData.displayName}}
 </td>
 <td data-label="ProjectName"
-  [attr.aria-label]="'Link to project' + rowData.project.name"
-  (click)="goToProject(rowData)"
-  (keyup.enter)="goToProject(rowData)"
-  class="col-2"
-  style="color: var(--link-color); cursor: pointer; text-decoration: underline;"
-  tabindex="0">{{rowData.project.name}}</td>
+  class="col-2">
+  <a
+    [attr.aria-label]="'Link to project ' + rowData.project.name"
+    (click)="goToProject(rowData)"
+    (keyup.enter)="goToProject(rowData)"
+    tabindex="0"
+    role="link"
+    style="cursor: pointer;">{{rowData.project.name}}</a>
+</td>
 <td data-label="Date"
   class="col-2">
   @if (rowData.datePosted !== '1900-01-01T08:00:00.000Z') {

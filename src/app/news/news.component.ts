@@ -73,6 +73,7 @@ export class NewsListComponent implements OnInit, OnDestroy {
         newTableData.options.showPageCountDisplay = true;
         newTableData.options.showPagination = true;
         newTableData.options.showAllPicker = true;
+        newTableData.options.disableRowHighlight = true;
 
         this.tableData.set(newTableData);
       }

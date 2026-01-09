@@ -1,63 +1,39 @@
-@if (useChips()) {
-  <mat-chip-listbox #chipList>
-    <div class="mat-chip-list-wrapper-override">
-      <input
-        #multiAutocompleteFilter
-        name="multiAutocompleteFilter"
-        type="text"
-        class="form-control multi-box-width"
-        [placeholder]="updatedPaceholderText()"
-        matInput
-        (keyup)="filterPicklist($event)"
-        (keydown)="handleEnter($event)"
-        [matAutocomplete]="multiAutocomplete"
-      />
-      @for (option of currentOptions(); track option.value) {
-        @if (option.selected) {
-          <mat-chip-option
-            [selectable]="true"
-            [removable]="true"
-            (removed)="removeChip(option)">
-            <span class="chip-text-style">{{option.displayValue}}</span>
-            <mat-icon matChipRemove>cancel</mat-icon>
-          </mat-chip-option>
-        }
-      }
-    </div>
-  </mat-chip-listbox>
-}
-@if (!useChips()) {
-  <input
-    #multiAutocompleteFilter
-    name="multiAutocompleteFilter"
-    type="text"
-    class="form-control"
-    [placeholder]="updatedPaceholderText()"
-    matInput
-    (keyup)="filterPicklist($event)"
-    (keydown)="handleEnter($event)"
-    [matAutocomplete]="multiAutocomplete"
-  />
-}
-<mat-autocomplete #multiAutocomplete="matAutocomplete">
-  <mat-option (click)="selectNone()" title="Select none" value="Clear Selected">Clear Selected</mat-option>
-  @for (option of currentOptions(); track option.value) {
-    @if (option.display) {
-      <mat-option
-        class="multi-select-option p-0"
-        [value]="option.value"
-        [title]="option.displayValue"
-      >
-        <div
-          class="py-0 px-3"
-          (click)="toggleSelection(option); $event.stopPropagation()"
-          [title]="option.displayValue"
-        >
-          <mat-checkbox class="no-pointer-events" [checked]="option.selected" [title]="option.displayValue">
-            {{ option.displayValue }}
-          </mat-checkbox>
-        </div>
-      </mat-option>
+<div class="form-group">
+    <!-- Filter definition for filters with group options -->
+    @if (filter().filterDefinition.group) {
+        <app-custom-multi-select
+            [id]="filter().name"
+            [name]="filter().name"
+            [multiple]="true"
+            bindLabel="name"
+            [groupBy]="filter().filterDefinition.group.name"
+            [placeholder]="'Type ' + filter().name"
+            (add)="onChange()"
+            [items]="filter().filterDefinition.options"
+            [markFirst]="false"
+            [closeOnSelect]="false"
+            [(ngModel)]="filter().filterDefinition.selectedOptions"
+            [compareWith]="filterCompareWith"
+            (clear)="onChange()"
+            (remove)="onChange()">
+        </app-custom-multi-select>
     }
-  }
-</mat-autocomplete>
+    <!-- Filter definition for filters without group options -->
+    @if (!filter().filterDefinition.group) {
+        <app-custom-multi-select
+            [id]="filter().name"
+            [name]="filter().name"
+            [multiple]="true"
+            bindLabel="name"
+            [placeholder]="'Type ' + filter().name"
+            (add)="onChange()"
+            [items]="filter().filterDefinition.options"
+            [markFirst]="false"
+            [closeOnSelect]="false"
+            [(ngModel)]="filter().filterDefinition.selectedOptions"
+            [compareWith]="filterCompareWith"
+            (clear)="onChange()"
+            (remove)="onChange()">
+        </app-custom-multi-select>
+    }
+</div>

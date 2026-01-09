@@ -3,7 +3,6 @@ import { Component, input, computed, ChangeDetectionStrategy } from '@angular/co
 @Component({
   selector: 'lib-page-count-display',
   templateUrl: './page-count-display.component.html',
-  styleUrl: './page-count-display.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true
 })

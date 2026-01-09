@@ -2,7 +2,7 @@
 
 /* Modern :focus-visible - only shows focus for keyboard navigation */
 :focus-visible {
-  outline: 2px solid var(--bs-primary, #003366);
+  outline: 2px solid var(--bs-primary);
   outline-offset: 2px;
 }
 
@@ -13,18 +13,18 @@
 
 /* Button focus styles */
 .btn:focus-visible {
-  box-shadow: 0 0 0 0.25rem rgba(0, 51, 102, 0.25);
+  box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
 }
 
 /* Form control focus styles */
 .form-control:focus-visible {
-  outline: 2px solid var(--bs-primary, #003366);
+  outline: 2px solid var(--bs-primary);
   outline-offset: 2px;
 }
 
 /* Link focus styles */
 a:focus-visible {
-  outline: 2px solid var(--bs-primary, #003366);
+  outline: 2px solid var(--bs-primary);
   outline-offset: 2px;
   text-decoration: underline;
 }
@@ -34,8 +34,8 @@ a:focus-visible {
   position: absolute;
   top: -40px;
   left: 0;
-  background: var(--bs-primary, #003366);
-  color: var(--white);
+  background: var(--bs-primary);
+  color: var(--bs-white);
   padding: 8px;
   text-decoration: none;
 }

@@ -6,7 +6,6 @@ import { TableObject } from 'app/shared/components/table-template/table-object';
 @Component({
   selector: 'tr[app-pins-table-rows]',
   templateUrl: './pins-table-rows.component.html',
-  styleUrls: ['./pins-table-rows.component.css'],
   imports: [CommonModule],
   standalone: true
 })
