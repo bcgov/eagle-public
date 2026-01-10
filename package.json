@@ -48,7 +48,7 @@
     "@angular-devkit/core": "~8.3.25",
     "@angular-devkit/schematics": "~8.3.25",
     "@angular/cli": "^9.1.15",
-    "@angular/core": "^9.1.13",
+    "@angular/core": "^19.2.18",
     "@types/arcgis-js-api": "4.6.0",
     "@types/jasmine": "2.8.6",
     "@types/leaflet.markercluster": "1.4.3",
