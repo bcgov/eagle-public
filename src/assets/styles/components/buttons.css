@@ -5,6 +5,16 @@
  * This file contains only EAGLE-specific button variants and animations
  */
 
+/* === GLOBAL BUTTON STYLES === */
+
+/* Remove text decoration from all buttons */
+.btn,
+.btn:hover,
+.btn:focus,
+.btn:active {
+  text-decoration: none !important;
+}
+
 /* === EAGLE-SPECIFIC BUTTON VARIANTS === */
 
 /* EAGLE Inverted Button (Hero Banner) - transparent with white border */
@@ -23,6 +33,7 @@
   border-color: var(--gold);
   background: var(--gold);
   color: var(--white);
+  text-decoration: none;
 }
 
 /* Feature Block Button - Different hover state */
@@ -32,6 +43,7 @@
   border-color: var(--white);
   background: var(--white);
   color: var(--bs-primary);
+  text-decoration: none;
 }
 
 /* Hero Banner Button - Common styles for hero banner action buttons */

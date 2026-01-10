@@ -10,12 +10,13 @@ You are an expert in TypeScript, Angular, and scalable web application developme
 ## Angular Best Practices
 
 - Always use standalone components over NgModules
-- Must NOT set `standalone: true` inside Angular decorators. It's the default in Angular v20+.
+- MUST explicitly set `standalone: true` when using the `imports` array in component decorators
 - Use signals for state management
 - Implement lazy loading for feature routes
 - Do NOT use the `@HostBinding` and `@HostListener` decorators. Put host bindings inside the `host` object of the `@Component` or `@Directive` decorator instead
 - Use `NgOptimizedImage` for all static images.
   - `NgOptimizedImage` does not work for inline base64 images.
+- NEVER manually call `ChangeDetectorRef.detectChanges()` - rely on signals and immutable state updates instead
 
 ## Accessibility Requirements
 
@@ -32,7 +33,8 @@ You are an expert in TypeScript, Angular, and scalable web application developme
 - Prefer Reactive forms instead of Template-driven ones
 - Do NOT use `ngClass`, use `class` bindings instead
 - Do NOT use `ngStyle`, use `style` bindings instead
-- When using external templates/styles, use paths relative to the component TS file.
+- When using external templates/styles, use paths relative to the component TS file
+- Use `styleUrl:` (singular) instead of `styleUrls:` (plural) - use string for single file, array only when multiple stylesheets are necessary
 
 ## State Management
 
@@ -40,20 +42,24 @@ You are an expert in TypeScript, Angular, and scalable web application developme
 - Use `computed()` for derived state
 - Keep state transformations pure and predictable
 - Do NOT use `mutate` on signals, use `update` or `set` instead
+- Always use immutable patterns when updating signal state - create new objects/arrays instead of mutating existing ones
+- Replace manual subscription management with signals where possible to avoid memory leaks
 
 ## Templates
 
 - Keep templates simple and avoid complex logic
 - Use native control flow (`@if`, `@for`, `@switch`) instead of `*ngIf`, `*ngFor`, `*ngSwitch`
 - Use the async pipe to handle observables
-- Do not assume globals like (`new Date()`) are available.
-- Do not write arrow functions in templates (they are not supported).
+- Do not assume globals like (`new Date()`) are available
+- Do not write arrow functions in templates (they are not supported)
+- Remember to call signal functions in templates: `@if (loading())` not `@if (loading)`
 
 ## Services
 
 - Design services around a single responsibility
 - Use the `providedIn: 'root'` option for singleton services
 - Use the `inject()` function instead of constructor injection
+- Avoid deprecated Angular APIs like `ComponentFactoryResolver` - use modern alternatives like `ViewContainerRef.createComponent()` directly
 
 ## Logging
 
@@ -145,3 +151,19 @@ You are an expert in TypeScript, Angular, and scalable web application developme
 - The dev server runs at `http://localhost:4200`
 - Use VS Code's Simple Browser for testing instead of MCP Chrome DevTools
 - MCP Chrome DevTools requires additional port forwarding configuration in this remote setup
+
+## Responsive Design & Bootstrap 5.3
+
+- Always use Bootstrap 5.3 standard breakpoints in custom CSS:
+  - `576px` (sm - small devices)
+  - `768px` (md - tablets)
+  - `992px` (lg - desktops)
+  - `1200px` (xl - large desktops)
+  - `1400px` (xxl - extra large desktops)
+- Prefer Bootstrap utility classes over custom CSS where possible:
+  - Spacing: `m-*`, `p-*`, `gap-*`, `mt-*`, `mb-*`, `ms-*`, `me-*`
+  - Flexbox: `d-flex`, `flex-column`, `flex-row`, `justify-content-*`, `align-items-*`
+  - Display: `d-none`, `d-block`, `d-md-block`, `d-lg-flex`
+  - Text: `text-center`, `text-start`, `text-end`, `fw-bold`, `fs-*`
+- Use mobile-first approach - write base styles for mobile, then add `@media (min-width: ...)` for larger screens
+- Test layouts at all breakpoints to ensure responsive behavior

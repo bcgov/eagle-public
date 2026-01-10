@@ -1,23 +1,6 @@
 
-.row {
-  padding-left: 1rem;
-}
-
-.form-group {
-  padding-right: 1rem;
-}
-
 .understandText {
   font-size: 0.8rem !important;
-}
-
-.modal-dialog {
-  .progress-new {
-    position: absolute;
-    top: 40%;
-    left: 25%;
-    width: 50%;
-  }
 }
 
 .modal-content {
@@ -31,6 +14,11 @@
 }
 
 .modal-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+
   .btn {
     min-width: 6rem;
     text-transform: uppercase;
@@ -39,39 +27,20 @@
   }
 }
 
-.contact-info {
-  margin: 0;
-  padding: 0;
-  list-style-type: none;
-}
+@media (max-width: 768px) {
+  .modal-footer {
+    flex-direction: column;
+    align-items: stretch;
 
-.contact-info__name {
-  font-weight: 600;
-}
-
-.confirm-check {
-  margin-top: 1rem;
-  margin-bottom: 0;
-
-  label {
-    font-weight: 600;
+    .btn {
+      width: 100%;
+      margin-top: 0.5rem;
+    }
   }
-}
-
-.step-desc {
-  margin-bottom: 1.5rem;
 }
 
 .progress-content {
   text-align: center;
-
-  h4 {
-    margin-bottom: 1rem;
-  }
-}
-
-.progress-content__msg {
-  margin-bottom: 1rem;
 }
 
 .thank-you-content {
@@ -84,21 +53,6 @@
 
   .modal-body {
     padding-top: 0;
-    padding-bottom: 3rem;
-  }
-
-  h4 {
-    margin-top: 1.5rem;
-    margin-bottom: 1.5rem;
-  }
-
-  p {
-    margin-bottom: 1.75em;
-  }
-
-  .btn {
-    font-size: 0.875rem;
-    font-weight: 700;
   }
 }
 
@@ -106,28 +60,26 @@
   display: inline-block;
   width: 96px;
   height: 96px;
-  border: 6px solid #007bff;
-  border-radius: 48px;
-  background-image: url('/assets/images/baseline-check-24px.svg');
-  background-position: center center;
-  background-repeat: no-repeat;
-  background-size: 72px;
+  border: 6px solid var(--bs-primary);
+  border-radius: 50%;
+  background: url('/assets/images/baseline-check-24px.svg') center / 72px no-repeat;
 }
 
 .comment-tip-container {
   background-color: var(--bc-blue);
   color: #fff;
   display: flex;
-  padding: 10px;
-  margin-bottom: 10px;
+  align-items: flex-start;
+  padding: 0.625rem;
+  margin-bottom: 0.625rem;
 
   .material-icons {
     color: var(--bs-warning);
-    margin-right: 10px;
+    margin-right: 0.625rem;
   }
 
   p {
     margin-bottom: 0;
-    font-size: .8rem;
+    font-size: 0.8rem;
   }
 }

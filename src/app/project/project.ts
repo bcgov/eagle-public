@@ -262,11 +262,6 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   private createScrollChecker(navTabs: HTMLElement, leftArrow: HTMLButtonElement, rightArrow: HTMLButtonElement) {
-    const adjustArrowPosition = () => {
-      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
-      rightArrow.style.right = scrollbarWidth > 0 ? `${scrollbarWidth}px` : '0px';
-    };
-
     const checkArrows = () => {
       const hasOverflow = navTabs.scrollWidth > navTabs.clientWidth;
       const isAtStart = navTabs.scrollLeft <= 1;
@@ -274,8 +269,6 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
       
       leftArrow.style.display = hasOverflow && !isAtStart ? 'flex' : 'none';
       rightArrow.style.display = hasOverflow && !isAtEnd ? 'flex' : 'none';
-      
-      adjustArrowPosition();
     };
     
     this.checkTabArrowsFn = checkArrows;
@@ -430,6 +423,9 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
         .setIcon(markerIconYellow);
       this.map.addLayer(marker);
       this.appFG.addLayer(marker);
+      
+      // Center map on the marker at zoom level 8
+      this.map.setView([proj.centroid[1], proj.centroid[0]], 8);
     }
     
     this.map.addLayer(this.appFG);
@@ -439,11 +435,21 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
 
   private fixMap() {
     if (this.elementRef.nativeElement.offsetParent) {
-      this.fitBounds(this.appFG.getBounds());
+      const proj = this.project();
+      if (proj && proj.centroid && proj.centroid.length === 2) {
+        // Center on marker instead of fitting bounds
+        this.map?.setView([proj.centroid[1], proj.centroid[0]], 8);
+      } else {
+        this.fitBounds(this.appFG.getBounds());
+      }
       // Invalidate map size after container is properly rendered
       setTimeout(() => {
         this.map?.invalidateSize();
-        this.fitBounds(this.appFG.getBounds());
+        if (proj && proj.centroid && proj.centroid.length === 2) {
+          this.map?.setView([proj.centroid[1], proj.centroid[0]], 8);
+        } else {
+          this.fitBounds(this.appFG.getBounds());
+        }
       }, 100);
     } else {
       setTimeout(this.fixMap.bind(this), 50);

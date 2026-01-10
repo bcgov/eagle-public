@@ -1,6 +1,6 @@
 <div class="table-template">
-  @if (data.options.showTopControls) {
-  <div class="row">
+  @if (data.options.showTopControls && (data.options.showPageCountDisplay || shouldShowPagination())) {
+  <div class="row mb-4">
     <div class="col-12 col-md-6 text-center text-md-start mb-3 mb-md-0">
       @if (data.options.showPageCountDisplay) {
       <lib-page-count-display [isHidden]="false" [currentPageNum]="data.currentPage" [currentPageSize]="data.pageSize"
@@ -63,7 +63,7 @@
   </table>
 
   @if (data.items.length > 0 || !loading) {
-  <div class="table-controls-bottom mb-4">
+  <div class="table-controls-bottom mt-4">
     <div class="row">
       <div class="col-12 col-md-6 text-center text-md-start mb-3 mb-md-0">
         @if (data.options.showPageSizePicker && data.totalListItems > 10) {

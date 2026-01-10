@@ -1,4 +1,4 @@
-<section class="tab-section">
+
   <section class="mb-4 pt-0 pb-0">
       <search-filter-template
         (searchEvent)="executeSearch($event)"
@@ -10,7 +10,7 @@
         (toggleFiltersPanelEvent)="onToggleFiltersPanel($event)"
         [searchHelpLinkArray]="['/search-help']">
       </search-filter-template>
-    </section>
+    
 
     @if (!loading() && tableData().totalListItems === 0) {
       <div>

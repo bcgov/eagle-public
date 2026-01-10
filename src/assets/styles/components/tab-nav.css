@@ -5,7 +5,7 @@
   width: 100%;
   background-color: transparent;
   position: relative;
-  overflow: visible;
+  overflow: hidden;
 }
 
 /* Tab arrow buttons */
@@ -14,9 +14,10 @@
   top: 0;
   bottom: 2px;
   width: 40px;
-  background: linear-gradient(to right, rgba(var(--bs-white-rgb), 0.95), rgba(var(--bs-white-rgb), 0.95));
+  background: var(--table-row-hover-bg);
   border: none;
   font-size: 2rem;
+  line-height: 1;
   color: var(--font-color);
   cursor: pointer;
   z-index: 10;
@@ -24,30 +25,25 @@
   align-items: center;
   justify-content: center;
   transition: background-color 0.2s;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.2);
 }
 
 .tab-arrow:hover {
-  background: linear-gradient(to right, rgba(206, 212, 218, 0.95), rgba(206, 212, 218, 0.95));
+  background: var(--table-border-color);
+}
+
+.tab-arrow:focus {
+  outline: 2px solid var(--bs-primary);
+  outline-offset: -2px;
 }
 
 .tab-arrow-left {
   left: 0;
-  box-shadow: 2px 0 4px rgba(0,0,0,0.1);
 }
 
 .tab-arrow-right {
   right: 0;
-  box-shadow: -2px 0 4px rgba(0,0,0,0.1);
-  /* Account for scrollbar on desktop */
-  margin-right: env(safe-area-inset-right, 0);
 }
-
-/* Desktop: account for scrollbar */
-body:has(.tab-arrow-right) {
-  --scrollbar-width: 15px;
-}
-
-/* Use JavaScript to dynamically position based on scrollbar */
 
 /* Tab navigation bar */
 .nav-tabs {
@@ -61,7 +57,15 @@ body:has(.tab-arrow-right) {
   padding-right: 0 !important;
   list-style: none;
   display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
   scroll-behavior: smooth;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.nav-tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .nav-tabs .nav-item {

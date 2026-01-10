@@ -133,7 +133,7 @@
   }
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 992px) {
   .hero-banner {
     background-size: 150%;
   }
@@ -149,7 +149,7 @@
   }
 }
 
-@media (min-width: 1600px) {
+@media (min-width: 1400px) {
   .hero-banner {
     background-position: center -15rem;
   }

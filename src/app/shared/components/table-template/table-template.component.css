@@ -3,18 +3,14 @@
 
 /* === COMPONENT LAYOUT === */
 
-.table-template {
-  margin-top: 1rem;
-}
-
-/* Top and bottom controls spacing */
-.table-template > :first-child {
-  padding-left: 0;
-  padding-right: 0;
+/* Top controls spacing - only when shown */
+.table-template .row:has(#table-template-page-count-display),
+.table-template .row:has(lib-pagination) {
   margin-bottom: 1.5rem;
 }
 
-.table-controls-bottom {
+/* Bottom controls spacing - only when content exists */
+.table-controls-bottom:not(:empty) {
   margin-top: 1.5rem;
 }
 

@@ -6,7 +6,7 @@
     /* === EAGLE-SPECIFIC COLORS === */
     /* Use Bootstrap variables for semantic colors: --bs-primary, --bs-secondary, --bs-warning, --bs-white, --bs-black */
     /* These are EAGLE-specific utility colors not covered by Bootstrap */
-    --primary: var(--bs-secondary); /* #003366 - for legacy compatibility */
+    --primary: var(--bs-primary); /* #38598a - BC Gov interactive blue */
     --gold: var(--bs-warning); /* #fcba19 - for legacy compatibility */
     --white: var(--bs-white); /* for legacy compatibility */
     --black: var(--bs-black); /* for legacy compatibility */
@@ -35,17 +35,15 @@
 
     /* Header */
     --header-font-color: var(--white);
-    --header-bg: var(--primary);
+    --header-bg: var(--bs-secondary);
 
     /* Footer */
-    --footer-bg: var(--primary);
+    --footer-bg: var(--bs-secondary);
     --footer-color: var(--white);
 
     /* Main Navigation */
     --mn-font-size: 0.875rem;
-    /* 14 px */
     --mn-dropdown-menu-size: 0.875rem;
-    /* 14 px */
     --mn-color: var(--white);
     --mn-border-color: #5f79a2;
     --mn-hover-bg: #2b4777;
@@ -83,9 +81,6 @@
     --list-row-bg: #f7f8fa;
     --list-row-alt-bg: #f4f4f4;
 
-    /* Pagination Control - Custom component uses Bootstrap classes */
-    /* Spinner - No longer used */
-
     /* Tab Navigation */
     --tab-color: #38598a;
     --tab-nav-border-color: #ddd;
@@ -109,8 +104,8 @@
 
     /* Modal */
     --modal-bg: var(--white);
-    --modal-header-bg: #f1f1f1;
-    --modal-footer-bg: #f1f1f1;
+    --modal-header-bg: var(--bs-primary);
+    --modal-footer-bg: var(--bs-primary);
 
     /* Map Components */
     --map-bg: #445a71;
@@ -135,10 +130,7 @@
     --map-popup-footer-bg: var(--primary);
     --map-popup-header-bg: var(--primary);
     --map-popup-font-size: 0.9375rem;
-    /* 15 px */
     --map-popup-menu-active-bg: #5091cd;
     --map-popup-btn-color: var(--white);
     --map-popup-border-color: var(--white);
-
-
 }

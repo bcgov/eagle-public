@@ -4,17 +4,12 @@
   </div>
 }
 
-@if (tableData.totalListItems > 0) {
-  <div>
-    <div class="row">
-      <div class="col-12">
-        <h3>Participating Indigenous Nations</h3>
-        <lib-table-template
-          [data]="tableData"
-          (messageOut)="onMessageOut($event)">
-        </lib-table-template>
-      </div>
-    </div>
-    <br />
+@if (tableData().totalListItems > 0) {
+  <div class="mb-4">
+    <h3 class="mb-4">Participating Indigenous Nations</h3>
+    <lib-table-template
+      [data]="tableData()"
+      (messageOut)="onMessageOut($event)">
+    </lib-table-template>
   </div>
 }

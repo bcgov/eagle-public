@@ -9,6 +9,7 @@
   display: flex;
   flex-direction: column;
   flex: 1;
+  overflow-x: hidden;
 }
 
 .project main {
@@ -28,6 +29,11 @@
 .project .main-content {
   flex: 1;
   padding-bottom: 3rem;
+}
+
+.project .project-tabs {
+  padding-top: 3rem;
+  padding-inline: 3.5rem;
 }
 
 /* Public Comment Period Banner */
@@ -84,18 +90,27 @@
 
 /* Tab navigation */
 .project .project-tabs .nav-tabs {
-  padding-top: 4rem;
   max-width: 1100px;
   margin-inline: auto;
   padding-inline: 2rem;
 }
 
+/* Tab content padding - applies to all tab children */
+.project .project-tabs .tab-content {
+  max-width: 1100px;
+  margin-inline: auto;
+  margin-top: 0;
+  padding-top: 3rem;
+}
+
 /* Tablet and mobile styles */
-@media (max-width: 1073px) {
-  .project .project-tabs .nav-tabs {
-    max-width: 100%;
-    padding-inline: 0;
-    padding-top: 0;
+@media (max-width: 1126px) {
+  .project .project-tabs {
+    padding-inline: .5rem;
+  }
+
+  .project .project-tabs .tab-content {
+    padding: 1rem;
   }
 
   .project .pcp-banner {
@@ -109,6 +124,19 @@
 
   .project .pcp-banner h5 {
     font-size: 0.9rem;
+  }
+
+  .project .pcp-banner-header {
+    flex-direction: column;
+  }
+
+  .project .pcp-banner-actions {
+    width: 100%;
+    margin-top: 1rem;
+  }
+
+  .project .pcp-banner-actions .btn {
+    width: 100%;
   }
 
   .project .pcp-banner .text-end {
@@ -149,7 +177,7 @@
 }
 
 /* Desktop-specific styles */
-@media (min-width: 1074px) {
+@media (min-width: 1127px) {
   .project .project-info {
     display: grid;
     grid-template-columns: var(--sidebar-width) 1fr;

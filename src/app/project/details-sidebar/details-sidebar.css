@@ -1,5 +1,5 @@
 
-/* Host element styling for grid */
+/* Host element styling */
 :host {
   display: block;
   position: relative;
@@ -15,6 +15,7 @@
 /* Sidebar */
 .side-banner {
   background-color: var(--bc-blue);
+  color: #fff;
   transition: margin-left 0.5s ease;
   position: relative;
 }
@@ -23,136 +24,133 @@
   margin-left: calc(-1 * var(--sidebar-width));
 }
 
-.side-banner .hero-banner__content {
-  background-color: inherit;
+/* Content */
+.sidebar-content {
+  padding: 1.5rem;
+}
+
+.project-name {
+  font-size: 1.75rem;
   color: #fff;
-  padding: 0;
+  margin: 0 0 1rem 0;
+  font-weight: 700;
 }
 
-.side-banner .hero-banner__content > div {
-  padding: 6px 8px 6px 6px;
-  text-decoration: none;
-  font-size: 20px;
+.info-section {
+  width: 100%;
+}
+
+.info-block {
+  margin-bottom: 1rem;
+}
+
+.info-block label {
+  font-weight: bold;
+  color: var(--bs-warning);
+  font-size: 1rem;
   display: block;
+  margin-bottom: 5px;
 }
 
-.side-banner .ea-decision {
+.info-block .ea-decision {
   color: white;
   font-size: 1rem;
   border: 2px solid white;
   padding: 5px 10px;
   font-weight: bold;
   display: inline-block;
-  margin: 0 0 15px 0;
 }
 
-/* Basic info section */
-.side-banner .basic-info {
-  width: 100%;
-}
-
-.side-banner .basic-info .info-block p,
-.side-banner .basic-info .info-block a {
-  font-size: small;
+.info-block .info-link {
   color: white;
-}
-
-.side-banner .basic-info > div {
-  padding: 0;
-  max-width: 100%;
-}
-
-.side-banner .basic-info .hyperlink {
+  font-size: small;
   text-decoration: underline;
 }
 
-.side-banner .basic-info label {
-  font-weight: bold;
-  color: var(--bs-warning);
+.info-block .info-value {
+  color: white;
   font-size: 1rem;
-  padding-bottom: 5px;
+  margin: 0;
 }
 
-.side-banner .basic-info p {
-  font-size: 1rem;
-  display: block;
+.divider {
+  border: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.3);
+  margin: 1rem 0;
 }
 
 /* Map */
-.side-banner .map-wrapper {
-  width: 100%;
-  height: 250px;
-  padding-top: 10px;
-  margin-top: 20px;
-  margin-bottom: 30px;
+.map-wrapper {
+  margin-top: 1rem;
 }
 
-.side-banner .map-item {
-  position: relative;
-  height: 250px;
-  color: black;
-}
-
-.side-banner .map-item .map-container {
+.map-container {
   padding: 0;
   display: block;
   position: relative;
   overflow: hidden;
-  height: 250px;
-  min-height: 250px;
+  height: 17rem;
+  min-height: 17rem;
 }
 
-.side-banner .map-item .map {
+.map {
   position: relative;
-  min-height: 250px;
-  height: 250px !important;
-  width: 100% !important;
+  min-height: 17rem;
+  height: 17rem;
+  width: 100%;
   outline: none;
   background-color: #ddd;
 }
 
-.side-banner .map-item__no-results {
+.map-placeholder {
   text-align: center;
   position: absolute;
   background: grey;
   width: 100%;
   height: 250px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
 }
 
 /* Toggle button */
-button.btn.icon-btn.sidebar-toggle {
-  position: fixed !important;
-  left: var(--sidebar-width) !important;
-  top: var(--header-total-height) !important;
-  background: var(--bc-blue) !important;
-  border: none !important;
-  border-radius: 0 6px 6px 0 !important;
-  box-shadow: 0.1rem 0.1rem 0.5rem rgba(0, 0, 0, 0.25) !important;
-  height: 48px !important;
-  width: 35px !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  display: none !important;
-  justify-content: center !important;
-  align-items: center !important;
-  cursor: pointer !important;
-  transition: left 0.5s ease !important;
+.sidebar-toggle {
+  position: fixed;
+  left: var(--sidebar-width);
+  top: var(--header-total-height);
+  background: var(--bc-blue);
+  border: none;
+  border-radius: 0 6px 6px 0;
+  height: 48px;
+  width: 35px;
+  padding: 0;
+  margin: 0;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: left 0.5s ease, background-color 0.2s ease;
   z-index: 110;
+  color: #fff;
 }
 
-button.btn.icon-btn.sidebar-toggle .icon {
-  color: #fff !important;
-  font-size: 2.2rem !important;
+.sidebar-toggle:hover {
+  background: #003366;
 }
 
-.side-banner.closed ~ button.btn.icon-btn.sidebar-toggle {
-  left: 0 !important;
+.sidebar-toggle .material-icons {
+  font-size: 2.2rem;
+}
+
+.side-banner.closed ~ .sidebar-toggle {
+  left: 0;
 }
 
 /* Desktop styles */
-@media (min-width: 1074px) {
-  button.btn.icon-btn.sidebar-toggle {
-    display: flex !important;
+@media (min-width: 1127px) {
+  .sidebar-toggle {
+    display: flex;
   }
 
   .side-banner {
@@ -164,16 +162,11 @@ button.btn.icon-btn.sidebar-toggle .icon {
     padding: 10px 30px 20px 30px;
     overflow-y: auto;
     overflow-x: hidden;
-    transition: margin-left 0.5s ease;
     z-index: 100;
     box-shadow: 4px 0 12px rgba(0, 0, 0, 0.15);
   }
 
-  .side-banner.closed {
-    margin-left: calc(-1 * var(--sidebar-width));
-  }
-
-  .side-banner .map-wrapper {
+  .map-wrapper {
     margin-bottom: 30px;
   }
 }

@@ -2,7 +2,7 @@
 @if (submitting() && (totalSize() > 100000)) {
   <div class="modal-content progress-content">
     <div class="modal-body">
-      <h4 class="modal-title">Submitting your comment...</h4>
+      <h4 class="modal-title mb-3">Submitting your comment...</h4>
       <!-- Note: mat-progress-bar would need to be imported separately if needed -->
     </div>
   </div>
@@ -14,11 +14,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <h4 class="modal-title">Submit a Comment</h4>
-        <button class="btn btn-icon close-btn gtm-submit-comment_cancel-pg1" type="button" aria-label="Close" (click)="activeModal.dismiss('dismissed page1')">
-          <i class="material-icons">
-            close
-          </i>
-        </button>
+        <button class="btn-close gtm-submit-comment_cancel-pg1" type="button" aria-label="Close" (click)="activeModal.dismiss('dismissed page1')"></button>
       </div>
 
       <div class="modal-body">
@@ -35,10 +31,10 @@
             <li>Attachments must be no larger than 10 MB and must be a .png, .pdf, .gif, .jpg, .jpeg, .doc, .docx, .xls, .xlst, .ppt, .rtf, .pptx, .txt or .bmp file</li>
           </ul>        
         </section>
-        <section class="m-b-0 mt-5">
+        <section class="mb-0 mt-5">
           <h2>Collection Notice</h2>
-          <p>Your personal information is collected by the Environmental Assessment Office for the purpose of commenting on the <em>{{project()?.name}} Project</em> under the authority of s.26(c) of the <a href="http://www.bclaws.ca/Recon/document/ID/freeside/96165_00" target="_blank">Freedom of Information and Protection of Privacy Act</a>. In submitting your comment, you consent to your comment being published online and shared with the proponent. This consent is valid from this date forward and may be revoked by contacting the EAO representative below. Should you have any questions about this collection please contact:</p>
-          <p class="m-b-0">Director, Digital Services<br>Environmental Assessment Office<br>836 Yates Street, Victoria, BC<br><a href="mailto: EAO.EPICsystem@gov.bc.ca">EAO.EPICsystem@gov.bc.ca</a><br>(250) 356-7441
+          <p>Your personal information is collected by the Environmental Assessment Office for the purpose of commenting on the <em>{{project.name}} Project</em> under the authority of s.26(c) of the <a href="http://www.bclaws.ca/Recon/document/ID/freeside/96165_00" target="_blank">Freedom of Information and Protection of Privacy Act</a>. In submitting your comment, you consent to your comment being published online and shared with the proponent. This consent is valid from this date forward and may be revoked by contacting the EAO representative below. Should you have any questions about this collection please contact:</p>
+          <p class="mb-0">Director, Digital Services<br>Environmental Assessment Office<br>836 Yates Street, Victoria, BC<br><a href="mailto: EAO.EPICsystem@gov.bc.ca">EAO.EPICsystem@gov.bc.ca</a><br>(250) 356-7441
         </section>
       </div>
       <div class="modal-footer">
@@ -48,7 +44,7 @@
             I have read the above and understand what my submission should/shouldn't include
           </label>
         </div>
-        <button type="button" class="btn btn-primary" [disabled]="!agreeConditions()" (click)="p1_next()">Next</button>
+        <button type="button" class="btn btn-warning" [disabled]="!agreeConditions()" (click)="p1_next()">Next</button>
       </div>
     </div>
   }
@@ -60,11 +56,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <h4 class="modal-title">Community Advisory Committee</h4>
-        <button class="btn btn-icon close-btn gtm-submit-comment_cancel-pg1" type="button" aria-label="Close" (click)="activeModal.dismiss('dismissed page1')">
-          <i class="material-icons">
-            close
-          </i>
-        </button>
+        <button class="btn-close gtm-submit-comment_cancel-pg1" type="button" aria-label="Close" (click)="activeModal.dismiss('dismissed page1')"></button>
       </div>
 
       <div class="modal-body">
@@ -78,15 +70,15 @@
             </ul>
           <p>Feedback from Community Advisory Committee members contributes to a better understanding of the potential effects of the proposed project on the community. The Environmental Assessment Office forms and operates Community Advisory Committees digitally through EPIC.</p>
         </section>
-        <section class="m-b-0">
+        <section class="mb-0">
           <h3>What can I expect as a Community Advisory Committee Member?</h3>
           <p>The Environmental Assessment Office will provide subscribed Community Advisory Committee members information on the environmental assessment process and the proposed project, including notifications of process milestones, when and where key documents are posted, information on public comment periods and any other engagement opportunities. Members will be invited to provide their input through the public comment periods held throughout the environmental assessment and, depending on the overall interest of Community Advisory Committee members, the Environmental Assessment Office may directly seek the advice of Community Advisory Committee members and establish other engagement opportunities. See the<a href="https://www2.gov.bc.ca/assets/gov/environment/natural-resource-stewardship/environmental-assessments/guidance-documents/2018-act/community_advisory_committee_guideline_v1.pdf" target="_blank"> <strong>Community Advisory Committee Guideline</strong> </a> and the <a href="https://www2.gov.bc.ca/assets/gov/environment/natural-resource-stewardship/environmental-assessments/guidance-documents/2018-act/community_advisory_committee_guideline_v1.pdf#page=8" target="_blank"><strong>Community Advisory Committee Terms of Reference</strong></a> for further information.</p>
         </section>
       </div>
       <div class="modal-footer">
-          <button class="btn btn-light" type="button" (click)="p2_back()">Back</button>
+          <button class="btn btn-outline-white" type="button" (click)="p2_back()">Back</button>
           <button class="btn btn-light" type="button" (click)="p2_next()">No Thanks</button>
-          <button type="button" class="btn btn-primary" (click)="p2_becomeAMember()">Become a Member</button>
+          <button type="button" class="btn btn-warning" (click)="p2_becomeAMember()">Become a Member</button>
       </div>
     </div>
   }
@@ -98,11 +90,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <h4 class="modal-title">Community Advisory Committee</h4>
-        <button class="btn btn-icon close-btn gtm-submit-comment-cancel-pg2" type="button" aria-label="Close" (click)="activeModal.dismiss('dismissed page2')">
-          <i class="material-icons">
-            close
-          </i>
-        </button>
+        <button class="btn-close gtm-submit-comment-cancel-pg2" type="button" aria-label="Close" (click)="activeModal.dismiss('dismissed page2')"></button>
       </div>
       <div class="modal-body">
         <fieldset>
@@ -174,7 +162,7 @@
 
             <div class="mb-3">
               <label class="control-label understandText">I understand that...</label>
-              <p class="font-italic understandText">Your personal information is collected by the Environmental Assessment Office for the purpose of sending you updates on {{project()?.name}} project under the authority of s.26(c) of the Freedom of Information and Protection of Privacy Act. In submitting your comment, you consent to receiving updates to the email address you have provided. This consent is valid from this date forward and may be revoked by contacting the EAO representative below. Should you have any questions about this collection, or wish to revoke your consent please contact:</p>
+              <p class="font-italic understandText">Your personal information is collected by the Environmental Assessment Office for the purpose of sending you updates on {{project.name}} project under the authority of s.26(c) of the Freedom of Information and Protection of Privacy Act. In submitting your comment, you consent to receiving updates to the email address you have provided. This consent is valid from this date forward and may be revoked by contacting the EAO representative below. Should you have any questions about this collection, or wish to revoke your consent please contact:</p>
                 <ul class="font-italic understandText m-0">Director, Digital Services</ul>
                 <ul class="font-italic understandText m-0">Environmental Assessment Office</ul>
                 <ul class="font-italic understandText m-0">836 Yates Street, Victoria, BC</ul>
@@ -197,8 +185,8 @@
       </div>
       <div class="modal-footer">
         <!-- enable submission when required fields are entered and when either a file or comment is entered -->
-          <button class="btn btn-light" type="button" (click)="p3_back()">Back</button>
-          <button class="btn btn-primary" type="button" (click)="p3_next()" [disabled]="!cacSignUpForm.form.valid || (emailInput() !== emailConfirmInput())">Complete Submission</button>
+          <button class="btn btn-outline-white" type="button" (click)="p3_back()">Back</button>
+          <button class="btn btn-warning" type="button" (click)="p3_next()" [disabled]="!cacSignUpForm.form.valid || (emailInput() !== emailConfirmInput())">Complete Submission</button>
       </div>
     </div>
   }
@@ -208,19 +196,15 @@
 @if (currentPage() === 4) {
   <div class="modal-content thank-you-content">
     <div class="modal-header">
-      <button class="btn btn-icon close-btn gtm-submit-comment-cancel-pg3" type="button" aria-label="Close" (click)="activeModal.dismiss('dismissed page3')">
-        <i class="material-icons">
-          close
-        </i>
-      </button>
+      <button class="btn-close gtm-submit-comment-cancel-pg3" type="button" aria-label="Close" (click)="activeModal.dismiss('dismissed page3')"></button>
     </div>
-    <div class="modal-body">
-      <div class="thank-you-icon"></div>
-      <h4>Thank you for becoming a Community Advisory Committee Member</h4>
-      <p>You are now a member of this group!</p>
-      <p>We will be communicating with members of the Community Advisory Committee over the assessment stages of this project.  We will send out emails to members of this committee at key points through the assessment.</p>
-      <p>Please add <a href="mailto:{{project()?.cacEmail}}">{{project()?.cacEmail}}</a> to your contacts to ensure that our emails go to your inbox and are not filtered to your Spam folder.</p>
-      <button class="btn btn-primary gtm-submit-comment-done" type="button" (click)="p4_next()">Continue to Commenting</button>
+    <div class="modal-body pb-5">
+      <div class="thank-you-icon mt-4"></div>
+      <h4 class="my-4">Thank you for becoming a Community Advisory Committee Member</h4>
+      <p class="mb-4">You are now a member of this group!</p>
+      <p class="mb-4">We will be communicating with members of the Community Advisory Committee over the assessment stages of this project.  We will send out emails to members of this committee at key points through the assessment.</p>
+      <p class="mb-4">Please add <a href="mailto:{{project.cacEmail}}">{{project.cacEmail}}</a> to your contacts to ensure that our emails go to your inbox and are not filtered to your Spam folder.</p>
+      <button class="btn btn-warning" type="button" (click)="p4_next()">Continue to Commenting</button>
     </div>
   </div>
 }
@@ -231,11 +215,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <h4 class="modal-title">Submit a Comment</h4>
-        <button class="btn btn-icon close-btn gtm-submit-comment-cancel-pg2" type="button" aria-label="Close" (click)="activeModal.dismiss('dismissed page2')">
-          <i class="material-icons">
-            close
-          </i>
-        </button>
+        <button class="btn-close gtm-submit-comment-cancel-pg2" type="button" aria-label="Close" (click)="activeModal.dismiss('dismissed page2')"></button>
       </div>
       <div class="modal-body">
         <fieldset>
@@ -298,7 +278,7 @@
                 <input required class="form-control" type="text" name="nameInput" maxlength="50" id="nameInput" [(ngModel)]="contactName" autofocus [disabled]="!makePublic()"/>
               </div>
             </div>
-            @if (project()?.projectCAC && project()?.projectCACPublished) {
+            @if (project.projectCAC && project.projectCACPublished) {
               <div class="mb-3">
                 <label class="control-label" >
                   <input type="checkbox" aria-label="Checkbox for row item" name="submittedCAC" [(ngModel)]="submittedCAC">
@@ -312,9 +292,9 @@
           </fieldset>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-light" type="button" (click)="p5_back()">Back</button>
+        <button class="btn btn-outline-white" type="button" (click)="p5_back()">Back</button>
         <!-- enable submission when required fields are entered and when either a file or comment is entered -->
-        <button class="btn btn-primary" type="button" (click)="p5_next()" [disabled]="!commentForm1.form.valid || (!commentInput() && (documents() && documents().length === 0)) || submitting()">Submit</button>
+        <button class="btn btn-warning" type="button" (click)="p5_next()" [disabled]="!commentForm1.form.valid || (!commentInput() && (documents() && documents().length === 0)) || submitting()">Submit</button>
       </div>
     </div>
   }
@@ -324,17 +304,13 @@
 @if (currentPage() === 6) {
   <div class="modal-content thank-you-content">
     <div class="modal-header">
-      <button class="btn btn-icon close-btn gtm-submit-comment-cancel-pg3" type="button" aria-label="Close" (click)="activeModal.dismiss('dismissed page3')">
-        <i class="material-icons">
-          close
-        </i>
-      </button>
+      <button class="btn-close gtm-submit-comment-cancel-pg3" type="button" aria-label="Close" (click)="activeModal.dismiss('dismissed page3')"></button>
     </div>
-    <div class="modal-body">
-      <div class="thank-you-icon"></div>
-      <h4>Your comment has been submitted!</h4>
-      <p>Thank you for participating in the public comment period for the {{project()?.name}} Project.</p>
-      <button class="btn btn-primary gtm-submit-comment-done" type="button" (click)="activeModal.dismiss('closed page4')">Done</button>
+    <div class="modal-body pb-5">
+      <div class="thank-you-icon mt-4"></div>
+      <h4 class="my-4">Your comment has been submitted!</h4>
+      <p class="mb-4">Thank you for participating in the public comment period for the {{project.name}} Project.</p>
+      <button class="btn btn-warning" type="button" (click)="activeModal.dismiss('closed page4')">Done</button>
     </div>
   </div>
 }

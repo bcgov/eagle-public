@@ -52,7 +52,7 @@
 }
 
 /* Desktop: 2 per row */
-@media (min-width: 769px) {
+@media (min-width: 768px) {
   .mt-2 .attachment {
     flex: 0 0 calc(50% - 0.25rem);
     max-width: calc(50% - 0.25rem);

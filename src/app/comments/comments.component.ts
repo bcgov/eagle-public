@@ -1,6 +1,7 @@
-import { Component, inject, signal, OnInit, OnDestroy, ChangeDetectorRef, ViewEncapsulation } from '@angular/core';
+import { Component, inject, signal, OnInit, OnDestroy, ChangeDetectorRef, ViewEncapsulation, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
@@ -21,7 +22,7 @@ import { LoggingService } from '../services/logging.service';
 
 @Component({
   selector: 'app-comments',
-  imports: [CommonModule, TableTemplateComponent],
+  imports: [CommonModule, TableTemplateComponent, AddCommentComponent],
   templateUrl: './comments.component.html',
   styleUrls: ['./comments.component.css'],
   encapsulation: ViewEncapsulation.None,
@@ -40,12 +41,19 @@ export class CommentsComponent implements OnInit, OnDestroy {
   private router = inject(Router);
   private loadingState = inject(LoadingStateService);
   private logger = inject(LoggingService);
+  private sanitizer = inject(DomSanitizer);
 
   loading = this.loadingState.getOperationState('comments');
   commentPeriod = signal<CommentPeriod | null>(null);
   project = signal<Project | null>(null);
   comments = signal<any[]>([]);
   commentPeriodDocs = signal<any[]>([]);
+  
+  // Sanitized instructions for safe HTML rendering
+  sanitizedInstructions = computed(() => {
+    const instructions = this.commentPeriod()?.instructions;
+    return instructions ? this.sanitizer.bypassSecurityTrustHtml(String(instructions)) : '';
+  });
   
   tableData = signal<TableObject>(new TableObject({ component: CommentsTableRowsComponent }));
   commentPeriodHeader = signal('');

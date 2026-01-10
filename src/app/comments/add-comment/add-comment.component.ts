@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, input } from '@angular/core';
+import { Component, inject, signal, OnInit, input, ViewEncapsulation } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
@@ -20,6 +20,7 @@ import { LoggingService } from '../../services/logging.service';
   imports: [CommonModule, FormsModule, FileUploadComponent],
   templateUrl: './add-comment.component.html',
   styleUrls: ['./add-comment.component.css'],
+  encapsulation: ViewEncapsulation.None,
   standalone: true
 })
 export class AddCommentComponent implements OnInit {
@@ -30,8 +31,9 @@ export class AddCommentComponent implements OnInit {
   private config = inject(ConfigService);
   private logger = inject(LoggingService);
 
-  currentPeriod = input<CommentPeriod>();
-  project = input<Project>();
+  // Properties set by parent component
+  currentPeriod!: CommentPeriod;
+  project!: Project;
 
   submitting = signal(false);
   progressValue = signal(0);
@@ -73,7 +75,7 @@ export class AddCommentComponent implements OnInit {
   ngOnInit() {
     this.hasSeenCAC.set(false);
     const newComment = new Comment();
-    const period = this.currentPeriod();
+    const period = this.currentPeriod;
     if (period) {
       newComment.period = period._id;
       this.commentTip.set(String(period.commentTip || ''));
@@ -131,7 +133,7 @@ export class AddCommentComponent implements OnInit {
   }
 
   p1_next() {
-    const proj = this.project();
+    const proj = this.project;
     if (this.submittedCAC() || !proj?.projectCAC || !this.hasSeenCAC()) {
       this.currentPage.set(5);
     } else {
@@ -173,7 +175,7 @@ export class AddCommentComponent implements OnInit {
     };
 
     try {
-      const proj = this.project();
+      const proj = this.project;
       if (proj) {
         const res = await this.projectService.cacSignUp(proj, signUpObject).toPromise();
         this.logger.info('CAC sign-up submitted successfully', 'AddCommentComponent');
@@ -232,7 +234,7 @@ export class AddCommentComponent implements OnInit {
 
       // then upload all documents
       const observables: Array<Observable<Document>> = [];
-      const proj = this.project();
+      const proj = this.project;
 
       filesList.forEach(file => {
         const formData = new FormData();

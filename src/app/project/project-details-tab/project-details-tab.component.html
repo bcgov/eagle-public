@@ -1,11 +1,10 @@
-<div class="tab-pane" role="tabpanel" aria-labelledby="project-details-tab" id="project-details-panel" tabindex="0">
-  <h2 class="visually-hidden">Project Details</h2>
-  <section class="tab-section">
-    <div class="row">
-      <div class="col-12">
+<h2 class="visually-hidden">Project Details</h2>
+
+  <div class="row">
+    <div class="col-12">
       <div class="location-info">
-          <p class="desc mb-3" [innerHTML]="(project()?.description?.toString() || '-') | newlines"></p>
-          <dl class="row g-3">
+          <p class="desc mb-4" [innerHTML]="(project()?.description?.toString() || '-') | newlines"></p>
+          <dl class="row g-3 mb-4">
             <div class="col-sm-6 col-md-4 col-lg-3">
               <dt class="fw-bold text-primary mb-0 lh-sm">Proponent</dt>
               <dd class="mb-1">{{project()?.proponent?.name || "-" }}</dd>
@@ -31,8 +30,12 @@
                   </dd>
                 }
                 @if (project()?.CEAAInvolvement?.name!=='None') {
-                  <dd class="mb-1"><a target="_blank"
-                      href="{{project()?.CEAALink}}">{{project()?.CEAAInvolvement?.name || "-" }}</a>
+                  <dd class="mb-1">
+                    <a target="_blank" rel="noopener" href="{{project()?.CEAALink}}">
+                      {{project()?.CEAAInvolvement?.name || "-" }}
+                      <i class="material-icons" style="font-size: 0.875rem; vertical-align: middle;" aria-hidden="true">open_in_new</i>
+                      <span class="visually-hidden">(opens in new tab)</span>
+                    </a>
                   </dd>
                 }
               </div>
@@ -71,10 +74,7 @@
         </div>
       </div>
     </div>
-    <br>
     <app-featured-documents></app-featured-documents>
     <app-pins></app-pins>
     <app-project-activites></app-project-activites>
-  </section>
-</div>
 

@@ -3,3 +3,6 @@
 :host {
   display: block;
 }
+.static-content {
+  margin-bottom: 2rem;
+}

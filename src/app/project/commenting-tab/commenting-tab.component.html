@@ -1,46 +1,42 @@
-<div class="tab-pane" role="tabpanel">
-  <section class="tab-section">
-    @if (loading()) {
-      <div class="spinner-container">
-        <div class="spinner-new rotating"></div>
-      </div>
-    }
+@if (loading()) {
+  <div class="spinner-container">
+    <div class="spinner-new rotating"></div>
+  </div>
+}
 
-    @if (!loading()) {
-      <div class="row">
-        <div class="col-12">
-            @if (commentPeriods().length < 1) {
-              <div>
-                No comment periods are currently scheduled for this project.
-              </div>
-            }
+@if (!loading()) {
+  <div class="row">
+    <div class="col-12">
+        @if (commentPeriods().length < 1) {
+          <div>
+            No comment periods are currently scheduled for this project.
+          </div>
+        }
 
-            @if (commentPeriods().length > 0) {
-              <div>
-                @for (commentPeriod of commentPeriods(); track commentPeriod._id) {
-                  <div class="d-flex justify-content-between list-group-item"
-                       tabindex="0"
-                       (keyup.enter)="goToCP(commentPeriod)"
-                       (click)="goToCP(commentPeriod)">
-                    @if (commentPeriod.commentPeriodStatus) {
-                      <div>
-                        <label class="title">{{commentPeriod.commentPeriodStatus}}</label>
-                        <div class="commentInfo">{{commentPeriod.instructions}}</div>
-                        <p class="mb-0">{{commentPeriod.dateStarted | date:'mediumDate'}} - {{commentPeriod.dateCompleted | date:'mediumDate'}}</p>
-                      </div>
-                    }
-                    @if (commentPeriodService.isOpen(commentPeriod)) {
-                      <div>
-                        <span class="badge rounded-pill bg-warning text-dark fs-6 px-3 py-2">{{commentPeriod.daysRemaining}}</span>
-                      </div>
-                    }
+        @if (commentPeriods().length > 0) {
+          <div>
+            @for (commentPeriod of commentPeriods(); track commentPeriod._id) {
+              <div class="d-flex justify-content-between list-group-item"
+                   tabindex="0"
+                   (keyup.enter)="goToCP(commentPeriod)"
+                   (click)="goToCP(commentPeriod)">
+                @if (commentPeriod.commentPeriodStatus) {
+                  <div>
+                    <label class="title">{{commentPeriod.commentPeriodStatus}}</label>
+                    <div class="commentInfo">{{commentPeriod.instructions}}</div>
+                    <p class="mb-0">{{commentPeriod.dateStarted | date:'mediumDate'}} - {{commentPeriod.dateCompleted | date:'mediumDate'}}</p>
+                  </div>
+                }
+                @if (commentPeriodService.isOpen(commentPeriod)) {
+                  <div>
+                    <span class="badge rounded-pill bg-warning text-dark fs-6 px-3 py-2">{{commentPeriod.daysRemaining}}</span>
                   </div>
                 }
               </div>
             }
           </div>
-        </div>
-    }
-  </section>
-</div>
+        }
+      </div>
+    </div>
+}
 

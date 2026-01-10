@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef, inject, computed } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, computed, signal } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { takeWhile } from 'rxjs/operators';
@@ -21,7 +21,6 @@ import { LoadingStateService } from 'app/services/loading-state.service';
 })
 export class PinsComponent implements OnInit, OnDestroy {
   private router = inject(Router);
-  private _changeDetectionRef = inject(ChangeDetectorRef);
   private route = inject(ActivatedRoute);
   private storageService = inject(StorageService);
   private tableTemplateUtils = inject(TableTemplate);
@@ -34,7 +33,7 @@ export class PinsComponent implements OnInit, OnDestroy {
     this.loadingState.getOperationState(`pins-${this.projId || 'all'}-page-${this.pinsService.fetchDataConfig.currentPage}`)()
   );
 
-  public tableData: TableObject = new TableObject({ component: PinsTableRowsComponent });
+  public tableData = signal<TableObject>(new TableObject({ component: PinsTableRowsComponent }));
   public tableColumns: any[] = [
     {
       name: 'Nation Name',
@@ -49,40 +48,44 @@ export class PinsComponent implements OnInit, OnDestroy {
   ];
 
   ngOnInit() {
-    this.tableData.tableId = 'pins-table';
+    const initialTableData = this.tableData();
+    initialTableData.tableId = 'pins-table';
 
     // Hide table controls
-    this.tableData.options.showPageCountDisplay = false;
-    this.tableData.options.showPageSizePicker = false;
+    initialTableData.options.showPageCountDisplay = false;
+    initialTableData.options.showPageSizePicker = false;
+    
+    this.tableData.set(initialTableData);
 
     // Get project ID from parent route
     this.projId = this.route.parent?.snapshot.params['projId'] || '';
     this.pinsService.fetchDataConfig.projId = this.projId;
 
     this.route.queryParamMap.pipe(takeWhile(() => this.alive)).subscribe(data => {
-      // Get params from route, shove into the tableTemplateUtils so that we get a new dataset to work with.
+      // Get params from route, update table data immutably
       const params: any = {};
       data.keys.forEach(key => params[key] = data.get(key));
-      this.tableData = this.tableTemplateUtils.updateTableObjectWithUrlParams(params, this.tableData, 'Pins');
-      this.tableData.sortBy = params.sortByPins ? params.sortByPins : '+name';
-      this._changeDetectionRef.detectChanges();
+      const updatedTableData = this.tableTemplateUtils.updateTableObjectWithUrlParams(params, this.tableData(), 'Pins');
+      updatedTableData.sortBy = params.sortByPins ? params.sortByPins : '+name';
+      this.tableData.set(updatedTableData);
     });
 
     this.pinsService.getValue()
       .pipe(takeWhile(() => this.alive))
       .subscribe((searchResults: SearchResults) => {
         if (searchResults && searchResults.data !== null && searchResults.data !== undefined) {
-          this.tableData.totalListItems = searchResults.totalSearchCount || 0;
+          const currentData = this.tableData();
+          const updatedTableData = { ...currentData };
+          updatedTableData.totalListItems = searchResults.totalSearchCount || 0;
           if (Array.isArray(searchResults.data) && searchResults.data.length > 0) {
-            this.tableData.items = searchResults.data.map((record: any) => {
+            updatedTableData.items = searchResults.data.map((record: any) => {
               return { rowData: record };
             });
           } else {
-            this.tableData.items = [];
+            updatedTableData.items = [];
           }
-          this.tableData.columns = this.tableColumns;
-
-          this._changeDetectionRef.detectChanges();
+          updatedTableData.columns = this.tableColumns;
+          this.tableData.set(updatedTableData);
         }
       });
 
@@ -94,7 +97,8 @@ export class PinsComponent implements OnInit, OnDestroy {
     let params: any = {};
     switch (msg.label) {
       case 'columnSort':
-        if (this.tableData.sortBy.charAt(0) === '+') {
+        const currentTableData = this.tableData();
+        if (currentTableData.sortBy.charAt(0) === '+') {
           params['sortByPins'] = '-' + msg.data;
         } else {
           params['sortByPins'] = '+' + msg.data;

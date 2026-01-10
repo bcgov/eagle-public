@@ -1,27 +1,25 @@
-<section class="tab-section">
-  <section class="mb-4 pt-0 pb-0">
-    <search-filter-template
-      (searchEvent)="executeSearch($event)"
-      [advancedFilters]="true"
-      [showAdvancedFilters]="showAdvancedFilters()"
-      [searchOnFilterChange]="true"
-      [filters]="filters()"
-      (resetControls)="onResetControls()"
-      (toggleFiltersPanelEvent)="onToggleFiltersPanel($event)"
-      [searchHelpLinkArray]="['/search-help']">
-    </search-filter-template>
-  </section>
-
-  @if (!loading() && tableData().totalListItems === 0) {
-    <div>
-      There are no amendment documents associated with this project.
-    </div>
-  } @else {
-    <lib-table-template
-      [data]="tableData()"
-      [loading]="loading()"
-      (messageOut)="onMessageOut($event)">
-    </lib-table-template>
-  }
+<section class="mb-4 pt-0 pb-0">
+  <search-filter-template
+    (searchEvent)="executeSearch($event)"
+    [advancedFilters]="true"
+    [showAdvancedFilters]="showAdvancedFilters()"
+    [searchOnFilterChange]="true"
+    [filters]="filters()"
+    (resetControls)="onResetControls()"
+    (toggleFiltersPanelEvent)="onToggleFiltersPanel($event)"
+    [searchHelpLinkArray]="['/search-help']">
+  </search-filter-template>
 </section>
+
+@if (!loading() && tableData().totalListItems === 0) {
+  <div>
+    There are no amendment documents associated with this project.
+  </div>
+} @else {
+  <lib-table-template
+    [data]="tableData()"
+    [loading]="loading()"
+    (messageOut)="onMessageOut($event)">
+  </lib-table-template>
+}
 

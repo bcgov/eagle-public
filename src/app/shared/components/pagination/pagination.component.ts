@@ -6,7 +6,8 @@ import { CommonModule } from '@angular/common';
   templateUrl: './pagination.component.html',
   styleUrl: './pagination.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule]
+  imports: [CommonModule],
+  standalone: true
 })
 export class PaginationComponent {
   // Input signals - automatically reactive

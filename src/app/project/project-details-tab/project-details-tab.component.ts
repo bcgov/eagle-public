@@ -13,7 +13,7 @@ import { ProjectActivitesComponent } from '../project-activites/project-activite
   selector: 'app-project-details-tab',
   imports: [CommonModule, NewlinesPipe, FeaturedDocumentsComponent, PinsComponent, ProjectActivitesComponent],
   templateUrl: './project-details-tab.component.html',
-  styleUrls: ['./project-details-tab-sm.component.css', './project-details-tab-md-lg.component.css'],
+  styleUrl: './project-details-tab.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true
 })
