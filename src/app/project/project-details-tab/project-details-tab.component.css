@@ -4,12 +4,12 @@ h3 {
 }
 
 dd {
-    font-size: 0.875rem;
+    font-size: var(--bs-font-size-sm);
 }
 
 @media (min-width: 768px) {
     h2,
     h3 {
-        color: #003364;
+        color: var(--bc-blue);
     }
 }

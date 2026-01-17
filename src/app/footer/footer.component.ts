@@ -1,5 +1,5 @@
 import { Component, ChangeDetectionStrategy, inject, AfterViewInit, OnDestroy, ElementRef, effect } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { Router, RouterModule } from '@angular/router';
 import { ApiService } from 'app/services/api';
 
@@ -8,7 +8,7 @@ import { ApiService } from 'app/services/api';
   templateUrl: './footer.component.html',
   styleUrl: './footer.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, RouterModule],
+  imports: [RouterModule],
   standalone: true
 })
 export class FooterComponent implements AfterViewInit, OnDestroy {
@@ -21,7 +21,7 @@ export class FooterComponent implements AfterViewInit, OnDestroy {
   constructor() {
     // Update footer height on route changes
     effect(() => {
-      const url = this.router.url;
+      const _url = this.router.url;
       this.updateFooterHeightTimeoutId = setTimeout(() => this.updateFooterHeight(), 0);
     });
     

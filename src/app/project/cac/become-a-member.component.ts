@@ -1,5 +1,5 @@
 import { Component, inject, signal, input } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { ProjectService } from '../../services/project.service';
@@ -8,7 +8,7 @@ import { LoggingService } from '../../services/logging.service';
 
 @Component({
   selector: 'app-become-a-member',
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule],
   templateUrl: './become-a-member.component.html',
   styleUrls: ['./become-a-member.component.css'],
   standalone: true
@@ -56,7 +56,7 @@ export class BecomeAMemberComponent {
     };
 
     try {
-      const res = await this.projectService.cacSignUp(this.project(), signUpObject).toPromise();
+      await this.projectService.cacSignUp(this.project(), signUpObject).toPromise();
       this.logger.info('CAC sign-up submitted successfully', 'BecomeAMemberComponent');
       this.submitting.set(false);
       this.currentPage.set(3);

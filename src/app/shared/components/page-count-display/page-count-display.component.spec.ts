@@ -20,10 +20,10 @@ describe('PageCountDisplayComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should display no results message when totalItems is 0', () => {
+  it('should display empty message when totalItems is 0', () => {
     fixture.componentRef.setInput('totalItems', 0);
     fixture.detectChanges();
-    expect(component.message()).toBe('No results found');
+    expect(component.message()).toBe('');
   });
 
   it('should calculate correct message for valid page', () => {

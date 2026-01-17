@@ -1,5 +1,5 @@
 :host {
-  --fc-invalid-color: #dc3545;
+  --fc-invalid-color: var(--bs-danger);
 }
 
 .date-picker-container {
@@ -9,9 +9,9 @@
 .date-input-wrapper {
   display: flex;
   align-items: stretch;
-  border: 1px solid #ced4da;
+  border: 1px solid var(--bc-gray-border);
   border-radius: 0.375rem;
-  background-color: #fff;
+  background-color: var(--bs-white);
   overflow: hidden;
 }
 
@@ -25,7 +25,7 @@
   padding: 0.375rem 0.75rem;
   font-size: 1rem;
   line-height: 1.5;
-  color: #212529;
+  color: var(--bs-body-color);
   background-color: transparent;
   border: none;
   outline: none;
@@ -36,7 +36,7 @@
 }
 
 .date-input:disabled {
-  background-color: #e9ecef;
+  background-color: var(--bs-secondary-bg);
   opacity: 1;
 }
 
@@ -50,19 +50,19 @@
   padding: 0;
   margin: 0;
   border: none;
-  border-left: 1px solid #ced4da;
-  background-color: #f8f9fa;
-  color: #212529;
+  border-left: 1px solid var(--bc-gray-border);
+  background-color: var(--bs-tertiary-bg);
+  color: var(--bs-body-color);
   cursor: pointer;
   transition: background-color 0.15s ease-in-out;
 }
 
 .icon-btn:hover:not(:disabled) {
-  background-color: #e9ecef;
+  background-color: var(--bs-secondary-bg);
 }
 
 .icon-btn:active:not(:disabled) {
-  background-color: #dee2e6;
+  background-color: var(--bs-border-color);
 }
 
 .icon-btn:disabled {
@@ -78,6 +78,6 @@
 
 .invalid-feedback {
   color: var(--fc-invalid-color);
-  font-size: 0.875rem;
+  font-size: var(--bs-font-size-sm);
   margin-top: 0.25rem;
 }

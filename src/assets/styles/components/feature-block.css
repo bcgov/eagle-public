@@ -22,8 +22,8 @@
 }
 
 .feature-block__header h3 {
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-size: var(--bs-font-size-4);
+  font-weight: var(--bs-font-weight-bold);
   margin-bottom: 1rem;
   color: var(--feature-block-color);
 }
@@ -34,9 +34,21 @@
 }
 
 .feature-block__body p {
-  font-size: 1rem;
+  font-size: var(--bs-font-size-6);
   line-height: 1.6;
   color: var(--feature-block-color);
+}
+
+/* Links inside feature blocks need BC Gold for visibility on dark background */
+.feature-block__body a {
+  color: var(--bc-gold);
+  text-decoration: underline;
+}
+
+.feature-block__body a:hover,
+.feature-block__body a:focus {
+  color: var(--bc-gold);
+  text-decoration: none;
 }
 
 .feature-block__footer {

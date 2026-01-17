@@ -15,7 +15,7 @@
   border-top-right-radius: 0.2rem;
   border-top-left-radius: 0.2rem;
   background: var(--bc-blue);
-  color: #fff;
+  color: var(--bs-white);
 }
 
 .popup-title span {
@@ -24,7 +24,7 @@
 
 .client-name__label {
   font-size: 0.75em;
-  font-weight: 700;
+  font-weight: var(--bs-font-weight-bold);
 }
 
 .client-name__value {
@@ -32,7 +32,7 @@
   white-space: nowrap;
   text-overflow: ellipsis;
   font-size: 0.875em;
-  font-weight: 700;
+  font-weight: var(--bs-font-weight-bold);
 }
 
 .popup-body {
@@ -58,7 +58,7 @@
 
 .app-link {
   margin-top: 0.875em;
-  color: #fff;
+  color: var(--bs-white);
   font-size: 1em;
   text-align: center;
 }
@@ -87,7 +87,7 @@
 
 .meta-container .key {
   padding-right: 0.25em;
-  font-weight: 700;
+  font-weight: var(--bs-font-weight-bold);
 }
 
 .meta-container .value {
@@ -97,17 +97,17 @@
 hr {
   margin: 0.875em 0;
   border: none;
-  border-top: 1px solid #e0e0e0;
+  border-top: 1px solid var(--bs-border-color);
 }
 
 @media (max-width: 1023px) {
   .popup-content {
-    font-size: 0.85rem;
+    font-size: var(--bs-font-size-sm);
   }
 }
 
 @media (min-width: 1024px) {
   .popup-content {
-    font-size: 1rem;
+    font-size: var(--bs-font-size-6);
   }
 }

@@ -1,5 +1,4 @@
 import { inject } from '@angular/core';
-import { map } from 'rxjs';
 import { TableListConfig } from 'app/shared/components/table-list/table-list-config.interface';
 import { IColumnObject } from 'app/shared/components/table-template/table-object';
 import { DocSearchTableRowsComponent } from './search-documents-table-rows/search-document-table-rows.component';

@@ -1,6 +1,14 @@
 <div [id]="id" class="custom-multi-select" [class.custom-multi-select--open]="isOpen()" [class.custom-multi-select--disabled]="disabled">
   <!-- Selected values display / dropdown trigger -->
-  <div class="custom-multi-select__control" (click)="toggleDropdown()" tabindex="0" role="combobox" [attr.aria-expanded]="isOpen()" [attr.aria-label]="placeholder">
+  <div class="custom-multi-select__control" 
+       (click)="toggleDropdown()" 
+       (keydown.enter)="toggleDropdown()"
+       (keydown.space)="toggleDropdown(); $event.preventDefault()"
+       tabindex="0" 
+       role="combobox" 
+       [attr.aria-expanded]="isOpen()" 
+       [attr.aria-controls]="id + '-listbox'"
+       [attr.aria-label]="placeholder">
     
     <!-- Selected items as chips -->
     @if (selectedItems().length > 0) {
@@ -49,7 +57,7 @@
   
   <!-- Dropdown panel -->
   @if (isOpen()) {
-    <div class="custom-multi-select__dropdown" role="listbox" [attr.aria-label]="'Options for ' + placeholder">
+    <div class="custom-multi-select__dropdown" [id]="id + '-listbox'" role="listbox" [attr.aria-label]="'Options for ' + placeholder">
       
       <!-- Search input -->
       <div class="custom-multi-select__search-wrapper">
@@ -87,6 +95,9 @@
                 [class.custom-multi-select__option--selected]="isSelected(item)"
                 [class.custom-multi-select__option--focused]="getItemIndex(item) === focusedIndex()"
                 (click)="selectItem(item, $event)"
+                (keydown.enter)="selectItem(item, $event)"
+                (keydown.space)="selectItem(item, $event); $event.preventDefault()"
+                tabindex="0"
                 role="option"
                 [attr.aria-selected]="isSelected(item)">
                 

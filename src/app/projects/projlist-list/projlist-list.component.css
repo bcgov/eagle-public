@@ -12,7 +12,7 @@
   flex-flow: column nowrap;
   width: 100%;
   height: 100%;
-  background: #fff;
+  background: var(--bs-white);
 }
 
 .app-list__header {
@@ -24,7 +24,7 @@
   flex: 1 1 auto;
   position: relative;
   overflow: hidden;
-  background-color: #fff;
+  background-color: var(--bs-white);
 }
 
 .app-list__scroll-container {
@@ -44,7 +44,7 @@
 /* No Results Container  */
 .no-results {
   padding: 1rem;
-  border-top: 1px solid var(--bs-border-color, #ddd);
+  border-top: 1px solid var(--bs-border-color);
 }
 
 .loading {
@@ -52,7 +52,7 @@
   width: 100%;
   height: 100%;
   padding: 1rem;
-  background: #fff;
+  background: var(--bs-white);
 
   + .no-results {
     display: none;
@@ -62,7 +62,7 @@
 /* Project Cards */
 .app-card {
   padding: 1rem;
-  font-size: 0.9375rem; /* 14px */
+  font-size: var(--bs-font-size-sm);
 
   &.list-group-item {
     border-radius: 0;
@@ -70,7 +70,7 @@
   }
 
   + .app-card {
-    border-top: 1px solid #ddd;
+    border-top: 1px solid var(--bs-border-color);
   }
 }
 
@@ -95,7 +95,7 @@
 
   .key {
     margin-bottom: 0.2rem;
-    font-size: 0.8rem;
+    font-size: var(--bs-font-size-sm);
     font-weight: bold;
   }
 
@@ -103,7 +103,7 @@
     &.client-name {
       margin-bottom: 0.75rem;
       letter-spacing: -0.02rem;
-      font-size: 1.15rem;
+      font-size: var(--bs-font-size-6);
       font-weight: bold;
     }
   }
@@ -116,7 +116,7 @@
   .comment-status-badge {
     padding: 0.5rem;
     text-transform: none;
-    font-size: 0.875rem;
+    font-size: var(--bs-font-size-sm);
   
     .date {
       font-weight: normal;
@@ -131,8 +131,8 @@
 /* Project List Options */
 .app-list__options {
   padding: 0.25rem 1rem;
-  border-top: 1px solid #ddd;
-  font-size: 0.825rem;
+  border-top: 1px solid var(--bs-border-color);
+  font-size: var(--bs-font-size-sm);
 
   .form-check {
     margin-bottom: 0.25rem;
@@ -147,12 +147,12 @@
 .active {
   .app-card__details {
     * {
-      color: #fff;
+      color: var(--bs-white);
     }
   }
 
   .app-details-link {
-    color: #fff;
+    color: var(--bs-white);
   }
 }
 
@@ -160,13 +160,13 @@
 .load-more {
   padding-top: 1rem;
   padding-bottom: 1rem;
-  border-top: 1px solid #ddd;
+  border-top: 1px solid var(--bs-border-color);
   text-align: center;
 
   .btn {
     position: relative;
     text-transform: uppercase;
-    font-size: 0.75rem;
+    font-size: var(--bs-font-size-xs);
     font-weight: bold;
   }
 }

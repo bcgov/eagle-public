@@ -32,21 +32,21 @@
 </nav>
 @if (document(); as doc) {
   <main class="container-fluid-padding">
-    <h1>Details</h1>
-    <section>
-      <div class="label-pair">
+    <h1 class="mb-4">Details</h1>
+    <section class="mb-4">
+      <div class="label-pair mb-3">
         <h3 for="displayName">Display Name: </h3>
-        <p id="displayName">{{doc.displayName || '-'}}</p>
+        <p id="displayName" class="mb-0">{{doc.displayName || '-'}}</p>
       </div>
-      <div class="label-pair">
+      <div class="label-pair mb-3">
         <h3 for="documentFileName">Filename: </h3>
-        <p id="documentFileName">{{doc.documentFileName || '-'}}</p>
+        <p id="documentFileName" class="mb-0">{{doc.documentFileName || '-'}}</p>
       </div>
-      <div class="label-pair">
+      <div class="label-pair mb-3">
         <h3 for="description">Description: </h3>
-        <p id="description">{{doc.description || '-'}}</p>
+        <p id="description" class="mb-0">{{doc.description || '-'}}</p>
       </div>
-      <div class="label-pair">
+      <div class="label-pair mb-3">
         <h3 for="tags">Labels: </h3>
         @for (label of doc.labels; track label) {
           <div>
@@ -56,31 +56,31 @@
       </div>
     </section>
     <section>
-      <div class="label-pair">
+      <div class="label-pair mb-3">
         <h3 for="type">Type: </h3>
-        <p id="type">{{doc.type | listConverter}}</p>
+        <p id="type" class="mb-0">{{doc.type | listConverter}}</p>
       </div>
-      <div class="label-pair">
+      <div class="label-pair mb-3">
         <h3 for="dateUploaded">Upload Date: </h3>
-        <p id="dateUploaded">{{doc.dateUploaded | date}}</p>
+        <p id="dateUploaded" class="mb-0">{{doc.dateUploaded | date}}</p>
       </div>
       @if (doc.datePosted) {
-        <div class="label-pair">
+        <div class="label-pair mb-3">
           <h3 for="datePosted">Document Date: </h3>
-          <p id="datePosted">{{doc.datePosted | date:'longDate'}}</p>
+          <p id="datePosted" class="mb-0">{{doc.datePosted | date:'longDate'}}</p>
         </div>
       }
-      <div class="label-pair">
+      <div class="label-pair mb-3">
         <h3 for="documentAuthor">Author: </h3>
-        <p id="documentAuthor">{{doc.documentAuthor | listConverter}}</p>
+        <p id="documentAuthor" class="mb-0">{{doc.documentAuthor | listConverter}}</p>
       </div>
-      <div class="label-pair">
+      <div class="label-pair mb-3">
         <h3 for="milestone">Milestone: </h3>
-        <p id="milestone">{{doc.milestone | listConverter}}</p>
+        <p id="milestone" class="mb-0">{{doc.milestone | listConverter}}</p>
       </div>
-      <div class="label-pair">
+      <div class="label-pair mb-3">
         <h3 for="documentFileSize">Filesize: </h3>
-        <p id="documentFileSize">{{doc.documentFileSize || '-'}}</p>
+        <p id="documentFileSize" class="mb-0">{{doc.documentFileSize || '-'}}</p>
       </div>
     </section>
   </main>

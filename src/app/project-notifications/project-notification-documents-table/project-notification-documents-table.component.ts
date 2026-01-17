@@ -1,6 +1,6 @@
 import { Component, OnInit, ChangeDetectionStrategy, inject, input, signal, effect, untracked } from '@angular/core';
 import { MediaMatcher, Breakpoints } from '@angular/cdk/layout';
-import { CommonModule } from '@angular/common';
+
 
 import { TableObject } from '../../shared/components/table-template/table-object';
 import { ITableMessage } from '../../shared/components/table-template/table-row-component';
@@ -17,7 +17,7 @@ import { HttpCacheService } from '../../interceptors/http-cache.interceptor';
   templateUrl: './project-notification-documents-table.component.html',
   styleUrls: ['./project-notification-documents-table.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, TableTemplateComponent],
+  imports: [TableTemplateComponent],
   standalone: true
 })
 export class ProjectNotificationDocumentsTableComponent implements OnInit {
@@ -120,7 +120,7 @@ export class ProjectNotificationDocumentsTableComponent implements OnInit {
 
   onMessageOut(msg: ITableMessage) {
     switch (msg.label) {
-      case 'columnSort':
+      case 'columnSort': {
         const currentTableData = this.tableData();
         const currentSortBy = currentTableData.sortBy || '-datePosted';
         const currentSortField = currentSortBy.replace(/^[+-]/, '');
@@ -139,12 +139,14 @@ export class ProjectNotificationDocumentsTableComponent implements OnInit {
         this.tableData.set(currentTableData);
         this.submit();
         break;
-      case 'pageNum':
+      }
+      case 'pageNum': {
         const tableData = this.tableData();
         tableData.currentPage = msg.data;
         this.tableData.set(tableData);
         this.submit();
         break;
+      }
     }
   }
 

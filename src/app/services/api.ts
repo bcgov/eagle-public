@@ -1,22 +1,24 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
-import { map, finalize } from 'rxjs/operators';
+import { map } from 'rxjs/operators';
 
 import { Project } from 'app/models/project';
-import { Feature } from 'app/models/feature';
 import { Comment } from 'app/models/comment';
 import { CommentPeriod } from 'app/models/commentperiod';
 import { Document } from 'app/models/document';
 import { SearchResults } from 'app/models/search';
 import { Org } from 'app/models/organization';
 import { Decision } from 'app/models/decision';
-import { User } from 'app/models/user';
 import { Utils } from 'app/shared/utils/utils';
 import { LoggingService } from './logging.service';
 
 @Injectable({providedIn:'root'})
 export class ApiService {
+  private http = inject(HttpClient);
+  private utils = inject(Utils);
+  private logger = inject(LoggingService);
+
   // public token: string;
   public isMS: boolean; // IE, Edge, etc
   public apiPath: string;
@@ -26,11 +28,7 @@ export class ApiService {
   public surveyUrl: string | null; // This is the URL pointing to the public survey for feedback.
   public showSurveyBanner: boolean; // This is the toggle to show or hide the survey banner.
 
-  constructor(
-    private http: HttpClient,
-    private utils: Utils,
-    private logger: LoggingService
-  ) {
+  constructor() {
     // const currentUser = JSON.parse(window.localStorage.getItem('currentUser'));
     // this.token = currentUser && currentUser.token;
     this.isMS = !!(window.navigator as any).msSaveOrOpenBlob;
@@ -58,7 +56,7 @@ export class ApiService {
     return throwError(error);
   }
 
-  getFullDataSet(dataSet: string, pageSize: number = 250): Observable<any> {
+  getFullDataSet(dataSet: string, pageSize = 250): Observable<any> {
     return this.http.get<any>(`${this.apiPath}/search?pageSize=${pageSize}&dataset=${dataSet}`, {});
   }
 
@@ -117,14 +115,14 @@ export class ApiService {
   }
 
   getItem(_id: string, schema: string): Observable<SearchResults[]> {
-    let queryString = `search?dataset=Item&_id=${_id}&_schemaName=${schema}`;
+    const queryString = `search?dataset=Item&_id=${_id}&_schemaName=${schema}`;
     return this.http.get<SearchResults[]>(`${this.apiPath}/${queryString}`, {});
   }
 
   //
   // Searching
   //
-  searchKeywords(keys: string, dataset: string, fields: any[], pageNum: number, pageSize: number, projectLegislation: string = '', sortBy: string | null = null, queryModifier: Record<string, string> = {}, populate = false, secondarySort: string | null = null, filter: Record<string, string> = {}, fuzzy: boolean = false): Observable<SearchResults[]> {
+  searchKeywords(keys: string, dataset: string, fields: any[], pageNum: number, pageSize: number, projectLegislation = '', sortBy: string | null = null, queryModifier: Record<string, string> = {}, populate = false, secondarySort: string | null = null, filter: Record<string, string> = {}, fuzzy = false): Observable<SearchResults[]> {
     this.logger.debug(`API.searchKeywords called with keys: ${keys}`, 'ApiService', { filter });
     
     projectLegislation = (projectLegislation === '') ? 'default' : projectLegislation;
@@ -176,7 +174,7 @@ export class ApiService {
   //
   getCountProjects(): Observable<number> {
     const queryString = `project`;
-    return this.http.head<HttpResponse<Object>>(`${this.apiPath}/${queryString}`, { observe: 'response' })
+    return this.http.head<HttpResponse<object>>(`${this.apiPath}/${queryString}`, { observe: 'response' })
       .pipe(
         map(res => {
           // retrieve the count from the response headers
@@ -209,7 +207,7 @@ export class ApiService {
     return this.http.post<any>(`${this.apiPath}/project/${project._id}/cacSignUp`, meta, {});
   }
 
-  cacRemoveMember(projectId: String, meta: any) {
+  cacRemoveMember(projectId: string, meta: any) {
     // We are just looking for a 200 OK
     return this.http.put<any>(`${this.apiPath}/project/${projectId}/cacRemoveMember`, meta, {});
   }
@@ -225,53 +223,7 @@ export class ApiService {
     return this.http.get<Org[]>(`${this.apiPath}/${queryString}`, {});
   }
 
-  getProjects(pageNum: number, pageSize: number, regions: string[], cpStatuses: string[], appStatuses: string[], applicant: string,	  //
-    clFile: string, dispId: string, purpose: string): Observable<Project[]> {	  // Using Search Service Instead
-    const fields = [	  //
-      'agency',	  // getProjects(pageNum: number, pageSize: number, sortBy: string, populate: Boolean = true):
-      'areaHectares',
-      'businessUnit',
-      'centroid',
-      'cl_file',
-      'client',
-      'currentPhaseName',
-      'eacDecision',
-      'epicProjectID',
-      'description',
-      'legalDescription',
-      'location',
-      'name',
-      'publishDate',
-      'purpose',
-      'sector',
-      'status',
-      'subpurpose',
-      'tantalisID',
-      'tenureStage',
-      'type',
-      'legislation',
-      'featuredDocuments',
-      'projectCAC',
-      'projectCACPublished',
-      'cacEmail'
-    ];
-
-    let queryString = 'project?';
-    if (pageNum !== null) { queryString += `pageNum=${pageNum}&`; }
-    if (pageSize !== null) { queryString += `pageSize=${pageSize}&`; }
-    if (regions !== null && regions.length > 0) { queryString += `regions=${this.buildValues(regions)}&`; }
-    if (cpStatuses !== null && cpStatuses.length > 0) { queryString += `cpStatuses=${this.buildValues(cpStatuses)}&`; }
-    if (appStatuses !== null && appStatuses.length > 0) { queryString += `statuses=${this.buildValues(appStatuses)}&`; }
-    if (applicant !== null) { queryString += `client=${applicant}&`; }
-    if (clFile !== null) { queryString += `cl_file=${clFile}&`; }
-    if (dispId !== null) { queryString += `tantalisId=${dispId}&`; }
-    if (purpose !== null) { queryString += `purpose=${purpose}&`; }
-    queryString += `fields=${this.buildValues(fields)}`;
-
-    return this.http.get<Project[]>(`${this.apiPath}/${queryString}`, {});
-  }
-
-  getProject(id: string, cpStart: string | null, cpEnd: string | null): Observable<Project[]> {	   //
+  getProject(id: string, cpStart: string | null, cpEnd: string | null): Observable<Project[]> {
     const fields = [	  // Using Search Service Instead
       'CEAAInvolvement',	  //
       'CELead',	  // getProject(id: string, cpStart: string, cpEnd: string): Observable<Project[]>
@@ -337,33 +289,6 @@ export class ApiService {
   }
 
   //
-  // Features
-  //
-  getFeaturesByTantalisId(tantalisID: number): Observable<Feature[]> {
-    const fields = [
-      'applicationID',
-      'geometry',
-      'geometryName',
-      'properties',
-      'type'
-    ];
-    const queryString = `feature?tantalisId=${tantalisID}&fields=${this.buildValues(fields)}`;
-    return this.http.get<Feature[]>(`${this.apiPath}/${queryString}`, {});
-  }
-
-  getFeaturesByApplicationId(applicationId: string): Observable<Feature[]> {
-    const fields = [
-      'applicationID',
-      'geometry',
-      'geometryName',
-      'properties',
-      'type'
-    ];
-    const queryString = `feature?applicationId=${applicationId}&fields=${this.buildValues(fields)}`;
-    return this.http.get<Feature[]>(`${this.apiPath}/${queryString}`, {});
-  }
-
-  //
   // Decisions
   //
   getDecisionByAppId(appId: string): Observable<Decision[]> {
@@ -391,7 +316,7 @@ export class ApiService {
   //
   // Comment Periods
   //
-  getPeriodsByProjId(projId: string): Observable<Object> {
+  getPeriodsByProjId(projId: string): Observable<object> {
     const fields = [
       'project',
       'dateStarted',
@@ -401,7 +326,7 @@ export class ApiService {
       'metURL',
     ];
     const queryString = `commentperiod?project=${projId}&sortBy=-dateStarted&fields=${this.buildValues(fields)}`;
-    return this.http.get<Object>(`${this.apiPath}/${queryString}`, {});
+    return this.http.get<object>(`${this.apiPath}/${queryString}`, {});
   }
 
   getPeriod(id: string): Observable<CommentPeriod[]> {
@@ -425,7 +350,7 @@ export class ApiService {
   //
   getCountCommentsById(commentPeriodId: string): Observable<number> {
     const queryString = `comment?period=${commentPeriodId}`;
-    return this.http.head<HttpResponse<Object>>(`${this.apiPath}/${queryString}`, { observe: 'response' })
+    return this.http.head<HttpResponse<object>>(`${this.apiPath}/${queryString}`, { observe: 'response' })
       .pipe(
         map(res => {
           // retrieve the count from the response headers
@@ -434,7 +359,7 @@ export class ApiService {
       );
   }
 
-  getCommentsByPeriodId(pageNum: number | null, pageSize: number | null, getCount: boolean, periodId: string): Observable<Object> {
+  getCommentsByPeriodId(pageNum: number | null, pageSize: number | null, getCount: boolean, periodId: string): Observable<object> {
     const fields = [
       'author',
       'comment',
@@ -457,7 +382,7 @@ export class ApiService {
     if (pageNum !== null) { queryString += `pageNum=${pageNum}&`; }
     if (pageSize !== null) { queryString += `pageSize=${pageSize}&`; }
     if (getCount !== null) { queryString += `count=${getCount}&`; }
-    return this.http.get<Object>(`${this.apiPath}/${queryString}`, { observe: 'response' });
+    return this.http.get<object>(`${this.apiPath}/${queryString}`, { observe: 'response' });
   }
 
   getComment(id: string): Observable<any> {
@@ -534,7 +459,7 @@ export class ApiService {
     return this.http.get<Document[]>(`${this.apiPath}/${queryString}`, {});
   }
 
-  getDocumentsByMultiId(ids: Array<String>): Observable<Document[]> {
+  getDocumentsByMultiId(ids: string[]): Observable<Document[]> {
     const fields = [
       'eaoStatus',
       'internalOriginalName',
@@ -575,27 +500,9 @@ export class ApiService {
     return this.http.post<Document>(`${this.apiPath}/${queryString}`, formData, {});
   }
 
-  getDocumentUrl(document: Document): string {
-    return document ? (this.apiPath + '/document/' + document._id + '/download') : '';
-  }
-
   getTopNewsItems(): Observable<any[]> {
     const queryString = 'recentActivity?top=true';
     return this.http.get<any[]>(`${this.apiPath}/${queryString}`, {});
-  }
-
-  //
-  // Users
-  //
-  getAllUsers(): Observable<User[]> {
-    const fields = [
-      'displayName',
-      'username',
-      'firstName',
-      'lastName'
-    ];
-    const queryString = 'user?fields=' + this.buildValues(fields);
-    return this.http.get<User[]>(`${this.apiPath}/${queryString}`, {});
   }
 
   //

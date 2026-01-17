@@ -10,15 +10,15 @@
 }
 
 .size-picker-option:not(.current):hover {
-  background: #e6e6e6;
+  background: var(--bs-secondary-bg);
   border-radius: 6px;
-  border-color: #e6e6e6;
+  border-color: var(--bs-secondary-bg);
   transition: none;
 }
 
 .current {
   padding: 0.1875rem 0.625rem;
-  color: #fefefe;
+  color: var(--bs-white);
   background: var(--bs-primary);
   border-radius: 6px;
   border-color: var(--bs-primary);

@@ -1,10 +1,4 @@
-section + section {
-  margin-top: 1rem;
-}
-
-h1 {
-  margin-bottom: 1.75rem;
-}
+/* Spacing now handled by Bootstrap utility classes in template */
 
 .people {
   vertical-align: top;
@@ -28,15 +22,11 @@ h1 {
   }
 }
 
-.label-pair {
-  margin-bottom: 1rem;
-}
-
 .label-pair h3 {
-  font-weight: 600;
-  font-size: 1rem;
+  font-weight: var(--bs-font-weight-semibold);
+  font-size: var(--bs-font-size-6);
   margin-bottom: 0.25rem;
-  color: var(--primary, #003366);
+  color: var(--bc-blue);
 }
 
 .label-pair p {

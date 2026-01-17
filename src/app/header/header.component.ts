@@ -1,5 +1,5 @@
 import { Component, ChangeDetectionStrategy, signal, inject, OnInit, OnDestroy, PLATFORM_ID, effect } from '@angular/core';
-import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { isPlatformBrowser } from '@angular/common';
 import { Router, RouterModule, NavigationEnd } from '@angular/router';
 import { ApiService } from '../services/api';
 import { LoadingStateService } from '../services/loading-state.service';
@@ -11,7 +11,7 @@ import { debounceTime } from 'rxjs/operators';
   templateUrl: './header.component.html',
   styleUrl: './header.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, RouterModule],
+  imports: [RouterModule],
   standalone: true
 })
 export class HeaderComponent implements OnInit, OnDestroy {

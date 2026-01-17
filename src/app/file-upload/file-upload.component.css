@@ -29,7 +29,7 @@
   bottom: 0;
   left: 0;
   border-radius: 0.4rem;
-  border: 3px dashed #ccc;
+  border: 3px dashed var(--bc-gray-border);
   text-align: center;
   transition: all ease-out 0.2s;
 }
@@ -37,9 +37,9 @@
 .file-upload__prompt {
   margin-top: 0.85rem;
   display: inline-block;
-  color: #007bff;
-  font-size: 0.875rem;
-  font-weight: 700;
+  color: var(--bs-primary);
+  font-size: var(--bs-font-size-sm);
+  font-weight: var(--bs-font-weight-bold);
 }
 
 .file-upload__prompt-icon {
@@ -48,7 +48,7 @@
 }
 
 .file-upload__prompt strong {
-  color: #007bff;
+  color: var(--bs-primary);
 }
 
 .file-upload__prompt-msg {
@@ -79,11 +79,15 @@
 .doc-list li {
   display: flex;
   flex-direction: row;
-  background: #f7f8fa;
+  background: var(--table-row-bg);
 }
 
 .doc-list li + li {
   margin-top: 2px;
+}
+
+.doc-list li:hover {
+  background-color: var(--table-row-hover-bg);
 }
 
 .doc-list .cell {
@@ -109,14 +113,14 @@
 .doc-list .cell.icon i {
   margin-top: 0.5rem;
   font-size: 1.35rem;
-  color: #999;
+  color: var(--bc-gray-medium);
   cursor: default;
 }
 
 /* Name Column */
 .doc-list .cell.name {
   flex: 1 1 auto;
-  font-size: 0.875rem;
+  font-size: var(--bs-font-size-sm);
 }
 
 /* Actions Column */
@@ -126,8 +130,8 @@
 
 .dragDropStyling {
     border-style: dotted;
-    border-color: gray;
-    background-color: #d3d3d37a;
+    border-color: var(--bc-gray-medium);
+    background-color: rgba(211, 211, 211, 0.48);
     padding-bottom: 20px;
     padding-top: 20px;
 }

@@ -1,12 +1,12 @@
 import { Component, input, output, signal, computed, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 
 import { Project } from '../../models/project';
 import { Constants } from '../../shared/utils/constants';
 
 @Component({
   selector: 'details-sidebar',
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './details-sidebar.html',
   styleUrls: ['./details-sidebar.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -14,7 +14,7 @@ import { Constants } from '../../shared/utils/constants';
 })
 export class DetailsSidebarComponent {
   project = input.required<Project | null>();
-  onSidebarToggle = output<{ open: boolean }>();
+  sidebarToggle = output<{ open: boolean }>();
 
   public sidebarOpen = signal(true);
   
@@ -33,6 +33,6 @@ export class DetailsSidebarComponent {
 
   toggleSidebar() {
     this.sidebarOpen.update(open => !open);
-    this.onSidebarToggle.emit({ open: this.sidebarOpen() });
+    this.sidebarToggle.emit({ open: this.sidebarOpen() });
   }
 }

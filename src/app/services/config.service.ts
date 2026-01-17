@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import * as L from 'leaflet';
 import { ApiService } from 'app/services/api';
 import { Observable, ReplaySubject } from 'rxjs';
@@ -12,6 +12,9 @@ import { LoadingStateService } from './loading-state.service';
 
 @Injectable({providedIn:'root'})
 export class ConfigService {
+  private api = inject(ApiService);
+  private loadingState = inject(LoadingStateService);
+
 
   // defaults
   private _isApplistListVisible = false;
@@ -24,10 +27,7 @@ export class ConfigService {
   private _baseLayerName = 'World Topographic'; // NB: must match a valid base layer name
   private _mapBounds: L.LatLngBounds | null = null;
 
-  constructor(
-    private api: ApiService,
-    private loadingState: LoadingStateService
-  ) {
+  constructor() {
     this.initializeLists();
   }
 

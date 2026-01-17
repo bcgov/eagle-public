@@ -5,26 +5,26 @@
       
       <div class="info-section">
         <div class="info-block">
-          <label>Environmental Assessment</label>
-          <span class="ea-decision">{{project()?.eacDecision?.name || "-"}}</span>
+          <span class="info-label">Environmental Assessment</span>
+          <p><span class="ea-decision">{{project()?.eacDecision?.name || "-"}}</span></p>
         </div>
         
         <div class="info-block">
-          <label>Legislation</label>
+          <span class="info-label">Legislation</span>
           <a target="_blank" [href]="legislationLink()" class="info-link">
-            {{project()?.legislation || "-"}}
+            <p class="info-value hyperlink">{{project()?.legislation || "-"}}</p>
           </a>
         </div>
         
         <hr class="divider">
         
         <div class="info-block">
-          <label>Region</label>
+          <span class="info-label">Region</span>
           <p class="info-value">{{project()?.region || "-"}}</p>
         </div>
         
         <div class="info-block">
-          <label>Location</label>
+          <span class="info-label">Location</span>
           <p class="info-value">{{project()?.location || "-"}}</p>
         </div>
         

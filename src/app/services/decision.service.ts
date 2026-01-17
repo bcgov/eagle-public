@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Observable, of } from 'rxjs';
 import { map, catchError, mergeMap } from 'rxjs/operators';
 
@@ -9,16 +9,14 @@ import { LoadingStateService } from './loading-state.service';
 
 @Injectable({providedIn:'root'})
 export class DecisionService {
+  private api = inject(ApiService);
+  private documentService = inject(DocumentService);
+  private loadingState = inject(LoadingStateService);
+
   private decision: Decision | null = null;
 
-  constructor(
-    private api: ApiService,
-    private documentService: DocumentService,
-    private loadingState: LoadingStateService
-  ) { }
-
   // get decision for the specified application id
-  getByApplicationId(appId: string, forceReload: boolean = false): Observable<Decision> {
+  getByApplicationId(appId: string, forceReload = false): Observable<Decision> {
     if (this.decision && this.decision._application === appId && !forceReload) {
       return of(this.decision);
     }
@@ -58,7 +56,7 @@ export class DecisionService {
   }
 
   // get a specific decision by its id
-  getById(decisionId: string, forceReload: boolean = false): Observable<Decision> {
+  getById(decisionId: string, forceReload = false): Observable<Decision> {
     if (this.decision && this.decision._id === decisionId && !forceReload) {
       return of(this.decision);
     }

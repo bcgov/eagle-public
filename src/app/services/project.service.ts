@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Observable, of, forkJoin } from 'rxjs';
 import { map, catchError, mergeMap, flatMap, tap } from 'rxjs/operators';
 
@@ -19,21 +19,18 @@ interface GetParameters {
 
 @Injectable({providedIn:'root'})
 export class ProjectService {
+  private api = inject(ApiService);
+  private searchService = inject(SearchService);
+  private utils = inject(Utils);
+  private loadingState = inject(LoadingStateService);
+
   private project: Project | null = null; // for caching
   private projectList: Project[] = [];
   private cachedCount: number | null = null;
   private count$: Observable<number> | null = null;
 
-
-  constructor(
-    private api: ApiService,
-    private searchService: SearchService,
-    private utils: Utils,
-    private loadingState: LoadingStateService
-  ) { }
-
   // get just the projects (for fast mapping)
-  getAll(pageNum: number = 0, pageSize: number = 1000000): Observable<Project[]> {
+  getAll(pageNum = 0, pageSize = 1000000): Observable<Project[]> {
     const loadingId = `projects-page-${pageNum}`;
     this.loadingState.startLoading(loadingId, 'Loading projects');
     return this.searchService.getSearchResults('', 'Project', [], pageNum, pageSize, '', {}, true, '', {}, '')
@@ -95,7 +92,7 @@ export class ProjectService {
   // get all projects and related data
   // TODO: instead of using promises to get all data at once, use observables and DEEP-OBSERVE changes
   // see https://github.com/angular/angular/issues/11704
-  getAllFull(pageNum: number = 0, pageSize: number = 1000000): Observable<Project[]> {
+  getAllFull(pageNum = 0, pageSize = 1000000): Observable<Project[]> {
     const loadingId = `projects-full-page-${pageNum}`;
     this.loadingState.startLoading(loadingId, 'Loading projects');
     // first get the projects
@@ -107,7 +104,7 @@ export class ProjectService {
             return of([] as Project[]);
           }
 
-          const promises: Array<Promise<any>> = [];
+          const promises: Promise<any>[] = [];
 
           return Promise.all(promises).then(() => { 
             this.loadingState.stopLoading(loadingId);
@@ -122,7 +119,7 @@ export class ProjectService {
   }
 
   // get a specific project by its id
-  getById(projId: string, forceReload: boolean = false, cpStart: string | null = null, cpEnd: string | null = null): Observable<Project> {
+  getById(projId: string, forceReload = false, cpStart: string | null = null, cpEnd: string | null = null): Observable<Project> {
     if (this.project && this.project._id === projId && !forceReload) {
       return of(this.project);
     }
@@ -137,11 +134,11 @@ export class ProjectService {
             if (projects[0] && projects[0].commentPeriodForBanner && projects[0].commentPeriodForBanner.length === 1) {
               projects[0].commentPeriodForBanner = new CommentPeriod(projects[0].commentPeriodForBanner[0]);
             } else if (projects[0] && projects[0].commentPeriodForBanner && projects[0].commentPeriodForBanner.length > 1) {
-              let now = new Date
-              let currentDate = now.toISOString();
+              const now = new Date
+              const currentDate = now.toISOString();
               // Default to the same comment period we're using currently in case one is not active
               let finalCommentPeriod = new CommentPeriod(projects[0].commentPeriodForBanner[0]);
-              for (let commentPeriod in projects[0].commentPeriodForBanner) {
+              for (const commentPeriod in projects[0].commentPeriodForBanner) {
                 if (Date.parse(projects[0].commentPeriodForBanner[commentPeriod].dateCompleted) > Date.parse(currentDate)
                   && Date.parse(projects[0].commentPeriodForBanner[commentPeriod].dateStarted) < Date.parse(currentDate)) {
                   finalCommentPeriod = new CommentPeriod(projects[0].commentPeriodForBanner[commentPeriod]);
@@ -156,7 +153,7 @@ export class ProjectService {
           return projects.length > 0 ? new Project(projects[0]) : null;
         }),
         flatMap(res => {
-          let project = res;
+          const project = res;
           if (!project) {
             this.loadingState.stopLoading(loadingId);
             return of(null as unknown as Project);
@@ -286,7 +283,7 @@ export class ProjectService {
   }
 
   // Remove this user from the CAC membership on this project
-  cacRemoveMember(projectId: String, meta: any): Observable<any> {
+  cacRemoveMember(projectId: string, meta: any): Observable<any> {
     this.loadingState.startLoading('cac-unsubscribe', 'Unsubscribing from CAC');
     return this.api.cacRemoveMember(projectId, meta)
       .pipe(

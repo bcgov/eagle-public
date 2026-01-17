@@ -3,13 +3,13 @@
 }
 
 .form-control.is-invalid {
-  border-color: #dc3545;
+  border-color: var(--bs-danger);
 }
 
 .input-group.is-invalid .form-control {
-  border-color: #dc3545;
+  border-color: var(--bs-danger);
 }
 
 .input-group.is-invalid .input-group-append .btn-icon {
-  border-color: #dc3545;
+  border-color: var(--bs-danger);
 }

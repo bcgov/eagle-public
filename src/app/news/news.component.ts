@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, signal, inject, effect, untracked } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { Router, ActivatedRoute, Params } from '@angular/router';
 import { takeWhile } from 'rxjs/operators';
 
@@ -19,7 +19,7 @@ import { SearchFilterTemplateComponent } from 'app/shared/components/search-filt
   templateUrl: './news.component.html',
   styleUrl: './news.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, TableTemplateComponent, HeroBannerComponent, SearchFilterTemplateComponent],
+  imports: [TableTemplateComponent, HeroBannerComponent, SearchFilterTemplateComponent],
   standalone: true
 })
 export class NewsListComponent implements OnInit, OnDestroy {
@@ -85,7 +85,7 @@ export class NewsListComponent implements OnInit, OnDestroy {
     this.route.queryParamMap.pipe(takeWhile(() => this.alive)).subscribe(data => {
       const params = (data as any)['params'] || {};
       
-      let updatedTableData = this.tableTemplateUtils.updateTableObjectWithUrlParams(params, this.tableData());
+      const updatedTableData = this.tableTemplateUtils.updateTableObjectWithUrlParams(params, this.tableData());
 
       if (updatedTableData.sortBy === '-datePosted') {
         updatedTableData.sortBy = '-dateAdded';
@@ -110,7 +110,6 @@ export class NewsListComponent implements OnInit, OnDestroy {
 
   onMessageOut(msg: ITableMessage): void {
     const params: Params = {};
-    const currentTableData = this.tableData();
     const currentParams = this.route.snapshot.queryParams;
     
     switch (msg.label) {

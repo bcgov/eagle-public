@@ -1,5 +1,5 @@
 import { Component, ChangeDetectionStrategy, input, computed } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { RouterModule } from '@angular/router';
 
 export interface HeroBannerAction {
@@ -17,7 +17,7 @@ export interface HeroBannerAction {
   templateUrl: './hero-banner.component.html',
   styleUrl: './hero-banner.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, RouterModule],
+  imports: [RouterModule],
   standalone: true
 })
 export class HeroBannerComponent {

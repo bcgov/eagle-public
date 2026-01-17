@@ -3,11 +3,9 @@ import { TestBed } from '@angular/core/testing';
 import { ProjectService } from './project.service';
 import { ApiService } from 'app/services/api';
 import { DecisionService } from './decision.service';
-import { FeatureService } from './feature.service';
 import { of } from 'rxjs';
 import { Project } from 'app/models/project';
 import { Decision } from 'app/models/decision';
-import { Feature } from 'app/models/feature';
 import { SearchService } from './search.service';
 // Mock data removed - simplified tests
 import { Utils } from 'app/shared/utils/utils';
@@ -19,7 +17,6 @@ describe('ProjectService', () => {
   let mockSearchService: any;
   let mockUtils: any;
   let mockDecisionService: any;
-  let mockFeatureService: any;
 
   beforeEach(() => {
     mockApiService = {
@@ -60,24 +57,13 @@ describe('ProjectService', () => {
       getByProjectId: vi.fn(() => of(new Decision({ _id: 'IIIII' })))
     };
 
-    mockFeatureService = {
-      getByProjectId: vi.fn(() => {
-        const features = [
-          new Feature({ id: 'FFFFF', properties: { TENURE_AREA_IN_HECTARES: 12 } }),
-          new Feature({ id: 'GGGGG', properties: { TENURE_AREA_IN_HECTARES: 13 } })
-        ];
-        return of(features);
-      })
-    };
-
     TestBed.configureTestingModule({
       providers: [
         ProjectService,
         { provide: ApiService, useValue: mockApiService },
         { provide: SearchService, useValue: mockSearchService },
         { provide: Utils, useValue: mockUtils },
-        { provide: DecisionService, useValue: mockDecisionService },
-        { provide: FeatureService, useValue: mockFeatureService }
+        { provide: DecisionService, useValue: mockDecisionService }
       ]
     });
 
@@ -103,7 +89,7 @@ describe('ProjectService', () => {
       const mockProject = [new Project({ _id: 'test-id', description: 'Test' })];
       mockApiService.getProject.mockReturnValue(of(mockProject));
 
-      service.getById('test-id', true).subscribe(project => {
+      service.getById('test-id', true).subscribe(_project => {
         expect(mockApiService.getProject).toHaveBeenCalled();
       });
     });

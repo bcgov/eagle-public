@@ -1,24 +1,26 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { BecomeAMemberComponent } from './become-a-member.component';
-import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { ProjectService } from '../../services/project.service';
 import { Project } from '../../models/project';
+import { ComponentRef } from '@angular/core';
 
 describe('BecomeAMemberComponent', () => {
   let component: BecomeAMemberComponent;
   let fixture: ComponentFixture<BecomeAMemberComponent>;
-  let mockDialogRef: any;
+  let mockActiveModal: any;
   let mockProjectService: any;
   let mockProject: Project;
 
   beforeEach(() => {
-    mockDialogRef = {
-      close: vi.fn()
+    mockActiveModal = {
+      close: vi.fn(),
+      dismiss: vi.fn()
     };
 
     mockProjectService = {
-      addMember: vi.fn()
+      cacSignUp: vi.fn()
     };
 
     mockProject = new Project({ _id: '123', name: 'Test Project' });
@@ -26,14 +28,17 @@ describe('BecomeAMemberComponent', () => {
     TestBed.configureTestingModule({
       imports: [BecomeAMemberComponent],
       providers: [
-        { provide: MatDialogRef, useValue: mockDialogRef },
-        { provide: MAT_DIALOG_DATA, useValue: { project: mockProject } },
+        { provide: NgbActiveModal, useValue: mockActiveModal },
         { provide: ProjectService, useValue: mockProjectService }
       ]
     });
 
     fixture = TestBed.createComponent(BecomeAMemberComponent);
     component = fixture.componentInstance;
+    
+    // Set the required input using componentRef
+    const componentRef = fixture.componentRef as ComponentRef<BecomeAMemberComponent>;
+    componentRef.setInput('project', mockProject);
     
     fixture.detectChanges();
   });
@@ -52,5 +57,10 @@ describe('BecomeAMemberComponent', () => {
 
   it('should have access to activeModal', () => {
     expect(component.activeModal).toBeDefined();
+  });
+
+  it('should navigate to page 2 when p1_next is called', () => {
+    component.p1_next();
+    expect(component.currentPage()).toBe(2);
   });
 });

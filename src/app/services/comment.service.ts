@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Observable, of, forkJoin } from 'rxjs';
 import { map, catchError, flatMap } from 'rxjs/operators';
 
@@ -9,13 +9,11 @@ import { LoadingStateService } from './loading-state.service';
 
 @Injectable({providedIn:'root'})
 export class CommentService {
-  private comment: Comment | null = null;
+  private api = inject(ApiService);
+  private documentService = inject(DocumentService);
+  private loadingState = inject(LoadingStateService);
 
-  constructor(
-    private api: ApiService,
-    private documentService: DocumentService,
-    private loadingState: LoadingStateService
-  ) { }
+  private comment: Comment | null = null;
 
   // get count of projects
   getCountById(commentPeriodId: string): Observable<number> {
@@ -27,7 +25,7 @@ export class CommentService {
 
   // get all comments for the specified comment period id
   // (without documents)
-  getByPeriodId(periodId: string, pageNum: number | null = null, pageSize: number | null = null, getCount: boolean = false): Observable<Object> {
+  getByPeriodId(periodId: string, pageNum: number | null = null, pageSize: number | null = null, getCount = false): Observable<object> {
     const loadingId = pageNum && pageNum > 1 ? 'comments-list' : 'comments';
     this.loadingState.startLoading(loadingId, pageNum ? `Loading page ${pageNum}` : 'Loading comments');
     
@@ -58,7 +56,7 @@ export class CommentService {
 
   // get a specific comment by its id
   // (including documents)
-  getById(commentId: string, forceReload: boolean = false): Observable<Comment> {
+  getById(commentId: string, forceReload = false): Observable<Comment> {
     if (this.comment && this.comment._id === commentId && !forceReload) {
       return of(this.comment);
     }
@@ -67,7 +65,7 @@ export class CommentService {
     return this.api.getComment(commentId)
     .pipe(
       flatMap(res => {
-        let comments = res.body;
+        const comments = res.body;
         if (!comments || comments.length === 0) {
           return of(null as unknown as Comment);
         }

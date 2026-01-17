@@ -22,8 +22,8 @@
                    (click)="goToCP(commentPeriod)">
                 @if (commentPeriod.commentPeriodStatus) {
                   <div>
-                    <label class="title">{{commentPeriod.commentPeriodStatus}}</label>
-                    <div class="commentInfo">{{commentPeriod.instructions}}</div>
+                    <span class="title mb-1">{{commentPeriod.commentPeriodStatus}}</span>
+                    <div class="commentInfo mb-2">{{commentPeriod.instructions}}</div>
                     <p class="mb-0">{{commentPeriod.dateStarted | date:'mediumDate'}} - {{commentPeriod.dateCompleted | date:'mediumDate'}}</p>
                   </div>
                 }

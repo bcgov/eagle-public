@@ -18,7 +18,7 @@ import { VarDirective } from '../../shared/utils/ng-var.directive';
 })
 export class ProjlistListComponent {
   // NB: this component is bound to the same list of apps as the other components
-  projects = input<Array<Project>>([]); // from projects component
+  projects = input<Project[]>([]); // from projects component
   setCurrentApp = output<Project>(); // to projects component
   unsetCurrentApp = output<Project>(); // to projects component
 

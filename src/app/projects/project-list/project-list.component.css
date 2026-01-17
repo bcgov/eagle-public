@@ -17,7 +17,7 @@
 }
 
 .project-table__project-details {
-  font-size: 0.85rem;
+  font-size: var(--bs-font-size-sm);
 }
 
 .project-table__project-details--links {
@@ -31,7 +31,7 @@
 .project-table__project-details--description p {
   margin: 0;
   line-height: calc(0.85rem * 1.5);
-  font-size: 0.85rem;
+  font-size: var(--bs-font-size-sm);
 }
 
 .project-table__project-details--list li {
@@ -106,12 +106,12 @@
   }
   
   .project-table__project-details {
-    font-size: 0.9375rem;
+    font-size: var(--bs-font-size-sm);
   }
   
   .project-table__project-details--description p {
     line-height: calc(0.9375rem * 1.5);
-    font-size: 0.9375rem;
+    font-size: var(--bs-font-size-sm);
   }
   
   .project-table__project-details--list {
@@ -153,6 +153,6 @@
 
 .loading-spinner p {
   margin: 0;
-  font-size: 0.875rem;
-  color: #666;
+  font-size: var(--bs-font-size-sm);
+  color: var(--bc-gray-medium);
 }

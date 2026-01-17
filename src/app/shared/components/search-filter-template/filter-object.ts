@@ -60,6 +60,7 @@ export abstract class FilterDefinition {
    * Creates an instance of FilterDefinition.
    * @memberof FilterDefinition
    */
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
   constructor() { }
 }
 
@@ -83,9 +84,9 @@ export class DateFilterDefinition extends FilterDefinition {
    */
   constructor(
     public startDateId: string,
-    public startDateLabel: string = 'Start Date',
+    public startDateLabel = 'Start Date',
     public endDateId: string,
-    public endDateLabel: string = 'End Date',
+    public endDateLabel = 'End Date',
     public minDate = new Date('01-01-1900'),
     public maxDate = new Date()
   ) { super(); }
@@ -116,7 +117,7 @@ export class CheckOrRadioFilterDefinition extends FilterDefinition {
    */
   constructor(
     public options: OptionItem[] = [],
-    public grouped: boolean = false // note, radio buttons are grouped by default
+    public grouped = false // note, radio buttons are grouped by default
   ) { super(); }
 }
 
@@ -138,7 +139,7 @@ export class OptionItem {
   constructor(
     public id: string,
     public label: string,
-    public isChecked: boolean = false
+    public isChecked = false
   ) { }
 }
 
@@ -165,7 +166,7 @@ export class RadioOptionItem extends OptionItem {
     id: string,
     label: string,
     public value: string,
-    isChecked: boolean = false
+    isChecked = false
   ) { super(id, label, isChecked); }
 }
 
@@ -193,7 +194,7 @@ export class MultiSelectDefinition extends FilterDefinition {
     public selectedOptions: any[] = [],
     public group: FilterGroupObject | null = null,
     public collection: FilterObject[] | null = null,
-    public matchId: boolean = false
+    public matchId = false
   ) {
     super();
     // If we have a collection value, empty the options container so the UI doesn't
@@ -221,7 +222,7 @@ export class DropdownDefinition extends FilterDefinition {
    */
   constructor(
     public options: string[] = [],
-    public multiselect: boolean = true
+    public multiselect = true
   ) { super(); }
 }
 

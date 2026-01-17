@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject, ChangeDetectionStrategy, effect, signal, computed } from '@angular/core';
+import { Component, OnDestroy, inject, ChangeDetectionStrategy, effect, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { Subject } from 'rxjs';
@@ -17,7 +17,7 @@ import { StorageService } from '../../services/storage.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true
 })
-export class CommentingTabComponent implements OnInit, OnDestroy {
+export class CommentingTabComponent implements OnDestroy {
   private router = inject(Router);
   private storageService = inject(StorageService);
   public commentPeriodService = inject(CommentPeriodService);
@@ -25,7 +25,7 @@ export class CommentingTabComponent implements OnInit, OnDestroy {
 
   // Use the reactive signal from storageService
   public project = this.storageService.currentProject;
-  public commentPeriods = signal<Array<CommentPeriod>>([]);
+  public commentPeriods = signal<CommentPeriod[]>([]);
   private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
   private loadedProjectId: string | null = null;
 
@@ -45,8 +45,6 @@ export class CommentingTabComponent implements OnInit, OnDestroy {
       }
     });
   }
-
-  ngOnInit() {}
 
   goToCP(commentPeriod: CommentPeriod) {
     const project = this.project();

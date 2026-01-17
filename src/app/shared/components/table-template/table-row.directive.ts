@@ -8,7 +8,6 @@ import {
   OnChanges,
   SimpleChanges,
   OnDestroy,
-  ComponentRef,
   inject
 } from '@angular/core';
 import { IRowObject, TableObject } from './table-object';

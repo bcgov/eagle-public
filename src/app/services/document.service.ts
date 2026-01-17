@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Observable, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 
@@ -8,16 +8,14 @@ import { LoadingStateService } from './loading-state.service';
 
 @Injectable({providedIn:'root'})
 export class DocumentService {
+  private api = inject(ApiService);
+  private loadingState = inject(LoadingStateService);
+
 
   private document: Document | null = null;
 
-  constructor(
-    private api: ApiService,
-    private loadingState: LoadingStateService
-  ) { }
-
   // get a specific document by its id
-  getByMultiId(ids: Array<String>): Observable<Document[]> {
+  getByMultiId(ids: string[]): Observable<Document[]> {
     const loadingId = `documents-multi-${ids.length}`;
     this.loadingState.startLoading(loadingId, `Loading ${ids.length} documents`);
     return this.api.getDocumentsByMultiId(ids)
@@ -27,7 +25,7 @@ export class DocumentService {
             const documents = res;
             if (documents.length > 0) {
               // return the first (only) document
-              let docs: Document[] = [];
+              const docs: Document[] = [];
               documents.forEach((doc: any) => {
                 docs.push(new Document(doc));
               });
@@ -98,7 +96,7 @@ export class DocumentService {
   }
 
   // get a specific document by its id
-  getById(documentId: string, forceReload: boolean = false): Observable<Document> {
+  getById(documentId: string, forceReload = false): Observable<Document> {
     if (this.document && this.document._id === documentId && !forceReload) {
       return of(this.document);
     }

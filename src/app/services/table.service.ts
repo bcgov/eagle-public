@@ -13,8 +13,6 @@ export class TableService {
   private tables = new Map<string, WritableSignal<any>>();
   private searchService = inject(SearchService);
 
-  constructor() {}
-
   /**
    * Get or create a signal for a table
    */

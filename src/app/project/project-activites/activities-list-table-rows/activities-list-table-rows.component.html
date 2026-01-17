@@ -1,11 +1,11 @@
-<td scope="row"
+<td
   data-label="Headline"
   class="col-10"
   tabindex="0">
   <div>
-    <span class="font-weight-bold">{{rowData.project.name || '-'}}</span>
+    <span class="fw-bold">{{rowData.project.name || '-'}}</span>
     @if (rowData.notificationName) {
-      <span class="font-weight-bold">{{rowData.notificationName}}</span>
+      <span class="fw-bold">{{rowData.notificationName}}</span>
     }
     <br>
     <span>{{rowData.headline || '-'}}</span>
@@ -36,7 +36,7 @@
     }
   </div>
 </td>
-<td scope="row"
+<td
   data-label="Date"
   class="col-2"
   tabindex="0">{{rowData.dateAdded | date:'longDate'}}</td>

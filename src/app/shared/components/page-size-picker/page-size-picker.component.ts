@@ -22,14 +22,14 @@ export interface IPageSizePickerOption {
 }
 
 import { Component, input, output, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 
 @Component({
   selector: 'lib-page-size-picker',
   templateUrl: './page-size-picker.component.html',
   styleUrls: ['./page-size-picker.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule],
+  imports: [],
   standalone: true
 })
 export class PageSizePickerComponent {

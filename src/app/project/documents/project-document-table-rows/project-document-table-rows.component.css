@@ -7,12 +7,12 @@ td:hover {
 }
 
 .featured-star {
-  color: #ffc107;
+  color: var(--bs-warning);
   font-size: 1.5rem;
 }
 
 .un-featured-star {
-  color: #6a6a6a;
+  color: var(--bc-gray-medium);
 }
 
 /* Mobile card layout - remove extra styling since it's in global CSS */

@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy, ViewChild, ElementRef, inject, signal } from '@angular/core';
 import { Router, ActivatedRoute, Params } from '@angular/router';
-import { CommonModule } from '@angular/common';
+
 import { takeWhile } from 'rxjs/operators';
 import { toObservable } from '@angular/core/rxjs-interop';
 
@@ -19,7 +19,7 @@ import { SearchFilterTemplateComponent } from 'app/shared/components/search-filt
   selector: 'app-project-activites',
   templateUrl: './project-activites.component.html',
   styleUrls: ['./project-activites.component.css'],
-  imports: [CommonModule, TableTemplateComponent, SearchFilterTemplateComponent],
+  imports: [TableTemplateComponent, SearchFilterTemplateComponent],
   standalone: true
 })
 export class ProjectActivitesComponent implements OnInit, OnDestroy {
@@ -85,6 +85,7 @@ export class ProjectActivitesComponent implements OnInit, OnDestroy {
           updatedTableData.items = [];
         }
         updatedTableData.options.showAllPicker = true;
+        updatedTableData.options.disableRowHighlight = true;
         this.tableData.set(updatedTableData);
       }
     });

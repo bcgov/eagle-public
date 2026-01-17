@@ -119,7 +119,7 @@ export class MapStateService {
   /**
    * Add or update a marker
    */
-  setMarker(projectId: string, marker: L.Marker, isVisible: boolean = true): void {
+  setMarker(projectId: string, marker: L.Marker, isVisible = true): void {
     const currentMarkers = new Map(this.markers());
     currentMarkers.set(projectId, { projectId, marker, isVisible });
     this.markers.set(currentMarkers);

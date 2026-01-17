@@ -1,4 +1,4 @@
-import { Injectable, computed, inject } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Project } from '../models/project';
 import { FilterStateService, FilterCriteria } from './filter-state.service';
 import { MapStateService } from './map-state.service';

@@ -1,6 +1,6 @@
 .active-flag {
-  background: #5BB75C;
-  color: #fff;
+  background: var(--bc-success);
+  color: var(--bs-white);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   padding: 3px 8px 4px;
@@ -9,8 +9,8 @@
 }
 
 .inactive-flag {
-  background: red;
-  color: #fff;
+  background: var(--bc-danger);
+  color: var(--bs-white);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   padding: 3px 8px 4px;

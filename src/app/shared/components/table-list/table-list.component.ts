@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy, signal, input, inject, ChangeDetectionStrategy, computed, Injector, runInInjectionContext } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { Router, ActivatedRoute, Params, RouterLink } from '@angular/router';
 import { takeWhile, distinctUntilChanged, skip } from 'rxjs/operators';
 import { toObservable } from '@angular/core/rxjs-interop';
@@ -25,12 +25,11 @@ import { LoadingStateService } from 'app/services/loading-state.service';
   templateUrl: './table-list.component.html',
   styleUrls: ['./table-list.component.css'],
   imports: [
-    CommonModule,
     RouterLink,
     TableTemplateComponent,
     SearchFilterTemplateComponent,
     HeroBannerComponent
-  ],
+],
   changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true
 })

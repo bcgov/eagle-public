@@ -16,14 +16,14 @@
 }
 
 .page-link:hover {
-  background: #e6e6e6;
+  background: var(--bs-secondary-bg);
   border-radius: 6px;
   color: var(--bs-body-color);
 }
 
 .page-item.active .page-link {
   padding: 0.1875rem 0.625rem;
-  color: #fefefe;
+  color: var(--bs-white);
   background: var(--bs-primary);
   border-radius: 6px;
   cursor: default;

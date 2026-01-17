@@ -46,19 +46,11 @@ export class DocumentTableRowsComponent implements TableRowComponent, OnInit, On
   }
 
   idToList(id: string): string {
-    if (!id) return '-';
-    
-    const currentLists = this.lists();
-    if (!currentLists?.length) return '-';
-    
-    const item = currentLists.find(listItem => listItem._id === id);
-    return item?.name ?? '-';
+    return this.utils.idToListName(id, this.lists());
   }
 
   goToItem(item: any): void {
-    const filename = item.documentFileName || item.displayName || item.internalOriginalName;
-    const safeName = this.utils.encodeString(filename, true);
-    window.open(`/api/public/document/${item._id}/download/${safeName}`, '_blank');
+    this.utils.openDocumentDownload(item);
   }
 
   ngOnDestroy() {

@@ -41,9 +41,9 @@
     --footer-bg: var(--bs-secondary);
     --footer-color: var(--white);
 
-    /* Main Navigation */
-    --mn-font-size: 0.875rem;
-    --mn-dropdown-menu-size: 0.875rem;
+    /* Main Navigation - uses theme typography scale */
+    --mn-font-size: var(--bs-font-size-sm);
+    --mn-dropdown-menu-size: var(--bs-font-size-sm);
     --mn-color: var(--white);
     --mn-border-color: #5f79a2;
     --mn-hover-bg: #2b4777;
@@ -99,7 +99,7 @@
     --table-header-hover-border: #fcba19;
     --table-header-sort-color: #fff;
     --table-row-bg: #E9ECEF;
-    --table-row-hover-bg: #e8eaed;
+    --table-row-hover-bg: #d8dce0;
     --table-border-color: #CED4DA;
 
     /* Modal */
@@ -129,7 +129,7 @@
     --map-popup-bg: #244278;
     --map-popup-footer-bg: var(--primary);
     --map-popup-header-bg: var(--primary);
-    --map-popup-font-size: 0.9375rem;
+    --map-popup-font-size: var(--bs-font-size-6);
     --map-popup-menu-active-bg: #5091cd;
     --map-popup-btn-color: var(--white);
     --map-popup-border-color: var(--white);

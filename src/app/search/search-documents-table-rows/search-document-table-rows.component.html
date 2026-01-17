@@ -6,11 +6,8 @@
   class="col-2">
   <a
     [attr.aria-label]="'Link to project ' + rowData.project.name"
-    (click)="goToProject(rowData)"
-    (keyup.enter)="goToProject(rowData)"
-    tabindex="0"
-    role="link"
-    style="cursor: pointer;">{{rowData.project.name}}</a>
+    [routerLink]="['/p', rowData.project._id, 'project-details']"
+    tabindex="0">{{rowData.project.name}}</a>
 </td>
 <td data-label="Date"
   class="col-2">

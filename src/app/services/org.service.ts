@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Observable, BehaviorSubject } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 
@@ -8,11 +8,11 @@ import { LoadingStateService } from './loading-state.service';
 
 @Injectable({providedIn:'root'})
 export class OrgService {
+  private api = inject(ApiService);
+  private loadingState = inject(LoadingStateService);
+
   private data: BehaviorSubject<Org[]>;
-  constructor(
-    private api: ApiService,
-    private loadingState: LoadingStateService
-  ) {
+  constructor() {
     this.data = new BehaviorSubject<Org[]>([]);
   }
 

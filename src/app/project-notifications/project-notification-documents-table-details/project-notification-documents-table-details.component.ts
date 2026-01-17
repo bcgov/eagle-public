@@ -1,5 +1,5 @@
 import { Component, ChangeDetectionStrategy, input, computed } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { RouterModule } from '@angular/router';
 
 import { NewlinesPipe } from '../../shared/pipes/newlines.pipe';
@@ -9,7 +9,7 @@ import { NewlinesPipe } from '../../shared/pipes/newlines.pipe';
   templateUrl: './project-notification-documents-table-details.component.html',
   styleUrls: ['./project-notification-documents-table-details.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, RouterModule, NewlinesPipe],
+  imports: [RouterModule, NewlinesPipe],
   standalone: true
 })
 export class ProjectNotificationDocumentsTableDetailsComponent {

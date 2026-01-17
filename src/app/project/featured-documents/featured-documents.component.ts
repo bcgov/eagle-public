@@ -1,7 +1,6 @@
-import { Component, OnInit, OnDestroy, inject, signal, ChangeDetectionStrategy, effect } from '@angular/core';
-import { CommonModule, Location } from '@angular/common';
+import { Component, OnInit, inject, signal, ChangeDetectionStrategy, effect } from '@angular/core';
+import { Location } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
-import { SearchResults } from '../../models/search';
 import { IColumnObject, TableObject } from '../../shared/components/table-template/table-object';
 import { DocumentTableRowsComponent } from '../documents/project-document-table-rows/project-document-table-rows.component';
 import { TableService } from '../../services/table.service';
@@ -12,7 +11,7 @@ import { LoadingStateService } from '../../services/loading-state.service';
 @Component({
   selector: 'app-featured-documents',
   templateUrl: './featured-documents.component.html',
-  imports: [CommonModule, TableTemplateComponent],
+  imports: [TableTemplateComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true
 })

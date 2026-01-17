@@ -4,10 +4,9 @@ import {
   output,
   ChangeDetectorRef,
   inject,
-  OnInit,
-  effect
+  OnInit
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormControl, FormsModule } from '@angular/forms';
 import { CustomMultiSelectComponent } from '../custom-multi-select/custom-multi-select.component';
 import { FilterObject } from '../search-filter-template/filter-object';
@@ -16,7 +15,7 @@ import { FilterObject } from '../search-filter-template/filter-object';
   selector: 'app-autocomplete-multi-select',
   templateUrl: './autocomplete-multi-select.component.html',
   styleUrls: ['./autocomplete-multi-select.component.css'],
-  imports: [CommonModule, FormsModule, CustomMultiSelectComponent],
+  imports: [FormsModule, CustomMultiSelectComponent],
   standalone: true
 })
 export class AutoCompleteMultiSelectComponent implements OnInit {
@@ -82,9 +81,9 @@ export class AutoCompleteMultiSelectComponent implements OnInit {
   // the DB, so check for the possible identifiers of code or _id. If we have
   // neither, then assume a string to string comparison
   public filterCompareWith(item: any, itemToCompare: any) {
-    if (item.hasOwnProperty('code')) {
+    if (Object.hasOwn(item, 'code')) {
       return item && itemToCompare ? item.code === itemToCompare.code : item === itemToCompare;
-    } else if (item.hasOwnProperty('_id')) {
+    } else if (Object.hasOwn(item, '_id')) {
       return item && itemToCompare ? item._id === itemToCompare._id : item === itemToCompare;
     } else {
       return item === itemToCompare;

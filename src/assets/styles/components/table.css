@@ -11,7 +11,7 @@
 
 .table {
   width: 100%;
-  background-color: var(--bs-table-bg, #f7f8fa);
+  background-color: var(--bc-gray-light);
   margin-bottom: 2rem;
 }
 
@@ -28,8 +28,8 @@
 
 .table thead th {
   padding: 0.75rem 0.5rem;
-  font-size: 0.875rem;
-  font-weight: 600;
+  font-size: var(--bs-font-size-sm);
+  font-weight: var(--bs-font-weight-semibold);
   color: var(--bs-table-head-color);
   background-color: var(--bs-table-head-bg);
   border: none;
@@ -182,7 +182,7 @@
     padding: 0.75rem;
     vertical-align: middle;
     line-height: 1.5;
-    font-size: 0.875rem;
+    font-size: var(--bs-font-size-sm);
   }
 
   /* Column width definitions */
@@ -285,9 +285,9 @@
   .table-template td[data-label="Name"] {
     padding: 1rem;
     margin: 0;
-    font-weight: 500;
-    font-size: 0.875rem;
-    color: var(--bs-card-cap-color, #fff);
+    font-weight: var(--bs-font-weight-medium);
+    font-size: var(--bs-font-size-sm);
+    color: var(--bs-white);
     line-height: 1.3;
     background-color: var(--bs-primary) !important;
     border-bottom: none;
@@ -305,7 +305,7 @@
   .table-template td[data-label]:not([data-label="Name"]):not([data-label="★"]) {
     padding: 0.75rem 1rem;
     color: var(--bs-body-color);
-    font-size: 0.875rem;
+    font-size: var(--bs-font-size-sm);
     line-height: 1.5;
   }
 
@@ -313,8 +313,8 @@
   .table-template td[data-label]:not([data-label="Name"]):not([data-label="★"])::before {
     content: attr(data-label);
     display: block;
-    font-size: 0.75rem;
-    font-weight: 600;
+    font-size: var(--bs-font-size-xs);
+    font-weight: var(--bs-font-weight-semibold);
     color: var(--bs-secondary-color);
     text-transform: uppercase;
     letter-spacing: 0.05em;

@@ -23,8 +23,8 @@
 }
 
 .keyword-search-text {
-  font-size: 1.25rem;
-  font-weight: 500;
+  font-size: var(--bs-font-size-5);
+  font-weight: var(--bs-font-weight-medium);
 }
 
 /* Align icon with text in buttons */
@@ -73,7 +73,7 @@
   right: 0.5rem;
   transform: translateY(-50%);
   padding: 0.25rem;
-  color: #6c757d;
+  color: var(--bs-secondary-color);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -83,7 +83,7 @@
 }
 
 .search-clear-btn:hover {
-  color: #495057;
+  color: var(--bs-body-color);
   text-decoration: none;
 }
 
@@ -139,7 +139,7 @@
 
 .clear-button {
   cursor: pointer;
-  color: #dc3545;
+  color: var(--bs-danger);
   display: inline-flex;
   align-items: center;
   justify-content: center;

@@ -1,7 +1,6 @@
 import {
   Component,
   Input,
-  OnDestroy,
   Output,
   EventEmitter,
   SimpleChanges,
@@ -34,7 +33,7 @@ import { Constants } from '../../utils/constants';
   ],
   standalone: true
 })
-export class TableTemplateComponent implements OnChanges, OnDestroy {
+export class TableTemplateComponent implements OnChanges {
   @Input() data!: TableObject;
   @Input() loading = false;
 
@@ -152,6 +151,4 @@ export class TableTemplateComponent implements OnChanges, OnDestroy {
   public trackByRowId(index: number, item: any): any {
     return item.rowData?._id || index;
   }
-
-  ngOnDestroy(): void { }
 }

@@ -1,5 +1,5 @@
 import { Component, OnInit, ChangeDetectionStrategy, signal, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ProjectService } from 'app/services/project.service';
@@ -11,7 +11,7 @@ import { LoggingService } from 'app/services/logging.service';
   templateUrl: './cac-unsubscribe.component.html',
   styleUrl: './cac-unsubscribe.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule],
   standalone: true
 })
 export class CACUnsubscribeComponent implements OnInit {

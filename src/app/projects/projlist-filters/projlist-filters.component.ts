@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy, ElementRef, signal, ChangeDetectionStrategy, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
@@ -15,7 +15,7 @@ import { FilterStateService } from '../../services/filter-state.service';
   templateUrl: './projlist-filters.component.html',
   styleUrls: ['./projlist-filters.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, CustomMultiSelectComponent],
+  imports: [FormsModule, CustomMultiSelectComponent],
   standalone: true
 })
 export class ProjlistFiltersComponent implements OnInit, OnDestroy {
@@ -27,9 +27,9 @@ export class ProjlistFiltersComponent implements OnInit, OnDestroy {
   readonly maxDate = DateTime.now().toJSDate();
 
   // Metadata for dropdowns
-  public projectTypes: Array<any> = [];
-  public projectRegions: Array<any> = [];
-  public projectPhases: Array<any> = [];
+  public projectTypes: any[] = [];
+  public projectRegions: any[] = [];
+  public projectPhases: any[] = [];
 
   // UI state
   public showFilters = false;

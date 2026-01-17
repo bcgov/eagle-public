@@ -1,5 +1,5 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { HeroBannerComponent, HeroBannerAction } from '../shared/hero-banner/hero-banner.component';
 import { InfoCardComponent, InfoCardButton } from '../shared/info-card/info-card.component';
 
@@ -7,7 +7,7 @@ import { InfoCardComponent, InfoCardButton } from '../shared/info-card/info-card
   selector: 'app-contact',
   templateUrl: './contact.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, HeroBannerComponent, InfoCardComponent],
+  imports: [HeroBannerComponent, InfoCardComponent],
   standalone: true
 })
 export class ContactComponent {

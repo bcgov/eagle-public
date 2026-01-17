@@ -11,7 +11,13 @@
       </app-projlist-list>
     </div>
 
-    <div class="overlay" (click)="toggleAppList();$event.stopPropagation();"></div>
+    <div class="overlay" 
+         role="button"
+         tabindex="0"
+         aria-label="Close project list"
+         (click)="toggleAppList();$event.stopPropagation();"
+         (keydown.enter)="toggleAppList();$event.stopPropagation();"
+         (keydown.space)="toggleAppList();$event.stopPropagation();"></div>
 
     <app-projlist-map class="app-map" #appmap
       [projects]="mapApps()"

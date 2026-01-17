@@ -1,5 +1,5 @@
-import { Component, OnInit, inject, ChangeDetectionStrategy, signal, effect } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, inject, ChangeDetectionStrategy, signal, effect } from '@angular/core';
+
 import { ActivatedRoute, Router } from '@angular/router';
 
 import { Project } from '../../models/project';
@@ -8,13 +8,13 @@ import { ProjectService } from '../../services/project.service';
 
 @Component({
   selector: 'app-decisions-tab',
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './decisions-tab.component.html',
   styleUrl: './decisions-tab.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true
 })
-export class DecisionsTabComponent implements OnInit {
+export class DecisionsTabComponent {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   public api = inject(ApiService);
@@ -36,9 +36,5 @@ export class DecisionsTabComponent implements OnInit {
         }
       });
     });
-  }
-
-  ngOnInit() {
-    // Component initialization if needed
   }
 }

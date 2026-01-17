@@ -36,7 +36,17 @@
   --bc-gray-medium: #666;       /* Secondary text */
   --bc-gray-light: #f7f8fa;     /* Light backgrounds */
   --bc-gray-border: #ced4da;    /* Borders - darker for better visibility */
-  --bc-gray-hover: #e8eaed;     /* Hover backgrounds */
+  --bc-gray-hover: #d8dce0;     /* Hover backgrounds - darker for visibility */
+  
+  /* Status Colors */
+  --bc-success: #2e8540;        /* Success/active states */
+  --bc-danger: #d8292f;         /* Error/danger states */
+  --bc-info: #269abc;           /* Informational states */
+  
+  /* UI Colors */
+  --bc-hover-highlight: #e2f1ff; /* Light blue highlight on hover */
+  --bc-white: #ffffff;          /* Pure white */
+  --bc-black: #000000;          /* Pure black */
   
   /* ========================================
      BOOTSTRAP SEMANTIC COLOR MAPPING
@@ -73,13 +83,57 @@
   --bs-dark-bg-subtle: #ccd6e0;
   --bs-dark-border-subtle: #99adc2;
   
+  /* Status colors */
+  --bs-success: var(--bc-success);
+  --bs-success-rgb: 46, 133, 64;
+  --bs-success-text-emphasis: #1a4d24;
+  --bs-success-bg-subtle: #d4edda;
+  --bs-success-border-subtle: #a9dbb5;
+  
+  --bs-danger: var(--bc-danger);
+  --bs-danger-rgb: 216, 41, 47;
+  --bs-danger-text-emphasis: #5c1114;
+  --bs-danger-bg-subtle: #f8d7da;
+  --bs-danger-border-subtle: #f1aeb5;
+  
+  --bs-info: var(--bc-info);
+  --bs-info-rgb: 38, 154, 188;
+  --bs-info-text-emphasis: #0f3d4b;
+  --bs-info-bg-subtle: #cff4fc;
+  --bs-info-border-subtle: #9eeaf9;
+  
   /* ========================================
      TYPOGRAPHY
      ======================================== */
   
+  /* Font Family */
   --bs-font-sans-serif: BCSans, "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --bs-body-font-family: var(--bs-font-sans-serif);
   --bs-font-family-base: var(--bs-font-sans-serif);
+  
+  /* 
+   * Typography Scale - Aligned with Bootstrap 5.3 fs-* utilities
+   * Use Bootstrap classes when possible: fs-1 through fs-6, fw-normal, fw-semibold, fw-bold
+   * These variables are for CSS when utility classes aren't practical
+   */
+  
+  /* Font Sizes - matches Bootstrap fs-1 through fs-6 */
+  --bs-font-size-1: 2.5rem;    /* 40px - Display/h1, use class="fs-1" */
+  --bs-font-size-2: 2rem;      /* 32px - h2, use class="fs-2" */
+  --bs-font-size-3: 1.75rem;   /* 28px - h3, use class="fs-3" */
+  --bs-font-size-4: 1.5rem;    /* 24px - h4, use class="fs-4" */
+  --bs-font-size-5: 1.25rem;   /* 20px - h5, use class="fs-5" */
+  --bs-font-size-6: 1rem;      /* 16px - h6/body, use class="fs-6" */
+  
+  /* Extended sizes for smaller text (not in Bootstrap utilities) */
+  --bs-font-size-sm: 0.875rem; /* 14px - tables, labels, small text */
+  --bs-font-size-xs: 0.75rem;  /* 12px - captions, badges, fine print */
+  
+  /* Font Weights - use Bootstrap classes: fw-normal, fw-medium, fw-semibold, fw-bold */
+  --bs-font-weight-normal: 400;
+  --bs-font-weight-medium: 500;
+  --bs-font-weight-semibold: 600;
+  --bs-font-weight-bold: 700;
   
   /* ========================================
      BODY DEFAULTS

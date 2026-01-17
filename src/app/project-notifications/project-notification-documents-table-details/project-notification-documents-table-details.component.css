@@ -1,19 +1,19 @@
 .active-flag,
 .inactive-flag {
-  color: #fff;
+  color: var(--bs-white);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   padding: 3px 8px 4px;
   border-radius: 5px;
-  font-size: 0.8rem;
+  font-size: var(--bs-font-size-sm);
 }
 
 .active-flag {
-  background: #5bb75c;
+  background: var(--bc-success);
 }
 
 .inactive-flag {
-  background: #d32f2f;
+  background: var(--bc-danger);
 }
 
 h4 {
@@ -23,17 +23,17 @@ h4 {
 
 .view-pcp-btn {
   background: var(--bc-blue);
-  color: white;
+  color: var(--bs-white);
 }
 
 .view-pcp-btn:hover {
-  color: white;
+  color: var(--bs-white);
 }
 
 .pcp-indicator {
-  background: #f7f8fa;
+  background: var(--bc-gray-light);
   border-radius: 16px;
-  border: 2px solid #f7f8fa;
+  border: 2px solid var(--bc-gray-light);
   height: 16px;
   width: 16px;
   display: inline-block;
@@ -41,11 +41,11 @@ h4 {
 }
 
 .pcp-indicator-active {
-  background: #07a209d1;
+  background: var(--bc-success);
 }
 
 .pcp-indicator-inactive {
-  background: #d20e0ebf;
+  background: var(--bc-danger);
 }
 
 .pcp-indicator-pending {
@@ -60,7 +60,7 @@ h4 {
 
 .pn-info-block p,
 .pn-info-block a {
-  font-size: medium;
+  font-size: var(--bs-font-size-6);
   line-height: 1.8;
 }
 
@@ -72,14 +72,14 @@ label {
 }
 
 .value {
-  font-size: 1rem;
+  font-size: var(--bs-font-size-6);
   line-height: 1.25;
   margin-bottom: 5px;
   margin-top: 5px;
 }
 
 .pn-decision {
-  background: #5475a7;
+  background: var(--bc-blue-interactive);
   border-radius: 4px;
   padding: 8px 16px;
   margin: 0;
@@ -89,14 +89,14 @@ label {
 
 .pn-decision p,
 .pn-decision a {
-  color: white;
+  color: var(--bs-white);
   border-radius: 2px;
 }
 
 .pn-decision .value {
   padding: 0;
   margin: 0;
-  font-weight: 700;
-  font-size: 1rem;
+  font-weight: var(--bs-font-weight-bold);
+  font-size: var(--bs-font-size-6);
 }
 

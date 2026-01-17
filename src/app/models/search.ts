@@ -20,7 +20,7 @@ export interface ISearchResults<T> {
 // TODO: Flesh out these interfaces
 export interface ISearchResult<T> {
   meta: any;
-  searchResults: Array<T>;
+  searchResults: T[];
 }
 
 export class SearchTerms {

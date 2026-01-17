@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 
@@ -8,6 +8,9 @@ import { LoadingStateService } from './loading-state.service';
 
 @Injectable({providedIn:'root'})
 export class CommentPeriodService {
+  private api = inject(ApiService);
+  private loadingState = inject(LoadingStateService);
+
   // statuses / query param options
   readonly NOT_STARTED = 'NS';
   readonly NOT_OPEN = 'NO';
@@ -17,10 +20,7 @@ export class CommentPeriodService {
   private commentPeriodStatuses: Record<string, string> = {}; // use helper to get these
   private commentPeriod: CommentPeriod | null = null; // for caching
 
-  constructor(
-    private api: ApiService,
-    private loadingState: LoadingStateService
-  ) {
+  constructor() {
     // user-friendly strings for display
     this.commentPeriodStatuses[this.NOT_STARTED] = 'Commenting Not Started';
     this.commentPeriodStatuses[this.NOT_OPEN] = 'Not Open For Commenting';
@@ -29,14 +29,14 @@ export class CommentPeriodService {
   }
 
   // get all comment periods for the specified application id
-  getAllByProjectId(projId: string): Observable<Object> {
+  getAllByProjectId(projId: string): Observable<object> {
     const loadingId = `commentperiods-${projId}`;
     this.loadingState.startLoading(loadingId, 'Loading comment periods');
     return this.api.getPeriodsByProjId(projId)
       .pipe(
         map((res: any) => {
           if (res) {
-            const periods: Array<CommentPeriod> = [];
+            const periods: CommentPeriod[] = [];
             if (!res || res.length === 0) {
               this.loadingState.stopLoading(loadingId);
               return periods;

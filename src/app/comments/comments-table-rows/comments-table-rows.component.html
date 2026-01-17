@@ -1,29 +1,54 @@
 <td class="p-3">
   <div class="mb-2">
-    <b *ngIf="rowData.author && rowData.Anonymous !== true">
-      {{rowData.author}}<span *ngIf="rowData.location">, {{rowData.location}}</span>
+    @if (rowData.author && rowData.Anonymous !== true) {
+      <b>
+        {{rowData.author}}@if (rowData.location) {
+        <span>, {{rowData.location}}</span>
+      }
     </b>
-    <b *ngIf="rowData.author == null || rowData.Anonymous">Anonymous</b>
-  </div>
-  
-  <div class="text-muted mb-3">
-    {{(rowData.dateAdded | date:'longDate') || "-"}}
-  </div>
+  }
+  @if (rowData.author === null || rowData.Anonymous) {
+    <b>Anonymous</b>
+  }
+</div>
 
-  <div *ngIf="rowData.comment">
-    <p *ngIf="rowData.expanded">{{rowData.comment}}</p>
-    <p *ngIf="!rowData.expanded" class="comment-truncated">{{rowData.comment}}</p>
-    <button *ngIf="!rowData.expanded && hasOverflow()" class="btn btn-link clickable p-0" (click)="toggle(rowData); $event.stopPropagation()">
-      Read More
-    </button>
-    <button *ngIf="rowData.expanded" class="btn btn-link clickable p-0" (click)="toggle(rowData); $event.stopPropagation()">
-      Read Less
-    </button>
-  </div>
+<div class="text-muted mb-3">
+  {{(rowData.dateAdded | date:'longDate') || "-"}}
+</div>
 
-  <div *ngIf="rowData.documents && rowData.documents.length > 0" class="mt-2">
-    <div class="attachment clickable" *ngFor="let file of rowData.documents" (click)="openAttachment(file); $event.stopPropagation()">
-      <i class="material-icons">attach_file</i>{{file.internalOriginalName}}
-    </div>
+@if (rowData.comment) {
+  <div>
+    @if (rowData.expanded) {
+      <p>{{rowData.comment}}</p>
+    }
+    @if (!rowData.expanded) {
+      <p class="comment-truncated">{{rowData.comment}}</p>
+    }
+    @if (!rowData.expanded && hasOverflow()) {
+      <button class="btn btn-link clickable p-0" (click)="toggle(rowData); $event.stopPropagation()">
+        Read More
+      </button>
+    }
+    @if (rowData.expanded) {
+      <button class="btn btn-link clickable p-0" (click)="toggle(rowData); $event.stopPropagation()">
+        Read Less
+      </button>
+    }
   </div>
+}
+
+@if (rowData.documents && rowData.documents.length > 0) {
+  <div class="mt-2">
+    @for (file of rowData.documents; track file) {
+      <div class="attachment clickable" 
+           role="button"
+           tabindex="0"
+           (click)="openAttachment(file); $event.stopPropagation()"
+           (keydown.enter)="openAttachment(file); $event.stopPropagation()"
+           (keydown.space)="openAttachment(file); $event.stopPropagation()">
+        <i class="material-icons">attach_file</i>{{file.internalOriginalName}}
+      </div>
+    }
+  </div>
+}
 </td>

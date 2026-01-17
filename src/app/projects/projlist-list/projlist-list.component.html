@@ -22,7 +22,11 @@
       <ul class="app-list__list">
         @for (item of loadedApps(); track item._id) {
           <li class="app-card list-group-item" [class.active]="isCurrentApp(item)"
-            (click)="toggleCurrentApp(item);$event.stopPropagation();">
+            role="button"
+            tabindex="0"
+            (click)="toggleCurrentApp(item);$event.stopPropagation();"
+            (keydown.enter)="toggleCurrentApp(item);$event.stopPropagation();"
+            (keydown.space)="toggleCurrentApp(item);$event.stopPropagation();">
 
             <!-- Project Details -->
             <ul class="app-card__details">

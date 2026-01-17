@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { HeaderComponent } from './header.component';
@@ -58,24 +58,7 @@ describe('HeaderComponent', () => {
     expect(component.showBanner()).toBe(false);
   });
 
-  it('should focus projectInfo and unfocus eaProcess', () => {
-    component.onFocus('projectInfo');
-    expect(component.projectInfoFocused()).toBe(true);
-    expect(component.eaProcessFocused()).toBe(false);
-  });
-
-  it('should focus eaProcess and unfocus projectInfo', () => {
-    component.onFocus('eaProcess');
-    expect(component.eaProcessFocused()).toBe(true);
-    expect(component.projectInfoFocused()).toBe(false);
-  });
-
-  it('should handle unknown focus element gracefully', () => {
-    component.projectInfoFocused.set(true);
-    component.eaProcessFocused.set(true);
-    component.onFocus('unknown');
-    // Should not change state
-    expect(component.projectInfoFocused()).toBe(true);
-    expect(component.eaProcessFocused()).toBe(true);
+  it('should have a closeMenus method', () => {
+    expect(component.closeMenus).toBeDefined();
   });
 });

@@ -81,7 +81,7 @@ export class SearchFilterTemplateComponent implements OnInit, AfterViewInit, OnD
   // public vars
   public FilterType = FilterType; // enum access for the template html
   public keywordSearchWords = signal<string>('');
-  public previousKeywords: string = '';
+  public previousKeywords = '';
   public queryParams: Record<string, any> = {};
   public formGroup!: FormGroup; // Helper formGroup for grabbing values from controls
   public showFiltersPanel = signal(false);
@@ -397,9 +397,9 @@ export class SearchFilterTemplateComponent implements OnInit, AfterViewInit, OnD
   // hides and displays the advanced filters
   // Emits an event on the toggleFiltersPanelEvent emitter
   toggleAdvancedFilters() {
-    // @ts-ignore
+    // @ts-expect-error - HotJar analytics not in types
     if (window.hj) {
-      // @ts-ignore
+      // @ts-expect-error - HotJar analytics not in types
       window.hj('event', 'SEARCH_TOGGLED');
     }
     this.showFiltersPanel.update(val => !val);
@@ -410,9 +410,9 @@ export class SearchFilterTemplateComponent implements OnInit, AfterViewInit, OnD
    * Clears all filter components and resets to default state
    */
   clearFilters() {
-    // @ts-ignore
+    // @ts-expect-error - HotJar analytics not in types
     if (window.hj) {
-      // @ts-ignore
+      // @ts-expect-error - HotJar analytics not in types
       window.hj('event', 'FILTERS_CLEARED');
     }
     
@@ -566,9 +566,9 @@ export class SearchFilterTemplateComponent implements OnInit, AfterViewInit, OnD
   }
 
   changeMultiSelect() {
-    // @ts-ignore
+    // @ts-expect-error - HotJar analytics not in types
     if (window.hj) {
-      // @ts-ignore
+      // @ts-expect-error - HotJar analytics not in types
       window.hj('event', 'CHANGE_MULTISELECT');
     }
     this.search();

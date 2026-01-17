@@ -1,12 +1,12 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { HeroBannerComponent, HeroBannerAction } from '../shared/hero-banner/hero-banner.component';
 
 @Component({
   selector: 'app-legislation',
   templateUrl: './legislation.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, HeroBannerComponent],
+  imports: [HeroBannerComponent],
   standalone: true
 })
 export class LegislationComponent {

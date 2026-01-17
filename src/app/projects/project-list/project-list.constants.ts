@@ -1,4 +1,4 @@
-import { FilterObject, FilterType, MultiSelectDefinition, DateFilterDefinition } from 'app/shared/components/search-filter-template/filter-object';
+import { FilterType } from 'app/shared/components/search-filter-template/filter-object';
 import { IColumnObject } from 'app/shared/components/table-template/table-object';
 import { Constants } from 'app/shared/utils/constants';
 

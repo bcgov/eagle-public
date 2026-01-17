@@ -12,7 +12,7 @@
 /* Main Content Area */
 .app-content {
   flex: 1;
-  background-color: var(--bs-light, #f7f8fa);
+  background-color: var(--bc-gray-light);
   display: flex;
   flex-direction: column;
   padding-top: var(--header-total-height, 0px);

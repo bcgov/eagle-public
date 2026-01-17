@@ -1,10 +1,8 @@
 import { Component, Input, Output, EventEmitter, forwardRef, signal, computed, OnInit, OnDestroy, ElementRef, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule, ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 
-export interface CustomMultiSelectOption {
-  [key: string]: any;
-}
+export type CustomMultiSelectOption = Record<string, any>;
 
 export interface CustomMultiSelectGroup {
   name: string;
@@ -23,7 +21,7 @@ export interface CustomMultiSelectGroup {
       multi: true
     }
   ],
-  imports: [CommonModule, FormsModule]
+  imports: [FormsModule]
 })
 export class CustomMultiSelectComponent implements ControlValueAccessor, OnInit, OnDestroy {
   private elementRef = inject(ElementRef);
@@ -81,7 +79,9 @@ export class CustomMultiSelectComponent implements ControlValueAccessor, OnInit,
   });
 
   // ControlValueAccessor
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
   private onChange: any = () => {};
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
   private onTouched: any = () => {};
   disabled = false;
 

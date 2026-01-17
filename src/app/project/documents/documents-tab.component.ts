@@ -5,7 +5,6 @@ import { toObservable } from '@angular/core/rxjs-interop';
 import { SearchResults } from '../../models/search';
 import { SearchParamObject } from '../../services/search.service';
 import { DocumentTableRowsComponent } from './project-document-table-rows/project-document-table-rows.component';
-import { Constants } from '../../shared/utils/constants';
 import { TableTemplate } from '../../shared/components/table-template/table-template';
 import { IColumnObject, TableObject } from '../../shared/components/table-template/table-object';
 import { ITableMessage } from '../../shared/components/table-template/table-row-component';
@@ -271,7 +270,7 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
   }
 
   executeSearch(searchPackage: any) {
-    let params: any = {};
+    const params: any = {};
     if (searchPackage.keywords) {
       params['keywords'] = searchPackage.keywords;
       if (searchPackage.keywordsChanged) {
@@ -285,13 +284,13 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
 
     params['currentPage'] = 1;
 
-    let queryFilters = this.tableTemplateUtils.getFiltersFromSearchPackage(searchPackage, this.filtersList, this.dateFiltersList);
+    const queryFilters = this.tableTemplateUtils.getFiltersFromSearchPackage(searchPackage, this.filtersList, this.dateFiltersList);
 
     this.submit(params, queryFilters);
   }
 
   onMessageOut(msg: ITableMessage) {
-    let params: any = {};
+    const params: any = {};
     const currentTableData = this.tableData();
     
     switch (msg.label) {

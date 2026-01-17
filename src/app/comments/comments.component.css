@@ -7,12 +7,12 @@
 .project .hero-banner-alt {
   position: relative;
   background-color: var(--bc-blue);
-  color: #fff;
+  color: var(--bs-white);
   padding: 1.875rem 0;
 }
 
 .project .hero-banner-alt h1 {
-  color: #fff;
+  color: var(--bs-white);
   margin-bottom: 0.75rem;
   font-weight: bold;
 }
@@ -20,7 +20,7 @@
 .project .hero-banner-alt .hero-banner__content > h2 {
   margin-bottom: 0.5rem !important;
   line-height: 1.4;
-  color: #fff;
+  color: var(--bs-white);
 }
 
 .project .hero-banner-alt .hero-banner__content > h2:last-of-type {
@@ -124,14 +124,14 @@
 
 .project .card-header {
   background-color: var(--bs-primary);
-  color: #fff;
+  color: var(--bs-white);
   font-weight: bold;
   padding: 0.75rem 1.25rem;
   border: none;
 }
 
 .project .list-group-item {
-  color: #000;
+  color: var(--bs-black);
 }
 
 .clickable-row {
@@ -139,22 +139,22 @@
 }
 
 .doc-list {
-  color: black;
+  color: var(--bs-black);
   list-style: none;
   padding-left: 0;
-  background-color: #fff;
+  background-color: var(--table-row-bg);
 }
 
 .doc-list li {
   display: flex;
   align-items: center;
-  background: #f7f8fa;
-  border-bottom: 1px solid #dee2e6;
+  background: var(--table-row-bg);
+  border-bottom: 1px solid var(--table-border-color);
   transition: background-color 0.15s ease-in-out;
 }
 
 .doc-list li:hover {
-  background-color: #E2F1FF;
+  background-color: var(--table-row-hover-bg);
 }
 
 .doc-list li:last-child {
@@ -175,12 +175,12 @@
 
 .doc-list .cell.icon i {
   font-size: 1.35rem;
-  color: #999;
+  color: var(--bc-gray-medium);
 }
 
 .doc-list .cell.name {
   flex: 1 1 auto;
-  font-size: 0.875rem;
+  font-size: var(--bs-font-size-sm);
 }
 
 /* Comments table container */

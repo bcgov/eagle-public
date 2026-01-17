@@ -52,70 +52,70 @@
 
             <div class="form-group row">
               <div class="form-group">
-                <label class="control-label">Full Name *</label>
+                <label for="nameInput" class="control-label">Full Name *</label>
                 <div class="form-control-container">
-                  <input required class="form-control" type="text" name="nameInput" id="nameInput" [(ngModel)]="nameInput" autofocus />
+                  <input required class="form-control" type="text" name="nameInput" id="nameInput" [(ngModel)]="nameInput" />
                 </div>
               </div>
               <div class="form-group">
-                <label class="control-label">Location</label>
+                <label for="locationInput" class="control-label">Location</label>
                 <div class="form-control-container">
-                  <input class="form-control" type="text" name="locationInput" id="locationInput" autofocus />
+                  <input class="form-control" type="text" name="locationInput" id="locationInput" />
                 </div>
               </div>
             </div>
 
             <div class="form-group row">
               <div class="form-group">
-                <label class="control-label">Email Address *</label>
+                <label for="emailInput" class="control-label">Email Address *</label>
                 <div class="form-control-container">
-                  <input required email class="form-control" type="text" name="emailInput" id="emailInput" [(ngModel)]="emailInput" autofocus />
+                  <input required email class="form-control" type="text" name="emailInput" id="emailInput" [(ngModel)]="emailInput" />
                 </div>
               </div>
               <div class="form-group">
-                <label class="control-label">Confirm Email Address *</label>
+                <label for="emailConfirmInput" class="control-label">Confirm Email Address *</label>
                 <div class="form-control-container">
-                  <input required email class="form-control" type="text" name="emailConfirmInput" id="emailConfirmInput" [(ngModel)]="emailConfirmInput" autofocus />
+                  <input required email class="form-control" type="text" name="emailConfirmInput" id="emailConfirmInput" [(ngModel)]="emailConfirmInput" />
                 </div>
               </div>
             </div>
 
             <div class="form-group">
-              <label class="control-label">Describe your interest in the project</label>
+              <span class="control-label">Describe your interest in the project</span>
               <div>
                 <p class="font-italic understandText">Please select all that apply. You may include additional details or information regarding your interest in the text box below. This information is for the EAO to better understand the membership of the committee, any information you provide here will not be considered as input into the assessment of the project. Please submit your comments on the proposed project through the public comment periods throughout the environmental assessment.</p>
               </div>
 
               <!-- I live near -->
               <div class="form-group row">
-                  <label class="control-label"><input class="me-1" name="liveNear" type="checkbox" [(ngModel)]="liveNear"/>I live near or have particular knowledge of the project area</label>
+                  <label class="control-label" for="liveNear"><input class="me-1" name="liveNear" id="liveNear" type="checkbox" [(ngModel)]="liveNear"/>I live near or have particular knowledge of the project area</label>
                   @if (liveNear()) {
-                    <input class="form-control col-12" type="text" name="liveNearInput" id="liveNearInput" [(ngModel)]="liveNearInput" autofocus />
+                    <input class="form-control col-12" type="text" name="liveNearInput" id="liveNearInput" [(ngModel)]="liveNearInput" />
                   }
               </div>
               <!-- I am a member of -->
               <div class="form-group row">
-                <label class="control-label"><input class="me-1" name="memberOf" type="checkbox" [(ngModel)]="memberOf"/>I am a member of an organization with an interest in the project (provide organization name below)</label>
+                <label class="control-label" for="memberOf"><input class="me-1" name="memberOf" id="memberOf" type="checkbox" [(ngModel)]="memberOf"/>I am a member of an organization with an interest in the project (provide organization name below)</label>
                 @if (memberOf()) {
-                  <input class="form-control col-12" type="text" name="memberOfInput" id="memberOfInput" [(ngModel)]="memberOfInput" autofocus />
+                  <input class="form-control col-12" type="text" name="memberOfInput" id="memberOfInput" [(ngModel)]="memberOfInput" />
                 }
               </div>
               <!-- I have knowledge of -->
               <div class="form-group row">
-                <label class="control-label"><input class="me-1" name="knowledgeOf" type="checkbox" [(ngModel)]="knowledgeOf"/>I have particular knowledge of issues relevant to the potential project</label>
+                <label class="control-label" for="knowledgeOf"><input class="me-1" name="knowledgeOf" id="knowledgeOf" type="checkbox" [(ngModel)]="knowledgeOf"/>I have particular knowledge of issues relevant to the potential project</label>
                 @if (knowledgeOf()) {
-                  <input class="form-control col-12" type="text" name="knowledgeOfInput" id="knowledgeOfInput" [(ngModel)]="knowledgeOfInput" autofocus />
+                  <input class="form-control col-12" type="text" name="knowledgeOfInput" id="knowledgeOfInput" [(ngModel)]="knowledgeOfInput" />
                 }
               </div>
               <!-- Additional Notes -->
               <div class="form-group row">
-                <label class="control-label">Additional Notes:</label>
-                <textarea class="form-control" rows="4" name="additionalNotesInput" id="additionalNotesInput" [(ngModel)]="additionalNotesInput" autofocus></textarea>
+                <label for="additionalNotesInput" class="control-label">Additional Notes:</label>
+                <textarea class="form-control" rows="4" name="additionalNotesInput" id="additionalNotesInput" [(ngModel)]="additionalNotesInput"></textarea>
               </div>
             </div>
 
             <div class="form-group">
-              <label class="control-label understandText">I understand that...</label>
+              <span class="control-label understandText">I understand that...</span>
               <p class="font-italic understandText">Your personal information is collected by the Environmental Assessment Office for the purpose of sending you updates on {{project().name}} project under the authority of s.26(c) of the Freedom of Information and Protection of Privacy Act. In submitting your comment, you consent to receiving updates to the email address you have provided. This consent is valid from this date forward and may be revoked by contacting the EAO representative below. Should you have any questions about this collection, or wish to revoke your consent please contact:</p>
                 <ul class="font-italic understandText m-0">Director, Digital Services</ul>
                 <ul class="font-italic understandText m-0">Environmental Assessment Office</ul>
@@ -123,14 +123,14 @@
                 <ul class="font-italic understandText m-0">EAO.EPICsystem@gov.bc.ca</ul>
                 <ul class="font-italic understandText m-0 mb-2">(250) 356-7441</ul>
               <div class="form-control-container">
-                <label class="control-label" >
-                <input required type="checkbox" aria-label="Checkbox for row item" name="acknowledged" [(ngModel)]="acknowledged">
+                <label class="control-label" for="acknowledged">
+                <input required type="checkbox" aria-label="Checkbox for row item" name="acknowledged" id="acknowledged" [(ngModel)]="acknowledged">
                   By checking this box, I acknowledge that I understand the above text.
                 </label>
               </div>
               <div class="form-control-container">
-                <label class="control-label" >
-                  <input required type="checkbox" aria-label="Checkbox for row item" name="termsOfReference" [(ngModel)]="termsOfReference">
+                <label class="control-label" for="termsOfReference">
+                  <input required type="checkbox" aria-label="Checkbox for row item" name="termsOfReference" id="termsOfReference" [(ngModel)]="termsOfReference">
                   By checking this box, I acknowledge that I have read, understood, and will abide by the <a href="https://www2.gov.bc.ca/assets/gov/environment/natural-resource-stewardship/environmental-assessments/guidance-documents/2018-act/community_advisory_committee_guideline_v1.pdf#page=8" target="_blank">Community Advisory Committee Terms of Reference</a>
                 </label>
               </div>

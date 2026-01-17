@@ -72,7 +72,7 @@ export class Constants {
     { code: 'Water Management', name: 'Water Management' }
   ];
 
-  public static readonly REGIONS_COLLECTION: Array<object> = [
+  public static readonly REGIONS_COLLECTION: object[] = [
     { code: 'Cariboo', name: 'Cariboo' },
     { code: 'Kootenay', name: 'Kootenay' },
     { code: 'Lower Mainland', name: 'Lower Mainland' },
@@ -84,7 +84,7 @@ export class Constants {
     { code: 'Vancouver Island', name: 'Vancouver Island' }
   ];
 
-  public static readonly PROJECT_NOTIFICATION_DECISIONS: Array<object> = [
+  public static readonly PROJECT_NOTIFICATION_DECISIONS: object[] = [
     { code: 'In Progress', name: 'In Progress' },
     { code: 'Referred for s.11 consideration', name: 'Referred for s.11 consideration' },
     { code: 'Not referred for s.11 consideration', name: 'Not referred for s.11 consideration' }

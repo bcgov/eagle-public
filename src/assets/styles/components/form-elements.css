@@ -11,7 +11,7 @@
 /* Only override specific properties, not the entire form-control */
 input.form-control {
   height: var(--fc-height);
-  font-size: 0.9375rem;
+  font-size: var(--bs-font-size-sm);
 }
 
 input[type="text"],
@@ -50,7 +50,7 @@ textarea {
 }
 
 .control-label em {
-  font-size: 0.875rem;
+  font-size: var(--bs-font-size-sm);
   vertical-align: top;
 }
 
@@ -63,12 +63,12 @@ fieldset + fieldset {
 legend {
   float: left;
   margin-bottom: 1.5rem;
-  font-size: 1.2rem;
-  font-weight: 600;
+  font-size: var(--bs-font-size-5);
+  font-weight: var(--bs-font-weight-semibold);
 }
 
 label {
-  font-size: 0.875rem;
+  font-size: var(--bs-font-size-sm);
 }
 
 /* Input Group */
@@ -81,7 +81,7 @@ label {
   position: relative;
   margin-top: 0.75rem;
   padding: 0.5rem 1rem;
-  font-weight: 600;
+  font-weight: var(--bs-font-weight-semibold);
   color: var(--white);
 }
 

@@ -29,7 +29,7 @@
 #map .marker-cluster-medium div,
 #map .marker-cluster-large div {
   background-color: var(--map-cluster-inner-bg) !important; /* dodgerblue */
-  color: #fff;
+  color: var(--bs-white);
 }
 
 #map .marker-cluster {

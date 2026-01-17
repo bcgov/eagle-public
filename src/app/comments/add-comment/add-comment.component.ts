@@ -1,5 +1,5 @@
-import { Component, inject, signal, OnInit, input, ViewEncapsulation } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, inject, signal, OnInit, ViewEncapsulation } from '@angular/core';
+
 import { FormsModule } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { Observable, forkJoin } from 'rxjs';
@@ -17,7 +17,7 @@ import { LoggingService } from '../../services/logging.service';
 
 @Component({
   selector: 'app-add-comment',
-  imports: [CommonModule, FormsModule, FileUploadComponent],
+  imports: [FormsModule, FileUploadComponent],
   templateUrl: './add-comment.component.html',
   styleUrls: ['./add-comment.component.css'],
   encapsulation: ViewEncapsulation.None,
@@ -42,7 +42,7 @@ export class AddCommentComponent implements OnInit {
   currentPage = signal(1);
   
   comment = signal<Comment>(new Comment());
-  files = signal<Array<File>>([]);
+  files = signal<File[]>([]);
   documents = signal<Document[]>([]);
   documentAuthor = signal<any>(null);
   documentAuthorType = signal<any>(null);
@@ -98,17 +98,17 @@ export class AddCommentComponent implements OnInit {
       const currentCommentFiles = [...this.commentFiles()];
       const currentDocuments = [...this.documents()];
       
-      for (let i = 0; i < files.length; i++) {
-        if (files[i]) {
+      for (const file of files) {
+        if (file) {
           // ensure file is not already in the list
-          if (currentDocuments.find(x => x.documentFileName === files[i].name)) {
+          if (currentDocuments.find(x => x.documentFileName === file.name)) {
             continue;
           }
-          currentCommentFiles.push(files[i]);
+          currentCommentFiles.push(file);
           const document = new Document();
-          document.upfile = files[i];
-          document.documentFileName = files[i].name;
-          document.internalOriginalName = files[i].name;
+          document.upfile = file;
+          document.documentFileName = file.name;
+          document.internalOriginalName = file.name;
           currentDocuments.push(document);
         }
       }
@@ -177,7 +177,7 @@ export class AddCommentComponent implements OnInit {
     try {
       const proj = this.project;
       if (proj) {
-        const res = await this.projectService.cacSignUp(proj, signUpObject).toPromise();
+        await this.projectService.cacSignUp(proj, signUpObject).toPromise();
         this.logger.info('CAC sign-up submitted successfully', 'AddCommentComponent');
         this.submitting.set(false);
         this.submittedCAC.set(true);
@@ -233,7 +233,7 @@ export class AddCommentComponent implements OnInit {
       this.comment.set(savedComment);
 
       // then upload all documents
-      const observables: Array<Observable<Document>> = [];
+      const observables: Observable<Document>[] = [];
       const proj = this.project;
 
       filesList.forEach(file => {

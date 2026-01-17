@@ -4,7 +4,6 @@ import {
   OnDestroy,
   input,
   output,
-  signal,
   effect,
   untracked,
   ElementRef,
@@ -27,10 +26,10 @@ import { FilterStateService } from '../../services/filter-state.service';
 import { ProjDetailPopupComponent } from '../proj-detail-popup/proj-detail-popup.component';
 
 declare module 'leaflet' {
-  export interface FeatureGroup<P = any> {
+  export interface FeatureGroup {
     projectId: string;
   }
-  export interface Marker<P = any> {
+  export interface Marker {
     projectId: string;
   }
 }
@@ -305,14 +304,15 @@ export class ProjlistMapComponent implements AfterViewInit, OnDestroy {
       showCoverageOnHover: false,
       maxClusterRadius: 60,
       spiderfyOnMaxZoom: true,
-      zoomToBoundsOnClick: true, // Let Leaflet handle zooming to show all cluster children
-      disableClusteringAtZoom: 10, // Break clusters earlier at zoom 10
+      zoomToBoundsOnClick: true,
+      disableClusteringAtZoom: 10,
       removeOutsideVisibleBounds: true,
       animate: true,
       animateAddingMarkers: false,
       spiderfyDistanceMultiplier: 1.5
     });
 
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     const self = this;
 
     // Create reset view control
@@ -404,7 +404,7 @@ export class ProjlistMapComponent implements AfterViewInit, OnDestroy {
     });
   }
 
-  private createBaseLayers(): { [key: string]: L.TileLayer } {
+  private createBaseLayers(): Record<string, L.TileLayer> {
     return {
       'Nat Geo World Map': L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/{z}/{y}/{x}', {
         attribution: 'Tiles &copy; Esri',
@@ -509,7 +509,7 @@ export class ProjlistMapComponent implements AfterViewInit, OnDestroy {
     });
   }
 
-  private fitBounds(bounds: L.LatLngBounds | null = null, animate: boolean = false): void {
+  private fitBounds(bounds: L.LatLngBounds | null = null, animate = false): void {
     if (!this.map) return;
 
     const padding = this.calculateFitBoundsPadding();
@@ -604,7 +604,7 @@ export class ProjlistMapComponent implements AfterViewInit, OnDestroy {
    * Handle marker selection - opens popup and centers map
    * @param isAutoSelect - true for auto-select on page load, false for manual clicks
    */
-  private selectMarker(project: Project, marker: L.Marker, isAutoSelect: boolean = false): void {
+  private selectMarker(project: Project, marker: L.Marker, isAutoSelect = false): void {
     const isMobile = this.isMobile();
     
     if (isMobile) {

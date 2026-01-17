@@ -1,16 +1,16 @@
 .tab-section {
     overflow-y: auto;
-    font-size: medium;
+    font-size: var(--bs-font-size-6);
     >div {
         margin: 1em;
     }
     .status {
         text-align: right;
-        font-size: large;
+        font-size: var(--bs-font-size-5);
         font-weight: bold;
     }
     .title {
-        font-size: 1.2rem;
+        font-size: var(--bs-font-size-5);
         font-weight: bold;
         color: var(--primary-color);
         margin-bottom: 5px;

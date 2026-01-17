@@ -2,7 +2,6 @@ import { Component, inject, EventEmitter, AfterViewInit, ElementRef, ChangeDetec
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../../services/api';
 import { TableRowComponent, ITableMessage } from '../../shared/components/table-template/table-row-component';
-import { TableObject } from '../../shared/components/table-template/table-object';
 
 @Component({
   selector: 'tr[app-comments-table-rows]',

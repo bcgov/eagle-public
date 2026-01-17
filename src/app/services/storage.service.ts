@@ -1,6 +1,6 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { Observable, of, Subject } from 'rxjs';
-import { tap, take, filter } from 'rxjs/operators';
+import { tap, take } from 'rxjs/operators';
 import { Project } from '../models/project';
 import { ProjectService } from './project.service';
 import { LoggingService } from './logging.service';

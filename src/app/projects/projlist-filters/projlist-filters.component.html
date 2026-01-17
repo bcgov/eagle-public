@@ -19,7 +19,13 @@
         }
       </div>
       <div class="toggle-container">
-        <div class="toggle-btn" (click)="toggleFilters()">
+        <div class="toggle-btn" 
+             role="button"
+             tabindex="0"
+             (click)="toggleFilters()"
+             (keydown.enter)="toggleFilters()"
+             (keydown.space)="toggleFilters()"
+             [attr.aria-expanded]="showFilters">
           <span>{{ showFilters ? 'Hide' : 'Show' }} Advanced Filters</span>
           <i class="material-icons">{{ showFilters ? 'keyboard_arrow_up' : 'keyboard_arrow_down' }}</i>
         </div>

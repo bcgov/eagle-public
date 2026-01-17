@@ -1,9 +1,9 @@
 import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 
 @Component({
   selector: 'app-toggle-button',
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './toggle-button.html',
   styleUrls: ['./toggle-button.css'],
   changeDetection: ChangeDetectionStrategy.OnPush

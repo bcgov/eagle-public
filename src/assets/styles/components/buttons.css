@@ -24,7 +24,7 @@
   border: 2px solid var(--white);
   background: transparent;
   text-transform: uppercase;
-  font-weight: 700;
+  font-weight: var(--bs-font-weight-bold);
 }
 
 .btn.inverted:active,
@@ -55,8 +55,8 @@
   border: 2px solid var(--bs-warning);
   border-radius: 0.2rem;
   text-transform: none;
-  font-size: 1rem;
-  font-weight: 700;
+  font-size: var(--bs-font-size-6);
+  font-weight: var(--bs-font-weight-bold);
   line-height: 1.5;
   color: var(--bs-warning);
   background: var(--hero-btn-overlay);
@@ -75,7 +75,7 @@
 
 .hero-banner-btn i,
 .hero-banner-btn .material-icons {
-  font-size: 1.25rem;
+  font-size: var(--bs-font-size-5);
   line-height: 1;
   vertical-align: middle;
 }
@@ -186,8 +186,8 @@
   padding: 0.5rem;
   background: var(--lightgray);
   color: var(--link-color);
-  font-size: 0.875rem;
-  font-weight: 600;
+  font-size: var(--bs-font-size-sm);
+  font-weight: var(--bs-font-weight-semibold);
   box-shadow: 0 2px 2px 0 rgb(0 0 0 / 14%),
     0 1px 5px 0 rgb(0 0 0 / 12%),
     0 3px 1px -2px rgb(0 0 0 / 20%);
@@ -205,8 +205,8 @@
   color: var(--white);
   border: 2px solid var(--bs-primary);
   background: var(--bs-primary);
-  font-size: 0.875rem;
-  font-weight: 700;
+  font-size: var(--bs-font-size-sm);
+  font-weight: var(--bs-font-weight-bold);
   text-decoration: none;
 }
 

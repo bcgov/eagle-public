@@ -2,63 +2,63 @@ export class Project {
   // the following are retrieved from the API
   _id: string;
   CEAAInvolvement: any;
-  CELead: String;
-  CELeadEmail: String;
-  CELeadPhone: String;
-  centroid: Array<number> = [];
-  description: String;
+  CELead: string;
+  CELeadEmail: string;
+  CELeadPhone: string;
+  centroid: number[] = [];
+  description: string;
   eacDecision: any;
-  location: String;
-  name: String;
-  projectLeadId: String;
+  location: string;
+  name: string;
+  projectLeadId: string;
   projectLeadObj?: any;
-  projectLead: String;
-  projectLeadEmail: String;
-  projectLeadPhone: String;
+  projectLead: string;
+  projectLeadEmail: string;
+  projectLeadPhone: string;
   proponent: any;
-  region: String;
-  responsibleEPDId: String;
+  region: string;
+  responsibleEPDId: string;
   responsibleEPDObj?: any;
-  responsibleEPD: String;
-  responsibleEPDEmail: String;
-  responsibleEPDPhone: String;
-  type: String;
-  legislation: String;
+  responsibleEPD: string;
+  responsibleEPDEmail: string;
+  responsibleEPDPhone: string;
+  type: string;
+  legislation: string;
 
   // Everything else
-  addedBy: String;
+  addedBy: string;
   build: string;
-  CEAALink: String;
-  code: String;
-  commodity: String;
+  CEAALink: string;
+  code: string;
+  commodity: string;
   currentPhaseName: any;
   currentPeriod?: any;
   phaseHistory: any[];
-  dateAdded: String;
-  dateCommentsClosed!: String;
-  dateUpdated: String;
-  decisionDate: String;
-  duration: String;
+  dateAdded: string;
+  dateCommentsClosed!: string;
+  dateUpdated: string;
+  decisionDate: string;
+  duration: string;
   // TODO: directoryStructure
-  eaoMember: String;
-  epicProjectID?: Number;
-  fedElecDist: String;
+  eaoMember: string;
+  epicProjectID?: number;
+  fedElecDist: string;
   // TODO: intake
-  isTermsAgreed: Boolean;
-  overallProgress: Number;
-  primaryContact: String;
-  proMember: String;
-  provElecDist: String;
-  sector: String;
-  shortName: String;
-  status: String;
-  substitution: Boolean;
-  updatedBy?: String;
+  isTermsAgreed: boolean;
+  overallProgress: number;
+  primaryContact: string;
+  proMember: string;
+  provElecDist: string;
+  sector: string;
+  shortName: string;
+  status: string;
+  substitution: boolean;
+  updatedBy?: string;
   operational?: any;
   nature?: any;
   commentPeriodForBanner: any;
-  projectCAC: Boolean;
-  projectCACPublished: Boolean;
+  projectCAC: boolean;
+  projectCACPublished: boolean;
   cacEmail: any;
   appStatus?: string; // Application status for display
   cpStatus?: string; // Comment period status for display
@@ -69,13 +69,13 @@ export class Project {
   client?: string; // Client/applicant name
 
   // Permissions
-  read?: Array<String> = [];
-  write?: Array<String> = [];
-  delete?: Array<String> = [];
+  read?: string[] = [];
+  write?: string[] = [];
+  delete?: string[] = [];
 
-  isLoaded?: Boolean = false;
+  isLoaded?: boolean = false;
 
-  featuredDocuments?: Array<Document> = [];
+  featuredDocuments?: Document[] = [];
 
 
   constructor(obj?: any) {

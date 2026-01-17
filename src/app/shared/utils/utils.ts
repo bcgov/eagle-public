@@ -12,12 +12,10 @@ window['encodeURIComponent'] = (component: string | number | boolean) => {
 
 @Injectable({providedIn:'root'})
 export class Utils {
-  constructor() { }
-
   public encodeString(filename: string, isUrl: boolean) {
     let safeName;
     if (isUrl) {
-      safeName = encode(filename).replace(/\(/g, '%28').replace(/\)/g, '%29').replace(/\\/g, '_').replace(/\//g, '_').replace(/\%2F/g, '_').replace(/ /g, '_');
+      safeName = encode(filename).replace(/\(/g, '%28').replace(/\)/g, '%29').replace(/\\/g, '_').replace(/\//g, '_').replace(/%2F/g, '_').replace(/ /g, '_');
         return safeName;
     } else {
         safeName = filename.replace(/\(/g, '%28').replace(/\)/g, '%29').replace(/\\/g, '_').replace(/\//g, '_');
@@ -33,7 +31,7 @@ export class Utils {
     }
     const data = results[0].data;
     if (!data) { return null; }
-    return <T[]>data.searchResults;
+    return data.searchResults as T[];
   }
    // Mapping the build database field to the human readable nature field
    public natureBuildMapper(key: string): string {
@@ -45,15 +43,15 @@ export class Utils {
   }
 
   // Creates query modifiers used for tab display in a project.
-  public createProjectTabModifiers(projectTab: string, list: Array<any>) {
-    let types: Array<object> = [];
-    let milestones: Array<object> = [];
+  public createProjectTabModifiers(projectTab: string, list: any[]) {
+    let types: object[] = [];
+    let milestones: object[] = [];
     let phases: string | undefined;
 
     switch (projectTab) {
       case Constants.optionalProjectDocTabs.UNSUBSCRIBE_CAC:
         break;
-      case Constants.optionalProjectDocTabs.AMENDMENT:
+      case Constants.optionalProjectDocTabs.AMENDMENT: {
         types = [
           { legislation: 2002, name: 'Amendment Package' },
           { legislation: 2018, name: 'Amendment Package' },
@@ -76,6 +74,7 @@ export class Utils {
         // Special case for phases.
         phases = this.getIdsByName(amendPhase, list).map(phase => phase.id).join(',');
         break;
+      }
       case Constants.optionalProjectDocTabs.CERTIFICATE:
         types = [
           { legislation: 2002, name: 'Certificate Package' },
@@ -94,7 +93,7 @@ export class Utils {
           { legislation: 2018, name: 'Transfer of Certificate/Order' }
         ];
         break;
-      case Constants.optionalProjectDocTabs.APPLICATION:
+      case Constants.optionalProjectDocTabs.APPLICATION: {
         types = [
           { legislation: 2002, name: 'Application Materials' },
           { legislation: 2018, name: 'Application Materials' },
@@ -127,6 +126,7 @@ export class Utils {
         .join(',');
 
         break;
+      }
     }
 
     const typeIds = this.getIdsByName(types, list).map(type => type.id).join(',');
@@ -146,7 +146,7 @@ export class Utils {
   }
 
   // Searches the list of terms for a name and legislation year.
-  public getIdsByName(terms: Array<any>, list: Array<any>) {
+  public getIdsByName(terms: any[], list: any[]) {
     const matchedItems = terms.map(term => {
       const listItem = list.find(item => item.name === term.name && item.legislation === term.legislation)
       return {
@@ -157,27 +157,38 @@ export class Utils {
     return matchedItems;
   }
 
-  public convertJSDateToNGBDate(jSDate: Date) {
-    if (!jSDate) {
-      return null;
-    }
-
-    return {
-      year: jSDate.getFullYear(),
-      month: jSDate.getMonth() + 1,
-      day: jSDate.getDate()
-    };
+  /**
+   * Looks up a list item by ID and returns its name.
+   * Commonly used in table rows to display human-readable names for IDs.
+   * @param id The ID to look up
+   * @param lists Array of list items with _id and name properties
+   * @returns The name of the matching item, or '-' if not found
+   */
+  public idToListName(id: string, lists: any[]): string {
+    if (!id) return '-';
+    if (!lists?.length) return '-';
+    
+    const item = lists.find(listItem => listItem._id === id);
+    return item?.name ?? '-';
   }
 
-  public convertJSDateToString(jSDate: Date) {
-    if (!jSDate) {
-      return null;
-    }
-
-    return `${jSDate.getFullYear()}-${jSDate.getMonth() + 1}-${jSDate.getDate()}`;
+  /**
+   * Opens a document download in a new browser tab.
+   * @param document Document object with _id, documentFileName, displayName, or internalOriginalName
+   */
+  public openDocumentDownload(document: { _id: string; documentFileName?: string; displayName?: string; internalOriginalName?: string }): void {
+    const filename = document.documentFileName || document.displayName || document.internalOriginalName || 'document';
+    const safeName = this.encodeString(filename, true);
+    window.open(`/api/public/document/${document._id}/download/${safeName}`, '_blank');
   }
 
-  public convertFormGroupNGBDateToJSDate(nGBDate: any, nGBTime: any = null) {
+  /**
+   * Converts an NgbDateStruct (and optional NgbTimeStruct) to a JavaScript Date.
+   * @param nGBDate NgbDateStruct with year, month, day properties
+   * @param nGBTime Optional NgbTimeStruct with hour, minute properties
+   * @returns JavaScript Date object or null if input is invalid
+   */
+  public convertFormGroupNGBDateToJSDate(nGBDate: { year: number; month: number; day: number }, nGBTime: { hour: number; minute: number } | null = null): Date | null {
     if (!nGBDate) {
       return null;
     }

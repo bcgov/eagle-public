@@ -115,7 +115,7 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
     this.router.navigate(['/projects']);
   }
 
-  public tabLinks = signal<Array<any>>([
+  public tabLinks = signal<any[]>([
     {
       label: 'Project Details',
       link: 'project-details',
@@ -302,7 +302,7 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
     }
   }
 
-  onResize(event?: Event) {
+  onResize(_event?: Event) {
     if (this.map) {
       this.map.invalidateSize();
       this.fitBounds(this.appFG.getBounds());
@@ -325,6 +325,7 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
       return;
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     const self = this;
 
     const resetViewControl = L.Control.extend({
@@ -342,6 +343,7 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
         element.style.textAlign = 'center';
         element.style.cursor = 'pointer';
         element.style.backgroundColor = '#fff';
+        element.style.color = '#333';
         element.onmouseover = () => element.style.backgroundColor = '#f4f4f4';
         element.onmouseout = () => element.style.backgroundColor = '#fff';
 

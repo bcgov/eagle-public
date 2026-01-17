@@ -98,36 +98,36 @@
 
             <div class="mb-3 row">
               <div class="mb-3">
-                <label class="control-label">Full Name *</label>
+                <label for="nameInput" class="control-label">Full Name *</label>
                 <div class="form-control-container">
-                  <input required class="form-control" type="text" name="nameInput" id="nameInput" [(ngModel)]="nameInput" autofocus />
+                  <input required class="form-control" type="text" name="nameInput" id="nameInput" [(ngModel)]="nameInput" />
                 </div>
               </div>
               <div class="mb-3">
-                <label class="control-label">Location</label>
+                <label for="caclocationInput" class="control-label">Location</label>
                 <div class="form-control-container">
-                  <input class="form-control" type="text" name="caclocationInput" id="caclocationInput" [(ngModel)]="caclocationInput" autofocus />
+                  <input class="form-control" type="text" name="caclocationInput" id="caclocationInput" [(ngModel)]="caclocationInput" />
                 </div>
               </div>
             </div>
 
             <div class="mb-3 row">
               <div class="mb-3">
-                <label class="control-label">Email Address *</label>
+                <label for="emailInput" class="control-label">Email Address *</label>
                 <div class="form-control-container">
-                  <input required email class="form-control" type="text" name="emailInput" id="emailInput" [(ngModel)]="emailInput" autofocus />
+                  <input required email class="form-control" type="text" name="emailInput" id="emailInput" [(ngModel)]="emailInput" />
                 </div>
               </div>
               <div class="mb-3">
-                <label class="control-label">Confirm Email Address *</label>
+                <label for="emailConfirmInput" class="control-label">Confirm Email Address *</label>
                 <div class="form-control-container">
-                  <input required email class="form-control" type="text" name="emailConfirmInput" id="emailConfirmInput" [(ngModel)]="emailConfirmInput" autofocus />
+                  <input required email class="form-control" type="text" name="emailConfirmInput" id="emailConfirmInput" [(ngModel)]="emailConfirmInput" />
                 </div>
               </div>
             </div>
 
             <div class="mb-3">
-              <label class="control-label">Describe your interest in the project</label>
+              <span class="control-label">Describe your interest in the project</span>
               <div>
                 <p class="font-italic understandText">Please select all that apply. You may include additional details or information regarding your interest in the text box below. This information is for the EAO to better understand the membership of the committee, any information you provide here will not be considered as input into the assessment of the project. Please submit your comments on the proposed project through the public comment periods throughout the environmental assessment.</p>
               </div>
@@ -136,32 +136,32 @@
               <div class="mb-3 row">
                   <label class="control-label"><input class="me-1" name="liveNear" type="checkbox" [(ngModel)]="liveNear"/>I live near or have particular knowledge of the project area</label>
                   @if (liveNear()) {
-                    <input class="form-control col-12" type="text" name="liveNearInput" id="liveNearInput" [(ngModel)]="liveNearInput" autofocus />
+                    <input class="form-control col-12" type="text" name="liveNearInput" id="liveNearInput" [(ngModel)]="liveNearInput" />
                   }
               </div>
               <!-- I am a member of -->
               <div class="mb-3 row">
                 <label class="control-label"><input class="me-1" name="memberOf" type="checkbox" [(ngModel)]="memberOf"/>I am a member of an organization with an interest in the project (provide organization name below)</label>
                 @if (memberOf()) {
-                  <input class="form-control col-12" type="text" name="memberOfInput" id="memberOfInput" [(ngModel)]="memberOfInput" autofocus />
+                  <input class="form-control col-12" type="text" name="memberOfInput" id="memberOfInput" [(ngModel)]="memberOfInput" />
                 }
               </div>
               <!-- I have knowledge of -->
               <div class="mb-3 row">
                 <label class="control-label"><input class="me-1" name="knowledgeOf" type="checkbox" [(ngModel)]="knowledgeOf"/>I have particular knowledge of issues relevant to the potential project</label>
                 @if (knowledgeOf()) {
-                  <input class="form-control col-12" type="text" name="knowledgeOfInput" id="knowledgeOfInput" [(ngModel)]="knowledgeOfInput" autofocus />
+                  <input class="form-control col-12" type="text" name="knowledgeOfInput" id="knowledgeOfInput" [(ngModel)]="knowledgeOfInput" />
                 }
               </div>
               <!-- Additional Notes -->
               <div class="mb-3 row">
-                <label class="control-label">Additional Notes:</label>
-                <textarea class="form-control" rows="4" name="additionalNotesInput" id="additionalNotesInput" [(ngModel)]="additionalNotesInput" autofocus></textarea>
+                <label for="additionalNotesInput" class="control-label">Additional Notes:</label>
+                <textarea class="form-control" rows="4" name="additionalNotesInput" id="additionalNotesInput" [(ngModel)]="additionalNotesInput"></textarea>
               </div>
             </div>
 
             <div class="mb-3">
-              <label class="control-label understandText">I understand that...</label>
+              <span class="control-label understandText">I understand that...</span>
               <p class="font-italic understandText">Your personal information is collected by the Environmental Assessment Office for the purpose of sending you updates on {{project.name}} project under the authority of s.26(c) of the Freedom of Information and Protection of Privacy Act. In submitting your comment, you consent to receiving updates to the email address you have provided. This consent is valid from this date forward and may be revoked by contacting the EAO representative below. Should you have any questions about this collection, or wish to revoke your consent please contact:</p>
                 <ul class="font-italic understandText m-0">Director, Digital Services</ul>
                 <ul class="font-italic understandText m-0">Environmental Assessment Office</ul>
@@ -220,19 +220,19 @@
       <div class="modal-body">
         <fieldset>
             <div class="mb-3">
-              <label class="control-label" >Location *</label>
+              <label for="locationInput" class="control-label" >Location *</label>
               <input required class="form-control" type="text" name="locationInput" placeholder="IE: City, Province, etc."
-                id="locationInput" maxlength="50" [(ngModel)]="locationInput" autofocus />
+                id="locationInput" maxlength="50" [(ngModel)]="locationInput" />
             </div>
             <div class="mb-3">
-              <label class="control-label" >Your Comment Submission*</label>
+              <label for="commentInput" class="control-label" >Your Comment Submission*</label>
               @if (commentTip()) {
                 <div class="comment-tip-container">
                   <i class="material-icons">error_outline</i>
                   <p [innerHTML]="commentTip()"></p>
                 </div>
               }
-              <textarea class="form-control" rows="8" name="commentInput" id="commentInput" [(ngModel)]="commentInput" autofocus placeholder="Comments must not contain personal or otherwise identifying information of yourself or any other individuals within your text submission and/or attachment (e.g. home/work address, email address, telephone number)."></textarea>
+              <textarea class="form-control" rows="8" name="commentInput" id="commentInput" [(ngModel)]="commentInput" placeholder="Comments must not contain personal or otherwise identifying information of yourself or any other individuals within your text submission and/or attachment (e.g. home/work address, email address, telephone number)."></textarea>
             </div>
             <app-file-upload [maxFiles]="15" [maxSize]="10" [showInfo]="false" [showList]="false" [files]="commentFiles()"
                              (filesChange)="addFiles($event); commentFiles.set([])"></app-file-upload>
@@ -262,7 +262,7 @@
               </div>
             }
             <div class="mb-3">
-              <label class="control-label">Name <em>(All comments are submitted anonymously by default.)</em></label>            
+              <span class="control-label">Name <em>(All comments are submitted anonymously by default.)</em></span>            
             </div>
             <div class="mb-3">
               <label class="control-label" >
@@ -275,7 +275,7 @@
             </div>
             <div class="mb-3">            
               <div class="form-control-container">
-                <input required class="form-control" type="text" name="nameInput" maxlength="50" id="nameInput" [(ngModel)]="contactName" autofocus [disabled]="!makePublic()"/>
+                <input required class="form-control" type="text" name="nameInput" maxlength="50" id="nameInput" [(ngModel)]="contactName" [disabled]="!makePublic()"/>
               </div>
             </div>
             @if (project.projectCAC && project.projectCACPublished) {
@@ -284,9 +284,9 @@
                   <input type="checkbox" aria-label="Checkbox for row item" name="submittedCAC" [(ngModel)]="submittedCAC">
                   I'm a Community Advisory Committee Member.
                 </label>
-                <div class="btn btn-link mb-1" (click)="learnMore()">
+                <button type="button" class="btn btn-link mb-1" (click)="learnMore()">
                   <span class="float-end">Learn More</span>
-                </div>
+                </button>
               </div>
             }
           </fieldset>

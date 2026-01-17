@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Observable, of, lastValueFrom } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 
@@ -12,15 +12,13 @@ import { LoggingService } from './logging.service';
 
 @Injectable({providedIn:'root'})
 export class SearchService {
+  private api = inject(ApiService);
+  private eventService = inject(EventService);
+  private loadingState = inject(LoadingStateService);
+  private logger = inject(LoggingService);
+
 
   public isError = false;
-
-  constructor(
-    private api: ApiService,
-    private eventService: EventService,
-    private loadingState: LoadingStateService,
-    private logger: LoggingService
-  ) { }
 
   getItem(_id: string, schema: string): Observable<any> {
     const loadingId = `search-item-${_id}`;
@@ -28,7 +26,7 @@ export class SearchService {
     const searchResults = this.api.getItem(_id, schema)
       .pipe(
         map(res => {
-          let allResults = <any>[];
+          const allResults = [] as any;
           res.forEach(item => {
             const r = new SearchResults({ type: item._schemaName, data: item });
             allResults.push(r);
@@ -52,11 +50,11 @@ export class SearchService {
   getFullList(schema: string): Observable<any> {
     return this.api.getFullDataSet(schema);
   }
-  getSearchResults(keys: string, dataset: string, fields: any[], pageNum: number = 1, pageSize: number = 10, sortBy: string | null = null, queryModifier: Record<string,string> = {}, populate: boolean = false, secondarySort: string | null = null, filter: Record<string,string> = {}, projectLegislation: string = '', fuzzy: boolean = false): Observable<any[]> {
+  getSearchResults(keys: string, dataset: string, fields: any[], pageNum = 1, pageSize = 10, sortBy: string | null = null, queryModifier: Record<string,string> = {}, populate = false, secondarySort: string | null = null, filter: Record<string,string> = {}, projectLegislation = '', fuzzy = false): Observable<any[]> {
     const searchResults = this.api.searchKeywords(keys, dataset, fields, pageNum, pageSize, projectLegislation, sortBy, queryModifier, populate, secondarySort, filter, fuzzy)
       .pipe(
         map(res => {
-          let allResults = <any>[];
+          const allResults = [] as any;
           res.forEach(item => {
             const r = new SearchResults({ type: item._schemaName, data: item });
 
@@ -78,7 +76,7 @@ export class SearchService {
     const searchResults = this.api.getTopNewsItems()
       .pipe(
         map(res => {
-          let allResults = <any>[];
+          const allResults = [] as any;
           // Handle case where API returns empty object {} instead of array
           if (Array.isArray(res)) {
             res.forEach(item => {
@@ -110,7 +108,7 @@ export class SearchService {
     this.logger.debug('SearchService.fetchData called', 'SearchService', searchParamObject);
 
     // Remove null/undefined filters
-    for (let filter in searchParamObject.filters) {
+    for (const filter in searchParamObject.filters) {
       if (searchParamObject.filters[filter] === null || searchParamObject.filters[filter] === undefined) {
         delete searchParamObject.filters[filter];
       }
@@ -149,8 +147,7 @@ export class SearchService {
       return new SearchResults();
     }
 
-    // tslint:disable-next-line: prefer-const
-    let searchResults = new SearchResults();
+       const searchResults = new SearchResults();
 
     this.logger.debug(`Processing response for ${loadingId}`, 'SearchService', { 
       hasRes: !!res, 
@@ -201,18 +198,18 @@ export class SearchService {
 
 export class SearchParamObject {
   constructor(
-    public tableId: string = '',
+    public tableId = '',
     public keywords: string = Constants.tableDefaults.DEFAULT_KEYWORDS,
-    public dataset: string = '',
+    public dataset = '',
     public fields: any[] = [],
     public currentPage: number = Constants.tableDefaults.DEFAULT_CURRENT_PAGE,
     public pageSize: number = Constants.tableDefaults.DEFAULT_PAGE_SIZE,
     public sortBy: string = Constants.tableDefaults.DEFAULT_SORT_BY,
     public queryModifiers: Record<string,string> = {},
-    public populate: boolean = false,
-    public secondarySort: string = '',
+    public populate = false,
+    public secondarySort = '',
     public filters: Record<string,string> = {},
-    public projectLegislation: string = '',
-    public fuzzy: boolean = false
+    public projectLegislation = '',
+    public fuzzy = false
   ) { }
 }

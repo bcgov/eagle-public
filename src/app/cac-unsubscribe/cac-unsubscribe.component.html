@@ -22,13 +22,13 @@
         <main class="m-5">
           <form>
             <div class="form-group">
-              <label class="control-label">Project</label>
+              <span class="control-label">Project</span>
               <div class="form-control-container">
-                <label>{{projectName()}}</label>
+                <span>{{projectName()}}</span>
               </div>
             </div>
             <div class="form-group">
-              <label class="control-label">Email Address</label>
+              <label for="emailInput" class="control-label">Email Address</label>
               <input 
                 readonly 
                 required 
@@ -39,7 +39,7 @@
                 id="emailInput" 
                 [ngModel]="emailInput()" 
                 (ngModelChange)="emailInput.set($event)"
-                autofocus />
+                />
               <button class="btn content-btn-dark mt-2 me-2" (click)="unsubscribe()">
                 <span>Unsubscribe</span>
               </button>
@@ -48,7 +48,7 @@
               </button>
             </div>
             <div class="form-group">
-              <label>If you are experiencing any issues with unsubscribing please send an email to <a href="mailto:EAO.EPICsystem@gov.bc.ca">EAO.EPICsystem@gov.bc.ca</a></label>
+              <p>If you are experiencing any issues with unsubscribing please send an email to <a href="mailto:EAO.EPICsystem@gov.bc.ca">EAO.EPICsystem@gov.bc.ca</a></p>
             </div>
           </form>
         </main>

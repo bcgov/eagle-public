@@ -8,7 +8,7 @@
 }
 
 .understandText {
-  font-size: 0.8rem !important;
+  font-size: var(--bs-font-size-sm) !important;
 }
 
 .modal-dialog {
@@ -22,7 +22,7 @@
 
 .modal-content {
   h4, h5 {
-    font-weight: 600;
+    font-weight: var(--bs-font-weight-semibold);
   }
 
   h5 {
@@ -34,8 +34,8 @@
   .btn {
     min-width: 6rem;
     text-transform: uppercase;
-    font-size: 0.875rem;
-    font-weight: 700;
+    font-size: var(--bs-font-size-sm);
+    font-weight: var(--bs-font-weight-bold);
   }
 }
 
@@ -46,7 +46,7 @@
 }
 
 .contact-info__name {
-  font-weight: 600;
+  font-weight: var(--bs-font-weight-semibold);
 }
 
 .confirm-check {
@@ -54,7 +54,7 @@
   margin-bottom: 0;
 
   label {
-    font-weight: 600;
+    font-weight: var(--bs-font-weight-semibold);
   }
 }
 
@@ -97,8 +97,8 @@
   }
 
   .btn {
-    font-size: 0.875rem;
-    font-weight: 700;
+    font-size: var(--bs-font-size-sm);
+    font-weight: var(--bs-font-weight-bold);
   }
 }
 
@@ -106,7 +106,7 @@
   display: inline-block;
   width: 96px;
   height: 96px;
-  border: 6px solid #007bff;
+  border: 6px solid var(--bs-primary);
   border-radius: 48px;
   background-image: url('/assets/images/baseline-check-24px.svg');
   background-position: center center;

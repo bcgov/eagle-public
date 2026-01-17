@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { TestBed } from '@angular/core/testing';
-import { Decision } from 'app/models/decision';
 import { of, throwError } from 'rxjs';
 import { ApiService } from './api';
 import { DecisionService } from './decision.service';
@@ -41,6 +40,7 @@ describe('DecisionService', () => {
   describe('getByApplicationId', () => {
     it('returns null when no decision is returned by the API', () => {
       mockApiService.getDecisionByAppId.mockReturnValue(
+        // eslint-disable-next-line @typescript-eslint/no-empty-function
         of({ text: () => {} })
       );
 
@@ -104,6 +104,7 @@ describe('DecisionService', () => {
 
   describe('getById', () => {
     it('returns null when no decision is returned by the API', () => {
+      // eslint-disable-next-line @typescript-eslint/no-empty-function
       mockApiService.getDecision.mockReturnValue(of({ text: () => {} }));
 
       service.getById('1', true).subscribe(result => {

@@ -1,9 +1,9 @@
 import { Component, input, output, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 
 @Component({
   selector: 'app-file-upload',
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './file-upload.component.html',
   styleUrls: ['./file-upload.component.css'],
   host: {
@@ -21,15 +21,15 @@ export class FileUploadComponent {
   fileExt = input<string>('jpg, jpeg, gif, png, bmp, doc, docx, xls, xlsx, ppt, pptx, pdf, txt, rtf');
   maxFiles = input<number>(15);
   maxSize = input<number>(10); // in MB
-  files = input<Array<File>>([]);
+  files = input<File[]>([]);
   showInfo = input<boolean>(true);
   showList = input<boolean>(true);
   
-  filesChange = output<Array<File>>();
+  filesChange = output<File[]>();
   
-  errors = signal<Array<string>>([]);
+  errors = signal<string[]>([]);
 
-  private currentFiles: Array<File> = [];
+  private currentFiles: File[] = [];
 
   onDragOver(event: DragEvent) {
     this.dragDropClass.set('droparea');
@@ -72,8 +72,8 @@ export class FileUploadComponent {
     this.currentFiles = [...this.files()];
 
     if (this.isValidFiles(fileList)) {
-      for (let i = 0; i < fileList.length; i++) {
-        this.currentFiles.push(fileList[i]);
+      for (const file of Array.from(fileList)) {
+        this.currentFiles.push(file);
       }
       this.filesChange.emit(this.currentFiles);
     }
@@ -111,11 +111,11 @@ export class FileUploadComponent {
   private validateFileExtensions(fileList: FileList): boolean {
     let ret = true;
     const extensions = this.fileExt().split(',').map(x => x.toUpperCase().trim());
-    for (let i = 0; i < fileList.length; i++) {
-      const ext = fileList[i].name.toUpperCase().split('.').pop() || fileList[i].name;
+    for (const file of Array.from(fileList)) {
+      const ext = file.name.toUpperCase().split('.').pop() || file.name;
       if (!extensions.includes(ext)) {
         const currentErrors = [...this.errors()];
-        currentErrors.push('Invalid extension: ' + fileList[i].name);
+        currentErrors.push('Invalid extension: ' + file.name);
         this.errors.set(currentErrors);
         setTimeout(() => this.errors.set([]), 5000);
         ret = false;
@@ -126,12 +126,12 @@ export class FileUploadComponent {
 
   private validateFileSizes(fileList: FileList): boolean {
     let ret = true;
-    for (let i = 0; i < fileList.length; i++) {
-      const fileSizeinMB = fileList[i].size / 1024 / 1024; // in MB
+    for (const file of Array.from(fileList)) {
+      const fileSizeinMB = file.size / 1024 / 1024; // in MB
       const size = Math.round(fileSizeinMB * 100) / 100; // convert up to 2 decimal places
       if (size > this.maxSize()) {
         const currentErrors = [...this.errors()];
-        currentErrors.push('File too large: ' + fileList[i].name);
+        currentErrors.push('File too large: ' + file.name);
         this.errors.set(currentErrors);
         setTimeout(() => this.errors.set([]), 5000);
         ret = false;

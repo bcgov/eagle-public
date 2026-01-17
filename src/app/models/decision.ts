@@ -8,7 +8,7 @@ export class Decision {
   description?: string;
 
   // associated data
-  documents: Array<Document> = [];
+  documents: Document[] = [];
 
   constructor(obj?: any) {
     this._id          = obj && obj._id          || null;

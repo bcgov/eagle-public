@@ -1,7 +1,7 @@
 <div class="project" [attr.data-sidebar-state]="sidebarOpen() ? 'open' : 'closed'">
     <main>
         <div class="project-info">
-           <details-sidebar [project]="project()" (onSidebarToggle)="handleSidebarToggle($event)"></details-sidebar>
+           <details-sidebar [project]="project()" (sidebarToggle)="handleSidebarToggle($event)"></details-sidebar>
             <div class="content">
                 @if (project()?.commentPeriodForBanner) {
                     <div class="pcp-banner col-sm-12">
@@ -33,7 +33,7 @@
                                                 This Public Comment Period is regarding the <b>{{project()!.commentPeriodForBanner!.informationLabel}}</b>
                                             </p>
                                         }
-                                        @if (project()!.commentPeriodForBanner!.informationLabel == null) {
+                                        @if (project()!.commentPeriodForBanner!.informationLabel === null) {
                                             <div id="instructions" [innerHTML]="project()!.commentPeriodForBanner!.instructions | safeHtml"></div>
                                         }
                                     </div>

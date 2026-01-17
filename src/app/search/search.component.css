@@ -26,12 +26,12 @@ h1 {
 }
 
 h2 {
-    font-size: 1.5rem;
-    font-weight: 400;
+    font-size: var(--bs-font-size-4);
+    font-weight: var(--bs-font-weight-normal);
     letter-spacing: -0.03rem;
 
     strong {
-        font-weight: 400;
+        font-weight: var(--bs-font-weight-normal);
     }
 }
 
@@ -49,7 +49,7 @@ h2 {
     margin-bottom: 0.5rem;
     transition: all ease-out 0.2s;
     cursor: pointer;
-    font-weight: 600;
+    font-weight: var(--bs-font-weight-semibold);
 
     .material-icons {
         font-size: 20px;
@@ -82,8 +82,8 @@ form {
 }
 
 .search-area {
-    background-color: white;
-    border: 1px solid lightgray;
+    background-color: var(--bs-white);
+    border: 1px solid var(--bc-gray-border);
 }
 
 .main-search-field {
@@ -91,17 +91,17 @@ form {
 
     input {
         height: 3rem;
-        color: #000;
-        font-size: 1.15rem;
+        color: var(--bs-black);
+        font-size: var(--bs-font-size-6);
 
         &:-webkit-autofill {
-            box-shadow: 0 0 0 30px white inset;
+            box-shadow: 0 0 0 30px var(--bs-white) inset;
         }
     }
 
     button {
         min-width: 10rem;
-        font-weight: 700;
+        font-weight: var(--bs-font-weight-bold);
         background: var(--bs-warning);
         color: var(--bc-blue);
         border: none;
@@ -114,12 +114,12 @@ form {
     }
 
     .input-group-addon {
-        font-size: 1.15rem;
+        font-size: var(--bs-font-size-6);
     }
 }
 
 .search-disclaimer {
-    font-size: 12px;
+    font-size: var(--bs-font-size-xs);
     line-height: 20px;
     margin: 8px 8px 8px 0px;
     padding-left: 12px;
@@ -239,7 +239,7 @@ form {
 
     .form-check label {
         padding-left: 0.25rem;
-        font-size: 1rem;
+        font-size: var(--bs-font-size-6);
     }
 
     .search-button {
@@ -248,7 +248,7 @@ form {
         bottom: 42px;
 
         min-width: 10rem;
-        font-weight: 700;
+        font-weight: var(--bs-font-weight-bold);
         background: var(--bs-warning);
         color: var(--bc-blue);
         border: none;
@@ -263,7 +263,7 @@ form {
 
 .form-text {
     margin-top: 0.55rem;
-    font-size: 0.85rem;
+    font-size: var(--bs-font-size-sm);
 }
 
 /* Search Results Table */
@@ -279,9 +279,9 @@ form {
         padding: 0.5rem 1rem;
         overflow: hidden;
         border: none;
-        background: #f7f8fa;
+        background: var(--bc-gray-light);
         text-overflow: ellipsis;
-        font-size: 0.875rem;
+        font-size: var(--bs-font-size-sm);
     }
 
     td {
@@ -290,9 +290,9 @@ form {
         padding-bottom: 1.25rem;
         padding-left: 1rem;
         border: none;
-        background: #f7f8fa;
+        background: var(--bc-gray-light);
         line-height: 1.15rem;
-        font-size: 0.9375rem;
+        font-size: var(--bs-font-size-sm);
     }
 }
 
@@ -314,7 +314,7 @@ form {
         margin-top: -0.35rem;
         width: 6rem;
         border-width: 2px;
-        font-weight: 700;
+        font-weight: var(--bs-font-weight-bold);
     }
 }
 
@@ -322,12 +322,12 @@ form {
     padding-top: 0;
     padding-bottom: 0;
     border: none;
-    box-shadow: 0 0 0.5rem #999;
-    font-size: 0.875rem;
+    box-shadow: 0 0 0.5rem var(--bc-gray-medium);
+    font-size: var(--bs-font-size-sm);
 
     button {
         padding: 0.5rem 1rem;
-        color: #007bff;
+        color: var(--bs-primary);
 
         i {
             margin-top: -0.15rem;
@@ -339,8 +339,8 @@ form {
         }
 
         &:hover {
-            color: #fff;
-            background: #007bff;
+            color: var(--bs-white);
+            background: var(--bs-primary);
         }
     }
 }
@@ -361,24 +361,24 @@ form {
 .ant-select-dropdown-menu-item-active,
 .ant-pagination-item-active,
 .ant-select-dropdown-menu-item:hover {
-    background: #007bff !important;
-    color: #fff !important;
+    background: var(--bs-primary) !important;
+    color: var(--bs-white) !important;
 }
 
 .ant-pagination-item-active a,
 .ant-pagination-item:focus a,
 .ant-pagination-item:hover a {
-    color: #fff !important;
+    color: var(--bs-white) !important;
 }
 
 .ant-pagination-item-container .ant-pagination-item-link-icon {
-    color: #007bff;
+    color: var(--bs-primary);
 }
 
 .ant-pagination-prev:hover .ant-pagination-item-link,
 .ant-pagination-next:hover .ant-pagination-item-link {
-    background: #007bff !important;
-    color: #fff !important;
+    background: var(--bs-primary) !important;
+    color: var(--bs-white) !important;
 }
 
 .show_all_btn {

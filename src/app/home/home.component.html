@@ -47,7 +47,9 @@
                         <div class="mb-2">
                           <h3 class="mb-1 lh-sm">
                             @if (item.project) {
-                              <span class="font-weight-bold">{{ item.project.name }}</span>
+                              <div class="mb-3">
+                                <span class="font-weight-bold">{{ item.project.name }}</span>
+                              </div>
                             }
                             @if (item.notificationName) {
                               <span class="font-weight-bold">{{ item.notificationName }}</span>

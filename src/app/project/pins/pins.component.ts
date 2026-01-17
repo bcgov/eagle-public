@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy, inject, computed, signal } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
-import { CommonModule } from '@angular/common';
+
 import { takeWhile } from 'rxjs/operators';
 
 import { StorageService } from 'app/services/storage.service';
@@ -16,7 +16,7 @@ import { LoadingStateService } from 'app/services/loading-state.service';
 @Component({
   selector: 'app-pins',
   templateUrl: './pins.component.html',
-  imports: [CommonModule, TableTemplateComponent],
+  imports: [TableTemplateComponent],
   standalone: true
 })
 export class PinsComponent implements OnInit, OnDestroy {
@@ -94,9 +94,9 @@ export class PinsComponent implements OnInit, OnDestroy {
   }
 
   onMessageOut(msg: ITableMessage) {
-    let params: any = {};
+    const params: any = {};
     switch (msg.label) {
-      case 'columnSort':
+      case 'columnSort': {
         const currentTableData = this.tableData();
         if (currentTableData.sortBy.charAt(0) === '+') {
           params['sortByPins'] = '-' + msg.data;
@@ -105,6 +105,7 @@ export class PinsComponent implements OnInit, OnDestroy {
         }
         this.pinsService.fetchDataConfig.sortBy = params['sortByPins'];
         break;
+      }
       case 'pageNum':
         params['currentPagePins'] = msg.data;
         this.pinsService.fetchDataConfig.currentPage = params['currentPagePins'];

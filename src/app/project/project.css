@@ -38,8 +38,8 @@
 
 /* Public Comment Period Banner */
 .project .pcp-banner {
-  background-color: #014B79;
-  color: white;
+  background-color: var(--bc-blue);
+  color: var(--bs-white);
   padding: 4rem 2rem 3rem 2rem;
 }
 
@@ -62,15 +62,15 @@
 }
 
 .project .pcp-banner h2 {
-  color: #ffffff;
-  font-size: 1.5rem;
-  font-weight: 700;
+  color: var(--bs-white);
+  font-size: var(--bs-font-size-4);
+  font-weight: var(--bs-font-weight-bold);
 }
 
 .project .pcp-banner h5 {
   color: var(--gold);
-  font-size: 1rem;
-  font-weight: 400;
+  font-size: var(--bs-font-size-6);
+  font-weight: var(--bs-font-weight-normal);
   margin-bottom: 0;
 }
 
@@ -80,12 +80,12 @@
 
 .project .pcp-banner-description {
   margin-top: 1.5rem;
-  color: #ffffff;
+  color: var(--bs-white);
 }
 
 .project .pcp-banner-description p {
   margin-bottom: 0;
-  color: #ffffff;
+  color: var(--bs-white);
 }
 
 /* Tab navigation */
@@ -123,7 +123,7 @@
   }
 
   .project .pcp-banner h5 {
-    font-size: 0.9rem;
+    font-size: var(--bs-font-size-sm);
   }
 
   .project .pcp-banner-header {
@@ -173,7 +173,7 @@
 }
 
 .project .people h2 {
-  color: #003364;
+  color: var(--bc-blue);
 }
 
 /* Desktop-specific styles */
@@ -199,7 +199,7 @@
   }
 
   .project .people .contact-divider {
-    border-left: 1px solid #adb5bd;
+    border-left: 1px solid var(--bs-border-color);
     padding-left: 2rem;
   }
 }

@@ -1,6 +1,6 @@
 import { Component, OnDestroy, EventEmitter, inject } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
-import { Router } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { Utils } from 'app/shared/utils/utils';
 import { TableRowComponent, ITableMessage } from 'app/shared/components/table-template/table-row-component';
 import { TableObject } from 'app/shared/components/table-template/table-object';
@@ -11,14 +11,14 @@ import { TableObject } from 'app/shared/components/table-template/table-object';
   styleUrls: ['./search-document-table-rows.component.css'],
   imports: [
     CommonModule,
-    DatePipe
+    DatePipe,
+    RouterLink
   ],
   providers: [DatePipe],
   standalone: true
 })
 export class DocSearchTableRowsComponent implements TableRowComponent, OnDestroy {
   private alive = true;
-  private router = inject(Router);
   private utils = inject(Utils);
 
   // Required by TableRowComponent interface
@@ -33,21 +33,11 @@ export class DocSearchTableRowsComponent implements TableRowComponent, OnDestroy
   }
 
   idToList(id: string): string {
-    if (!id) return '-';
-    const item = this.lists.find(listItem => listItem._id === id);
-    return item?.name || id;
+    return this.utils.idToListName(id, this.lists);
   }
 
   goToItem(item: any) {
-    const filename = item.documentFileName || item.displayName || item.internalOriginalName;
-    const safeName = this.utils.encodeString(filename, true);
-    window.open(`/api/public/document/${item._id}/download/${safeName}`, '_blank');
-  }
-
-  goToProject(item: any) {
-    if (item?.project?._id) {
-      this.router.navigate(['/p', item.project._id, 'project-details']);
-    }
+    this.utils.openDocumentDownload(item);
   }
 
   ngOnDestroy() {

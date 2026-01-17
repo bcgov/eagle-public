@@ -19,13 +19,13 @@
 .hero-banner__content {
   padding-top: 5rem;
   padding-bottom: 2rem;
-  color: #fff;
+  color: var(--bs-white);
 }
 
 .hero-banner__content h1 {
   margin-bottom: 1.15rem;
   line-height: 2.15rem;
-  font-size: 2.25rem;
+  font-size: var(--bs-font-size-1);
 }
 
 .hero-banner__content h1 .wb {
@@ -35,9 +35,9 @@
 .hero-banner__content p {
   margin-bottom: 0;
   line-height: 1.5;
-  font-size: 1.65rem;
+  font-size: var(--bs-font-size-3);
   max-width: 860px;
-  font-weight: 300;
+  font-weight: var(--bs-font-weight-normal);
   orphans: 3;
 }
 
@@ -56,15 +56,15 @@
   border: 2px solid var(--bs-warning);
   padding: 0.5rem;
   text-transform: none;
-  font-size: 1rem;
-  font-weight: 900;
+  font-size: var(--bs-font-size-6);
+  font-weight: var(--bs-font-weight-bold);
   cursor: pointer;
   color: var(--bs-warning);
   margin-bottom: 10px;
 }
 
 .hero-banner__actions-buttons .btn:hover {
-  color: #036;
+  color: var(--bc-blue);
 }
 
 .hero-banner__actions-buttons .btn + span {
@@ -80,12 +80,12 @@
   }
 
   .hero-banner__content h1 {
-    font-size: 1.8rem;
+    font-size: var(--bs-font-size-3);
     font-weight: bold;
   }
 
   .hero-banner__content p {
-    font-size: 1.2rem;
+    font-size: var(--bs-font-size-5);
   }
 }
 
@@ -124,12 +124,12 @@
 
   .hero-banner__content h1 {
     line-height: 2.8rem;
-    font-size: 2.65rem;
+    font-size: var(--bs-font-size-1);
   }
 
   .hero-banner__content p {
     line-height: 1.75;
-    font-size: 1.35rem;
+    font-size: var(--bs-font-size-4);
   }
 }
 

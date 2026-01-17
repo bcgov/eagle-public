@@ -147,7 +147,7 @@
               @if (filter.type === FilterType.DateRange) {
                 <div>
                   @if (filter.name && filter.name.length > 0) {
-                    <label class="control-label font-weight-bold">{{filter.name}}</label>
+                    <span class="control-label font-weight-bold">{{filter.name}}</span>
                   }
                   <div class="row">
                     <div class="col-md-6 start-date-padding">
@@ -181,7 +181,7 @@
               @if (filter.type === FilterType.Dropdown) {
                 <div>
                   @if (filter.name && filter.name.length > 0) {
-                    <label class="control-label font-weight-bold">{{filter.name}}</label>
+                    <span class="control-label font-weight-bold">{{filter.name}}</span>
                   }
                   <select class="form-select"
                     [attr.aria-label]="filter.name + ' dropdown'"
@@ -200,8 +200,8 @@
               @if (filter.type === FilterType.MultiSelect) {
                 <div>
                   @if (filter.name && filter.name.length > 0) {
-                    <label class="control-label font-weight-bold"
-                      for="activityTypeFilter" tabindex="0">{{filter.name}}</label>
+                    <span class="control-label font-weight-bold"
+                      tabindex="0">{{filter.name}}</span>
                   }
                   <app-autocomplete-multi-select [filter]="filter"
                     (changeEvent)="changeMultiSelect()"
@@ -213,7 +213,7 @@
               @if (filter.type === FilterType.RadioPicker) {
                 <div>
                   @if (filter.name && filter.name.length > 0) {
-                    <label class="control-label font-weight-bold">{{filter.name}}</label>
+                    <span class="control-label font-weight-bold">{{filter.name}}</span>
                   }
                   <div class="row">
                     @for (radio of filter.filterDefinition.options; track radio.id) {
@@ -231,8 +231,9 @@
                     }
                     <div class="col-xl-1 d-flex align-items-center">
                       @if (formGroup.get(filter.id)!.value) {
-                        <span class="clear-button"
-                          (click)="resetFilter(filter.id)">
+                        <button type="button" class="clear-button"
+                          (click)="resetFilter(filter.id)"
+                          aria-label="Clear filter">
                           <svg class="bi bi-x-circle"
                             width="1em"
                             height="1em"
@@ -246,7 +247,7 @@
                             <path fill-rule="evenodd"
                               d="M4.146 4.146a.5.5 0 0 0 0 .708l7 7a.5.5 0 0 0 .708-.708l-7-7a.5.5 0 0 0-.708 0z" />
                           </svg>
-                        </span>
+                        </button>
                       }
                     </div>
                   </div>
@@ -256,7 +257,7 @@
               @if (filter.type === FilterType.Checkbox) {
                 <div>
                   @if (filter.name && filter.name.length > 0) {
-                    <label class="control-label font-weight-bold">{{filter.name}}</label>
+                    <span class="control-label font-weight-bold">{{filter.name}}</span>
                   }
                   <div class="row">
                     @for (box of filter.filterDefinition.options; track box.id) {
@@ -280,7 +281,7 @@
               @if (filter.type === FilterType.SliderToggle) {
                 <div>
                   @if (filter.name && filter.name.length > 0) {
-                    <label class="control-label font-weight-bold">{{filter.name}}</label>
+                    <span class="control-label font-weight-bold">{{filter.name}}</span>
                   }
                   <div class="row slide-toggle-margin">
                     <div class="form-check form-switch">

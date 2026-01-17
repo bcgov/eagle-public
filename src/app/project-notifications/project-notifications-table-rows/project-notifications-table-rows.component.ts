@@ -1,5 +1,5 @@
 import { Component, ViewEncapsulation, ChangeDetectionStrategy, inject, signal, EventEmitter } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ResponsiveService } from '../../services/responsive.service';
 
 import { TableRowComponent, ITableMessage } from '../../shared/components/table-template/table-row-component';
@@ -14,10 +14,9 @@ import { ProjectNotificationDocumentsTableComponent } from '../project-notificat
   encapsulation: ViewEncapsulation.None,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    CommonModule,
     ProjectNotificationDocumentsTableDetailsComponent,
     ProjectNotificationDocumentsTableComponent
-  ],
+],
   standalone: true
 })
 export class ProjectNotificationsTableRowsComponent implements TableRowComponent {

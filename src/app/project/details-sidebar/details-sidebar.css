@@ -15,7 +15,7 @@
 /* Sidebar */
 .side-banner {
   background-color: var(--bc-blue);
-  color: #fff;
+  color: var(--bs-white);
   transition: margin-left 0.5s ease;
   position: relative;
 }
@@ -30,10 +30,10 @@
 }
 
 .project-name {
-  font-size: 1.75rem;
-  color: #fff;
+  font-size: var(--bs-font-size-3);
+  color: var(--bs-white);
   margin: 0 0 1rem 0;
-  font-weight: 700;
+  font-weight: var(--bs-font-weight-bold);
 }
 
 .info-section {
@@ -44,32 +44,32 @@
   margin-bottom: 1rem;
 }
 
-.info-block label {
+.info-block .info-label {
   font-weight: bold;
   color: var(--bs-warning);
-  font-size: 1rem;
+  font-size: var(--bs-font-size-6);
   display: block;
   margin-bottom: 5px;
 }
 
 .info-block .ea-decision {
-  color: white;
-  font-size: 1rem;
-  border: 2px solid white;
+  color: var(--bs-white);
+  font-size: var(--bs-font-size-6);
+  border: 2px solid var(--bs-white);
   padding: 5px 10px;
   font-weight: bold;
   display: inline-block;
 }
 
 .info-block .info-link {
-  color: white;
-  font-size: small;
+  color: var(--bs-white);
+  font-size: var(--bs-font-size-sm);
   text-decoration: underline;
 }
 
 .info-block .info-value {
-  color: white;
-  font-size: 1rem;
+  color: var(--bs-white);
+  font-size: var(--bs-font-size-6);
   margin: 0;
 }
 
@@ -99,19 +99,19 @@
   height: 17rem;
   width: 100%;
   outline: none;
-  background-color: #ddd;
+  background-color: var(--bs-border-color);
 }
 
 .map-placeholder {
   text-align: center;
   position: absolute;
-  background: grey;
+  background: var(--bc-gray-medium);
   width: 100%;
   height: 250px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
+  color: var(--bs-white);
 }
 
 /* Toggle button */
@@ -132,11 +132,11 @@
   cursor: pointer;
   transition: left 0.5s ease, background-color 0.2s ease;
   z-index: 110;
-  color: #fff;
+  color: var(--bs-white);
 }
 
 .sidebar-toggle:hover {
-  background: #003366;
+  background: var(--bc-blue);
 }
 
 .sidebar-toggle .material-icons {

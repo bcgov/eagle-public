@@ -7,7 +7,6 @@ import { SearchService } from './search.service';
 describe('DocumentService', () => {
   let service: DocumentService;
   let mockApiService: any;
-  let mockSearchService: any;
 
   beforeEach(() => {
     mockApiService = {
@@ -15,7 +14,7 @@ describe('DocumentService', () => {
       handleError: vi.fn()
     };
 
-    mockSearchService = {
+    const mockSearchService = {
       getSearchResults: vi.fn(),
       getItem: vi.fn()
     };

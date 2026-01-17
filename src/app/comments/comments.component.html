@@ -28,15 +28,15 @@
             <span class="ea-decision">{{project()?.eacDecision?.name || "-"}}</span>
             <div class="basic-info">
               <div>
-                <label>Proponent</label>
+                <span class="info-label">Proponent</span>
                 <p class="value">{{project()?.proponent?.name || "-"}}</p>
               </div>
               <div>
-                <label>Type</label>
+                <span class="info-label">Type</span>
                 <p class="value">{{project()?.type || "-"}}</p>
               </div>
               <div>
-                <label>Sub-type</label>
+                <span class="info-label">Sub-type</span>
                 <p class="value">{{project()?.sector || "-"}}</p>
               </div>
             </div>
@@ -48,7 +48,12 @@
               <div class="card-header">Related Documents</div>
               <ul class="doc-list mb-0">
                 @for (doc of commentPeriodDocs(); track doc) {
-                  <li class="clickable-row" (click)="downloadDocument(doc)">
+                  <li class="clickable-row" 
+                      role="button"
+                      tabindex="0"
+                      (click)="downloadDocument(doc)"
+                      (keydown.enter)="downloadDocument(doc)"
+                      (keydown.space)="downloadDocument(doc)">
                     <span class="cell icon">
                       <i class="material-icons">insert_drive_file</i>
                     </span>
@@ -110,7 +115,7 @@
         </lib-table-template>
       </div>
     }
-    @if (tableData().totalListItems == 0) {
+    @if (tableData().totalListItems === 0) {
       <div>
         There are no comments.
       </div>

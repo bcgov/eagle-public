@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, Renderer2, ViewChild, inject, signal, computed } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { Router, NavigationEnd } from '@angular/router';
-import { Subject, Observable } from 'rxjs';
+import { Subject } from 'rxjs';
 import { takeUntil, finalize } from 'rxjs/operators';
 import * as L from 'leaflet';
 
@@ -13,7 +13,6 @@ import { ProjectFilterService } from 'app/services/project-filter.service';
 import { MapStateService } from 'app/services/map-state.service';
 import { FilterStateService } from 'app/services/filter-state.service';
 import { LoggingService } from 'app/services/logging.service';
-import { LoadingStateService } from 'app/services/loading-state.service';
 import { ProjlistFiltersComponent } from './projlist-filters/projlist-filters.component';
 import { ProjlistListComponent } from './projlist-list/projlist-list.component';
 import { ProjlistMapComponent } from './projlist-map/projlist-map.component';
@@ -23,11 +22,10 @@ import { ProjlistMapComponent } from './projlist-map/projlist-map.component';
   templateUrl: './projects.component.html',
   styleUrls: ['./projects.component.css'],
   imports: [
-    CommonModule,
     ProjlistFiltersComponent,
     ProjlistListComponent,
     ProjlistMapComponent
-  ],
+],
   standalone: true
 })
 export class ProjectsComponent implements OnInit, OnDestroy {
@@ -80,13 +78,13 @@ export class ProjectsComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     // prevent underlying map actions for list and filters components
-    const applist_list = <HTMLElement>document.getElementById('applist-list');
+    const applist_list = document.getElementById('applist-list') as HTMLElement;
     if (applist_list) {
       L.DomEvent.disableClickPropagation(applist_list);
       L.DomEvent.disableScrollPropagation(applist_list);
     }
 
-    const applist_filters = <HTMLElement>document.getElementById('applist-filters');
+    const applist_filters = document.getElementById('applist-filters') as HTMLElement;
     if (applist_filters) {
       L.DomEvent.disableClickPropagation(applist_filters);
       L.DomEvent.disableScrollPropagation(applist_filters);
