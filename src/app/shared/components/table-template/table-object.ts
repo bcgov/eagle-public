@@ -1,7 +1,7 @@
 import { Type } from '@angular/core';
 import { Constants } from 'app/shared/utils/constants';
 import { IPageSizePickerOption } from '../page-size-picker/page-size-picker.component';
-import { TableRowComponent } from './table-row-component';
+import type { TableRowComponent } from './table-row-component';
 
 export const DEFAULT_TABLE_OPTIONS: ITableOptions = {
   showHeader: true,
@@ -197,6 +197,13 @@ export interface ITableObjectParams {
    */
   totalListItems?: number;
   tableId?: string;
+  /**
+   * Additional data to pass to table rows (e.g., lists, configuration).
+   *
+   * @type {any}
+   * @memberof ITableObjectParams
+   */
+  data?: any;
 }
 /**
  * Main class that should contain all information needed to render a table, and handle pagination, sorting, etc.
@@ -205,19 +212,22 @@ export interface ITableObjectParams {
  * @class TableObject
  */
 export class TableObject {
-  public options: ITableOptions;
-  public component: Type<TableRowComponent>;
-  public columns: IColumnObject[];
-  public items: IRowObject[];
-  public dataset: string;
-  public currentPage: number;
-  public pageSizeOptions: IPageSizePickerOption[];
-  public pageSize: number;
-  public sortBy: string;
-  public totalListItems: number;
-  public tableId: string;
+  public options!: ITableOptions;
+  public component!: Type<TableRowComponent> | null;
+  public columns!: IColumnObject[];
+  public items!: IRowObject[];
+  public dataset!: string;
+  public currentPage!: number;
+  public pageSizeOptions!: IPageSizePickerOption[];
+  public pageSize!: number;
+  public sortBy!: string;
+  public totalListItems!: number;
+  public tableId!: string;
+  public data?: any;
+  
   constructor(params?: ITableObjectParams) {
-    this.options = (params && params.options) || new Object({
+    // Use nullish coalescing for cleaner null/undefined checks
+    this.options = params?.options ?? {
       showHeader: true,
       showPagination: true,
       showPageSizePicker: true,
@@ -225,16 +235,17 @@ export class TableObject {
       disableRowHighlight: false,
       showTopControls: true,
       rowSpacing: 0
-    });
-    this.component = (params && params.component) || null;
-    this.columns = (params && params.columns) || [];
-    this.items = (params && params.items) || [];
-    this.dataset = (params && params.dataset) || Constants.tableDefaults.DEFAULT_DATASET;
-    this.currentPage = (params && params.currentPage) || Constants.tableDefaults.DEFAULT_CURRENT_PAGE;
-    this.pageSizeOptions = (params && params.pageSizeOptions) || [...Constants.tableDefaults.DEFAULT_PAGE_SIZE_OPTIONS];
-    this.pageSize = (params && params.pageSize) || Constants.tableDefaults.DEFAULT_PAGE_SIZE;
-    this.sortBy = (params && params.sortBy) || Constants.tableDefaults.DEFAULT_SORT_BY;
-    this.totalListItems = (params && params.totalListItems) || 0;
-    this.tableId = (params && params.tableId) || String(Math.floor(Math.random() * 100000));
+    };
+    this.component = params?.component ?? null;
+    this.columns = params?.columns ?? [];
+    this.items = params?.items ?? [];
+    this.dataset = params?.dataset ?? Constants.tableDefaults.DEFAULT_DATASET;
+    this.currentPage = params?.currentPage ?? Constants.tableDefaults.DEFAULT_CURRENT_PAGE;
+    this.pageSizeOptions = params?.pageSizeOptions ?? [...Constants.tableDefaults.DEFAULT_PAGE_SIZE_OPTIONS];
+    this.pageSize = params?.pageSize ?? Constants.tableDefaults.DEFAULT_PAGE_SIZE;
+    this.sortBy = params?.sortBy ?? Constants.tableDefaults.DEFAULT_SORT_BY;
+    this.totalListItems = params?.totalListItems ?? 0;
+    this.tableId = params?.tableId ?? crypto.randomUUID();
+    this.data = params?.data ?? null;
   }
 }

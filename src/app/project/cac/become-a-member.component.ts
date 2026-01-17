@@ -1,77 +1,69 @@
-import { Component, Input, OnInit } from '@angular/core';
-import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
+import { Component, inject, signal, input } from '@angular/core';
 
-import { ProjectService } from 'app/services/project.service';
-import { Project } from 'app/models/project';
+import { FormsModule } from '@angular/forms';
+import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
+import { ProjectService } from '../../services/project.service';
+import { Project } from '../../models/project';
+import { LoggingService } from '../../services/logging.service';
 
 @Component({
+  selector: 'app-become-a-member',
+  imports: [FormsModule],
   templateUrl: './become-a-member.component.html',
-  styleUrls: ['./become-a-member.component.scss']
+  styleUrls: ['./become-a-member.component.css'],
+  standalone: true
 })
+export class BecomeAMemberComponent {
+  private projectService = inject(ProjectService);
+  private logger = inject(LoggingService);
+  public activeModal = inject(NgbActiveModal);
+  
+  project = input.required<Project>();
+  
+  submitting = signal(false);
+  currentPage = signal(1);
+  
+  acknowledged = signal<boolean>(false);
+  nameInput = signal('');
+  emailInput = signal('');
+  emailConfirmInput = signal('');
+  liveNear = signal(false);
+  liveNearInput = signal('');
+  memberOf = signal(false);
+  memberOfInput = signal('');
+  knowledgeOf = signal(false);
+  knowledgeOfInput = signal('');
+  additionalNotesInput = signal('');
+  termsOfReference = signal(false);
 
-export class BecomeAMemberComponent implements OnInit {
-  @Input() project: Project;
-
-  public submitting = false;
-  public progressValue: number;
-  public progressBufferValue: number;
-  public totalSize: number;
-  public currentPage = 1;
-  public comment: Comment;
-  public acknowledged: any;
-
-  // CAC
-  public nameInput: string;
-  public emailInput: any;
-  public emailConfirmInput: any;
-  public liveNear: boolean;
-  public liveNearInput: any;
-  public memberOf: boolean;
-  public memberOfInput: any;
-  public knowledgeOf: boolean;
-  public knowledgeOfInput: any;
-  public additionalNotesInput: any;
-
-  constructor(
-    public activeModal: NgbActiveModal,
-    private projectService: ProjectService,
-  ) { }
-
-  ngOnInit() {
-    this.comment = new Comment();
+  p1_next() {
+    this.currentPage.set(2);
   }
 
-  public p1_next() {
-    this.currentPage++;
-  }
+  async p2_next() {
+    this.submitting.set(true);
 
-  public p2_next() {
-    this.submitting = true;
-
-    // Build the comment
-    let signUpObject = {
-      name: this.nameInput,
-      email: this.emailInput,
-      liveNear: this.liveNear,
-      liveNearInput: this.liveNearInput,
-      memberOf: this.memberOf,
-      memberOfInput: this.memberOfInput,
-      knowledgeOf: this.knowledgeOf,
-      knowledgeOfInput: this.knowledgeOfInput,
-      additionalNotes: this.additionalNotesInput
+    const signUpObject = {
+      name: this.nameInput(),
+      email: this.emailInput(),
+      liveNear: this.liveNear(),
+      liveNearInput: this.liveNearInput(),
+      memberOf: this.memberOf(),
+      memberOfInput: this.memberOfInput(),
+      knowledgeOf: this.knowledgeOf(),
+      knowledgeOfInput: this.knowledgeOfInput(),
+      additionalNotes: this.additionalNotesInput()
     };
 
-    this.projectService.cacSignUp(this.project, signUpObject)
-    .toPromise()
-    .then((res: any) => {
-      console.log('Success:', res);
-      this.submitting = false;
-      this.currentPage++;
-    })
-    .catch(error => {
-      console.log('error', error);
+    try {
+      await this.projectService.cacSignUp(this.project(), signUpObject).toPromise();
+      this.logger.info('CAC sign-up submitted successfully', 'BecomeAMemberComponent');
+      this.submitting.set(false);
+      this.currentPage.set(3);
+    } catch (error) {
+      this.logger.error('Error submitting CAC sign-up', 'BecomeAMemberComponent', error);
       alert('Uh-oh, error submitting information');
-      this.submitting = false;
-    });
+      this.submitting.set(false);
+    }
   }
 }

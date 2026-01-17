@@ -1,5 +1,3 @@
-import { Component, Input, EventEmitter, Output } from '@angular/core';
-
 /**
  * Defines a single page size option.
  *
@@ -23,20 +21,24 @@ export interface IPageSizePickerOption {
   value: number;
 }
 
+import { Component, input, output, ChangeDetectionStrategy } from '@angular/core';
+
+
 @Component({
   selector: 'lib-page-size-picker',
   templateUrl: './page-size-picker.component.html',
-  styleUrls: ['./page-size-picker.component.scss']
+  styleUrls: ['./page-size-picker.component.css'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [],
+  standalone: true
 })
 export class PageSizePickerComponent {
-  @Input() isDisabled = false;
-  @Input() isHidden = false;
-  @Input() sizeOptions: IPageSizePickerOption[] = [];
-  @Input() currentPageSize;
+  isDisabled = input(false);
+  isHidden = input(false);
+  sizeOptions = input<IPageSizePickerOption[]>([]);
+  currentPageSize = input<number>();
 
-  @Output() pageSizeChosen: EventEmitter<IPageSizePickerOption> = new EventEmitter();
-
-  constructor() {}
+  pageSizeChosen = output<IPageSizePickerOption>();
 
   getTitle(sizeOption: IPageSizePickerOption) {
     return `Show ${sizeOption.value} records per page`;
@@ -46,7 +48,7 @@ export class PageSizePickerComponent {
     this.pageSizeChosen.emit(sizeOption);
   }
 
-  isSizeOptionActive(sizeOption): boolean {
-    return sizeOption.value === this.currentPageSize;
+  isSizeOptionActive(sizeOption: IPageSizePickerOption): boolean {
+    return sizeOption.value === this.currentPageSize();
   }
 }

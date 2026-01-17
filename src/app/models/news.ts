@@ -1,15 +1,16 @@
 import { Project } from './project';
 import { ProjectNotification } from './projectNotification';
+import { CommentPeriod } from './commentperiod';
 
 export class News {
-  _id: number;
-  headline: string;
-  content: string;
-  active: boolean;
-  project: Project;
-  type: string;
-  pcp: string;
-  projectNotification: ProjectNotification;
+  _id!: number;
+  headline!: string;
+  content!: string;
+  active!: boolean;
+  project!: Project;
+  type!: string;
+  pcp!: CommentPeriod | null;
+  projectNotification!: ProjectNotification;
   dateAdded: string;
   dateUpdated: string;
   contentUrl: string;

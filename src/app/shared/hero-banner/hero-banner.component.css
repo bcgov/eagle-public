@@ -1,0 +1,162 @@
+/* Hero Banner Component */
+
+.hero-banner {
+  position: relative;
+  background-color: var(--header-bg);
+  background-image: url("/assets/images/prc-hero-banner-img.jpg");
+  background-position: center bottom;
+  background-size: 350%;
+  box-shadow: 0 0 4rem var(--hero-shadow-color) inset, 0 0.1rem 0.5rem rgb(158 158 158 / 24%);
+  margin-bottom: 3rem;
+}
+
+.hero-banner .container {
+  min-height: 20rem;
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+}
+
+.hero-banner__content {
+  padding-top: 5rem;
+  padding-bottom: 2rem;
+  color: var(--bs-white);
+}
+
+.hero-banner__content h1 {
+  margin-bottom: 1.15rem;
+  line-height: 2.15rem;
+  font-size: var(--bs-font-size-1);
+}
+
+.hero-banner__content h1 .wb {
+  display: block;
+}
+
+.hero-banner__content p {
+  margin-bottom: 0;
+  line-height: 1.5;
+  font-size: var(--bs-font-size-3);
+  max-width: 860px;
+  font-weight: var(--bs-font-weight-normal);
+  orphans: 3;
+}
+
+.hero-banner__actions {
+  margin-top: 1.75rem;
+}
+
+/* Hero banner button styles are now in assets/styles/components/buttons.css as .hero-banner-btn */
+
+.hero-banner__actions-title {
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.hero-banner__actions-buttons .btn {
+  border: 2px solid var(--bs-warning);
+  padding: 0.5rem;
+  text-transform: none;
+  font-size: var(--bs-font-size-6);
+  font-weight: var(--bs-font-weight-bold);
+  cursor: pointer;
+  color: var(--bs-warning);
+  margin-bottom: 10px;
+}
+
+.hero-banner__actions-buttons .btn:hover {
+  color: var(--bc-blue);
+}
+
+.hero-banner__actions-buttons .btn + span {
+  padding: 0.65rem 0.4rem;
+  vertical-align: middle;
+}
+
+/* Mobile/Tablet */
+@media (max-width: 767px) {
+  .hero-banner__content {
+    padding-top: 2rem;
+    padding-bottom: 1rem;
+  }
+
+  .hero-banner__content h1 {
+    font-size: var(--bs-font-size-3);
+    font-weight: bold;
+  }
+
+  .hero-banner__content p {
+    font-size: var(--bs-font-size-5);
+  }
+}
+
+@media (max-width: 1023px) {
+  .hero-banner__actions .btn i {
+    display: none;
+  }
+
+  .hero-banner__actions .btn span {
+    display: inline-block;
+    transform: none;
+  }
+}
+
+/* Responsive background scaling */
+@media (min-width: 400px) {
+  .hero-banner {
+    background-size: 300%;
+  }
+}
+
+@media (min-width: 768px) {
+  .hero-banner {
+    background-size: 200%;
+  }
+
+  .hero-banner .container {
+    padding-top: 67px;
+    min-height: 30rem;
+  }
+
+  .hero-banner__content {
+    padding-top: 8rem;
+    padding-bottom: 6rem;
+  }
+
+  .hero-banner__content h1 {
+    line-height: 2.8rem;
+    font-size: var(--bs-font-size-1);
+  }
+
+  .hero-banner__content p {
+    line-height: 1.75;
+    font-size: var(--bs-font-size-4);
+  }
+}
+
+@media (min-width: 992px) {
+  .hero-banner {
+    background-size: 150%;
+  }
+
+  .hero-banner__content h1 .wb {
+    display: inline;
+  }
+}
+
+@media (min-width: 1200px) {
+  .hero-banner {
+    background-size: 120%;
+  }
+}
+
+@media (min-width: 1400px) {
+  .hero-banner {
+    background-position: center -15rem;
+  }
+}
+
+@media (min-width: 1900px) {
+  .hero-banner {
+    background-size: 100%;
+  }
+}

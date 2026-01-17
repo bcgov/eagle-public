@@ -1,21 +1,21 @@
 export class Comment {
-  _id: string;
-  author: string;
-  comment: string;
-  commentId: number;
-  dateAdded: Date;
-  dateUpdated: Date;
-  isAnonymous: boolean;
-  location: string;
+  _id!: string;
+  author!: string;
+  comment!: string;
+  commentId!: number;
+  dateAdded!: Date;
+  dateUpdated!: Date;
+  isAnonymous!: boolean;
+  location!: string;
   period: any;
-  submittedCAC: Boolean;
+  submittedCAC!: boolean;
   documents: any;
   documentsList: any;
 
   // Permissions
-  read: Array<String> = [];
-  write: Array<String> = [];
-  delete: Array<String> = [];
+  read: string[] = [];
+  write: string[] = [];
+  delete: string[] = [];
 
   constructor(obj?: any) {
     this._id            = obj && obj._id         || null;

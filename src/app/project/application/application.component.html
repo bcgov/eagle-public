@@ -1,15 +1,26 @@
-<section class="tab-section">
-  <div class="spinner-container"
-    *ngIf="loading">
-    <div class="spinner-new rotating"></div>
-  </div>
-  <div *ngIf="!loading && tableData.totalListItems !== 0">
-    <lib-table-template *ngIf="tableData.totalListItems > 0"
-      [data]="tableData"
-      (messageOut)="onMessageOut($event)">
-    </lib-table-template>
-  </div>
-  <div *ngIf="tableData.totalListItems === 0">
-    There are no application documents associated with this project.
-  </div>
-</section>
+
+  <section class="mb-4 pt-0 pb-0">
+      <search-filter-template
+        (searchEvent)="executeSearch($event)"
+        [advancedFilters]="true"
+        [showAdvancedFilters]="showAdvancedFilters()"
+        [searchOnFilterChange]="true"
+        [filters]="filters()"
+        (resetControls)="onResetControls()"
+        (toggleFiltersPanelEvent)="onToggleFiltersPanel($event)"
+        [searchHelpLinkArray]="['/search-help']">
+      </search-filter-template>
+    
+
+    @if (!loading() && tableData().totalListItems === 0) {
+      <div>
+        There are no application documents associated with this project.
+      </div>
+    } @else {
+      <lib-table-template
+        [data]="tableData()"
+        [loading]="loading()"
+        (messageOut)="onMessageOut($event)">
+      </lib-table-template>
+    }
+

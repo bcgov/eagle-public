@@ -1,0 +1,32 @@
+<main>
+  <app-hero-banner
+    [title]="config().heroBanner.title"
+    [description]="config().heroBanner.description"
+    [actions]="config().heroBanner.actions"
+    [backgroundImage]="config().heroBanner.backgroundImage"
+  />
+
+  <section class="table-container">
+    <div class="container">
+      <section class="mb-4 pt-0 pb-0">
+        <search-filter-template
+          (searchEvent)='executeSearch($event)'
+          [advancedFilters]="true"
+          [showAdvancedFilters]="showAdvancedFilters()"
+          [searchOnFilterChange]="true"
+          [filters]="filters()"
+          (toggleFiltersPanelEvent)="showAdvancedFilters.set($event.showPanel)"
+          [searchHelpLinkArray]='["/search-help"]'
+          [searching]="loadingTableData()">
+        </search-filter-template>
+      </section>
+      <div [class.table-loading]="loadingTableData()">
+        <lib-table-template
+          [data]="tableData()"
+          [loading]="loadingTableData()"
+          (messageOut)="onMessageOut($event)">
+        </lib-table-template>
+      </div>
+    </div>
+  </section>
+</main>

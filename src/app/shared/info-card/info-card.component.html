@@ -1,0 +1,34 @@
+<div class="feature-block">
+  @if (icon()) {
+    <div class="feature-block__icon">
+      <div class="rounded-circle border border-white border-3 d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+        <i class="material-icons fs-1 text-white">{{ icon() }}</i>
+      </div>
+    </div>
+  }
+  <div class="feature-block__header">
+    <h3>{{ title() }}</h3>
+  </div>
+  <div class="feature-block__body">
+    <p [innerHTML]="description()"></p>
+  </div>
+  @if (button()) {
+    <div class="feature-block__footer">
+      @if (button()!.link) {
+        <a class="btn btn-sm inverted" 
+           [routerLink]="button()!.link"
+           [attr.aria-label]="button()!.title || button()!.text">
+          {{ button()!.text }}
+        </a>
+      } @else if (button()!.href) {
+        <a class="btn btn-sm inverted" 
+           [href]="button()!.href"
+           [target]="button()!.target || '_self'"
+           [rel]="button()!.rel || ''"
+           [title]="button()!.title || button()!.text">
+          {{ button()!.text }}
+        </a>
+      }
+    </div>
+  }
+</div>

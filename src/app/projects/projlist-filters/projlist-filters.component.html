@@ -1,80 +1,98 @@
 <div class="app-filters__container d-flex flex-column">
-  <div class="search-container" id="applist-filters">
+  <button class="mobile-search-toggle" (click)="toggleSearchMobile()" aria-label="Toggle search">
+    <i class="material-icons">{{ showSearchMobile() ? 'close' : 'search' }}</i>
+  </button>
+  <div class="search-container" [class.show-mobile]="showSearchMobile()" id="applist-filters">
     <div class="additional-filters">
-      <label class="header-label" for="applicantInput">Search Environmental Assessment Projects</label>
-      <div class="search-box">
-        <input type="text" class="form-control gtm-filter-applicant " placeholder="Start Typing A Project Name" id="applicantInput"
-        [(ngModel)]="_applicantFilter"
-        [ngbTypeahead]="applicantSearch" [focusFirst]="false">
-        <button type="button" class="btn btn-primary" title="Apply Filters" id="applyButton" (click)="applyAllFilters();"
-            [disabled]="loading">
-          <i class="material-icons">search</i>Search
-        </button>
+      <div class="mobile-header">
+        <label class="header-label" for="applicantInput">Search Environmental Assessment Projects</label>
+        <button type="button" class="btn-close" (click)="toggleSearchMobile()" aria-label="Close search"></button>
+      </div>
+      <div class="search-box position-relative">
+        <input type="text" class="form-control gtm-filter-applicant" placeholder="Start typing a project name" id="applicantInput"
+        [ngModel]="applicant()" 
+        (ngModelChange)="applicant.set($event); applyFilters()">
+        @if (applicant()) {
+          <button type="button" class="btn-clear" (click)="clearSearch()" aria-label="Clear search">
+            <i class="material-icons">close</i>
+          </button>
+        }
       </div>
       <div class="toggle-container">
-        <div class="toggle-btn" (click)="toggleFilters()">
+        <div class="toggle-btn" 
+             role="button"
+             tabindex="0"
+             (click)="toggleFilters()"
+             (keydown.enter)="toggleFilters()"
+             (keydown.space)="toggleFilters()"
+             [attr.aria-expanded]="showFilters">
           <span>{{ showFilters ? 'Hide' : 'Show' }} Advanced Filters</span>
           <i class="material-icons">{{ showFilters ? 'keyboard_arrow_up' : 'keyboard_arrow_down' }}</i>
         </div>
       </div>
-      <div class="filters-container" *ngIf="showFilters">
-        <div class="filter-container">
-          <label for="type">
-            Project Type
-          </label>
-          <div class="filter-select">
-            <ng-select
-                id="type"
-                name="type"
-                multiple="true"
-                bindLabel="name"
-                placeholder="Type Project Type"
-                [items]="projectTypes"
-                [closeOnSelect]="false"
-                [(ngModel)]="_typeFilter"
-            >
-            </ng-select>
+      @if (showFilters) {
+        <div class="filters-container">
+          <div class="filter-container">
+            <label for="type">
+              Project Type
+            </label>
+            <div class="filter-select">
+              <app-custom-multi-select
+                  id="type"
+                  name="type"
+                  [multiple]="true"
+                  bindLabel="name"
+                  placeholder="Type Project Type"
+                  [items]="projectTypes"
+                  [closeOnSelect]="false"
+                  [ngModel]="types()"
+                  (ngModelChange)="types.set($event); applyFilters()"
+              >
+              </app-custom-multi-select>
+            </div>
+          </div>
+          <div class="filter-container">
+            <label for="region">
+              Region
+            </label>
+            <div class="filter-select">
+              <app-custom-multi-select
+                  id="region"
+                  name="region"
+                  [multiple]="true"
+                  bindLabel="name"
+                  placeholder="Type Project Region"
+                  [items]="projectRegions"
+                  [closeOnSelect]="false"
+                  [ngModel]="regions()"
+                  (ngModelChange)="regions.set($event); applyFilters()"
+              >
+              </app-custom-multi-select>
+            </div>
+          </div>
+          <div class="filter-container">
+            <label for="phase">
+              Project Phase
+            </label>
+            <div class="filter-select">
+              <app-custom-multi-select
+                  id="phase"
+                  name="phase"
+                  [multiple]="true"
+                  bindLabel="name"
+                  [groupBy]="'legislation'"
+                  placeholder="Type Project Phase"
+                  [items]="projectPhases"
+                  [closeOnSelect]="false"
+                  [markFirst]="false"
+                  [ngModel]="phases()"
+                  (ngModelChange)="phases.set($event); applyFilters()"
+              >
+              </app-custom-multi-select>
+            </div>
           </div>
         </div>
-        <div class="filter-container">
-          <label for="region">
-            Region
-          </label>
-          <div class="filter-select">
-            <ng-select
-                id="region"
-                name="region"
-                multiple="true"
-                bindLabel="name"
-                placeholder="Type Project Region"
-                [items]="projectRegions"
-                [closeOnSelect]="false"
-                [(ngModel)]="_regionFilter"
-            >
-            </ng-select>
-          </div>
-        </div>
-        <div class="filter-container">
-          <label for="phase">
-            Project Phase
-          </label>
-          <div class="filter-select">
-            <ng-select
-                id="phase"
-                name="phase"
-                multiple="true"
-                bindLabel="name"
-                groupBy="legislation"
-                placeholder="Type Project Phase"
-                [items]="projectPhases"
-                [closeOnSelect]="false"
-                [markFirst]="false"
-                [(ngModel)]="_phaseFilter"
-            >
-            </ng-select>
-          </div>
-        </div>
-      </div>
+      }
     </div>
   </div>
 </div>

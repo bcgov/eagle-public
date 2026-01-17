@@ -1,45 +1,54 @@
-<tr class="border">
-  <td class="col-12 p-3">
-    <div class="d-flex w-100 justify-content-between">
-      <div class="pb-3">
-        <div *ngIf="rowData.author && rowData.Anonymous !== true">
-          <b>
-            <span>{{rowData.author}}</span>
-            <span *ngIf="rowData.location">, {{rowData.location}}</span>
-          </b>
-        </div>
-        <div *ngIf="rowData.author == null || rowData.Anonymous">
-          <b>
-            <span>Anonymous</span>
-          </b>
-        </div>
+<td class="p-3">
+  <div class="mb-2">
+    @if (rowData.author && rowData.Anonymous !== true) {
+      <b>
+        {{rowData.author}}@if (rowData.location) {
+        <span>, {{rowData.location}}</span>
+      }
+    </b>
+  }
+  @if (rowData.author === null || rowData.Anonymous) {
+    <b>Anonymous</b>
+  }
+</div>
+
+<div class="text-muted mb-3">
+  {{(rowData.dateAdded | date:'longDate') || "-"}}
+</div>
+
+@if (rowData.comment) {
+  <div>
+    @if (rowData.expanded) {
+      <p>{{rowData.comment}}</p>
+    }
+    @if (!rowData.expanded) {
+      <p class="comment-truncated">{{rowData.comment}}</p>
+    }
+    @if (!rowData.expanded && hasOverflow()) {
+      <button class="btn btn-link clickable p-0" (click)="toggle(rowData); $event.stopPropagation()">
+        Read More
+      </button>
+    }
+    @if (rowData.expanded) {
+      <button class="btn btn-link clickable p-0" (click)="toggle(rowData); $event.stopPropagation()">
+        Read Less
+      </button>
+    }
+  </div>
+}
+
+@if (rowData.documents && rowData.documents.length > 0) {
+  <div class="mt-2">
+    @for (file of rowData.documents; track file) {
+      <div class="attachment clickable" 
+           role="button"
+           tabindex="0"
+           (click)="openAttachment(file); $event.stopPropagation()"
+           (keydown.enter)="openAttachment(file); $event.stopPropagation()"
+           (keydown.space)="openAttachment(file); $event.stopPropagation()">
+        <i class="material-icons">attach_file</i>{{file.internalOriginalName}}
       </div>
-      <div>
-        {{(rowData.dateAdded | date:'longDate') || "-"}}
-      </div>
-    </div>
-    <div>
-      <div *ngIf="rowData.comment && rowData.comment.length > 120">
-        <p *ngIf="rowData.comment && rowData.expanded == true">
-          {{rowData.comment}}
-        </p>
-        <p *ngIf="rowData.expanded == false">
-          {{rowData.comment.substr(0, 120)}} ...
-        </p>
-        <button class="btn btn-link clickable p-0" (click)="toggle(rowData)">
-          {{rowData.expanded ? 'Read Less' : 'Read More'}}
-        </button>
-      </div>
-      <p *ngIf="rowData.comment && rowData.comment.length <= 120">{{rowData.comment}}</p>
-    </div>
-    <div class="pb-3" *ngIf="rowData.documents && rowData.documents.length > 0">
-        <div class="attachment clickable" *ngFor="let file of rowData.documents" (click)="openAttachment(file)">
-            <div *ngIf="file && file.internalOriginalName">
-            <i class="material-icons">
-                attach_file
-            </i>{{file.internalOriginalName}}
-            </div>
-        </div>
-    </div>
-  </td>
-</tr>
+    }
+  </div>
+}
+</td>

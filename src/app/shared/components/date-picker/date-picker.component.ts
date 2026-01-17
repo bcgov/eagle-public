@@ -1,83 +1,166 @@
 import {
   Component,
-  Input,
-  OnChanges,
-  SimpleChanges,
-  ChangeDetectorRef,
+  input,
   OnInit,
-  EventEmitter,
-  OnDestroy
+  OnDestroy,
+  signal,
+  computed,
+  effect,
+  ChangeDetectionStrategy,
+  inject
 } from '@angular/core';
-import { NgbDateStruct } from '@ng-bootstrap/ng-bootstrap';
-import { FormControl } from '@angular/forms';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { NgbDatepickerModule, NgbDateStruct } from '@ng-bootstrap/ng-bootstrap';
 import { Utils } from '../../utils/utils';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
+import { LoggingService } from 'app/services/logging.service';
 
 @Component({
   selector: 'lib-date-picker',
   templateUrl: './date-picker.component.html',
-  styleUrls: ['./date-picker.component.scss']
+  styleUrl: './date-picker.component.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, NgbDatepickerModule],
+  standalone: true
 })
-export class DatePickerComponent implements OnInit, OnChanges, OnDestroy {
-  @Input() control: FormControl;
-  @Input() isValidate = false;
-  @Input() isDisabled = false;
-  @Input() minDate: Date = null;
-  @Input() maxDate: Date = null;
-  @Input() reset: EventEmitter<any>;
-  @Input() required = false;
+export class DatePickerComponent implements OnInit, OnDestroy {
+  control = input.required<FormControl>();
+  isValidate = input(false);
+  isDisabled = input(false);
+  minDate = input<Date | null>(null);
+  maxDate = input<Date | null>(null);
+  reset = input<Subject<any>>();
+  required = input(false);
 
-  private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
+  private ngUnsubscribe = new Subject<boolean>();
+  private utils = inject(Utils);
+  private logger = inject(LoggingService);
 
-  public ngbDate: NgbDateStruct = null;
-  public minNgbDate: NgbDateStruct = null;
-  public maxNgbDate: NgbDateStruct = null;
+  public dateValue = signal<NgbDateStruct | null>(null);
+  public minDateStruct = signal<NgbDateStruct | null>(null);
+  public maxDateStruct = signal<NgbDateStruct | null>(null);
+  
+  // Computed signals that return undefined instead of null for ngbDatepicker compatibility
+  public minDateForPicker = computed(() => this.minDateStruct() ?? undefined);
+  public maxDateForPicker = computed(() => this.maxDateStruct() ?? undefined);
 
-  public loading = true;
+  constructor() {
+    // Watch for min/max date changes and convert to NgbDateStruct
+    effect(() => {
+      const min = this.minDate();
+      if (min) {
+        this.minDateStruct.set(this.dateToNgbDateStruct(new Date(min)));
+      }
+    });
 
-  constructor(private _changeDetectionRef: ChangeDetectorRef, private utils: Utils) { }
+    effect(() => {
+      const max = this.maxDate();
+      if (max) {
+        this.maxDateStruct.set(this.dateToNgbDateStruct(new Date(max)));
+      }
+    });
+  }
 
-  ngOnChanges(changes: SimpleChanges) {
-    if (changes.minDate && changes.minDate.currentValue) {
-      this.minNgbDate = this.utils.convertJSDateToNGBDate(new Date(changes.minDate.currentValue));
-    }
-    if (changes.maxDate && changes.maxDate.currentValue) {
-      this.maxNgbDate = this.utils.convertJSDateToNGBDate(new Date(changes.maxDate.currentValue));
-    }
+  private dateToNgbDateStruct(date: Date): NgbDateStruct {
+    return {
+      year: date.getFullYear(),
+      month: date.getMonth() + 1,
+      day: date.getDate()
+    };
+  }
 
-    this.loading = false;
-    this._changeDetectionRef.detectChanges();
+  private ngbDateStructToDate(dateStruct: NgbDateStruct): Date {
+    return new Date(dateStruct.year, dateStruct.month - 1, dateStruct.day);
   }
 
   ngOnInit() {
-    this.ngbDate = this.control.value || null;
-    if (this.reset) {
-      this.reset.pipe(takeUntil(this.ngUnsubscribe)).subscribe(() => this.clearDate());
+    const ctrl = this.control();
+    if (!ctrl) {
+      this.logger.debug('DatePicker control is null - parent may not have registered this form control yet', 'DatePickerComponent');
+      return;
     }
+    
+    // Convert control value to NgbDateStruct
+    const value = ctrl.value;
+    if (value) {
+      if (typeof value === 'string') {
+        // Convert ISO string to NgbDateStruct
+        const date = new Date(value);
+        this.dateValue.set(this.dateToNgbDateStruct(date));
+      } else if (value instanceof Date) {
+        this.dateValue.set(this.dateToNgbDateStruct(value));
+      } else if (typeof value === 'object' && 'year' in value) {
+        // Already NgbDateStruct
+        this.dateValue.set(value);
+      }
+    }
+    
+    const resetSubject = this.reset();
+    if (resetSubject) {
+      resetSubject.pipe(takeUntil(this.ngUnsubscribe)).subscribe(() => this.clearDate());
+    }
+    
+    // Subscribe to control value changes to sync dateValue
+    ctrl.valueChanges
+      .pipe(takeUntil(this.ngUnsubscribe))
+      .subscribe(value => {
+        if (value) {
+          if (typeof value === 'string') {
+            const date = new Date(value);
+            this.dateValue.set(this.dateToNgbDateStruct(date));
+          } else if (value instanceof Date) {
+            this.dateValue.set(this.dateToNgbDateStruct(value));
+          } else if (typeof value === 'object' && 'year' in value) {
+            this.dateValue.set(value);
+          }
+        } else {
+          this.dateValue.set(null);
+        }
+      });
   }
 
-  onDateChange(ngbDate: NgbDateStruct) {
-    this.control.setValue(ngbDate);
-    this.control.markAsDirty();
+  onDateChange(dateStruct: NgbDateStruct | null) {
+    const ctrl = this.control();
+    if (!ctrl) return;
+    
+    if (dateStruct) {
+      // Convert NgbDateStruct to ISO string for storage
+      const isoString = `${dateStruct.year}-${String(dateStruct.month).padStart(2, '0')}-${String(dateStruct.day).padStart(2, '0')}`;
+      ctrl.setValue(isoString);
+      ctrl.markAsDirty();
+      this.dateValue.set(dateStruct);
+    } else {
+      ctrl.setValue('');
+      ctrl.markAsDirty();
+      this.dateValue.set(null);
+    }
   }
 
   clearDate() {
-    this.ngbDate = null;
-    this.control.setValue(null);
-    this.control.markAsDirty();
+    const ctrl = this.control();
+    this.dateValue.set(null);
+    if (!ctrl) return;
+    
+    ctrl.setValue('');
+    ctrl.markAsDirty();
   }
 
-  public isValidDate(date: NgbDateStruct): boolean {
-    if (date === null && !this.required) {
+  public isValidDate(dateStruct: NgbDateStruct | null): boolean {
+    if (!dateStruct && !this.required()) {
       return true;
-    } else {
-      return date && !isNaN(date.year) && !isNaN(date.month) && !isNaN(date.day);
     }
+    if (!dateStruct) {
+      return false;
+    }
+    // Check if date is valid
+    return dateStruct.year > 0 && dateStruct.month > 0 && dateStruct.month <= 12 && dateStruct.day > 0 && dateStruct.day <= 31;
   }
 
   ngOnDestroy() {
-    this.ngUnsubscribe.next();
+    this.ngUnsubscribe.next(true);
     this.ngUnsubscribe.complete();
   }
 }

@@ -1,0 +1,8 @@
+/* Note: Full SCSS conversion pending from search-help.component.scss */
+
+:host {
+  display: block;
+}
+.static-content {
+  margin-bottom: 2rem;
+}

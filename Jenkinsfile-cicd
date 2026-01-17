@@ -62,7 +62,7 @@ def _openshift(String name, String project, Closure body) {
 
             if ('Ignore'.equalsIgnoreCase(inputAction)) {
               notifyRocketChat(
-                "@all The build ${env.BUILD_DISPLAY_NAME} of eagle-public-pr, seems to be broken.\n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
+                "@all The build ${env.BUILD_DISPLAY_NAME} of eagle-public, seems to be broken.\n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
                 'deploy'
               )
               isDone=true
@@ -76,6 +76,7 @@ def _openshift(String name, String project, Closure body) {
 }
 
 def BUILD_DONE_STATUSES = ['Complete', 'Failed', 'Cancelled']
+
 pipeline {
   environment {
     TOOLSPROJECT = "${TOOLS_NAMESPACE ?: '6cdc9e-tools'}"
@@ -96,14 +97,16 @@ pipeline {
                 ROCKET_DEPLOY_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-deploy-webhook')
                 ROCKET_QA_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-qa-webhook')
               } catch (error) {
-                echo "Error retrieviing rocket chat token"
+                echo "Error retrieving rocket chat token"
               }
-              echo "Building eagle-public develop branch"
-              // trigger and wait for s2i build to complete
+
+              echo "Building eagle-public develop branch with Angular 21"
+              
+              // Trigger and wait for s2i build to complete
               def bcObj1 = openshift.selector('bc', "eagle-public-angular-builder")
               bcObj1.startBuild()
               def buildName1 = "eagle-public-angular-builder-${bcObj1.object().status.lastVersion}"
-              echo "Angular build name: ${buildName1}"
+              echo "Angular 21 build name: ${buildName1}"
               def buildSelector1 = openshift.selector('build', buildName1)
 
               buildSelector1.untilEach(1) {
@@ -114,11 +117,11 @@ pipeline {
                 return ( BUILD_DONE_STATUSES.contains(phase) )
               }
 
-              //  trigger and wait for nginx image build to complete
+              // Trigger and wait for nginx image build to complete
               def bcObj2 = openshift.selector('bc',"eagle-public-build" )
               bcObj2.startBuild()
               def buildName2 = "eagle-public-build-${bcObj2.object().status.lastVersion}"
-              echo "Ngix build name: ${buildName2}"
+              echo "Nginx build name: ${buildName2}"
               def buildSelector2 = openshift.selector('build', buildName2)
 
               buildSelector2.untilEach(1) {
@@ -128,7 +131,6 @@ pipeline {
                 }
                 return ( BUILD_DONE_STATUSES.contains(phase) )
               }
-
 
               echo "Build done"
 
@@ -143,7 +145,7 @@ pipeline {
             echo "Tagging latest to dev, hash: ${IMAGE_HASH}"
             openshift.tag("${TOOLSPROJECT}/eagle-public:latest", "${TOOLSPROJECT}/eagle-public:dev")
             notifyRocketChat(
-              "eagle-public latest develop has been built and tagged to dev",
+              "eagle-public latest develop (Angular 21) has been built and tagged to dev",
               'deploy'
             )
           }
@@ -162,7 +164,7 @@ pipeline {
             ROCKET_DEPLOY_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-deploy-webhook')
             ROCKET_QA_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-qa-webhook')
           } catch (error) {
-            echo "Error retrieviing rocket chat token"
+            echo "Error retrieving rocket chat token"
           }
           try {
             echo "Backing up..."
@@ -205,7 +207,7 @@ pipeline {
             ROCKET_DEPLOY_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-deploy-webhook')
             ROCKET_QA_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-qa-webhook')
           } catch (error) {
-            echo "Error retrieviing rocket chat token"
+            echo "Error retrieving rocket chat token"
           }
           try {
             echo "Backing up..."

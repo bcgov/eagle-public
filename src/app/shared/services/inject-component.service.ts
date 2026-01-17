@@ -1,11 +1,10 @@
-import { ViewContainerRef, ComponentFactoryResolver, Injectable, Type, ComponentRef } from '@angular/core';
+import { ViewContainerRef, Injectable, Type, ComponentRef } from '@angular/core';
 
 @Injectable({ providedIn: 'root' })
 export class InjectComponentService {
-  constructor(private componentFactoryResolver: ComponentFactoryResolver) {}
-
   /**
    * Inject the provided component into the provided view.
+   * In Angular 21, ComponentFactoryResolver is deprecated, use ViewContainerRef.createComponent directly.
    *
    * @param {ViewContainerRef} viewContainerRef
    * @param {Type<any>} componentToInject
@@ -13,10 +12,8 @@ export class InjectComponentService {
    * @memberof InjectComponentService
    */
   injectComponentIntoView(viewContainerRef: ViewContainerRef, componentToInject: Type<any>): ComponentRef<any> {
-    const componentFactory = this.componentFactoryResolver.resolveComponentFactory(componentToInject);
     viewContainerRef.clear();
-    const componentRef = viewContainerRef.createComponent(componentFactory);
-
+    const componentRef = viewContainerRef.createComponent(componentToInject);
     return componentRef;
   }
 }

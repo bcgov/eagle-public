@@ -1,15 +1,18 @@
-import { Component } from '@angular/core';
+import { Component, EventEmitter } from '@angular/core';
 
-import { TableRowComponent } from 'app/shared/components/table-template/table-row-component';
+import { TableRowComponent, ITableMessage } from 'app/shared/components/table-template/table-row-component';
+import { TableObject } from 'app/shared/components/table-template/table-object';
 
 @Component({
   selector: 'tr[app-pins-table-rows]',
   templateUrl: './pins-table-rows.component.html',
-  styleUrls: ['./pins-table-rows.component.scss']
+  imports: [],
+  standalone: true
 })
-
-export class PinsTableRowsComponent extends TableRowComponent {
-  constructor() {
-    super();
-  }
+export class PinsTableRowsComponent implements TableRowComponent {
+  // TableRowComponent interface properties
+  rowData: any;
+  tableData!: TableObject;
+  messageOut = new EventEmitter<ITableMessage>();
+  messageIn = new EventEmitter<ITableMessage>();
 }

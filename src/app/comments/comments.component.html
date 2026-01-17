@@ -1,99 +1,124 @@
-<div *ngIf="loading" class="spinner-border" role="status">
-  <span class="sr-only">Loading...</span>
-</div>
-
-<div *ngIf="!loading" class="project">
+<div class="project">
   <main class="project-info">
     <div class="hero-banner-alt">
       <div class="container">
         <div class="hero-banner__content">
-          <h1>{{project?.name || '-'}}</h1>
+          <h1>{{project()?.name || '-'}}</h1>
         
-        <div class="header-section" *ngIf="commentPeriod !== null && commentPeriod._id == commentPeriod._id">
-          <h2>{{commentPeriodHeader}}</h2>
-          <h2>{{commentPeriod.dateStarted | date:'mediumDate'}} - {{commentPeriod.longEndDate.toFormat('MMMM dd @ hh:mm a ZZZZ')}}</h2>
-          
-          <div *ngIf="commentPeriod.informationLabel !== null">
-            <div id="instructions" [innerHTML]="commentPeriod.instructions  | safeHtml"></div>
-            <br>
-            <p>{{commentPeriod.additionalText}}</p>
-            <br>
-            <p>{{commentPeriod.informationLabel}}</p>
-          </div>
-          <div *ngIf="commentPeriod.informationLabel === null">
-            <div id="instructions" [innerHTML]="commentPeriod.instructions  | safeHtml"></div>
-          </div>
-          
-          <div class="d-flex justify-content-end">
-            <button class="btn btn-light" (click)="addComment()" type="button"
-              *ngIf="commentPeriod.commentPeriodStatus === 'Open'">Submit Comment</button>
-          </div>
-        </div>
+          @if (commentPeriod() !== null && commentPeriod()?._id) {
+            <h2>{{commentPeriodHeader() || '-'}}</h2>
+            <h2>{{commentPeriod()!.dateStarted | date:'mediumDate'}} - {{commentPeriod()!.longEndDate.toFormat('MMMM dd @ hh:mm a ZZZZ')}}</h2>
+            <hr class="comment-period-divider">
+            
+            <div class="header-section">
+              <div>
+                <div id="instructions" [innerHTML]="sanitizedInstructions()"></div>
+                @if (commentPeriod()!.additionalText) {
+                  <p>{{commentPeriod()!.additionalText}}</p>
+                }
+                @if (commentPeriod()!.informationLabel) {
+                  <p>{{commentPeriod()!.informationLabel}}</p>
+                }
+              </div>
 
-        <span *ngIf="type === 'PROJECT'" class="ea-decision">{{project?.eacDecision?.name || "-"}}</span>
-        <div *ngIf="type === 'PROJECT'" class="basic-info">
-          <div>
-            <label>Proponent</label>
-            <p class="value">{{project?.proponent?.name || "-" | titlecase}}</p>
-          </div>
-          <div>
-            <label>Type</label>
-            <p class="value">{{project?.type || "-" | titlecase}}</p>
-          </div>
-          <div>
-            <label>Sub-type</label>
-            <p class="value">{{project?.sector || "-" | titlecase}}</p>
-          </div>
-        </div>
+            </div>
+          }
 
-        <!-- Related Documents -->
-        <div class="mb-3" *ngIf="commentPeriodDocs && commentPeriodDocs.length > 0">
-          <div class="card">
-            <div class="card-header">Related Documents</div>
-            <ul class="doc-list mb-0">
-              <li class="clickable-row" *ngFor="let doc of commentPeriodDocs" (click)="downloadDocument(doc)">
-                <span class="cell icon">
-                  <i class="material-icons">insert_drive_file</i>
-                </span>
-                <span class="cell name" [title]="doc.displayName || ''">
-                  <span class="cell__txt-content">{{doc.displayName}}</span>
-                </span>
-              </li>
-            </ul>
-          </div>
-        </div>
+          @if (type() === 'PROJECT') {
+            <span class="ea-decision">{{project()?.eacDecision?.name || "-"}}</span>
+            <div class="basic-info">
+              <div>
+                <span class="info-label">Proponent</span>
+                <p class="value">{{project()?.proponent?.name || "-"}}</p>
+              </div>
+              <div>
+                <span class="info-label">Type</span>
+                <p class="value">{{project()?.type || "-"}}</p>
+              </div>
+              <div>
+                <span class="info-label">Sub-type</span>
+                <p class="value">{{project()?.sector || "-"}}</p>
+              </div>
+            </div>
+          }
 
-        <!-- Open Houses -->
-        <div class="mb-3" *ngIf="commentPeriod && commentPeriod.openHouses && commentPeriod.openHouses.length > 0">
-          <div class="card">
-            <div class="card-header">Open Houses</div>
-            <ul class="list-group mb-0">
-              <li class="list-group-item" *ngFor="let openHouse of commentPeriod.openHouses">
-                <h6 class="mb-2"><b>Date:</b>&nbsp;{{openHouse.eventDate | date}}</h6>
-                <h6 class="mb-0"><b>Description:</b>&nbsp;{{openHouse.description}}</h6>
-              </li>
-            </ul>
-          </div>
-        </div>
+          <!-- Related Documents -->
+          @if (commentPeriodDocs() && commentPeriodDocs().length > 0) {
+            <div class="mb-3">
+              <div class="card-header">Related Documents</div>
+              <ul class="doc-list mb-0">
+                @for (doc of commentPeriodDocs(); track doc) {
+                  <li class="clickable-row" 
+                      role="button"
+                      tabindex="0"
+                      (click)="downloadDocument(doc)"
+                      (keydown.enter)="downloadDocument(doc)"
+                      (keydown.space)="downloadDocument(doc)">
+                    <span class="cell icon">
+                      <i class="material-icons">insert_drive_file</i>
+                    </span>
+                    <span class="cell name" [title]="doc.displayName || ''">
+                      {{doc.displayName}}
+                    </span>
+                  </li>
+                }
+              </ul>
+            </div>
+          }
+
+          <!-- Open Houses -->
+          @if (commentPeriod() && commentPeriod()!.openHouses && commentPeriod()!.openHouses.length > 0) {
+            <div class="mb-3">
+              <div class="card border-0">
+                <div class="card-header">Open Houses</div>
+                <ul class="list-group mb-0">
+                  @for (openHouse of commentPeriod()!.openHouses; track openHouse) {
+                    <li class="list-group-item">
+                      <h6 class="mb-2"><b>Date:</b>&nbsp;{{openHouse.eventDate | date}}</h6>
+                      <h6 class="mb-0"><b>Description:</b>&nbsp;{{openHouse.description}}</h6>
+                    </li>
+                  }
+                </ul>
+              </div>
+            </div>
+          }
+
+          <button class="btn btn-sm inverted" (click)="goBackToProjectDetails()" type="button">
+            {{type() === 'PROJECT' ? 'Back to Project Details' : 'Back to Project Notifications'}}
+          </button>
 
         </div>
-        
-        <button class="btn btn-sm inverted" (click)="goBackToProjectDetails()" type="button">
-          {{type === 'PROJECT' ? 'Back to Project Details' : 'Back to Project Notifications'}}
-        </button>
       </div>
     </div>
   </main>
 </div>
 
-<div *ngIf="!loading" class="container comments">
-  <div *ngIf="tableData.totalListItems > 0">
-    <lib-table-template 
-      [data]="tableData" 
-      (messageOut)="onMessageOut($event)">
-    </lib-table-template>
-  </div>
-  <div *ngIf="tableData.totalListItems == 0">
-    There are no comments.
-  </div>
+<div class="container comments">
+  @if (loading()) {
+    <div class="d-flex justify-content-center my-5">
+      <div class="spinner-border" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    </div>
+  } @else {
+    @if (commentPeriod() && commentPeriod()!.commentPeriodStatus === 'Open') {
+      <div class="mb-3 d-flex justify-content-end">
+        <button class="btn btn-warning" (click)="addComment()" type="button">Submit Comment</button>
+      </div>
+    }
+    
+    @if (tableData().totalListItems > 0) {
+      <div>
+        <lib-table-template 
+          [data]="tableData()" 
+          (messageOut)="onMessageOut($event)">
+        </lib-table-template>
+      </div>
+    }
+    @if (tableData().totalListItems === 0) {
+      <div>
+        There are no comments.
+      </div>
+    }
+  }
 </div>

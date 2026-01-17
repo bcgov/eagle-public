@@ -1,0 +1,23 @@
+.active-flag {
+  background: var(--bc-success);
+  color: var(--bs-white);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 3px 8px 4px;
+  border-radius: 5px;
+  font-size: .8rem;
+}
+
+.inactive-flag {
+  background: var(--bc-danger);
+  color: var(--bs-white);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 3px 8px 4px;
+  border-radius: 5px;
+  font-size: .8rem;
+}
+
+.fixedWidth {
+  width: 100px;
+}

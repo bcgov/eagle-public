@@ -1,56 +1,56 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, signal, inject } from '@angular/core';
+
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ProjectService } from 'app/services/project.service';
+import { LoadingStateService } from 'app/services/loading-state.service';
+import { LoggingService } from 'app/services/logging.service';
 
 @Component({
   selector: 'app-cac-unsubscribe',
   templateUrl: './cac-unsubscribe.component.html',
-  styleUrls: ['./cac-unsubscribe.component.scss']
+  styleUrl: './cac-unsubscribe.component.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [FormsModule],
+  standalone: true
 })
 export class CACUnsubscribeComponent implements OnInit {
-  public loading: Boolean = false;
-  public success: Boolean = false;
-  public emailInput: String = '';
-  public projectName: String = '';
-  public projectId: String = '';
-  constructor(
-    private route: ActivatedRoute,
-    private _changeDetectionRef: ChangeDetectorRef,
-    private projectService: ProjectService,
-    private router: Router
-  ) { }
+  private route = inject(ActivatedRoute);
+  private projectService = inject(ProjectService);
+  private router = inject(Router);
+  private loadingState = inject(LoadingStateService);
+  private logger = inject(LoggingService);
 
-  ngOnInit() {
-      this.emailInput = this.route.snapshot.paramMap.get('email');
-      this.projectName = this.route.snapshot.paramMap.get('project');
-      this.projectId = this.route.snapshot.paramMap.get('projectId');
+  loading = this.loadingState.getOperationState('cac-unsubscribe');
+  success = signal<boolean>(false);
+  emailInput = signal<string>('');
+  projectName = signal<string>('');
+  projectId = signal<string>('');
+
+  ngOnInit(): void {
+    this.emailInput.set(this.route.snapshot.paramMap.get('email') || '');
+    this.projectName.set(this.route.snapshot.paramMap.get('project') || '');
+    this.projectId.set(this.route.snapshot.paramMap.get('projectId') || '');
   }
 
-  cancel() {
-    // Navigate one level up
+  cancel(): void {
     this.router.navigate(['..'], { relativeTo: this.route });
   }
 
-  unsubscribe() {
-    this.loading = true;
-    this._changeDetectionRef.detectChanges();
-    // Remove them from the list.
-    this.projectService.cacRemoveMember(this.projectId, {
-      email: this.emailInput,
-      projId: this.projectId
+  unsubscribe(): void {
+    this.projectService.cacRemoveMember(this.projectId(), {
+      email: this.emailInput(),
+      projId: this.projectId()
     })
-    .toPromise()
-    .then((res: any) => {
-      console.log('Success:', res);
-      this.loading = false;
-      this.success = true;
-      this._changeDetectionRef.detectChanges();
-    })
-    .catch(error => {
-      console.log('error', error);
-      this.loading = false;
-      this._changeDetectionRef.detectChanges();
-      alert('Uh-oh, error submitting information');
+    .subscribe({
+      next: (res) => {
+        this.logger.info('Successfully unsubscribed from CAC', 'CACUnsubscribeComponent', res);
+        this.success.set(true);
+      },
+      error: (error) => {
+        this.logger.error('Error unsubscribing from CAC', 'CACUnsubscribeComponent', error);
+        alert('Uh-oh, error submitting information');
+      }
     });
   }
 }

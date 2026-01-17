@@ -1,52 +1,40 @@
-import { BreakpointObserver, Breakpoints, MediaMatcher } from '@angular/cdk/layout';
-import { Component, OnDestroy, OnInit, ViewEncapsulation } from '@angular/core';
+import { Component, ViewEncapsulation, ChangeDetectionStrategy, inject, signal, EventEmitter } from '@angular/core';
 
-import { TableRowComponent } from 'app/shared/components/table-template/table-row-component';
-import { takeWhile } from 'rxjs/operators';
+import { ResponsiveService } from '../../services/responsive.service';
+
+import { TableRowComponent, ITableMessage } from '../../shared/components/table-template/table-row-component';
+import { TableObject } from '../../shared/components/table-template/table-object';
+import { ProjectNotificationDocumentsTableDetailsComponent } from '../project-notification-documents-table-details/project-notification-documents-table-details.component';
+import { ProjectNotificationDocumentsTableComponent } from '../project-notification-documents-table/project-notification-documents-table.component';
 
 @Component({
   selector: 'tr[app-project-notifications-table-rows]',
   templateUrl: './project-notifications-table-rows.component.html',
-  styleUrls: ['./project-notifications-table-rows.component.scss'],
-  encapsulation: ViewEncapsulation.None
+  styleUrls: ['./project-notifications-table-rows.component.css'],
+  encapsulation: ViewEncapsulation.None,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [
+    ProjectNotificationDocumentsTableDetailsComponent,
+    ProjectNotificationDocumentsTableComponent
+],
+  standalone: true
 })
+export class ProjectNotificationsTableRowsComponent implements TableRowComponent {
+  rowData: any;
+  tableData!: TableObject;
+  messageOut = new EventEmitter<ITableMessage>();
+  messageIn = new EventEmitter<ITableMessage>();
+  
+  private responsive = inject(ResponsiveService);
 
-export class ProjectNotificationsTableRowsComponent extends TableRowComponent implements OnInit, OnDestroy {
-  public isMobile = false;
-  private alive = true;
+  isMobile = this.responsive.isMobile;
+  activeTab = signal<'details' | 'documents'>('details');
+  documentsTabLoaded = signal(false);
 
-  constructor(
-    private breakpointObserver: BreakpointObserver,
-    private mediaMatcher: MediaMatcher
-  ) {
-    super();
-  }
-
-  ngOnInit() {
-    const mediaQueryList = this.mediaMatcher.matchMedia(Breakpoints.Web);
-    this.isMobile = !mediaQueryList.matches;
-
-    this.breakpointObserver.observe([
-      Breakpoints.Tablet
-    ])
-      .pipe(takeWhile(() => this.alive))
-      .subscribe(result => {
-        if (result.matches) {
-          this.isMobile = true;
-        }
-      });
-    this.breakpointObserver.observe([
-      Breakpoints.Web
-    ])
-      .pipe(takeWhile(() => this.alive))
-      .subscribe(result => {
-        if (result.matches) {
-          this.isMobile = false;
-        }
-      });
-  }
-
-  ngOnDestroy() {
-    this.alive = false;
+  setActiveTab(tab: 'details' | 'documents') {
+    this.activeTab.set(tab);
+    if (tab === 'documents' && !this.documentsTabLoaded()) {
+      this.documentsTabLoaded.set(true);
+    }
   }
 }

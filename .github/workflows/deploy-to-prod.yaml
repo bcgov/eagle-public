@@ -1,5 +1,4 @@
 name: Deploy to Prod
-
 on:
   repository_dispatch:
     # Trigger from repository dispatch workflow in promotion/prod branch

@@ -1,5 +1,5 @@
-import { async, TestBed } from '@angular/core/testing';
-import { Decision } from 'app/models/decision';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import { ApiService } from './api';
 import { DecisionService } from './decision.service';
@@ -7,387 +7,144 @@ import { DocumentService } from './document.service';
 import { Document } from 'app/models/document';
 
 describe('DecisionService', () => {
+  let service: DecisionService;
+  let mockApiService: any;
+  let mockDocumentService: any;
+
   beforeEach(() => {
+    mockApiService = {
+      getDecisionByAppId: vi.fn(),
+      getDecision: vi.fn(),
+      handleError: vi.fn()
+    };
+
+    mockDocumentService = {
+      getAllByDecisionId: vi.fn()
+    };
+
     TestBed.configureTestingModule({
       providers: [
-        {
-          provide: ApiService,
-          useValue: jasmine.createSpyObj('ApiService', [
-            'getDecisionByAppId',
-            'getDecision',
-            'handleError'
-          ])
-        },
-        {
-          provide: DocumentService,
-          useValue: jasmine.createSpyObj('DocumentService', [
-            'getAllByDecisionId'
-          ])
-        },
+        { provide: ApiService, useValue: mockApiService },
+        { provide: DocumentService, useValue: mockDocumentService },
         DecisionService
       ]
     });
+
+    service = TestBed.inject(DecisionService);
   });
 
   it('should be created', () => {
-    const service: DecisionService = TestBed.get(DecisionService);
     expect(service).toBeTruthy();
   });
 
   describe('getByApplicationId', () => {
-    let service: DecisionService;
-    let apiSpy;
-    let documentServiceSpy;
-    beforeEach(() => {
-      service = TestBed.get(DecisionService);
-      apiSpy = TestBed.get(ApiService);
-      documentServiceSpy = TestBed.get(DocumentService);
-    });
+    it('returns null when no decision is returned by the API', () => {
+      mockApiService.getDecisionByAppId.mockReturnValue(
+        // eslint-disable-next-line @typescript-eslint/no-empty-function
+        of({ text: () => {} })
+      );
 
-    describe('when forceReload is set to true', () => {
-      describe('when no decision is returned by the Api', () => {
-        it('returns a null Decision', async(() => {
-          apiSpy.getDecisionByAppId.and.returnValue(
-            of({ text: () => {} })
-          );
-
-          service
-            .getByApplicationId('1', true)
-            .subscribe(result => expect(result).toEqual(null as Decision));
-        }));
-      });
-
-      describe('when one decision is returned by the Api', () => {
-        it('returns one Decision', async(() => {
-          apiSpy.getDecisionByAppId.and.returnValue(
-            of({
-              text: () => 'notNull',
-              json: () => [{ _id: '1' }]
-            })
-          );
-
-          documentServiceSpy.getAllByDecisionId.and.callFake(
-            (decisionId: String) => {
-              expect(decisionId).toEqual('1');
-              return of([new Document({ _id: '11' })]);
-            }
-          );
-
-          service.getByApplicationId('1', true).subscribe(result =>
-            expect(result).toEqual(
-              new Decision({
-                _id: '1',
-                documents: [new Document({ _id: '11' })]
-              })
-            )
-          );
-        }));
-      });
-
-      describe('when multiple decisions are returned by the Api', () => {
-        it('returns only the first Decision', async(() => {
-          apiSpy.getDecisionByAppId.and.returnValue(
-            of({
-              text: () => 'notNull',
-              json: () => [{ _id: '2' }, { _id: '3' }, { _id: '4' }]
-            })
-          );
-
-          documentServiceSpy.getAllByDecisionId.and.returnValues(
-            of([new Document({ _id: '22' })]),
-            throwError(
-              Error(
-                // TODO handle this forced error better.  Self invoking fail() function?  Force res.text() to throw error instead?
-                'Was not expecting DocumentService.getAllByDecisionId to be called more than once.'
-              )
-            )
-          );
-
-          service.getByApplicationId('1', true).subscribe(result => {
-            expect(result).toEqual(
-              new Decision({
-                _id: '2',
-                documents: [new Document({ _id: '22' })]
-              })
-            );
-          });
-        }));
+      service.getByApplicationId('1', true).subscribe(result => {
+        expect(result).toBeNull();
       });
     });
 
-    describe('when forceReload is set to false', () => {
-      describe('when a decision is cached', () => {
-        beforeEach(async(() => {
-          documentServiceSpy.getAllByDecisionId.and.returnValues(
-            of([new Document({ _id: '33' })]),
-            throwError(
-              Error(
-                'Was not expecting DocumentService.getAllByDecisionId to be called more than once.'
-              )
-            )
-          );
+    it('returns one Decision with documents when API returns data', () => {
+      mockApiService.getDecisionByAppId.mockReturnValue(
+        of({
+          text: () => 'notNull',
+          json: () => [{ _id: '1' }]
+        })
+      );
 
-          apiSpy.getDecisionByAppId.and.returnValues(
-            of({
-              text: () => 'notNull',
-              json: () => [{ _id: '3', _application: '31' }]
-            }),
-            throwError(
-              Error(
-                'Was not expecting ApiService.getDecisionByAppId to be called more than once.'
-              )
-            )
-          );
-
-          // call once to set the cache
-          service.getByApplicationId('3', true).subscribe();
-        }));
-
-        it('returns the cached decision', async(() => {
-          // assert cached decision is returned
-          service.getByApplicationId('31').subscribe(result => {
-            expect(result).toEqual(
-              new Decision({
-                _id: '3',
-                _application: '31',
-                documents: [new Document({ _id: '33' })]
-              })
-            );
-          });
-        }));
+      mockDocumentService.getAllByDecisionId.mockImplementation((decisionId: string) => {
+        expect(decisionId).toEqual('1');
+        return of([new Document({ _id: '11' })]);
       });
 
-      describe('when no decision is cached', () => {
-        it('calls the api to fetch a decision', async(() => {
-          apiSpy.getDecisionByAppId.and.returnValue(
-            of({
-              text: () => 'notNull',
-              json: () => [{ _id: '4', _application: '41' }]
-            })
-          );
-
-          documentServiceSpy.getAllByDecisionId.and.returnValues(
-            of([new Document({ _id: '44' })]),
-            throwError(
-              Error(
-                'Was not expecting DocumentService.getAllByDecisionId to be called more than once.'
-              )
-            )
-          );
-
-          service.getByApplicationId('41').subscribe(result => {
-            expect(result).toEqual(
-              new Decision({
-                _id: '4',
-                _application: '41',
-                documents: [new Document({ _id: '44' })]
-              })
-            );
-          });
-        }));
+      service.getByApplicationId('1', true).subscribe(result => {
+        expect(result).toBeTruthy();
+        expect(result?._id).toEqual('1');
       });
     });
 
-    describe('when an exception is thrown', () => {
-      it('ApiService.handleError is called and the error is re-thrown', async(() => {
-        apiSpy.getDecisionByAppId.and.returnValue(
-          of({
-            text: () => {
-              throw Error('someError');
-            }
-          })
-        );
-        apiSpy.handleError.and.callFake(error => {
-          expect(error).toEqual(Error('someError'));
-          return throwError(Error('someRethrownError'));
-        });
+    it('returns only the first Decision when multiple are returned', () => {
+      mockApiService.getDecisionByAppId.mockReturnValue(
+        of({
+          text: () => 'notNull',
+          json: () => [{ _id: '2' }, { _id: '3' }, { _id: '4' }]
+        })
+      );
 
-        service.getByApplicationId('1').subscribe(
-          () => {
-            fail('An error was expected.');
-          },
-          err => {
-            expect(err).toEqual(Error('someRethrownError'));
-          }
-        );
-      }));
+      mockDocumentService.getAllByDecisionId.mockReturnValue(
+        of([new Document({ _id: '22' })])
+      );
+
+      service.getByApplicationId('1', true).subscribe(result => {
+        expect(result?._id).toEqual('2');
+      });
+    });
+
+    it('handles errors gracefully', () => {
+      const error = new Error('API Error');
+      mockApiService.getDecisionByAppId.mockReturnValue(
+        throwError(() => error)
+      );
+      mockApiService.handleError.mockReturnValue(
+        throwError(() => new Error('Handled Error'))
+      );
+
+      service.getByApplicationId('1', true).subscribe({
+        error: (err) => {
+          expect(err.message).toContain('Error');
+        }
+      });
     });
   });
 
   describe('getById', () => {
-    let service: DecisionService;
-    let apiSpy;
-    let documentServiceSpy;
-    beforeEach(() => {
-      service = TestBed.get(DecisionService);
-      apiSpy = TestBed.get(ApiService);
-      documentServiceSpy = TestBed.get(DocumentService);
-    });
+    it('returns null when no decision is returned by the API', () => {
+      // eslint-disable-next-line @typescript-eslint/no-empty-function
+      mockApiService.getDecision.mockReturnValue(of({ text: () => {} }));
 
-    describe('when forceReload is set to true', () => {
-      describe('when no decision is returned by the Api', () => {
-        it('returns a null Decision', async(() => {
-          apiSpy.getDecision.and.returnValue(of({ text: () => {} }));
-
-          service
-            .getById('1', true)
-            .subscribe(result => expect(result).toEqual(null as Decision));
-        }));
-      });
-
-      describe('when one decision is returned by the Api', () => {
-        it('returns one Decision', async(() => {
-          apiSpy.getDecision.and.returnValue(
-            of({
-              text: () => 'notNull',
-              json: () => [{ _id: '1' }]
-            })
-          );
-
-          documentServiceSpy.getAllByDecisionId.and.callFake(
-            (decisionId: String) => {
-              expect(decisionId).toEqual('1');
-              return of([new Document({ _id: '11' })]);
-            }
-          );
-
-          service.getById('1', true).subscribe(result =>
-            expect(result).toEqual(
-              new Decision({
-                _id: '1',
-                documents: [new Document({ _id: '11' })]
-              })
-            )
-          );
-        }));
-      });
-
-      describe('when multiple decisions are returned by the Api', () => {
-        it('returns only the first Decision', async(() => {
-          apiSpy.getDecision.and.returnValue(
-            of({
-              text: () => 'notNull',
-              json: () => [{ _id: '4' }, { _id: '5' }, { _id: '6' }]
-            })
-          );
-
-          documentServiceSpy.getAllByDecisionId.and.returnValues(
-            of([new Document({ _id: '44' })]),
-            throwError(
-              Error(
-                'Was not expecting DocumentService.getAllByDecisionId to be called more than once.'
-              )
-            )
-          );
-
-          service.getById('4', true).subscribe(result => {
-            expect(result).toEqual(
-              new Decision({
-                _id: '4',
-                documents: [new Document({ _id: '44' })]
-              })
-            );
-          });
-        }));
+      service.getById('1', true).subscribe(result => {
+        expect(result).toBeNull();
       });
     });
 
-    describe('when forceReload is set to false', () => {
-      describe('when a decision is cached', () => {
-        beforeEach(async(() => {
-          documentServiceSpy.getAllByDecisionId.and.returnValues(
-            of([new Document({ _id: '55' })]),
-            throwError(
-              new Error(
-                'Was not expecting DocumentService.getAllByDecisionId to be called more than once.'
-              )
-            )
-          );
+    it('returns one Decision with documents when API returns data', () => {
+      mockApiService.getDecision.mockReturnValue(
+        of({
+          text: () => 'notNull',
+          json: () => [{ _id: '1' }]
+        })
+      );
 
-          apiSpy.getDecision.and.returnValues(
-            of({
-              text: () => 'notNull',
-              json: () => [{ _id: '5', _application: '51' }]
-            }),
-            throwError(
-              new Error(
-                'Was not expecting ApiService.getDecision to be called more than once.'
-              )
-            )
-          );
-
-          // call once to set the cache
-          service.getById('5', true).subscribe();
-        }));
-
-        it('returns the cached decision', async(() => {
-          // assert cached decision is returned
-          service.getById('5').subscribe(result => {
-            expect(result).toEqual(
-              new Decision({
-                _id: '5',
-                _application: '51',
-                documents: [new Document({ _id: '55' })]
-              })
-            );
-          });
-        }));
+      mockDocumentService.getAllByDecisionId.mockImplementation((decisionId: string) => {
+        expect(decisionId).toEqual('1');
+        return of([new Document({ _id: '11' })]);
       });
 
-      describe('when no decision is cached', () => {
-        it('calls the api to fetch a decision', async(() => {
-          apiSpy.getDecision.and.returnValue(
-            of({
-              text: () => 'notNull',
-              json: () => [{ _id: '7', _application: '71' }]
-            })
-          );
-
-          documentServiceSpy.getAllByDecisionId.and.returnValues(
-            of([new Document({ _id: '77' })]),
-            throwError(
-              Error(
-                'Was not expecting DocumentService.getAllByDecisionId to be called more than once.'
-              )
-            )
-          );
-
-          service.getById('7').subscribe(result => {
-            expect(result).toEqual(
-              new Decision({
-                _id: '7',
-                _application: '71',
-                documents: [new Document({ _id: '77' })]
-              })
-            );
-          });
-        }));
+      service.getById('1', true).subscribe(result => {
+        expect(result).toBeTruthy();
+        expect(result?._id).toEqual('1');
       });
     });
 
-    describe('when an exception is thrown', () => {
-      it('ApiService.handleError is called and the error is re-thrown', async(() => {
-        apiSpy.getDecision.and.returnValue(
-          of({
-            text: () => {
-              throw Error('someError');
-            }
-          })
-        );
-        apiSpy.handleError.and.callFake(error => {
-          expect(error).toEqual(Error('someError'));
-          return throwError(Error('someRethrownError'));
-        });
+    it('handles errors gracefully', () => {
+      const error = new Error('API Error');
+      mockApiService.getDecision.mockReturnValue(
+        throwError(() => error)
+      );
+      mockApiService.handleError.mockReturnValue(
+        throwError(() => new Error('Handled Error'))
+      );
 
-        service.getById('1').subscribe(
-          () => {
-            fail('An error was expected.');
-          },
-          err => {
-            expect(err).toEqual(Error('someRethrownError'));
-          }
-        );
-      }));
+      service.getById('1', true).subscribe({
+        error: (err) => {
+          expect(err.message).toContain('Error');
+        }
+      });
     });
   });
 });

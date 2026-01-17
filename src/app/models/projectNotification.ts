@@ -2,24 +2,24 @@ import { CommentPeriod } from './commentperiod';
 
 export class ProjectNotification {
   _id: string;
-  name: String;
-  type: String;
-  subType: String;
-  region: String;
-  location: String;
-  decision: String;
+  name: string;
+  type: string;
+  subType: string;
+  region: string;
+  location: string;
+  decision: string;
   decisionDate: Date;
-  description: String;
-  trigger: String;
+  description: string;
+  trigger: string;
   associatedProjectId: string;
   associatedProjectName: string;
-  proponent: String;
-  centroid: Array<number>;
+  proponent: string;
+  centroid: number[];
   // dynamic attributes
-  commentPeriod: CommentPeriod;
-  documents: Array<Document>;
+  commentPeriod!: CommentPeriod;
+  documents!: Document[];
 
-  read: Array<String> = [];
+  read: string[] = [];
 
   constructor(obj?: any) {
     this._id = obj && obj._id || undefined;

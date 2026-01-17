@@ -1,83 +1,20 @@
 <!doctype html>
-<html>
-
+<html lang="en">
 <head>
-	<meta charset="utf-8">
-	<title>EPIC</title>
-	<base href="/">
-	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<link rel="icon" type="image/x-icon" href="./favicon.ico">
-
-	<link href="https://fonts.googleapis.com/css?family=Noto+Sans:400,700" rel="stylesheet">
-	<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-
-	<!-- Google Tag Manager -->
-	<script>
-		(function (w, d, s, l, i) {
-			w[l] = w[l] || []; w[l].push({
-				'gtm.start':
-					new Date().getTime(), event: 'gtm.js'
-			}); var f = d.getElementsByTagName(s)[0],
-				j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : ''; j.async = true; j.src =
-					'https://www.googletagmanager.com/gtm.js?id=' + i + dl; f.parentNode.insertBefore(j, f);
-		})(window, document, 'script', 'dataLayer', 'GTM-T9H54MV');
-	</script>
-	<!-- End Google Tag Manager -->
-
-    <!-- Snowplow starts plowing - Standalone vE.2.14.0 -->
-    <script type="text/javascript">
-    ;(function(p,l,o,w,i,n,g){if(!p[i]){p.GlobalSnowplowNamespace=p.GlobalSnowplowNamespace||[];
-    p.GlobalSnowplowNamespace.push(i);p[i]=function(){(p[i].q=p[i].q||[]).push(arguments)
-    };p[i].q=p[i].q||[];n=l.createElement(o);g=l.getElementsByTagName(o)[0];n.async=1;
-    n.src=w;g.parentNode.insertBefore(n,g)}}(window,document,"script","https://www2.gov.bc.ca/StaticWebResources/static/sp/sp-2-14-0.js","snowplow"));
-    var collector = 'spt.apps.gov.bc.ca';
-    window.snowplow('newTracker','rt',collector, {
-    appId: "Snowplow_standalone",
-    cookieLifetime: 86400 * 548,
-    platform: 'web',
-    post: true,
-    forceSecureTracker: true,
-    contexts: {   webPage: true,   performanceTiming: true  } });
-    window.snowplow('enableActivityTracking', 30, 30);
-    // Ping every 30 seconds after 30 seconds
-    window.snowplow('enableLinkClickTracking');
-    window.snowplow('trackPageView');
-    </script>
-    <!-- Snowplow stop plowing -->
-
-	<!-- Typekit -->
-	<script>
-		(function (d) {
-			var config = {
-				kitId: 'iqc1gmr',
-				scriptTimeout: 3000,
-				async: true
-			},
-				h = d.documentElement, t = setTimeout(function () { h.className = h.className.replace(/\bwf-loading\b/g, "") + " wf-inactive"; }, config.scriptTimeout), tk = d.createElement("script"), f = false, s = d.getElementsByTagName("script")[0], a; h.className += " wf-loading"; tk.src = 'https://use.typekit.net/' + config.kitId + '.js'; tk.async = true; tk.onload = tk.onreadystatechange = function () { a = this.readyState; if (f || a && a != "complete" && a != "loaded") return; f = true; clearTimeout(t); try { Typekit.load(config) } catch (e) { } }; s.parentNode.insertBefore(tk, s)
-		})(document);
-	</script>
-	<script src="./publicServerEnvironmentSettings.js"></script> <!-- Generated at cluster during the image deploy time by the run file in the nginx-runtime -->
-	<!-- Hotjar Tracking Code for EAGLE EPIC -->
-	<script>
-		(function(h,o,t,j,a,r){
-			h.hj=h.hj||function(){(h.hj.q=h.hj.q||[]).push(arguments)};
-			h._hjSettings={hjid:3794678,hjsv:6};
-			a=o.getElementsByTagName('head')[0];
-			r=o.createElement('script');r.async=1;
-			r.src=t+h._hjSettings.hjid+j+h._hjSettings.hjsv;
-			a.appendChild(r);
-		})(window,document,'https://static.hotjar.com/c/hotjar-','.js?sv=');
-	</script>
-<!--Hotjar End-->
+  <meta charset="utf-8">
+  <title>EPIC</title>
+  <base href="/">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  
+  <!-- BC Sans Font -->
+  <link rel="preload" href="assets/fonts/BCSans/BCSans-Regular.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/BCSans/BCSans-Bold.woff2" as="font" type="font/woff2" crossorigin>
+  
+  <!-- Material Icons -->
+  <link rel="preload" href="assets/fonts/MaterialIcons-Regular.woff2" as="font" type="font/woff2" crossorigin>
 </head>
-
-<body id="top">
-	<app-root>
-		<div class="spinner-container" *ngIf="!results" aria-label="Loading...">
-			<div class="spinner-new rotating"></div>
-		</div>
-	</app-root>
+<body>
+  <app-root></app-root>
 </body>
-
 </html>

@@ -1,22 +1,22 @@
 export class Org {
-  _id: String;
-  description: String;
-  name: String;
-  code: String;
-  updatedBy: String;
-  dateAdded: String;
-  country: String;
-  postal: String;
-  province: String;
-  city: String;
-  address1: String;
-  address2: String;
-  companyType: String;
-  parentCompany: String;
-  registeredIn: String;
-  companyLegal: String;
-  website: String;
-  company: String;
+  _id: string;
+  description: string;
+  name: string;
+  code: string;
+  updatedBy: string;
+  dateAdded: string;
+  country: string;
+  postal: string;
+  province: string;
+  city: string;
+  address1: string;
+  address2: string;
+  companyType: string;
+  parentCompany: string;
+  registeredIn: string;
+  companyLegal: string;
+  website: string;
+  company: string;
 
   constructor(obj?: any) {
     this._id = obj && obj._id || null;

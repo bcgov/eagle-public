@@ -1,7 +1,8 @@
 export class Document {
   _id: string;
   project: string;
-  documentFileName: string;
+  documentFileName?: string;
+  documentFileSize?: number;
   internalOriginalName: string;
   internalURL: string;
   passedAVCheck: boolean;
@@ -14,7 +15,7 @@ export class Document {
   type: string;
   description: string;
   documentAuthor: string;
-  documentAuthorType: string;
+  documentAuthorType!: string;
   eaoStatus: string;
   datePosted: Date;
   dateUpdated: Date;

@@ -1,28 +1,42 @@
-<div class="tab-pane" role="tabpanel">
-    <div class="spinner-container" *ngIf="loading" >
-        <div class="spinner-new rotating"></div>
-    </div>
+@if (loading()) {
+  <div class="spinner-container">
+    <div class="spinner-new rotating"></div>
+  </div>
+}
 
-    <section class="tab-section" *ngIf="!loading">
-        <div *ngIf="commentPeriods.length < 1">
+@if (!loading()) {
+  <div class="row">
+    <div class="col-12">
+        @if (commentPeriods().length < 1) {
+          <div>
             No comment periods are currently scheduled for this project.
-        </div>
+          </div>
+        }
 
-        <div *ngIf="commentPeriods.length > 0">
-            <div class="d-flex justify-content-between list-group-item"
-                 *ngFor="let commentPeriod of commentPeriods"
-                 tabindex="0"
-                 (keyup.enter)=goToCP(commentPeriod)
-                 (click)=goToCP(commentPeriod)>
-                <div *ngIf="commentPeriod.commentPeriodStatus">
-                    <label class="title">{{commentPeriod.commentPeriodStatus}}</label>
-                    <div class="commentInfo">{{commentPeriod.instructions}}</div>
+        @if (commentPeriods().length > 0) {
+          <div>
+            @for (commentPeriod of commentPeriods(); track commentPeriod._id) {
+              <div class="d-flex justify-content-between list-group-item"
+                   tabindex="0"
+                   (keyup.enter)="goToCP(commentPeriod)"
+                   (click)="goToCP(commentPeriod)">
+                @if (commentPeriod.commentPeriodStatus) {
+                  <div>
+                    <span class="title mb-1">{{commentPeriod.commentPeriodStatus}}</span>
+                    <div class="commentInfo mb-2">{{commentPeriod.instructions}}</div>
                     <p class="mb-0">{{commentPeriod.dateStarted | date:'mediumDate'}} - {{commentPeriod.dateCompleted | date:'mediumDate'}}</p>
-                </div>
-                <div *ngIf="commentPeriodService.isOpen(commentPeriod)">
-                    <div class="badge badge-secondary p-3">{{commentPeriod.daysRemaining}}</div>
-                </div>
-            </div>
-        </div>
-    </section>
-</div>
+                  </div>
+                }
+                @if (commentPeriodService.isOpen(commentPeriod)) {
+                  <div>
+                    <span class="badge rounded-pill bg-warning text-dark fs-6 px-3 py-2">{{commentPeriod.daysRemaining}}</span>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+}
+

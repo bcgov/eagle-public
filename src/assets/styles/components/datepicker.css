@@ -1,0 +1,7 @@
+/* ng-bootstrap Datepicker Customizations */
+
+/* Weekday labels (M T W T F S S) - match navigation button color */
+.ngb-dp-weekday {
+  color: var(--bs-primary) !important;
+  font-weight: var(--bs-font-weight-semibold);
+}

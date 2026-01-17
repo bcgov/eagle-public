@@ -1,11 +1,12 @@
-<div class="lib-page-size-display"
-  *ngIf="!isHidden">
-  <button *ngFor="let sizeOption of sizeOptions"
-    [class.current]="isSizeOptionActive(sizeOption)"
-    class="btn size-picker-option"
-    (click)="sizeOptionChosen(sizeOption)"
-    [disabled]="isDisabled"
-    title="getTitle(sizeOption)">
-    {{ sizeOption.displayText }}
-  </button>
+<div class="lib-page-size-display" [hidden]="isHidden()">
+  @for (sizeOption of sizeOptions(); track sizeOption.value) {
+    <button 
+      [class.current]="isSizeOptionActive(sizeOption)"
+      class="btn size-picker-option"
+      (click)="sizeOptionChosen(sizeOption)"
+      [disabled]="isDisabled()"
+      [title]="getTitle(sizeOption)">
+      {{ sizeOption.displayText }}
+    </button>
+  }
 </div>

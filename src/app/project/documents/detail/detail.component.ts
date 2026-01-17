@@ -1,50 +1,60 @@
-import { Component, OnInit, ChangeDetectorRef, OnDestroy } from '@angular/core';
-import { Router, ActivatedRoute } from '@angular/router';
+import { Component, OnInit, ChangeDetectorRef, OnDestroy, inject, signal, ChangeDetectionStrategy } from '@angular/core';
+import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
-import { Document } from 'app/models/document';
-import { Project } from 'app/models/project';
-import { ApiService } from 'app/services/api';
-import { StorageService } from 'app/services/storage.service';
+import { DatePipe } from '@angular/common';
+import { Document } from '../../../models/document';
+import { Project } from '../../../models/project';
+import { ApiService } from '../../../services/api';
+import { StorageService } from '../../../services/storage.service';
+import { ListConverterPipe } from '../../../shared/pipes/list-converter.pipe';
 
 @Component({
   selector: 'app-detail',
   templateUrl: './detail.component.html',
-  styleUrls: ['./detail.component.scss']
+  styleUrls: ['./detail.component.css'],
+  imports: [RouterLink, DatePipe, ListConverterPipe],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  standalone: true
 })
 export class DocumentDetailComponent implements OnInit, OnDestroy {
-  private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
-  public document: Document = null;
-  public currentProject: Project = null;
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  public readonly api = inject(ApiService);
+  private readonly changeDetectorRef = inject(ChangeDetectorRef);
+  private readonly storageService = inject(StorageService);
 
-  constructor(
-    private route: ActivatedRoute,
-    private router: Router,
-    public api: ApiService,
-    private _changeDetectionRef: ChangeDetectorRef,
-    private storageService: StorageService
-  ) { }
+  private readonly ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
+  
+  public readonly document = signal<Document | null>(null);
+  public readonly currentProject = signal<Project | null>(null);
 
   ngOnInit() {
-    this.currentProject = this.storageService.state.currentProject.data;
+    this.currentProject.set(this.storageService.state.currentProject.data);
 
     this.route.data
       .pipe(takeUntil(this.ngUnsubscribe))
       .subscribe((res: any) => {
-        this.document = res.document;
-        this._changeDetectionRef.detectChanges();
+        this.document.set(res.document);
+        this.changeDetectorRef.detectChanges();
       });
   }
 
   onEdit() {
-    this.storageService.state.selectedDocs = [this.document];
-    this.storageService.state.labels = this.document.labels;
-    this.storageService.state.back = { url: ['/p', this.document.project, 'project-documents', 'detail', this.document._id], label: 'View Document' };
-    this.router.navigate(['p', this.document.project, 'project-documents', 'edit']);
+    const doc = this.document();
+    if (doc) {
+      this.storageService.state.selectedDocs = [doc];
+      this.storageService.state.labels = doc.labels;
+      this.storageService.state.back = { 
+        url: ['/p', doc.project, 'project-documents', 'detail', doc._id], 
+        label: 'View Document' 
+      };
+      this.router.navigate(['p', doc.project, 'project-documents', 'edit']);
+    }
   }
 
   ngOnDestroy() {
-    this.ngUnsubscribe.next();
+    this.ngUnsubscribe.next(true);
     this.ngUnsubscribe.complete();
   }
 }

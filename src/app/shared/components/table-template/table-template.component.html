@@ -1,73 +1,90 @@
 <div class="table-template">
-  <div class="row mb-3"
-    *ngIf="data.options.showTopControls">
-    <div class="col-md-12 col-lg-6 text-lg-left text-center mb-lg-0 mb-3">
-      <lib-page-count-display *ngIf="data.options.showPageCountDisplay"
-        [isHidden]="false"
-        [currentPageNum]="data.currentPage"
-        [currentPageSize]="data.pageSize"
-        [totalItems]="data.totalListItems"
-        id="table-template-page-count-display"></lib-page-count-display>
+  @if (data.options.showTopControls && (data.options.showPageCountDisplay || shouldShowPagination())) {
+  <div class="row mb-4">
+    <div class="col-12 col-md-6 text-center text-md-start mb-3 mb-md-0">
+      @if (data.options.showPageCountDisplay) {
+      <lib-page-count-display [isHidden]="false" [currentPageNum]="data.currentPage" [currentPageSize]="data.pageSize"
+        [totalItems]="data.totalListItems" id="table-template-page-count-display" />
+      }
     </div>
-    <div class="col-md-12 col-lg-6 text-lg-right text-center">
-      <pagination-controls *ngIf="data.options.showPagination"
-        (pageChange)="onUpdatePageNumber($event)"
-        id="{{this.data.tableId}}"
-        autoHide="true"
-        responsive="true"></pagination-controls>
+    <div class="col-12 col-md-6 text-center text-md-end">
+      @if (shouldShowPagination()) {
+      <lib-pagination 
+        [currentPage]="data.currentPage"
+        [pageSize]="data.pageSize"
+        [totalItems]="data.totalListItems"
+        [ariaLabel]="'Table pagination'"
+        (pageChange)="onUpdatePageNumber($event)" />
+      }
     </div>
   </div>
-  <table class="table"
-    aria-label="table-template">
-    <thead class="thead-light"
-      *ngIf="data.options.showHeader">
+  }
+
+  <div [class.table-loading]="loading && data.items.length > 0">
+  @if (loading && data.items.length === 0) {
+    <div class="text-center my-5">
+      <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    </div>
+  } @else if (!loading && data.items.length === 0 && data.totalListItems === 0) {
+    <div class="text-center my-5">
+      <p class="text-muted">No results found</p>
+    </div>
+  } @else {
+  <table class="table" aria-label="table-template">
+    @if (data.options.showHeader) {
+    <thead>
       <tr>
-        <th tabindex="0"
-          [attr.aria-label]="'Column header ' + entry.name + (!entry.nosort ? 'sortable' : '')"
-          *ngFor="let entry of data.columns"
-          id="table-template-header"
-          class="project-table__name-col"
-          (keyup.enter)="!entry.nosort && onSort(entry.value)"
-          (click)="!entry.nosort && onSort(entry.value)"
+        @for (entry of data.columns; track entry.value) {
+        <th tabindex="0" [attr.aria-label]="'Column header ' + entry.name + (!entry.nosort ? ' sortable' : '')"
+          id="table-template-header" class="project-table__name-col"
+          (keyup.enter)="!entry.nosort && onSort(entry.value!)" (click)="!entry.nosort && onSort(entry.value!)"
           [ngClass]="[entry.width, !entry.nosort ? 'sortable' : '']">
           {{ entry.name }}
-          <i *ngIf="entry.nosort !== true"
-            class="sort"
-            [ngClass]="{
-              'sort-asc': data.sortBy.slice(1) == entry.value && data.sortBy.charAt(0) === '+',
-              'sort-desc': data.sortBy.slice(1) == entry.value && data.sortBy.charAt(0) === '-'
-            }"
-            aria-hidden="true"></i>
+          @if (entry.nosort !== true) {
+          <i class="sort" 
+             [class.sort-asc]="isSortedAsc(entry.value!)"
+             [class.sort-desc]="isSortedDesc(entry.value!)"
+             aria-hidden="true"></i>
+          }
         </th>
+        }
       </tr>
     </thead>
-    <tbody [ngClass]="data.options.disableRowHighlight ? '' : 'highlight'">
-      <ng-container *ngFor="let item of data.items | paginate: { id: data.tableId, itemsPerPage: data.pageSize, currentPage: data.currentPage, totalItems: data.totalListItems }"
-        [libTableRow]="item"
-        [tableData]="data"
-        [messageIn]="messageIn"
-        (messageOut)="onMessageOut($event)">
-        <div [style.margin-bottom.px]="data.options.rowSpacing"></div>
+    }
+
+    <tbody [class.highlight]="!data.options.disableRowHighlight">
+      @for (item of paginatedItems(); track trackByRowId($index, item)) {
+      <ng-container [libTableRow]="item" [tableData]="data" [messageIn]="messageIn" (messageOut)="onMessageOut($event)">
       </ng-container>
+      }
     </tbody>
   </table>
-  <div class="table-controls-bottom">
+
+  @if (data.items.length > 0 || !loading) {
+  <div class="table-controls-bottom mt-4">
     <div class="row">
-      <div class="col-md-12 col-lg-6 text-lg-left text-center mb-lg-0 mb-3">
-        <lib-page-size-picker *ngIf="data.options.showPageSizePicker && data.totalListItems > 10"
-          [isHidden]="false"
-          [currentPageSize]="data.pageSize"
-          [sizeOptions]="data.pageSizeOptions"
-          (pageSizeChosen)="onUpdatePageSize($event)"
-          id="table-template-page-size-picker"></lib-page-size-picker>
+      <div class="col-12 col-md-6 text-center text-md-start mb-3 mb-md-0">
+        @if (data.options.showPageSizePicker && data.totalListItems > 10) {
+        <lib-page-size-picker [isHidden]="false" [currentPageSize]="data.pageSize" [sizeOptions]="data.pageSizeOptions"
+          (pageSizeChosen)="onUpdatePageSize($event)" id="table-template-page-size-picker" />
+        }
       </div>
-      <div class="col-md-12 col-lg-6 text-lg-right text-center">
-        <pagination-controls *ngIf="data.options.showPagination"
-          (pageChange)="onUpdatePageNumber($event)"
-          id="{{data.tableId}}"
-          autoHide="true"
-          responsive="true"></pagination-controls>
+      <div class="col-12 col-md-6 text-center text-md-end">
+        @if (shouldShowPagination()) {
+        <lib-pagination 
+          [currentPage]="data.currentPage"
+          [pageSize]="data.pageSize"
+          [totalItems]="data.totalListItems"
+          [ariaLabel]="'Table pagination'"
+          (pageChange)="onUpdatePageNumber($event)" />
+        }
       </div>
     </div>
   </div>
+  }
+  }
+  </div>
 </div>
+

@@ -1,60 +1,59 @@
-# eagle-public
+# EaglePublic
 
-Public facing site for the Environmental Assessment Office (EAO) EPIC application.
+This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.0.2.
 
-## Related Projects
+## Development server
 
-Eagle is a revision name of the EAO EPIC application suite.
-
-These projects comprise EAO EPIC:
-
-- [eagle-api](https://github.com/bcgov/eagle-api)
-- [eagle-public](https://github.com/bcgov/eagle-public)
-- [eagle-admin](https://github.com/bcgov/eagle-admin)
-- [eagle-mobile-inspections](https://github.com/bcgov/eagle-mobile-inspections)
-- [eagle-reports](https://github.com/bcgov/eagle-reports)
-- [eagle-helper-pods](https://github.com/bcgov/eagle-helper-pods)
-- [eagle-dev-guides](https://github.com/bcgov/eagle-dev-guides)
-
-## Prerequisites
-
-**Note:** The following commands work in macOS bash (not zsh which is now default in Catalina). The scripts are currently not fully working in Windows and Linux, so you may need to look at the source of the scripts and manually apply the commands in the correct order.
-
-Run the following scripts to set up your environment:
+To start a local development server, run:
 
 ```bash
-./install_prerequisites.sh
-./setup_project.sh
+ng serve
 ```
 
-## Build and Run
+Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
 
-1. After installing Node and Yarn, clone or download this repository.
-2. Run `npm start` to start the development server on port 4300.
+## Code scaffolding
 
-   Navigate to <http://localhost:4300> to verify that the application is running.
+Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
 
-   💡 **Tip:** To change the default port, modify the `defaults.serve.port` value in `.angular-cli.json`.
+```bash
+ng generate component component-name
+```
 
-3. Run `npm run build` to build the project. The build artifacts will be stored in the `dist/` directory. Use the `--prod` flag for a production build: `npm run build -- --prod`
-4. Run `npm run lint` to lint your code using TSLint.
+For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
 
-## CI/CD Pipeline
+```bash
+ng generate --help
+```
 
-The EPIC project has moved away from PR based pipeline due to complexity and reliability concerns of the PR based pipeline implementation. The current CI/CD pipeline utilizes Github Actions to build Docker images and push them back into the BC Gov OpenShift Docker registry.
+## Building
 
-A full description and guide to the EPIC pipeline and branching strategy is available in the [eagle-dev-guides](https://github.com/bcgov/eagle-dev-guides/blob/master/dev_guides/github_action_pipeline.md) repository.
+To build the project run:
 
-## Angular Code scaffolding
+```bash
+ng build
+```
 
-A brief guide to Angular CLI's code scaffolding can be found in [eagle-dev-guides](https://github.com/bcgov/eagle-dev-guides/blob/master/dev_guides/angular_scaffolding.md)
+This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
 
-## Testing
+## Running unit tests
 
-An overview of the EPIC test stack can be found in our documentation guides: [EPIC Test Stack](https://github.com/bcgov/eagle-dev-guides/blob/master/dev_guides/testing_components.md).
+To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
 
-Instructions on how running tests unit tests and end-to-end tests can be found in our [test documentation](https://github.com/bcgov/eagle-dev-guides/blob/master/dev_guides/angular_scaffolding.md#running-tests).
+```bash
+ng test
+```
 
-## How to Contribute
+## Running end-to-end tests
 
-Feel free to create pull requests from the default "develop" branch, click here to create one automatically: <https://github.com/bcgov/eagle-public/pull/new/develop>
+For end-to-end (e2e) testing, run:
+
+```bash
+ng e2e
+```
+
+Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+
+## Additional Resources
+
+For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.

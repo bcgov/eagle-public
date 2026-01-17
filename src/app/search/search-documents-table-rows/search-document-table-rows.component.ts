@@ -1,58 +1,43 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnDestroy, EventEmitter, inject } from '@angular/core';
+import { CommonModule, DatePipe } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { Utils } from 'app/shared/utils/utils';
-import { TableRowComponent } from 'app/shared/components/table-template/table-row-component';
-import { ConfigService } from 'app/services/config.service';
-import { takeWhile } from 'rxjs/operators';
+import { TableRowComponent, ITableMessage } from 'app/shared/components/table-template/table-row-component';
+import { TableObject } from 'app/shared/components/table-template/table-object';
 
 @Component({
   selector: 'tr[app-document-table-rows]',
   templateUrl: './search-document-table-rows.component.html',
-  styleUrls: ['./search-document-table-rows.component.scss']
+  styleUrls: ['./search-document-table-rows.component.css'],
+  imports: [
+    CommonModule,
+    DatePipe,
+    RouterLink
+  ],
+  providers: [DatePipe],
+  standalone: true
 })
-
-export class DocSearchTableRowsComponent extends TableRowComponent implements OnInit, OnDestroy {
-  private lists: any[] = [];
+export class DocSearchTableRowsComponent implements TableRowComponent, OnDestroy {
   private alive = true;
+  private utils = inject(Utils);
 
-  constructor(
-    public configService: ConfigService,
-    private utils: Utils
-  ) {
-    super();
+  // Required by TableRowComponent interface
+  rowData: any;
+  tableData!: TableObject;
+  messageOut = new EventEmitter<ITableMessage>();
+  messageIn = new EventEmitter<ITableMessage>();
+
+  // Get lists from tableData.data (passed from parent, no HTTP subscription)
+  private get lists(): any[] {
+    return this.tableData?.data?.lists || [];
   }
 
-  ngOnInit() {
-    this.configService.lists.pipe(takeWhile(() => this.alive)).subscribe((list) => {
-      this.lists = list;
-    });
+  idToList(id: string): string {
+    return this.utils.idToListName(id, this.lists);
   }
 
-  idToList(id: string) {
-    if (!id) {
-      return '-';
-    }
-    // Grab the item from the constant lists, returning the name field of the object.
-    const items = this.lists.filter(listItem => listItem._id === id);
-    if (items.length !== 0) {
-      return items[0].name;
-    } else {
-      return '-';
-    }
-  }
-
-  goToItem(item) {
-    const filename = item.documentFileName || item.displayName || item.internalOriginalName;
-    let safeName = filename;
-    try {
-      safeName = this.utils.encodeString(filename, true)
-    } catch (e) {
-      console.log('error:', e);
-    }
-    window.open('/api/public/document/' + item._id + '/download/' + safeName, '_blank');
-  }
-
-  goToProject(item) {
-    window.open('/p/' + item.project._id + '/project-details');
+  goToItem(item: any) {
+    this.utils.openDocumentDownload(item);
   }
 
   ngOnDestroy() {
