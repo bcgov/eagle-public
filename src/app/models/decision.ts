@@ -1,14 +1,14 @@
-import { Document } from 'app/models/document';
+import { Document } from './document';
 
 export class Decision {
   _id: string;
   _addedBy: string; // objectid -> User
   _application: string; // objectid -> Application
   name: string;
-  description: string = null;
+  description?: string;
 
   // associated data
-  documents: Array<Document> = [];
+  documents: Document[] = [];
 
   constructor(obj?: any) {
     this._id          = obj && obj._id          || null;

@@ -1,5 +1,4 @@
 name: Build
-
 on:
   push:
     branches:
@@ -24,15 +23,18 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Use Node.js 12
+      - name: Use Node.js 24
         uses: actions/setup-node@v4
         with:
-          node-version: "12.x"
+          node-version: "24.x"
+
+      - name: Enable Corepack
+        run: corepack enable
 
       - name: Angular Build
         run: |
-          npm install
-          npm run build
+          yarn install --immutable
+          yarn run build
 
       - name: Install OpenShift CLI
         run: |

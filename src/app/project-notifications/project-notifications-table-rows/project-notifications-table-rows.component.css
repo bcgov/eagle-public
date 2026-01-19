@@ -1,0 +1,23 @@
+/* Component-specific styles - tab styles are now global in /assets/styles/components/tab-nav.css */
+
+.pn-content-wrapper {
+  padding: 1.5rem;
+}
+
+.tab-pane {
+  padding: 0.5rem 0.75rem 0.5rem 0.75rem;
+}
+
+@media (max-width: 768px) {
+  .pn-location-info {
+    background-color: var(--bs-secondary-bg) !important;
+  }
+  
+  .pn-content-wrapper {
+    padding: 3%;
+  }
+  
+  .tab-pane {
+    padding: 0.5rem;
+  }
+}

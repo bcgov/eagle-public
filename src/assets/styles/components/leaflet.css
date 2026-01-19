@@ -1,0 +1,52 @@
+#map {
+  /* see applist-map.component.ts:_clusterCreate() */
+}
+
+#map .my-cluster {
+  margin-left: -20px !important;
+  margin-top: -18px !important;
+  width: 40px !important;
+  height: 36px !important;
+  border-radius: 5px;
+  background-color: var(--map-cluster-highlight);
+  opacity: 0.8 !important;
+  text-align: center;
+  font-size: 24px;
+}
+
+/*
+ * small = 1-9 markers in cluster
+ * medium = 10-99 markers in cluster
+ * large = 100+ markers in cluster
+ */
+#map .marker-cluster-small,
+#map .marker-cluster-medium,
+#map .marker-cluster-large {
+  background-color: var(--map-cluster-bg) !important; /* lightskyblue */
+}
+
+#map .marker-cluster-small div,
+#map .marker-cluster-medium div,
+#map .marker-cluster-large div {
+  background-color: var(--map-cluster-inner-bg) !important; /* dodgerblue */
+  color: var(--bs-white);
+}
+
+#map .marker-cluster {
+  background-clip: padding-box;
+  border-radius: 20px;
+}
+
+#map .marker-cluster div {
+  width: 30px;
+  height: 30px;
+  margin-left: 5px;
+  margin-top: 5px;
+  text-align: center;
+  border-radius: 15px;
+  font-size: 12px;
+}
+
+#map .marker-cluster span {
+  line-height: 30px;
+}

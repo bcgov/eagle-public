@@ -1,5 +1,5 @@
 import { TableObject } from './table-object';
-import { EventEmitter, Output, Input } from '@angular/core';
+import { EventEmitter } from '@angular/core';
 
 /**
  * Generic message event for all input/output messages.
@@ -25,39 +25,40 @@ export interface ITableMessage {
 }
 
 /**
- * Components compatible with table template should extend this class.
+ * Interface for components compatible with table template.
+ * Components should implement this interface and use @Input/@Output decorators or input()/output() functions.
  *
  * @export
- * @class TableRowComponent
+ * @interface TableRowComponent
  */
-export class TableRowComponent {
+export interface TableRowComponent {
   /**
    * The specific row data used by the component.
    *
    * @type {*}
    * @memberof TableRowComponent
    */
-  @Input() rowData: any;
+  rowData: any;
   /**
    * A copy of the table data.
    *
    * @type {TableObject}
    * @memberof TableRowComponent
    */
-  @Input() tableData: TableObject;
+  tableData: TableObject;
   /**
-   * An Output() for generically emitting events from child to parent.
+   * An output for generically emitting events from child to parent.
    *
    * @type {EventEmitter<ITableMessage>}
    * @memberof TableRowComponent
    */
-  @Output() messageOut: EventEmitter<ITableMessage> = new EventEmitter<ITableMessage>();
+  messageOut: EventEmitter<ITableMessage>;
 
   /**
-   * An Input() for generically emitting events from parent to child.
+   * An input for generically emitting events from parent to child.
    *
    * @type {EventEmitter<ITableMessage>}
    * @memberof TableRowComponent
    */
-  @Input() messageIn: EventEmitter<ITableMessage> = new EventEmitter<ITableMessage>();
+  messageIn: EventEmitter<ITableMessage>;
 }

@@ -1,35 +1,31 @@
-import { Component } from '@angular/core';
-
-import { Router } from '@angular/router';
-import { TableRowComponent } from 'app/shared/components/table-template/table-row-component';
+import { Component, ChangeDetectionStrategy, EventEmitter, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { Router, RouterModule } from '@angular/router';
+import { TableRowComponent, ITableMessage } from 'app/shared/components/table-template/table-row-component';
 
 @Component({
-    selector: 'tbody[app-news-list-table-rows]',
-    templateUrl: './news-list-table-rows.component.html',
-    styleUrls: ['./news-list-table-rows.component.scss']
+  selector: 'tbody[app-news-list-table-rows]',
+  templateUrl: './news-list-table-rows.component.html',
+  styleUrl: './news-list-table-rows.component.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [CommonModule, RouterModule],
+  standalone: true
 })
+export class NewsListTableRowsComponent implements TableRowComponent {
+  private router = inject(Router);
 
-export class NewsListTableRowsComponent extends TableRowComponent {
-    constructor(
-      private router: Router,
-    ) { super(); }
+  rowData: any;
+  tableData: any;
+  messageIn = new EventEmitter<ITableMessage>();
+  messageOut = new EventEmitter<ITableMessage>();
 
-
-    goToCP(activity) {
-      if (activity.pcp.isMet && activity.pcp.metURL) {
-        window.open(activity.pcp.metURL, '_blank');
-      } else {
-        this.router.navigate(['p', activity.project._id, 'cp', activity.pcp._id]);
-      }
+  goToCP(activity: any): void {
+    if (activity.project?._id && activity.pcp?._id) {
+      this.router.navigate(['p', activity.project._id, 'cp', activity.pcp._id]);
     }
+  }
 
-    isSingleDoc(item) {
-      if (item !== ''
-         && item !== null
-         ) {
-        return true;
-      } else {
-        return false;
-      }
-    }
+  isSingleDoc(item: any): boolean {
+    return item !== '' && item !== null;
+  }
 }

@@ -1,28 +1,28 @@
-<div class="projects-view" [ngClass]="configService.isApplistListVisible ? 'app-list-open':'app-list-closed'">
-  <h1 class="sr-only">Find Environmental Assessment Projects in British Columbia</h1>
+<div class="projects-view" [class.app-list-open]="configService.isApplistListVisible" [class.app-list-closed]="!configService.isApplistListVisible">
+  <h1 class="visually-hidden">Find Environmental Assessment Projects in British Columbia</h1>
 
-  <app-projlist-filters class="app-filters" #appfilters
-    [projects]="filterApps"
-    (updateMatching)="updateMatching()">
+  <app-projlist-filters class="app-filters" #appfilters>
   </app-projlist-filters>
 
   <div class="app-list-map-container">
     <div class="app-list-container">
       <app-projlist-list class="app-list" #applist
-      [projects]="listApps"
-      (setCurrentApp)="highlightProject($event, true)"
-        (unsetCurrentApp)="highlightProject($event, false)">
+        [projects]="listApps()">
       </app-projlist-list>
     </div>
 
-    <div class="overlay" (click)="toggleAppList();$event.stopPropagation();"></div>
+    <div class="overlay" 
+         role="button"
+         tabindex="0"
+         aria-label="Close project list"
+         (click)="toggleAppList();$event.stopPropagation();"
+         (keydown.enter)="toggleAppList();$event.stopPropagation();"
+         (keydown.space)="toggleAppList();$event.stopPropagation();"></div>
 
     <app-projlist-map class="app-map" #appmap
-      [projects]="mapApps"
+      [projects]="mapApps()"
       [applist]="applist"
-      [appfilters]="appfilters"
-      (updateVisible)="updateVisible()"
-      (reloadApps)="reloadApps()">
+      [appfilters]="appfilters">
     </app-projlist-map>
   </div>
 

@@ -1,5 +1,4 @@
 name: Front-End tests
-
 on: [pull_request]
 
 jobs:
@@ -9,17 +8,19 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [12.x]
+        node-version: [24.x]
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v4
     - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v1
+      uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
-    - name: npm install, and test
+    - name: Enable Corepack
+      run: corepack enable
+    - name: yarn install and test
       run: |
-        npm install
-        npm run tests-ci
+        yarn install --immutable
+        yarn run test
       env:
         CI: true

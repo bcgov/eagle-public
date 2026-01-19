@@ -1,0 +1,45 @@
+/* Accessibility Focus Styles (WCAG 2.1 Compliance) */
+
+/* Modern :focus-visible - only shows focus for keyboard navigation */
+:focus-visible {
+  outline: 2px solid var(--bs-primary);
+  outline-offset: 2px;
+}
+
+/* Remove default focus for mouse users, keep for keyboard */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Button focus styles */
+.btn:focus-visible {
+  box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
+}
+
+/* Form control focus styles */
+.form-control:focus-visible {
+  outline: 2px solid var(--bs-primary);
+  outline-offset: 2px;
+}
+
+/* Link focus styles */
+a:focus-visible {
+  outline: 2px solid var(--bs-primary);
+  outline-offset: 2px;
+  text-decoration: underline;
+}
+
+/* Skip to main content link (for screen readers) */
+.skip-to-main {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: var(--bs-primary);
+  color: var(--bs-white);
+  padding: 8px;
+  text-decoration: none;
+}
+
+.skip-to-main:focus {
+  top: 0;
+}

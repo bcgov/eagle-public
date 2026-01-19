@@ -1,41 +1,50 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
-import { TableRowComponent } from 'app/shared/components/table-template/table-row-component';
-import { ApiService } from 'app/services/api';
+import { Component, inject, EventEmitter, AfterViewInit, ElementRef, ChangeDetectorRef, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { ApiService } from '../../services/api';
+import { TableRowComponent, ITableMessage } from '../../shared/components/table-template/table-row-component';
 
 @Component({
-  selector: 'tbody[app-comments-table-rows]',
+  selector: 'tr[app-comments-table-rows]',
+  imports: [CommonModule],
   templateUrl: './comments-table-rows.component.html',
-  styleUrls: ['./comments-table-rows.component.scss']
+  styleUrls: ['./comments-table-rows.component.css'],
+  standalone: true,
+  host: {
+    'class': 'border',
+    '[style.cursor]': '"default"'
+  }
 })
+export class CommentsTableRowsComponent implements TableRowComponent, AfterViewInit {
+  private api = inject(ApiService);
+  private elementRef = inject(ElementRef);
+  private cdr = inject(ChangeDetectorRef);
+  
+  rowData: any;
+  tableData: any;
+  messageOut = new EventEmitter<ITableMessage>();
+  messageIn = new EventEmitter<ITableMessage>();
+  hasOverflow = signal(false);
 
-export class CommentsTableRowsComponent extends TableRowComponent implements OnInit, OnDestroy {
-
-  constructor(
-    private api: ApiService
-  ) {
-    super();
+  ngAfterViewInit() {
+    setTimeout(() => {
+      const truncatedP = this.elementRef.nativeElement.querySelector('.comment-truncated');
+      if (!truncatedP) return;
+      
+      // Temporarily disable line-clamp to measure full height
+      truncatedP.style.webkitLineClamp = 'unset';
+      const fullHeight = truncatedP.scrollHeight;
+      truncatedP.style.webkitLineClamp = '';
+      
+      this.hasOverflow.set(fullHeight > truncatedP.clientHeight);
+    }, 0);
   }
 
-  ngOnInit() {
-    // Table row component initialization handled by parent
-  }
-
-  ngOnDestroy() {
-    // Cleanup if needed
-  }
-
-  toggle(comment) {
+  toggle(comment: any) {
     comment.expanded = !comment.expanded;
 
-    // CHANGE THE NAME OF THE BUTTON.
-    if (comment.expanded) {
-      comment.buttonName = 'Read Less';
-    } else {
-      comment.buttonName = 'Read More';
-    }
   }
 
-  public openAttachment(file) {
+  openAttachment(file: any) {
     this.api.openDocument(file);
   }
 }

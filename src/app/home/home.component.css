@@ -1,0 +1,194 @@
+/* Home Component Styles */
+/* Inherits background from .app-content */
+
+/* Hero banner button styles are now in assets/styles/components/buttons.css as .hero-banner-btn */
+
+.hero-banner__version {
+  margin-top: -0.25rem;
+  margin-left: -0.25rem;
+  display: inline-block;
+  color: var(--bc-gold);
+  font-size: var(--bs-font-size-sm);
+  font-weight: var(--bs-font-weight-bold);
+  vertical-align: top;
+}
+
+main {
+  padding: 3rem 0 3.75rem;
+  text-align: center;
+}
+
+main h2 {
+  text-align: center;
+  font-size: var(--bs-font-size-4);
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 767px) {
+  main h2 {
+    font-size: var(--bs-font-size-4);
+  }
+}
+
+main p {
+  line-height: 1.75;
+  font-size: var(--bs-font-size-5);
+  max-width: 780px;
+  margin: 0 auto;
+}
+
+.feature-blocks {
+  margin-top: 50px;
+}
+
+.hero-btn:focus {
+  color: var(--bc-blue-dark);
+}
+
+@media (max-width: 767px) {
+  .hero-banner h1 {
+    line-height: 2rem;
+    font-size: var(--bs-font-size-3);
+  }
+
+  .hero-banner__version {
+    margin-top: -0.3rem;
+  }
+}
+
+/* Survey Banner Styles */
+.survey-banner {
+  background-color: var(--bs-warning);
+  padding: 1.5rem 0;
+}
+
+.survey-banner .container {
+  padding: 1.5rem;
+  min-height: auto;
+  max-width: 1140px;
+}
+
+.survey-banner .d-flex {
+  align-items: center;
+}
+
+.survey-banner h5 {
+  font-size: var(--bs-font-size-5);
+  font-weight: var(--bs-font-weight-bold);
+  color: var(--bs-black);
+}
+
+.survey-banner p {
+  line-height: 1.6;
+  font-size: var(--bs-font-size-6);
+}
+
+.survey-banner .survey-link {
+  background-color: var(--bc-blue);
+  color: var(--bs-white);
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  white-space: nowrap;
+  text-decoration: none;
+  font-weight: var(--bs-font-weight-semibold);
+  transition: background-color 0.2s;
+}
+
+.survey-banner .survey-link:hover {
+  background-color: var(--bc-blue-dark);
+  color: var(--bs-white);
+}
+
+@media (max-width: 767px) {
+  .survey-banner .survey-link {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+/* Recent Activities & Updates Styles */
+.home-news-feed {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+  border-radius: 0.25rem;
+  background: var(--bs-secondary-bg);
+  overflow: hidden;
+}
+
+.home-news-feed h2 {
+  padding: 1.5rem;
+  margin: 0;
+}
+
+.home-news-feed .table {
+  border: none;
+  margin: 0;
+  padding: 0 1.5rem;
+  width: 100%;
+}
+
+.home-news-feed .table tbody {
+  display: block;
+  border-bottom: 2px solid var(--bs-border-color);
+}
+
+.home-news-feed .table tbody:last-child {
+  border-bottom: none;
+}
+
+.home-news-feed .table tbody tr {
+  display: block;
+  border: none;
+  width: 100%;
+  background: var(--bs-secondary-bg) !important;
+}
+
+.home-news-feed .table tbody td {
+  display: block;
+  padding: 1.25rem 0.5rem;
+  border: none;
+  width: 100%;
+  background: var(--bs-secondary-bg) !important;
+}
+
+@media (min-width: 768px) {
+  .home-news-feed .table tbody td {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
+.home-news-feed .mt-4 {
+  padding: 1.5rem;
+  padding-top: 0;
+}
+
+.home-news-feed h3 {
+  font-size: var(--bs-font-size-6);
+  font-weight: var(--bs-font-weight-normal);
+}
+
+.home-news-feed h3 span.font-weight-bold {
+  color: var(--bc-blue);
+  font-weight: var(--bs-font-weight-bold);
+}
+
+.home-news-feed h3 .home-news-feed__headline {
+  display: block;
+  color: var(--bc-gray);
+}
+
+.home-news-feed .content-btn-alt {
+  margin-right: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.news-block-more {
+  margin-top: 2rem;
+  text-align: center;
+}
+
+.news-block-more .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}

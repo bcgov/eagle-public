@@ -1,117 +1,139 @@
-//
-// inspired by http://www.advancesharp.com/blog/1218/angular-4-upload-files-with-data-and-web-api-by-drag-drop
-//
-import { Component, Input, Output, EventEmitter, HostListener } from '@angular/core';
+import { Component, input, output, signal } from '@angular/core';
+
 
 @Component({
   selector: 'app-file-upload',
+  imports: [],
   templateUrl: './file-upload.component.html',
-  styleUrls: ['./file-upload.component.scss']
+  styleUrls: ['./file-upload.component.css'],
+  host: {
+    '(dragover)': 'onDragOver($event)',
+    '(dragenter)': 'onDragEnter($event)',
+    '(dragend)': 'onDragEnd($event)',
+    '(dragleave)': 'onDragLeave($event)',
+    '(drop)': 'onDrop($event)'
+  },
+  standalone: true
 })
-
 export class FileUploadComponent {
-  public dragDropClass = 'dragarea';
-  @Input() fileExt = 'jpg, jpeg, gif, png, bmp, doc, docx, xls, xlsx, ppt, pptx, pdf, txt, rtf';
-  @Input() maxFiles = 15;
-  @Input() maxSize = 10; // in MB
-  @Input() files: Array<File> = [];
-  @Input() showInfo = true;
-  @Input() showList = true;
-  @Output() filesChange = new EventEmitter();
-  public errors: Array<string> = [];
+  dragDropClass = signal('dragarea');
+  
+  fileExt = input<string>('jpg, jpeg, gif, png, bmp, doc, docx, xls, xlsx, ppt, pptx, pdf, txt, rtf');
+  maxFiles = input<number>(15);
+  maxSize = input<number>(10); // in MB
+  files = input<File[]>([]);
+  showInfo = input<boolean>(true);
+  showList = input<boolean>(true);
+  
+  filesChange = output<File[]>();
+  
+  errors = signal<string[]>([]);
 
-  constructor() { }
+  private currentFiles: File[] = [];
 
-  @HostListener('dragover', ['$event']) onDragOver(event) {
-    this.dragDropClass = 'droparea';
+  onDragOver(event: DragEvent) {
+    this.dragDropClass.set('droparea');
     event.preventDefault();
   }
 
-  @HostListener('dragenter', ['$event']) onDragEnter(event) {
-    this.dragDropClass = 'droparea';
+  onDragEnter(event: DragEvent) {
+    this.dragDropClass.set('droparea');
     event.preventDefault();
   }
 
-  @HostListener('dragend', ['$event']) onDragEnd(event) {
-    this.dragDropClass = 'dragarea';
+  onDragEnd(event: DragEvent) {
+    this.dragDropClass.set('dragarea');
     event.preventDefault();
   }
 
-  @HostListener('dragleave', ['$event']) onDragLeave(event) {
-    this.dragDropClass = 'dragarea';
+  onDragLeave(event: DragEvent) {
+    this.dragDropClass.set('dragarea');
     event.preventDefault();
   }
 
-  @HostListener('drop', ['$event']) onDrop(event) {
-    this.dragDropClass = 'dragarea';
+  onDrop(event: DragEvent) {
+    this.dragDropClass.set('dragarea');
     event.preventDefault();
     event.stopPropagation();
-    this.addFiles(event.dataTransfer.files);
+    if (event.dataTransfer?.files) {
+      this.addFiles(event.dataTransfer.files);
+    }
   }
 
-  onFileChange(event) {
-    const files = event.target.files;
-    this.addFiles(files);
+  onFileChange(event: Event) {
+    const target = event.target as HTMLInputElement;
+    if (target.files) {
+      this.addFiles(target.files);
+    }
   }
 
-  addFiles(files: FileList) {
-    this.errors = []; // clear previous errors
+  addFiles(fileList: FileList) {
+    this.errors.set([]); // clear previous errors
+    this.currentFiles = [...this.files()];
 
-    if (this.isValidFiles(files)) {
-      for (let i = 0; i < files.length; i++) {
-        this.files.push(files[i]);
+    if (this.isValidFiles(fileList)) {
+      for (const file of Array.from(fileList)) {
+        this.currentFiles.push(file);
       }
-      this.filesChange.emit(this.files);
+      this.filesChange.emit(this.currentFiles);
     }
   }
+
   removeFile(file: File) {
-    this.errors = []; // clear previous errors
+    this.errors.set([]); // clear previous errors
+    this.currentFiles = [...this.files()];
 
-    const index = this.files.indexOf(file);
+    const index = this.currentFiles.indexOf(file);
     if (index !== -1) {
-      this.files.splice(index, 1);
+      this.currentFiles.splice(index, 1);
     }
-    this.filesChange.emit(this.files);
+    this.filesChange.emit(this.currentFiles);
   }
 
-  private isValidFiles(files: FileList): boolean {
-    if (this.maxFiles > 0) { this.validateMaxFiles(files); }
-    if (this.fileExt.length > 0) { this.validateFileExtensions(files); }
-    if (this.maxSize > 0) { this.validateFileSizes(files); }
-    return (this.errors.length === 0);
+  private isValidFiles(fileList: FileList): boolean {
+    if (this.maxFiles() > 0) { this.validateMaxFiles(fileList); }
+    if (this.fileExt().length > 0) { this.validateFileExtensions(fileList); }
+    if (this.maxSize() > 0) { this.validateFileSizes(fileList); }
+    return (this.errors().length === 0);
   }
 
-  private validateMaxFiles(files: FileList): boolean {
-    if ((files.length + this.files.length) > this.maxFiles) {
-      this.errors.push('Too many files');
-      setTimeout(() => this.errors = [], 5000);
+  private validateMaxFiles(fileList: FileList): boolean {
+    if ((fileList.length + this.files().length) > this.maxFiles()) {
+      const currentErrors = [...this.errors()];
+      currentErrors.push('Too many files');
+      this.errors.set(currentErrors);
+      setTimeout(() => this.errors.set([]), 5000);
       return false;
     }
     return true;
   }
 
-  private validateFileExtensions(files: FileList): boolean {
+  private validateFileExtensions(fileList: FileList): boolean {
     let ret = true;
-    const extensions = this.fileExt.split(',').map(function (x) { return x.toUpperCase().trim(); });
-    for (let i = 0; i < files.length; i++) {
-      const ext = files[i].name.toUpperCase().split('.').pop() || files[i].name;
+    const extensions = this.fileExt().split(',').map(x => x.toUpperCase().trim());
+    for (const file of Array.from(fileList)) {
+      const ext = file.name.toUpperCase().split('.').pop() || file.name;
       if (!extensions.includes(ext)) {
-        this.errors.push('Invalid extension: ' + files[i].name);
-        setTimeout(() => this.errors = [], 5000);
+        const currentErrors = [...this.errors()];
+        currentErrors.push('Invalid extension: ' + file.name);
+        this.errors.set(currentErrors);
+        setTimeout(() => this.errors.set([]), 5000);
         ret = false;
       }
     }
     return ret;
   }
 
-  private validateFileSizes(files: FileList): boolean {
+  private validateFileSizes(fileList: FileList): boolean {
     let ret = true;
-    for (let i = 0; i < files.length; i++) {
-      const fileSizeinMB = files[i].size / 1024 / 1024; // in MB
+    for (const file of Array.from(fileList)) {
+      const fileSizeinMB = file.size / 1024 / 1024; // in MB
       const size = Math.round(fileSizeinMB * 100) / 100; // convert up to 2 decimal places
-      if (size > this.maxSize) {
-        this.errors.push('File too large: ' + files[i].name);
-        setTimeout(() => this.errors = [], 5000);
+      if (size > this.maxSize()) {
+        const currentErrors = [...this.errors()];
+        currentErrors.push('File too large: ' + file.name);
+        this.errors.set(currentErrors);
+        setTimeout(() => this.errors.set([]), 5000);
         ret = false;
       }
     }

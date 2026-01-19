@@ -1,24 +1,26 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 
 import { ApiService } from './api';
 import { CommentPeriod } from 'app/models/commentperiod';
+import { LoadingStateService } from './loading-state.service';
 
-@Injectable()
+@Injectable({providedIn:'root'})
 export class CommentPeriodService {
+  private api = inject(ApiService);
+  private loadingState = inject(LoadingStateService);
+
   // statuses / query param options
   readonly NOT_STARTED = 'NS';
   readonly NOT_OPEN = 'NO';
   readonly CLOSED = 'CL';
   readonly OPEN = 'OP';
 
-  private commentPeriodStatuses: Array<string> = []; // use helper to get these
-  private commentPeriod: CommentPeriod = null; // for caching
+  private commentPeriodStatuses: Record<string, string> = {}; // use helper to get these
+  private commentPeriod: CommentPeriod | null = null; // for caching
 
-  constructor(
-    private api: ApiService,
-  ) {
+  constructor() {
     // user-friendly strings for display
     this.commentPeriodStatuses[this.NOT_STARTED] = 'Commenting Not Started';
     this.commentPeriodStatuses[this.NOT_OPEN] = 'Not Open For Commenting';
@@ -27,28 +29,38 @@ export class CommentPeriodService {
   }
 
   // get all comment periods for the specified application id
-  getAllByProjectId(projId: string): Observable<Object> {
+  getAllByProjectId(projId: string): Observable<object> {
+    const loadingId = `commentperiods-${projId}`;
+    this.loadingState.startLoading(loadingId, 'Loading comment periods');
     return this.api.getPeriodsByProjId(projId)
       .pipe(
         map((res: any) => {
           if (res) {
-            const periods: Array<CommentPeriod> = [];
+            const periods: CommentPeriod[] = [];
             if (!res || res.length === 0) {
+              this.loadingState.stopLoading(loadingId);
               return periods;
             }
-            res.forEach(cp => {
+            res.forEach((cp: any) => {
               periods.push(new CommentPeriod(cp));
             });
+            this.loadingState.stopLoading(loadingId);
             return { totalCount: res.length, data: periods };
           }
+          this.loadingState.stopLoading(loadingId);
           return {};
         }),
-        catchError(error => this.api.handleError(error))
+        catchError(error => {
+          this.loadingState.stopLoading(loadingId);
+          return this.api.handleError(error);
+        })
       );
   }
 
   // get a specific comment period by its id
   getById(periodId: string): Observable<CommentPeriod> {
+    const loadingId = `commentperiod-${periodId}`;
+    this.loadingState.startLoading(loadingId, 'Loading comment period');
     return this.api.getPeriod(periodId)
       .pipe(
         map((res: any) => {
@@ -57,18 +69,26 @@ export class CommentPeriodService {
             // return the first (only) comment period
             return periods.length > 0 ? new CommentPeriod(periods[0]) : null;
           }
+          return null;
         }),
-        map((period: CommentPeriod) => {
-          if (!period) { return null as CommentPeriod; }
+        map((period: CommentPeriod | null) => {
+          if (!period) { 
+            this.loadingState.stopLoading(loadingId);
+            return null as unknown as CommentPeriod; 
+          }
 
           this.commentPeriod = period;
+          this.loadingState.stopLoading(loadingId);
           return this.commentPeriod;
         }),
-        catchError(this.api.handleError)
+        catchError(error => {
+          this.loadingState.stopLoading(loadingId);
+          return this.api.handleError(error);
+        })
       );
   }
   // returns first period - multiple comment periods are currently not supported
-  getCurrent(periods: CommentPeriod[]): CommentPeriod {
+  getCurrent(periods: CommentPeriod[]): CommentPeriod | null {
     return (periods.length > 0) ? periods[0] : null;
   }
 
@@ -95,7 +115,7 @@ export class CommentPeriodService {
   /**
      * Given a status code, returns user-friendly status string.
      */
-  getStatusString(statusCode: string): string {
+  getStatusString(statusCode: string): string | null {
     switch (statusCode) {
       case this.NOT_STARTED: return this.commentPeriodStatuses[this.NOT_STARTED];
       case this.NOT_OPEN: return this.commentPeriodStatuses[this.NOT_OPEN];

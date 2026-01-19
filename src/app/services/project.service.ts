@@ -1,6 +1,6 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Observable, of, forkJoin } from 'rxjs';
-import { map, catchError, mergeMap, flatMap } from 'rxjs/operators';
+import { map, catchError, mergeMap, flatMap, tap } from 'rxjs/operators';
 
 import { Project } from 'app/models/project';
 import { ApiService } from './api';
@@ -10,77 +10,121 @@ import { ISearchResults } from 'app/models/search';
 import { SearchService } from './search.service';
 import { Utils } from 'app/shared/utils/utils';
 import { DataQueryResponse } from 'app/models/api-response';
+import { LoadingStateService } from './loading-state.service';
 
 interface GetParameters {
   getresponsibleEPD?: boolean;
   getprojectLead?: boolean;
 }
 
-@Injectable()
+@Injectable({providedIn:'root'})
 export class ProjectService {
-  private project: Project = null; // for caching
+  private api = inject(ApiService);
+  private searchService = inject(SearchService);
+  private utils = inject(Utils);
+  private loadingState = inject(LoadingStateService);
+
+  private project: Project | null = null; // for caching
   private projectList: Project[] = [];
-
-
-  constructor(
-    private api: ApiService,
-    private searchService: SearchService,
-    private utils: Utils,
-  ) { }
+  private cachedCount: number | null = null;
+  private count$: Observable<number> | null = null;
 
   // get just the projects (for fast mapping)
-  getAll(pageNum: number = 0, pageSize: number = 1000000): Observable<Project[]> {
-    return this.searchService.getSearchResults('', 'Project', null, pageNum, pageSize, '', {}, true, '', {}, '')
+  getAll(pageNum = 0, pageSize = 1000000): Observable<Project[]> {
+    const loadingId = `projects-page-${pageNum}`;
+    this.loadingState.startLoading(loadingId, 'Loading projects');
+    return this.searchService.getSearchResults('', 'Project', [], pageNum, pageSize, '', {}, true, '', {}, '')
       .pipe(
         map((res: ISearchResults<Project>[]) => {
           if (res) {
             const results = this.utils.extractFromSearchResults(res);
             // let projects: Array<Project> = [];
             this.projectList = [];
-            results.forEach(project => {
-              this.projectList.push(new Project(project));
-            });
+            if (results) {
+              results.forEach(project => {
+                this.projectList.push(new Project(project));
+              });
+            }
+            this.loadingState.stopLoading(loadingId);
             return { totalCount: res[0].data.meta[0].searchResultsTotal, data: this.projectList };
           }
+          this.loadingState.stopLoading(loadingId);
           return {};
         }),
-        catchError(error => this.api.handleError(error))
+        catchError(error => {
+          this.loadingState.stopLoading(loadingId);
+          return this.api.handleError(error);
+        })
       );
   }
 
   // get count of projects
   getCount(): Observable<number> {
-    return this.api.getCountProjects()
+    // Return cached count if available
+    if (this.cachedCount !== null) {
+      return of(this.cachedCount);
+    }
+    
+    // Return in-flight request if one exists
+    if (this.count$) {
+      return this.count$;
+    }
+    
+    // Create new request and cache it
+    const loadingId = 'projects-count';
+    this.loadingState.startLoading(loadingId, 'Counting projects');
+    this.count$ = this.api.getCountProjects()
       .pipe(
-        catchError(error => this.api.handleError(error))
+        map(count => {
+          this.cachedCount = count;
+          this.loadingState.stopLoading(loadingId);
+          return count;
+        }),
+        catchError(error => {
+          this.loadingState.stopLoading(loadingId);
+          return this.api.handleError(error);
+        })
       );
+    
+    return this.count$;
   }
 
   // get all projects and related data
   // TODO: instead of using promises to get all data at once, use observables and DEEP-OBSERVE changes
   // see https://github.com/angular/angular/issues/11704
-  getAllFull(pageNum: number = 0, pageSize: number = 1000000): Observable<Project[]> {
+  getAllFull(pageNum = 0, pageSize = 1000000): Observable<Project[]> {
+    const loadingId = `projects-full-page-${pageNum}`;
+    this.loadingState.startLoading(loadingId, 'Loading projects');
     // first get the projects
     return this.getAll(pageNum, pageSize)
       .pipe(
         mergeMap((projects: any) => {
           if (projects.length === 0) {
+            this.loadingState.stopLoading(loadingId);
             return of([] as Project[]);
           }
 
-          const promises: Array<Promise<any>> = [];
+          const promises: Promise<any>[] = [];
 
-          return Promise.all(promises).then(() => { return projects.data; });
+          return Promise.all(promises).then(() => { 
+            this.loadingState.stopLoading(loadingId);
+            return projects.data; 
+          });
         }),
-        catchError(this.api.handleError)
+        catchError(error => {
+          this.loadingState.stopLoading(loadingId);
+          return this.api.handleError(error);
+        })
       );
   }
 
   // get a specific project by its id
-  getById(projId: string, forceReload: boolean = false, cpStart: string = null, cpEnd: string = null): Observable<Project> {
+  getById(projId: string, forceReload = false, cpStart: string | null = null, cpEnd: string | null = null): Observable<Project> {
     if (this.project && this.project._id === projId && !forceReload) {
       return of(this.project);
     }
+    const loadingId = `project-${projId}`;
+    this.loadingState.startLoading(loadingId, 'Loading project');
     return this.api.getProject(projId, cpStart, cpEnd)
       .pipe(
         map((projects: Project[]) => {
@@ -90,11 +134,11 @@ export class ProjectService {
             if (projects[0] && projects[0].commentPeriodForBanner && projects[0].commentPeriodForBanner.length === 1) {
               projects[0].commentPeriodForBanner = new CommentPeriod(projects[0].commentPeriodForBanner[0]);
             } else if (projects[0] && projects[0].commentPeriodForBanner && projects[0].commentPeriodForBanner.length > 1) {
-              let now = new Date
-              let currentDate = now.toISOString();
+              const now = new Date
+              const currentDate = now.toISOString();
               // Default to the same comment period we're using currently in case one is not active
               let finalCommentPeriod = new CommentPeriod(projects[0].commentPeriodForBanner[0]);
-              for (let commentPeriod in projects[0].commentPeriodForBanner) {
+              for (const commentPeriod in projects[0].commentPeriodForBanner) {
                 if (Date.parse(projects[0].commentPeriodForBanner[commentPeriod].dateCompleted) > Date.parse(currentDate)
                   && Date.parse(projects[0].commentPeriodForBanner[commentPeriod].dateStarted) < Date.parse(currentDate)) {
                   finalCommentPeriod = new CommentPeriod(projects[0].commentPeriodForBanner[commentPeriod]);
@@ -109,13 +153,15 @@ export class ProjectService {
           return projects.length > 0 ? new Project(projects[0]) : null;
         }),
         flatMap(res => {
-          let project = res;
+          const project = res;
           if (!project) {
-            return of(null as Project);
+            this.loadingState.stopLoading(loadingId);
+            return of(null as unknown as Project);
           }
           // Map the build to the human readable nature field
           project.nature = this.utils.natureBuildMapper(project.build);
           if (project.projectLeadId == null && project.responsibleEPDId == null) {
+            this.loadingState.stopLoading(loadingId);
             return of(new Project(project));
           }
           // now get the rest of the data for this project
@@ -125,20 +171,52 @@ export class ProjectService {
               getresponsibleEPD: project.responsibleEPDId !== null && project.responsibleEPDId !== '' || project.responsibleEPDId !== undefined,
               getprojectLead: project.projectLeadId !== null && project.projectLeadId !== '' || project.projectLeadId !== undefined
             }
+          ).pipe(
+            tap(() => this.loadingState.stopLoading(loadingId))
           );
         }),
-        catchError(error => this.api.handleError(error))
+        catchError(error => {
+          this.loadingState.stopLoading(loadingId);
+          return this.api.handleError(error);
+        })
       );
   }
 
   getPins(proj: string, pageNum: number, pageSize: number, sortBy: any): Observable<DataQueryResponse<Org>[]> {
+    const loadingId = `project-pins-${proj}-page-${pageNum}`;
+    this.loadingState.startLoading(loadingId, 'Loading pins');
     return this.api.getProjectPins(proj, pageNum, pageSize, sortBy)
       .pipe(
-        catchError(error => this.api.handleError(error))
+        map(res => {
+          this.loadingState.stopLoading(loadingId);
+          return res;
+        }),
+        catchError(error => {
+          this.loadingState.stopLoading(loadingId);
+          return this.api.handleError(error);
+        })
       );
   }
 
   private _getExtraAppData(project: Project, { getresponsibleEPD = false, getprojectLead = false }: GetParameters): Observable<Project> {
+    // Check if both roles are the same person to avoid duplicate API calls
+    const sameUser = getresponsibleEPD && getprojectLead && 
+                     project.responsibleEPDId && project.projectLeadId &&
+                     project.responsibleEPDId.toString() === project.projectLeadId.toString();
+    
+    if (sameUser) {
+      // Fetch user data once and assign to both roles
+      return this.searchService.getItem(project.responsibleEPDId.toString(), 'User')
+        .pipe(
+          map(payload => {
+            project.responsibleEPDObj = payload.data;
+            project.projectLeadObj = payload.data;
+            return project;
+          })
+        );
+    }
+    
+    // Different users or only one role needed - use forkJoin
     return forkJoin(
       getresponsibleEPD ? this.searchService.getItem(project.responsibleEPDId.toString(), 'User') : of(null),
       getprojectLead ? this.searchService.getItem(project.projectLeadId.toString(), 'User') : of(null)
@@ -156,7 +234,7 @@ export class ProjectService {
         })
       );
   }
-  public getPeopleObjs(data): Observable<any> {
+  public getPeopleObjs(data: any): Observable<any> {
     const projectSearchData = this.utils.extractFromSearchResults(data);
     if (!projectSearchData) {
       return of(data)
@@ -189,17 +267,34 @@ export class ProjectService {
 
   // Send this users' information to our CAC back-end
   cacSignUp(project: Project, meta: any): Observable<any> {
+    const loadingId = `cac-signup-${project._id}`;
+    this.loadingState.startLoading(loadingId, 'Signing up for CAC');
     return this.api.cacSignUp(project, meta)
       .pipe(
-        catchError(error => this.api.handleError(error))
+        map(res => {
+          this.loadingState.stopLoading(loadingId);
+          return res;
+        }),
+        catchError(error => {
+          this.loadingState.stopLoading(loadingId);
+          return this.api.handleError(error);
+        })
       );
   }
 
   // Remove this user from the CAC membership on this project
-  cacRemoveMember(projectId: String, meta: any): Observable<any> {
+  cacRemoveMember(projectId: string, meta: any): Observable<any> {
+    this.loadingState.startLoading('cac-unsubscribe', 'Unsubscribing from CAC');
     return this.api.cacRemoveMember(projectId, meta)
       .pipe(
-        catchError(error => this.api.handleError(error))
+        map(result => {
+          this.loadingState.stopLoading('cac-unsubscribe');
+          return result;
+        }),
+        catchError(error => {
+          this.loadingState.stopLoading('cac-unsubscribe');
+          return this.api.handleError(error);
+        })
       );
   }
 }

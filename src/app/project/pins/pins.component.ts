@@ -1,24 +1,39 @@
-import { Component, OnInit, ChangeDetectorRef, OnDestroy } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Component, OnInit, OnDestroy, inject, computed, signal } from '@angular/core';
+import { Router, ActivatedRoute } from '@angular/router';
+
+import { takeWhile } from 'rxjs/operators';
+
 import { StorageService } from 'app/services/storage.service';
 import { SearchResults } from 'app/models/search';
 import { PinsTableRowsComponent } from './pins-table-rows/pins-table-rows.component';
-import { takeWhile } from 'rxjs/operators';
 import { TableTemplate } from 'app/shared/components/table-template/table-template';
 import { TableObject } from 'app/shared/components/table-template/table-object';
 import { PinsService } from 'app/services/pins.service';
 import { ITableMessage } from 'app/shared/components/table-template/table-row-component';
+import { TableTemplateComponent } from 'app/shared/components/table-template/table-template.component';
+import { LoadingStateService } from 'app/services/loading-state.service';
 
 @Component({
   selector: 'app-pins',
   templateUrl: './pins.component.html',
-  styleUrls: ['./pins.component.scss']
+  imports: [TableTemplateComponent],
+  standalone: true
 })
 export class PinsComponent implements OnInit, OnDestroy {
-  private alive = true;
-  public loading: Boolean = true;
+  private router = inject(Router);
+  private route = inject(ActivatedRoute);
+  private storageService = inject(StorageService);
+  private tableTemplateUtils = inject(TableTemplate);
+  private pinsService = inject(PinsService);
+  private loadingState = inject(LoadingStateService);
 
-  public tableData: TableObject = new TableObject({ component: PinsTableRowsComponent });
+  private alive = true;
+  private projId = '';
+  public loading = computed(() => 
+    this.loadingState.getOperationState(`pins-${this.projId || 'all'}-page-${this.pinsService.fetchDataConfig.currentPage}`)()
+  );
+
+  public tableData = signal<TableObject>(new TableObject({ component: PinsTableRowsComponent }));
   public tableColumns: any[] = [
     {
       name: 'Nation Name',
@@ -31,61 +46,66 @@ export class PinsComponent implements OnInit, OnDestroy {
       width: 'col-4'
     }
   ];
-  constructor(
-    private router: Router,
-    private _changeDetectionRef: ChangeDetectorRef,
-    private route: ActivatedRoute,
-    private storageService: StorageService,
-    private tableTemplateUtils: TableTemplate,
-    private pinsService: PinsService
-  ) {
-  }
 
   ngOnInit() {
-    this.tableData.tableId = 'pins-table';
+    const initialTableData = this.tableData();
+    initialTableData.tableId = 'pins-table';
 
     // Hide table controls
-    this.tableData.options.showPageCountDisplay = false;
-    this.tableData.options.showPageSizePicker = false;
+    initialTableData.options.showPageCountDisplay = false;
+    initialTableData.options.showPageSizePicker = false;
+    
+    this.tableData.set(initialTableData);
+
+    // Get project ID from parent route
+    this.projId = this.route.parent?.snapshot.params['projId'] || '';
+    this.pinsService.fetchDataConfig.projId = this.projId;
 
     this.route.queryParamMap.pipe(takeWhile(() => this.alive)).subscribe(data => {
-      // Get params from route, shove into the tableTemplateUtils so that we get a new dataset to work with.
-      this.tableData = this.tableTemplateUtils.updateTableObjectWithUrlParams(data['params'], this.tableData, 'Pins');
-      this.tableData.sortBy = data['params'].sortByPins ? data['params'].sortByPins : '+name';
-      this._changeDetectionRef.detectChanges();
+      // Get params from route, update table data immutably
+      const params: any = {};
+      data.keys.forEach(key => params[key] = data.get(key));
+      const updatedTableData = this.tableTemplateUtils.updateTableObjectWithUrlParams(params, this.tableData(), 'Pins');
+      updatedTableData.sortBy = params.sortByPins ? params.sortByPins : '+name';
+      this.tableData.set(updatedTableData);
     });
 
     this.pinsService.getValue()
       .pipe(takeWhile(() => this.alive))
       .subscribe((searchResults: SearchResults) => {
-        if (searchResults.data !== 0) {
-          this.tableData.totalListItems = searchResults.totalSearchCount;
-          if (this.tableData.totalListItems > 0) {
-            this.tableData.items = searchResults.data.map(record => {
+        if (searchResults && searchResults.data !== null && searchResults.data !== undefined) {
+          const currentData = this.tableData();
+          const updatedTableData = { ...currentData };
+          updatedTableData.totalListItems = searchResults.totalSearchCount || 0;
+          if (Array.isArray(searchResults.data) && searchResults.data.length > 0) {
+            updatedTableData.items = searchResults.data.map((record: any) => {
               return { rowData: record };
             });
           } else {
-            this.tableData.items = [];
+            updatedTableData.items = [];
           }
-          this.tableData.columns = this.tableColumns;
-
-          this.loading = false;
-          this._changeDetectionRef.detectChanges();
+          updatedTableData.columns = this.tableColumns;
+          this.tableData.set(updatedTableData);
         }
       });
+
+    // Trigger initial data fetch
+    this.pinsService.refreshData();
   }
 
   onMessageOut(msg: ITableMessage) {
-    let params = {};
+    const params: any = {};
     switch (msg.label) {
-      case 'columnSort':
-        if (this.tableData.sortBy.charAt(0) === '+') {
+      case 'columnSort': {
+        const currentTableData = this.tableData();
+        if (currentTableData.sortBy.charAt(0) === '+') {
           params['sortByPins'] = '-' + msg.data;
         } else {
           params['sortByPins'] = '+' + msg.data;
         }
         this.pinsService.fetchDataConfig.sortBy = params['sortByPins'];
         break;
+      }
       case 'pageNum':
         params['currentPagePins'] = msg.data;
         this.pinsService.fetchDataConfig.currentPage = params['currentPagePins'];
@@ -96,7 +116,7 @@ export class PinsComponent implements OnInit, OnDestroy {
     this.submit(params);
   }
 
-  submit(params) {
+  submit(params: any) {
     this.storageService.state.scrollPosition = { type: 'scrollPosition', data: [window.scrollX, window.scrollY] };
     this.router.navigate(
       [],

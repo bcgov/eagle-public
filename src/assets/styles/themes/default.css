@@ -1,0 +1,136 @@
+/* EAGLE Custom CSS Variables */
+/* Note: Bootstrap semantic colors (--bs-primary, --bs-secondary, etc.) are in bootstrap-override.css */
+/* This file contains EAGLE-specific variables NOT covered by Bootstrap */
+
+:root {
+    /* === EAGLE-SPECIFIC COLORS === */
+    /* Use Bootstrap variables for semantic colors: --bs-primary, --bs-secondary, --bs-warning, --bs-white, --bs-black */
+    /* These are EAGLE-specific utility colors not covered by Bootstrap */
+    --primary: var(--bs-primary); /* #38598a - BC Gov interactive blue */
+    --gold: var(--bs-warning); /* #fcba19 - for legacy compatibility */
+    --white: var(--bs-white); /* for legacy compatibility */
+    --black: var(--bs-black); /* for legacy compatibility */
+    --lightgray: #eee;
+    --blue-dark: #002663;
+
+    /* Layout */
+    --header-height: 4.2rem;
+    --env-banner-height: 0rem;
+    --header-total-height: 4.2rem;
+    --footer-height: 17rem;
+    --sidebar-width: 30%;
+
+    /* Background Colors */
+    --bg-dark: var(--primary);
+    --bg-dark-color: var(--white);
+    --bg-dark-link-color: var(--gold);
+    --bg-dark-border-color: #5475a7;
+
+    /* Font Colors - Using Bootstrap variables for consistency */
+    --font-color: var(--bs-body-color, #494949); /* Fallback to #494949 if Bootstrap not loaded */
+    --font-gray: var(--bs-secondary-color, #666); /* Fallback to #666 */
+
+    /* Links */
+    --link-color: #1a5a96;
+
+    /* Header */
+    --header-font-color: var(--white);
+    --header-bg: var(--bs-secondary);
+
+    /* Footer */
+    --footer-bg: var(--bs-secondary);
+    --footer-color: var(--white);
+
+    /* Main Navigation - uses theme typography scale */
+    --mn-font-size: var(--bs-font-size-sm);
+    --mn-dropdown-menu-size: var(--bs-font-size-sm);
+    --mn-color: var(--white);
+    --mn-border-color: #5f79a2;
+    --mn-hover-bg: #2b4777;
+    --mn-hover-color: var(--gold);
+    --mn-toggle-color: var(--gold);
+    --mn-dropdown-bg: #2b4777;
+
+    /* COMPONENTS */
+
+    /* Aside */
+    --aside-title-color: #38598a;
+    --aside-bg: #f7f8fa;
+
+    /* Cards */
+    --card-header-color: var(--white);
+    --card-header-bg: #003367;
+
+    /* Feature Blocks */
+    --feature-block-color: var(--white);
+    --feature-block-bg: #244278;
+    --feature-block-light-bg: var(--white);
+    --feature-block-light-color: #666;
+    --feature-block-primary: var(--primary);
+
+    /* Form Controls */
+    --fc-height: 2.75rem;
+    --fc-border-color: #ddd;
+    --fc-bg: var(--white);
+    --fc-inner-shadow: 0.1rem 0.1rem 0.1rem var(--lightgray);
+    --fc-placeholder-color: #aaa;
+    --fc-focus-border-color: #5091cd;
+
+    /* List Variants */
+    --nv-list-bg: white;
+    --list-row-bg: #f7f8fa;
+    --list-row-alt-bg: #f4f4f4;
+
+    /* Tab Navigation */
+    --tab-color: #38598a;
+    --tab-nav-border-color: #ddd;
+    --tab-nav-bg: #f7f8fa;
+    --tab-hover-bg: var(--lightgray);
+    --tab-sm-active-color: var(--white);
+    --tab-sm-bg: var(--lightgray);
+    --tab-sm-active-bg: #38598a;
+    --tab-active-bg: #38598a;
+    --tab-active-color: var(--white);
+
+    /* Tables */
+    --table-header-bg: #38598a;
+    --table-header-color: #fff;
+    --table-header-border: #2d4a6f;
+    --table-header-hover-border: #fcba19;
+    --table-header-sort-color: #fff;
+    --table-row-bg: #E9ECEF;
+    --table-row-hover-bg: #d8dce0;
+    --table-border-color: #CED4DA;
+
+    /* Modal */
+    --modal-bg: var(--white);
+    --modal-header-bg: var(--bs-primary);
+    --modal-footer-bg: var(--bs-primary);
+
+    /* Map Components */
+    --map-bg: #445a71;
+    --map-cluster-highlight: var(--bc-gold, #fcba19);
+    --map-cluster-bg: rgba(80, 145, 205, 0.6); /* BC blue light - lighter */
+    --map-cluster-inner-bg: rgba(80, 145, 205, 0.9); /* BC blue light - darker */
+
+    /* Hero Banner */
+    --hero-shadow-color: #00264d;
+    --hero-btn-overlay: rgba(0, 38, 77, 0.3);
+
+    /* Buttons */
+    --btn-disabled-color: #808080;
+
+    /* Shadows & Overlays */
+    --shadow-subtle: rgba(0, 0, 0, 0.1);
+    --hover-tint: rgba(0, 0, 0, 0.02);
+
+    /* Map Popup */
+    --map-popup-color: var(--white);
+    --map-popup-bg: #244278;
+    --map-popup-footer-bg: var(--primary);
+    --map-popup-header-bg: var(--primary);
+    --map-popup-font-size: var(--bs-font-size-6);
+    --map-popup-menu-active-bg: #5091cd;
+    --map-popup-btn-color: var(--white);
+    --map-popup-border-color: var(--white);
+}

@@ -1,37 +1,49 @@
 <div class="app-list__container" id="applist-list" name="List of EAO Projects, limited by filters and bound by map view">
 
-    <div class="app-list__body">
-  
-      <!-- Initial Loading Indicator -->
-      <div class="spinner-container" *ngIf="loading && loadedApps().length === 0">
+  <div class="app-list__body">
+
+    <!-- Initial Loading Indicator -->
+    @if (loading() && loadedApps().length === 0) {
+      <div class="spinner-container">
         <div class="spinner spinner-sm rotating"></div>
         <span class="spinner__msg">Loading projects...</span>
       </div>
-  
-      <!-- No Results -->
-      <div class="no-results" *ngIf="!loading && loadedApps().length === 0">
+    }
+
+    <!-- No Results -->
+    @if (!loading() && loadedApps().length === 0) {
+      <div class="no-results">
         <strong>No projects found</strong>
       </div>
-  
-      <!-- Scrollable Content -->
-      <div class="app-list__scroll-container">
-        <ul class="app-list__list">
-          <ng-template ngFor let-item [ngForOf]="loadedApps()">
-            <li class="app-card list-group-item" [class.active]="isCurrentApp(item)"
-              (click)="toggleCurrentApp(item);$event.stopPropagation();" *ngIf="item.isVisible">
-  
-              <!-- Project Details -->
-              <ul class="app-card__details">
-                <li>
-                  <span class="key">Applicant</span>
-                  <span class="value client-name">{{item.client || 'Unknown Client'}}</span>
-                </li>
-                <li>
-                  <span class="key">Purpose / Subpurpose</span>
-                  <!-- TODO: Need a better way of handling values that are not available - see also below -->
-                  <span class="value">
-                    <span *ngIf="item.purpose || item.subpurpose">{{item.purpose | titlecase}} / {{item.subpurpose | titlecase}}</span>
-                    <span *ngIf="!item.purpose || !item.subpurpose">Not Available</span>
+    }
+
+    <!-- Scrollable Content -->
+    <div class="app-list__scroll-container">
+      <ul class="app-list__list">
+        @for (item of loadedApps(); track item._id) {
+          <li class="app-card list-group-item" [class.active]="isCurrentApp(item)"
+            role="button"
+            tabindex="0"
+            (click)="toggleCurrentApp(item);$event.stopPropagation();"
+            (keydown.enter)="toggleCurrentApp(item);$event.stopPropagation();"
+            (keydown.space)="toggleCurrentApp(item);$event.stopPropagation();">
+
+            <!-- Project Details -->
+            <ul class="app-card__details">
+              <li>
+                <span class="key">Applicant</span>
+                <span class="value client-name">{{item.client || 'Unknown Client'}}</span>
+              </li>
+              <li>
+                <span class="key">Purpose / Subpurpose</span>
+                <!-- TODO: Need a better way of handling values that are not available - see also below -->
+                <span class="value">
+                  @if (item.purpose || item.subpurpose) {
+                    <span>{{item.purpose | titlecase}} / {{item.subpurpose | titlecase}}</span>
+                  }
+                    @if (!item.purpose || !item.subpurpose) {
+                      <span>Not Available</span>
+                    }
                   </span>
                 </li>
                 <li>
@@ -48,10 +60,7 @@
                   <span class="value">{{item.appStatus || 'Unknown'}}</span>
                 </li>
               </ul>
-  
-              <!-- FOR TESTING -->
-              <!-- <div class="mt-3 font-weight-bold" *ngIf="item.features && item.features.length === 0">THIS APPLICATION HAS NO SHAPES</div> -->
-  
+
               <!-- Project Card Actions -->
               <div class="app-card__actions d-flex justify-content-between">
                 <div class="badges">
@@ -61,16 +70,22 @@
                       'badge-secondary': commentPeriodService.isNotOpen(item.currentPeriod),
                       'badge-danger': commentPeriodService.isClosed(item.currentPeriod),
                       'badge-success': commentPeriodService.isOpen(item.currentPeriod)}">
-                      {{item.cpStatus || 'Unknown'}}
-                    <span class="date" *ngIf="commentPeriodService.isNotStarted(item.currentPeriod)">
-                      :&nbsp;{{item.currentPeriod.startDate | date:'mediumDate'}}
-                    </span>
-                    <span class="date" *ngIf="commentPeriodService.isClosed(item.currentPeriod)">
-                      :&nbsp;{{item.currentPeriod.endDate | date:'mediumDate'}}
-                    </span>
-                    <span class="date" *ngIf="commentPeriodService.isOpen(item.currentPeriod)">
-                      :&nbsp;{{item.currentPeriod.startDate | date:'MMM d'}} - {{item.currentPeriod.endDate | date:'MMM d'}}
-                    </span>
+                    <span>{{item.cpStatus}}</span>
+                    @if (commentPeriodService.isNotStarted(item.currentPeriod)) {
+                      <span class="date">
+                        :&nbsp;{{item.currentPeriod.startDate | date:'mediumDate'}}
+                      </span>
+                    }
+                    @if (commentPeriodService.isClosed(item.currentPeriod)) {
+                      <span class="date">
+                        :&nbsp;{{item.currentPeriod.endDate | date:'mediumDate'}}
+                      </span>
+                    }
+                    @if (commentPeriodService.isOpen(item.currentPeriod)) {
+                      <span class="date">
+                        :&nbsp;{{item.currentPeriod.startDate | date:'MMM d'}} - {{item.currentPeriod.endDate | date:'MMM d'}}
+                      </span>
+                    }
                   </div>
                 </div>
                 <a class="app-details-link btn" (click)="$event.stopPropagation()" [routerLink]="['/a', item._id]" title="Go to project details">
@@ -78,24 +93,28 @@
                 </a>
               </div>
             </li>
-          </ng-template>
-        </ul>
-  
-        <!-- Load More -->
-        <div class="load-more" *ngIf="loadedApps().length > 0 && loadedApps().length < projects.length">
-          <button class="btn btn-primary" type="button" title="Load more projects" (click)="loadMore();$event.stopPropagation()" [disabled]="loading">
-            <i class="spinner rotating" [hidden]="!loading"></i>
-            <span>{{loading ? 'Loading...':'Load More'}}</span>
+        }
+      </ul>
+
+      <!-- Load More -->
+      @if (loadedApps().length > 0 && loadedApps().length < projects().length) {
+        <div class="load-more">
+          <button class="btn btn-primary" type="button" title="Load more projects" (click)="loadMore();$event.stopPropagation()" [disabled]="loading()">
+            @if (loading()) {
+              <i class="spinner rotating"></i>
+            }
+            <span>{{loading() ? 'Loading...':'Load More'}}</span>
           </button>
         </div>
-  
-      </div>
+      }
+
     </div>
-  
-    <div class="app-list__options" *ngVar="appsWithShapes().length as numResults">
-      <div class="text-right mb-1">
-        {{numResults > 0 ? numResults + ' results on map' : 'No results'}}
-      </div>
-    </div>
-  
   </div>
+
+  <div class="app-list__options" *ngVar="appsWithShapes().length as numResults">
+    <div class="text-end mb-1">
+      {{numResults > 0 ? numResults + ' results on map' : 'No results'}}
+    </div>
+  </div>
+
+</div>

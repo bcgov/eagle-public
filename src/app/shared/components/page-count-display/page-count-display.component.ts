@@ -1,55 +1,33 @@
-import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, input, computed, ChangeDetectionStrategy } from '@angular/core';
 
 @Component({
   selector: 'lib-page-count-display',
   templateUrl: './page-count-display.component.html',
-  styleUrls: ['./page-count-display.component.scss']
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  standalone: true
 })
-export class PageCountDisplayComponent implements OnChanges {
-  @Input() isHidden = false;
-  @Input() currentPageNum = 1;
-  @Input() currentPageSize = 25;
-  @Input() totalItems = 0;
+export class PageCountDisplayComponent {
+  isHidden = input(false);
+  currentPageNum = input(1);
+  currentPageSize = input(25);
+  totalItems = input(0);
 
-  message = '';
+  message = computed(() => {
+    const totalItems = this.totalItems();
+    const currentPageNum = this.currentPageNum();
+    const currentPageSize = this.currentPageSize();
+    const pageCount = Math.max(1, Math.ceil(totalItems / currentPageSize));
 
-  constructor() { }
-
-  ngOnChanges(changes: SimpleChanges) {
-    if (changes.firstChange) {
-      return;
+    if (totalItems <= 0) {
+      return '';
     }
-
-    if (changes['currentPageNum'] && changes['currentPageNum'].currentValue) {
-      this.currentPageNum = changes['currentPageNum'].currentValue;
+    
+    if (currentPageNum > pageCount) {
+      // Rare edge-case: user manually incremented page param beyond valid range
+      return 'Unable to display results, please clear and re-try';
     }
-
-    if (changes['currentPageSize'] && changes['currentPageSize'].currentValue) {
-      this.currentPageSize = changes['currentPageSize'].currentValue;
-    }
-
-    if (changes['totalItems'] && changes['totalItems'].currentValue) {
-      this.totalItems = changes['totalItems'].currentValue;
-    }
-
-    this.setCountDisplayMessage();
-  }
-
-  setCountDisplayMessage(): void {
-    const pageCount = Math.max(1, Math.ceil(this.totalItems / this.currentPageSize));
-
-    if (this.totalItems <= 0) {
-      this.message = 'No results found';
-    } else if (this.currentPageNum > pageCount) {
-      // This check is necessary due to a rare edge-case where the user has manually incremented the page parameter in
-      // the URL beyond what would normally be allowed. As a result when records are fetched, there aren't enough
-      // to reach this page, and so the total records found is > 0, but the records displayed for this page
-      // is 0, which may confuse users.  Tell them to press clear button which will reset the pagination url parameter.
-      this.message = 'Unable to display results, please clear and re-try';
-    } else {
-      const high = Math.min(this.totalItems, this.currentPageNum * this.currentPageSize);
-      this.message = `Showing ${high} of ${this.totalItems} results`;
-
-    }
-  }
+    
+    const high = Math.min(totalItems, currentPageNum * currentPageSize);
+    return `Showing ${high} of ${totalItems} results`;
+  });
 }

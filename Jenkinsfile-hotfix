@@ -62,23 +62,6 @@ def _openshift(String name, String project, Closure body) {
   }
 }
 
-
-/*
- * Updates the global pastBuilds array: it will iterate recursively
- * and add all the builds prior to the current one that had a result
- * different than 'SUCCESS'.
- */
-def buildsSinceLastSuccess(previousBuild, build) {
-  if ((build != null) && (build.result != 'SUCCESS')) {
-    pastBuilds.add(build)
-    buildsSinceLastSuccess(pastBuilds, build.getPreviousBuild())
-  }
-}
-
-/*
- * Generates a string containing all the commit messages from
- * the builds in pastBuilds.
- */
 @NonCPS
 def getChangeLog(pastBuilds) {
   def log = ""
@@ -91,114 +74,143 @@ def getChangeLog(pastBuilds) {
       }
     }
   }
-  return log;
+  return log
 }
 
-
-
-
 def CHANGELOG = "No new changes"
-def IMAGE_HASH = "latest"
-def lockName = "eagle-public-${env.JOB_NAME}-${env.BUILD_NUMBER}"
+def BUILD_DONE_STATUSES = ['Complete', 'Failed', 'Cancelled']
+
 pipeline {
   environment {
-    TESTPROJECT = "${TEST_NAMESPACE ?: '6cdc9e-test'}"
+    TOOLSPROJECT = "${TOOLS_NAMESPACE ?: '6cdc9e-tools'}"
+    PRODPROJECT = "${PROD_NAMESPACE ?: '6cdc9e-prod'}"
   }
   agent any
+  
   stages {
-    stage('Build Init') {
-      steps {
-        script {
-          openshift.setLockName(lockName)
+
+    stage('Build Hotfix') {
+      when {
+        expression { 
+          return env.BRANCH_NAME ==~ /^hotfix.*$/
         }
       }
-    }
-    stage('Parallel Stage') {
-      failFast true
-      parallel {
-        stage('Build') {
-          agent any
-          steps {
-            script {
-              pastBuilds = []
-              buildsSinceLastSuccess(pastBuilds, currentBuild);
-              CHANGELOG = getChangeLog(pastBuilds);
-
-              echo ">>>>>>Changelog: \n ${CHANGELOG}"
-
+      steps {
+        script {
+          _openshift(env.STAGE_NAME, TOOLSPROJECT) {
+            timeout(20) {
               try {
                 sh("oc extract secret/rocket-chat-secrets --to=${env.WORKSPACE} --confirm")
                 ROCKET_DEPLOY_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-deploy-webhook')
-                ROCKET_QA_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-qa-webhook')
-
-                echo "Building hotfix-eagle-public hotfix branch"
-                openshiftBuild bldCfg: 'hotfix-eagle-public-angular-builder', showBuildLogs: 'true'
-                openshiftBuild bldCfg: 'hotfix-eagle-public-build', showBuildLogs: 'true'
-                echo "Build done"
-
-                echo ">>> Get Image Hash"
-                // Don't tag with BUILD_ID so the pruner can do it's job; it won't delete tagged images.
-                // Tag the images for deployment based on the image's hash
-                IMAGE_HASH = sh (
-                  script: """oc get istag hotfix-eagle-public:latest -o template --template=\"{{.image.dockerImageReference}}\"|awk -F \":\" \'{print \$3}\'""",
-                  returnStdout: true).trim()
-                echo ">> IMAGE_HASH: ${IMAGE_HASH}"
               } catch (error) {
+                echo "Error retrieving rocket chat token"
+              }
+
+              echo "Building eagle-public hotfix branch: ${env.BRANCH_NAME}"
+              
+              // Trigger and wait for Angular builder
+              def bcObj1 = openshift.selector('bc', "eagle-public-angular-builder")
+              bcObj1.startBuild()
+              def buildName1 = "eagle-public-angular-builder-${bcObj1.object().status.lastVersion}"
+              echo "Angular 21 hotfix build name: ${buildName1}"
+              def buildSelector1 = openshift.selector('build', buildName1)
+
+              buildSelector1.untilEach(1) {
+                def phase = it.object().status.phase
+                if (phase == 'Failed') {
+                  currentBuild.result = "FAILURE"
+                }
+                return ( BUILD_DONE_STATUSES.contains(phase) )
+              }
+
+              // Trigger and wait for runtime image build
+              def bcObj2 = openshift.selector('bc', "eagle-public-build")
+              bcObj2.startBuild()
+              def buildName2 = "eagle-public-build-${bcObj2.object().status.lastVersion}"
+              echo "Nginx hotfix build name: ${buildName2}"
+              def buildSelector2 = openshift.selector('build', buildName2)
+
+              buildSelector2.untilEach(1) {
+                def phase = it.object().status.phase
+                if (phase == 'Failed') {
+                  currentBuild.result = "FAILURE"
+                }
+                return ( BUILD_DONE_STATUSES.contains(phase) )
+              }
+
+              echo "Hotfix build completed"
+
+              // Get image hash
+              IMAGE_HASH = sh (
+                script: """oc get istag eagle-public:latest -o template --template=\"{{.image.dockerImageReference}}\"|awk -F \":\" \'{print \$3}\'""",
+                returnStdout: true).trim()
+              echo "Image Hash: ${IMAGE_HASH}"
+              
+              // Tag as hotfix
+              echo "Tagging latest to hotfix"
+              openshift.tag("${TOOLSPROJECT}/eagle-public:latest", "${TOOLSPROJECT}/eagle-public:hotfix")
+              
+              notifyRocketChat(
+                "eagle-public hotfix ${env.BRANCH_NAME} (Angular 21) has been built and tagged",
+                ROCKET_DEPLOY_WEBHOOK
+              )
+            }
+          }
+        }
+      }
+    }
+
+    stage('Tag Hotfix as Prod') {
+      when {
+        expression { 
+          return env.BRANCH_NAME ==~ /^hotfix.*$/
+        }
+      }
+      steps {
+        script {
+          def isApproved = input(
+            message: 'Deploy hotfix to production?',
+            ok: 'Deploy',
+            submitter: 'authenticated'
+          )
+          
+          if (isApproved) {
+            _openshift(env.STAGE_NAME, TOOLSPROJECT) {
+              try {
+                sh("oc extract secret/rocket-chat-secrets --to=${env.WORKSPACE} --confirm")
+                ROCKET_DEPLOY_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-deploy-webhook')
+              } catch (error) {
+                echo "Error retrieving rocket chat token"
+              }
+              
+              try {
+                echo "Backing up production..."
+                sh("oc tag ${TOOLSPROJECT}/eagle-public:prod ${TOOLSPROJECT}/eagle-public:prod-backup-hotfix")
+                sleep 5
+                
+                echo "Tagging hotfix as prod..."
+                sh("oc tag ${TOOLSPROJECT}/eagle-public:hotfix ${TOOLSPROJECT}/eagle-public:prod")
+                sleep 5
+                
+                echo "Hotfix deployed to production"
+                
                 notifyRocketChat(
-                  "@all The build ${env.BUILD_DISPLAY_NAME} of hotfix-eagle-public, seems to be broken.\n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
+                  "@all eagle-public hotfix ${env.BRANCH_NAME} has been deployed to PRODUCTION",
                   ROCKET_DEPLOY_WEBHOOK
                 )
-                throw error
+              } catch (error) {
+                notifyRocketChat(
+                  "@all hotfix deployment to production FAILED: ${error.message}",
+                  ROCKET_DEPLOY_WEBHOOK
+                )
+                currentBuild.result = "FAILURE"
+                throw new Exception("Hotfix deployment failed")
               }
             }
           }
         }
-
-
       }
     }
 
-    stage('Deploy to hotfix'){
-      agent any
-      steps {
-        script {
-          try {
-            echo "Backing up..."
-            openshiftTag destStream: 'hotfix-eagle-public', verbose: 'false', destTag: 'backup-hotfix', srcStream: 'hotfix-eagle-public', srcTag: "hotfix"
-            sleep 5
-            echo "Deploying to hotfix..."
-            openshiftTag destStream: 'hotfix-eagle-public', verbose: 'false', destTag: 'hotfix', srcStream: 'hotfix-eagle-public', srcTag: "${IMAGE_HASH}"
-            sleep 5
-            openshiftVerifyDeployment depCfg: 'hotfix-eagle-public', namespace: TESTPROJECT, replicaCount: 1, verbose: 'false', verifyReplicaCount: 'false', waitTime: 600000
-            echo ">>>> Deployment Complete"
-
-            notifyRocketChat(
-              "A new hotfix image has been created, build: ${env.BUILD_DISPLAY_NAME} \n Changes: \n ${CHANGELOG}",
-              ROCKET_DEPLOY_WEBHOOK
-            )
-            notifyRocketChat(
-              "@all A new hotfix image has been created \n Changes to hotfix: \n ${CHANGELOG}",
-              ROCKET_QA_WEBHOOK
-            )
-          } catch (error) {
-            notifyRocketChat(
-              "@all The build ${env.BUILD_DISPLAY_NAME} of hotfix-eagle-public, seems to be broken.\n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
-              ROCKET_DEPLOY_WEBHOOK
-            )
-            currentBuild.result = "FAILURE"
-            throw new Exception("Deploy failed")
-          }
-        }
-      }
-    }
-
-    // stage('BDD Tests') {
-    //   agent { label: bddPodLabel }
-      // steps{
-      //   echo "BDD placeholder"
-      //   echo "Build: ${BUILD_ID}"
-        // checkout scm
-      // }
-    // }
   }
 }

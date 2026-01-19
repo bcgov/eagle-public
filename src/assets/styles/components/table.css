@@ -1,0 +1,323 @@
+/* Global Table Styles - Bootstrap-compatible base styles for ALL tables */
+/* Includes table-template component styles which need global scope for proper rendering */
+
+/* === TABLE CONTAINER === */
+
+.table-container {
+  padding-bottom: 2rem;
+}
+
+/* === BASE TABLE STYLES === */
+
+.table {
+  width: 100%;
+  background-color: var(--bc-gray-light);
+  margin-bottom: 2rem;
+}
+
+/* === HEADER STYLING === */
+
+.table thead {
+  background-color: var(--bs-table-head-bg);
+  box-shadow: 0.1rem 0.1rem 0.5rem rgb(158 158 158 / 24%);
+}
+
+.table thead tr {
+  background-color: var(--bs-table-head-bg);
+}
+
+.table thead th {
+  padding: 0.75rem 0.5rem;
+  font-size: var(--bs-font-size-sm);
+  font-weight: var(--bs-font-weight-semibold);
+  color: var(--bs-table-head-color);
+  background-color: var(--bs-table-head-bg);
+  border: none;
+  text-align: left;
+  cursor: default;
+}
+
+.table thead th.sortable {
+  cursor: pointer;
+  user-select: none;
+  border-bottom: 3px solid var(--bs-table-head-bg);
+}
+
+.table thead th.sortable:hover,
+.table thead th.sortable:has(.sort-asc),
+.table thead th.sortable:has(.sort-desc) {
+  border-bottom-color: var(--table-header-hover-border);
+}
+
+/* Sort indicators */
+.sort {
+  display: inline-block;
+  width: 0;
+  height: 0;
+  margin-left: 0.5rem;
+  vertical-align: middle;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+}
+
+.sort-asc {
+  border-bottom: 4px solid var(--table-header-sort-color);
+}
+
+.sort-desc {
+  border-top: 4px solid var(--table-header-sort-color);
+}
+
+/* === BODY STYLING === */
+
+.table tbody {
+  background-color: var(--bs-table-bg);
+}
+
+.table tbody tr {
+  background-color: var(--bs-table-bg);
+  transition: background-color 0.2s ease-in-out;
+}
+
+.table tbody tr td {
+  background-color: var(--table-row-bg);
+  padding: 0.75rem 0.5rem;
+  border: none;
+  text-align: left;
+  overflow: hidden;
+  transition: background-color 0.2s ease-in-out;
+}
+
+/* Project notifications row - add padding around entire content */
+.table tbody tr td.pn-location-info {
+  padding: 1.5rem;
+}
+
+/* === INTERACTIVE STATES === */
+
+/* Clickable rows - generic utility class */
+.clickable-row {
+  cursor: pointer;
+}
+
+.clickable-row:hover {
+  background-color: var(--hover-tint);
+}
+
+/* Hover state - only for tables with highlight class */
+.table tbody.highlight tr:hover {
+  background-color: var(--bs-table-hover-bg);
+}
+
+.table tbody.highlight tr:hover td {
+  background-color: var(--bs-table-hover-bg) !important;
+}
+
+/* === TABLE-TEMPLATE COMPONENT STYLES === */
+
+.table-template .table {
+  box-shadow: 2px 2px 8px var(--shadow-subtle);
+  border-radius: 0.25rem;
+  overflow: hidden;
+  table-layout: fixed;
+  width: 100%;
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+.table-template .table thead,
+.table-template .table tbody,
+.table-template .table thead tr,
+.table-template .table tbody tr {
+  padding: 0;
+  margin: 0;
+}
+
+/* Bootstrap column width mapping - Reset flex properties for table cells */
+.table-template .table th[class*="col-"],
+.table-template .table td[class*="col-"] {
+  flex: none;
+  display: table-cell;
+}
+
+.table-template .table tbody tr {
+  border-bottom: 2px solid var(--table-border-color);
+}
+
+/* Only project list table rows should be clickable */
+.table-template .table tbody.highlight tr:hover td {
+  cursor: pointer;
+}
+
+/* === DESKTOP LAYOUT (>= 769px) === */
+@media (min-width: 769px) {
+  /* Flex layout for table template */
+  .table-template .table thead tr {
+    display: flex;
+    align-items: center;
+  }
+
+  .table-template .table thead th {
+    flex: 1 1 0;
+    min-width: 0;
+    border-top: none;
+    border-bottom: 2px solid var(--bs-border-color);
+    padding: 0.75rem;
+    vertical-align: middle;
+    line-height: 1.5;
+    display: table-cell;
+  }
+
+  .table-template .table tbody tr {
+    display: flex;
+    align-items: stretch;
+    min-height: 3rem;
+  }
+
+  .table-template .table tbody tr td {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    padding: 0.75rem;
+    vertical-align: middle;
+    line-height: 1.5;
+    font-size: var(--bs-font-size-sm);
+  }
+
+  /* Column width definitions */
+  .table-template .table col.col-1,
+  .table-template .table th.col-1,
+  .table-template .table td.col-1 {
+    width: 8.33%;
+    min-width: 8.33%;
+    max-width: 8.33%;
+    text-align: center; /* Center align star column */
+  }
+
+  .table-template .table col.col-2,
+  .table-template .table th.col-2,
+  .table-template .table td.col-2 {
+    width: 16.67%;
+    min-width: 16.67%;
+    max-width: 16.67%;
+  }
+
+  .table-template .table col.col-3,
+  .table-template .table th.col-3,
+  .table-template .table td.col-3 {
+    width: 25%;
+    min-width: 25%;
+    max-width: 25%;
+  }
+}
+
+/* === MOBILE LAYOUT (<= 768px) - Card Style === */
+@media (max-width: 768px) {
+  /* Reset flex layout to simple block */
+  .table-template .table {
+    display: block !important;
+  }
+
+  .table-template .table thead {
+    display: none !important;
+  }
+
+  .table-template .table tbody {
+    display: block !important;
+    background-color: transparent;
+  }
+
+  .table-template .table tbody tr {
+    display: block !important;
+    margin-bottom: 1rem;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.375rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    overflow: hidden;
+  }
+
+  .table-template .table tbody tr:last-child {
+    margin-bottom: 0;
+  }
+
+  .table-template .table tbody.highlight tr:hover {
+    box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.15);
+  }
+
+  .table-template .table tbody tr td {
+    display: block !important;
+    width: 100% !important;
+    flex: none !important;
+    padding: 0.75rem 1rem;
+    margin: 0;
+    background-color: transparent;
+    text-align: left;
+  }
+
+  /* Hide featured star column completely on mobile */
+  .table-template .table tbody tr td[data-label="★"],
+  .table-template td[data-label="★"] {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    width: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Override col-* classes specifically */
+  .table-template .table tbody tr td.col-1,
+  .table-template .table tbody tr td.col-2,
+  .table-template .table tbody tr td.col-3 {
+    display: block !important;
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    text-align: left;
+  }
+
+  .table-template .table tbody.highlight tr:hover td {
+    background-color: transparent;
+  }
+
+  /* Name field - card header style */
+  .table-template td[data-label="Name"] {
+    padding: 1rem;
+    margin: 0;
+    font-weight: var(--bs-font-weight-medium);
+    font-size: var(--bs-font-size-sm);
+    color: var(--bs-white);
+    line-height: 1.3;
+    background-color: var(--bs-primary) !important;
+    border-bottom: none;
+  }
+
+  .table-template .table tbody.highlight tr:hover td[data-label="Name"] {
+    background-color: var(--bs-primary) !important;
+  }
+
+  .table-template td[data-label="Name"]::before {
+    content: none;
+  }
+
+  /* All metadata fields (except Name and star) */
+  .table-template td[data-label]:not([data-label="Name"]):not([data-label="★"]) {
+    padding: 0.75rem 1rem;
+    color: var(--bs-body-color);
+    font-size: var(--bs-font-size-sm);
+    line-height: 1.5;
+  }
+
+  /* Labels above values */
+  .table-template td[data-label]:not([data-label="Name"]):not([data-label="★"])::before {
+    content: attr(data-label);
+    display: block;
+    font-size: var(--bs-font-size-xs);
+    font-weight: var(--bs-font-weight-semibold);
+    color: var(--bs-secondary-color);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.25rem;
+  }
+}

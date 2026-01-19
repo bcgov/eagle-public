@@ -1,5 +1,4 @@
 name: Deploy to Test
-
 on:
   repository_dispatch:
     # Trigger from repository dispatch workflow in promotion/test branch

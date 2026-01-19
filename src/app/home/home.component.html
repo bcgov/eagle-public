@@ -1,255 +1,156 @@
-<div class="hero-banner">
-  <div class="container">
-    <div class="container-inner">
-      <div class="hero-banner__content">
-        <span tabindex="0">
-          <h1>Environmental Assessments</h1>
-          <p>
-            British Columbia's environmental assessment process provides
-            opportunities for Indigenous Nations, government agencies and the
-            public to influence the outcome of environmental assessments in
-            British Columbia.
-          </p>
-        </span>
-        <div class="hero-banner__actions">
-          <div class="hero-banner__actions-buttons">
-            <a
-              class="btn slide-l-btn hero-btn inverted"
-              href="/projects"
-              [routerLink]="['/projects']"
-            >
-              <i class="material-icons">list</i
-              ><span>Find Environmental Assessment Projects</span>
-            </a>
-            <a
-              class="btn slide-l-btn hero-btn inverted"
-              href="/projects-list"
-              [routerLink]="['/projects-list']"
-            >
-              <i class="material-icons">list</i><span>List of Projects</span>
-            </a>
-            <a
-              class="btn slide-l-btn hero-btn inverted ml-4"
-              href="/project-notifications"
-              [routerLink]="['/project-notifications']"
-            >
-              <i class="material-icons">list</i
-              ><span>Project Notifications</span>
-            </a>
+<app-hero-banner
+  [title]="heroBannerTitle"
+  [description]="heroBannerDescription"
+  [actions]="heroBannerActions"
+/>
+
+<div>
+  @if (showSurveyBanner() && surveyUrl()) {
+    <div class="survey-banner">
+      <div class="container">
+        <div class="d-flex flex-column flex-md-row gap-3">
+          <div class="flex-grow-1">
+            <h5 class="mb-3">Can you take a few minutes to help us improve your experience on EPIC?</h5>
+            <p class="mb-0">
+              We are working on some improvements to this website and would like to hear about your experience.
+              Please fill out a short 5-10 minute survey to help us design a better EAO Project Information Centre.
+              Thank you!
+            </p>
+          </div>
+          <div class="flex-shrink-0">
+            <a class="btn btn-primary survey-link" [href]="surveyUrl()" rel="noopener" target="_blank">Share your thoughts</a>
           </div>
         </div>
       </div>
     </div>
-  </div>
-</div>
-<div class="survey-banner"  *ngIf="showSurveyBanner">
-  <div class="container">
-    <div class="container-inner">
-      <h5>
-        Can you take a few minutes to help us improve your experience on EPIC?
-      </h5>
-      <div class="survey-content">
-        <p>
-          We are working on some improvements to this website and would like to hear about your experience. Please fill out a short 5-10 minute survey to help us design a better EAO Project Information Centre. Thank you!
-        </p>
-        <a class="survey-link" href="{{ surveyUrl }}" rel="noopener" target="_blank"
-          >Share your thoughts</a
-        >
-      </div>
-    </div>
-  </div>
+  }
 </div>
 
 <main>
   <div id="anchor-point">
     <section class="container">
-      <h2 tabindex="0" class="mb-4">Recent Activities & Updates</h2>
-      <div class="home-news-feed">
-        <table class="table" id="tableTop" *ngIf="results">
-          <tbody *ngFor="let item of results">
-            <tr *ngIf="item.active == true" tabindex="0">
-              <td>
-                <div class="title-container">
-                  <h3 class="title-container__title">
-                    <span 
-                      class="font-weight-bold" 
-                      *ngIf="item.project">
-                      {{ item.project?.name }}
-                    </span>
-                    <span
-                      *ngIf="item.notificationName"
-                      class="font-weight-bold"
-                      >{{ item.notificationName }}</span
-                    >
-                    <span 
-                    class="font-weight-bold" 
-                    *ngIf="item.projectNotification">
-                    {{ item.projectNotification?.name }}
-                  </span>
-                    <span class="home-news-feed__headline">{{
-                      item.headline
-                    }}</span>
-                  </h3>
-                  <span class="title-container__date">{{
-                    item.dateAdded | date: 'longDate'
-                  }}</span>
-                </div>
-                <div>
-                  <div
-                    class="activity-content"
-                    [innerHTML]="item.content"
-                  ></div>
-                </div>
-                <div>
-                  <a
-                  *ngIf="item.type === 'Project Notification News'"
-                  class="btn btn-sm content-btn-alt"
-                  title="View Projects Notifications Page"
-                  href="/project-notifications"
-                  >View Project Notifications Page
-                  </a>
-                  <a
-                    class="btn btn-sm content-btn-alt"
-                    title="View more information about {{ item.project.name }}"
-                    [routerLink]="['/p', item.project?._id]"
-                    *ngIf="item.type !== 'Project Notification News' && item.project?._id"
-                  >
-                    Project Info
-                  </a>
-                  <a
-                    *ngIf="
-                      item.pcp &&
-                      item.type === 'Public Comment Period' &&
-                      (!item.pcp.isMet || !item.pcp.metURL)
-                    "
-                    class="btn btn-sm content-btn-alt"
-                    title="View this Engagement"
-                    [routerLink]="['/p', item.project?._id, 'cp', item.pcp._id]"
-                  >
-                    View Engagement
-                  </a>
-                  <a
-                    *ngIf="
-                      item.pcp &&
-                      item.type === 'Public Comment Period' &&
-                      item.pcp.isMet &&
-                      item.pcp.metURL
-                    "
-                    class="btn btn-sm content-btn-alt"
-                    href="{{ item.pcp.metURL }}"
-                    rel="noopener"
-                    target="_blank"
-                    title="View this Engagement"
-                  >
-                    View Engagement
-                  </a>
-                  <a
-                    *ngIf="
-                      item.documentUrl &&
-                      !item?.documentUrl.includes('docs?folder') &&
-                      !item?.notificationName
-                    "
-                    class="btn btn-sm content-btn-alt"
-                    href="{{ item.documentUrl }}"
-                    rel="noopener"
-                    target="_blank"
-                    title="View more information"
-                  >
-                    View Document(s)
-                  </a>
-                  <a
-                    *ngIf="
-                      item.documentUrl &&
-                      item?.notificationName &&
-                      item?.type ===
-                        'Project Notification Public Comment Period'
-                    "
-                    class="btn btn-sm content-btn-alt"
-                    href="{{ item.documentUrl }}"
-                    rel="noopener"
-                    target="_blank"
-                    title="View more information"
-                  >
-                    View Project Notification Public Comment Period
-                  </a>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-        <div class="news-block-more">
-          <a
-            class="btn slide-r-btn content-btn-alt"
-            href="/news"
-            [routerLink]="['/news']"
-          >
-            <span>View All Activities & Updates</span>
-            <i class="material-icons">&#xE5C8;</i>
-          </a>
-        </div>
-      </div>
-    </section>
-    <hr />
-    <div class="bg-faded">
-      <section class="container">
-        <h2 tabindex="0">About the B.C. Environmental Assessment Process...</h2>
-        <p tabindex="0">
-          Learn more about how the Environmental Assessment Office neutrally
-          administers a process that is predictable, transparent, timely,
-          procedurally fair, and holds all participants accountable.
-        </p>
-        <div class="row feature-blocks">
-          <div class="col-md-4">
-            <div tabindex="0" class="feature-block">
-              <h3>Legislation</h3>
-              <p>
-                Learn about the legislation and regulations that apply to
-                environmental assessments in the province of British Columbia.
-              </p>
-              <a
-                class="btn btn-sm inverted"
-                href="/legislation"
-                [routerLink]="['/legislation']"
-                aria-label="Learn more about legislation"
-                >Learn More</a
-              >
+        <div class="home-news-feed">
+        <h2 tabindex="0">Recent Activities & Updates</h2>
+        @if (loading()) {
+          <div class="d-flex justify-content-center align-items-center py-5">
+            <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+              <span class="visually-hidden">Loading...</span>
             </div>
           </div>
-          <div class="col-md-4">
-            <div tabindex="0" class="feature-block">
-              <h3>Process & Procedures</h3>
-              <p>
-                Learn more about how the Environmental Assessment Office
-                neutrally administers a process that holds all participants
-                accountable.
-              </p>
-              <a
-                class="btn btn-sm inverted"
-                href="/process"
-                [routerLink]="['/process']"
-                aria-label="Learn more about process and procedures"
-                >Learn More</a
-              >
-            </div>
-          </div>
-          <div tabindex="0" class="col-md-4">
-            <div class="feature-block">
-              <h3>Compliance Oversight</h3>
-              <p>
-                Learn about how we collaborate with other agencies to coordinate
-                oversight of environmental assessment projects.
-              </p>
-              <a
-                class="btn btn-sm inverted"
-                href="/compliance-oversight"
-                [routerLink]="['/compliance-oversight']"
-                aria-label="Learn more about compliance oversight"
-                >Learn More</a
-              >
-            </div>
+        } @else if (results() && results().length > 0) {
+            <table class="table" id="tableTop">
+              @for (item of results(); track item._id) {
+                @if (item.active) {
+                  <tbody>
+                    <tr tabindex="0">
+                      <td>
+                        <div class="mb-2">
+                          <h3 class="mb-1 lh-sm">
+                            @if (item.project) {
+                              <div class="mb-3">
+                                <span class="font-weight-bold">{{ item.project.name }}</span>
+                              </div>
+                            }
+                            @if (item.notificationName) {
+                              <span class="font-weight-bold">{{ item.notificationName }}</span>
+                            }
+                            @if (item.projectNotification) {
+                              <span class="font-weight-bold">{{ item.projectNotification.name }}</span>
+                            }
+                            <span class="home-news-feed__headline">{{ item.headline }}</span>
+                          </h3>
+                          <small class="d-block text-muted mb-3">{{ item.dateAdded | date: 'longDate' }}</small>
+                        </div>
+                        <div class="mb-3 lh-base" [innerHTML]="item.content"></div>
+                        <div class="d-flex flex-wrap gap-2">
+                          @if (item.type === 'Project Notification News') {
+                            <a class="btn btn-sm btn-outline-primary" 
+                               [routerLink]="['/project-notifications']"
+                               title="View Projects Notifications Page">
+                              View Project Notifications Page
+                            </a>
+                          }
+                          @if (item.type !== 'Project Notification News' && item.project._id) {
+                            <a class="btn btn-sm btn-outline-primary" 
+                               [routerLink]="['/p', item.project._id]"
+                               [title]="'View more information about ' + item.project.name">
+                              Project Info
+                            </a>
+                          }
+                          @if (item.pcp && item.type === 'Public Comment Period') {
+                            @if (item.pcp.isMet && item.pcp.metURL) {
+                              <a class="btn btn-sm btn-outline-primary" 
+                                 [href]="item.pcp.metURL" 
+                                 rel="noopener" 
+                                 target="_blank"
+                                 title="View this Engagement">
+                                View Engagement
+                              </a>
+                            } @else {
+                              <a class="btn btn-sm btn-outline-primary" 
+                                 [routerLink]="['/p', item.project._id, 'cp', item.pcp._id]"
+                                 title="View this Engagement">
+                                View Engagement
+                              </a>
+                            }
+                          }
+                          @if (item.documentUrl) {
+                            @if (item.notificationName && item.type === 'Project Notification Public Comment Period') {
+                              <a class="btn btn-sm btn-outline-primary" 
+                                 [href]="item.documentUrl" 
+                                 rel="noopener" 
+                                 target="_blank"
+                                 title="View more information">
+                                View Project Notification Public Comment Period
+                              </a>
+                            } @else if (!item.notificationName) {
+                              <a class="btn btn-sm btn-outline-primary" 
+                                 [href]="item.documentUrl" 
+                                 rel="noopener" 
+                                 target="_blank"
+                                 title="View more information">
+                                View Document(s)
+                              </a>
+                            }
+                          }
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                }
+              }
+            </table>
+          }
+          <div class="mt-4 text-center">
+            <a class="btn slide-r-btn btn-outline-primary d-inline-flex align-items-center gap-2" [routerLink]="['/news']">
+              <span>View All Activities & Updates</span>
+              <i class="material-icons">&#xE5C8;</i>
+            </a>
           </div>
         </div>
       </section>
+      
+      <div class="bg-faded mt-5">
+        <section class="container">
+          <h2 tabindex="0">About the B.C. Environmental Assessment Process</h2>
+          <p tabindex="0">
+            Learn more about how the Environmental Assessment Office neutrally
+            administers a process that is predictable, transparent, timely,
+            procedurally fair, and holds all participants accountable.
+          </p>
+          <div class="feature-cards-container">
+            @for (card of aboutCards; track card.title) {
+              <div class="feature-card">
+                <app-info-card
+                  [title]="card.title"
+                  [description]="card.description"
+                  [button]="card.button"
+                />
+              </div>
+            }
+          </div>
+        </section>
+      </div>
     </div>
-  </div>
-</main>
+  </main>
+

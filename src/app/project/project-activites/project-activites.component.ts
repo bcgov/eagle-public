@@ -1,28 +1,46 @@
-import { Component, OnInit, ChangeDetectorRef, OnDestroy, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, ElementRef, inject, signal } from '@angular/core';
 import { Router, ActivatedRoute, Params } from '@angular/router';
-import { SearchResults } from 'app/models/search';
+
+import { takeWhile } from 'rxjs/operators';
+import { toObservable } from '@angular/core/rxjs-interop';
+
 import { ActivitiesListTableRowsComponent } from './activities-list-table-rows/activities-list-table-rows.component';
 import { IColumnObject, TableObject } from 'app/shared/components/table-template/table-object';
 import { TableTemplate } from 'app/shared/components/table-template/table-template';
 import { ITableMessage } from 'app/shared/components/table-template/table-row-component';
-import { takeWhile } from 'rxjs/operators';
 import { StorageService } from 'app/services/storage.service';
 import { TableService } from 'app/services/table.service';
+import { SearchParamObject } from 'app/services/search.service';
+import { LoadingStateService } from 'app/services/loading-state.service';
+import { TableTemplateComponent } from 'app/shared/components/table-template/table-template.component';
+import { SearchFilterTemplateComponent } from 'app/shared/components/search-filter-template/search-filter-template.component';
 
 @Component({
   selector: 'app-project-activites',
   templateUrl: './project-activites.component.html',
-  styleUrls: ['./project-activites.component.scss']
+  styleUrls: ['./project-activites.component.css'],
+  imports: [TableTemplateComponent, SearchFilterTemplateComponent],
+  standalone: true
 })
 export class ProjectActivitesComponent implements OnInit, OnDestroy {
-  @ViewChild('activitiesHeader', { static: true }) activitiesHeader: ElementRef;
+  @ViewChild('activitiesHeader', { static: false }) activitiesHeader?: ElementRef;
+
+  private router = inject(Router);
+  private route = inject(ActivatedRoute);
+  private tableTemplateUtils = inject(TableTemplate);
+  private tableService = inject(TableService);
+  private storageService = inject(StorageService);
+
   private alive = true;
-  private tableId = 'projectActivities';
+  private readonly tableId = 'projectActivities';
+  private projId = '';
+  private readonly tableSignal$ = toObservable(this.tableService.getTableSignal(this.tableId));
 
-  public loading = true;
-  public queryParams: Params;
+  public loadingState = inject(LoadingStateService);
+  public loading = this.loadingState.getOperationState('table-projectActivities');
+  public queryParams: Params = {};
 
-  public tableData: TableObject = new TableObject({ component: ActivitiesListTableRowsComponent });
+  public tableData = signal<TableObject>(new TableObject({ component: ActivitiesListTableRowsComponent }));
   public tableColumns: IColumnObject[] = [
     {
       name: 'Headline',
@@ -37,103 +55,103 @@ export class ProjectActivitesComponent implements OnInit, OnDestroy {
       nosort: true
     }
   ];
-  constructor(
-    private router: Router,
-    private route: ActivatedRoute,
-    private tableTemplateUtils: TableTemplate,
-    private tableService: TableService,
-    private storageService: StorageService,
-    private _changeDetectionRef: ChangeDetectorRef) { }
 
   ngOnInit() {
-    this.tableData.options.showPageCountDisplay = true;
-    this.tableData.options.showPagination = true;
+    // Get project ID from parent route
+    this.projId = this.route.parent?.snapshot.params['projId'] || '';
 
-    this.tableData.tableId = 'activities-table';
-
-    this.route.queryParamMap.pipe(takeWhile(() => this.alive)).subscribe(data => {
-      this.queryParams = { ...data['params'] };
-      // Get params from route, shove into the tableTemplateUtils so that we get a new dataset to work with.
-      this.tableData = this.tableTemplateUtils.updateTableObjectWithUrlParams(data['params'], this.tableData, 'Activities');
-
-      if (!data['params'].sortBy) {
-        this.tableData.sortBy = '-dateAdded';
+    // Watch for table data changes from service
+    this.tableSignal$.pipe(takeWhile(() => this.alive)).subscribe(searchResults => {
+      // Only process when we have actual API results (not initial null value)
+      if (searchResults !== null && searchResults !== undefined) {
+        const currentTableData = this.tableData();
+        // Create new TableObject to ensure change detection with OnPush
+        const updatedTableData = new TableObject({
+          component: ActivitiesListTableRowsComponent,
+          pageSize: currentTableData.pageSize,
+          currentPage: currentTableData.currentPage,
+          sortBy: currentTableData.sortBy,
+          tableId: 'activities-table'
+        });
+        
+        if (searchResults.data && Array.isArray(searchResults.data) && searchResults.data.length > 0) {
+          updatedTableData.totalListItems = searchResults.totalSearchCount;
+          updatedTableData.items = searchResults.data.map((record: any) => {
+            return { rowData: record };
+          });
+          updatedTableData.columns = this.tableColumns;
+        } else {
+          updatedTableData.totalListItems = 0;
+          updatedTableData.items = [];
+        }
+        updatedTableData.options.showAllPicker = true;
+        updatedTableData.options.disableRowHighlight = true;
+        this.tableData.set(updatedTableData);
       }
-
-      this._changeDetectionRef.detectChanges();
     });
 
-    this.tableService.getValue(this.tableId).pipe(takeWhile(() => this.alive)).subscribe((searchResults: SearchResults) => {
-      if (searchResults.data !== 0) {
-        this.tableData.totalListItems = searchResults.totalSearchCount;
-        this.tableData.items = searchResults.data.map(record => {
-          return { rowData: record };
-        });
-        this.tableData.columns = this.tableColumns;
-        this.tableData.options.showAllPicker = true;
+    this.route.queryParamMap.pipe(takeWhile(() => this.alive)).subscribe(data => {
+      const params: any = {};
+      data.keys.forEach(key => params[key] = data.get(key));
+      this.queryParams = { ...params };
+      
+      const updatedTableData = this.tableTemplateUtils.updateTableObjectWithUrlParams(params, this.tableData(), 'Activities');
 
-        this.loading = false;
-        this._changeDetectionRef.detectChanges();
-      }
+      updatedTableData.sortBy = params.sortByActivities || '-dateAdded';
+
+      this.tableData.set(updatedTableData);
+      
+      // Fetch data
+      this.tableService.fetchData(new SearchParamObject(
+        this.tableId,
+        params['keywordsActivities'] || '',
+        'RecentActivity',
+        [],
+        updatedTableData.currentPage,
+        updatedTableData.pageSize,
+        updatedTableData.sortBy,
+        { project: this.projId },
+        true
+      ));
     });
   }
 
   onMessageOut(msg: ITableMessage) {
-    let params = {};
+    const params: any = {};
     switch (msg.label) {
       case 'pageNum':
         params['currentPageActivities'] = msg.data;
-        this.tableService.data[this.tableId].cachedConfig.currentPage = params['currentPageActivities'];
         break;
       case 'pageSize':
         params['pageSizeActivities'] = msg.data.value;
-        if (params['pageSizeActivities'] === this.tableData.totalListItems) {
-          this.loading = true;
-        }
         params['currentPageActivities'] = 1;
-        this.tableService.data[this.tableId].cachedConfig.pageSize = params['pageSizeActivities'];
-        this.tableService.data[this.tableId].cachedConfig.currentPage = params['currentPageActivities'];
-        break;
-      default:
         break;
     }
     this.submit(params);
   }
 
-  executeSearch(searchPackage) {
-    let params = {};
-    if (searchPackage.keywords) {
-      params['keywordsActivities'] = searchPackage.keywords;
-      this.tableService.data[this.tableId].cachedConfig.keywords = params['keywordsActivities'];
-      // always change sortBy to '-score' if keyword search is directly triggered by user
-      if (searchPackage.keywordsChanged) {
-        params['sortByActivities'] = '-score';
-        this.tableService.data[this.tableId].cachedConfig.sortBy = params['sortByActivities'];
-      }
-    } else {
-      params['keywordsActivities'] = null;
-      params['sortByActivities'] = '-dateAdded';
-      this.tableService.data[this.tableId].cachedConfig.keywords = '';
-      this.tableService.data[this.tableId].cachedConfig.sortBy = params['sortByActivities'];
-    }
-    params['currentPageActivities'] = 1;
-    this.tableService.data[this.tableId].cachedConfig.currentPage = params['currentPageActivities'];
-    this.submit(params);
-  }
-
-  submit(params) {
-    this.storageService.state.scrollPosition = {
-      type: 'scrollPosition',
-      data: [window.scrollX, this.activitiesHeader.nativeElement.offsetTop - (this.activitiesHeader.nativeElement.clientHeight * 2)]
+  executeSearch(searchPackage: any) {
+    const params: any = {
+      keywordsActivities: searchPackage.keywords || null,
+      sortByActivities: searchPackage.keywords && searchPackage.keywordsChanged ? '-score' : '-dateAdded',
+      currentPageActivities: 1
     };
-    this.router.navigate(
-      [],
-      {
-        queryParams: params,
-        relativeTo: this.route,
-        queryParamsHandling: 'merge'
-      });
-    this.tableService.refreshData(this.tableId);
+    this.submit(params);
+  }
+
+  submit(params: any) {
+    if (this.activitiesHeader?.nativeElement) {
+      const headerElement = this.activitiesHeader.nativeElement;
+      this.storageService.state = {
+        type: 'scrollPosition',
+        data: [window.scrollX, headerElement.offsetTop - (headerElement.clientHeight * 2)]
+      };
+    }
+    this.router.navigate([], {
+      queryParams: params,
+      relativeTo: this.route,
+      queryParamsHandling: 'merge'
+    });
   }
 
   ngOnDestroy() {

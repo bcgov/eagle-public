@@ -1,21 +1,23 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { EventKeywords, EventObject, EventService } from './event.service';
 import { SearchResults } from 'app/models/search';
 import { Constants } from 'app/shared/utils/constants';
 import { ApiService } from './api';
+import { LoadingStateService } from './loading-state.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class PinsService {
+  private api = inject(ApiService);
+  private eventService = inject(EventService);
+  private loadingState = inject(LoadingStateService);
+
   private data: BehaviorSubject<SearchResults>;
   public fetchDataConfig: any;
 
-  constructor(
-    private api: ApiService,
-    private eventService: EventService
-  ) {
+  constructor() {
     this.data = new BehaviorSubject<SearchResults>(new SearchResults);
 
     this.fetchDataConfig = {
@@ -26,7 +28,7 @@ export class PinsService {
     }
   }
 
-  setValue(value): void {
+  setValue(value: SearchResults): void {
     this.data.next(value);
   }
 
@@ -47,8 +49,10 @@ export class PinsService {
     currentPage: number = Constants.tableDefaults.DEFAULT_CURRENT_PAGE,
     pageSize: number = Constants.tableDefaults.DEFAULT_PAGE_SIZE,
     sortBy: string = Constants.tableDefaults.DEFAULT_SORT_BY,
-    projId: string = ''
+    projId = ''
   ) {
+    const loadingId = `pins-${projId || 'all'}-page-${currentPage}`;
+    this.loadingState.startLoading(loadingId, 'Loading pins');
 
     // Caching for later
     this.fetchDataConfig = {
@@ -62,19 +66,19 @@ export class PinsService {
     try {
       res = await this.api.getProjectPins(projId, currentPage, pageSize, sortBy).toPromise();
     } catch (error) {
+      this.loadingState.stopLoading(loadingId);
       this.eventService.setError(
         new EventObject(
           EventKeywords.ERROR,
-          error,
+          String(error),
           'PINs Service'
         )
       );
     }
 
-    // tslint:disable-next-line: prefer-const
-    let searchResults = new SearchResults();
+       const searchResults = new SearchResults();
 
-    if (res && res[0]) {
+    if (res && Array.isArray(res) && res[0]) {
       if (res[0].results) {
         searchResults.data = res[0].results;
       } else if (res[0].total_items === 0) {
@@ -88,7 +92,7 @@ export class PinsService {
           )
         );
       }
-      if (res[0].total_items) {
+      if (res[0].total_items !== undefined && res[0].total_items !== null) {
         searchResults.totalSearchCount = res[0].total_items;
       } else {
         this.eventService.setError(
@@ -108,6 +112,7 @@ export class PinsService {
         )
       );
     }
+    this.loadingState.stopLoading(loadingId);
     this.setValue(searchResults);
   }
 

@@ -10,7 +10,6 @@
 # supported CodeQL languages.
 #
 name: "CodeQL Advanced"
-
 on:
   push:
     branches: [ "develop", "main", "projectNotificationFeature", "promotion/prod", "promotion/test", "test" ]
@@ -63,11 +62,15 @@ jobs:
       if: matrix.language == 'javascript-typescript'
       uses: actions/setup-node@v4
       with:
-        node-version: '16.x'
+        node-version: '24.x'
+
+    - name: Enable Corepack
+      if: matrix.language == 'javascript-typescript'
+      run: corepack enable
 
     - name: Install dependencies
       if: matrix.language == 'javascript-typescript'
-      run: npm ci
+      run: yarn install --immutable
 
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL

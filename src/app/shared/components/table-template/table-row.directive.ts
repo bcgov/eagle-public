@@ -2,14 +2,13 @@ import {
   Directive,
   ViewContainerRef,
   Input,
-  ComponentFactoryResolver,
   Output,
   EventEmitter,
   OnInit,
   OnChanges,
   SimpleChanges,
   OnDestroy,
-  ComponentRef
+  inject
 } from '@angular/core';
 import { IRowObject, TableObject } from './table-object';
 import { TableRowComponent, ITableMessage } from './table-row-component';
@@ -18,34 +17,41 @@ import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
 @Directive({
-  selector: '[libTableRow]'
+  selector: '[libTableRow]',
+  standalone: true
 })
 export class TableRowDirective implements OnInit, OnChanges, OnDestroy {
-  @Input('libTableRow') rowObject: IRowObject;
-  @Input() tableData: TableObject;
+  @Input('libTableRow') rowObject!: IRowObject;
+  @Input() tableData!: TableObject;
 
   @Input() messageIn: EventEmitter<ITableMessage> = new EventEmitter<ITableMessage>();
   @Output() messageOut: EventEmitter<ITableMessage> = new EventEmitter<ITableMessage>();
 
   private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
-
-  constructor(
-    public viewContainerRef: ViewContainerRef,
-    public componentFactoryResolver: ComponentFactoryResolver,
-    public injectComponentService: InjectComponentService
-  ) {}
+  
+  private viewContainerRef = inject(ViewContainerRef);
+  private injectComponentService = inject(InjectComponentService);
 
   ngOnInit() {
     this.loadComponent();
   }
 
   ngOnChanges(changes: SimpleChanges) {
-    if (!changes.firstChange && changes['tableData'].currentValue) {
-      this.tableData = changes['tableData'].currentValue;
-      this.rowObject = this.tableData.items.find(element => element.rowData._id === this.rowObject.rowData._id);
-
-      this.loadComponent();
+    const tableDataChange = changes['tableData'];
+    if (tableDataChange?.firstChange || !tableDataChange?.currentValue) {
+      return;
     }
+
+    this.tableData = tableDataChange.currentValue;
+    
+    // Find updated row data - the items array contains only current page items
+    const updatedRow = this.tableData.items.find(element => element.rowData._id === this.rowObject.rowData._id);
+    if (updatedRow) {
+      this.rowObject = updatedRow;
+    }
+    
+    // Always reload component when table data changes (pagination, sorting, etc.)
+    this.loadComponent();
   }
 
   /**
@@ -54,12 +60,18 @@ export class TableRowDirective implements OnInit, OnChanges, OnDestroy {
    * @memberof TableRowDirective
    */
   loadComponent() {
-    const tableComponentRef: ComponentRef<TableRowComponent> = this.injectComponentService.injectComponentIntoView(
+    const component = this.rowObject.component || this.tableData.component;
+    if (!component) {
+      return;
+    }
+    
+    this.viewContainerRef.clear();
+    const componentRef = this.injectComponentService.injectComponentIntoView(
       this.viewContainerRef,
-      this.rowObject.component || this.tableData.component
+      component
     );
 
-    this.setRowComponentData(tableComponentRef.instance);
+    this.setRowComponentData(componentRef.instance);
   }
 
   /**
@@ -84,7 +96,7 @@ export class TableRowDirective implements OnInit, OnChanges, OnDestroy {
   }
 
   ngOnDestroy() {
-    this.ngUnsubscribe.next();
+    this.ngUnsubscribe.next(true);
     this.ngUnsubscribe.complete();
   }
 }
