@@ -1,4 +1,4 @@
-// Import Leaflet and make it globally available before Angular bootstraps
+// Import Leaflet for TypeScript support but also load as global script
 import * as L from 'leaflet';
 (window as any).L = L;
 import 'leaflet.markercluster';

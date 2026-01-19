@@ -14,7 +14,7 @@ import {
   computed
 } from '@angular/core';
 import { Subject } from 'rxjs';
-declare const L: any;
+import * as L from 'leaflet';
 
 import { Project } from '../../models/project';
 import { ConfigService } from '../../services/config.service';
