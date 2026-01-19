@@ -5,11 +5,6 @@
 /* BCSans Font */
 @import url("assets/fonts/BCSans.css");
 
-/* Leaflet CSS */
-@import "leaflet/dist/leaflet.css";
-@import "leaflet.markercluster/dist/MarkerCluster.css";
-@import "leaflet.markercluster/dist/MarkerCluster.Default.css";
-
 /* BC Gov Bootstrap Theme - Reusable across projects */
 @import url("assets/styles/themes/bcgov-bootstrap-theme.css");
 

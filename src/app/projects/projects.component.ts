@@ -3,7 +3,7 @@ import { Component, OnInit, OnDestroy, Renderer2, ViewChild, inject, signal, com
 import { Router, NavigationEnd } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil, finalize } from 'rxjs/operators';
-import * as L from 'leaflet';
+declare const L: any;
 
 import { Project } from 'app/models/project';
 import { ProjectService } from 'app/services/project.service';

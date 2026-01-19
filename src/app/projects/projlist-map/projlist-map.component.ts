@@ -14,8 +14,7 @@ import {
   computed
 } from '@angular/core';
 import { Subject } from 'rxjs';
-import * as L from 'leaflet';
-import 'leaflet.markercluster';
+declare const L: any;
 
 import { Project } from '../../models/project';
 import { ConfigService } from '../../services/config.service';
@@ -73,7 +72,7 @@ export class ProjlistMapComponent implements AfterViewInit, OnDestroy {
   private loadingState = inject(LoadingStateService);
 
   private map: L.Map | null = null;
-  private markerClusterGroup!: L.MarkerClusterGroup;
+  private markerClusterGroup!: any;
   // Map loading state - observes loading states from services that make API calls
   // - storage-preload: StorageService background preload
   // - projects-full-page-1: ProjectService.getAllFull() when cache not available
@@ -346,62 +345,61 @@ export class ProjlistMapComponent implements AfterViewInit, OnDestroy {
     });
 
     // Store map reference in state service
-    this.mapStateService.setMap(this.map);
+    if (this.map) {
+      this.mapStateService.setMap(this.map);
 
-    // Add event listeners
-    this.map.on('moveend', () => {
-      if (this.map) {
-        this.mapStateService.updateBounds(this.map.getBounds());
-      }
-      this.updateVisibleProjects();
-    });
-
-    this.map.on('baselayerchange', (e: L.LayersControlEvent) => {
-      this.configService.baseLayerName = e.name;
-      this.mapStateService.setBaseLayer(e.name);
-    });
-
-    // Add marker cluster group
-    this.map.addLayer(this.markerClusterGroup);
-
-    // Add default base layer
-    const savedLayerName = this.configService.baseLayerName;
-    const defaultLayer = baseLayers[savedLayerName] || baseLayers['World Topographic'];
-    this.map.addLayer(defaultLayer);
-    this.mapStateService.setBaseLayer(savedLayerName || 'World Topographic');
-
-    // Add map controls
-    L.control.scale({ position: 'bottomleft' }).addTo(this.map);
-    L.control.layers(baseLayers, undefined, { position: 'bottomleft' }).addTo(this.map);
-    L.control.zoom({ position: 'bottomright' }).addTo(this.map);
-    this.map.addControl(new resetViewControl());
-
-    // Set up ResizeObserver to handle container size changes
-    this.setupResizeObserver();
-
-    // Initialize bounds
-    this.mapStateService.updateBounds(this.map.getBounds());
-
-    // Use whenReady to ensure map is fully initialized before adding markers
-    this.map.whenReady(() => {
-      if (this.map) {
-        this.map.invalidateSize(true);
-      }
-
-      // Trigger marker update now that map is ready
-      const currentProjects = this.projects();
-      this.updateMarkers(currentProjects);
-
-      // Auto-reposition after markers are added
-      setTimeout(() => {
-        if (this.markerClusterGroup) {
-          const bounds = this.markerClusterGroup.getBounds();
-          if (bounds.isValid()) {
-            this.fitBounds(bounds);
-          }
+      // Add event listeners
+      this.map.on('moveend', () => {
+        if (this.map) {
+          this.mapStateService.updateBounds(this.map.getBounds());
         }
-      }, 100);
-    });
+        this.updateVisibleProjects();
+      });
+
+      this.map.on('baselayerchange', (e: any) => {
+        this.configService.baseLayerName = e.name;
+        this.mapStateService.setBaseLayer(e.name);
+      });
+
+      // Add marker cluster group
+      this.map.addLayer(this.markerClusterGroup);
+
+      // Add default base layer
+      const savedLayerName = this.configService.baseLayerName;
+      const defaultLayer = baseLayers[savedLayerName] || baseLayers['World Topographic'];
+      this.map.addLayer(defaultLayer);
+      this.mapStateService.setBaseLayer(savedLayerName || 'World Topographic');
+
+      // Add map controls
+      L.control.scale({ position: 'bottomleft' }).addTo(this.map);
+      L.control.layers(baseLayers, undefined, { position: 'bottomleft' }).addTo(this.map);
+      L.control.zoom({ position: 'bottomright' }).addTo(this.map);
+      this.map.addControl(new resetViewControl());
+
+      // Initialize bounds
+      this.mapStateService.updateBounds(this.map.getBounds());
+
+      // Use whenReady to ensure map is fully initialized before adding markers
+      this.map.whenReady(() => {
+        if (this.map) {
+          this.map.invalidateSize(true);
+        }
+
+        // Trigger marker update now that map is ready
+        const currentProjects = this.projects();
+        this.updateMarkers(currentProjects);
+
+        // Auto-reposition after markers are added
+        setTimeout(() => {
+          if (this.markerClusterGroup) {
+            const bounds = this.markerClusterGroup.getBounds();
+            if (bounds.isValid()) {
+              this.fitBounds(bounds);
+            }
+          }
+        }, 100);
+      });
+    }
   }
 
   private createBaseLayers(): Record<string, L.TileLayer> {
@@ -556,7 +554,7 @@ export class ProjlistMapComponent implements AfterViewInit, OnDestroy {
       { title }
     )
       .setIcon(markerIconYellow)
-      .on('click', (e) => this.onMarkerClick(project, e));
+      .on('click', (e: any) => this.onMarkerClick(project, e));
 
     (marker as any).projectId = project._id;
     return marker;
