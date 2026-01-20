@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import * as L from 'leaflet';
+
 import { ApiService } from 'app/services/api';
 import { Observable, ReplaySubject } from 'rxjs';
 import { map, catchError, take } from 'rxjs/operators';
@@ -25,7 +25,7 @@ export class ConfigService {
 
   // TODO: store these in URL instead
   private _baseLayerName = 'World Topographic'; // NB: must match a valid base layer name
-  private _mapBounds: L.LatLngBounds | null = null;
+  private _mapBounds: any = null;
 
   constructor() {
     this.initializeLists();
@@ -83,7 +83,7 @@ export class ConfigService {
   get baseLayerName(): string { return this._baseLayerName; }
   set baseLayerName(val: string) { this._baseLayerName = val; }
 
-  get mapBounds(): L.LatLngBounds | null { return this._mapBounds; }
-  set mapBounds(val: L.LatLngBounds | null) { this._mapBounds = val; }
+  get mapBounds(): any { return this._mapBounds; }
+  set mapBounds(val: any) { this._mapBounds = val; }
 
 }

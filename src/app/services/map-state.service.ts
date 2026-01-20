@@ -1,5 +1,5 @@
 import { Injectable, signal, computed } from '@angular/core';
-import * as L from 'leaflet';
+
 import { Project } from '../models/project';
 
 export interface MapBounds {
@@ -11,7 +11,7 @@ export interface MapBounds {
 
 export interface MarkerState {
   projectId: string;
-  marker: L.Marker;
+  marker: any;
   isVisible: boolean;
 }
 
@@ -24,7 +24,7 @@ export interface MarkerState {
 })
 export class MapStateService {
   // Map instance reference
-  private mapInstance = signal<L.Map | null>(null);
+  private mapInstance = signal<any>(null);
   
   // Marker tracking
   private markers = signal<Map<string, MarkerState>>(new Map());
@@ -55,10 +55,10 @@ export class MapStateService {
   });
   
   // Get single visible project (for auto-open)
-  public readonly singleVisibleProject = computed<{projectId: string; marker: L.Marker} | null>(() => {
+  public readonly singleVisibleProject = computed<{projectId: string; marker: any} | null>(() => {
     if (this.visibleMarkerCount() !== 1) return null;
     
-    let result: {projectId: string; marker: L.Marker} | null = null;
+    let result: {projectId: string; marker: any} | null = null;
     this.markers().forEach(state => {
       if (state.isVisible) {
         result = { projectId: state.projectId, marker: state.marker };
@@ -75,14 +75,14 @@ export class MapStateService {
   /**
    * Initialize map instance
    */
-  setMap(map: L.Map): void {
+  setMap(map: any): void {
     this.mapInstance.set(map);
   }
 
   /**
    * Update map bounds
    */
-  updateBounds(bounds: L.LatLngBounds): void {
+  updateBounds(bounds: any): void {
     this.bounds.set({
       north: bounds.getNorth(),
       south: bounds.getSouth(),
@@ -112,14 +112,14 @@ export class MapStateService {
   /**
    * Get or create marker for a project
    */
-  getMarker(projectId: string): L.Marker | undefined {
+  getMarker(projectId: string): any {
     return this.markers().get(projectId)?.marker;
   }
 
   /**
    * Add or update a marker
    */
-  setMarker(projectId: string, marker: L.Marker, isVisible = true): void {
+  setMarker(projectId: string, marker: any, isVisible = true): void {
     const currentMarkers = new Map(this.markers());
     currentMarkers.set(projectId, { projectId, marker, isVisible });
     this.markers.set(currentMarkers);

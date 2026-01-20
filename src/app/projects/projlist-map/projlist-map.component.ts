@@ -14,7 +14,7 @@ import {
   computed
 } from '@angular/core';
 import { Subject } from 'rxjs';
-import * as L from 'leaflet';
+
 
 import { Project } from '../../models/project';
 import { ConfigService } from '../../services/config.service';
@@ -23,15 +23,6 @@ import { LoggingService } from '../../services/logging.service';
 import { LoadingStateService } from '../../services/loading-state.service';
 import { FilterStateService } from '../../services/filter-state.service';
 import { ProjDetailPopupComponent } from '../proj-detail-popup/proj-detail-popup.component';
-
-declare module 'leaflet' {
-  export interface FeatureGroup {
-    projectId: string;
-  }
-  export interface Marker {
-    projectId: string;
-  }
-}
 
 const markerIconYellow = L.icon({
   iconUrl: 'assets/images/marker-icon-yellow.svg',
@@ -71,7 +62,7 @@ export class ProjlistMapComponent implements AfterViewInit, OnDestroy {
   private logger = inject(LoggingService);
   private loadingState = inject(LoadingStateService);
 
-  private map: L.Map | null = null;
+  private map: any = null;
   private markerClusterGroup!: any;
   // Map loading state - observes loading states from services that make API calls
   // - storage-preload: StorageService background preload
@@ -217,8 +208,8 @@ export class ProjlistMapComponent implements AfterViewInit, OnDestroy {
     const projectIds = new Set(projects.filter(p => this.hasValidCentroid(p)).map(p => p._id));
 
     // Batch marker operations
-    const markersToRemove: L.Marker[] = [];
-    const markersToAdd: L.Marker[] = [];
+    const markersToRemove: any[] = [];
+    const markersToAdd: any[] = [];
 
     // Collect markers to remove
     currentMarkers.forEach((markerState, projectId) => {
@@ -266,7 +257,7 @@ export class ProjlistMapComponent implements AfterViewInit, OnDestroy {
 
   readonly defaultBounds = L.latLngBounds([48, -139], [60, -114]);
   // Center of BC coordinates
-  readonly bcCenter: L.LatLngExpression = [55.5, -125.5];
+  readonly bcCenter: any = [55.5, -125.5];
   readonly defaultZoom = 5.7;
 
   /**
@@ -402,7 +393,7 @@ export class ProjlistMapComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  private createBaseLayers(): Record<string, L.TileLayer> {
+  private createBaseLayers(): Record<string, any> {
     return {
       'Nat Geo World Map': L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/{z}/{y}/{x}', {
         attribution: 'Tiles &copy; Esri',
@@ -507,7 +498,7 @@ export class ProjlistMapComponent implements AfterViewInit, OnDestroy {
     });
   }
 
-  private fitBounds(bounds: L.LatLngBounds | null = null, animate = false): void {
+  private fitBounds(bounds: any = null, animate = false): void {
     if (!this.map) return;
 
     const padding = this.calculateFitBoundsPadding();
@@ -518,9 +509,9 @@ export class ProjlistMapComponent implements AfterViewInit, OnDestroy {
       boundsToFit = this.expandBounds(bounds, padding.expansion);
     }
 
-    const fitBoundsOptions: L.FitBoundsOptions = {
-      paddingTopLeft: L.point(padding.side, padding.top),
-      paddingBottomRight: L.point(padding.side, padding.side),
+    const fitBoundsOptions = {
+      paddingTopLeft: (L as any).point(padding.side, padding.top),
+      paddingBottomRight: (L as any).point(padding.side, padding.side),
       animate: animate,
       duration: animate ? 0.5 : undefined,
       maxZoom: 10 // Prevent over-zooming when fitting to single marker or tight bounds
@@ -532,7 +523,7 @@ export class ProjlistMapComponent implements AfterViewInit, OnDestroy {
   /**
    * Expand map bounds by a percentage to add buffer around markers
    */
-  private expandBounds(bounds: L.LatLngBounds, expansionPercent: number): L.LatLngBounds {
+  private expandBounds(bounds: any, expansionPercent: number): any {
     const latDiff = bounds.getNorth() - bounds.getSouth();
     const lngDiff = bounds.getEast() - bounds.getWest();
     const expandLat = latDiff * expansionPercent;
@@ -547,7 +538,7 @@ export class ProjlistMapComponent implements AfterViewInit, OnDestroy {
   /**
    * Create a Leaflet marker for a project
    */
-  private createMarker(project: Project): L.Marker {
+  private createMarker(project: Project): any {
     const title = `${project.name}\n${project.sector}\n${project.location}`;
     const marker = L.marker(
       L.latLng(project.centroid[1], project.centroid[0]),
@@ -563,8 +554,8 @@ export class ProjlistMapComponent implements AfterViewInit, OnDestroy {
   /**
    * Handle marker click event
    */
-  private onMarkerClick(project: Project, event: L.LeafletMouseEvent): void {
-    this.selectMarker(project, event.target as L.Marker, false);
+  private onMarkerClick(project: Project, event: any): void {
+    this.selectMarker(project, event.target, false);
   }
 
   /**
@@ -602,7 +593,7 @@ export class ProjlistMapComponent implements AfterViewInit, OnDestroy {
    * Handle marker selection - opens popup and centers map
    * @param isAutoSelect - true for auto-select on page load, false for manual clicks
    */
-  private selectMarker(project: Project, marker: L.Marker, isAutoSelect = false): void {
+  private selectMarker(project: Project, marker: any, isAutoSelect = false): void {
     const isMobile = this.isMobile();
     
     if (isMobile) {
@@ -637,7 +628,7 @@ export class ProjlistMapComponent implements AfterViewInit, OnDestroy {
   /**
    * Center map on a specific marker with appropriate offset for popups
    */
-  private centerMapOnMarker(marker: L.Marker): void {
+  private centerMapOnMarker(marker: any): void {
     if (!this.map) return;
 
     const isMobile = this.isMobile();
@@ -655,7 +646,7 @@ export class ProjlistMapComponent implements AfterViewInit, OnDestroy {
    * Create and display a popup for a project marker.
    * Reuses a single popup component instance for better performance.
    */
-  private createProjectPopup(project: Project, marker: L.Marker): void {
+  private createProjectPopup(project: Project, marker: any): void {
     if (this.isPopupOpening) {
       this.logger.warn('Popup creation already in progress', 'ProjlistMapComponent');
       return;

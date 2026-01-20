@@ -3,7 +3,6 @@ import { ActivatedRoute, Router, RouterModule, NavigationEnd } from '@angular/ro
 import { CommonModule } from '@angular/common';
 import { Subject } from 'rxjs';
 import { takeUntil, take } from 'rxjs/operators';
-import * as L from 'leaflet';
 
 import { Project } from '../models/project';
 import { ConfigService } from '../services/config.service';
@@ -55,7 +54,7 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
   public sidebarOpen = signal(true);
   private checkTabArrowsFn: (() => void) | null = null;
 
-  public map: L.Map | null = null;
+  public map: any = null;
   public appFG = L.featureGroup();
   readonly defaultBounds = L.latLngBounds([48, -139], [60, -114]);
 
@@ -405,7 +404,7 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     const configService = this.configService;
-    this.map.on('baselayerchange', function (e: L.LayersControlEvent) {
+    this.map.on('baselayerchange', function (e: any) {
       configService.baseLayerName = e.name;
     });
 
@@ -458,8 +457,8 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
     }
   }
 
-  public fitBounds(bounds: L.LatLngBounds | null = null) {
-    const fitBoundsOptions: L.FitBoundsOptions = {
+  public fitBounds(bounds: any = null) {
+    const fitBoundsOptions = {
       animate: false,
       paddingBottomRight: [0, 35],
       padding: [50, 50],
