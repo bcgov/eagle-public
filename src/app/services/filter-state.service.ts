@@ -170,8 +170,10 @@ export class FilterStateService {
 
   /**
    * Clear all filters
+   * @param syncUrl - Whether to sync the cleared state to the URL. Default is false to avoid
+   *                  interfering with navigation when called during component destruction.
    */
-  clearAll(): void {
+  clearAll(syncUrl = false): void {
     this.regions.set([]);
     this.phases.set([]);
     this.types.set([]);
@@ -181,7 +183,12 @@ export class FilterStateService {
     this.purpose.set(null);
     this.publishFrom.set(null);
     this.publishTo.set(null);
-    this.syncToUrl();
+    
+    // Only sync to URL if explicitly requested
+    // Avoid syncing on component destroy as it interferes with navigation
+    if (syncUrl) {
+      this.syncToUrl();
+    }
   }
 
   /**

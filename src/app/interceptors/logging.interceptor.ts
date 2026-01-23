@@ -7,10 +7,12 @@ import { LoggingService } from '../services/logging.service';
 /**
  * HTTP interceptor that logs all requests and responses
  * Automatically logs errors with detailed information
+ * 
+ * Note: This interceptor is only included in non-production environments.
+ * In production, all HTTP logging is disabled to reduce overhead.
  */
 export const loggingInterceptor: HttpInterceptorFn = (req, next) => {
   const logger = inject(LoggingService);
-  const startTime = Date.now();
 
   // Log outgoing request
   logger.logHttpRequest(req.method, req.url, 'HttpInterceptor');
@@ -19,12 +21,11 @@ export const loggingInterceptor: HttpInterceptorFn = (req, next) => {
     tap(event => {
       // Log successful response (if it's an HttpResponse)
       if ((event as any).status !== undefined) {
-        const duration = Date.now() - startTime;
         logger.logHttpResponse(
           req.method,
           req.url,
           (event as any).status,
-          duration,
+          undefined,
           'HttpInterceptor'
         );
       }

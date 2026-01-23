@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
@@ -10,7 +10,6 @@ import { CommentPeriodService } from '../../services/commentperiod.service';
   selector: 'app-proj-detail-popup',
   templateUrl: './proj-detail-popup.component.html',
   styleUrls: ['./proj-detail-popup.component.css'],
-  imports: [RouterLink],
   standalone: true
 })
 export class ProjDetailPopupComponent implements OnInit, OnDestroy {
@@ -19,6 +18,7 @@ export class ProjDetailPopupComponent implements OnInit, OnDestroy {
 
   private destroy$ = new Subject<void>();
   private commentPeriodService = inject(CommentPeriodService);
+  private router = inject(Router);
 
   ngOnInit() {
     if (!this.proj?._id) {
@@ -42,5 +42,11 @@ export class ProjDetailPopupComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  navigateToProject(): void {
+    if (this.proj?._id) {
+      this.router.navigate(['/p', this.proj._id]);
+    }
   }
 }

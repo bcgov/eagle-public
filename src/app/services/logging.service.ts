@@ -146,11 +146,16 @@ export class LoggingService {
    * Log HTTP response
    */
   logHttpResponse(method: string, url: string, status: number, duration?: number, source?: string): void {
-    const durationStr = duration ? ` (${duration}ms)` : '';
+    // Only include duration if provided and this log will actually be output
+    let message = `HTTP ${method} ${url} ${status}`;
+    if (duration && this.shouldLog(LogLevel.DEBUG)) {
+      message += ` (${duration}ms)`;
+    }
+    
     if (status >= 400) {
-      this.error(`HTTP ${method} ${url} ${status}${durationStr}`, source || 'HttpClient');
+      this.error(message, source || 'HttpClient');
     } else {
-      this.debug(`HTTP ${method} ${url} ${status}${durationStr}`, source || 'HttpClient');
+      this.debug(message, source || 'HttpClient');
     }
   }
 

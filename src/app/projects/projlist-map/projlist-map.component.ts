@@ -102,16 +102,24 @@ export class ProjlistMapComponent implements AfterViewInit, OnDestroy {
   }
 
   /**
-   * Calculate padding values for map bounds fitting
+   * Calculate padding values for map bounds fitting.
+   * The goal is to center markers in the visible map area (below filters).
    */
-  private calculateFitBoundsPadding(): { top: number; side: number; expansion: number } {
+  private calculateFitBoundsPadding(): { top: number; side: number; bottom: number; expansion: number } {
     const isMobile = this.isMobile();
     const filterHeight = this.getFilterHeight();
 
+    // Use balanced padding for proper centering
+    // Increased horizontal padding from 50 to 100 to provide better visual balance
+    // and prevent markers from appearing too close to viewport edges
+    const topPadding = isMobile ? 50 : filterHeight + 80;
+    const bottomPadding = isMobile ? 50 : 80;
+
     return {
-      top: isMobile ? 50 : filterHeight + 175,
-      side: isMobile ? 20 : 50,
-      expansion: isMobile ? 0.05 : 0.1
+      top: topPadding,
+      bottom: bottomPadding,
+      side: isMobile ? 20 : 100,
+      expansion: isMobile ? 0.05 : 0.08
     };
   }
 
@@ -511,7 +519,7 @@ export class ProjlistMapComponent implements AfterViewInit, OnDestroy {
 
     const fitBoundsOptions = {
       paddingTopLeft: (L as any).point(padding.side, padding.top),
-      paddingBottomRight: (L as any).point(padding.side, padding.side),
+      paddingBottomRight: (L as any).point(padding.side, padding.bottom),
       animate: animate,
       duration: animate ? 0.5 : undefined,
       maxZoom: 10 // Prevent over-zooming when fitting to single marker or tight bounds
