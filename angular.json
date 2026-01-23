@@ -65,7 +65,7 @@
                   "maximumError": "150kB"
                 }
               ],
-              "outputHashing": "all",
+              "outputHashing": "bundles",
               "optimization": {
                 "scripts": true,
                 "styles": {
