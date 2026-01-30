@@ -15,6 +15,7 @@ import { LoadingStateService } from '../../services/loading-state.service';
 import { TableTemplateComponent } from '../../shared/components/table-template/table-template.component';
 import { SearchFilterTemplateComponent } from '../../shared/components/search-filter-template/search-filter-template.component';
 import { LoggingService } from '../../services/logging.service';
+import { AnalyticsService } from '../../services/analytics/analytics.service';
 
 @Component({
   selector: 'app-documents',
@@ -31,6 +32,7 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
   private readonly loadingState = inject(LoadingStateService);
   private readonly configService = inject(ConfigService);
   private readonly logger = inject(LoggingService);
+  private readonly analytics = inject(AnalyticsService);
 
   private readonly tableId = 'documentsTab';
   private alive = true;
@@ -266,6 +268,10 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
   }
 
   navSearchHelp() {
+    this.analytics.track('Search Help Clicked', {
+      context: 'documents_tab',
+      project_id: this.projId
+    });
     this.router.navigate(['/search-help']);
   }
 
@@ -286,7 +292,57 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
 
     const queryFilters = this.tableTemplateUtils.getFiltersFromSearchPackage(searchPackage, this.filtersList, this.dateFiltersList);
 
+    // Track document filters applied
+    const filterCounts = this.countFilters(queryFilters);
+    this.analytics.track('Document Filters Applied', {
+      project_id: this.projId,
+      milestone_count: filterCounts.milestone,
+      document_type_count: filterCounts.type,
+      author_count: filterCounts.documentAuthorType,
+      phase_count: filterCounts.projectPhase,
+      has_date_range: filterCounts.hasDateRange,
+      has_keyword: !!searchPackage.keywords,
+      keyword_length: searchPackage.keywords?.length || 0,
+      total_filters: filterCounts.total
+    });
+
     this.submit(params, queryFilters);
+  }
+
+  private countFilters(queryFilters: any): any {
+    const counts = {
+      milestone: 0,
+      type: 0,
+      documentAuthorType: 0,
+      projectPhase: 0,
+      hasDateRange: false,
+      total: 0
+    };
+
+    if (queryFilters) {
+      if (queryFilters.milestone) {
+        counts.milestone = Array.isArray(queryFilters.milestone) ? queryFilters.milestone.length : 1;
+        counts.total += counts.milestone;
+      }
+      if (queryFilters.type) {
+        counts.type = Array.isArray(queryFilters.type) ? queryFilters.type.length : 1;
+        counts.total += counts.type;
+      }
+      if (queryFilters.documentAuthorType) {
+        counts.documentAuthorType = Array.isArray(queryFilters.documentAuthorType) ? queryFilters.documentAuthorType.length : 1;
+        counts.total += counts.documentAuthorType;
+      }
+      if (queryFilters.projectPhase) {
+        counts.projectPhase = Array.isArray(queryFilters.projectPhase) ? queryFilters.projectPhase.length : 1;
+        counts.total += counts.projectPhase;
+      }
+      if (queryFilters.datePostedStart || queryFilters.datePostedEnd) {
+        counts.hasDateRange = true;
+        counts.total += 1;
+      }
+    }
+
+    return counts;
   }
 
   onMessageOut(msg: ITableMessage) {
@@ -324,6 +380,12 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
 
   onToggleFiltersPanel(event: { showPanel: boolean }) {
     this.showAdvancedFilters.set(event.showPanel);
+    
+    // Track filter panel toggle
+    this.analytics.track('Document Filters Panel Toggled', {
+      project_id: this.projId,
+      is_open: event.showPanel
+    });
   }
 
   onResetControls() {

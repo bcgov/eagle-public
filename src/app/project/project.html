@@ -54,7 +54,8 @@
                                            role="tab" 
                                            [routerLink]="tabLink.link" 
                                            [replaceUrl]="true"
-                                           routerLinkActive="active" 
+                                           routerLinkActive="active"
+                                           (click)="trackTabClick(tabLink)"
                                            [attr.id]="tabLink.link === 'project-details' ? 'project-details-tab' : null" 
                                            [attr.aria-controls]="tabLink.link === 'project-details' ? 'project-details-panel' : null">
                                             {{tabLink.label}}

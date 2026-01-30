@@ -5,6 +5,7 @@ import { takeUntil } from 'rxjs/operators';
 
 import { Project } from '../../models/project';
 import { CommentPeriodService } from '../../services/commentperiod.service';
+import { AnalyticsService } from '../../services/analytics/analytics.service';
 
 @Component({
   selector: 'app-proj-detail-popup',
@@ -19,6 +20,7 @@ export class ProjDetailPopupComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
   private commentPeriodService = inject(CommentPeriodService);
   private router = inject(Router);
+  private analytics = inject(AnalyticsService);
 
   ngOnInit() {
     if (!this.proj?._id) {
@@ -46,6 +48,13 @@ export class ProjDetailPopupComponent implements OnInit, OnDestroy {
 
   navigateToProject(): void {
     if (this.proj?._id) {
+      // Track project view from map popup
+      this.analytics.track('Project Viewed', {
+        project_id: this.proj._id,
+        project_name: this.proj.name,
+        source: 'map_popup'
+      });
+      
       this.router.navigate(['/p', this.proj._id]);
     }
   }

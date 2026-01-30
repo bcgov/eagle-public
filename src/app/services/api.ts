@@ -12,12 +12,14 @@ import { Org } from 'app/models/organization';
 import { Decision } from 'app/models/decision';
 import { Utils } from 'app/shared/utils/utils';
 import { LoggingService } from './logging.service';
+import { AnalyticsService } from './analytics/analytics.service';
 
 @Injectable({providedIn:'root'})
 export class ApiService {
   private http = inject(HttpClient);
   private utils = inject(Utils);
   private logger = inject(LoggingService);
+  private analytics = inject(AnalyticsService);
 
   // public token: string;
   public isMS: boolean; // IE, Edge, etc
@@ -61,6 +63,13 @@ export class ApiService {
   }
 
   public async downloadDocument(document: Document): Promise<void> {
+    // Track document download
+    this.analytics.track('Document Downloaded', {
+      document_id: document._id,
+      document_name: document.displayName,
+      document_type: document.internalMime || 'unknown'
+    });
+
     let blob;
     try {
       blob = await this.downloadResource(document._id)
@@ -88,6 +97,13 @@ export class ApiService {
   }
 
   public async openDocument(document: Document): Promise<void> {
+    // Track document opened
+    this.analytics.track('Document Opened', {
+      document_id: document._id,
+      document_name: document.displayName || document.documentFileName,
+      document_source: document.documentSource || 'unknown'
+    });
+
     let filename;
     if (document.documentSource === 'COMMENT') {
       filename = document.internalOriginalName;

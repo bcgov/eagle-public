@@ -18,6 +18,8 @@ import { PageCountDisplayComponent } from '../page-count-display/page-count-disp
 import { PageSizePickerComponent, IPageSizePickerOption } from '../page-size-picker/page-size-picker.component';
 import { PaginationComponent } from '../pagination/pagination.component';
 import { Constants } from '../../utils/constants';
+import { AnalyticsService } from '../../../services/analytics/analytics.service';
+import { inject } from '@angular/core';
 
 @Component({
   selector: 'lib-table-template',
@@ -40,6 +42,7 @@ export class TableTemplateComponent implements OnChanges {
   @Input() messageIn: EventEmitter<ITableMessage> = new EventEmitter<ITableMessage>();
   @Output() messageOut: EventEmitter<ITableMessage> = new EventEmitter<ITableMessage>();
 
+  private analytics = inject(AnalyticsService);
   private lastTotalItems = 0;
   
   // Create a signal to track data changes for computed signals
@@ -125,6 +128,16 @@ export class TableTemplateComponent implements OnChanges {
   }
 
   public onSort(property: string): void {
+    // Track sorting
+    const currentSort = this.data.sortBy;
+    const newDirection = currentSort === `+${property}` ? 'desc' : 'asc';
+    
+    this.analytics.track('Table Column Sorted', {
+      table_type: this.data.component?.name || 'unknown',
+      column: property,
+      direction: newDirection
+    });
+    
     this.messageOut.emit({ label: 'columnSort', data: property });
   }
 
@@ -133,10 +146,25 @@ export class TableTemplateComponent implements OnChanges {
   }
 
   public onUpdatePageNumber(pageNum: number): void {
+    // Track pagination change
+    this.analytics.track('Pagination Changed', {
+      table_type: this.data.component?.name || 'unknown',
+      from_page: this.data.currentPage,
+      to_page: pageNum,
+      total_pages: this.totalPages()
+    });
+    
     this.messageOut.emit({ label: 'pageNum', data: pageNum });
   }
 
   public onUpdatePageSize(pageSize: IPageSizePickerOption): void {
+    // Track page size change
+    this.analytics.track('Page Size Changed', {
+      table_type: this.data.component?.name || 'unknown',
+      from_size: this.data.pageSize,
+      to_size: pageSize.value
+    });
+    
     this.messageOut.emit({ label: 'pageSize', data: pageSize });
   }
 

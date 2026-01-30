@@ -13,6 +13,7 @@ import { ProjectFilterService } from 'app/services/project-filter.service';
 import { MapStateService } from 'app/services/map-state.service';
 import { FilterStateService } from 'app/services/filter-state.service';
 import { LoggingService } from 'app/services/logging.service';
+import { AnalyticsService } from 'app/services/analytics/analytics.service';
 import { ProjlistFiltersComponent } from './projlist-filters/projlist-filters.component';
 import { ProjlistListComponent } from './projlist-list/projlist-list.component';
 import { ProjlistMapComponent } from './projlist-map/projlist-map.component';
@@ -41,6 +42,7 @@ export class ProjectsComponent implements OnInit, OnDestroy {
   private filterStateService = inject(FilterStateService);
   private mapStateService = inject(MapStateService);
   private logger = inject(LoggingService);
+  private analytics = inject(AnalyticsService);
   
   // Project data signals - immutable state management
   public allApps = signal<Project[]>([]);
@@ -135,6 +137,14 @@ export class ProjectsComponent implements OnInit, OnDestroy {
 
   public toggleAppList(): void {
     this.configService.isApplistListVisible = !this.configService.isApplistListVisible;
+    
+    // Track projects view toggle
+    this.analytics.track('Projects View Changed', {
+      view: this.configService.isApplistListVisible ? 'list' : 'map',
+      total_projects: this.allApps().length,
+      filtered_projects: this.filterApps().length,
+      list_projects: this.listApps().length
+    });
   }
 
   ngOnDestroy(): void {
