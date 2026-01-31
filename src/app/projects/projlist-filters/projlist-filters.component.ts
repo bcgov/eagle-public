@@ -9,6 +9,7 @@ import { CustomMultiSelectComponent } from '../../shared/components/custom-multi
 import { Constants } from '../../shared/utils/constants';
 import { ConfigService } from '../../services/config.service';
 import { FilterStateService } from '../../services/filter-state.service';
+import { AnalyticsService } from '../../services/analytics/analytics.service';
 
 @Component({
   selector: 'app-projlist-filters',
@@ -22,6 +23,7 @@ export class ProjlistFiltersComponent implements OnInit, OnDestroy {
   private configService = inject(ConfigService);
   private filterState = inject(FilterStateService);
   private elementRef = inject(ElementRef);
+  private analytics = inject(AnalyticsService);
 
   readonly minDate = DateTime.fromISO('2018-03-23').toJSDate();
   readonly maxDate = DateTime.now().toJSDate();
@@ -137,14 +139,33 @@ export class ProjlistFiltersComponent implements OnInit, OnDestroy {
       publishTo: this.publishTo(),
       purpose: null
     });
+    
+    // Track filters applied
+    this.analytics.track('Project Filters Applied', {
+      regions_count: this.regions().length,
+      phases_count: this.phases().length,
+      types_count: this.types().length,
+      has_applicant: !!applicantValue,
+      has_cl_file: !!clFileValue,
+      has_disp_id: !!dispIdValue,
+      has_date_range: !!(this.publishFrom() || this.publishTo()),
+      total_filters: this.filterCount
+    });
   }
 
   /**
    * Clear all filters
    */
   public clearAllFilters(): void {
+    const previousFilterCount = this.filterCount;
+    
     this.filterState.clearAll();
     this.syncFromService();
+    
+    // Track filters cleared
+    this.analytics.track('Project Filters Cleared', {
+      previous_filter_count: previousFilterCount
+    });
   }
 
   public clearSearch(): void {
@@ -154,6 +175,12 @@ export class ProjlistFiltersComponent implements OnInit, OnDestroy {
 
   public toggleFilters(): void {
     this.showFilters = !this.showFilters;
+    
+    // Track filter panel toggle
+    this.analytics.track('Project Filters Panel Toggled', {
+      is_open: this.showFilters,
+      current_filter_count: this.filterCount
+    });
   }
 
   public toggleSearchMobile(): void {

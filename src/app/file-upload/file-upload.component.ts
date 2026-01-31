@@ -1,4 +1,5 @@
-import { Component, input, output, signal } from '@angular/core';
+import { Component, input, output, signal, inject } from '@angular/core';
+import { AnalyticsService } from '../services/analytics/analytics.service';
 
 
 @Component({
@@ -16,6 +17,8 @@ import { Component, input, output, signal } from '@angular/core';
   standalone: true
 })
 export class FileUploadComponent {
+  private analytics = inject(AnalyticsService);
+  
   dragDropClass = signal('dragarea');
   
   fileExt = input<string>('jpg, jpeg, gif, png, bmp, doc, docx, xls, xlsx, ppt, pptx, pdf, txt, rtf');
@@ -56,26 +59,43 @@ export class FileUploadComponent {
     event.preventDefault();
     event.stopPropagation();
     if (event.dataTransfer?.files) {
-      this.addFiles(event.dataTransfer.files);
+      this.addFiles(event.dataTransfer.files, 'drag_drop');
     }
   }
 
   onFileChange(event: Event) {
     const target = event.target as HTMLInputElement;
     if (target.files) {
-      this.addFiles(target.files);
+      this.addFiles(target.files, 'browse');
     }
   }
 
-  addFiles(fileList: FileList) {
+  addFiles(fileList: FileList, method: 'drag_drop' | 'browse' = 'browse') {
     this.errors.set([]); // clear previous errors
     this.currentFiles = [...this.files()];
 
     if (this.isValidFiles(fileList)) {
+      const totalSize = Array.from(fileList).reduce((sum, file) => sum + file.size, 0);
+      
+      // Track file upload attempt
+      this.analytics.track('File Upload Attempted', {
+        file_count: fileList.length,
+        total_size_mb: Math.round((totalSize / 1024 / 1024) * 100) / 100,
+        upload_method: method
+      });
+      
       for (const file of Array.from(fileList)) {
         this.currentFiles.push(file);
       }
       this.filesChange.emit(this.currentFiles);
+    } else {
+      // Track validation errors
+      this.analytics.track('File Upload Failed', {
+        file_count: fileList.length,
+        upload_method: method,
+        error_count: this.errors().length,
+        errors: this.errors()
+      });
     }
   }
 
@@ -85,6 +105,12 @@ export class FileUploadComponent {
 
     const index = this.currentFiles.indexOf(file);
     if (index !== -1) {
+      // Track file removal
+      this.analytics.track('File Upload Removed', {
+        file_name: file.name,
+        file_size_mb: Math.round((file.size / 1024 / 1024) * 100) / 100
+      });
+      
       this.currentFiles.splice(index, 1);
     }
     this.filesChange.emit(this.currentFiles);

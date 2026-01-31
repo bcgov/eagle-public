@@ -14,6 +14,7 @@ import { ConfigService } from '../../services/config.service';
 import { ProjectService } from '../../services/project.service';
 import { FileUploadComponent } from '../../file-upload/file-upload.component';
 import { LoggingService } from '../../services/logging.service';
+import { AnalyticsService } from '../../services/analytics/analytics.service';
 
 @Component({
   selector: 'app-add-comment',
@@ -30,6 +31,7 @@ export class AddCommentComponent implements OnInit {
   private documentService = inject(DocumentService);
   private config = inject(ConfigService);
   private logger = inject(LoggingService);
+  private analytics = inject(AnalyticsService);
 
   // Properties set by parent component
   currentPeriod!: CommentPeriod;
@@ -87,6 +89,13 @@ export class AddCommentComponent implements OnInit {
     this.commentFiles.set([]);
     this.documentAuthorType.set(null);
     this.getLists();
+    
+    // Track modal opened
+    this.analytics.track('Comment Modal Opened', {
+      project_id: this.project?._id,
+      project_name: this.project?.name,
+      comment_period_id: this.currentPeriod?._id
+    });
   }
 
   publicChecked() {
@@ -129,6 +138,10 @@ export class AddCommentComponent implements OnInit {
 
   learnMore() {
     this.hasSeenCAC.set(true);
+    this.analytics.track('Comment Modal CAC Learn More Clicked', {
+      project_id: this.project?._id,
+      project_name: this.project?.name
+    });
     this.currentPage.set(2);
   }
 
@@ -151,6 +164,10 @@ export class AddCommentComponent implements OnInit {
   }
 
   p2_becomeAMember() {
+    this.analytics.track('Comment Modal Become Member Clicked', {
+      project_id: this.project?._id,
+      project_name: this.project?.name
+    });
     this.currentPage.update(page => page + 1);
   }
 
@@ -179,6 +196,13 @@ export class AddCommentComponent implements OnInit {
       if (proj) {
         await this.projectService.cacSignUp(proj, signUpObject).toPromise();
         this.logger.info('CAC sign-up submitted successfully', 'AddCommentComponent');
+        
+        // Track CAC signup completion
+        this.analytics.track('CAC Signup Completed', {
+          project_id: proj._id,
+          project_name: proj.name
+        });
+        
         this.submitting.set(false);
         this.submittedCAC.set(true);
         this.currentPage.update(page => page + 1);
@@ -267,6 +291,16 @@ export class AddCommentComponent implements OnInit {
       if (observables.length > 0) {
         await forkJoin(observables).toPromise();
       }
+
+      // Track successful comment submission
+      this.analytics.track('Comment Submitted', {
+        project_id: proj?._id,
+        project_name: proj?.name,
+        comment_period_id: this.currentPeriod?._id,
+        is_anonymous: !this.makePublic(),
+        has_attachments: filesList.length > 0,
+        attachment_count: filesList.length
+      });
 
       this.submitting.set(false);
       this.currentPage.update(page => page + 1);

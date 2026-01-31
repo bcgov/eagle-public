@@ -19,6 +19,7 @@ import { CommentsTableRowsComponent } from './comments-table-rows/comments-table
 import { TableObject } from '../shared/components/table-template/table-object';
 import { TableTemplateComponent } from '../shared/components/table-template/table-template.component';
 import { LoggingService } from '../services/logging.service';
+import { AnalyticsService } from '../services/analytics/analytics.service';
 
 @Component({
   selector: 'app-comments',
@@ -42,6 +43,7 @@ export class CommentsComponent implements OnInit, OnDestroy {
   private loadingState = inject(LoadingStateService);
   private logger = inject(LoggingService);
   private sanitizer = inject(DomSanitizer);
+  private analytics = inject(AnalyticsService);
 
   loading = this.loadingState.getOperationState('comments');
   commentPeriod = signal<CommentPeriod | null>(null);
@@ -252,8 +254,13 @@ export class CommentsComponent implements OnInit, OnDestroy {
       // open modal
       this.ngbModal = this.modalService.open(AddCommentComponent, { backdrop: 'static', size: 'lg' });
       // set input parameters
-      (this.ngbModal.componentInstance as any).currentPeriod = this.commentPeriod();
-      (this.ngbModal.componentInstance as any).project = this.project();
+      const modalInstance = this.ngbModal.componentInstance as any;
+      modalInstance.currentPeriod = this.commentPeriod();
+      modalInstance.project = this.project();
+      
+      // Store current page for tracking on dismiss
+      const currentPage = modalInstance.currentPage?.() || 1;
+      
       // check result
       this.ngbModal.result.then(
         value => {
@@ -261,6 +268,18 @@ export class CommentsComponent implements OnInit, OnDestroy {
         },
         reason => {
           this.logger.debug('Modal cancelled', 'CommentsComponent', { reason });
+          
+          // Track modal dismissal
+          const proj = this.project();
+          if (proj) {
+            this.analytics.track('Comment Modal Dismissed', {
+              project_id: proj._id,
+              project_name: proj.name,
+              comment_period_id: this.commentPeriodId,
+              page: currentPage,
+              reason: String(reason || 'unknown')
+            });
+          }
         }
       );
     }

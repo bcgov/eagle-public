@@ -5,6 +5,7 @@ import { DatePipe } from '@angular/common';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { TableRowComponent, ITableMessage } from 'app/shared/components/table-template/table-row-component';
 import { TableObject } from 'app/shared/components/table-template/table-object';
+import { AnalyticsService } from 'app/services/analytics/analytics.service';
 
 @Component({
   selector: 'tr[app-activities-list-table-rows]',
@@ -16,6 +17,7 @@ import { TableObject } from 'app/shared/components/table-template/table-object';
 export class ActivitiesListTableRowsComponent implements TableRowComponent {
   private router = inject(Router);
   private sanitizer = inject(DomSanitizer);
+  private analytics = inject(AnalyticsService);
 
   // TableRowComponent interface properties
   rowData: any;
@@ -24,6 +26,15 @@ export class ActivitiesListTableRowsComponent implements TableRowComponent {
   messageIn = new EventEmitter<ITableMessage>();
 
   goToCP(activity: any) {
+    // Track comment period view from activities
+    this.analytics.track('News Item Clicked', {
+      activity_type: activity.type,
+      project_id: activity.project?._id,
+      project_name: activity.project?.name,
+      has_comment_period: !!activity.pcp,
+      is_met: activity.pcp?.isMet || false
+    });
+    
     if (activity.pcp.isMet && activity.pcp.metURL) {
       window.open(activity.pcp.metURL, '_blank');
     } else {

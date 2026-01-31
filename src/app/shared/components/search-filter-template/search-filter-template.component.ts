@@ -10,6 +10,7 @@ import { SubsetsObject } from './subset-object';
 import { Utils } from 'app/shared/utils/utils';
 import { DatePickerComponent } from '../date-picker/date-picker.component';
 import { AutoCompleteMultiSelectComponent } from '../autocomplete-multi-select/autocomplete-multi-select.component';
+import { AnalyticsService } from 'app/services/analytics/analytics.service';
 
 /**
  * Common template component for NRPTI search filters. The default component will only include a keyword
@@ -48,6 +49,7 @@ import { AutoCompleteMultiSelectComponent } from '../autocomplete-multi-select/a
 export class SearchFilterTemplateComponent implements OnInit, AfterViewInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private document = inject(DOCUMENT);
+  private analytics = inject(AnalyticsService);
   public utils = inject(Utils);
 
   // Inputs
@@ -386,6 +388,15 @@ export class SearchFilterTemplateComponent implements OnInit, AfterViewInit, OnD
     // Update the reset button state
     this.updateHasActiveFilters();
     
+    // Track search execution
+    const activeFilterCount = Object.keys(searchPackage.filters).length;
+    this.analytics.track('Search Executed', {
+      has_keywords: !!searchPackage.keywords,
+      keyword_count: searchPackage.keywords ? searchPackage.keywords.split(' ').length : 0,
+      filter_count: activeFilterCount,
+      subset: searchPackage.subset
+    });
+    
     // and return the package to the host component
     this.searchEvent.emit(searchPackage);
   }
@@ -402,6 +413,13 @@ export class SearchFilterTemplateComponent implements OnInit, AfterViewInit, OnD
       // @ts-expect-error - HotJar analytics not in types
       window.hj('event', 'SEARCH_TOGGLED');
     }
+    
+    // Track filter panel toggle
+    const newState = !this.showFiltersPanel();
+    this.analytics.track('Filters Panel Toggled', {
+      action: newState ? 'opened' : 'closed'
+    });
+    
     this.showFiltersPanel.update(val => !val);
     this.toggleFiltersPanelEvent.emit({ showPanel: this.showFiltersPanel() });
   }
@@ -415,6 +433,12 @@ export class SearchFilterTemplateComponent implements OnInit, AfterViewInit, OnD
       // @ts-expect-error - HotJar analytics not in types
       window.hj('event', 'FILTERS_CLEARED');
     }
+    
+    // Track filters cleared
+    this.analytics.track('Filters Cleared', {
+      had_keywords: !!this.keywordSearchWords(),
+      had_filters: this.hasActiveFilters()
+    });
     
     // Unsubscribe from valueChanges to prevent ANY firings during ALL reset operations
     if (this.valueChangesSubscription) {

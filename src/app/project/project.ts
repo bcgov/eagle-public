@@ -16,6 +16,7 @@ import { Utils } from '../shared/utils/utils';
 import { DetailsSidebarComponent } from './details-sidebar/details-sidebar';
 import { SafeHtmlPipe } from '../shared/pipes/safe-html-converter.pipe';
 import { LoggingService } from '../services/logging.service';
+import { AnalyticsService } from '../services/analytics/analytics.service';
 
 @Component({
   selector: 'app-project',
@@ -43,6 +44,7 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
   private utils = inject(Utils);
   private searchService = inject(SearchService);
   private logger = inject(LoggingService);
+  private analytics = inject(AnalyticsService);
   public configService = inject(ConfigService);
   public projectService = inject(ProjectService);
   public commentPeriodService = inject(CommentPeriodService);
@@ -347,6 +349,10 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
         element.onmouseout = () => element.style.backgroundColor = '#fff';
 
         element.onclick = function () {
+          self.analytics.track('Map Reset View Clicked', {
+            project_id: self.project()?._id || null,
+            project_name: self.project()?.name || null
+          });
           self.fitBounds(self.appFG.getBounds());
         };
 
@@ -404,8 +410,19 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     const configService = this.configService;
+    const analytics = this.analytics;
+    const getProject = () => this.project();
+    
     this.map.on('baselayerchange', function (e: any) {
       configService.baseLayerName = e.name;
+      const proj = getProject();
+      if (proj) {
+        analytics.track('Map Base Layer Changed', {
+          project_id: proj._id,
+          project_name: proj.name,
+          layer_name: e.name
+        });
+      }
     });
 
     this.map.scrollWheelZoom.disable();
@@ -422,6 +439,16 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
       const title = `${proj.name}\n${proj.sector}\n${proj.location}\n`;
       const marker = L.marker(L.latLng(proj.centroid[1], proj.centroid[0]), { title: title })
         .setIcon(markerIconYellow);
+      
+      // Track marker click
+      marker.on('click', () => {
+        this.analytics.track('Map Marker Clicked', {
+          project_id: proj._id,
+          project_name: proj.name,
+          map_zoom_level: this.map.getZoom()
+        });
+      });
+      
       this.map.addLayer(marker);
       this.appFG.addLayer(marker);
       
@@ -490,14 +517,40 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
   public goToViewComments() {
     const proj = this.project();
     if (proj?.commentPeriodForBanner?.isMet && proj.commentPeriodForBanner.metURL) {
+      this.analytics.track('Comment Period Banner Clicked', {
+        project_id: proj._id,
+        project_name: proj.name,
+        status: proj.commentPeriodForBanner.commentPeriodStatus,
+        is_met: true,
+        destination: 'external_met'
+      });
       window.open(proj.commentPeriodForBanner.metURL, '_blank');
     } else if (proj?.commentPeriodForBanner) {
+      this.analytics.track('Comment Period Banner Clicked', {
+        project_id: proj._id,
+        project_name: proj.name,
+        status: proj.commentPeriodForBanner.commentPeriodStatus,
+        is_met: false,
+        destination: 'comment_period_details'
+      });
       this.router.navigate(['/p', proj._id, 'cp', proj.commentPeriodForBanner._id, 'details']);
     }
   }
 
   public handleSidebarToggle(event: { open: boolean }) {
     this.sidebarOpen.set(event.open);
+  }
+
+  public trackTabClick(tabLink: any) {
+    const proj = this.project();
+    if (proj) {
+      this.analytics.track('Project Tab Clicked', {
+        project_id: proj._id,
+        project_name: proj.name,
+        tab_name: tabLink.label,
+        tab_path: tabLink.link
+      });
+    }
   }
 
   ngOnDestroy() {

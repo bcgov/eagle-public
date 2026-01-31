@@ -48,7 +48,9 @@
             },
             "allowedCommonJsDependencies": [
               "leaflet",
-              "leaflet.markercluster"
+              "leaflet.markercluster",
+              "analytics",
+              "dlv"
             ]
           },
           "configurations": {
@@ -87,6 +89,9 @@
         },
         "serve": {
           "builder": "@angular/build:dev-server",
+          "options": {
+            "proxyConfig": "proxy.conf.json"
+          },
           "configurations": {
             "production": {
               "buildTarget": "eagle-public:build:production"

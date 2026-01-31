@@ -5,7 +5,6 @@ on:
       - develop
     paths-ignore:
       - ".github/**"
-      - "openshift/**"
 
 env:
   OPENSHIFT_NAMESPACE: 6cdc9e-tools
@@ -22,6 +21,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 2  # Need at least 2 commits to compare changes
 
       - name: Use Node.js 24
         uses: actions/setup-node@v4
@@ -43,19 +44,42 @@ jobs:
           sudo mv oc /usr/local/bin/
           rm -f openshift-client-linux.tar.gz
 
-      - name: Login to OpenShift registry
-        uses: docker/login-action@v3
+      - name: Log into OpenShift
+        uses: redhat-actions/oc-login@v1.3
         with:
-          registry: ${{ secrets.OPENSHIFT_REPOSITORY }}
-          username: ${{ secrets.OPENSHIFT_REPOSITORY_USERNAME }}
-          password: ${{ secrets.OPENSHIFT_REPOSITORY_PASSWORD }}
+          openshift_server_url: ${{ secrets.OPENSHIFT_URL }}
+          openshift_token: ${{ secrets.OPENSHIFT_TOKEN }}
+          namespace: ${{ env.OPENSHIFT_NAMESPACE }}
+
+      - name: Check if nginx config changed
+        id: nginx-check
+        run: |
+          # Check if nginx-runtime config files changed in this commit
+          if git diff --name-only HEAD~1 HEAD 2>/dev/null | grep -q "openshift/templates/nginx-runtime/"; then
+            echo "Nginx config files changed"
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "No nginx config changes detected"
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Rebuild nginx-runtime image
+        if: steps.nginx-check.outputs.changed == 'true'
+        run: |
+          echo "Nginx config changed, rebuilding nginx-runtime image..."
+          oc start-build eagle-public-nginx-runtime -n ${{ env.OPENSHIFT_NAMESPACE }} --wait --follow
+
+      - name: Login to OpenShift registry for Docker push
+        run: |
+          # Use the OpenShift token to login to the image registry
+          docker login -u unused -p $(oc whoami -t) ${{ secrets.OPENSHIFT_REPOSITORY }}
   
       - name: Get Short SHA
         id: short-sha
         run: echo "SHA=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           push: true

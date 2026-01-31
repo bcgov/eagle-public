@@ -12,6 +12,9 @@ LABEL io.openshift.s2i.scripts-url=image://$STI_SCRIPTS_PATH
 COPY nginx.conf.template /tmp/
 COPY default.conf /etc/nginx/conf.d/
 
+# Copy publicServerEnvironmentSettings.js template
+COPY publicServerEnvironmentSettings.js.template /tmp/
+
 # Setup directories and permissions
 RUN mkdir -p /etc/nginx/ && \
     echo "" > /etc/nginx/publicServerEnvironmentSettings.js && \
