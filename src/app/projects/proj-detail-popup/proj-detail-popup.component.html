@@ -37,7 +37,7 @@
 
         <hr>
 
-        <a class="app-link btn btn-primary" (click)="navigateToProject()" style="cursor: pointer" title="View more information about this project">
+        <a class="app-link btn btn-primary" (click)="navigateToProject()" (keydown.enter)="navigateToProject()" tabindex="0" role="button" style="cursor: pointer" title="View more information about this project">
           View Project Details
         </a>
       </div>
