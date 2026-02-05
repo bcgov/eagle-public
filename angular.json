@@ -38,7 +38,6 @@
               "src/assets/fonts/BCSans.css"
             ],
             "scripts": [
-              "src/publicServerEnvironmentSettings.js",
               "node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"
             ],
             "stylePreprocessorOptions": {
@@ -55,6 +54,15 @@
           },
           "configurations": {
             "production": {
+              "assets": [
+                {
+                  "glob": "**/*",
+                  "input": "public"
+                },
+                "src/favicon.ico",
+                "src/assets",
+                "src/env.js"
+              ],
               "budgets": [
                 {
                   "type": "initial",
@@ -82,7 +90,16 @@
             "development": {
               "optimization": false,
               "extractLicenses": false,
-              "sourceMap": true
+              "sourceMap": true,
+              "assets": [
+                {
+                  "glob": "**/*",
+                  "input": "public"
+                },
+                "src/favicon.ico",
+                "src/assets",
+                "src/env.js"
+              ]
             }
           },
           "defaultConfiguration": "production"

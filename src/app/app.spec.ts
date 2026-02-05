@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { signal } from '@angular/core';
 import { App } from './app';
 import { ApiService } from 'app/services/api';
 import { ConfigService } from 'app/services/config.service';
@@ -10,7 +11,6 @@ describe('App', () => {
   let component: App;
   let fixture: ComponentFixture<App>;
   let mockApiService: { apiPath: string; env: string; bannerColour: string; adminUrl: string };
-  let mockConfigService: { init: () => void; lists: { subscribe: () => void } };
 
   beforeEach(() => {
     mockApiService = {
@@ -20,9 +20,17 @@ describe('App', () => {
       adminUrl: 'http://localhost:4000/admin/'
     };
 
-    mockConfigService = {
-      init: () => { /* mock implementation */ },
-      lists: of([])
+    const mockConfigService = {
+      init: () => Promise.resolve(),
+      lists: of([]),
+      config: signal({
+        ENVIRONMENT: 'test',
+        BANNER_COLOUR: 'red',
+        API_PATH: 'https://great-api.gov.bc.ca/api/public',
+        ADMIN_PATH: 'http://localhost:4000/admin/',
+        ANALYTICS_API_URL: 'http://localhost:3001',
+        ANALYTICS_DEBUG: true
+      })
     };
 
     TestBed.configureTestingModule({

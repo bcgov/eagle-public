@@ -1,0 +1,22 @@
+# Production environment values
+replicaCount: 3
+
+image:
+  tag: "prod"
+
+route:
+  host: projects.eao.gov.bc.ca
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+  requests:
+    cpu: 250m
+    memory: 512Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 6
+  targetCPUUtilizationPercentage: 70

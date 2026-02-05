@@ -1,25 +1,36 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { signal, WritableSignal } from '@angular/core';
 import { HeaderComponent } from './header.component';
-import { ApiService } from 'app/services/api';
+import { ConfigService } from 'app/services/config.service';
+
+interface MockConfig {
+  ENVIRONMENT: string;
+  BANNER_COLOUR: string;
+}
 
 describe('HeaderComponent', () => {
   let component: HeaderComponent;
   let fixture: ComponentFixture<HeaderComponent>;
-  let mockApiService: { env: string; bannerColour: string };
+  let configSignal: WritableSignal<MockConfig>;
 
   beforeEach(() => {
-    mockApiService = {
-      env: 'test',
-      bannerColour: 'blue'
+    configSignal = signal<MockConfig>({
+      ENVIRONMENT: 'test',
+      BANNER_COLOUR: 'blue'
+    });
+
+    const mockConfigService = {
+      config: configSignal,
+      lists: { subscribe: () => ({ unsubscribe: () => undefined }) }
     };
 
     TestBed.configureTestingModule({
       imports: [HeaderComponent],
       providers: [
         provideRouter([]),
-        { provide: ApiService, useValue: mockApiService }
+        { provide: ConfigService, useValue: mockConfigService }
       ]
     });
 
@@ -47,15 +58,17 @@ describe('HeaderComponent', () => {
   });
 
   it('should not show banner when bannerColour is default', () => {
-    mockApiService.bannerColour = 'no-banner-colour-set';
+    configSignal.set({ ENVIRONMENT: 'test', BANNER_COLOUR: 'no-banner-colour-set' });
     fixture.detectChanges();
     expect(component.showBanner()).toBe(false);
   });
 
-  it('should not show banner when env is empty', () => {
-    mockApiService.env = '';
+  it('should show banner when env is empty (defaults to local)', () => {
+    // When ENVIRONMENT is empty, envName() defaults to 'local', which shows banner
+    configSignal.set({ ENVIRONMENT: '', BANNER_COLOUR: 'blue' });
     fixture.detectChanges();
-    expect(component.showBanner()).toBe(false);
+    expect(component.envName()).toBe('local');
+    expect(component.showBanner()).toBe(true);
   });
 
   it('should have a closeMenus method', () => {

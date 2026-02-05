@@ -1,4 +1,0 @@
-// Runtime configuration - generated at container startup
-window.localStorage.setItem('from_public_server--deployment_env', '${DEPLOYMENT_ENVIRONMENT}');
-window.localStorage.setItem('from_public_server--banner_colour', '${BANNER_COLOUR}');
-window.localStorage.setItem('from_public_server--analytics_api_url', '${ANALYTICS_API_URL}');

@@ -176,7 +176,7 @@ export function penguinAnalyticsPlugin(pluginConfig: PenguinAnalyticsConfig): An
       });
     },
 
-    identify: () => {}, // No-op: no PII collection
+    identify: () => { /* No-op: no PII collection in eagle-public */ },
 
     loaded: () => true,
 

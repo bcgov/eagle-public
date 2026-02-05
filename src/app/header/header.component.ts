@@ -1,7 +1,8 @@
-import { Component, ChangeDetectionStrategy, signal, inject, OnInit, OnDestroy, PLATFORM_ID, effect } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, inject, OnDestroy, PLATFORM_ID, effect, computed } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { Router, RouterModule, NavigationEnd } from '@angular/router';
 import { ApiService } from '../services/api';
+import { ConfigService } from '../services/config.service';
 import { LoadingStateService } from '../services/loading-state.service';
 import { filter, fromEvent } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
@@ -14,17 +15,25 @@ import { debounceTime } from 'rxjs/operators';
   imports: [RouterModule],
   standalone: true
 })
-export class HeaderComponent implements OnInit, OnDestroy {
+export class HeaderComponent implements OnDestroy {
   private apiService = inject(ApiService);
+  private configService = inject(ConfigService);
   private platformId = inject(PLATFORM_ID);
   public router = inject(Router);
   
   // Public access to loading state service
   public loadingState = inject(LoadingStateService);
   
-  envName = signal<string>('');
-  bannerColour = signal<string>('');
-  showBanner = signal<boolean>(false);
+  // Reactive banner values - update when config changes
+  envName = computed(() => this.configService.config().ENVIRONMENT || 'local');
+  bannerColour = computed(() => this.configService.config().BANNER_COLOUR || 'red');
+  showBanner = computed(() => {
+    const env = this.envName();
+    const colour = this.bannerColour();
+    const hasValidColor = !!colour && colour !== 'no-banner-colour-set';
+    return env === 'local' || (!!env && hasValidColor);
+  });
+  
   currentUrl = signal<string>('');
   
   private resizeSubscription: any = null;
@@ -63,15 +72,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
     }, 0);
   }
 
-  ngOnInit(): void {
-    const { env, bannerColour } = this.apiService;
-    
-    this.envName.set(env);
-    this.bannerColour.set(bannerColour);
-    
-    const hasValidColor = !!bannerColour && bannerColour !== 'no-banner-colour-set';
-    this.showBanner.set(env === 'local' || (!!env && hasValidColor));
-  }
+  // ngOnInit not needed - banner values are computed signals that react to config changes
   
   ngOnDestroy(): void {
     this.resizeSubscription?.unsubscribe();

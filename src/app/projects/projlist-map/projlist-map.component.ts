@@ -260,7 +260,41 @@ export class ProjlistMapComponent implements AfterViewInit, OnDestroy {
    * Check if project has valid centroid coordinates
    */
   private hasValidCentroid(project: Project): boolean {
-    return project.centroid?.length === 2;
+    if (!project.centroid || project.centroid.length !== 2) {
+      return false;
+    }
+    
+    const lon = project.centroid[0];
+    const lat = project.centroid[1];
+    
+    // Reject if coordinates are not numbers (e.g., DMS strings)
+    if (typeof lon !== 'number' || typeof lat !== 'number') {
+      this.logger.warn(
+        `Invalid centroid type for project ${project._id}: [${typeof lon}, ${typeof lat}]`,
+        'ProjlistMapComponent'
+      );
+      return false;
+    }
+    
+    // Reject NaN values
+    if (isNaN(lon) || isNaN(lat)) {
+      this.logger.warn(
+        `NaN centroid for project ${project._id}`,
+        'ProjlistMapComponent'
+      );
+      return false;
+    }
+    
+    // Reject out-of-range coordinates (BC: roughly lat 48-60, lon -139 to -114)
+    if (lat < 48 || lat > 60 || lon < -139 || lon > -114) {
+      this.logger.warn(
+        `Out-of-range centroid for project ${project._id}: [${lon}, ${lat}]`,
+        'ProjlistMapComponent'
+      );
+      return false;
+    }
+    
+    return true;
   }
 
   readonly defaultBounds = L.latLngBounds([48, -139], [60, -114]);

@@ -12,6 +12,7 @@ import { Org } from 'app/models/organization';
 import { Decision } from 'app/models/decision';
 import { Utils } from 'app/shared/utils/utils';
 import { LoggingService } from './logging.service';
+import { ConfigService } from './config.service';
 import { AnalyticsService } from './analytics/analytics.service';
 
 @Injectable({providedIn:'root'})
@@ -19,37 +20,41 @@ export class ApiService {
   private http = inject(HttpClient);
   private utils = inject(Utils);
   private logger = inject(LoggingService);
+  private configService = inject(ConfigService);
   private analytics = inject(AnalyticsService);
 
   // public token: string;
   public isMS: boolean; // IE, Edge, etc
-  public apiPath: string;
-  public adminUrl: string;
-  public env: string;  // Could be anything per Openshift environment variables  but generally is one of 'local' | 'dev' | 'test' | 'prod' | 'demo' | 'hotfix'
-  public bannerColour: string;  // This is the colour of the banner that you see in the header, and could be anything per Openshift environment variables but must correspond with the css in header.component.scss e.g. red | orange | green | yellow | purple
-  public surveyUrl: string | null; // This is the URL pointing to the public survey for feedback.
-  public showSurveyBanner: boolean; // This is the toggle to show or hide the survey banner.
 
   constructor() {
     // const currentUser = JSON.parse(window.localStorage.getItem('currentUser'));
     // this.token = currentUser && currentUser.token;
     this.isMS = !!(window.navigator as any).msSaveOrOpenBlob;
+  }
 
-    // The following items are loaded by a file that is only present on cluster builds.
-    // Locally, this will be empty and local defaults will be used.
-    const remote_api_path = window.localStorage.getItem('from_public_server--remote_api_path');
-    const remote_admin_path = window.localStorage.getItem('from_public_server--remote_admin_path');
-    const deployment_env = window.localStorage.getItem('from_public_server--deployment_env');
-    const banner_colour = window.localStorage.getItem('from_public_server--banner_colour');
-    const survey_url = window.localStorage.getItem('from_public_server--survey_url');
-    const show_survey_banner = window.localStorage.getItem('from_public_server--show_survey_banner');
+  // Configuration getters - delegated to ConfigService
+  get apiPath(): string {
+    return this.configService.config().API_PATH || 'https://eagle-dev.apps.silver.devops.gov.bc.ca/api/public';
+  }
 
-    this.apiPath = (!remote_api_path) ? 'https://eagle-dev.apps.silver.devops.gov.bc.ca/api/public' : remote_api_path;
-    this.adminUrl = (!remote_admin_path) ? 'http://localhost:4200/admin' : remote_admin_path;
-    this.env = (!deployment_env) ? 'local' : deployment_env;
-    this.bannerColour = (!banner_colour) ? 'red' : banner_colour;
-    this.surveyUrl = (!survey_url || survey_url === null || survey_url === 'null') ? null : survey_url;
-    this.showSurveyBanner = !!show_survey_banner && show_survey_banner !== 'null';
+  get adminUrl(): string {
+    return this.configService.config().ADMIN_PATH || 'http://localhost:4200/admin/';
+  }
+
+  get env(): string {
+    return this.configService.config().ENVIRONMENT || 'local';
+  }
+
+  get bannerColour(): string {
+    return this.configService.config().BANNER_COLOUR || 'red';
+  }
+
+  get surveyUrl(): string | null {
+    return this.configService.config().SURVEY_URL || null;
+  }
+
+  get showSurveyBanner(): boolean {
+    return this.configService.config().SHOW_SURVEY_BANNER ?? false;
   }
 
   handleError(error: any): Observable<any> {
@@ -517,7 +522,7 @@ export class ApiService {
   }
 
   getTopNewsItems(): Observable<any[]> {
-    const queryString = 'recentActivity?top=true';
+    const queryString = 'public/recentActivity?top=true';
     return this.http.get<any[]>(`${this.apiPath}/${queryString}`, {});
   }
 

@@ -138,11 +138,57 @@ export class Project {
 
     this.featuredDocuments   = obj && obj.featuredDocuments   || [];
 
-    // copy centroid
-    if (obj && obj.centroid) {
-      obj.centroid.forEach((num: number) => {
-        this.centroid.push(num);
-      });
+    // copy centroid - convert DMS strings to decimal if needed
+    if (obj && obj.centroid && obj.centroid.length === 2) {
+      const lon = Project.parseCoordinate(obj.centroid[0]);
+      const lat = Project.parseCoordinate(obj.centroid[1]);
+      if (lon !== null && lat !== null) {
+        this.centroid = [lon, lat];
+      }
     }
+  }
+
+  /**
+   * Parse a coordinate value - handles both decimal numbers and DMS strings
+   * DMS format examples: "53°49'42.9\"N", "122°43'20.8\"W"
+   */
+  static parseCoordinate(value: any): number | null {
+    if (typeof value === 'number' && !isNaN(value)) {
+      return value;
+    }
+    
+    if (typeof value === 'string') {
+      // Try parsing DMS format first: 53°49'42.9"N or 122°43'20.8"W
+      const dmsRegex = /^(\d+)°(\d+)'([\d.]+)"?([NSEW])?$/i;
+      const match = value.match(dmsRegex);
+      if (match) {
+        const degrees = parseFloat(match[1]);
+        const minutes = parseFloat(match[2]);
+        const seconds = parseFloat(match[3]);
+        const direction = match[4]?.toUpperCase();
+        
+        let decimal = degrees + (minutes / 60) + (seconds / 3600);
+        
+        // Make negative for West or South
+        if (direction === 'W' || direction === 'S') {
+          decimal = -decimal;
+        }
+        
+        return decimal;
+      }
+      
+      // Try parsing as a simple number (must be the entire string)
+      const num = parseFloat(value);
+      if (!isNaN(num) && String(num) === value.trim()) {
+        return num;
+      }
+      
+      // Also accept numbers with optional whitespace
+      if (!isNaN(num) && /^-?\d+\.?\d*$/.test(value.trim())) {
+        return num;
+      }
+    }
+    
+    return null;
   }
 }
