@@ -65,14 +65,12 @@ jobs:
           git push origin "${{ inputs.version }}"
 
       - name: Create GitHub Release
-        uses: actions/create-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ inputs.version }}
-          release_name: Release ${{ inputs.version }}
-          draft: false
-          prerelease: false
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${{ inputs.version }}" \
+            --title "Release ${{ inputs.version }}" \
+            --generate-notes
 
   deploy:
     name: Deploy to Test
