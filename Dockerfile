@@ -40,6 +40,9 @@ RUN yarn build
 # -----------------------------------------------------------------------------
 FROM nginx:1.27-alpine
 
+# Update Alpine packages to latest security patches
+RUN apk upgrade --no-cache
+
 # Labels for OpenShift compatibility
 LABEL io.openshift.expose-services="8080:http" \
       io.openshift.tags="nginx,angular,eagle-public"
