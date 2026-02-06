@@ -2,67 +2,22 @@
 
 This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.0.2.
 
-## Deployment
+## Documentation
 
-### Automated Deployments
+All documentation has been consolidated in the [Eagle Documentation Wiki](https://github.com/bcgov/eagle-dev-guides/wiki):
 
-The application uses GitHub Actions for CI/CD with Helm deployments to OpenShift:
+* **[Architecture Overview](https://github.com/bcgov/eagle-dev-guides/wiki/Architecture-Overview)** - System components and request flow
+* **[Configuration Management](https://github.com/bcgov/eagle-dev-guides/wiki/Configuration-Management)** - ConfigService pattern and environment variables
+* **[Deployment Pipeline](https://github.com/bcgov/eagle-dev-guides/wiki/Deployment-Pipeline)** - CI/CD workflows and procedures
+* **[Helm Charts](https://github.com/bcgov/eagle-dev-guides/wiki/Helm-Charts)** - Kubernetes deployment configuration
+* **[Local Development](https://github.com/bcgov/eagle-dev-guides/wiki/Local-Development)** - Setting up your development environment
+* **[Rollback Procedures](https://github.com/bcgov/eagle-dev-guides/wiki/Rollback-Procedures)** - How to rollback deployments
+* **[Troubleshooting](https://github.com/bcgov/eagle-dev-guides/wiki/Troubleshooting)** - Common issues and solutions
 
-**Development (6cdc9e-dev)**
-- **Trigger**: Automatic on push to `develop` branch
-- **Workflow**: `.github/workflows/build_and_promote.yaml`
-- **Process**: Builds Docker image → Tags as `dev` and `<commit-sha>` → Deploys via Helm
-- **URL**: https://eagle-dev.apps.silver.devops.gov.bc.ca
-
-**Test (6cdc9e-test)**
-- **Trigger**: Manual via GitHub Actions UI
-- **Workflow**: `.github/workflows/deploy-to-test.yaml`
-- **Process**: 
-  1. Go to Actions → "Deploy to Test" → "Run workflow"
-  2. Enter image tag (default: `dev`) or specific commit SHA
-  3. Workflow tags image as `test` and deploys via Helm
-- **URL**: https://eagle-test.apps.silver.devops.gov.bc.ca
-
-**Production (6cdc9e-prod)**
-- **Trigger**: Manual via GitHub Actions UI
-- **Workflow**: `.github/workflows/deploy-to-prod.yaml`
-- **Process**:
-  1. Go to Actions → "Deploy to Prod" → "Run workflow"
-  2. Enter image tag (default: `test`) or specific commit SHA
-  3. Workflow tags image as `prod` and deploys via Helm
-- **URL**: https://eagle.gov.bc.ca
-
-### Deployment Flow Example
-
-```bash
-# 1. Push to develop → auto-deploys to dev with tag abc1234
-git push origin develop
-
-# 2. Manually promote to test (via GitHub UI)
-#    - Select "Deploy to Test" workflow
-#    - Input: abc1234 (or leave default "dev")
-#    - Click "Run workflow"
-
-# 3. Manually promote to production (via GitHub UI)
-#    - Select "Deploy to Prod" workflow
-#    - Input: abc1234 (or leave default "test")
-#    - Click "Run workflow"
-```
-
-### Helm Charts
-
-The application is deployed using Helm charts located in `helm/eagle-public/`:
-- `values-dev.yaml` - Development configuration
-- `values-test.yaml` - Test configuration
-- `values-prod.yaml` - Production configuration
-
-To deploy locally:
-```bash
-helm upgrade --install eagle-public ./helm/eagle-public \
-  --namespace 6cdc9e-dev \
-  --values ./helm/eagle-public/values-dev.yaml \
-  --set image.tag=latest
-```
+**Environments:**
+- Dev: https://eagle-dev.apps.silver.devops.gov.bc.ca
+- Test: https://eagle-test.apps.silver.devops.gov.bc.ca
+- Prod: https://eagle.gov.bc.ca
 
 ## Development server
 
