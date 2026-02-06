@@ -82,8 +82,8 @@ jobs:
       - run: yarn install --immutable
       - run: yarn test
 
-  build-check:
-    name: Build Verification
+  build:
+    name: Build
     runs-on: ubuntu-latest
     needs: install
     strategy:
@@ -104,12 +104,11 @@ jobs:
       - run: yarn install --immutable
       - run: yarn build
 
-  build:
-    name: Build and Push Image
+  scan:
+    name: Security Scan
     runs-on: ubuntu-latest
-    needs: [lint, test, build-check]
+    needs: [lint, test, build]
     outputs:
-      IMAGE_TAG: ${{ steps.push.outputs.digest }}
       SHORT_SHA: ${{ steps.short-sha.outputs.SHA }}
     steps:
       - name: Checkout repository
@@ -118,6 +117,35 @@ jobs:
       - name: Get short SHA
         id: short-sha
         run: echo "SHA=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Build Docker image for scanning
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          tags: ${{ env.IMAGE_NAME }}:${{ steps.short-sha.outputs.SHA }}
+          load: true
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.IMAGE_NAME }}:${{ steps.short-sha.outputs.SHA }}
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
+  push:
+    name: Push Image
+    runs-on: ubuntu-latest
+    needs: scan
+    outputs:
+      IMAGE_TAG: ${{ steps.push.outputs.digest }}
+      SHORT_SHA: ${{ needs.scan.outputs.SHORT_SHA }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Login to OpenShift registry
         uses: docker/login-action@v3
@@ -135,11 +163,11 @@ jobs:
           tags: |
             ${{ secrets.OPENSHIFT_REPOSITORY }}/${{ env.OPENSHIFT_NAMESPACE_TOOLS }}/${{ env.IMAGE_NAME }}:dev
             ${{ secrets.OPENSHIFT_REPOSITORY }}/${{ env.OPENSHIFT_NAMESPACE_TOOLS }}/${{ env.IMAGE_NAME }}:ci-latest
-            ${{ secrets.OPENSHIFT_REPOSITORY }}/${{ env.OPENSHIFT_NAMESPACE_TOOLS }}/${{ env.IMAGE_NAME }}:${{ steps.short-sha.outputs.SHA }}
+            ${{ secrets.OPENSHIFT_REPOSITORY }}/${{ env.OPENSHIFT_NAMESPACE_TOOLS }}/${{ env.IMAGE_NAME }}:${{ needs.scan.outputs.SHORT_SHA }}
 
   deploy:
     name: Deploy to Dev
-    needs: build
+    needs: push
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
