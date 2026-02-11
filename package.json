@@ -25,6 +25,11 @@
   },
   "private": true,
   "packageManager": "yarn@4.12.0",
+  "engines": {
+    "node": ">=24.0.0 <25.0.0",
+    "npm": "please-use-yarn",
+    "yarn": ">=4.0.0"
+  },
   "dependencies": {
     "@angular/animations": "^21.0.8",
     "@angular/cdk": "^21.0.5",
