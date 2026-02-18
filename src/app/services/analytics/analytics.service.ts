@@ -37,13 +37,22 @@ export class AnalyticsService {
     }
 
     const debug = config.ANALYTICS_DEBUG ?? (config.ENVIRONMENT !== 'prod');
+    const enhancedTracking = config.ANALYTICS_ENHANCED_TRACKING ?? false;
 
-    const plugin = penguinAnalyticsPlugin({ apiUrl, sourceApp: 'eagle-public', debug });
+    const plugin = penguinAnalyticsPlugin({ 
+      apiUrl, 
+      sourceApp: 'eagle-public', 
+      debug,
+      enhancedTracking 
+    });
     this.plugin = plugin as unknown as PluginWithStartTracking;
     this.analytics = Analytics({ app: 'eagle-public', debug, plugins: [plugin] });
     this.initialized = true;
     
     console.log('Analytics initialized with API URL:', apiUrl);
+    if (debug) {
+      console.log('Enhanced tracking (browser context):', enhancedTracking ? 'enabled' : 'disabled');
+    }
   }
 
   startTracking(): void {

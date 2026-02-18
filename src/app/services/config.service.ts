@@ -16,6 +16,7 @@ interface EnvConfig {
   SHOW_SURVEY_BANNER?: boolean;
   ANALYTICS_API_URL?: string | null;
   ANALYTICS_DEBUG?: boolean;
+  ANALYTICS_ENHANCED_TRACKING?: boolean;
   GH_HASH?: string;
 }
 

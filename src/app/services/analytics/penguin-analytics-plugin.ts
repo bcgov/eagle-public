@@ -8,6 +8,7 @@ export interface PenguinAnalyticsConfig {
   apiUrl: string;
   sourceApp: string;
   debug?: boolean;
+  enhancedTracking?: boolean;  // Include browser context (timezone, screen size, viewport)
 }
 
 interface EventPayload {
@@ -28,17 +29,57 @@ const getSessionId = (): string => {
   return id;
 };
 
-const getBrowserContext = (): Record<string, unknown> => ({
-  url: window.location.href,
-  path: window.location.pathname,
-  referrer: document.referrer,
-  title: document.title,
-  screen_width: window.screen.width,
-  screen_height: window.screen.height,
-  viewport_width: window.innerWidth,
-  viewport_height: window.innerHeight,
-  timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
-});
+const getBrowserContext = (config: PenguinAnalyticsConfig): Record<string, unknown> => {
+  const basicContext = {
+    url: window.location.pathname,  // Path only (privacy-friendly)
+    title: document.title
+  };
+
+  // Enhanced tracking includes browser fingerprinting data
+  if (config.enhancedTracking) {
+    // Get connection info (Network Information API)
+    const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+
+    // Get browser info from User-Agent Client Hints API (with fallback)
+    const uaData = navigator.userAgentData;
+    const primaryBrand = uaData?.brands?.find(b => !b.brand.includes('Not'))
+      || uaData?.brands?.[0];
+
+    return {
+      ...basicContext,
+      url: window.location.href,  // Full URL (may include query params)
+      referrer: document.referrer,
+
+      // Screen & viewport
+      screen_width: window.screen.width,
+      screen_height: window.screen.height,
+      viewport_width: window.innerWidth,
+      viewport_height: window.innerHeight,
+      pixel_ratio: window.devicePixelRatio,
+      color_depth: window.screen.colorDepth,
+
+      // Locale & timezone
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      language: navigator.language,
+      languages: navigator.languages?.slice(0, 3).join(','),
+
+      // Device & browser detection
+      user_agent: navigator.userAgent,
+      platform: uaData?.platform || navigator.platform,
+      browser: primaryBrand?.brand,
+      browser_version: primaryBrand?.version,
+      mobile: uaData?.mobile ?? (navigator.maxTouchPoints > 0),
+      touch_points: navigator.maxTouchPoints,
+
+      // Network info (may not be available in all browsers)
+      connection_type: connection?.effectiveType,
+      connection_downlink: connection?.downlink,
+      connection_rtt: connection?.rtt
+    };
+  }
+
+  return basicContext;
+};
 
 const sendEvent = (config: PenguinAnalyticsConfig, eventData: Partial<EventPayload>): void => {
   if (!config.apiUrl) return;
@@ -153,7 +194,7 @@ export function penguinAnalyticsPlugin(pluginConfig: PenguinAnalyticsConfig): An
 
       sendEvent(config, {
         eventType: 'Session Started',
-        properties: { session_start: sessionStart, session_id: getSessionId(), ...getBrowserContext() }
+        properties: { session_start: sessionStart, session_id: getSessionId(), ...getBrowserContext(config) }
       });
 
       if (config.debug) console.log('[Analytics] Session started:', getSessionId());
@@ -164,7 +205,7 @@ export function penguinAnalyticsPlugin(pluginConfig: PenguinAnalyticsConfig): An
       const props = payload['properties'] as Record<string, unknown> | undefined;
       sendEvent(config, {
         eventType: 'Page Viewed',
-        properties: { page_name: props?.['name'] || 'unknown', ...getBrowserContext(), ...props }
+        properties: { page_name: props?.['name'] || 'unknown', ...getBrowserContext(config), ...props }
       });
     },
 
