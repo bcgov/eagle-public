@@ -44,3 +44,4 @@ Thumbs.db
 
 # GitHub Copilot
 .github/copilot-instructions.md
+.github/instructions/
