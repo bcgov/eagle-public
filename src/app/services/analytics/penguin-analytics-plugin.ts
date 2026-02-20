@@ -29,6 +29,94 @@ const getSessionId = (): string => {
   return id;
 };
 
+/**
+ * Get traffic source data from URL parameters (UTM) and referrer.
+ * Returns traffic channel, source, medium, campaign, content, term
+ */
+const getTrafficSource = (): Record<string, string | null> | null => {
+  try {
+    // First check localStorage from original-source plugin
+    const stored = localStorage.getItem('__user_original_source__');
+    
+    if (stored) {
+      // Parse pipe-separated format: "source=google|medium=cpc|campaign=test"
+      const parsed: Record<string, string> = {};
+      stored.split('|').forEach(pair => {
+        const [key, value] = pair.split('=');
+        if (key && value) {
+          parsed[key] = decodeURIComponent(value);
+        }
+      });
+      
+      if (Object.keys(parsed).length > 0) {
+        const channel = determineChannel(parsed['source'], parsed['medium']);
+        return {
+          traffic_channel: channel,
+          traffic_source: parsed['source'] || null,
+          traffic_medium: parsed['medium'] || null,
+          traffic_campaign: parsed['campaign'] || null,
+          traffic_content: parsed['content'] || null,
+          traffic_term: parsed['term'] || null,
+          traffic_referrer: stored,
+        };
+      }
+    }
+    
+    // Fallback: parse UTM parameters directly from current URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const source = urlParams.get('utm_source');
+    const medium = urlParams.get('utm_medium');
+    const campaign = urlParams.get('utm_campaign');
+    const content = urlParams.get('utm_content');
+    const term = urlParams.get('utm_term');
+    
+    if (source || medium) {
+      const channel = determineChannel(source, medium);
+      const result: Record<string, string | null> = {
+        traffic_channel: channel,
+        traffic_source: source,
+        traffic_medium: medium,
+        traffic_campaign: campaign,
+        traffic_content: content,
+        traffic_term: term,
+        traffic_referrer: document.referrer || null,
+      };
+      return result;
+    }
+    
+    return null;
+  } catch (_e) {
+    // Silent fail - traffic source is optional
+    return null;
+  }
+};
+
+/**
+ * Determine traffic channel from source and medium
+ */
+const determineChannel = (source: string | null, medium: string | null): string => {
+  const src = source?.toLowerCase() || '';
+  const med = medium?.toLowerCase() || '';
+  
+  if (src.includes('chatgpt') || src.includes('claude') || src.includes('bard')) {
+    return 'chatbot';
+  } else if (med === 'email' || src.includes('mail')) {
+    return 'email';
+  } else if (med.includes('cpc') || med.includes('ppc') || src === 'google' || src === 'bing') {
+    return 'search';
+  } else if (med === 'social' || src.match(/facebook|twitter|linkedin|instagram|youtube/)) {
+    return 'social';
+  } else if (src === '(direct)' && med === '(none)') {
+    return 'direct';
+  } else if (src.includes(window.location.hostname)) {
+    return 'internal';
+  } else if (src && src !== '(direct)') {
+    return 'referral';
+  }
+  
+  return 'other';
+};
+
 const getBrowserContext = (config: PenguinAnalyticsConfig): Record<string, unknown> => {
   const basicContext = {
     url: window.location.pathname,  // Path only (privacy-friendly)
@@ -202,10 +290,21 @@ export function penguinAnalyticsPlugin(pluginConfig: PenguinAnalyticsConfig): An
 
     page: ({ payload }: { payload: Record<string, unknown> }) => {
       if (!isActive) return;
+      
       const props = payload['properties'] as Record<string, unknown> | undefined;
+      
+      // Include traffic source data (if available from original-source plugin)
+      const trafficSource = getTrafficSource();
+      const pageProperties = {
+        page_name: props?.['name'] || 'unknown',
+        ...getBrowserContext(config),
+        ...(trafficSource || {}),  // Merge traffic source data
+        ...props
+      };
+      
       sendEvent(config, {
         eventType: 'Page Viewed',
-        properties: { page_name: props?.['name'] || 'unknown', ...getBrowserContext(config), ...props }
+        properties: pageProperties
       });
     },
 

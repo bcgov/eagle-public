@@ -17,6 +17,7 @@ interface EnvConfig {
   ANALYTICS_API_URL?: string | null;
   ANALYTICS_DEBUG?: boolean;
   ANALYTICS_ENHANCED_TRACKING?: boolean;
+  ANALYTICS_TRAFFIC_TRACKING?: boolean;
   GH_HASH?: string;
 }
 

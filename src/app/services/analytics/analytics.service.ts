@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import Analytics from 'analytics';
-import type { AnalyticsInstance } from 'analytics';
+import type { AnalyticsInstance, AnalyticsPlugin } from 'analytics';
+import { originalSourcePlugin } from '@analytics/original-source-plugin';
 import { penguinAnalyticsPlugin } from './penguin-analytics-plugin';
 import { ConfigService } from '../config.service';
 
@@ -38,20 +39,32 @@ export class AnalyticsService {
 
     const debug = config.ANALYTICS_DEBUG ?? (config.ENVIRONMENT !== 'prod');
     const enhancedTracking = config.ANALYTICS_ENHANCED_TRACKING ?? false;
+    const trafficTracking = config.ANALYTICS_TRAFFIC_TRACKING ?? false;
 
+    const plugins: AnalyticsPlugin[] = [];
+
+    // Add traffic source plugin first (if enabled) - stores source in localStorage
+    if (trafficTracking) {
+      plugins.push(originalSourcePlugin());
+    }
+
+    // Add penguin analytics plugin - sends events to backend
     const plugin = penguinAnalyticsPlugin({ 
       apiUrl, 
       sourceApp: 'eagle-public', 
       debug,
       enhancedTracking 
     });
+    plugins.push(plugin);
+    
     this.plugin = plugin as unknown as PluginWithStartTracking;
-    this.analytics = Analytics({ app: 'eagle-public', debug, plugins: [plugin] });
+    this.analytics = Analytics({ app: 'eagle-public', debug, plugins });
     this.initialized = true;
     
     console.log('Analytics initialized with API URL:', apiUrl);
     if (debug) {
       console.log('Enhanced tracking (browser context):', enhancedTracking ? 'enabled' : 'disabled');
+      console.log('Traffic source tracking:', trafficTracking ? 'enabled' : 'disabled');
     }
   }
 

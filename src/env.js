@@ -41,6 +41,7 @@
   window.__env.ANALYTICS_API_URL = '/api/analytics';
   window.__env.ANALYTICS_DEBUG = true;
   window.__env.ANALYTICS_ENHANCED_TRACKING = true;  // Browser context data (timezone, screen size)
+  window.__env.ANALYTICS_TRAFFIC_TRACKING = true;   // Traffic source tracking (utm, referrer parsing)
 
   // Build hash - replaced during CI build (not used in local dev)
   window.__env.GH_HASH = 'local-build';
