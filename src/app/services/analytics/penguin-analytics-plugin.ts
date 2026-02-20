@@ -133,6 +133,43 @@ const getBrowserContext = (config: PenguinAnalyticsConfig): Record<string, unkno
     const primaryBrand = uaData?.brands?.find(b => !b.brand.includes('Not'))
       || uaData?.brands?.[0];
 
+    // Fallback browser detection from user agent string
+    const detectBrowser = (): { name: string; version: string } => {
+      const ua = navigator.userAgent;
+      if (ua.includes('Firefox/')) {
+        const match = ua.match(/Firefox\/(\d+)/);
+        return { name: 'Firefox', version: match?.[1] || '' };
+      }
+      if (ua.includes('Safari/') && !ua.includes('Chrome')) {
+        const match = ua.match(/Version\/(\d+)/);
+        return { name: 'Safari', version: match?.[1] || '' };
+      }
+      if (ua.includes('Edg/')) {
+        const match = ua.match(/Edg\/(\d+)/);
+        return { name: 'Edge', version: match?.[1] || '' };
+      }
+      if (ua.includes('Chrome/')) {
+        const match = ua.match(/Chrome\/(\d+)/);
+        return { name: 'Chrome', version: match?.[1] || '' };
+      }
+      return { name: 'Unknown', version: '' };
+    };
+
+    // Fallback platform detection from user agent string
+    const detectPlatform = (): string => {
+      const ua = navigator.userAgent;
+      if (ua.includes('Windows')) return 'Windows';
+      if (ua.includes('Mac OS X') || ua.includes('Macintosh')) return 'macOS';
+      if (ua.includes('iPhone') || ua.includes('iPad')) return 'iOS';
+      if (ua.includes('Android')) return 'Android';
+      if (ua.includes('Linux')) return 'Linux';
+      if (ua.includes('CrOS')) return 'ChromeOS';
+      return navigator.platform || 'Unknown';
+    };
+
+    const browserFallback = detectBrowser();
+    const platformFallback = detectPlatform();
+
     return {
       ...basicContext,
       url: window.location.href,  // Full URL (may include query params)
@@ -153,9 +190,9 @@ const getBrowserContext = (config: PenguinAnalyticsConfig): Record<string, unkno
 
       // Device & browser detection
       user_agent: navigator.userAgent,
-      platform: uaData?.platform || navigator.platform,
-      browser: primaryBrand?.brand,
-      browser_version: primaryBrand?.version,
+      platform: uaData?.platform || platformFallback,
+      browser: primaryBrand?.brand || browserFallback.name,
+      browser_version: primaryBrand?.version || browserFallback.version,
       mobile: uaData?.mobile ?? (navigator.maxTouchPoints > 0),
       touch_points: navigator.maxTouchPoints,
 
