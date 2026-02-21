@@ -391,6 +391,7 @@ export class SearchFilterTemplateComponent implements OnInit, AfterViewInit, OnD
     // Track search execution
     const activeFilterCount = Object.keys(searchPackage.filters).length;
     this.analytics.track('Search Executed', {
+      search_term: searchPackage.keywords || '',
       has_keywords: !!searchPackage.keywords,
       keyword_count: searchPackage.keywords ? searchPackage.keywords.split(' ').length : 0,
       filter_count: activeFilterCount,
