@@ -6,6 +6,7 @@ import { LoadingStateService } from './loading-state.service';
 
 interface EnvConfig {
   logLevel?: number;
+  LOG_LEVEL?: number;  // From /api/config
   configEndpoint?: boolean;
   ENVIRONMENT?: string;
   BANNER_COLOUR?: string;
@@ -53,6 +54,12 @@ export class ConfigService {
 
   // Expose config as a computed signal that components can react to
   public readonly config = computed(() => this._config());
+  
+  constructor() {
+    // Expose ConfigService on window for LoggingService to access
+    // (avoids circular dependency since LoggingService can't inject ConfigService)
+    (window as any).__configService = this;
+  }
 
   // UI state defaults
   private _isApplistListVisible = false;
@@ -64,10 +71,6 @@ export class ConfigService {
   // Map state (TODO: store these in URL instead)
   private _baseLayerName = 'World Topographic';
   private _mapBounds: any = null;
-
-  constructor() {
-    // No pre-initialization needed - config comes from env.js then optionally API
-  }
 
   /**
    * Initialize the Config Service.

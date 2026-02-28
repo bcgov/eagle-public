@@ -32,7 +32,6 @@ export class AnalyticsService {
     
     // Skip analytics if no API URL configured
     if (!apiUrl) {
-      console.log('Analytics disabled: ANALYTICS_API_URL not configured');
       this.initialized = true;
       return;
     }
@@ -61,8 +60,8 @@ export class AnalyticsService {
     this.analytics = Analytics({ app: 'eagle-public', debug, plugins });
     this.initialized = true;
     
-    console.log('Analytics initialized with API URL:', apiUrl);
     if (debug) {
+      console.log('Analytics initialized with API URL:', apiUrl);
       console.log('Enhanced tracking (browser context):', enhancedTracking ? 'enabled' : 'disabled');
       console.log('Traffic source tracking:', trafficTracking ? 'enabled' : 'disabled');
     }

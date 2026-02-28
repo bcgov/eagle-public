@@ -1,11 +1,11 @@
 import { Injectable } from '@angular/core';
 
 export enum LogLevel {
-  ERROR = 0,
-  WARN = 1,
+  ALL = 0,
+  DEBUG = 1,
   INFO = 2,
-  DEBUG = 3,
-  TRACE = 4
+  WARN = 3,
+  ERROR = 4
 }
 
 export interface LogEntry {
@@ -19,22 +19,43 @@ export interface LogEntry {
 
 @Injectable({ providedIn: 'root' })
 export class LoggingService {
-  private minLevel: LogLevel = LogLevel.DEBUG;
-  private environment: string;
   
-  constructor() {
-    // Get environment directly from localStorage to avoid circular dependency
-    const deployment_env = window.localStorage.getItem('from_public_server--deployment_env');
-    this.environment = deployment_env || 'local';
-    
-    // Set minimum log level based on environment
-    if (this.environment === 'prod') {
-      this.minLevel = LogLevel.ERROR; // Only errors in production
-    } else if (this.environment === 'test') {
-      this.minLevel = LogLevel.INFO; // Info and above in test
-    } else {
-      this.minLevel = LogLevel.DEBUG; // Everything in dev/local
+  /**
+   * Get the minimum log level from ConfigService (populated from /api/config).
+   * Falls back to window.__env for early logs before config loads.
+   * Log levels: 0=All, 1=Debug, 2=Info, 3=Warn, 4=Error
+   */
+  private get minLevel(): LogLevel {
+    // Try to read from ConfigService (exposed on window to avoid circular deps)
+    // ConfigService.config() contains merged env.js + /api/config values
+    const configService = (window as any).__configService;
+    if (configService?.config) {
+      const config = configService.config();
+      // API returns LOG_LEVEL, env.js uses logLevel
+      if (config?.LOG_LEVEL !== undefined) {
+        return config.LOG_LEVEL;
+      }
+      if (config?.logLevel !== undefined) {
+        return config.logLevel;
+      }
     }
+    
+    // Fallback: check window.__env (set by env.js or Dockerfile)
+    const envLogLevel = (window as any).__env?.logLevel;
+    if (typeof envLogLevel === 'number') {
+      return envLogLevel;
+    }
+    
+    // Default: show all logs until config loads
+    return LogLevel.ALL;
+  }
+  
+  private get environment(): string {
+    const configService = (window as any).__configService;
+    if (configService?.config) {
+      return configService.config()?.ENVIRONMENT || 'local';
+    }
+    return (window as any).__env?.ENVIRONMENT || 'local';
   }
 
   /**
@@ -46,9 +67,10 @@ export class LoggingService {
 
   /**
    * Check if a log level should be output
+   * Only log if entry.level >= minLevel (higher level = more severe)
    */
   private shouldLog(level: LogLevel): boolean {
-    return level <= this.minLevel;
+    return level >= this.minLevel;
   }
 
   /**
@@ -87,10 +109,8 @@ export class LoggingService {
         console.info(`🔵 ${timestamp} ${prefix}`, entry.message, entry.data || '');
         break;
       case LogLevel.DEBUG:
+      case LogLevel.ALL:
         console.log(`🟢 ${timestamp} ${prefix}`, entry.message, entry.data || '');
-        break;
-      case LogLevel.TRACE:
-        console.log(`⚪ ${timestamp} ${prefix}`, entry.message, entry.data || '');
         break;
     }
   }
@@ -128,10 +148,10 @@ export class LoggingService {
   }
 
   /**
-   * Log a trace message (very verbose)
+   * Log a trace message (very verbose) - uses DEBUG level
    */
   trace(message: string, source?: string, data?: any): void {
-    const entry = this.createLogEntry(LogLevel.TRACE, message, source, data);
+    const entry = this.createLogEntry(LogLevel.DEBUG, message, source, data);
     this.output(entry);
   }
 
