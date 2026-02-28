@@ -105,6 +105,11 @@
 
 /* Tablet and mobile styles */
 @media (max-width: 1126px) {
+  /* Extra bottom padding for PCP banner on mobile */
+  .project .pcp-banner {
+    padding-bottom: 3rem !important;
+  }
+
   .project .project-tabs {
     padding-inline: .5rem;
   }
