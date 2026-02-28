@@ -28,9 +28,11 @@ COPY . .
 # Configure env.js for deployed environment:
 # - configEndpoint=true: App fetches config from /api/config at runtime
 # - API_LOCATION cleared: Forces use of relative paths (nginx handles routing)
+# - logLevel=4: Only show errors in production (not debug/info logs)
 # - All other config (ENVIRONMENT, ANALYTICS_API_URL, etc.) comes from API
 RUN sed -i 's/configEndpoint = false/configEndpoint = true/' src/env.js && \
-    sed -i "s/window.__env.API_LOCATION = .*/window.__env.API_LOCATION = null;/" src/env.js
+    sed -i "s/window.__env.API_LOCATION = .*/window.__env.API_LOCATION = null;/" src/env.js && \
+    sed -i 's/window.__env.logLevel = 0/window.__env.logLevel = 4/' src/env.js
 
 # Build production bundle
 RUN yarn build
