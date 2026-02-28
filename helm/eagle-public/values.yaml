@@ -74,3 +74,8 @@ autoscaling:
   minReplicas: 1
   maxReplicas: 3
   targetCPUUtilizationPercentage: 80
+
+# Pod Disruption Budget for zero-downtime deployments
+podDisruptionBudget:
+  enabled: false
+  minAvailable: 1
