@@ -5,41 +5,38 @@
             <div class="content">
                 @if (project()?.commentPeriodForBanner) {
                     <div class="pcp-banner col-sm-12">
-                        @if (project()!.commentPeriodForBanner!.isMet) {
-                            <div>
-                                <engagement-banner-wc [attr.engagementurl]="project()!.commentPeriodForBanner!.metURL"></engagement-banner-wc>
-                            </div>
-                        }
-                        @if (!project()!.commentPeriodForBanner!.isMet) {
-                            <div class="pcp-banner-content">
-                                <div class="pcp-banner-header">
-                                    <div class="pcp-banner-info">
-                                        <h2>Public Comment Period is {{project()!.commentPeriodForBanner!.commentPeriodStatus}}</h2>
-                                        <h5>{{project()!.commentPeriodForBanner!.dateStarted | date: 'MMMM d'}} -
-                                        {{project()!.commentPeriodForBanner!.longEndDate.toFormat('MMMM dd @ hh:mm a ZZZZ')}}</h5>
-                                    </div>
-                                    @if (project()!.commentPeriodForBanner!.commentPeriodStatus === 'Open') {
-                                        <div class="pcp-banner-actions">
-                                            <button type="button" class="btn btn-outline-warning" (click)="goToViewComments()">
-                                                View Comment Period
-                                            </button>
-                                        </div>
-                                    }
+                        <div class="pcp-banner-content">
+                            <div class="pcp-banner-header">
+                                <div class="pcp-banner-info">
+                                    <h2>Public Comment Period is {{project()!.commentPeriodForBanner!.commentPeriodStatus}}</h2>
+                                    <h5>{{project()!.commentPeriodForBanner!.dateStarted | date: 'MMMM d'}} -
+                                    {{project()!.commentPeriodForBanner!.longEndDate.toFormat('MMMM dd @ hh:mm a ZZZZ')}}</h5>
                                 </div>
-                                @if (project()!.commentPeriodForBanner!.informationLabel || project()!.commentPeriodForBanner!.instructions) {
-                                    <div class="pcp-banner-description">
-                                        @if (project()!.commentPeriodForBanner!.informationLabel) {
-                                            <p>
-                                                This Public Comment Period is regarding the <b>{{project()!.commentPeriodForBanner!.informationLabel}}</b>
-                                            </p>
-                                        }
-                                        @if (project()!.commentPeriodForBanner!.informationLabel === null) {
-                                            <div id="instructions" [innerHTML]="project()!.commentPeriodForBanner!.instructions | safeHtml"></div>
-                                        }
+                                @if (project()!.commentPeriodForBanner!.commentPeriodStatus === 'Open') {
+                                    <div class="pcp-banner-actions">
+                                        <button type="button" class="btn btn-outline-warning" (click)="goToViewComments()">
+                                            @if (project()!.commentPeriodForBanner!.isMet) {
+                                                <span>View on engage.eao.gov.bc.ca</span>
+                                            } @else {
+                                                <span>View Comment Period</span>
+                                            }
+                                        </button>
                                     </div>
                                 }
                             </div>
-                        }
+                            @if (project()!.commentPeriodForBanner!.informationLabel || project()!.commentPeriodForBanner!.instructions) {
+                                <div class="pcp-banner-description">
+                                    @if (project()!.commentPeriodForBanner!.informationLabel) {
+                                        <p>
+                                            This Public Comment Period is regarding the <b>{{project()!.commentPeriodForBanner!.informationLabel}}</b>
+                                        </p>
+                                    }
+                                    @if (!project()!.commentPeriodForBanner!.informationLabel && project()!.commentPeriodForBanner!.instructions) {
+                                        <div id="instructions" [innerHTML]="project()!.commentPeriodForBanner!.instructions | safeHtml"></div>
+                                    }
+                                </div>
+                            }
+                        </div>
                     </div>
                 }
 
