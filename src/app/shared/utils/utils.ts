@@ -97,6 +97,8 @@ export class Utils {
         ];
         break;
       case Constants.optionalProjectDocTabs.APPLICATION: {
+        // Application documents are identified by type and milestone only.
+        // Adding projectPhase filter causes query issues with many AND conditions.
         types = [
           { legislation: 2002, name: 'Application Materials' },
           { legislation: 2018, name: 'Application Materials' },
@@ -108,26 +110,6 @@ export class Utils {
           { legislation: 2018, name: 'EAC Application' },
           { legislation: 2018, name: 'Revised EAC Application' },
         ];
-
-        const applications = [
-          { legislation: 2002, name: 'Post Decision - Amendment' },
-          { legislation: 2018, name: 'Post Decision - Amendment' }
-        ];
-
-        // Special case for phases.
-        const amendmentPhaseIds = this.getIdsByName(applications, list).map(type => type.id);
-
-        // Get all phase list items excluding the matched applications.
-        phases = list.filter(item => {
-          if (item.type === 'projectPhase' && !amendmentPhaseIds.includes(item._id)) {
-            return true;
-          }
-
-          return false;
-        })
-        .map(item => item._id)
-        .join(',');
-
         break;
       }
     }
