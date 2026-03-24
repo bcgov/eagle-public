@@ -186,11 +186,9 @@ jobs:
           helm version
 
       - name: Log into OpenShift
-        uses: redhat-actions/oc-login@v1
-        with:
-          openshift_server_url: ${{ secrets.OPENSHIFT_URL }}
-          openshift_token: ${{ secrets.OPENSHIFT_TOKEN }}
-          namespace: ${{ env.OPENSHIFT_NAMESPACE_DEV }}
+        run: |
+          oc login --server=${{ secrets.OPENSHIFT_URL }} --token=${{ secrets.OPENSHIFT_TOKEN }}
+          oc project ${{ env.OPENSHIFT_NAMESPACE_DEV }}
 
       - name: Deploy with Helm
         run: |
