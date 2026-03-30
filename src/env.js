@@ -2,48 +2,45 @@
   window.__env = window.__env || {};
 
   // ==========================================================================
-  // EAGLE-PUBLIC ENVIRONMENT CONFIGURATION
+  // EAGLE-PUBLIC LOCAL DEVELOPMENT CONFIGURATION
   // ==========================================================================
-  // 
+  //
   // LOCAL DEV (configEndpoint = false):
-  //   - Uses values below directly
-  //   - Hits APIs directly (no proxy)
+  //   Uses these values directly. Set URLs to your local services.
   //
   // DEPLOYED (configEndpoint = true):
-  //   - Dockerfile runs: sed -i 's/configEndpoint = false/configEndpoint = true/' src/env.js
-  //   - App fetches runtime config from /api/config
-  //   - API config values override these defaults
+  //   Dockerfile runs: sed -i 's/configEndpoint = false/configEndpoint = true/'
+  //   App then fetches runtime config from /api/config (nginx ConfigMap).
+  //   Those values override everything below.
   //
   // ==========================================================================
+
+  // false = use values below (local dev)
+  // true  = fetch from /api/config (Dockerfile sed changes this at build time)
+  window.__env.configEndpoint = false;
 
   // Log level: 0 = All, 1 = Debug, 2 = Info, 3 = Warn, 4 = Error
   window.__env.logLevel = 0;
 
-  // Get config from remote host?
-  // LOCAL: false (use values below)
-  // DEPLOYED: true (Dockerfile changes this via sed, then app fetches from /api/config)
-  window.__env.configEndpoint = false;
-
-  // Environment name - for display purposes
+  // Environment label
   window.__env.ENVIRONMENT = 'local';
 
-  // API configuration - full URL for local dev
-  // NOTE: eagle-api must have CORS configured to allow localhost:4200
-  window.__env.API_LOCATION = 'https://eagle-dev.apps.silver.devops.gov.bc.ca';
+  // API target — proxy.conf.js reads this to route /api and /analytics.
+  // To use the dev environment: change to 'https://eagle-dev.apps.silver.devops.gov.bc.ca'
+  // and set configEndpoint = true above so config is fetched from /api/config.
+  window.__env.API_LOCATION = 'http://localhost:3000';
   window.__env.API_PATH = '/api';
 
-  // Admin app URL (for links)
+  // eagle-admin link
   window.__env.ADMIN_PATH = 'http://localhost:4200/admin/';
 
-  // Analytics configuration
-  // LOCAL: /api/analytics - proxy rewrites to localhost:3001/analytics
-  // DEPLOYED: fetched from /api/config (points to penguin-analytics service URL)
-  window.__env.ANALYTICS_API_URL = '/api/analytics';
+  // Analytics — proxied through /analytics (eagle-api forwards to penguin-analytics)
+  window.__env.ANALYTICS_API_URL = '/analytics';
   window.__env.ANALYTICS_DEBUG = true;
-  window.__env.ANALYTICS_ENHANCED_TRACKING = true;  // Browser context data (timezone, screen size)
-  window.__env.ANALYTICS_TRAFFIC_TRACKING = true;   // Traffic source tracking (utm, referrer parsing)
+  window.__env.ANALYTICS_ENHANCED_TRACKING = true;
+  window.__env.ANALYTICS_TRAFFIC_TRACKING = true;
 
-  // Build hash - replaced during CI build (not used in local dev)
+  // Build hash — replaced during CI build
   window.__env.GH_HASH = 'local-build';
 
 }(this));

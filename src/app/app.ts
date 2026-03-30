@@ -26,13 +26,6 @@ export class App implements OnInit, OnDestroy {
   currentUrl = signal<string>('');
 
   ngOnInit(): void {
-    // Initialize config service
-    this.configService.init();
-    this.configService.lists.subscribe();
-    
-    // Initialize analytics tracking immediately
-    this.analyticsService.startTracking();
-    
     // Track current URL for route-specific styling and analytics
     this.currentUrl.set(this.router.url);
     

@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable, of, lastValueFrom } from 'rxjs';
-import { map, catchError } from 'rxjs/operators';
+import { map, catchError, finalize } from 'rxjs/operators';
 
 import { ApiService } from './api';
 import { SearchResults } from 'app/models/search';
@@ -73,29 +73,22 @@ export class SearchService {
 
   getTopNewsItems() {
     this.loadingState.startLoading('home', 'Loading recent activities');
-    const searchResults = this.api.getTopNewsItems()
+    return this.api.getTopNewsItems()
       .pipe(
         map(res => {
-          const allResults = [] as any;
-          // Handle case where API returns empty object {} instead of array
+          const allResults: News[] = [];
           if (Array.isArray(res)) {
-            res.forEach(item => {
-              const r = new News(item);
-              allResults.push(r);
-            });
+            res.forEach(item => allResults.push(new News(item)));
           }
-          this.loadingState.stopLoading('home');
           return allResults;
         }),
         catchError((error) => {
           this.logger.error('Error fetching top news items', 'SearchService', error);
-          this.loadingState.stopLoading('home');
           this.isError = true;
-          // if call fails, return empty array
-          return of([]);
-        })
+          return of([] as News[]);
+        }),
+        finalize(() => this.loadingState.stopLoading('home'))
       );
-    return searchResults;
   }
 
   async fetchData(searchParamObject: SearchParamObject) {

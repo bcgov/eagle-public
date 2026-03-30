@@ -144,8 +144,8 @@
   background-color: transparent;
 }
 
-/* Add border under Contact Us on mobile */
-@media (max-width: 991px) {
+/* Add border around nav items in collapsed mobile menu */
+@media (max-width: 767px) {
   .nav-item:first-child .nav-link {
     border-top: 2px solid var(--gold);
   }

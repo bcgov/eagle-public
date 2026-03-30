@@ -106,9 +106,6 @@
         },
         "serve": {
           "builder": "@angular/build:dev-server",
-          "options": {
-            "proxyConfig": "proxy.conf.json"
-          },
           "configurations": {
             "production": {
               "buildTarget": "eagle-public:build:production"
@@ -116,6 +113,9 @@
             "development": {
               "buildTarget": "eagle-public:build:development"
             }
+          },
+          "options": {
+            "proxyConfig": "proxy.conf.js"
           },
           "defaultConfiguration": "development"
         },

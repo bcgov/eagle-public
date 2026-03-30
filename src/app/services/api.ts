@@ -34,7 +34,7 @@ export class ApiService {
 
   // Configuration getters - delegated to ConfigService
   get apiPath(): string {
-    return this.configService.config().API_PATH || 'https://eagle-dev.apps.silver.devops.gov.bc.ca/api/public';
+    return this.configService.getApiPath();
   }
 
   get adminUrl(): string {

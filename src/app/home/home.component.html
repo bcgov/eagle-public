@@ -61,7 +61,7 @@
                           </h3>
                           <small class="d-block text-muted mb-3">{{ item.dateAdded | date: 'longDate' }}</small>
                         </div>
-                        <div class="mb-3 lh-base" [innerHTML]="item.content"></div>
+                        <div class="mb-3 lh-base" [innerHTML]="safeHtml(item.content)"></div>
                         <div class="d-flex flex-wrap gap-2">
                           @if (item.type === 'Project Notification News') {
                             <a class="btn btn-sm btn-outline-primary" 
