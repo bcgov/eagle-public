@@ -15,12 +15,12 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     provideHttpClient(withInterceptors([httpCacheInterceptor, loggingInterceptor])),
     { provide: ErrorHandler, useClass: GlobalErrorHandler },
-    provideAppInitializer(() => {
+    provideAppInitializer(async () => {
       const configService = inject(ConfigService);
       const analyticsService = inject(AnalyticsService);
 
-      // Load config from env.js (sync). If deployed, kicks off non-blocking /api/config fetch.
-      configService.init();
+      // Load config — awaits /api/config fetch so analytics gets correct environment values.
+      await configService.init();
 
       // Initialize analytics. Skips silently if ANALYTICS_API_URL is empty.
       analyticsService.initialize();

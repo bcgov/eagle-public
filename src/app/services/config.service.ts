@@ -72,11 +72,12 @@ export class ConfigService {
    * Initialize the Config Service.
    *
    * 1. Load env.js values (synchronous — already on window.__env)
-   * 2. If deployed (configEndpoint=true), kick off async config fetch (non-blocking)
+   * 2. If deployed (configEndpoint=true), fetch and merge /api/config before returning
    *
-   * No network requests block this method. Lists are lazy-loaded later.
+   * Must be awaited so that dependent services (analytics, Keycloak) initialize
+   * with the correct environment-specific values from the API config.
    */
-  public init(): void {
+  public async init(): Promise<void> {
     // Step 1: Start with env.js values (loaded before Angular via script tag)
     this._config.set({ ...(window.__env || {}) });
 
@@ -84,9 +85,9 @@ export class ConfigService {
       console.log('ConfigService: env.js values:', this._config());
     }
 
-    // Step 2: If deployed (configEndpoint=true), fetch config from API (non-blocking)
+    // Step 2: If deployed (configEndpoint=true), await config from API before continuing
     if (this._config().configEndpoint === true) {
-      this.fetchRemoteConfig();
+      await this.fetchRemoteConfig();
     }
 
     this.configLoaded = true;
