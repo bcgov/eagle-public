@@ -60,14 +60,4 @@ body {
   margin-top: 1.5rem;
 }
 
-/*
- * Neutralize inline styles from content pasted from Microsoft Word/Office.
- * Word injects background-color, font-family, font-size, and other styles
- * on wrapper divs and spans that break the site's styling.
- */
-.OutlineElement,
-.OutlineElement * {
-  background-color: transparent !important;
-  font-family: inherit !important;
-  font-size: inherit !important;
-}
+/* Word-paste inline style overrides removed — sanitized in word-html-sanitizer.ts at render time */

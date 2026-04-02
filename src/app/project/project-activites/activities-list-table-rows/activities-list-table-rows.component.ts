@@ -6,6 +6,7 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { TableRowComponent, ITableMessage } from 'app/shared/components/table-template/table-row-component';
 import { TableObject } from 'app/shared/components/table-template/table-object';
 import { AnalyticsService } from 'app/services/analytics/analytics.service';
+import { sanitizeWordHtml } from 'app/shared/utils/word-html-sanitizer';
 
 @Component({
   selector: 'tr[app-activities-list-table-rows]',
@@ -47,6 +48,6 @@ export class ActivitiesListTableRowsComponent implements TableRowComponent {
   }
 
   getSafeHtml(content: string): SafeHtml {
-    return this.sanitizer.bypassSecurityTrustHtml(content || '');
+    return this.sanitizer.bypassSecurityTrustHtml(sanitizeWordHtml(content));
   }
 }
