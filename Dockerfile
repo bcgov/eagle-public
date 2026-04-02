@@ -107,6 +107,7 @@ server {
     add_header X-Frame-Options "DENY" always;
     add_header X-XSS-Protection "1; mode=block" always;
     add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Permissions-Policy "browsing-topics=(), run-ad-auction=(), join-ad-interest-group=(), private-state-token-redemption=(), private-state-token-issuance=(), private-aggregation=(), attribution-reporting=()" always;
 
     # Health check endpoint
     location /health {
@@ -122,7 +123,13 @@ server {
         index index.html;
         try_files $uri $uri/ /index.html;
 
-        # Cache static assets
+        # Runtime config — must never be cached (changes between deployments)
+        location = /env.js {
+            expires -1;
+            add_header Cache-Control "no-cache, no-store, must-revalidate";
+        }
+
+        # Cache static assets (hashed filenames safe to cache long-term)
         location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
             expires 1y;
             add_header Cache-Control "public, immutable";
