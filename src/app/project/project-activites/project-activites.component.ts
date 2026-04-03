@@ -4,7 +4,7 @@ import { Router, ActivatedRoute, Params } from '@angular/router';
 import { takeWhile } from 'rxjs/operators';
 import { toObservable } from '@angular/core/rxjs-interop';
 
-import { ActivitiesListTableRowsComponent } from './activities-list-table-rows/activities-list-table-rows.component';
+import { ActivityCardComponent } from 'app/shared/components/activity-card/activity-card.component';
 import { IColumnObject, TableObject } from 'app/shared/components/table-template/table-object';
 import { TableTemplate } from 'app/shared/components/table-template/table-template';
 import { ITableMessage } from 'app/shared/components/table-template/table-row-component';
@@ -40,7 +40,7 @@ export class ProjectActivitesComponent implements OnInit, OnDestroy {
   public loading = this.loadingState.getOperationState('table-projectActivities');
   public queryParams: Params = {};
 
-  public tableData = signal<TableObject>(new TableObject({ component: ActivitiesListTableRowsComponent }));
+  public tableData = signal<TableObject>(new TableObject({ component: ActivityCardComponent, data: { showProjectInfo: false } }));
   public tableColumns: IColumnObject[] = [
     {
       name: 'Headline',
@@ -67,7 +67,8 @@ export class ProjectActivitesComponent implements OnInit, OnDestroy {
         const currentTableData = this.tableData();
         // Create new TableObject to ensure change detection with OnPush
         const updatedTableData = new TableObject({
-          component: ActivitiesListTableRowsComponent,
+          component: ActivityCardComponent,
+          data: { showProjectInfo: false },
           pageSize: currentTableData.pageSize,
           currentPage: currentTableData.currentPage,
           sortBy: currentTableData.sortBy,

@@ -142,6 +142,7 @@ main p {
   background: var(--bs-secondary-bg) !important;
 }
 
+/* In home page context, render td as a full-width block (card mode) */
 .home-news-feed .table tbody td {
   display: block;
   padding: 1.25rem 0.5rem;
@@ -160,26 +161,6 @@ main p {
 .home-news-feed .mt-4 {
   padding: 1.5rem;
   padding-top: 0;
-}
-
-.home-news-feed h3 {
-  font-size: var(--bs-font-size-6);
-  font-weight: var(--bs-font-weight-normal);
-}
-
-.home-news-feed h3 span.font-weight-bold {
-  color: var(--bc-blue);
-  font-weight: var(--bs-font-weight-bold);
-}
-
-.home-news-feed h3 .home-news-feed__headline {
-  display: block;
-  color: var(--bc-gray);
-}
-
-.home-news-feed .content-btn-alt {
-  margin-right: 0.5rem;
-  margin-bottom: 0.5rem;
 }
 
 .news-block-more {

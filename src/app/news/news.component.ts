@@ -10,7 +10,7 @@ import { IColumnObject, TableObject } from 'app/shared/components/table-template
 import { ITableMessage } from 'app/shared/components/table-template/table-row-component';
 import { TableTemplate } from 'app/shared/components/table-template/table-template';
 import { TableTemplateComponent } from 'app/shared/components/table-template/table-template.component';
-import { NewsListTableRowsComponent } from './news-list-table-rows/news-list-table-rows.component';
+import { ActivityCardComponent } from 'app/shared/components/activity-card/activity-card.component';
 import { HeroBannerComponent } from 'app/shared/hero-banner/hero-banner.component';
 import { SearchFilterTemplateComponent } from 'app/shared/components/search-filter-template/search-filter-template.component';
 
@@ -33,7 +33,7 @@ export class NewsListComponent implements OnInit, OnDestroy {
   private alive = true;
 
   loading = this.loadingState.getOperationState('table-news');
-  tableData = signal<TableObject>(new TableObject({ component: NewsListTableRowsComponent }));
+  tableData = signal<TableObject>(new TableObject({ component: ActivityCardComponent }));
   
   tableColumns: IColumnObject[] = [
     {
@@ -61,7 +61,7 @@ export class NewsListComponent implements OnInit, OnDestroy {
         // Use untracked to read current tableData without creating a dependency
         const currentTableData = untracked(() => this.tableData());
         const newTableData = new TableObject({
-          component: NewsListTableRowsComponent,
+          component: ActivityCardComponent,
           pageSize: currentTableData.pageSize,
           currentPage: currentTableData.currentPage,
           sortBy: currentTableData.sortBy

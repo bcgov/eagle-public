@@ -1,7 +1,6 @@
 import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
@@ -12,13 +11,14 @@ import { LoadingStateService } from 'app/services/loading-state.service';
 import { News } from 'app/models/news';
 import { HeroBannerComponent, HeroBannerAction } from '../shared/hero-banner/hero-banner.component';
 import { InfoCardComponent, InfoCardButton } from '../shared/info-card/info-card.component';
+import { ActivityCardComponent } from '../shared/components/activity-card/activity-card.component';
 
 @Component({
   selector: 'app-home',
   templateUrl: './home.component.html',
   styleUrl: './home.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, RouterModule, HeroBannerComponent, InfoCardComponent],
+  imports: [CommonModule, RouterModule, HeroBannerComponent, InfoCardComponent, ActivityCardComponent],
   standalone: true
 })
 export class HomeComponent implements OnInit, OnDestroy {
@@ -26,7 +26,6 @@ export class HomeComponent implements OnInit, OnDestroy {
   private apiService = inject(ApiService);
   private logger = inject(LoggingService);
   private loadingState = inject(LoadingStateService);
-  private sanitizer = inject(DomSanitizer);
   private destroy$ = new Subject<boolean>();
 
   results = signal<News[]>([]);
@@ -104,9 +103,5 @@ export class HomeComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next(true);
     this.destroy$.complete();
-  }
-
-  safeHtml(html: string): SafeHtml {
-    return this.sanitizer.bypassSecurityTrustHtml(html || '');
   }
 }
