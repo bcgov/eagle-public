@@ -531,13 +531,14 @@ export class ProjlistMapComponent implements AfterViewInit, OnDestroy {
     // Create Map for O(1) lookups
     const projectsMap = new Map(projectsList.map(p => [p._id, p]));
 
+    const visibilityUpdates = new Map<string, boolean>();
     markers.forEach((markerState, projectId) => {
       const project = projectsMap.get(projectId);
       if (project) {
-        const isVisible = mapBounds.contains(markerState.marker.getLatLng());
-        this.mapStateService.setMarkerVisibility(projectId, isVisible);
+        visibilityUpdates.set(projectId, mapBounds.contains(markerState.marker.getLatLng()));
       }
     });
+    this.mapStateService.setMarkerVisibilitiesBatch(visibilityUpdates);
   }
 
   private fitBounds(bounds: any = null, animate = false): void {
@@ -742,7 +743,7 @@ export class ProjlistMapComponent implements AfterViewInit, OnDestroy {
       }
 
       // Update component with project data
-      this.popupComponentRef.instance.proj = project;
+      this.popupComponentRef.setInput('proj', project);
       this.popupComponentRef.changeDetectorRef.detectChanges();
 
       // Create new popup instance with fresh content reference

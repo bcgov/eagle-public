@@ -139,14 +139,21 @@ export class MapStateService {
   }
 
   /**
-   * Update marker visibility
+   * Update visibility for multiple markers in a single signal update.
+   * Use this instead of calling setMarkerVisibility in a loop to avoid
+   * O(n²) Map copies and excessive signal change notifications.
    */
-  setMarkerVisibility(projectId: string, isVisible: boolean): void {
+  setMarkerVisibilitiesBatch(updates: Map<string, boolean>): void {
     const currentMarkers = new Map(this.markers());
-    const state = currentMarkers.get(projectId);
-    if (state) {
-      state.isVisible = isVisible;
-      currentMarkers.set(projectId, state);
+    let changed = false;
+    updates.forEach((isVisible, projectId) => {
+      const state = currentMarkers.get(projectId);
+      if (state && state.isVisible !== isVisible) {
+        currentMarkers.set(projectId, { ...state, isVisible });
+        changed = true;
+      }
+    });
+    if (changed) {
       this.markers.set(currentMarkers);
     }
   }
