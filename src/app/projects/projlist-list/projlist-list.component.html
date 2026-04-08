@@ -10,8 +10,8 @@
       </div>
     }
 
-    <!-- No Results -->
-    @if (!loading() && loadedApps().length === 0) {
+    <!-- No Results (only after data has loaded) -->
+    @if (!loading() && projects() !== null && loadedApps().length === 0) {
       <div class="no-results">
         <strong>No projects found</strong>
       </div>
@@ -97,7 +97,7 @@
       </ul>
 
       <!-- Load More -->
-      @if (loadedApps().length > 0 && loadedApps().length < projects().length) {
+      @if (loadedApps().length > 0 && loadedApps().length < (projects()?.length ?? 0)) {
         <div class="load-more">
           <button class="btn btn-primary" type="button" title="Load more projects" (click)="loadMore();$event.stopPropagation()" [disabled]="loading()">
             @if (loading()) {

@@ -43,25 +43,26 @@ export class ProjectsComponent implements OnInit, OnDestroy {
   private mapStateService = inject(MapStateService);
   private logger = inject(LoggingService);
   private analytics = inject(AnalyticsService);
-  
-  // Project data signals - immutable state management
-  public allApps = signal<Project[]>([]);
-  
-  // Filtered projects (matches filter criteria)
-  public filterApps = computed(() => this.filterService.filterProjects(this.allApps()));
-  
-  // Projects visible on map (matches filters AND in map bounds)
-  public mapApps = computed(() => this.filterApps());
-  
-  // Projects visible in list (visible on map)
+
+  // null = not yet loaded; [] = loaded but empty; Project[] = loaded with results
+  public allApps = signal<Project[] | null>(null);
+
+  // Filtered projects — null while loading, Project[] once data arrives
+  public filterApps = computed(() => {
+    const apps = this.allApps();
+    return apps === null ? null : this.filterService.filterProjects(apps);
+  });
+
+  // Projects visible on map — always an array (map renders empty markers while loading)
+  public mapApps = computed(() => this.filterApps() ?? []);
+
+  // Projects visible in list — null while loading so the list can distinguish
+  // "not yet loaded" from "loaded but empty"
   public listApps = computed(() => {
     const filtered = this.filterApps();
+    if (filtered === null) return null;
     const bounds = this.mapStateService.currentBounds();
-    
-    if (!bounds) {
-      return filtered;
-    }
-    
+    if (!bounds) return filtered;
     return filtered.filter(project => this.mapStateService.isProjectInBounds(project));
   });
   
@@ -76,10 +77,28 @@ export class ProjectsComponent implements OnInit, OnDestroy {
           this.renderer.removeClass(document.body, 'no-scroll');
         }
       });
+
+    // Kick off data fetch immediately — no need to wait for the DOM (ngOnInit)
+    this.storageService.getCachedProjects$()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (cachedProjects) => {
+          if (cachedProjects && cachedProjects.length > 0) {
+            this.logger.info(`Using ${cachedProjects.length} cached projects`, 'ProjectsComponent');
+            this.allApps.set(cachedProjects);
+          } else {
+            this.getApps();
+          }
+        },
+        error: () => {
+          // Preload failed, load projects normally
+          this.getApps();
+        }
+      });
   }
 
   ngOnInit() {
-    // prevent underlying map actions for list and filters components
+    // Prevent underlying map actions for list and filter overlays
     const applist_list = document.getElementById('applist-list') as HTMLElement;
     if (applist_list) {
       L.DomEvent.disableClickPropagation(applist_list);
@@ -91,26 +110,6 @@ export class ProjectsComponent implements OnInit, OnDestroy {
       L.DomEvent.disableClickPropagation(applist_filters);
       L.DomEvent.disableScrollPropagation(applist_filters);
     }
-
-    // Wait for StorageService preload, then use cache or fallback to direct load
-    this.storageService.getCachedProjects$()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (cachedProjects) => {
-          if (cachedProjects && cachedProjects.length > 0) {
-            // Use cached projects (from preload or previous load)
-            this.logger.info(`Using ${cachedProjects.length} cached projects`, 'ProjectsComponent');
-            this.allApps.set(cachedProjects);
-          } else {
-            // No cache available and no preload in progress - load projects
-            this.getApps();
-          }
-        },
-        error: () => {
-          // Preload failed, load projects normally
-          this.getApps();
-        }
-      });
   }
 
   private getApps(): void {
@@ -120,7 +119,7 @@ export class ProjectsComponent implements OnInit, OnDestroy {
       .pipe(
         takeUntil(this.destroy$),
         finalize(() => {
-          this.logger.info(`Loaded ${this.allApps().length} projects in ${Date.now() - start}ms`, 'ProjectsComponent');
+          this.logger.info(`Loaded ${this.allApps()?.length ?? 0} projects in ${Date.now() - start}ms`, 'ProjectsComponent');
         })
       )
       .subscribe({
@@ -129,6 +128,8 @@ export class ProjectsComponent implements OnInit, OnDestroy {
           this.storageService.cacheProjects(projects);
         },
         error: (error) => {
+          // Set empty array (not null) so the list shows "No projects found" on error
+          this.allApps.set([]);
           this.logger.error('Error loading projects', 'ProjectsComponent', error);
           this.router.navigate(['/']);
         }
@@ -141,9 +142,9 @@ export class ProjectsComponent implements OnInit, OnDestroy {
     // Track projects view toggle
     this.analytics.track('Projects View Changed', {
       view: this.configService.isApplistListVisible ? 'list' : 'map',
-      total_projects: this.allApps().length,
-      filtered_projects: this.filterApps().length,
-      list_projects: this.listApps().length
+      total_projects: this.allApps()?.length ?? 0,
+      filtered_projects: this.filterApps()?.length ?? 0,
+      list_projects: this.listApps()?.length ?? 0
     });
   }
 

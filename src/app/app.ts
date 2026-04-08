@@ -4,7 +4,6 @@ import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
 import { HeaderComponent } from './header/header.component';
 import { FooterComponent } from './footer/footer.component';
 import { ToastContainerComponent } from './shared/components/toast-container/toast-container.component';
-import { ConfigService } from './services/config.service';
 import { AnalyticsService } from './services/analytics/analytics.service';
 import { filter } from 'rxjs/operators';
 
@@ -17,7 +16,6 @@ import { filter } from 'rxjs/operators';
   standalone: true
 })
 export class App implements OnInit, OnDestroy {
-  private configService = inject(ConfigService);
   private analyticsService = inject(AnalyticsService);
   public router = inject(Router);
   

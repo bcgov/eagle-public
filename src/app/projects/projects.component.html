@@ -8,6 +8,7 @@
     <div class="app-list-container">
       <app-projlist-list class="app-list" #applist
         [projects]="listApps()">
+        <!-- null = still loading; [] = loaded but empty; Project[] = results -->
       </app-projlist-list>
     </div>
 

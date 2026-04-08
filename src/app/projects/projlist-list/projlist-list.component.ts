@@ -18,7 +18,7 @@ import { VarDirective } from '../../shared/utils/ng-var.directive';
 })
 export class ProjlistListComponent {
   // NB: this component is bound to the same list of apps as the other components
-  projects = input<Project[]>([]); // from projects component
+  projects = input<Project[] | null>(null); // from projects component
   setCurrentApp = output<Project>(); // to projects component
   unsetCurrentApp = output<Project>(); // to projects component
 
@@ -28,19 +28,20 @@ export class ProjlistListComponent {
   private loadingState = inject(LoadingStateService);
 
   private currentApp: Project | null = null; // for selecting app in list
-  public loading = this.loadingState.getOperationState('projlist-list');
+  public loading = this.loadingState.isLoading;
   private numToLoad = signal<number>(0);
 
   // Computed signal for loaded projects (no mutation)
   public loadedApps = computed(() => {
     const projects = this.projects();
+    if (projects === null) return [];
     const limit = this.numToLoad();
     return projects.slice(0, limit);
   });
 
   // Computed signal for projects with valid coordinates
   public appsWithShapes = computed(() => {
-    return this.projects().filter(a => a.centroid?.length === 2);
+    return (this.projects() ?? []).filter(a => a.centroid?.length === 2);
   });
 
   get clientWidth(): number {
@@ -51,13 +52,14 @@ export class ProjlistListComponent {
     // Initialize with first page of results
     effect(() => {
       const currentProjects = this.projects();
-      
+      if (currentProjects === null) return;
+
       untracked(() => {
         // Clear current selection if the selected app is no longer in the list
         if (this.currentApp && !currentProjects.some(p => p._id === this.currentApp?._id)) {
           this.currentApp = null;
         }
-        
+
         // Initialize page size if not set
         if (this.numToLoad() === 0 && currentProjects.length > 0) {
           this.numToLoad.set(this.configService.listPageSize);
