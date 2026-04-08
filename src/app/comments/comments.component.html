@@ -3,6 +3,15 @@
     <div class="hero-banner-alt">
       <div class="container">
         <div class="hero-banner__content">
+
+          @if (pageLoading()) {
+            <div class="d-flex justify-content-center align-items-center py-5">
+              <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+            </div>
+          } @else {
+
           <h1>{{project()?.name || '-'}}</h1>
         
           @if (commentPeriod() !== null && commentPeriod()?._id) {
@@ -86,6 +95,8 @@
           <button class="btn btn-sm inverted" (click)="goBackToProjectDetails()" type="button">
             {{type() === 'PROJECT' ? 'Back to Project Details' : 'Back to Project Notifications'}}
           </button>
+
+          } <!-- end @else (pageLoading) -->
 
         </div>
       </div>

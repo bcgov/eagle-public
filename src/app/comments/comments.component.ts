@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, OnDestroy, ChangeDetectorRef, ViewEncapsulation, computed } from '@angular/core';
+import { Component, inject, signal, OnDestroy, ChangeDetectorRef, ViewEncapsulation, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DomSanitizer } from '@angular/platform-browser';
@@ -29,7 +29,7 @@ import { AnalyticsService } from '../services/analytics/analytics.service';
   encapsulation: ViewEncapsulation.None,
   standalone: true
 })
-export class CommentsComponent implements OnInit, OnDestroy {
+export class CommentsComponent implements OnDestroy {
   private toastService = inject(ToastService);
   private route = inject(ActivatedRoute);
   private api = inject(ApiService);
@@ -46,6 +46,8 @@ export class CommentsComponent implements OnInit, OnDestroy {
   private analytics = inject(AnalyticsService);
 
   loading = this.loadingState.getOperationState('comments');
+  // True while project or comment period are not yet loaded
+  pageLoading = computed(() => !this.project() || !this.commentPeriod());
   commentPeriod = signal<CommentPeriod | null>(null);
   project = signal<Project | null>(null);
   comments = signal<any[]>([]);
@@ -66,7 +68,7 @@ export class CommentsComponent implements OnInit, OnDestroy {
 
   type = signal<'PROJECT' | 'PROJECT-NOTIFICATION'>('PROJECT');
 
-  ngOnInit() {
+  constructor() {
     // Initialize table options
     const initialTableData = this.tableData();
     initialTableData.options.showPageCountDisplay = true;

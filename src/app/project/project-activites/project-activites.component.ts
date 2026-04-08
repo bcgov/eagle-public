@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ViewChild, ElementRef, inject, signal } from '@angular/core';
+import { Component, OnDestroy, ViewChild, ElementRef, inject, signal } from '@angular/core';
 import { Router, ActivatedRoute, Params } from '@angular/router';
 
 import { takeWhile } from 'rxjs/operators';
@@ -22,7 +22,7 @@ import { SearchFilterTemplateComponent } from 'app/shared/components/search-filt
   imports: [TableTemplateComponent, SearchFilterTemplateComponent],
   standalone: true
 })
-export class ProjectActivitesComponent implements OnInit, OnDestroy {
+export class ProjectActivitesComponent implements OnDestroy {
   @ViewChild('activitiesHeader', { static: false }) activitiesHeader?: ElementRef;
 
   private router = inject(Router);
@@ -41,22 +41,8 @@ export class ProjectActivitesComponent implements OnInit, OnDestroy {
   public queryParams: Params = {};
 
   public tableData = signal<TableObject>(new TableObject({ component: ActivityCardComponent, data: { showProjectInfo: false } }));
-  public tableColumns: IColumnObject[] = [
-    {
-      name: 'Headline',
-      value: 'headine',
-      width: 'col-10',
-      nosort: true
-    },
-    {
-      name: 'Date',
-      value: 'dateAdded',
-      width: 'col-2',
-      nosort: true
-    }
-  ];
 
-  ngOnInit() {
+  constructor() {
     // Get project ID from parent route
     this.projId = this.route.parent?.snapshot.params['projId'] || '';
 
@@ -116,6 +102,21 @@ export class ProjectActivitesComponent implements OnInit, OnDestroy {
       ));
     });
   }
+
+  public tableColumns: IColumnObject[] = [
+    {
+      name: 'Headline',
+      value: 'headine',
+      width: 'col-10',
+      nosort: true
+    },
+    {
+      name: 'Date',
+      value: 'dateAdded',
+      width: 'col-2',
+      nosort: true
+    }
+  ];
 
   onMessageOut(msg: ITableMessage) {
     const params: any = {};

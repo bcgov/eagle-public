@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject, computed, signal } from '@angular/core';
+import { Component, OnDestroy, inject, computed, signal } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 
 import { takeWhile } from 'rxjs/operators';
@@ -19,7 +19,7 @@ import { LoadingStateService } from 'app/services/loading-state.service';
   imports: [TableTemplateComponent],
   standalone: true
 })
-export class PinsComponent implements OnInit, OnDestroy {
+export class PinsComponent implements OnDestroy {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private storageService = inject(StorageService);
@@ -33,8 +33,7 @@ export class PinsComponent implements OnInit, OnDestroy {
     this.loadingState.getOperationState(`pins-${this.projId || 'all'}-page-${this.pinsService.fetchDataConfig.currentPage}`)()
   );
 
-  public tableData = signal<TableObject>(new TableObject({ component: PinsTableRowsComponent }));
-  public tableColumns: any[] = [
+  public readonly tableColumns: any[] = [
     {
       name: 'Nation Name',
       value: 'name',
@@ -47,14 +46,13 @@ export class PinsComponent implements OnInit, OnDestroy {
     }
   ];
 
-  ngOnInit() {
+  public tableData = signal<TableObject>(new TableObject({ component: PinsTableRowsComponent }));
+
+  constructor() {
     const initialTableData = this.tableData();
     initialTableData.tableId = 'pins-table';
-
-    // Hide table controls
     initialTableData.options.showPageCountDisplay = false;
     initialTableData.options.showPageSizePicker = false;
-    
     this.tableData.set(initialTableData);
 
     // Get project ID from parent route

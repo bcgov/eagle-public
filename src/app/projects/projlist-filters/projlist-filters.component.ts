@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ElementRef, signal, ChangeDetectionStrategy, inject } from '@angular/core';
+import { Component, OnDestroy, ElementRef, signal, ChangeDetectionStrategy, inject } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 import { Subject } from 'rxjs';
@@ -19,7 +19,7 @@ import { AnalyticsService } from '../../services/analytics/analytics.service';
   imports: [FormsModule, CustomMultiSelectComponent],
   standalone: true
 })
-export class ProjlistFiltersComponent implements OnInit, OnDestroy {
+export class ProjlistFiltersComponent implements OnDestroy {
   private configService = inject(ConfigService);
   private filterState = inject(FilterStateService);
   private elementRef = inject(ElementRef);
@@ -49,24 +49,7 @@ export class ProjlistFiltersComponent implements OnInit, OnDestroy {
 
   private destroy$ = new Subject<void>();
 
-  get filterCount(): number {
-    const filters = this.filterState.allFilters();
-    return filters.regions.length + 
-           filters.phases.length + 
-           filters.types.length +
-           (filters.applicant ? 1 : 0) +
-           (filters.clFile ? 1 : 0) +
-           (filters.dispId ? 1 : 0) +
-           (filters.publishFrom ? 1 : 0) +
-           (filters.publishTo ? 1 : 0);
-  }
-
-  get clientHeight(): number {
-    return this.elementRef.nativeElement.offsetTop + 
-      this.elementRef.nativeElement.firstElementChild.firstElementChild.clientHeight;
-  }
-
-  public ngOnInit() {
+  constructor() {
     // Load metadata (regions, phases, types)
     this.configService.lists
       .pipe(
@@ -85,10 +68,27 @@ export class ProjlistFiltersComponent implements OnInit, OnDestroy {
         });
 
         this.projectTypes = Constants.PROJECT_TYPE_COLLECTION;
-        
+
         // Initialize local models from FilterStateService
         this.syncFromService();
       });
+  }
+
+  get filterCount(): number {
+    const filters = this.filterState.allFilters();
+    return filters.regions.length + 
+           filters.phases.length + 
+           filters.types.length +
+           (filters.applicant ? 1 : 0) +
+           (filters.clFile ? 1 : 0) +
+           (filters.dispId ? 1 : 0) +
+           (filters.publishFrom ? 1 : 0) +
+           (filters.publishTo ? 1 : 0);
+  }
+
+  get clientHeight(): number {
+    return this.elementRef.nativeElement.offsetTop + 
+      this.elementRef.nativeElement.firstElementChild.firstElementChild.clientHeight;
   }
 
   ngOnDestroy() {

@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject, signal, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnDestroy, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, Router, Params } from '@angular/router';
 import { takeWhile } from 'rxjs/operators';
 import { toObservable } from '@angular/core/rxjs-interop';
@@ -23,7 +23,7 @@ import { Constants } from '../../shared/utils/constants';
   changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true
 })
-export class AmendmentsComponent implements OnInit, OnDestroy {
+export class AmendmentsComponent implements OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly tableTemplateUtils = inject(TableTemplate);
@@ -50,36 +50,8 @@ export class AmendmentsComponent implements OnInit, OnDestroy {
   public readonly loading = this.loadingState.getOperationState('table-amendments');
   public readonly tableData = signal<TableObject>(new TableObject({ component: DocumentTableRowsComponent }));
   private readonly tableSignal$ = toObservable(this.tableService.getTableSignal(this.tableId));
-  
-  public readonly tableColumns: IColumnObject[] = [
-    {
-      name: 'Name',
-      value: 'displayName',
-      width: 'col-4'
-    },
-    {
-      name: 'Date',
-      value: 'datePosted',
-      width: 'col-2'
-    },
-    {
-      name: 'Type',
-      value: 'type',
-      width: 'col-2'
-    },
-    {
-      name: 'Milestone',
-      value: 'milestone',
-      width: 'col-2'
-    },
-    {
-      name: 'Phase',
-      value: 'projectPhase',
-      width: 'col-2'
-    }
-  ];
 
-  ngOnInit() {
+  constructor() {
     // Get project ID from parent route
     this.projId = this.route.parent?.snapshot.params['projId'] || '';
 
@@ -136,6 +108,34 @@ export class AmendmentsComponent implements OnInit, OnDestroy {
       }
     });
   }
+
+  public readonly tableColumns: IColumnObject[] = [
+    {
+      name: 'Name',
+      value: 'displayName',
+      width: 'col-4'
+    },
+    {
+      name: 'Date',
+      value: 'datePosted',
+      width: 'col-2'
+    },
+    {
+      name: 'Type',
+      value: 'type',
+      width: 'col-2'
+    },
+    {
+      name: 'Milestone',
+      value: 'milestone',
+      width: 'col-2'
+    },
+    {
+      name: 'Phase',
+      value: 'projectPhase',
+      width: 'col-2'
+    }
+  ];
 
   private fetchDataWithCurrentParams() {
     const currentParams = this.route.snapshot.queryParamMap;

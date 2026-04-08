@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject, signal, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnDestroy, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { Router, ActivatedRoute, Params } from '@angular/router';
 import { takeWhile } from 'rxjs/operators';
 import { toObservable } from '@angular/core/rxjs-interop';
@@ -24,7 +24,7 @@ import { AnalyticsService } from '../../services/analytics/analytics.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true
 })
-export class DocumentsTabComponent implements OnInit, OnDestroy {
+export class DocumentsTabComponent implements OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly tableTemplateUtils = inject(TableTemplate);
@@ -92,7 +92,7 @@ export class DocumentsTabComponent implements OnInit, OnDestroy {
   private readonly legislationFilterGroup = { name: 'legislation', labelPrefix: '', labelPostfix: ' Act Terms' };
   private readonly tableSignal$ = toObservable(this.tableService.getTableSignal(this.tableId));
 
-  ngOnInit() {
+  constructor() {
     // Get project ID from parent route
     this.projId = this.route.parent?.snapshot.params['projId'] || '';
     this.logger.debug(`Documents tab projId: ${this.projId}`, 'DocumentsTabComponent');

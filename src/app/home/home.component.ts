@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, signal, inject } from '@angular/core';
+import { Component, OnDestroy, ChangeDetectionStrategy, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { Subject } from 'rxjs';
@@ -21,7 +21,7 @@ import { ActivityCardComponent } from '../shared/components/activity-card/activi
   imports: [CommonModule, RouterModule, HeroBannerComponent, InfoCardComponent, ActivityCardComponent],
   standalone: true
 })
-export class HomeComponent implements OnInit, OnDestroy {
+export class HomeComponent implements OnDestroy {
   private searchService = inject(SearchService);
   private apiService = inject(ApiService);
   private logger = inject(LoggingService);
@@ -83,7 +83,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     }
   ];
 
-  ngOnInit(): void {
+  constructor() {
     this.searchService.getTopNewsItems()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
