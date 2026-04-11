@@ -29,7 +29,13 @@
         </div>
         
         <div class="map-wrapper">
-          @if (!project()?.centroid || project()!.centroid.length !== 2) {
+          @if (!project()) {
+            <div class="map-placeholder">
+              <div class="spinner-border spinner-border-sm text-light opacity-50" role="status">
+                <span class="visually-hidden">Loading map&hellip;</span>
+              </div>
+            </div>
+          } @else if (!project()?.centroid || project()!.centroid.length !== 2) {
             <div class="map-placeholder">
               <span>No map available</span>
             </div>

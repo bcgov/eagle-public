@@ -15,6 +15,7 @@ import { Project } from '../models/project';
 import { DocumentService } from '../services/document.service';
 import { ApiService } from '../services/api';
 import { LoadingStateService } from '../services/loading-state.service';
+import { StorageService } from '../services/storage.service';
 import { CommentsTableRowsComponent } from './comments-table-rows/comments-table-rows.component';
 import { TableObject } from '../shared/components/table-template/table-object';
 import { TableTemplateComponent } from '../shared/components/table-template/table-template.component';
@@ -44,6 +45,7 @@ export class CommentsComponent implements OnDestroy {
   private logger = inject(LoggingService);
   private sanitizer = inject(DomSanitizer);
   private analytics = inject(AnalyticsService);
+  private storageService = inject(StorageService);
 
   loading = this.loadingState.getOperationState('comments');
   // True while project or comment period are not yet loaded
@@ -99,17 +101,19 @@ export class CommentsComponent implements OnDestroy {
         const isProjectNotification = this.router.url.includes('/pn/');
         this.type.set(isProjectNotification ? 'PROJECT-NOTIFICATION' : 'PROJECT');
 
-        // Load project data
-        this.projectService.getById(projId)
-          .pipe(takeUntil(this.ngUnsubscribe))
-          .subscribe({
-            next: (project) => {
-              this.project.set(project);
-            },
-            error: (error) => {
-              this.logger.error('Error loading project', 'CommentsComponent', error);
-            }
-          });
+        // Load project data — use StorageService if already loaded (in-page navigation),
+        // otherwise fall back to API (direct navigation / bookmark).
+        const storedProject = this.storageService.currentProject();
+        if (storedProject && storedProject._id === projId && storedProject.name) {
+          this.project.set(storedProject);
+        } else {
+          this.projectService.getById(projId)
+            .pipe(takeUntil(this.ngUnsubscribe))
+            .subscribe({
+              next: (project) => this.project.set(project),
+              error: (error) => this.logger.error('Error loading project', 'CommentsComponent', error)
+            });
+        }
 
         // Load comment period data
         this.commentPeriodService.getById(commentPeriodId)

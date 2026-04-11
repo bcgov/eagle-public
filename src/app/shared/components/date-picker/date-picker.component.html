@@ -10,6 +10,8 @@
       [required]="required()"
       ngbDatepicker
       #d="ngbDatepicker"
+      [minDate]="$any(minDateForPicker())"
+      [maxDate]="$any(maxDateForPicker())"
       aria-label="Date input field" />
     
     <button 

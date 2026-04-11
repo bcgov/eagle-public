@@ -1,12 +1,11 @@
-import { Component, OnDestroy, inject, ChangeDetectionStrategy, effect, signal, computed } from '@angular/core';
+import { Component, OnDestroy, inject, ChangeDetectionStrategy, effect, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { Subject } from 'rxjs';
+import { Subject, Subscription } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
 import { CommentPeriodService } from '../../services/commentperiod.service';
 import { CommentPeriod } from '../../models/commentperiod';
-import { LoadingStateService } from '../../services/loading-state.service';
 import { StorageService } from '../../services/storage.service';
 
 @Component({
@@ -21,19 +20,14 @@ export class CommentingTabComponent implements OnDestroy {
   private router = inject(Router);
   private storageService = inject(StorageService);
   public commentPeriodService = inject(CommentPeriodService);
-  public loadingState = inject(LoadingStateService);
 
   // Use the reactive signal from storageService
   public project = this.storageService.currentProject;
   public commentPeriods = signal<CommentPeriod[]>([]);
+  public loading = signal(true);
   private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
   private loadedProjectId: string | null = null;
-
-  // Computed loading state based on current project
-  public loading = computed(() => {
-    const project = this.project();
-    return project?._id ? this.loadingState.getOperationState(`commentperiods-${project._id}`)() : false;
-  });
+  private commentPeriodSub: Subscription | null = null;
 
   constructor() {
     // Load comment periods when project is available
@@ -56,16 +50,22 @@ export class CommentingTabComponent implements OnDestroy {
   }
 
   getCommentPeriods(projectId: string) {
-    this.commentPeriodService.getAllByProjectId(projectId)
+    this.commentPeriodSub?.unsubscribe();
+    this.loading.set(true);
+    this.commentPeriodSub = this.commentPeriodService.getAllByProjectId(projectId)
       .pipe(takeUntil(this.ngUnsubscribe))
-      .subscribe((res: any) => {
-        if (res.data) {
-          const periods = res.data.map((element: CommentPeriod) => {
-            const match = element.instructions ? element.instructions.match(/Comment Period on the (.*?) for /) : null;
-            return { ...element, instructions: match ? match[1] : '' };
-          });
-          this.commentPeriods.set(periods);
-        }
+      .subscribe({
+        next: (res: any) => {
+          if (res.data) {
+            const periods = res.data.map((element: CommentPeriod) => {
+              const match = element.instructions ? element.instructions.match(/Comment Period on the (.*?) for /) : null;
+              return { ...element, instructions: match ? match[1] : '' };
+            });
+            this.commentPeriods.set(periods);
+          }
+          this.loading.set(false);
+        },
+        error: () => this.loading.set(false),
       });
   }
 

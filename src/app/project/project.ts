@@ -54,6 +54,7 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
   public commentPeriod = signal<CommentPeriod | null>(null);
   public legislationLink = signal<string>('');
   public sidebarOpen = signal(true);
+  public isLoading = signal(true);
   private checkTabArrowsFn: (() => void) | null = null;
 
   public map: any = null;
@@ -93,8 +94,13 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
     const end = new Date();
     start.setDate(start.getDate() - 21);
     end.setDate(end.getDate() + 14);
-    
-    this.projectService.getById(projId, false, start.toISOString(), end.toISOString())
+    // Use date-only strings (YYYY-MM-DD) so the URL is stable within a day and
+    // the HTTP cache interceptor can serve repeat visits without a network call.
+    const cpStart = start.toISOString().slice(0, 10);
+    const cpEnd = end.toISOString().slice(0, 10);
+
+    this.isLoading.set(true);
+    this.projectService.getById(projId, false, cpStart, cpEnd)
       .pipe(takeUntil(this.ngUnsubscribe))
       .subscribe({
         next: (project) => {
@@ -102,12 +108,16 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
             this.project.set(project);
             this.storageService.state = { type: 'currentProject', data: project };
             this.renderer.removeClass(document.body, 'no-scroll');
+            this.isLoading.set(false);
             setTimeout(() => this.initMap(), 0);
           } else {
             this.handleProjectLoadError();
           }
         },
-        error: () => this.handleProjectLoadError()
+        error: () => {
+          this.isLoading.set(false);
+          this.handleProjectLoadError();
+        }
       });
   }
 
@@ -206,6 +216,12 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
       .subscribe(params => {
         const projId = params.get('projId');
         if (projId && this.project()?._id !== projId) {
+          // Prime storageService immediately with the project ID so child tabs
+          // (commenting, documents) fire their own API calls in parallel with
+          // the project load, rather than waiting for it to finish.
+          if (this.storageService.currentProject()?._id !== projId) {
+            this.storageService.state = { type: 'currentProject', data: { _id: projId } as Project };
+          }
           this.loadProject(projId);
         }
       });
@@ -311,6 +327,9 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   private initMap() {
+    if (this.map) {
+      return; // Guard against double-call when concat emits two project values
+    }
     // Check if map element exists
     const mapElement = document.getElementById('map');
     if (!mapElement) {

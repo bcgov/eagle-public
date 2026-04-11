@@ -41,6 +41,13 @@
                 }
 
                 <div class="main-content">
+                    @if (isLoading()) {
+                      <div class="d-flex justify-content-center align-items-center py-5">
+                        <div class="spinner-border text-secondary" role="status">
+                          <span class="visually-hidden">Loading project&hellip;</span>
+                        </div>
+                      </div>
+                    } @else {
                     <section class="project-tabs">
                         <div class="tabs-container">
                             <ul class="nav-tabs" role="tablist">
@@ -66,6 +73,7 @@
                             <router-outlet></router-outlet>
                         </div>
                     </section>
+                    } <!-- end @else -->
                 </div>
 
                 <section class="people">

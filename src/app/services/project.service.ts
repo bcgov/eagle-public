@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, of, forkJoin } from 'rxjs';
-import { map, catchError, mergeMap, flatMap, tap } from 'rxjs/operators';
+import { Observable, of, forkJoin, concat } from 'rxjs';
+import { map, catchError, mergeMap, tap } from 'rxjs/operators';
 
 import { Project } from 'app/models/project';
 import { ApiService } from './api';
@@ -152,7 +152,7 @@ export class ProjectService {
           // return the first (only) project
           return projects.length > 0 ? new Project(projects[0]) : null;
         }),
-        flatMap(res => {
+        mergeMap(res => {
           const project = res;
           if (!project) {
             this.loadingState.stopLoading(loadingId);
@@ -160,21 +160,27 @@ export class ProjectService {
           }
           // Map the build to the human readable nature field
           project.nature = this.utils.natureBuildMapper(project.build);
+          const partialProject = new Project(project);
           if (project.projectLeadId == null && project.responsibleEPDId == null) {
             this.loadingState.stopLoading(loadingId);
-            return of(new Project(project));
+            return of(partialProject);
           }
-          // now get the rest of the data for this project
-          return this._getExtraAppData(
-            new Project(project),
-            {
-              getresponsibleEPD: project.responsibleEPDId !== null && project.responsibleEPDId !== '' || project.responsibleEPDId !== undefined,
-              getprojectLead: project.projectLeadId !== null && project.projectLeadId !== '' || project.projectLeadId !== undefined
-            }
-          ).pipe(
-            tap(() => this.loadingState.stopLoading(loadingId))
+          // Emit partial project immediately to clear the spinner, then fetch staff data.
+          // The component's subscribe handler fires on each emission, so isLoading is
+          // cleared on the first emission without waiting for User API calls to complete.
+          this.loadingState.stopLoading(loadingId);
+          return concat(
+            of(partialProject),
+            this._getExtraAppData(
+              partialProject,
+              {
+                getresponsibleEPD: project.responsibleEPDId !== null && project.responsibleEPDId !== '' || project.responsibleEPDId !== undefined,
+                getprojectLead: project.projectLeadId !== null && project.projectLeadId !== '' || project.projectLeadId !== undefined
+              }
+            )
           );
         }),
+        tap(project => { if (project) this.project = project; }),
         catchError(error => {
           this.loadingState.stopLoading(loadingId);
           return this.api.handleError(error);

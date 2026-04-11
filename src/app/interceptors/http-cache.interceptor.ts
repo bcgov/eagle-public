@@ -1,6 +1,6 @@
-import { HttpInterceptorFn, HttpResponse } from '@angular/common/http';
+import { HttpEvent, HttpInterceptorFn, HttpResponse } from '@angular/common/http';
 import { inject } from '@angular/core';
-import { of, tap } from 'rxjs';
+import { Observable, finalize, of, shareReplay, tap } from 'rxjs';
 import { LoggingService } from '../services/logging.service';
 
 /**
@@ -15,7 +15,8 @@ interface CacheEntry {
 
 class HttpCacheService {
   private cache = new Map<string, CacheEntry>();
-  private readonly defaultTTL = 5 * 60 * 1000; // 5 minutes
+  inFlight = new Map<string, Observable<HttpEvent<any>>>();
+  private readonly defaultTTL = 15 * 60 * 1000; // 15 minutes
 
   get(url: string): HttpResponse<any> | null {
     const entry = this.cache.get(url);
@@ -77,15 +78,27 @@ export const httpCacheInterceptor: HttpInterceptorFn = (req, next) => {
     return of(cachedResponse.clone());
   }
 
-  // If not cached, make the request and cache the response
-  return next(req).pipe(
+  // Check for an in-flight request to coalesce parallel identical requests
+  const existing = cacheService.inFlight.get(req.urlWithParams);
+  if (existing) {
+    logger.debug(`Coalescing duplicate request: ${req.url}`, 'HttpCache');
+    return existing;
+  }
+
+  // Make the request, cache the response, and track it as in-flight
+  const request$ = next(req).pipe(
     tap(event => {
       if (event instanceof HttpResponse) {
         logger.debug(`Caching response for: ${req.url}`, 'HttpCache');
         cacheService.set(req.urlWithParams, event);
       }
-    })
+    }),
+    shareReplay(1),
+    finalize(() => cacheService.inFlight.delete(req.urlWithParams))
   );
+
+  cacheService.inFlight.set(req.urlWithParams, request$);
+  return request$;
 };
 
 // Export cache service for manual cache management
