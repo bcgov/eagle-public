@@ -472,17 +472,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@angular/animations@npm:^21.0.8":
-  version: 21.0.8
-  resolution: "@angular/animations@npm:21.0.8"
-  dependencies:
-    tslib: "npm:^2.3.0"
-  peerDependencies:
-    "@angular/core": 21.0.8
-  checksum: 10c0/4e46f7bedd4d40f0ed0dffd49361dd669e1e314e4ce79a05aa15bc3706a8862c05c5a4c64bd5c1bde944f6f6a7390968fa29f3bda4818f25c93794f3265e48f6
-  languageName: node
-  linkType: hard
-
 "@angular/build@npm:^21.0.5":
   version: 21.0.5
   resolution: "@angular/build@npm:21.0.5"
@@ -4440,7 +4429,6 @@ __metadata:
     "@analogjs/vitest-angular": "npm:^2.2.2"
     "@analytics/original-source-plugin": "npm:^1.0.15"
     "@angular-eslint/builder": "npm:21.1.0"
-    "@angular/animations": "npm:^21.0.8"
     "@angular/build": "npm:^21.0.5"
     "@angular/cdk": "npm:^21.0.5"
     "@angular/cli": "npm:^21.0.5"

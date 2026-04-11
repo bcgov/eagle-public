@@ -9,7 +9,6 @@ import {
   NgZone,
   ChangeDetectionStrategy,
 } from '@angular/core';
-import { trigger, state, style, animate, transition } from '@angular/animations';
 import { Router } from '@angular/router';
 import { HeroBannerComponent, HeroBannerAction } from 'app/shared/hero-banner/hero-banner.component';
 import instantsearch from 'instantsearch.js';
@@ -91,7 +90,7 @@ const sortByName = (a: DisplayItem, b: DisplayItem): number => a.label.localeCom
  */
 function mergeItems(
   masterMap: Map<string, DisplayItem>,
-  newItems: Array<{ label: string; count: number; isRefined: boolean }>,
+  newItems: { label: string; count: number; isRefined: boolean }[],
   sorter: (a: DisplayItem, b: DisplayItem) => number,
 ): DisplayItem[] {
   for (const [key, item] of masterMap) {
@@ -122,13 +121,6 @@ function sortByPhaseOrder(a: { label: string }, b: { label: string }): number {
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [HeroBannerComponent, DatePickerComponent, ReactiveFormsModule],
-  animations: [
-    trigger('filterSlide', [
-      state('open',   style({ height: '*',    overflow: 'hidden' })),
-      state('closed', style({ height: '0px', overflow: 'hidden' })),
-      transition('open <=> closed', animate('280ms cubic-bezier(0.4, 0, 0.2, 1)')),
-    ]),
-  ],
   template: `
     <app-hero-banner
       title="Search Environmental Assessment Projects"
@@ -163,7 +155,8 @@ function sortByPhaseOrder(a: { label: string }, b: { label: string }): number {
       <div class="row">
         <!-- Facet sidebar: always visible on md+, collapsible on mobile -->
         <div class="col-md-3">
-          <div id="filterPanel" class="filter-wrap" [@filterSlide]="filtersOpen() ? 'open' : 'closed'">
+          <div id="filterPanel" class="filter-wrap" [class.filter-wrap--open]="filtersOpen()">
+          <div class="filter-inner">
           @if (!filtersLoaded()) {
             <div class="d-flex align-items-center gap-2 py-3 text-muted">
               <div class="spinner-border spinner-border-sm" role="status">
@@ -246,13 +239,14 @@ function sortByPhaseOrder(a: { label: string }, b: { label: string }): number {
           </div>
           <div class="mb-3" [class.d-none]="!filtersLoaded()">
             <h6 class="fw-semibold">Decision Date</h6>
-            <label class="control-label fw-bold">From</label>
+            <label class="control-label fw-bold" for="dateFrom">From</label>
             <lib-date-picker [control]="fromControl" [minDate]="minDate" />
-            <label class="control-label fw-bold mt-2">To</label>
+            <label class="control-label fw-bold mt-2" for="dateTo">To</label>
             <lib-date-picker [control]="toControl" [minDate]="minDate" />
             @if (hasDateFilter()) {
               <button class="btn btn-link btn-sm p-0 text-secondary mt-1" (click)="clearDecisionDate()">Clear both</button>
             }
+          </div>
           </div>
           </div>
         </div>
@@ -336,7 +330,24 @@ function sortByPhaseOrder(a: { label: string }, b: { label: string }): number {
       </div>
     </div>
   `,
-  styles: [],
+  styles: [`
+    .filter-wrap {
+      display: grid;
+      grid-template-rows: 0fr;
+      transition: grid-template-rows 280ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .filter-wrap--open {
+      grid-template-rows: 1fr;
+    }
+    .filter-inner {
+      overflow: hidden;
+    }
+    @media (min-width: 768px) {
+      .filter-wrap {
+        grid-template-rows: 1fr;
+      }
+    }
+  `],
 })
 export class TypesenseProjectSearchComponent implements AfterViewInit, OnDestroy {
   readonly heroBannerActions: HeroBannerAction[] = [{
@@ -362,10 +373,10 @@ export class TypesenseProjectSearchComponent implements AfterViewInit, OnDestroy
   phaseItems = signal<DisplayItem[]>([]);
   decisionItems = signal<DisplayItem[]>([]);
 
-  refineRegion = (_: string) => {};
-  refineType = (_: string) => {};
-  refinePhase = (_: string) => {};
-  refineDecision = (_: string) => {};
+  refineRegion = (_: string) => { /* assigned by connectRefinementList */ };
+  refineType = (_: string) => { /* assigned by connectRefinementList */ };
+  refinePhase = (_: string) => { /* assigned by connectRefinementList */ };
+  refineDecision = (_: string) => { /* assigned by connectRefinementList */ };
 
   private masterRegion = new Map<string, DisplayItem>();
   private masterType = new Map<string, DisplayItem>();
