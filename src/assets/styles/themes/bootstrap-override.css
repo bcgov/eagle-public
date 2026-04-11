@@ -7,7 +7,7 @@
 
 :root {
   /* === EAGLE-SPECIFIC CONTAINER WIDTH === */
-  /* EAGLE uses a max-width of 1100px for all containers */
+  /* EAGLE uses a max-width of 1400px for all containers */
   /* Note: This overrides Bootstrap's default responsive widths */
 }
 
@@ -19,7 +19,7 @@
 .container-lg,
 .container-xl,
 .container-xxl {
-  max-width: 1100px;
+  max-width: 1400px;
 }
 
 /* === EAGLE COMPONENT CUSTOMIZATIONS === */

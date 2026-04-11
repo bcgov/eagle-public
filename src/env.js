@@ -26,8 +26,6 @@
   window.__env.ENVIRONMENT = 'local';
 
   // API target — proxy.conf.js reads this to route /api and /analytics.
-  // To use the dev environment: change to 'https://eagle-dev.apps.silver.devops.gov.bc.ca'
-  // and set configEndpoint = true above so config is fetched from /api/config.
   window.__env.API_LOCATION = 'http://localhost:3000';
   window.__env.API_PATH = '/api';
 
@@ -42,5 +40,12 @@
 
   // Build hash — replaced during CI build
   window.__env.GH_HASH = 'local-build';
+
+  // Typesense search — proxied through Angular dev server at /search-api.
+  // Start port-forward: oc port-forward svc/typesense-typesense 8108:8108 -n 6cdc9e-dev
+  // Get key: oc get secret typesense-api-key -n 6cdc9e-dev -o jsonpath='{.data.TYPESENSE_SEARCH_KEY}' | base64 -d
+  window.__env.TYPESENSE_ENABLED = true;
+  window.__env.TYPESENSE_SEARCH_HOST = '/search-api';
+  window.__env.TYPESENSE_SEARCH_KEY = '';  // Set locally; never commit a real key here.
 
 }(this));

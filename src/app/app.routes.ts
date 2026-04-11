@@ -8,7 +8,7 @@ import { SearchHelpComponent } from './search-help/search-help.component';
 import { CACUnsubscribeComponent } from './cac-unsubscribe/cac-unsubscribe.component';
 import { NewsListComponent } from './news/news.component';
 import { ProjectsComponent } from './projects/projects.component';
-import { ProjectListComponent } from './projects/project-list/project-list.component';
+import { ProjectListWrapperComponent } from './projects/project-list/project-list-wrapper.component';
 import { ProjectNotificationsListComponent } from './project-notifications/project-notifications.component';
 import { CommentsComponent } from './comments/comments.component';
 import { SearchComponent } from './search/search.component';
@@ -38,7 +38,7 @@ export const routes: Routes = [
   },
   {
     path: 'projects-list',
-    component: ProjectListComponent
+    component: ProjectListWrapperComponent
   },
   
   {

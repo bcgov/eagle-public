@@ -22,6 +22,7 @@
 /* Components */
 @import url("assets/styles/components/buttons.css");
 @import url("assets/styles/components/datepicker.css");
+@import url("assets/styles/components/instantsearch.css");
 @import url("assets/styles/components/feature-block.css");
 @import url("assets/styles/components/form-elements.css");
 @import url("assets/styles/components/leaflet.css");
