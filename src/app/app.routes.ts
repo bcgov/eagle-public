@@ -11,7 +11,7 @@ import { ProjectsComponent } from './projects/projects.component';
 import { ProjectListWrapperComponent } from './projects/project-list/project-list-wrapper.component';
 import { ProjectNotificationsListComponent } from './project-notifications/project-notifications.component';
 import { CommentsComponent } from './comments/comments.component';
-import { SearchComponent } from './search/search.component';
+import { SearchWrapperComponent } from './search/search-wrapper.component';
 import { ProjectComponent } from './project/project';
 import { ProjectDetailsTabComponent } from './project/project-details-tab/project-details-tab.component';
 import { CertificatesComponent } from './project/certificates/certificates.component';
@@ -78,7 +78,7 @@ export const routes: Routes = [
   
   {
     path: 'search',
-    component: SearchComponent
+    component: SearchWrapperComponent
   },
   
   {

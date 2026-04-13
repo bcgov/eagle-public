@@ -351,10 +351,10 @@ function sortByPhaseOrder(a: { label: string }, b: { label: string }): number {
 })
 export class TypesenseProjectSearchComponent implements AfterViewInit, OnDestroy {
   readonly heroBannerActions: HeroBannerAction[] = [{
-    label: 'Search All Documents',
+    label: 'Search Documents',
     icon: 'search',
     routerLink: '/search',
-    title: 'Search All Documents',
+    title: 'Search Documents',
   }];
 
   @ViewChild('searchBoxEl') searchBoxEl!: ElementRef;
