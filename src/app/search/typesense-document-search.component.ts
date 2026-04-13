@@ -416,7 +416,7 @@ export class TypesenseDocumentSearchComponent implements AfterViewInit, OnDestro
     FACET_DEFS.map(f => [f.attribute, new Map()])
   );
   private readonly refineFns: Record<string, (v: string) => void> = Object.fromEntries(
-    FACET_DEFS.map(f => [f.attribute, (_: string) => {}])
+    FACET_DEFS.map(f => [f.attribute, (_: string) => { /* assigned by connectRefinementList */ }])
   );
   readonly grouped: Record<string, Signal<LegislationGroup[]>> = Object.fromEntries(
     FACET_DEFS.map(f => [
