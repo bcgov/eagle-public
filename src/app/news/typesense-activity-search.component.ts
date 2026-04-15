@@ -247,6 +247,7 @@ export class TypesenseActivitySearchComponent implements AfterViewInit, OnDestro
 
   typeItems: WritableSignal<DisplayItem[]> = signal([]);
   private typeMasterMap = new Map<string, DisplayItem>();
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
   private refineFn: (v: string) => void = () => {};
 
   readonly sortOptions = SORT_OPTIONS;
