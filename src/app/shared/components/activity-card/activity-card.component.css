@@ -28,3 +28,11 @@
   border-bottom: none;
   padding: 1.25rem 0.75rem;
 }
+
+/* Dividing line between rows (table mode) */
+:host {
+  border-bottom: 2px solid #dee2e6;
+}
+:host:last-child {
+  border-bottom: none;
+}

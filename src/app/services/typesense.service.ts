@@ -35,7 +35,10 @@ export class TypesenseService {
     const searchHost = config.TYPESENSE_SEARCH_HOST || '/search-api';
     const apiKey = config.TYPESENSE_SEARCH_KEY || '';
     const { host, port, protocol, path } = this.parseHost(searchHost);
-    const clientKey = `${apiKey}@${host}:${port}${path}|${additionalSearchParameters.query_by}`;
+    // Include sort_by in cache key — different sort orders require separate adapter instances
+    // because sort_by is fixed in additionalSearchParameters at adapter construction time.
+    const sortKey = additionalSearchParameters['sort_by'] ?? '';
+    const clientKey = `${apiKey}@${host}:${port}${path}|${additionalSearchParameters.query_by}|${sortKey}`;
 
     if (!this.cachedSearchClient || this.cachedClientKey !== clientKey) {
       const adapter = new TypesenseInstantSearchAdapter({

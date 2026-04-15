@@ -44,8 +44,8 @@
   // Typesense search — proxied through Angular dev server at /search-api.
   // Start port-forward: oc port-forward svc/typesense-typesense 8108:8108 -n 6cdc9e-dev
   // Get key: oc get secret typesense-api-key -n 6cdc9e-dev -o jsonpath='{.data.TYPESENSE_SEARCH_KEY}' | base64 -d
-  window.__env.TYPESENSE_ENABLED = true;
+  window.__env.TYPESENSE_ENABLED = false;
   window.__env.TYPESENSE_SEARCH_HOST = '/search-api';
-  window.__env.TYPESENSE_SEARCH_KEY = '';  // Set locally; never commit a real key here.
+  window.__env.TYPESENSE_SEARCH_KEY = '';
 
 }(this));

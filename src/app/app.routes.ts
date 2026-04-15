@@ -6,7 +6,7 @@ import { ProcessComponent } from './process/process.component';
 import { ComplianceOversightComponent } from './compliance-oversight/compliance-oversight.component';
 import { SearchHelpComponent } from './search-help/search-help.component';
 import { CACUnsubscribeComponent } from './cac-unsubscribe/cac-unsubscribe.component';
-import { NewsListComponent } from './news/news.component';
+import { NewsWrapperComponent } from './news/news-wrapper.component';
 import { ProjectsComponent } from './projects/projects.component';
 import { ProjectListWrapperComponent } from './projects/project-list/project-list-wrapper.component';
 import { ProjectNotificationsListComponent } from './project-notifications/project-notifications.component';
@@ -58,7 +58,7 @@ export const routes: Routes = [
   
   {
     path: 'news',
-    component: NewsListComponent
+    component: NewsWrapperComponent
   },
   
   {
