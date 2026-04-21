@@ -16,15 +16,21 @@ const target = sandbox.__env.API_LOCATION || 'http://localhost:3000';
 
 const proxyRule = { target, secure: false, changeOrigin: true };
 
-// Proxy /search-api:
-// - localhost API_LOCATION → port-forward to localhost:8108 (strip /search-api prefix)
-//   Start: oc port-forward svc/typesense-typesense 8108:8108 -n 6cdc9e-dev
-// - remote API_LOCATION (dev/test/prod) → route through rproxy at same host
-//   No port-forward needed; eao-nginx forwards /search-api → Typesense internally
-const isRemote = !target.includes('localhost') && !target.includes('127.0.0.1');
-const typesenseRule = isRemote
-  ? { target, secure: false, changeOrigin: true }
-  : { target: 'http://localhost:8108', secure: false, changeOrigin: true, pathRewrite: { '^/search-api': '' } };
+// Typesense proxy — routes /search-api to the target set by TYPESENSE_API_LOCATION.
+//
+// TYPESENSE_API_LOCATION options (set in src/env.js):
+//   dev  (default): https://eagle-dev.apps.silver.devops.gov.bc.ca
+//   test:           https://eagle-test.apps.silver.devops.gov.bc.ca
+//   prod:           https://projects.eao.gov.bc.ca
+//   port-forward:   http://localhost:8108  (legacy — still works, strips /search-api prefix)
+//
+// eao-nginx exposes /search-api/ without HTTP basic auth on all three environments.
+// No port-forward needed when using a remote TYPESENSE_API_LOCATION.
+const tsTarget = sandbox.__env.TYPESENSE_API_LOCATION || target;
+const isDirectTypesense = tsTarget.includes('localhost') || tsTarget.includes('127.0.0.1');
+const typesenseRule = isDirectTypesense
+  ? { target: tsTarget, secure: false, changeOrigin: true, pathRewrite: { '^/search-api': '' } }
+  : { target: tsTarget, secure: false, changeOrigin: true };
 
 module.exports = {
   '/api':        proxyRule,

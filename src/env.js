@@ -41,11 +41,22 @@
   // Build hash — replaced during CI build
   window.__env.GH_HASH = 'local-build';
 
-  // Typesense search — proxied through Angular dev server at /search-api.
-  // Start port-forward: oc port-forward svc/typesense-typesense 8108:8108 -n 6cdc9e-dev
-  // Get key: oc get secret typesense-api-key -n 6cdc9e-dev -o jsonpath='{.data.TYPESENSE_SEARCH_KEY}' | base64 -d
-  window.__env.TYPESENSE_ENABLED = false;
+  // Typesense search — proxied through the Angular dev server at /search-api.
+  //
+  // TYPESENSE_API_LOCATION controls WHERE proxy.conf.js forwards /search-api:
+  //   dev  → https://eagle-dev.apps.silver.devops.gov.bc.ca  (default)
+  //   test → https://eagle-test.apps.silver.devops.gov.bc.ca
+  //   prod → https://projects.eao.gov.bc.ca
+  //   port-forward (legacy) → http://localhost:8108
+  //
+  // No port-forward needed for dev/test/prod — eao-nginx exposes /search-api/
+  // without HTTP basic auth and proxies it to Typesense internally.
+  //
+  // TYPESENSE_SEARCH_KEY is a scoped search-only key (read-only, no admin ops).
+  // It is already publicly served via /api/config — not a secret.
+  window.__env.TYPESENSE_ENABLED = true;
+  window.__env.TYPESENSE_API_LOCATION = 'https://eagle-dev.apps.silver.devops.gov.bc.ca';
   window.__env.TYPESENSE_SEARCH_HOST = '/search-api';
-  window.__env.TYPESENSE_SEARCH_KEY = '';
+  window.__env.TYPESENSE_SEARCH_KEY = '5-t333j4Lyqtgi4Tiw4DRfbTtoZhZrnsum9cug_W';
 
 }(this));
