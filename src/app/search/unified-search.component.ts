@@ -31,8 +31,6 @@ import { SearchNotificationCardComponent } from './cards/search-notification-car
 import {
   type CollectionId,
   type Tab,
-  type CollectionConfig,
-  type FacetDef,
   type DisplayItem,
   type LegislationGroup,
   COLLECTIONS,
@@ -85,6 +83,7 @@ function createState(id: CollectionId): ColState {
   for (const f of col.facets) {
     facetItems[f.attribute] = signal<DisplayItem[]>([]);
     masterMaps[f.attribute] = new Map();
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
     refineFns[f.attribute] = (_: string) => {};
     lawLookups[f.attribute] = signal(new Map<string, number>());
   }
@@ -262,10 +261,12 @@ const TABS: { id: Tab; label: string }[] = [
                 @if (activeConfig()?.dateFacet; as df) {
                   <div class="mb-3" [class.d-none]="!activeFiltersLoaded()">
                     <h6 class="fw-semibold">{{ df.heading }}</h6>
+                    <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
                     <label class="control-label fw-bold">{{ df.fromLabel }}</label>
                     @if (activeFromCtrl(); as ctrl) {
                       <lib-date-picker [control]="ctrl" [minDate]="minDate" />
                     }
+                    <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
                     <label class="control-label fw-bold mt-2">{{ df.toLabel }}</label>
                     @if (activeToCtrl(); as ctrl) {
                       <div class="mb-3">
