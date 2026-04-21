@@ -156,6 +156,8 @@ export class ConfigService {
     return this._lists$.asObservable();
   }
 
+  get listItems(): any[] { return this._lists; }
+
   get isApplistListVisible(): boolean { return this._isApplistListVisible; }
   set isApplistListVisible(val: boolean) { this._isApplistListVisible = val; }
 

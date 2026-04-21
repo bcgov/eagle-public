@@ -29,10 +29,21 @@
   padding: 1.25rem 0.75rem;
 }
 
-/* Dividing line between rows (table mode) */
+/* Row background — white; dividing line between rows */
 :host {
+  --bs-table-bg: white;
+  --table-row-bg: white;
+  background-color: white;
   border-bottom: 2px solid #dee2e6;
 }
+
 :host:last-child {
   border-bottom: none;
+}
+
+/* In home-news-feed context, inherit the grey container background */
+:host-context(.home-news-feed) {
+  --bs-table-bg: transparent;
+  --table-row-bg: transparent;
+  background-color: transparent !important;
 }

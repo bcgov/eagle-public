@@ -37,25 +37,15 @@ export class HomeComponent implements OnDestroy {
   readonly heroBannerDescription = "British Columbia's environmental assessment process provides opportunities for Indigenous Nations, government agencies and the public to influence the outcome of environmental assessments in British Columbia.";
   readonly heroBannerActions: HeroBannerAction[] = [
     {
-      label: 'Find Projects on Map',
-      routerLink: '/projects',
-      icon: 'map'
-    },
-    {
-      label: 'Search Projects',
-      routerLink: '/projects-list',
-      icon: 'search'
-    },
-    {
-      label: 'Search Documents',
+      label: 'Search',
       routerLink: '/search',
       icon: 'search'
     },
     {
-      label: 'Search Notifications',
-      routerLink: '/project-notifications',
-      icon: 'search'
-    }
+      label: 'Project Map',
+      routerLink: '/projects',
+      icon: 'map'
+    },
   ];
 
   readonly aboutCards = [

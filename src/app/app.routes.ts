@@ -6,12 +6,9 @@ import { ProcessComponent } from './process/process.component';
 import { ComplianceOversightComponent } from './compliance-oversight/compliance-oversight.component';
 import { SearchHelpComponent } from './search-help/search-help.component';
 import { CACUnsubscribeComponent } from './cac-unsubscribe/cac-unsubscribe.component';
-import { NewsWrapperComponent } from './news/news-wrapper.component';
-import { ProjectsComponent } from './projects/projects.component';
-import { ProjectListWrapperComponent } from './projects/project-list/project-list-wrapper.component';
-import { ProjectNotificationsListComponent } from './project-notifications/project-notifications.component';
 import { CommentsComponent } from './comments/comments.component';
 import { SearchWrapperComponent } from './search/search-wrapper.component';
+import { ProjectsComponent } from './projects/projects.component';
 import { ProjectComponent } from './project/project';
 import { ProjectDetailsTabComponent } from './project/project-details-tab/project-details-tab.component';
 import { CertificatesComponent } from './project/certificates/certificates.component';
@@ -38,12 +35,14 @@ export const routes: Routes = [
   },
   {
     path: 'projects-list',
-    component: ProjectListWrapperComponent
+    redirectTo: '/search?tab=projects',
+    pathMatch: 'full'
   },
   
   {
     path: 'project-notifications',
-    component: ProjectNotificationsListComponent
+    redirectTo: '/search?tab=notifications',
+    pathMatch: 'full'
   },
   
   {
@@ -58,7 +57,8 @@ export const routes: Routes = [
   
   {
     path: 'news',
-    component: NewsWrapperComponent
+    redirectTo: '/search?tab=updates',
+    pathMatch: 'full'
   },
   
   {

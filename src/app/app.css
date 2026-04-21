@@ -9,6 +9,7 @@
   min-height: 100vh;
 }
 
+
 /* Main Content Area */
 .app-content {
   flex: 1;
@@ -20,4 +21,15 @@
 
 .app-content.projects-route {
   padding-top: 0;
+}
+
+@media (min-width: 768px) {
+  .app-wrapper.search-route {
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  .app-content.search-route {
+    overflow: hidden;
+  }
 }

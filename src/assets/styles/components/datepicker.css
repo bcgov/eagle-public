@@ -1,6 +1,40 @@
 /* ng-bootstrap Datepicker Customizations */
 
-/* Weekday labels (M T W T F S S) - match navigation button color */
+/* Popup container — white background so it reads against any page colour */
+ngb-datepicker {
+  background-color: #fff !important;
+  border: 1px solid #dee2e6;
+  border-radius: var(--bs-border-radius, 0.375rem);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+/* Month/year navigation header */
+.ngb-dp-header {
+  background-color: var(--bs-primary) !important;
+  border-radius: calc(var(--bs-border-radius, 0.375rem) - 1px) calc(var(--bs-border-radius, 0.375rem) - 1px) 0 0;
+  padding: 0.25rem 0;
+}
+
+.ngb-dp-header .ngb-dp-arrow button,
+.ngb-dp-header .btn-light {
+  color: #fff !important;
+  background-color: transparent !important;
+  border-color: transparent !important;
+}
+
+/* Month/year <select> — white background, dark text for readability */
+.ngb-dp-header .ngb-dp-navigation-select select {
+  color: var(--bs-body-color, #212529) !important;
+  background-color: #fff !important;
+  border-color: #dee2e6 !important;
+}
+
+/* Weekday labels row (M T W T F S S) */
+.ngb-dp-week.ngb-dp-weekdays {
+  background-color: rgba(var(--bs-primary-rgb), 0.08) !important;
+  border-bottom: 1px solid #dee2e6;
+}
+
 .ngb-dp-weekday {
   color: var(--bs-primary) !important;
   font-weight: var(--bs-font-weight-semibold);

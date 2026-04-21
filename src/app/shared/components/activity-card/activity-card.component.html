@@ -41,14 +41,14 @@
     @if (isSingleDoc(rowData?.documentUrl) && !rowData?.documentUrl?.includes('docs?folder')) {
       @if (rowData?.notificationName && rowData?.type === 'Project Notification Public Comment Period') {
         <a class="btn btn-sm btn-outline-primary"
-           [href]="rowData.documentUrl"
+           [href]="getDocUrl(rowData.documentUrl)"
            target="_blank"
            rel="noopener">
           View Project Notification Public Comment Period
         </a>
       } @else if (!rowData?.notificationName) {
         <a class="btn btn-sm btn-outline-primary"
-           [href]="rowData.documentUrl"
+           [href]="getDocUrl(rowData.documentUrl)"
            target="_blank"
            rel="noopener">
           View Document(s)

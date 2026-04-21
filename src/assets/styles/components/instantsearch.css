@@ -121,6 +121,15 @@
   font-size: .875rem;
   color: var(--bs-secondary-color);
 }
+.search-result-content {
+  font-size: .875rem;
+  color: var(--bs-body-color);
+}
+.search-result-card mark {
+  padding: 0;
+  background-color: #fff3cd;
+  border-radius: 2px;
+}
 
 /* ── Filter Panel (mobile collapsible, driven by Angular @filterSlide trigger) ── */
 .filter-wrap {
@@ -174,3 +183,72 @@
 .filter-chevron.open {
   transform: rotate(180deg);
 }
+
+/* ── Document result action column ── */
+.search-result-action {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  padding-top: 1rem;
+  border-top: 1px solid #dee2e6;
+}
+@media (min-width: 768px) {
+  .search-result-action {
+    padding-top: 0;
+    padding-left: 1.25rem;
+    border-top: none;
+    border-left: 1px solid #dee2e6;
+  }
+}
+
+/* ── Document download button ── */
+.search-dl-btn {
+  display: inline-block;
+  padding: 0.5rem 1.25rem;
+  border-radius: 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  text-decoration: none;
+  text-align: center;
+  background-color: rgba(var(--bs-primary-rgb), 0.1);
+  color: var(--bs-primary);
+  border: none;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+.search-dl-btn:hover {
+  background-color: var(--bs-primary);
+  color: #fff;
+}
+.search-dl-btn--block {
+  display: block;
+  width: 100%;
+}
+
+/* ── Legislation year group heading (documents facet) ── */
+.legislation-heading {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #6c757d;
+  margin-top: 0.75rem;
+  margin-bottom: 0.2rem;
+  padding-bottom: 2px;
+  border-bottom: 1px solid #dee2e6;
+}
+
+/* ── Notification card document list ── */
+.notif-doc-header {
+  background: var(--bs-primary);
+  color: #fff;
+}
+.notif-doc-date   { width: 90px;  flex-shrink: 0; }
+.notif-doc-author { width: 140px; flex-shrink: 0; }
+.notif-doc-action { width: 36px;  height: 36px; flex-shrink: 0; }
+.notif-doc-mobile-row { font-size: .75rem; }
+.notification-doc-row:last-child { border-bottom: none !important; }
+.notification-doc-name { word-break: break-word; }

@@ -8,34 +8,31 @@ import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { timeout } from 'rxjs/operators';
 import { ConfigService } from 'app/services/config.service';
-import { SearchComponent } from './search.component';
-import { TypesenseDocumentSearchComponent } from './typesense-document-search.component';
+import { UnifiedSearchComponent } from './unified-search.component';
 
 /**
- * Wrapper that health-checks Typesense on init and renders the appropriate
- * document search UI.
+ * Wrapper that health-checks Typesense on init, then renders UnifiedSearchComponent
+ * with typesenseAvailable=true/false so the 3 search tabs know whether to show results
+ * or an unavailable message.
  *
- * - TYPESENSE_ENABLED false or no key → legacy SearchComponent
- * - /search-api/health responds       → TypesenseDocumentSearchComponent
- * - health check fails/times out      → legacy SearchComponent (silent fallback)
- *
- * Shares the same static cache as ProjectListWrapperComponent so only one
- * health check fires per page session.
+ * Notifications and Map tabs always work regardless of Typesense status.
  */
 @Component({
   selector: 'app-search-wrapper',
   standalone: true,
-  imports: [SearchComponent, TypesenseDocumentSearchComponent],
-  template: `
-    @if (useTypesense()) {
-      <app-typesense-document-search />
-    } @else {
-      <app-search />
+  imports: [UnifiedSearchComponent],
+  template: `<app-unified-search [typesenseAvailable]="useTypesense()" />`,
+  styles: [`
+    :host {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
     }
-  `,
+  `],
 })
 export class SearchWrapperComponent implements OnInit {
-  /** Shared cache with ProjectListWrapperComponent — one health check per session. */
+  /** Shared cache — one health check per session. */
   private static cachedResult: boolean | null = null;
 
   useTypesense = signal(false);
@@ -63,7 +60,7 @@ export class SearchWrapperComponent implements OnInit {
       SearchWrapperComponent.cachedResult = true;
       this.useTypesense.set(true);
     } catch {
-      console.warn('[SearchWrapper] Typesense health check failed — using legacy document search');
+      console.warn('[SearchWrapper] Typesense health check failed — Typesense tabs unavailable');
       SearchWrapperComponent.cachedResult = false;
     }
   }

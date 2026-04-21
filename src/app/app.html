@@ -1,6 +1,6 @@
-<div class="app-wrapper">
+<div class="app-wrapper" [class.search-route]="currentUrl().startsWith('/search')">
   <app-header></app-header>
-  <main class="app-content" [class.projects-route]="currentUrl().startsWith('/projects')">
+  <main class="app-content" [class.projects-route]="currentUrl().startsWith('/projects')" [class.search-route]="currentUrl().startsWith('/search')">
     <router-outlet id="scrollTop"></router-outlet>
   </main>
   <app-footer [class.hide-mobile-projects]="currentUrl().startsWith('/projects')"></app-footer>

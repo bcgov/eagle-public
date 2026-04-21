@@ -42,7 +42,14 @@ export class TypesenseService {
 
     if (!this.cachedSearchClient || this.cachedClientKey !== clientKey) {
       const adapter = new TypesenseInstantSearchAdapter({
-        server: { apiKey, nodes: [{ host, port, protocol, path }], connectionTimeoutSeconds: 5 },
+        server: {
+          apiKey,
+          nodes: [{ host, port, protocol, path }],
+          connectionTimeoutSeconds: 5,   // Allow slow proxy connection in dev
+          numRetries: 1,                 // One retry on transient failure; more just creates noise
+          retryIntervalSeconds: 0.1,
+          cacheSearchResultsForSeconds: 120, // Avoid re-querying identical strings
+        },
         additionalSearchParameters,
       });
       this.cachedSearchClient = adapter.searchClient;

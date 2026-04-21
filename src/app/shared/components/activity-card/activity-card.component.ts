@@ -7,6 +7,7 @@ import { TableRowComponent, ITableMessage } from 'app/shared/components/table-te
 import { TableObject } from 'app/shared/components/table-template/table-object';
 import { AnalyticsService } from 'app/services/analytics/analytics.service';
 import { sanitizeWordHtml } from 'app/shared/utils/word-html-sanitizer';
+import { resolveDocUrl } from 'app/search/search-collections';
 
 /**
  * Shared activity card component. Renders a single RecentActivity item in the
@@ -81,5 +82,13 @@ export class ActivityCardComponent implements TableRowComponent {
 
   isSingleDoc(item: any): boolean {
     return item !== '' && item !== null && item !== undefined;
+  }
+
+  /**
+   * Rewrites old `project-notifications` URLs (legacy site) to the new unified search.
+   * All other URLs are returned unchanged.
+   */
+  getDocUrl(url: string | null | undefined): string {
+    return resolveDocUrl(url ?? '') || '#';
   }
 }
