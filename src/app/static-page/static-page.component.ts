@@ -12,12 +12,12 @@ export interface StaticPageData {
   heroBannerDescription: string;
   heroBannerActions?: HeroBannerAction[];
   bodyHtml?: string;
-  infoCards?: Array<{
+  infoCards?: {
     title: string;
     description: string;
     icon?: string;
     button?: InfoCardButton;
-  }>;
+  }[];
 }
 
 @Component({
