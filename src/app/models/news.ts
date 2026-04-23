@@ -1,6 +1,7 @@
 import { Project } from './project';
 import { ProjectNotification } from './projectNotification';
 import { CommentPeriod } from './commentperiod';
+import { assignFromObj } from 'app/shared/utils/model-utils';
 
 export class News {
   _id!: number;
@@ -11,24 +12,15 @@ export class News {
   type!: string;
   pcp!: CommentPeriod | null;
   projectNotification!: ProjectNotification;
-  dateAdded: string;
-  dateUpdated: string;
-  contentUrl: string;
-  documentUrl: string;
-  notificationName: string;
+  dateAdded!: string;
+  dateUpdated!: string;
+  contentUrl!: string;
+  documentUrl!: string;
+  notificationName!: string;
   constructor(obj?: any) {
-    this._id = obj && obj._id || null;
-    this.headline = obj && obj.headline || null;
-    this.content = obj && obj.content || null;
-    this.project = obj && obj.project || null;
-    this.type = obj && obj.type || null;
-    this.pcp = obj && obj.pcp || null;
-    this.projectNotification = obj && obj.projectNotification || null;
-    this.active = obj && obj.active || null;
-    this.dateAdded = obj && obj.dateAdded || null;
-    this.dateUpdated = obj && obj.dateUpdated || null;
-    this.contentUrl = obj && obj.contentUrl || null;
-    this.notificationName = obj && obj.notificationName || null;
-    this.documentUrl = obj && obj.documentUrl || null;
+    assignFromObj(this, obj, [
+      '_id', 'headline', 'content', 'project', 'type', 'pcp', 'projectNotification',
+      'active', 'dateAdded', 'dateUpdated', 'contentUrl', 'notificationName', 'documentUrl',
+    ]);
   }
 }

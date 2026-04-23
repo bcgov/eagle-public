@@ -7,12 +7,14 @@ import {
   computed,
 } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { RouterLink } from '@angular/router';
 import { highlightField } from '../search-collections';
 
 @Component({
   selector: 'app-search-project-card',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [RouterLink],
   template: `
     <article class="card search-result-card">
       <div class="card-body p-4">
@@ -55,8 +57,8 @@ import { highlightField } from '../search-collections';
           <div class="search-result-action">
             <a
               class="search-dl-btn"
-              [href]="'/p/' + (hit()['id'] ?? hit()['objectID']) + '/project-details'"
-              (click)="clicked.emit(); $event.stopPropagation()"
+              [routerLink]="['/p', hit()['id'] ?? hit()['objectID'], 'project-details']"
+              (click)="clicked.emit()"
             >Go to Project</a>
           </div>
         </div>

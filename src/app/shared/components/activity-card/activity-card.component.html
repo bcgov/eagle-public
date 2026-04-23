@@ -38,7 +38,7 @@
         View Engagement
       </button>
     }
-    @if (isSingleDoc(rowData?.documentUrl) && !rowData?.documentUrl?.includes('docs?folder')) {
+    @if (isSingleDoc(rowData?.documentUrl)) {
       @if (rowData?.notificationName && rowData?.type === 'Project Notification Public Comment Period') {
         <a class="btn btn-sm btn-outline-primary"
            [href]="getDocUrl(rowData.documentUrl)"
@@ -46,20 +46,47 @@
            rel="noopener">
           View Project Notification Public Comment Period
         </a>
-      } @else if (!rowData?.notificationName) {
-        <a class="btn btn-sm btn-outline-primary"
-           [href]="getDocUrl(rowData.documentUrl)"
-           target="_blank"
-           rel="noopener">
-          View Document(s)
-        </a>
+      } @else if (!rowData?.notificationName && hasDocContent()) {
+        <button class="btn btn-sm btn-outline-primary" type="button" (click)="toggleDocs()">
+          {{ expanded() ? 'Hide Documents' : 'View Documents' }}
+        </button>
       }
     }
   </div>
+
+  @if (expanded() && hasDocContent()) {
+    <hr class="my-3">
+    <div>
+      @if (isFolderDocUrl()) {
+        <div class="d-flex align-items-center gap-3 py-2 border-bottom notification-doc-row">
+          <span class="flex-fill fw-semibold small notification-doc-name">All project documents</span>
+          <a class="d-flex align-items-center justify-content-center text-primary notif-doc-action"
+             [href]="'/p/' + rowData.project._id + '/documents'">
+            <i class="material-icons md-18" aria-hidden="true">open_in_new</i>
+          </a>
+        </div>
+      } @else {
+        <div class="d-none d-md-flex gap-3 px-2 py-1 small fw-semibold rounded-1 mb-2 notif-doc-header">
+          <span class="flex-fill">Document Name</span>
+          <span class="notif-doc-action"></span>
+        </div>
+        <div class="d-flex flex-column flex-md-row align-items-md-center gap-1 gap-md-3 py-2 border-bottom notification-doc-row">
+          <span class="flex-fill fw-semibold small notification-doc-name">{{ docFilename() || 'Document' }}</span>
+          <a class="d-flex align-items-center justify-content-center text-primary notif-doc-action"
+             [href]="'/api/document/' + docId() + '/fetch'"
+             target="_blank"
+             rel="noopener noreferrer"
+             title="Download">
+            <i class="material-icons md-18" aria-hidden="true">file_download</i>
+          </a>
+        </div>
+      }
+    </div>
+  }
 </td>
 
 @if (tableMode) {
-  <td class="col-2 activity-card__date" tabindex="0">
+  <td class="col-2 activity-card__date" [class.align-top]="expanded()" tabindex="0">
     {{ rowData?.dateAdded | date: 'longDate' }}
   </td>
 }

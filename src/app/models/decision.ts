@@ -1,20 +1,18 @@
 import { Document } from './document';
+import { assignFromObj } from 'app/shared/utils/model-utils';
 
 export class Decision {
-  _id: string;
-  _addedBy: string; // objectid -> User
-  _application: string; // objectid -> Application
-  name: string;
+  _id!: string;
+  _addedBy!: string; // objectid -> User
+  _application!: string; // objectid -> Application
+  name!: string;
   description?: string;
 
   // associated data
   documents: Document[] = [];
 
   constructor(obj?: any) {
-    this._id          = obj && obj._id          || null;
-    this._addedBy     = obj && obj._addedBy     || null;
-    this._application = obj && obj._application || null;
-    this.name         = obj && obj.name         || null;
+    assignFromObj(this, obj, ['_id', '_addedBy', '_application', 'name']);
 
     // replace \\n (JSON format) with newlines
     if (obj && obj.description) {

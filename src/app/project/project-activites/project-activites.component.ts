@@ -1,7 +1,9 @@
-import { Component, OnDestroy, ViewChild, ElementRef, inject, signal } from '@angular/core';
+import { Component, OnDestroy, ViewChild, ElementRef, inject, signal, computed } from '@angular/core';
 import { Router, ActivatedRoute, Params } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 
-import { takeWhile } from 'rxjs/operators';
+import { Subject } from 'rxjs';
+import { takeWhile, debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { toObservable } from '@angular/core/rxjs-interop';
 
 import { ActivityCardComponent } from 'app/shared/components/activity-card/activity-card.component';
@@ -14,12 +16,14 @@ import { SearchParamObject } from 'app/services/search.service';
 import { LoadingStateService } from 'app/services/loading-state.service';
 import { TableTemplateComponent } from 'app/shared/components/table-template/table-template.component';
 import { SearchFilterTemplateComponent } from 'app/shared/components/search-filter-template/search-filter-template.component';
+import { TypesenseService } from 'app/services/typesense.service';
+import { ConfigService } from 'app/services/config.service';
 
 @Component({
   selector: 'app-project-activites',
   templateUrl: './project-activites.component.html',
   styleUrls: ['./project-activites.component.css'],
-  imports: [TableTemplateComponent, SearchFilterTemplateComponent],
+  imports: [TableTemplateComponent, SearchFilterTemplateComponent, FormsModule],
   standalone: true
 })
 export class ProjectActivitesComponent implements OnDestroy {
@@ -30,6 +34,8 @@ export class ProjectActivitesComponent implements OnDestroy {
   private tableTemplateUtils = inject(TableTemplate);
   private tableService = inject(TableService);
   private storageService = inject(StorageService);
+  private typesense = inject(TypesenseService);
+  private configService = inject(ConfigService);
 
   private alive = true;
   private readonly tableId = 'projectActivities';
@@ -40,40 +46,40 @@ export class ProjectActivitesComponent implements OnDestroy {
   public loading = this.loadingState.getOperationState('table-projectActivities');
   public queryParams: Params = {};
 
+  // Instant search (Typesense path)
+  isTypesense = computed(() => !!this.configService.config().TYPESENSE_ENABLED);
+  keywords = signal('');
+  private keywordInput$ = new Subject<string>();
+
   public tableData = signal<TableObject>(new TableObject({ component: ActivityCardComponent, data: { showProjectInfo: false } }));
 
   constructor() {
-    // Get project ID from parent route
     this.projId = this.route.parent?.snapshot.params['projId'] || '';
+    this.tableService.clearTable(this.tableId);
 
-    // Watch for table data changes from service
+    // Init keyword from URL on first load
+    this.keywords.set(this.route.snapshot.queryParamMap.get('keywordsActivities') ?? '');
+
+    // Instant search debounce pipeline (Typesense path only)
+    this.keywordInput$.pipe(
+      debounceTime(200),
+      distinctUntilChanged(),
+      takeWhile(() => this.alive),
+    ).subscribe(kw => {
+      this.submit({
+        keywordsActivities: kw || null,
+        sortByActivities: kw ? '-score' : '-dateAdded',
+        currentPageActivities: 1,
+      });
+    });
+
+    // MongoDB path: react to tableService signal
     this.tableSignal$.pipe(takeWhile(() => this.alive)).subscribe(searchResults => {
-      // Only process when we have actual API results (not initial null value)
       if (searchResults !== null && searchResults !== undefined) {
-        const currentTableData = this.tableData();
-        // Create new TableObject to ensure change detection with OnPush
-        const updatedTableData = new TableObject({
-          component: ActivityCardComponent,
-          data: { showProjectInfo: false },
-          pageSize: currentTableData.pageSize,
-          currentPage: currentTableData.currentPage,
-          sortBy: currentTableData.sortBy,
-          tableId: 'activities-table'
-        });
-        
-        if (searchResults.data && Array.isArray(searchResults.data) && searchResults.data.length > 0) {
-          updatedTableData.totalListItems = searchResults.totalSearchCount;
-          updatedTableData.items = searchResults.data.map((record: any) => {
-            return { rowData: record };
-          });
-          updatedTableData.columns = this.tableColumns;
-        } else {
-          updatedTableData.totalListItems = 0;
-          updatedTableData.items = [];
-        }
-        updatedTableData.options.showAllPicker = true;
-        updatedTableData.options.disableRowHighlight = true;
-        this.tableData.set(updatedTableData);
+        const hasItems = searchResults.data?.length > 0;
+        const items = hasItems ? searchResults.data : [];
+        const total = hasItems ? searchResults.totalSearchCount : 0;
+        this.tableData.set(this.buildActivityTable(this.tableData(), items, total));
       }
     });
 
@@ -83,23 +89,45 @@ export class ProjectActivitesComponent implements OnDestroy {
       this.queryParams = { ...params };
       
       const updatedTableData = this.tableTemplateUtils.updateTableObjectWithUrlParams(params, this.tableData(), 'Activities');
-
       updatedTableData.sortBy = params.sortByActivities || '-dateAdded';
-
       this.tableData.set(updatedTableData);
-      
-      // Fetch data
-      this.tableService.fetchData(new SearchParamObject(
-        this.tableId,
-        params['keywordsActivities'] || '',
-        'RecentActivity',
-        [],
-        updatedTableData.currentPage,
-        updatedTableData.pageSize,
-        updatedTableData.sortBy,
-        { project: this.projId },
-        true
-      ));
+
+      // Keep keyword signal synced with URL (back/fwd navigation)
+      this.keywords.set(params['keywordsActivities'] || '');
+
+      const config = this.configService.config();
+      const keywords = params['keywordsActivities'] || '';
+      // Use Typesense when enabled (browse + keyword search).
+      // Falls back to MongoDB when Typesense is disabled (e.g. prod before Typesense deploy).
+      if (config.TYPESENSE_ENABLED) {
+        const loadingId = 'table-projectActivities';
+        this.loadingState.startLoading(loadingId, 'Loading activities');
+        this.typesense.getProjectActivities(
+          this.projId,
+          updatedTableData.currentPage,
+          updatedTableData.pageSize,
+          updatedTableData.sortBy,
+          keywords,
+        ).pipe(takeWhile(() => this.alive)).subscribe({
+          next: ({ items, total }) => {
+            this.tableData.set(this.buildActivityTable(updatedTableData, items, total));
+            this.loadingState.stopLoading(loadingId);
+          },
+          error: () => this.loadingState.stopLoading(loadingId),
+        });
+      } else {
+        this.tableService.fetchData(new SearchParamObject(
+          this.tableId,
+          keywords,
+          'RecentActivity',
+          [],
+          updatedTableData.currentPage,
+          updatedTableData.pageSize,
+          updatedTableData.sortBy,
+          { project: this.projId },
+          true
+        ));
+      }
     });
   }
 
@@ -117,6 +145,34 @@ export class ProjectActivitesComponent implements OnDestroy {
       nosort: true
     }
   ];
+
+  private buildActivityTable(ref: TableObject, items: any[], total: number): TableObject {
+    const t = new TableObject({
+      component: ActivityCardComponent,
+      data: { showProjectInfo: false },
+      pageSize: ref.pageSize,
+      currentPage: ref.currentPage,
+      sortBy: ref.sortBy,
+      tableId: 'activities-table',
+    });
+    t.totalListItems = total;
+    t.items = items.map(record => ({ rowData: record }));
+    t.columns = this.tableColumns;
+    t.options.showAllPicker = true;
+    t.options.disableRowHighlight = true;
+    return t;
+  }
+
+  onInstantInput(e: Event): void {
+    const value = (e.target as HTMLInputElement).value;
+    this.keywords.set(value);
+    this.keywordInput$.next(value);
+  }
+
+  clearInstantSearch(): void {
+    this.keywords.set('');
+    this.keywordInput$.next('');
+  }
 
   onMessageOut(msg: ITableMessage) {
     const params: any = {};
@@ -158,5 +214,6 @@ export class ProjectActivitesComponent implements OnDestroy {
 
   ngOnDestroy() {
     this.alive = false;
+    this.keywordInput$.complete();
   }
 }

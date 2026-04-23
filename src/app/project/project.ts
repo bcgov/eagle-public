@@ -11,6 +11,7 @@ import { CommentPeriodService } from '../services/commentperiod.service';
 import { StorageService } from '../services/storage.service';
 import { CommentPeriod } from '../models/commentperiod';
 import { Constants } from '../shared/utils/constants';
+import { initTabArrows, TabArrowsHandle } from '../shared/utils/tab-arrows';
 import { SearchService } from '../services/search.service';
 import { Utils } from '../shared/utils/utils';
 import { DetailsSidebarComponent } from './details-sidebar/details-sidebar';
@@ -55,7 +56,7 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
   public legislationLink = signal<string>('');
   public sidebarOpen = signal(true);
   public isLoading = signal(true);
-  private checkTabArrowsFn: (() => void) | null = null;
+  private tabArrowsHandle: TabArrowsHandle | null = null;
 
   public map: any = null;
   public appFG = L.featureGroup();
@@ -84,7 +85,7 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
         this.legislationLink.set(legislationLinks[legislationYear]);
         
         // Re-check tab arrows after tabs are updated
-        setTimeout(() => this.checkTabArrowsVisibility(), 100);
+        setTimeout(() => this.tabArrowsHandle?.check(), 100);
       }
     });
   }
@@ -231,93 +232,16 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
       .pipe(takeUntil(this.ngUnsubscribe))
       .subscribe(event => {
         if (event instanceof NavigationEnd) {
-          setTimeout(() => this.checkTabArrowsVisibility(), 100);
+          setTimeout(() => this.tabArrowsHandle?.check(), 100);
         }
       });
   }
 
   ngAfterViewInit() {
-    // Initialize tab navigation arrows for overflow
-    this.initTabArrows();
+    this.tabArrowsHandle = initTabArrows();
   }
 
-  private initTabArrows() {
-    const tabsContainer = document.querySelector('.tabs-container') as HTMLElement;
-    const navTabs = document.querySelector('.nav-tabs') as HTMLElement;
-    if (!tabsContainer || !navTabs) {
-      setTimeout(() => this.initTabArrows(), 100);
-      return;
-    }
-    
-    // Avoid creating duplicate arrows
-    if (tabsContainer.querySelector('.tab-arrow')) {
-      return;
-    }
 
-    const { leftArrow, rightArrow } = this.createArrowElements(tabsContainer);
-    const checkArrows = this.createScrollChecker(navTabs, leftArrow, rightArrow);
-    this.setupArrowHandlers(navTabs, leftArrow, rightArrow, checkArrows);
-  }
-
-  private createArrowElements(container: HTMLElement) {
-    const leftArrow = document.createElement('button');
-    leftArrow.className = 'tab-arrow tab-arrow-left';
-    leftArrow.innerHTML = '&#8249;';
-    leftArrow.setAttribute('aria-label', 'Scroll tabs left');
-    leftArrow.type = 'button';
-
-    const rightArrow = document.createElement('button');
-    rightArrow.className = 'tab-arrow tab-arrow-right';
-    rightArrow.innerHTML = '&#8250;';
-    rightArrow.setAttribute('aria-label', 'Scroll tabs right');
-    rightArrow.type = 'button';
-
-    container.appendChild(leftArrow);
-    container.appendChild(rightArrow);
-
-    return { leftArrow, rightArrow };
-  }
-
-  private createScrollChecker(navTabs: HTMLElement, leftArrow: HTMLButtonElement, rightArrow: HTMLButtonElement) {
-    const checkArrows = () => {
-      const hasOverflow = navTabs.scrollWidth > navTabs.clientWidth;
-      const isAtStart = navTabs.scrollLeft <= 1;
-      const isAtEnd = navTabs.scrollLeft >= navTabs.scrollWidth - navTabs.clientWidth - 1;
-      
-      leftArrow.style.display = hasOverflow && !isAtStart ? 'flex' : 'none';
-      rightArrow.style.display = hasOverflow && !isAtEnd ? 'flex' : 'none';
-    };
-    
-    this.checkTabArrowsFn = checkArrows;
-    return checkArrows;
-  }
-
-  private setupArrowHandlers(navTabs: HTMLElement, leftArrow: HTMLButtonElement, rightArrow: HTMLButtonElement, checkArrows: () => void) {
-    leftArrow.addEventListener('click', () => {
-      navTabs.scrollBy({ left: -200, behavior: 'smooth' });
-      setTimeout(checkArrows, 100);
-    });
-
-    rightArrow.addEventListener('click', () => {
-      navTabs.scrollBy({ left: 200, behavior: 'smooth' });
-      setTimeout(checkArrows, 100);
-    });
-
-    navTabs.addEventListener('scroll', checkArrows);
-    
-    // Use ResizeObserver for responsive checking
-    const resizeObserver = new ResizeObserver(() => checkArrows());
-    resizeObserver.observe(navTabs);
-    
-    // Initial check
-    setTimeout(() => checkArrows(), 0);
-  }
-
-  private checkTabArrowsVisibility() {
-    if (this.checkTabArrowsFn) {
-      this.checkTabArrowsFn();
-    }
-  }
 
   onResize(_event?: Event) {
     if (this.map) {
@@ -576,6 +500,7 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
     if (this.map) {
       this.map.remove();
     }
+    this.tabArrowsHandle?.cleanup();
     this.ngUnsubscribe.next(true);
     this.ngUnsubscribe.complete();
   }

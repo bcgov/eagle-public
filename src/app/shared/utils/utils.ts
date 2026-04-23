@@ -154,7 +154,10 @@ export class Utils {
     if (!lists?.length) return '-';
     
     const item = lists.find(listItem => listItem._id === id);
-    return item?.name ?? '-';
+    if (item) return item.name;
+    // Typesense already resolves ObjectIDs to strings — return as-is if not a 24-char hex ID
+    if (!/^[0-9a-f]{24}$/i.test(id)) return id;
+    return '-';
   }
 
   /**

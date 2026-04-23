@@ -11,6 +11,7 @@ import { SearchService } from './search.service';
 import { Utils } from 'app/shared/utils/utils';
 import { DataQueryResponse } from 'app/models/api-response';
 import { LoadingStateService } from './loading-state.service';
+import { withLoading } from 'app/shared/utils/rxjs-operators';
 
 interface GetParameters {
   getresponsibleEPD?: boolean;
@@ -72,18 +73,14 @@ export class ProjectService {
     
     // Create new request and cache it
     const loadingId = 'projects-count';
-    this.loadingState.startLoading(loadingId, 'Counting projects');
     this.count$ = this.api.getCountProjects()
       .pipe(
+        withLoading(this.loadingState, loadingId, 'Counting projects'),
         map(count => {
           this.cachedCount = count;
-          this.loadingState.stopLoading(loadingId);
           return count;
         }),
-        catchError(error => {
-          this.loadingState.stopLoading(loadingId);
-          return this.api.handleError(error);
-        })
+        catchError(error => this.api.handleError(error))
       );
     
     return this.count$;
@@ -190,17 +187,10 @@ export class ProjectService {
 
   getPins(proj: string, pageNum: number, pageSize: number, sortBy: any): Observable<DataQueryResponse<Org>[]> {
     const loadingId = `project-pins-${proj}-page-${pageNum}`;
-    this.loadingState.startLoading(loadingId, 'Loading pins');
     return this.api.getProjectPins(proj, pageNum, pageSize, sortBy)
       .pipe(
-        map(res => {
-          this.loadingState.stopLoading(loadingId);
-          return res;
-        }),
-        catchError(error => {
-          this.loadingState.stopLoading(loadingId);
-          return this.api.handleError(error);
-        })
+        withLoading(this.loadingState, loadingId, 'Loading pins'),
+        catchError(error => this.api.handleError(error))
       );
   }
 
@@ -274,33 +264,19 @@ export class ProjectService {
   // Send this users' information to our CAC back-end
   cacSignUp(project: Project, meta: any): Observable<any> {
     const loadingId = `cac-signup-${project._id}`;
-    this.loadingState.startLoading(loadingId, 'Signing up for CAC');
     return this.api.cacSignUp(project, meta)
       .pipe(
-        map(res => {
-          this.loadingState.stopLoading(loadingId);
-          return res;
-        }),
-        catchError(error => {
-          this.loadingState.stopLoading(loadingId);
-          return this.api.handleError(error);
-        })
+        withLoading(this.loadingState, loadingId, 'Signing up for CAC'),
+        catchError(error => this.api.handleError(error))
       );
   }
 
   // Remove this user from the CAC membership on this project
   cacRemoveMember(projectId: string, meta: any): Observable<any> {
-    this.loadingState.startLoading('cac-unsubscribe', 'Unsubscribing from CAC');
     return this.api.cacRemoveMember(projectId, meta)
       .pipe(
-        map(result => {
-          this.loadingState.stopLoading('cac-unsubscribe');
-          return result;
-        }),
-        catchError(error => {
-          this.loadingState.stopLoading('cac-unsubscribe');
-          return this.api.handleError(error);
-        })
+        withLoading(this.loadingState, 'cac-unsubscribe', 'Unsubscribing from CAC'),
+        catchError(error => this.api.handleError(error))
       );
   }
 }

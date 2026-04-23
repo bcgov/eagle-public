@@ -1,7 +1,7 @@
-import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, signal, inject, effect, untracked } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, signal, inject, effect, untracked, DestroyRef } from '@angular/core';
 
 import { Router, ActivatedRoute, Params } from '@angular/router';
-import { takeWhile } from 'rxjs/operators';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { SearchParamObject } from 'app/services/search.service';
 import { TableService } from 'app/services/table.service';
@@ -22,15 +22,15 @@ import { SearchFilterTemplateComponent } from 'app/shared/components/search-filt
   imports: [TableTemplateComponent, HeroBannerComponent, SearchFilterTemplateComponent],
   standalone: true
 })
-export class NewsListComponent implements OnInit, OnDestroy {
+export class NewsListComponent implements OnInit {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
+  private destroyRef = inject(DestroyRef);
   private tableTemplateUtils = inject(TableTemplate);
   private tableService = inject(TableService);
   private loadingState = inject(LoadingStateService);
 
   private tableId = 'news';
-  private alive = true;
 
   loading = this.loadingState.getOperationState('table-news');
   tableData = signal<TableObject>(new TableObject({ component: ActivityCardComponent }));
@@ -82,7 +82,7 @@ export class NewsListComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     // Subscribe to query params and fetch data
-    this.route.queryParamMap.pipe(takeWhile(() => this.alive)).subscribe(data => {
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(data => {
       const params = (data as any)['params'] || {};
       
       const updatedTableData = this.tableTemplateUtils.updateTableObjectWithUrlParams(params, this.tableData());
@@ -146,10 +146,6 @@ export class NewsListComponent implements OnInit, OnDestroy {
       queryParams: params,
       relativeTo: this.route
     });
-  }
-
-  ngOnDestroy(): void {
-    this.alive = false;
   }
 
   executeSearch(searchEvent: any): void {

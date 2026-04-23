@@ -11,11 +11,27 @@
       <div class="search-box position-relative">
         <input type="text" class="form-control gtm-filter-applicant" placeholder="Start typing a project name" id="applicantInput"
         [ngModel]="applicant()" 
-        (ngModelChange)="applicant.set($event); applyFilters()">
+        (ngModelChange)="applicant.set($event); applyFilters(); onSearchInput($event)"
+        (blur)="hideSuggestions()"
+        (keydown.escape)="hideSuggestions()"
+        autocomplete="off">
         @if (applicant()) {
           <button type="button" class="btn-clear" (click)="clearSearch()" aria-label="Clear search">
             <i class="material-icons">close</i>
           </button>
+        }
+        @if (showSuggestions() && suggestions().length > 0) {
+          <ul class="autocomplete-dropdown" role="listbox" aria-label="Project name suggestions">
+            @for (s of suggestions().slice(0, 5); track s.id) {
+              <li role="option"
+                  aria-selected="false"
+                  (mousedown)="selectSuggestion(s)"
+                  (keydown.enter)="selectSuggestion(s)"
+                  tabindex="0">
+                <span [innerHTML]="s.highlighted"></span>
+              </li>
+            }
+          </ul>
         }
       </div>
       <div class="toggle-container">

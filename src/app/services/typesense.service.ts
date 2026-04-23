@@ -1,4 +1,6 @@
 import { Injectable, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable, map, expand, reduce, EMPTY } from 'rxjs';
 import TypesenseInstantSearchAdapter from 'typesense-instantsearch-adapter';
 import { ConfigService } from './config.service';
 
@@ -15,6 +17,7 @@ import { ConfigService } from './config.service';
 @Injectable({ providedIn: 'root' })
 export class TypesenseService {
   private configService = inject(ConfigService);
+  private http = inject(HttpClient);
 
   private cachedSearchClient: any = null;
   private cachedClientKey = '';
@@ -78,6 +81,227 @@ export class TypesenseService {
   setLastFacets(indexName: string, attribute: string, items: any[]): void {
     if (!this.lastFacetsCache[indexName]) this.lastFacetsCache[indexName] = {};
     this.lastFacetsCache[indexName][attribute] = [...items];
+  }
+
+  /**
+   * Fetches the top recent activities directly from Typesense REST API.
+   * Returns them mapped to the shape ActivityCardComponent expects so the
+   * home page can use Typesense instead of the MongoDB /api/public/recentActivity endpoint.
+   *
+   * Sorted pinned-first then newest-first, filtered to active=true only.
+   */
+  getTopActivities(perPage = 5): Observable<any[]> {
+    return this.searchCollection('activities', {
+      q: '*',
+      query_by: 'headline',
+      filter_by: 'active:true',
+      sort_by: 'pinned:desc,dateAdded:desc',
+      per_page: String(perPage),
+    }).pipe(
+      map(res => (res.hits ?? []).map((hit: any) => {
+        const d = hit.document;
+        return {
+          _id: d.id,
+          headline: d.headline,
+          content: d.contentHtml || d.content,
+          dateAdded: d.dateAdded ? d.dateAdded * 1000 : null,
+          type: d.type,
+          documentUrl: d.documentUrl || null,
+          active: d.active,
+          notificationName: d.notificationName || null,
+          projectNotification: d.notificationName ? { name: d.notificationName } : null,
+          project: d.projectId ? { _id: d.projectId, name: d.projectName || '' } : null,
+          pcp: null,
+        };
+      }))
+    );
+  }
+
+  /**
+   * Fetches ALL projects from Typesense, paginating at 250/page.
+   * Maps each hit to the shape ProjectsComponent / the map expects.
+   * Used as a fast replacement for the MongoDB getAllFull() API call.
+   */
+  getAllProjects(): Observable<any[]> {
+    const fetchPage = (page: number) =>
+      this.searchCollection('projects', { q: '*', query_by: 'name', per_page: '250', page: String(page) });
+
+    return fetchPage(1).pipe(
+      expand(res => {
+        const fetched = res.page * 250;
+        return fetched < res.found ? fetchPage(res.page + 1) : EMPTY;
+      }),
+      reduce((acc: any[], res: any) => {
+        const mapped = (res.hits ?? []).map((hit: any) => {
+          const d = hit.document;
+          return {
+            _id:              d.id,
+            name:             d.name             || null,
+            description:      d.description      || null,
+            location:         d.location         || null,
+            sector:           d.sector           || null,
+            region:           d.region           || null,
+            type:             d.type             || null,
+            status:           d.status           || null,
+            currentPhaseName: d.currentPhaseName ? { name: d.currentPhaseName } : null,
+            eacDecision:      d.eacDecision      ? { name: d.eacDecision }      : null,
+            centroid:         d.centroid         || [],
+          };
+        });
+        return acc.concat(mapped);
+      }, [])
+    );
+  }
+
+  /**
+   * Fetches featured documents for a given project from Typesense.
+   * Replaces the MongoDB `isFeatured:true` search on the Featured Documents tab.
+   * Returns up to 5 docs sorted newest-first, mapped to the shape
+   * DocumentTableRowsComponent expects.
+   */
+  getFeaturedDocuments(projId: string): Observable<any[]> {
+    return this.searchCollection('documents', {
+      q: '*',
+      query_by: 'displayName',
+      filter_by: `projectId:${projId} && isFeatured:true`,
+      sort_by: 'datePosted:desc',
+      per_page: '5',
+    }).pipe(
+      map(res => (res.hits ?? []).map((hit: any) => {
+        const d = hit.document;
+        return {
+          _id:              d.id,
+          displayName:      d.displayName      || null,
+          documentFileName: d.documentFileName || null,
+          internalExt:      d.internalExt      || null,
+          // datePosted is stored as Unix seconds; DatePipe needs ms
+          datePosted:       d.datePosted ? d.datePosted * 1000 : null,
+          type:             d.type             || null,
+          milestone:        d.milestone        || null,
+          projectPhase:     d.projectPhase     || null,
+          isFeatured:       d.isFeatured       ?? false,
+          showFeatured:     true,
+        };
+      }))
+    );
+  }
+
+  /**
+   * Fetches paginated activities for a given project from Typesense.
+   * Replaces the MongoDB RecentActivity search on the Activities & Updates tab.
+   *
+   * @param projId   Project ObjectID string
+   * @param page     1-based page number
+   * @param pageSize Items per page
+   * @param sortBy   MongoDB-style sort string (e.g. '-dateAdded', '+dateAdded', '-score')
+   * @param keywords Keyword search string (empty string = wildcard)
+   */
+  getProjectActivities(
+    projId: string,
+    page: number,
+    pageSize: number,
+    sortBy: string,
+    keywords: string,
+  ): Observable<{ items: any[]; total: number }> {
+    // Convert MongoDB-style sort ('-dateAdded') to Typesense style ('dateAdded:desc')
+    // '-score' means full-text relevance — map to _text_match:desc
+    const tsSort = sortBy === '-score'
+      ? '_text_match:desc,dateAdded:desc'
+      : sortBy
+        ? `${sortBy.slice(1)}:${sortBy.charAt(0) === '-' ? 'desc' : 'asc'}`
+        : 'pinned:desc,dateAdded:desc';
+
+    return this.searchCollection('activities', {
+      q:           keywords || '*',
+      query_by:    'headline,content',
+      filter_by:   `projectId:${projId} && active:true`,
+      sort_by:     tsSort,
+      page:        String(page),
+      per_page:    String(pageSize),
+      highlight_full_fields: 'headline,content',
+    }).pipe(
+      map(res => ({
+        total: res.found ?? 0,
+        items: (res.hits ?? []).map((hit: any) => {
+          const d = hit.document;
+          const getHighlightValue = (field: string) =>
+            hit.highlights?.find((h: any) => h.field === field)?.value;
+          return {
+            _id:                 d.id,
+            // Full headline text with <mark> tags on matched terms
+            headline:            getHighlightValue('headline') ?? d.headline ?? '',
+            // Full content with <mark> tags when matched; falls back to rich
+            // contentHtml when no match (contentHtml is not indexed so marks
+            // can only appear in the plain-text content.value from Typesense)
+            content:             getHighlightValue('content') ?? d.contentHtml ?? d.content ?? '',
+            dateAdded:           d.dateAdded ? d.dateAdded * 1000 : null,
+            type:                d.type                || null,
+            documentUrl:         d.documentUrl         || null,
+            active:              d.active,
+            notificationName:    d.notificationName    || null,
+            projectNotification: d.notificationName ? { name: d.notificationName } : null,
+            project:             d.projectId ? { _id: d.projectId, name: d.projectName || '' } : null,
+            // Reconstruct pcp object from stored fields so "View Engagement" button works
+            pcp: d.pcpId ? {
+              _id:    d.pcpId,
+              isMet:  d.pcpIsMet  || false,
+              metURL: d.pcpMetURL || null,
+            } : null,
+          };
+        }),
+      }))
+    );
+  }
+
+  /**
+   * Returns up to 5 project name suggestions for the given prefix query.
+   * Used to drive the autocomplete dropdown on the map search input.
+   * Only called when TYPESENSE_ENABLED is true.
+   */
+  getProjectSuggestions(query: string): Observable<{ id: string; name: string; highlighted: string }[]> {
+    return this.searchCollection('projects', {
+      q: query,
+      query_by: 'name',
+      per_page: '250',   // fetch up to 250 for accurate marker filtering; dropdown limits to 5
+      num_typos: '1',
+      highlight_fields: 'name',
+      include_fields: 'id,name',
+    }).pipe(
+      map(res => (res.hits ?? []).map((hit: any) => {
+        const snippet = hit.highlights?.[0]?.snippet ?? hit.document.name ?? '';
+        return {
+          id:          hit.document.id   as string,
+          name:        hit.document.name as string,
+          highlighted: snippet,
+        };
+      }))
+    );
+  }
+
+  /** Makes a direct Typesense REST search call to the given collection. */
+  private searchCollection(collection: string, params: Record<string, string>): Observable<any> {
+    const config = this.configService.config();
+    const apiKey = config.TYPESENSE_SEARCH_KEY || '';
+    const baseUrl = this.buildSearchUrl();
+    return this.http.get<any>(
+      `${baseUrl}/collections/${collection}/documents/search?${new URLSearchParams(params)}`,
+      { headers: { 'X-TYPESENSE-API-KEY': apiKey } }
+    );
+  }
+
+  /**
+   * Builds the base URL for direct Typesense REST calls.
+   * For path-only TYPESENSE_SEARCH_HOST (deployed), prefixes with window.location.origin.
+   * For absolute URLs (local dev), uses the URL directly.
+   */
+  private buildSearchUrl(): string {
+    const config = this.configService.config();
+    const searchHost = config.TYPESENSE_SEARCH_HOST || '/search-api';
+    if (searchHost.startsWith('http')) {
+      return searchHost.replace(/\/$/, '');
+    }
+    const origin = `${window.location.protocol}//${window.location.host}`;
+    return `${origin}${searchHost}`;
   }
 
   /**

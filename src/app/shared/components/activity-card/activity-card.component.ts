@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, ChangeDetectionStrategy, inject } from '@angular/core';
+import { Component, EventEmitter, Input, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
@@ -91,4 +91,39 @@ export class ActivityCardComponent implements TableRowComponent {
   getDocUrl(url: string | null | undefined): string {
     return resolveDocUrl(url ?? '') || '#';
   }
+
+  expanded = signal(false);
+
+  toggleDocs(): void {
+    this.expanded.update(v => !v);
+  }
+
+  /** True when documentUrl is a legacy docs?folder link (no direct file). */
+  isFolderDocUrl = computed(() =>
+    (this.rowData?.documentUrl ?? '').includes('docs?folder')
+  );
+
+  /** MongoDB ObjectId parsed from the documentUrl path, or null. */
+  docId = computed((): string | null => {
+    const url = this.rowData?.documentUrl ?? '';
+    const m = url.match(/\/document\/([a-f0-9]{24})\//i);
+    return m ? m[1] : null;
+  });
+
+  /** Decoded filename from the last path segment of documentUrl. */
+  docFilename = computed((): string | null => {
+    const url = this.rowData?.documentUrl ?? '';
+    if (!url) return null;
+    try {
+      const parts = new URL(url, 'http://x').pathname.split('/');
+      const last = parts[parts.length - 1];
+      return last ? decodeURIComponent(last) : null;
+    } catch { return null; }
+  });
+
+  /** True only when we have actual content to show in the accordion. */
+  hasDocContent = computed((): boolean => {
+    if (this.isFolderDocUrl()) return !!this.rowData?.project?._id;
+    return !!this.docId();
+  });
 }

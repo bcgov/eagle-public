@@ -2,6 +2,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import { Observable, of, Subject } from 'rxjs';
 import { tap, take } from 'rxjs/operators';
 import { Project } from '../models/project';
+import { News } from '../models/news';
 import { ProjectService } from './project.service';
 import { LoggingService } from './logging.service';
 import { LoadingStateService } from './loading-state.service';
@@ -21,6 +22,9 @@ export class StorageService {
     
     // Current project signal for reactive access
     public currentProject = signal<Project | null>(null);
+
+    // Recent activities cache (home page — changes infrequently, cache for session lifetime)
+    private cachedActivities: News[] | null = null;
 
     constructor() {
         this.currentState = {};
@@ -92,5 +96,15 @@ export class StorageService {
         this.cachedProjects.set(projects);
         this.preloadComplete.set(true);
         this.logger.info(`Cached ${projects.length} projects`, 'StorageService');
+    }
+
+    /** Returns cached activities, or null if not yet fetched. */
+    getCachedActivities(): News[] | null {
+        return this.cachedActivities;
+    }
+
+    /** Store activities after first fetch. */
+    cacheActivities(activities: News[]): void {
+        this.cachedActivities = activities;
     }
 }

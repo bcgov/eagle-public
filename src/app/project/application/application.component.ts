@@ -1,6 +1,6 @@
 import { Component, OnDestroy, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, Router, Params } from '@angular/router';
-import { takeWhile } from 'rxjs/operators';
+import { takeWhile, take, switchMap } from 'rxjs/operators';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { SearchParamObject } from '../../services/search.service';
 import { IColumnObject, TableObject } from '../../shared/components/table-template/table-object';
@@ -56,6 +56,7 @@ export class ApplicationComponent implements OnDestroy {
   constructor() {
     // Get project ID from parent route
     this.projId = this.route.parent?.snapshot.params['projId'] || '';
+    this.tableService.clearTable(this.tableId);
 
     // Watch for table data changes from service
     this.tableSignal$.pipe(takeWhile(() => this.alive)).subscribe(searchResults => {
@@ -81,26 +82,28 @@ export class ApplicationComponent implements OnDestroy {
     });
 
     // Load config lists and trigger initial fetch
-    this.configService.lists.pipe(takeWhile(() => this.alive)).subscribe(list => {
-      this.lists = list;
-      this.lists.forEach(item => {
-        if (item.type === 'label') {
-          this.milestoneArray.push({ ...item });
-        } else if (item.type === 'doctype') {
-          this.documentTypeArray.push({ ...item });
-        } else if (item.type === 'projectPhase') {
-          this.projectPhaseArray.push({ ...item });
-        }
-      });
-      this.setFilters();
+    // Wait for lists metadata before subscribing to query params.
+    // This prevents a premature fetch with empty lists (wrong modifiers) followed
+    // by a second fetch once lists arrive — the source of the pop-in.
+    this.configService.lists.pipe(
+      take(1),
+      switchMap(list => {
+        this.lists = list;
+        list.forEach((item: any) => {
+          if (item.type === 'label') {
+            this.milestoneArray.push({ ...item });
+          } else if (item.type === 'doctype') {
+            this.documentTypeArray.push({ ...item });
+          } else if (item.type === 'projectPhase') {
+            this.projectPhaseArray.push({ ...item });
+          }
+        });
+        this.setFilters();
+        return this.route.queryParamMap;
+      }),
+      takeWhile(() => this.alive)
+    ).subscribe(() => {
       this.fetchDataWithCurrentParams();
-    });
-
-    // Subscribe to query params and fetch data
-    this.route.queryParamMap.pipe(takeWhile(() => this.alive)).subscribe(() => {
-      if (this.lists.length > 0) {
-        this.fetchDataWithCurrentParams();
-      }
     });
   }
 

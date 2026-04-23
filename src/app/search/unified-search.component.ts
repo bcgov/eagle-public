@@ -39,6 +39,7 @@ import {
   groupByLegislation,
   tabToCollectionId,
 } from './search-collections';
+import { initTabArrows, TabArrowsHandle } from 'app/shared/utils/tab-arrows';
 
 // ── Per-collection runtime state ───────────────────────────────────────────────
 
@@ -126,21 +127,23 @@ const TABS: { id: Tab; label: string }[] = [
   ],
   template: `
     <!-- ── Tab bar ───────────────────────────────────────────────── -->
-    <div class="tab-bar-wrapper pt-3">
+    <div class="tabs-container pt-3">
       <div class="container">
-        <div class="tab-bar" role="tablist" aria-label="Search dataset tabs">
+        <ul class="nav-tabs" role="tablist" aria-label="Search dataset tabs">
           @for (tab of tabs; track tab.id) {
-            <button
-              class="tab-btn"
-              [class.active]="activeTab() === tab.id"
-              role="tab"
-              [attr.aria-selected]="activeTab() === tab.id"
-              [id]="'search-tab-' + tab.id"
-              [attr.aria-controls]="'search-panel-' + tab.id"
-              (click)="switchTab(tab.id)"
-            >{{ tab.label }}</button>
+            <li class="nav-item">
+              <button
+                class="nav-link"
+                [class.active]="activeTab() === tab.id"
+                role="tab"
+                [attr.aria-selected]="activeTab() === tab.id"
+                [id]="'search-tab-' + tab.id"
+                [attr.aria-controls]="'search-panel-' + tab.id"
+                (click)="switchTab(tab.id)"
+              >{{ tab.label }}</button>
+            </li>
           }
-        </div>
+        </ul>
       </div>
     </div>
 
@@ -367,46 +370,6 @@ const TABS: { id: Tab; label: string }[] = [
     </div><!-- /.search-panels -->
   `,
   styles: [`
-    .tab-bar-wrapper .container {
-      position: relative;
-    }
-    .tab-bar-wrapper .container::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: calc(var(--bs-gutter-x, 1.5rem) * .5);
-      right: calc(var(--bs-gutter-x, 1.5rem) * .5);
-      height: 2px;
-      background: #dee2e6;
-      z-index: 0;
-    }
-    .tab-bar {
-      display: flex;
-      gap: 0;
-      white-space: nowrap;
-      overflow-x: auto;
-      scrollbar-width: none;
-    }
-    .tab-bar::-webkit-scrollbar { display: none; }
-    .tab-btn {
-      flex-shrink: 0;
-      padding: 0.6rem 1.25rem;
-      border: none;
-      border-bottom: 3px solid transparent;
-      background: transparent;
-      font-size: 0.9rem;
-      font-weight: 600;
-      color: #6c757d;
-      cursor: pointer;
-      position: relative;
-      z-index: 1;
-      transition: color 0.15s ease, border-bottom-color 0.15s ease;
-    }
-    .tab-btn:hover { color: var(--bs-primary, #003366); }
-    .tab-btn.active {
-      color: var(--bs-primary, #003366);
-      border-bottom-color: var(--bc-gold, #e3a82b);
-    }
     .results-col {
       position: relative;
       overflow-anchor: none;
@@ -526,6 +489,7 @@ export class UnifiedSearchComponent implements OnInit, AfterViewInit, OnDestroy 
   private zone          = inject(NgZone);
   private destroy$ = new Subject<void>();
   private searchInput$ = new Subject<string>();
+  private tabArrowsHandle: TabArrowsHandle | null = null;
   private lastTrackedQuery = new Map<CollectionId, string>();
 
   // ── Derived computed signals ─────────────────────────────────────────────────
@@ -638,11 +602,13 @@ export class UnifiedSearchComponent implements OnInit, AfterViewInit, OnDestroy 
   ngAfterViewInit(): void {
     const id = this.activeCollectionId();
     if (id) this.ensureActive(id);
+    this.tabArrowsHandle = initTabArrows();
   }
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+    this.tabArrowsHandle?.cleanup();
     (Object.keys(this.states) as CollectionId[]).forEach(id => this.teardown(id));
   }
 

@@ -29,11 +29,9 @@
   padding: 1.25rem 0.75rem;
 }
 
-/* Row background — white; dividing line between rows */
+/* Row background — matches other project-details table rows */
 :host {
-  --bs-table-bg: white;
-  --table-row-bg: white;
-  background-color: white;
+  background-color: var(--table-row-bg);
   border-bottom: 2px solid #dee2e6;
 }
 

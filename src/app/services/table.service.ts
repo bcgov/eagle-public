@@ -1,5 +1,6 @@
 import { Injectable, signal, WritableSignal, inject } from '@angular/core';
 import { SearchParamObject, SearchService } from './search.service';
+import { LoadingStateService } from './loading-state.service';
 
 /**
  * Signal-based table data service.
@@ -12,6 +13,7 @@ import { SearchParamObject, SearchService } from './search.service';
 export class TableService {
   private tables = new Map<string, WritableSignal<any>>();
   private searchService = inject(SearchService);
+  private loadingState = inject(LoadingStateService);
 
   /**
    * Get or create a signal for a table
@@ -40,6 +42,15 @@ export class TableService {
       tableSignal.set({ data: [], totalSearchCount: 0, error: true, _timestamp: Date.now() });
       throw error;
     }
+  }
+
+  /**
+   * Clear a single table's signal and start loading immediately to prevent
+   * the stale-data flash where null signal + loading=false briefly shows "no results".
+   */
+  clearTable(tableId: string): void {
+    this.loadingState.startLoading(`table-${tableId}`);
+    this.tables.get(tableId)?.set(null);
   }
 
   /**

@@ -1,16 +1,6 @@
-@if (loading()) {
-  <div class="spinner-container">
-    <div class="text-center py-4">
-      <div class="spinner-border text-primary" role="status" style="width: 2rem; height: 2rem;">
-        <span class="visually-hidden">Loading&hellip;</span>
-      </div>
-    </div>
-  </div>
-}
-
-@if (!loading() && tableData().totalListItems > 0) {
-  <div class="fade-in mb-4">
+@if (loading() || tableData().totalListItems > 0) {
+  <div class="mb-4">
     <h3 class="mb-4">Featured Documents</h3>
-    <lib-table-template [data]="tableData()"></lib-table-template>
+    <lib-table-template [data]="tableData()" [loading]="loading()"></lib-table-template>
   </div>
 }

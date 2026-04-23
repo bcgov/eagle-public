@@ -400,7 +400,46 @@
 .search-box {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
 }
+
+/* Autocomplete Dropdown */
+.autocomplete-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 1050;
+  list-style: none;
+  margin: 2px 0 0;
+  padding: 0;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.autocomplete-dropdown li {
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: #333;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.autocomplete-dropdown li:last-child {
+  border-bottom: none;
+}
+
+.autocomplete-dropdown li:hover,
+.autocomplete-dropdown li:focus {
+  background-color: var(--bc-blue-light, #e8f0fe);
+  outline: none;
+}
+
 
 /* Toggle Container */
 .toggle-container {

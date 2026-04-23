@@ -14,6 +14,8 @@ import { MapStateService } from 'app/services/map-state.service';
 import { FilterStateService } from 'app/services/filter-state.service';
 import { LoggingService } from 'app/services/logging.service';
 import { AnalyticsService } from 'app/services/analytics/analytics.service';
+import { TypesenseService } from 'app/services/typesense.service';
+import { LoadingStateService } from 'app/services/loading-state.service';
 import { ProjlistFiltersComponent } from './projlist-filters/projlist-filters.component';
 import { ProjlistListComponent } from './projlist-list/projlist-list.component';
 import { ProjlistMapComponent } from './projlist-map/projlist-map.component';
@@ -43,6 +45,8 @@ export class ProjectsComponent implements OnInit, OnDestroy {
   private mapStateService = inject(MapStateService);
   private logger = inject(LoggingService);
   private analytics = inject(AnalyticsService);
+  private typesenseService = inject(TypesenseService);
+  private loadingState = inject(LoadingStateService);
 
   // null = not yet loaded; [] = loaded but empty; Project[] = loaded with results
   public allApps = signal<Project[] | null>(null);
@@ -79,22 +83,28 @@ export class ProjectsComponent implements OnInit, OnDestroy {
       });
 
     // Kick off data fetch immediately — no need to wait for the DOM (ngOnInit)
-    this.storageService.getCachedProjects$()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (cachedProjects) => {
-          if (cachedProjects && cachedProjects.length > 0) {
-            this.logger.info(`Using ${cachedProjects.length} cached projects`, 'ProjectsComponent');
-            this.allApps.set(cachedProjects);
-          } else {
+    // Skip cache when Typesense is enabled — cached data may be from MongoDB (different shape)
+    const config = this.configService.config();
+    if (config.TYPESENSE_ENABLED) {
+      this.getApps();
+    } else {
+      this.storageService.getCachedProjects$()
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: (cachedProjects) => {
+            if (cachedProjects && cachedProjects.length > 0) {
+              this.logger.info(`Using ${cachedProjects.length} cached projects`, 'ProjectsComponent');
+              this.allApps.set(cachedProjects);
+            } else {
+              this.getApps();
+            }
+          },
+          error: () => {
+            // Preload failed, load projects normally
             this.getApps();
           }
-        },
-        error: () => {
-          // Preload failed, load projects normally
-          this.getApps();
-        }
-      });
+        });
+    }
   }
 
   ngOnInit() {
@@ -114,8 +124,22 @@ export class ProjectsComponent implements OnInit, OnDestroy {
 
   private getApps(): void {
     const start = Date.now();
+    const config = this.configService.config();
 
-    this.projectService.getAllFull(1, 1000000)
+    let source$;
+    if (config.TYPESENSE_ENABLED) {
+      // Track with the same key the map/list spinners watch
+      const loadingId = 'projects-full-page-1';
+      this.loadingState.startLoading(loadingId, 'Loading projects');
+      source$ = this.typesenseService.getAllProjects().pipe(
+        finalize(() => this.loadingState.stopLoading(loadingId))
+      );
+    } else {
+      // projectService.getAllFull tracks its own loading state internally
+      source$ = this.projectService.getAllFull(1, 1000000);
+    }
+
+    source$
       .pipe(
         takeUntil(this.destroy$),
         finalize(() => {

@@ -1,16 +1,12 @@
-import { Component, OnInit, inject, signal, ChangeDetectionStrategy, effect, DestroyRef } from '@angular/core';
+import { Component, OnInit, inject, signal, ChangeDetectionStrategy, effect, untracked } from '@angular/core';
 import { Location } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { finalize } from 'rxjs/operators';
 import { IColumnObject, TableObject } from '../../shared/components/table-template/table-object';
 import { DocumentTableRowsComponent } from '../documents/project-document-table-rows/project-document-table-rows.component';
 import { TableService } from '../../services/table.service';
 import { TableTemplateComponent } from '../../shared/components/table-template/table-template.component';
 import { SearchParamObject } from '../../services/search.service';
 import { LoadingStateService } from '../../services/loading-state.service';
-import { ConfigService } from '../../services/config.service';
-import { TypesenseService } from '../../services/typesense.service';
 
 @Component({
   selector: 'app-featured-documents',
@@ -24,9 +20,6 @@ export class FeaturedDocumentsComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly tableService = inject(TableService);
   private readonly loadingState = inject(LoadingStateService);
-  private readonly configService = inject(ConfigService);
-  private readonly typesense = inject(TypesenseService);
-  private readonly destroyRef = inject(DestroyRef);
 
   private readonly tableId = 'featuredDocuments';
   private projId = '';
@@ -41,7 +34,7 @@ export class FeaturedDocumentsComponent implements OnInit {
     effect(() => {
       const searchResults = this.tableSignal();
       if (searchResults !== null && searchResults !== undefined) {
-        const current = this.tableData();
+        const current = untracked(() => this.tableData());
         const updated = new TableObject({
           component: DocumentTableRowsComponent,
           pageSize: current.pageSize,
@@ -118,58 +111,17 @@ export class FeaturedDocumentsComponent implements OnInit {
 
     this.projId = this.route.parent?.snapshot.params['projId'] || '';
 
-    const config = this.configService.config();
-    if (config.TYPESENSE_ENABLED) {
-      this.loadingState.startLoading('table-' + this.tableId);
-      this.typesense.getFeaturedDocuments(this.projId)
-        .pipe(
-          takeUntilDestroyed(this.destroyRef),
-          finalize(() => this.loadingState.stopLoading('table-' + this.tableId))
-        )
-        .subscribe({
-          next: (docs) => {
-            const current = this.tableData();
-            const updated = new TableObject({
-              component: DocumentTableRowsComponent,
-              pageSize: current.pageSize,
-              currentPage: current.currentPage,
-              sortBy: current.sortBy,
-              tableId: current.tableId,
-            });
-            updated.options = { ...current.options };
-            updated.totalListItems = docs.length;
-            updated.items = docs.map(doc => ({ rowData: doc }));
-            updated.columns = this.tableColumns;
-            this.tableData.set(updated);
-          },
-          error: () => {
-            const current = this.tableData();
-            const updated = new TableObject({
-              component: DocumentTableRowsComponent,
-              pageSize: current.pageSize,
-              currentPage: current.currentPage,
-              sortBy: current.sortBy,
-              tableId: current.tableId,
-            });
-            updated.options = { ...current.options };
-            updated.totalListItems = 0;
-            updated.items = [];
-            this.tableData.set(updated);
-          }
-        });
-    } else {
-      this.tableService.fetchData(new SearchParamObject(
-        this.tableId,
-        '',
-        'Document',
-        [{ name: 'project', value: this.projId }],
-        1,
-        5,
-        '-datePosted',
-        { isFeatured: 'true' },
-        false,
-        ''
-      ));
-    }
+    this.tableService.fetchData(new SearchParamObject(
+      this.tableId,
+      '',
+      'Document',
+      [{ name: 'project', value: this.projId }],
+      1,
+      5,
+      '-datePosted',
+      { isFeatured: 'true' },
+      false,
+      ''
+    ));
   }
 }

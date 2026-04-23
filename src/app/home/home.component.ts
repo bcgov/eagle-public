@@ -3,11 +3,15 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
+import { withLoading } from 'app/shared/utils/rxjs-operators';
 
 import { SearchService } from 'app/services/search.service';
 import { ApiService } from 'app/services/api';
 import { LoggingService } from 'app/services/logging.service';
 import { LoadingStateService } from 'app/services/loading-state.service';
+import { TypesenseService } from 'app/services/typesense.service';
+import { ConfigService } from 'app/services/config.service';
+import { StorageService } from 'app/services/storage.service';
 import { News } from 'app/models/news';
 import { HeroBannerComponent, HeroBannerAction } from '../shared/hero-banner/hero-banner.component';
 import { InfoCardComponent, InfoCardButton } from '../shared/info-card/info-card.component';
@@ -26,6 +30,9 @@ export class HomeComponent implements OnDestroy {
   private apiService = inject(ApiService);
   private logger = inject(LoggingService);
   private loadingState = inject(LoadingStateService);
+  private typesenseService = inject(TypesenseService);
+  private configService = inject(ConfigService);
+  private storageService = inject(StorageService);
   private destroy$ = new Subject<boolean>();
 
   results = signal<News[]>([]);
@@ -79,17 +86,34 @@ export class HomeComponent implements OnDestroy {
   ];
 
   constructor() {
-    this.searchService.getTopNewsItems()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (res: News[]) => {
-          this.results.set(res || []);
-        },
-        error: (err) => {
-          this.logger.error('Error loading recent activities', 'HomeComponent', err);
-          this.results.set([]);
-        }
-      });
+    const typesenseEnabled = this.configService.config()?.TYPESENSE_ENABLED;
+
+    // Serve from cache instantly if available (activities rarely change)
+    const cached = this.storageService.getCachedActivities();
+    if (cached) {
+      this.results.set(cached);
+    } else {
+      const source$ = typesenseEnabled
+        ? this.typesenseService.getTopActivities(5)
+        : this.searchService.getTopNewsItems();
+
+      source$
+        .pipe(
+          withLoading(this.loadingState, 'home', 'Loading recent activities'),
+          takeUntil(this.destroy$)
+        )
+        .subscribe({
+          next: (res: News[]) => {
+            const activities = res || [];
+            this.results.set(activities);
+            this.storageService.cacheActivities(activities);
+          },
+          error: (err) => {
+            this.logger.error('Error loading recent activities', 'HomeComponent', err);
+            this.results.set([]);
+          }
+        });
+    }
 
     this.surveyUrl.set(this.apiService.surveyUrl || '');
     this.showSurveyBanner.set(this.apiService.showSurveyBanner);

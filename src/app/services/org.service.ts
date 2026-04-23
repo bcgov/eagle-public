@@ -5,6 +5,7 @@ import { map, catchError } from 'rxjs/operators';
 import { ApiService } from './api';
 import { Org } from 'app/models/organization';
 import { LoadingStateService } from './loading-state.service';
+import { withLoading } from 'app/shared/utils/rxjs-operators';
 
 @Injectable({providedIn:'root'})
 export class OrgService {
@@ -18,25 +19,11 @@ export class OrgService {
 
   getByCompanyType(type: string): Observable<Org[]> {
     const loadingId = `org-${type}`;
-    this.loadingState.startLoading(loadingId, `Loading ${type} organizations`);
     return this.api.getOrgsByCompanyType(type)
       .pipe(
-        map((res: any) => {
-          if (res) {
-            const orgs = res;
-            orgs.forEach((org: any, index: number) => {
-              orgs[index] = new Org(org);
-            });
-            this.loadingState.stopLoading(loadingId);
-            return orgs;
-          }
-          this.loadingState.stopLoading(loadingId);
-          return [];
-        }),
-        catchError(error => {
-          this.loadingState.stopLoading(loadingId);
-          return this.api.handleError(error);
-        })
+        withLoading(this.loadingState, loadingId, `Loading ${type} organizations`),
+        map((res: any) => res ? (res as any[]).map(org => new Org(org)) : []),
+        catchError(error => this.api.handleError(error))
       );
   }
 

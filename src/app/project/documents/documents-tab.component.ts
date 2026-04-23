@@ -1,6 +1,6 @@
 import { Component, OnDestroy, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { Router, ActivatedRoute, Params } from '@angular/router';
-import { takeWhile } from 'rxjs/operators';
+import { takeWhile, take, switchMap } from 'rxjs/operators';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { SearchResults } from '../../models/search';
 import { SearchParamObject } from '../../services/search.service';
@@ -95,6 +95,7 @@ export class DocumentsTabComponent implements OnDestroy {
   constructor() {
     // Get project ID from parent route
     this.projId = this.route.parent?.snapshot.params['projId'] || '';
+    this.tableService.clearTable(this.tableId);
     this.logger.debug(`Documents tab projId: ${this.projId}`, 'DocumentsTabComponent');
 
     // Watch for table data changes from service
@@ -121,23 +122,29 @@ export class DocumentsTabComponent implements OnDestroy {
       }
     });
 
-    this.configService.lists.pipe(takeWhile(() => this.alive)).subscribe((list) => {
-      this.lists = list;
-      this.lists.forEach(item => {
-        if (item.type === 'label') {
-          this.milestoneArray.push({ ...item });
-        } else if (item.type === 'author') {
-          this.documentAuthorTypeArray.push({ ...item });
-        } else if (item.type === 'doctype') {
-          this.documentTypeArray.push({ ...item });
-        } else if (item.type === 'projectPhase') {
-          this.projectPhaseArray.push({ ...item });
-        }
-      });
-      this.setFilters();
-    });
-
-    this.route.queryParamMap.pipe(takeWhile(() => this.alive)).subscribe(data => {
+    // Wait for lists metadata before subscribing to query params.
+    // This prevents a premature fetch with empty lists followed by a second
+    // fetch once lists arrive — the source of filter pop-in on first render.
+    this.configService.lists.pipe(
+      take(1),
+      switchMap(list => {
+        this.lists = list;
+        this.lists.forEach(item => {
+          if (item.type === 'label') {
+            this.milestoneArray.push({ ...item });
+          } else if (item.type === 'author') {
+            this.documentAuthorTypeArray.push({ ...item });
+          } else if (item.type === 'doctype') {
+            this.documentTypeArray.push({ ...item });
+          } else if (item.type === 'projectPhase') {
+            this.projectPhaseArray.push({ ...item });
+          }
+        });
+        this.setFilters();
+        return this.route.queryParamMap;
+      }),
+      takeWhile(() => this.alive)
+    ).subscribe(data => {
       this.queryParams = { ...(data as any)['params'] };
       const currentTableData = this.tableData();
       const updatedTableData = this.tableTemplateUtils.updateTableObjectWithUrlParams((data as any)['params'], currentTableData);

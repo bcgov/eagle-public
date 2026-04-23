@@ -1,10 +1,34 @@
 <h3 #activitiesHeader class="mb-4">Activities and Updates</h3>
 
-<search-filter-template
-  #explorePanel
-  [keywordOverride]='queryParams["keywordsActivities"]'
-  (searchEvent)='executeSearch($event)'>
-</search-filter-template>
+@if (isTypesense()) {
+  <div class="ais-SearchBox mb-4">
+    <form class="ais-SearchBox-form" novalidate (submit)="$event.preventDefault()">
+      <input
+        class="ais-SearchBox-input"
+        type="search"
+        placeholder="Filter activities…"
+        [value]="keywords()"
+        (input)="onInstantInput($event)"
+        autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+      />
+      @if (keywords()) {
+        <button class="ais-SearchBox-reset" type="button"
+          (click)="clearInstantSearch()" aria-label="Clear search">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12"
+            fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8z"/>
+          </svg>
+        </button>
+      }
+    </form>
+  </div>
+} @else {
+  <search-filter-template
+    #explorePanel
+    [keywordOverride]='queryParams["keywordsActivities"]'
+    (searchEvent)='executeSearch($event)'>
+  </search-filter-template>
+}
 
 <section class="tab-section">
   @if (tableData().totalListItems === 0 && !loading()) {
