@@ -208,3 +208,16 @@
     padding-left: 2rem;
   }
 }
+
+/* === SECTION SPINNER CONTAINERS ===
+ * min-height prevents sections from collapsing to zero while loading and then
+ * snapping to full height when content arrives (reduces CLS on project details tab).
+ * Applied only to the spinner wrapper so sections with no content still
+ * collapse to zero after loading completes.
+ */
+.spinner-container {
+  min-height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

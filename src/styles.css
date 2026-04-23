@@ -33,7 +33,8 @@
 
 /* Typesense search highlight — [innerHTML] bypasses component encapsulation; <mark> tags from adapter */
 .activity-card__headline mark,
-.lh-base mark {
+.lh-base mark,
+.autocomplete-dropdown mark {
   background-color: rgba(255, 220, 0, 0.5);
   border-radius: 2px;
   padding: 0;
@@ -73,3 +74,30 @@ body {
 }
 
 /* Word-paste inline style overrides removed — sanitized in word-html-sanitizer.ts at render time */
+
+/* === ENTRANCE ANIMATION ===
+ * Used wherever Angular @if blocks reveal content after loading.
+ * A 220 ms fade + subtle upward lift (4 px) follows Material/Bootstrap
+ * micro-animation conventions and is imperceptible at line with no delay.
+ * Respects prefers-reduced-motion (WCAG 2.1 SC 2.3.3).
+ */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fade-in 220ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-in {
+    animation: none;
+  }
+}

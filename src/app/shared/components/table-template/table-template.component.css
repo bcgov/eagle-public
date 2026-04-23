@@ -41,3 +41,44 @@
   position: relative;
   z-index: 2;
 }
+
+/* === SKELETON LOADING ROWS ===
+ * Shown instead of a spinner on initial load so the table's height is
+ * reserved immediately — prevents CLS from the table section growing in.
+ * Shimmer sweep is a left-to-right gradient animation (GitHub/LinkedIn standard).
+ */
+@keyframes shimmer {
+  from {
+    background-position: -600px 0;
+  }
+  to {
+    background-position: 600px 0;
+  }
+}
+
+.skeleton-row {
+  display: flex;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.skeleton-cell {
+  height: 1rem;
+  border-radius: 4px;
+  background: linear-gradient(
+    90deg,
+    #e8eaed 25%,
+    #f4f5f6 50%,
+    #e8eaed 75%
+  );
+  background-size: 600px 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-cell {
+    animation: none;
+    background: #e8eaed;
+  }
+}
