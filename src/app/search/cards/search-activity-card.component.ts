@@ -57,7 +57,7 @@ import { resolveDocUrl } from 'app/search/search-collections';
               }
             </div>
           </div>
-          @if (hit()['projectId'] || hasDocSource() || docLink()) {
+          @if (hit()['projectId'] || hasDocSource() || pcpDocsLink() || docLink()) {
             <div class="vr d-none d-md-block"></div>
             <div class="d-flex flex-md-column align-items-md-stretch justify-content-md-center gap-2">
               @if (hit()['projectId']) {
@@ -71,6 +71,12 @@ import { resolveDocUrl } from 'app/search/search-collections';
                 <button type="button" class="search-dl-btn search-dl-btn--block flex-shrink-0" (click)="toggleDocs()">
                   {{ expanded() ? 'Hide Documents' : 'View Documents' }}
                 </button>
+              } @else if (pcpDocsLink()) {
+                <a class="search-dl-btn search-dl-btn--block"
+                  [href]="pcpDocsLink()"
+                  (click)="$event.stopPropagation()">
+                  View Documents
+                </a>
               } @else if (docLink()) {
                 <a class="search-dl-btn search-dl-btn--block"
                   [href]="docLink()"
@@ -158,12 +164,20 @@ export class SearchActivityCardComponent {
   });
 
   /**
-   * True when we can fetch an actual document list (notification ref or PCP ref present).
-   * When false, fall back to the external documentUrl link (or nothing).
+   * True when we can fetch an actual document list (notification ref present).
+   * PCP types link to the project documents tab instead.
    */
   hasDocSource = computed(() =>
-    !!(this.hit()['projectNotificationId'] || this.hit()['pcpId'])
+    !!this.hit()['projectNotificationId']
   );
+
+  /** For PCP hits: link directly to the project documents tab. */
+  pcpDocsLink = computed((): string | null => {
+    const h = this.hit();
+    if (!h['pcpId']) return null;
+    const projectId = h['projectId'];
+    return projectId ? `/p/${projectId}/project-documents` : null;
+  });
 
   /** Resolved documentUrl — rewrites legacy project-notifications URLs to unified search. */
   docLink = computed((): string | null => {
@@ -191,13 +205,8 @@ export class SearchActivityCardComponent {
     this.expanded.update(v => !v);
     if (this.expanded() && this.documents() === null) {
       this.docsLoading.set(true);
-      const h = this.hit();
-      const notifId = h['projectNotificationId'];
-      const pcpId   = h['pcpId'];
-      const obs = notifId
-        ? this.api.getDocumentsByNotificationId(notifId)
-        : this.api.getDocumentsByPcpId(pcpId);
-      obs.subscribe({
+      const notifId = this.hit()['projectNotificationId'];
+      this.api.getDocumentsByNotificationId(notifId).subscribe({
         next: (docs: any[]) => {
           this.documents.set(docs ?? []);
           this.docsLoading.set(false);
