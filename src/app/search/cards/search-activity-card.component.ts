@@ -57,27 +57,29 @@ import { resolveDocUrl } from 'app/search/search-collections';
               }
             </div>
           </div>
-          <div class="vr d-none d-md-block"></div>
-          <div class="d-flex flex-md-column align-items-md-stretch justify-content-md-center gap-2">
-            @if (hit()['projectId']) {
-              <a class="search-dl-btn search-dl-btn--block"
-                [href]="'/p/' + hit()['projectId']"
-                (click)="projectClicked.emit(); $event.stopPropagation()">
-                Go to Project
-              </a>
-            }
-            @if (hasDocSource()) {
-              <button type="button" class="search-dl-btn search-dl-btn--block flex-shrink-0" (click)="toggleDocs()">
-                {{ expanded() ? 'Hide Documents' : 'View Documents' }}
-              </button>
-            } @else if (docLink()) {
-              <a class="search-dl-btn search-dl-btn--block"
-                [href]="docLink()"
-                (click)="$event.stopPropagation()">
-                View Documents
-              </a>
-            }
-          </div>
+          @if (hit()['projectId'] || hasDocSource() || docLink()) {
+            <div class="vr d-none d-md-block"></div>
+            <div class="d-flex flex-md-column align-items-md-stretch justify-content-md-center gap-2">
+              @if (hit()['projectId']) {
+                <a class="search-dl-btn search-dl-btn--block"
+                  [href]="'/p/' + hit()['projectId']"
+                  (click)="projectClicked.emit(); $event.stopPropagation()">
+                  Go to Project
+                </a>
+              }
+              @if (hasDocSource()) {
+                <button type="button" class="search-dl-btn search-dl-btn--block flex-shrink-0" (click)="toggleDocs()">
+                  {{ expanded() ? 'Hide Documents' : 'View Documents' }}
+                </button>
+              } @else if (docLink()) {
+                <a class="search-dl-btn search-dl-btn--block"
+                  [href]="docLink()"
+                  (click)="$event.stopPropagation()">
+                  View Documents
+                </a>
+              }
+            </div>
+          }
         </div>
 
         @if (safeContent()) {
