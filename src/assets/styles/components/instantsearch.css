@@ -241,14 +241,22 @@
   border-bottom: 1px solid #dee2e6;
 }
 
-/* ── Notification card document list ── */
-.notif-doc-header {
+/* ── Inline document list (shared by Notification and Updates cards) ── */
+.search-doc-header {
   background: var(--bs-primary);
   color: #fff;
 }
-.notif-doc-date   { width: 90px;  flex-shrink: 0; }
-.notif-doc-author { width: 140px; flex-shrink: 0; }
-.notif-doc-action { width: 36px;  height: 36px; flex-shrink: 0; }
+.search-doc-date   { width: 90px;  flex-shrink: 0; }
+.search-doc-author { width: 140px; flex-shrink: 0; }
+.search-doc-action { width: 36px;  height: 36px; flex-shrink: 0; }
+.search-doc-mobile-row { font-size: .75rem; }
+.search-doc-row:last-child { border-bottom: none !important; }
+.search-doc-name { word-break: break-word; }
+/* Legacy aliases kept for back-compat (notification card still uses these class names) */
+.notif-doc-header  { background: var(--bs-primary); color: #fff; }
+.notif-doc-date    { width: 90px;  flex-shrink: 0; }
+.notif-doc-author  { width: 140px; flex-shrink: 0; }
+.notif-doc-action  { width: 36px;  height: 36px; flex-shrink: 0; }
 .notif-doc-mobile-row { font-size: .75rem; }
 .notification-doc-row:last-child { border-bottom: none !important; }
 .notification-doc-name { word-break: break-word; }
