@@ -176,7 +176,7 @@ export class SearchActivityCardComponent {
     const h = this.hit();
     if (!h['pcpId']) return null;
     const projectId = h['projectId'];
-    return projectId ? `/p/${projectId}/project-documents` : null;
+    return projectId ? `/p/${projectId}/documents` : null;
   });
 
   /** Resolved documentUrl — rewrites legacy project-notifications URLs to unified search. */
