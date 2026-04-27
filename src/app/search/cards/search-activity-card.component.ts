@@ -16,141 +16,160 @@ import { resolveDocUrl } from 'app/search/search-collections';
 
 @Component({
   selector: 'app-search-activity-card',
-  standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [DatePipe],
   template: `
-    <article class="card search-result-card">
-      <div class="card-body p-4">
-        <div class="d-flex flex-column flex-md-row gap-3 align-items-md-stretch">
-          <div class="d-flex flex-column gap-2 flex-fill">
-            <div class="d-flex align-items-start gap-2 flex-wrap">
-              <h5 class="fw-bold mb-0"
-                [innerHTML]="hit()['_highlightResult']?.['headline']?.value ?? hit()['headline'] ?? hit()['notificationName'] ?? 'Untitled'">
-              </h5>
-              @if (isNotificationType()) {
-                <span class="badge bg-primary-subtle text-primary border border-primary-subtle activity-notif-badge">
-                  Notification
-                </span>
-              }
-            </div>
-            <div class="row row-cols-2 row-cols-md-4 g-2">
-              @if (hit()['projectName']) {
-                <div class="col">
-                  <div class="search-result-card-label">Project</div>
-                  <div class="search-result-card-value">{{ hit()['projectName'] }}</div>
-                </div>
-              }
-              @if (hit()['type']) {
-                <div class="col">
-                  <div class="search-result-card-label">Type</div>
-                  <div class="search-result-card-value">{{ hit()['type'] }}</div>
-                </div>
-              }
-              @if (hit()['dateAdded']) {
-                <div class="col">
-                  <div class="search-result-card-label">Date</div>
-                  <div class="search-result-card-value">
-                    {{ hit()['dateAdded'] * 1000 | date:'yyyy-MM-dd' }}
+    <article class="card search-result-card search-result-card--styled">
+      <div class="search-card-header">
+        <div class="d-flex align-items-start gap-2 flex-wrap">
+          <h5 class="fw-bold mb-0 flex-fill"
+            [innerHTML]="hit()['_highlightResult']?.['headline']?.value ?? hit()['headline'] ?? hit()['notificationName'] ?? 'Untitled'">
+          </h5>
+          @if (isNotificationType()) {
+            <span class="badge activity-notif-badge flex-shrink-0">
+              Notification
+            </span>
+          }
+        </div>
+      </div>
+
+      @if (hit()['projectName'] || hit()['type'] || hit()['dateAdded'] || hit()['notificationName'] || hit()['complianceAndEnforcement'] || safeContent() || expanded() || (hit()['projectId'] && showProjectLink()) || hasDocSource() || pcpDocsLink() || docLink()) {
+        <hr class="search-card-divider">
+        <div class="search-card-content">
+          <div class="d-flex flex-column flex-md-row gap-3">
+            <div class="flex-fill align-self-md-start">
+              <div class="row row-cols-2 row-cols-md-4 g-2">
+                @if (hit()['projectName']) {
+                  <div class="col">
+                    <div class="search-result-card-label">Project</div>
+                    <div class="search-result-card-value" [innerHTML]="hit()['projectName']"></div>
                   </div>
-                </div>
-              }
+                }
+                @if (hit()['type']) {
+                  <div class="col">
+                    <div class="search-result-card-label">Type</div>
+                    <div class="search-result-card-value" [innerHTML]="hit()['type']"></div>
+                  </div>
+                }
+                @if (hit()['dateAdded']) {
+                  <div class="col">
+                    <div class="search-result-card-label">Date</div>
+                    <div class="search-result-card-value">{{ hit()['dateAdded'] * 1000 | date:'MMM d, y' }}</div>
+                  </div>
+                }
+                @if (hit()['notificationName']) {
+                  <div class="col">
+                    <div class="search-result-card-label">Notification</div>
+                    <div class="search-result-card-value" [innerHTML]="hit()['notificationName']"></div>
+                  </div>
+                }
+                @if (hit()['complianceAndEnforcement']) {
+                  <div class="col">
+                    <div class="search-result-card-label">Category</div>
+                    <div class="search-result-card-value">Compliance &amp; Enforcement</div>
+                  </div>
+                }
+                @if (hit()['pinned']) {
+                  <div class="col">
+                    <div class="search-result-card-label">Status</div>
+                    <div class="search-result-card-value">Pinned</div>
+                  </div>
+                }
+              </div>
             </div>
+            @if ((hit()['projectId'] && showProjectLink()) || hasDocSource() || pcpDocsLink() || docLink()) {
+              <div class="search-card-vr d-none d-md-block"></div>
+              <div class="d-flex flex-md-column align-items-md-stretch justify-content-md-center gap-2 flex-shrink-0">
+                @if (hit()['projectId'] && showProjectLink()) {
+                  <a class="search-card-btn search-card-btn--primary"
+                    [href]="'/p/' + hit()['projectId']"
+                    (click)="projectClicked.emit(); $event.stopPropagation()">
+                    <i class="material-icons">open_in_new</i><span>Project</span>
+                  </a>
+                }
+                @if (hasDocSource()) {
+                  <button type="button" class="search-card-btn search-card-btn--primary" (click)="toggleDocs()">
+                    <i class="material-icons">description</i><span>{{ expanded() ? 'Hide Documents' : 'Documents' }}</span>
+                  </button>
+                } @else if (pcpDocsLink()) {
+                  <a class="search-card-btn search-card-btn--primary"
+                    [href]="pcpDocsLink()"
+                    (click)="$event.stopPropagation()">
+                    <i class="material-icons">description</i><span>Documents</span>
+                  </a>
+                } @else if (docLink()) {
+                  <a class="search-card-btn search-card-btn--primary"
+                    [href]="docLink()"
+                    (click)="$event.stopPropagation()">
+                    <i class="material-icons">description</i><span>Documents</span>
+                  </a>
+                }
+              </div>
+            }
           </div>
-          @if (hit()['projectId'] || hasDocSource() || pcpDocsLink() || docLink()) {
-            <div class="vr d-none d-md-block"></div>
-            <div class="d-flex flex-md-column align-items-md-stretch justify-content-md-center gap-2">
-              @if (hit()['projectId']) {
-                <a class="search-dl-btn search-dl-btn--block"
-                  [href]="'/p/' + hit()['projectId']"
-                  (click)="projectClicked.emit(); $event.stopPropagation()">
-                  Go to Project
-                </a>
-              }
-              @if (hasDocSource()) {
-                <button type="button" class="search-dl-btn search-dl-btn--block flex-shrink-0" (click)="toggleDocs()">
-                  {{ expanded() ? 'Hide Documents' : 'View Documents' }}
-                </button>
-              } @else if (pcpDocsLink()) {
-                <a class="search-dl-btn search-dl-btn--block"
-                  [href]="pcpDocsLink()"
-                  (click)="$event.stopPropagation()">
-                  View Documents
-                </a>
-              } @else if (docLink()) {
-                <a class="search-dl-btn search-dl-btn--block"
-                  [href]="docLink()"
-                  (click)="$event.stopPropagation()">
-                  View Documents
-                </a>
+          @if (safeContent()) {
+            <hr class="my-2 opacity-25">
+            <div class="search-result-content" [class.mb-3]="expanded()" [innerHTML]="safeContent()"></div>
+          }
+          @if (expanded()) {
+            <div class="mt-2">
+              @if (docsLoading()) {
+                <div class="d-flex align-items-center gap-2 text-muted small py-2">
+                  <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                  Loading documents&hellip;
+                </div>
+              } @else if (documents()?.length === 0) {
+                <p class="text-muted small mb-0">No documents available.</p>
+              } @else {
+                <!-- Header row — desktop only -->
+                <div class="d-none d-md-flex gap-3 px-2 py-1 small fw-semibold rounded-1 mb-2 search-doc-header">
+                  <span class="flex-fill">Document Name</span>
+                  <span class="search-doc-date">Date Posted</span>
+                  <span class="search-doc-author">Author</span>
+                  <span class="search-doc-action"></span>
+                </div>
+                @for (doc of documents(); track doc['_id']) {
+                  <div class="d-flex flex-column flex-md-row align-items-md-center gap-1 gap-md-3 py-2 border-bottom search-doc-row">
+                    <span class="flex-fill fw-semibold small search-doc-name">
+                      {{ doc['displayName'] || doc['documentFileName'] || 'Untitled' }}
+                    </span>
+                    <span class="text-muted small d-none d-md-block search-doc-date">
+                      {{ doc['datePosted'] ? (doc['datePosted'] | date:'yyyy-MM-dd') : '' }}
+                    </span>
+                    <span class="text-muted small d-none d-md-block text-truncate search-doc-author"
+                      [title]="resolveAuthor(doc['documentAuthor'])">
+                      {{ resolveAuthor(doc['documentAuthor']) }}
+                    </span>
+                    <!-- mobile: compact date + author -->
+                    <div class="d-flex d-md-none gap-2 text-muted search-doc-mobile-row">
+                      @if (doc['datePosted']) {
+                        <span>{{ doc['datePosted'] | date:'yyyy-MM-dd' }}</span>
+                      }
+                      @if (doc['documentAuthor']) {
+                        <span class="text-truncate">{{ resolveAuthor(doc['documentAuthor']) }}</span>
+                      }
+                    </div>
+                    <a class="d-flex align-items-center justify-content-center text-primary search-doc-action"
+                      [href]="'/api/document/' + doc['_id'] + '/fetch'"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="Download">
+                      <i class="material-icons md-18">file_download</i>
+                    </a>
+                  </div>
+                }
               }
             </div>
           }
         </div>
-
-        @if (safeContent()) {
-          <hr class="my-3">
-          <div class="search-result-content" [innerHTML]="safeContent()"></div>
-        }
-
-        @if (expanded()) {
-          <hr class="my-3">
-          <div>
-            @if (docsLoading()) {
-              <div class="d-flex align-items-center gap-2 text-muted small py-2">
-                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                Loading documents&hellip;
-              </div>
-            } @else if (documents()?.length === 0) {
-              <p class="text-muted small mb-0">No documents available.</p>
-            } @else {
-              <!-- Header row — desktop only -->
-              <div class="d-none d-md-flex gap-3 px-2 py-1 small fw-semibold rounded-1 mb-2 search-doc-header">
-                <span class="flex-fill">Document Name</span>
-                <span class="search-doc-date">Date Posted</span>
-                <span class="search-doc-author">Author</span>
-                <span class="search-doc-action"></span>
-              </div>
-              @for (doc of documents(); track doc['_id']) {
-                <div class="d-flex flex-column flex-md-row align-items-md-center gap-1 gap-md-3 py-2 border-bottom search-doc-row">
-                  <span class="flex-fill fw-semibold small search-doc-name">
-                    {{ doc['displayName'] || doc['documentFileName'] || 'Untitled' }}
-                  </span>
-                  <span class="text-muted small d-none d-md-block search-doc-date">
-                    {{ doc['datePosted'] ? (doc['datePosted'] | date:'yyyy-MM-dd') : '' }}
-                  </span>
-                  <span class="text-muted small d-none d-md-block text-truncate search-doc-author"
-                    [title]="resolveAuthor(doc['documentAuthor'])">
-                    {{ resolveAuthor(doc['documentAuthor']) }}
-                  </span>
-                  <!-- mobile: compact date + author -->
-                  <div class="d-flex d-md-none gap-2 text-muted search-doc-mobile-row">
-                    @if (doc['datePosted']) {
-                      <span>{{ doc['datePosted'] | date:'yyyy-MM-dd' }}</span>
-                    }
-                    @if (doc['documentAuthor']) {
-                      <span class="text-truncate">{{ resolveAuthor(doc['documentAuthor']) }}</span>
-                    }
-                  </div>
-                  <a class="d-flex align-items-center justify-content-center text-primary search-doc-action"
-                    [href]="'/api/document/' + doc['_id'] + '/fetch'"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    title="Download">
-                    <i class="material-icons md-18">file_download</i>
-                  </a>
-                </div>
-              }
-            }
-          </div>
-        }
-      </div>
+      }
     </article>
   `,
-  styles: [`.activity-notif-badge { font-size: 0.65rem; padding: 0.2em 0.55em; flex-shrink: 0; }`],
+  styles: [`.activity-notif-badge { font-size: 0.65rem; padding: 0.2em 0.55em; flex-shrink: 0; background-color: rgba(252, 186, 25, 0.2); color: var(--gold); border: 1px solid rgba(252, 186, 25, 0.5); }`],
 })
 export class SearchActivityCardComponent {
   hit = input.required<any>();
+  showProjectLink = input(true);
   projectClicked = output<void>();
 
   private sanitizer = inject(DomSanitizer);
@@ -187,9 +206,35 @@ export class SearchActivityCardComponent {
 
   safeContent = computed(() => {
     const h = this.hit();
-    const raw = h['_highlightResult']?.['content']?.value ?? h['contentHtml'] ?? h['content'];
-    return raw ? this.sanitizer.bypassSecurityTrustHtml(raw) : null;
+    const highlight = h['_highlightResult']?.['content']?.value;
+    // contentHtml is already proper HTML — decode entities only, no linkify
+    const htmlOnly = !highlight && h['contentHtml'];
+    const raw = highlight ?? (htmlOnly || h['content']);
+    if (!raw) return null;
+    const decoded = this.decodeHtmlEntities(raw);
+    return this.sanitizer.bypassSecurityTrustHtml(htmlOnly ? decoded : this.linkifyUrls(decoded));
   });
+
+  private decodeHtmlEntities(str: string): string {
+    const named: Record<string, string> = {
+      amp: '&', nbsp: '\u00A0', ndash: '\u2013', mdash: '\u2014',
+      rsquo: '\u2019', lsquo: '\u2018', rdquo: '\u201D', ldquo: '\u201C',
+      quot: '"', apos: "'", hellip: '\u2026', bull: '\u2022',
+      middot: '\u00B7', copy: '\u00A9', reg: '\u00AE', trade: '\u2122',
+    };
+    return str
+      .replace(/&([a-z]+);/gi, (_, n) => named[n.toLowerCase()] ?? `&${n};`)
+      .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(+n))
+      .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCharCode(parseInt(n, 16)));
+  }
+
+  private linkifyUrls(text: string): string {
+    return text.replace(/(https?:\/\/[^\s<>"{}|\\^`[\]]+)/g, (url) => {
+      const clean = url.replace(/[.,;:!?)'"\u201C\u201D]+$/, '');
+      const trailing = url.slice(clean.length);
+      return `<a href="${clean}" target="_blank" rel="noopener noreferrer">${clean}</a>${trailing}`;
+    });
+  }
 
   resolveAuthor(id: string | null | undefined): string {
     if (!id) return '-';

@@ -8,74 +8,86 @@ import { DatePipe } from '@angular/common';
 
 @Component({
   selector: 'app-search-document-card',
-  standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [DatePipe],
   template: `
-    <article class="card search-result-card">
-      <div class="card-body p-4">
+    <article class="card search-result-card search-result-card--styled">
+      <div class="search-card-header">
+        <div class="d-flex align-items-start gap-2">
+          <h5 class="fw-bold mb-0 flex-fill">
+            {{ hit()['displayName'] || hit()['documentFileName'] || 'Untitled Document' }}
+          </h5>
+          @if (hit()['internalExt']) {
+            <span class="search-doc-ext-badge">{{ hit()['internalExt'].toUpperCase() }}</span>
+          }
+        </div>
+      </div>
+      <hr class="search-card-divider">
+      <div class="search-card-content">
         <div class="d-flex flex-column flex-md-row gap-3">
-          <div class="flex-fill">
-            <div class="d-flex flex-column gap-2">
-              <h5 class="fw-bold mb-0">
-                {{ hit()['displayName'] || hit()['documentFileName'] || 'Untitled Document' }}
-              </h5>
-              @if (hit()['documentFileName'] && hit()['documentFileName'] !== hit()['displayName']) {
-                <div class="text-muted small">{{ hit()['documentFileName'] }}</div>
-              }
-              <div class="row row-cols-2 row-cols-md-4 g-2 mt-1">
-                @if (hit()['projectName']) {
-                  <div class="col">
-                    <div class="search-result-card-label">Project</div>
-                    <div class="search-result-card-value">{{ hit()['projectName'] }}</div>
-                  </div>
-                }
-                @if (hit()['type']) {
-                  <div class="col">
-                    <div class="search-result-card-label">Type</div>
-                    <div class="search-result-card-value">{{ hit()['type'] }}</div>
-                  </div>
-                }
-                @if (hit()['milestone']) {
-                  <div class="col">
-                    <div class="search-result-card-label">Milestone</div>
-                    <div class="search-result-card-value">{{ hit()['milestone'] }}</div>
-                  </div>
-                }
-                @if (hit()['datePosted']) {
-                  <div class="col">
-                    <div class="search-result-card-label">Date Posted</div>
-                    <div class="search-result-card-value">
-                      {{ hit()['datePosted'] * 1000 | date:'yyyy-MM-dd' }}
-                    </div>
-                  </div>
-                }
+          <div class="flex-fill align-self-md-start">
+            <div class="row row-cols-2 row-cols-md-4 g-2">
+              <div class="col">
+                <div class="search-result-card-label">Project</div>
+                <div class="search-result-card-value">{{ hit()['projectName'] || '—' }}</div>
+              </div>
+              <div class="col">
+                <div class="search-result-card-label">Type</div>
+                <div class="search-result-card-value">{{ hit()['type'] || '—' }}</div>
+              </div>
+              <div class="col">
+                <div class="search-result-card-label">Milestone</div>
+                <div class="search-result-card-value">{{ hit()['milestone'] || '—' }}</div>
+              </div>
+              <div class="col">
+                <div class="search-result-card-label">Author Type</div>
+                <div class="search-result-card-value">{{ hit()['documentAuthorType'] || '—' }}</div>
+              </div>
+              <div class="col">
+                <div class="search-result-card-label">Phase</div>
+                <div class="search-result-card-value">{{ hit()['projectPhase'] || '—' }}</div>
+              </div>
+              <div class="col">
+                <div class="search-result-card-label">Date Posted</div>
+                <div class="search-result-card-value">
+                  @if (hit()['datePosted']) {
+                    {{ hit()['datePosted'] * 1000 | date:'yyyy-MM-dd' }}
+                  } @else {
+                    —
+                  }
+                </div>
               </div>
             </div>
           </div>
-          <div class="search-result-action">
-            @if (hit()['projectId']) {
-              <a
-                class="search-dl-btn"
+          <div class="search-card-vr d-none d-md-block"></div>
+          <div class="d-flex flex-md-column align-items-md-stretch justify-content-md-center gap-2 flex-shrink-0">
+            @if (hit()['projectId'] && showProjectLink()) {
+              <a class="search-card-btn search-card-btn--primary"
                 [href]="'/p/' + hit()['projectId']"
-                (click)="projectClicked.emit(); $event.stopPropagation()"
-              >Go to Project</a>
+                (click)="projectClicked.emit(); $event.stopPropagation()">
+                <i class="material-icons">open_in_new</i><span>Project</span>
+              </a>
             }
-            <a
-              class="search-dl-btn mt-2"
+            <a class="search-card-btn search-card-btn--primary"
               [href]="'/api/document/' + (hit()['id'] ?? hit()['objectID']) + '/fetch'"
               target="_blank"
               rel="noopener noreferrer"
-              (click)="downloadClicked.emit(); $event.stopPropagation()"
-            >Download</a>
+              (click)="downloadClicked.emit(); $event.stopPropagation()">
+              <i class="material-icons">file_download</i><span>Download</span>
+            </a>
           </div>
         </div>
+        @if (hit()['documentFileName'] && hit()['documentFileName'] !== hit()['displayName']) {
+          <hr class="my-2 opacity-25">
+          <div class="search-result-content" style="color: var(--bs-secondary-color);">{{ hit()['documentFileName'] }}</div>
+        }
       </div>
     </article>
   `,
 })
 export class SearchDocumentCardComponent {
   hit = input.required<any>();
+  showProjectLink = input(true);
   downloadClicked = output<void>();
   projectClicked = output<void>();
 }

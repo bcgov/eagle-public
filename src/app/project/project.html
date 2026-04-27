@@ -68,6 +68,11 @@
                                     </li>
                                 }
                             }
+                            @if (tabsLoading()) {
+                                <li class="nav-item" aria-hidden="true"><a class="nav-link disabled"><div class="skeleton-cell" style="width:5rem;height:.75rem;margin:auto"></div></a></li>
+                                <li class="nav-item" aria-hidden="true"><a class="nav-link disabled"><div class="skeleton-cell" style="width:4rem;height:.75rem;margin:auto"></div></a></li>
+                                <li class="nav-item" aria-hidden="true"><a class="nav-link disabled"><div class="skeleton-cell" style="width:5.5rem;height:.75rem;margin:auto"></div></a></li>
+                            }
                             </ul>
                         </div>
                         <div class="tab-content">

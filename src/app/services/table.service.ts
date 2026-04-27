@@ -27,15 +27,12 @@ export class TableService {
 
   /**
    * Fetch data for a table and update its signal.
-   * Note: Loading state is managed by SearchService since it makes the actual API calls.
    */
   async fetchData(searchParamObject: SearchParamObject): Promise<void> {
     const tableSignal = this.getTableSignal(searchParamObject.tableId);
     
     try {
       const res = await this.searchService.fetchData(searchParamObject);
-      // Always trigger an update by creating a new object reference
-      // This ensures subscribers are notified even if data is identical
       tableSignal.set({ ...res, _timestamp: Date.now() });
     } catch (error) {
       // On error, still update signal to show empty state

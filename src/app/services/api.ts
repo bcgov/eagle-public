@@ -491,21 +491,6 @@ export class ApiService {
     return this.http.get<Document[]>(`${this.apiPath}/${queryString}`, {});
   }
 
-  getDocumentsByPcpId(pcpId: string): Observable<Document[]> {
-    const fields = [
-      '_comment',
-      'displayName',
-      'documentFileName',
-      'datePosted',
-      'documentAuthor',
-      'internalURL',
-      'internalMime',
-      'internalExt',
-    ];
-    const queryString = 'document?_comment=' + pcpId + '&fields=' + this.buildValues(fields);
-    return this.http.get<Document[]>(`${this.apiPath}/${queryString}`, {});
-  }
-
   getDocument(id: string): Observable<Document[]> {
     const queryString = 'document/' + id + '?fields=internalOriginalName|documentSource';
     return this.http.get<Document[]>(`${this.apiPath}/${queryString}`, {});

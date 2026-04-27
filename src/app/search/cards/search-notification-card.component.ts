@@ -16,15 +16,17 @@ import { highlightField } from '../search-collections';
 
 @Component({
   selector: 'app-search-notification-card',
-  standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [DatePipe, TitleCasePipe],
   template: `
-    <article class="card search-result-card">
-      <div class="card-body p-4">
-        <div class="d-flex flex-column flex-md-row gap-3 align-items-md-stretch">
-          <div class="d-flex flex-column gap-2 flex-fill">
-            <h5 class="fw-bold mb-0" [innerHTML]="hl('name') || 'Untitled'"></h5>
+    <article class="card search-result-card search-result-card--styled">
+      <div class="search-card-header">
+        <h5 class="fw-bold mb-0" [innerHTML]="hl('name') || 'Untitled'"></h5>
+      </div>
+      <hr class="search-card-divider">
+      <div class="search-card-content">
+        <div class="d-flex flex-column flex-md-row gap-3">
+          <div class="flex-fill align-self-md-start">
             <div class="row row-cols-2 row-cols-md-3 g-2">
               @if (hit()['type']) {
                 <div class="col">
@@ -90,29 +92,28 @@ import { highlightField } from '../search-collections';
               }
             </div>
           </div>
-          <div class="vr d-none d-md-block"></div>
-          <div class="d-flex flex-md-column align-items-md-stretch justify-content-md-center gap-2">
+          <div class="search-card-vr d-none d-md-block"></div>
+          <div class="d-flex flex-md-column align-items-md-stretch justify-content-md-center gap-2 flex-shrink-0">
             @if (hit()['associatedProjectId']) {
-              <a class="search-dl-btn search-dl-btn--block flex-shrink-0"
+              <a class="search-card-btn search-card-btn--primary"
                 [href]="'/p/' + hit()['associatedProjectId']"
                 (click)="projectClicked.emit(); $event.stopPropagation()">
-                Go to Project
+                <i class="material-icons">open_in_new</i><span>Project</span>
               </a>
             }
-            <button type="button" class="search-dl-btn search-dl-btn--block flex-shrink-0" (click)="toggleDocs()">
-              {{ expanded() ? 'Hide Documents' : 'View Documents' }}
+            <button type="button" class="search-card-btn search-card-btn--primary" (click)="toggleDocs()">
+              <i class="material-icons">description</i><span>{{ expanded() ? 'Hide Documents' : 'Documents' }}</span>
             </button>
           </div>
         </div>
 
         @if (safeDescription()) {
-          <hr class="my-3">
+          <hr class="my-2 opacity-25">
           <div class="search-result-content" [innerHTML]="safeDescription()"></div>
         }
 
         @if (expanded()) {
-          <hr class="my-3">
-          <div>
+          <div class="mt-2">
             @if (docsLoading()) {
               <div class="d-flex align-items-center gap-2 text-muted small py-2">
                 <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
@@ -122,26 +123,26 @@ import { highlightField } from '../search-collections';
               <p class="text-muted small mb-0">No documents available.</p>
             } @else {
               <!-- Header row — desktop only -->
-              <div class="d-none d-md-flex gap-3 px-2 py-1 small fw-semibold rounded-1 mb-2 notif-doc-header">
+              <div class="d-none d-md-flex gap-3 px-2 py-1 small fw-semibold rounded-1 mb-2 search-doc-header">
                 <span class="flex-fill">Document Name</span>
-                <span class="notif-doc-date">Date Posted</span>
-                <span class="notif-doc-author">Author</span>
-                <span class="notif-doc-action"></span>
+                <span class="search-doc-date">Date Posted</span>
+                <span class="search-doc-author">Author</span>
+                <span class="search-doc-action"></span>
               </div>
               @for (doc of documents(); track doc['_id']) {
-                <div class="d-flex flex-column flex-md-row align-items-md-center gap-1 gap-md-3 py-2 border-bottom notification-doc-row">
-                  <span class="flex-fill fw-semibold small notification-doc-name">
+                <div class="d-flex flex-column flex-md-row align-items-md-center gap-1 gap-md-3 py-2 border-bottom search-doc-row">
+                  <span class="flex-fill fw-semibold small search-doc-name">
                     {{ doc['displayName'] || doc['documentFileName'] || 'Untitled' }}
                   </span>
-                  <span class="text-muted small d-none d-md-block notif-doc-date">
+                  <span class="text-muted small d-none d-md-block search-doc-date">
                     {{ doc['datePosted'] ? (doc['datePosted'] | date:'yyyy-MM-dd') : '' }}
                   </span>
-                  <span class="text-muted small d-none d-md-block text-truncate notif-doc-author"
+                  <span class="text-muted small d-none d-md-block text-truncate search-doc-author"
                     [title]="resolveAuthor(doc['documentAuthor'])">
                     {{ resolveAuthor(doc['documentAuthor']) }}
                   </span>
                   <!-- mobile: compact date + author -->
-                  <div class="d-flex d-md-none gap-2 text-muted notif-doc-mobile-row">
+                  <div class="d-flex d-md-none gap-2 text-muted search-doc-mobile-row">
                     @if (doc['datePosted']) {
                       <span>{{ doc['datePosted'] | date:'yyyy-MM-dd' }}</span>
                     }
@@ -149,7 +150,7 @@ import { highlightField } from '../search-collections';
                       <span class="text-truncate">{{ resolveAuthor(doc['documentAuthor']) }}</span>
                     }
                   </div>
-                  <a class="d-flex align-items-center justify-content-center text-primary notif-doc-action"
+                  <a class="d-flex align-items-center justify-content-center text-primary search-doc-action"
                     [href]="'/api/document/' + doc['_id'] + '/fetch'"
                     target="_blank"
                     rel="noopener noreferrer"

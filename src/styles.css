@@ -101,3 +101,43 @@ body {
     animation: none;
   }
 }
+
+/* === SKELETON LOADING ROWS ===
+ * Shared by table-template, search-card-list, featured-documents, and any
+ * other component that needs shimmer placeholders.  Defined globally because
+ * Angular's default view-encapsulation would otherwise prevent one component's
+ * skeleton CSS from styling skeleton markup in another component.
+ */
+@keyframes shimmer {
+  from { background-position: -600px 0; }
+  to   { background-position:  600px 0; }
+}
+
+.skeleton-row {
+  display: flex;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.skeleton-cell {
+  height: 1rem;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #e8eaed 25%, #f4f5f6 50%, #e8eaed 75%);
+  background-size: 600px 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+/* Inside <td>/<th> the cell is block-level by default; be explicit so
+   width/height constraints apply correctly in both flex and table contexts. */
+td > .skeleton-cell,
+th > .skeleton-cell {
+  display: block;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-cell {
+    animation: none;
+    background: #e8eaed;
+  }
+}

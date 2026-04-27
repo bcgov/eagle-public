@@ -66,6 +66,12 @@ export const httpCacheInterceptor: HttpInterceptorFn = (req, next) => {
     return next(req);
   }
 
+  // Don't cache /search-api requests — Typesense adapter has its own 120 s cache
+  // and the shareReplay ghost-request pattern here causes stale results + missed retries
+  if (req.url.startsWith('/search-api')) {
+    return next(req);
+  }
+
   // Don't cache requests with cache-control: no-cache header
   if (req.headers.has('cache-control') && req.headers.get('cache-control') === 'no-cache') {
     return next(req);

@@ -31,11 +31,15 @@
                 }
                 @if (project()?.CEAAInvolvement?.name!=='None') {
                   <dd class="mb-1">
-                    <a target="_blank" rel="noopener" href="{{project()?.CEAALink}}">
+                    @if (project()?.CEAALink) {
+                      <a target="_blank" rel="noopener" href="{{project()?.CEAALink}}">
+                        {{project()?.CEAAInvolvement?.name || "-" }}
+                        <i class="material-icons" style="font-size: 0.875rem; vertical-align: middle;" aria-hidden="true">open_in_new</i>
+                        <span class="visually-hidden">(opens in new tab)</span>
+                      </a>
+                    } @else {
                       {{project()?.CEAAInvolvement?.name || "-" }}
-                      <i class="material-icons" style="font-size: 0.875rem; vertical-align: middle;" aria-hidden="true">open_in_new</i>
-                      <span class="visually-hidden">(opens in new tab)</span>
-                    </a>
+                    }
                   </dd>
                 }
               </div>

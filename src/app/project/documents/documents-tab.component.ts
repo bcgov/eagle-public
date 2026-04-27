@@ -1,280 +1,129 @@
-import { Component, OnDestroy, inject, signal, ChangeDetectionStrategy } from '@angular/core';
-import { Router, ActivatedRoute, Params } from '@angular/router';
-import { takeWhile, take, switchMap } from 'rxjs/operators';
-import { toObservable } from '@angular/core/rxjs-interop';
-import { SearchResults } from '../../models/search';
+import { Component, signal, ChangeDetectionStrategy, inject } from '@angular/core';
 import { SearchParamObject } from '../../services/search.service';
-import { DocumentTableRowsComponent } from './project-document-table-rows/project-document-table-rows.component';
-import { TableTemplate } from '../../shared/components/table-template/table-template';
 import { IColumnObject, TableObject } from '../../shared/components/table-template/table-object';
-import { ITableMessage } from '../../shared/components/table-template/table-row-component';
+import { DocumentTableRowsComponent } from './project-document-table-rows/project-document-table-rows.component';
 import { DateFilterDefinition, FilterObject, FilterType, MultiSelectDefinition } from '../../shared/components/search-filter-template/filter-object';
-import { ConfigService } from '../../services/config.service';
-import { TableService } from '../../services/table.service';
-import { LoadingStateService } from '../../services/loading-state.service';
 import { TableTemplateComponent } from '../../shared/components/table-template/table-template.component';
 import { SearchFilterTemplateComponent } from '../../shared/components/search-filter-template/search-filter-template.component';
+import { ITableMessage } from '../../shared/components/table-template/table-row-component';
 import { LoggingService } from '../../services/logging.service';
 import { AnalyticsService } from '../../services/analytics/analytics.service';
+import { ProjectDocumentTabBase } from '../shared/project-document-tab-base';
 
 @Component({
   selector: 'app-documents',
   templateUrl: './documents-tab.component.html',
   imports: [TableTemplateComponent, SearchFilterTemplateComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  standalone: true
 })
-export class DocumentsTabComponent implements OnDestroy {
-  private readonly route = inject(ActivatedRoute);
-  private readonly router = inject(Router);
-  private readonly tableTemplateUtils = inject(TableTemplate);
-  private readonly tableService = inject(TableService);
-  private readonly loadingState = inject(LoadingStateService);
-  private readonly configService = inject(ConfigService);
+export class DocumentsTabComponent extends ProjectDocumentTabBase {
   private readonly logger = inject(LoggingService);
   private readonly analytics = inject(AnalyticsService);
 
-  private readonly tableId = 'documentsTab';
-  private alive = true;
-  private lists: any[] = [];
-  private initialLoad = true;
-  private projId = '';
+  protected readonly tableId = 'documentsTab';
+  protected readonly filtersList = ['milestone', 'documentAuthorType', 'type', 'projectPhase'];
+  protected readonly dateFiltersList = ['datePostedStart', 'datePostedEnd'];
+  protected override readonly showFeatured: boolean = true;
 
   private readonly milestoneArray: any[] = [];
   private readonly documentAuthorTypeArray: any[] = [];
   private readonly documentTypeArray: any[] = [];
   private readonly projectPhaseArray: any[] = [];
-  private readonly filtersList = ['milestone', 'documentAuthorType', 'type', 'projectPhase'];
-  private readonly dateFiltersList = ['datePostedStart', 'datePostedEnd'];
+  private readonly legislationFilterGroup = { name: 'legislation', labelPrefix: '', labelPostfix: ' Act Terms' };
 
-  public queryParams: Params = {};
-  public readonly loading = this.loadingState.getOperationState('table-documentsTab');
-  public readonly showAdvancedFilters = signal(false);
+  public override readonly showAdvancedFilters = signal(false);
   public readonly filters = signal<FilterObject[]>([]);
-  public readonly tableData = signal<TableObject>(new TableObject({ 
+  public readonly tableData = signal<TableObject>(new TableObject({
     component: DocumentTableRowsComponent,
-    sortBy: '-datePosted' // Default sort: date posted (descending)
+    sortBy: '-datePosted'
   }));
 
   public readonly tableColumns: IColumnObject[] = [
-    {
-      name: '★',
-      value: 'isFeatured',
-      width: 'col-1'
-    },
-    {
-      name: 'Name',
-      value: 'displayName',
-      width: 'col-3'
-    },
-    {
-      name: 'Date',
-      value: 'datePosted',
-      width: 'col-2'
-    },
-    {
-      name: 'Type',
-      value: 'type',
-      width: 'col-2'
-    },
-    {
-      name: 'Milestone',
-      value: 'milestone',
-      width: 'col-2'
-    },
-    {
-      name: 'Phase',
-      value: 'projectPhase',
-      width: 'col-2'
-    }
+    { name: '★',         value: 'isFeatured',   width: 'col-1' },
+    { name: 'Name',      value: 'displayName',  width: 'col-3' },
+    { name: 'Date',      value: 'datePosted',   width: 'col-2' },
+    { name: 'Type',      value: 'type',         width: 'col-2' },
+    { name: 'Milestone', value: 'milestone',    width: 'col-2' },
+    { name: 'Phase',     value: 'projectPhase', width: 'col-2' },
   ];
 
-  private readonly legislationFilterGroup = { name: 'legislation', labelPrefix: '', labelPostfix: ' Act Terms' };
-  private readonly tableSignal$ = toObservable(this.tableService.getTableSignal(this.tableId));
-
   constructor() {
-    // Get project ID from parent route
+    super();
     this.projId = this.route.parent?.snapshot.params['projId'] || '';
-    this.tableService.clearTable(this.tableId);
     this.logger.debug(`Documents tab projId: ${this.projId}`, 'DocumentsTabComponent');
-
-    // Watch for table data changes from service
-    this.tableSignal$.pipe(takeWhile(() => this.alive)).subscribe((searchResults: SearchResults) => {
-      if (searchResults && searchResults.data !== undefined) {
-        const currentTableData = this.tableData();
-        // Create new TableObject to ensure change detection with OnPush
-        const updatedTableData = new TableObject({
-          component: DocumentTableRowsComponent,
-          currentPage: currentTableData.currentPage,
-          pageSize: currentTableData.pageSize,
-          sortBy: currentTableData.sortBy
-        });
-        
-        updatedTableData.totalListItems = searchResults.totalSearchCount || 0;
-        updatedTableData.items = (searchResults.data || []).map((record: any) => {
-          record['showFeatured'] = true;
-          return { rowData: record };
-        });
-        updatedTableData.columns = this.tableColumns;
-        updatedTableData.options.showAllPicker = true;
-        
-        this.tableData.set(updatedTableData);
-      }
-    });
-
-    // Wait for lists metadata before subscribing to query params.
-    // This prevents a premature fetch with empty lists followed by a second
-    // fetch once lists arrive — the source of filter pop-in on first render.
-    this.configService.lists.pipe(
-      take(1),
-      switchMap(list => {
-        this.lists = list;
-        this.lists.forEach(item => {
-          if (item.type === 'label') {
-            this.milestoneArray.push({ ...item });
-          } else if (item.type === 'author') {
-            this.documentAuthorTypeArray.push({ ...item });
-          } else if (item.type === 'doctype') {
-            this.documentTypeArray.push({ ...item });
-          } else if (item.type === 'projectPhase') {
-            this.projectPhaseArray.push({ ...item });
-          }
-        });
-        this.setFilters();
-        return this.route.queryParamMap;
-      }),
-      takeWhile(() => this.alive)
-    ).subscribe(data => {
-      this.queryParams = { ...(data as any)['params'] };
-      const currentTableData = this.tableData();
-      const updatedTableData = this.tableTemplateUtils.updateTableObjectWithUrlParams((data as any)['params'], currentTableData);
-      
-      // If no sortBy in URL, use date as default for documents tab
-      if (!(data as any)['params'].sortBy) {
-        updatedTableData.sortBy = '-datePosted';
-      }
-      
-      this.tableData.set(updatedTableData);
-
-      if (
-        this.initialLoad && (
-          this.queryParams['milestone'] ||
-          this.queryParams['documentAuthorType'] ||
-          this.queryParams['type'] ||
-          this.queryParams['datePostedStart'] ||
-          this.queryParams['datePostedEnd'] ||
-          this.queryParams['projectPhase'])
-      ) {
-        this.showAdvancedFilters.set(true);
-        this.initialLoad = false;
-      }
-
-      // Build filters object from query params
-      const filters: Record<string, string> = {};
-      [...this.filtersList, ...this.dateFiltersList].forEach(filterKey => {
-        if (this.queryParams[filterKey]) {
-          filters[filterKey] = this.queryParams[filterKey];
-        }
-      });
-      
-      // Fetch data with current params (use local variable, not signal)
-      this.logger.debug(`Fetching documents with projId: ${this.projId}`, 'DocumentsTabComponent', {
-        currentPage: updatedTableData.currentPage,
-        pageSize: updatedTableData.pageSize,
-        sortBy: updatedTableData.sortBy,
-        filters
-      });
-      this.tableService.fetchData(new SearchParamObject(
-        this.tableId,
-        this.queryParams['keywords'] || '',
-        'Document',
-        [],
-        updatedTableData.currentPage,
-        updatedTableData.pageSize,
-        updatedTableData.sortBy,
-        { project: this.projId },
-        true,
-        updatedTableData.sortBy.includes('displayName') ? '' : '+displayName',
-        filters
-      ));
-    });
+    this.tableService.clearTable(this.tableId);
+    this.setup();
   }
 
-  private setFilters() {
-    const docDateFilter = new FilterObject(
-      'issuedDate',
-      FilterType.DateRange,
-      '',
-      new DateFilterDefinition('datePostedStart', 'Start Date', 'datePostedEnd', 'End Date'),
-      8
-    );
+  protected initListData(list: any[]): void {
+    list.forEach(item => {
+      if (item.type === 'label') {
+        this.milestoneArray.push({ ...item });
+      } else if (item.type === 'author') {
+        this.documentAuthorTypeArray.push({ ...item });
+      } else if (item.type === 'doctype') {
+        this.documentTypeArray.push({ ...item });
+      } else if (item.type === 'projectPhase') {
+        this.projectPhaseArray.push({ ...item });
+      }
+    });
+    this.setFilters();
+  }
 
-    const milestoneFilter = new FilterObject(
-      'milestone',
-      FilterType.MultiSelect,
-      'Milestone',
-      new MultiSelectDefinition(
-        this.milestoneArray,
-        [],
-        this.legislationFilterGroup,
-        null,
-        true
-      ),
-      4
-    );
+  protected fetchDataWithCurrentParams(): void {
+    const updated = this.readCurrentParams();
+    this.logger.debug(`Fetching documents with projId: ${this.projId}`, 'DocumentsTabComponent', {
+      currentPage: updated.currentPage,
+      pageSize: updated.pageSize,
+      sortBy: updated.sortBy,
+      filters: this.buildFilters()
+    });
+    this.tableService.fetchData(new SearchParamObject(
+      this.tableId,
+      this.queryParams['keywords'] || '',
+      'Document',
+      [],
+      updated.currentPage,
+      updated.pageSize,
+      updated.sortBy,
+      { project: this.projId },
+      true,
+      updated.sortBy.includes('displayName') ? '' : '+displayName',
+      this.buildFilters()
+    ));
+  }
 
-    const documentAuthorTypeFilter = new FilterObject(
-      'documentAuthorType',
-      FilterType.MultiSelect,
-      'Document Author',
-      new MultiSelectDefinition(
-        this.documentAuthorTypeArray,
-        [],
-        this.legislationFilterGroup,
-        null,
-        true
-      ),
-      4
-    );
-
-    const documentTypeFilter = new FilterObject(
-      'type',
-      FilterType.MultiSelect,
-      'Document Type',
-      new MultiSelectDefinition(
-        this.documentTypeArray,
-        [],
-        this.legislationFilterGroup,
-        null,
-        true
-      ),
-      4
-    );
-
-    const projectPhaseFilter = new FilterObject(
-      'projectPhase',
-      FilterType.MultiSelect,
-      'Project Phase',
-      new MultiSelectDefinition(
-        this.projectPhaseArray,
-        [],
-        this.legislationFilterGroup,
-        null,
-        true
-      ),
-      4
-    );
-
+  private setFilters(): void {
     this.filters.set([
-      docDateFilter,
-      milestoneFilter,
-      documentAuthorTypeFilter,
-      documentTypeFilter,
-      projectPhaseFilter
+      new FilterObject(
+        'issuedDate', FilterType.DateRange, '',
+        new DateFilterDefinition('datePostedStart', 'Start Date', 'datePostedEnd', 'End Date'),
+        8
+      ),
+      new FilterObject(
+        'milestone', FilterType.MultiSelect, 'Milestone',
+        new MultiSelectDefinition(this.milestoneArray, [], this.legislationFilterGroup, null, true),
+        4
+      ),
+      new FilterObject(
+        'documentAuthorType', FilterType.MultiSelect, 'Document Author',
+        new MultiSelectDefinition(this.documentAuthorTypeArray, [], this.legislationFilterGroup, null, true),
+        4
+      ),
+      new FilterObject(
+        'type', FilterType.MultiSelect, 'Document Type',
+        new MultiSelectDefinition(this.documentTypeArray, [], this.legislationFilterGroup, null, true),
+        4
+      ),
+      new FilterObject(
+        'projectPhase', FilterType.MultiSelect, 'Project Phase',
+        new MultiSelectDefinition(this.projectPhaseArray, [], this.legislationFilterGroup, null, true),
+        4
+      ),
     ]);
   }
 
-  navSearchHelp() {
+  navSearchHelp(): void {
     this.analytics.track('Search Help Clicked', {
       context: 'documents_tab',
       project_id: this.projId
@@ -282,7 +131,7 @@ export class DocumentsTabComponent implements OnDestroy {
     this.router.navigate(['/search-help']);
   }
 
-  executeSearch(searchPackage: any) {
+  override executeSearch(searchPackage: any): void {
     const params: any = {};
     if (searchPackage.keywords) {
       params['keywords'] = searchPackage.keywords;
@@ -291,15 +140,13 @@ export class DocumentsTabComponent implements OnDestroy {
       }
     } else {
       params['keywords'] = null;
-      // For documents tab, default to date posted (descending)
       params['sortBy'] = '-datePosted';
     }
-
     params['currentPage'] = 1;
 
-    const queryFilters = this.tableTemplateUtils.getFiltersFromSearchPackage(searchPackage, this.filtersList, this.dateFiltersList);
-
-    // Track document filters applied
+    const queryFilters = this.tableTemplateUtils.getFiltersFromSearchPackage(
+      searchPackage, this.filtersList, this.dateFiltersList
+    );
     const filterCounts = this.countFilters(queryFilters);
     this.analytics.track('Document Filters Applied', {
       project_id: this.projId,
@@ -312,20 +159,48 @@ export class DocumentsTabComponent implements OnDestroy {
       keyword_length: searchPackage.keywords?.length || 0,
       total_filters: filterCounts.total
     });
-
     this.submit(params, queryFilters);
+  }
+
+  override onMessageOut(msg: ITableMessage): void {
+    const params: any = {};
+    const currentTableData = this.tableData();
+    switch (msg.label) {
+      case 'columnSort':
+        params['sortBy'] = (currentTableData.sortBy.charAt(0) === '+' ? '-' : '+') + msg.data;
+        break;
+      case 'pageNum':
+        params['currentPage'] = msg.data;
+        break;
+      case 'pageSize':
+        params['pageSize'] = msg.data.value;
+        params['currentPage'] = 1;
+        break;
+    }
+    this.submit(params);
+  }
+
+  override onToggleFiltersPanel(event: { showPanel: boolean }): void {
+    this.showAdvancedFilters!.set(event.showPanel);
+    this.analytics.track('Document Filters Panel Toggled', {
+      project_id: this.projId,
+      is_open: event.showPanel
+    });
+  }
+
+  onResetControls(): void {
+    const currentTableData = this.tableData();
+    if (currentTableData.sortBy.includes('score')) {
+      currentTableData.sortBy = '-datePosted';
+      this.tableData.set(currentTableData);
+    }
   }
 
   private countFilters(queryFilters: any): any {
     const counts = {
-      milestone: 0,
-      type: 0,
-      documentAuthorType: 0,
-      projectPhase: 0,
-      hasDateRange: false,
-      total: 0
+      milestone: 0, type: 0, documentAuthorType: 0, projectPhase: 0,
+      hasDateRange: false, total: 0
     };
-
     if (queryFilters) {
       if (queryFilters.milestone) {
         counts.milestone = Array.isArray(queryFilters.milestone) ? queryFilters.milestone.length : 1;
@@ -348,62 +223,6 @@ export class DocumentsTabComponent implements OnDestroy {
         counts.total += 1;
       }
     }
-
     return counts;
-  }
-
-  onMessageOut(msg: ITableMessage) {
-    const params: any = {};
-    const currentTableData = this.tableData();
-    
-    switch (msg.label) {
-      case 'columnSort':
-        if (currentTableData.sortBy.charAt(0) === '+') {
-          params['sortBy'] = '-' + msg.data;
-        } else {
-          params['sortBy'] = '+' + msg.data;
-        }
-        break;
-      case 'pageNum':
-        params['currentPage'] = msg.data;
-        break;
-      case 'pageSize':
-        params['pageSize'] = msg.data.value;
-        params['currentPage'] = 1;
-        break;
-    }
-    this.submit(params);
-  }
-
-  submit(params: any, filters: any = null) {
-    this.router.navigate(
-      [],
-      {
-        queryParams: filters ? { ...params, ...filters } : params,
-        relativeTo: this.route,
-        queryParamsHandling: 'merge'
-      });
-  }
-
-  onToggleFiltersPanel(event: { showPanel: boolean }) {
-    this.showAdvancedFilters.set(event.showPanel);
-    
-    // Track filter panel toggle
-    this.analytics.track('Document Filters Panel Toggled', {
-      project_id: this.projId,
-      is_open: event.showPanel
-    });
-  }
-
-  onResetControls() {
-    const currentTableData = this.tableData();
-    if (currentTableData.sortBy.includes('score')) {
-      currentTableData.sortBy = '-datePosted';
-      this.tableData.set(currentTableData);
-    }
-  }
-
-  ngOnDestroy() {
-    this.alive = false;
   }
 }

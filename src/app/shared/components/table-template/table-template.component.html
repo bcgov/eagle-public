@@ -22,16 +22,45 @@
 
   <div [class.table-loading]="loading && data.items.length > 0">
   @if (loading && data.items.length === 0) {
-    <div aria-busy="true" aria-label="Loading table data">
-      @for (i of [1,2,3,4,5]; track i) {
-        <div class="skeleton-row">
-          <div class="skeleton-cell" style="flex: 3"></div>
-          <div class="skeleton-cell" style="flex: 2"></div>
-          <div class="skeleton-cell" style="flex: 2"></div>
-          <div class="skeleton-cell" style="flex: 1"></div>
-        </div>
-      }
-    </div>
+    @if (data.columns.length > 0) {
+      <!-- Structured skeleton: mirrors real table layout so no layout shift on load -->
+      <table class="table fade-in" aria-busy="true" aria-label="Loading table data">
+        @if (data.options.showHeader) {
+          <thead>
+            <tr>
+              @for (col of data.columns; track col.value) {
+                <th [class]="col.width">
+                  <div class="skeleton-cell" style="width: 55%; height: 0.85rem;"></div>
+                </th>
+              }
+            </tr>
+          </thead>
+        }
+        <tbody>
+          @for (i of [1,2,3,4,5]; track i) {
+            <tr>
+              @for (col of data.columns; track col.value) {
+                <td [class]="col.width">
+                  <div class="skeleton-cell"></div>
+                </td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    } @else {
+      <!-- Fallback: column definitions not yet available -->
+      <div class="fade-in" aria-busy="true" aria-label="Loading table data">
+        @for (i of [1,2,3,4,5]; track i) {
+          <div class="skeleton-row">
+            <div class="skeleton-cell" style="flex: 3"></div>
+            <div class="skeleton-cell" style="flex: 2"></div>
+            <div class="skeleton-cell" style="flex: 2"></div>
+            <div class="skeleton-cell" style="flex: 1"></div>
+          </div>
+        }
+      </div>
+    }
   } @else if (!loading && data.items.length === 0 && data.totalListItems === 0) {
     <div class="text-center my-5">
       <p class="text-muted">No results found</p>

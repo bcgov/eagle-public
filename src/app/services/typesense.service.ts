@@ -23,6 +23,43 @@ export class TypesenseService {
   private cachedClientKey = '';
   private lastHitsCache: Record<string, any[]> = {};
   private lastFacetsCache: Record<string, Record<string, any[]>> = {};
+  private healthCheckResult: boolean | null = null;
+
+  /**
+   * Health-checks the Typesense endpoint using native fetch (bypasses HttpClient
+   * interceptors). Result is cached for the session lifetime so only one network
+   * round-trip is ever made. On first-load cold-connection failures the check
+   * retries once after 1.5 s before giving up.
+   */
+  async checkHealth(searchHost: string): Promise<boolean> {
+    if (this.healthCheckResult !== null) {
+      return this.healthCheckResult;
+    }
+
+    const healthUrl = `${searchHost}/health`;
+    const attempt = async (): Promise<boolean> => {
+      try {
+        const res = await fetch(healthUrl, { signal: AbortSignal.timeout(8000) });
+        return res.ok;
+      } catch {
+        return false;
+      }
+    };
+
+    let ok = await attempt();
+    if (!ok) {
+      // One retry after a short delay — handles TLS cold-start on the dev proxy
+      await new Promise(r => setTimeout(r, 1500));
+      ok = await attempt();
+    }
+
+    if (!ok) {
+      console.warn('[TypesenseService] Health check failed after retry — search unavailable');
+    }
+
+    this.healthCheckResult = ok;
+    return ok;
+  }
 
   /**
    * Returns a cached Typesense search client built from runtime config.
@@ -155,11 +192,10 @@ export class TypesenseService {
 
   /**
    * Fetches featured documents for a given project from Typesense.
-   * Replaces the MongoDB `isFeatured:true` search on the Featured Documents tab.
-   * Returns up to 5 docs sorted newest-first, mapped to the shape
-   * DocumentTableRowsComponent expects.
+   * Returns raw Typesense document fields (datePosted in seconds) suitable
+   * for SearchDocumentCardComponent.
    */
-  getFeaturedDocuments(projId: string): Observable<any[]> {
+  getFeaturedDocumentsCards(projId: string): Observable<any[]> {
     return this.searchCollection('documents', {
       q: '*',
       query_by: 'displayName',
@@ -167,21 +203,54 @@ export class TypesenseService {
       sort_by: 'datePosted:desc',
       per_page: '5',
     }).pipe(
-      map(res => (res.hits ?? []).map((hit: any) => {
-        const d = hit.document;
-        return {
-          _id:              d.id,
-          displayName:      d.displayName      || null,
-          documentFileName: d.documentFileName || null,
-          internalExt:      d.internalExt      || null,
-          // datePosted is stored as Unix seconds; DatePipe needs ms
-          datePosted:       d.datePosted ? d.datePosted * 1000 : null,
-          type:             d.type             || null,
-          milestone:        d.milestone        || null,
-          projectPhase:     d.projectPhase     || null,
-          isFeatured:       d.isFeatured       ?? false,
-          showFeatured:     true,
-        };
+      map(res => (res.hits ?? []).map((hit: any) => hit.document))
+    );
+  }
+
+  /**
+   * Fetches paginated activities for a given project from Typesense.
+   * Returns items in the shape SearchActivityCardComponent expects:
+   * - dateAdded / datePosted in seconds (card does *1000 internally via Algolia convention)
+   * - _highlightResult.headline.value / _highlightResult.content.value for highlighted text
+   * - projectId, projectName, type, notificationName, pcpId etc. as raw fields
+   */
+  getProjectActivitiesCards(
+    projId: string,
+    page: number,
+    pageSize: number,
+    sortBy: string,
+    keywords: string,
+  ): Observable<{ items: any[]; total: number }> {
+    const tsSort = sortBy === '-score'
+      ? '_text_match:desc,dateAdded:desc'
+      : sortBy
+        ? `${sortBy.slice(1)}:${sortBy.charAt(0) === '-' ? 'desc' : 'asc'}`
+        : 'pinned:desc,dateAdded:desc';
+
+    return this.searchCollection('activities', {
+      q:           keywords || '*',
+      query_by:    'headline,content',
+      filter_by:   `projectId:${projId} && active:true`,
+      sort_by:     tsSort,
+      page:        String(page),
+      per_page:    String(pageSize),
+      highlight_full_fields: 'headline,content',
+    }).pipe(
+      map(res => ({
+        total: res.found ?? 0,
+        items: (res.hits ?? []).map((hit: any) => {
+          const d = hit.document;
+          // Build Algolia-compatible _highlightResult so SearchActivityCardComponent
+          // can render <mark> tags from the Typesense snippet.
+          const highlightResult: Record<string, any> = {};
+          for (const h of (hit.highlights ?? [])) {
+            highlightResult[h.field] = { value: h.value ?? h.snippet ?? '' };
+          }
+          return {
+            ...d,
+            _highlightResult: Object.keys(highlightResult).length ? highlightResult : undefined,
+          };
+        }),
       }))
     );
   }

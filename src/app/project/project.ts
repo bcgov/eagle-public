@@ -1,8 +1,8 @@
-import { Component, OnInit, OnDestroy, AfterViewInit, ElementRef, signal, ChangeDetectionStrategy, inject, Renderer2, CUSTOM_ELEMENTS_SCHEMA, effect } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit, ElementRef, signal, ChangeDetectionStrategy, inject, Renderer2, CUSTOM_ELEMENTS_SCHEMA, effect, untracked } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule, NavigationEnd } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { Subject } from 'rxjs';
-import { takeUntil, take } from 'rxjs/operators';
+import { Subject, forkJoin, of } from 'rxjs';
+import { takeUntil, take, map, catchError } from 'rxjs/operators';
 
 import { Project } from '../models/project';
 import { ConfigService } from '../services/config.service';
@@ -34,7 +34,6 @@ import { AnalyticsService } from '../services/analytics/analytics.service';
   host: {
     '(window:resize)': 'onResize($event)'
   },
-  standalone: true
 })
 export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
   private route = inject(ActivatedRoute);
@@ -56,20 +55,25 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
   public legislationLink = signal<string>('');
   public sidebarOpen = signal(true);
   public isLoading = signal(true);
+  public tabsLoading = signal(false);
   private tabArrowsHandle: TabArrowsHandle | null = null;
 
   public map: any = null;
   public appFG = L.featureGroup();
   readonly defaultBounds = L.latLngBounds([48, -139], [60, -114]);
+  private mapRetryTimeout: ReturnType<typeof setTimeout> | null = null;
 
   private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
 
   constructor() {
-    // Initialize tab links when project data loads
+    // Initialize tab links when project data loads.
+    // untracked() prevents signal reads inside initTabLinks (tabLinks, tabsLoading)
+    // from becoming effect dependencies — otherwise tabLinks.set() in the forkJoin
+    // callback would reschedule the effect, creating an infinite request loop.
     effect(() => {
       const proj = this.project();
       if (proj?._id) {
-        this.initTabLinks();
+        untracked(() => this.initTabLinks());
         
         // Set legislation link based on year
         const legislationYear = proj.legislation.includes('2002') ? '2002' 
@@ -176,40 +180,6 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
     }
   ]);
 
-  private tabLinkIfNotEmpty(key: string, queryModifier: Record<string, string>) {
-    if (queryModifier) {
-      const projectId = this.project()?._id;
-      if (!projectId) return;
-      
-      // Only fetch if tab is not already displayed
-      const tab = this.tabLinks().find(docTab => docTab.key === key);
-      if (tab?.display) return;
-      
-      this.searchService.getSearchResults(
-        '',
-        'Document',
-        [{ 'name': 'project', 'value': projectId }],
-        1,
-        1,
-        '',
-        queryModifier,
-        true,
-        ''
-      )
-      .pipe(take(1))
-      .subscribe((res: any) => {
-        if (res[0].data.searchResults.length) {
-          const currentTabs = this.tabLinks();
-          const tab = currentTabs.find(docTab => docTab.key === key);
-          if (tab) {
-            tab.display = true;
-            this.tabLinks.set([...currentTabs]);
-          }
-        }
-      });
-    }
-  }
-
   ngOnInit() {
     // Get project ID from route params
     this.route.paramMap
@@ -254,18 +224,15 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
     if (this.map) {
       return; // Guard against double-call when concat emits two project values
     }
-    // Check if map element exists
-    const mapElement = document.getElementById('map');
-    if (!mapElement) {
-      this.logger.warn('Map element not found, retrying...', 'ProjectComponent');
-      setTimeout(() => this.initMap(), 100);
-      return;
-    }
-
-    // Check if project has valid centroid
+    // No centroid = no map needed; bail immediately so we never retry
     const proj = this.project();
     if (!proj || !proj.centroid || proj.centroid.length !== 2) {
-      this.logger.info('No valid centroid for map display', 'ProjectComponent');
+      return;
+    }
+    // Check if map element exists (may not be in DOM yet on first render)
+    const mapElement = document.getElementById('map');
+    if (!mapElement) {
+      this.mapRetryTimeout = setTimeout(() => this.initMap(), 100);
       return;
     }
 
@@ -447,13 +414,51 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
       take(1),
       takeUntil(this.ngUnsubscribe)
     ).subscribe(list => {
-      const currentTabs = this.tabLinks();
-      currentTabs.forEach(tabLink => {
-        if (!tabLink.display && tabLink.key !== Constants.optionalProjectDocTabs.UNSUBSCRIBE_CAC) {
-          const tabModifier = this.utils.createProjectTabModifiers(tabLink.key, list);
-          this.tabLinkIfNotEmpty(tabLink.key, tabModifier);
-        }
+      const projectId = this.project()?._id;
+      if (!projectId) return;
+
+      const optionalTabs = this.tabLinks().filter(
+        t => !t.display && t.key !== Constants.optionalProjectDocTabs.UNSUBSCRIBE_CAC
+      );
+
+      if (optionalTabs.length === 0) return;
+
+      this.tabsLoading.set(true);
+
+      // Fire all tab-visibility checks in parallel; update tabLinks signal once
+      // when all results are in — prevents tabs from popping in one at a time.
+      const checks$ = optionalTabs.map(tabLink => {
+        const queryModifier = this.utils.createProjectTabModifiers(tabLink.key, list);
+        if (!queryModifier) return of({ key: tabLink.key, hasResults: false });
+
+        return this.searchService.getSearchResults(
+          '', 'Document',
+          [{ name: 'project', value: projectId }],
+          1, 1, '', queryModifier, true, ''
+        ).pipe(
+          take(1),
+          map((res: any) => ({
+            key: tabLink.key,
+            hasResults: !!res?.[0]?.data?.searchResults?.length
+          })),
+          catchError(() => of({ key: tabLink.key, hasResults: false }))
+        );
       });
+
+      forkJoin(checks$)
+        .pipe(takeUntil(this.ngUnsubscribe))
+        .subscribe(results => {
+          const currentTabs = this.tabLinks();
+          let changed = false;
+          results.forEach(({ key, hasResults }) => {
+            if (hasResults) {
+              const tab = currentTabs.find(t => t.key === key);
+              if (tab && !tab.display) { tab.display = true; changed = true; }
+            }
+          });
+          if (changed) this.tabLinks.set([...currentTabs]);
+          this.tabsLoading.set(false);
+        });
     });
   }
 
@@ -497,6 +502,9 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   ngOnDestroy() {
+    if (this.mapRetryTimeout !== null) {
+      clearTimeout(this.mapRetryTimeout);
+    }
     if (this.map) {
       this.map.remove();
     }

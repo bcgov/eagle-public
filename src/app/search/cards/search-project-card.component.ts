@@ -12,15 +12,17 @@ import { highlightField } from '../search-collections';
 
 @Component({
   selector: 'app-search-project-card',
-  standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink],
   template: `
-    <article class="card search-result-card">
-      <div class="card-body p-4">
+    <article class="card search-result-card search-result-card--styled">
+      <div class="search-card-header">
+        <h5 class="fw-bold mb-0">{{ hit()['name'] || 'Unnamed Project' }}</h5>
+      </div>
+      <hr class="search-card-divider">
+      <div class="search-card-content">
         <div class="d-flex flex-column flex-md-row gap-3">
-          <div class="flex-fill">
-            <h5 class="fw-bold mb-3">{{ hit()['name'] || 'Unnamed Project' }}</h5>
+          <div class="flex-fill align-self-md-start">
             <div class="row row-cols-2 row-cols-md-5 g-2">
               @if (hit()['proponent']) {
                 <div class="col">
@@ -54,16 +56,17 @@ import { highlightField } from '../search-collections';
               }
             </div>
           </div>
-          <div class="search-result-action">
-            <a
-              class="search-dl-btn"
+          <div class="search-card-vr d-none d-md-block"></div>
+          <div class="d-flex flex-md-column align-items-md-stretch justify-content-md-center gap-2 flex-shrink-0">
+            <a class="search-card-btn search-card-btn--primary"
               [routerLink]="['/p', hit()['id'] ?? hit()['objectID'], 'project-details']"
-              (click)="clicked.emit()"
-            >Go to Project</a>
+              (click)="clicked.emit()">
+              <i class="material-icons">open_in_new</i><span>Project</span>
+            </a>
           </div>
         </div>
         @if (safeDescription()) {
-          <hr class="my-3">
+          <hr class="my-2 opacity-25">
           <div class="search-result-content" [innerHTML]="safeDescription()"></div>
         }
       </div>

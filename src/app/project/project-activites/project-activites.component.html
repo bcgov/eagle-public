@@ -22,25 +22,42 @@
       }
     </form>
   </div>
+
+  <section class="tab-section">
+    @if (typesenseTotalItems() === 0 && !loading()) {
+      <div>No recent activities.</div>
+    } @else {
+      <app-search-card-list
+        [items]="typesenseItems()"
+        [loading]="loading()"
+        [totalItems]="typesenseTotalItems()"
+        [currentPage]="tableData().currentPage"
+        [pageSize]="tableData().pageSize"
+        (pageChange)="onTypesensePageChange($event)"
+        (pageSizeChange)="onTypesensePageSizeChange($event)">
+        <ng-template let-hit>
+          <app-search-activity-card [hit]="hit" [showProjectLink]="false" />
+        </ng-template>
+      </app-search-card-list>
+    }
+  </section>
 } @else {
   <search-filter-template
     #explorePanel
     [keywordOverride]='queryParams["keywordsActivities"]'
     (searchEvent)='executeSearch($event)'>
   </search-filter-template>
-}
 
-<section class="tab-section">
-  @if (tableData().totalListItems === 0 && !loading()) {
-    <div>
-      No recent activities.
-    </div>
-  } @else {
-    <lib-table-template
-      [data]="tableData()"
-      [loading]="loading()"
-      (messageOut)="onMessageOut($event)">
-    </lib-table-template>
-  }
-</section>
+  <section class="tab-section">
+    @if (tableData().totalListItems === 0 && !loading()) {
+      <div>No recent activities.</div>
+    } @else {
+      <lib-table-template
+        [data]="tableData()"
+        [loading]="loading()"
+        (messageOut)="onMessageOut($event)">
+      </lib-table-template>
+    }
+  </section>
+}
 

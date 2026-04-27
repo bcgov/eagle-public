@@ -106,6 +106,11 @@
 .search-result-card:last-child {
   border-bottom: 1px solid var(--bs-border-color) !important;
 }
+/* In a table context (each card is the only child of its <td>),
+   :last-child always matches — suppress the duplicate border
+   and only restore it on the actual last row. */
+td .search-result-card { border-bottom: none !important; }
+tr:last-child td .search-result-card { border-bottom: 1px solid var(--bs-border-color) !important; }
 .search-result-card h5 {
   color: var(--bs-body-color);
 }
@@ -125,10 +130,34 @@
   font-size: .875rem;
   color: var(--bs-body-color);
 }
+.search-result-content a {
+  color: #38598A;
+  text-decoration: underline;
+  word-break: break-all;
+}
+.search-result-content a:hover {
+  color: #1e3c5a;
+}
 .search-result-card mark {
   padding: 0;
   background-color: #fff3cd;
   border-radius: 2px;
+}
+
+/* ── Document card file-extension badge ── */
+.search-doc-ext-badge {
+  display: inline-block;
+  flex-shrink: 0;
+  font-size: .65rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  padding: .15rem .4rem;
+  border-radius: var(--bs-border-radius);
+  background-color: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  line-height: 1.4;
+  margin-top: .15rem;
 }
 
 /* ── Filter Panel (mobile collapsible, driven by Angular @filterSlide trigger) ── */
@@ -184,49 +213,8 @@
   transform: rotate(180deg);
 }
 
-/* ── Document result action column ── */
-.search-result-action {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  justify-content: center;
-  padding-top: 1rem;
-  border-top: 1px solid #dee2e6;
-}
-@media (min-width: 768px) {
-  .search-result-action {
-    padding-top: 0;
-    padding-left: 1.25rem;
-    border-top: none;
-    border-left: 1px solid #dee2e6;
-  }
-}
-
-/* ── Document download button ── */
-.search-dl-btn {
-  display: inline-block;
-  padding: 0.5rem 1.25rem;
-  border-radius: 0.5rem;
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  white-space: nowrap;
-  text-decoration: none;
-  text-align: center;
-  background-color: rgba(var(--bs-primary-rgb), 0.1);
-  color: var(--bs-primary);
-  border: none;
-  transition: background-color 0.2s ease, color 0.2s ease;
-}
-.search-dl-btn:hover {
-  background-color: var(--bs-primary);
-  color: #fff;
-}
-.search-dl-btn--block {
-  display: block;
-  width: 100%;
-}
+/* ── Shared card action column (legacy table-rows component) ── */
+/* search-result-action and search-dl-btn removed — use search-card-btn instead */
 
 /* ── Legislation year group heading (documents facet) ── */
 .legislation-heading {
@@ -252,11 +240,81 @@
 .search-doc-mobile-row { font-size: .75rem; }
 .search-doc-row:last-child { border-bottom: none !important; }
 .search-doc-name { word-break: break-word; }
-/* Legacy aliases kept for back-compat (notification card still uses these class names) */
-.notif-doc-header  { background: var(--bs-primary); color: #fff; }
-.notif-doc-date    { width: 90px;  flex-shrink: 0; }
-.notif-doc-author  { width: 140px; flex-shrink: 0; }
-.notif-doc-action  { width: 36px;  height: 36px; flex-shrink: 0; }
-.notif-doc-mobile-row { font-size: .75rem; }
-.notification-doc-row:last-child { border-bottom: none !important; }
-.notification-doc-name { word-break: break-word; }
+
+/* ── Shared styled card variant (blue header / gold accent / gray content) ── */
+.search-result-card--styled {
+  overflow: hidden;
+}
+.search-result-card--styled .search-card-header {
+  background-color: var(--bs-primary);
+  color: #fff;
+  padding: 0.75rem 1.25rem;
+}
+.search-result-card--styled .search-card-header h5 {
+  color: #fff;
+  font-size: 0.95rem;
+}
+.search-result-card--styled .search-card-header .search-result-card-label {
+  color: rgba(255, 255, 255, 0.65);
+}
+.search-result-card--styled .search-card-header .search-result-card-value {
+  color: rgba(255, 255, 255, 0.9);
+}
+.search-card-header-vr {
+  width: 1px;
+  align-self: center;
+  min-height: 2rem;
+  background-color: rgba(255, 255, 255, 0.25);
+  flex-shrink: 0;
+}
+.search-card-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  width: 100%;
+  min-width: 8rem;
+  padding: 0.4rem 1rem;
+  border-radius: 0.4rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  border: 1.5px solid transparent;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+.search-card-btn .material-icons {
+  font-size: 14px;
+  line-height: 1;
+}
+.search-card-btn--primary {
+  color: var(--bs-primary);
+  border-color: var(--bs-primary);
+  background-color: transparent;
+}
+.search-card-btn--primary:hover {
+  background-color: var(--bs-primary);
+  border-color: var(--bs-primary);
+  color: #fff;
+  text-decoration: none;
+}
+.search-card-divider {
+  border: none;
+  border-top: 1px solid var(--bs-border-color, #dee2e6);
+  margin: 0;
+  opacity: 1;
+}
+.search-card-content {
+  background-color: var(--table-row-bg);
+  padding: 1.25rem 1.5rem;
+}
+.search-card-vr {
+  width: 1px;
+  align-self: stretch;
+  background-color: #dee2e6;
+  flex-shrink: 0;
+}
+

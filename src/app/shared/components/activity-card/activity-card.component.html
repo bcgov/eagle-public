@@ -58,21 +58,21 @@
     <hr class="my-3">
     <div>
       @if (isFolderDocUrl()) {
-        <div class="d-flex align-items-center gap-3 py-2 border-bottom notification-doc-row">
-          <span class="flex-fill fw-semibold small notification-doc-name">All project documents</span>
-          <a class="d-flex align-items-center justify-content-center text-primary notif-doc-action"
+        <div class="d-flex align-items-center gap-3 py-2 border-bottom search-doc-row">
+          <span class="flex-fill fw-semibold small search-doc-name">All project documents</span>
+          <a class="d-flex align-items-center justify-content-center text-primary search-doc-action"
              [href]="'/p/' + rowData.project._id + '/documents'">
             <i class="material-icons md-18" aria-hidden="true">open_in_new</i>
           </a>
         </div>
       } @else {
-        <div class="d-none d-md-flex gap-3 px-2 py-1 small fw-semibold rounded-1 mb-2 notif-doc-header">
+        <div class="d-none d-md-flex gap-3 px-2 py-1 small fw-semibold rounded-1 mb-2 search-doc-header">
           <span class="flex-fill">Document Name</span>
-          <span class="notif-doc-action"></span>
+          <span class="search-doc-action"></span>
         </div>
-        <div class="d-flex flex-column flex-md-row align-items-md-center gap-1 gap-md-3 py-2 border-bottom notification-doc-row">
-          <span class="flex-fill fw-semibold small notification-doc-name">{{ docFilename() || 'Document' }}</span>
-          <a class="d-flex align-items-center justify-content-center text-primary notif-doc-action"
+        <div class="d-flex flex-column flex-md-row align-items-md-center gap-1 gap-md-3 py-2 border-bottom search-doc-row">
+          <span class="flex-fill fw-semibold small search-doc-name">{{ docFilename() || 'Document' }}</span>
+          <a class="d-flex align-items-center justify-content-center text-primary search-doc-action"
              [href]="'/api/document/' + docId() + '/fetch'"
              target="_blank"
              rel="noopener noreferrer"

@@ -1,12 +1,13 @@
-import { Component, OnDestroy, ViewChild, ElementRef, inject, signal, computed } from '@angular/core';
+import { Component, OnDestroy, ViewChild, ElementRef, DestroyRef, inject, signal, computed } from '@angular/core';
 import { Router, ActivatedRoute, Params } from '@angular/router';
-import { FormsModule } from '@angular/forms';
 
 import { Subject } from 'rxjs';
-import { takeWhile, debounceTime, distinctUntilChanged } from 'rxjs/operators';
-import { toObservable } from '@angular/core/rxjs-interop';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 
 import { ActivityCardComponent } from 'app/shared/components/activity-card/activity-card.component';
+import { SearchActivityCardComponent } from 'app/search/cards/search-activity-card.component';
+import { SearchCardListComponent } from 'app/shared/components/search-card-list/search-card-list.component';
 import { IColumnObject, TableObject } from 'app/shared/components/table-template/table-object';
 import { TableTemplate } from 'app/shared/components/table-template/table-template';
 import { ITableMessage } from 'app/shared/components/table-template/table-row-component';
@@ -23,8 +24,7 @@ import { ConfigService } from 'app/services/config.service';
   selector: 'app-project-activites',
   templateUrl: './project-activites.component.html',
   styleUrls: ['./project-activites.component.css'],
-  imports: [TableTemplateComponent, SearchFilterTemplateComponent, FormsModule],
-  standalone: true
+  imports: [TableTemplateComponent, SearchFilterTemplateComponent, SearchCardListComponent, SearchActivityCardComponent],
 })
 export class ProjectActivitesComponent implements OnDestroy {
   @ViewChild('activitiesHeader', { static: false }) activitiesHeader?: ElementRef;
@@ -36,8 +36,8 @@ export class ProjectActivitesComponent implements OnDestroy {
   private storageService = inject(StorageService);
   private typesense = inject(TypesenseService);
   private configService = inject(ConfigService);
+  private destroyRef = inject(DestroyRef);
 
-  private alive = true;
   private readonly tableId = 'projectActivities';
   private projId = '';
   private readonly tableSignal$ = toObservable(this.tableService.getTableSignal(this.tableId));
@@ -51,7 +51,14 @@ export class ProjectActivitesComponent implements OnDestroy {
   keywords = signal('');
   private keywordInput$ = new Subject<string>();
 
-  public tableData = signal<TableObject>(new TableObject({ component: ActivityCardComponent, data: { showProjectInfo: false } }));
+  // Typesense card-list data (bypasses <table> wrapper)
+  typesenseItems = signal<any[]>([]);
+  typesenseTotalItems = signal(0);
+
+  public tableData = signal<TableObject>(new TableObject({
+    component: ActivityCardComponent,
+    data: { showProjectInfo: false },
+  }));
 
   constructor() {
     this.projId = this.route.parent?.snapshot.params['projId'] || '';
@@ -64,7 +71,7 @@ export class ProjectActivitesComponent implements OnDestroy {
     this.keywordInput$.pipe(
       debounceTime(200),
       distinctUntilChanged(),
-      takeWhile(() => this.alive),
+      takeUntilDestroyed(this.destroyRef),
     ).subscribe(kw => {
       this.submit({
         keywordsActivities: kw || null,
@@ -74,7 +81,7 @@ export class ProjectActivitesComponent implements OnDestroy {
     });
 
     // MongoDB path: react to tableService signal
-    this.tableSignal$.pipe(takeWhile(() => this.alive)).subscribe(searchResults => {
+    this.tableSignal$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(searchResults => {
       if (searchResults !== null && searchResults !== undefined) {
         const hasItems = searchResults.data?.length > 0;
         const items = hasItems ? searchResults.data : [];
@@ -83,7 +90,7 @@ export class ProjectActivitesComponent implements OnDestroy {
       }
     });
 
-    this.route.queryParamMap.pipe(takeWhile(() => this.alive)).subscribe(data => {
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(data => {
       const params: any = {};
       data.keys.forEach(key => params[key] = data.get(key));
       this.queryParams = { ...params };
@@ -102,15 +109,25 @@ export class ProjectActivitesComponent implements OnDestroy {
       if (config.TYPESENSE_ENABLED) {
         const loadingId = 'table-projectActivities';
         this.loadingState.startLoading(loadingId, 'Loading activities');
-        this.typesense.getProjectActivities(
+        this.typesense.getProjectActivitiesCards(
           this.projId,
           updatedTableData.currentPage,
           updatedTableData.pageSize,
           updatedTableData.sortBy,
           keywords,
-        ).pipe(takeWhile(() => this.alive)).subscribe({
+        ).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
           next: ({ items, total }) => {
-            this.tableData.set(this.buildActivityTable(updatedTableData, items, total));
+            this.typesenseItems.set(items);
+            this.typesenseTotalItems.set(total);
+            // Keep tableData in sync for page/size tracking
+            this.tableData.update(t => {
+              const updated = new TableObject({ component: ActivityCardComponent });
+              Object.assign(updated, t);
+              updated.totalListItems = total;
+              updated.currentPage = updatedTableData.currentPage;
+              updated.pageSize = updatedTableData.pageSize;
+              return updated;
+            });
             this.loadingState.stopLoading(loadingId);
           },
           error: () => this.loadingState.stopLoading(loadingId),
@@ -163,6 +180,14 @@ export class ProjectActivitesComponent implements OnDestroy {
     return t;
   }
 
+  onTypesensePageChange(page: number): void {
+    this.submit({ currentPageActivities: page });
+  }
+
+  onTypesensePageSizeChange(size: number): void {
+    this.submit({ pageSizeActivities: size, currentPageActivities: 1 });
+  }
+
   onInstantInput(e: Event): void {
     const value = (e.target as HTMLInputElement).value;
     this.keywords.set(value);
@@ -213,7 +238,6 @@ export class ProjectActivitesComponent implements OnDestroy {
   }
 
   ngOnDestroy() {
-    this.alive = false;
     this.keywordInput$.complete();
   }
 }

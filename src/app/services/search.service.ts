@@ -92,13 +92,9 @@ export class SearchService {
   }
 
   async fetchData(searchParamObject: SearchParamObject) {
-    // SearchService manages loading state because it makes the actual API calls
     const loadingId = `table-${searchParamObject.tableId}`;
-    this.logger.debug(`Starting loading for ${loadingId}`, 'SearchService');
     this.loadingState.startLoading(loadingId, `Loading ${searchParamObject.dataset} data`);
     let res = null;
-
-    this.logger.debug('SearchService.fetchData called', 'SearchService', searchParamObject);
 
     // Remove null/undefined filters
     for (const filter in searchParamObject.filters) {
@@ -124,8 +120,6 @@ export class SearchService {
           searchParamObject.fuzzy
         )
       );
-      
-      this.logger.debug(`Promise resolved for ${loadingId}`, 'SearchService', { res });
     } catch (error) {
       this.logger.error(`Error in fetchData for ${loadingId}`, 'SearchService', error);
       this.loadingState.stopLoading(loadingId);
@@ -136,18 +130,10 @@ export class SearchService {
           searchParamObject.dataset + ' Service'
         )
       );
-      // Return empty results on error
       return new SearchResults();
     }
 
-       const searchResults = new SearchResults();
-
-    this.logger.debug(`Processing response for ${loadingId}`, 'SearchService', { 
-      hasRes: !!res, 
-      resLength: res?.length,
-      res0Keys: res?.[0] ? Object.keys(res[0]) : [],
-      res0DataKeys: res?.[0]?.data ? Object.keys(res[0].data) : []
-    });
+    const searchResults = new SearchResults();
 
     if (res && res[0] && res[0].data) {
       if (res[0].data.searchResults) {
@@ -183,7 +169,6 @@ export class SearchService {
         )
       );
     }
-    this.logger.debug(`Stopping loading for ${loadingId}`, 'SearchService', { totalCount: searchResults.totalSearchCount, dataLength: searchResults.data?.length });
     this.loadingState.stopLoading(loadingId);
     return searchResults;
   }

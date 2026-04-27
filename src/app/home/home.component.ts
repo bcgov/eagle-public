@@ -23,7 +23,6 @@ import { ActivityCardComponent } from '../shared/components/activity-card/activi
   styleUrl: './home.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule, RouterModule, HeroBannerComponent, InfoCardComponent, ActivityCardComponent],
-  standalone: true
 })
 export class HomeComponent implements OnDestroy {
   private searchService = inject(SearchService);
@@ -87,16 +86,25 @@ export class HomeComponent implements OnDestroy {
 
   constructor() {
     const typesenseEnabled = this.configService.config()?.TYPESENSE_ENABLED;
+    const source$ = typesenseEnabled
+      ? this.typesenseService.getTopActivities(5)
+      : this.searchService.getTopNewsItems();
 
-    // Serve from cache instantly if available (activities rarely change)
     const cached = this.storageService.getCachedActivities();
     if (cached) {
+      // Serve cached data instantly, then refresh in background
       this.results.set(cached);
+      source$.pipe(takeUntil(this.destroy$)).subscribe({
+        next: (res: News[]) => {
+          const activities = res || [];
+          this.results.set(activities);
+          this.storageService.cacheActivities(activities);
+        },
+        error: (err) => {
+          this.logger.error('Error refreshing recent activities', 'HomeComponent', err);
+        }
+      });
     } else {
-      const source$ = typesenseEnabled
-        ? this.typesenseService.getTopActivities(5)
-        : this.searchService.getTopNewsItems();
-
       source$
         .pipe(
           withLoading(this.loadingState, 'home', 'Loading recent activities'),
