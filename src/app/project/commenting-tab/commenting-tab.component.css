@@ -1,31 +1,13 @@
-.list-group-item {
-  padding: 1rem;
-  border-top: 2px solid var(--table-border-color);
-  background-color: var(--table-row-bg);
+.cp-card {
   cursor: pointer;
-  transition: background-color 0.2s ease-in;
+  transition: opacity 0.15s ease;
 }
 
-.list-group-item:first-child {
-  border-top: none;
+.cp-card:hover {
+  opacity: 0.9;
 }
 
-.list-group-item:hover {
-  background-color: rgba(0, 123, 255, 0.05);
-}
-
-
-
-.title {
-  font-size: 1.2rem;
-  font-weight: bold;
-  color: var(--primary-color);
-}
-
-.commentInfo {
-  font-weight: bold;
-}
-
-.badge {
-  white-space: nowrap;
+.cp-card:focus-visible {
+  outline: 3px solid var(--bs-primary);
+  outline-offset: 2px;
 }

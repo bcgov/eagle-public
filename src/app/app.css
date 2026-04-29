@@ -24,12 +24,14 @@
 }
 
 @media (min-width: 768px) {
-  .app-wrapper.search-route {
+  .app-wrapper.search-route,
+  .app-wrapper.documents-route {
     height: 100dvh;
     overflow: hidden;
   }
 
-  .app-content.search-route {
+  .app-content.search-route,
+  .app-content.documents-route {
     overflow: hidden;
   }
 }

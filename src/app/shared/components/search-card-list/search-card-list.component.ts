@@ -72,7 +72,7 @@ import { PageCountDisplayComponent } from '../page-count-display/page-count-disp
 
     <!-- Card list -->
     } @else {
-      <div [class.search-card-list--loading]="loading()">
+      <div class="search-card-list" [class.search-card-list--loading]="loading()">
         @for (item of items(); track $index) {
           <ng-container *ngTemplateOutlet="cardTemplate; context: { $implicit: item }" />
         }

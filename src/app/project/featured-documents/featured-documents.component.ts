@@ -1,5 +1,4 @@
-import { Component, OnInit, inject, signal, ChangeDetectionStrategy, effect, untracked, computed, DestroyRef } from '@angular/core';
-import { Location } from '@angular/common';
+import { Component, OnInit, inject, signal, ChangeDetectionStrategy, effect, untracked, DestroyRef } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { IColumnObject, TableObject } from '../../shared/components/table-template/table-object';
 import { DocumentTableRowsComponent } from '../documents/project-document-table-rows/project-document-table-rows.component';
@@ -9,17 +8,15 @@ import { SearchParamObject } from '../../services/search.service';
 import { LoadingStateService } from '../../services/loading-state.service';
 import { TypesenseService } from '../../services/typesense.service';
 import { ConfigService } from '../../services/config.service';
-import { SearchDocumentCardComponent } from '../../search/cards/search-document-card.component';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 @Component({
   selector: 'app-featured-documents',
   templateUrl: './featured-documents.component.html',
-  imports: [TableTemplateComponent, SearchDocumentCardComponent],
+  imports: [TableTemplateComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FeaturedDocumentsComponent implements OnInit {
-  public readonly location = inject(Location);
   private readonly route = inject(ActivatedRoute);
   private readonly tableService = inject(TableService);
   private readonly loadingState = inject(LoadingStateService);
@@ -33,10 +30,6 @@ export class FeaturedDocumentsComponent implements OnInit {
 
   public readonly loading = this.loadingState.getOperationState('table-featuredDocuments');
   public readonly tableData = signal<TableObject>(new TableObject({ component: DocumentTableRowsComponent }));
-  /** Cards shown in the Typesense path (raw Typesense document objects). */
-  public readonly featuredCards = signal<any[]>([]);
-
-  public readonly isTypesense = computed(() => !!this.configService.config().TYPESENSE_ENABLED);
 
   constructor() {
     this.tableService.clearTable(this.tableId);
@@ -55,10 +48,7 @@ export class FeaturedDocumentsComponent implements OnInit {
         updated.options = { ...current.options };
         if (searchResults.data && Array.isArray(searchResults.data) && searchResults.data.length > 0) {
           updated.totalListItems = searchResults.totalSearchCount;
-          updated.items = searchResults.data.map((record: any) => {
-            record['showFeatured'] = true;
-            return { rowData: record };
-          });
+          updated.items = searchResults.data.map((record: any) => ({ rowData: record }));
           updated.columns = this.tableColumns;
         } else {
           updated.totalListItems = 0;
@@ -71,15 +61,9 @@ export class FeaturedDocumentsComponent implements OnInit {
   
   public readonly tableColumns: IColumnObject[] = [
     {
-      name: '★',
-      value: 'isFeatured',
-      width: 'col-1',
-      nosort: true
-    },
-    {
       name: 'Name',
       value: 'displayName',
-      width: 'col-3',
+      width: 'col-4',
       nosort: true
     },
     {
@@ -111,28 +95,48 @@ export class FeaturedDocumentsComponent implements OnInit {
   ngOnInit() {
     this.projId = this.route.parent?.snapshot.params['projId'] || '';
 
-    if (this.isTypesense()) {
+    const currentTableData = this.tableData();
+    currentTableData.options.showPageCountDisplay = false;
+    currentTableData.options.showPagination = false;
+    currentTableData.options.showPageSizePicker = false;
+    currentTableData.tableId = 'documents-table';
+    currentTableData.currentPage = 1;
+    currentTableData.pageSize = 5;
+    currentTableData.sortBy = '-datePosted';
+    this.tableData.set(currentTableData);
+
+    const typesenseEnabled = !!this.configService.config().TYPESENSE_ENABLED;
+
+    if (typesenseEnabled) {
       this.loadingState.startLoading('table-featuredDocuments', 'Loading featured documents');
       this.typesense.getFeaturedDocumentsCards(this.projId)
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: (docs) => {
-            this.featuredCards.set(docs);
+            const current = this.tableData();
+            const updated = new TableObject({
+              component: DocumentTableRowsComponent,
+              pageSize: current.pageSize,
+              currentPage: current.currentPage,
+              sortBy: current.sortBy,
+              tableId: current.tableId,
+            });
+            updated.options = { ...current.options };
+            updated.totalListItems = docs.length;
+            updated.items = docs.map((doc: any) => ({
+              rowData: {
+                ...doc,
+                _id: doc.id,
+                datePosted: doc.datePosted * 1000,
+              },
+            }));
+            updated.columns = this.tableColumns;
+            this.tableData.set(updated);
             this.loadingState.stopLoading('table-featuredDocuments');
           },
           error: () => this.loadingState.stopLoading('table-featuredDocuments'),
         });
     } else {
-      const currentTableData = this.tableData();
-      currentTableData.options.showPageCountDisplay = false;
-      currentTableData.options.showPagination = false;
-      currentTableData.options.showPageSizePicker = false;
-      currentTableData.tableId = 'documents-table';
-      currentTableData.currentPage = 1;
-      currentTableData.pageSize = 5;
-      currentTableData.sortBy = '-datePosted';
-      this.tableData.set(currentTableData);
-
       this.tableService.fetchData(new SearchParamObject(
         this.tableId,
         '',

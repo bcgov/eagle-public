@@ -1,44 +1,46 @@
 @if (loading()) {
-  <div class="d-flex justify-content-center align-items-center py-5">
-    <div class="spinner-border text-secondary" role="status">
-      <span class="visually-hidden">Loading&hellip;</span>
+  @for (i of [1, 2, 3]; track i) {
+    <div class="skeleton-row">
+      <div class="skeleton-cell" style="flex: 2"></div>
+      <div class="skeleton-cell" style="flex: 3"></div>
+      <div class="skeleton-cell" style="flex: 1"></div>
     </div>
-  </div>
-}
-
-@if (!loading()) {
-  <div class="row">
-    <div class="col-12">
-        @if (commentPeriods().length < 1) {
-          <div>
-            No comment periods are currently scheduled for this project.
-          </div>
+  }
+} @else if (commentPeriods().length < 1) {
+  <div>No comment periods are currently scheduled for this project.</div>
+} @else {
+  @for (cp of commentPeriods(); track cp._id) {
+    <article class="card search-result-card search-result-card--inline-row cp-card"
+             role="button" tabindex="0"
+             (click)="goToCP(cp)"
+             (keyup.enter)="goToCP(cp)">
+      <div class="inline-body">
+        <div class="inline-segment-status">
+          <span class="inline-status-dot"
+                [class.inline-status-dot--open]="commentPeriodService.isOpen(cp)"
+                [class.inline-status-dot--pending]="commentPeriodService.isNotStarted(cp)"
+                [class.inline-status-dot--closed]="commentPeriodService.isClosed(cp)"
+                [class.inline-status-dot--inactive]="commentPeriodService.isNotOpen(cp)">
+          </span>
+          <span class="inline-status-label">{{ cp.commentPeriodStatus }}</span>
+        </div>
+        @if (commentPeriodService.isOpen(cp)) {
+          <span class="inline-action">
+            <span class="inline-days-pill">{{ cp.daysRemaining }}d left</span>
+          </span>
         }
-
-        @if (commentPeriods().length > 0) {
-          <div>
-            @for (commentPeriod of commentPeriods(); track commentPeriod._id) {
-              <div class="d-flex justify-content-between list-group-item"
-                   tabindex="0"
-                   (keyup.enter)="goToCP(commentPeriod)"
-                   (click)="goToCP(commentPeriod)">
-                @if (commentPeriod.commentPeriodStatus) {
-                  <div>
-                    <span class="title mb-1">{{commentPeriod.commentPeriodStatus}}</span>
-                    <div class="commentInfo mb-2">{{commentPeriod.instructions}}</div>
-                    <p class="mb-0">{{commentPeriod.dateStarted | date:'mediumDate'}} - {{commentPeriod.dateCompleted | date:'mediumDate'}}</p>
-                  </div>
-                }
-                @if (commentPeriodService.isOpen(commentPeriod)) {
-                  <div>
-                    <span class="badge rounded-pill bg-warning text-dark fs-6 px-3 py-2">{{commentPeriod.daysRemaining}}</span>
-                  </div>
-                }
-              </div>
-            }
-          </div>
+        @if (cp.dateStarted) {
+          <span class="inline-divider d-none d-md-block"></span>
+          <span class="inline-segment-dates">
+            {{ cp.dateStarted | date:'MMM d, y' }} – {{ cp.dateCompleted | date:'MMM d, y' }}
+          </span>
+        }
+        @if (cp.instructions) {
+          <span class="inline-divider d-none d-md-block"></span>
+          <span class="inline-title">{{ cp.instructions }}</span>
         }
       </div>
-    </div>
+    </article>
+  }
 }
 

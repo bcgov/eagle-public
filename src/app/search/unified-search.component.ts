@@ -38,6 +38,7 @@ import {
   mergeItems,
   groupByLegislation,
   tabToCollectionId,
+  isoToUnixTimestamp,
 } from './search-collections';
 import { initTabArrows, TabArrowsHandle } from 'app/shared/utils/tab-arrows';
 
@@ -182,37 +183,68 @@ const TABS: { id: Tab; label: string }[] = [
 
     <!-- ── Collection panels (facets + results) ──────────────────── -->
     <div class="container search-body pt-3" role="tabpanel" [id]="'search-panel-' + activeTab()">
-      <div class="row">
+      <div class="search-columns">
 
           <!-- ── Facets sidebar ───── -->
-          <div class="col-md-3">
-            <!-- Mobile filter toggle + stats row -->
-            <div class="d-md-none d-flex align-items-center justify-content-between mb-3">
-              <button
-                class="btn filter-toggle-btn btn-sm d-flex align-items-center gap-2"
-                [class.filter-toggle-btn--open]="filtersOpen()"
-                (click)="filtersOpen.set(!filtersOpen())"
-                [attr.aria-expanded]="filtersOpen()"
-                aria-controls="searchFilterPanel"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
-                  <path d="M6 10.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5zm-2-3a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5zm-2-3a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5z"/>
-                </svg>
-                Filters
-                <svg class="filter-chevron" [class.open]="filtersOpen()" xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
-                  <path d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/>
-                </svg>
-              </button>
-              @if (activeStatsText()) {
-                <span class="text-muted small">{{ activeStatsText() }}</span>
+          <div class="filter-sidebar" [class.filter-sidebar--collapsed]="sidebarCollapsed()"
+            role="complementary" aria-label="Search filters">
+
+            <!-- Collapsed strip (desktop only) -->
+            <button class="filter-sidebar__strip" (click)="toggleSidebar()"
+              aria-label="Expand filters" title="Expand filters">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                viewBox="0 0 16 16" aria-hidden="true">
+                <path d="M6 10.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5zm-2-3a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5zm-2-3a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5z"/>
+              </svg>
+              @if (activeFilterCount() > 0) {
+                <span class="filter-sidebar__badge">{{ activeFilterCount() }}</span>
               }
-            </div>
-            <div id="searchFilterPanel" class="filter-wrap" [class.filter-wrap--open]="filtersOpen()">
-              <div class="filter-inner">
-                <div class="filter-inner-pad">
-                @if (!activeFiltersLoaded() && typesenseAvailable()) {
-                  <div class="d-flex align-items-center gap-2 py-3 text-muted">
-                    <div class="spinner-border spinner-border-sm" role="status">
+            </button>
+
+            <!-- Expanded content -->
+            <div class="filter-sidebar__content">
+
+              <!-- Desktop header: "Filters" label + collapse toggle -->
+              <div class="filter-sidebar__header d-none d-md-flex mb-2">
+                <span class="filter-sidebar__label">Filters</span>
+                <button class="filter-sidebar__toggle" (click)="toggleSidebar()"
+                  [attr.aria-label]="sidebarCollapsed() ? 'Expand filters' : 'Collapse filters'"
+                  [attr.aria-expanded]="!sidebarCollapsed()">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor"
+                    viewBox="0 0 16 16" aria-hidden="true">
+                    <path fill-rule="evenodd" d="M8.354 1.646a.5.5 0 0 1 0 .708L2.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/>
+                    <path fill-rule="evenodd" d="M12.354 1.646a.5.5 0 0 1 0 .708L6.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/>
+                  </svg>
+                </button>
+              </div>
+
+              <!-- Mobile filter toggle + stats row -->
+              <div class="d-md-none d-flex align-items-center justify-content-between mb-3">
+                <button
+                  class="btn filter-toggle-btn btn-sm d-flex align-items-center gap-2"
+                  [class.filter-toggle-btn--open]="filtersOpen()"
+                  (click)="filtersOpen.set(!filtersOpen())"
+                  [attr.aria-expanded]="filtersOpen()"
+                  aria-controls="searchFilterPanel"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+                    <path d="M6 10.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5zm-2-3a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5zm-2-3a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5z"/>
+                  </svg>
+                  Filters
+                  <svg class="filter-chevron" [class.open]="filtersOpen()" xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+                    <path d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/>
+                  </svg>
+                </button>
+                @if (activeStatsText()) {
+                  <span class="text-muted small">{{ activeStatsText() }}</span>
+                }
+              </div>
+              <div id="searchFilterPanel" class="filter-wrap" [class.filter-wrap--open]="filtersOpen()">
+                <div class="filter-inner">
+                  <div class="filter-inner-pad">
+                  @if (!activeFiltersLoaded() && typesenseAvailable()) {
+                    <div class="d-flex align-items-center gap-2 py-3 text-muted">
+                      <div class="spinner-border spinner-border-sm" role="status">
                       <span class="visually-hidden">Loading filters…</span>
                     </div>
                     <span class="small">Loading filters…</span>
@@ -301,10 +333,12 @@ const TABS: { id: Tab; label: string }[] = [
                 </div><!-- /.filter-inner-pad -->
               </div>
             </div>
-          </div>
+
+            </div><!-- /.filter-sidebar__content -->
+          </div><!-- /.filter-sidebar -->
 
           <!-- ── Results col ─────── -->
-          <div class="col-md-9 results-col" #resultsCol>
+          <div class="results-col" #resultsCol>
             @if (!typesenseAvailable()) {
               <div class="text-center py-5 text-muted">
                 <p>Search service is temporarily unavailable. Please try again later.</p>
@@ -370,18 +404,7 @@ const TABS: { id: Tab; label: string }[] = [
     </div><!-- /.search-panels -->
   `,
   styles: [`
-    .results-col {
-      position: relative;
-      overflow-anchor: none;
-      min-height: 500px;
-    }
-    .results-loading-overlay {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
+    /* .results-col base styles (position, min-height, overlay) live in global instantsearch.css */
     .filter-wrap {
       display: grid;
       grid-template-rows: 0fr;
@@ -424,18 +447,15 @@ const TABS: { id: Tab; label: string }[] = [
         overflow-x: hidden;
         overflow-y: hidden;
       }
-      .search-body > .row {
+      .search-columns {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
         height: 100%;
         overflow: hidden;
-        flex-wrap: nowrap;
-      }
-      .search-body .col-md-3 {
-        height: 100%;
-        overflow-y: auto;
-        flex-shrink: 0;
-        min-width: 0;
       }
       .results-col {
+        flex: 1;
         height: 100%;
         overflow-y: auto;
         min-height: unset;
@@ -453,6 +473,26 @@ export class UnifiedSearchComponent implements OnInit, AfterViewInit, OnDestroy 
   activeTab   = signal<Tab>('projects');
   searchQuery = signal('');
   filtersOpen = signal(false);
+  sidebarCollapsed = signal(localStorage.getItem('filterSidebarCollapsed') === 'true');
+
+  toggleSidebar(): void {
+    const next = !this.sidebarCollapsed();
+    this.sidebarCollapsed.set(next);
+    localStorage.setItem('filterSidebarCollapsed', String(next));
+  }
+
+  activeFilterCount = computed(() => {
+    const id = this.activeCollectionId();
+    if (!id) return 0;
+    const st = this.states[id];
+    const col = COLLECTIONS[id];
+    let count = 0;
+    for (const f of col.facets) {
+      count += (st.facetItems[f.attribute]?.() ?? []).filter((i: any) => i.isRefined).length;
+    }
+    if (st.fromCtrl.value || st.toCtrl.value) count++;
+    return count;
+  });
 
   // ── Per-collection state (created upfront, IS instances created lazily) ─────
   private states: Record<CollectionId, ColState> = {
@@ -871,8 +911,6 @@ export class UnifiedSearchComponent implements OnInit, AfterViewInit, OnDestroy 
     this.router.navigate([], { queryParams: { tab, q: q || null }, queryParamsHandling: 'replace', replaceUrl: true });
   }
 
-  private ts(iso: string, endOfDay = false): number {
-    return Math.floor(new Date(iso + 'T00:00:00Z').getTime() / 1000) + (endOfDay ? 86399 : 0);
-  }
+  private ts = isoToUnixTimestamp;
 }
 

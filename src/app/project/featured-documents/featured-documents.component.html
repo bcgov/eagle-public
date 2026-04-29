@@ -1,23 +1,6 @@
-@if (loading() || tableData().totalListItems > 0 || featuredCards().length > 0) {
+@if (loading() || tableData().totalListItems > 0) {
   <div class="mb-4">
     <h3 class="mb-4">Featured Documents</h3>
-    @if (isTypesense()) {
-      @if (loading()) {
-        <div aria-busy="true" aria-label="Loading featured documents">
-          @for (i of [1, 2, 3]; track i) {
-            <div class="skeleton-row">
-              <div class="skeleton-cell" style="flex: 3"></div>
-              <div class="skeleton-cell" style="flex: 2"></div>
-              <div class="skeleton-cell" style="flex: 1"></div>
-            </div>
-          }
-        </div>
-      }
-      @for (card of featuredCards(); track card.id) {
-        <app-search-document-card [hit]="card" [showProjectLink]="false" class="d-block" />
-      }
-    } @else {
-      <lib-table-template [data]="tableData()" [loading]="loading()"></lib-table-template>
-    }
+    <lib-table-template [data]="tableData()" [loading]="loading()"></lib-table-template>
   </div>
 }

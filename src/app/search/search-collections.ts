@@ -239,6 +239,11 @@ export function tabToCollectionId(tab: Tab): CollectionId | null {
   return tab as CollectionId;
 }
 
+/** Converts an ISO date string (yyyy-mm-dd) to a Unix timestamp (seconds). */
+export function isoToUnixTimestamp(iso: string, endOfDay = false): number {
+  return Math.floor(new Date(iso + 'T00:00:00Z').getTime() / 1000) + (endOfDay ? 86399 : 0);
+}
+
 /** Rewrites old project-notifications legacy URLs to the new unified search route. */
 export function resolveDocUrl(url: string): string {
   try {

@@ -1,5 +1,5 @@
 import { Component, OnDestroy, inject, ChangeDetectionStrategy, effect, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { Subject, Subscription } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
@@ -10,11 +10,10 @@ import { StorageService } from '../../services/storage.service';
 
 @Component({
   selector: 'app-commenting-tab',
-  imports: [CommonModule],
+  imports: [DatePipe],
   templateUrl: './commenting-tab.component.html',
   styleUrls: ['./commenting-tab.component.css'],
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  standalone: true
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CommentingTabComponent implements OnDestroy {
   private router = inject(Router);

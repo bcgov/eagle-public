@@ -56,6 +56,7 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
   public sidebarOpen = signal(true);
   public isLoading = signal(true);
   public tabsLoading = signal(false);
+  public currentTab = signal<string>(this.router.url.split('/').pop() ?? '');
   private tabArrowsHandle: TabArrowsHandle | null = null;
 
   public map: any = null;
@@ -197,11 +198,12 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
         }
       });
     
-    // Re-check tab arrows when route changes
+    // Re-check tab arrows when route changes; track active tab segment
     this.router.events
       .pipe(takeUntil(this.ngUnsubscribe))
       .subscribe(event => {
         if (event instanceof NavigationEnd) {
+          this.currentTab.set(event.urlAfterRedirects.split('/').pop() ?? '');
           setTimeout(() => this.tabArrowsHandle?.check(), 100);
         }
       });
