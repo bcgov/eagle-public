@@ -1,18 +1,22 @@
+@if (isTypesense()) {
+  <app-typesense-document-table [projId]="projId" [tabKey]="'application'" />
+
+} @else {
 
   <section class="mb-4 pt-0 pb-0">
     <search-filter-template
-        (searchEvent)="executeSearch($event)"
-        [advancedFilters]="true"
-        [showAdvancedFilters]="showAdvancedFilters()"
-        [searchOnFilterChange]="true"
-        [filters]="filters()"
-        (resetControls)="onResetControls()"
-        (toggleFiltersPanelEvent)="onToggleFiltersPanel($event)"
-        [searchHelpLinkArray]="['/search-help']">
-      </search-filter-template>
-    
+      (searchEvent)="executeSearch($event)"
+      [advancedFilters]="true"
+      [showAdvancedFilters]="showAdvancedFilters()"
+      [searchOnFilterChange]="true"
+      [filters]="filters()"
+      (resetControls)="onResetControls()"
+      (toggleFiltersPanelEvent)="onToggleFiltersPanel($event)"
+      [searchHelpLinkArray]="['/search-help']">
+    </search-filter-template>
+  </section>
 
-    @if (loading() && tableData().items.length === 0) {
+  @if (loading() && tableData().items.length === 0) {
       <table class="table fade-in" aria-busy="true" aria-label="Loading application documents">
         <thead>
           <tr>
@@ -43,3 +47,4 @@
       </lib-table-template>
     }
 
+}

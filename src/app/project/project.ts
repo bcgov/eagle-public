@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy, AfterViewInit, ElementRef, signal, ChangeDetectionStrategy, inject, Renderer2, CUSTOM_ELEMENTS_SCHEMA, effect, untracked } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule, NavigationEnd } from '@angular/router';
-import { CommonModule } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { Subject, forkJoin, of } from 'rxjs';
 import { takeUntil, take, map, catchError } from 'rxjs/operators';
 
@@ -22,7 +22,7 @@ import { AnalyticsService } from '../services/analytics/analytics.service';
 @Component({
   selector: 'app-project',
   imports: [
-    CommonModule,
+    DatePipe,
     RouterModule,
     DetailsSidebarComponent,
     SafeHtmlPipe
@@ -77,17 +77,12 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
         untracked(() => this.initTabLinks());
         
         // Set legislation link based on year
-        const legislationYear = proj.legislation.includes('2002') ? '2002' 
-          : proj.legislation.includes('1996') ? '1996' 
-          : '2018';
-        
-        const legislationLinks: Record<string, string> = {
-          '2002': Constants.legislationLinks.ENVIRONMENTAL_ASSESSMENT_ACT_2002_LINK,
-          '1996': Constants.legislationLinks.ENVIRONMENTAL_ASSESSMENT_ACT_1996_LINK,
-          '2018': Constants.legislationLinks.ENVIRONMENTAL_ASSESSMENT_ACT_2018_LINK
-        };
-        
-        this.legislationLink.set(legislationLinks[legislationYear]);
+        const leg = proj.legislation;
+        this.legislationLink.set(
+          leg.includes('2002') ? Constants.legislationLinks.ENVIRONMENTAL_ASSESSMENT_ACT_2002_LINK
+          : leg.includes('1996') ? Constants.legislationLinks.ENVIRONMENTAL_ASSESSMENT_ACT_1996_LINK
+          : Constants.legislationLinks.ENVIRONMENTAL_ASSESSMENT_ACT_2018_LINK
+        );
         
         // Re-check tab arrows after tabs are updated
         setTimeout(() => this.tabArrowsHandle?.check(), 100);
@@ -153,21 +148,21 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
     },
     {
       key: Constants.optionalProjectDocTabs.APPLICATION,
-      label: 'Application',
+      label: 'Applications',
       link: 'application',
       tabDisplayCriteria: null,
       display: false,
     },
     {
       key: Constants.optionalProjectDocTabs.CERTIFICATE,
-      label: 'Certificate',
+      label: 'Certificates',
       link: 'certificates',
       tabDisplayCriteria: null,
       display: false,
     },
     {
       key: Constants.optionalProjectDocTabs.AMENDMENT,
-      label: 'Amendment(s)',
+      label: 'Amendments',
       link: 'amendments',
       tabDisplayCriteria: null,
       display: false,

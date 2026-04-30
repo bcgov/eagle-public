@@ -232,6 +232,36 @@ export const COLLECTIONS: Record<CollectionId, CollectionConfig> = {
   },
 };
 
+// ── Per-tab Typesense filter strings ──────────────────────────────────────────
+// Applied as base filter_by for Application / Certificate / Amendment tabs.
+// These mirror the MongoDB createProjectTabModifiers() type/milestone lookups,
+// but use the human-readable names stored in Typesense (already resolved by sync).
+
+export const TAB_FILTER_BY: Record<string, string> = {
+  application: `type:=["Application Materials","Scientific Memo","Independent Memo"] && milestone:=["Application Review","EAC Application","Revised EAC Application"]`,
+  certificate: `type:=["Certificate Package","Order","Decision Materials"] && milestone:=["Certificate","Certificate Decision","Decision","Certificate Extension","Transfer of Certificate/Order"]`,
+  amendment:   `type:=["Amendment Package","Request","Decision Materials","Tracking Table"] && milestone:=["Amendment"] && projectPhase:=["Post Decision - Amendment"]`,
+};
+
+// ── Per-tab facet subsets (no documentAuthorType) ──────────────────────────────
+
+export const TAB_FACETS: Record<string, readonly FacetDef[]> = {
+  // all 4 facets: type, milestone, documentAuthorType, projectPhase
+  documents: COLLECTIONS.documents.facets as FacetDef[],
+  // type + milestone + projectPhase
+  application: COLLECTIONS.documents.facets.filter(f =>
+    ['type', 'milestone', 'projectPhase'].includes(f.attribute)
+  ) as FacetDef[],
+  // type + milestone only
+  certificate: COLLECTIONS.documents.facets.filter(f =>
+    ['type', 'milestone'].includes(f.attribute)
+  ) as FacetDef[],
+  // type + milestone + projectPhase
+  amendment: COLLECTIONS.documents.facets.filter(f =>
+    ['type', 'milestone', 'projectPhase'].includes(f.attribute)
+  ) as FacetDef[],
+};
+
 /** Maps a Tab value to a CollectionId. */
 export function tabToCollectionId(tab: Tab): CollectionId | null {
   if (tab === 'updates') return 'activities';

@@ -24,7 +24,7 @@ export class CommentingTabComponent implements OnDestroy {
   public project = this.storageService.currentProject;
   public commentPeriods = signal<CommentPeriod[]>([]);
   public loading = signal(true);
-  private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
+  private ngUnsubscribe = new Subject<void>();
   private loadedProjectId: string | null = null;
   private commentPeriodSub: Subscription | null = null;
 
@@ -69,7 +69,7 @@ export class CommentingTabComponent implements OnDestroy {
   }
 
   ngOnDestroy() {
-    this.ngUnsubscribe.next(true);
+    this.ngUnsubscribe.next();
     this.ngUnsubscribe.complete();
   }
 }

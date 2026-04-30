@@ -1,4 +1,8 @@
-import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
+import {
+  Component,
+  signal,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { SearchParamObject } from '../../services/search.service';
 import { IColumnObject, TableObject } from '../../shared/components/table-template/table-object';
 import { DocumentTableRowsComponent } from '../documents/project-document-table-rows/project-document-table-rows.component';
@@ -7,15 +11,21 @@ import { TableTemplateComponent } from '../../shared/components/table-template/t
 import { SearchFilterTemplateComponent } from '../../shared/components/search-filter-template/search-filter-template.component';
 import { Constants } from '../../shared/utils/constants';
 import { ProjectDocumentTabBase } from '../shared/project-document-tab-base';
+import { TypesenseDocumentTableComponent } from '../shared/typesense-document-table.component';
 
 @Component({
   selector: 'app-application',
   templateUrl: './application.component.html',
   styleUrls: ['./application.component.css'],
-  imports: [TableTemplateComponent, SearchFilterTemplateComponent],
+  imports: [
+    TableTemplateComponent,
+    SearchFilterTemplateComponent,
+    TypesenseDocumentTableComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ApplicationComponent extends ProjectDocumentTabBase {
+  // ── MongoDB fallback state ─────────────────────────────────────────────────
   protected readonly tableId = 'application';
   protected readonly filtersList = ['milestone', 'type', 'projectPhase'];
   protected readonly dateFiltersList = ['datePostedStart', 'datePostedEnd'];
@@ -27,31 +37,11 @@ export class ApplicationComponent extends ProjectDocumentTabBase {
   public override readonly showAdvancedFilters = signal(false);
   public readonly filters = signal<FilterObject[]>([]);
   public readonly tableColumns: IColumnObject[] = [
-    {
-      name: 'Name',
-      value: 'displayName',
-      width: 'col-4'
-    },
-    {
-      name: 'Date',
-      value: 'datePosted',
-      width: 'col-2'
-    },
-    {
-      name: 'Type',
-      value: 'type',
-      width: 'col-2'
-    },
-    {
-      name: 'Milestone',
-      value: 'milestone',
-      width: 'col-2'
-    },
-    {
-      name: 'Phase',
-      value: 'projectPhase',
-      width: 'col-2'
-    }
+    { name: 'Name',      value: 'displayName',  width: 'col-4' },
+    { name: 'Date',      value: 'datePosted',   width: 'col-2' },
+    { name: 'Type',      value: 'type',         width: 'col-2' },
+    { name: 'Milestone', value: 'milestone',    width: 'col-2' },
+    { name: 'Phase',     value: 'projectPhase', width: 'col-2' },
   ];
   public readonly tableData = signal<TableObject>(new TableObject({ component: DocumentTableRowsComponent, columns: this.tableColumns }));
 
@@ -74,6 +64,8 @@ export class ApplicationComponent extends ProjectDocumentTabBase {
   }
 
   protected fetchDataWithCurrentParams(): void {
+    if (this.isTypesense()) return;
+
     const updated = this.readCurrentParams();
     const secondarySort = updated.sortBy.includes('displayName') ? '' : '+displayName';
 
@@ -91,6 +83,8 @@ export class ApplicationComponent extends ProjectDocumentTabBase {
       this.buildFilters()
     ));
   }
+
+  // ── MongoDB fallback handlers ──────────────────────────────────────────────
 
   onResetControls(): void {
     const params: any = {};
@@ -128,5 +122,4 @@ export class ApplicationComponent extends ProjectDocumentTabBase {
       ),
     ]);
   }
-
 }

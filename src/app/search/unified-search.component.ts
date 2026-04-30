@@ -115,7 +115,6 @@ const TABS: { id: Tab; label: string }[] = [
 
 @Component({
   selector: 'app-unified-search',
-  standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     RouterLink,

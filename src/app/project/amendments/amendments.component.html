@@ -1,3 +1,8 @@
+@if (isTypesense()) {
+  <app-typesense-document-table [projId]="projId" [tabKey]="'amendment'" />
+
+} @else {
+
 <section class="mb-4 pt-0 pb-0">
   <search-filter-template
     (searchEvent)="executeSearch($event)"
@@ -42,3 +47,4 @@
   </lib-table-template>
 }
 
+}

@@ -1,18 +1,27 @@
-import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
+import {
+  Component,
+  signal,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { SearchParamObject } from '../../services/search.service';
 import { IColumnObject, TableObject } from '../../shared/components/table-template/table-object';
 import { DocumentTableRowsComponent } from '../documents/project-document-table-rows/project-document-table-rows.component';
 import { TableTemplateComponent } from '../../shared/components/table-template/table-template.component';
 import { Constants } from '../../shared/utils/constants';
 import { ProjectDocumentTabBase } from '../shared/project-document-tab-base';
+import { TypesenseDocumentTableComponent } from '../shared/typesense-document-table.component';
 
 @Component({
   selector: 'app-certificates',
   templateUrl: './certificates.component.html',
-  imports: [TableTemplateComponent],
+  imports: [
+    TableTemplateComponent,
+    TypesenseDocumentTableComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CertificatesComponent extends ProjectDocumentTabBase {
+  // ── MongoDB fallback state ─────────────────────────────────────────────────
   protected readonly tableId = 'certificates';
   protected readonly filtersList: string[] = [];
   protected readonly dateFiltersList: string[] = [];
@@ -34,10 +43,12 @@ export class CertificatesComponent extends ProjectDocumentTabBase {
   }
 
   protected initListData(_list: any[]): void {
-    // Certificates tab has no filter panels; no list parsing needed
+    // Certificates has no filter panels in MongoDB path; no list parsing needed
   }
 
   protected fetchDataWithCurrentParams(): void {
+    if (this.isTypesense()) return;
+
     const updated = this.readCurrentParams();
     const secondarySort = updated.sortBy.includes('displayName') ? '' : '+displayName';
 

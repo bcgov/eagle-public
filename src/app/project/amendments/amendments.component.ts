@@ -1,4 +1,8 @@
-import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
+import {
+  Component,
+  signal,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { SearchParamObject } from '../../services/search.service';
 import { IColumnObject, TableObject } from '../../shared/components/table-template/table-object';
 import { DocumentTableRowsComponent } from '../documents/project-document-table-rows/project-document-table-rows.component';
@@ -7,14 +11,20 @@ import { TableTemplateComponent } from '../../shared/components/table-template/t
 import { SearchFilterTemplateComponent } from '../../shared/components/search-filter-template/search-filter-template.component';
 import { Constants } from '../../shared/utils/constants';
 import { ProjectDocumentTabBase } from '../shared/project-document-tab-base';
+import { TypesenseDocumentTableComponent } from '../shared/typesense-document-table.component';
 
 @Component({
   selector: 'app-amendments',
   templateUrl: './amendments.component.html',
-  imports: [TableTemplateComponent, SearchFilterTemplateComponent],
+  imports: [
+    TableTemplateComponent,
+    SearchFilterTemplateComponent,
+    TypesenseDocumentTableComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AmendmentsComponent extends ProjectDocumentTabBase {
+  // ── MongoDB fallback state ─────────────────────────────────────────────────
   protected readonly tableId = 'amendments';
   protected readonly filtersList = ['milestone', 'type', 'projectPhase'];
   protected readonly dateFiltersList = ['datePostedStart', 'datePostedEnd'];
@@ -53,6 +63,8 @@ export class AmendmentsComponent extends ProjectDocumentTabBase {
   }
 
   protected fetchDataWithCurrentParams(): void {
+    if (this.isTypesense()) return;
+
     const updated = this.readCurrentParams();
     const secondarySort = updated.sortBy.includes('displayName') ? '' : '+displayName';
 
@@ -70,6 +82,8 @@ export class AmendmentsComponent extends ProjectDocumentTabBase {
       this.buildFilters()
     ));
   }
+
+  // ── MongoDB fallback handlers ──────────────────────────────────────────────
 
   onResetControls(): void {
     if (this.tableData().sortBy.includes('score')) {

@@ -1,4 +1,4 @@
-import { DestroyRef, inject, WritableSignal, Signal, afterNextRender } from '@angular/core';
+import { computed, DestroyRef, inject, WritableSignal, Signal, afterNextRender } from '@angular/core';
 import { ActivatedRoute, Params, Router } from '@angular/router';
 import { take, switchMap } from 'rxjs/operators';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
@@ -72,6 +72,8 @@ export abstract class ProjectDocumentTabBase {
    * (Documents tab). All other tabs set showFeatured = false.
    */
   protected readonly showFeatured: boolean = false;
+
+  readonly isTypesense = computed(() => !!this.configService.config().TYPESENSE_ENABLED);
 
   // ── Lifecycle wiring ──────────────────────────────────────────────────────
 

@@ -1,3 +1,5 @@
+:host { display: block; }
+
 .tab-section .row {
   @media (max-width: 767px) {
     display: block;
@@ -8,4 +10,6 @@
     }
   }
 }
+
+
 

@@ -5,7 +5,7 @@ import { LoggingService } from '../services/logging.service';
 
 /**
  * Simple HTTP cache for GET requests.
- * Caches responses for 5 minutes by default.
+ * Caches responses for 15 minutes by default.
  */
 
 interface CacheEntry {

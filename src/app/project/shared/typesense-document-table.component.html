@@ -1,0 +1,183 @@
+<div class="ais-SearchBox mb-3">
+  <form class="ais-SearchBox-form" novalidate (submit)="$event.preventDefault()">
+    <input
+      class="ais-SearchBox-input"
+      type="search"
+      [placeholder]="cfg.searchPlaceholder"
+      [value]="tsKeywords()"
+      (input)="onTsInput($event)"
+      autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+    />
+    @if (tsKeywords()) {
+      <button class="ais-SearchBox-reset" type="button"
+        (click)="clearTsSearch()" aria-label="Clear search">
+        <i class="material-icons" aria-hidden="true" style="font-size:12px">close</i>
+      </button>
+    }
+  </form>
+</div>
+
+<div class="ts-body-row">
+
+  <!-- ── Facets sidebar ───────────────────────────────────────────────── -->
+  <div class="filter-sidebar" [class.filter-sidebar--collapsed]="sidebarCollapsed()"
+    role="complementary" [attr.aria-label]="cfg.filterAriaLabel">
+
+    <!-- Collapsed strip (desktop only) — click to expand -->
+    <button class="filter-sidebar__strip" (click)="toggleSidebar()"
+      aria-label="Expand filters" title="Expand filters">
+      <i class="material-icons" aria-hidden="true" style="font-size:16px">last_page</i>
+      @if (activeFilterCount() > 0) {
+        <span class="filter-sidebar__badge">{{ activeFilterCount() }}</span>
+      }
+    </button>
+
+    <!-- Expanded content -->
+    <div class="filter-sidebar__content">
+
+      <!-- Desktop header: "Filters" label + collapse toggle -->
+      <div class="filter-sidebar__header d-none d-md-flex mb-2">
+        <span class="filter-sidebar__label">Filters</span>
+        <button class="filter-sidebar__toggle" (click)="toggleSidebar()"
+          [attr.aria-label]="sidebarCollapsed() ? 'Expand filters' : 'Collapse filters'"
+          [attr.aria-expanded]="!sidebarCollapsed()">
+          <i class="material-icons" aria-hidden="true" style="font-size:14px">{{ sidebarCollapsed() ? 'last_page' : 'first_page' }}</i>
+        </button>
+      </div>
+
+      <!-- Mobile filter toggle -->
+      <div class="d-md-none mb-2">
+        <button
+          class="btn filter-toggle-btn btn-sm d-flex align-items-center gap-2"
+          [class.filter-toggle-btn--open]="tsFiltersOpen()"
+          (click)="tsFiltersOpen.set(!tsFiltersOpen())"
+          [attr.aria-expanded]="tsFiltersOpen()">
+          <i class="material-icons" aria-hidden="true" style="font-size:16px">filter_list</i>
+          Filters
+        </button>
+      </div>
+
+      <div class="filter-wrap" [class.filter-wrap--open]="tsFiltersOpen()">
+        <div class="filter-inner">
+          <div class="filter-inner-pad">
+
+            @if (!tsFiltersLoaded()) {
+              <div aria-busy="true" aria-label="Loading filters">
+                @for (section of [1, 2, 3]; track section) {
+                  <div class="mb-3">
+                    <div class="skeleton-cell mb-2" style="width:55%;height:.85rem;"></div>
+                    @for (item of [1, 2, 3, 4]; track item) {
+                      <div class="d-flex align-items-center gap-2 py-1">
+                        <div class="skeleton-cell flex-shrink-0" style="width:1rem;height:1rem;"></div>
+                        <div class="skeleton-cell flex-fill"></div>
+                        <div class="skeleton-cell flex-shrink-0" style="width:1.5rem;height:.85rem;"></div>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            }
+
+            @for (facet of tsFacets; track facet.attribute) {
+              <div class="mb-3" [class.d-none]="!tsFiltersLoaded()">
+                <h6 class="fw-semibold">{{ facet.heading }}</h6>
+                @if (facet.grouped) {
+                  @for (group of tsGroupedSnapshot()[facet.attribute]; track group.year) {
+                    @if (group.heading) {
+                      <small class="legislation-heading d-block">{{ group.heading }}</small>
+                    }
+                    <ul class="ais-RefinementList-list">
+                      @for (item of group.items; track item.label) {
+                        <li class="ais-RefinementList-item"
+                          [class.ais-RefinementList-item--selected]="item.isRefined"
+                          [class.ais-RefinementList-item--disabled]="item.isDisabled">
+                          <label class="ais-RefinementList-label">
+                            <input type="checkbox" class="ais-RefinementList-checkbox"
+                              [checked]="item.isRefined" [disabled]="item.isDisabled"
+                              (change)="refineTsFacet(facet.attribute, item.label)" />
+                            <span class="ais-RefinementList-labelText">{{ item.label }}</span>
+                            <span class="ais-RefinementList-count">{{ item.count }}</span>
+                          </label>
+                        </li>
+                      }
+                    </ul>
+                  }
+                } @else {
+                  <ul class="ais-RefinementList-list">
+                    @for (item of tsFacetItems[facet.attribute]?.() ?? []; track item.label) {
+                      <li class="ais-RefinementList-item"
+                        [class.ais-RefinementList-item--selected]="item.isRefined"
+                        [class.ais-RefinementList-item--disabled]="item.isDisabled">
+                        <label class="ais-RefinementList-label">
+                          <input type="checkbox" class="ais-RefinementList-checkbox"
+                            [checked]="item.isRefined" [disabled]="item.isDisabled"
+                            (change)="refineTsFacet(facet.attribute, item.label)" />
+                          <span class="ais-RefinementList-labelText">{{ item.label }}</span>
+                          <span class="ais-RefinementList-count">{{ item.count }}</span>
+                        </label>
+                      </li>
+                    }
+                  </ul>
+                }
+              </div>
+            }
+
+            <!-- Date range filter -->
+            <div class="mb-3" [class.d-none]="!tsFiltersLoaded()">
+              <h6 class="fw-semibold">Date Posted</h6>
+              <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
+              <label class="control-label fw-bold">From</label>
+              <lib-date-picker [control]="tsFromCtrl" [minDate]="tsMinDate" />
+              <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
+              <label class="control-label fw-bold mt-2">To</label>
+              <div class="mb-2">
+                <lib-date-picker [control]="tsToCtrl" [minDate]="tsMinDate" />
+              </div>
+              @if (tsHasDateFilter()) {
+                <button class="btn btn-link btn-sm p-0 text-secondary"
+                  (click)="clearTsDateFilter()">Clear both</button>
+              }
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /.filter-sidebar__content -->
+  </div>
+
+  <!-- ── Results ──────────────────────────────────────────────────────── -->
+  <div class="ts-results-col" #tsResultsCol>
+    @if (tsLoading() && !tsHasSearched()) {
+      <div aria-busy="true" aria-label="Loading">
+        @for (i of [1, 2, 3, 4, 5]; track i) {
+          <div class="skeleton-row">
+            <div class="skeleton-cell" style="flex: 3"></div>
+            <div class="skeleton-cell" style="flex: 2"></div>
+            <div class="skeleton-cell" style="flex: 2"></div>
+            <div class="skeleton-cell" style="flex: 1"></div>
+          </div>
+        }
+      </div>
+    } @else if (tsHasError()) {
+      <div class="text-center text-muted py-5">Search timed out — please try again.</div>
+    } @else if (tsHits().length === 0 && tsHasSearched()) {
+      <div class="text-center text-muted py-4">{{ cfg.emptyMessage }}</div>
+    } @else {
+      <div class="d-flex flex-column">
+        @for (hit of tsHits(); track hit['objectID'] ?? hit['id']) {
+          <app-search-document-card [hit]="hit" [showProjectLink]="false"
+            (downloadClicked)="onTsDownload(hit)" />
+        }
+      </div>
+      <div #tsSentinel class="py-2 text-center">
+        @if (tsLoadingMore()) {
+          <div class="spinner-border spinner-border-sm text-secondary" role="status">
+            <span class="visually-hidden">Loading more…</span>
+          </div>
+        }
+      </div>
+    }
+  </div>
+
+</div>

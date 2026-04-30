@@ -36,7 +36,7 @@ export class FeaturedDocumentsComponent implements OnInit {
     // MongoDB path: react to tableService signal
     effect(() => {
       const searchResults = this.tableSignal();
-      if (searchResults !== null && searchResults !== undefined) {
+      if (searchResults != null) {
         const current = untracked(() => this.tableData());
         const updated = new TableObject({
           component: DocumentTableRowsComponent,
@@ -46,13 +46,10 @@ export class FeaturedDocumentsComponent implements OnInit {
           tableId: current.tableId,
         });
         updated.options = { ...current.options };
-        if (searchResults.data && Array.isArray(searchResults.data) && searchResults.data.length > 0) {
+        if (searchResults.data?.length > 0) {
           updated.totalListItems = searchResults.totalSearchCount;
           updated.items = searchResults.data.map((record: any) => ({ rowData: record }));
           updated.columns = this.tableColumns;
-        } else {
-          updated.totalListItems = 0;
-          updated.items = [];
         }
         this.tableData.set(updated);
       }
