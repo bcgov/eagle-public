@@ -43,8 +43,15 @@
         <a class="btn btn-sm btn-outline-primary"
            [href]="getDocUrl(rowData.documentUrl)"
            target="_blank"
-           rel="noopener">
+           rel="noopener noreferrer">
           View Project Notification Public Comment Period
+        </a>
+      } @else if (isExternalUrl()) {
+        <a class="btn btn-sm btn-outline-primary"
+           [href]="getDocUrl(rowData.documentUrl)"
+           target="_blank"
+           rel="noopener noreferrer">
+          View Documents
         </a>
       } @else if (!rowData?.notificationName && hasDocContent()) {
         <button class="btn btn-sm btn-outline-primary" type="button" (click)="toggleDocs()">

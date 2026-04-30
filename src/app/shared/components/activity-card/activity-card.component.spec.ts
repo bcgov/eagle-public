@@ -118,6 +118,60 @@ describe('ActivityCardComponent', () => {
     expect(component.isSingleDoc('https://example.com/doc.pdf')).toBe(true);
   });
 
+  // ─── isExternalUrl ────────────────────────────────────────────────────────
+
+  it('isExternalUrl returns true for https:// URL', () => {
+    component.rowData = { documentUrl: 'https://example.gov.bc.ca/doc' };
+    expect(component.isExternalUrl()).toBe(true);
+  });
+
+  it('isExternalUrl returns true for http:// URL', () => {
+    component.rowData = { documentUrl: 'http://example.com/doc.pdf' };
+    expect(component.isExternalUrl()).toBe(true);
+  });
+
+  it('isExternalUrl returns false for internal API doc path', () => {
+    component.rowData = { documentUrl: '/api/document/abc123abc123abc123abc123/fetch/file.pdf' };
+    expect(component.isExternalUrl()).toBe(false);
+  });
+
+  it('isExternalUrl returns false for folder URL', () => {
+    component.rowData = { documentUrl: '/some/path/docs?folder=abc' };
+    expect(component.isExternalUrl()).toBe(false);
+  });
+
+  it('isExternalUrl returns false for null documentUrl', () => {
+    component.rowData = { documentUrl: null };
+    expect(component.isExternalUrl()).toBe(false);
+  });
+
+  it('isExternalUrl returns false when rowData is null', () => {
+    component.rowData = null;
+    expect(component.isExternalUrl()).toBe(false);
+  });
+
+  // ─── hasDocContent ────────────────────────────────────────────────────────
+
+  it('hasDocContent returns true for internal API doc path with 24-hex ObjectId', () => {
+    component.rowData = { documentUrl: '/api/document/aabbccddeeff001122334455/fetch/report.pdf' };
+    expect(component.hasDocContent()).toBe(true);
+  });
+
+  it('hasDocContent returns false for external URL (docId null)', () => {
+    component.rowData = { documentUrl: 'https://example.com/doc' };
+    expect(component.hasDocContent()).toBe(false);
+  });
+
+  it('hasDocContent returns true for folder URL when project._id present', () => {
+    component.rowData = { documentUrl: '/docs?folder=abc', project: { _id: 'proj1' } };
+    expect(component.hasDocContent()).toBe(true);
+  });
+
+  it('hasDocContent returns false for folder URL when no project', () => {
+    component.rowData = { documentUrl: '/docs?folder=abc', project: null };
+    expect(component.hasDocContent()).toBe(false);
+  });
+
   // ─── goToCP ───────────────────────────────────────────────────────────────
 
   it('goToCP tracks analytics event', () => {

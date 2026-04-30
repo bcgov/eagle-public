@@ -100,6 +100,8 @@ import { resolveDocUrl } from 'app/search/search-collections';
                 } @else if (docLink()) {
                   <a class="search-card-btn search-card-btn--primary"
                     [href]="docLink()"
+                    target="_blank"
+                    rel="noopener noreferrer"
                     (click)="$event.stopPropagation()">
                     <i class="material-icons">description</i><span>Documents</span>
                   </a>

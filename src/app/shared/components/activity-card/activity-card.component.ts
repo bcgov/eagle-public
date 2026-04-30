@@ -126,4 +126,9 @@ export class ActivityCardComponent implements TableRowComponent {
     if (this.isFolderDocUrl()) return !!this.rowData?.project?._id;
     return !!this.docId();
   });
+
+  /** True when documentUrl is a plain external HTTP(S) link (not an internal API doc path or folder URL). */
+  isExternalUrl = computed((): boolean =>
+    /^https?:\/\//.test(this.rowData?.documentUrl ?? '')
+  );
 }
