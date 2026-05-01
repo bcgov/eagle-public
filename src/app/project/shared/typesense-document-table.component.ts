@@ -194,7 +194,7 @@ export class TypesenseDocumentTableComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.cfg = TAB_CONFIG[this.tabKey()];
     this.tsFacets = this.cfg.facets;
-    this.sidebarCollapsed.set(localStorage.getItem(this.cfg.localStorageKey) !== 'false');
+    this.sidebarCollapsed.set(localStorage.getItem(this.cfg.localStorageKey) === 'true');
 
     for (const f of this.tsFacets) {
       this.tsFacetItems[f.attribute] = signal<DisplayItem[]>([]);

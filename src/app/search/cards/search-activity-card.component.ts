@@ -7,7 +7,7 @@ import {
   computed,
   signal,
 } from '@angular/core';
-import { DatePipe } from '@angular/common';
+import { DatePipe, NgClass } from '@angular/common';
 import { DomSanitizer } from '@angular/platform-browser';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ApiService } from '../../services/api';
@@ -17,7 +17,7 @@ import { resolveDocUrl } from 'app/search/search-collections';
 @Component({
   selector: 'app-search-activity-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe],
+  imports: [DatePipe, NgClass],
   template: `
     <article class="card search-result-card search-result-card--styled">
       <div class="search-card-header">
@@ -25,9 +25,9 @@ import { resolveDocUrl } from 'app/search/search-collections';
           <h5 class="fw-bold mb-0 flex-fill"
             [innerHTML]="hit()['_highlightResult']?.['headline']?.value ?? hit()['headline'] ?? hit()['notificationName'] ?? 'Untitled'">
           </h5>
-          @if (isNotificationType()) {
-            <span class="badge activity-notif-badge flex-shrink-0">
-              Notification
+          @if (activityBadge(); as badge) {
+            <span class="badge flex-shrink-0" [ngClass]="badge.cls">
+              {{ badge.label }}
             </span>
           }
         </div>
@@ -167,7 +167,11 @@ import { resolveDocUrl } from 'app/search/search-collections';
       }
     </article>
   `,
-  styles: [`.activity-notif-badge { font-size: 0.65rem; padding: 0.2em 0.55em; flex-shrink: 0; background-color: rgba(252, 186, 25, 0.2); color: var(--gold); border: 1px solid rgba(252, 186, 25, 0.5); }`],
+  styles: [`
+    .activity-badge--news  { font-size: 0.65rem; padding: 0.2em 0.55em; background-color: rgba(103, 232, 249, 0.15); color: #67e8f9; border: 1px solid rgba(103, 232, 249, 0.5); }
+    .activity-badge--pcp   { font-size: 0.65rem; padding: 0.2em 0.55em; background-color: rgba(134, 239, 172, 0.15); color: #86efac; border: 1px solid rgba(134, 239, 172, 0.5); }
+    .activity-badge--notif { font-size: 0.65rem; padding: 0.2em 0.55em; background-color: rgba(252, 186, 25, 0.2);   color: #fcba19; border: 1px solid rgba(252, 186, 25, 0.6); }
+  `],
 })
 export class SearchActivityCardComponent {
   hit = input.required<any>();
@@ -179,9 +183,15 @@ export class SearchActivityCardComponent {
   private configService = inject(ConfigService);
   private lists = toSignal(this.configService.lists, { initialValue: [] as any[] });
 
-  isNotificationType = computed(() => {
-    const t = this.hit()['type'] ?? '';
-    return t === 'Project Notification News' || t === 'Project Notification Public Comment Period';
+  activityBadge = computed((): { label: string; cls: string } | null => {
+    switch (this.hit()['type']) {
+      case 'News': return { label: 'News', cls: 'activity-badge--news' };
+      case 'Public Comment Period': return { label: 'Comment Period', cls: 'activity-badge--pcp' };
+      case 'Project Notification News':
+      case 'Project Notification Public Comment Period':
+        return { label: 'Notification', cls: 'activity-badge--notif' };
+      default: return null;
+    }
   });
 
   /**

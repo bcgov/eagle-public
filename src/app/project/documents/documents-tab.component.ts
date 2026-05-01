@@ -18,6 +18,7 @@ import { TypesenseDocumentTableComponent } from '../shared/typesense-document-ta
 @Component({
   selector: 'app-documents',
   templateUrl: './documents-tab.component.html',
+  styles: [':host { display: block; }'],
   imports: [
     TableTemplateComponent,
     SearchFilterTemplateComponent,

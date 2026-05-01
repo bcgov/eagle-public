@@ -1,4 +1,13 @@
-<td class="activity-card col-10" tabindex="0">
+<ng-template #cardContent>
+  <div class="activity-card__top-meta d-flex align-items-center gap-2 mb-2">
+    @if (activityBadge(); as badge) {
+      <span class="badge" [ngClass]="badge.cls">{{ badge.label }}</span>
+    }
+    @if (!tableMode) {
+      <small class="text-muted ms-auto">{{ rowData?.dateAdded | date: 'longDate' }}</small>
+    }
+  </div>
+
   <div class="activity-card__meta mb-2">
     @if (rowData?.project?.name) {
       <div class="activity-card__project-name">{{ rowData.project.name }}</div>
@@ -12,16 +21,11 @@
     <div class="activity-card__headline" [innerHTML]="getSafeHtml(rowData?.headline || '')"></div>
   </div>
 
-  @if (!tableMode) {
-    <small class="d-block text-muted mb-3">{{ rowData?.dateAdded | date: 'longDate' }}</small>
-  }
+  <div class="activity-card__body mb-3 lh-base" [innerHTML]="getSafeHtml(rowData?.content)"></div>
 
-  <div class="mb-3 lh-base" [innerHTML]="getSafeHtml(rowData?.content)"></div>
-
-  <div class="d-flex flex-wrap gap-2">
+  <div class="activity-card__actions d-flex flex-wrap gap-2">
     @if (rowData?.type === 'Project Notification News') {
-      <a class="btn btn-sm btn-outline-primary"
-         [routerLink]="['/project-notifications']">
+      <a class="btn btn-sm btn-outline-primary" [routerLink]="['/project-notifications']">
         View Project Notifications Page
       </a>
     }
@@ -33,8 +37,7 @@
       </a>
     }
     @if (rowData?.pcp && rowData?.type === 'Public Comment Period') {
-      <button class="btn btn-sm btn-outline-primary"
-        (click)="goToCP(rowData)">
+      <button class="btn btn-sm btn-outline-primary" type="button" (click)="goToCP(rowData)">
         View Engagement
       </button>
     }
@@ -63,37 +66,40 @@
 
   @if (expanded() && hasDocContent()) {
     <hr class="my-3">
-    <div>
-      @if (isFolderDocUrl()) {
-        <div class="d-flex align-items-center gap-3 py-2 border-bottom search-doc-row">
-          <span class="flex-fill fw-semibold small search-doc-name">All project documents</span>
-          <a class="d-flex align-items-center justify-content-center text-primary search-doc-action"
-             [href]="'/p/' + rowData.project._id + '/documents'">
-            <i class="material-icons md-18" aria-hidden="true">open_in_new</i>
-          </a>
-        </div>
-      } @else {
-        <div class="d-none d-md-flex gap-3 px-2 py-1 small fw-semibold rounded-1 mb-2 search-doc-header">
-          <span class="flex-fill">Document Name</span>
-          <span class="search-doc-action"></span>
-        </div>
-        <div class="d-flex flex-column flex-md-row align-items-md-center gap-1 gap-md-3 py-2 border-bottom search-doc-row">
-          <span class="flex-fill fw-semibold small search-doc-name">{{ docFilename() || 'Document' }}</span>
-          <a class="d-flex align-items-center justify-content-center text-primary search-doc-action"
-             [href]="'/api/document/' + docId() + '/fetch'"
-             target="_blank"
-             rel="noopener noreferrer"
-             title="Download">
-            <i class="material-icons md-18" aria-hidden="true">file_download</i>
-          </a>
-        </div>
-      }
-    </div>
+    @if (isFolderDocUrl()) {
+      <div class="d-flex align-items-center gap-3 py-2 border-bottom search-doc-row">
+        <span class="flex-fill fw-semibold small search-doc-name">All project documents</span>
+        <a class="d-flex align-items-center justify-content-center text-primary search-doc-action"
+           [href]="'/p/' + rowData.project._id + '/documents'">
+          <i class="material-icons md-18" aria-hidden="true">open_in_new</i>
+        </a>
+      </div>
+    } @else {
+      <div class="d-none d-md-flex gap-3 px-2 py-1 small fw-semibold rounded-1 mb-2 search-doc-header">
+        <span class="flex-fill">Document Name</span>
+        <span class="search-doc-action"></span>
+      </div>
+      <div class="d-flex flex-column flex-md-row align-items-md-center gap-1 gap-md-3 py-2 border-bottom search-doc-row">
+        <span class="flex-fill fw-semibold small search-doc-name">{{ docFilename() || 'Document' }}</span>
+        <a class="d-flex align-items-center justify-content-center text-primary search-doc-action"
+           [href]="'/api/document/' + docId() + '/fetch'"
+           target="_blank"
+           rel="noopener noreferrer"
+           title="Download">
+          <i class="material-icons md-18" aria-hidden="true">file_download</i>
+        </a>
+      </div>
+    }
   }
-</td>
+</ng-template>
 
 @if (tableMode) {
+  <td class="activity-card col-10" tabindex="0">
+    <ng-container [ngTemplateOutlet]="cardContent" />
+  </td>
   <td class="col-2 activity-card__date" [class.align-top]="expanded()" tabindex="0">
     {{ rowData?.dateAdded | date: 'longDate' }}
   </td>
+} @else {
+  <ng-container [ngTemplateOutlet]="cardContent" />
 }

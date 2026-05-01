@@ -274,14 +274,21 @@ export function isoToUnixTimestamp(iso: string, endOfDay = false): number {
   return Math.floor(new Date(iso + 'T00:00:00Z').getTime() / 1000) + (endOfDay ? 86399 : 0);
 }
 
-/** Rewrites old project-notifications legacy URLs to the new unified search route. */
+/** Rewrites old project-notifications legacy URLs to the new unified search route.
+ *  Also normalises bare-domain URLs (e.g. "www.example.com") by prepending "https://". */
 export function resolveDocUrl(url: string): string {
+  if (!url) return url;
+  // Normalise bare-domain URLs that have no scheme (not starting with / or a known scheme).
+  let normalised = url;
+  if (!/^https?:\/\//i.test(url) && !url.startsWith('/') && /\.[a-z]{2,}/i.test(url)) {
+    normalised = 'https://' + url;
+  }
   try {
-    const u = new URL(url, 'http://x');
+    const u = new URL(normalised, 'http://x');
     if (/\/project-notifications(?:\?|$)/.test(u.pathname)) {
       const q = u.searchParams.get('keywords') ?? '';
       return '/search?tab=notifications' + (q ? '&q=' + encodeURIComponent(q) : '');
     }
   } catch { /* not parseable */ }
-  return url;
+  return normalised;
 }

@@ -31,27 +31,27 @@
   <div id="anchor-point">
     <section class="container">
         <div class="home-news-feed">
-        <h2 tabindex="0">Recent Activities & Updates</h2>
-        @if (loading()) {
-          <div class="d-flex justify-content-center align-items-center py-5">
-            <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
-              <span class="visually-hidden">Loading...</span>
+        <div class="activity-panel">
+          <h2 class="home-news-feed__header" tabindex="0">Recent Activities &amp; Updates</h2>
+          @if (loading()) {
+            <div class="d-flex justify-content-center align-items-center py-5">
+              <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
             </div>
-          </div>
-        } @else if (results() && results().length > 0) {
-            <table class="table" id="tableTop">
+          } @else if (results() && results().length > 0) {
+            <div class="activity-feed" id="tableTop">
               @for (item of results(); track item._id) {
                 @if (item.active) {
-                  <tbody>
-                    <tr app-activity-card [rowData]="item"></tr>
-                  </tbody>
+                  <app-activity-card-home [rowData]="item" />
                 }
               }
-            </table>
+            </div>
           }
+        </div>
           <div class="mt-4 text-center">
             <a class="btn slide-r-btn btn-outline-primary d-inline-flex align-items-center gap-2" [routerLink]="['/news']">
-              <span>View All Activities & Updates</span>
+              <span>View All Activities &amp; Updates</span>
               <i class="material-icons">&#xE5C8;</i>
             </a>
           </div>

@@ -21,12 +21,17 @@ import { resolveDocUrl } from 'app/search/search-collections';
  *    <td> with inline date. showProjectInfo uses the @Input binding directly.
  */
 @Component({
-  selector: 'tr[app-activity-card]',
+  selector: 'tr[app-activity-card], app-activity-card-home',
   templateUrl: './activity-card.component.html',
   styleUrl: './activity-card.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule, RouterModule, DatePipe],
-  standalone: true
+  standalone: true,
+  host: {
+    '[class.badge-type--news]':  "activityBadge()?.cls === 'activity-badge--news'",
+    '[class.badge-type--pcp]':   "activityBadge()?.cls === 'activity-badge--pcp'",
+    '[class.badge-type--notif]': "activityBadge()?.cls === 'activity-badge--notif'"
+  }
 })
 export class ActivityCardComponent implements TableRowComponent {
   private router = inject(Router);
@@ -127,8 +132,21 @@ export class ActivityCardComponent implements TableRowComponent {
     return !!this.docId();
   });
 
-  /** True when documentUrl is a plain external HTTP(S) link (not an internal API doc path or folder URL). */
-  isExternalUrl = computed((): boolean =>
-    /^https?:\/\//.test(this.rowData?.documentUrl ?? '')
-  );
+  /** True when documentUrl is a plain external HTTP(S) link or a bare-domain URL (no scheme). */
+  isExternalUrl = computed((): boolean => {
+    const url = this.rowData?.documentUrl ?? '';
+    if (/^https?:\/\//i.test(url)) return true;
+    // Bare-domain with no leading slash and at least one dot (e.g. "www.example.com")
+    return !url.startsWith('/') && /\.[a-z]{2,}/i.test(url);
+  });
+
+  /** Badge label and CSS class for the activity type, or null for unknown types. */
+  activityBadge = computed((): { label: string; cls: string } | null => {
+    const type = this.rowData?.type;
+    if (!type) return null;
+    if (type === 'News') return { label: 'News', cls: 'activity-badge--news' };
+    if (type === 'Public Comment Period') return { label: 'Comment Period', cls: 'activity-badge--pcp' };
+    if (type.startsWith('Project Notification')) return { label: 'Notification', cls: 'activity-badge--notif' };
+    return null;
+  });
 }

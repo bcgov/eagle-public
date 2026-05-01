@@ -1,3 +1,30 @@
+/* Activity type badges — shared base */
+.activity-badge--news,
+.activity-badge--pcp,
+.activity-badge--notif {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 0.2em 0.65em;
+  border-radius: 2rem;
+}
+.activity-badge--news {
+  background-color: rgba(13, 202, 240, 0.15);
+  color: #0a9ec4;
+  border: 1px solid rgba(13, 202, 240, 0.4);
+}
+.activity-badge--pcp {
+  background-color: rgba(25, 135, 84, 0.15);
+  color: #198754;
+  border: 1px solid rgba(25, 135, 84, 0.4);
+}
+.activity-badge--notif {
+  background-color: rgba(252, 186, 25, 0.2);
+  color: var(--gold);
+  border: 1px solid rgba(252, 186, 25, 0.5);
+}
+
 /* Project name — blue, bold (matches home page card style) */
 .activity-card__project-name {
   color: var(--bc-blue);
@@ -11,7 +38,6 @@
   display: block;
   color: var(--bc-gray);
   font-size: var(--bs-font-size-6);
-  margin-bottom: 0;
 }
 
 /* Date column (table mode only) */
@@ -39,9 +65,27 @@
   border-bottom: none;
 }
 
-/* In home-news-feed context, inherit the grey container background */
-:host-context(.home-news-feed) {
-  --bs-table-bg: transparent;
-  --table-row-bg: transparent;
-  background-color: transparent !important;
+/* === Activity-feed card mode (home page div list) === */
+:host-context(.activity-feed) {
+  display: block;
+  background-color: #E9ECEF;
+  border-left: 4px solid var(--primary);
+  border-top: 1px solid #b0bac5;
+  border-bottom: none;
+  padding: 1.25rem 1.5rem;
+  transition: background-color 0.12s ease;
+  text-align: left;
+}
+
+:host-context(.activity-feed):first-child {
+  border-top: none;
+}
+
+/* Left-border accent colour per type */
+:host-context(.activity-feed).badge-type--news  { border-left-color: #0a9ec4; }
+:host-context(.activity-feed).badge-type--pcp   { border-left-color: #198754; }
+:host-context(.activity-feed).badge-type--notif { border-left-color: #fcba19; }
+
+:host-context(.activity-feed) .activity-card__top-meta small {
+  font-size: 0.8rem;
 }

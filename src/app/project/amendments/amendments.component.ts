@@ -16,6 +16,7 @@ import { TypesenseDocumentTableComponent } from '../shared/typesense-document-ta
 @Component({
   selector: 'app-amendments',
   templateUrl: './amendments.component.html',
+  styles: [':host { display: block; }'],
   imports: [
     TableTemplateComponent,
     SearchFilterTemplateComponent,

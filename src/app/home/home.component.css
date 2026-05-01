@@ -56,6 +56,28 @@ main p {
   }
 }
 
+.activity-panel {
+  border: 1px solid #dee2e6;
+  border-bottom: none;
+  border-radius: 0.5rem 0.5rem 0 0;
+  overflow: hidden;
+}
+
+.home-news-feed__header {
+  background-color: var(--primary);
+  color: var(--card-header-color);
+  margin: 0;
+  padding: 0.75rem 1.5rem;
+  font-size: var(--bs-font-size-4);
+  text-align: left;
+}
+
+/* Activity feed container */
+.activity-feed {
+  display: flex;
+  flex-direction: column;
+}
+
 /* Survey Banner Styles */
 .survey-banner {
   background-color: var(--bs-warning);

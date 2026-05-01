@@ -172,6 +172,38 @@ describe('ActivityCardComponent', () => {
     expect(component.hasDocContent()).toBe(false);
   });
 
+  // ─── activityBadge ────────────────────────────────────────────────────────
+
+  it('activityBadge returns null for unknown type', () => {
+    component.rowData = { type: 'Unknown' };
+    expect(component.activityBadge()).toBeNull();
+  });
+
+  it('activityBadge returns null when type is null', () => {
+    component.rowData = { type: null };
+    expect(component.activityBadge()).toBeNull();
+  });
+
+  it('activityBadge returns News badge for News type', () => {
+    component.rowData = { type: 'News' };
+    expect(component.activityBadge()).toEqual({ label: 'News', cls: 'activity-badge--news' });
+  });
+
+  it('activityBadge returns Comment Period badge for Public Comment Period', () => {
+    component.rowData = { type: 'Public Comment Period' };
+    expect(component.activityBadge()).toEqual({ label: 'Comment Period', cls: 'activity-badge--pcp' });
+  });
+
+  it('activityBadge returns Notification badge for Project Notification News', () => {
+    component.rowData = { type: 'Project Notification News' };
+    expect(component.activityBadge()).toEqual({ label: 'Notification', cls: 'activity-badge--notif' });
+  });
+
+  it('activityBadge returns Notification badge for Project Notification Public Comment Period', () => {
+    component.rowData = { type: 'Project Notification Public Comment Period' };
+    expect(component.activityBadge()).toEqual({ label: 'Notification', cls: 'activity-badge--notif' });
+  });
+
   // ─── goToCP ───────────────────────────────────────────────────────────────
 
   it('goToCP tracks analytics event', () => {
