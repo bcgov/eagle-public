@@ -16,7 +16,7 @@
         
           @if (commentPeriod() !== null && commentPeriod()?._id) {
             <h2>{{commentPeriodHeader() || '-'}}</h2>
-            <h2>{{commentPeriod()!.dateStarted | date:'mediumDate'}} - {{commentPeriod()!.longEndDate.toFormat('MMMM dd @ hh:mm a ZZZZ')}}</h2>
+            <h2>{{commentPeriod()!.dateStarted | date:'mediumDate'}} - {{commentPeriod()!.endDateDisplay}}</h2>
             <hr class="comment-period-divider">
             
             <div class="header-section">

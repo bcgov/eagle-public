@@ -10,7 +10,7 @@
                                 <div class="pcp-banner-info">
                                     <h2>Public Comment Period is {{project()!.commentPeriodForBanner!.commentPeriodStatus}}</h2>
                                     <h5>{{project()!.commentPeriodForBanner!.dateStarted | date: 'MMMM d'}} -
-                                    {{project()!.commentPeriodForBanner!.longEndDate.toFormat('MMMM dd @ hh:mm a ZZZZ')}}</h5>
+                                    {{project()!.commentPeriodForBanner!.endDateDisplay}}</h5>
                                 </div>
                                 @if (project()!.commentPeriodForBanner!.commentPeriodStatus === 'Open') {
                                     <div class="pcp-banner-actions">

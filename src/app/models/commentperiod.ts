@@ -50,6 +50,7 @@ export class CommentPeriod {
   daysRemainingCount!: number;
 
   longEndDate!: DateTime;
+  endDateDisplay!: string;
   // Permissions
   read: string[] = [];
   write: string[] = [];
@@ -104,5 +105,19 @@ export class CommentPeriod {
     }
 
     this.longEndDate = DateTime.fromJSDate(this.dateCompleted).setZone('local');
+
+    // Build a display string that avoids misleading "12:00 AM" times.
+    // Midnight (00:00) means "end of previous day" — show previous day date-only.
+    // 23:59 means "end of that day" — show date-only.
+    // Any other time — show full datetime.
+    const h = this.longEndDate.hour;
+    const m = this.longEndDate.minute;
+    if (h === 0 && m === 0) {
+      this.endDateDisplay = this.longEndDate.minus({ days: 1 }).toFormat('MMMM dd, yyyy');
+    } else if (h === 23 && m === 59) {
+      this.endDateDisplay = this.longEndDate.toFormat('MMMM dd, yyyy');
+    } else {
+      this.endDateDisplay = this.longEndDate.toFormat('MMMM dd @ h:mm a ZZZZ');
+    }
   }
 }
