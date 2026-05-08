@@ -14,7 +14,9 @@
     "importHelpers": true,
     "target": "ES2022",
     "module": "preserve",
+    "rootDir": "src",
     "baseUrl": "src",
+    "ignoreDeprecations": "6.0",
     "paths": {
       "app/*": ["app/*"]
     }
