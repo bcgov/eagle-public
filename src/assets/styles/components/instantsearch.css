@@ -403,34 +403,38 @@ tr:last-child td .search-result-card { border-bottom: 1px solid var(--bs-border-
   background-color: rgba(255, 255, 255, 0.25);
   flex-shrink: 0;
 }
+/* Action button — shared across search cards and activity cards.
+ * Use .action-btn (preferred) or .search-card-btn (alias, legacy). */
+.action-btn,
 .search-card-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.3rem;
-  width: 100%;
   min-width: 8rem;
   padding: 0.4rem 1rem;
   border-radius: 0.4rem;
   font-size: 0.7rem;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  text-transform: none;
   white-space: nowrap;
   text-decoration: none;
   cursor: pointer;
   border: 1.5px solid transparent;
   transition: background-color 0.2s ease, color 0.2s ease;
 }
+.action-btn .material-icons,
 .search-card-btn .material-icons {
   font-size: 14px;
   line-height: 1;
 }
+.action-btn--primary,
 .search-card-btn--primary {
   color: var(--bs-primary);
   border-color: var(--bs-primary);
   background-color: transparent;
 }
+.action-btn--primary:hover,
 .search-card-btn--primary:hover {
   background-color: var(--bs-primary);
   border-color: var(--bs-primary);

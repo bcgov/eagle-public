@@ -26,9 +26,9 @@ export interface LegislationGroup {
 
 // ── Collection config types ────────────────────────────────────────────────────
 
-export type CollectionId = 'projects' | 'documents' | 'activities' | 'notifications';
-export type Tab = CollectionId | 'notifications' | 'updates';
-export const VALID_TABS: Tab[] = ['projects', 'documents', 'updates', 'notifications'];
+export type CollectionId = 'projects' | 'documents' | 'activities' | 'notifications' | 'document_chunks';
+export type Tab = CollectionId | 'updates' | 'content';
+export const VALID_TABS: Tab[] = ['projects', 'documents', 'updates', 'notifications', 'content'];
 
 export interface FacetDef {
   attribute: string;
@@ -230,6 +230,19 @@ export const COLLECTIONS: Record<CollectionId, CollectionConfig> = {
     ],
     dateFacet: { field: 'notificationReceivedDate', heading: 'Date Received', fromLabel: 'From', toLabel: 'To' },
   },
+
+  document_chunks: {
+    indexName: 'document_chunks',
+    queryBy: 'content',
+    queryByWeights: '9000',
+    hitsPerPage: 20,
+    defaultSortBy: '',
+    placeholder: 'Search PDF document text…',
+    facets: [
+      { attribute: 'documentType', heading: 'Document Type', operator: 'or', limit: 100, sorter: sortByName },
+    ],
+    dateFacet: { field: 'datePosted', heading: 'Date Posted', fromLabel: 'From', toLabel: 'To' },
+  },
 };
 
 // ── Per-tab Typesense filter strings ──────────────────────────────────────────
@@ -265,7 +278,7 @@ export const TAB_FACETS: Record<string, readonly FacetDef[]> = {
 /** Maps a Tab value to a CollectionId. */
 export function tabToCollectionId(tab: Tab): CollectionId | null {
   if (tab === 'updates') return 'activities';
-  if (tab === 'notifications') return 'notifications';
+  if (tab === 'content') return 'document_chunks';
   return tab as CollectionId;
 }
 

@@ -11,16 +11,16 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { highlightField } from '../search-collections';
 
 @Component({
-  selector: 'app-search-document-card',
+  selector: 'app-search-document-chunk-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [DatePipe],
   template: `
     <article class="card search-result-card search-result-card--styled">
       <div class="search-card-header">
         <div class="d-flex align-items-start gap-2">
-          <h5 class="fw-bold mb-0 flex-fill" [innerHTML]="safeName()"></h5>
-          @if (hit()['internalExt']) {
-            <span class="search-doc-ext-badge">{{ hit()['internalExt'].toUpperCase() }}</span>
+          <h5 class="fw-bold mb-0 flex-fill" [innerHTML]="safeDocName()"></h5>
+          @if (hit()['pageNumber']) {
+            <span class="search-doc-ext-badge">p.{{ hit()['pageNumber'] }}</span>
           }
         </div>
       </div>
@@ -28,26 +28,14 @@ import { highlightField } from '../search-collections';
       <div class="search-card-content">
         <div class="d-flex flex-column flex-md-row gap-3">
           <div class="flex-fill align-self-md-start">
-            <div class="row row-cols-2 row-cols-md-4 g-2">
+            <div class="row row-cols-2 row-cols-md-3 g-2 mb-2">
               <div class="col">
                 <div class="search-result-card-label">Project</div>
                 <div class="search-result-card-value">{{ hit()['projectName'] || '—' }}</div>
               </div>
               <div class="col">
                 <div class="search-result-card-label">Type</div>
-                <div class="search-result-card-value">{{ hit()['type'] || '—' }}</div>
-              </div>
-              <div class="col">
-                <div class="search-result-card-label">Milestone</div>
-                <div class="search-result-card-value">{{ hit()['milestone'] || '—' }}</div>
-              </div>
-              <div class="col">
-                <div class="search-result-card-label">Author Type</div>
-                <div class="search-result-card-value">{{ hit()['documentAuthorType'] || '—' }}</div>
-              </div>
-              <div class="col">
-                <div class="search-result-card-label">Phase</div>
-                <div class="search-result-card-value">{{ hit()['projectPhase'] || '—' }}</div>
+                <div class="search-result-card-value">{{ hit()['documentType'] || '—' }}</div>
               </div>
               <div class="col">
                 <div class="search-result-card-label">Date Posted</div>
@@ -60,45 +48,51 @@ import { highlightField } from '../search-collections';
                 </div>
               </div>
             </div>
+            <div class="search-result-content" [innerHTML]="safeSnippet()"></div>
           </div>
           <div class="search-card-vr d-none d-md-block"></div>
           <div class="d-flex flex-md-column align-items-md-stretch justify-content-md-center gap-2 flex-shrink-0">
-            @if (hit()['projectId'] && showProjectLink()) {
+            @if (hit()['projectId']) {
               <a class="search-card-btn search-card-btn--primary"
                 [href]="'/p/' + hit()['projectId']"
                 (click)="projectClicked.emit(); $event.stopPropagation()">
                 <i class="material-icons">open_in_new</i><span>Project Page</span>
               </a>
             }
-            <a class="search-card-btn search-card-btn--primary"
-              [href]="'/api/document/' + (hit()['id'] ?? hit()['objectID']) + '/fetch'"
-              target="_blank"
-              rel="noopener noreferrer"
-              (click)="downloadClicked.emit(); $event.stopPropagation()">
-              <i class="material-icons">file_download</i><span>Download</span>
-            </a>
+            @if (hit()['documentId']) {
+              <a class="search-card-btn search-card-btn--primary"
+                [href]="'/api/document/' + hit()['documentId'] + '/fetch' + pageFragment()"
+                target="_blank"
+                rel="noopener noreferrer"
+                (click)="documentClicked.emit(); $event.stopPropagation()">
+                <i class="material-icons">picture_as_pdf</i><span>View Page</span>
+              </a>
+            }
           </div>
         </div>
-        @if (hit()['documentFileName'] && hit()['documentFileName'] !== hit()['displayName']) {
-          <hr class="my-2 opacity-25">
-          <div class="search-result-content" style="color: var(--bs-secondary-color);">{{ hit()['documentFileName'] }}</div>
-        }
       </div>
     </article>
   `,
 })
-export class SearchDocumentCardComponent {
+export class SearchDocumentChunkCardComponent {
   hit = input.required<any>();
-  showProjectLink = input(true);
-  downloadClicked = output<void>();
+  documentClicked = output<void>();
   projectClicked = output<void>();
 
   private sanitizer = inject(DomSanitizer);
 
-  safeName = computed<SafeHtml>(() => {
-    const raw = highlightField(this.hit(), 'displayName')
-      || highlightField(this.hit(), 'documentFileName')
-      || 'Untitled Document';
+  safeDocName = computed<SafeHtml>(() => {
+    const raw = highlightField(this.hit(), 'documentName') || 'Untitled Document';
     return this.sanitizer.bypassSecurityTrustHtml(raw);
   });
+
+  safeSnippet = computed<SafeHtml>(() => {
+    const raw = highlightField(this.hit(), 'content') ?? '';
+    return this.sanitizer.bypassSecurityTrustHtml(raw);
+  });
+
+  pageFragment = (): string => {
+    const p = this.hit()['pageNumber'];
+    return p ? `#page=${p}` : '';
+  };
 }

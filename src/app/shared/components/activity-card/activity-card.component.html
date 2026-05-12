@@ -25,40 +25,46 @@
 
   <div class="activity-card__actions d-flex flex-wrap gap-2">
     @if (rowData?.type === 'Project Notification News') {
-      <a class="btn btn-sm btn-outline-primary" [routerLink]="['/project-notifications']">
-        View Project Notifications Page
+      <a class="action-btn action-btn--primary" [routerLink]="['/project-notifications']">
+        <i class="material-icons">view_list</i>
+        <span>Project Notifications</span>
       </a>
     }
     @if (showProjectInfoEffective && rowData?.type !== 'Project Notification News' && rowData?.project?._id) {
-      <a class="btn btn-sm btn-outline-primary"
+      <a class="action-btn action-btn--primary"
          [routerLink]="['/p', rowData.project._id]"
          [title]="'View more information about ' + rowData.project.name">
-        Project Info
+        <i class="material-icons">open_in_new</i>
+        <span>Project Page</span>
       </a>
     }
     @if (rowData?.pcp && rowData?.type === 'Public Comment Period') {
-      <button class="btn btn-sm btn-outline-primary" type="button" (click)="goToCP(rowData)">
-        View Engagement
+      <button class="action-btn action-btn--primary" type="button" (click)="goToCP(rowData)">
+        <i class="material-icons">forum</i>
+        <span>View Engagement</span>
       </button>
     }
     @if (isSingleDoc(rowData?.documentUrl)) {
       @if (rowData?.notificationName && rowData?.type === 'Project Notification Public Comment Period') {
-        <a class="btn btn-sm btn-outline-primary"
+        <a class="action-btn action-btn--primary"
            [href]="getDocUrl(rowData.documentUrl)"
            target="_blank"
            rel="noopener noreferrer">
-          View Project Notification Public Comment Period
+          <i class="material-icons">description</i>
+          <span>Notification Comment Period</span>
         </a>
       } @else if (isExternalUrl()) {
-        <a class="btn btn-sm btn-outline-primary"
+        <a class="action-btn action-btn--primary"
            [href]="getDocUrl(rowData.documentUrl)"
            target="_blank"
            rel="noopener noreferrer">
-          View Documents
+          <i class="material-icons">description</i>
+          <span>Documents</span>
         </a>
       } @else if (!rowData?.notificationName && hasDocContent()) {
-        <button class="btn btn-sm btn-outline-primary" type="button" (click)="toggleDocs()">
-          {{ expanded() ? 'Hide Documents' : 'View Documents' }}
+        <button class="action-btn action-btn--primary" type="button" (click)="toggleDocs()">
+          <i class="material-icons">description</i>
+          <span>{{ expanded() ? 'Hide Documents' : 'Documents' }}</span>
         </button>
       }
     }

@@ -135,13 +135,18 @@
   margin: 0;
   padding: 0.875rem 1rem;
   border-top: 1px solid var(--mn-border-color);
-  color: var(--gold) !important;
+  color: var(--bs-white) !important;
   font-size: var(--mn-font-size);
   font-weight: var(--bs-font-weight-bold);
   text-transform: uppercase;
   text-decoration: none !important;
   cursor: pointer;
   background-color: transparent;
+}
+
+.nav-link:hover,
+.nav-link:focus {
+  color: var(--gold) !important;
 }
 
 /* Add border around nav items in collapsed mobile menu */

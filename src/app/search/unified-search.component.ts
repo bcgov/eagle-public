@@ -28,6 +28,7 @@ import { SearchProjectCardComponent } from './cards/search-project-card.componen
 import { SearchDocumentCardComponent } from './cards/search-document-card.component';
 import { SearchActivityCardComponent } from './cards/search-activity-card.component';
 import { SearchNotificationCardComponent } from './cards/search-notification-card.component';
+import { SearchDocumentChunkCardComponent } from './cards/search-document-chunk-card.component';
 import {
   type CollectionId,
   type Tab,
@@ -109,6 +110,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'documents',     label: 'Documents'     },
   { id: 'updates',       label: 'Updates'       },
   { id: 'notifications', label: 'Notifications' },
+  { id: 'content',       label: 'PDF Content'   },
 ];
 
 
@@ -124,6 +126,7 @@ const TABS: { id: Tab; label: string }[] = [
     SearchDocumentCardComponent,
     SearchActivityCardComponent,
     SearchNotificationCardComponent,
+    SearchDocumentChunkCardComponent,
   ],
   template: `
     <!-- ── Tab bar ───────────────────────────────────────────────── -->
@@ -386,6 +389,15 @@ const TABS: { id: Tab; label: string }[] = [
                     }
                   </div>
                 }
+                @case ('document_chunks') {
+                  <div class="d-flex flex-column">
+                    @for (hit of activeHits(); track hit['id'] ?? hit['objectID']; let i = $index) {
+                      <app-search-document-chunk-card [hit]="hit"
+                        (documentClicked)="trackChunkDocClick(hit, i)"
+                        (projectClicked)="trackResultClick(hit, i)" />
+                    }
+                  </div>
+                }
               }
             }
             <div #scrollSentinel class="py-2 text-center">
@@ -495,10 +507,11 @@ export class UnifiedSearchComponent implements OnInit, AfterViewInit, OnDestroy 
 
   // ── Per-collection state (created upfront, IS instances created lazily) ─────
   private states: Record<CollectionId, ColState> = {
-    projects:      createState('projects'),
-    documents:     createState('documents'),
-    activities:    createState('activities'),
-    notifications: createState('notifications'),
+    projects:        createState('projects'),
+    documents:       createState('documents'),
+    activities:      createState('activities'),
+    notifications:   createState('notifications'),
+    document_chunks: createState('document_chunks'),
   };
 
   // ── Scroll sentinel + results column (ViewChild setters) ───────────────────
@@ -727,6 +740,16 @@ export class UnifiedSearchComponent implements OnInit, AfterViewInit, OnDestroy 
       result_type: 'document',
       result_id: hit['id'] ?? hit['objectID'],
       result_title: hit['displayName'] ?? hit['documentFileName'] ?? 'Unknown',
+      position,
+      query: this.searchQuery(),
+    });
+  }
+
+  trackChunkDocClick(hit: any, position: number): void {
+    this.analytics.track('Search Content Clicked', {
+      document_id: hit['documentId'],
+      document_name: hit['documentName'] ?? 'Unknown',
+      page_number: hit['pageNumber'],
       position,
       query: this.searchQuery(),
     });
