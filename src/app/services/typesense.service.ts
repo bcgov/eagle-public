@@ -25,11 +25,18 @@ export class TypesenseService {
   private lastFacetsCache: Record<string, Record<string, any[]>> = {};
   private healthCheckResult: boolean | null = null;
 
+  /** Scoped key fetched from /api/public/search/key — has filter_by baked in. */
+  private scopedKey: string | null = null;
+  private scopedKeyExpiry = 0;
+
   /**
    * Health-checks the Typesense endpoint using native fetch (bypasses HttpClient
    * interceptors). Result is cached for the session lifetime so only one network
    * round-trip is ever made. On first-load cold-connection failures the check
    * retries once after 1.5 s before giving up.
+   *
+   * Also fetches a scoped search key from /api/public/search/key so all subsequent
+   * Typesense queries use a key with filter_by: "allowed_roles:=[public]" baked in.
    */
   async checkHealth(searchHost: string): Promise<boolean> {
     if (this.healthCheckResult !== null) {
@@ -58,7 +65,47 @@ export class TypesenseService {
     }
 
     this.healthCheckResult = ok;
+
+    // After confirming Typesense is up, fetch a scoped key so all queries use
+    // filter_by: "allowed_roles:=[public]" baked in — non-fatal if it fails,
+    // falls back to the static TYPESENSE_SEARCH_KEY from config.
+    if (ok) {
+      await this.fetchScopedKey().catch(err => {
+        console.warn('[TypesenseService] Scoped key fetch failed, falling back to config key:', err.message);
+      });
+    }
+
     return ok;
+  }
+
+  /**
+   * Fetches a scoped search key from eagle-api (/api/public/search/key).
+   * The key has filter_by: "allowed_roles:=[<roles>]" baked in — Typesense
+   * enforces this filter regardless of what the client sends in requests.
+   * Result is cached until 60 s before expiry to avoid key-rotation gaps.
+   */
+  private async fetchScopedKey(): Promise<string> {
+    const now = Math.floor(Date.now() / 1000);
+    if (this.scopedKey && this.scopedKeyExpiry > now + 60) {
+      return this.scopedKey;
+    }
+    const config = this.configService.config();
+    const apiPath = config.API_PATH || '/api';
+    const res = await fetch(`${apiPath}/public/search/key`, { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    this.scopedKey = data.key;
+    this.scopedKeyExpiry = data.expiresAt ?? (now + 3600);
+    // Invalidate cached search client so it rebuilds with the new key
+    this.cachedSearchClient = null;
+    this.cachedClientKey = '';
+    return data.key;
+  }
+
+  /** Returns the current search API key: scoped key if available, static config key otherwise. */
+  private getApiKey(): string {
+    const config = this.configService.config();
+    return this.scopedKey || config.TYPESENSE_SEARCH_KEY || '';
   }
 
   /**
@@ -73,7 +120,7 @@ export class TypesenseService {
   getSearchClient(additionalSearchParameters: { query_by: string; [key: string]: any }): any {
     const config = this.configService.config();
     const searchHost = config.TYPESENSE_SEARCH_HOST || '/search-api';
-    const apiKey = config.TYPESENSE_SEARCH_KEY || '';
+    const apiKey = this.getApiKey();
     const { host, port, protocol, path } = this.parseHost(searchHost);
     // Include sort_by and filter_by in cache key — different sort orders or base filters
     // require separate adapter instances (sort_by and filter_by are fixed at construction time).
@@ -350,8 +397,7 @@ export class TypesenseService {
 
   /** Makes a direct Typesense REST search call to the given collection. */
   private searchCollection(collection: string, params: Record<string, string>): Observable<any> {
-    const config = this.configService.config();
-    const apiKey = config.TYPESENSE_SEARCH_KEY || '';
+    const apiKey = this.getApiKey();
     const baseUrl = this.buildSearchUrl();
     return this.http.get<any>(
       `${baseUrl}/collections/${collection}/documents/search?${new URLSearchParams(params)}`,
