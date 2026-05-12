@@ -142,7 +142,7 @@ export class ProjectService {
                 }
               }
               projects[0].commentPeriodForBanner = finalCommentPeriod
-            } else {
+            } else if (projects[0]) {
               projects[0].commentPeriodForBanner = null;
             }
           }

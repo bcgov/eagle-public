@@ -84,7 +84,7 @@ import { resolveDocUrl } from 'app/search/search-collections';
                   <a class="search-card-btn search-card-btn--primary"
                     [href]="'/p/' + hit()['projectId']"
                     (click)="projectClicked.emit(); $event.stopPropagation()">
-                    <i class="material-icons">open_in_new</i><span>Project</span>
+                    <i class="material-icons">open_in_new</i><span>Project Page</span>
                   </a>
                 }
                 @if (hasDocSource()) {

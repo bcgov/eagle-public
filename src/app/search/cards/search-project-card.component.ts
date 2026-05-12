@@ -61,7 +61,7 @@ import { highlightField } from '../search-collections';
             <a class="search-card-btn search-card-btn--primary"
               [routerLink]="['/p', hit()['id'] ?? hit()['objectID'], 'project-details']"
               (click)="clicked.emit()">
-              <i class="material-icons">open_in_new</i><span>Project</span>
+              <i class="material-icons">open_in_new</i><span>Project Page</span>
             </a>
           </div>
         </div>
