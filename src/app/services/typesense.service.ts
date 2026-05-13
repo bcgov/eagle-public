@@ -66,13 +66,19 @@ export class TypesenseService {
 
     this.healthCheckResult = ok;
 
-    // After confirming Typesense is up, fetch a scoped key so all queries use
-    // filter_by: "allowed_roles:=[public]" baked in — non-fatal if it fails,
-    // falls back to the static TYPESENSE_SEARCH_KEY from config.
+    // Fetch a scoped key — required for any Typesense query. If this fails,
+    // Typesense is marked unhealthy so components fall back to MongoDB.
+    // The scoped key has filter_by: "allowed_roles:=[public]" baked in,
+    // cryptographically enforced by Typesense. Without it, the raw parent
+    // key would expose unpublished documents.
     if (ok) {
-      await this.fetchScopedKey().catch(err => {
-        console.warn('[TypesenseService] Scoped key fetch failed, falling back to config key:', err.message);
-      });
+      try {
+        await this.fetchScopedKey();
+      } catch (err: any) {
+        console.error('[TypesenseService] Scoped key fetch failed — disabling Typesense:', err.message);
+        this.healthCheckResult = false;
+        return false;
+      }
     }
 
     return ok;
@@ -104,8 +110,10 @@ export class TypesenseService {
 
   /** Returns the current search API key: scoped key if available, static config key otherwise. */
   private getApiKey(): string {
-    const config = this.configService.config();
-    return this.scopedKey || config.TYPESENSE_SEARCH_KEY || '';
+    if (!this.scopedKey) {
+      throw new Error('No scoped search key available — Typesense search requires a scoped key');
+    }
+    return this.scopedKey;
   }
 
   /**

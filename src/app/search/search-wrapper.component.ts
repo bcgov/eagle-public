@@ -37,7 +37,7 @@ export class SearchWrapperComponent implements OnInit {
   async ngOnInit(): Promise<void> {
     const config = this.configService.config();
 
-    if (!config.TYPESENSE_ENABLED || !config.TYPESENSE_SEARCH_KEY) {
+    if (!config.TYPESENSE_ENABLED) {
       return;
     }
 
