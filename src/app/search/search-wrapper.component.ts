@@ -41,9 +41,7 @@ export class SearchWrapperComponent implements OnInit {
       return;
     }
 
-    const available = await this.typesenseService.checkHealth(
-      config.TYPESENSE_SEARCH_HOST || '/search-api'
-    );
+    const available = await this.typesenseService.checkHealth();
     this.useTypesense.set(available);
   }
 }

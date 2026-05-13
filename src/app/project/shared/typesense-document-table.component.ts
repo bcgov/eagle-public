@@ -210,12 +210,11 @@ export class TypesenseDocumentTableComponent implements OnInit, OnDestroy {
       takeUntilDestroyed(this.destroyRef),
     ).subscribe(kw => { this.tsSearchBoxRefine?.(kw || ''); });
 
-    // Health-check (fetches scoped key) and lists run in parallel.
+    // Health-check and lists run in parallel.
     // checkHealth() is idempotent — returns cached result immediately on
     // subsequent calls, so navigating between tabs incurs no extra round-trip.
-    const searchHost = this.configService.config().TYPESENSE_SEARCH_HOST || '/search-api';
     combineLatest([
-      from(this.typesense.checkHealth(searchHost)),
+      from(this.typesense.checkHealth()),
       this.configService.lists.pipe(take(1)),
     ]).pipe(
       takeUntilDestroyed(this.destroyRef),

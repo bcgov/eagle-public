@@ -25,25 +25,25 @@ export class TypesenseService {
   private lastFacetsCache: Record<string, Record<string, any[]>> = {};
   private healthCheckResult: boolean | null = null;
 
-  /** Scoped key fetched from /api/public/search/key — has filter_by baked in. */
-  private scopedKey: string | null = null;
-  private scopedKeyExpiry = 0;
+  /** Base URL of the eagle-api Typesense proxy. Used by all search methods. */
+  private get proxyBase(): string {
+    return `${this.configService.config().API_PATH || '/api'}/public/typesense`;
+  }
 
   /**
-   * Health-checks the Typesense endpoint using native fetch (bypasses HttpClient
-   * interceptors). Result is cached for the session lifetime so only one network
-   * round-trip is ever made. On first-load cold-connection failures the check
-   * retries once after 1.5 s before giving up.
+   * Health-checks the Typesense endpoint via the eagle-api proxy. Result is cached
+   * for the session lifetime so only one network round-trip is ever made. On
+   * first-load cold-connection failures the check retries once after 1.5 s.
    *
-   * Also fetches a scoped search key from /api/public/search/key so all subsequent
-   * Typesense queries use a key with filter_by: "allowed_roles:=[public]" baked in.
+   * No API key is needed — the proxy validates health internally.
    */
-  async checkHealth(searchHost: string): Promise<boolean> {
+  async checkHealth(): Promise<boolean> {
     if (this.healthCheckResult !== null) {
       return this.healthCheckResult;
     }
 
-    const healthUrl = `${searchHost}/health`;
+    const healthUrl = `${this.proxyBase}/health`;
+
     const attempt = async (): Promise<boolean> => {
       try {
         const res = await fetch(healthUrl, { signal: AbortSignal.timeout(8000) });
@@ -65,86 +65,31 @@ export class TypesenseService {
     }
 
     this.healthCheckResult = ok;
-
-    // Fetch a scoped key — required for any Typesense query. If this fails,
-    // Typesense is marked unhealthy so components fall back to MongoDB.
-    // The scoped key has filter_by: "allowed_roles:=[public]" baked in,
-    // cryptographically enforced by Typesense. Without it, the raw parent
-    // key would expose unpublished documents.
-    if (ok) {
-      try {
-        await this.fetchScopedKey();
-      } catch (err: any) {
-        console.error('[TypesenseService] Scoped key fetch failed — disabling Typesense:', err.message);
-        this.healthCheckResult = false;
-        return false;
-      }
-    }
-
     return ok;
   }
 
   /**
-   * Fetches a scoped search key from eagle-api (/api/public/search/key).
-   * The key has filter_by: "allowed_roles:=[<roles>]" baked in — Typesense
-   * enforces this filter regardless of what the client sends in requests.
-   * Result is cached until 60 s before expiry to avoid key-rotation gaps.
-   */
-  private async fetchScopedKey(): Promise<string> {
-    const now = Math.floor(Date.now() / 1000);
-    if (this.scopedKey && this.scopedKeyExpiry > now + 60) {
-      return this.scopedKey;
-    }
-    const config = this.configService.config();
-    const apiPath = config.API_PATH || '/api';
-    const res = await fetch(`${apiPath}/public/search/key`, { signal: AbortSignal.timeout(8000) });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    this.scopedKey = data.key;
-    this.scopedKeyExpiry = data.expiresAt ?? (now + 3600);
-    // Invalidate cached search client so it rebuilds with the new key
-    this.cachedSearchClient = null;
-    this.cachedClientKey = '';
-    return data.key;
-  }
-
-  /** Returns the current search API key: scoped key if available, static config key otherwise. */
-  private getApiKey(): string {
-    if (!this.scopedKey) {
-      throw new Error('No scoped search key available — Typesense search requires a scoped key');
-    }
-    return this.scopedKey;
-  }
-
-  /**
-   * Returns a cached Typesense search client built from runtime config.
-   * Reuses the same HTTP connection pool across component destroy/recreate cycles
-   * to prevent the ~3 s cold-start penalty on re-navigation.
+   * Returns a cached Typesense InstantSearch adapter client pointed at the
+   * eagle-api server-side proxy. The browser sends `apiKey: 'proxy'` — the
+   * real key never leaves eagle-api. Role filter is injected server-side.
    *
    * @param additionalSearchParameters  Typesense-specific params (query_by, weights, etc.).
-   *   Required by the adapter; cache key includes query_by so different collections
-   *   each get their own cached client.
    */
   getSearchClient(additionalSearchParameters: { query_by: string; [key: string]: any }): any {
-    const config = this.configService.config();
-    const searchHost = config.TYPESENSE_SEARCH_HOST || '/search-api';
-    const apiKey = this.getApiKey();
-    const { host, port, protocol, path } = this.parseHost(searchHost);
-    // Include sort_by and filter_by in cache key — different sort orders or base filters
-    // require separate adapter instances (sort_by and filter_by are fixed at construction time).
+    const { host, port, protocol, path } = this.parseHost(this.proxyBase);
     const sortKey   = additionalSearchParameters['sort_by']   ?? '';
     const filterKey = additionalSearchParameters['filter_by'] ?? '';
-    const clientKey = `${apiKey}@${host}:${port}${path}|${additionalSearchParameters.query_by}|${sortKey}|${filterKey}`;
+    const clientKey = `proxy@${host}:${port}${path}|${additionalSearchParameters.query_by}|${sortKey}|${filterKey}`;
 
     if (!this.cachedSearchClient || this.cachedClientKey !== clientKey) {
       const adapter = new TypesenseInstantSearchAdapter({
         server: {
-          apiKey,
+          apiKey: 'proxy',
           nodes: [{ host, port, protocol, path }],
-          connectionTimeoutSeconds: 5,   // Allow slow proxy connection in dev
-          numRetries: 1,                 // One retry on transient failure; more just creates noise
+          connectionTimeoutSeconds: 5,
+          numRetries: 1,
           retryIntervalSeconds: 0.1,
-          cacheSearchResultsForSeconds: 120, // Avoid re-querying identical strings
+          cacheSearchResultsForSeconds: 120,
         },
         additionalSearchParameters,
       });
@@ -403,35 +348,18 @@ export class TypesenseService {
     );
   }
 
-  /** Makes a direct Typesense REST search call to the given collection. */
+  /** Makes a search call via the eagle-api Typesense proxy. No key sent from browser. */
   private searchCollection(collection: string, params: Record<string, string>): Observable<any> {
-    const apiKey = this.getApiKey();
-    const baseUrl = this.buildSearchUrl();
     return this.http.get<any>(
-      `${baseUrl}/collections/${collection}/documents/search?${new URLSearchParams(params)}`,
-      { headers: { 'X-TYPESENSE-API-KEY': apiKey } }
+      `${this.proxyBase}/collections/${collection}/documents/search`,
+      { params }
     );
   }
 
   /**
-   * Builds the base URL for direct Typesense REST calls.
-   * For path-only TYPESENSE_SEARCH_HOST (deployed), prefixes with window.location.origin.
-   * For absolute URLs (local dev), uses the URL directly.
-   */
-  private buildSearchUrl(): string {
-    const config = this.configService.config();
-    const searchHost = config.TYPESENSE_SEARCH_HOST || '/search-api';
-    if (searchHost.startsWith('http')) {
-      return searchHost.replace(/\/$/, '');
-    }
-    const origin = `${window.location.protocol}//${window.location.host}`;
-    return `${origin}${searchHost}`;
-  }
-
-  /**
-   * Parses TYPESENSE_SEARCH_HOST into connection params.
+   * Parses a URL or path into Typesense adapter connection params.
    * Handles both absolute URLs (local dev port-forward) and path-only values
-   * (deployed, routed through rproxy on the same origin).
+   * (deployed, routed through eagle-api on the same origin).
    */
   private parseHost(searchHost: string): { host: string; port: number; protocol: 'http' | 'https'; path: string } {
     if (searchHost.startsWith('http')) {

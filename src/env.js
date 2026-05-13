@@ -26,7 +26,7 @@
   window.__env.ENVIRONMENT = 'local';
 
   // API target — proxy.conf.js reads this to route /api and /analytics.
-  window.__env.API_LOCATION = 'http://localhost:3000';
+  window.__env.API_LOCATION = 'https://eagle-test.apps.silver.devops.gov.bc.ca';
   window.__env.API_PATH = '/api';
 
   // eagle-admin link
@@ -41,22 +41,8 @@
   // Build hash — replaced during CI build
   window.__env.GH_HASH = 'local-build';
 
-  // Typesense search — proxied through the Angular dev server at /search-api.
-  //
-  // TYPESENSE_API_LOCATION controls WHERE proxy.conf.js forwards /search-api:
-  //   dev  → https://eagle-dev.apps.silver.devops.gov.bc.ca  (default)
-  //   test → https://eagle-test.apps.silver.devops.gov.bc.ca
-  //   prod → https://projects.eao.gov.bc.ca
-  //   port-forward (legacy) → http://localhost:8108
-  //
-  // No port-forward needed for dev/test/prod — eao-nginx exposes /search-api/
-  // without HTTP basic auth and proxies it to Typesense internally.
-  //
-  // TYPESENSE_SEARCH_KEY is a scoped search-only key (read-only, no admin ops).
-  // It is already publicly served via /api/config — not a secret.
+  // Typesense search — all queries proxy through eagle-api (/api/public/typesense/*).
+  // No API key needed in the browser; eagle-api injects role filter server-side.
   window.__env.TYPESENSE_ENABLED = true;
-  window.__env.TYPESENSE_API_LOCATION = 'https://eagle-dev.apps.silver.devops.gov.bc.ca';
-  window.__env.TYPESENSE_SEARCH_HOST = '/search-api';
-  window.__env.TYPESENSE_SEARCH_KEY = '5-t333j4Lyqtgi4Tiw4DRfbTtoZhZrnsum9cug_W';
 
 }(this));
