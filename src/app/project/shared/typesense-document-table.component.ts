@@ -14,7 +14,7 @@ import {
   DestroyRef,
 } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { Subject, Subscription } from 'rxjs';
+import { Subject, Subscription, from, combineLatest } from 'rxjs';
 import { debounceTime, distinctUntilChanged, take } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import instantsearch from 'instantsearch.js';
@@ -210,12 +210,19 @@ export class TypesenseDocumentTableComponent implements OnInit, OnDestroy {
       takeUntilDestroyed(this.destroyRef),
     ).subscribe(kw => { this.tsSearchBoxRefine?.(kw || ''); });
 
-    // Init Typesense once lists are available (ReplaySubject(1) replays immediately
-    // if lists already loaded by parent tab; otherwise waits for API response)
-    this.configService.lists.pipe(
-      take(1),
+    // Health-check (fetches scoped key) and lists run in parallel.
+    // checkHealth() is idempotent — returns cached result immediately on
+    // subsequent calls, so navigating between tabs incurs no extra round-trip.
+    const searchHost = this.configService.config().TYPESENSE_SEARCH_HOST || '/search-api';
+    combineLatest([
+      from(this.typesense.checkHealth(searchHost)),
+      this.configService.lists.pipe(take(1)),
+    ]).pipe(
       takeUntilDestroyed(this.destroyRef),
-    ).subscribe(lists => this.initCollection(lists));
+    ).subscribe(([healthy, lists]) => {
+      if (!healthy) { this.tsLoading.set(false); return; }
+      this.initCollection(lists);
+    });
   }
 
   ngOnDestroy(): void {
