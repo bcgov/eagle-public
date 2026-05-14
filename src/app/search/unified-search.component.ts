@@ -8,6 +8,7 @@ import {
   ChangeDetectionStrategy,
   WritableSignal,
 } from '@angular/core';
+import { trigger, transition, style, animate } from '@angular/animations';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { Subject, Subscription } from 'rxjs';
@@ -106,18 +107,28 @@ function createState(id: CollectionId): ColState {
 }
 
 const TABS: { id: Tab; label: string }[] = [
-  { id: 'projects',      label: 'Projects'      },
-  { id: 'documents',     label: 'Documents'     },
-  { id: 'updates',       label: 'Updates'       },
-  { id: 'notifications', label: 'Notifications' },
-  { id: 'content',       label: 'PDF Content'   },
+  { id: 'projects',      label: 'Projects'              },
+  { id: 'documents',     label: 'Documents'             },
+  { id: 'updates',       label: 'Updates'               },
+  { id: 'notifications', label: 'Project Notifications' },
+  // { id: 'content',       label: 'PDF Content'           },  // hidden — not ready
 ];
-
-
 
 @Component({
   selector: 'app-unified-search',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  animations: [
+    trigger('slideDown', [
+      transition(':enter', [
+        style({ height: '0', opacity: 0, overflow: 'hidden' }),
+        animate('200ms ease', style({ height: '*', opacity: 1, overflow: 'hidden' })),
+      ]),
+      transition(':leave', [
+        style({ overflow: 'hidden' }),
+        animate('200ms ease', style({ height: '0', opacity: 0 })),
+      ]),
+    ]),
+  ],
   imports: [
     RouterLink,
     ReactiveFormsModule,
@@ -174,101 +185,98 @@ const TABS: { id: Tab; label: string }[] = [
             }
           </form>
         </div>
-        <!-- Stats shown on md+ only here; on mobile it moves into the filter row below -->
-        @if (activeStatsText()) {
-          <div class="d-none d-md-block text-muted small mt-1 text-end">{{ activeStatsText() }}</div>
-        }
       </div>
 
     <!-- ── Panels wrapper (flex child that fills remaining height) ── -->
     <div class="search-panels">
 
-    <!-- ── Collection panels (facets + results) ──────────────────── -->
+    <!-- ── Collection panels (filters + results) ─────────────────── -->
     <div class="container search-body pt-3" role="tabpanel" [id]="'search-panel-' + activeTab()">
-      <div class="search-columns">
 
-          <!-- ── Facets sidebar ───── -->
-          <div class="filter-sidebar" [class.filter-sidebar--collapsed]="sidebarCollapsed()"
-            role="complementary" aria-label="Search filters">
-
-            <!-- Collapsed strip (desktop only) -->
-            <button class="filter-sidebar__strip" (click)="toggleSidebar()"
-              aria-label="Expand filters" title="Expand filters">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
-                viewBox="0 0 16 16" aria-hidden="true">
+          <!-- ── Filter bar: Open Filters button + stats (above two-column area) ── -->
+          <div class="filter-bar mb-3">
+            <button class="filter-bar__toggle"
+              type="button"
+              (click)="toggleSidebar()"
+              [attr.aria-expanded]="!sidebarCollapsed()"
+              aria-controls="searchFilterSidebar">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
                 <path d="M6 10.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5zm-2-3a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5zm-2-3a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5z"/>
               </svg>
+              {{ sidebarCollapsed() ? 'Open Filters' : 'Close Filters' }}
               @if (activeFilterCount() > 0) {
                 <span class="filter-sidebar__badge">{{ activeFilterCount() }}</span>
               }
             </button>
+            @if (activeStatsText()) {
+              <span class="text-muted small ms-auto">{{ activeStatsText() }}</span>
+            }
+          </div>
+
+          <div class="search-columns">
+
+          <!-- ── Facets sidebar ───── -->
+          <div id="searchFilterSidebar"
+            class="filter-sidebar" [class.filter-sidebar--collapsed]="sidebarCollapsed()"
+            role="complementary" aria-label="Search filters">
 
             <!-- Expanded content -->
             <div class="filter-sidebar__content">
-
-              <!-- Desktop header: "Filters" label + collapse toggle -->
-              <div class="filter-sidebar__header d-none d-md-flex mb-2">
-                <span class="filter-sidebar__label">Filters</span>
-                <button class="filter-sidebar__toggle" (click)="toggleSidebar()"
-                  [attr.aria-label]="sidebarCollapsed() ? 'Expand filters' : 'Collapse filters'"
-                  [attr.aria-expanded]="!sidebarCollapsed()">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor"
-                    viewBox="0 0 16 16" aria-hidden="true">
-                    <path fill-rule="evenodd" d="M8.354 1.646a.5.5 0 0 1 0 .708L2.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/>
-                    <path fill-rule="evenodd" d="M12.354 1.646a.5.5 0 0 1 0 .708L6.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/>
-                  </svg>
-                </button>
-              </div>
-
-              <!-- Mobile filter toggle + stats row -->
-              <div class="d-md-none d-flex align-items-center justify-content-between mb-3">
-                <button
-                  class="btn filter-toggle-btn btn-sm d-flex align-items-center gap-2"
-                  [class.filter-toggle-btn--open]="filtersOpen()"
-                  (click)="filtersOpen.set(!filtersOpen())"
-                  [attr.aria-expanded]="filtersOpen()"
-                  aria-controls="searchFilterPanel"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
-                    <path d="M6 10.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5zm-2-3a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5zm-2-3a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5z"/>
-                  </svg>
-                  Filters
-                  <svg class="filter-chevron" [class.open]="filtersOpen()" xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
-                    <path d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/>
-                  </svg>
-                </button>
-                @if (activeStatsText()) {
-                  <span class="text-muted small">{{ activeStatsText() }}</span>
-                }
-              </div>
-              <div id="searchFilterPanel" class="filter-wrap" [class.filter-wrap--open]="filtersOpen()">
-                <div class="filter-inner">
-                  <div class="filter-inner-pad">
-                  @if (!activeFiltersLoaded() && typesenseAvailable()) {
-                    <div class="d-flex align-items-center gap-2 py-3 text-muted">
-                      <div class="spinner-border spinner-border-sm" role="status">
-                      <span class="visually-hidden">Loading filters…</span>
-                    </div>
-                    <span class="small">Loading filters…</span>
+              @if (!activeFiltersLoaded() && typesenseAvailable()) {
+                <div class="d-flex align-items-center gap-2 py-3 text-muted">
+                  <div class="spinner-border spinner-border-sm" role="status">
+                    <span class="visually-hidden">Loading filters…</span>
                   </div>
-                }
-                @for (facet of activeFacets(); track facet.attribute) {
-                  <div class="mb-3" [class.d-none]="!activeFiltersLoaded()">
+                  <span class="small">Loading filters…</span>
+                </div>
+              }
+              @for (facet of activeFacets(); track facet.attribute) {
+                <div class="mb-3" [class.d-none]="!activeFiltersLoaded()">
+                  <button class="filter-section-toggle" type="button"
+                    (click)="toggleFacet(facet.attribute)"
+                    [attr.aria-expanded]="!isFacetCollapsed(facet.attribute)">
                     <h6 class="fw-semibold">{{ facet.heading }}</h6>
-                    @if (facet.grouped) {
-                      @for (group of activeGroupedSnapshot()[facet.attribute]; track group.year) {
-                        @if (group.heading) {
-                          <small class="legislation-heading d-block">{{ group.heading }}</small>
+                    <svg class="filter-section-chevron"
+                      [class.filter-section-chevron--collapsed]="isFacetCollapsed(facet.attribute)"
+                      xmlns="http://www.w3.org/2000/svg" width="12" height="12"
+                      fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+                      <path d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/>
+                    </svg>
+                  </button>
+                  @if (!isFacetCollapsed(facet.attribute)) {
+                    <div [@slideDown]>
+                      @if (facet.grouped) {
+                        @for (group of activeGroupedSnapshot()[facet.attribute]; track group.year) {
+                          @if (group.heading) {
+                            <small class="legislation-heading d-block">{{ group.heading }}</small>
+                          }
+                          <ul class="ais-RefinementList-list">
+                            @for (item of group.items; track item.label) {
+                              <li class="ais-RefinementList-item"
+                                [class.ais-RefinementList-item--selected]="item.isRefined"
+                                [class.ais-RefinementList-item--disabled]="item.isDisabled">
+                                <label class="ais-RefinementList-label">
+                                  <input type="checkbox" class="ais-RefinementList-checkbox"
+                                    [checked]="item.isRefined" [disabled]="item.isDisabled"
+                                    (change)="refineFacet(facet.attribute, item.value)" />
+                                  <span class="ais-RefinementList-labelText">{{ item.label }}</span>
+                                  <span class="ais-RefinementList-count">{{ item.count }}</span>
+                                </label>
+                              </li>
+                            }
+                          </ul>
                         }
+                      } @else {
                         <ul class="ais-RefinementList-list">
-                          @for (item of group.items; track item.label) {
+                          @for (item of activeFacetSnapshot()[facet.attribute]; track item.label) {
                             <li class="ais-RefinementList-item"
                               [class.ais-RefinementList-item--selected]="item.isRefined"
                               [class.ais-RefinementList-item--disabled]="item.isDisabled">
                               <label class="ais-RefinementList-label">
                                 <input type="checkbox" class="ais-RefinementList-checkbox"
                                   [checked]="item.isRefined" [disabled]="item.isDisabled"
-                                  (change)="refineFacet(facet.attribute, item.label)" />
+                                  (change)="refineFacet(facet.attribute, item.value)" />
                                 <span class="ais-RefinementList-labelText">{{ item.label }}</span>
                                 <span class="ais-RefinementList-count">{{ item.count }}</span>
                               </label>
@@ -276,66 +284,75 @@ const TABS: { id: Tab; label: string }[] = [
                           }
                         </ul>
                       }
-                    } @else {
-                      <ul class="ais-RefinementList-list">
-                        @for (item of activeFacetSnapshot()[facet.attribute]; track item.label) {
-                          <li class="ais-RefinementList-item"
-                            [class.ais-RefinementList-item--selected]="item.isRefined"
-                            [class.ais-RefinementList-item--disabled]="item.isDisabled">
-                            <label class="ais-RefinementList-label">
-                              <input type="checkbox" class="ais-RefinementList-checkbox"
-                                [checked]="item.isRefined" [disabled]="item.isDisabled"
-                                (change)="refineFacet(facet.attribute, item.label)" />
-                              <span class="ais-RefinementList-labelText">{{ item.label }}</span>
-                              <span class="ais-RefinementList-count">{{ item.count }}</span>
-                            </label>
-                          </li>
-                        }
-                      </ul>
-                    }
-                  </div>
-                }
-                @if (activeConfig()?.dateFacet; as df) {
-                  <div class="mb-3" [class.d-none]="!activeFiltersLoaded()">
+                    </div>
+                  }
+                </div>
+              }
+              @if (activeConfig()?.dateFacet; as df) {
+                <div class="mb-3" [class.d-none]="!activeFiltersLoaded()">
+                  <button class="filter-section-toggle" type="button"
+                    (click)="toggleFacet('__date__')"
+                    [attr.aria-expanded]="!isFacetCollapsed('__date__')">
                     <h6 class="fw-semibold">{{ df.heading }}</h6>
-                    <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
-                    <label class="control-label fw-bold">{{ df.fromLabel }}</label>
-                    @if (activeFromCtrl(); as ctrl) {
-                      <lib-date-picker [control]="ctrl" [minDate]="minDate" />
-                    }
-                    <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
-                    <label class="control-label fw-bold mt-2">{{ df.toLabel }}</label>
-                    @if (activeToCtrl(); as ctrl) {
-                      <div class="mb-3">
+                    <svg class="filter-section-chevron"
+                      [class.filter-section-chevron--collapsed]="isFacetCollapsed('__date__')"
+                      xmlns="http://www.w3.org/2000/svg" width="12" height="12"
+                      fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+                      <path d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/>
+                    </svg>
+                  </button>
+                  @if (!isFacetCollapsed('__date__')) {
+                    <div [@slideDown]>
+                      <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
+                      <label class="control-label fw-bold">{{ df.fromLabel }}</label>
+                      @if (activeFromCtrl(); as ctrl) {
                         <lib-date-picker [control]="ctrl" [minDate]="minDate" />
-                      </div>
-                    }
-                    @if (activeHasDateFilter()) {
-                      <button class="btn btn-link btn-sm p-0 text-secondary mt-1"
-                        (click)="clearDateFilter()">Clear both</button>
-                    }
-                  </div>
-                }
-                @if (activeConfig()?.sortOptions; as opts) {
-                  <div class="mb-3" [class.d-none]="!activeFiltersLoaded()">
+                      }
+                      <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
+                      <label class="control-label fw-bold mt-2">{{ df.toLabel }}</label>
+                      @if (activeToCtrl(); as ctrl) {
+                        <div class="mb-3">
+                          <lib-date-picker [control]="ctrl" [minDate]="minDate" />
+                        </div>
+                      }
+                      @if (activeHasDateFilter()) {
+                        <button class="btn btn-link btn-sm p-0 text-secondary mt-1"
+                          (click)="clearDateFilter()">Clear both</button>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+              @if (activeConfig()?.sortOptions; as opts) {
+                <div class="mb-3" [class.d-none]="!activeFiltersLoaded()">
+                  <button class="filter-section-toggle" type="button"
+                    (click)="toggleFacet('__sort__')"
+                    [attr.aria-expanded]="!isFacetCollapsed('__sort__')">
                     <h6 class="fw-semibold">Sort</h6>
-                    @for (opt of opts; track opt.value) {
-                      <div class="form-check">
-                        <input class="form-check-input" type="radio" name="searchSort"
-                          [id]="'sort-' + opt.value"
-                          [checked]="activeSortBy() === opt.value"
-                          (change)="applySort(opt.value)" />
-                        <label class="form-check-label small" [for]="'sort-' + opt.value">
-                          {{ opt.label }}
-                        </label>
-                      </div>
-                    }
-                  </div>
-                }
-                </div><!-- /.filter-inner-pad -->
-              </div>
-            </div>
-
+                    <svg class="filter-section-chevron"
+                      [class.filter-section-chevron--collapsed]="isFacetCollapsed('__sort__')"
+                      xmlns="http://www.w3.org/2000/svg" width="12" height="12"
+                      fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+                      <path d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/>
+                    </svg>
+                  </button>
+                  @if (!isFacetCollapsed('__sort__')) {
+                    <div [@slideDown]>
+                      @for (opt of opts; track opt.value) {
+                        <div class="form-check">
+                          <input class="form-check-input" type="radio" name="searchSort"
+                            [id]="'sort-' + opt.value"
+                            [checked]="activeSortBy() === opt.value"
+                            (change)="applySort(opt.value)" />
+                          <label class="form-check-label small" [for]="'sort-' + opt.value">
+                            {{ opt.label }}
+                          </label>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+              }
             </div><!-- /.filter-sidebar__content -->
           </div><!-- /.filter-sidebar -->
 
@@ -356,49 +373,41 @@ const TABS: { id: Tab; label: string }[] = [
             } @else if (activeHits().length === 0 && activeHasSearched()) {
               <div class="text-center text-muted py-5">No results found.</div>
             } @else {
-              @switch (activeCollectionId()) {
-                @case ('projects') {
-                  <div class="d-flex flex-column">
+              <div class="d-flex flex-column gap-3">
+                @switch (activeCollectionId()) {
+                  @case ('projects') {
                     @for (hit of activeHits(); track hit['id'] ?? hit['objectID']; let i = $index) {
                       <app-search-project-card [hit]="hit" (clicked)="trackResultClick(hit, i)" />
                     }
-                  </div>
-                }
-                @case ('documents') {
-                  <div class="d-flex flex-column">
+                  }
+                  @case ('documents') {
                     @for (hit of activeHits(); track hit['objectID'] ?? hit['id']; let i = $index) {
                       <app-search-document-card [hit]="hit"
                         (downloadClicked)="trackDocDownload(hit, i)"
                         (projectClicked)="trackDocProjectClick(hit, i)" />
                     }
-                  </div>
-                }
-                @case ('activities') {
-                  <div class="d-flex flex-column">
+                  }
+                  @case ('activities') {
                     @for (hit of activeHits(); track hit['objectID'] ?? hit['id']; let i = $index) {
                       <app-search-activity-card [hit]="hit"
                         (projectClicked)="trackResultClick(hit, i)" />
                     }
-                  </div>
-                }
-                @case ('notifications') {
-                  <div class="d-flex flex-column">
+                  }
+                  @case ('notifications') {
                     @for (hit of activeHits(); track hit['id'] ?? hit['objectID']; let i = $index) {
                       <app-search-notification-card [hit]="hit"
                         (projectClicked)="trackResultClick(hit, i)" />
                     }
-                  </div>
-                }
-                @case ('document_chunks') {
-                  <div class="d-flex flex-column">
+                  }
+                  @case ('document_chunks') {
                     @for (hit of activeHits(); track hit['id'] ?? hit['objectID']; let i = $index) {
                       <app-search-document-chunk-card [hit]="hit"
                         (documentClicked)="trackChunkDocClick(hit, i)"
                         (projectClicked)="trackResultClick(hit, i)" />
                     }
-                  </div>
+                  }
                 }
-              }
+              </div>
             }
             <div #scrollSentinel class="py-2 text-center">
               @if (activeIsLoadingMore()) {
@@ -407,30 +416,16 @@ const TABS: { id: Tab; label: string }[] = [
                 </div>
               }
             </div>
-          </div>
+          </div><!-- /.results-col -->
 
-        </div>
-      </div>
+        </div><!-- /.search-columns -->
+      </div><!-- /.search-body -->
 
     </div><!-- /.search-panels -->
   `,
   styles: [`
     /* .results-col base styles (position, min-height, overlay) live in global instantsearch.css */
-    .filter-wrap {
-      display: grid;
-      grid-template-rows: 0fr;
-      transition: grid-template-rows 280ms cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .filter-wrap--open { grid-template-rows: 1fr; }
-    .filter-inner { overflow: hidden; }
-    .filter-inner-pad { padding-bottom: 0.5rem; }
-    /* Date picker borders blend with the grey filter panel — darken them slightly */
-    .filter-inner lib-date-picker .date-input-wrapper {
-      border-color: #adb5bd;
-    }
     @media (min-width: 768px) {
-      .filter-wrap { grid-template-rows: 1fr; }
-
       /* ── Fixed-height search layout ── */
       :host {
         display: flex;
@@ -444,12 +439,6 @@ const TABS: { id: Tab; label: string }[] = [
         display: flex;
         flex-direction: column;
         overflow: hidden;
-      }
-      /* notifications tab: single scrollable column */
-      .search-panels > .container {
-        flex: 1;
-        min-height: 0;
-        overflow-y: auto;
       }
       /* collection two-panel layout */
       .search-body {
@@ -483,13 +472,21 @@ export class UnifiedSearchComponent implements OnInit, AfterViewInit, OnDestroy 
   // ── UI state ────────────────────────────────────────────────────────────────
   activeTab   = signal<Tab>('projects');
   searchQuery = signal('');
-  filtersOpen = signal(false);
-  sidebarCollapsed = signal(localStorage.getItem('filterSidebarCollapsed') === 'true');
+  sidebarCollapsed = signal(true); // collapsed by default
+  collapsedFacets = signal<Set<string>>(new Set());
 
   toggleSidebar(): void {
-    const next = !this.sidebarCollapsed();
-    this.sidebarCollapsed.set(next);
-    localStorage.setItem('filterSidebarCollapsed', String(next));
+    this.sidebarCollapsed.set(!this.sidebarCollapsed());
+  }
+
+  toggleFacet(attribute: string): void {
+    const next = new Set(this.collapsedFacets());
+    if (next.has(attribute)) { next.delete(attribute); } else { next.add(attribute); }
+    this.collapsedFacets.set(next);
+  }
+
+  isFacetCollapsed(attribute: string): boolean {
+    return this.collapsedFacets().has(attribute);
   }
 
   activeFilterCount = computed(() => {
@@ -827,15 +824,22 @@ export class UnifiedSearchComponent implements OnInit, AfterViewInit, OnDestroy 
 
     for (const f of col.facets) {
       const cached = this.typesense.getLastFacets(col.indexName, f.attribute);
-      if (cached.length > 0) { s.facetItems[f.attribute].set(mergeItems(s.masterMaps[f.attribute], cached, f.sorter)); s.filtersLoaded.set(true); }
+      // Pre-populate masterMap from cache so items render quickly, but do NOT set
+      // filtersLoaded here — refineFns[attribute] is still the no-op until IS.js
+      // fires its first render callback. Setting filtersLoaded=true prematurely
+      // makes filters visible before they're interactive (clicks do nothing).
+      if (cached.length > 0) { s.facetItems[f.attribute].set(mergeItems(s.masterMaps[f.attribute], cached, f.sorter)); }
       widgets.push(
         connectRefinementList((rs: any) => {
           s.refineFns[f.attribute] = rs.refine;
-          if (rs.items.length === 0 && s.masterMaps[f.attribute].size > 0) return;
           this.zone.run(() => {
-            s.facetItems[f.attribute].set(mergeItems(s.masterMaps[f.attribute], rs.items, f.sorter));
+            // Skip item merge only on init when IS.js returns 0 items but cache populated the map.
+            // Always run zone.run() so angular detects the refineFns update and filtersLoaded flip.
+            if (rs.items.length > 0 || s.masterMaps[f.attribute].size === 0) {
+              s.facetItems[f.attribute].set(mergeItems(s.masterMaps[f.attribute], rs.items, f.sorter));
+              this.typesense.setLastFacets(col.indexName, f.attribute, rs.items);
+            }
             s.filtersLoaded.set(true);
-            this.typesense.setLastFacets(col.indexName, f.attribute, rs.items);
           });
         })({ attribute: f.attribute, operator: f.operator, limit: f.limit })
       );

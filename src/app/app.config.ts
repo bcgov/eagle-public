@@ -1,6 +1,7 @@
 import { ApplicationConfig, provideBrowserGlobalErrorListeners, ErrorHandler, inject, provideAppInitializer } from '@angular/core';
 import { provideRouter, RouteReuseStrategy } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 
 import { routes } from './app.routes';
 import { httpCacheInterceptor } from './interceptors/http-cache.interceptor';
@@ -13,6 +14,7 @@ import { ProjectRouteReuseStrategy } from './route-reuse-strategy';
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
+    provideAnimationsAsync(),
     provideRouter(routes),
     provideHttpClient(withInterceptors([httpCacheInterceptor, loggingInterceptor])),
     { provide: ErrorHandler, useClass: GlobalErrorHandler },

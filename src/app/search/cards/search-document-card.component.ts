@@ -24,10 +24,9 @@ import { highlightField } from '../search-collections';
           }
         </div>
       </div>
-      <hr class="search-card-divider">
       <div class="search-card-content">
         <div class="d-flex flex-column flex-md-row gap-3">
-          <div class="flex-fill align-self-md-start">
+          <div class="flex-fill">
             <div class="row row-cols-2 row-cols-md-4 g-2">
               <div class="col">
                 <div class="search-result-card-label">Project</div>
@@ -62,7 +61,7 @@ import { highlightField } from '../search-collections';
             </div>
           </div>
           <div class="search-card-vr d-none d-md-block"></div>
-          <div class="d-flex flex-md-column align-items-md-stretch justify-content-md-center gap-2 flex-shrink-0">
+          <div class="card-actions">
             @if (hit()['projectId'] && showProjectLink()) {
               <a class="search-card-btn search-card-btn--primary"
                 [href]="'/p/' + hit()['projectId']"
@@ -80,8 +79,8 @@ import { highlightField } from '../search-collections';
           </div>
         </div>
         @if (hit()['documentFileName'] && hit()['documentFileName'] !== hit()['displayName']) {
-          <hr class="my-2 opacity-25">
-          <div class="search-result-content" style="color: var(--bs-secondary-color);">{{ hit()['documentFileName'] }}</div>
+          <hr class="opacity-25">
+          <div class="search-result-content text-muted">{{ hit()['documentFileName'] }}</div>
         }
       </div>
     </article>

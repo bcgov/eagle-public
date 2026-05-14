@@ -13,6 +13,8 @@
 
 export interface DisplayItem {
   label: string;
+  /** IS.js escapedValue — passed to rs.refine(). Equals label for most values; differs only for values starting with '-'. */
+  value: string;
   count: number;
   isRefined: boolean;
   isDisabled: boolean;
@@ -103,7 +105,7 @@ export function sortByPhaseOrder(a: DisplayItem, b: DisplayItem): number {
  */
 export function mergeItems(
   masterMap: Map<string, DisplayItem>,
-  newItems: { label: string; count: number; isRefined: boolean }[],
+  newItems: { label: string; value?: string; count: number; isRefined: boolean }[],
   sorter: (a: DisplayItem, b: DisplayItem) => number = sortByName,
 ): DisplayItem[] {
   for (const [key, item] of masterMap) {
@@ -111,7 +113,7 @@ export function mergeItems(
   }
   for (const item of newItems) {
     masterMap.set(item.label, {
-      label: item.label, count: item.count, isRefined: item.isRefined, isDisabled: false,
+      label: item.label, value: item.value ?? item.label, count: item.count, isRefined: item.isRefined, isDisabled: false,
     });
   }
   return Array.from(masterMap.values()).sort(sorter);
