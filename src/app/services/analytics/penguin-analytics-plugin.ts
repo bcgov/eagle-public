@@ -307,6 +307,8 @@ export function penguinAnalyticsPlugin(pluginConfig: PenguinAnalyticsConfig): An
       );
       activityInterval = setInterval(() => {
         if (!isActive) return;
+        // Skip heartbeat if user idle for more than 5 minutes
+        if (Date.now() - lastActivity > 300000) return;
         sendEvent(config, {
           eventType: 'User Active',
           properties: {
@@ -315,11 +317,11 @@ export function penguinAnalyticsPlugin(pluginConfig: PenguinAnalyticsConfig): An
             seconds_since_activity: Math.floor((Date.now() - lastActivity) / 1000)
           }
         });
-      }, 30000);
+      }, 120000);
 
       sendEvent(config, {
         eventType: 'Session Started',
-        properties: { session_start: sessionStart, session_id: getSessionId(), ...getBrowserContext(config) }
+        properties: { session_start: sessionStart, session_id: getSessionId(), ...getBrowserContext({ ...config, enhancedTracking: true }) }
       });
 
       if (config.debug) console.log('[Analytics] Session started:', getSessionId());
@@ -334,7 +336,8 @@ export function penguinAnalyticsPlugin(pluginConfig: PenguinAnalyticsConfig): An
       const trafficSource = getTrafficSource();
       const pageProperties = {
         page_name: props?.['name'] || 'unknown',
-        ...getBrowserContext(config),
+        url: window.location.pathname,
+        title: document.title,
         ...(trafficSource || {}),  // Merge traffic source data
         ...props
       };
