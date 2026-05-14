@@ -19,10 +19,9 @@ import { highlightField } from '../search-collections';
       <div class="search-card-header">
         <h5 class="fw-bold mb-0">{{ hit()['name'] || 'Unnamed Project' }}</h5>
       </div>
-      <hr class="search-card-divider">
       <div class="search-card-content">
         <div class="d-flex flex-column flex-md-row gap-3">
-          <div class="flex-fill align-self-md-start">
+          <div class="flex-fill">
             <div class="row row-cols-2 row-cols-md-5 g-2">
               @if (hit()['proponent']) {
                 <div class="col">
@@ -57,7 +56,7 @@ import { highlightField } from '../search-collections';
             </div>
           </div>
           <div class="search-card-vr d-none d-md-block"></div>
-          <div class="d-flex flex-md-column align-items-md-stretch justify-content-md-center gap-2 flex-shrink-0">
+          <div class="card-actions">
             <a class="search-card-btn search-card-btn--primary"
               [routerLink]="['/p', hit()['id'] ?? hit()['objectID'], 'project-details']"
               (click)="clicked.emit()">
@@ -66,7 +65,7 @@ import { highlightField } from '../search-collections';
           </div>
         </div>
         @if (safeDescription()) {
-          <hr class="my-2 opacity-25">
+          <hr class="opacity-25">
           <div class="search-result-content" [innerHTML]="safeDescription()"></div>
         }
       </div>

@@ -89,7 +89,8 @@ export class TypesenseService {
           connectionTimeoutSeconds: 5,
           numRetries: 1,
           retryIntervalSeconds: 0.1,
-          cacheSearchResultsForSeconds: 120,
+          cacheSearchResultsForSeconds: 0,
+          sendApiKeyAsQueryParam: false,
         },
         additionalSearchParameters,
       });

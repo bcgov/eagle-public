@@ -23,10 +23,9 @@ import { highlightField } from '../search-collections';
       <div class="search-card-header">
         <h5 class="fw-bold mb-0" [innerHTML]="hl('name') || 'Untitled'"></h5>
       </div>
-      <hr class="search-card-divider">
       <div class="search-card-content">
         <div class="d-flex flex-column flex-md-row gap-3">
-          <div class="flex-fill align-self-md-start">
+          <div class="flex-fill">
             <div class="row row-cols-2 row-cols-md-3 g-2">
               @if (hit()['type']) {
                 <div class="col">
@@ -93,12 +92,12 @@ import { highlightField } from '../search-collections';
             </div>
           </div>
           <div class="search-card-vr d-none d-md-block"></div>
-          <div class="d-flex flex-md-column align-items-md-stretch justify-content-md-center gap-2 flex-shrink-0">
+          <div class="card-actions">
             @if (hit()['associatedProjectId']) {
               <a class="search-card-btn search-card-btn--primary"
                 [href]="'/p/' + hit()['associatedProjectId']"
                 (click)="projectClicked.emit(); $event.stopPropagation()">
-                <i class="material-icons">open_in_new</i><span>Project</span>
+                <i class="material-icons">open_in_new</i><span>Project Page</span>
               </a>
             }
             <button type="button" class="search-card-btn search-card-btn--primary" (click)="toggleDocs()">
@@ -108,7 +107,7 @@ import { highlightField } from '../search-collections';
         </div>
 
         @if (safeDescription()) {
-          <hr class="my-2 opacity-25">
+          <hr class="opacity-25">
           <div class="search-result-content" [innerHTML]="safeDescription()"></div>
         }
 

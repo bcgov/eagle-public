@@ -34,10 +34,9 @@ import { resolveDocUrl } from 'app/search/search-collections';
       </div>
 
       @if (hit()['projectName'] || hit()['type'] || hit()['dateAdded'] || hit()['notificationName'] || hit()['complianceAndEnforcement'] || safeContent() || expanded() || (hit()['projectId'] && showProjectLink()) || hasDocSource() || pcpDocsLink() || docLink()) {
-        <hr class="search-card-divider">
         <div class="search-card-content">
           <div class="d-flex flex-column flex-md-row gap-3">
-            <div class="flex-fill align-self-md-start">
+            <div class="flex-fill">
               <div class="row row-cols-2 row-cols-md-4 g-2">
                 @if (hit()['projectName']) {
                   <div class="col">
@@ -79,7 +78,7 @@ import { resolveDocUrl } from 'app/search/search-collections';
             </div>
             @if ((hit()['projectId'] && showProjectLink()) || hasDocSource() || pcpDocsLink() || docLink()) {
               <div class="search-card-vr d-none d-md-block"></div>
-              <div class="d-flex flex-md-column align-items-md-stretch justify-content-md-center gap-2 flex-shrink-0">
+              <div class="card-actions">
                 @if (hit()['projectId'] && showProjectLink()) {
                   <a class="search-card-btn search-card-btn--primary"
                     [href]="'/p/' + hit()['projectId']"
@@ -110,7 +109,7 @@ import { resolveDocUrl } from 'app/search/search-collections';
             }
           </div>
           @if (safeContent()) {
-            <hr class="my-2 opacity-25">
+            <hr class="opacity-25">
             <div class="search-result-content" [class.mb-3]="expanded()" [innerHTML]="safeContent()"></div>
           }
           @if (expanded()) {
