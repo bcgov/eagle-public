@@ -206,25 +206,6 @@
   color: var(--mn-color) !important;
 }
 
-.dropdown-item .dd-item-header {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  white-space: nowrap;
-}
-
-.dropdown-item .icon {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  line-height: 1;
-}
-
-.dropdown-item .icon i {
-  display: block;
-  line-height: 1;
-}
-
 .dropdown-item strong {
   font-weight: var(--bs-font-weight-semibold);
   transition: color 0.2s;
