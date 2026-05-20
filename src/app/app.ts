@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, OnInit, OnDestroy, inject, signal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, OnInit, OnDestroy, inject, signal, computed } from '@angular/core';
 
 import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
 import { HeaderComponent } from './header/header.component';
@@ -12,8 +12,7 @@ import { filter } from 'rxjs/operators';
   imports: [RouterOutlet, HeaderComponent, FooterComponent, ToastContainerComponent],
   templateUrl: './app.html',
   styleUrl: './app.css',
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  standalone: true
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class App implements OnInit, OnDestroy {
   private analyticsService = inject(AnalyticsService);
@@ -22,6 +21,10 @@ export class App implements OnInit, OnDestroy {
   title = 'EPIC - Environmental Assessment Office';
   showScrollButton = signal(false);
   currentUrl = signal<string>('');
+  isContentSearch = computed(() => {
+    const url = this.currentUrl();
+    return url.startsWith('/search') && /[?&]tab=content/.test(url);
+  });
 
   ngOnInit(): void {
     // Track current URL for route-specific styling and analytics

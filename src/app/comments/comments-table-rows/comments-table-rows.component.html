@@ -1,13 +1,13 @@
 <td class="p-3">
   <div class="mb-2">
-    @if (rowData.author && rowData.Anonymous !== true) {
+    @if (rowData.author && rowData.isAnonymous !== true) {
       <b>
         {{rowData.author}}@if (rowData.location) {
         <span>, {{rowData.location}}</span>
       }
     </b>
   }
-  @if (rowData.author === null || rowData.Anonymous) {
+  @if (rowData.author === null || rowData.isAnonymous) {
     <b>Anonymous</b>
   }
 </div>

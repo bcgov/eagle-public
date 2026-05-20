@@ -5,6 +5,7 @@ import { RouterModule } from '@angular/router';
 export interface HeroBannerAction {
   label: string;
   routerLink?: string;
+  queryParams?: Record<string, string>;
   href?: string;
   icon?: string;
   target?: string;

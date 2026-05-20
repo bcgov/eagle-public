@@ -1,4 +1,10 @@
 import { Routes } from '@angular/router';
+import {
+  migrateSearchParams,
+  legacyProjectNotificationsRedirect,
+  legacyProjectsListRedirect,
+  legacyNewsRedirect,
+} from './legacy-redirect.guard';
 import { HomeComponent } from './home/home.component';
 import { StaticPageComponent, StaticPageData } from './static-page/static-page.component';
 import { SearchHelpComponent } from './search-help/search-help.component';
@@ -155,13 +161,13 @@ export const routes: Routes = [
   },
   {
     path: 'projects-list',
-    redirectTo: '/search?tab=projects',
+    redirectTo: legacyProjectsListRedirect,
     pathMatch: 'full'
   },
   
   {
     path: 'project-notifications',
-    redirectTo: '/search?tab=notifications',
+    redirectTo: legacyProjectNotificationsRedirect,
     pathMatch: 'full'
   },
   
@@ -177,7 +183,7 @@ export const routes: Routes = [
   
   {
     path: 'news',
-    redirectTo: '/search?tab=updates',
+    redirectTo: legacyNewsRedirect,
     pathMatch: 'full'
   },
   
@@ -201,7 +207,8 @@ export const routes: Routes = [
   
   {
     path: 'search',
-    component: SearchWrapperComponent
+    component: SearchWrapperComponent,
+    canActivate: [migrateSearchParams],
   },
   
   {

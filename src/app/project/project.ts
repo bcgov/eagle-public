@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, AfterViewInit, ElementRef, signal, ChangeDetectionStrategy, inject, Renderer2, CUSTOM_ELEMENTS_SCHEMA, effect, untracked } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule, NavigationEnd } from '@angular/router';
 import { DatePipe } from '@angular/common';
-import { Subject, forkJoin, of } from 'rxjs';
+import { Observable, Subject, forkJoin, of } from 'rxjs';
 import { takeUntil, take, map, catchError } from 'rxjs/operators';
 
 import { Project } from '../models/project';
@@ -13,6 +13,8 @@ import { CommentPeriod } from '../models/commentperiod';
 import { Constants } from '../shared/utils/constants';
 import { initTabArrows, TabArrowsHandle } from '../shared/utils/tab-arrows';
 import { SearchService } from '../services/search.service';
+import { TypesenseService } from '../services/typesense.service';
+import { TAB_FILTER_BY } from '../search/search-collections';
 import { Utils } from '../shared/utils/utils';
 import { DetailsSidebarComponent } from './details-sidebar/details-sidebar';
 import { SafeHtmlPipe } from '../shared/pipes/safe-html-converter.pipe';
@@ -43,6 +45,7 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
   private renderer = inject(Renderer2);
   private utils = inject(Utils);
   private searchService = inject(SearchService);
+  private typesenseService = inject(TypesenseService);
   private logger = inject(LoggingService);
   private analytics = inject(AnalyticsService);
   public configService = inject(ConfigService);
@@ -407,23 +410,45 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   initTabLinks(): void {
+    const projectId = this.project()?._id;
+    if (!projectId) return;
+
+    const optionalTabs = this.tabLinks().filter(
+      t => !t.display && t.key !== Constants.optionalProjectDocTabs.UNSUBSCRIBE_CAC
+    );
+    if (optionalTabs.length === 0) return;
+
+    this.tabsLoading.set(true);
+
+    // When Typesense is enabled, check tab visibility with per_page=0 count queries
+    // (no documents returned — just `found` count). Far faster than MongoDB searches
+    // and avoids competing with the document-table multi_search for proxy connections.
+    if (this.configService.config().TYPESENSE_ENABLED) {
+      const checks$ = optionalTabs.map(tabLink => {
+        const filterBy = TAB_FILTER_BY[tabLink.key];
+        if (!filterBy) return of({ key: tabLink.key, hasResults: false });
+
+        return this.typesenseService.searchCollection('documents', {
+          q: '*',
+          query_by: 'displayName',
+          filter_by: `projectId:=${projectId} && ${filterBy}`,
+          per_page: '0',
+        }).pipe(
+          take(1),
+          map((res: any) => ({ key: tabLink.key, hasResults: (res.found ?? 0) > 0 })),
+          catchError(() => of({ key: tabLink.key, hasResults: false }))
+        );
+      });
+
+      this.applyTabChecks(checks$);
+      return;
+    }
+
+    // MongoDB fallback — used when TYPESENSE_ENABLED is false.
     this.configService.lists.pipe(
       take(1),
       takeUntil(this.ngUnsubscribe)
     ).subscribe(list => {
-      const projectId = this.project()?._id;
-      if (!projectId) return;
-
-      const optionalTabs = this.tabLinks().filter(
-        t => !t.display && t.key !== Constants.optionalProjectDocTabs.UNSUBSCRIBE_CAC
-      );
-
-      if (optionalTabs.length === 0) return;
-
-      this.tabsLoading.set(true);
-
-      // Fire all tab-visibility checks in parallel; update tabLinks signal once
-      // when all results are in — prevents tabs from popping in one at a time.
       const checks$ = optionalTabs.map(tabLink => {
         const queryModifier = this.utils.createProjectTabModifiers(tabLink.key, list);
         if (!queryModifier) return of({ key: tabLink.key, hasResults: false });
@@ -442,21 +467,25 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
         );
       });
 
-      forkJoin(checks$)
-        .pipe(takeUntil(this.ngUnsubscribe))
-        .subscribe(results => {
-          const currentTabs = this.tabLinks();
-          let changed = false;
-          results.forEach(({ key, hasResults }) => {
-            if (hasResults) {
-              const tab = currentTabs.find(t => t.key === key);
-              if (tab && !tab.display) { tab.display = true; changed = true; }
-            }
-          });
-          if (changed) this.tabLinks.set([...currentTabs]);
-          this.tabsLoading.set(false);
-        });
+      this.applyTabChecks(checks$);
     });
+  }
+
+  private applyTabChecks(checks$: Observable<{ key: string; hasResults: boolean }>[]): void {
+    forkJoin(checks$)
+      .pipe(takeUntil(this.ngUnsubscribe))
+      .subscribe(results => {
+        const currentTabs = this.tabLinks();
+        let changed = false;
+        results.forEach(({ key, hasResults }) => {
+          if (hasResults) {
+            const tab = currentTabs.find(t => t.key === key);
+            if (tab && !tab.display) { tab.display = true; changed = true; }
+          }
+        });
+        if (changed) this.tabLinks.set([...currentTabs]);
+        this.tabsLoading.set(false);
+      });
   }
 
   public goToViewComments() {

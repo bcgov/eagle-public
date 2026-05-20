@@ -13,6 +13,7 @@
                 <a 
                   class="btn hero-banner-btn" 
                   [routerLink]="action.routerLink"
+                  [queryParams]="action.queryParams || {}"
                   [title]="action.title || action.label">
                   @if (action.icon) {
                     <i class="material-icons">{{ action.icon }}</i>

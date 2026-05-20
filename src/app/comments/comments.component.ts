@@ -1,9 +1,9 @@
 import { Component, inject, signal, OnDestroy, ChangeDetectorRef, ViewEncapsulation, computed } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DomSanitizer } from '@angular/platform-browser';
-import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { Subject, from } from 'rxjs';
+import { takeUntil, switchMap } from 'rxjs/operators';
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { ToastService } from '../services/toast.service';
 import { CommentPeriod } from '../models/commentperiod';
@@ -24,11 +24,10 @@ import { AnalyticsService } from '../services/analytics/analytics.service';
 
 @Component({
   selector: 'app-comments',
-  imports: [CommonModule, TableTemplateComponent, AddCommentComponent],
+  imports: [DatePipe, TableTemplateComponent, AddCommentComponent],
   templateUrl: './comments.component.html',
   styleUrls: ['./comments.component.css'],
-  encapsulation: ViewEncapsulation.None,
-  standalone: true
+  encapsulation: ViewEncapsulation.None
 })
 export class CommentsComponent implements OnDestroy {
   private toastService = inject(ToastService);
@@ -162,78 +161,71 @@ export class CommentsComponent implements OnDestroy {
 
     const currentTableData = this.tableData();
     this.commentService.getByPeriodId(this.commentPeriodId, currentTableData.currentPage, currentTableData.pageSize, true)
-      .pipe(takeUntil(this.ngUnsubscribe))
-      .subscribe(async (res: any) => {
-        const currentComments = res.currentComments;
-
-        // Initialize expanded property
-        currentComments.forEach((comment: any) => {
-          comment.expanded = false;
-        });
-
-        // Collect all document IDs from all comments
-        const allDocIds: string[] = [];
-        const commentDocMap = new Map<string, string[]>(); // Map comment index to its document IDs
-
-        currentComments.forEach((comment: any, index: number) => {
-          if (comment.documents && comment.documents.length > 0) {
-            const docIds = comment.documents.map((doc: any) => {
-              // Handle both string IDs and objects with _id property
-              return typeof doc === 'string' ? doc : (doc._id || doc);
-            });
-            commentDocMap.set(index.toString(), docIds);
-            allDocIds.push(...docIds);
-          }
-        });
-
-        // Load all documents in a single batch request
-        if (allDocIds.length > 0) {
-          try {
-            const allDocs = await this.documentService.getByMultiId(allDocIds).toPromise();
-            
-            // Create a map of document ID to document object for quick lookup
-            const docMap = new Map<string, any>();
-            allDocs?.forEach((doc: any) => {
-              if (doc && doc._id) {
-                docMap.set(doc._id, doc);
-              }
-            });
-
-            // Assign documents back to their respective comments
-            currentComments.forEach((comment: any, index: number) => {
-              const docIds = commentDocMap.get(index.toString());
-              if (docIds) {
-                comment.documents = docIds
-                  .map(id => docMap.get(id))
-                  .filter(doc => doc !== undefined);
-              }
-            });
-          } catch (error) {
-            this.logger.error('Error loading documents for comments', 'CommentsComponent', error);
-            currentComments.forEach((comment: any) => {
-              if (comment.documents) {
-                comment.documents = [];
-              }
-            });
-          }
-        }
-
+      .pipe(
+        takeUntil(this.ngUnsubscribe),
+        switchMap((res: any) => from(this.enrichWithDocuments(res)))
+      )
+      .subscribe(({ res, currentComments }) => {
         this.comments.set(currentComments);
 
-        // Create new TableObject with updated data
-        const currentTableData = this.tableData();
+        const snapshotTableData = this.tableData();
         const newTableData = new TableObject({ component: CommentsTableRowsComponent });
-        newTableData.options = currentTableData.options;
-        newTableData.currentPage = currentTableData.currentPage;
-        newTableData.pageSize = currentTableData.pageSize;
+        newTableData.options = snapshotTableData.options;
+        newTableData.currentPage = snapshotTableData.currentPage;
+        newTableData.pageSize = snapshotTableData.pageSize;
         newTableData.totalListItems = res.totalCount;
         newTableData.items = currentComments.map((comment: any) => ({ rowData: comment }));
 
-        this.logger.debug(`Loaded ${currentComments.length} comments, tableData.items length: ${newTableData.items.length}, totalListItems: ${newTableData.totalListItems}`, 'CommentsComponent');
+        this.logger.debug(`Loaded ${currentComments.length} comments, totalListItems: ${newTableData.totalListItems}`, 'CommentsComponent');
 
         this.tableData.set(newTableData);
         this.changeDetectionRef.detectChanges();
       });
+  }
+
+  private async enrichWithDocuments(res: any): Promise<{ res: any; currentComments: any[] }> {
+    const currentComments = res.currentComments;
+
+    currentComments.forEach((comment: any) => {
+      comment.expanded = false;
+    });
+
+    const allDocIds: string[] = [];
+    const commentDocMap = new Map<string, string[]>();
+
+    currentComments.forEach((comment: any, index: number) => {
+      if (comment.documents && comment.documents.length > 0) {
+        const docIds = comment.documents.map((doc: any) =>
+          typeof doc === 'string' ? doc : (doc._id || doc)
+        );
+        commentDocMap.set(index.toString(), docIds);
+        allDocIds.push(...docIds);
+      }
+    });
+
+    if (allDocIds.length > 0) {
+      try {
+        const allDocs = await this.documentService.getByMultiId(allDocIds).toPromise();
+        const docMap = new Map<string, any>();
+        allDocs?.forEach((doc: any) => {
+          if (doc && doc._id) docMap.set(doc._id, doc);
+        });
+
+        currentComments.forEach((comment: any, index: number) => {
+          const docIds = commentDocMap.get(index.toString());
+          if (docIds) {
+            comment.documents = docIds.map(id => docMap.get(id)).filter(doc => doc !== undefined);
+          }
+        });
+      } catch (error) {
+        this.logger.error('Error loading documents for comments', 'CommentsComponent', error);
+        currentComments.forEach((comment: any) => {
+          if (comment.documents) comment.documents = [];
+        });
+      }
+    }
+
+    return { res, currentComments };
   }
 
   onMessageOut(msg: any) {

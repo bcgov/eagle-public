@@ -251,7 +251,7 @@ export class TypesenseDocumentTableComponent implements OnInit, OnDestroy {
       this.tsLawLookups[f.attribute].set(m);
     }
 
-    const baseFilter = `projectId:${projId}`;
+    const baseFilter = `projectId:=${projId}`;
     const filter_by = cfg.extraFilter ? `${baseFilter} && ${cfg.extraFilter}` : baseFilter;
 
     this.tsIs = instantsearch({

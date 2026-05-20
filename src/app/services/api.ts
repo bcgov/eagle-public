@@ -370,7 +370,7 @@ export class ApiService {
   // Comments
   //
   getCountCommentsById(commentPeriodId: string): Observable<number> {
-    const queryString = `comment?period=${commentPeriodId}`;
+    const queryString = `public/comment?period=${commentPeriodId}`;
     return this.http.head<HttpResponse<object>>(`${this.apiPath}/${queryString}`, { observe: 'response' })
       .pipe(
         map(res => {
@@ -398,7 +398,7 @@ export class ApiService {
     // TODO: May want to pass this as a parameter in the future.
     const sort = '-commentId';
 
-    let queryString = 'comment?period=' + periodId + '&fields=' + this.buildValues(fields) + '&';
+    let queryString = 'public/comment?period=' + periodId + '&fields=' + this.buildValues(fields) + '&';
     if (sort !== null) { queryString += `sortBy=${sort}&`; }
     if (pageNum !== null) { queryString += `pageNum=${pageNum}&`; }
     if (pageSize !== null) { queryString += `pageSize=${pageSize}&`; }
@@ -420,7 +420,7 @@ export class ApiService {
       'write',
       'delete'
     ];
-    const queryString = 'comment/' + id + '?fields=' + this.buildValues(fields);
+    const queryString = 'public/comment/' + id + '?fields=' + this.buildValues(fields);
     return this.http.get<any>(`${this.apiPath}/${queryString}`, { observe: 'response' });
   }
 
@@ -429,7 +429,7 @@ export class ApiService {
       'comment',
       'author'
     ];
-    const queryString = 'comment?fields=' + this.buildValues(fields);
+    const queryString = 'public/comment?fields=' + this.buildValues(fields);
     return this.http.post<Comment>(`${this.apiPath}/${queryString}`, comment, {});
   }
 

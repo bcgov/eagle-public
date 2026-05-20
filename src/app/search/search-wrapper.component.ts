@@ -3,24 +3,36 @@ import {
   OnInit,
   inject,
   signal,
+  DestroyRef,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ActivatedRoute } from '@angular/router';
 import { ConfigService } from 'app/services/config.service';
 import { TypesenseService } from 'app/services/typesense.service';
 import { UnifiedSearchComponent } from './unified-search.component';
+import { SearchTableComponent } from './search-table/search-table.component';
 
 /**
- * Wrapper that health-checks Typesense on init, then renders UnifiedSearchComponent
- * with typesenseAvailable=true/false so the 3 search tabs know whether to show results
- * or an unavailable message.
- *
- * Notifications and Map tabs always work regardless of Typesense status.
+ * Wrapper that health-checks Typesense on init, then routes to either:
+ * - SearchTableComponent for projects/documents/updates/notifications (table view)
+ * - UnifiedSearchComponent for content tab (PDF search, card view)
  */
 @Component({
   selector: 'app-search-wrapper',
-  imports: [UnifiedSearchComponent],
-  template: `<app-unified-search [typesenseAvailable]="useTypesense()" />`,
+  imports: [UnifiedSearchComponent, SearchTableComponent],
+  host: { '[class.content-tab]': 'isContentTab()' },
+  template: `
+    @if (isContentTab()) {
+      <app-unified-search [typesenseAvailable]="useTypesense()" />
+    } @else {
+      <app-search-table [typesenseAvailable]="useTypesense()" />
+    }
+  `,
   styles: [`
     :host {
+      display: block;
+    }
+    :host.content-tab {
       display: flex;
       flex-direction: column;
       flex: 1;
@@ -29,19 +41,24 @@ import { UnifiedSearchComponent } from './unified-search.component';
   `],
 })
 export class SearchWrapperComponent implements OnInit {
-  useTypesense = signal(false);
+  useTypesense  = signal(false);
+  isContentTab  = signal(false);
 
-  private configService = inject(ConfigService);
+  private configService    = inject(ConfigService);
   private typesenseService = inject(TypesenseService);
+  private route            = inject(ActivatedRoute);
+  private destroyRef       = inject(DestroyRef);
 
-  async ngOnInit(): Promise<void> {
+  ngOnInit(): void {
+    this.route.queryParams
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(p => this.isContentTab.set(p['tab'] === 'content'));
+
     const config = this.configService.config();
+    if (!config.TYPESENSE_ENABLED) return;
 
-    if (!config.TYPESENSE_ENABLED) {
-      return;
-    }
-
-    const available = await this.typesenseService.checkHealth();
-    this.useTypesense.set(available);
+    this.typesenseService.checkHealth().then(available => {
+      this.useTypesense.set(available);
+    });
   }
 }

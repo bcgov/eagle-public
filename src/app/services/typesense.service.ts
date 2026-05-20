@@ -201,7 +201,7 @@ export class TypesenseService {
     return this.searchCollection('documents', {
       q: '*',
       query_by: 'displayName',
-      filter_by: `projectId:${projId} && isFeatured:true`,
+      filter_by: `projectId:=${projId} && isFeatured:=true`,
       sort_by: 'datePosted:desc',
       per_page: '5',
     }).pipe(
@@ -232,7 +232,7 @@ export class TypesenseService {
     return this.searchCollection('activities', {
       q:           keywords || '*',
       query_by:    'headline,content',
-      filter_by:   `projectId:${projId} && active:true`,
+      filter_by:   `projectId:=${projId} && active:=true`,
       sort_by:     tsSort,
       page:        String(page),
       per_page:    String(pageSize),
@@ -285,7 +285,7 @@ export class TypesenseService {
     return this.searchCollection('activities', {
       q:           keywords || '*',
       query_by:    'headline,content',
-      filter_by:   `projectId:${projId} && active:true`,
+      filter_by:   `projectId:=${projId} && active:=true`,
       sort_by:     tsSort,
       page:        String(page),
       per_page:    String(pageSize),
@@ -350,7 +350,7 @@ export class TypesenseService {
   }
 
   /** Makes a search call via the eagle-api Typesense proxy. No key sent from browser. */
-  private searchCollection(collection: string, params: Record<string, string>): Observable<any> {
+  searchCollection(collection: string, params: Record<string, string>): Observable<any> {
     return this.http.get<any>(
       `${this.proxyBase}/collections/${collection}/documents/search`,
       { params }

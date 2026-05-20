@@ -24,13 +24,14 @@
 }
 
 @media (min-width: 768px) {
-  .app-wrapper.search-route,
+  /* Viewport-fill only on content/PDF tab and documents route (internal scrollers) */
+  .app-wrapper.content-search,
   .app-wrapper.documents-route {
     height: 100dvh;
     overflow: hidden;
   }
 
-  .app-content.search-route,
+  .app-content.content-search,
   .app-content.documents-route {
     overflow: hidden;
   }

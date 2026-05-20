@@ -472,7 +472,7 @@ export class UnifiedSearchComponent implements OnInit, AfterViewInit, OnDestroy 
   // ── UI state ────────────────────────────────────────────────────────────────
   activeTab   = signal<Tab>('projects');
   searchQuery = signal('');
-  sidebarCollapsed = signal(true); // collapsed by default
+  sidebarCollapsed = signal(true);
   collapsedFacets = signal<Set<string>>(new Set());
 
   toggleSidebar(): void {
@@ -566,7 +566,7 @@ export class UnifiedSearchComponent implements OnInit, AfterViewInit, OnDestroy 
     if (!s.hasSearched()) return '';
     const n = s.nbHits(), ms = s.procMs();
     const base = `${n.toLocaleString()} result${n !== 1 ? 's' : ''}`;
-    return `${base} in ${ms} ms`;
+    return ms > 0 ? `${base} in ${ms} ms` : base;
   });
 
   activeFacetSnapshot = computed((): Record<string, DisplayItem[]> => {

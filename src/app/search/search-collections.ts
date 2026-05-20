@@ -277,6 +277,83 @@ export const TAB_FACETS: Record<string, readonly FacetDef[]> = {
   ) as FacetDef[],
 };
 
+// ── Table-view column definitions ──────────────────────────────────────────────
+
+import type { IColumnObject } from 'app/shared/components/table-template/table-object';
+
+export type TableTab = 'projects' | 'documents' | 'updates' | 'notifications';
+export const TABLE_TABS: { id: TableTab; label: string }[] = [
+  { id: 'projects',      label: 'Projects'      },
+  { id: 'documents',     label: 'Documents'     },
+  { id: 'updates',       label: 'Updates'       },
+  { id: 'notifications', label: 'Notifications' },
+];
+
+export interface SearchTableDef {
+  columns: IColumnObject[];
+  defaultSort: string;           // URL format: '+name', '-datePosted'
+  /** Maps URL sortBy field name → Typesense sort field name (when different). */
+  sortFieldMap: Record<string, string>;
+  filterList: string[];          // facet attribute names used as URL params
+  dateFilterList: string[];      // date URL param names (start/end)
+}
+
+export const SEARCH_TABLE_DEFS: Record<TableTab, SearchTableDef> = {
+  projects: {
+    columns: [
+      { name: 'Name',     value: 'name',             width: 'col-2' },
+      { name: 'Proponent', value: 'proponent',       width: 'col-2' },
+      { name: 'Type',     value: 'type',             width: 'col-2' },
+      { name: 'Region',   value: 'region',           width: 'col-2' },
+      { name: 'Phase',    value: 'currentPhaseName', width: 'col-2' },
+      { name: 'Decision', value: 'eacDecision',      width: 'col-2' },
+    ],
+    defaultSort: '-updatedDate',
+    sortFieldMap: {},
+    filterList: ['region', 'type', 'currentPhaseName', 'eacDecision'],
+    dateFilterList: ['decisionDateStart', 'decisionDateEnd'],
+  },
+  documents: {
+    columns: [
+      { name: 'Document Name', value: 'displayName', width: 'col-3' },
+      { name: 'Project',       value: 'projectName', width: 'col-2' },
+      { name: 'Date',          value: 'datePosted',  width: 'col-2' },
+      { name: 'Type',          value: 'type',        width: 'col-2' },
+      { name: 'Milestone',     value: 'milestone',   width: 'col-2' },
+      { name: '',              value: 'download',    width: 'col-1', nosort: true },
+    ],
+    defaultSort: '-datePosted',
+    sortFieldMap: {},
+    filterList: ['type', 'milestone', 'documentAuthorType', 'projectPhase'],
+    dateFilterList: ['datePostedStart', 'datePostedEnd'],
+  },
+  updates: {
+    columns: [
+      { name: 'Headline', value: 'headline',    width: 'col-4', nosort: true },
+      { name: 'Project',  value: 'projectName', width: 'col-3', nosort: true },
+      { name: 'Type',     value: 'type',        width: 'col-2', nosort: true },
+      { name: 'Date',     value: 'dateAdded',   width: 'col-3' },
+    ],
+    defaultSort: '-dateAdded',
+    sortFieldMap: {},
+    filterList: ['type'],
+    dateFilterList: [],
+  },
+  notifications: {
+    columns: [
+      { name: 'Name',     value: 'name',                     width: 'col-3' },
+      { name: 'Type',     value: 'type',                     width: 'col-2' },
+      { name: 'Sub-Type', value: 'subType',                  width: 'col-2' },
+      { name: 'Region',   value: 'region',                   width: 'col-2' },
+      { name: 'Date',     value: 'notificationReceivedDate',  width: 'col-3' },
+    ],
+    defaultSort: '-notificationReceivedDate',
+    sortFieldMap: {},
+    filterList: ['type', 'subType', 'region', 'decision', 'trigger', 'pcp'],
+    dateFilterList: ['notificationReceivedDateStart', 'notificationReceivedDateEnd'],
+  },
+};
+
 /** Maps a Tab value to a CollectionId. */
 export function tabToCollectionId(tab: Tab): CollectionId | null {
   if (tab === 'updates') return 'activities';

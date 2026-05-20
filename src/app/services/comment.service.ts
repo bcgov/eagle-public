@@ -34,7 +34,7 @@ export class CommentService {
         map((res: any) => {
           if (!res) return null;
           const comments: Comment[] = res.body.map((c: any) => new Comment(c));
-          return { totalCount: res.headers.get('x-total-count'), currentComments: comments };
+          return { totalCount: parseInt(res.headers.get('x-total-count') || '0', 10), currentComments: comments };
         }),
         catchError(error => this.api.handleError(error))
       );

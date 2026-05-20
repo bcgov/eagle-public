@@ -45,6 +45,7 @@ export class HomeComponent implements OnDestroy {
     {
       label: 'Search',
       routerLink: '/search',
+      queryParams: { tab: 'projects' },
       icon: 'search'
     },
     {
