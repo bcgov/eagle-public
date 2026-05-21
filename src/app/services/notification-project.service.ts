@@ -61,6 +61,32 @@ export class NotificationProjectService {
     );
   }
 
+  /**
+   * Fetch a single ProjectNotification by its ID.
+   * Returns the mapped notification object or null if not found.
+   */
+  getById(id: string): Observable<any | null> {
+    return this.api.searchKeywords(
+      '',
+      'ProjectNotification',
+      [],
+      1, 1,
+      '',
+      '',
+      { _id: id },  // queryModifier: adds &and[_id]=id
+      false,
+      null,
+      {},
+      false,
+    ).pipe(
+      map((raw: any) => {
+        const hit = raw?.[0]?.searchResults?.[0];
+        return hit ? mapNotificationApiHit(hit) : null;
+      }),
+      catchError(() => of(null)),
+    );
+  }
+
   private applyClientFilters(
     all: any[],
     refs: Record<string, Set<string>>,

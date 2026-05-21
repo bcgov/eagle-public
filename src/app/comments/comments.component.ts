@@ -9,6 +9,7 @@ import { ToastService } from '../services/toast.service';
 import { CommentPeriod } from '../models/commentperiod';
 import { CommentPeriodService } from '../services/commentperiod.service';
 import { ProjectService } from '../services/project.service';
+import { NotificationProjectService } from '../services/notification-project.service';
 import { CommentService } from '../services/comment.service';
 import { AddCommentComponent } from './add-comment/add-comment.component';
 import { Project } from '../models/project';
@@ -36,6 +37,7 @@ export class CommentsComponent implements OnDestroy {
   private commentService = inject(CommentService);
   private commentPeriodService = inject(CommentPeriodService);
   private projectService = inject(ProjectService);
+  private notificationProjectService = inject(NotificationProjectService);
   private documentService = inject(DocumentService);
   private changeDetectionRef = inject(ChangeDetectorRef);
   private modalService = inject(NgbModal);
@@ -47,8 +49,13 @@ export class CommentsComponent implements OnDestroy {
   private storageService = inject(StorageService);
 
   loading = this.loadingState.getOperationState('comments');
-  // True while project or comment period are not yet loaded
-  pageLoading = computed(() => !this.project() || !this.commentPeriod());
+  // True while comment period is not yet loaded.
+  // For PROJECT-NOTIFICATION routes the project signal may remain null (no Project API endpoint),
+  // so only block on commentPeriod.
+  pageLoading = computed(() => {
+    if (this.type() === 'PROJECT-NOTIFICATION') return !this.commentPeriod();
+    return !this.project() || !this.commentPeriod();
+  });
   commentPeriod = signal<CommentPeriod | null>(null);
   project = signal<Project | null>(null);
   comments = signal<any[]>([]);
@@ -100,18 +107,36 @@ export class CommentsComponent implements OnDestroy {
         const isProjectNotification = this.router.url.includes('/pn/');
         this.type.set(isProjectNotification ? 'PROJECT-NOTIFICATION' : 'PROJECT');
 
-        // Load project data — use StorageService if already loaded (in-page navigation),
-        // otherwise fall back to API (direct navigation / bookmark).
-        const storedProject = this.storageService.currentProject();
-        if (storedProject && storedProject._id === projId && storedProject.name) {
-          this.project.set(storedProject);
-        } else {
-          this.projectService.getById(projId)
+        if (isProjectNotification) {
+          // For PN routes, projId is a ProjectNotification ID — do NOT call projectService.getById
+          // (which queries /api/project/ and returns empty for PN IDs, causing a TypeError).
+          // Fetch the notification name via search instead.
+          this.notificationProjectService.getById(projId)
             .pipe(takeUntil(this.ngUnsubscribe))
             .subscribe({
-              next: (project) => this.project.set(project),
-              error: (error) => this.logger.error('Error loading project', 'CommentsComponent', error)
+              next: (notification) => {
+                if (notification) {
+                  // Synthesise a minimal Project-shaped object so the template renders the name.
+                  this.project.set({ name: notification.name } as any);
+                }
+                // If null, project stays null — template shows '-' for name, which is fine.
+              },
+              error: () => { /* notification name is non-critical — swallow */ }
             });
+        } else {
+          // Load project data — use StorageService if already loaded (in-page navigation),
+          // otherwise fall back to API (direct navigation / bookmark).
+          const storedProject = this.storageService.currentProject();
+          if (storedProject && storedProject._id === projId && storedProject.name) {
+            this.project.set(storedProject);
+          } else {
+            this.projectService.getById(projId)
+              .pipe(takeUntil(this.ngUnsubscribe))
+              .subscribe({
+                next: (project) => this.project.set(project),
+                error: (error) => this.logger.error('Error loading project', 'CommentsComponent', error)
+              });
+          }
         }
 
         // Load comment period data
