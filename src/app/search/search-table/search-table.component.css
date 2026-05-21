@@ -77,3 +77,9 @@
     height: auto !important;
   }
 }
+
+/* ── Notification card list (replaces lib-table-template for notifications tab) ── */
+
+.notif-card-list {
+  overflow: hidden;
+}

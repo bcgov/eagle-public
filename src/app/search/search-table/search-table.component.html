@@ -220,12 +220,38 @@
         </div><!-- /.filter-sidebar__content -->
       </div><!-- /.filter-sidebar -->
 
-      <!-- ── Results col (table) ── -->
+      <!-- ── Results col ── -->
       <div class="results-col">
         @if (!typesenseAvailable()) {
           <div class="text-center py-5 text-muted">
             <p>Search service is temporarily unavailable. Please try again later.</p>
           </div>
+        } @else if (activeTab() === 'notifications') {
+          <!-- Notification cards — rendered outside lib-table-template to avoid table layout -->
+          <div class="notif-card-list" [class.table-loading]="loading()">
+            @if (loading() && notificationItems().length === 0) {
+              @for (i of [1,2,3,4,5]; track i) {
+                <div class="p-3 border-bottom">
+                  <div class="placeholder-glow mb-2">
+                    <span class="placeholder col-5 bg-secondary rounded"></span>
+                  </div>
+                  <div class="placeholder-glow">
+                    <span class="placeholder col-8 bg-secondary rounded" style="height:.6rem;"></span>
+                  </div>
+                </div>
+              }
+            } @else if (!loading() && notificationItems().length === 0) {
+              <div class="text-center my-5">
+                <p class="text-muted">No results found</p>
+              </div>
+            } @else {
+              @for (item of notificationItems(); track item._id) {
+                <app-search-notification-card [rowData]="item" />
+              }
+            }
+          </div>
+
+
         } @else {
           <lib-table-template
             [data]="tableData()"

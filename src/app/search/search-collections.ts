@@ -341,11 +341,7 @@ export const SEARCH_TABLE_DEFS: Record<TableTab, SearchTableDef> = {
   },
   notifications: {
     columns: [
-      { name: 'Name',     value: 'name',                     width: 'col-3' },
-      { name: 'Type',     value: 'type',                     width: 'col-2' },
-      { name: 'Sub-Type', value: 'subType',                  width: 'col-2' },
-      { name: 'Region',   value: 'region',                   width: 'col-2' },
-      { name: 'Date',     value: 'notificationReceivedDate',  width: 'col-3' },
+      { name: 'Project Notifications', value: '', width: 'col-12', nosort: true },
     ],
     defaultSort: '-notificationReceivedDate',
     sortFieldMap: {},
@@ -383,4 +379,65 @@ export function resolveDocUrl(url: string): string {
     }
   } catch { /* not parseable */ }
   return normalised;
+}
+
+/** Maps a raw eagle-api ProjectNotification (with populate=true) to card rowData. */
+export function mapNotificationApiHit(n: any): any {
+  return {
+    _id:                   n._id,
+    name:                  n.name                  || null,
+    description:           n.descriptionHtml        || n.description || null,
+    proponent:             n.proponent              || null,
+    location:              n.location               || null,
+    type:                  n.type                   || null,
+    subType:               n.subType                || null,
+    region:                n.region                 || null,
+    decision:              n.decision               || null,
+    trigger:               n.trigger                || null,
+    pcp:                   n.pcp                    || null,
+    associatedProjectId:   n.associatedProjectId    || null,
+    associatedProjectName: n.associatedProjectName  || null,
+    _receivedDate:         n.notificationReceivedDate ? new Date(n.notificationReceivedDate) : null,
+    documents:             Array.isArray(n.documents) ? n.documents : [],
+    _highlightResult:      {},
+  };
+}
+
+/**
+ * Builds disjunctive facet counts from raw ProjectNotification results.
+ * Returns a Record<attr, DisplayItem[]> suitable for facetItems signal.
+ */
+export function buildNotificationFacets(
+  all: any[],
+  refs: Record<string, Set<string>>,
+): Record<string, DisplayItem[]> {
+  const col = COLLECTIONS['notifications'];
+  const items: Record<string, DisplayItem[]> = {};
+
+  for (const facetDef of col.facets) {
+    const attr = facetDef.attribute;
+    const countMap = new Map<string, number>();
+    const othersFiltered = all.filter(n => {
+      for (const [a, values] of Object.entries(refs)) {
+        if (a === attr) continue;
+        if (values.size > 0 && !values.has(n[a] ?? '')) return false;
+      }
+      return true;
+    });
+    for (const n of othersFiltered) {
+      const v: string = n[attr] ?? '';
+      if (v) countMap.set(v, (countMap.get(v) ?? 0) + 1);
+    }
+    items[attr] = Array.from(countMap.entries())
+      .map(([label, count]) => ({
+        label,
+        value: label,
+        count,
+        isRefined: refs[attr]?.has(label) ?? false,
+        isDisabled: false,
+      }))
+      .sort(facetDef.sorter);
+  }
+
+  return items;
 }

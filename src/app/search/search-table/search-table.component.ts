@@ -5,15 +5,18 @@ import {
 import { trigger, state, style, animate, transition } from '@angular/animations';
 import { ActivatedRoute, Router, Params } from '@angular/router';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { Subject, combineLatest } from 'rxjs';
+import { Subject, combineLatest, lastValueFrom } from 'rxjs';
 import { debounceTime, distinctUntilChanged, filter, takeUntil } from 'rxjs/operators';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { TypesenseService } from 'app/services/typesense.service';
 import { ConfigService } from 'app/services/config.service';
+import { ApiService } from 'app/services/api';
+import { NotificationProjectService } from 'app/services/notification-project.service';
 import { TableTemplateComponent } from 'app/shared/components/table-template/table-template.component';
 import { TableObject } from 'app/shared/components/table-template/table-object';
 import { ITableMessage, TableRowComponent } from 'app/shared/components/table-template/table-row-component';
 import { DatePickerComponent } from 'app/shared/components/date-picker/date-picker.component';
+import { SearchNotificationCardComponent } from './search-notification-card.component';
 import {
   type CollectionId, type Tab, type DisplayItem, type LegislationGroup,
   type TableTab,
@@ -24,13 +27,11 @@ import {
 import { SearchProjectTableRowsComponent } from './search-project-table-rows.component';
 import { SearchDocTableRowsComponent } from './search-doc-table-rows.component';
 import { SearchActivityTableRowsComponent } from './search-activity-table-rows.component';
-import { SearchNotificationTableRowsComponent } from './search-notification-table-rows.component';
 
-const ROW_COMPONENTS: Record<TableTab, Type<TableRowComponent>> = {
-  projects:      SearchProjectTableRowsComponent,
-  documents:     SearchDocTableRowsComponent,
-  updates:       SearchActivityTableRowsComponent,
-  notifications: SearchNotificationTableRowsComponent,
+const ROW_COMPONENTS: Partial<Record<TableTab, Type<TableRowComponent>>> = {
+  projects:  SearchProjectTableRowsComponent,
+  documents: SearchDocTableRowsComponent,
+  updates:   SearchActivityTableRowsComponent,
 };
 
 @Component({
@@ -40,6 +41,7 @@ const ROW_COMPONENTS: Record<TableTab, Type<TableRowComponent>> = {
     ReactiveFormsModule,
     TableTemplateComponent,
     DatePickerComponent,
+    SearchNotificationCardComponent,
   ],
   templateUrl: './search-table.component.html',
   styleUrl: './search-table.component.css',
@@ -57,6 +59,9 @@ export class SearchTableComponent implements OnInit, AfterViewInit, OnDestroy {
   // TABLE_TABS for table views; content tab handled by UnifiedSearchComponent via wrapper
   readonly tabs = TABLE_TABS;
   readonly minDate = new Date(1970, 0, 1);
+
+  // Notification cards rendered directly (not via TableTemplateComponent)
+  notificationItems = signal<any[]>([]);
 
   // ── State signals ───────────────────────────────────────────────────────────
   activeTab     = signal<TableTab>('documents');
@@ -103,6 +108,8 @@ export class SearchTableComponent implements OnInit, AfterViewInit, OnDestroy {
   private router = inject(Router);
   private typesenseService = inject(TypesenseService);
   private configService    = inject(ConfigService);
+  private api              = inject(ApiService);
+  private notificationService = inject(NotificationProjectService);
 
   @ViewChild('sidebarRef') private sidebarRef!: ElementRef<HTMLElement>;
   private resizeObserver!: ResizeObserver;
@@ -304,7 +311,15 @@ export class SearchTableComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private executeSearch(): void {
     const colId = this.activeCollectionId();
-    if (!colId || !this.typesenseAvailable()) return;
+    if (!colId) return;
+
+    // Notifications use eagle-api (documents pre-joined); all other tabs use Typesense
+    if (colId === 'notifications') {
+      this.executeNotificationSearch();
+      return;
+    }
+
+    if (!this.typesenseAvailable()) return;
 
     const col    = COLLECTIONS[colId];
     const def    = this.activeDef();
@@ -370,6 +385,37 @@ export class SearchTableComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
+  private async executeNotificationSearch(): Promise<void> {
+    this.loading.set(true);
+    try {
+      const def    = this.activeDef();
+      const params = this.route.snapshot.queryParams;
+
+      const result = await lastValueFrom(
+        this.notificationService.search(
+          this.searchQuery() || '',
+          this.activeRefinements(),
+          {
+            fromKey: def.dateFilterList[0] || undefined,
+            toKey:   def.dateFilterList[1] || undefined,
+            params:  params as Record<string, string>,
+          },
+        )
+      );
+
+      this.notificationItems.set(result.items);
+      this.totalFound.set(result.totalCount);
+      this.facetItems.set(result.facets);
+      this.groupedFacets.set({});
+    } catch {
+      this.notificationItems.set([]);
+      this.totalFound.set(0);
+    } finally {
+      this.loading.set(false);
+      this.filtersLoaded.set(true);
+    }
+  }
+
   private updateTable(
     res: any, page: number, pageSize: number, sortBy: string,
     def: any, colId: CollectionId,
@@ -395,13 +441,14 @@ export class SearchTableComponent implements OnInit, AfterViewInit, OnDestroy {
       { displayText: '100', value: 100 },
     ];
     td.options = {
-      showHeader: true,
+      showHeader: tab !== 'notifications',
       showPagination: true,
       showPageSizePicker: true,
       showPageCountDisplay: true,
       showTopControls: false,
       showAllPicker: (res.found ?? 0) <= 250,
       disableRowHighlight: tab !== 'projects',
+      rowSpacing: tab === 'notifications' ? 25 : 0,
     };
 
     this.tableData.set(td);
@@ -439,15 +486,6 @@ export class SearchTableComponent implements OnInit, AfterViewInit, OnDestroy {
           projectName: d.projectName,
           type:        d.type,
           _dateAdded:  d.dateAdded ? new Date(d.dateAdded * 1000) : null,
-        };
-      case 'notifications':
-        return {
-          _id:           d.id,
-          name:          d.name,
-          type:          d.type,
-          subType:       d.subType,
-          region:        d.region,
-          _receivedDate: d.notificationReceivedDate ? new Date(d.notificationReceivedDate * 1000) : null,
         };
       default:
         return d;
