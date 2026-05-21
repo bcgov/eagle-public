@@ -5,8 +5,8 @@ import {
 import { trigger, state, style, animate, transition } from '@angular/animations';
 import { ActivatedRoute, Router, Params } from '@angular/router';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { Subject, combineLatest, lastValueFrom } from 'rxjs';
-import { debounceTime, distinctUntilChanged, filter, takeUntil } from 'rxjs/operators';
+import { Subject, combineLatest, lastValueFrom, of } from 'rxjs';
+import { debounceTime, distinctUntilChanged, filter, takeUntil, tap, catchError, concatMap } from 'rxjs/operators';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { TypesenseService } from 'app/services/typesense.service';
 import { ConfigService } from 'app/services/config.service';
@@ -26,12 +26,12 @@ import {
 } from '../search-collections';
 import { SearchProjectTableRowsComponent } from './search-project-table-rows.component';
 import { SearchDocTableRowsComponent } from './search-doc-table-rows.component';
-import { SearchActivityTableRowsComponent } from './search-activity-table-rows.component';
+import { ActivityCardComponent } from 'app/shared/components/activity-card/activity-card.component';
 
 const ROW_COMPONENTS: Partial<Record<TableTab, Type<TableRowComponent>>> = {
   projects:  SearchProjectTableRowsComponent,
   documents: SearchDocTableRowsComponent,
-  updates:   SearchActivityTableRowsComponent,
+  updates:   ActivityCardComponent,
 };
 
 @Component({
@@ -42,6 +42,7 @@ const ROW_COMPONENTS: Partial<Record<TableTab, Type<TableRowComponent>>> = {
     TableTemplateComponent,
     DatePickerComponent,
     SearchNotificationCardComponent,
+    ActivityCardComponent,
   ],
   templateUrl: './search-table.component.html',
   styleUrl: './search-table.component.css',
@@ -368,7 +369,21 @@ export class SearchTableComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.loading.set(true);
 
-    this.typesenseService.searchCollection(colId, searchParams).pipe(
+    // Seed masterMaps on first load so all facet values appear (disabled when not in results).
+    const needsSeed = !col.facets.some(f => this.masterMaps[f.attribute]);
+    const seed$ = needsSeed
+      ? this.typesenseService.searchCollection(colId, {
+          q: '*', query_by: col.queryBy,
+          page: '1', per_page: '0',
+          facet_by: facetBy, max_facet_values: '250',
+        }).pipe(
+          tap(seedRes => this.updateFacets(seedRes.facet_counts ?? [], colId)),
+          catchError(() => of(null)),
+        )
+      : of(null);
+
+    seed$.pipe(
+      concatMap(() => this.typesenseService.searchCollection(colId, searchParams)),
       takeUntil(this.destroy$),
     ).subscribe({
       next: res => {
@@ -431,6 +446,7 @@ export class SearchTableComponent implements OnInit, AfterViewInit, OnDestroy {
       pageSize: pageSize,
       sortBy: sortBy,
       columns: def.columns,
+      data: { showProjectInfo: true },
     });
     td.totalListItems = res.found ?? 0;
     td.items = items;
@@ -441,14 +457,13 @@ export class SearchTableComponent implements OnInit, AfterViewInit, OnDestroy {
       { displayText: '100', value: 100 },
     ];
     td.options = {
-      showHeader: tab !== 'notifications',
+      showHeader: true,
       showPagination: true,
       showPageSizePicker: true,
       showPageCountDisplay: true,
       showTopControls: false,
       showAllPicker: (res.found ?? 0) <= 250,
       disableRowHighlight: tab !== 'projects',
-      rowSpacing: tab === 'notifications' ? 25 : 0,
     };
 
     this.tableData.set(td);
@@ -480,12 +495,28 @@ export class SearchTableComponent implements OnInit, AfterViewInit, OnDestroy {
         };
       case 'activities':
         return {
-          _id:         d.id,
-          headline:    d.headline,
-          projectId:   d.projectId,
-          projectName: d.projectName,
-          type:        d.type,
-          _dateAdded:  d.dateAdded ? new Date(d.dateAdded * 1000) : null,
+          _id:                 d.id,
+          headline:            d.headline,
+          content:             d.contentHtml || d.content,
+          dateAdded:           d.dateAdded ? d.dateAdded * 1000 : null,
+          type:                d.type,
+          documentUrl:         d.documentUrl || null,
+          notificationName:    d.notificationName || null,
+          projectNotification: d.notificationName ? { name: d.notificationName } : null,
+          project:             d.projectId ? { _id: d.projectId, name: d.projectName || '' } : null,
+          pcp:                 null,
+        };
+      case 'notifications':
+        return {
+          _id:      d.id,
+          headline: d.name,
+          content:  d.descriptionHtml || d.description,
+          dateAdded: d.notificationReceivedDate ? d.notificationReceivedDate * 1000 : null,
+          type: 'Project Notification',
+          documentUrl: null,
+          project: d.associatedProjectId
+            ? { _id: d.associatedProjectId, name: d.associatedProjectName || '' }
+            : null,
         };
       default:
         return d;

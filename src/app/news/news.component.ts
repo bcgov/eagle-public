@@ -1,10 +1,9 @@
-import { Component, OnInit, ChangeDetectionStrategy, signal, inject, effect, untracked, DestroyRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, signal, inject, DestroyRef } from '@angular/core';
 
 import { Router, ActivatedRoute, Params } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
-import { SearchParamObject } from 'app/services/search.service';
-import { TableService } from 'app/services/table.service';
+import { TypesenseService } from 'app/services/typesense.service';
 import { LoadingStateService } from 'app/services/loading-state.service';
 import { IColumnObject, TableObject } from 'app/shared/components/table-template/table-object';
 import { ITableMessage } from 'app/shared/components/table-template/table-row-component';
@@ -27,12 +26,12 @@ export class NewsListComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private destroyRef = inject(DestroyRef);
   private tableTemplateUtils = inject(TableTemplate);
-  private tableService = inject(TableService);
+  private typesense = inject(TypesenseService);
   private loadingState = inject(LoadingStateService);
 
-  private tableId = 'news';
+  private readonly loadingId = 'table-news';
 
-  loading = this.loadingState.getOperationState('table-news');
+  loading = this.loadingState.getOperationState(this.loadingId);
   tableData = signal<TableObject>(new TableObject({ component: ActivityCardComponent }));
   
   tableColumns: IColumnObject[] = [
@@ -50,62 +49,79 @@ export class NewsListComponent implements OnInit {
     }
   ];
 
-  constructor() {
-    // Watch for table data changes from service
-    const tableSignal = this.tableService.getTableSignal(this.tableId);
-    effect(() => {
-      const searchResults = tableSignal();
-      
-      // Only process if we have valid data and it's not the initial null state
-      if (searchResults && searchResults.data && searchResults.totalSearchCount !== undefined) {
-        // Use untracked to read current tableData without creating a dependency
-        const currentTableData = untracked(() => this.tableData());
-        const newTableData = new TableObject({
-          component: ActivityCardComponent,
-          pageSize: currentTableData.pageSize,
-          currentPage: currentTableData.currentPage,
-          sortBy: currentTableData.sortBy
-        });
-
-        newTableData.totalListItems = searchResults.totalSearchCount;
-        newTableData.items = searchResults.data.map((record: any) => ({ rowData: record }));
-        newTableData.columns = this.tableColumns;
-        newTableData.options.showPageCountDisplay = true;
-        newTableData.options.showPagination = true;
-        newTableData.options.showAllPicker = true;
-        newTableData.options.disableRowHighlight = true;
-
-        this.tableData.set(newTableData);
-      }
-    });
-  }
-
   ngOnInit(): void {
-    // Subscribe to query params and fetch data
     this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(data => {
       const params = (data as any)['params'] || {};
       
       const updatedTableData = this.tableTemplateUtils.updateTableObjectWithUrlParams(params, this.tableData());
-
       if (updatedTableData.sortBy === '-datePosted') {
         updatedTableData.sortBy = '-dateAdded';
       }
-
       this.tableData.set(updatedTableData);
 
-      // Fetch data with current params
-      this.tableService.fetchData(new SearchParamObject(
-        this.tableId,
-        params['keywords'] || '',
-        'RecentActivity',
-        [],
-        updatedTableData.currentPage,
-        updatedTableData.pageSize,
-        updatedTableData.sortBy,
-        {},
-        true
-      ));
+      this.fetchActivities(params, updatedTableData);
     });
+  }
+
+  private fetchActivities(params: Record<string, any>, tableState: TableObject): void {
+    const keywords = params['keywords'] || '';
+    const sortBy   = tableState.sortBy || '-dateAdded';
+    const page     = tableState.currentPage || 1;
+    const pageSize = tableState.pageSize || 10;
+
+    // Convert URL sort to Typesense sort_by
+    const dir = sortBy.charAt(0) === '-' ? 'desc' : 'asc';
+    const field = sortBy.replace(/^[+-]/, '');
+    const tsSortBy = field === 'score'
+      ? '_text_match:desc,dateAdded:desc'
+      : `${field}:${dir}`;
+
+    const searchParams: Record<string, string> = {
+      q:        keywords || '*',
+      query_by: 'headline,content',
+      sort_by:  tsSortBy,
+      page:     String(page),
+      per_page: String(pageSize),
+    };
+
+    this.loadingState.startLoading(this.loadingId, 'Loading activities');
+    this.typesense.searchCollection('activities', searchParams)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res) => {
+          const items = (res.hits ?? []).map((hit: any) => {
+            const d = hit.document;
+            return {
+              rowData: {
+                _id:      d.id,
+                headline: d.headline,
+                content:  d.contentHtml || d.content,
+                dateAdded: d.dateAdded ? d.dateAdded * 1000 : null,
+                type:     d.type,
+                documentUrl: d.documentUrl || null,
+                notificationName: d.notificationName || null,
+                project: d.projectId ? { _id: d.projectId, name: d.projectName || '' } : null,
+              },
+            };
+          });
+          const newTableData = new TableObject({
+            component: ActivityCardComponent,
+            pageSize:    tableState.pageSize,
+            currentPage: tableState.currentPage,
+            sortBy:      tableState.sortBy,
+          });
+          newTableData.totalListItems = res.found ?? 0;
+          newTableData.items = items;
+          newTableData.columns = this.tableColumns;
+          newTableData.options.showPageCountDisplay = true;
+          newTableData.options.showPagination = true;
+          newTableData.options.showAllPicker = true;
+          newTableData.options.disableRowHighlight = true;
+          this.tableData.set(newTableData);
+          this.loadingState.stopLoading(this.loadingId);
+        },
+        error: () => this.loadingState.stopLoading(this.loadingId),
+      });
   }
 
   onMessageOut(msg: ITableMessage): void {

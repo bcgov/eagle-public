@@ -329,10 +329,8 @@ export const SEARCH_TABLE_DEFS: Record<TableTab, SearchTableDef> = {
   },
   updates: {
     columns: [
-      { name: 'Headline', value: 'headline',    width: 'col-4', nosort: true },
-      { name: 'Project',  value: 'projectName', width: 'col-3', nosort: true },
-      { name: 'Type',     value: 'type',        width: 'col-2', nosort: true },
-      { name: 'Date',     value: 'dateAdded',   width: 'col-3' },
+      { name: 'Headline', value: 'headline', width: 'col-10', nosort: true },
+      { name: 'Date',     value: 'dateAdded', width: 'col-2' },
     ],
     defaultSort: '-dateAdded',
     sortFieldMap: {},
@@ -341,7 +339,8 @@ export const SEARCH_TABLE_DEFS: Record<TableTab, SearchTableDef> = {
   },
   notifications: {
     columns: [
-      { name: 'Project Notifications', value: '', width: 'col-12', nosort: true },
+      { name: 'Headline', value: 'name',                    width: 'col-10', nosort: true },
+      { name: 'Date',     value: 'notificationReceivedDate', width: 'col-2' },
     ],
     defaultSort: '-notificationReceivedDate',
     sortFieldMap: {},

@@ -54,9 +54,6 @@ export class SearchWrapperComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(p => this.isContentTab.set(p['tab'] === 'content'));
 
-    const config = this.configService.config();
-    if (!config.TYPESENSE_ENABLED) return;
-
     this.typesenseService.checkHealth().then(available => {
       this.useTypesense.set(available);
     });

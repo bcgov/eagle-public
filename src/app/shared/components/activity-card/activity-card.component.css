@@ -21,7 +21,7 @@
 }
 .activity-badge--notif {
   background-color: rgba(252, 186, 25, 0.2);
-  color: var(--gold);
+  color: #7a5500;
   border: 1px solid rgba(252, 186, 25, 0.5);
 }
 

@@ -62,8 +62,7 @@ export class ProjlistFiltersComponent implements OnDestroy {
       debounceTime(120),
       distinctUntilChanged(),
       switchMap(query => {
-        const config = this.configService.config();
-        if (!config.TYPESENSE_ENABLED || query.length < 2) {
+        if (query.length < 2) {
           return of([]);
         }
         return this.typesenseService.getProjectSuggestions(query).pipe(

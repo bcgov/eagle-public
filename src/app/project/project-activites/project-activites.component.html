@@ -1,63 +1,43 @@
 <h3 #activitiesHeader class="mb-4">Activities and Updates</h3>
 
-@if (isTypesense()) {
-  <div class="ais-SearchBox mb-4">
-    <form class="ais-SearchBox-form" novalidate (submit)="$event.preventDefault()">
-      <input
-        class="ais-SearchBox-input"
-        type="search"
-        placeholder="Filter activities…"
-        [value]="keywords()"
-        (input)="onInstantInput($event)"
-        autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
-      />
-      @if (keywords()) {
-        <button class="ais-SearchBox-reset" type="button"
-          (click)="clearInstantSearch()" aria-label="Clear search">
-          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12"
-            fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
-            <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8z"/>
-          </svg>
-        </button>
-      }
-    </form>
-  </div>
-
-  <section class="tab-section">
-    @if (typesenseTotalItems() === 0 && !loading()) {
-      <div>No recent activities.</div>
-    } @else {
-      <app-search-card-list
-        [items]="typesenseItems()"
-        [loading]="loading()"
-        [totalItems]="typesenseTotalItems()"
-        [currentPage]="tableData().currentPage"
-        [pageSize]="tableData().pageSize"
-        (pageChange)="onTypesensePageChange($event)"
-        (pageSizeChange)="onTypesensePageSizeChange($event)">
-        <ng-template let-hit>
-          <app-search-activity-card [hit]="hit" [showProjectLink]="false" />
-        </ng-template>
-      </app-search-card-list>
+<div class="ais-SearchBox mb-4">
+  <form class="ais-SearchBox-form" novalidate (submit)="$event.preventDefault()">
+    <input
+      class="ais-SearchBox-input"
+      type="search"
+      placeholder="Filter activities…"
+      [value]="keywords()"
+      (input)="onInstantInput($event)"
+      autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+    />
+    @if (keywords()) {
+      <button class="ais-SearchBox-reset" type="button"
+        (click)="clearInstantSearch()" aria-label="Clear search">
+        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12"
+          fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+          <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8z"/>
+        </svg>
+      </button>
     }
-  </section>
-} @else {
-  <search-filter-template
-    #explorePanel
-    [keywordOverride]='queryParams["keywordsActivities"]'
-    (searchEvent)='executeSearch($event)'>
-  </search-filter-template>
+  </form>
+</div>
 
-  <section class="tab-section">
-    @if (tableData().totalListItems === 0 && !loading()) {
-      <div>No recent activities.</div>
-    } @else {
-      <lib-table-template
-        [data]="tableData()"
-        [loading]="loading()"
-        (messageOut)="onMessageOut($event)">
-      </lib-table-template>
-    }
-  </section>
-}
+<section class="tab-section">
+  @if (typesenseTotalItems() === 0 && !loading()) {
+    <div>No recent activities.</div>
+  } @else {
+    <app-search-card-list
+      [items]="typesenseItems()"
+      [loading]="loading()"
+      [totalItems]="typesenseTotalItems()"
+      [currentPage]="tableData().currentPage"
+      [pageSize]="tableData().pageSize"
+      (pageChange)="onTypesensePageChange($event)"
+      (pageSizeChange)="onTypesensePageSizeChange($event)">
+      <ng-template let-hit>
+        <app-search-activity-card [hit]="hit" [showProjectLink]="false" />
+      </ng-template>
+    </app-search-card-list>
+  }
+</section>
 

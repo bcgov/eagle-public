@@ -5,12 +5,10 @@ import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { withLoading } from 'app/shared/utils/rxjs-operators';
 
-import { SearchService } from 'app/services/search.service';
-import { ApiService } from 'app/services/api';
 import { LoggingService } from 'app/services/logging.service';
 import { LoadingStateService } from 'app/services/loading-state.service';
 import { TypesenseService } from 'app/services/typesense.service';
-import { ConfigService } from 'app/services/config.service';
+import { ApiService } from 'app/services/api';
 import { StorageService } from 'app/services/storage.service';
 import { News } from 'app/models/news';
 import { HeroBannerComponent, HeroBannerAction } from '../shared/hero-banner/hero-banner.component';
@@ -25,12 +23,10 @@ import { ActivityCardComponent } from '../shared/components/activity-card/activi
   imports: [CommonModule, RouterModule, HeroBannerComponent, InfoCardComponent, ActivityCardComponent],
 })
 export class HomeComponent implements OnDestroy {
-  private searchService = inject(SearchService);
   private apiService = inject(ApiService);
   private logger = inject(LoggingService);
   private loadingState = inject(LoadingStateService);
   private typesenseService = inject(TypesenseService);
-  private configService = inject(ConfigService);
   private storageService = inject(StorageService);
   private destroy$ = new Subject<boolean>();
 
@@ -86,10 +82,7 @@ export class HomeComponent implements OnDestroy {
   ];
 
   constructor() {
-    const typesenseEnabled = this.configService.config()?.TYPESENSE_ENABLED;
-    const source$ = typesenseEnabled
-      ? this.typesenseService.getTopActivities(5)
-      : this.searchService.getTopNewsItems();
+    const source$ = this.typesenseService.getTopActivities(5);
 
     const cached = this.storageService.getCachedActivities();
     if (cached) {

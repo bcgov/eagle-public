@@ -14,8 +14,7 @@
     }
     @if (rowData?.notificationName) {
       <div class="activity-card__project-name">{{ rowData.notificationName }}</div>
-    }
-    @if (rowData?.projectNotification?.name) {
+    } @else if (rowData?.projectNotification?.name) {
       <div class="activity-card__project-name">{{ rowData.projectNotification.name }}</div>
     }
     <div class="activity-card__headline" [innerHTML]="getSafeHtml(rowData?.headline || '')"></div>

@@ -12,10 +12,8 @@ import { StorageService } from '../services/storage.service';
 import { CommentPeriod } from '../models/commentperiod';
 import { Constants } from '../shared/utils/constants';
 import { initTabArrows, TabArrowsHandle } from '../shared/utils/tab-arrows';
-import { SearchService } from '../services/search.service';
 import { TypesenseService } from '../services/typesense.service';
 import { TAB_FILTER_BY } from '../search/search-collections';
-import { Utils } from '../shared/utils/utils';
 import { DetailsSidebarComponent } from './details-sidebar/details-sidebar';
 import { SafeHtmlPipe } from '../shared/pipes/safe-html-converter.pipe';
 import { LoggingService } from '../services/logging.service';
@@ -43,8 +41,6 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
   private elementRef = inject(ElementRef);
   private router = inject(Router);
   private renderer = inject(Renderer2);
-  private utils = inject(Utils);
-  private searchService = inject(SearchService);
   private typesenseService = inject(TypesenseService);
   private logger = inject(LoggingService);
   private analytics = inject(AnalyticsService);
@@ -420,55 +416,23 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
 
     this.tabsLoading.set(true);
 
-    // When Typesense is enabled, check tab visibility with per_page=0 count queries
-    // (no documents returned — just `found` count). Far faster than MongoDB searches
-    // and avoids competing with the document-table multi_search for proxy connections.
-    if (this.configService.config().TYPESENSE_ENABLED) {
-      const checks$ = optionalTabs.map(tabLink => {
-        const filterBy = TAB_FILTER_BY[tabLink.key];
-        if (!filterBy) return of({ key: tabLink.key, hasResults: false });
+    const checks$ = optionalTabs.map(tabLink => {
+      const filterBy = TAB_FILTER_BY[tabLink.key];
+      if (!filterBy) return of({ key: tabLink.key, hasResults: false });
 
-        return this.typesenseService.searchCollection('documents', {
-          q: '*',
-          query_by: 'displayName',
-          filter_by: `projectId:=${projectId} && ${filterBy}`,
-          per_page: '0',
-        }).pipe(
-          take(1),
-          map((res: any) => ({ key: tabLink.key, hasResults: (res.found ?? 0) > 0 })),
-          catchError(() => of({ key: tabLink.key, hasResults: false }))
-        );
-      });
-
-      this.applyTabChecks(checks$);
-      return;
-    }
-
-    // MongoDB fallback — used when TYPESENSE_ENABLED is false.
-    this.configService.lists.pipe(
-      take(1),
-      takeUntil(this.ngUnsubscribe)
-    ).subscribe(list => {
-      const checks$ = optionalTabs.map(tabLink => {
-        const queryModifier = this.utils.createProjectTabModifiers(tabLink.key, list);
-        if (!queryModifier) return of({ key: tabLink.key, hasResults: false });
-
-        return this.searchService.getSearchResults(
-          '', 'Document',
-          [{ name: 'project', value: projectId }],
-          1, 1, '', queryModifier, true, ''
-        ).pipe(
-          take(1),
-          map((res: any) => ({
-            key: tabLink.key,
-            hasResults: !!res?.[0]?.data?.searchResults?.length
-          })),
-          catchError(() => of({ key: tabLink.key, hasResults: false }))
-        );
-      });
-
-      this.applyTabChecks(checks$);
+      return this.typesenseService.searchCollection('documents', {
+        q: '*',
+        query_by: 'displayName',
+        filter_by: `projectId:=${projectId} && ${filterBy}`,
+        per_page: '0',
+      }).pipe(
+        take(1),
+        map((res: any) => ({ key: tabLink.key, hasResults: (res.found ?? 0) > 0 })),
+        catchError(() => of({ key: tabLink.key, hasResults: false }))
+      );
     });
+
+    this.applyTabChecks(checks$);
   }
 
   private applyTabChecks(checks$: Observable<{ key: string; hasResults: boolean }>[]): void {

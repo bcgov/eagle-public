@@ -17,7 +17,6 @@ export interface EnvConfig {
   ANALYTICS_ENHANCED_TRACKING?: boolean;
   ANALYTICS_TRAFFIC_TRACKING?: boolean;
   GH_HASH?: string;
-  TYPESENSE_ENABLED?: boolean;
 }
 
 // env.js sets window.__env before Angular loads (via script tag in index.html)

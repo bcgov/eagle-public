@@ -6,7 +6,6 @@ import { takeUntil, finalize } from 'rxjs/operators';
 declare const L: any;
 
 import { Project } from 'app/models/project';
-import { ProjectService } from 'app/services/project.service';
 import { ConfigService } from 'app/services/config.service';
 import { StorageService } from 'app/services/storage.service';
 import { ProjectFilterService } from 'app/services/project-filter.service';
@@ -36,7 +35,6 @@ export class ProjectsComponent implements OnInit, OnDestroy {
   @ViewChild('applist', { static: true }) applist!: ProjlistListComponent;
 
   private router = inject(Router);
-  private projectService = inject(ProjectService);
   public configService = inject(ConfigService);
   private renderer = inject(Renderer2);
   private storageService = inject(StorageService);
@@ -83,28 +81,7 @@ export class ProjectsComponent implements OnInit, OnDestroy {
       });
 
     // Kick off data fetch immediately — no need to wait for the DOM (ngOnInit)
-    // Skip cache when Typesense is enabled — cached data may be from MongoDB (different shape)
-    const config = this.configService.config();
-    if (config.TYPESENSE_ENABLED) {
-      this.getApps();
-    } else {
-      this.storageService.getCachedProjects$()
-        .pipe(takeUntil(this.destroy$))
-        .subscribe({
-          next: (cachedProjects) => {
-            if (cachedProjects && cachedProjects.length > 0) {
-              this.logger.info(`Using ${cachedProjects.length} cached projects`, 'ProjectsComponent');
-              this.allApps.set(cachedProjects);
-            } else {
-              this.getApps();
-            }
-          },
-          error: () => {
-            // Preload failed, load projects normally
-            this.getApps();
-          }
-        });
-    }
+    this.getApps();
   }
 
   ngOnInit() {
@@ -124,20 +101,11 @@ export class ProjectsComponent implements OnInit, OnDestroy {
 
   private getApps(): void {
     const start = Date.now();
-    const config = this.configService.config();
-
-    let source$;
-    if (config.TYPESENSE_ENABLED) {
-      // Track with the same key the map/list spinners watch
-      const loadingId = 'projects-full-page-1';
-      this.loadingState.startLoading(loadingId, 'Loading projects');
-      source$ = this.typesenseService.getAllProjects().pipe(
-        finalize(() => this.loadingState.stopLoading(loadingId))
-      );
-    } else {
-      // projectService.getAllFull tracks its own loading state internally
-      source$ = this.projectService.getAllFull(1, 1000000);
-    }
+    const loadingId = 'projects-full-page-1';
+    this.loadingState.startLoading(loadingId, 'Loading projects');
+    const source$ = this.typesenseService.getAllProjects().pipe(
+      finalize(() => this.loadingState.stopLoading(loadingId))
+    );
 
     source$
       .pipe(

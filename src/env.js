@@ -43,6 +43,5 @@
 
   // Typesense search — all queries proxy through eagle-api (/api/public/typesense/*).
   // No API key needed in the browser; eagle-api injects role filter server-side.
-  window.__env.TYPESENSE_ENABLED = true;
 
 }(this));
