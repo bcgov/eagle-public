@@ -14,7 +14,6 @@ import { AnalyticsService } from '../services/analytics/analytics.service';
     '(dragleave)': 'onDragLeave($event)',
     '(drop)': 'onDrop($event)'
   },
-  standalone: true
 })
 export class FileUploadComponent {
   private analytics = inject(AnalyticsService);

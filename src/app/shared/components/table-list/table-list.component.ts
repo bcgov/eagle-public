@@ -31,7 +31,6 @@ import { LoadingStateService } from 'app/services/loading-state.service';
     HeroBannerComponent
 ],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  standalone: true
 })
 export class TableListComponent implements OnInit, OnDestroy {
   config = input.required<TableListConfig>();

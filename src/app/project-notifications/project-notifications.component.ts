@@ -8,7 +8,6 @@ import { createProjectNotificationsConfig } from './project-notifications.config
   template: '<app-table-list [config]="config" />',
   imports: [TableListComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  standalone: true
 })
 export class ProjectNotificationsListComponent {
   readonly config: TableListConfig = createProjectNotificationsConfig();

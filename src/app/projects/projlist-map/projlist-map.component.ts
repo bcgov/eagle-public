@@ -43,7 +43,6 @@ const markerIconYellowLg = L.icon({
   selector: 'app-projlist-map',
   templateUrl: './projlist-map.component.html',
   styleUrls: ['./projlist-map.component.css'],
-  standalone: true
 })
 export class ProjlistMapComponent implements AfterViewInit, OnDestroy {
   @ViewChild('mapContainer', { static: true }) mapContainer!: ElementRef<HTMLDivElement>;

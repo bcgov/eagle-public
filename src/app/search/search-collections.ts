@@ -277,9 +277,9 @@ export const COLLECTIONS: Record<CollectionId, CollectionConfig> = {
 // but use the human-readable names stored in Typesense (already resolved by sync).
 
 export const TAB_FILTER_BY: Record<string, string> = {
-  application: `type:=["Application Materials","Scientific Memo","Independent Memo"] && milestone:=["Application Review","EAC Application","Revised EAC Application"]`,
-  certificate: `type:=["Certificate Package","Order","Decision Materials"] && milestone:=["Certificate","Certificate Decision","Decision","Certificate Extension","Transfer of Certificate/Order"]`,
-  amendment:   `type:=["Amendment Package","Request","Decision Materials","Tracking Table"] && milestone:=["Amendment"] && projectPhase:=["Post Decision - Amendment"]`,
+  application: 'type:=[`Application Materials`,`Scientific Memo`,`Independent Memo`] && milestone:=[`Application Review`,`EAC Application`,`Revised EAC Application`]',
+  certificate: 'type:=[`Certificate Package`,`Order`,`Decision Materials`] && milestone:=[`Certificate`,`Certificate Decision`,`Decision`,`Certificate Extension`,`Transfer of Certificate/Order`]',
+  amendment:   'type:=[`Amendment Package`,`Request`,`Decision Materials`,`Tracking Table`] && milestone:=[`Amendment`] && projectPhase:=[`Post Decision - Amendment`]',
 };
 
 // ── Per-tab facet subsets (no documentAuthorType) ──────────────────────────────

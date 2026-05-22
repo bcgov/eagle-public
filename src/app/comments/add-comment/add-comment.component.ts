@@ -22,7 +22,6 @@ import { AnalyticsService } from '../../services/analytics/analytics.service';
   templateUrl: './add-comment.component.html',
   styleUrls: ['./add-comment.component.css'],
   encapsulation: ViewEncapsulation.None,
-  standalone: true
 })
 export class AddCommentComponent implements OnInit {
   public activeModal = inject(NgbActiveModal);

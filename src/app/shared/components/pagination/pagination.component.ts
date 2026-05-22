@@ -7,7 +7,6 @@ import { Component, Output, EventEmitter, computed, input, ChangeDetectionStrate
   styleUrl: './pagination.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [],
-  standalone: true
 })
 export class PaginationComponent {
   // Input signals - automatically reactive

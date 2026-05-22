@@ -14,7 +14,6 @@ import { VarDirective } from '../../shared/utils/ng-var.directive';
   styleUrl: './projlist-list.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule, RouterModule, VarDirective],
-  standalone: true
 })
 export class ProjlistListComponent {
   // NB: this component is bound to the same list of apps as the other components

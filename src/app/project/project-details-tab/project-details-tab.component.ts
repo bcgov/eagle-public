@@ -15,7 +15,6 @@ import { ProjectActivitesComponent } from '../project-activites/project-activite
   templateUrl: './project-details-tab.component.html',
   styleUrl: './project-details-tab.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  standalone: true
 })
 export class ProjectDetailsTabComponent implements OnInit, OnDestroy {
   private storageService = inject(StorageService);

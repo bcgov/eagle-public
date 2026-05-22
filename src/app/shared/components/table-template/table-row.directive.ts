@@ -18,7 +18,6 @@ import { takeUntil } from 'rxjs/operators';
 
 @Directive({
   selector: '[libTableRow]',
-  standalone: true
 })
 export class TableRowDirective implements OnInit, OnChanges, OnDestroy {
   @Input('libTableRow') rowObject!: IRowObject;

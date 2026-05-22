@@ -8,7 +8,6 @@ import { TableRowComponent, ITableMessage } from '../../shared/components/table-
   imports: [CommonModule],
   templateUrl: './comments-table-rows.component.html',
   styleUrls: ['./comments-table-rows.component.css'],
-  standalone: true,
   host: {
     'class': 'border',
     '[style.cursor]': '"default"'

@@ -15,7 +15,6 @@ import { TableObject } from 'app/shared/components/table-template/table-object';
     RouterLink
   ],
   providers: [DatePipe],
-  standalone: true
 })
 export class DocSearchTableRowsComponent implements TableRowComponent, OnDestroy {
   private alive = true;

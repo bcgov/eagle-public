@@ -44,7 +44,6 @@ import { AnalyticsService } from 'app/services/analytics/analytics.service';
     AutoCompleteMultiSelectComponent
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  standalone: true
 })
 export class SearchFilterTemplateComponent implements OnInit, AfterViewInit, OnDestroy {
   private route = inject(ActivatedRoute);

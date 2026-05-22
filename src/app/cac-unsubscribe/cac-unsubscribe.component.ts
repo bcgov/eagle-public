@@ -12,7 +12,6 @@ import { LoggingService } from 'app/services/logging.service';
   styleUrl: './cac-unsubscribe.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FormsModule],
-  standalone: true
 })
 export class CACUnsubscribeComponent implements OnInit {
   private route = inject(ActivatedRoute);

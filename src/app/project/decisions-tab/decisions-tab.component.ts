@@ -12,7 +12,6 @@ import { StorageService } from '../../services/storage.service';
   templateUrl: './decisions-tab.component.html',
   styleUrl: './decisions-tab.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  standalone: true
 })
 export class DecisionsTabComponent {
   private router = inject(Router);

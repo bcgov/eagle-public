@@ -30,7 +30,6 @@ import { Component, input, output, ChangeDetectionStrategy } from '@angular/core
   styleUrls: ['./page-size-picker.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [],
-  standalone: true
 })
 export class PageSizePickerComponent {
   isDisabled = input(false);

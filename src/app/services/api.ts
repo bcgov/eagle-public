@@ -222,6 +222,10 @@ export class ApiService {
     return this.http.get<any>(`${this.apiPath}/${queryString}`, {});
   }
 
+  getProjectFeaturedDocuments(projId: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiPath}/public/project/${projId}/FeaturedDocuments`, {});
+  }
+
   // CAC
   cacSignUp(project: Project, meta: any) {
     // We are just looking for a 200 OK

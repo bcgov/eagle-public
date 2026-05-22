@@ -10,7 +10,6 @@ import { Constants } from '../../shared/utils/constants';
   templateUrl: './details-sidebar.html',
   styleUrls: ['./details-sidebar.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  standalone: true
 })
 export class DetailsSidebarComponent {
   project = input.required<Project | null>();

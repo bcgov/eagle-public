@@ -18,7 +18,6 @@ import { HttpCacheService } from '../../interceptors/http-cache.interceptor';
   styleUrls: ['./project-notification-documents-table.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [TableTemplateComponent],
-  standalone: true
 })
 export class ProjectNotificationDocumentsTableComponent implements OnInit {
   tableId = input.required<string>();

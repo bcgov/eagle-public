@@ -24,7 +24,6 @@ import { LoggingService } from 'app/services/logging.service';
   styleUrl: './date-picker.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule, FormsModule, ReactiveFormsModule, NgbDatepickerModule],
-  standalone: true
 })
 export class DatePickerComponent implements OnInit, OnDestroy {
   control = input.required<FormControl>();

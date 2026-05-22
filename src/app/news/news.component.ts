@@ -19,7 +19,6 @@ import { SearchFilterTemplateComponent } from 'app/shared/components/search-filt
   styleUrl: './news.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [TableTemplateComponent, HeroBannerComponent, SearchFilterTemplateComponent],
-  standalone: true
 })
 export class NewsListComponent implements OnInit {
   private router = inject(Router);

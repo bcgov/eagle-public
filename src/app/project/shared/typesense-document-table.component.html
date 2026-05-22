@@ -17,16 +17,44 @@
   </form>
 </div>
 
-<div class="ts-body-row">
+<!-- ── Filter bar ─────────────────────────────────────────── -->
+<div class="filter-bar mb-3">
+  <button class="filter-bar__toggle" type="button"
+    (click)="toggleSidebar()"
+    [attr.aria-expanded]="!sidebarCollapsed()"
+    aria-controls="tsFilterSidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+      fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+      <path d="M6 10.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5zm-2-3a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5zm-2-3a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5z"/>
+    </svg>
+    {{ sidebarCollapsed() ? 'Open Filters' : 'Close Filters' }}
+    @if (activeFilterCount() > 0) {
+      <span class="filter-sidebar__badge">{{ activeFilterCount() }}</span>
+    }
+  </button>
+  @if (tsNbHits() > 0 && !tsLoading()) {
+    <span class="text-muted small ms-auto">
+      {{ tsNbHits().toLocaleString() }} result{{ tsNbHits() === 1 ? '' : 's' }}{{ tsProcMs() ? ' in ' + tsProcMs() + ' ms' : '' }}
+    </span>
+  }
+</div>
+
+<div class="search-columns">
 
   <!-- ── Facets sidebar ───────────────────────────────────────────────── -->
-  <div class="filter-sidebar" [class.filter-sidebar--collapsed]="sidebarCollapsed()"
+  <div [@sidebar]="sidebarCollapsed() ? 'collapsed' : 'open'"
+    [class.filter-sidebar--collapsed]="sidebarCollapsed()"
+    class="filter-sidebar"
+    id="tsFilterSidebar"
     role="complementary" [attr.aria-label]="cfg.filterAriaLabel">
 
     <!-- Collapsed strip (desktop only) — click to expand -->
     <button class="filter-sidebar__strip" (click)="toggleSidebar()"
       aria-label="Expand filters" title="Expand filters">
-      <i class="material-icons" aria-hidden="true" style="font-size:16px">last_page</i>
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+        viewBox="0 0 16 16" aria-hidden="true">
+        <path d="M6 10.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5zm-2-3a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5zm-2-3a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5z"/>
+      </svg>
       @if (activeFilterCount() > 0) {
         <span class="filter-sidebar__badge">{{ activeFilterCount() }}</span>
       }
@@ -35,25 +63,25 @@
     <!-- Expanded content -->
     <div class="filter-sidebar__content">
 
-      <!-- Desktop header: "Filters" label + collapse toggle -->
+      <!-- Desktop header: "Filters" label only (no collapse toggle here — use filter-bar button) -->
       <div class="filter-sidebar__header d-none d-md-flex mb-2">
         <span class="filter-sidebar__label">Filters</span>
-        <button class="filter-sidebar__toggle" (click)="toggleSidebar()"
-          [attr.aria-label]="sidebarCollapsed() ? 'Expand filters' : 'Collapse filters'"
-          [attr.aria-expanded]="!sidebarCollapsed()">
-          <i class="material-icons" aria-hidden="true" style="font-size:14px">{{ sidebarCollapsed() ? 'last_page' : 'first_page' }}</i>
-        </button>
       </div>
 
       <!-- Mobile filter toggle -->
-      <div class="d-md-none mb-2">
+      <div class="d-md-none d-flex align-items-center justify-content-between mb-3">
         <button
           class="btn filter-toggle-btn btn-sm d-flex align-items-center gap-2"
           [class.filter-toggle-btn--open]="tsFiltersOpen()"
           (click)="tsFiltersOpen.set(!tsFiltersOpen())"
           [attr.aria-expanded]="tsFiltersOpen()">
-          <i class="material-icons" aria-hidden="true" style="font-size:16px">filter_list</i>
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M6 10.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5zm-2-3a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5zm-2-3a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5z"/>
+          </svg>
           Filters
+          <svg class="filter-chevron" [class.open]="tsFiltersOpen()" xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/>
+          </svg>
         </button>
       </div>
 
@@ -147,7 +175,7 @@
   </div>
 
   <!-- ── Results ──────────────────────────────────────────────────────── -->
-  <div class="ts-results-col" #tsResultsCol>
+  <div class="results-col" #tsResultsCol>
     @if (tsLoading() && !tsHasSearched()) {
       <div aria-busy="true" aria-label="Loading">
         @for (i of [1, 2, 3, 4, 5]; track i) {
@@ -164,12 +192,7 @@
     } @else if (tsHits().length === 0 && tsHasSearched()) {
       <div class="text-center text-muted py-4">{{ cfg.emptyMessage }}</div>
     } @else {
-      <div class="d-flex flex-column">
-        @for (hit of tsHits(); track hit['objectID'] ?? hit['id']) {
-          <app-search-document-card [hit]="hit" [showProjectLink]="false"
-            (downloadClicked)="onTsDownload(hit)" />
-        }
-      </div>
+      <lib-table-template [data]="tableDataObj()" [loading]="tsLoadingMore()" />
       <div #tsSentinel class="py-2 text-center">
         @if (tsLoadingMore()) {
           <div class="spinner-border spinner-border-sm text-secondary" role="status">

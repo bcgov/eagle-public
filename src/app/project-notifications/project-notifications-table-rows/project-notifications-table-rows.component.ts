@@ -17,7 +17,6 @@ import { ProjectNotificationDocumentsTableComponent } from '../project-notificat
     ProjectNotificationDocumentsTableDetailsComponent,
     ProjectNotificationDocumentsTableComponent
 ],
-  standalone: true
 })
 export class ProjectNotificationsTableRowsComponent implements TableRowComponent {
   rowData: any;

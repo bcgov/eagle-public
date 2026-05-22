@@ -33,7 +33,6 @@ import { ToastService } from '../../../services/toast.service';
       z-index: 11000;
     }
   `],
-  standalone: true
 })
 export class ToastContainerComponent {
   public toastService = inject(ToastService);

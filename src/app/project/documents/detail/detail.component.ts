@@ -15,7 +15,6 @@ import { ListConverterPipe } from '../../../shared/pipes/list-converter.pipe';
   styleUrls: ['./detail.component.css'],
   imports: [RouterLink, DatePipe, ListConverterPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  standalone: true
 })
 export class DocumentDetailComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);

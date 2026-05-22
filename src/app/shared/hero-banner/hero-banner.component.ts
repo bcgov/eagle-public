@@ -19,7 +19,6 @@ export interface HeroBannerAction {
   styleUrl: './hero-banner.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterModule],
-  standalone: true
 })
 export class HeroBannerComponent {
   title = input.required<string>();

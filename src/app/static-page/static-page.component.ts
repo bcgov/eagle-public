@@ -25,7 +25,6 @@ export interface StaticPageData {
   templateUrl: './static-page.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [HeroBannerComponent, InfoCardComponent, SafeHtmlPipe],
-  standalone: true
 })
 export class StaticPageComponent {
   private route = inject(ActivatedRoute);

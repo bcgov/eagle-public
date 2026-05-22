@@ -4,7 +4,6 @@ import { Component, input, computed, ChangeDetectionStrategy } from '@angular/co
   selector: 'lib-page-count-display',
   templateUrl: './page-count-display.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  standalone: true
 })
 export class PageCountDisplayComponent {
   isHidden = input(false);

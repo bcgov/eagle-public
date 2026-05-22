@@ -13,7 +13,6 @@ export interface CustomMultiSelectGroup {
   selector: 'app-custom-multi-select',
   templateUrl: './custom-multi-select.component.html',
   styleUrls: ['./custom-multi-select.component.css'],
-  standalone: true,
   providers: [
     {
       provide: NG_VALUE_ACCESSOR,

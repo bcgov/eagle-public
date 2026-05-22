@@ -9,7 +9,6 @@ import { createProjectListConfig } from './project-list.config';
   styleUrls: ['./project-list.component.css'],
   imports: [TableListComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  standalone: true
 })
 export class ProjectListComponent {
   readonly config: TableListConfig = createProjectListConfig();

@@ -11,7 +11,6 @@ import { AnalyticsService } from '../../services/analytics/analytics.service';
   selector: 'app-proj-detail-popup',
   templateUrl: './proj-detail-popup.component.html',
   styleUrls: ['./proj-detail-popup.component.css'],
-  standalone: true
 })
 export class ProjDetailPopupComponent implements OnDestroy {
   proj = input.required<Project>();

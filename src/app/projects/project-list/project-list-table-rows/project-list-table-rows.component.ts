@@ -7,7 +7,6 @@ import { AnalyticsService } from 'app/services/analytics/analytics.service';
 @Component({
   selector: 'app-project-list-table-rows',
   templateUrl: './project-list-table-rows.component.html',
-  standalone: true
 })
 export class ProjectListTableRowsComponent implements TableRowComponent {
   private router = inject(Router);

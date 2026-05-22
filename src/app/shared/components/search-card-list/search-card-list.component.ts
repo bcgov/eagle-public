@@ -105,6 +105,11 @@ import { PageCountDisplayComponent } from '../page-count-display/page-count-disp
     }
   `,
   styles: [`
+    .search-card-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
     .search-card-list--loading {
       opacity: 0.6;
       pointer-events: none;

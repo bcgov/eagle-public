@@ -18,7 +18,6 @@ import { TypesenseService } from '../../services/typesense.service';
   styleUrls: ['./projlist-filters.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FormsModule, CustomMultiSelectComponent],
-  standalone: true
 })
 export class ProjlistFiltersComponent implements OnDestroy {
   private configService = inject(ConfigService);

@@ -1,6 +1,6 @@
-import { Component, OnDestroy, OnInit, ChangeDetectionStrategy, inject, EventEmitter } from '@angular/core';
-import { takeWhile } from 'rxjs/operators';
-import { CommonModule, DatePipe } from '@angular/common';
+import { Component, DestroyRef, ChangeDetectionStrategy, inject, EventEmitter, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { DatePipe } from '@angular/common';
 
 import { ConfigService } from '../../services/config.service';
 import { TableRowComponent, ITableMessage } from '../../shared/components/table-template/table-row-component';
@@ -11,40 +11,35 @@ import { Utils } from '../../shared/utils/utils';
   selector: 'app-project-notification-documents-table-rows',
   templateUrl: './project-notification-documents-table-rows.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, DatePipe],
-  standalone: true,
+  imports: [DatePipe],
   host: {
     '(keyup.enter)': 'goToItem(rowData)',
     'tabindex': '0'
   }
 })
-export class ProjectNotificationDocumentsTableRowsComponent implements TableRowComponent, OnInit, OnDestroy {
+export class ProjectNotificationDocumentsTableRowsComponent implements TableRowComponent {
   rowData: any;
   tableData!: TableObject;
   messageOut = new EventEmitter<ITableMessage>();
   messageIn = new EventEmitter<ITableMessage>();
-  
-  private configService = inject(ConfigService);
-  private utils = inject(Utils);
 
-  private lists: any[] = [];
-  private alive = true;
+  private readonly configService = inject(ConfigService);
+  private readonly utils = inject(Utils);
+  private readonly destroyRef = inject(DestroyRef);
 
-  ngOnInit() {
-    this.configService.lists.pipe(takeWhile(() => this.alive)).subscribe((list) => {
-      this.lists = list;
-    });
+  private readonly lists = signal<any[]>([]);
+
+  constructor() {
+    this.configService.lists
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((list) => this.lists.set(list));
   }
 
   idToList(id: string) {
-    return this.utils.idToListName(id, this.lists);
+    return this.utils.idToListName(id, this.lists());
   }
 
   goToItem(item: any) {
     this.utils.openDocumentDownload(item);
-  }
-
-  ngOnDestroy() {
-    this.alive = false;
   }
 }

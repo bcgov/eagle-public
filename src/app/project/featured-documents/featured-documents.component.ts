@@ -4,7 +4,7 @@ import { IColumnObject, TableObject } from '../../shared/components/table-templa
 import { DocumentTableRowsComponent } from '../documents/project-document-table-rows/project-document-table-rows.component';
 import { TableTemplateComponent } from '../../shared/components/table-template/table-template.component';
 import { LoadingStateService } from '../../services/loading-state.service';
-import { TypesenseService } from '../../services/typesense.service';
+import { ApiService } from '../../services/api';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 @Component({
@@ -16,7 +16,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 export class FeaturedDocumentsComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly loadingState = inject(LoadingStateService);
-  private readonly typesense = inject(TypesenseService);
+  private readonly api = inject(ApiService);
   private readonly destroyRef = inject(DestroyRef);
 
   private projId = '';
@@ -61,6 +61,7 @@ export class FeaturedDocumentsComponent implements OnInit {
     this.projId = this.route.parent?.snapshot.params['projId'] || '';
 
     const currentTableData = this.tableData();
+    currentTableData.columns = this.tableColumns;
     currentTableData.options.showPageCountDisplay = false;
     currentTableData.options.showPagination = false;
     currentTableData.options.showPageSizePicker = false;
@@ -71,7 +72,7 @@ export class FeaturedDocumentsComponent implements OnInit {
     this.tableData.set(currentTableData);
 
     this.loadingState.startLoading('table-featuredDocuments', 'Loading featured documents');
-    this.typesense.getFeaturedDocumentsCards(this.projId)
+    this.api.getProjectFeaturedDocuments(this.projId)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (docs) => {
@@ -84,15 +85,9 @@ export class FeaturedDocumentsComponent implements OnInit {
             tableId: current.tableId,
           });
           updated.options = { ...current.options };
-          updated.totalListItems = docs.length;
-          updated.items = docs.map((doc: any) => ({
-            rowData: {
-              ...doc,
-              _id: doc.id,
-              datePosted: doc.datePosted * 1000,
-            },
-          }));
           updated.columns = this.tableColumns;
+          updated.totalListItems = docs.length;
+          updated.items = docs.map((doc: any) => ({ rowData: doc }));
           this.tableData.set(updated);
           this.loadingState.stopLoading('table-featuredDocuments');
         },

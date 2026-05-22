@@ -10,7 +10,6 @@ import { NewlinesPipe } from '../../shared/pipes/newlines.pipe';
   styleUrls: ['./project-notification-documents-table-details.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterModule, NewlinesPipe],
-  standalone: true
 })
 export class ProjectNotificationDocumentsTableDetailsComponent {
   rowData = input.required<any>();

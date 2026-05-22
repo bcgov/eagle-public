@@ -7,7 +7,6 @@ import { TableObject } from 'app/shared/components/table-template/table-object';
   selector: 'tr[app-pins-table-rows]',
   templateUrl: './pins-table-rows.component.html',
   imports: [],
-  standalone: true
 })
 export class PinsTableRowsComponent implements TableRowComponent {
   // TableRowComponent interface properties

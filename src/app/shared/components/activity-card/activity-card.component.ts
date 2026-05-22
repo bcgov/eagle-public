@@ -26,7 +26,6 @@ import { resolveDocUrl } from 'app/search/search-collections';
   styleUrl: './activity-card.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule, RouterModule, DatePipe],
-  standalone: true,
   host: {
     '[class.badge-type--news]':  "activityBadge()?.cls === 'activity-badge--news'",
     '[class.badge-type--pcp]':   "activityBadge()?.cls === 'activity-badge--pcp'",

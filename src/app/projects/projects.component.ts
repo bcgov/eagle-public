@@ -28,7 +28,6 @@ import { ProjlistMapComponent } from './projlist-map/projlist-map.component';
     ProjlistListComponent,
     ProjlistMapComponent
 ],
-  standalone: true
 })
 export class ProjectsComponent implements OnInit, OnDestroy {
   @ViewChild('appmap', { static: true }) appmap!: ProjlistMapComponent;

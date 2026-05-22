@@ -13,8 +13,9 @@ import {
   input,
   DestroyRef,
 } from '@angular/core';
+import { trigger, state, style, animate, transition } from '@angular/animations';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { Subject, Subscription, from, combineLatest } from 'rxjs';
+import { Subject, from, combineLatest } from 'rxjs';
 import { debounceTime, distinctUntilChanged, take } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import instantsearch from 'instantsearch.js';
@@ -28,7 +29,9 @@ import {
 import { AnalyticsService } from '../../services/analytics/analytics.service';
 import { TypesenseService } from '../../services/typesense.service';
 import { ConfigService } from '../../services/config.service';
-import { SearchDocumentCardComponent } from '../../search/cards/search-document-card.component';
+import { TableTemplateComponent } from '../../shared/components/table-template/table-template.component';
+import { TableObject } from '../../shared/components/table-template/table-object';
+import { ProjectDocTableRowsComponent } from './project-doc-table-rows.component';
 import { DatePickerComponent } from '../../shared/components/date-picker/date-picker.component';
 import {
   COLLECTIONS,
@@ -102,11 +105,18 @@ const TAB_CONFIG: Record<DocTabKey, TabConfig> = {
   templateUrl: './typesense-document-table.component.html',
   styleUrls: ['./typesense-document-table.component.css'],
   imports: [
-    SearchDocumentCardComponent,
+    TableTemplateComponent,
     DatePickerComponent,
     ReactiveFormsModule,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  animations: [
+    trigger('sidebar', [
+      state('open',      style({ width: '250px', minWidth: '250px', marginRight: '1.5rem', paddingRight: '0.75rem' })),
+      state('collapsed', style({ width: '0',     minWidth: '0',     marginRight: '0',       paddingRight: '0'       })),
+      transition('open <=> collapsed', animate('250ms cubic-bezier(0.4, 0, 0.2, 1)')),
+    ]),
+  ],
 })
 export class TypesenseDocumentTableComponent implements OnInit, OnDestroy {
   private readonly analytics    = inject(AnalyticsService);
@@ -159,6 +169,39 @@ export class TypesenseDocumentTableComponent implements OnInit, OnDestroy {
     return snap;
   });
 
+  private readonly DOC_COLUMNS = [
+    { name: 'Document Name', value: 'displayName', width: 'col-4'                },
+    { name: 'Date',          value: 'datePosted',  width: 'col-2', nosort: true },
+    { name: 'Type',          value: 'type',        width: 'col-2', nosort: true },
+    { name: 'Milestone',     value: 'milestone',   width: 'col-2', nosort: true },
+    { name: '',              value: 'download',    width: 'col-2', nosort: true },
+  ] as const;
+
+  tableDataObj = computed(() => new TableObject({
+    component: ProjectDocTableRowsComponent,
+    columns: [...this.DOC_COLUMNS],
+    items: this.tsHits().map(hit => ({
+      rowData: {
+        _id:              hit['id'] ?? hit['objectID'],
+        displayName:      hit['displayName'],
+        _datePosted:      hit['datePosted'] ? new Date(hit['datePosted'] * 1000) : null,
+        type:             hit['type'],
+        milestone:        hit['milestone'],
+        documentFileName: hit['documentFileName'],
+      },
+    })),
+    options: {
+      showHeader: true,
+      showTopControls: false,
+      showPagination: false,
+      showPageSizePicker: false,
+      showPageCountDisplay: false,
+    },
+    totalListItems: this.tsHits().length,
+    currentPage: 1,
+    pageSize: Math.max(this.tsHits().length, 1),
+  }));
+
   activeFilterCount = computed(() => {
     let count = 0;
     for (const f of this.tsFacets) {
@@ -176,7 +219,6 @@ export class TypesenseDocumentTableComponent implements OnInit, OnDestroy {
   private tsConfigWidget: any = null;
   private tsSentinelObserver: IntersectionObserver | null = null;
   private tsResultsColEl: HTMLElement | null = null;
-  private tsDateSubs: Subscription[] = [];
   private tsKeywordInput$ = new Subject<string>();
 
   @ViewChild('tsSentinel')
@@ -328,22 +370,18 @@ export class TypesenseDocumentTableComponent implements OnInit, OnDestroy {
         filter_type: filterType, date_value: v, project_id: projId,
       });
     };
-    this.tsDateSubs.push(
-      this.tsFromCtrl.valueChanges.subscribe(onDateChange('from')),
-      this.tsToCtrl.valueChanges.subscribe(onDateChange('to')),
-    );
+    this.tsFromCtrl.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(onDateChange('from'));
+    this.tsToCtrl.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(onDateChange('to'));
 
     // Live legislation lookup updates (configService.lists can re-emit after the app starts)
-    this.tsDateSubs.push(
-      this.configService.lists.subscribe(updatedLists => {
-        for (const f of this.tsFacets) {
-          if (!f.listType) continue;
-          const m = new Map<string, number>();
-          updatedLists.filter((l: any) => l.type === f.listType).forEach((l: any) => m.set(l.name, l.legislation || 0));
-          this.tsLawLookups[f.attribute].set(m);
-        }
-      })
-    );
+    this.configService.lists.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(updatedLists => {
+      for (const f of this.tsFacets) {
+        if (!f.listType) continue;
+        const m = new Map<string, number>();
+        updatedLists.filter((l: any) => l.type === f.listType).forEach((l: any) => m.set(l.name, l.legislation || 0));
+        this.tsLawLookups[f.attribute].set(m);
+      }
+    });
   }
 
   private tsApplyDateFilter(): void {
@@ -375,8 +413,6 @@ export class TypesenseDocumentTableComponent implements OnInit, OnDestroy {
     this.tsSentinelObserver?.disconnect();
     this.tsIs?.dispose();
     this.tsIs = null;
-    this.tsDateSubs.forEach(s => s.unsubscribe());
-    this.tsDateSubs = [];
   }
 
   // ── Public handlers ──────────────────────────────────────────────────────────
@@ -390,14 +426,6 @@ export class TypesenseDocumentTableComponent implements OnInit, OnDestroy {
   clearTsSearch(): void {
     this.tsKeywords.set('');
     this.tsKeywordInput$.next('');
-  }
-
-  onTsDownload(hit: any): void {
-    this.analytics.track(`${this.cfg.analyticsPrefix} Download Clicked`, {
-      document_id: hit['id'] ?? hit['objectID'],
-      document_name: hit['displayName'] ?? hit['documentFileName'] ?? 'Unknown',
-      project_id: this.projId(),
-    });
   }
 
   refineTsFacet(attribute: string, label: string): void {

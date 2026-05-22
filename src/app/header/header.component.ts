@@ -13,7 +13,6 @@ import { debounceTime } from 'rxjs/operators';
   styleUrl: './header.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterModule],
-  standalone: true
 })
 export class HeaderComponent implements OnDestroy {
   private apiService = inject(ApiService);

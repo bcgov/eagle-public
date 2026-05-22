@@ -33,7 +33,6 @@ import { inject } from '@angular/core';
     PaginationComponent,
     TableRowDirective
   ],
-  standalone: true
 })
 export class TableTemplateComponent implements OnChanges {
   @Input() data!: TableObject;
