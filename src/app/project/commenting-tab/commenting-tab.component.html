@@ -1,43 +1,54 @@
 @if (loading()) {
-  @for (i of [1, 2, 3]; track i) {
-    <div class="skeleton-row">
-      <div class="skeleton-cell" style="flex: 2"></div>
-      <div class="skeleton-cell" style="flex: 3"></div>
-      <div class="skeleton-cell" style="flex: 1"></div>
+  @for (i of [1, 2]; track i) {
+    <div class="cp-card cp-card--skeleton">
+      <div class="cp-card__header">
+        <div class="skeleton-cell" style="width: 90px; height: 12px; border-radius: 4px"></div>
+        <div class="skeleton-cell" style="width: 70px; height: 20px; border-radius: 999px; margin-left: auto"></div>
+      </div>
+      <div class="cp-card__body">
+        <div class="skeleton-cell" style="width: 55%; height: 14px; border-radius: 4px; margin-bottom: 0.5rem"></div>
+        <div class="skeleton-cell" style="width: 38%; height: 11px; border-radius: 4px; margin-bottom: 0.5rem"></div>
+        <div class="skeleton-cell" style="width: 88%; height: 11px; border-radius: 4px"></div>
+      </div>
     </div>
   }
 } @else if (commentPeriods().length < 1) {
   <div>No comment periods are currently scheduled for this project.</div>
 } @else {
   @for (cp of commentPeriods(); track cp._id) {
-    <article class="card search-result-card search-result-card--inline-row cp-card"
+    <article class="card cp-card"
              role="button" tabindex="0"
              (click)="goToCP(cp)"
              (keyup.enter)="goToCP(cp)">
-      <div class="inline-body">
-        <div class="inline-segment-status">
-          <span class="inline-status-dot"
-                [class.inline-status-dot--open]="commentPeriodService.isOpen(cp)"
-                [class.inline-status-dot--pending]="commentPeriodService.isNotStarted(cp)"
-                [class.inline-status-dot--closed]="commentPeriodService.isClosed(cp)"
-                [class.inline-status-dot--inactive]="commentPeriodService.isNotOpen(cp)">
-          </span>
-          <span class="inline-status-label">{{ cp.commentPeriodStatus }}</span>
-        </div>
+
+      <div class="cp-card__header">
+        <span class="cp-card__status-dot"
+              [class.cp-card__status-dot--open]="commentPeriodService.isOpen(cp)"
+              [class.cp-card__status-dot--pending]="commentPeriodService.isNotStarted(cp)"
+              [class.cp-card__status-dot--closed]="commentPeriodService.isClosed(cp)">
+        </span>
+        <span class="cp-card__status-label">{{ cp.commentPeriodStatus }}</span>
+
         @if (commentPeriodService.isOpen(cp)) {
-          <span class="inline-action">
-            <span class="inline-days-pill">{{ cp.daysRemaining }}d left</span>
-          </span>
+          <span class="cp-card__pill cp-card__pill--open">{{ cp.daysRemaining }}</span>
+        } @else if (commentPeriodService.isClosed(cp)) {
+          <span class="cp-card__pill cp-card__pill--closed">Closed {{ cp.dateCompleted | date:'MMM d, y' }}</span>
+        } @else if (commentPeriodService.isNotStarted(cp)) {
+          <span class="cp-card__pill cp-card__pill--pending">Starts {{ cp.dateStarted | date:'MMM d, y' }}</span>
+        }
+      </div>
+
+      <div class="cp-card__body">
+        @if (cp.instructions) {
+          <h3 class="cp-card__title">{{ cp.instructions }}</h3>
         }
         @if (cp.dateStarted) {
-          <span class="inline-divider d-none d-md-block"></span>
-          <span class="inline-segment-dates">
+          <p class="cp-card__dates">
             {{ cp.dateStarted | date:'MMM d, y' }} – {{ cp.dateCompleted | date:'MMM d, y' }}
-          </span>
+          </p>
         }
-        @if (cp.instructions) {
-          <span class="inline-divider d-none d-md-block"></span>
-          <span class="inline-title">{{ cp.instructions }}</span>
+        @if (cp.additionalText) {
+          <p class="cp-card__description">{{ cp.additionalText }}</p>
         }
       </div>
     </article>

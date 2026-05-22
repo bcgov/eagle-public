@@ -20,21 +20,19 @@ export class CommentingTabComponent implements OnDestroy {
   private storageService = inject(StorageService);
   public commentPeriodService = inject(CommentPeriodService);
 
-  // Use the reactive signal from storageService
-  public project = this.storageService.currentProject;
-  public commentPeriods = signal<CommentPeriod[]>([]);
-  public loading = signal(true);
-  private ngUnsubscribe = new Subject<void>();
+  public readonly project = this.storageService.currentProject;
+  public readonly commentPeriods = signal<CommentPeriod[]>([]);
+  public readonly loading = signal(true);
+  private readonly destroy$ = new Subject<void>();
   private loadedProjectId: string | null = null;
   private commentPeriodSub: Subscription | null = null;
 
   constructor() {
-    // Load comment periods when project is available
     effect(() => {
-      const project = this.project();
-      if (project?._id && project._id !== this.loadedProjectId) {
-        this.loadedProjectId = project._id;
-        this.getCommentPeriods(project._id);
+      const projectId = this.project()?._id;
+      if (projectId && projectId !== this.loadedProjectId) {
+        this.loadedProjectId = projectId;
+        this.getCommentPeriods(projectId);
       }
     });
   }
@@ -52,13 +50,20 @@ export class CommentingTabComponent implements OnDestroy {
     this.commentPeriodSub?.unsubscribe();
     this.loading.set(true);
     this.commentPeriodSub = this.commentPeriodService.getAllByProjectId(projectId)
-      .pipe(takeUntil(this.ngUnsubscribe))
+      .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (res: any) => {
           if (res.data) {
             const periods = res.data.map((element: CommentPeriod) => {
-              const match = element.instructions ? element.instructions.match(/Comment Period on the (.*?) for /) : null;
-              return { ...element, instructions: match ? match[1] : '' };
+              const fullText = element.instructions
+                ? element.instructions.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+                : '';
+              const match = fullText.match(/Comment Period on the (.*?) for /);
+              return {
+                ...element,
+                instructions: match ? match[1] : '',
+                additionalText: element.additionalText || fullText || element.informationLabel,
+              };
             });
             this.commentPeriods.set(periods);
           }
@@ -69,7 +74,7 @@ export class CommentingTabComponent implements OnDestroy {
   }
 
   ngOnDestroy() {
-    this.ngUnsubscribe.next();
-    this.ngUnsubscribe.complete();
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 }

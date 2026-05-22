@@ -86,7 +86,12 @@ export class CommentPeriod {
     if (obj && obj.dateStarted && obj.dateCompleted) {
       const now = DateTime.now();
       const dateStarted = DateTime.fromJSDate(new Date(obj.dateStarted));
-      const dateCompleted = DateTime.fromJSDate(new Date(obj.dateCompleted));
+      // When dateCompleted is midnight (admin picked a date with no time), treat the period
+      // as closing at end of that day (11:59:59 PM) to satisfy "open until 11:59 PM" requirement.
+      const rawEnd = DateTime.fromJSDate(new Date(obj.dateCompleted));
+      const dateCompleted = (rawEnd.hour === 0 && rawEnd.minute === 0 && rawEnd.second === 0)
+        ? rawEnd.endOf('day')
+        : rawEnd;
 
       if (now < dateStarted) {
         this.commentPeriodStatus = 'Pending';
@@ -107,14 +112,12 @@ export class CommentPeriod {
     this.longEndDate = DateTime.fromJSDate(this.dateCompleted).setZone('local');
 
     // Build a display string that avoids misleading "12:00 AM" times.
-    // Midnight (00:00) means "end of previous day" — show previous day date-only.
+    // Midnight (00:00) = admin picked that date as closing day (start-of-day stored) — show date-only.
     // 23:59 means "end of that day" — show date-only.
     // Any other time — show full datetime.
     const h = this.longEndDate.hour;
     const m = this.longEndDate.minute;
-    if (h === 0 && m === 0) {
-      this.endDateDisplay = this.longEndDate.minus({ days: 1 }).toFormat('MMMM dd, yyyy');
-    } else if (h === 23 && m === 59) {
+    if ((h === 0 && m === 0) || (h === 23 && m === 59)) {
       this.endDateDisplay = this.longEndDate.toFormat('MMMM dd, yyyy');
     } else {
       this.endDateDisplay = this.longEndDate.toFormat('MMMM dd @ h:mm a ZZZZ');
