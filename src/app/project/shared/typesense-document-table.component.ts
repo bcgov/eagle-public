@@ -217,6 +217,7 @@ export class TypesenseDocumentTableComponent implements OnInit, OnDestroy {
   private tsSearchBoxRefine: ((q: string) => void) | null = null;
   private tsIs: ReturnType<typeof instantsearch> | null = null;
   private tsConfigWidget: any = null;
+  private tsStaticFilter = '';
   private tsSentinelObserver: IntersectionObserver | null = null;
   private tsResultsColEl: HTMLElement | null = null;
   private tsKeywordInput$ = new Subject<string>();
@@ -294,13 +295,18 @@ export class TypesenseDocumentTableComponent implements OnInit, OnDestroy {
     }
 
     const baseFilter = `projectId:=${projId}`;
-    const filter_by = cfg.extraFilter ? `${baseFilter} && ${cfg.extraFilter}` : baseFilter;
+    this.tsStaticFilter = cfg.extraFilter ? `${baseFilter} && ${cfg.extraFilter}` : baseFilter;
 
+    // NOTE: The static filter is passed via configure({ filters }) below, NOT via
+    // additionalSearchParameters.filter_by. The TypesenseInstantSearchAdapter uses
+    // "_adaptFilters() || additionalSearchParameters.filter_by" — if any widget-level
+    // facet filter is active, _adaptFilters() is non-empty and the || short-circuits,
+    // silently dropping the static filter_by (losing projectId and tab constraints).
+    // Passing the filter via configure() ensures _adaptFilters() always includes it.
     this.tsIs = instantsearch({
       searchClient: this.typesense.getSearchClient({
         query_by:         col.queryBy,
         query_by_weights: col.queryByWeights,
-        filter_by,
       }),
       indexName: col.indexName,
     });
@@ -351,7 +357,7 @@ export class TypesenseDocumentTableComponent implements OnInit, OnDestroy {
       );
     }
 
-    this.tsConfigWidget = configure({ hitsPerPage: col.hitsPerPage });
+    this.tsConfigWidget = configure({ hitsPerPage: col.hitsPerPage, filters: this.tsStaticFilter });
     widgets.push(this.tsConfigWidget);
     this.tsIs.addWidgets(widgets);
     // Clear stale hits from other contexts before starting
@@ -394,7 +400,7 @@ export class TypesenseDocumentTableComponent implements OnInit, OnDestroy {
     if (from) nf.push(`${df.field}>=${isoToUnixTimestamp(from)}`);
     if (to)   nf.push(`${df.field}<=${isoToUnixTimestamp(to, true)}`);
     this.tsIs.removeWidgets([this.tsConfigWidget]);
-    this.tsConfigWidget = configure({ hitsPerPage: col.hitsPerPage, ...(nf.length ? { numericFilters: nf } : {}) });
+    this.tsConfigWidget = configure({ hitsPerPage: col.hitsPerPage, filters: this.tsStaticFilter, ...(nf.length ? { numericFilters: nf } : {}) });
     this.tsIs.addWidgets([this.tsConfigWidget]);
   }
 

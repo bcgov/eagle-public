@@ -33,12 +33,7 @@ export class DocumentsTabComponent extends ProjectDocumentTabBase {
   protected readonly filtersList = ['milestone', 'documentAuthorType', 'type', 'projectPhase'];
   protected readonly dateFiltersList = ['datePostedStart', 'datePostedEnd'];
   protected override readonly showFeatured: boolean = true;
-
-  private readonly milestoneArray: any[] = [];
-  private readonly documentAuthorTypeArray: any[] = [];
-  private readonly documentTypeArray: any[] = [];
-  private readonly projectPhaseArray: any[] = [];
-  private readonly legislationFilterGroup = { name: 'legislation', labelPrefix: '', labelPostfix: ' Act Terms' };
+  protected override readonly filterByProjectLegislation = false;
 
   public override readonly showAdvancedFilters = signal(false);
   public readonly filters = signal<FilterObject[]>([]);
@@ -65,18 +60,46 @@ export class DocumentsTabComponent extends ProjectDocumentTabBase {
   }
 
   protected initListData(list: any[]): void {
-    list.forEach(item => {
-      if (item.type === 'label') {
-        this.milestoneArray.push({ ...item });
-      } else if (item.type === 'author') {
-        this.documentAuthorTypeArray.push({ ...item });
-      } else if (item.type === 'doctype') {
-        this.documentTypeArray.push({ ...item });
-      } else if (item.type === 'projectPhase') {
-        this.projectPhaseArray.push({ ...item });
+    const milestone: any[] = [];
+    const documentAuthorType: any[] = [];
+    const documentType: any[] = [];
+    const projectPhase: any[] = [];
+    const lfg = { name: 'legislation', labelPrefix: '', labelPostfix: ' Act Terms' };
+    for (const item of list) {
+      switch (item.type) {
+        case 'label':        milestone.push({ ...item }); break;
+        case 'author':       documentAuthorType.push({ ...item }); break;
+        case 'doctype':      documentType.push({ ...item }); break;
+        case 'projectPhase': projectPhase.push({ ...item }); break;
       }
-    });
-    this.setMongoFilters();
+    }
+    this.filters.set([
+      new FilterObject(
+        'issuedDate', FilterType.DateRange, '',
+        new DateFilterDefinition('datePostedStart', 'Start Date', 'datePostedEnd', 'End Date'),
+        8
+      ),
+      new FilterObject(
+        'milestone', FilterType.MultiSelect, 'Milestone',
+        new MultiSelectDefinition(milestone, [], lfg, null, true),
+        4
+      ),
+      new FilterObject(
+        'documentAuthorType', FilterType.MultiSelect, 'Document Author',
+        new MultiSelectDefinition(documentAuthorType, [], lfg, null, true),
+        4
+      ),
+      new FilterObject(
+        'type', FilterType.MultiSelect, 'Document Type',
+        new MultiSelectDefinition(documentType, [], lfg, null, true),
+        4
+      ),
+      new FilterObject(
+        'projectPhase', FilterType.MultiSelect, 'Project Phase',
+        new MultiSelectDefinition(projectPhase, [], lfg, null, true),
+        4
+      ),
+    ]);
   }
 
   protected fetchDataWithCurrentParams(): void {
@@ -105,36 +128,6 @@ export class DocumentsTabComponent extends ProjectDocumentTabBase {
   }
 
   // ── MongoDB fallback handlers ──────────────────────────────────────────────
-
-  private setMongoFilters(): void {
-    this.filters.set([
-      new FilterObject(
-        'issuedDate', FilterType.DateRange, '',
-        new DateFilterDefinition('datePostedStart', 'Start Date', 'datePostedEnd', 'End Date'),
-        8
-      ),
-      new FilterObject(
-        'milestone', FilterType.MultiSelect, 'Milestone',
-        new MultiSelectDefinition(this.milestoneArray, [], this.legislationFilterGroup, null, true),
-        4
-      ),
-      new FilterObject(
-        'documentAuthorType', FilterType.MultiSelect, 'Document Author',
-        new MultiSelectDefinition(this.documentAuthorTypeArray, [], this.legislationFilterGroup, null, true),
-        4
-      ),
-      new FilterObject(
-        'type', FilterType.MultiSelect, 'Document Type',
-        new MultiSelectDefinition(this.documentTypeArray, [], this.legislationFilterGroup, null, true),
-        4
-      ),
-      new FilterObject(
-        'projectPhase', FilterType.MultiSelect, 'Project Phase',
-        new MultiSelectDefinition(this.projectPhaseArray, [], this.legislationFilterGroup, null, true),
-        4
-      ),
-    ]);
-  }
 
   // NOTE: executeSearch intentionally overrides base — preserves existing sort
   // when keywords change without keywordsChanged flag (e.g. filter-only updates).

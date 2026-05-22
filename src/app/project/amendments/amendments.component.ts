@@ -30,10 +30,6 @@ export class AmendmentsComponent extends ProjectDocumentTabBase {
   protected readonly filtersList = ['milestone', 'type', 'projectPhase'];
   protected readonly dateFiltersList = ['datePostedStart', 'datePostedEnd'];
 
-  private readonly milestoneArray: any[] = [];
-  private readonly documentTypeArray: any[] = [];
-  private readonly projectPhaseArray: any[] = [];
-
   public override readonly showAdvancedFilters = signal(false);
   public readonly filters = signal<FilterObject[]>([]);
   public readonly tableColumns: IColumnObject[] = [
@@ -53,14 +49,38 @@ export class AmendmentsComponent extends ProjectDocumentTabBase {
   }
 
   protected initListData(list: any[]): void {
-    list.forEach((item: any) => {
+    const milestone: any[] = [];
+    const documentType: any[] = [];
+    const projectPhase: any[] = [];
+    for (const item of list) {
       switch (item.type) {
-        case 'label':        this.milestoneArray.push({ ...item }); break;
-        case 'doctype':      this.documentTypeArray.push({ ...item }); break;
-        case 'projectPhase': this.projectPhaseArray.push({ ...item }); break;
+        case 'label':        milestone.push({ ...item }); break;
+        case 'doctype':      documentType.push({ ...item }); break;
+        case 'projectPhase': projectPhase.push({ ...item }); break;
       }
-    });
-    this.setFilters();
+    }
+    this.filters.set([
+      new FilterObject(
+        'issuedDate', FilterType.DateRange, '',
+        new DateFilterDefinition('datePostedStart', 'Start Date', 'datePostedEnd', 'End Date'),
+        6
+      ),
+      new FilterObject(
+        'milestone', FilterType.MultiSelect, 'Milestone',
+        new MultiSelectDefinition(milestone, [], null, null, true),
+        6
+      ),
+      new FilterObject(
+        'type', FilterType.MultiSelect, 'Document Type',
+        new MultiSelectDefinition(documentType, [], null, null, true),
+        4
+      ),
+      new FilterObject(
+        'projectPhase', FilterType.MultiSelect, 'Project Phase',
+        new MultiSelectDefinition(projectPhase, [], null, null, true),
+        4
+      ),
+    ]);
   }
 
   protected fetchDataWithCurrentParams(): void {
@@ -92,28 +112,4 @@ export class AmendmentsComponent extends ProjectDocumentTabBase {
     }
   }
 
-  private setFilters(): void {
-    this.filters.set([
-      new FilterObject(
-        'issuedDate', FilterType.DateRange, '',
-        new DateFilterDefinition('datePostedStart', 'Start Date', 'datePostedEnd', 'End Date'),
-        6
-      ),
-      new FilterObject(
-        'milestone', FilterType.MultiSelect, 'Milestone',
-        new MultiSelectDefinition(this.milestoneArray, [], null, null, true),
-        6
-      ),
-      new FilterObject(
-        'type', FilterType.MultiSelect, 'Document Type',
-        new MultiSelectDefinition(this.documentTypeArray, [], null, null, true),
-        4
-      ),
-      new FilterObject(
-        'projectPhase', FilterType.MultiSelect, 'Project Phase',
-        new MultiSelectDefinition(this.projectPhaseArray, [], null, null, true),
-        4
-      ),
-    ]);
-  }
 }

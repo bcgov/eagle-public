@@ -1,6 +1,7 @@
 import { DestroyRef, inject, WritableSignal, Signal, afterNextRender, signal } from '@angular/core';
 import { ActivatedRoute, Params, Router } from '@angular/router';
-import { take, switchMap } from 'rxjs/operators';
+import { combineLatest, of, Observable } from 'rxjs';
+import { take, switchMap, filter, map } from 'rxjs/operators';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 
 import { IColumnObject, TableObject } from '../../shared/components/table-template/table-object';
@@ -9,6 +10,7 @@ import { TableTemplate } from '../../shared/components/table-template/table-temp
 import { TableService } from '../../services/table.service';
 import { LoadingStateService } from '../../services/loading-state.service';
 import { ConfigService } from '../../services/config.service';
+import { StorageService } from '../../services/storage.service';
 import { Utils } from '../../shared/utils/utils';
 import { DocumentTableRowsComponent } from '../documents/project-document-table-rows/project-document-table-rows.component';
 
@@ -32,6 +34,7 @@ export abstract class ProjectDocumentTabBase {
   protected readonly tableService  = inject(TableService);
   protected readonly loadingState  = inject(LoadingStateService);
   protected readonly configService = inject(ConfigService);
+  protected readonly storageService = inject(StorageService);
   protected readonly utils         = inject(Utils);
   protected readonly destroyRef    = inject(DestroyRef);
 
@@ -73,6 +76,13 @@ export abstract class ProjectDocumentTabBase {
    */
   protected readonly showFeatured: boolean = false;
 
+  /**
+   * When true, filter config lists to the current project's legislation year
+   * before passing to initListData(). Set to false in tabs (e.g. Documents)
+   * that intentionally display cross-legislation options.
+   */
+  protected readonly filterByProjectLegislation: boolean = true;
+
   readonly isTypesense = signal(true);
 
   // ── Lifecycle wiring ──────────────────────────────────────────────────────
@@ -109,13 +119,23 @@ export abstract class ProjectDocumentTabBase {
         }
       });
 
-    // Load list metadata immediately so filter components are ready on first render.
-    this.configService.lists.pipe(
-      take(1),
+    // Scope filter options to the current project's legislation year when applicable.
+    const year$: Observable<number | null> = this.filterByProjectLegislation
+      ? toObservable(this.storageService.currentProject).pipe(
+          filter((p): p is NonNullable<typeof p> => p !== null),
+          take(1),
+          map(p => this.getLegislationYear((p as any).legislation))
+        )
+      : of(null);
+
+    combineLatest([this.configService.lists.pipe(take(1)), year$]).pipe(
       takeUntilDestroyed(this.destroyRef)
-    ).subscribe(list => {
+    ).subscribe(([list, year]) => {
       this.lists = list;
-      this.initListData(list);
+      const scopedList = year
+        ? list.filter((item: any) => !item.legislation || item.legislation === year)
+        : list;
+      this.initListData(scopedList);
       if (this.showAdvancedFilters) {
         const snap = this.route.snapshot.queryParamMap;
         if ([...this.filtersList, ...this.dateFiltersList].some(k => snap.has(k))) {
@@ -136,6 +156,14 @@ export abstract class ProjectDocumentTabBase {
     afterNextRender(() => {
       fetchPipeline$.subscribe(() => this.fetchDataWithCurrentParams());
     });
+  }
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+
+  /** Extract the numeric year (2002, 2018 …) from a project.legislation string. */
+  protected getLegislationYear(legislation: string | undefined): number | null {
+    const m = legislation?.match(/\b(2002|2018|1996)\b/);
+    return m ? +m[1] : null;
   }
 
   // ── Abstract methods ──────────────────────────────────────────────────────
