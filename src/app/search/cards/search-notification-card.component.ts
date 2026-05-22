@@ -13,6 +13,7 @@ import { DomSanitizer } from '@angular/platform-browser';
 import { ApiService } from '../../services/api';
 import { ConfigService } from '../../services/config.service';
 import { highlightField } from '../search-collections';
+import { sanitizeHighlight } from 'app/search/highlight/sanitize-highlight';
 
 @Component({
   selector: 'app-search-notification-card',
@@ -210,7 +211,11 @@ export class SearchNotificationCardComponent {
 
   safeDescription = computed(() => {
     const h = this.hit();
-    const raw = h['_highlightResult']?.['description']?.value ?? h['descriptionHtml'] ?? h['description'];
+    // description is in highlightFullFields; full value with <mark> tags returned when it matches
+    const highlighted = h['_highlightResult']?.['description']?.value;
+    const raw = (highlighted ? sanitizeHighlight(highlighted) : null)
+      ?? h['descriptionHtml']
+      ?? h['description'];
     return raw ? this.sanitizer.bypassSecurityTrustHtml(raw) : null;
   });
 }

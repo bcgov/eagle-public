@@ -11,6 +11,12 @@ export class GlobalErrorHandler implements ErrorHandler {
 
   handleError(error: Error | any): void {
     const errorMessage = error?.message || error?.toString() || 'Unknown error';
+
+    // ResizeObserver loop errors are benign browser notifications, not app errors.
+    if (typeof errorMessage === 'string' && errorMessage.includes('ResizeObserver loop')) {
+      return;
+    }
+
     const stack = error?.stack;
 
     // Log the error with full details

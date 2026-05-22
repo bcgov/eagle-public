@@ -2,12 +2,10 @@ import {
   Component,
   ChangeDetectionStrategy,
   computed,
-  inject,
   input,
   output,
 } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { highlightField } from '../search-collections';
 
 @Component({
@@ -18,7 +16,7 @@ import { highlightField } from '../search-collections';
     <article class="card search-result-card search-result-card--styled">
       <div class="search-card-header">
         <div class="d-flex align-items-start gap-2">
-          <h5 class="fw-bold mb-0 flex-fill" [innerHTML]="safeName()"></h5>
+          <h5 class="fw-bold mb-0 flex-fill" [innerHTML]="name()"></h5>
           @if (hit()['internalExt']) {
             <span class="search-doc-ext-badge">{{ hit()['internalExt'].toUpperCase() }}</span>
           }
@@ -92,12 +90,10 @@ export class SearchDocumentCardComponent {
   downloadClicked = output<void>();
   projectClicked = output<void>();
 
-  private sanitizer = inject(DomSanitizer);
-
-  safeName = computed<SafeHtml>(() => {
-    const raw = highlightField(this.hit(), 'displayName')
-      || highlightField(this.hit(), 'documentFileName')
-      || 'Untitled Document';
-    return this.sanitizer.bypassSecurityTrustHtml(raw);
-  });
+  // highlightField() → sanitizeHighlight() output — safe for [innerHTML]
+  name = computed(() =>
+    highlightField(this.hit(), 'displayName')
+    || highlightField(this.hit(), 'documentFileName')
+    || 'Untitled Document'
+  );
 }

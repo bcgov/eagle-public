@@ -250,7 +250,26 @@
               }
             }
           </div>
-
+          @if (tableData().totalListItems > tableData().pageSize) {
+            <div class="table-controls-bottom mt-4 mb-4">
+              <div class="row">
+                <div class="col-12 col-md-6 text-center text-md-start">
+                  <lib-page-size-picker [isHidden]="false"
+                    [currentPageSize]="tableData().pageSize"
+                    [sizeOptions]="tableData().pageSizeOptions"
+                    (pageSizeChosen)="onNotifPageSizeChange($event)" />
+                </div>
+                <div class="col-12 col-md-6 text-center text-md-end">
+                  <lib-pagination
+                    [currentPage]="tableData().currentPage"
+                    [pageSize]="tableData().pageSize"
+                    [totalItems]="tableData().totalListItems"
+                    ariaLabel="Notifications pagination"
+                    (pageChange)="onNotifPageChange($event)" />
+                </div>
+              </div>
+            </div>
+          }
 
         } @else {
           <lib-table-template

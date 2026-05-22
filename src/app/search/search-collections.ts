@@ -9,6 +9,8 @@
  *  - Shared utilities: mergeItems, groupByLegislation, sortByName, sortByPhaseOrder, highlightField
  */
 
+import { sanitizeHighlight } from 'app/search/highlight/sanitize-highlight';
+
 // ── Shared display types ───────────────────────────────────────────────────────
 
 export interface DisplayItem {
@@ -60,6 +62,10 @@ export interface CollectionConfig {
   indexName: string;
   queryBy: string;
   queryByWeights: string;
+  /** Comma-separated fields Typesense should return highlights for. Only include fields displayed in the card. */
+  highlightFields: string;
+  /** Comma-separated fields to return as full-value highlights (not snippets). Use for description-like long fields. Leave undefined for the PDF content collection. */
+  highlightFullFields?: string;
   hitsPerPage: number;
   defaultSortBy: string;
   facets: readonly FacetDef[];
@@ -156,11 +162,22 @@ export function groupByLegislation(
 // ── highlightField ─────────────────────────────────────────────────────────────
 
 /**
- * Returns the Typesense highlight snippet for `field` if available,
- * otherwise falls back to the raw field value from the hit.
+ * Returns a safe HTML string for use in Angular [innerHTML] with highlighted matches.
+ *
+ * If _highlightResult[field] is present (populated by Typesense via the adapter),
+ * sanitizeHighlight() strips dangerous HTML, preserves <mark> tags, and decodes
+ * HTML entities. Angular's [innerHTML] sanitizer allows <mark> natively — no
+ * bypassSecurityTrustHtml needed for the output of this function.
+ *
+ * Falls back to the raw field value (plain string, no marks) if no highlight.
+ *
+ * Requires `escapeHTML: false` on connectInfiniteHits — IS.js default (true) encodes
+ * <mark> → &lt;mark&gt;, turning highlight tags into literal text.
  */
 export function highlightField(hit: any, field: string): string {
-  return (hit['_highlightResult']?.[field]?.value ?? hit[field]) ?? '';
+  const highlighted = hit['_highlightResult']?.[field]?.value;
+  if (highlighted) return sanitizeHighlight(highlighted);
+  return String(hit[field] ?? '');
 }
 
 // ── Collection definitions ─────────────────────────────────────────────────────
@@ -170,6 +187,8 @@ export const COLLECTIONS: Record<CollectionId, CollectionConfig> = {
     indexName: 'projects',
     queryBy: 'name,displayName,description,epicProjectId,proponent',
     queryByWeights: '9000,8500,8000,3000,1000',
+    highlightFields: 'name,description',
+    highlightFullFields: 'description',
     hitsPerPage: 20,
     defaultSortBy: '',
     placeholder: 'Search projects by name, description, proponent…',
@@ -186,6 +205,7 @@ export const COLLECTIONS: Record<CollectionId, CollectionConfig> = {
     indexName: 'documents',
     queryBy: 'displayName,documentFileName,description,projectName',
     queryByWeights: '8500,5000,8000,3000',
+    highlightFields: 'displayName,documentFileName',
     hitsPerPage: 20,
     defaultSortBy: '',
     placeholder: 'Search documents by name, file name, project…',
@@ -202,6 +222,7 @@ export const COLLECTIONS: Record<CollectionId, CollectionConfig> = {
     indexName: 'activities',
     queryBy: 'headline,content,notificationName',
     queryByWeights: '9000,8000,3000',
+    highlightFields: 'headline,content',
     hitsPerPage: 20,
     defaultSortBy: 'pinned:desc,dateAdded:desc',
     placeholder: 'Search news by headline, content, project…',
@@ -219,6 +240,8 @@ export const COLLECTIONS: Record<CollectionId, CollectionConfig> = {
     indexName: 'notifications',
     queryBy: 'name,description,proponent,subType,associatedProjectName,region,location',
     queryByWeights: '9000,8000,3000,2500,2000,1500,1000',
+    highlightFields: 'name,description,proponent,subType,associatedProjectName,region,location',
+    highlightFullFields: 'description',
     hitsPerPage: 20,
     defaultSortBy: 'notificationReceivedDate:desc',
     placeholder: 'Search notifications by name, proponent, project…',
@@ -237,6 +260,7 @@ export const COLLECTIONS: Record<CollectionId, CollectionConfig> = {
     indexName: 'document_chunks',
     queryBy: 'content',
     queryByWeights: '9000',
+    highlightFields: 'content',
     hitsPerPage: 20,
     defaultSortBy: '',
     placeholder: 'Search PDF document text…',
@@ -378,65 +402,4 @@ export function resolveDocUrl(url: string): string {
     }
   } catch { /* not parseable */ }
   return normalised;
-}
-
-/** Maps a raw eagle-api ProjectNotification (with populate=true) to card rowData. */
-export function mapNotificationApiHit(n: any): any {
-  return {
-    _id:                   n._id,
-    name:                  n.name                  || null,
-    description:           n.descriptionHtml        || n.description || null,
-    proponent:             n.proponent              || null,
-    location:              n.location               || null,
-    type:                  n.type                   || null,
-    subType:               n.subType                || null,
-    region:                n.region                 || null,
-    decision:              n.decision               || null,
-    trigger:               n.trigger                || null,
-    pcp:                   n.pcp                    || null,
-    associatedProjectId:   n.associatedProjectId    || null,
-    associatedProjectName: n.associatedProjectName  || null,
-    _receivedDate:         n.notificationReceivedDate ? new Date(n.notificationReceivedDate) : null,
-    documents:             Array.isArray(n.documents) ? n.documents : [],
-    _highlightResult:      {},
-  };
-}
-
-/**
- * Builds disjunctive facet counts from raw ProjectNotification results.
- * Returns a Record<attr, DisplayItem[]> suitable for facetItems signal.
- */
-export function buildNotificationFacets(
-  all: any[],
-  refs: Record<string, Set<string>>,
-): Record<string, DisplayItem[]> {
-  const col = COLLECTIONS['notifications'];
-  const items: Record<string, DisplayItem[]> = {};
-
-  for (const facetDef of col.facets) {
-    const attr = facetDef.attribute;
-    const countMap = new Map<string, number>();
-    const othersFiltered = all.filter(n => {
-      for (const [a, values] of Object.entries(refs)) {
-        if (a === attr) continue;
-        if (values.size > 0 && !values.has(n[a] ?? '')) return false;
-      }
-      return true;
-    });
-    for (const n of othersFiltered) {
-      const v: string = n[attr] ?? '';
-      if (v) countMap.set(v, (countMap.get(v) ?? 0) + 1);
-    }
-    items[attr] = Array.from(countMap.entries())
-      .map(([label, count]) => ({
-        label,
-        value: label,
-        count,
-        isRefined: refs[attr]?.has(label) ?? false,
-        isDisabled: false,
-      }))
-      .sort(facetDef.sorter);
-  }
-
-  return items;
 }

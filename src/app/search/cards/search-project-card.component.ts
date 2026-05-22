@@ -3,10 +3,8 @@ import {
   ChangeDetectionStrategy,
   input,
   output,
-  inject,
   computed,
 } from '@angular/core';
-import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { RouterLink } from '@angular/router';
 import { highlightField } from '../search-collections';
 
@@ -64,9 +62,9 @@ import { highlightField } from '../search-collections';
             </a>
           </div>
         </div>
-        @if (safeDescription()) {
+        @if (description()) {
           <hr class="opacity-25">
-          <div class="search-result-content" [innerHTML]="safeDescription()"></div>
+          <div class="search-result-content" [innerHTML]="description()"></div>
         }
       </div>
     </article>
@@ -76,10 +74,6 @@ export class SearchProjectCardComponent {
   hit = input.required<any>();
   clicked = output<void>();
 
-  private sanitizer = inject(DomSanitizer);
-
-  safeDescription = computed<SafeHtml | null>(() => {
-    const raw = highlightField(this.hit(), 'description');
-    return raw ? this.sanitizer.bypassSecurityTrustHtml(raw) : null;
-  });
+  // highlightField() → sanitizeHighlight() output — safe for [innerHTML] (Angular allows <mark>)
+  description = computed(() => highlightField(this.hit(), 'description'));
 }

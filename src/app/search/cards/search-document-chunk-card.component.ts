@@ -2,12 +2,10 @@ import {
   Component,
   ChangeDetectionStrategy,
   computed,
-  inject,
   input,
   output,
 } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { highlightField } from '../search-collections';
 
 @Component({
@@ -18,7 +16,7 @@ import { highlightField } from '../search-collections';
     <article class="card search-result-card search-result-card--styled">
       <div class="search-card-header">
         <div class="d-flex align-items-start gap-2">
-          <h5 class="fw-bold mb-0 flex-fill" [innerHTML]="safeDocName()"></h5>
+          <h5 class="fw-bold mb-0 flex-fill" [innerHTML]="docName()"></h5>
           @if (hit()['pageNumber']) {
             <span class="search-doc-ext-badge">p.{{ hit()['pageNumber'] }}</span>
           }
@@ -47,7 +45,7 @@ import { highlightField } from '../search-collections';
                 </div>
               </div>
             </div>
-            <div class="search-result-content" [innerHTML]="safeSnippet()"></div>
+            <div class="search-result-content" [innerHTML]="snippet()"></div>
           </div>
           <div class="search-card-vr d-none d-md-block"></div>
           <div class="card-actions">
@@ -78,17 +76,9 @@ export class SearchDocumentChunkCardComponent {
   documentClicked = output<void>();
   projectClicked = output<void>();
 
-  private sanitizer = inject(DomSanitizer);
-
-  safeDocName = computed<SafeHtml>(() => {
-    const raw = highlightField(this.hit(), 'documentName') || 'Untitled Document';
-    return this.sanitizer.bypassSecurityTrustHtml(raw);
-  });
-
-  safeSnippet = computed<SafeHtml>(() => {
-    const raw = highlightField(this.hit(), 'content') ?? '';
-    return this.sanitizer.bypassSecurityTrustHtml(raw);
-  });
+  // highlightField() → sanitizeHighlight() output — safe for [innerHTML]
+  docName = computed(() => highlightField(this.hit(), 'documentName') || 'Untitled Document');
+  snippet = computed(() => highlightField(this.hit(), 'content'));
 
   pageFragment = (): string => {
     const p = this.hit()['pageNumber'];

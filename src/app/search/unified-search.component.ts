@@ -770,7 +770,12 @@ export class UnifiedSearchComponent implements OnInit, AfterViewInit, OnDestroy 
     const s   = this.states[id];
     const sortBy = s.sortBy();
 
-    const params: any = { query_by: col.queryBy, query_by_weights: col.queryByWeights };
+    const params: any = {
+      query_by: col.queryBy,
+      query_by_weights: col.queryByWeights,
+      highlight_fields: col.highlightFields,
+    };
+    if (col.highlightFullFields) params['highlight_full_fields'] = col.highlightFullFields;
     if (sortBy) params['sort_by'] = sortBy;
 
     // Pass the current query as initialUiState so IS.js's automatic start() search
@@ -820,7 +825,8 @@ export class UnifiedSearchComponent implements OnInit, AfterViewInit, OnDestroy 
       });
     });
 
-    const widgets: any[] = [customSearchBox({}), customStats({}), customHits({})];
+    // escapeHTML:false keeps raw <mark> tags in _highlightResult for [innerHTML] rendering
+    const widgets: any[] = [customSearchBox({}), customStats({}), customHits({ escapeHTML: false })];
 
     for (const f of col.facets) {
       const cached = this.typesense.getLastFacets(col.indexName, f.attribute);

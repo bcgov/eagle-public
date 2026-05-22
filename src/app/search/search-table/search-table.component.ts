@@ -5,17 +5,18 @@ import {
 import { trigger, state, style, animate, transition } from '@angular/animations';
 import { ActivatedRoute, Router, Params } from '@angular/router';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { Subject, combineLatest, lastValueFrom, of } from 'rxjs';
+import { Subject, combineLatest, of } from 'rxjs';
 import { debounceTime, distinctUntilChanged, filter, takeUntil, tap, catchError, concatMap } from 'rxjs/operators';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { TypesenseService } from 'app/services/typesense.service';
 import { ConfigService } from 'app/services/config.service';
 import { ApiService } from 'app/services/api';
-import { NotificationProjectService } from 'app/services/notification-project.service';
 import { TableTemplateComponent } from 'app/shared/components/table-template/table-template.component';
 import { TableObject } from 'app/shared/components/table-template/table-object';
 import { ITableMessage, TableRowComponent } from 'app/shared/components/table-template/table-row-component';
 import { DatePickerComponent } from 'app/shared/components/date-picker/date-picker.component';
+import { PaginationComponent } from 'app/shared/components/pagination/pagination.component';
+import { PageSizePickerComponent, IPageSizePickerOption } from 'app/shared/components/page-size-picker/page-size-picker.component';
 import { SearchNotificationCardComponent } from './search-notification-card.component';
 import {
   type CollectionId, type Tab, type DisplayItem, type LegislationGroup,
@@ -34,6 +35,13 @@ const ROW_COMPONENTS: Partial<Record<TableTab, Type<TableRowComponent>>> = {
   updates:   ActivityCardComponent,
 };
 
+const PAGE_SIZE_OPTIONS = [
+  { displayText: '10',  value: 10  },
+  { displayText: '25',  value: 25  },
+  { displayText: '50',  value: 50  },
+  { displayText: '100', value: 100 },
+];
+
 @Component({
   selector: 'app-search-table',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -43,6 +51,8 @@ const ROW_COMPONENTS: Partial<Record<TableTab, Type<TableRowComponent>>> = {
     DatePickerComponent,
     SearchNotificationCardComponent,
     ActivityCardComponent,
+    PaginationComponent,
+    PageSizePickerComponent,
   ],
   templateUrl: './search-table.component.html',
   styleUrl: './search-table.component.css',
@@ -110,7 +120,6 @@ export class SearchTableComponent implements OnInit, AfterViewInit, OnDestroy {
   private typesenseService = inject(TypesenseService);
   private configService    = inject(ConfigService);
   private api              = inject(ApiService);
-  private notificationService = inject(NotificationProjectService);
 
   @ViewChild('sidebarRef') private sidebarRef!: ElementRef<HTMLElement>;
   private resizeObserver!: ResizeObserver;
@@ -262,6 +271,14 @@ export class SearchTableComponent implements OnInit, AfterViewInit, OnDestroy {
     this.navigate(params);
   }
 
+  onNotifPageChange(page: number): void {
+    this.navigate({ currentPage: page });
+  }
+
+  onNotifPageSizeChange(option: IPageSizePickerOption): void {
+    this.navigate({ pageSize: option.value, currentPage: 1 });
+  }
+
   private toggleSort(field: string): string {
     const current = this.tableData().sortBy;
     if (current?.includes(field)) {
@@ -314,12 +331,6 @@ export class SearchTableComponent implements OnInit, AfterViewInit, OnDestroy {
     const colId = this.activeCollectionId();
     if (!colId) return;
 
-    // Notifications use eagle-api (documents pre-joined); all other tabs use Typesense
-    if (colId === 'notifications') {
-      this.executeNotificationSearch();
-      return;
-    }
-
     if (!this.typesenseAvailable()) return;
 
     const col    = COLLECTIONS[colId];
@@ -366,6 +377,7 @@ export class SearchTableComponent implements OnInit, AfterViewInit, OnDestroy {
     if (col.queryByWeights) searchParams['query_by_weights'] = col.queryByWeights;
     if (tsSortBy) searchParams['sort_by'] = tsSortBy;
     if (filterParts.length) searchParams['filter_by'] = filterParts.join(' && ');
+    if (col.highlightFields) searchParams['highlight_full_fields'] = col.highlightFields;
 
     this.loading.set(true);
 
@@ -400,45 +412,24 @@ export class SearchTableComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  private async executeNotificationSearch(): Promise<void> {
-    this.loading.set(true);
-    try {
-      const def    = this.activeDef();
-      const params = this.route.snapshot.queryParams;
-
-      const result = await lastValueFrom(
-        this.notificationService.search(
-          this.searchQuery() || '',
-          this.activeRefinements(),
-          {
-            fromKey: def.dateFilterList[0] || undefined,
-            toKey:   def.dateFilterList[1] || undefined,
-            params:  params as Record<string, string>,
-          },
-        )
-      );
-
-      this.notificationItems.set(result.items);
-      this.totalFound.set(result.totalCount);
-      this.facetItems.set(result.facets);
-      this.groupedFacets.set({});
-    } catch {
-      this.notificationItems.set([]);
-      this.totalFound.set(0);
-    } finally {
-      this.loading.set(false);
-      this.filtersLoaded.set(true);
-    }
-  }
-
   private updateTable(
     res: any, page: number, pageSize: number, sortBy: string,
     def: any, colId: CollectionId,
   ): void {
     const tab = this.activeTab();
-    const items = (res.hits ?? []).map((hit: any) => ({
-      rowData: this.mapHit(hit, colId),
-    }));
+    const rowDataItems = (res.hits ?? []).map((hit: any) => this.mapHit(hit, colId));
+
+    // Notification cards render in a custom card list; populate their signal and set
+    // tableData with pagination metadata only (no row component needed).
+    if (colId === 'notifications') {
+      this.notificationItems.set(rowDataItems);
+      const td = new TableObject({ currentPage: page, pageSize, sortBy, columns: [] });
+      td.totalListItems = res.found ?? 0;
+      td.items = [];
+      td.pageSizeOptions = PAGE_SIZE_OPTIONS;
+      this.tableData.set(td);
+      return;
+    }
 
     const td = new TableObject({
       component: ROW_COMPONENTS[tab],
@@ -449,13 +440,8 @@ export class SearchTableComponent implements OnInit, AfterViewInit, OnDestroy {
       data: { showProjectInfo: true },
     });
     td.totalListItems = res.found ?? 0;
-    td.items = items;
-    td.pageSizeOptions = [
-      { displayText: '10', value: 10 },
-      { displayText: '25', value: 25 },
-      { displayText: '50', value: 50 },
-      { displayText: '100', value: 100 },
-    ];
+    td.items = rowDataItems.map((rowData: any) => ({ rowData }));
+    td.pageSizeOptions = PAGE_SIZE_OPTIONS;
     td.options = {
       showHeader: true,
       showPagination: true,
@@ -496,8 +482,9 @@ export class SearchTableComponent implements OnInit, AfterViewInit, OnDestroy {
       case 'activities':
         return {
           _id:                 d.id,
-          headline:            d.headline,
-          content:             d.contentHtml || d.content,
+          // highlight_full_fields: full text with <mark> tags; fallback: rich HTML or plain text
+          headline:            hit.highlight?.headline?.value || d.headline,
+          content:             hit.highlight?.content?.value  || d.contentHtml || d.content,
           dateAdded:           d.dateAdded ? d.dateAdded * 1000 : null,
           type:                d.type,
           documentUrl:         d.documentUrl || null,
@@ -506,18 +493,29 @@ export class SearchTableComponent implements OnInit, AfterViewInit, OnDestroy {
           project:             d.projectId ? { _id: d.projectId, name: d.projectName || '' } : null,
           pcp:                 null,
         };
-      case 'notifications':
+      case 'notifications': {
+        const _highlightResult = Object.fromEntries(
+          (hit.highlights ?? []).map((h: any) => [h.field, { value: h.value ?? h.snippet ?? '' }])
+        );
         return {
-          _id:      d.id,
-          headline: d.name,
-          content:  d.descriptionHtml || d.description,
-          dateAdded: d.notificationReceivedDate ? d.notificationReceivedDate * 1000 : null,
-          type: 'Project Notification',
-          documentUrl: null,
-          project: d.associatedProjectId
-            ? { _id: d.associatedProjectId, name: d.associatedProjectName || '' }
-            : null,
+          _id:                   d.id,
+          name:                  d.name                  || null,
+          description:           d.descriptionHtml        || d.description || null,
+          proponent:             d.proponent              || null,
+          location:              d.location               || null,
+          type:                  d.type                   || null,
+          subType:               d.subType                || null,
+          region:                d.region                 || null,
+          decision:              d.decision               || null,
+          trigger:               d.trigger                || null,
+          pcp:                   d.pcp                    || null,
+          associatedProjectId:   d.associatedProjectId    || null,
+          associatedProjectName: d.associatedProjectName  || null,
+          _receivedDate:         d.notificationReceivedDate
+                                   ? new Date(d.notificationReceivedDate * 1000) : null,
+          _highlightResult,
         };
+      }
       default:
         return d;
     }

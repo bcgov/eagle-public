@@ -1,8 +1,12 @@
 import {
-  Component, ChangeDetectionStrategy, input, inject,
+  Component, ChangeDetectionStrategy, inject, input, computed,
 } from '@angular/core';
+import { toObservable, toSignal } from '@angular/core/rxjs-interop';
+import { map, switchMap, distinctUntilChanged, catchError } from 'rxjs/operators';
+import { of } from 'rxjs';
 import { DatePipe, TitleCasePipe } from '@angular/common';
 import { DomSanitizer } from '@angular/platform-browser';
+import { ApiService } from 'app/services/api';
 import { ConfigService } from 'app/services/config.service';
 import { Utils } from 'app/shared/utils/utils';
 import { highlightField } from 'app/search/search-collections';
@@ -106,7 +110,7 @@ import { highlightField } from 'app/search/search-collections';
       </div>
 
       <!-- ── Documents ──────────────────────────────────────────────── -->
-      @if (rowData().documents?.length) {
+      @if (documents().length) {
         <div class="notif-doc-section px-3 pt-2 pb-1">
 
           <!-- Header row (desktop) -->
@@ -117,7 +121,7 @@ import { highlightField } from 'app/search/search-collections';
             <span class="notif-doc-col-action"></span>
           </div>
 
-          @for (doc of rowData().documents; track doc['_id']) {
+          @for (doc of documents(); track doc['_id']) {
             <div class="d-flex flex-column flex-md-row align-items-md-center gap-1 gap-md-3 py-2 notif-doc-row">
               <span class="flex-fill small notif-doc-name">
                 {{ doc['displayName'] || doc['documentFileName'] || 'Untitled' }}
@@ -166,9 +170,35 @@ import { highlightField } from 'app/search/search-collections';
 export class SearchNotificationCardComponent {
   rowData = input.required<any>();
 
-  private sanitizer  = inject(DomSanitizer);
+  private sanitizer     = inject(DomSanitizer);
   private configService = inject(ConfigService);
-  private utils      = inject(Utils);
+  private utils         = inject(Utils);
+  private api           = inject(ApiService);
+
+  /** Documents fetched lazily; auto-cancelled via switchMap when rowData._id changes. */
+  readonly documents = toSignal(
+    toObservable(this.rowData).pipe(
+      map(rd => rd?._id as string | undefined),
+      distinctUntilChanged(),
+      switchMap(id => id
+        ? this.api.getDocumentsByNotificationId(id).pipe(
+            map((docs: any) => Array.isArray(docs) ? docs : []),
+            catchError(() => of([])),
+          )
+        : of([])
+      ),
+    ),
+    { initialValue: [] as any[] },
+  );
+
+  /** Description with Typesense highlight when available, full HTML otherwise. */
+  readonly safeDescription = computed(() => {
+    const rd = this.rowData();
+    const highlight = rd?._highlightResult?.['description']?.value;
+    if (highlight) return highlightField(rd, 'description');
+    const raw = rd?.description;
+    return raw ? this.sanitizer.bypassSecurityTrustHtml(raw) : null;
+  });
 
   hl(field: string): string {
     return highlightField(this.rowData(), field);
@@ -177,11 +207,6 @@ export class SearchNotificationCardComponent {
   authorName(id: string | null | undefined): string {
     if (!id) return '';
     return this.utils.idToListName(id, this.configService.listItems);
-  }
-
-  safeDescription(): any {
-    const raw = this.rowData()?.description;
-    return raw ? this.sanitizer.bypassSecurityTrustHtml(raw) : null;
   }
 }
 

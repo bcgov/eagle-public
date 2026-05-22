@@ -12,7 +12,9 @@ import { DomSanitizer } from '@angular/platform-browser';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ApiService } from '../../services/api';
 import { ConfigService } from '../../services/config.service';
-import { resolveDocUrl } from 'app/search/search-collections';
+import { resolveDocUrl, highlightField } from 'app/search/search-collections';
+import { sanitizeHighlight, escapeHtml } from 'app/search/highlight/sanitize-highlight';
+import { sanitizeWordHtml } from 'app/shared/utils/word-html-sanitizer';
 
 @Component({
   selector: 'app-search-activity-card',
@@ -23,7 +25,7 @@ import { resolveDocUrl } from 'app/search/search-collections';
       <div class="search-card-header">
         <div class="d-flex align-items-start gap-2 flex-wrap">
           <h5 class="fw-bold mb-0 flex-fill"
-            [innerHTML]="hit()['_highlightResult']?.['headline']?.value ?? hit()['headline'] ?? hit()['notificationName'] ?? 'Untitled'">
+            [innerHTML]="hl('headline') || hit()['notificationName'] || 'Untitled'">
           </h5>
           @if (activityBadge(); as badge) {
             <span class="badge flex-shrink-0" [ngClass]="badge.cls">
@@ -215,29 +217,30 @@ export class SearchActivityCardComponent {
     return url ? resolveDocUrl(url) : null;
   });
 
+  hl(field: string): string {
+    return highlightField(this.hit(), field);
+  }
+
   safeContent = computed(() => {
     const h = this.hit();
-    const highlight = h['_highlightResult']?.['content']?.value;
-    // contentHtml is already proper HTML — decode entities only, no linkify
-    const htmlOnly = !highlight && h['contentHtml'];
-    const raw = highlight ?? (htmlOnly || h['content']);
-    if (!raw) return null;
-    const decoded = this.decodeHtmlEntities(raw);
-    return this.sanitizer.bypassSecurityTrustHtml(htmlOnly ? decoded : this.linkifyUrls(decoded));
-  });
+    const rawHighlight = h['_highlightResult']?.['content']?.value;
 
-  private decodeHtmlEntities(str: string): string {
-    const named: Record<string, string> = {
-      amp: '&', nbsp: '\u00A0', ndash: '\u2013', mdash: '\u2014',
-      rsquo: '\u2019', lsquo: '\u2018', rdquo: '\u201D', ldquo: '\u201C',
-      quot: '"', apos: "'", hellip: '\u2026', bull: '\u2022',
-      middot: '\u00B7', copy: '\u00A9', reg: '\u00AE', trade: '\u2122',
-    };
-    return str
-      .replace(/&([a-z]+);/gi, (_, n) => named[n.toLowerCase()] ?? `&${n};`)
-      .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(+n))
-      .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCharCode(parseInt(n, 16)));
-  }
+    if (rawHighlight) {
+      // sanitizeHighlight: strips dangerous HTML, preserves <mark>, decodes entities
+      const sanitized = sanitizeHighlight(rawHighlight);
+      return this.sanitizer.bypassSecurityTrustHtml(this.linkifyUrls(sanitized));
+    }
+
+    const htmlContent = h['contentHtml'];
+    if (htmlContent) {
+      return this.sanitizer.bypassSecurityTrustHtml(sanitizeWordHtml(htmlContent));
+    }
+
+    const plain = h['content'];
+    if (!plain) return null;
+    // Plain text — escape to prevent XSS, then linkify
+    return this.sanitizer.bypassSecurityTrustHtml(this.linkifyUrls(escapeHtml(String(plain))));
+  });
 
   private linkifyUrls(text: string): string {
     return text.replace(/(https?:\/\/[^\s<>"{}|\\^`[\]]+)/g, (url) => {
