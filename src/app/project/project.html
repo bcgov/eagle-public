@@ -4,6 +4,9 @@
            <details-sidebar [project]="project()" (sidebarToggle)="handleSidebarToggle($event)"></details-sidebar>
             <div class="content">
                 @if (project()?.commentPeriodForBanner) {
+                    @if (project()!.commentPeriodForBanner!.isMet && project()!.commentPeriodForBanner!.metURL) {
+                        <app-engage-banner [engagementUrl]="project()!.commentPeriodForBanner!.metURL" />
+                    } @else {
                     <div class="pcp-banner col-sm-12">
                         <div class="pcp-banner-content">
                             <div class="pcp-banner-header">
@@ -15,11 +18,7 @@
                                 @if (project()!.commentPeriodForBanner!.commentPeriodStatus === 'Open') {
                                     <div class="pcp-banner-actions">
                                         <button type="button" class="btn btn-outline-warning" (click)="goToViewComments()">
-                                            @if (project()!.commentPeriodForBanner!.isMet) {
-                                                <span>View on engage.eao.gov.bc.ca</span>
-                                            } @else {
-                                                <span>View Comment Period</span>
-                                            }
+                                            <span>View Comment Period</span>
                                         </button>
                                     </div>
                                 }
@@ -38,6 +37,7 @@
                             }
                         </div>
                     </div>
+                    }
                 }
 
                 <div class="main-content">

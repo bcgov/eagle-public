@@ -1,0 +1,34 @@
+@if (loading()) {
+  <div class="engage-banner--loading">
+    <div class="engage-banner__skeleton"></div>
+  </div>
+} @else if (engagement(); as eng) {
+  <div class="engage-banner">
+    <img class="engage-banner__image" [src]="eng.banner_url" [alt]="eng.name" fetchpriority="high" loading="eager">
+    <div class="engage-banner__overlay">
+      <div class="engage-banner__card">
+        <h2 class="engage-banner__title">{{ eng.name }}</h2>
+        @if (eng.description) {
+          <p class="engage-banner__description">{{ eng.description }}</p>
+        }
+        @if (eng.start_date && eng.end_date) {
+          <p class="engage-banner__dates">
+            Engagement dates: {{ eng.start_date | date:"MMM d, yyyy" }} to {{ eng.end_date | date:"MMM d, yyyy" }}
+          </p>
+        }
+        <div class="engage-banner__footer">
+          @if (engagementStatus(); as status) {
+            <span class="engage-banner__status-chip engage-banner__status-chip--{{ status | lowercase }}">{{ status }}</span>
+          }
+          <a class="engage-banner__cta"
+             [href]="engagementUrl()"
+             target="_blank"
+             rel="noopener noreferrer">
+            View Engagement
+            <i class="material-icons">open_in_new</i>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+}

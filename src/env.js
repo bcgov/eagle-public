@@ -41,6 +41,11 @@
   // Build hash — replaced during CI build
   window.__env.GH_HASH = 'local-build';
 
+  // Engage API — used by EngageBannerComponent to fetch engagement data.
+  // Local dev: proxied through /engage-api (proxy.conf.js → epic-engage-web-prod).
+  // Deployed: set per environment in eao-nginx rproxy ConfigMap.
+  window.__env.ENGAGE_API_URL = '/engage-api';
+
   // Typesense search — all queries proxy through eagle-api (/api/public/typesense/*).
   // No API key needed in the browser; eagle-api injects role filter server-side.
 

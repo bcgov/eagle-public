@@ -16,6 +16,7 @@ export interface EnvConfig {
   ANALYTICS_DEBUG?: boolean;
   ANALYTICS_ENHANCED_TRACKING?: boolean;
   ANALYTICS_TRAFFIC_TRACKING?: boolean;
+  ENGAGE_API_URL?: string;
   GH_HASH?: string;
 }
 

@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, AfterViewInit, ElementRef, signal, ChangeDetectionStrategy, inject, Renderer2, CUSTOM_ELEMENTS_SCHEMA, effect, untracked } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit, ElementRef, signal, ChangeDetectionStrategy, inject, Renderer2, effect, untracked } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule, NavigationEnd } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import { Observable, Subject, forkJoin, of } from 'rxjs';
@@ -18,6 +18,8 @@ import { DetailsSidebarComponent } from './details-sidebar/details-sidebar';
 import { SafeHtmlPipe } from '../shared/pipes/safe-html-converter.pipe';
 import { LoggingService } from '../services/logging.service';
 import { AnalyticsService } from '../services/analytics/analytics.service';
+import { EngageBannerComponent } from './engage-banner/engage-banner.component';
+import { EngageApiService } from '../services/engage-api.service';
 
 @Component({
   selector: 'app-project',
@@ -25,12 +27,12 @@ import { AnalyticsService } from '../services/analytics/analytics.service';
     DatePipe,
     RouterModule,
     DetailsSidebarComponent,
-    SafeHtmlPipe
+    SafeHtmlPipe,
+    EngageBannerComponent
   ],
   templateUrl: './project.html',
   styleUrl: './project.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  schemas: [CUSTOM_ELEMENTS_SCHEMA],
   host: {
     '(window:resize)': 'onResize($event)'
   },
@@ -47,6 +49,7 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
   public configService = inject(ConfigService);
   public projectService = inject(ProjectService);
   public commentPeriodService = inject(CommentPeriodService);
+  private engageApi = inject(EngageApiService);
 
   public project = signal<Project | null>(null);
   public period = signal<CommentPeriod | null>(null);
@@ -110,6 +113,12 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
             this.renderer.removeClass(document.body, 'no-scroll');
             this.isLoading.set(false);
             setTimeout(() => this.initMap(), 0);
+            // Warm engage-banner cache — start fetching before the banner component
+            // mounts so it subscribes to an already-in-flight request.
+            const metURL = project.commentPeriodForBanner?.metURL;
+            if (project.commentPeriodForBanner?.isMet && metURL) {
+              this.engageApi.getEngagementByUrl(metURL).pipe(take(1)).subscribe();
+            }
           } else {
             this.handleProjectLoadError();
           }

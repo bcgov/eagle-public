@@ -1,0 +1,128 @@
+.engage-banner {
+  --h: 480px;
+  position: relative;
+  width: 100%;
+  height: var(--h);
+  overflow: hidden;
+}
+
+.engage-banner--loading {
+  height: var(--h);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e0e0e0;
+}
+
+.engage-banner__skeleton {
+  width: 100%;
+  height: var(--h);
+  background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.engage-banner__image {
+  display: block;
+  width: 100%;
+  height: var(--h);
+  object-fit: cover;
+}
+
+.engage-banner__overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+
+.engage-banner__card {
+  background: rgba(242, 242, 242, 0.95);
+  padding: 1rem 1rem 1.25rem;
+  margin: 1rem;
+  max-width: 640px;
+  color: rgb(33, 37, 41);
+}
+
+/* On desktop the sidebar-toggle button is fixed at the left edge of the
+   content area (width: 35px, height: 48px). Increase top + left margin
+   so the card doesn't overlap it. */
+@media (min-width: 1127px) {
+  .engage-banner__card {
+    margin: 3.5rem 1rem 1rem 3.5rem;
+  }
+}
+
+.engage-banner__title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.engage-banner__description {
+  font-size: 0.95rem;
+  margin-bottom: 0.75rem;
+  line-height: 1.5;
+}
+
+.engage-banner__dates {
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.engage-banner__footer {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.engage-banner__status-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.75rem;
+  border-radius: 16px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.engage-banner__status-chip--open {
+  background-color: rgb(46, 125, 50);
+}
+
+.engage-banner__status-chip--upcoming {
+  background-color: #1565c0;
+}
+
+.engage-banner__status-chip--closed {
+  background-color: #616161;
+}
+
+.engage-banner__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background-color: #003366;
+  color: #fff;
+  font-weight: 600;
+  padding: 0.4rem 1rem;
+  border-radius: 4px;
+  text-decoration: none;
+  font-size: 0.875rem;
+  transition: background-color 0.2s;
+}
+
+.engage-banner__cta:hover {
+  background-color: #002244;
+}
+
+.engage-banner__cta .material-icons {
+  font-size: 1rem;
+}
