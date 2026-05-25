@@ -28,8 +28,14 @@ export class EngageBannerComponent {
     const eng = this.engagement();
     if (!eng?.start_date || !eng?.end_date) return null;
     const now = new Date();
-    if (now < new Date(eng.start_date)) return 'Upcoming';
-    if (now > new Date(eng.end_date)) return 'Closed';
+    // Engage API returns date-only strings (e.g. "2026-08-27" with no time).
+    // new Date("2026-08-27") parses as midnight UTC, not midnight local — so
+    // PDT users would see "Closed" from 5 PM the previous day. Fix: append
+    // T23:59:59 (no timezone = local) so it closes at end-of-day locally.
+    const parseDate = (s: string) =>
+      s.includes('T') || s.includes(' ') ? new Date(s) : new Date(s + 'T23:59:59');
+    if (now < parseDate(eng.start_date)) return 'Upcoming';
+    if (now > parseDate(eng.end_date)) return 'Closed';
     return 'Open';
   });
 

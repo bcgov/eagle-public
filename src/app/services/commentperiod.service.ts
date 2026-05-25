@@ -65,21 +65,19 @@ export class CommentPeriodService {
 
   /**
    * Given a comment period, returns status abbreviation.
+   * Delegates to the commentPeriodStatus set on the model, which correctly
+   * handles midnight-stored dates (admin picked a date with no time) by
+   * treating them as end-of-day so the period stays Open all closing day.
    */
   getStatusCode(commentPeriod: CommentPeriod): string {
     if (!commentPeriod || !commentPeriod.dateStarted || !commentPeriod.dateCompleted) {
       return this.NOT_OPEN;
     }
-
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 0, 0);
-
-    if (commentPeriod.dateCompleted < today) {
-      return this.CLOSED;
-    } else if (commentPeriod.dateStarted > today) {
-      return this.NOT_STARTED;
-    } else {
-      return this.OPEN;
+    switch (commentPeriod.commentPeriodStatus) {
+      case 'Open':    return this.OPEN;
+      case 'Pending': return this.NOT_STARTED;
+      case 'Closed':  return this.CLOSED;
+      default:        return this.NOT_OPEN;
     }
   }
 
