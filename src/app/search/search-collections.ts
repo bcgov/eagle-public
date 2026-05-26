@@ -258,16 +258,23 @@ export const COLLECTIONS: Record<CollectionId, CollectionConfig> = {
 
   document_chunks: {
     indexName: 'document_chunks',
-    queryBy: 'content',
-    queryByWeights: '9000',
-    highlightFields: 'content',
+    queryBy: 'documentName,documentType,milestone,projectName,content',
+    queryByWeights: '9000,7000,5000,3000,1000',
+    highlightFields: 'documentName,content',
     hitsPerPage: 20,
     defaultSortBy: '',
     placeholder: 'Search PDF document text…',
     facets: [
       { attribute: 'documentType', heading: 'Document Type', operator: 'or', limit: 100, sorter: sortByName },
+      { attribute: 'milestone',    heading: 'Milestone',      operator: 'or', limit: 100, sorter: sortByName },
     ],
     dateFacet: { field: 'datePosted', heading: 'Date Posted', fromLabel: 'From', toLabel: 'To' },
+    sortOptions: [
+      { label: 'Relevance',    value: '_text_match:desc,datePosted:desc' },
+      { label: 'Newest First', value: 'datePosted:desc' },
+      { label: 'Oldest First', value: 'datePosted:asc' },
+      { label: 'Doc Name A–Z', value: 'documentName:asc' },
+    ],
   },
 };
 
@@ -305,10 +312,9 @@ export const TAB_FACETS: Record<string, readonly FacetDef[]> = {
 
 import type { IColumnObject } from 'app/shared/components/table-template/table-object';
 
-export type TableTab = 'projects' | 'documents' | 'updates' | 'notifications';
+export type TableTab = 'projects' | 'updates' | 'notifications';
 export const TABLE_TABS: { id: TableTab; label: string }[] = [
   { id: 'projects',      label: 'Projects'      },
-  { id: 'documents',     label: 'Documents'     },
   { id: 'updates',       label: 'Updates'       },
   { id: 'notifications', label: 'Notifications' },
 ];
@@ -336,20 +342,6 @@ export const SEARCH_TABLE_DEFS: Record<TableTab, SearchTableDef> = {
     sortFieldMap: {},
     filterList: ['region', 'type', 'currentPhaseName', 'eacDecision'],
     dateFilterList: ['decisionDateStart', 'decisionDateEnd'],
-  },
-  documents: {
-    columns: [
-      { name: 'Document Name', value: 'displayName', width: 'col-3' },
-      { name: 'Project',       value: 'projectName', width: 'col-2' },
-      { name: 'Date',          value: 'datePosted',  width: 'col-2' },
-      { name: 'Type',          value: 'type',        width: 'col-2' },
-      { name: 'Milestone',     value: 'milestone',   width: 'col-2' },
-      { name: '',              value: 'download',    width: 'col-1', nosort: true },
-    ],
-    defaultSort: '-datePosted',
-    sortFieldMap: {},
-    filterList: ['type', 'milestone', 'documentAuthorType', 'projectPhase'],
-    dateFilterList: ['datePostedStart', 'datePostedEnd'],
   },
   updates: {
     columns: [

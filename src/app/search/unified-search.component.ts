@@ -108,10 +108,9 @@ function createState(id: CollectionId): ColState {
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'projects',      label: 'Projects'              },
-  { id: 'documents',     label: 'Documents'             },
+  { id: 'content',       label: 'Documents'             },
   { id: 'updates',       label: 'Updates'               },
   { id: 'notifications', label: 'Project Notifications' },
-  // { id: 'content',       label: 'PDF Content'           },  // hidden — not ready
 ];
 
 @Component({
