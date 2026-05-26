@@ -35,10 +35,6 @@ import { highlightField } from '../search-collections';
                 <div class="search-result-card-value">{{ hit()['documentType'] || '—' }}</div>
               </div>
               <div class="col">
-                <div class="search-result-card-label">Milestone</div>
-                <div class="search-result-card-value">{{ hit()['milestone'] || '—' }}</div>
-              </div>
-              <div class="col">
                 <div class="search-result-card-label">Date Posted</div>
                 <div class="search-result-card-value">
                   @if (hit()['datePosted']) {
@@ -49,9 +45,7 @@ import { highlightField } from '../search-collections';
                 </div>
               </div>
             </div>
-            @if (hasContentMatch()) {
-              <div class="search-result-content" [innerHTML]="snippet()"></div>
-            }
+            <div class="search-result-content" [innerHTML]="snippet()"></div>
           </div>
           <div class="search-card-vr d-none d-md-block"></div>
           <div class="card-actions">
@@ -85,12 +79,6 @@ export class SearchDocumentChunkCardComponent {
   // highlightField() → sanitizeHighlight() output — safe for [innerHTML]
   docName = computed(() => highlightField(this.hit(), 'documentName') || 'Untitled Document');
   snippet = computed(() => highlightField(this.hit(), 'content'));
-
-  /** True when the query matched inside the PDF content (vs. metadata fields only). */
-  hasContentMatch = computed(() => {
-    const hl = this.hit()['_highlightResult']?.['content']?.value;
-    return !!hl && hl.includes('<mark>');
-  });
 
   pageFragment = (): string => {
     const p = this.hit()['pageNumber'];

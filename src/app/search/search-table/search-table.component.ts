@@ -26,11 +26,13 @@ import {
   mergeItems, groupByLegislation,
 } from '../search-collections';
 import { SearchProjectTableRowsComponent } from './search-project-table-rows.component';
+import { SearchDocTableRowsComponent } from './search-doc-table-rows.component';
 import { ActivityCardComponent } from 'app/shared/components/activity-card/activity-card.component';
 
 const ROW_COMPONENTS: Partial<Record<TableTab, Type<TableRowComponent>>> = {
-  projects: SearchProjectTableRowsComponent,
-  updates:  ActivityCardComponent,
+  projects:  SearchProjectTableRowsComponent,
+  documents: SearchDocTableRowsComponent,
+  updates:   ActivityCardComponent,
 };
 
 const PAGE_SIZE_OPTIONS = [
@@ -73,7 +75,7 @@ export class SearchTableComponent implements OnInit, AfterViewInit, OnDestroy {
   notificationItems = signal<any[]>([]);
 
   // ── State signals ───────────────────────────────────────────────────────────
-  activeTab     = signal<TableTab>('projects');
+  activeTab     = signal<TableTab>('documents');
   searchQuery   = signal('');
   loading       = signal(true);  // true until first search completes — avoids flash of empty-state
   totalFound    = signal(0);
