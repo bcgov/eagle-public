@@ -52,7 +52,7 @@ export class SearchWrapperComponent implements OnInit {
   ngOnInit(): void {
     this.route.queryParams
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(p => this.isContentTab.set(p['tab'] === 'content'));
+      .subscribe(p => this.isContentTab.set(p['tab'] === 'content' || p['tab'] === 'documents'));
 
     this.typesenseService.checkHealth().then(available => {
       this.useTypesense.set(available);

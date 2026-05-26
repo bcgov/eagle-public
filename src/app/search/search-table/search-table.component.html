@@ -2,7 +2,18 @@
 <div class="tabs-container pt-3">
   <div class="container">
     <ul class="nav-tabs" role="tablist" aria-label="Search dataset tabs">
-      @for (tab of tabs; track tab.id) {
+      @for (tab of tabs; track tab.id; let i = $index) {
+        @if (i === 1) {
+          <li class="nav-item">
+            <button
+              class="nav-link"
+              role="tab"
+              [attr.aria-selected]="false"
+              id="search-tab-content"
+              (click)="goToDocuments()"
+            >Documents</button>
+          </li>
+        }
         <li class="nav-item">
           <button
             class="nav-link"

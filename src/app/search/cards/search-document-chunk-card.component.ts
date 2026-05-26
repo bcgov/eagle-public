@@ -17,7 +17,7 @@ import { highlightField } from '../search-collections';
       <div class="search-card-header">
         <div class="d-flex align-items-start gap-2">
           <h5 class="fw-bold mb-0 flex-fill" [innerHTML]="docName()"></h5>
-          @if (hit()['pageNumber']) {
+          @if (hasQuery() && hit()['pageNumber']) {
             <span class="search-doc-ext-badge">p.{{ hit()['pageNumber'] }}</span>
           }
         </div>
@@ -35,6 +35,10 @@ import { highlightField } from '../search-collections';
                 <div class="search-result-card-value">{{ hit()['documentType'] || '—' }}</div>
               </div>
               <div class="col">
+                <div class="search-result-card-label">Milestone</div>
+                <div class="search-result-card-value">{{ hit()['milestone'] || '—' }}</div>
+              </div>
+              <div class="col">
                 <div class="search-result-card-label">Date Posted</div>
                 <div class="search-result-card-value">
                   @if (hit()['datePosted']) {
@@ -45,7 +49,9 @@ import { highlightField } from '../search-collections';
                 </div>
               </div>
             </div>
-            <div class="search-result-content" [innerHTML]="snippet()"></div>
+            @if (hasContentMatch()) {
+              <div class="search-result-content" [innerHTML]="snippet()"></div>
+            }
           </div>
           <div class="search-card-vr d-none d-md-block"></div>
           <div class="card-actions">
@@ -61,8 +67,9 @@ import { highlightField } from '../search-collections';
                 [href]="'/api/document/' + hit()['documentId'] + '/fetch' + pageFragment()"
                 target="_blank"
                 rel="noopener noreferrer"
+                download
                 (click)="documentClicked.emit(); $event.stopPropagation()">
-                <i class="material-icons">picture_as_pdf</i><span>View Page</span>
+                <i class="material-icons">file_download</i><span>Download</span>
               </a>
             }
           </div>
@@ -73,12 +80,19 @@ import { highlightField } from '../search-collections';
 })
 export class SearchDocumentChunkCardComponent {
   hit = input.required<any>();
+  hasQuery = input(false);
   documentClicked = output<void>();
   projectClicked = output<void>();
 
   // highlightField() → sanitizeHighlight() output — safe for [innerHTML]
   docName = computed(() => highlightField(this.hit(), 'documentName') || 'Untitled Document');
   snippet = computed(() => highlightField(this.hit(), 'content'));
+
+  /** True when the query matched inside the PDF content (vs. metadata fields only). */
+  hasContentMatch = computed(() => {
+    const hl = this.hit()['_highlightResult']?.['content']?.value;
+    return !!hl && hl.includes('<mark>');
+  });
 
   pageFragment = (): string => {
     const p = this.hit()['pageNumber'];

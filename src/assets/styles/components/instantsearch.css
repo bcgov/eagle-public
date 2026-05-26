@@ -120,6 +120,10 @@
 .search-result-content {
   font-size: .875rem;
   color: var(--bs-body-color);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 .search-result-content a {
   color: #38598A;

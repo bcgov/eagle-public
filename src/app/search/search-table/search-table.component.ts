@@ -26,13 +26,11 @@ import {
   mergeItems, groupByLegislation,
 } from '../search-collections';
 import { SearchProjectTableRowsComponent } from './search-project-table-rows.component';
-import { SearchDocTableRowsComponent } from './search-doc-table-rows.component';
 import { ActivityCardComponent } from 'app/shared/components/activity-card/activity-card.component';
 
 const ROW_COMPONENTS: Partial<Record<TableTab, Type<TableRowComponent>>> = {
-  projects:  SearchProjectTableRowsComponent,
-  documents: SearchDocTableRowsComponent,
-  updates:   ActivityCardComponent,
+  projects: SearchProjectTableRowsComponent,
+  updates:  ActivityCardComponent,
 };
 
 const PAGE_SIZE_OPTIONS = [
@@ -75,7 +73,7 @@ export class SearchTableComponent implements OnInit, AfterViewInit, OnDestroy {
   notificationItems = signal<any[]>([]);
 
   // ── State signals ───────────────────────────────────────────────────────────
-  activeTab     = signal<TableTab>('documents');
+  activeTab     = signal<TableTab>('projects');
   searchQuery   = signal('');
   loading       = signal(true);  // true until first search completes — avoids flash of empty-state
   totalFound    = signal(0);
@@ -158,6 +156,10 @@ export class SearchTableComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   // ── Tab switching ─────────────────────────────────────────────────────────
+  goToDocuments(): void {
+    this.router.navigate(['/search'], { queryParams: { tab: 'content' } });
+  }
+
   switchTab(tab: TableTab): void {
     const params: Params = {
       tab,

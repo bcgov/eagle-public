@@ -108,10 +108,9 @@ function createState(id: CollectionId): ColState {
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'projects',      label: 'Projects'              },
-  { id: 'documents',     label: 'Documents'             },
+  { id: 'content',       label: 'Documents'             },
   { id: 'updates',       label: 'Updates'               },
   { id: 'notifications', label: 'Project Notifications' },
-  // { id: 'content',       label: 'PDF Content'           },  // hidden — not ready
 ];
 
 @Component({
@@ -402,6 +401,7 @@ const TABS: { id: Tab; label: string }[] = [
                   @case ('document_chunks') {
                     @for (hit of activeHits(); track hit['id'] ?? hit['objectID']; let i = $index) {
                       <app-search-document-chunk-card [hit]="hit"
+                        [hasQuery]="!!searchQuery()"
                         (documentClicked)="trackChunkDocClick(hit, i)"
                         (projectClicked)="trackResultClick(hit, i)" />
                     }
