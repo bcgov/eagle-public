@@ -1,6 +1,6 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, map, expand, reduce, EMPTY } from 'rxjs';
+import { Observable, map, expand, reduce, EMPTY, firstValueFrom, timeout } from 'rxjs';
 import TypesenseInstantSearchAdapter from 'typesense-instantsearch-adapter';
 import { ConfigService } from './config.service';
 
@@ -24,6 +24,16 @@ export class TypesenseService {
   private lastHitsCache: Record<string, any[]> = {};
   private lastFacetsCache: Record<string, Record<string, any[]>> = {};
   private healthCheckResult: boolean | null = null;
+
+  /** Map of documentId → content snippet HTML from the latest chunk search. Signal-backed for reactivity. */
+  private _contentSnippets = signal<Map<string, string>>(new Map());
+  /** Memoize in-flight chunk fetches per query — IS.js fires search() 2-4× per keystroke. */
+  private _chunkCache = new Map<string, Promise<Map<string, any>>>();
+
+  /** Returns the cached content snippet for a given document ID (if any). Reactive — triggers computed() re-evaluation. */
+  getContentSnippet(docId: string): string {
+    return this._contentSnippets().get(docId) ?? '';
+  }
 
   /** Base URL of the eagle-api Typesense proxy. Used by all search methods. */
   private get proxyBase(): string {
@@ -86,10 +96,10 @@ export class TypesenseService {
         server: {
           apiKey: 'proxy',
           nodes: [{ host, port, protocol, path }],
-          connectionTimeoutSeconds: 5,
+          connectionTimeoutSeconds: 8,   // total per-request timeout (Axios); allow for proxy chain latency
           numRetries: 1,
           retryIntervalSeconds: 0.1,
-          cacheSearchResultsForSeconds: 0,
+          cacheSearchResultsForSeconds: 60, // deduplicates IS.js multi-widget fires; helps repeat queries in session
           sendApiKeyAsQueryParam: false,
         },
         additionalSearchParameters,
@@ -133,7 +143,7 @@ export class TypesenseService {
     return this.searchCollection('activities', {
       q: '*',
       query_by: 'headline',
-      filter_by: 'active:true',
+      filter_by: 'active:=true',
       sort_by: 'pinned:desc,dateAdded:desc',
       per_page: String(perPage),
     }).pipe(
@@ -355,6 +365,147 @@ export class TypesenseService {
       `${this.proxyBase}/collections/${collection}/documents/search`,
       { params }
     );
+  }
+
+  /**
+   * Performs a Typesense multi_search via the eagle-api proxy.
+   * Sends multiple sub-queries in one HTTP call; the proxy injects role filters per collection.
+   */
+  multiSearch(searches: Record<string, any>[]): Promise<any> {
+    return firstValueFrom(this.http.post<any>(
+      `${this.proxyBase}/multi_search`,
+      { searches }
+    ).pipe(timeout(8000)));
+  }
+
+  /**
+   * Returns a custom InstantSearch.js-compatible searchClient that queries BOTH
+   * the `documents` collection (metadata) and `document_chunks` collection (PDF content).
+   *
+   * Delegates fully to the Typesense adapter (preserving facets, pagination, highlighting)
+   * then augments hits with content snippets from chunk matches.
+   *
+   * @param metadataParams  Typesense search params for the documents collection
+   */
+  getDocumentsSearchClient(metadataParams: { query_by: string; [key: string]: any }): any {
+    const { host, port, protocol, path } = this.parseHost(this.proxyBase);
+    const baseAdapter = new TypesenseInstantSearchAdapter({
+      server: {
+        apiKey: 'proxy',
+        nodes: [{ host, port, protocol, path }],
+        connectionTimeoutSeconds: 8,   // total per-request timeout (Axios); allow for proxy chain latency
+        numRetries: 1,
+        retryIntervalSeconds: 0.1,
+        cacheSearchResultsForSeconds: 60, // deduplicates IS.js multi-widget fires; helps repeat queries in session
+        sendApiKeyAsQueryParam: false,
+      },
+      additionalSearchParameters: metadataParams,
+    });
+
+    const originalClient = baseAdapter.searchClient;
+
+    return {
+      ...originalClient,
+      search: async (requests: any[]): Promise<any> => {
+        // Always delegate to the adapter — preserves facets, pagination, query state
+        const baseResponse: any = await originalClient.search(requests as any);
+
+        // Extract query from first request
+        const query = requests[0]?.params?.query ?? '';
+        if (!query || query === '*' || query.length < 3) return baseResponse;
+
+        // Collect metadata hit doc IDs for targeted snippet lookup
+        const mainResult = baseResponse.results?.[0];
+        if (!mainResult?.hits) return baseResponse;
+
+        const metaDocIds = (mainResult.hits as any[])
+          .map((h: any) => h.objectID ?? h.id)
+          .filter(Boolean) as string[];
+
+        // Fire chunk search without awaiting — _contentSnippets signal update will
+        // reactively update the card components via their contentSnippet computed().
+        // Not awaiting avoids blocking Typesense while it handles the next IS.js request.
+        this.fetchChunkSnippets(query, metaDocIds);
+
+        return baseResponse;
+      },
+    };
+  }
+
+  /**
+   * Fetches content snippets from document_chunks using two parallel Typesense queries
+   * bundled into one multiSearch call:
+   *   - Broad search: top-50 content-matching chunks across all documents (finds content-only hits)
+   *   - Targeted search: all chunks for the given metaDocIds (finds snippets for metadata hits
+   *     whose PDFs are indexed, even if they weren't in the top-50 broad results)
+   *
+   * Memoized per query string for ~2 s so IS.js double-fires share one API call.
+   * Returns a Map of documentId → { text, docName, projectName }.
+   */
+  private fetchChunkSnippets(query: string, metaDocIds: string[]): Promise<Map<string, any>> {
+    if (this._chunkCache.has(query)) return this._chunkCache.get(query)!;
+    const p = this._doFetchChunkSnippets(query, metaDocIds);
+    this._chunkCache.set(query, p);
+    p.finally(() => setTimeout(() => this._chunkCache.delete(query), 2000));
+    return p;
+  }
+
+  private async _doFetchChunkSnippets(query: string, metaDocIds: string[]): Promise<Map<string, any>> {
+    const snippetMap = new Map<string, any>();
+    const baseParams = {
+      collection: 'document_chunks',
+      query_by: 'content',
+      sort_by: '_text_match:desc',          // best content matches first
+      drop_tokens_threshold: '0',           // never degrade by dropping search terms
+      highlight_fields: 'content',          // snippet only — avoids multi-KB full-field payloads
+      include_fields: 'documentId,documentName,projectName',
+      highlight_start_tag: '<mark>',
+      highlight_end_tag: '</mark>',
+    };
+
+    const queries: any[] = [
+      // Query 0 — broad: top content-matching chunks (reveals content-only docs)
+      { ...baseParams, q: query, per_page: '50', page: '1' },
+    ];
+    if (metaDocIds.length) {
+      // Query 1 — targeted: best chunks for the current metadata hits' documents.
+      // Uses filter_by so even docs that rank outside the top-50 broad results get snippets.
+      queries.push({
+        ...baseParams,
+        q: query,
+        filter_by: `documentId:[${metaDocIds.join(',')}]`,
+        per_page: String(metaDocIds.length), // one per doc is sufficient (dedup by docId)
+        page: '1',
+      });
+    }
+
+    const addHits = (hits: any[]) => {
+      for (const hit of hits) {
+        const docId = hit.document?.documentId;
+        if (!docId || snippetMap.has(docId)) continue; // first hit per doc = highest score
+        const text = hit.highlights?.find((h: any) => h.field === 'content')?.snippet ?? '';
+        if (text) snippetMap.set(docId, {
+          text,
+          docName:  hit.document.documentName  ?? '',
+          projectName: hit.document.projectName ?? '',
+        });
+      }
+    };
+
+    try {
+      const res = await this.multiSearch(queries);
+      // Process targeted first (gives metadata docs their best snippet);
+      // then broad fills in content-only docs without overriding targeted entries.
+      addHits(res?.results?.[1]?.hits ?? []);
+      addHits(res?.results?.[0]?.hits ?? []);
+
+      this._contentSnippets.set(new Map(
+        [...snippetMap].map(([id, v]) => [id, v.text]),
+      ));
+    } catch (e) {
+      console.warn('[TypesenseService] Chunk snippet fetch failed:', e);
+    }
+    return snippetMap;
   }
 
   /**

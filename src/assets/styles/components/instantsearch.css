@@ -135,7 +135,7 @@
 }
 .search-result-card mark {
   padding: 0;
-  background-color: #fff3cd;
+  background-color: #fff3a3;
   border-radius: 2px;
 }
 
@@ -166,11 +166,17 @@
 .filter-inner-pad { padding-bottom: 0.5rem; }
 @media (min-width: 768px) {
   .filter-wrap { grid-template-rows: 1fr; }
+
+  /* ── Two-panel search layout (shared by search-table and unified-search) ── */
+  .search-body {
+    display: flex;
+    flex-direction: column; /* filter-bar height doesn't displace search-columns */
+  }
   .search-columns {
     display: flex;
     flex-direction: row;
     flex-wrap: nowrap;
-    align-items: flex-start;
+    align-items: flex-start; /* sidebar pins to top; results col stretches independently */
   }
 }
 
@@ -220,9 +226,18 @@
 .results-col {
   position: relative;
   overflow-anchor: none;
-  min-height: 500px;
+  min-height: 200px;
   flex: 1;
   min-width: 0;
+}
+@media (min-width: 768px) {
+  .ts-results-col,
+  .results-col {
+    overflow-y: auto;
+    /* tall enough to scroll without the sidebar jumping; synced to sidebar max-height var */
+    max-height: var(--sidebar-max-h, calc(100dvh - var(--header-total-height, 4.2rem)));
+    min-height: 0;
+  }
 }
 .results-loading-overlay {
   position: absolute;
@@ -230,6 +245,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  background: rgba(255, 255, 255, 0.65);
+  z-index: 10;
 }
 
 /* ── Desktop collapsible sidebar ── */
@@ -243,6 +260,7 @@
   .filter-sidebar {
     width: 250px;
     min-width: 250px;
+    margin-right: 0.75rem;  /* gap between sidebar and results col; matches @sidebar animation open state */
     will-change: width;
     /* Angular @sidebar animation controls width/margin — suppress CSS transitions */
     transition: none !important;
@@ -259,6 +277,7 @@
     min-width: 0;
     overflow: hidden;
     padding-right: 0;
+    margin-right: 0;
   }
 }
 
@@ -363,6 +382,7 @@
 .filter-bar {
   display: flex;
   align-items: flex-start;
+  flex-shrink: 0; /* don't collapse when parent is a flex-column */
 }
 .filter-bar__toggle {
   display: inline-flex;

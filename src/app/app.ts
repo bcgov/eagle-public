@@ -23,7 +23,7 @@ export class App implements OnInit, OnDestroy {
   currentUrl = signal<string>('');
   isContentSearch = computed(() => {
     const url = this.currentUrl();
-    return url.startsWith('/search') && /[?&]tab=content/.test(url);
+    return url.startsWith('/search') && /[?&]tab=(documents|content)/.test(url);
   });
 
   ngOnInit(): void {

@@ -56,7 +56,7 @@ const PAGE_SIZE_OPTIONS = [
   styleUrl: './search-table.component.css',
   animations: [
     trigger('sidebar', [
-      state('open', style({ width: '250px', minWidth: '250px', marginRight: '1.5rem', paddingRight: '0.75rem' })),
+      state('open', style({ width: '250px', minWidth: '250px', marginRight: '0.75rem', paddingRight: '0.75rem' })),
       state('collapsed', style({ width: '0', minWidth: '0', marginRight: '0', paddingRight: '0' })),
       transition('open <=> collapsed', animate('250ms cubic-bezier(0.4, 0, 0.2, 1)')),
     ]),
@@ -65,7 +65,7 @@ const PAGE_SIZE_OPTIONS = [
 export class SearchTableComponent implements OnInit, AfterViewInit, OnDestroy {
   typesenseAvailable = input(false);
 
-  // TABLE_TABS for table views; content tab handled by UnifiedSearchComponent via wrapper
+  // TABLE_TABS for table views; documents tab handled by UnifiedSearchComponent via wrapper
   readonly tabs = TABLE_TABS;
   readonly minDate = new Date(1970, 0, 1);
 
@@ -157,7 +157,7 @@ export class SearchTableComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // ── Tab switching ─────────────────────────────────────────────────────────
   goToDocuments(): void {
-    this.router.navigate(['/search'], { queryParams: { tab: 'content' } });
+    this.router.navigate(['/search'], { queryParams: { tab: 'documents' } });
   }
 
   switchTab(tab: TableTab): void {

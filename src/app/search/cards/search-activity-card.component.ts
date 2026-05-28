@@ -43,13 +43,13 @@ import { sanitizeWordHtml } from 'app/shared/utils/word-html-sanitizer';
                 @if (hit()['projectName']) {
                   <div class="col">
                     <div class="search-result-card-label">Project</div>
-                    <div class="search-result-card-value" [innerHTML]="hit()['projectName']"></div>
+                    <div class="search-result-card-value" [innerHTML]="hl('projectName')"></div>
                   </div>
                 }
                 @if (hit()['type']) {
                   <div class="col">
                     <div class="search-result-card-label">Type</div>
-                    <div class="search-result-card-value" [innerHTML]="hit()['type']"></div>
+                    <div class="search-result-card-value" [innerHTML]="hl('type')"></div>
                   </div>
                 }
                 @if (hit()['dateAdded']) {
@@ -61,7 +61,7 @@ import { sanitizeWordHtml } from 'app/shared/utils/word-html-sanitizer';
                 @if (hit()['notificationName']) {
                   <div class="col">
                     <div class="search-result-card-label">Notification</div>
-                    <div class="search-result-card-value" [innerHTML]="hit()['notificationName']"></div>
+                    <div class="search-result-card-value" [innerHTML]="hl('notificationName')"></div>
                   </div>
                 }
                 @if (hit()['complianceAndEnforcement']) {

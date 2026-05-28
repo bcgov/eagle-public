@@ -62,6 +62,15 @@ export interface CollectionConfig {
   indexName: string;
   queryBy: string;
   queryByWeights: string;
+  /** Typesense text_match_type. 'max_score' (default) ranks by best-matching field score.
+   * 'max_weight' ranks by the highest-weighted field — use when one field should dominate (e.g. content). */
+  textMatchType?: 'max_score' | 'max_weight' | 'sum_score';
+  /** Per-field typo tolerance: comma-separated integers matching queryBy field count.
+   * Set 0 for ID or file-name fields — exact match required (no fuzzy). Default: 2 per field. */
+  numTypos?: string;
+  /** Per-field infix search: comma-separated 'off' | 'always' | 'fallback' per queryBy field.
+   * 'fallback' enables substring matching only when no prefix results found — use for file names and part-number IDs. */
+  infix?: string;
   /** Comma-separated fields Typesense should return highlights for. Only include fields displayed in the card. */
   highlightFields: string;
   /** Comma-separated fields to return as full-value highlights (not snippets). Use for description-like long fields. Leave undefined for the PDF content collection. */
@@ -187,6 +196,8 @@ export const COLLECTIONS: Record<CollectionId, CollectionConfig> = {
     indexName: 'projects',
     queryBy: 'name,displayName,description,epicProjectId,proponent',
     queryByWeights: '9000,8500,8000,3000,1000',
+    numTypos: '2,2,2,0,2',              // epicProjectId (pos 4): exact — project IDs must not fuzzy-match
+    // infix not set — epicProjectId needs infix:true in Typesense schema before this can be enabled
     highlightFields: 'name,description',
     highlightFullFields: 'description',
     hitsPerPage: 20,
@@ -205,7 +216,9 @@ export const COLLECTIONS: Record<CollectionId, CollectionConfig> = {
     indexName: 'documents',
     queryBy: 'displayName,documentFileName,description,projectName',
     queryByWeights: '8500,5000,8000,3000',
-    highlightFields: 'displayName,documentFileName',
+    numTypos: '2,0,2,2',               // documentFileName (pos 2): exact — file names must not fuzzy-match
+    // infix not set — documentFileName needs infix:true in Typesense schema before this can be enabled
+    highlightFields: 'displayName,documentFileName,projectName,type,milestone,documentAuthorType,projectPhase',
     hitsPerPage: 20,
     defaultSortBy: '',
     placeholder: 'Search documents by name, file name, project…',
@@ -258,9 +271,13 @@ export const COLLECTIONS: Record<CollectionId, CollectionConfig> = {
 
   document_chunks: {
     indexName: 'document_chunks',
-    queryBy: 'documentName,documentType,milestone,projectName,content',
-    queryByWeights: '9000,7000,5000,3000,1000',
-    highlightFields: 'documentName,content',
+    // content-first: users search PDF text; documentName/projectName help refine by document identity.
+    // max_weight ensures the highest-weighted field (content) drives the document score,
+    // so a strong content match always outranks a weak metadata match.
+    queryBy: 'content,documentName,projectName,documentType,milestone',
+    queryByWeights: '9000,5000,2000,1500,1000',
+    textMatchType: 'max_weight',
+    highlightFields: 'content,documentName,documentType,milestone,projectName',
     hitsPerPage: 20,
     defaultSortBy: '',
     placeholder: 'Search PDF document text…',
@@ -314,9 +331,9 @@ import type { IColumnObject } from 'app/shared/components/table-template/table-o
 
 export type TableTab = 'projects' | 'updates' | 'notifications';
 export const TABLE_TABS: { id: TableTab; label: string }[] = [
-  { id: 'projects',      label: 'Projects'      },
-  { id: 'updates',       label: 'Updates'       },
-  { id: 'notifications', label: 'Notifications' },
+  { id: 'projects',      label: 'Projects'              },
+  { id: 'updates',       label: 'Updates'               },
+  { id: 'notifications', label: 'Project Notifications' },
 ];
 
 export interface SearchTableDef {

@@ -12,7 +12,7 @@ import { trigger, transition, style, animate } from '@angular/animations';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { Subject, Subscription } from 'rxjs';
-import { debounceTime, distinctUntilChanged, takeUntil } from 'rxjs/operators';
+import { debounceTime, distinctUntilChanged, take, takeUntil } from 'rxjs/operators';
 import instantsearch from 'instantsearch.js';
 import { configure } from 'instantsearch.js/es/widgets';
 import {
@@ -29,7 +29,6 @@ import { SearchProjectCardComponent } from './cards/search-project-card.componen
 import { SearchDocumentCardComponent } from './cards/search-document-card.component';
 import { SearchActivityCardComponent } from './cards/search-activity-card.component';
 import { SearchNotificationCardComponent } from './cards/search-notification-card.component';
-import { SearchDocumentChunkCardComponent } from './cards/search-document-chunk-card.component';
 import {
   type CollectionId,
   type Tab,
@@ -108,7 +107,7 @@ function createState(id: CollectionId): ColState {
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'projects',      label: 'Projects'              },
-  { id: 'content',       label: 'Documents'             },
+  { id: 'documents',     label: 'Documents'             },
   { id: 'updates',       label: 'Updates'               },
   { id: 'notifications', label: 'Project Notifications' },
 ];
@@ -136,7 +135,6 @@ const TABS: { id: Tab; label: string }[] = [
     SearchDocumentCardComponent,
     SearchActivityCardComponent,
     SearchNotificationCardComponent,
-    SearchDocumentChunkCardComponent,
   ],
   template: `
     <!-- ── Tab bar ───────────────────────────────────────────────── -->
@@ -361,17 +359,19 @@ const TABS: { id: Tab; label: string }[] = [
               <div class="text-center py-5 text-muted">
                 <p>Search service is temporarily unavailable. Please try again later.</p>
               </div>
-            } @else if (activeIsLoading()) {
-              <div class="results-loading-overlay">
-                <div class="spinner-border text-secondary" role="status">
-                  <span class="visually-hidden">Loading…</span>
-                </div>
-              </div>
             } @else if (activeHasError()) {
               <div class="text-center text-muted py-5">Search timed out — please try again.</div>
-            } @else if (activeHits().length === 0 && activeHasSearched()) {
-              <div class="text-center text-muted py-5">No results found.</div>
             } @else {
+              @if (activeIsLoading()) {
+                <div class="results-loading-overlay">
+                  <div class="spinner-border text-secondary" role="status">
+                    <span class="visually-hidden">Loading…</span>
+                  </div>
+                </div>
+              }
+              @if (activeHits().length === 0 && activeHasSearched() && !activeIsLoading()) {
+                <div class="text-center text-muted py-5">No results found.</div>
+              } @else if (activeHits().length > 0) {
               <div class="d-flex flex-column gap-3">
                 @switch (activeCollectionId()) {
                   @case ('projects') {
@@ -398,17 +398,10 @@ const TABS: { id: Tab; label: string }[] = [
                         (projectClicked)="trackResultClick(hit, i)" />
                     }
                   }
-                  @case ('document_chunks') {
-                    @for (hit of activeHits(); track hit['id'] ?? hit['objectID']; let i = $index) {
-                      <app-search-document-chunk-card [hit]="hit"
-                        [hasQuery]="!!searchQuery()"
-                        (documentClicked)="trackChunkDocClick(hit, i)"
-                        (projectClicked)="trackResultClick(hit, i)" />
-                    }
-                  }
                 }
               </div>
             }
+            }<!-- /@else -->
             <div #scrollSentinel class="py-2 text-center">
               @if (activeIsLoadingMore()) {
                 <div class="spinner-border spinner-border-sm text-secondary" role="status">
@@ -424,44 +417,9 @@ const TABS: { id: Tab; label: string }[] = [
     </div><!-- /.search-panels -->
   `,
   styles: [`
-    /* .results-col base styles (position, min-height, overlay) live in global instantsearch.css */
-    @media (min-width: 768px) {
-      /* ── Fixed-height search layout ── */
-      :host {
-        display: flex;
-        flex-direction: column;
-        flex: 1;
-        min-height: 0;
-      }
-      .search-panels {
-        flex: 1;
-        min-height: 0;
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-      }
-      /* collection two-panel layout */
-      .search-body {
-        flex: 1;
-        min-height: 0;
-        overflow-x: hidden;
-        overflow-y: hidden;
-      }
-      .search-columns {
-        display: flex;
-        flex-direction: row;
-        flex-wrap: nowrap;
-        height: 100%;
-        overflow: hidden;
-      }
-      .results-col {
-        flex: 1;
-        height: 100%;
-        overflow-y: auto;
-        min-height: unset;
-        min-width: 0;
-      }
-    }
+    /* Layout for .search-panels / .search-body / .search-columns / .results-col
+       lives entirely in global instantsearch.css — no component overrides needed. */
+    :host { display: block; }
   `],
 })
 export class UnifiedSearchComponent implements OnInit, AfterViewInit, OnDestroy {
@@ -472,7 +430,7 @@ export class UnifiedSearchComponent implements OnInit, AfterViewInit, OnDestroy 
   // ── UI state ────────────────────────────────────────────────────────────────
   activeTab   = signal<Tab>('projects');
   searchQuery = signal('');
-  sidebarCollapsed = signal(true);
+  sidebarCollapsed = signal(false);
   collapsedFacets = signal<Set<string>>(new Set());
 
   toggleSidebar(): void {
@@ -617,6 +575,11 @@ export class UnifiedSearchComponent implements OnInit, AfterViewInit, OnDestroy 
     this.activeTab.set(this.parseTab(snap.get('tab')));
     this.searchQuery.set(snap.get('q') ?? '');
 
+    // Eagerly trigger law-lookup list loading so data is in the ReplaySubject buffer
+    // before the Documents tab is first opened. This prevents the layout shift caused
+    // by grouped facet headings appearing after the first IS.js render cycle.
+    this.configService.lists.pipe(take(1)).subscribe();
+
     // Debounced input → update signal + URL after 200 ms pause
     // (Algolia InstantSearch performance guide recommends 200 ms; >300 ms degrades UX)
     this.searchInput$.pipe(
@@ -632,7 +595,8 @@ export class UnifiedSearchComponent implements OnInit, AfterViewInit, OnDestroy 
     // q-only changes are handled by the searchInput$ pipeline and the signal
     // effect above — calling ensureActive here too would fire the search twice.
     this.route.queryParamMap.pipe(takeUntil(this.destroy$)).subscribe(p => {
-      const tab = this.parseTab(p.get('tab'));
+      const raw = p.get('tab');
+      const tab = this.parseTab(raw);
       const q   = p.get('q') ?? '';
       const prevTab = this.activeTab();
       this.activeTab.set(tab);
@@ -641,6 +605,8 @@ export class UnifiedSearchComponent implements OnInit, AfterViewInit, OnDestroy 
       if (q !== this.searchQuery()) {
         this.searchQuery.set(q);
       }
+      // Rewrite legacy tab values (e.g. 'content' → 'documents') in the URL
+      if (raw !== tab) this.updateUrl(tab, q);
       if (tab !== prevTab) {
         const id = tabToCollectionId(tab);
         if (id) this.ensureActive(id);
@@ -776,7 +742,15 @@ export class UnifiedSearchComponent implements OnInit, AfterViewInit, OnDestroy 
       highlight_fields: col.highlightFields,
     };
     if (col.highlightFullFields) params['highlight_full_fields'] = col.highlightFullFields;
+    if (col.textMatchType) params['text_match_type'] = col.textMatchType;
+    if (col.numTypos) params['num_typos'] = col.numTypos;
+    if (col.infix) params['infix'] = col.infix;
     if (sortBy) params['sort_by'] = sortBy;
+
+    // For documents, use multi-search client that queries both metadata + PDF content
+    const searchClient = id === 'documents'
+      ? this.typesense.getDocumentsSearchClient(params)
+      : this.typesense.getSearchClient(params);
 
     // Pass the current query as initialUiState so IS.js's automatic start() search
     // fires with the correct query rather than q='*'. This eliminates the need to
@@ -784,7 +758,7 @@ export class UnifiedSearchComponent implements OnInit, AfterViewInit, OnDestroy 
     // browser connection-pool saturation during rapid tab switching.
     const initialQ = this.searchQuery();
     s.is = instantsearch({
-      searchClient: this.typesense.getSearchClient(params),
+      searchClient,
       indexName: col.indexName,
       ...(initialQ ? { initialUiState: { [col.indexName]: { query: initialQ } } } : {}),
     });
@@ -801,9 +775,24 @@ export class UnifiedSearchComponent implements OnInit, AfterViewInit, OnDestroy 
         if (cached.length > 0) this.zone.run(() => { s.hits.set(cached); s.isLoading.set(false); });
         return;
       }
+      // Guard against stale/transitional IS.js renders: when a new query starts, IS.js
+      // fires the connectInfiniteHits callback with the PREVIOUS rs.results object but
+      // rs.hits=[] (cleared for the new query). Without this guard that clears hits and
+      // sets isLoading=false prematurely — causing a "No results found" flash.
+      const rawQ = (rs.results?.query as string) ?? '';
+      const normQ = rawQ === '*' ? '' : rawQ;
+      if (normQ !== s.lastRefinedQuery) return;
       this.zone.run(() => {
-        this.typesense.setLastHits(col.indexName, rs.hits);
-        s.hits.set([...rs.hits]);
+        // Deduplicate hits (chunk-only results can appear multiple times when IS.js fires search() repeatedly)
+        const seen = new Set<string>();
+        const uniqueHits = rs.hits.filter((h: any) => {
+          const key = h.objectID ?? h.id;
+          if (!key || seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+        this.typesense.setLastHits(col.indexName, uniqueHits);
+        s.hits.set(uniqueHits);
         s.isLoading.set(false);
         s.isLoadingMore.set(false);
         s.hasSearched.set(true);
@@ -851,6 +840,21 @@ export class UnifiedSearchComponent implements OnInit, AfterViewInit, OnDestroy 
       );
     }
 
+    // Subscribe to law-lookup lists BEFORE s.is.start() so that if the ReplaySubject
+    // already has a buffered value (lists loaded via the eager ngOnInit pre-load),
+    // the callback fires synchronously and populates lawLookups before any IS.js
+    // render callback can fire — eliminating the grouped-facet layout shift.
+    if (id === 'documents') {
+      s.dateSubs.push(this.configService.lists.subscribe((lists: any[]) => {
+        for (const f of col.facets) {
+          if (!f.listType) continue;
+          const m = new Map<string, number>();
+          lists.filter(l => l.type === f.listType).forEach((l: any) => m.set(l.name, l.legislation || 0));
+          s.lawLookups[f.attribute].set(m);
+        }
+      }));
+    }
+
     s.configureWidget = configure({ hitsPerPage: col.hitsPerPage });
     widgets.push(s.configureWidget);
     s.is.addWidgets(widgets);
@@ -863,17 +867,6 @@ export class UnifiedSearchComponent implements OnInit, AfterViewInit, OnDestroy 
     });
 
     if (this.sentinelEl) this.setupObserver(id);
-
-    if (id === 'documents') {
-      s.dateSubs.push(this.configService.lists.subscribe((lists: any[]) => {
-        for (const f of col.facets) {
-          if (!f.listType) continue;
-          const m = new Map<string, number>();
-          lists.filter(l => l.type === f.listType).forEach((l: any) => m.set(l.name, l.legislation || 0));
-          s.lawLookups[f.attribute].set(m);
-        }
-      }));
-    }
 
     if (col.dateFacet) {
       const onDateChange = (filterType: 'from' | 'to') => (v: string | null) => {
@@ -936,6 +929,7 @@ export class UnifiedSearchComponent implements OnInit, AfterViewInit, OnDestroy 
   }
 
   private parseTab(raw: string | null): Tab {
+    if (raw === 'content') return 'documents'; // legacy URL redirect
     return VALID_TABS.includes(raw as Tab) ? (raw as Tab) : 'projects';
   }
 

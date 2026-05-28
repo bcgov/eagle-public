@@ -4,9 +4,11 @@ import {
   computed,
   input,
   output,
+  inject,
 } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { highlightField } from '../search-collections';
+import { TypesenseService } from 'app/services/typesense.service';
 
 @Component({
   selector: 'app-search-document-card',
@@ -28,23 +30,23 @@ import { highlightField } from '../search-collections';
             <div class="row row-cols-2 row-cols-md-4 g-2">
               <div class="col">
                 <div class="search-result-card-label">Project</div>
-                <div class="search-result-card-value">{{ hit()['projectName'] || '—' }}</div>
+                <div class="search-result-card-value" [innerHTML]="hl('projectName') || '—'"></div>
               </div>
               <div class="col">
                 <div class="search-result-card-label">Type</div>
-                <div class="search-result-card-value">{{ hit()['type'] || '—' }}</div>
+                <div class="search-result-card-value" [innerHTML]="hl('type') || '—'"></div>
               </div>
               <div class="col">
                 <div class="search-result-card-label">Milestone</div>
-                <div class="search-result-card-value">{{ hit()['milestone'] || '—' }}</div>
+                <div class="search-result-card-value" [innerHTML]="hl('milestone') || '—'"></div>
               </div>
               <div class="col">
                 <div class="search-result-card-label">Author Type</div>
-                <div class="search-result-card-value">{{ hit()['documentAuthorType'] || '—' }}</div>
+                <div class="search-result-card-value" [innerHTML]="hl('documentAuthorType') || '—'"></div>
               </div>
               <div class="col">
                 <div class="search-result-card-label">Phase</div>
-                <div class="search-result-card-value">{{ hit()['projectPhase'] || '—' }}</div>
+                <div class="search-result-card-value" [innerHTML]="hl('projectPhase') || '—'"></div>
               </div>
               <div class="col">
                 <div class="search-result-card-label">Date Posted</div>
@@ -80,11 +82,20 @@ import { highlightField } from '../search-collections';
           <hr class="opacity-25">
           <div class="search-result-content text-muted">{{ hit()['documentFileName'] }}</div>
         }
+        @if (contentSnippet()) {
+          <hr class="opacity-25">
+          <div class="search-result-content">
+            <small class="search-result-card-label d-block mb-1">Content match:</small>
+            <span [innerHTML]="contentSnippet()"></span>
+          </div>
+        }
       </div>
     </article>
   `,
 })
 export class SearchDocumentCardComponent {
+  private typesense = inject(TypesenseService);
+
   hit = input.required<any>();
   showProjectLink = input(true);
   downloadClicked = output<void>();
@@ -96,4 +107,18 @@ export class SearchDocumentCardComponent {
     || highlightField(this.hit(), 'documentFileName')
     || 'Untitled Document'
   );
+
+  /** Content snippet from PDF chunk search — checks hit property first, then service cache. */
+  contentSnippet = computed(() => {
+    const h = this.hit();
+    const fromHit = h['_contentSnippet'];
+    const id = h['objectID'] ?? h['id'] ?? '';
+    const fromCache = this.typesense.getContentSnippet(id);
+    return fromHit || fromCache;
+  });
+
+  /** Returns Typesense highlight snippet for field, falling back to raw hit value. */
+  hl(field: string): string {
+    return highlightField(this.hit(), field);
+  }
 }

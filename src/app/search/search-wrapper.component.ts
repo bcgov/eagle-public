@@ -15,7 +15,7 @@ import { SearchTableComponent } from './search-table/search-table.component';
 /**
  * Wrapper that health-checks Typesense on init, then routes to either:
  * - SearchTableComponent for projects/documents/updates/notifications (table view)
- * - UnifiedSearchComponent for content tab (PDF search, card view)
+ * - UnifiedSearchComponent for documents tab (card view, PDF content search)
  */
 @Component({
   selector: 'app-search-wrapper',

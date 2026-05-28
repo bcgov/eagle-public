@@ -15,9 +15,13 @@ export const migrateSearchParams: CanActivateFn = (route) => {
   const router = inject(Router);
   const qp = route.queryParams;
 
+  // Unified search (documents/content tab) uses 'q' natively — don't migrate it.
+  const tab = qp['tab'];
+  const isUnifiedTab = tab === 'documents' || tab === 'content';
+
   const MIGRATIONS: Record<string, string> = {
     pageNum: 'currentPage',
-    q:       'keywords',
+    ...(!isUnifiedTab && { q: 'keywords' }),
   };
 
   const staleKeys = Object.keys(MIGRATIONS).filter(k => qp[k] != null);
