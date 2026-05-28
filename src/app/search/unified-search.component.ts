@@ -210,6 +210,30 @@ const TABS: { id: Tab; label: string }[] = [
 
             <!-- Expanded content -->
             <div class="filter-sidebar__content">
+              <div class="filter-sidebar__header d-none d-md-flex mb-2">
+                <span class="filter-sidebar__label">Filters</span>
+              </div>
+
+              <!-- Mobile filter toggle -->
+              <div class="d-md-none d-flex align-items-center justify-content-between mb-3">
+                <button class="btn filter-toggle-btn btn-sm d-flex align-items-center gap-2"
+                  [class.filter-toggle-btn--open]="filtersOpen()"
+                  (click)="filtersOpen.set(!filtersOpen())"
+                  [attr.aria-expanded]="filtersOpen()">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+                    <path d="M6 10.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5zm-2-3a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5zm-2-3a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5z"/>
+                  </svg>
+                  Filters
+                  <svg class="filter-chevron" [class.open]="filtersOpen()"
+                    xmlns="http://www.w3.org/2000/svg" width="12" height="12"
+                    fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+                    <path d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/>
+                  </svg>
+                </button>
+              </div>
+
+              <div class="filter-wrap" [class.filter-wrap--open]="filtersOpen()">
+                <div class="filter-inner filter-inner-pad">
               @if (!activeFiltersLoaded() && typesenseAvailable()) {
                 <div class="d-flex align-items-center gap-2 py-3 text-muted">
                   <div class="spinner-border spinner-border-sm" role="status">
@@ -219,20 +243,18 @@ const TABS: { id: Tab; label: string }[] = [
                 </div>
               }
               @for (facet of activeFacets(); track facet.attribute) {
-                <div class="mb-3" [class.d-none]="!activeFiltersLoaded()">
-                  <button class="filter-section-toggle" type="button"
+                <div class="facet-section" [class.facet-section--collapsed]="isFacetCollapsed(facet.attribute)" [class.d-none]="!activeFiltersLoaded()">
+                  <button class="facet-section__heading" type="button"
                     (click)="toggleFacet(facet.attribute)"
                     [attr.aria-expanded]="!isFacetCollapsed(facet.attribute)">
-                    <h6 class="fw-semibold">{{ facet.heading }}</h6>
-                    <svg class="filter-section-chevron"
-                      [class.filter-section-chevron--collapsed]="isFacetCollapsed(facet.attribute)"
-                      xmlns="http://www.w3.org/2000/svg" width="12" height="12"
+                    <span>{{ facet.heading }}</span>
+                    <svg class="facet-chevron" xmlns="http://www.w3.org/2000/svg" width="12" height="12"
                       fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
                       <path d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/>
                     </svg>
                   </button>
-                  @if (!isFacetCollapsed(facet.attribute)) {
-                    <div>
+                  <div class="facet-section__body">
+                    <div class="facet-section__inner">
                       @if (facet.grouped) {
                         @for (group of activeGroupedSnapshot()[facet.attribute]; track group.year) {
                           @if (group.heading) {
@@ -272,24 +294,22 @@ const TABS: { id: Tab; label: string }[] = [
                         </ul>
                       }
                     </div>
-                  }
+                  </div>
                 </div>
               }
               @if (activeConfig()?.dateFacet; as df) {
-                <div class="mb-3" [class.d-none]="!activeFiltersLoaded()">
-                  <button class="filter-section-toggle" type="button"
+                <div class="facet-section" [class.facet-section--collapsed]="isFacetCollapsed('__date__')" [class.d-none]="!activeFiltersLoaded()">
+                  <button class="facet-section__heading" type="button"
                     (click)="toggleFacet('__date__')"
                     [attr.aria-expanded]="!isFacetCollapsed('__date__')">
-                    <h6 class="fw-semibold">{{ df.heading }}</h6>
-                    <svg class="filter-section-chevron"
-                      [class.filter-section-chevron--collapsed]="isFacetCollapsed('__date__')"
-                      xmlns="http://www.w3.org/2000/svg" width="12" height="12"
+                    <span>{{ df.heading }}</span>
+                    <svg class="facet-chevron" xmlns="http://www.w3.org/2000/svg" width="12" height="12"
                       fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
                       <path d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/>
                     </svg>
                   </button>
-                  @if (!isFacetCollapsed('__date__')) {
-                    <div>
+                  <div class="facet-section__body">
+                    <div class="facet-section__inner">
                       <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
                       <label class="control-label fw-bold">{{ df.fromLabel }}</label>
                       @if (activeFromCtrl(); as ctrl) {
@@ -307,24 +327,22 @@ const TABS: { id: Tab; label: string }[] = [
                           (click)="clearDateFilter()">Clear both</button>
                       }
                     </div>
-                  }
+                  </div>
                 </div>
               }
               @if (activeConfig()?.sortOptions; as opts) {
-                <div class="mb-3" [class.d-none]="!activeFiltersLoaded()">
-                  <button class="filter-section-toggle" type="button"
+                <div class="facet-section" [class.facet-section--collapsed]="isFacetCollapsed('__sort__')" [class.d-none]="!activeFiltersLoaded()">
+                  <button class="facet-section__heading" type="button"
                     (click)="toggleFacet('__sort__')"
                     [attr.aria-expanded]="!isFacetCollapsed('__sort__')">
-                    <h6 class="fw-semibold">Sort</h6>
-                    <svg class="filter-section-chevron"
-                      [class.filter-section-chevron--collapsed]="isFacetCollapsed('__sort__')"
-                      xmlns="http://www.w3.org/2000/svg" width="12" height="12"
+                    <span>Sort</span>
+                    <svg class="facet-chevron" xmlns="http://www.w3.org/2000/svg" width="12" height="12"
                       fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
                       <path d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/>
                     </svg>
                   </button>
-                  @if (!isFacetCollapsed('__sort__')) {
-                    <div>
+                  <div class="facet-section__body">
+                    <div class="facet-section__inner">
                       @for (opt of opts; track opt.value) {
                         <div class="form-check">
                           <input class="form-check-input" type="radio" name="searchSort"
@@ -337,9 +355,11 @@ const TABS: { id: Tab; label: string }[] = [
                         </div>
                       }
                     </div>
-                  }
+                  </div>
                 </div>
               }
+                </div><!-- /.filter-inner -->
+              </div><!-- /.filter-wrap -->
             </div><!-- /.filter-sidebar__content -->
           </div><!-- /.filter-sidebar -->
 
@@ -409,7 +429,7 @@ const TABS: { id: Tab; label: string }[] = [
   styles: [`
     /* Layout for .search-panels / .search-body / .search-columns / .results-col
        lives entirely in global instantsearch.css — no component overrides needed. */
-    :host { display: block; }
+    :host { display: flex; flex-direction: column; flex: 1; min-height: 0; }
   `],
 })
 export class UnifiedSearchComponent implements OnInit, AfterViewInit, OnDestroy {
@@ -420,11 +440,14 @@ export class UnifiedSearchComponent implements OnInit, AfterViewInit, OnDestroy 
   // ── UI state ────────────────────────────────────────────────────────────────
   activeTab   = signal<Tab>('projects');
   searchQuery = signal('');
-  sidebarCollapsed = signal(false);
+  sidebarCollapsed = signal(localStorage.getItem('filterSidebarCollapsed') === 'true');
+  filtersOpen      = signal(false);
   collapsedFacets = signal<Set<string>>(new Set());
 
   toggleSidebar(): void {
-    this.sidebarCollapsed.set(!this.sidebarCollapsed());
+    const next = !this.sidebarCollapsed();
+    this.sidebarCollapsed.set(next);
+    localStorage.setItem('filterSidebarCollapsed', String(next));
   }
 
   toggleFacet(attribute: string): void {

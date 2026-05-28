@@ -1,39 +1,6 @@
-/* Reuses global .ais-* and .filter-sidebar* CSS from instantsearch.css */
+/* Reuses global .ais-*, .filter-sidebar*, and .facet-section* CSS from instantsearch.css */
 
-/* ── Per-facet accordion ── */
-.facet-section {
-  margin-bottom: 0.25rem;
-  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
-}
-.facet-section__heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  padding: 0.4rem 0;
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--bs-body-color);
-  text-align: left;
-}
-.facet-section__heading:hover { color: var(--bs-primary); }
-.facet-chevron {
-  flex-shrink: 0;
-  transition: transform 250ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-.facet-section--collapsed .facet-chevron { transform: rotate(-90deg); }
-.facet-section__body {
-  display: grid;
-  grid-template-rows: 1fr;
-  transition: grid-template-rows 250ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-.facet-section--collapsed .facet-section__body { grid-template-rows: 0fr; }
-.facet-section__inner { overflow: hidden; }
-
-:host { display: block; }
+:host { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 
 /* ── Notification card list (replaces lib-table-template for notifications tab) ── */
 

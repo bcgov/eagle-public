@@ -458,6 +458,7 @@ export class TypesenseService {
       sort_by: '_text_match:desc',          // best content matches first
       drop_tokens_threshold: '0',           // never degrade by dropping search terms
       highlight_fields: 'content',          // snippet only — avoids multi-KB full-field payloads
+      highlight_affix_num_tokens: '15',      // words of context around each match (default 4)
       include_fields: 'documentId,documentName,projectName',
       highlight_start_tag: '<mark>',
       highlight_end_tag: '</mark>',

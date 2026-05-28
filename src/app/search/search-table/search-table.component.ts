@@ -1,6 +1,6 @@
 import {
-  Component, OnInit, OnDestroy, AfterViewInit, inject, input, signal, computed,
-  ChangeDetectionStrategy, Type, ViewChild, ElementRef, DestroyRef,
+  Component, OnInit, OnDestroy, inject, input, signal, computed,
+  ChangeDetectionStrategy, Type, DestroyRef,
 } from '@angular/core';
 import { ActivatedRoute, Router, Params } from '@angular/router';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
@@ -54,7 +54,7 @@ const PAGE_SIZE_OPTIONS = [
   templateUrl: './search-table.component.html',
   styleUrl: './search-table.component.css',
 })
-export class SearchTableComponent implements OnInit, AfterViewInit, OnDestroy {
+export class SearchTableComponent implements OnInit, OnDestroy {
   typesenseAvailable = input(false);
 
   // TABLE_TABS for table views; documents tab handled by UnifiedSearchComponent via wrapper
@@ -110,9 +110,6 @@ export class SearchTableComponent implements OnInit, AfterViewInit, OnDestroy {
   private typesenseService = inject(TypesenseService);
   private configService    = inject(ConfigService);
   private api              = inject(ApiService);
-
-  @ViewChild('sidebarRef') private sidebarRef!: ElementRef<HTMLElement>;
-  private resizeObserver!: ResizeObserver;
 
   private destroyRef = inject(DestroyRef);
   private masterMaps: Record<string, Map<string, DisplayItem>> = {};
@@ -576,25 +573,7 @@ export class SearchTableComponent implements OnInit, AfterViewInit, OnDestroy {
     return `${tsField}:${dir}`;
   }
 
-  // offsetTop = layout distance from body top; stable without waiting for paint.
-  private setSidebarMaxHeight(): void {
-    const el = this.sidebarRef?.nativeElement;
-    if (!el) return;
-    document.documentElement.style.setProperty(
-      '--sidebar-max-h',
-      `${Math.max(100, window.innerHeight - el.offsetTop - 16)}px`,
-    );
-  }
-
-  ngAfterViewInit(): void {
-    this.setSidebarMaxHeight();
-    this.resizeObserver = new ResizeObserver(() => this.setSidebarMaxHeight());
-    this.resizeObserver.observe(document.documentElement);
-  }
-
   ngOnDestroy(): void {
     clearTimeout(this.searchDebounceTimer);
-    this.resizeObserver?.disconnect();
-    document.documentElement.style.removeProperty('--sidebar-max-h');
   }
 }
