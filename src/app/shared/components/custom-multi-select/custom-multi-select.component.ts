@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, forwardRef, signal, computed, OnInit, OnDestroy, ElementRef, inject } from '@angular/core';
+import { Component, input, output, forwardRef, signal, computed, OnInit, OnDestroy, ElementRef, inject } from '@angular/core';
 
 import { FormsModule, ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 
@@ -25,20 +25,20 @@ export interface CustomMultiSelectGroup {
 export class CustomMultiSelectComponent implements ControlValueAccessor, OnInit, OnDestroy {
   private elementRef = inject(ElementRef);
   
-  @Input() id = '';
-  @Input() name = '';
-  @Input() items: CustomMultiSelectOption[] = [];
-  @Input() bindLabel = 'label';
-  @Input() groupBy: string | null = null;
-  @Input() placeholder = 'Select items';
-  @Input() multiple = true;
-  @Input() markFirst = false;
-  @Input() closeOnSelect = false;
-  @Input() compareWith: (item: any, selected: any) => boolean = (a, b) => a === b;
+  id = input('');
+  name = input('');
+  items = input<CustomMultiSelectOption[]>([]);
+  bindLabel = input('label');
+  groupBy = input<string | null>(null);
+  placeholder = input('Select items');
+  multiple = input(true);
+  markFirst = input(false);
+  closeOnSelect = input(false);
+  compareWith = input<(item: any, selected: any) => boolean>((a, b) => a === b);
   
-  @Output() add = new EventEmitter<CustomMultiSelectOption>();
-  @Output() remove = new EventEmitter<CustomMultiSelectOption>();
-  @Output() clear = new EventEmitter<void>();
+  add = output<CustomMultiSelectOption>();
+  remove = output<CustomMultiSelectOption>();
+  clear = output<void>();
 
   // Internal state
   isOpen = signal(false);
@@ -49,9 +49,9 @@ export class CustomMultiSelectComponent implements ControlValueAccessor, OnInit,
   // Filtered and grouped items
   filteredItems = computed(() => {
     const term = this.searchTerm().toLowerCase();
-    if (!term) return this.items;
+    if (!term) return this.items();
     
-    return this.items.filter(item => {
+    return this.items().filter(item => {
       const label = this.getLabel(item).toLowerCase();
       return label.includes(term);
     });
@@ -60,14 +60,14 @@ export class CustomMultiSelectComponent implements ControlValueAccessor, OnInit,
   groupedItems = computed(() => {
     const filtered = this.filteredItems();
     
-    if (!this.groupBy) {
+    if (!this.groupBy()) {
       return [{ name: '', items: filtered }];
     }
     
     const groups = new Map<string, CustomMultiSelectOption[]>();
     
     filtered.forEach(item => {
-      const groupValue = item[this.groupBy!] || '';
+      const groupValue = item[this.groupBy()!] || '';
       if (!groups.has(groupValue)) {
         groups.set(groupValue, []);
       }
@@ -102,12 +102,12 @@ export class CustomMultiSelectComponent implements ControlValueAccessor, OnInit,
 
   // Helper methods
   getLabel(item: CustomMultiSelectOption): string {
-    return item[this.bindLabel] || '';
+    return item[this.bindLabel()] || '';
   }
 
   isSelected(item: CustomMultiSelectOption): boolean {
     return this.selectedItems().some(selected => 
-      this.compareWith(item, selected)
+      this.compareWith()(item, selected)
     );
   }
 
@@ -139,7 +139,7 @@ export class CustomMultiSelectComponent implements ControlValueAccessor, OnInit,
       this.onChange(newSelected);
       this.add.emit(item);
       
-      if (this.closeOnSelect) {
+      if (this.closeOnSelect()) {
         this.isOpen.set(false);
       }
     }
@@ -150,7 +150,7 @@ export class CustomMultiSelectComponent implements ControlValueAccessor, OnInit,
 
   deselectItem(item: CustomMultiSelectOption): void {
     const newSelected = this.selectedItems().filter(selected => 
-      !this.compareWith(item, selected)
+      !this.compareWith()(item, selected)
     );
     this.selectedItems.set(newSelected);
     this.onChange(newSelected);
@@ -224,7 +224,7 @@ export class CustomMultiSelectComponent implements ControlValueAccessor, OnInit,
 
   getItemIndex(item: CustomMultiSelectOption): number {
     const flatItems = this.getFlatItems();
-    return flatItems.findIndex(i => this.compareWith(i, item));
+    return flatItems.findIndex(i => this.compareWith()(i, item));
   }
 
   // Click outside handler

@@ -1,4 +1,4 @@
-import { Component, Output, EventEmitter, computed, input, ChangeDetectionStrategy } from '@angular/core';
+import { Component, output, computed, input, ChangeDetectionStrategy } from '@angular/core';
 
 
 @Component({
@@ -15,7 +15,7 @@ export class PaginationComponent {
   totalItems = input<number>(0);
   ariaLabel = input<string>('Pagination navigation');
 
-  @Output() pageChange = new EventEmitter<number>();
+  pageChange = output<number>();
 
   /**
    * Computed signal for total number of pages
