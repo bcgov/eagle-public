@@ -1,9 +1,10 @@
-import { Component, inject, signal, OnDestroy, ChangeDetectorRef, ViewEncapsulation, computed } from '@angular/core';
+import { Component, inject, signal, DestroyRef, ChangeDetectorRef, ViewEncapsulation, computed } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DomSanitizer } from '@angular/platform-browser';
-import { Subject, from } from 'rxjs';
-import { takeUntil, switchMap } from 'rxjs/operators';
+import { from } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { ToastService } from '../services/toast.service';
 import { CommentPeriod } from '../models/commentperiod';
@@ -30,7 +31,7 @@ import { AnalyticsService } from '../services/analytics/analytics.service';
   styleUrls: ['./comments.component.css'],
   encapsulation: ViewEncapsulation.None
 })
-export class CommentsComponent implements OnDestroy {
+export class CommentsComponent {
   private toastService = inject(ToastService);
   private route = inject(ActivatedRoute);
   private api = inject(ApiService);
@@ -47,6 +48,8 @@ export class CommentsComponent implements OnDestroy {
   private sanitizer = inject(DomSanitizer);
   private analytics = inject(AnalyticsService);
   private storageService = inject(StorageService);
+
+  private destroyRef = inject(DestroyRef);
 
   loading = this.loadingState.getOperationState('comments');
   // True while comment period is not yet loaded.
@@ -70,7 +73,6 @@ export class CommentsComponent implements OnDestroy {
   tableData = signal<TableObject>(new TableObject({ component: CommentsTableRowsComponent }));
   commentPeriodHeader = signal('');
 
-  private ngUnsubscribe = new Subject<boolean>();
   private commentPeriodId: string | null = null;
   private ngbModal: NgbModalRef | null = null;
 
@@ -92,7 +94,7 @@ export class CommentsComponent implements OnDestroy {
 
     // Load data from route params (modern pattern - no resolvers)
     this.route.paramMap
-      .pipe(takeUntil(this.ngUnsubscribe))
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(params => {
         const projId = params.get('projId');
         const commentPeriodId = params.get('commentPeriodId');
@@ -112,7 +114,7 @@ export class CommentsComponent implements OnDestroy {
           // (which queries /api/project/ and returns empty for PN IDs, causing a TypeError).
           // Fetch the notification name via search instead.
           this.notificationProjectService.getById(projId)
-            .pipe(takeUntil(this.ngUnsubscribe))
+            .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
               next: (notification) => {
                 if (notification) {
@@ -131,7 +133,7 @@ export class CommentsComponent implements OnDestroy {
             this.project.set(storedProject);
           } else {
             this.projectService.getById(projId)
-              .pipe(takeUntil(this.ngUnsubscribe))
+              .pipe(takeUntilDestroyed(this.destroyRef))
               .subscribe({
                 next: (project) => this.project.set(project),
                 error: (error) => this.logger.error('Error loading project', 'CommentsComponent', error)
@@ -141,7 +143,7 @@ export class CommentsComponent implements OnDestroy {
 
         // Load comment period data
         this.commentPeriodService.getById(commentPeriodId)
-          .pipe(takeUntil(this.ngUnsubscribe))
+          .pipe(takeUntilDestroyed(this.destroyRef))
           .subscribe({
             next: (period) => {
               if (!period) {
@@ -163,7 +165,7 @@ export class CommentsComponent implements OnDestroy {
 
               if (period.relatedDocuments && period.relatedDocuments.length > 0) {
                 this.documentService.getByMultiId(period.relatedDocuments)
-                  .pipe(takeUntil(this.ngUnsubscribe))
+                  .pipe(takeUntilDestroyed(this.destroyRef))
                   .subscribe(docs => {
                     this.commentPeriodDocs.set(docs);
                     this.changeDetectionRef.detectChanges();
@@ -187,7 +189,7 @@ export class CommentsComponent implements OnDestroy {
     const currentTableData = this.tableData();
     this.commentService.getByPeriodId(this.commentPeriodId, currentTableData.currentPage, currentTableData.pageSize, true)
       .pipe(
-        takeUntil(this.ngUnsubscribe),
+        takeUntilDestroyed(this.destroyRef),
         switchMap((res: any) => from(this.enrichWithDocuments(res)))
       )
       .subscribe(({ res, currentComments }) => {
@@ -331,10 +333,5 @@ export class CommentsComponent implements OnDestroy {
     this.tableData.set(currentTableData);
     this.getPaginatedComments(1);
     this.changeDetectionRef.detectChanges();
-  }
-
-  ngOnDestroy() {
-    this.ngUnsubscribe.next(true);
-    this.ngUnsubscribe.complete();
   }
 }

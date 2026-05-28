@@ -1,8 +1,9 @@
-import { Component, OnInit, OnDestroy, AfterViewInit, ElementRef, signal, ChangeDetectionStrategy, inject, Renderer2, effect, untracked } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit, ElementRef, signal, ChangeDetectionStrategy, inject, DestroyRef, Renderer2, effect, untracked } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule, NavigationEnd } from '@angular/router';
 import { DatePipe } from '@angular/common';
-import { Observable, Subject, forkJoin, of } from 'rxjs';
-import { takeUntil, take, map, catchError } from 'rxjs/operators';
+import { Observable, forkJoin, of } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { take, map, catchError } from 'rxjs/operators';
 
 import { Project } from '../models/project';
 import { ConfigService } from '../services/config.service';
@@ -66,7 +67,7 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
   readonly defaultBounds = L.latLngBounds([48, -139], [60, -114]);
   private mapRetryTimeout: ReturnType<typeof setTimeout> | null = null;
 
-  private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
+  private destroyRef = inject(DestroyRef);
 
   constructor() {
     // Initialize tab links when project data loads.
@@ -104,7 +105,7 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
 
     this.isLoading.set(true);
     this.projectService.getById(projId, false, cpStart, cpEnd)
-      .pipe(takeUntil(this.ngUnsubscribe))
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (project) => {
           if (project) {
@@ -187,7 +188,7 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
   ngOnInit() {
     // Get project ID from route params
     this.route.paramMap
-      .pipe(takeUntil(this.ngUnsubscribe))
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(params => {
         const projId = params.get('projId');
         if (projId && this.project()?._id !== projId) {
@@ -203,7 +204,7 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
     
     // Re-check tab arrows when route changes; track active tab segment
     this.router.events
-      .pipe(takeUntil(this.ngUnsubscribe))
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(event => {
         if (event instanceof NavigationEnd) {
           this.currentTab.set(event.urlAfterRedirects.split('/').pop() ?? '');
@@ -446,7 +447,7 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
 
   private applyTabChecks(checks$: Observable<{ key: string; hasResults: boolean }>[]): void {
     forkJoin(checks$)
-      .pipe(takeUntil(this.ngUnsubscribe))
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(results => {
         const currentTabs = this.tabLinks();
         let changed = false;
@@ -508,7 +509,5 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
       this.map.remove();
     }
     this.tabArrowsHandle?.cleanup();
-    this.ngUnsubscribe.next(true);
-    this.ngUnsubscribe.complete();
   }
 }
