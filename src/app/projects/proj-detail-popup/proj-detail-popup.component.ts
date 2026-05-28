@@ -1,7 +1,8 @@
-import { Component, OnDestroy, inject, signal, input, effect } from '@angular/core';
+import { Component, inject, signal, input, effect, DestroyRef } from '@angular/core';
 import { Router } from '@angular/router';
 import { Subject } from 'rxjs';
-import { debounceTime, switchMap, takeUntil } from 'rxjs/operators';
+import { debounceTime, switchMap } from 'rxjs/operators';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { Project } from '../../models/project';
 import { CommentPeriodService } from '../../services/commentperiod.service';
@@ -12,12 +13,12 @@ import { AnalyticsService } from '../../services/analytics/analytics.service';
   templateUrl: './proj-detail-popup.component.html',
   styleUrls: ['./proj-detail-popup.component.css'],
 })
-export class ProjDetailPopupComponent implements OnDestroy {
+export class ProjDetailPopupComponent {
   proj = input.required<Project>();
   commentPeriodStatus = signal<string>('');
 
-  private destroy$ = new Subject<void>();
   private projId$ = new Subject<string>();
+  private destroyRef = inject(DestroyRef);
   private commentPeriodService = inject(CommentPeriodService);
   private router = inject(Router);
   private analytics = inject(AnalyticsService);
@@ -35,7 +36,7 @@ export class ProjDetailPopupComponent implements OnDestroy {
         this.commentPeriodStatus.set('');
         return this.commentPeriodService.getAllByProjectId(projId);
       }),
-      takeUntil(this.destroy$)
+      takeUntilDestroyed(this.destroyRef)
     ).subscribe({
       next: (data: any) => {
         if (data && data.length > 0 && data[0]?.commentPeriodStatus) {
@@ -53,11 +54,6 @@ export class ProjDetailPopupComponent implements OnDestroy {
         this.projId$.next(project._id);
       }
     });
-  }
-
-  ngOnDestroy() {
-    this.destroy$.next();
-    this.destroy$.complete();
   }
 
   navigateToProject(): void {

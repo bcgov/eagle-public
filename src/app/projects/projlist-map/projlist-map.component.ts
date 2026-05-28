@@ -13,7 +13,6 @@ import {
   inject,
   computed
 } from '@angular/core';
-import { Subject } from 'rxjs';
 
 
 import { Project } from '../../models/project';
@@ -74,7 +73,6 @@ export class ProjlistMapComponent implements AfterViewInit, OnDestroy {
   private readonly MOBILE_BREAKPOINT = 768;
   private readonly VISIBILITY_UPDATE_DEBOUNCE_MS = 100;
 
-  private destroy$ = new Subject<void>();
   private resizeObserver?: ResizeObserver;
   private isPopupOpening = false; // Guard against concurrent popup creation
   private recentlyClosedProjectId: string | null = null; // Track manual closes to prevent immediate reopen
@@ -496,9 +494,6 @@ export class ProjlistMapComponent implements AfterViewInit, OnDestroy {
 
     // Reset service state for clean initialization next time
     this.mapStateService.reset();
-
-    this.destroy$.next();
-    this.destroy$.complete();
   }
 
   private visibilityUpdateTimeout?: ReturnType<typeof setTimeout>;

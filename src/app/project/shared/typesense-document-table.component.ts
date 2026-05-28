@@ -13,7 +13,6 @@ import {
   input,
   DestroyRef,
 } from '@angular/core';
-import { trigger, state, style, animate, transition } from '@angular/animations';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { Subject, from, combineLatest } from 'rxjs';
 import { debounceTime, distinctUntilChanged, take } from 'rxjs/operators';
@@ -110,13 +109,7 @@ const TAB_CONFIG: Record<DocTabKey, TabConfig> = {
     ReactiveFormsModule,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  animations: [
-    trigger('sidebar', [
-      state('open',      style({ width: '250px', minWidth: '250px', marginRight: '1.5rem', paddingRight: '0.75rem' })),
-      state('collapsed', style({ width: '0',     minWidth: '0',     marginRight: '0',       paddingRight: '0'       })),
-      transition('open <=> collapsed', animate('250ms cubic-bezier(0.4, 0, 0.2, 1)')),
-    ]),
-  ],
+
 })
 export class TypesenseDocumentTableComponent implements OnInit, OnDestroy {
   private readonly analytics    = inject(AnalyticsService);

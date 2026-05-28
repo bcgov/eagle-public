@@ -1,8 +1,8 @@
-import { Component, OnInit, OnDestroy, Renderer2, ViewChild, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, OnDestroy, Renderer2, ViewChild, inject, signal, computed, DestroyRef } from '@angular/core';
 
 import { Router, NavigationEnd } from '@angular/router';
-import { Subject } from 'rxjs';
-import { takeUntil, finalize } from 'rxjs/operators';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { finalize } from 'rxjs/operators';
 declare const L: any;
 
 import { Project } from 'app/models/project';
@@ -67,12 +67,12 @@ export class ProjectsComponent implements OnInit, OnDestroy {
     return filtered.filter(project => this.mapStateService.isProjectInBounds(project));
   });
   
-  private destroy$ = new Subject<void>();
+  private destroyRef = inject(DestroyRef);
 
   constructor() {
     // Clean up body class on navigation
     this.router.events
-      .pipe(takeUntil(this.destroy$))
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((event) => {
         if (event instanceof NavigationEnd) {
           this.renderer.removeClass(document.body, 'no-scroll');
@@ -108,7 +108,7 @@ export class ProjectsComponent implements OnInit, OnDestroy {
 
     source$
       .pipe(
-        takeUntil(this.destroy$),
+        takeUntilDestroyed(this.destroyRef),
         finalize(() => {
           this.logger.info(`Loaded ${this.allApps()?.length ?? 0} projects in ${Date.now() - start}ms`, 'ProjectsComponent');
         })
@@ -142,8 +142,5 @@ export class ProjectsComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     // Clear filters and reset state when leaving the page
     this.filterStateService.clearAll();
-    
-    this.destroy$.next();
-    this.destroy$.complete();
   }
 }

@@ -42,8 +42,7 @@
 <div class="search-columns">
 
   <!-- ── Facets sidebar ───────────────────────────────────────────────── -->
-  <div [@sidebar]="sidebarCollapsed() ? 'collapsed' : 'open'"
-    [class.filter-sidebar--collapsed]="sidebarCollapsed()"
+  <div [class.filter-sidebar--collapsed]="sidebarCollapsed()"
     class="filter-sidebar"
     id="tsFilterSidebar"
     role="complementary" [attr.aria-label]="cfg.filterAriaLabel">

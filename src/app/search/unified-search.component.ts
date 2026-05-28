@@ -7,12 +7,13 @@ import {
   ViewChild, ElementRef, NgZone,
   ChangeDetectionStrategy,
   WritableSignal,
+  DestroyRef,
 } from '@angular/core';
-import { trigger, transition, style, animate } from '@angular/animations';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { Subject, Subscription } from 'rxjs';
-import { debounceTime, distinctUntilChanged, take, takeUntil } from 'rxjs/operators';
+import { debounceTime, distinctUntilChanged, take } from 'rxjs/operators';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import instantsearch from 'instantsearch.js';
 import { configure } from 'instantsearch.js/es/widgets';
 import {
@@ -115,18 +116,7 @@ const TABS: { id: Tab; label: string }[] = [
 @Component({
   selector: 'app-unified-search',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  animations: [
-    trigger('slideDown', [
-      transition(':enter', [
-        style({ height: '0', opacity: 0, overflow: 'hidden' }),
-        animate('200ms ease', style({ height: '*', opacity: 1, overflow: 'hidden' })),
-      ]),
-      transition(':leave', [
-        style({ overflow: 'hidden' }),
-        animate('200ms ease', style({ height: '0', opacity: 0 })),
-      ]),
-    ]),
-  ],
+
   imports: [
     RouterLink,
     ReactiveFormsModule,
@@ -242,7 +232,7 @@ const TABS: { id: Tab; label: string }[] = [
                     </svg>
                   </button>
                   @if (!isFacetCollapsed(facet.attribute)) {
-                    <div [@slideDown]>
+                    <div>
                       @if (facet.grouped) {
                         @for (group of activeGroupedSnapshot()[facet.attribute]; track group.year) {
                           @if (group.heading) {
@@ -299,7 +289,7 @@ const TABS: { id: Tab; label: string }[] = [
                     </svg>
                   </button>
                   @if (!isFacetCollapsed('__date__')) {
-                    <div [@slideDown]>
+                    <div>
                       <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
                       <label class="control-label fw-bold">{{ df.fromLabel }}</label>
                       @if (activeFromCtrl(); as ctrl) {
@@ -334,7 +324,7 @@ const TABS: { id: Tab; label: string }[] = [
                     </svg>
                   </button>
                   @if (!isFacetCollapsed('__sort__')) {
-                    <div [@slideDown]>
+                    <div>
                       @for (opt of opts; track opt.value) {
                         <div class="form-check">
                           <input class="form-check-input" type="radio" name="searchSort"
@@ -494,7 +484,7 @@ export class UnifiedSearchComponent implements OnInit, AfterViewInit, OnDestroy 
   private route         = inject(ActivatedRoute);
   private router        = inject(Router);
   private zone          = inject(NgZone);
-  private destroy$ = new Subject<void>();
+  private destroyRef = inject(DestroyRef);
   private searchInput$ = new Subject<string>();
   private tabArrowsHandle: TabArrowsHandle | null = null;
   private lastTrackedQuery = new Map<CollectionId, string>();
@@ -585,7 +575,7 @@ export class UnifiedSearchComponent implements OnInit, AfterViewInit, OnDestroy 
     this.searchInput$.pipe(
       debounceTime(200),
       distinctUntilChanged(),
-      takeUntil(this.destroy$),
+      takeUntilDestroyed(this.destroyRef),
     ).subscribe(q => {
       this.searchQuery.set(q);
       this.updateUrl(this.activeTab(), q);
@@ -594,7 +584,7 @@ export class UnifiedSearchComponent implements OnInit, AfterViewInit, OnDestroy 
     // Route subscription: only call ensureActive when the TAB changes.
     // q-only changes are handled by the searchInput$ pipeline and the signal
     // effect above — calling ensureActive here too would fire the search twice.
-    this.route.queryParamMap.pipe(takeUntil(this.destroy$)).subscribe(p => {
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(p => {
       const raw = p.get('tab');
       const tab = this.parseTab(raw);
       const q   = p.get('q') ?? '';
@@ -621,8 +611,6 @@ export class UnifiedSearchComponent implements OnInit, AfterViewInit, OnDestroy 
   }
 
   ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
     this.tabArrowsHandle?.cleanup();
     (Object.keys(this.states) as CollectionId[]).forEach(id => this.teardown(id));
   }

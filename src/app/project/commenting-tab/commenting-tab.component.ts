@@ -1,8 +1,8 @@
-import { Component, OnDestroy, inject, ChangeDetectionStrategy, effect, signal } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy, effect, signal, DestroyRef } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { Router } from '@angular/router';
-import { Subject, Subscription } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { Subscription } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { CommentPeriodService } from '../../services/commentperiod.service';
 import { CommentPeriod } from '../../models/commentperiod';
@@ -15,15 +15,15 @@ import { StorageService } from '../../services/storage.service';
   styleUrls: ['./commenting-tab.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class CommentingTabComponent implements OnDestroy {
+export class CommentingTabComponent {
   private router = inject(Router);
   private storageService = inject(StorageService);
   public commentPeriodService = inject(CommentPeriodService);
+  private destroyRef = inject(DestroyRef);
 
   public readonly project = this.storageService.currentProject;
   public readonly commentPeriods = signal<CommentPeriod[]>([]);
   public readonly loading = signal(true);
-  private readonly destroy$ = new Subject<void>();
   private loadedProjectId: string | null = null;
   private commentPeriodSub: Subscription | null = null;
 
@@ -50,7 +50,7 @@ export class CommentingTabComponent implements OnDestroy {
     this.commentPeriodSub?.unsubscribe();
     this.loading.set(true);
     this.commentPeriodSub = this.commentPeriodService.getAllByProjectId(projectId)
-      .pipe(takeUntil(this.destroy$))
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (res: any) => {
           if (res.data) {
@@ -73,8 +73,4 @@ export class CommentingTabComponent implements OnDestroy {
       });
   }
 
-  ngOnDestroy() {
-    this.destroy$.next();
-    this.destroy$.complete();
-  }
 }

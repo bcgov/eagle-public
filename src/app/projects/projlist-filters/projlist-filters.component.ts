@@ -1,8 +1,9 @@
-import { Component, OnDestroy, ElementRef, signal, ChangeDetectionStrategy, inject } from '@angular/core';
+import { Component, ElementRef, signal, ChangeDetectionStrategy, inject, DestroyRef } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject } from 'rxjs';
-import { takeUntil, debounceTime, distinctUntilChanged, switchMap, of, catchError } from 'rxjs';
+import { debounceTime, distinctUntilChanged, switchMap, of, catchError } from 'rxjs';
 import { DateTime } from 'luxon';
 import { CustomMultiSelectComponent } from '../../shared/components/custom-multi-select/custom-multi-select.component';
 
@@ -19,12 +20,13 @@ import { TypesenseService } from '../../services/typesense.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FormsModule, CustomMultiSelectComponent],
 })
-export class ProjlistFiltersComponent implements OnDestroy {
+export class ProjlistFiltersComponent {
   private configService = inject(ConfigService);
   private filterState = inject(FilterStateService);
   private elementRef = inject(ElementRef);
   private analytics = inject(AnalyticsService);
   private typesenseService = inject(TypesenseService);
+  private destroyRef = inject(DestroyRef);
 
   readonly minDate = DateTime.fromISO('2018-03-23').toJSDate();
   readonly maxDate = DateTime.now().toJSDate();
@@ -53,8 +55,6 @@ export class ProjlistFiltersComponent implements OnDestroy {
   public publishFrom = signal<Date | null>(null);
   public publishTo = signal<Date | null>(null);
 
-  private destroy$ = new Subject<void>();
-
   constructor() {
     // Autocomplete: debounce keystrokes and query Typesense for project name suggestions
     this.search$.pipe(
@@ -68,7 +68,7 @@ export class ProjlistFiltersComponent implements OnDestroy {
           catchError(() => of([]))  // keep stream alive on network errors
         );
       }),
-      takeUntil(this.destroy$)
+      takeUntilDestroyed(this.destroyRef)
     ).subscribe(results => {
       this.suggestions.set(results);
       this.showSuggestions.set(results.length > 0);
@@ -81,7 +81,7 @@ export class ProjlistFiltersComponent implements OnDestroy {
     // Load metadata (regions, phases, types)
     this.configService.lists
       .pipe(
-        takeUntil(this.destroy$)
+        takeUntilDestroyed(this.destroyRef)
       )
       .subscribe(list => {
         list.forEach((item: any) => {
@@ -121,8 +121,6 @@ export class ProjlistFiltersComponent implements OnDestroy {
 
   ngOnDestroy() {
     this.search$.complete();
-    this.destroy$.next();
-    this.destroy$.complete();
   }
 
   /**

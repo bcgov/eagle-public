@@ -1,13 +1,12 @@
 import {
   Component, OnInit, OnDestroy, AfterViewInit, inject, input, signal, computed,
-  ChangeDetectionStrategy, Type, ViewChild, ElementRef,
+  ChangeDetectionStrategy, Type, ViewChild, ElementRef, DestroyRef,
 } from '@angular/core';
-import { trigger, state, style, animate, transition } from '@angular/animations';
 import { ActivatedRoute, Router, Params } from '@angular/router';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { Subject, combineLatest, of } from 'rxjs';
-import { debounceTime, distinctUntilChanged, filter, takeUntil, tap, catchError, concatMap } from 'rxjs/operators';
-import { toObservable } from '@angular/core/rxjs-interop';
+import { combineLatest, of } from 'rxjs';
+import { debounceTime, distinctUntilChanged, filter, tap, catchError, concatMap } from 'rxjs/operators';
+import { toObservable, takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TypesenseService } from 'app/services/typesense.service';
 import { ConfigService } from 'app/services/config.service';
 import { ApiService } from 'app/services/api';
@@ -54,13 +53,6 @@ const PAGE_SIZE_OPTIONS = [
   ],
   templateUrl: './search-table.component.html',
   styleUrl: './search-table.component.css',
-  animations: [
-    trigger('sidebar', [
-      state('open', style({ width: '250px', minWidth: '250px', marginRight: '0.75rem', paddingRight: '0.75rem' })),
-      state('collapsed', style({ width: '0', minWidth: '0', marginRight: '0', paddingRight: '0' })),
-      transition('open <=> collapsed', animate('250ms cubic-bezier(0.4, 0, 0.2, 1)')),
-    ]),
-  ],
 })
 export class SearchTableComponent implements OnInit, AfterViewInit, OnDestroy {
   typesenseAvailable = input(false);
@@ -122,7 +114,7 @@ export class SearchTableComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('sidebarRef') private sidebarRef!: ElementRef<HTMLElement>;
   private resizeObserver!: ResizeObserver;
 
-  private destroy$ = new Subject<void>();
+  private destroyRef = inject(DestroyRef);
   private masterMaps: Record<string, Map<string, DisplayItem>> = {};
   private lawLookups: Record<string, Map<string, number>> = {};
 
@@ -139,7 +131,7 @@ export class SearchTableComponent implements OnInit, AfterViewInit, OnDestroy {
       this.route.queryParams.pipe(distinctUntilChanged((a, b) => JSON.stringify(a) === JSON.stringify(b))),
       this.typesenseAvailable$,
     ]).pipe(
-      takeUntil(this.destroy$),
+      takeUntilDestroyed(this.destroyRef),
       filter(([, available]) => available),
     ).subscribe(([params]) => {
       this.applyParams(params);
@@ -148,10 +140,10 @@ export class SearchTableComponent implements OnInit, AfterViewInit, OnDestroy {
 
     // Date filter subscriptions
     this.fromCtrl.valueChanges.pipe(
-      takeUntil(this.destroy$), debounceTime(300),
+      takeUntilDestroyed(this.destroyRef), debounceTime(300),
     ).subscribe(() => this.onDateChange());
     this.toCtrl.valueChanges.pipe(
-      takeUntil(this.destroy$), debounceTime(300),
+      takeUntilDestroyed(this.destroyRef), debounceTime(300),
     ).subscribe(() => this.onDateChange());
   }
 
@@ -398,7 +390,7 @@ export class SearchTableComponent implements OnInit, AfterViewInit, OnDestroy {
 
     seed$.pipe(
       concatMap(() => this.typesenseService.searchCollection(colId, searchParams)),
-      takeUntil(this.destroy$),
+      takeUntilDestroyed(this.destroyRef),
     ).subscribe({
       next: res => {
         this.loading.set(false);
@@ -556,7 +548,7 @@ export class SearchTableComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private buildLawLookups(): void {
     const lists = this.configService.lists;
-    lists.pipe(takeUntil(this.destroy$)).subscribe(allLists => {
+    lists.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(allLists => {
       const lookups: Record<string, Map<string, number>> = {};
       for (const item of allLists) {
         if (item.legislation && item.name) {
@@ -601,8 +593,6 @@ export class SearchTableComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
     clearTimeout(this.searchDebounceTimer);
     this.resizeObserver?.disconnect();
     document.documentElement.style.removeProperty('--sidebar-max-h');

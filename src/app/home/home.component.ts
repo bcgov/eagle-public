@@ -1,8 +1,7 @@
-import { Component, OnDestroy, ChangeDetectionStrategy, signal, inject } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, inject, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { withLoading } from 'app/shared/utils/rxjs-operators';
 
 import { LoggingService } from 'app/services/logging.service';
@@ -22,13 +21,13 @@ import { ActivityCardComponent } from '../shared/components/activity-card/activi
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule, RouterModule, HeroBannerComponent, InfoCardComponent, ActivityCardComponent],
 })
-export class HomeComponent implements OnDestroy {
+export class HomeComponent {
   private apiService = inject(ApiService);
   private logger = inject(LoggingService);
   private loadingState = inject(LoadingStateService);
   private typesenseService = inject(TypesenseService);
   private storageService = inject(StorageService);
-  private destroy$ = new Subject<boolean>();
+  private destroyRef = inject(DestroyRef);
 
   results = signal<News[]>([]);
   surveyUrl = signal<string>('');
@@ -88,7 +87,7 @@ export class HomeComponent implements OnDestroy {
     if (cached) {
       // Serve cached data instantly, then refresh in background
       this.results.set(cached);
-      source$.pipe(takeUntil(this.destroy$)).subscribe({
+      source$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
         next: (res: News[]) => {
           const activities = res || [];
           this.results.set(activities);
@@ -102,7 +101,7 @@ export class HomeComponent implements OnDestroy {
       source$
         .pipe(
           withLoading(this.loadingState, 'home', 'Loading recent activities'),
-          takeUntil(this.destroy$)
+          takeUntilDestroyed(this.destroyRef)
         )
         .subscribe({
           next: (res: News[]) => {
@@ -121,8 +120,4 @@ export class HomeComponent implements OnDestroy {
     this.showSurveyBanner.set(this.apiService.showSurveyBanner);
   }
 
-  ngOnDestroy(): void {
-    this.destroy$.next(true);
-    this.destroy$.complete();
-  }
 }
