@@ -75,7 +75,7 @@
         <th tabindex="0" [attr.aria-label]="'Column header ' + entry.name + (!entry.nosort ? ' sortable' : '')"
           id="table-template-header" class="project-table__name-col"
           (keyup.enter)="!entry.nosort && onSort(entry.value!)" (click)="!entry.nosort && onSort(entry.value!)"
-          [ngClass]="[entry.width, !entry.nosort ? 'sortable' : '', !entry.name ? 'header-empty' : '']">
+          [class]="entry.width" [class.sortable]="!entry.nosort" [class.header-empty]="!entry.name">
           {{ entry.name }}
           @if (entry.nosort !== true) {
           <i class="sort" 

@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, OnInit, OnDestroy, Component, input, output, inject, AfterViewInit, effect, signal } from '@angular/core';
-import { CommonModule, DOCUMENT } from '@angular/common';
+import { DOCUMENT } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormGroup, FormControl } from '@angular/forms';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { NgbTooltip } from '@ng-bootstrap/ng-bootstrap';
@@ -35,7 +35,6 @@ import { AnalyticsService } from 'app/services/analytics/analytics.service';
   templateUrl: './search-filter-template.component.html',
   styleUrls: ['./search-filter-template.component.css'],
   imports: [
-    CommonModule,
     FormsModule,
     ReactiveFormsModule,
     RouterModule,

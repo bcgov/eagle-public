@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, ChangeDetectionStrategy, DestroyRef } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { IColumnObject, TableObject } from '../../shared/components/table-template/table-object';
 import { DocumentTableRowsComponent } from '../documents/project-document-table-rows/project-document-table-rows.component';
@@ -13,11 +13,10 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
   imports: [TableTemplateComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class FeaturedDocumentsComponent implements OnInit {
+export class FeaturedDocumentsComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly loadingState = inject(LoadingStateService);
   private readonly api = inject(ApiService);
-  private readonly destroyRef = inject(DestroyRef);
 
   private projId = '';
 
@@ -57,7 +56,7 @@ export class FeaturedDocumentsComponent implements OnInit {
     }
   ];
 
-  ngOnInit() {
+  constructor() {
     this.projId = this.route.parent?.snapshot.params['projId'] || '';
 
     const currentTableData = this.tableData();
@@ -73,7 +72,7 @@ export class FeaturedDocumentsComponent implements OnInit {
 
     this.loadingState.startLoading('table-featuredDocuments', 'Loading featured documents');
     this.api.getProjectFeaturedDocuments(this.projId)
-      .pipe(takeUntilDestroyed(this.destroyRef))
+      .pipe(takeUntilDestroyed())
       .subscribe({
         next: (docs) => {
           const current = this.tableData();

@@ -1,5 +1,4 @@
 import { Component, ChangeDetectionStrategy, signal, inject, DestroyRef } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { withLoading } from 'app/shared/utils/rxjs-operators';
@@ -19,7 +18,7 @@ import { ActivityCardComponent } from '../shared/components/activity-card/activi
   templateUrl: './home.component.html',
   styleUrl: './home.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, RouterModule, HeroBannerComponent, InfoCardComponent, ActivityCardComponent],
+  imports: [RouterModule, HeroBannerComponent, InfoCardComponent, ActivityCardComponent],
 })
 export class HomeComponent {
   private apiService = inject(ApiService);

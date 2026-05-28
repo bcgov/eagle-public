@@ -1,7 +1,7 @@
 <ng-template #cardContent>
   <div class="activity-card__top-meta d-flex align-items-center gap-2 mb-2">
     @if (activityBadge(); as badge) {
-      <span class="badge" [ngClass]="badge.cls">{{ badge.label }}</span>
+      <span class="badge" [class]="badge.cls">{{ badge.label }}</span>
     }
     @if (!tableMode) {
       <small class="text-muted ms-auto">{{ rowData?.dateAdded | date: 'longDate' }}</small>

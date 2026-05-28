@@ -1,12 +1,12 @@
 import { Component, inject, AfterViewInit, ElementRef, ChangeDetectorRef, signal, output } from '@angular/core';
 import { Subject } from 'rxjs';
-import { CommonModule } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { ApiService } from '../../services/api';
 import { TableRowComponent, ITableMessage } from '../../shared/components/table-template/table-row-component';
 
 @Component({
   selector: 'tr[app-comments-table-rows]',
-  imports: [CommonModule],
+  imports: [DatePipe],
   templateUrl: './comments-table-rows.component.html',
   styleUrls: ['./comments-table-rows.component.css'],
   host: {

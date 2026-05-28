@@ -1,5 +1,5 @@
 import { Component, OnDestroy, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { StorageService } from '../../services/storage.service';
 import { ConfigService } from '../../services/config.service';
 import { NavigationEnd, Router } from '@angular/router';
@@ -11,7 +11,7 @@ import { ProjectActivitesComponent } from '../project-activites/project-activite
 
 @Component({
   selector: 'app-project-details-tab',
-  imports: [CommonModule, NewlinesPipe, FeaturedDocumentsComponent, PinsComponent, ProjectActivitesComponent],
+  imports: [DatePipe, NewlinesPipe, FeaturedDocumentsComponent, PinsComponent, ProjectActivitesComponent],
   templateUrl: './project-details-tab.component.html',
   styleUrl: './project-details-tab.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

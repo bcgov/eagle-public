@@ -1,6 +1,6 @@
 import { Component, OnDestroy, inject, output } from '@angular/core';
 import { Subject } from 'rxjs';
-import { CommonModule, DatePipe } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { Utils } from 'app/shared/utils/utils';
 import { TableRowComponent, ITableMessage } from 'app/shared/components/table-template/table-row-component';
@@ -11,7 +11,6 @@ import { TableObject } from 'app/shared/components/table-template/table-object';
   templateUrl: './search-document-table-rows.component.html',
   styleUrls: ['./search-document-table-rows.component.css'],
   imports: [
-    CommonModule,
     DatePipe,
     RouterLink
   ],

@@ -65,11 +65,10 @@
               <div class="app-card__actions d-flex justify-content-between">
                 <div class="badges">
                   <div class="comment-status-badge badge"
-                    [ngClass]="{
-                      'badge-primary': commentPeriodService.isNotStarted(item.currentPeriod),
-                      'badge-secondary': commentPeriodService.isNotOpen(item.currentPeriod),
-                      'badge-danger': commentPeriodService.isClosed(item.currentPeriod),
-                      'badge-success': commentPeriodService.isOpen(item.currentPeriod)}">
+                    [class.badge-primary]="commentPeriodService.isNotStarted(item.currentPeriod)"
+                    [class.badge-secondary]="commentPeriodService.isNotOpen(item.currentPeriod)"
+                    [class.badge-danger]="commentPeriodService.isClosed(item.currentPeriod)"
+                    [class.badge-success]="commentPeriodService.isOpen(item.currentPeriod)">
                     <span>{{item.cpStatus}}</span>
                     @if (commentPeriodService.isNotStarted(item.currentPeriod)) {
                       <span class="date">

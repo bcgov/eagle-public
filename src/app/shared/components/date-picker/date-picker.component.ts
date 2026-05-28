@@ -9,7 +9,6 @@ import {
   ChangeDetectionStrategy,
   inject
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { NgbDatepickerModule, NgbDateStruct } from '@ng-bootstrap/ng-bootstrap';
@@ -23,7 +22,7 @@ import { LoggingService } from 'app/services/logging.service';
   templateUrl: './date-picker.component.html',
   styleUrl: './date-picker.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, NgbDatepickerModule],
+  imports: [FormsModule, ReactiveFormsModule, NgbDatepickerModule],
 })
 export class DatePickerComponent implements OnInit {
   control = input.required<FormControl>();

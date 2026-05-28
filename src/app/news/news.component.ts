@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy, signal, inject, DestroyRef } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, inject } from '@angular/core';
 
 import { Router, ActivatedRoute, Params } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -20,10 +20,9 @@ import { SearchFilterTemplateComponent } from 'app/shared/components/search-filt
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [TableTemplateComponent, HeroBannerComponent, SearchFilterTemplateComponent],
 })
-export class NewsListComponent implements OnInit {
+export class NewsListComponent {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
-  private destroyRef = inject(DestroyRef);
   private tableTemplateUtils = inject(TableTemplate);
   private typesense = inject(TypesenseService);
   private loadingState = inject(LoadingStateService);
@@ -48,8 +47,8 @@ export class NewsListComponent implements OnInit {
     }
   ];
 
-  ngOnInit(): void {
-    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(data => {
+  constructor() {
+    this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe(data => {
       const params = (data as any)['params'] || {};
       
       const updatedTableData = this.tableTemplateUtils.updateTableObjectWithUrlParams(params, this.tableData());
@@ -85,7 +84,7 @@ export class NewsListComponent implements OnInit {
 
     this.loadingState.startLoading(this.loadingId, 'Loading activities');
     this.typesense.searchCollection('activities', searchParams)
-      .pipe(takeUntilDestroyed(this.destroyRef))
+      .pipe(takeUntilDestroyed())
       .subscribe({
         next: (res) => {
           const items = (res.hits ?? []).map((hit: any) => {

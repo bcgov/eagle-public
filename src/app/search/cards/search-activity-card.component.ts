@@ -7,7 +7,7 @@ import {
   computed,
   signal,
 } from '@angular/core';
-import { DatePipe, NgClass } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { DomSanitizer } from '@angular/platform-browser';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ApiService } from '../../services/api';
@@ -19,7 +19,7 @@ import { sanitizeWordHtml } from 'app/shared/utils/word-html-sanitizer';
 @Component({
   selector: 'app-search-activity-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, NgClass],
+  imports: [DatePipe],
   template: `
     <article class="card search-result-card search-result-card--styled">
       <div class="search-card-header">
@@ -28,7 +28,7 @@ import { sanitizeWordHtml } from 'app/shared/utils/word-html-sanitizer';
             [innerHTML]="hl('headline') || hit()['notificationName'] || 'Untitled'">
           </h5>
           @if (activityBadge(); as badge) {
-            <span class="badge flex-shrink-0" [ngClass]="badge.cls">
+            <span class="badge flex-shrink-0" [class]="badge.cls">
               {{ badge.label }}
             </span>
           }

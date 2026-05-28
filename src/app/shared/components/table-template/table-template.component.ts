@@ -8,7 +8,6 @@ import {
   signal,
   output
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { Subject } from 'rxjs';
 
 import { TableObject } from './table-object';
@@ -27,7 +26,6 @@ import { inject } from '@angular/core';
   styleUrl: './table-template.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    CommonModule,
     PageSizePickerComponent,
     PageCountDisplayComponent,
     PaginationComponent,

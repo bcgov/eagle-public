@@ -1,6 +1,6 @@
 import { Component, Input, ChangeDetectionStrategy, inject, signal, computed, output } from '@angular/core';
 import { Subject } from 'rxjs';
-import { CommonModule, DatePipe } from '@angular/common';
+import { DatePipe, NgTemplateOutlet } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
@@ -26,7 +26,7 @@ import { resolveDocUrl } from 'app/search/search-collections';
   templateUrl: './activity-card.component.html',
   styleUrl: './activity-card.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, RouterModule, DatePipe],
+  imports: [RouterModule, DatePipe, NgTemplateOutlet],
   host: {
     '[class.badge-type--news]':  "activityBadge()?.cls === 'activity-badge--news'",
     '[class.badge-type--pcp]':   "activityBadge()?.cls === 'activity-badge--pcp'",

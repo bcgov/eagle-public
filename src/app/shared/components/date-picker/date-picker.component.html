@@ -1,4 +1,4 @@
-<div class="date-picker-container" [ngClass]="{ 'is-invalid': isValidate() && !isValidDate(dateValue()) }">
+<div class="date-picker-container" [class.is-invalid]="isValidate() && !isValidDate(dateValue())">
   <div class="date-input-wrapper">
     <input 
       class="date-input"
