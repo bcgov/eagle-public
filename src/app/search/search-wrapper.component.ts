@@ -1,9 +1,7 @@
 import {
   Component,
-  OnInit,
   inject,
   signal,
-  DestroyRef,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
@@ -40,18 +38,17 @@ import { SearchTableComponent } from './search-table/search-table.component';
     }
   `],
 })
-export class SearchWrapperComponent implements OnInit {
+export class SearchWrapperComponent {
   useTypesense  = signal(false);
   isContentTab  = signal(false);
 
   private configService    = inject(ConfigService);
   private typesenseService = inject(TypesenseService);
   private route            = inject(ActivatedRoute);
-  private destroyRef       = inject(DestroyRef);
 
-  ngOnInit(): void {
+  constructor() {
     this.route.queryParams
-      .pipe(takeUntilDestroyed(this.destroyRef))
+      .pipe(takeUntilDestroyed())
       .subscribe(p => this.isContentTab.set(p['tab'] === 'content' || p['tab'] === 'documents'));
 
     this.typesenseService.checkHealth().then(available => {

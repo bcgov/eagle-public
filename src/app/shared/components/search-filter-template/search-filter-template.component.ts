@@ -1,9 +1,9 @@
-import { ChangeDetectionStrategy, OnInit, OnDestroy, Component, input, output, inject, AfterViewInit, effect, signal } from '@angular/core';
+import { ChangeDetectionStrategy, OnInit, Component, input, output, inject, AfterViewInit, effect, signal, DestroyRef } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormGroup, FormControl } from '@angular/forms';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { NgbTooltip } from '@ng-bootstrap/ng-bootstrap';
-import { takeWhile } from 'rxjs/operators';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { FilterObject, FilterType } from './filter-object';
 import { SubsetsObject } from './subset-object';
@@ -28,7 +28,6 @@ import { AnalyticsService } from 'app/services/analytics/analytics.service';
  * @export
  * @class SearchFilterTemplateComponent
  * @implements {OnInit}
- * @implements {OnDestroy}
  */
 @Component({
   selector: 'search-filter-template',
@@ -44,11 +43,12 @@ import { AnalyticsService } from 'app/services/analytics/analytics.service';
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class SearchFilterTemplateComponent implements OnInit, AfterViewInit, OnDestroy {
+export class SearchFilterTemplateComponent implements OnInit, AfterViewInit {
   private route = inject(ActivatedRoute);
   private document = inject(DOCUMENT);
   private analytics = inject(AnalyticsService);
   public utils = inject(Utils);
+  private destroyRef = inject(DestroyRef);
 
   // Inputs
   title = input<string>();
@@ -89,7 +89,6 @@ export class SearchFilterTemplateComponent implements OnInit, AfterViewInit, OnD
   // Simple signal to track if any filters are active
   public hasActiveFilters = signal(false);
 
-  private alive = true;
   private skipNextSearch = false;
   private valueChangesSubscription?: any;
 
@@ -108,17 +107,13 @@ export class SearchFilterTemplateComponent implements OnInit, AfterViewInit, OnD
     });
   }
 
-  ngOnDestroy(): void {
-    this.alive = false;
-  }
-
   ngOnInit() {
     const urlValues: Record<string, any> = {}; // Storage for the URL params
 
     // ensure we parse through values from the URL and preselect anything
     // that needs pre-selecting
 
-    this.route.queryParamMap.pipe(takeWhile(() => this.alive)).subscribe(data => {
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(data => {
       const filterParams = { ...(data as any)['params'] };
       delete filterParams.currentPage;
       delete filterParams.pageSize;

@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, signal, inject, OnDestroy, PLATFORM_ID, effect, computed } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, inject, PLATFORM_ID, effect, computed } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { Router, RouterModule, NavigationEnd } from '@angular/router';
 import { ApiService } from '../services/api';
@@ -6,6 +6,7 @@ import { ConfigService } from '../services/config.service';
 import { LoadingStateService } from '../services/loading-state.service';
 import { filter, fromEvent } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 @Component({
   selector: 'app-header',
@@ -14,7 +15,7 @@ import { debounceTime } from 'rxjs/operators';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterModule],
 })
-export class HeaderComponent implements OnDestroy {
+export class HeaderComponent {
   private apiService = inject(ApiService);
   private configService = inject(ConfigService);
   private platformId = inject(PLATFORM_ID);
@@ -35,8 +36,6 @@ export class HeaderComponent implements OnDestroy {
   
   currentUrl = signal<string>('');
   
-  private resizeSubscription: any = null;
-
   constructor() {
     // Update header height when banner visibility changes
     effect(() => {
@@ -50,15 +49,15 @@ export class HeaderComponent implements OnDestroy {
       // Track current URL and update header height on navigation
       this.currentUrl.set(this.router.url);
       this.router.events
-        .pipe(filter(event => event instanceof NavigationEnd))
+        .pipe(filter(event => event instanceof NavigationEnd), takeUntilDestroyed())
         .subscribe(() => {
           this.currentUrl.set(this.router.url);
           this.updateHeaderHeight();
         });
       
       // Update header height on window resize
-      this.resizeSubscription = fromEvent(window, 'resize')
-        .pipe(debounceTime(100))
+      fromEvent(window, 'resize')
+        .pipe(debounceTime(100), takeUntilDestroyed())
         .subscribe(() => this.updateHeaderHeight());
     }
   }
@@ -72,10 +71,6 @@ export class HeaderComponent implements OnDestroy {
   }
 
   // ngOnInit not needed - banner values are computed signals that react to config changes
-  
-  ngOnDestroy(): void {
-    this.resizeSubscription?.unsubscribe();
-  }
 
   closeMenus(): void {
     if (isPlatformBrowser(this.platformId)) {

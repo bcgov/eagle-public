@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy, signal, inject } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, inject } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -13,7 +13,7 @@ import { LoggingService } from 'app/services/logging.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FormsModule],
 })
-export class CACUnsubscribeComponent implements OnInit {
+export class CACUnsubscribeComponent {
   private route = inject(ActivatedRoute);
   private projectService = inject(ProjectService);
   private router = inject(Router);
@@ -26,7 +26,7 @@ export class CACUnsubscribeComponent implements OnInit {
   projectName = signal<string>('');
   projectId = signal<string>('');
 
-  ngOnInit(): void {
+  constructor() {
     this.emailInput.set(this.route.snapshot.paramMap.get('email') || '');
     this.projectName.set(this.route.snapshot.paramMap.get('project') || '');
     this.projectId.set(this.route.snapshot.paramMap.get('projectId') || '');

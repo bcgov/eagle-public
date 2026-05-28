@@ -1,8 +1,8 @@
-import { Component, OnInit, OnDestroy, signal, input, inject, ChangeDetectionStrategy, computed, Injector, runInInjectionContext } from '@angular/core';
+import { Component, OnInit, signal, input, inject, ChangeDetectionStrategy, computed, Injector, runInInjectionContext, DestroyRef } from '@angular/core';
 
 import { Router, ActivatedRoute, Params, RouterLink } from '@angular/router';
-import { takeWhile, distinctUntilChanged, skip } from 'rxjs/operators';
-import { toObservable } from '@angular/core/rxjs-interop';
+import { distinctUntilChanged, skip } from 'rxjs/operators';
+import { toObservable, takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { TableListConfig } from './table-list-config.interface';
 import { TableObject } from '../table-template/table-object';
@@ -32,7 +32,7 @@ import { LoadingStateService } from 'app/services/loading-state.service';
 ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class TableListComponent implements OnInit, OnDestroy {
+export class TableListComponent implements OnInit {
   config = input.required<TableListConfig>();
 
   private router = inject(Router);
@@ -41,6 +41,7 @@ export class TableListComponent implements OnInit, OnDestroy {
   private tableService = inject(TableService);
   public loadingState = inject(LoadingStateService);
   private injector = inject(Injector);
+  private destroyRef = inject(DestroyRef);
 
   // Signals for component state
   readonly showAdvancedFilters = signal(false);
@@ -49,9 +50,6 @@ export class TableListComponent implements OnInit, OnDestroy {
   
   // Store filter data to pass to table rows
   private filterData: any = null;
-
-  // Component state
-  private alive = true;
 
   // Computed loading state based on config
   readonly loadingTableData = computed(() => {
@@ -74,7 +72,7 @@ export class TableListComponent implements OnInit, OnDestroy {
     runInInjectionContext(this.injector, () => {
       toObservable(tableSignal)
         .pipe(
-          takeWhile(() => this.alive),
+          takeUntilDestroyed(this.destroyRef),
           skip(1) // Skip initial empty value
         )
         .subscribe(searchResults => {
@@ -91,7 +89,7 @@ export class TableListComponent implements OnInit, OnDestroy {
 
     // Subscribe to filter data source
     cfg.filterDataSource
-      .pipe(takeWhile(() => this.alive))
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(data => {
         // Store the filter data to pass to table rows
         this.filterData = data;
@@ -111,8 +109,8 @@ export class TableListComponent implements OnInit, OnDestroy {
     // Subscribe to query params changes
     this.route.queryParams
       .pipe(
-        takeWhile(() => this.alive),
-        skip(1), // Skip initial emission to avoid duplicate with filter subscription
+        takeUntilDestroyed(this.destroyRef),
+        skip(1), // Skip initial emission
         distinctUntilChanged((a, b) => JSON.stringify(a) === JSON.stringify(b))
       )
       .subscribe(params => {
@@ -256,9 +254,5 @@ export class TableListComponent implements OnInit, OnDestroy {
       queryParams: params,
       relativeTo: this.route
     });
-  }
-
-  ngOnDestroy(): void {
-    this.alive = false;
   }
 }

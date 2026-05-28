@@ -1,4 +1,4 @@
-import { Component, OnDestroy, ViewChild, ElementRef, DestroyRef, inject, signal } from '@angular/core';
+import { Component, ViewChild, ElementRef, DestroyRef, inject, signal } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 
 import { Subject } from 'rxjs';
@@ -20,7 +20,7 @@ import { TypesenseService } from 'app/services/typesense.service';
   styleUrls: ['./project-activites.component.css'],
   imports: [SearchCardListComponent, SearchActivityCardComponent],
 })
-export class ProjectActivitesComponent implements OnDestroy {
+export class ProjectActivitesComponent {
   @ViewChild('activitiesHeader', { static: false }) activitiesHeader?: ElementRef;
 
   private router = inject(Router);
@@ -138,7 +138,5 @@ export class ProjectActivitesComponent implements OnDestroy {
     });
   }
 
-  ngOnDestroy() {
-    this.keywordInput$.complete();
-  }
 }
+
