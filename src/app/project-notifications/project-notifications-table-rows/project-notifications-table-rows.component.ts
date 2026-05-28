@@ -1,4 +1,5 @@
-import { Component, ViewEncapsulation, ChangeDetectionStrategy, inject, signal, EventEmitter } from '@angular/core';
+import { Component, ViewEncapsulation, ChangeDetectionStrategy, inject, signal, output } from '@angular/core';
+import { Subject } from 'rxjs';
 
 import { ResponsiveService } from '../../services/responsive.service';
 
@@ -21,8 +22,8 @@ import { ProjectNotificationDocumentsTableComponent } from '../project-notificat
 export class ProjectNotificationsTableRowsComponent implements TableRowComponent {
   rowData: any;
   tableData!: TableObject;
-  messageOut = new EventEmitter<ITableMessage>();
-  messageIn = new EventEmitter<ITableMessage>();
+  messageOut = output<ITableMessage>();
+  messageIn = new Subject<ITableMessage>();
   
   private responsive = inject(ResponsiveService);
 

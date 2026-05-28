@@ -1,4 +1,5 @@
-import { Component, DestroyRef, EventEmitter, inject, ChangeDetectionStrategy, signal } from '@angular/core';
+import { Component, DestroyRef, inject, ChangeDetectionStrategy, signal, output } from '@angular/core';
+import { Subject } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { DatePipe } from '@angular/common';
@@ -21,8 +22,8 @@ export class DocumentTableRowsComponent implements TableRowComponent {
 
   rowData: any;
   tableData: any;
-  messageOut = new EventEmitter<ITableMessage>();
-  messageIn = new EventEmitter<ITableMessage>();
+  messageOut = output<ITableMessage>();
+  messageIn = new Subject<ITableMessage>();
 
   private readonly lists = signal<any[]>([]);
   public currentUrl: string;

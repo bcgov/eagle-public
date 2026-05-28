@@ -2,18 +2,18 @@ import {
   Directive,
   ViewContainerRef,
   Input,
-  Output,
-  EventEmitter,
   OnInit,
   OnChanges,
   SimpleChanges,
   DestroyRef,
-  inject
+  inject,
+  output
 } from '@angular/core';
 import { IRowObject, TableObject } from './table-object';
 import { TableRowComponent, ITableMessage } from './table-row-component';
 import { InjectComponentService } from '../../services/inject-component.service';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, outputToObservable } from '@angular/core/rxjs-interop';
+import { Subject } from 'rxjs';
 
 @Directive({
   selector: '[libTableRow]',
@@ -22,8 +22,8 @@ export class TableRowDirective implements OnInit, OnChanges {
   @Input('libTableRow') rowObject!: IRowObject;
   @Input() tableData!: TableObject;
 
-  @Input() messageIn: EventEmitter<ITableMessage> = new EventEmitter<ITableMessage>();
-  @Output() messageOut: EventEmitter<ITableMessage> = new EventEmitter<ITableMessage>();
+  @Input() messageIn: Subject<ITableMessage> = new Subject<ITableMessage>();
+  messageOut = output<ITableMessage>();
 
   private destroyRef = inject(DestroyRef);
   
@@ -83,13 +83,13 @@ export class TableRowDirective implements OnInit, OnChanges {
     componentInstance.tableData = this.tableData;
 
     // subscribe to the components outbound messages and forward them to table template
-    componentInstance.messageOut.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(msg => {
+    outputToObservable(componentInstance.messageOut).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(msg => {
       this.messageOut.emit(msg);
     });
 
     // subscribe to table templates inbound messages and forward them to row component
     this.messageIn.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(msg => {
-      componentInstance.messageIn.emit(msg);
+      componentInstance.messageIn.next(msg);
     });
   }
 }

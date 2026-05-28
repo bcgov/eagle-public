@@ -1,4 +1,5 @@
-import { Component, EventEmitter, inject, ChangeDetectionStrategy } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy, output } from '@angular/core';
+import { Subject } from 'rxjs';
 import { DatePipe } from '@angular/common';
 import { TableRowComponent, ITableMessage } from 'app/shared/components/table-template/table-row-component';
 import { TableObject } from 'app/shared/components/table-template/table-object';
@@ -42,8 +43,8 @@ export class ProjectDocTableRowsComponent implements TableRowComponent {
 
   rowData: any;
   tableData!: TableObject;
-  messageOut = new EventEmitter<ITableMessage>();
-  messageIn = new EventEmitter<ITableMessage>();
+  messageOut = output<ITableMessage>();
+  messageIn = new Subject<ITableMessage>();
 
   download(): void {
     if (this.rowData._id) {

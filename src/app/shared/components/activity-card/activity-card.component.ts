@@ -1,4 +1,5 @@
-import { Component, EventEmitter, Input, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
+import { Component, Input, ChangeDetectionStrategy, inject, signal, computed, output } from '@angular/core';
+import { Subject } from 'rxjs';
 import { CommonModule, DatePipe } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
@@ -40,8 +41,8 @@ export class ActivityCardComponent implements TableRowComponent {
   // TableRowComponent interface — set by TableRowDirective in table context
   @Input() rowData: any = null;
   tableData: TableObject = null as any;
-  messageOut = new EventEmitter<ITableMessage>();
-  messageIn = new EventEmitter<ITableMessage>();
+  messageOut = output<ITableMessage>();
+  messageIn = new Subject<ITableMessage>();
 
   /** Controls "Project Info" button visibility when used standalone (home page). */
   @Input() showProjectInfo = true;

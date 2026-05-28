@@ -1,5 +1,6 @@
 import { TableObject } from './table-object';
-import { EventEmitter } from '@angular/core';
+import { OutputEmitterRef } from '@angular/core';
+import { Subject } from 'rxjs';
 
 /**
  * Generic message event for all input/output messages.
@@ -52,7 +53,7 @@ export interface TableRowComponent {
    * @type {EventEmitter<ITableMessage>}
    * @memberof TableRowComponent
    */
-  messageOut: EventEmitter<ITableMessage>;
+  messageOut: OutputEmitterRef<ITableMessage>;
 
   /**
    * An input for generically emitting events from parent to child.
@@ -60,5 +61,5 @@ export interface TableRowComponent {
    * @type {EventEmitter<ITableMessage>}
    * @memberof TableRowComponent
    */
-  messageIn: EventEmitter<ITableMessage>;
+  messageIn: Subject<ITableMessage>;
 }

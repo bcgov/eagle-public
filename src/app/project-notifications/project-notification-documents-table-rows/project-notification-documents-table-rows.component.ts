@@ -1,4 +1,5 @@
-import { Component, DestroyRef, ChangeDetectionStrategy, inject, EventEmitter, signal } from '@angular/core';
+import { Component, DestroyRef, ChangeDetectionStrategy, inject, signal, output } from '@angular/core';
+import { Subject } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DatePipe } from '@angular/common';
 
@@ -20,8 +21,8 @@ import { Utils } from '../../shared/utils/utils';
 export class ProjectNotificationDocumentsTableRowsComponent implements TableRowComponent {
   rowData: any;
   tableData!: TableObject;
-  messageOut = new EventEmitter<ITableMessage>();
-  messageIn = new EventEmitter<ITableMessage>();
+  messageOut = output<ITableMessage>();
+  messageIn = new Subject<ITableMessage>();
 
   private readonly configService = inject(ConfigService);
   private readonly utils = inject(Utils);

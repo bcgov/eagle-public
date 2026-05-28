@@ -1,4 +1,5 @@
-import { Component, inject, EventEmitter, AfterViewInit, ElementRef, ChangeDetectorRef, signal } from '@angular/core';
+import { Component, inject, AfterViewInit, ElementRef, ChangeDetectorRef, signal, output } from '@angular/core';
+import { Subject } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../../services/api';
 import { TableRowComponent, ITableMessage } from '../../shared/components/table-template/table-row-component';
@@ -20,8 +21,8 @@ export class CommentsTableRowsComponent implements TableRowComponent, AfterViewI
   
   rowData: any;
   tableData: any;
-  messageOut = new EventEmitter<ITableMessage>();
-  messageIn = new EventEmitter<ITableMessage>();
+  messageOut = output<ITableMessage>();
+  messageIn = new Subject<ITableMessage>();
   hasOverflow = signal(false);
 
   ngAfterViewInit() {

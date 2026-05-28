@@ -1,4 +1,5 @@
-import { Component, EventEmitter, ChangeDetectionStrategy, inject, signal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, output } from '@angular/core';
+import { Subject } from 'rxjs';
 import { DatePipe, TitleCasePipe } from '@angular/common';
 import { DomSanitizer } from '@angular/platform-browser';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -157,8 +158,8 @@ import { highlightField } from 'app/search/search-collections';
 export class SearchNotificationTableRowsComponent implements TableRowComponent {
   rowData: any;
   tableData!: TableObject;
-  messageOut = new EventEmitter<ITableMessage>();
-  messageIn = new EventEmitter<ITableMessage>();
+  messageOut = output<ITableMessage>();
+  messageIn = new Subject<ITableMessage>();
 
   private sanitizer = inject(DomSanitizer);
   private api = inject(ApiService);

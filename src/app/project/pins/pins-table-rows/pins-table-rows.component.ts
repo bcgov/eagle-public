@@ -1,4 +1,5 @@
-import { Component, EventEmitter } from '@angular/core';
+import { Component, output } from '@angular/core';
+import { Subject } from 'rxjs';
 
 import { TableRowComponent, ITableMessage } from 'app/shared/components/table-template/table-row-component';
 import { TableObject } from 'app/shared/components/table-template/table-object';
@@ -12,6 +13,6 @@ export class PinsTableRowsComponent implements TableRowComponent {
   // TableRowComponent interface properties
   rowData: any;
   tableData!: TableObject;
-  messageOut = new EventEmitter<ITableMessage>();
-  messageIn = new EventEmitter<ITableMessage>();
+  messageOut = output<ITableMessage>();
+  messageIn = new Subject<ITableMessage>();
 }

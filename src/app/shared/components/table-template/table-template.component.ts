@@ -1,15 +1,15 @@
 import {
   Component,
   Input,
-  Output,
-  EventEmitter,
   SimpleChanges,
   OnChanges,
   ChangeDetectionStrategy,
   computed,
-  signal
+  signal,
+  output
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Subject } from 'rxjs';
 
 import { TableObject } from './table-object';
 import { ITableMessage } from './table-row-component';
@@ -38,8 +38,8 @@ export class TableTemplateComponent implements OnChanges {
   @Input() data!: TableObject;
   @Input() loading = false;
 
-  @Input() messageIn: EventEmitter<ITableMessage> = new EventEmitter<ITableMessage>();
-  @Output() messageOut: EventEmitter<ITableMessage> = new EventEmitter<ITableMessage>();
+  @Input() messageIn: Subject<ITableMessage> = new Subject<ITableMessage>();
+  messageOut = output<ITableMessage>();
 
   private analytics = inject(AnalyticsService);
   private lastTotalItems = 0;

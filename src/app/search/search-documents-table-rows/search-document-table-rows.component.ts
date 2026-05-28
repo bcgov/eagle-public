@@ -1,4 +1,5 @@
-import { Component, OnDestroy, EventEmitter, inject } from '@angular/core';
+import { Component, OnDestroy, inject, output } from '@angular/core';
+import { Subject } from 'rxjs';
 import { CommonModule, DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { Utils } from 'app/shared/utils/utils';
@@ -23,8 +24,8 @@ export class DocSearchTableRowsComponent implements TableRowComponent, OnDestroy
   // Required by TableRowComponent interface
   rowData: any;
   tableData!: TableObject;
-  messageOut = new EventEmitter<ITableMessage>();
-  messageIn = new EventEmitter<ITableMessage>();
+  messageOut = output<ITableMessage>();
+  messageIn = new Subject<ITableMessage>();
 
   // Get lists from tableData.data (passed from parent, no HTTP subscription)
   private get lists(): any[] {

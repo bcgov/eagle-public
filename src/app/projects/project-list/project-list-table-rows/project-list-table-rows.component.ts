@@ -1,4 +1,5 @@
-import { Component, EventEmitter, inject } from '@angular/core';
+import { Component, inject, output } from '@angular/core';
+import { Subject } from 'rxjs';
 import { Router } from '@angular/router';
 import { TableRowComponent, ITableMessage } from 'app/shared/components/table-template/table-row-component';
 import { TableObject } from 'app/shared/components/table-template/table-object';
@@ -15,8 +16,8 @@ export class ProjectListTableRowsComponent implements TableRowComponent {
   // TableRowComponent interface properties
   rowData: any;
   tableData!: TableObject;
-  messageOut = new EventEmitter<ITableMessage>();
-  messageIn = new EventEmitter<ITableMessage>();
+  messageOut = output<ITableMessage>();
+  messageIn = new Subject<ITableMessage>();
 
   goToProject(project: any): void {
     // Track project view from list
