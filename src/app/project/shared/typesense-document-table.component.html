@@ -36,9 +36,9 @@
       <span class="filter-sidebar__badge">{{ activeFilterCount() }}</span>
     }
   </button>
-  @if (engine && engine.nbHits() > 0 && !engine.isLoading()) {
+  @if (engine() && engine()!.nbHits() > 0 && !engine()!.isLoading()) {
     <span class="text-muted small ms-auto">
-      {{ engine.nbHits().toLocaleString() }} result{{ engine.nbHits() === 1 ? '' : 's' }}{{ engine.procMs() ? ' in ' + engine.procMs() + ' ms' : '' }}
+      {{ engine()!.nbHits().toLocaleString() }} result{{ engine()!.nbHits() === 1 ? '' : 's' }}{{ engine()!.procMs() ? ' in ' + engine()!.procMs() + ' ms' : '' }}
     </span>
   }
 </div>
@@ -46,7 +46,7 @@
 <!-- Two-column layout: sidebar + results -->
 <div class="search-columns">
 
-  @if (engine) {
+  @if (engine(); as eng) {
 
     <!-- Filter sidebar -->
     <app-search-filter-sidebar
@@ -55,30 +55,30 @@
       [facets]="cfg.facets"
       [facetSnapshot]="facetSnapshot()"
       [groupedSnapshot]="groupedSnapshot()"
-      [filtersLoaded]="engine.filtersLoaded()"
+      [filtersLoaded]="eng.filtersLoaded()"
       [sidebarCollapsed]="sidebarCollapsed()"
       [filtersOpen]="filtersOpen()"
       [collapsedFacets]="collapsedFacets()"
-      [dateFacet]="$any(COLLECTIONS['documents'].dateFacet)"
-      [fromCtrl]="engine.fromCtrl"
-      [toCtrl]="engine.toCtrl"
-      [hasDateFilter]="engine.hasDateFilter()"
+      [dateFacet]="$any(docDateFacet)"
+      [fromCtrl]="eng.fromCtrl"
+      [toCtrl]="eng.toCtrl"
+      [hasDateFilter]="eng.hasDateFilter()"
       [activeFilterCount]="activeFilterCount()"
       (toggleSidebar)="toggleSidebar()"
       (toggleFiltersOpen)="filtersOpen.set(!filtersOpen())"
       (toggleFacet)="toggleFacet($event)"
-      (refineFacet)="engine.refine($event.attribute, $event.value)"
-      (clearDateFilter)="engine.clearDateFilter()" />
+      (refineFacet)="eng.refine($event.attribute, $event.value)"
+      (clearDateFilter)="eng.clearDateFilter()" />
 
     <!-- Results column -->
     <div class="results-col" #tsResultsCol>
       <app-search-results-list
         collectionId="documents"
-        [hits]="engine.hits()"
-        [isLoading]="engine.isLoading()"
-        [isLoadingMore]="engine.isLoadingMore()"
-        [hasSearched]="engine.hasSearched()"
-        [hasError]="engine.hasError()"
+        [hits]="eng.hits()"
+        [isLoading]="eng.isLoading()"
+        [isLoadingMore]="eng.isLoadingMore()"
+        [hasSearched]="eng.hasSearched()"
+        [hasError]="eng.hasError()"
         [emptyMessage]="cfg.emptyMessage"
         [showProjectLink]="false"
         (downloadClicked)="onDownloadClicked($event)" />

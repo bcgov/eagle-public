@@ -379,60 +379,6 @@ export class TypesenseService {
   }
 
   /**
-   * Returns a custom InstantSearch.js-compatible searchClient that queries BOTH
-   * the `documents` collection (metadata) and `document_chunks` collection (PDF content).
-   *
-   * Delegates fully to the Typesense adapter (preserving facets, pagination, highlighting)
-   * then augments hits with content snippets from chunk matches.
-   *
-   * @param metadataParams  Typesense search params for the documents collection
-   */
-  getDocumentsSearchClient(metadataParams: { query_by: string; [key: string]: any }): any {
-    const { host, port, protocol, path } = this.parseHost(this.proxyBase);
-    const baseAdapter = new TypesenseInstantSearchAdapter({
-      server: {
-        apiKey: 'proxy',
-        nodes: [{ host, port, protocol, path }],
-        connectionTimeoutSeconds: 8,   // total per-request timeout (Axios); allow for proxy chain latency
-        numRetries: 1,
-        retryIntervalSeconds: 0.1,
-        cacheSearchResultsForSeconds: 60, // deduplicates IS.js multi-widget fires; helps repeat queries in session
-        sendApiKeyAsQueryParam: false,
-      },
-      additionalSearchParameters: metadataParams,
-    });
-
-    const originalClient = baseAdapter.searchClient;
-
-    return {
-      ...originalClient,
-      search: async (requests: any[]): Promise<any> => {
-        // Always delegate to the adapter — preserves facets, pagination, query state
-        const baseResponse: any = await originalClient.search(requests as any);
-
-        // Extract query from first request
-        const query = requests[0]?.params?.query ?? '';
-        if (!query || query === '*' || query.length < 3) return baseResponse;
-
-        // Collect metadata hit doc IDs for targeted snippet lookup
-        const mainResult = baseResponse.results?.[0];
-        if (!mainResult?.hits) return baseResponse;
-
-        const metaDocIds = (mainResult.hits as any[])
-          .map((h: any) => h.objectID ?? h.id)
-          .filter(Boolean) as string[];
-
-        // Fire chunk search without awaiting — _contentSnippets signal update will
-        // reactively update the card components via their contentSnippet computed().
-        // Not awaiting avoids blocking Typesense while it handles the next IS.js request.
-        this.fetchChunkSnippets(query, metaDocIds);
-
-        return baseResponse;
-      },
-    };
-  }
-
-  /**
    * Fetches content snippets from document_chunks using two parallel Typesense queries
    * bundled into one multiSearch call:
    *   - Broad search: top-50 content-matching chunks across all documents (finds content-only hits)

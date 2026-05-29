@@ -3,7 +3,6 @@ import {
   signal,
   computed,
   ChangeDetectionStrategy,
-  ChangeDetectorRef,
   inject,
   NgZone,
   ViewChild,
@@ -103,7 +102,6 @@ export class TypesenseDocumentTableComponent implements OnInit, OnDestroy {
   private readonly configService = inject(ConfigService);
   private readonly zone          = inject(NgZone);
   private readonly destroyRef    = inject(DestroyRef);
-  private readonly cdr           = inject(ChangeDetectorRef);
 
   // ── Inputs ──────────────────────────────────────────────────────────────────
   readonly projId = input.required<string>();
@@ -122,20 +120,21 @@ export class TypesenseDocumentTableComponent implements OnInit, OnDestroy {
   cfg!: TabConfig;
 
   // Expose for template binding
-  readonly COLLECTIONS = COLLECTIONS;
+  readonly docDateFacet = COLLECTIONS.documents.dateFacet;
 
-  // ── Engine (created once health check passes) ────────────────────────────────
-  engine!: TypesenseSearchEngine;
+  // ── Engine (created once health check passes) ─────────────────────────────────────────
+  readonly engine = signal<TypesenseSearchEngine | null>(null);
 
   // ── Computed: grouped facet snapshot for legislation facets ─────────────────
   groupedSnapshot = computed((): Record<string, LegislationGroup[]> => {
-    if (!this.engine) return {};
+    const eng = this.engine();
+    if (!eng) return {};
     const snap: Record<string, LegislationGroup[]> = {};
     for (const f of this.cfg?.facets ?? []) {
       snap[f.attribute] = f.grouped
         ? groupByLegislation(
-            this.engine.facetItems[f.attribute]?.() ?? [],
-            this.engine.lawLookups[f.attribute]?.() ?? new Map(),
+            eng.facetItems[f.attribute]?.() ?? [],
+            eng.lawLookups[f.attribute]?.() ?? new Map(),
             f.sorter,
           )
         : [];
@@ -145,22 +144,24 @@ export class TypesenseDocumentTableComponent implements OnInit, OnDestroy {
 
   // ── Computed: flat facet snapshot for sidebar binding ────────────────────────
   facetSnapshot = computed((): Record<string, any[]> => {
-    if (!this.engine) return {};
+    const eng = this.engine();
+    if (!eng) return {};
     const snap: Record<string, any[]> = {};
     for (const f of this.cfg?.facets ?? []) {
-      snap[f.attribute] = this.engine.facetItems[f.attribute]?.() ?? [];
+      snap[f.attribute] = eng.facetItems[f.attribute]?.() ?? [];
     }
     return snap;
   });
 
   // ── Computed: active filter count for badge ──────────────────────────────────
   activeFilterCount = computed(() => {
-    if (!this.engine) return 0;
+    const eng = this.engine();
+    if (!eng) return 0;
     let count = 0;
     for (const f of this.cfg?.facets ?? []) {
-      count += (this.engine.facetItems[f.attribute]?.() ?? []).filter(i => i.isRefined).length;
+      count += (eng.facetItems[f.attribute]?.() ?? []).filter(i => i.isRefined).length;
     }
-    if (this.engine.fromCtrl.value || this.engine.toCtrl.value) count++;
+    if (eng.fromCtrl.value || eng.toCtrl.value) count++;
     return count;
   });
 
@@ -170,7 +171,7 @@ export class TypesenseDocumentTableComponent implements OnInit, OnDestroy {
   @ViewChild('tsSentinel')
   set tsSentinel(el: ElementRef | undefined) {
     if (el?.nativeElement) {
-      this.engine?.setupObserver(el.nativeElement, this.resultsColEl ?? undefined);
+      this.engine()?.setupObserver(el.nativeElement, this.resultsColEl ?? undefined);
     }
   }
 
@@ -190,7 +191,7 @@ export class TypesenseDocumentTableComponent implements OnInit, OnDestroy {
       debounceTime(200),
       distinctUntilChanged(),
       takeUntilDestroyed(this.destroyRef),
-    ).subscribe(kw => this.engine?.search(kw || ''));
+    ).subscribe(kw => this.engine()?.search(kw || ''));
 
     // Health-check + lists run in parallel.
     combineLatest([
@@ -205,7 +206,7 @@ export class TypesenseDocumentTableComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.engine?.dispose();
+    this.engine()?.dispose();
   }
 
   // ── Sidebar interactions ─────────────────────────────────────────────────────
@@ -233,7 +234,7 @@ export class TypesenseDocumentTableComponent implements OnInit, OnDestroy {
 
   clearTsSearch(): void {
     this.keywords.set('');
-    this.engine?.search('');
+    this.engine()?.search('');
   }
 
   // ── Analytics ────────────────────────────────────────────────────────────────
@@ -259,7 +260,7 @@ export class TypesenseDocumentTableComponent implements OnInit, OnDestroy {
       ? `${baseFilter} && ${cfg.extraFilter}`
       : baseFilter;
 
-    this.engine = new TypesenseSearchEngine(
+    const eng = new TypesenseSearchEngine(
       {
         collectionId: 'documents',
         facets,
@@ -281,17 +282,13 @@ export class TypesenseDocumentTableComponent implements OnInit, OnDestroy {
       this.zone,
     );
 
-    // Populate legislation lookups from the initial lists emission
-    this.engine.updateLegislationLookups(lists);
-
-    // Notify OnPush tree that engine is now available
-    this.cdr.markForCheck();
-
-    this.engine.init(this.destroyRef);
+    eng.updateLegislationLookups(lists);
+    eng.init(this.destroyRef);
+    this.engine.set(eng);
 
     // Keep legislation lookups fresh on subsequent list updates
     this.configService.lists
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(updatedLists => this.engine.updateLegislationLookups(updatedLists));
+      .subscribe(updatedLists => this.engine()?.updateLegislationLookups(updatedLists));
   }
 }

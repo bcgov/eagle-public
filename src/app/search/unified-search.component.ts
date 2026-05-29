@@ -175,7 +175,6 @@ const TABS: { id: Tab; label: string }[] = [
 })
 export class UnifiedSearchComponent implements OnInit, AfterViewInit, OnDestroy {
   readonly tabs = TABS;
-  readonly minDate = new Date(1970, 0, 1);
   typesenseAvailable = input(false);
 
   // ── UI state ────────────────────────────────────────────────────────────────
@@ -516,26 +515,10 @@ export class UnifiedSearchComponent implements OnInit, AfterViewInit, OnDestroy 
       this.lawLookupSub?.unsubscribe();
       this.lawLookupSub = null;
     }
-    // Disconnect observers in all other engines so only the active one watches the sentinel
-    for (const key of Object.keys(this.engines()) as CollectionId[]) {
-      if (key !== id) this.engines()[key]?.setupObserver(this.sentinelEl!, this.resultsColEl ?? undefined);
-    }
   }
 
   private setupObserver(id: CollectionId): void {
     if (!this.sentinelEl) return;
-    // Reconnect only the active collection; stop others from triggering load-more
-    for (const key of Object.keys(this.engines) as CollectionId[]) {
-      if (key !== id) {
-        const other = this.engines()[key];
-        if (other) {
-          // Recreate engine's observer targeting a non-existent sentinel to effectively stop it
-          // (cleanest approach: the observer is internal to the engine)
-          // We just don't call setupObserver on inactive engines.
-          // Their observers from previous setupObserver calls remain disconnected after dispose.
-        }
-      }
-    }
     this.engines()[id]?.setupObserver(this.sentinelEl, this.resultsColEl ?? undefined);
   }
 

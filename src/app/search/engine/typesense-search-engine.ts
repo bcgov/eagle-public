@@ -70,8 +70,7 @@ export interface SearchEngineConfig {
    */
   escapeHTML?: boolean;
   /** When true, fires a document_chunks multi_search after each query >= 3 chars
-   *  and updates TypesenseService._contentSnippets for SearchDocumentCardComponent.
-   *  Use for the 'documents' collection only. */
+   *  and updates TypesenseService._contentSnippets for SearchDocumentCardComponent. */
   enableContentSnippets?: boolean;
   /** Query to pre-populate via initialUiState on the first IS.js start(). */
   initialQuery?: string;
@@ -264,17 +263,17 @@ export class TypesenseSearchEngine {
 
     // ── Date filter subscriptions ─────────────────────────────────────────────
     if (col.dateFacet) {
-      const onDateChange = (_filterType: 'from' | 'to') => (_v: string | null) => {
+      const onDateChange = (_v: string | null) => {
         this.hasDateFilter.set(!!(this.fromCtrl.value || this.toCtrl.value));
         this.applyDateFilter();
       };
       this.dateSubs.push(
         this.fromCtrl.valueChanges
           .pipe(takeUntilDestroyed(destroyRef))
-          .subscribe(onDateChange('from')),
+          .subscribe(onDateChange),
         this.toCtrl.valueChanges
           .pipe(takeUntilDestroyed(destroyRef))
-          .subscribe(onDateChange('to')),
+          .subscribe(onDateChange),
       );
     }
   }
