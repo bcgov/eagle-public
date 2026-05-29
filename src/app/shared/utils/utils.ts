@@ -56,20 +56,26 @@ export class Utils {
         break;
       case Constants.optionalProjectDocTabs.AMENDMENT: {
         types = [
+          { legislation: 1996, name: 'Amendment Package' },
           { legislation: 2002, name: 'Amendment Package' },
           { legislation: 2018, name: 'Amendment Package' },
+          { legislation: 1996, name: 'Request' },
           { legislation: 2002, name: 'Request' },
+          { legislation: 1996, name: 'Decision Materials' },
           { legislation: 2002, name: 'Decision Materials' },
           { legislation: 2018, name: 'Decision Materials' },
+          { legislation: 1996, name: 'Tracking Table' },
           { legislation: 2002, name: 'Tracking Table' },
           { legislation: 2018, name: 'Tracking Table' }
         ];
         milestones = [
+          { legislation: 1996, name: 'Amendment' },
           { legislation: 2002, name: 'Amendment' },
           { legislation: 2018, name: 'Amendment' }
         ];
 
         const amendPhase = [
+          { legislation: 1996, name: 'Post Decision - Amendment' },
           { legislation: 2002, name: 'Post Decision - Amendment' },
           { legislation: 2018, name: 'Post Decision - Amendment' }
         ];
@@ -80,17 +86,23 @@ export class Utils {
       }
       case Constants.optionalProjectDocTabs.CERTIFICATE:
         types = [
+          { legislation: 1996, name: 'Certificate Package' },
           { legislation: 2002, name: 'Certificate Package' },
           { legislation: 2018, name: 'Certificate Package' },
+          { legislation: 1996, name: 'Order' },
           { legislation: 2002, name: 'Order' },
           { legislation: 2018, name: 'Order' },
+          { legislation: 1996, name: 'Decision Materials' },
           { legislation: 2002, name: 'Decision Materials' },
           { legislation: 2018, name: 'Decision Materials' }
         ];
         milestones = [
+          { legislation: 1996, name: 'Certificate' },
           { legislation: 2002, name: 'Certificate' },
           { legislation: 2018, name: 'Certificate Decision' },
+          { legislation: 1996, name: 'Decision' },
           { legislation: 2002, name: 'Decision' },
+          { legislation: 1996, name: 'Certificate Extension' },
           { legislation: 2002, name: 'Certificate Extension' },
           { legislation: 2018, name: 'Certificate Extension' },
           { legislation: 2018, name: 'Transfer of Certificate/Order' }
@@ -100,12 +112,15 @@ export class Utils {
         // Application documents are identified by type and milestone only.
         // Adding projectPhase filter causes query issues with many AND conditions.
         types = [
+          { legislation: 1996, name: 'Application Materials' },
           { legislation: 2002, name: 'Application Materials' },
           { legislation: 2018, name: 'Application Materials' },
+          { legislation: 1996, name: 'Scientific Memo' },
           { legislation: 2002, name: 'Scientific Memo' },
           { legislation: 2018, name: 'Independent Memo' }
         ];
         milestones = [
+          { legislation: 1996, name: 'Application Review' },
           { legislation: 2002, name: 'Application Review' },
           { legislation: 2018, name: 'EAC Application' },
           { legislation: 2018, name: 'Revised EAC Application' },
@@ -131,15 +146,14 @@ export class Utils {
   }
 
   // Searches the list of terms for a name and legislation year.
+  // Silently skips terms that have no matching list item (guards against missing 1996/future legislation entries).
   public getIdsByName(terms: any[], list: any[]) {
-    const matchedItems = terms.map(term => {
-      const listItem = list.find(item => item.name === term.name && item.legislation === term.legislation)
-      return {
-        name: term.name,
-        id: listItem._id
-      }
-    });
-    return matchedItems;
+    return terms
+      .map(term => {
+        const listItem = list.find(item => item.name === term.name && item.legislation === term.legislation);
+        return listItem ? { name: term.name, id: listItem._id } : null;
+      })
+      .filter((item): item is { name: string; id: string } => item !== null);
   }
 
   /**
