@@ -168,6 +168,29 @@ export function groupByLegislation(
   return result;
 }
 
+// ── buildAdapterParams ───────────────────────────────────────────────────────────
+
+/**
+ * Builds the Typesense adapter additionalSearchParameters from a CollectionConfig.
+ * Single source of truth — use in both unified search and project-tab engines.
+ */
+export function buildAdapterParams(
+  col: CollectionConfig,
+  sortBy?: string,
+): { query_by: string; [key: string]: any } {
+  const params: { query_by: string; [key: string]: any } = {
+    query_by:         col.queryBy,
+    query_by_weights: col.queryByWeights,
+    highlight_fields: col.highlightFields,
+  };
+  if (col.highlightFullFields) params['highlight_full_fields'] = col.highlightFullFields;
+  if (col.textMatchType)       params['text_match_type']       = col.textMatchType;
+  if (col.numTypos)            params['num_typos']             = col.numTypos;
+  if (col.infix)               params['infix']                 = col.infix;
+  if (sortBy)                  params['sort_by']               = sortBy;
+  return params;
+}
+
 // ── highlightField ─────────────────────────────────────────────────────────────
 
 /**

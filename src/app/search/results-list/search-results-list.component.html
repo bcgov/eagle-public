@@ -1,0 +1,85 @@
+@if (isLoading() && !hasSearched()) {
+  <!-- ── Skeleton cards ─────────────────────────────────────────────────── -->
+  <div aria-busy="true" aria-label="Loading">
+    @for (i of [1, 2, 3]; track i) {
+      <div class="card search-result-card mb-3 p-3">
+        <div class="skeleton-cell mb-2" style="width:60%;height:1.1rem;"></div>
+        <div class="row row-cols-4 g-2 mt-1">
+          @for (j of [1,2,3,4]; track j) {
+            <div class="col">
+              <div class="skeleton-cell mb-1" style="width:50%;height:.75rem;"></div>
+              <div class="skeleton-cell" style="height:.85rem;"></div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+  </div>
+
+} @else if (hasError()) {
+  <div class="text-center text-muted py-5">Search timed out — please try again.</div>
+
+} @else if (hits().length === 0 && hasSearched()) {
+  <div class="text-center text-muted py-4">{{ emptyMessage() }}</div>
+
+} @else {
+  <!-- ── Result cards ──────────────────────────────────────────────────── -->
+  <div class="d-flex flex-column gap-3">
+    @switch (collectionId()) {
+
+      @case ('projects') {
+        @for (hit of hits(); track hit['id'] ?? hit['objectID']; let i = $index) {
+          <app-search-project-card
+            [hit]="hit"
+            (clicked)="resultClicked.emit({ hit, index: i })" />
+        }
+      }
+
+      @case ('documents') {
+        @for (hit of hits(); track hit['objectID'] ?? hit['id']; let i = $index) {
+          <app-search-document-card
+            [hit]="hit"
+            [showProjectLink]="showProjectLink()"
+            (downloadClicked)="downloadClicked.emit(hit)"
+            (projectClicked)="projectClicked.emit({ hit, index: i })" />
+        }
+      }
+
+      @case ('document_chunks') {
+        @for (hit of hits(); track hit['objectID'] ?? hit['id']; let i = $index) {
+          <app-search-document-card
+            [hit]="hit"
+            [showProjectLink]="showProjectLink()"
+            (downloadClicked)="downloadClicked.emit(hit)"
+            (projectClicked)="projectClicked.emit({ hit, index: i })" />
+        }
+      }
+
+      @case ('activities') {
+        @for (hit of hits(); track hit['objectID'] ?? hit['id']; let i = $index) {
+          <app-search-activity-card
+            [hit]="hit"
+            (projectClicked)="projectClicked.emit({ hit, index: i })" />
+        }
+      }
+
+      @case ('notifications') {
+        @for (hit of hits(); track hit['id'] ?? hit['objectID']; let i = $index) {
+          <app-search-notification-card
+            [hit]="hit"
+            (projectClicked)="projectClicked.emit({ hit, index: i })" />
+        }
+      }
+
+    }
+  </div>
+}
+
+<!-- ── Infinite scroll sentinel + loading indicator ──────────────────────── -->
+<div class="py-2 text-center">
+  @if (isLoadingMore()) {
+    <div class="spinner-border spinner-border-sm text-secondary" role="status">
+      <span class="visually-hidden">Loading more…</span>
+    </div>
+  }
+</div>

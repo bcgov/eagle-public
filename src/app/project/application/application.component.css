@@ -1,4 +1,4 @@
-:host { display: block; }
+:host { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 
 .tab-section .row {
   @media (max-width: 767px) {

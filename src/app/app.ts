@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, OnInit, OnDestroy, inject, signal, computed } from '@angular/core';
+import { Component, ChangeDetectionStrategy, OnInit, OnDestroy, inject, signal } from '@angular/core';
 
 import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
 import { HeaderComponent } from './header/header.component';
@@ -21,10 +21,6 @@ export class App implements OnInit, OnDestroy {
   title = 'EPIC - Environmental Assessment Office';
   showScrollButton = signal(false);
   currentUrl = signal<string>('');
-  isContentSearch = computed(() => {
-    const url = this.currentUrl();
-    return url.startsWith('/search') && /[?&]tab=(documents|content)/.test(url);
-  });
 
   ngOnInit(): void {
     // Track current URL for route-specific styling and analytics

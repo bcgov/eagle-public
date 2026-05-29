@@ -1,6 +1,7 @@
 /* App Root Layout */
 :host {
   display: block;
+  min-height: 100dvh;
 }
 
 .app-wrapper {
@@ -23,16 +24,4 @@
   padding-top: 0;
 }
 
-@media (min-width: 768px) {
-  /* Viewport-fill only on content/PDF tab and documents route (internal scrollers) */
-  .app-wrapper.content-search,
-  .app-wrapper.documents-route {
-    height: 100dvh;
-    overflow: hidden;
-  }
 
-  .app-content.content-search,
-  .app-content.documents-route {
-    overflow: hidden;
-  }
-}

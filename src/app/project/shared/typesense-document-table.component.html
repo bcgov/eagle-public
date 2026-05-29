@@ -1,14 +1,15 @@
+<!-- Search box -->
 <div class="ais-SearchBox mb-3">
   <form class="ais-SearchBox-form" novalidate (submit)="$event.preventDefault()">
     <input
       class="ais-SearchBox-input"
       type="search"
       [placeholder]="cfg.searchPlaceholder"
-      [value]="tsKeywords()"
+      [value]="keywords()"
       (input)="onTsInput($event)"
       autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
     />
-    @if (tsKeywords()) {
+    @if (keywords()) {
       <button class="ais-SearchBox-reset" type="button"
         (click)="clearTsSearch()" aria-label="Clear search">
         <i class="material-icons" aria-hidden="true" style="font-size:12px">close</i>
@@ -17,8 +18,11 @@
   </form>
 </div>
 
-<!-- ── Filter bar ─────────────────────────────────────────── -->
-<div class="filter-bar mb-3">
+<!-- Filter bar + two-column layout: viewport-fill on desktop (matches unified search) -->
+<div class="search-panels">
+
+  <!-- Filter bar: toggle button + result count -->
+  <div class="filter-bar mb-3">
   <button class="filter-bar__toggle" type="button"
     (click)="toggleSidebar()"
     [attr.aria-expanded]="!sidebarCollapsed()"
@@ -32,174 +36,57 @@
       <span class="filter-sidebar__badge">{{ activeFilterCount() }}</span>
     }
   </button>
-  @if (tsNbHits() > 0 && !tsLoading()) {
+  @if (engine && engine.nbHits() > 0 && !engine.isLoading()) {
     <span class="text-muted small ms-auto">
-      {{ tsNbHits().toLocaleString() }} result{{ tsNbHits() === 1 ? '' : 's' }}{{ tsProcMs() ? ' in ' + tsProcMs() + ' ms' : '' }}
+      {{ engine.nbHits().toLocaleString() }} result{{ engine.nbHits() === 1 ? '' : 's' }}{{ engine.procMs() ? ' in ' + engine.procMs() + ' ms' : '' }}
     </span>
   }
 </div>
 
+<!-- Two-column layout: sidebar + results -->
 <div class="search-columns">
 
-  <!-- ── Facets sidebar ───────────────────────────────────────────────── -->
-  <div [class.filter-sidebar--collapsed]="sidebarCollapsed()"
-    class="filter-sidebar"
-    id="tsFilterSidebar"
-    role="complementary" [attr.aria-label]="cfg.filterAriaLabel">
+  @if (engine) {
 
-    <!-- Collapsed strip (desktop only) — click to expand -->
-    <button class="filter-sidebar__strip" (click)="toggleSidebar()"
-      aria-label="Expand filters" title="Expand filters">
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
-        viewBox="0 0 16 16" aria-hidden="true">
-        <path d="M6 10.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5zm-2-3a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5zm-2-3a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5z"/>
-      </svg>
-      @if (activeFilterCount() > 0) {
-        <span class="filter-sidebar__badge">{{ activeFilterCount() }}</span>
-      }
-    </button>
+    <!-- Filter sidebar -->
+    <app-search-filter-sidebar
+      sidebarId="tsFilterSidebar"
+      [ariaLabel]="cfg.filterAriaLabel"
+      [facets]="cfg.facets"
+      [facetSnapshot]="facetSnapshot()"
+      [groupedSnapshot]="groupedSnapshot()"
+      [filtersLoaded]="engine.filtersLoaded()"
+      [sidebarCollapsed]="sidebarCollapsed()"
+      [filtersOpen]="filtersOpen()"
+      [collapsedFacets]="collapsedFacets()"
+      [dateFacet]="$any(COLLECTIONS['documents'].dateFacet)"
+      [fromCtrl]="engine.fromCtrl"
+      [toCtrl]="engine.toCtrl"
+      [hasDateFilter]="engine.hasDateFilter()"
+      [activeFilterCount]="activeFilterCount()"
+      (toggleSidebar)="toggleSidebar()"
+      (toggleFiltersOpen)="filtersOpen.set(!filtersOpen())"
+      (toggleFacet)="toggleFacet($event)"
+      (refineFacet)="engine.refine($event.attribute, $event.value)"
+      (clearDateFilter)="engine.clearDateFilter()" />
 
-    <!-- Expanded content -->
-    <div class="filter-sidebar__content">
+    <!-- Results column -->
+    <div class="results-col" #tsResultsCol>
+      <app-search-results-list
+        collectionId="documents"
+        [hits]="engine.hits()"
+        [isLoading]="engine.isLoading()"
+        [isLoadingMore]="engine.isLoadingMore()"
+        [hasSearched]="engine.hasSearched()"
+        [hasError]="engine.hasError()"
+        [emptyMessage]="cfg.emptyMessage"
+        [showProjectLink]="false"
+        (downloadClicked)="onDownloadClicked($event)" />
+      <div #tsSentinel></div>
+    </div>
 
-      <!-- Desktop header: "Filters" label only (no collapse toggle here — use filter-bar button) -->
-      <div class="filter-sidebar__header d-none d-md-flex mb-2">
-        <span class="filter-sidebar__label">Filters</span>
-      </div>
+  }
 
-      <!-- Mobile filter toggle -->
-      <div class="d-md-none d-flex align-items-center justify-content-between mb-3">
-        <button
-          class="btn filter-toggle-btn btn-sm d-flex align-items-center gap-2"
-          [class.filter-toggle-btn--open]="tsFiltersOpen()"
-          (click)="tsFiltersOpen.set(!tsFiltersOpen())"
-          [attr.aria-expanded]="tsFiltersOpen()">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
-            <path d="M6 10.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5zm-2-3a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5zm-2-3a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5z"/>
-          </svg>
-          Filters
-          <svg class="filter-chevron" [class.open]="tsFiltersOpen()" xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
-            <path d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/>
-          </svg>
-        </button>
-      </div>
+</div><!-- /.search-columns -->
 
-      <div class="filter-wrap" [class.filter-wrap--open]="tsFiltersOpen()">
-        <div class="filter-inner">
-          <div class="filter-inner-pad">
-
-            @if (!tsFiltersLoaded()) {
-              <div aria-busy="true" aria-label="Loading filters">
-                @for (section of [1, 2, 3]; track section) {
-                  <div class="mb-3">
-                    <div class="skeleton-cell mb-2" style="width:55%;height:.85rem;"></div>
-                    @for (item of [1, 2, 3, 4]; track item) {
-                      <div class="d-flex align-items-center gap-2 py-1">
-                        <div class="skeleton-cell flex-shrink-0" style="width:1rem;height:1rem;"></div>
-                        <div class="skeleton-cell flex-fill"></div>
-                        <div class="skeleton-cell flex-shrink-0" style="width:1.5rem;height:.85rem;"></div>
-                      </div>
-                    }
-                  </div>
-                }
-              </div>
-            }
-
-            @for (facet of tsFacets; track facet.attribute) {
-              <div class="mb-3" [class.d-none]="!tsFiltersLoaded()">
-                <h6 class="fw-semibold">{{ facet.heading }}</h6>
-                @if (facet.grouped) {
-                  @for (group of tsGroupedSnapshot()[facet.attribute]; track group.year) {
-                    @if (group.heading) {
-                      <small class="legislation-heading d-block">{{ group.heading }}</small>
-                    }
-                    <ul class="ais-RefinementList-list">
-                      @for (item of group.items; track item.label) {
-                        <li class="ais-RefinementList-item"
-                          [class.ais-RefinementList-item--selected]="item.isRefined"
-                          [class.ais-RefinementList-item--disabled]="item.isDisabled">
-                          <label class="ais-RefinementList-label">
-                            <input type="checkbox" class="ais-RefinementList-checkbox"
-                              [checked]="item.isRefined" [disabled]="item.isDisabled"
-                              (change)="refineTsFacet(facet.attribute, item.label)" />
-                            <span class="ais-RefinementList-labelText">{{ item.label }}</span>
-                            <span class="ais-RefinementList-count">{{ item.count }}</span>
-                          </label>
-                        </li>
-                      }
-                    </ul>
-                  }
-                } @else {
-                  <ul class="ais-RefinementList-list">
-                    @for (item of tsFacetItems[facet.attribute]?.() ?? []; track item.label) {
-                      <li class="ais-RefinementList-item"
-                        [class.ais-RefinementList-item--selected]="item.isRefined"
-                        [class.ais-RefinementList-item--disabled]="item.isDisabled">
-                        <label class="ais-RefinementList-label">
-                          <input type="checkbox" class="ais-RefinementList-checkbox"
-                            [checked]="item.isRefined" [disabled]="item.isDisabled"
-                            (change)="refineTsFacet(facet.attribute, item.label)" />
-                          <span class="ais-RefinementList-labelText">{{ item.label }}</span>
-                          <span class="ais-RefinementList-count">{{ item.count }}</span>
-                        </label>
-                      </li>
-                    }
-                  </ul>
-                }
-              </div>
-            }
-
-            <!-- Date range filter -->
-            <div class="mb-3" [class.d-none]="!tsFiltersLoaded()">
-              <h6 class="fw-semibold">Date Posted</h6>
-              <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
-              <label class="control-label fw-bold">From</label>
-              <lib-date-picker [control]="tsFromCtrl" [minDate]="tsMinDate" />
-              <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
-              <label class="control-label fw-bold mt-2">To</label>
-              <div class="mb-2">
-                <lib-date-picker [control]="tsToCtrl" [minDate]="tsMinDate" />
-              </div>
-              @if (tsHasDateFilter()) {
-                <button class="btn btn-link btn-sm p-0 text-secondary"
-                  (click)="clearTsDateFilter()">Clear both</button>
-              }
-            </div>
-
-          </div>
-        </div>
-      </div>
-
-    </div><!-- /.filter-sidebar__content -->
-  </div>
-
-  <!-- ── Results ──────────────────────────────────────────────────────── -->
-  <div class="results-col" #tsResultsCol>
-    @if (tsLoading() && !tsHasSearched()) {
-      <div aria-busy="true" aria-label="Loading">
-        @for (i of [1, 2, 3, 4, 5]; track i) {
-          <div class="skeleton-row">
-            <div class="skeleton-cell" style="flex: 3"></div>
-            <div class="skeleton-cell" style="flex: 2"></div>
-            <div class="skeleton-cell" style="flex: 2"></div>
-            <div class="skeleton-cell" style="flex: 1"></div>
-          </div>
-        }
-      </div>
-    } @else if (tsHasError()) {
-      <div class="text-center text-muted py-5">Search timed out — please try again.</div>
-    } @else if (tsHits().length === 0 && tsHasSearched()) {
-      <div class="text-center text-muted py-4">{{ cfg.emptyMessage }}</div>
-    } @else {
-      <lib-table-template [data]="tableDataObj()" [loading]="tsLoadingMore()" />
-      <div #tsSentinel class="py-2 text-center">
-        @if (tsLoadingMore()) {
-          <div class="spinner-border spinner-border-sm text-secondary" role="status">
-            <span class="visually-hidden">Loading more…</span>
-          </div>
-        }
-      </div>
-    }
-  </div>
-
-</div>
+</div><!-- /.search-panels -->

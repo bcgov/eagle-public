@@ -14,7 +14,7 @@ import { TypesenseDocumentTableComponent } from '../shared/typesense-document-ta
 @Component({
   selector: 'app-certificates',
   templateUrl: './certificates.component.html',
-  styles: [':host { display: block; }'],
+  styles: [':host { display: flex; flex-direction: column; flex: 1; min-height: 0; }'],
   imports: [
     TableTemplateComponent,
     TypesenseDocumentTableComponent,

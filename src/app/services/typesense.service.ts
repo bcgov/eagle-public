@@ -442,7 +442,7 @@ export class TypesenseService {
    * Memoized per query string for ~2 s so IS.js double-fires share one API call.
    * Returns a Map of documentId → { text, docName, projectName }.
    */
-  private fetchChunkSnippets(query: string, metaDocIds: string[]): Promise<Map<string, any>> {
+  fetchChunkSnippets(query: string, metaDocIds: string[]): Promise<Map<string, any>> {
     if (this._chunkCache.has(query)) return this._chunkCache.get(query)!;
     const p = this._doFetchChunkSnippets(query, metaDocIds);
     this._chunkCache.set(query, p);

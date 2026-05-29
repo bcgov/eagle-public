@@ -35,7 +35,7 @@ import { EngageApiService } from '../services/engage-api.service';
   styleUrl: './project.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
-    '(window:resize)': 'onResize($event)'
+    '(window:resize)': 'onResize($event)',
   },
 })
 export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {

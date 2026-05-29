@@ -209,42 +209,7 @@
   }
 }
 
-/* ── Fixed-height chain for documents tab only (desktop) ──────────────────── */
-@media (min-width: 768px) {
-  /* Ancestors missing min-height: 0 — needed so flex items can shrink below content size */
-  :host:has(app-documents)             { min-height: 0; }
-  .project:has(app-documents)          { min-height: 0; }
-  .project main:has(app-documents)     { min-height: 0; }
-  .project .project-info:has(app-documents) { flex: 1; min-height: 0; }
-  .project .content:has(app-documents) { min-height: 0; }
 
-  .project .main-content:has(app-documents) {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    min-height: 0;
-    padding-bottom: 0;
-  }
-  .project .main-content:has(app-documents) > .fade-in {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    min-height: 0;
-  }
-  .project .project-tabs:has(app-documents) {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    min-height: 0;
-  }
-  .project .project-tabs:has(app-documents) .tab-content {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    min-height: 0;
-    width: 100%;
-  }
-}
 
 /* === SECTION SPINNER CONTAINERS ===
  * min-height prevents sections from collapsing to zero while loading and then

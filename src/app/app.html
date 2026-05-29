@@ -1,6 +1,6 @@
-<div class="app-wrapper" [class.content-search]="isContentSearch()" [class.documents-route]="currentUrl().includes('/documents')">
+<div class="app-wrapper">
   <app-header></app-header>
-  <main class="app-content" [class.projects-route]="currentUrl().startsWith('/projects')" [class.content-search]="isContentSearch()" [class.documents-route]="currentUrl().includes('/documents')">
+  <main class="app-content" [class.projects-route]="currentUrl().startsWith('/projects')">
     <router-outlet id="scrollTop"></router-outlet>
   </main>
   <app-footer [class.hide-mobile-projects]="currentUrl().startsWith('/projects')"></app-footer>

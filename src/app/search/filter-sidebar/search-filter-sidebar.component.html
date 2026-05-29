@@ -1,0 +1,195 @@
+<!-- ── Facets sidebar ──────────────────────────────────────────────────── -->
+<div
+  [id]="sidebarId()"
+  class="filter-sidebar"
+  [class.filter-sidebar--collapsed]="sidebarCollapsed()"
+  role="complementary"
+  [attr.aria-label]="ariaLabel()">
+
+  <div class="filter-sidebar__content">
+
+    <!-- Desktop header label -->
+    <div class="filter-sidebar__header d-none d-md-flex mb-2">
+      <span class="filter-sidebar__label">Filters</span>
+    </div>
+
+    <!-- Mobile filter toggle -->
+    <div class="d-md-none d-flex align-items-center justify-content-between mb-3">
+      <button
+        class="btn filter-toggle-btn btn-sm d-flex align-items-center gap-2"
+        [class.filter-toggle-btn--open]="filtersOpen()"
+        (click)="toggleFiltersOpen.emit()"
+        [attr.aria-expanded]="filtersOpen()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+          fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+          <path d="M6 10.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5zm-2-3a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5zm-2-3a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5z"/>
+        </svg>
+        Filters
+        <svg class="filter-chevron" [class.open]="filtersOpen()"
+          xmlns="http://www.w3.org/2000/svg" width="12" height="12"
+          fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+          <path d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="filter-wrap" [class.filter-wrap--open]="filtersOpen()">
+      <div class="filter-inner filter-inner-pad">
+
+        <!-- Loading spinner -->
+        @if (!filtersLoaded() && typesenseAvailable()) {
+          <div class="d-flex align-items-center gap-2 py-3 text-muted">
+            <div class="spinner-border spinner-border-sm" role="status">
+              <span class="visually-hidden">Loading filters…</span>
+            </div>
+            <span class="small">Loading filters…</span>
+          </div>
+        }
+
+        <!-- ── Regular / grouped facets ─────────────────────────────────── -->
+        @for (facet of facets(); track facet.attribute) {
+          <div
+            class="facet-section"
+            [class.facet-section--collapsed]="isFacetCollapsed(facet.attribute)"
+            [class.d-none]="!filtersLoaded()">
+            <button
+              class="facet-section__heading"
+              type="button"
+              (click)="toggleFacet.emit(facet.attribute)"
+              [attr.aria-expanded]="!isFacetCollapsed(facet.attribute)">
+              <span>{{ facet.heading }}</span>
+              <svg class="facet-chevron"
+                xmlns="http://www.w3.org/2000/svg" width="12" height="12"
+                fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+                <path d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/>
+              </svg>
+            </button>
+            <div class="facet-section__body">
+              <div class="facet-section__inner">
+                @if (facet.grouped) {
+                  @for (group of groupedSnapshot()[facet.attribute]; track group.year) {
+                    @if (group.heading) {
+                      <small class="legislation-heading d-block">{{ group.heading }}</small>
+                    }
+                    <ul class="ais-RefinementList-list">
+                      @for (item of group.items; track item.label) {
+                        <li class="ais-RefinementList-item"
+                          [class.ais-RefinementList-item--selected]="item.isRefined"
+                          [class.ais-RefinementList-item--disabled]="item.isDisabled">
+                          <label class="ais-RefinementList-label">
+                            <input type="checkbox" class="ais-RefinementList-checkbox"
+                              [checked]="item.isRefined" [disabled]="item.isDisabled"
+                              (change)="refineFacet.emit({ attribute: facet.attribute, value: item.value })" />
+                            <span class="ais-RefinementList-labelText">{{ item.label }}</span>
+                            <span class="ais-RefinementList-count">{{ item.count }}</span>
+                          </label>
+                        </li>
+                      }
+                    </ul>
+                  }
+                } @else {
+                  <ul class="ais-RefinementList-list">
+                    @for (item of facetSnapshot()[facet.attribute]; track item.label) {
+                      <li class="ais-RefinementList-item"
+                        [class.ais-RefinementList-item--selected]="item.isRefined"
+                        [class.ais-RefinementList-item--disabled]="item.isDisabled">
+                        <label class="ais-RefinementList-label">
+                          <input type="checkbox" class="ais-RefinementList-checkbox"
+                            [checked]="item.isRefined" [disabled]="item.isDisabled"
+                            (change)="refineFacet.emit({ attribute: facet.attribute, value: item.value })" />
+                          <span class="ais-RefinementList-labelText">{{ item.label }}</span>
+                          <span class="ais-RefinementList-count">{{ item.count }}</span>
+                        </label>
+                      </li>
+                    }
+                  </ul>
+                }
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- ── Date range facet ──────────────────────────────────────────── -->
+        @if (dateFacet(); as df) {
+          <div
+            class="facet-section"
+            [class.facet-section--collapsed]="isFacetCollapsed('__date__')"
+            [class.d-none]="!filtersLoaded()">
+            <button
+              class="facet-section__heading"
+              type="button"
+              (click)="toggleFacet.emit('__date__')"
+              [attr.aria-expanded]="!isFacetCollapsed('__date__')">
+              <span>{{ df.heading }}</span>
+              <svg class="facet-chevron"
+                xmlns="http://www.w3.org/2000/svg" width="12" height="12"
+                fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+                <path d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/>
+              </svg>
+            </button>
+            <div class="facet-section__body">
+              <div class="facet-section__inner">
+                <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
+                <label class="control-label fw-bold">{{ df.fromLabel }}</label>
+                @if (fromCtrl(); as ctrl) {
+                  <lib-date-picker [control]="ctrl" [minDate]="minDate" />
+                }
+                <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
+                <label class="control-label fw-bold mt-2">{{ df.toLabel }}</label>
+                @if (toCtrl(); as ctrl) {
+                  <div class="mb-3">
+                    <lib-date-picker [control]="ctrl" [minDate]="minDate" />
+                  </div>
+                }
+                @if (hasDateFilter()) {
+                  <button
+                    class="btn btn-link btn-sm p-0 text-secondary mt-1"
+                    (click)="clearDateFilter.emit()">Clear both</button>
+                }
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- ── Sort options (activities tab only) ───────────────────────── -->
+        @if (sortOptions(); as opts) {
+          <div
+            class="facet-section"
+            [class.facet-section--collapsed]="isFacetCollapsed('__sort__')"
+            [class.d-none]="!filtersLoaded()">
+            <button
+              class="facet-section__heading"
+              type="button"
+              (click)="toggleFacet.emit('__sort__')"
+              [attr.aria-expanded]="!isFacetCollapsed('__sort__')">
+              <span>Sort</span>
+              <svg class="facet-chevron"
+                xmlns="http://www.w3.org/2000/svg" width="12" height="12"
+                fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+                <path d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/>
+              </svg>
+            </button>
+            <div class="facet-section__body">
+              <div class="facet-section__inner">
+                @for (opt of opts; track opt.value) {
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="searchSort"
+                      [id]="sidebarId() + '-sort-' + opt.value"
+                      [checked]="activeSortBy() === opt.value"
+                      (change)="sortChanged.emit(opt.value)" />
+                    <label class="form-check-label small"
+                      [for]="sidebarId() + '-sort-' + opt.value">
+                      {{ opt.label }}
+                    </label>
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+        }
+
+      </div><!-- /.filter-inner -->
+    </div><!-- /.filter-wrap -->
+
+  </div><!-- /.filter-sidebar__content -->
+</div><!-- /.filter-sidebar -->
