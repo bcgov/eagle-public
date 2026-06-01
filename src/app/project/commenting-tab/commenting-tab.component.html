@@ -16,39 +16,47 @@
   <div>No comment periods are currently scheduled for this project.</div>
 } @else {
   @for (cp of commentPeriods(); track cp._id) {
-    <article class="card cp-card"
-             role="button" tabindex="0"
-             (click)="goToCP(cp)"
-             (keyup.enter)="goToCP(cp)">
+    @let eng = cp.isMet ? engageData().get(cp._id) : null;
+    @let status = eng ? engagementStatus(eng) : null;
+    @let title = eng?.name || cp.instructions || 'Public Comment Period';
+    @let startDate = eng?.start_date || cp.dateStarted;
+    @let endDate = eng?.end_date || cp.dateCompleted;
+    @let description = eng?.description || cp.additionalText || null;
 
+    <article class="card cp-card" role="button" tabindex="0"
+             (click)="goToCP(cp)" (keyup.enter)="goToCP(cp)">
       <div class="cp-card__header">
         <span class="cp-card__status-dot"
-              [class.cp-card__status-dot--open]="commentPeriodService.isOpen(cp)"
-              [class.cp-card__status-dot--pending]="commentPeriodService.isNotStarted(cp)"
-              [class.cp-card__status-dot--closed]="commentPeriodService.isClosed(cp)">
+              [class.cp-card__status-dot--open]="eng ? status === 'Open' : commentPeriodService.isOpen(cp)"
+              [class.cp-card__status-dot--pending]="eng ? status === 'Upcoming' : commentPeriodService.isNotStarted(cp)"
+              [class.cp-card__status-dot--closed]="eng ? status === 'Closed' : commentPeriodService.isClosed(cp)">
         </span>
-        <span class="cp-card__status-label">{{ cp.commentPeriodStatus }}</span>
-
-        @if (commentPeriodService.isOpen(cp)) {
-          <span class="cp-card__pill cp-card__pill--open">{{ cp.daysRemaining }}</span>
-        } @else if (commentPeriodService.isClosed(cp)) {
-          <span class="cp-card__pill cp-card__pill--closed">Closed {{ cp.dateCompleted | date:'MMM d, y' }}</span>
-        } @else if (commentPeriodService.isNotStarted(cp)) {
-          <span class="cp-card__pill cp-card__pill--pending">Starts {{ cp.dateStarted | date:'MMM d, y' }}</span>
+        <span class="cp-card__status-label">{{ eng ? (status || 'Engagement') : cp.commentPeriodStatus }}</span>
+        @if (eng) {
+          @if (status === 'Open') {
+            <span class="cp-card__pill cp-card__pill--open">Open until {{ endDate | date:'MMM d, y' }}</span>
+          } @else if (status === 'Closed') {
+            <span class="cp-card__pill cp-card__pill--closed">Closed {{ endDate | date:'MMM d, y' }}</span>
+          } @else if (status === 'Upcoming') {
+            <span class="cp-card__pill cp-card__pill--pending">Starts {{ startDate | date:'MMM d, y' }}</span>
+          }
+        } @else {
+          @if (commentPeriodService.isOpen(cp)) {
+            <span class="cp-card__pill cp-card__pill--open">{{ cp.daysRemaining }}</span>
+          } @else if (commentPeriodService.isClosed(cp)) {
+            <span class="cp-card__pill cp-card__pill--closed">Closed {{ endDate | date:'MMM d, y' }}</span>
+          } @else if (commentPeriodService.isNotStarted(cp)) {
+            <span class="cp-card__pill cp-card__pill--pending">Starts {{ startDate | date:'MMM d, y' }}</span>
+          }
         }
       </div>
-
       <div class="cp-card__body">
-        @if (cp.instructions) {
-          <h3 class="cp-card__title">{{ cp.instructions }}</h3>
+        <h3 class="cp-card__title">{{ title }}</h3>
+        @if (startDate) {
+          <p class="cp-card__dates">{{ startDate | date:'MMM d, y' }} – {{ endDate | date:'MMM d, y' }}</p>
         }
-        @if (cp.dateStarted) {
-          <p class="cp-card__dates">
-            {{ cp.dateStarted | date:'MMM d, y' }} – {{ cp.dateCompleted | date:'MMM d, y' }}
-          </p>
-        }
-        @if (cp.additionalText) {
-          <p class="cp-card__description">{{ cp.additionalText }}</p>
+        @if (description) {
+          <p class="cp-card__description">{{ description }}</p>
         }
       </div>
     </article>

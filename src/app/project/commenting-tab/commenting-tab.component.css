@@ -89,9 +89,11 @@
 .cp-card__description {
   font-size: var(--bs-font-size-sm, 0.875rem);
   color: var(--bs-body-color);
-  margin: 0;
+  margin: 0 0 0.75rem;
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
+  line-clamp: 3;
   overflow: hidden;
 }
+
