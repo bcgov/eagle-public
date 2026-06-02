@@ -78,7 +78,7 @@ import { sanitizeWordHtml } from 'app/shared/utils/word-html-sanitizer';
                 }
               </div>
             </div>
-            @if ((hit()['projectId'] && showProjectLink()) || hasDocSource() || pcpDocsLink() || docLink()) {
+              @if ((hit()['projectId'] && showProjectLink()) || hasDocSource() || pcpDocsLink() || docLink() || engageLink()) {
               <div class="search-card-vr d-none d-md-block"></div>
               <div class="card-actions">
                 @if (hit()['projectId'] && showProjectLink()) {
@@ -86,6 +86,15 @@ import { sanitizeWordHtml } from 'app/shared/utils/word-html-sanitizer';
                     [href]="'/p/' + hit()['projectId']"
                     (click)="projectClicked.emit(); $event.stopPropagation()">
                     <i class="material-icons">open_in_new</i><span>Project Page</span>
+                  </a>
+                }
+                @if (engageLink()) {
+                  <a class="search-card-btn search-card-btn--primary"
+                    [href]="engageLink()"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    (click)="$event.stopPropagation()">
+                    <i class="material-icons">forum</i><span>View Engagement</span>
                   </a>
                 }
                 @if (hasDocSource()) {
@@ -215,6 +224,12 @@ export class SearchActivityCardComponent {
   docLink = computed((): string | null => {
     const url = this.hit()['documentUrl'];
     return url ? resolveDocUrl(url) : null;
+  });
+
+  /** For Engage-managed PCP hits: direct link to the Engage engagement page. */
+  engageLink = computed((): string | null => {
+    const h = this.hit();
+    return (h['pcpIsMet'] && h['pcpMetURL']) ? h['pcpMetURL'] : null;
   });
 
   hl(field: string): string {

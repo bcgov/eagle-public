@@ -19,11 +19,40 @@ import { sanitizeHighlight } from 'app/search/highlight/sanitize-highlight';
   selector: 'app-search-notification-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [DatePipe, TitleCasePipe],
+  styles: [`
+    .pcp-status {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 0.75rem; font-weight: 600;
+      padding: 0.15rem 0.55rem; border-radius: 999px;
+    }
+    .pcp-status::before {
+      content: ''; display: inline-block;
+      width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+    }
+    .pcp-status--open    { background: rgba(46,133,64,.12); color: #2e8540; }
+    .pcp-status--open::before    { background: #2e8540; }
+    .pcp-status--pending { background: rgba(252,186,25,.15); color: #9a6c00; }
+    .pcp-status--pending::before { background: #fcba19; }
+    .pcp-status--closed  { background: rgba(216,41,47,.10); color: #d8292f; }
+    .pcp-status--closed::before  { background: #d8292f; }
+  `],
   template: `
     <article class="card search-result-card search-result-card--styled">
       <div class="search-card-header">
         <h5 class="fw-bold mb-0" [innerHTML]="hl('name') || 'Untitled'"></h5>
       </div>
+      @if (engageLink()) {
+        <div class="d-flex align-items-center gap-2 flex-wrap px-3 py-2 bg-success-subtle border-bottom border-success-subtle small">
+          <i class="material-icons" style="font-size:1.1em;color:var(--bs-success)">forum</i>
+          <span class="fw-semibold">Comment Period:</span>
+          <span class="pcp-status pcp-status--{{ hit()['pcp'] }}">{{ hit()['pcp'] | titlecase }}</span>
+          <a class="btn btn-sm btn-success ms-auto"
+             [href]="engageLink()" target="_blank" rel="noopener noreferrer"
+             (click)="$event.stopPropagation()">
+            View Engagement
+          </a>
+        </div>
+      }
       <div class="search-card-content">
         <div class="d-flex flex-column flex-md-row gap-3">
           <div class="flex-fill">
@@ -70,10 +99,12 @@ import { sanitizeHighlight } from 'app/search/highlight/sanitize-highlight';
                   <div class="search-result-card-value">{{ hit()['decision'] }}</div>
                 </div>
               }
-              @if (hit()['pcp']) {
+              @if (hit()['pcp'] && !engageLink()) {
                 <div class="col">
                   <div class="search-result-card-label">Comment Period</div>
-                  <div class="search-result-card-value">{{ hit()['pcp'] | titlecase }}</div>
+                  <div class="search-result-card-value">
+                    <span class="pcp-status pcp-status--{{ hit()['pcp'] }}">{{ hit()['pcp'] | titlecase }}</span>
+                  </div>
                 </div>
               }
               @if (hit()['notificationReceivedDate']) {
@@ -190,6 +221,12 @@ export class SearchNotificationCardComponent {
   documents = signal<any[] | null>(null);
   docsLoading = signal(false);
 
+  /** Direct Engage engagement URL — present when `isMet=true` and `metURL` is set on this PN. */
+  engageLink = computed((): string | null => {
+    const h = this.hit();
+    return (h['isMet'] && h['metURL']) ? h['metURL'] : null;
+  });
+
   toggleDocs(): void {
     this.expanded.update(v => !v);
     if (this.expanded() && this.documents() === null) {
@@ -211,11 +248,9 @@ export class SearchNotificationCardComponent {
 
   safeDescription = computed(() => {
     const h = this.hit();
-    // description is in highlightFullFields; full value with <mark> tags returned when it matches
-    const highlighted = h['_highlightResult']?.['description']?.value;
-    const raw = (highlighted ? sanitizeHighlight(highlighted) : null)
-      ?? h['descriptionHtml']
-      ?? h['description'];
+    const raw = h['_highlightResult']?.['description']?.value
+      ? sanitizeHighlight(h['_highlightResult']['description'].value)
+      : (h['descriptionHtml'] ?? h['description']);
     return raw ? this.sanitizer.bypassSecurityTrustHtml(raw) : null;
   });
 }

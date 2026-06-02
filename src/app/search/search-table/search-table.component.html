@@ -230,12 +230,8 @@
             @if (loading() && notificationItems().length === 0) {
               @for (i of [1,2,3,4,5]; track i) {
                 <div class="p-3 border-bottom">
-                  <div class="placeholder-glow mb-2">
-                    <span class="placeholder col-5 bg-secondary rounded"></span>
-                  </div>
-                  <div class="placeholder-glow">
-                    <span class="placeholder col-8 bg-secondary rounded" style="height:.6rem;"></span>
-                  </div>
+                  <div class="skeleton-cell mb-2" style="width:55%;height:1rem;"></div>
+                  <div class="skeleton-cell" style="width:80%;height:.7rem;"></div>
                 </div>
               }
             } @else if (!loading() && notificationItems().length === 0) {

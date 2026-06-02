@@ -160,7 +160,11 @@ export class TypesenseService {
           notificationName: d.notificationName || null,
           projectNotification: d.notificationName ? { name: d.notificationName } : null,
           project: d.projectId ? { _id: d.projectId, name: d.projectName || '' } : null,
-          pcp: null,
+          pcp: d.pcpId ? {
+            _id:    d.pcpId,
+            isMet:  d.pcpIsMet  || false,
+            metURL: d.pcpMetURL || null,
+          } : null,
         };
       }))
     );
@@ -226,6 +230,14 @@ export class TypesenseService {
    * - _highlightResult.headline.value / _highlightResult.content.value for highlighted text
    * - projectId, projectName, type, notificationName, pcpId etc. as raw fields
    */
+  /** Converts a MongoDB-style sort string to Typesense format.
+   * '-dateAdded' → 'dateAdded:desc', '+name' → 'name:asc', '-score' or '' → default. */
+  private mongoSortToTypesense(sortBy: string): string {
+    if (sortBy === '-score') return '_text_match:desc,dateAdded:desc';
+    if (!sortBy) return 'pinned:desc,dateAdded:desc';
+    return `${sortBy.slice(1)}:${sortBy.charAt(0) === '-' ? 'desc' : 'asc'}`;
+  }
+
   getProjectActivitiesCards(
     projId: string,
     page: number,
@@ -233,17 +245,11 @@ export class TypesenseService {
     sortBy: string,
     keywords: string,
   ): Observable<{ items: any[]; total: number }> {
-    const tsSort = sortBy === '-score'
-      ? '_text_match:desc,dateAdded:desc'
-      : sortBy
-        ? `${sortBy.slice(1)}:${sortBy.charAt(0) === '-' ? 'desc' : 'asc'}`
-        : 'pinned:desc,dateAdded:desc';
-
     return this.searchCollection('activities', {
       q:           keywords || '*',
       query_by:    'headline,content',
       filter_by:   `projectId:=${projId} && active:=true`,
-      sort_by:     tsSort,
+      sort_by:     this.mongoSortToTypesense(sortBy),
       page:        String(page),
       per_page:    String(pageSize),
       highlight_full_fields: 'headline,content',
@@ -284,19 +290,11 @@ export class TypesenseService {
     sortBy: string,
     keywords: string,
   ): Observable<{ items: any[]; total: number }> {
-    // Convert MongoDB-style sort ('-dateAdded') to Typesense style ('dateAdded:desc')
-    // '-score' means full-text relevance — map to _text_match:desc
-    const tsSort = sortBy === '-score'
-      ? '_text_match:desc,dateAdded:desc'
-      : sortBy
-        ? `${sortBy.slice(1)}:${sortBy.charAt(0) === '-' ? 'desc' : 'asc'}`
-        : 'pinned:desc,dateAdded:desc';
-
     return this.searchCollection('activities', {
       q:           keywords || '*',
       query_by:    'headline,content',
       filter_by:   `projectId:=${projId} && active:=true`,
-      sort_by:     tsSort,
+      sort_by:     this.mongoSortToTypesense(sortBy),
       page:        String(page),
       per_page:    String(pageSize),
       highlight_full_fields: 'headline,content',

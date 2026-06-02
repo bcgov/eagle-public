@@ -482,7 +482,7 @@ export class SearchTableComponent implements OnInit, OnDestroy {
           notificationName:    d.notificationName || null,
           projectNotification: d.notificationName ? { name: d.notificationName } : null,
           project:             d.projectId ? { _id: d.projectId, name: d.projectName || '' } : null,
-          pcp:                 null,
+          pcp:                 d.pcpId ? { _id: d.pcpId, isMet: d.pcpIsMet || false, metURL: d.pcpMetURL || null } : null,
         };
       case 'notifications': {
         const _highlightResult = Object.fromEntries(
@@ -500,6 +500,10 @@ export class SearchTableComponent implements OnInit, OnDestroy {
           decision:              d.decision               || null,
           trigger:               d.trigger                || null,
           pcp:                   d.pcp                    || null,
+          isMet:                 d.isMet                  ?? null,
+          metURL:                d.metURL                 || null,
+          dateStarted:           d.dateStarted   ? new Date(d.dateStarted   * 1000) : null,
+          dateCompleted:         d.dateCompleted ? new Date(d.dateCompleted * 1000) : null,
           associatedProjectId:   d.associatedProjectId    || null,
           associatedProjectName: d.associatedProjectName  || null,
           _receivedDate:         d.notificationReceivedDate
