@@ -122,7 +122,7 @@ import { highlightField } from 'app/search/search-collections';
       <!-- Comment Periods panel: show while loading (undefined !== null), when a full CP doc
            exists, or when the notification has a pcp status string without a linked CP record. -->
       @if (pcpDetails() !== null || (rowData().pcp && rowData().pcp !== 'none')) {
-      <button class="notif-accordion-toggle" type="button" (click)="pcpOpen.update(v => !v)">
+      <button class="notif-accordion-toggle" type="button" (click)="togglePcp()">
         <span>Comment Periods
           @if (pcpDetails() === undefined) {
             <span class="notif-accordion-spinner"></span>
@@ -170,7 +170,7 @@ import { highlightField } from 'app/search/search-collections';
 
       <!-- Documents panel: show while loading (undefined) or when loaded with docs; hide only if loaded+empty -->
       @if (documents() === undefined || documents()!.length > 0) {
-      <button class="notif-accordion-toggle" type="button" (click)="docsOpen.update(v => !v)">
+      <button class="notif-accordion-toggle" type="button" (click)="toggleDocs()">
         <span>Documents
           @if (documents() === undefined) {
             <span class="notif-accordion-spinner"></span>
@@ -277,6 +277,9 @@ export class SearchNotificationCardComponent {
 
   pcpOpen  = signal(false);
   docsOpen = signal(false);
+
+  togglePcp():  void { this.pcpOpen.update(v => !v); }
+  toggleDocs(): void { this.docsOpen.update(v => !v); }
 
   private sanitizer     = inject(DomSanitizer);
   private configService = inject(ConfigService);
