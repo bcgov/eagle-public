@@ -25,7 +25,38 @@
       <p class="value" [innerHTML]="(rowData().description || '-') | newlines"></p>
     </div>
   </div>
-  
+
+  @if (cpStatus(); as status) {
+    <div class="row mb-4" tabindex="0">
+      <div class="col-12 pn-info-block">
+        <span class="info-label">Public Comment Period</span>
+        <div class="d-flex align-items-center mt-1 gap-2">
+          <span class="pcp-indicator"
+                [class.pcp-indicator-active]="status === 'Open'"
+                [class.pcp-indicator-pending]="status === 'Pending'"
+                [class.pcp-indicator-inactive]="status === 'Closed'">
+          </span>
+          <span>{{ status }}</span>
+        </div>
+        @if (cpDates(); as dates) {
+          <p class="value mt-1">
+            {{ dates.start | date:"MMM d, yyyy":"UTC" }}
+            @if (dates.end) { – {{ dates.end | date:"MMM d, yyyy":"UTC" }} }
+          </p>
+        }
+        @if (rowData().isMet && rowData().metURL) {
+          <a [href]="rowData().metURL"
+             target="_blank"
+             rel="noopener noreferrer"
+             class="btn btn-sm view-pcp-btn mt-2">
+            Share your thoughts
+            <i class="material-icons" style="font-size:14px;vertical-align:middle">open_in_new</i>
+          </a>
+        }
+      </div>
+    </div>
+  }
+
   <div class="row" tabindex="0">
     <div class="col-sm-12 col-md-4 pn-info-block">
       <span class="info-label">Type</span>

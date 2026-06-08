@@ -1,4 +1,3 @@
-import { CommentPeriod } from './commentperiod';
 import { assignFromObj } from 'app/shared/utils/model-utils';
 
 export class ProjectNotification {
@@ -16,9 +15,12 @@ export class ProjectNotification {
   associatedProjectName!: string;
   proponent!: string;
   centroid!: number[];
-  // dynamic attributes
-  commentPeriod!: CommentPeriod;
-  documents!: Document[];
+  // Comment period / Engage fields
+  pcp!: string;
+  isMet!: boolean;
+  metURL!: string;
+  dateStarted!: Date | null;
+  dateCompleted!: Date | null;
 
   read: string[] = [];
 
@@ -26,6 +28,7 @@ export class ProjectNotification {
     assignFromObj(this, obj, [
       '_id', 'name', 'type', 'subType', 'region', 'location', 'decision', 'decisionDate',
       'description', 'trigger', 'associatedProjectId', 'associatedProjectName', 'proponent', 'read',
+      'pcp', 'isMet', 'metURL', 'dateStarted', 'dateCompleted',
     ], undefined);
     this.centroid = obj?.centroid ?? [];
   }
