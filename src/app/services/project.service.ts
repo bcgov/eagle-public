@@ -126,25 +126,37 @@ export class ProjectService {
       .pipe(
         map((projects: Project[]) => {
           // get upcoming comment period if there is one and convert it into a comment period object.
-          // If there are multiple comment periods any that is currently running is a higher priority than a past comment period
+          // If there are multiple comment periods any that is currently running is a higher priority than a past comment period.
+          // For Engage-managed (isMet) CPs, the engage-banner component fetches live status from Engage API.
           if (projects) {
-            if (projects[0] && projects[0].commentPeriodForBanner && projects[0].commentPeriodForBanner.length === 1) {
-              projects[0].commentPeriodForBanner = new CommentPeriod(projects[0].commentPeriodForBanner[0]);
-            } else if (projects[0] && projects[0].commentPeriodForBanner && projects[0].commentPeriodForBanner.length > 1) {
+            const cpf = projects[0]?.commentPeriodForBanner;
+            // Guard: only process when commentPeriodForBanner is a raw array from the API.
+            // The HTTP cache stores response objects by reference, so a cache hit delivers
+            // the already-mutated object (CommentPeriod instance, not an array). Without
+            // Array.isArray() the length checks silently fail and commentPeriodForBanner
+            // gets overwritten with null on every cached request.
+            if (projects[0] && Array.isArray(cpf) && cpf.length === 1) {
+              projects[0].commentPeriodForBanner = new CommentPeriod(cpf[0]);
+            } else if (projects[0] && Array.isArray(cpf) && cpf.length > 1) {
               const now = new Date
               const currentDate = now.toISOString();
-              // Default to the same comment period we're using currently in case one is not active
-              let finalCommentPeriod = new CommentPeriod(projects[0].commentPeriodForBanner[0]);
-              for (const commentPeriod in projects[0].commentPeriodForBanner) {
-                if (Date.parse(projects[0].commentPeriodForBanner[commentPeriod].dateCompleted) > Date.parse(currentDate)
-                  && Date.parse(projects[0].commentPeriodForBanner[commentPeriod].dateStarted) < Date.parse(currentDate)) {
-                  finalCommentPeriod = new CommentPeriod(projects[0].commentPeriodForBanner[commentPeriod]);
+              // Default to the first comment period; prefer isMet (Engage-managed) if available.
+              let finalCommentPeriod = new CommentPeriod(cpf[0]);
+              for (const commentPeriod in cpf) {
+                const cp = cpf[commentPeriod];
+                if (Date.parse(cp.dateCompleted) > Date.parse(currentDate)
+                  && Date.parse(cp.dateStarted) < Date.parse(currentDate)) {
+                  finalCommentPeriod = new CommentPeriod(cp);
+                  // If this active CP is Engage-managed, prefer it — break immediately.
+                  if (cp.isMet) break;
                 }
               }
-              projects[0].commentPeriodForBanner = finalCommentPeriod
-            } else if (projects[0]) {
+              projects[0].commentPeriodForBanner = finalCommentPeriod;
+            } else if (projects[0] && Array.isArray(cpf)) {
+              // Empty array from API → no active comment period.
               projects[0].commentPeriodForBanner = null;
             }
+            // If cpf is already a CommentPeriod (cached hit) or null/undefined, leave it unchanged.
           }
           // return the first (only) project
           return projects.length > 0 ? new Project(projects[0]) : null;

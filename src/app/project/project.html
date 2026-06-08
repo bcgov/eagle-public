@@ -3,7 +3,11 @@
         <div class="project-info">
            <details-sidebar [project]="project()" (sidebarToggle)="handleSidebarToggle($event)"></details-sidebar>
             <div class="content">
-                @if (project()?.commentPeriodForBanner) {
+                @if (isLoading()) {
+                    <div class="banner-skeleton">
+                        <div class="banner-skeleton__shimmer"></div>
+                    </div>
+                } @else if (project()?.commentPeriodForBanner) {
                     @if (project()!.commentPeriodForBanner!.isMet && project()!.commentPeriodForBanner!.metURL) {
                         <app-engage-banner [engagementUrl]="project()!.commentPeriodForBanner!.metURL" />
                     } @else {

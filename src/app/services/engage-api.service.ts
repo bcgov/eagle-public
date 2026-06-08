@@ -1,7 +1,12 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, switchMap, shareReplay } from 'rxjs';
+import { Observable, switchMap } from 'rxjs';
 import { ConfigService } from './config.service';
+
+export interface EngageEngagementStatus {
+  id: number;
+  status_name: string;
+}
 
 export interface EngageEngagement {
   id: number;
@@ -11,7 +16,14 @@ export interface EngageEngagement {
   rich_description: string;
   start_date: string;
   end_date: string;
-  engagement_status: { id: number; status_name: string };
+  engagement_status: EngageEngagementStatus;
+  is_internal: boolean;
+}
+
+/** Engagement is considered visible to the public when published and not internal. */
+export function isEngagementPublished(eng: EngageEngagement): boolean {
+  const status = eng.engagement_status?.status_name?.toLowerCase();
+  return (status === 'published' || status === 'open' || status === 'closed') && !eng.is_internal;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -19,15 +31,13 @@ export class EngageApiService {
   private http = inject(HttpClient);
   private configService = inject(ConfigService);
 
-  /** Cache: slug → shared replay observable, so repeated calls never re-fetch. */
-  private cache = new Map<string, Observable<EngageEngagement>>();
-
   private get baseUrl(): string {
     return this.configService.config().ENGAGE_API_URL || '/engage-api';
   }
 
   /**
    * Fetch engagement data by slug extracted from a full Engage URL.
+   * Returns cached data synchronously on repeat calls; fetches from API on first call.
    * Handles formats:
    *   https://engage.eao.gov.bc.ca/engagements/NewPolaris-AR/overview
    *   https://engage.eao.gov.bc.ca/engagements/NewPolaris-AR
@@ -35,19 +45,13 @@ export class EngageApiService {
    */
   getEngagementByUrl(engagementUrl: string): Observable<EngageEngagement> {
     const slug = this.extractSlug(engagementUrl);
-    const cached = this.cache.get(slug);
-    if (cached) return cached;
-
-    const obs$ = this.http
+    return this.http
       .get<{ engagement_id: number; slug: string }>(`${this.baseUrl}/slugs/${slug}`)
       .pipe(
         switchMap(slugData =>
           this.http.get<EngageEngagement>(`${this.baseUrl}/engagements/${slugData.engagement_id}`)
         ),
-        shareReplay(1),
       );
-    this.cache.set(slug, obs$);
-    return obs$;
   }
 
   private extractSlug(url: string): string {

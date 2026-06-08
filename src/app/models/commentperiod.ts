@@ -84,11 +84,11 @@ export class CommentPeriod {
 
     // get comment period days remaining and determine commentPeriodStatus of the period
     if (obj && obj.dateStarted && obj.dateCompleted) {
-      const now = DateTime.now();
-      const dateStarted = DateTime.fromJSDate(new Date(obj.dateStarted));
+      const now = DateTime.now().setZone('America/Vancouver');
+      const dateStarted = DateTime.fromJSDate(new Date(obj.dateStarted)).setZone('America/Vancouver');
       // When dateCompleted is midnight (admin picked a date with no time), treat the period
-      // as closing at end of that day (11:59:59 PM) to satisfy "open until 11:59 PM" requirement.
-      const rawEnd = DateTime.fromJSDate(new Date(obj.dateCompleted));
+      // as closing at end of that day (11:59:59 PM Pacific) to satisfy "open until 11:59 PM" requirement.
+      const rawEnd = DateTime.fromJSDate(new Date(obj.dateCompleted)).setZone('America/Vancouver');
       const dateCompleted = (rawEnd.hour === 0 && rawEnd.minute === 0 && rawEnd.second === 0)
         ? rawEnd.endOf('day')
         : rawEnd;
@@ -109,12 +109,13 @@ export class CommentPeriod {
       }
     }
 
-    this.longEndDate = DateTime.fromJSDate(this.dateCompleted).setZone('local');
+    // Always display dates in Pacific time — BC-based engagement deadlines.
+    this.longEndDate = DateTime.fromJSDate(this.dateCompleted).setZone('America/Vancouver');
 
     // Build a display string that avoids misleading "12:00 AM" times.
     // Midnight (00:00) = admin picked that date as closing day (start-of-day stored) — show date-only.
     // 23:59 means "end of that day" — show date-only.
-    // Any other time — show full datetime.
+    // Any other time — show full datetime in Pacific.
     const h = this.longEndDate.hour;
     const m = this.longEndDate.minute;
     if ((h === 0 && m === 0) || (h === 23 && m === 59)) {

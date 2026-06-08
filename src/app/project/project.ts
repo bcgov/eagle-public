@@ -1,26 +1,22 @@
 import { Component, OnInit, OnDestroy, AfterViewInit, ElementRef, signal, ChangeDetectionStrategy, inject, DestroyRef, Renderer2, effect, untracked } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule, NavigationEnd } from '@angular/router';
 import { DatePipe } from '@angular/common';
-import { Observable, forkJoin, of } from 'rxjs';
+import { Observable, Subject, forkJoin, of, take, map, catchError, takeUntil } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { take, map, catchError } from 'rxjs/operators';
 
 import { Project } from '../models/project';
 import { ConfigService } from '../services/config.service';
 import { ProjectService } from '../services/project.service';
 import { CommentPeriodService } from '../services/commentperiod.service';
 import { StorageService } from '../services/storage.service';
-import { CommentPeriod } from '../models/commentperiod';
 import { Constants } from '../shared/utils/constants';
 import { initTabArrows, TabArrowsHandle } from '../shared/utils/tab-arrows';
 import { TypesenseService } from '../services/typesense.service';
 import { TAB_FILTER_BY } from '../search/search-collections';
 import { DetailsSidebarComponent } from './details-sidebar/details-sidebar';
 import { SafeHtmlPipe } from '../shared/pipes/safe-html-converter.pipe';
-import { LoggingService } from '../services/logging.service';
 import { AnalyticsService } from '../services/analytics/analytics.service';
 import { EngageBannerComponent } from './engage-banner/engage-banner.component';
-import { EngageApiService } from '../services/engage-api.service';
 
 @Component({
   selector: 'app-project',
@@ -45,19 +41,15 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
   private router = inject(Router);
   private renderer = inject(Renderer2);
   private typesenseService = inject(TypesenseService);
-  private logger = inject(LoggingService);
   private analytics = inject(AnalyticsService);
   public configService = inject(ConfigService);
   public projectService = inject(ProjectService);
   public commentPeriodService = inject(CommentPeriodService);
-  private engageApi = inject(EngageApiService);
-
   public project = signal<Project | null>(null);
-  public period = signal<CommentPeriod | null>(null);
-  public commentPeriod = signal<CommentPeriod | null>(null);
   public legislationLink = signal<string>('');
   public sidebarOpen = signal(true);
   public isLoading = signal(true);
+  private loadCancel$ = new Subject<void>();
   public tabsLoading = signal(false);
   public currentTab = signal<string>(this.router.url.split('/').pop() ?? '');
   private tabArrowsHandle: TabArrowsHandle | null = null;
@@ -94,6 +86,9 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   private loadProject(projId: string) {
+    this.loadCancel$.next();
+    this.project.set(null);
+
     const start = new Date();
     const end = new Date();
     start.setDate(start.getDate() - 21);
@@ -105,7 +100,7 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
 
     this.isLoading.set(true);
     this.projectService.getById(projId, false, cpStart, cpEnd)
-      .pipe(takeUntilDestroyed(this.destroyRef))
+      .pipe(takeUntil(this.loadCancel$), takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (project) => {
           if (project) {
@@ -114,12 +109,6 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
             this.renderer.removeClass(document.body, 'no-scroll');
             this.isLoading.set(false);
             setTimeout(() => this.initMap(), 0);
-            // Warm engage-banner cache — start fetching before the banner component
-            // mounts so it subscribes to an already-in-flight request.
-            const metURL = project.commentPeriodForBanner?.metURL;
-            if (project.commentPeriodForBanner?.isMet && metURL) {
-              this.engageApi.getEngagementByUrl(metURL).pipe(take(1)).subscribe();
-            }
           } else {
             this.handleProjectLoadError();
           }
@@ -191,7 +180,7 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(params => {
         const projId = params.get('projId');
-        if (projId && this.project()?._id !== projId) {
+        if (projId && (this.project()?._id !== projId || this.isLoading())) {
           // Prime storageService immediately with the project ID so child tabs
           // (commenting, documents) fire their own API calls in parallel with
           // the project load, rather than waiting for it to finish.
@@ -216,8 +205,6 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
   ngAfterViewInit() {
     this.tabArrowsHandle = initTabArrows();
   }
-
-
 
   onResize(_event?: Event) {
     if (this.map) {
@@ -502,6 +489,7 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   ngOnDestroy() {
+    this.loadCancel$.complete();
     if (this.mapRetryTimeout !== null) {
       clearTimeout(this.mapRetryTimeout);
     }

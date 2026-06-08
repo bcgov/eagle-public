@@ -3,6 +3,7 @@
     <div class="engage-banner__skeleton"></div>
   </div>
 } @else if (engagement(); as eng) {
+  @if (isPublished()) {
   <div class="engage-banner">
     <img class="engage-banner__image" [src]="eng.banner_url" [alt]="eng.name" fetchpriority="high" loading="eager">
     <div class="engage-banner__overlay">
@@ -13,22 +14,24 @@
         }
         @if (eng.start_date && eng.end_date) {
           <p class="engage-banner__dates">
-            Engagement dates: {{ eng.start_date | date:"MMM d, yyyy" }} to {{ eng.end_date | date:"MMM d, yyyy" }}
+            <strong>Engagement dates: {{ eng.start_date | date:"MMM d, yyyy":"UTC" }} to {{ eng.end_date | date:"MMM d, yyyy":"UTC" }}</strong>
           </p>
         }
-        <div class="engage-banner__footer">
-          @if (engagementStatus(); as status) {
+        @if (engagementStatus(); as status) {
+          <div class="engage-banner__status-row">
+            <strong>Status:</strong>
             <span class="engage-banner__status-chip engage-banner__status-chip--{{ status | lowercase }}">{{ status }}</span>
-          }
-          <a class="engage-banner__cta"
-             [href]="engagementUrl()"
-             target="_blank"
-             rel="noopener noreferrer">
-            View Engagement
-            <i class="material-icons">open_in_new</i>
-          </a>
-        </div>
+          </div>
+        }
+        <a class="engage-banner__cta"
+           [href]="engagementUrl()"
+           target="_blank"
+           rel="noopener noreferrer">
+          Share your thoughts
+          <i class="material-icons">open_in_new</i>
+        </a>
       </div>
     </div>
   </div>
+  }
 }

@@ -1,9 +1,19 @@
-.engage-banner {
+:host {
+  display: block;
   --h: 480px;
+}
+
+.engage-banner {
   position: relative;
   width: 100%;
   height: var(--h);
   overflow: hidden;
+  animation: engageBannerFadeIn 0.25s ease;
+}
+
+@keyframes engageBannerFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
 .engage-banner--loading {
@@ -43,6 +53,8 @@
 }
 
 .engage-banner__card {
+  display: flex;
+  flex-direction: column;
   background: rgba(242, 242, 242, 0.95);
   padding: 1rem 1rem 1.25rem;
   margin: 1rem;
@@ -76,11 +88,12 @@
   margin-bottom: 1rem;
 }
 
-.engage-banner__footer {
+.engage-banner__status-row {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  margin-bottom: 0.75rem;
 }
 
 .engage-banner__status-chip {
@@ -107,6 +120,7 @@
 
 .engage-banner__cta {
   display: inline-flex;
+  align-self: flex-end;
   align-items: center;
   gap: 0.4rem;
   background-color: #003366;

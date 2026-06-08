@@ -1,3 +1,23 @@
+.banner-skeleton {
+  height: 480px;
+  background: #e0e0e0;
+  width: 100%;
+  overflow: hidden;
+}
+
+.banner-skeleton__shimmer {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%);
+  background-size: 200% 100%;
+  animation: banner-shimmer 1.5s infinite;
+}
+
+@keyframes banner-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
 /* Host element must participate in flex layout */
 :host {
   display: flex;

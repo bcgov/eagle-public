@@ -8,7 +8,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommentPeriodService } from '../../services/commentperiod.service';
 import { CommentPeriod } from '../../models/commentperiod';
 import { StorageService } from '../../services/storage.service';
-import { EngageApiService, EngageEngagement } from '../../services/engage-api.service';
+import { EngageApiService, EngageEngagement, isEngagementPublished } from '../../services/engage-api.service';
+import { pacificEndOfDay } from '../engage-banner/engage-banner.component';
 
 @Component({
   selector: 'app-commenting-tab',
@@ -43,11 +44,15 @@ export class CommentingTabComponent {
 
   engagementStatus(eng: EngageEngagement): 'Open' | 'Closed' | 'Upcoming' | null {
     if (!eng.start_date || !eng.end_date) return null;
+    if (!isEngagementPublished(eng)) return null;
     const now = new Date();
-    const parseDate = (s: string) =>
-      s.includes('T') || s.includes(' ') ? new Date(s) : new Date(s + 'T23:59:59');
-    if (now < parseDate(eng.start_date)) return 'Upcoming';
-    if (now > parseDate(eng.end_date)) return 'Closed';
+    const parseDate = (s: string, endOfDay: boolean) => {
+      if (s.includes('T') || s.includes(' ')) return new Date(s);
+      if (endOfDay) return pacificEndOfDay(s);
+      return new Date(s + 'T00:00:00');
+    };
+    if (now < parseDate(eng.start_date, false)) return 'Upcoming';
+    if (now > parseDate(eng.end_date, true)) return 'Closed';
     return 'Open';
   }
 
