@@ -84,6 +84,7 @@
 @media (min-width: 768px) {
   .project .hero-banner-alt .basic-info {
     display: flex;
+    align-items: flex-start;
   }
 }
 
@@ -102,16 +103,17 @@
   border-right: none;
 }
 
-.project .hero-banner-alt .basic-info label {
+.project .hero-banner-alt .basic-info .info-label {
   font-weight: bold;
   color: var(--bs-warning);
   margin-right: 0.5rem;
 }
 
-.project .hero-banner-alt .basic-info label,
-.project .hero-banner-alt .basic-info p {
+.project .hero-banner-alt .basic-info .info-label,
+.project .hero-banner-alt .basic-info .value {
   font-size: 1rem;
   display: inline-block;
+  margin-bottom: 0;
 }
 
 .project .hero-banner-alt .hero-banner__content {

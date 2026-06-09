@@ -24,15 +24,17 @@ import { highlightField } from 'app/search/search-collections';
       </div>
 
       <!-- ── Engagement banner ──────────────────────────────────────── -->
-      @if (engageLink()) {
+      @if (showBanner()) {
         <div class="d-flex align-items-center gap-2 flex-wrap px-3 py-2 bg-success-subtle border-bottom border-success-subtle small">
           <i class="material-icons" style="font-size:1.1em;color:var(--bs-success)">forum</i>
           <span class="fw-semibold">Comment Period:</span>
-          <span class="pcp-status pcp-status--{{ rowData().pcp }}">{{ rowData().pcp | titlecase }}</span>
-          <a class="btn btn-sm btn-success ms-auto"
-             [href]="engageLink()" target="_blank" rel="noopener noreferrer">
-            View Engagement
-          </a>
+          <span class="pcp-status pcp-status--{{ pcpStatus() }}">{{ pcpStatus() | titlecase }}</span>
+          @if (engageLink()) {
+            <a class="btn btn-sm btn-success ms-auto"
+               [href]="engageLink()!" target="_blank" rel="noopener noreferrer">
+              View Engagement
+            </a>
+          }
         </div>
       }
 
@@ -135,31 +137,20 @@ import { highlightField } from 'app/search/search-collections';
       <div class="notif-accordion-wrapper" [class.open]="pcpOpen()"><div class="notif-doc-section px-3">
           @if (pcpDetails() === undefined) {
             <p class="text-muted small py-2 mb-0">Loading…</p>
-          } @else if (pcpDetails()) {
-          <!-- Full CP record: show status, dates, and link. -->
+          } @else if (pcpDetails() || (rowData().pcp && rowData().pcp !== 'none')) {
           <div class="d-flex align-items-center gap-3 py-2 notif-doc-row">
             @if (pcpStatus()) {
               <span class="pcp-status pcp-status--{{ pcpStatus() }}">{{ pcpStatus() | titlecase }}</span>
             }
-            <span class="small text-muted">{{ pcpDetails()!['dateStarted'] | date:'yyyy-MM-dd' }} – {{ pcpDetails()!['dateCompleted'] | date:'yyyy-MM-dd' }}</span>
-            <a class="notif-doc-col-action btn btn-sm btn-link flex-shrink-0 p-0 ms-auto"
-              [href]="'/pn/' + rowData()._id + '/cp/' + pcpDetails()!['_id']"
-              title="View Comment Period">
-              <i class="material-icons" style="font-size:20px;vertical-align:middle">open_in_new</i>
-            </a>
-          </div>
-          } @else if (rowData().pcp && rowData().pcp !== 'none') {
-          <!-- Status-only: pcp string on notification; dates from rowData when set by admin. -->
-          <div class="d-flex align-items-center gap-3 py-2 notif-doc-row">
-            <span class="pcp-status pcp-status--{{ rowData().pcp }}">{{ rowData().pcp | titlecase }}</span>
-            @if (rowData().dateStarted || rowData().dateCompleted) {
-              <span class="small text-muted">{{ rowData().dateStarted | date:'yyyy-MM-dd' }} – {{ rowData().dateCompleted | date:'yyyy-MM-dd' }}</span>
+            @if (cpDateStarted() || cpDateCompleted()) {
+              <span class="small text-muted">{{ cpDateStarted() | date:'yyyy-MM-dd' }} – {{ cpDateCompleted() | date:'yyyy-MM-dd' }}</span>
             }
-            @if (engageLink()) {
+            @if (cpActionLink(); as link) {
               <a class="notif-doc-col-action btn btn-sm btn-link flex-shrink-0 p-0 ms-auto"
-                [href]="engageLink()!"
-                target="_blank" rel="noopener noreferrer"
-                title="View Engagement">
+                [href]="link.href"
+                [target]="link.external ? '_blank' : '_self'"
+                [attr.rel]="link.external ? 'noopener noreferrer' : null"
+                [title]="link.title">
                 <i class="material-icons" style="font-size:20px;vertical-align:middle">open_in_new</i>
               </a>
             }
@@ -270,10 +261,27 @@ import { highlightField } from 'app/search/search-collections';
 export class SearchNotificationCardComponent {
   rowData = input.required<any>();
 
-  /** Engage URL — present when isMet=true and metURL is set. */
-  engageLink = computed((): string | null =>
-    (this.rowData().isMet && this.rowData().metURL) ? this.rowData().metURL : null
-  );
+  /** Engage URL — from Typesense rowData or fetched CP record (whichever has it). */
+  engageLink = computed((): string | null => {
+    if (this.rowData().metURL) return this.rowData().metURL;
+    const pd = this.pcpDetails();
+    return pd?.['metURL'] ?? null;
+  });
+
+  /** Show engagement banner only when the pcp is currently open. */
+  showBanner = computed(() => this.pcpStatus() === 'open');
+
+  /** Action link for the CP accordion row. Engage URL takes priority; falls back to legacy CP page when a full record exists. */
+  cpActionLink = computed((): { href: string; external: boolean; title: string } | null => {
+    const engage = this.engageLink();
+    if (engage) return { href: engage, external: true, title: 'View Engagement' };
+    const pd = this.pcpDetails();
+    if (pd) return { href: `/pn/${this.rowData()._id}/cp/${pd['_id']}`, external: false, title: 'View Comment Period' };
+    return null;
+  });
+
+  cpDateStarted = computed(() => this.pcpDetails()?.['dateStarted'] || this.rowData().dateStarted);
+  cpDateCompleted = computed(() => this.pcpDetails()?.['dateCompleted'] || this.rowData().dateCompleted);
 
   pcpOpen  = signal(false);
   docsOpen = signal(false);

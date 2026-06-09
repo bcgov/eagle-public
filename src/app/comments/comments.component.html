@@ -52,12 +52,12 @@
           }
 
           <!-- Related Documents -->
-          @if (commentPeriodDocs() && commentPeriodDocs().length > 0) {
+          @if (allDocs().length > 0) {
             <div class="mb-3">
               <div class="card-header">Related Documents</div>
               <ul class="doc-list mb-0">
-                @for (doc of commentPeriodDocs(); track doc) {
-                  <li class="clickable-row" 
+                @for (doc of allDocs(); track doc) {
+                  <li class="clickable-row"
                       role="button"
                       tabindex="0"
                       (click)="downloadDocument(doc)"

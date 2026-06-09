@@ -1,4 +1,4 @@
-import { Component, ElementRef, signal, ChangeDetectionStrategy, inject, DestroyRef } from '@angular/core';
+import { Component, ElementRef, signal, ChangeDetectionStrategy, inject, DestroyRef, OnDestroy } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -20,7 +20,7 @@ import { TypesenseService } from '../../services/typesense.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FormsModule, CustomMultiSelectComponent],
 })
-export class ProjlistFiltersComponent {
+export class ProjlistFiltersComponent implements OnDestroy {
   private configService = inject(ConfigService);
   private filterState = inject(FilterStateService);
   private elementRef = inject(ElementRef);

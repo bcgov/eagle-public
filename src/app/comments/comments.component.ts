@@ -2,7 +2,7 @@ import { Component, inject, signal, DestroyRef, ChangeDetectorRef, ViewEncapsula
 import { DatePipe } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DomSanitizer } from '@angular/platform-browser';
-import { from } from 'rxjs';
+import { from, lastValueFrom } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
@@ -15,12 +15,12 @@ import { CommentService } from '../services/comment.service';
 import { AddCommentComponent } from './add-comment/add-comment.component';
 import { Project } from '../models/project';
 import { DocumentService } from '../services/document.service';
-import { ApiService } from '../services/api';
 import { LoadingStateService } from '../services/loading-state.service';
 import { StorageService } from '../services/storage.service';
 import { CommentsTableRowsComponent } from './comments-table-rows/comments-table-rows.component';
 import { TableObject } from '../shared/components/table-template/table-object';
 import { TableTemplateComponent } from '../shared/components/table-template/table-template.component';
+import { ApiService } from '../services/api';
 import { LoggingService } from '../services/logging.service';
 import { AnalyticsService } from '../services/analytics/analytics.service';
 
@@ -63,11 +63,19 @@ export class CommentsComponent {
   project = signal<Project | null>(null);
   comments = signal<any[]>([]);
   commentPeriodDocs = signal<any[]>([]);
+  notificationDocs = signal<any[]>([]);
+  allDocs = computed(() => [...this.notificationDocs(), ...this.commentPeriodDocs()]);
   
-  // Sanitized instructions for safe HTML rendering
+  // Sanitized instructions for safe HTML rendering.
+  // For PN routes, strip <a> tags — documents are surfaced in the doc-list below.
   sanitizedInstructions = computed(() => {
     const instructions = this.commentPeriod()?.instructions;
-    return instructions ? this.sanitizer.bypassSecurityTrustHtml(String(instructions)) : '';
+    if (!instructions) return '';
+    let html = instructions;
+    if (this.type() === 'PROJECT-NOTIFICATION') {
+      html = html.replace(/<a\b[^>]*>[\s\S]*?<\/a>/gi, '');
+    }
+    return this.sanitizer.bypassSecurityTrustHtml(html);
   });
   
   tableData = signal<TableObject>(new TableObject({ component: CommentsTableRowsComponent }));
@@ -124,6 +132,13 @@ export class CommentsComponent {
                 // If null, project stays null — template shows '-' for name, which is fine.
               },
               error: () => { /* notification name is non-critical — swallow */ }
+            });
+
+          this.api.getDocumentsByNotificationId(projId)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+              next: (docs: any) => this.notificationDocs.set(Array.isArray(docs) ? docs : []),
+              error: () => { /* non-critical — swallow */ }
             });
         } else {
           // Load project data — use StorageService if already loaded (in-page navigation),
@@ -232,7 +247,7 @@ export class CommentsComponent {
 
     if (allDocIds.length > 0) {
       try {
-        const allDocs = await this.documentService.getByMultiId(allDocIds).toPromise();
+        const allDocs = await lastValueFrom(this.documentService.getByMultiId(allDocIds));
         const docMap = new Map<string, any>();
         allDocs?.forEach((doc: any) => {
           if (doc && doc._id) docMap.set(doc._id, doc);
