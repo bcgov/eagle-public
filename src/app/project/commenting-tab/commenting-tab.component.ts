@@ -1,15 +1,12 @@
 import { Component, inject, ChangeDetectionStrategy, effect, signal, DestroyRef } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { Router } from '@angular/router';
-import { Subscription, forkJoin, of } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { Subscription } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { CommentPeriodService } from '../../services/commentperiod.service';
 import { CommentPeriod } from '../../models/commentperiod';
 import { StorageService } from '../../services/storage.service';
-import { EngageApiService, EngageEngagement, isEngagementPublished } from '../../services/engage-api.service';
-import { pacificEndOfDay } from '../engage-banner/engage-banner.component';
 
 @Component({
   selector: 'app-commenting-tab',
@@ -23,11 +20,9 @@ export class CommentingTabComponent {
   private storageService = inject(StorageService);
   public commentPeriodService = inject(CommentPeriodService);
   private destroyRef = inject(DestroyRef);
-  private engageApi = inject(EngageApiService);
 
   public readonly project = this.storageService.currentProject;
   public readonly commentPeriods = signal<CommentPeriod[]>([]);
-  public readonly engageData = signal<Map<string, EngageEngagement>>(new Map());
   public readonly loading = signal(true);
   private loadedProjectId: string | null = null;
   private commentPeriodSub: Subscription | null = null;
@@ -40,20 +35,6 @@ export class CommentingTabComponent {
         this.getCommentPeriods(projectId);
       }
     });
-  }
-
-  engagementStatus(eng: EngageEngagement): 'Open' | 'Closed' | 'Upcoming' | null {
-    if (!eng.start_date || !eng.end_date) return null;
-    if (!isEngagementPublished(eng)) return null;
-    const now = new Date();
-    const parseDate = (s: string, endOfDay: boolean) => {
-      if (s.includes('T') || s.includes(' ')) return new Date(s);
-      if (endOfDay) return pacificEndOfDay(s);
-      return new Date(s + 'T00:00:00');
-    };
-    if (now < parseDate(eng.start_date, false)) return 'Upcoming';
-    if (now > parseDate(eng.end_date, true)) return 'Closed';
-    return 'Open';
   }
 
   goToCP(commentPeriod: CommentPeriod) {
@@ -96,26 +77,10 @@ export class CommentingTabComponent {
               return true;
             });
             this.commentPeriods.set(deduped);
-            this.fetchEngageData(deduped);
           }
           this.loading.set(false);
         },
         error: () => this.loading.set(false),
-      });
-  }
-
-  private fetchEngageData(periods: CommentPeriod[]) {
-    const met = periods.filter(cp => cp.isMet && cp.metURL);
-    if (!met.length) return;
-
-    forkJoin(met.map(cp =>
-      this.engageApi.getEngagementByUrl(cp.metURL!).pipe(catchError(() => of(null)))
-    ))
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(results => {
-        const map = new Map<string, EngageEngagement>();
-        met.forEach((cp, i) => { if (results[i]) map.set(cp._id, results[i]!); });
-        this.engageData.set(map);
       });
   }
 

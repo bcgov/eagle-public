@@ -1,55 +1,15 @@
 :host {
   display: block;
-  --h: 480px;
 }
 
 .engage-banner {
-  position: relative;
   width: 100%;
-  height: var(--h);
-  overflow: hidden;
   animation: engageBannerFadeIn 0.25s ease;
 }
 
 @keyframes engageBannerFadeIn {
   from { opacity: 0; }
   to   { opacity: 1; }
-}
-
-.engage-banner--loading {
-  height: var(--h);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #e0e0e0;
-}
-
-.engage-banner__skeleton {
-  width: 100%;
-  height: var(--h);
-  background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-}
-
-@keyframes shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
-
-.engage-banner__image {
-  display: block;
-  width: 100%;
-  height: var(--h);
-  object-fit: cover;
-}
-
-.engage-banner__overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: flex-start;
-  justify-content: flex-start;
 }
 
 .engage-banner__card {
@@ -62,25 +22,10 @@
   color: rgb(33, 37, 41);
 }
 
-/* On desktop the sidebar-toggle button is fixed at the left edge of the
-   content area (width: 35px, height: 48px). Increase top + left margin
-   so the card doesn't overlap it. */
 @media (min-width: 1127px) {
   .engage-banner__card {
     margin: 3.5rem 1rem 1rem 3.5rem;
   }
-}
-
-.engage-banner__title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin-bottom: 0.5rem;
-}
-
-.engage-banner__description {
-  font-size: 0.95rem;
-  margin-bottom: 0.75rem;
-  line-height: 1.5;
 }
 
 .engage-banner__dates {
@@ -110,7 +55,7 @@
   background-color: rgb(46, 125, 50);
 }
 
-.engage-banner__status-chip--upcoming {
+.engage-banner__status-chip--pending {
   background-color: #1565c0;
 }
 
