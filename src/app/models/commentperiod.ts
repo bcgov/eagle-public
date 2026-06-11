@@ -31,6 +31,7 @@ export class CommentPeriod {
   isResolved!: boolean;
   isVetted!: string;
   metURL!: string;
+  metBannerImageUrl!: string;
   milestone!: string;
   openCommentPeriod!: string;
   openHouses!: { eventDate: string; description: string }[] | any;
@@ -66,7 +67,7 @@ export class CommentPeriod {
       'ceaaInformationLabel', 'ceaaRelatedDocuments', 'classificationRoles', 'classifiedPercent',
       'commenterRoles', 'commentTip', 'dateAdded', 'dateCompletedEst', 'dateStartedEst',
       'dateUpdated', 'downloadRoles', 'informationLabel', 'instructions', 'isMet', 'isClassified',
-      'isPublished', 'isResolved', 'isVetted', 'metURL', 'milestone', 'openHouses', 'periodType',
+      'isPublished', 'isResolved', 'isVetted', 'metURL', 'metBannerImageUrl', 'milestone', 'openHouses', 'periodType',
       'phase', 'phaseName', 'project', 'publishedPercent', 'rangeOption', 'rangeType',
       'relatedDocuments', 'resolvedPercent', 'updatedBy', 'userCan', 'vettedPercent',
       'vettingRoles', 'read', 'write', 'delete',

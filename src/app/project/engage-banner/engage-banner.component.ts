@@ -1,5 +1,6 @@
-import { Component, ChangeDetectionStrategy, input } from '@angular/core';
+import { Component, ChangeDetectionStrategy, input, computed } from '@angular/core';
 import { DatePipe, LowerCasePipe } from '@angular/common';
+import { CommentPeriod } from '../../models/commentperiod';
 
 @Component({
   selector: 'app-engage-banner',
@@ -7,10 +8,16 @@ import { DatePipe, LowerCasePipe } from '@angular/common';
   imports: [DatePipe, LowerCasePipe],
   templateUrl: './engage-banner.component.html',
   styleUrl: './engage-banner.component.css',
+  host: {
+    'class': 'engage-banner',
+    '[class.engage-banner--has-image]': 'data().metBannerImageUrl',
+  },
 })
 export class EngageBannerComponent {
-  engagementUrl = input.required<string>();
-  dateStarted = input<string | Date | null>(null);
-  dateCompleted = input<string | Date | null>(null);
-  cpStatus = input<string | null>(null);
+  data = input.required<CommentPeriod>();
+
+  statusClass = computed(() => {
+    const status = this.data().commentPeriodStatus;
+    return status ? `engage-banner__status-chip--${status.toLowerCase()}` : '';
+  });
 }
