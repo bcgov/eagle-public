@@ -9,7 +9,11 @@
                     </div>
                 } @else if (project()?.commentPeriodForBanner) {
                     @if (project()!.commentPeriodForBanner!.isMet && project()!.commentPeriodForBanner!.metURL) {
-                        <app-engage-banner [engagementUrl]="project()!.commentPeriodForBanner!.metURL" />
+                        <app-engage-banner
+                            [engagementUrl]="project()!.commentPeriodForBanner!.metURL"
+                            [dateStarted]="project()!.commentPeriodForBanner!.dateStarted"
+                            [dateCompleted]="project()!.commentPeriodForBanner!.dateCompleted"
+                            [cpStatus]="project()!.commentPeriodForBanner!.commentPeriodStatus" />
                     } @else {
                     <div class="pcp-banner col-sm-12">
                         <div class="pcp-banner-content">
