@@ -46,8 +46,13 @@ export class CommentsComponent implements OnDestroy {
   private analytics = inject(AnalyticsService);
 
   loading = this.loadingState.getOperationState('comments');
-  // True while project or comment period are not yet loaded
-  pageLoading = computed(() => !this.project() || !this.commentPeriod());
+  // True while comment period is not yet loaded.
+  // For PROJECT-NOTIFICATION routes the project signal may remain null (no Project API endpoint),
+  // so only block on commentPeriod.
+  pageLoading = computed(() => {
+    if (this.type() === 'PROJECT-NOTIFICATION') return !this.commentPeriod();
+    return !this.project() || !this.commentPeriod();
+  });
   commentPeriod = signal<CommentPeriod | null>(null);
   project = signal<Project | null>(null);
   comments = signal<any[]>([]);
@@ -100,16 +105,76 @@ export class CommentsComponent implements OnDestroy {
         this.type.set(isProjectNotification ? 'PROJECT-NOTIFICATION' : 'PROJECT');
 
         // Load project data
-        this.projectService.getById(projId)
-          .pipe(takeUntil(this.ngUnsubscribe))
-          .subscribe({
-            next: (project) => {
-              this.project.set(project);
+        if (isProjectNotification) {
+          // For PN routes, projId is a ProjectNotification ID — do NOT call projectService.getById
+          // (which queries /api/project/ and returns empty for PN IDs, causing a TypeError).
+          // Fetch the notification name via search instead.
+          this.api.searchKeywords(
+            '',
+            'ProjectNotification',
+            [],
+            1, 1,
+            '',
+            '',
+            { _id: projId },
+            false,
+            null,
+            {},
+            false,
+          ).pipe(
+            takeUntil(this.ngUnsubscribe)
+          ).subscribe({
+            next: (raw: any) => {
+              const hit = raw?.[0]?.searchResults?.[0];
+              if (hit) {
+                // Synthesise a minimal Project-shaped object so the template renders the name.
+                this.project.set({ name: hit.name } as any);
+              }
+              // If null, project stays null — template shows '-' for name, which is fine.
             },
-            error: (error) => {
-              this.logger.error('Error loading project', 'CommentsComponent', error);
-            }
+            error: () => { /* notification name is non-critical — swallow */ }
           });
+        } else {
+          this.projectService.getById(projId)
+            .pipe(takeUntil(this.ngUnsubscribe))
+            .subscribe({
+              next: (project) => {
+                if (project) {
+                  this.project.set(project);
+                } else {
+                  // Fallback: If not found as Project, try searching as Project Notification!
+                  this.logger.warn(`Project ${projId} not found, trying as ProjectNotification`, 'CommentsComponent');
+                  this.type.set('PROJECT-NOTIFICATION');
+                  this.api.searchKeywords(
+                    '',
+                    'ProjectNotification',
+                    [],
+                    1, 1,
+                    '',
+                    '',
+                    { _id: projId },
+                    false,
+                    null,
+                    {},
+                    false,
+                  ).pipe(
+                    takeUntil(this.ngUnsubscribe)
+                  ).subscribe({
+                    next: (raw: any) => {
+                      const hit = raw?.[0]?.searchResults?.[0];
+                      if (hit) {
+                        this.project.set({ name: hit.name } as any);
+                      }
+                    },
+                    error: () => { /* notification name is non-critical — swallow */ }
+                  });
+                }
+              },
+              error: (error) => {
+                this.logger.error('Error loading project', 'CommentsComponent', error);
+              }
+            });
+        }
 
         // Load comment period data
         this.commentPeriodService.getById(commentPeriodId)

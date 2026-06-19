@@ -25,15 +25,12 @@ export class CommentingTabComponent implements OnDestroy {
 
   // Use the reactive signal from storageService
   public project = this.storageService.currentProject;
-  public commentPeriods = signal<CommentPeriod[]>([]);
+  public commentPeriods = signal<CommentPeriod[] | null>(null);
   private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
   private loadedProjectId: string | null = null;
 
-  // Computed loading state based on current project
-  public loading = computed(() => {
-    const project = this.project();
-    return project?._id ? this.loadingState.getOperationState(`commentperiods-${project._id}`)() : false;
-  });
+  // Computed loading state based on null-sentinel
+  public loading = computed(() => this.commentPeriods() === null);
 
   constructor() {
     // Load comment periods when project is available
@@ -41,6 +38,7 @@ export class CommentingTabComponent implements OnDestroy {
       const project = this.project();
       if (project?._id && project._id !== this.loadedProjectId) {
         this.loadedProjectId = project._id;
+        this.commentPeriods.set(null); // Show loading skeleton
         this.getCommentPeriods(project._id);
       }
     });
@@ -58,13 +56,38 @@ export class CommentingTabComponent implements OnDestroy {
   getCommentPeriods(projectId: string) {
     this.commentPeriodService.getAllByProjectId(projectId)
       .pipe(takeUntil(this.ngUnsubscribe))
-      .subscribe((res: any) => {
-        if (res.data) {
-          const periods = res.data.map((element: CommentPeriod) => {
-            const match = element.instructions ? element.instructions.match(/Comment Period on the (.*?) for /) : null;
-            return { ...element, instructions: match ? match[1] : '' };
-          });
-          this.commentPeriods.set(periods);
+      .subscribe({
+        next: (res: any) => {
+          if (res && res.data) {
+            const periods = res.data.map((element: CommentPeriod) => {
+              const fullText = element.instructions
+                ? element.instructions.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+                : '';
+              const match = fullText.match(/Comment Period on the (.*?) for /);
+              return {
+                ...element,
+                instructions: match ? match[1] : '',
+                additionalText: element.additionalText || fullText || element.informationLabel,
+              };
+            });
+            const seenIds = new Set<string>();
+            const seenUrls = new Set<string>();
+            const deduped = periods.filter((p: CommentPeriod) => {
+              if (seenIds.has(p._id)) return false;
+              seenIds.add(p._id);
+              if (p.isMet && p.metURL) {
+                if (seenUrls.has(p.metURL)) return false;
+                seenUrls.add(p.metURL);
+              }
+              return true;
+            });
+            this.commentPeriods.set(deduped);
+          } else {
+            this.commentPeriods.set([]);
+          }
+        },
+        error: () => {
+          this.commentPeriods.set([]);
         }
       });
   }

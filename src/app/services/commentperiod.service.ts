@@ -99,16 +99,11 @@ export class CommentPeriodService {
     if (!commentPeriod || !commentPeriod.dateStarted || !commentPeriod.dateCompleted) {
       return this.NOT_OPEN;
     }
-
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 0, 0);
-
-    if (commentPeriod.dateCompleted < today) {
-      return this.CLOSED;
-    } else if (commentPeriod.dateStarted > today) {
-      return this.NOT_STARTED;
-    } else {
-      return this.OPEN;
+    switch (commentPeriod.commentPeriodStatus) {
+      case 'Open':    return this.OPEN;
+      case 'Pending': return this.NOT_STARTED;
+      case 'Closed':  return this.CLOSED;
+      default:        return this.NOT_OPEN;
     }
   }
 

@@ -17,6 +17,7 @@ import { DetailsSidebarComponent } from './details-sidebar/details-sidebar';
 import { SafeHtmlPipe } from '../shared/pipes/safe-html-converter.pipe';
 import { LoggingService } from '../services/logging.service';
 import { AnalyticsService } from '../services/analytics/analytics.service';
+import { EngageBannerComponent } from './engage-banner/engage-banner.component';
 
 @Component({
   selector: 'app-project',
@@ -24,7 +25,8 @@ import { AnalyticsService } from '../services/analytics/analytics.service';
     CommonModule,
     RouterModule,
     DetailsSidebarComponent,
-    SafeHtmlPipe
+    SafeHtmlPipe,
+    EngageBannerComponent
   ],
   templateUrl: './project.html',
   styleUrl: './project.css',

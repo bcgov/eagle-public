@@ -130,10 +130,10 @@ export class ProjectService {
         map((projects: Project[]) => {
           // get upcoming comment period if there is one and convert it into a comment period object.
           // If there are multiple comment periods any that is currently running is a higher priority than a past comment period
-          if (projects) {
-            if (projects[0] && projects[0].commentPeriodForBanner && projects[0].commentPeriodForBanner.length === 1) {
+          if (projects && projects.length > 0 && projects[0]) {
+            if (projects[0].commentPeriodForBanner && projects[0].commentPeriodForBanner.length === 1) {
               projects[0].commentPeriodForBanner = new CommentPeriod(projects[0].commentPeriodForBanner[0]);
-            } else if (projects[0] && projects[0].commentPeriodForBanner && projects[0].commentPeriodForBanner.length > 1) {
+            } else if (projects[0].commentPeriodForBanner && projects[0].commentPeriodForBanner.length > 1) {
               const now = new Date
               const currentDate = now.toISOString();
               // Default to the same comment period we're using currently in case one is not active
@@ -150,7 +150,7 @@ export class ProjectService {
             }
           }
           // return the first (only) project
-          return projects.length > 0 ? new Project(projects[0]) : null;
+          return projects && projects.length > 0 && projects[0] ? new Project(projects[0]) : null;
         }),
         flatMap(res => {
           const project = res;

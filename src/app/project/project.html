@@ -4,22 +4,21 @@
            <details-sidebar [project]="project()" (sidebarToggle)="handleSidebarToggle($event)"></details-sidebar>
             <div class="content">
                 @if (project()?.commentPeriodForBanner) {
+                    @if (project()!.commentPeriodForBanner!.isMet && project()!.commentPeriodForBanner!.metURL) {
+                        <app-engage-banner [data]="project()!.commentPeriodForBanner!" />
+                    } @else {
                     <div class="pcp-banner col-sm-12">
                         <div class="pcp-banner-content">
                             <div class="pcp-banner-header">
                                 <div class="pcp-banner-info">
                                     <h2>Public Comment Period is {{project()!.commentPeriodForBanner!.commentPeriodStatus}}</h2>
                                     <h5>{{project()!.commentPeriodForBanner!.dateStarted | date: 'MMMM d'}} -
-                                    {{project()!.commentPeriodForBanner!.longEndDate.toFormat('MMMM dd @ hh:mm a ZZZZ')}}</h5>
+                                    {{project()!.commentPeriodForBanner!.endDateDisplay}}</h5>
                                 </div>
                                 @if (project()!.commentPeriodForBanner!.commentPeriodStatus === 'Open') {
                                     <div class="pcp-banner-actions">
                                         <button type="button" class="btn btn-outline-warning" (click)="goToViewComments()">
-                                            @if (project()!.commentPeriodForBanner!.isMet) {
-                                                <span>View on engage.eao.gov.bc.ca</span>
-                                            } @else {
-                                                <span>View Comment Period</span>
-                                            }
+                                            <span>View Comment Period</span>
                                         </button>
                                     </div>
                                 }
@@ -38,6 +37,7 @@
                             }
                         </div>
                     </div>
+                    }
                 }
 
                 <div class="main-content">
