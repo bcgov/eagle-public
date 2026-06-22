@@ -1,10 +1,15 @@
 name: Teardown Branch Preview
 
 on:
+  delete:
+    branches:
+      - 'hotfix/**'
+      - 'feat/**'
+      - 'feature/**'
   workflow_dispatch:
     inputs:
       branch:
-        description: 'Branch to tear down (must match what was used to deploy, e.g. hotfix/pcp-engage)'
+        description: 'Branch to tear down (e.g. hotfix/pcp-engage)'
         required: true
         type: string
 
@@ -20,51 +25,48 @@ jobs:
     name: Teardown Preview
     runs-on: ubuntu-latest
     steps:
-      - name: Generate release name from branch
-        id: slug
+      - name: Resolve branch slug
+        id: vars
         run: |
-          SLUG=$(echo "${{ inputs.branch }}" | sed 's|/|-|g' | sed 's|[^a-zA-Z0-9-]|-|g' | tr '[:upper:]' '[:lower:]' | cut -c1-40)
-          RELEASE_NAME="eagle-public-${SLUG}"
-          IMAGE_TAG="preview-${SLUG}"
-          echo "release_name=${RELEASE_NAME}" >> $GITHUB_OUTPUT
-          echo "image_tag=${IMAGE_TAG}" >> $GITHUB_OUTPUT
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            BRANCH="${{ inputs.branch }}"
+          else
+            BRANCH="${{ github.event.ref }}"
+          fi
+          SLUG=$(echo "${BRANCH}" | sed 's|/|-|g' | sed 's|[^a-zA-Z0-9-]|-|g' | tr '[:upper:]' '[:lower:]' | cut -c1-40)
+          echo "release_name=eagle-public-${SLUG}" >> $GITHUB_OUTPUT
+          echo "image_tag=preview-${SLUG}"         >> $GITHUB_OUTPUT
+          echo "branch=${BRANCH}"                  >> $GITHUB_OUTPUT
 
-      - name: Install OpenShift CLI
+      - name: Install oc
         run: |
           curl -LO "https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-client-linux.tar.gz"
-          tar -xvzf openshift-client-linux.tar.gz
-          sudo mv oc /usr/local/bin/
-          rm -f openshift-client-linux.tar.gz
+          tar -xzf openshift-client-linux.tar.gz && sudo mv oc /usr/local/bin/
 
       - name: Install Helm
-        run: |
-          curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+        run: curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
-      - name: Log into OpenShift
-        run: |
-          oc login --server=${{ secrets.OPENSHIFT_URL }} --token=${{ secrets.OPENSHIFT_TOKEN }}
+      - name: Login to OpenShift
+        run: oc login --server=${{ secrets.OPENSHIFT_URL }} --token=${{ secrets.OPENSHIFT_TOKEN }}
 
-      - name: Uninstall Helm release
+      - name: Helm uninstall
         run: |
-          if helm status ${{ steps.slug.outputs.release_name }} -n ${{ env.OPENSHIFT_NAMESPACE_TEST }} > /dev/null 2>&1; then
-            helm uninstall ${{ steps.slug.outputs.release_name }} -n ${{ env.OPENSHIFT_NAMESPACE_TEST }}
-            echo "Release ${{ steps.slug.outputs.release_name }} removed."
+          if helm status ${{ steps.vars.outputs.release_name }} -n ${{ env.OPENSHIFT_NAMESPACE_TEST }} > /dev/null 2>&1; then
+            helm uninstall ${{ steps.vars.outputs.release_name }} -n ${{ env.OPENSHIFT_NAMESPACE_TEST }}
+            echo "Removed release ${{ steps.vars.outputs.release_name }}"
           else
-            echo "Release ${{ steps.slug.outputs.release_name }} not found — already cleaned up."
+            echo "Release not found — already cleaned up."
           fi
 
-      - name: Remove preview image tag from tools imagestream
+      - name: Remove image tag
         run: |
           if oc -n ${{ env.OPENSHIFT_NAMESPACE_TOOLS }} get imagestreamtag \
-            ${{ env.IMAGE_NAME }}:${{ steps.slug.outputs.image_tag }} &>/dev/null; then
+              ${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.image_tag }} &>/dev/null; then
             oc -n ${{ env.OPENSHIFT_NAMESPACE_TOOLS }} tag --delete \
-              ${{ env.IMAGE_NAME }}:${{ steps.slug.outputs.image_tag }}
-            echo "Image tag ${{ steps.slug.outputs.image_tag }} removed."
-          else
-            echo "Image tag not found — skipping."
+              ${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.image_tag }}
           fi
 
       - name: Summary
         run: |
           echo "## Teardown Complete" >> $GITHUB_STEP_SUMMARY
-          echo "Branch preview for \`${{ inputs.branch }}\` has been removed from \`${{ env.OPENSHIFT_NAMESPACE_TEST }}\`." >> $GITHUB_STEP_SUMMARY
+          echo "Preview for \`${{ steps.vars.outputs.branch }}\` removed from \`${{ env.OPENSHIFT_NAMESPACE_TEST }}\`." >> $GITHUB_STEP_SUMMARY
