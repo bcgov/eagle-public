@@ -1,0 +1,70 @@
+name: Teardown Branch Preview
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to tear down (must match what was used to deploy, e.g. hotfix/pcp-engage)'
+        required: true
+        type: string
+
+permissions: write-all
+
+env:
+  OPENSHIFT_NAMESPACE_TOOLS: 6cdc9e-tools
+  OPENSHIFT_NAMESPACE_TEST: 6cdc9e-test
+  IMAGE_NAME: eagle-public
+
+jobs:
+  teardown:
+    name: Teardown Preview
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate release name from branch
+        id: slug
+        run: |
+          SLUG=$(echo "${{ inputs.branch }}" | sed 's|/|-|g' | sed 's|[^a-zA-Z0-9-]|-|g' | tr '[:upper:]' '[:lower:]' | cut -c1-40)
+          RELEASE_NAME="eagle-public-${SLUG}"
+          IMAGE_TAG="preview-${SLUG}"
+          echo "release_name=${RELEASE_NAME}" >> $GITHUB_OUTPUT
+          echo "image_tag=${IMAGE_TAG}" >> $GITHUB_OUTPUT
+
+      - name: Install OpenShift CLI
+        run: |
+          curl -LO "https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-client-linux.tar.gz"
+          tar -xvzf openshift-client-linux.tar.gz
+          sudo mv oc /usr/local/bin/
+          rm -f openshift-client-linux.tar.gz
+
+      - name: Install Helm
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+      - name: Log into OpenShift
+        run: |
+          oc login --server=${{ secrets.OPENSHIFT_URL }} --token=${{ secrets.OPENSHIFT_TOKEN }}
+
+      - name: Uninstall Helm release
+        run: |
+          if helm status ${{ steps.slug.outputs.release_name }} -n ${{ env.OPENSHIFT_NAMESPACE_TEST }} > /dev/null 2>&1; then
+            helm uninstall ${{ steps.slug.outputs.release_name }} -n ${{ env.OPENSHIFT_NAMESPACE_TEST }}
+            echo "Release ${{ steps.slug.outputs.release_name }} removed."
+          else
+            echo "Release ${{ steps.slug.outputs.release_name }} not found — already cleaned up."
+          fi
+
+      - name: Remove preview image tag from tools imagestream
+        run: |
+          if oc -n ${{ env.OPENSHIFT_NAMESPACE_TOOLS }} get imagestreamtag \
+            ${{ env.IMAGE_NAME }}:${{ steps.slug.outputs.image_tag }} &>/dev/null; then
+            oc -n ${{ env.OPENSHIFT_NAMESPACE_TOOLS }} tag --delete \
+              ${{ env.IMAGE_NAME }}:${{ steps.slug.outputs.image_tag }}
+            echo "Image tag ${{ steps.slug.outputs.image_tag }} removed."
+          else
+            echo "Image tag not found — skipping."
+          fi
+
+      - name: Summary
+        run: |
+          echo "## Teardown Complete" >> $GITHUB_STEP_SUMMARY
+          echo "Branch preview for \`${{ inputs.branch }}\` has been removed from \`${{ env.OPENSHIFT_NAMESPACE_TEST }}\`." >> $GITHUB_STEP_SUMMARY

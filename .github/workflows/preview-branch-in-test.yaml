@@ -1,0 +1,161 @@
+name: Preview Branch in Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to build and preview (e.g. hotfix/pcp-engage)'
+        required: true
+        type: string
+      skip_scan:
+        description: 'Skip Trivy vulnerability scan (faster, use for non-security changes)'
+        required: false
+        type: boolean
+        default: false
+
+permissions: write-all
+
+env:
+  OPENSHIFT_NAMESPACE_TOOLS: 6cdc9e-tools
+  OPENSHIFT_NAMESPACE_TEST: 6cdc9e-test
+  IMAGE_NAME: eagle-public
+
+jobs:
+  prepare:
+    name: Prepare Branch Slug
+    runs-on: ubuntu-latest
+    outputs:
+      slug: ${{ steps.slug.outputs.slug }}
+      release_name: ${{ steps.slug.outputs.release_name }}
+      preview_host: ${{ steps.slug.outputs.preview_host }}
+      image_tag: ${{ steps.slug.outputs.image_tag }}
+    steps:
+      - name: Generate slug and host
+        id: slug
+        run: |
+          SLUG=$(echo "${{ inputs.branch }}" | sed 's|/|-|g' | sed 's|[^a-zA-Z0-9-]|-|g' | tr '[:upper:]' '[:lower:]' | cut -c1-40)
+          RELEASE_NAME="eagle-public-${SLUG}"
+          PREVIEW_HOST="${SLUG}.test.projects.eao.gov.bc.ca"
+          IMAGE_TAG="preview-${SLUG}"
+          echo "slug=${SLUG}" >> $GITHUB_OUTPUT
+          echo "release_name=${RELEASE_NAME}" >> $GITHUB_OUTPUT
+          echo "preview_host=${PREVIEW_HOST}" >> $GITHUB_OUTPUT
+          echo "image_tag=${IMAGE_TAG}" >> $GITHUB_OUTPUT
+          echo "## Branch Preview" >> $GITHUB_STEP_SUMMARY
+          echo "| | |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Branch** | \`${{ inputs.branch }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Helm Release** | \`${RELEASE_NAME}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Preview URL** | https://${PREVIEW_HOST} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Image Tag** | \`${IMAGE_TAG}\` |" >> $GITHUB_STEP_SUMMARY
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: prepare
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.branch }}
+      - name: Enable Corepack
+        run: corepack enable
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24.x'
+          cache: "yarn"
+      - run: yarn install --immutable
+      - run: yarn lint
+      - run: yarn build
+
+  scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: [prepare, build]
+    if: ${{ inputs.skip_scan == false }}
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.branch }}
+      - name: Build Docker image for scanning
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: false
+          tags: ${{ env.IMAGE_NAME }}:scan-${{ needs.prepare.outputs.slug }}
+          load: true
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@v0.35.0
+        with:
+          image-ref: ${{ env.IMAGE_NAME }}:scan-${{ needs.prepare.outputs.slug }}
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
+  push:
+    name: Push Preview Image
+    runs-on: ubuntu-latest
+    needs: [prepare, build, scan]
+    if: always() && needs.build.result == 'success' && (needs.scan.result == 'success' || needs.scan.result == 'skipped')
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.branch }}
+      - name: Login to OpenShift registry
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ secrets.OPENSHIFT_REPOSITORY }}
+          username: ${{ secrets.OPENSHIFT_REPOSITORY_USERNAME }}
+          password: ${{ secrets.OPENSHIFT_REPOSITORY_PASSWORD }}
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ secrets.OPENSHIFT_REPOSITORY }}/${{ env.OPENSHIFT_NAMESPACE_TOOLS }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.image_tag }}
+
+  deploy:
+    name: Deploy Preview to Test
+    runs-on: ubuntu-latest
+    needs: [prepare, push]
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.branch }}
+      - name: Install OpenShift CLI
+        run: |
+          curl -LO "https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-client-linux.tar.gz"
+          tar -xvzf openshift-client-linux.tar.gz
+          sudo mv oc /usr/local/bin/
+          rm -f openshift-client-linux.tar.gz
+      - name: Install Helm
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+      - name: Log into OpenShift
+        run: |
+          oc login --server=${{ secrets.OPENSHIFT_URL }} --token=${{ secrets.OPENSHIFT_TOKEN }}
+      - name: Deploy as isolated Helm release
+        run: |
+          helm upgrade --install ${{ needs.prepare.outputs.release_name }} ./helm/eagle-public \
+            --namespace ${{ env.OPENSHIFT_NAMESPACE_TEST }} \
+            --values ./helm/eagle-public/values-test.yaml \
+            --set image.tag=${{ needs.prepare.outputs.image_tag }} \
+            --set route.host=${{ needs.prepare.outputs.preview_host }} \
+            --set fullnameOverride=${{ needs.prepare.outputs.release_name }} \
+            --set replicaCount=1 \
+            --wait --timeout=5m
+      - name: Verify deployment
+        run: |
+          oc rollout status deployment/${{ needs.prepare.outputs.release_name }} \
+            -n ${{ env.OPENSHIFT_NAMESPACE_TEST }} --timeout=5m
+          echo "## Preview Ready" >> $GITHUB_STEP_SUMMARY
+          echo "**URL:** https://${{ needs.prepare.outputs.preview_host }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "> Tear down: run Teardown Branch Preview workflow with branch '${{ inputs.branch }}'" >> $GITHUB_STEP_SUMMARY
