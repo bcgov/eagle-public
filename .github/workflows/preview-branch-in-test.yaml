@@ -144,14 +144,18 @@ jobs:
             --namespace ${{ env.OPENSHIFT_NAMESPACE_TEST }} \
             --values ./helm/eagle-public/values-test.yaml \
             --set image.tag=${{ needs.prepare.outputs.image_tag }} \
-            --set route.host=${{ needs.prepare.outputs.preview_host }} \
             --set fullnameOverride=${{ needs.prepare.outputs.release_name }} \
+            --set route.host="" \
             --set replicaCount=1 \
             --wait --timeout=5m
       - name: Verify rollout
         run: |
           oc rollout status deployment/${{ needs.prepare.outputs.release_name }} \
             -n ${{ env.OPENSHIFT_NAMESPACE_TEST }} --timeout=5m
+          ROUTE_HOST=$(oc get route ${{ needs.prepare.outputs.release_name }} \
+            -n ${{ env.OPENSHIFT_NAMESPACE_TEST }} \
+            -o jsonpath='{.spec.host}' 2>/dev/null || echo 'unknown')
           echo "## Preview Ready" >> $GITHUB_STEP_SUMMARY
-          echo "**URL:** https://${{ needs.prepare.outputs.preview_host }}" >> $GITHUB_STEP_SUMMARY
+          echo "**URL:** https://${ROUTE_HOST}" >> $GITHUB_STEP_SUMMARY
           echo "> Teardown: run **Teardown Branch Preview** workflow with branch \`${{ needs.prepare.outputs.branch }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "Preview URL: https://${ROUTE_HOST}"
