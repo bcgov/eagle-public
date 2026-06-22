@@ -146,6 +146,7 @@ jobs:
             --set image.tag=${{ needs.prepare.outputs.image_tag }} \
             --set fullnameOverride=${{ needs.prepare.outputs.release_name }} \
             --set route.serviceName=${{ needs.prepare.outputs.release_name }} \
+            --set route.targetPort=http \
             --set route.host="" \
             --set replicaCount=1 \
             --wait --timeout=5m
