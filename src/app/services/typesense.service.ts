@@ -176,13 +176,14 @@ export class TypesenseService {
    * Used as a fast replacement for the MongoDB getAllFull() API call.
    */
   getAllProjects(): Observable<any[]> {
+    let loadedSoFar = 0;
     const fetchPage = (page: number) =>
       this.searchCollection('projects', { q: '*', query_by: 'name', per_page: '250', page: String(page) });
 
     return fetchPage(1).pipe(
       expand(res => {
-        const fetched = res.page * 250;
-        return fetched < res.found ? fetchPage(res.page + 1) : EMPTY;
+        loadedSoFar += res.hits?.length ?? 0;
+        return (loadedSoFar < res.found && res.hits?.length > 0) ? fetchPage(res.page + 1) : EMPTY;
       }),
       reduce((acc: any[], res: any) => {
         const mapped = (res.hits ?? []).map((hit: any) => {
