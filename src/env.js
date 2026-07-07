@@ -26,7 +26,9 @@
   window.__env.ENVIRONMENT = 'local';
 
   // API target — proxy.conf.js reads this to route /api and /analytics.
-  window.__env.API_LOCATION = 'https://eagle-test.apps.silver.devops.gov.bc.ca';
+  // To use the dev environment: change to 'https://eagle-dev.apps.silver.devops.gov.bc.ca'
+  // and set configEndpoint = true above so config is fetched from /api/config.
+  window.__env.API_LOCATION = 'http://localhost:3000';
   window.__env.API_PATH = '/api';
 
   // eagle-admin link
@@ -40,13 +42,5 @@
 
   // Build hash — replaced during CI build
   window.__env.GH_HASH = 'local-build';
-
-  // Engage API — used by EngageBannerComponent to fetch engagement data.
-  // Local dev: proxied through /engage-api (proxy.conf.js → epic-engage-web-prod).
-  // Deployed: set per environment in eao-nginx rproxy ConfigMap.
-  window.__env.ENGAGE_API_URL = '/engage-api';
-
-  // Typesense search — all queries proxy through eagle-api (/api/public/typesense/*).
-  // No API key needed in the browser; eagle-api injects role filter server-side.
 
 }(this));

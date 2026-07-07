@@ -2,9 +2,20 @@
 
 html,
 body {
-  min-height: 100dvh;
+  height: 100%;
+  min-height: 100%;
   margin: 0;
   padding: 0;
+}
+
+app-root {
+  display: block;
+  height: 100%;
+}
+
+div.content {
+  transition: 0.25s all;
+  height: 1000px;
 }
 
 .container-fluid-padding {

@@ -4,6 +4,7 @@ import { CommentPeriod } from '../../models/commentperiod';
 
 @Component({
   selector: 'app-engage-banner',
+  standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [DatePipe, LowerCasePipe],
   templateUrl: './engage-banner.component.html',

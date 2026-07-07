@@ -7,12 +7,6 @@
   padding-bottom: 2rem;
 }
 
-/* Bootstrap .row has negative horizontal margins (gutter bleed) which overflow
-   the component. Clip at the component root so it never escapes to the page. */
-.table-template {
-  overflow-x: clip;
-}
-
 /* === BASE TABLE STYLES === */
 
 .table {
@@ -26,6 +20,10 @@
 .table thead {
   background-color: var(--bs-table-head-bg);
   box-shadow: 0.1rem 0.1rem 0.5rem rgb(158 158 158 / 24%);
+}
+
+.table thead tr {
+  background-color: var(--bs-table-head-bg);
 }
 
 .table thead th {
@@ -78,6 +76,7 @@
 
 .table tbody tr {
   background-color: var(--bs-table-bg);
+  transition: background-color 0.2s ease-in-out;
 }
 
 .table tbody tr td {
@@ -164,15 +163,9 @@
     border-top: none;
     border-bottom: 2px solid var(--bs-border-color);
     padding: 0.75rem;
+    vertical-align: middle;
     line-height: 1.5;
-  }
-
-  /* Empty header cell (e.g. download column) has no text so collapses short under
-     align-items:center, pushing border-bottom to mid-row. Stretch fills full row height. */
-  .table-template .table thead th.header-empty {
-    align-self: stretch;
-    display: flex;
-    align-items: flex-end;
+    display: table-cell;
   }
 
   .table-template .table tbody tr {
@@ -187,19 +180,17 @@
     display: flex;
     align-items: center;
     padding: 0.75rem;
+    vertical-align: middle;
     line-height: 1.5;
     font-size: var(--bs-font-size-sm);
   }
 
-  /* Column width definitions.
-   * min-width MUST be 0 (not a %) — percentage min-width on flex children
-   * causes sub-pixel rounding: N × 16.67% > 100% → layout overflow.
-   * max-width + flex: 1 1 0 correctly sizes cells without a percentage floor. */
+  /* Column width definitions */
   .table-template .table col.col-1,
   .table-template .table th.col-1,
   .table-template .table td.col-1 {
     width: 8.33%;
-    min-width: 0;
+    min-width: 8.33%;
     max-width: 8.33%;
     text-align: center; /* Center align star column */
   }
@@ -208,7 +199,7 @@
   .table-template .table th.col-2,
   .table-template .table td.col-2 {
     width: 16.67%;
-    min-width: 0;
+    min-width: 16.67%;
     max-width: 16.67%;
   }
 
@@ -216,13 +207,8 @@
   .table-template .table th.col-3,
   .table-template .table td.col-3 {
     width: 25%;
-    min-width: 0;
+    min-width: 25%;
     max-width: 25%;
-  }
-
-  /* Clip text inside flex td cells — prevents content from overflowing cell boundary */
-  .table-template .table tbody tr td {
-    overflow: hidden;
   }
 }
 

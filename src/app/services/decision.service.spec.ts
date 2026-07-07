@@ -39,7 +39,10 @@ describe('DecisionService', () => {
 
   describe('getByApplicationId', () => {
     it('returns null when no decision is returned by the API', () => {
-      mockApiService.getDecisionByAppId.mockReturnValue(of([]));
+      mockApiService.getDecisionByAppId.mockReturnValue(
+        // eslint-disable-next-line @typescript-eslint/no-empty-function
+        of({ text: () => {} })
+      );
 
       service.getByApplicationId('1', true).subscribe(result => {
         expect(result).toBeNull();
@@ -47,7 +50,12 @@ describe('DecisionService', () => {
     });
 
     it('returns one Decision with documents when API returns data', () => {
-      mockApiService.getDecisionByAppId.mockReturnValue(of([{ _id: '1' }]));
+      mockApiService.getDecisionByAppId.mockReturnValue(
+        of({
+          text: () => 'notNull',
+          json: () => [{ _id: '1' }]
+        })
+      );
 
       mockDocumentService.getAllByDecisionId.mockImplementation((decisionId: string) => {
         expect(decisionId).toEqual('1');
@@ -62,7 +70,10 @@ describe('DecisionService', () => {
 
     it('returns only the first Decision when multiple are returned', () => {
       mockApiService.getDecisionByAppId.mockReturnValue(
-        of([{ _id: '2' }, { _id: '3' }, { _id: '4' }])
+        of({
+          text: () => 'notNull',
+          json: () => [{ _id: '2' }, { _id: '3' }, { _id: '4' }]
+        })
       );
 
       mockDocumentService.getAllByDecisionId.mockReturnValue(
@@ -93,7 +104,8 @@ describe('DecisionService', () => {
 
   describe('getById', () => {
     it('returns null when no decision is returned by the API', () => {
-      mockApiService.getDecision.mockReturnValue(of([]));
+      // eslint-disable-next-line @typescript-eslint/no-empty-function
+      mockApiService.getDecision.mockReturnValue(of({ text: () => {} }));
 
       service.getById('1', true).subscribe(result => {
         expect(result).toBeNull();
@@ -101,7 +113,12 @@ describe('DecisionService', () => {
     });
 
     it('returns one Decision with documents when API returns data', () => {
-      mockApiService.getDecision.mockReturnValue(of([{ _id: '1' }]));
+      mockApiService.getDecision.mockReturnValue(
+        of({
+          text: () => 'notNull',
+          json: () => [{ _id: '1' }]
+        })
+      );
 
       mockDocumentService.getAllByDecisionId.mockImplementation((decisionId: string) => {
         expect(decisionId).toEqual('1');

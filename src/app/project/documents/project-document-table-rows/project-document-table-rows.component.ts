@@ -1,7 +1,6 @@
-import { Component, DestroyRef, inject, ChangeDetectionStrategy, signal, output } from '@angular/core';
-import { Subject } from 'rxjs';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Component, OnDestroy, OnInit, EventEmitter, inject, ChangeDetectionStrategy, signal, ChangeDetectorRef } from '@angular/core';
 import { Router } from '@angular/router';
+import { takeWhile } from 'rxjs/operators';
 import { DatePipe } from '@angular/common';
 import { Utils } from '../../../shared/utils/utils';
 import { TableRowComponent, ITableMessage } from '../../../shared/components/table-template/table-row-component';
@@ -13,32 +12,37 @@ import { ConfigService } from '../../../services/config.service';
   styleUrls: ['./project-document-table-rows.component.css'],
   imports: [DatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  standalone: true
 })
-export class DocumentTableRowsComponent implements TableRowComponent {
+export class DocumentTableRowsComponent implements TableRowComponent, OnInit, OnDestroy {
   private readonly configService = inject(ConfigService);
   private readonly utils = inject(Utils);
   private readonly router = inject(Router);
-  private readonly destroyRef = inject(DestroyRef);
+  private readonly cdr = inject(ChangeDetectorRef);
 
+  // TableRowComponent properties
   rowData: any;
   tableData: any;
-  messageOut = output<ITableMessage>();
-  messageIn = new Subject<ITableMessage>();
+  messageOut = new EventEmitter<ITableMessage>();
+  messageIn = new EventEmitter<ITableMessage>();
 
-  private readonly lists = signal<any[]>([]);
+  private lists = signal<any[]>([]);
+  private alive = true;
   public currentUrl: string;
 
   constructor() {
     const currRoute = this.router.url.split(';')[0];
     this.currentUrl = currRoute.substring(currRoute.lastIndexOf('/') + 1);
+  }
 
-    this.configService.lists
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((list) => {
-        if (list && list.length > 0) {
-          this.lists.set(list);
-        }
-      });
+  ngOnInit() {
+    this.configService.lists.pipe(takeWhile(() => this.alive)).subscribe((list) => {
+      if (list && list.length > 0) {
+        this.lists.set(list);
+        // Trigger change detection when lists are loaded
+        this.cdr.markForCheck();
+      }
+    });
   }
 
   idToList(id: string): string {
@@ -47,5 +51,9 @@ export class DocumentTableRowsComponent implements TableRowComponent {
 
   goToItem(item: any): void {
     this.utils.openDocumentDownload(item);
+  }
+
+  ngOnDestroy() {
+    this.alive = false;
   }
 }

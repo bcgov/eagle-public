@@ -1,5 +1,5 @@
 import { Component, ElementRef, ChangeDetectionStrategy, input, output, signal, computed, effect, untracked, inject } from '@angular/core';
-import { DatePipe, TitleCasePipe } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 
 import { Project } from 'app/models/project';
@@ -13,7 +13,8 @@ import { VarDirective } from '../../shared/utils/ng-var.directive';
   templateUrl: './projlist-list.component.html',
   styleUrl: './projlist-list.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, TitleCasePipe, RouterModule, VarDirective],
+  imports: [CommonModule, RouterModule, VarDirective],
+  standalone: true
 })
 export class ProjlistListComponent {
   // NB: this component is bound to the same list of apps as the other components

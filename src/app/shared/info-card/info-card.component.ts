@@ -15,6 +15,7 @@ export interface InfoCardButton {
   selector: 'app-info-card',
   templateUrl: './info-card.component.html',
   imports: [RouterLink],
+  standalone: true
 })
 export class InfoCardComponent {
   title = input.required<string>();

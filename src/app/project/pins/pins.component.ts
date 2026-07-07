@@ -1,6 +1,7 @@
-import { Component, DestroyRef, inject, computed, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Component, OnDestroy, inject, computed, signal } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
+
+import { takeWhile } from 'rxjs/operators';
 
 import { StorageService } from 'app/services/storage.service';
 import { SearchResults } from 'app/models/search';
@@ -16,16 +17,17 @@ import { LoadingStateService } from 'app/services/loading-state.service';
   selector: 'app-pins',
   templateUrl: './pins.component.html',
   imports: [TableTemplateComponent],
+  standalone: true
 })
-export class PinsComponent {
+export class PinsComponent implements OnDestroy {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private storageService = inject(StorageService);
   private tableTemplateUtils = inject(TableTemplate);
   private pinsService = inject(PinsService);
   private loadingState = inject(LoadingStateService);
-  private destroyRef = inject(DestroyRef);
 
+  private alive = true;
   private projId = '';
   public loading = computed(() => 
     this.loadingState.getOperationState(`pins-${this.projId || 'all'}-page-${this.pinsService.fetchDataConfig.currentPage}`)()
@@ -49,7 +51,6 @@ export class PinsComponent {
   constructor() {
     const initialTableData = this.tableData();
     initialTableData.tableId = 'pins-table';
-    initialTableData.columns = this.tableColumns;
     initialTableData.options.showPageCountDisplay = false;
     initialTableData.options.showPageSizePicker = false;
     this.tableData.set(initialTableData);
@@ -58,7 +59,7 @@ export class PinsComponent {
     this.projId = this.route.parent?.snapshot.params['projId'] || '';
     this.pinsService.fetchDataConfig.projId = this.projId;
 
-    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(data => {
+    this.route.queryParamMap.pipe(takeWhile(() => this.alive)).subscribe(data => {
       // Get params from route, update table data immutably
       const params: any = {};
       data.keys.forEach(key => params[key] = data.get(key));
@@ -68,7 +69,7 @@ export class PinsComponent {
     });
 
     this.pinsService.getValue()
-      .pipe(takeUntilDestroyed(this.destroyRef))
+      .pipe(takeWhile(() => this.alive))
       .subscribe((searchResults: SearchResults) => {
         if (searchResults && searchResults.data !== null && searchResults.data !== undefined) {
           const currentData = this.tableData();
@@ -125,4 +126,7 @@ export class PinsComponent {
     this.pinsService.refreshData();
   }
 
+  ngOnDestroy() {
+    this.alive = false;
+  }
 }

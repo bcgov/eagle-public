@@ -1,27 +1,28 @@
-import { Component, OnInit, OnDestroy, AfterViewInit, ElementRef, signal, ChangeDetectionStrategy, inject, DestroyRef, Renderer2, effect, untracked } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit, ElementRef, signal, ChangeDetectionStrategy, inject, Renderer2, CUSTOM_ELEMENTS_SCHEMA, effect } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule, NavigationEnd } from '@angular/router';
-import { DatePipe } from '@angular/common';
-import { Observable, Subject, forkJoin, of, take, map, catchError, takeUntil } from 'rxjs';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { CommonModule } from '@angular/common';
+import { Subject } from 'rxjs';
+import { takeUntil, take } from 'rxjs/operators';
 
 import { Project } from '../models/project';
 import { ConfigService } from '../services/config.service';
 import { ProjectService } from '../services/project.service';
 import { CommentPeriodService } from '../services/commentperiod.service';
 import { StorageService } from '../services/storage.service';
+import { CommentPeriod } from '../models/commentperiod';
 import { Constants } from '../shared/utils/constants';
-import { initTabArrows, TabArrowsHandle } from '../shared/utils/tab-arrows';
-import { TypesenseService } from '../services/typesense.service';
-import { TAB_FILTER_BY } from '../search/search-collections';
+import { SearchService } from '../services/search.service';
+import { Utils } from '../shared/utils/utils';
 import { DetailsSidebarComponent } from './details-sidebar/details-sidebar';
 import { SafeHtmlPipe } from '../shared/pipes/safe-html-converter.pipe';
+import { LoggingService } from '../services/logging.service';
 import { AnalyticsService } from '../services/analytics/analytics.service';
 import { EngageBannerComponent } from './engage-banner/engage-banner.component';
 
 @Component({
   selector: 'app-project',
   imports: [
-    DatePipe,
+    CommonModule,
     RouterModule,
     DetailsSidebarComponent,
     SafeHtmlPipe,
@@ -30,9 +31,11 @@ import { EngageBannerComponent } from './engage-banner/engage-banner.component';
   templateUrl: './project.html',
   styleUrl: './project.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
   host: {
-    '(window:resize)': 'onResize($event)',
+    '(window:resize)': 'onResize($event)'
   },
+  standalone: true
 })
 export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
   private route = inject(ActivatedRoute);
@@ -40,83 +43,73 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
   private elementRef = inject(ElementRef);
   private router = inject(Router);
   private renderer = inject(Renderer2);
-  private typesenseService = inject(TypesenseService);
+  private utils = inject(Utils);
+  private searchService = inject(SearchService);
+  private logger = inject(LoggingService);
   private analytics = inject(AnalyticsService);
   public configService = inject(ConfigService);
   public projectService = inject(ProjectService);
   public commentPeriodService = inject(CommentPeriodService);
+
   public project = signal<Project | null>(null);
+  public period = signal<CommentPeriod | null>(null);
+  public commentPeriod = signal<CommentPeriod | null>(null);
   public legislationLink = signal<string>('');
   public sidebarOpen = signal(true);
-  public isLoading = signal(true);
-  private loadCancel$ = new Subject<void>();
-  public tabsLoading = signal(false);
-  public currentTab = signal<string>(this.router.url.split('/').pop() ?? '');
-  private tabArrowsHandle: TabArrowsHandle | null = null;
+  private checkTabArrowsFn: (() => void) | null = null;
 
   public map: any = null;
   public appFG = L.featureGroup();
   readonly defaultBounds = L.latLngBounds([48, -139], [60, -114]);
-  private mapRetryTimeout: ReturnType<typeof setTimeout> | null = null;
 
-  private destroyRef = inject(DestroyRef);
+  private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
 
   constructor() {
-    // Initialize tab links when project data loads.
-    // untracked() prevents signal reads inside initTabLinks (tabLinks, tabsLoading)
-    // from becoming effect dependencies — otherwise tabLinks.set() in the forkJoin
-    // callback would reschedule the effect, creating an infinite request loop.
+    // Initialize tab links when project data loads
     effect(() => {
       const proj = this.project();
       if (proj?._id) {
-        untracked(() => this.initTabLinks());
+        this.initTabLinks();
         
         // Set legislation link based on year
-        const leg = proj.legislation;
-        this.legislationLink.set(
-          leg.includes('2002') ? Constants.legislationLinks.ENVIRONMENTAL_ASSESSMENT_ACT_2002_LINK
-          : leg.includes('1996') ? Constants.legislationLinks.ENVIRONMENTAL_ASSESSMENT_ACT_1996_LINK
-          : Constants.legislationLinks.ENVIRONMENTAL_ASSESSMENT_ACT_2018_LINK
-        );
+        const legislationYear = proj.legislation.includes('2002') ? '2002' 
+          : proj.legislation.includes('1996') ? '1996' 
+          : '2018';
+        
+        const legislationLinks: Record<string, string> = {
+          '2002': Constants.legislationLinks.ENVIRONMENTAL_ASSESSMENT_ACT_2002_LINK,
+          '1996': Constants.legislationLinks.ENVIRONMENTAL_ASSESSMENT_ACT_1996_LINK,
+          '2018': Constants.legislationLinks.ENVIRONMENTAL_ASSESSMENT_ACT_2018_LINK
+        };
+        
+        this.legislationLink.set(legislationLinks[legislationYear]);
         
         // Re-check tab arrows after tabs are updated
-        setTimeout(() => this.tabArrowsHandle?.check(), 100);
+        setTimeout(() => this.checkTabArrowsVisibility(), 100);
       }
     });
   }
 
   private loadProject(projId: string) {
-    this.loadCancel$.next();
-    this.project.set(null);
-
     const start = new Date();
     const end = new Date();
     start.setDate(start.getDate() - 21);
     end.setDate(end.getDate() + 14);
-    // Use date-only strings (YYYY-MM-DD) so the URL is stable within a day and
-    // the HTTP cache interceptor can serve repeat visits without a network call.
-    const cpStart = start.toISOString().slice(0, 10);
-    const cpEnd = end.toISOString().slice(0, 10);
-
-    this.isLoading.set(true);
-    this.projectService.getById(projId, false, cpStart, cpEnd)
-      .pipe(takeUntil(this.loadCancel$), takeUntilDestroyed(this.destroyRef))
+    
+    this.projectService.getById(projId, false, start.toISOString(), end.toISOString())
+      .pipe(takeUntil(this.ngUnsubscribe))
       .subscribe({
         next: (project) => {
           if (project) {
             this.project.set(project);
             this.storageService.state = { type: 'currentProject', data: project };
             this.renderer.removeClass(document.body, 'no-scroll');
-            this.isLoading.set(false);
             setTimeout(() => this.initMap(), 0);
           } else {
             this.handleProjectLoadError();
           }
         },
-        error: () => {
-          this.isLoading.set(false);
-          this.handleProjectLoadError();
-        }
+        error: () => this.handleProjectLoadError()
       });
   }
 
@@ -146,21 +139,21 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
     },
     {
       key: Constants.optionalProjectDocTabs.APPLICATION,
-      label: 'Applications',
+      label: 'Application',
       link: 'application',
       tabDisplayCriteria: null,
       display: false,
     },
     {
       key: Constants.optionalProjectDocTabs.CERTIFICATE,
-      label: 'Certificates',
+      label: 'Certificate',
       link: 'certificates',
       tabDisplayCriteria: null,
       display: false,
     },
     {
       key: Constants.optionalProjectDocTabs.AMENDMENT,
-      label: 'Amendments',
+      label: 'Amendment(s)',
       link: 'amendments',
       tabDisplayCriteria: null,
       display: false,
@@ -174,36 +167,142 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
     }
   ]);
 
+  private tabLinkIfNotEmpty(key: string, queryModifier: Record<string, string>) {
+    if (queryModifier) {
+      const projectId = this.project()?._id;
+      if (!projectId) return;
+      
+      // Only fetch if tab is not already displayed
+      const tab = this.tabLinks().find(docTab => docTab.key === key);
+      if (tab?.display) return;
+      
+      this.searchService.getSearchResults(
+        '',
+        'Document',
+        [{ 'name': 'project', 'value': projectId }],
+        1,
+        1,
+        '',
+        queryModifier,
+        true,
+        ''
+      )
+      .pipe(take(1))
+      .subscribe((res: any) => {
+        if (res[0].data.searchResults.length) {
+          const currentTabs = this.tabLinks();
+          const tab = currentTabs.find(docTab => docTab.key === key);
+          if (tab) {
+            tab.display = true;
+            this.tabLinks.set([...currentTabs]);
+          }
+        }
+      });
+    }
+  }
+
   ngOnInit() {
     // Get project ID from route params
     this.route.paramMap
-      .pipe(takeUntilDestroyed(this.destroyRef))
+      .pipe(takeUntil(this.ngUnsubscribe))
       .subscribe(params => {
         const projId = params.get('projId');
-        if (projId && (this.project()?._id !== projId || this.isLoading())) {
-          // Prime storageService immediately with the project ID so child tabs
-          // (commenting, documents) fire their own API calls in parallel with
-          // the project load, rather than waiting for it to finish.
-          if (this.storageService.currentProject()?._id !== projId) {
-            this.storageService.state = { type: 'currentProject', data: { _id: projId } as Project };
-          }
+        if (projId && this.project()?._id !== projId) {
           this.loadProject(projId);
         }
       });
     
-    // Re-check tab arrows when route changes; track active tab segment
+    // Re-check tab arrows when route changes
     this.router.events
-      .pipe(takeUntilDestroyed(this.destroyRef))
+      .pipe(takeUntil(this.ngUnsubscribe))
       .subscribe(event => {
         if (event instanceof NavigationEnd) {
-          this.currentTab.set(event.urlAfterRedirects.split('/').pop() ?? '');
-          setTimeout(() => this.tabArrowsHandle?.check(), 100);
+          setTimeout(() => this.checkTabArrowsVisibility(), 100);
         }
       });
   }
 
   ngAfterViewInit() {
-    this.tabArrowsHandle = initTabArrows();
+    // Initialize tab navigation arrows for overflow
+    this.initTabArrows();
+  }
+
+  private initTabArrows() {
+    const tabsContainer = document.querySelector('.tabs-container') as HTMLElement;
+    const navTabs = document.querySelector('.nav-tabs') as HTMLElement;
+    if (!tabsContainer || !navTabs) {
+      setTimeout(() => this.initTabArrows(), 100);
+      return;
+    }
+    
+    // Avoid creating duplicate arrows
+    if (tabsContainer.querySelector('.tab-arrow')) {
+      return;
+    }
+
+    const { leftArrow, rightArrow } = this.createArrowElements(tabsContainer);
+    const checkArrows = this.createScrollChecker(navTabs, leftArrow, rightArrow);
+    this.setupArrowHandlers(navTabs, leftArrow, rightArrow, checkArrows);
+  }
+
+  private createArrowElements(container: HTMLElement) {
+    const leftArrow = document.createElement('button');
+    leftArrow.className = 'tab-arrow tab-arrow-left';
+    leftArrow.innerHTML = '&#8249;';
+    leftArrow.setAttribute('aria-label', 'Scroll tabs left');
+    leftArrow.type = 'button';
+
+    const rightArrow = document.createElement('button');
+    rightArrow.className = 'tab-arrow tab-arrow-right';
+    rightArrow.innerHTML = '&#8250;';
+    rightArrow.setAttribute('aria-label', 'Scroll tabs right');
+    rightArrow.type = 'button';
+
+    container.appendChild(leftArrow);
+    container.appendChild(rightArrow);
+
+    return { leftArrow, rightArrow };
+  }
+
+  private createScrollChecker(navTabs: HTMLElement, leftArrow: HTMLButtonElement, rightArrow: HTMLButtonElement) {
+    const checkArrows = () => {
+      const hasOverflow = navTabs.scrollWidth > navTabs.clientWidth;
+      const isAtStart = navTabs.scrollLeft <= 1;
+      const isAtEnd = navTabs.scrollLeft >= navTabs.scrollWidth - navTabs.clientWidth - 1;
+      
+      leftArrow.style.display = hasOverflow && !isAtStart ? 'flex' : 'none';
+      rightArrow.style.display = hasOverflow && !isAtEnd ? 'flex' : 'none';
+    };
+    
+    this.checkTabArrowsFn = checkArrows;
+    return checkArrows;
+  }
+
+  private setupArrowHandlers(navTabs: HTMLElement, leftArrow: HTMLButtonElement, rightArrow: HTMLButtonElement, checkArrows: () => void) {
+    leftArrow.addEventListener('click', () => {
+      navTabs.scrollBy({ left: -200, behavior: 'smooth' });
+      setTimeout(checkArrows, 100);
+    });
+
+    rightArrow.addEventListener('click', () => {
+      navTabs.scrollBy({ left: 200, behavior: 'smooth' });
+      setTimeout(checkArrows, 100);
+    });
+
+    navTabs.addEventListener('scroll', checkArrows);
+    
+    // Use ResizeObserver for responsive checking
+    const resizeObserver = new ResizeObserver(() => checkArrows());
+    resizeObserver.observe(navTabs);
+    
+    // Initial check
+    setTimeout(() => checkArrows(), 0);
+  }
+
+  private checkTabArrowsVisibility() {
+    if (this.checkTabArrowsFn) {
+      this.checkTabArrowsFn();
+    }
   }
 
   onResize(_event?: Event) {
@@ -214,18 +313,18 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   private initMap() {
-    if (this.map) {
-      return; // Guard against double-call when concat emits two project values
-    }
-    // No centroid = no map needed; bail immediately so we never retry
-    const proj = this.project();
-    if (!proj || !proj.centroid || proj.centroid.length !== 2) {
-      return;
-    }
-    // Check if map element exists (may not be in DOM yet on first render)
+    // Check if map element exists
     const mapElement = document.getElementById('map');
     if (!mapElement) {
-      this.mapRetryTimeout = setTimeout(() => this.initMap(), 100);
+      this.logger.warn('Map element not found, retrying...', 'ProjectComponent');
+      setTimeout(() => this.initMap(), 100);
+      return;
+    }
+
+    // Check if project has valid centroid
+    const proj = this.project();
+    if (!proj || !proj.centroid || proj.centroid.length !== 2) {
+      this.logger.info('No valid centroid for map display', 'ProjectComponent');
       return;
     }
 
@@ -403,50 +502,18 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   initTabLinks(): void {
-    const projectId = this.project()?._id;
-    if (!projectId) return;
-
-    const optionalTabs = this.tabLinks().filter(
-      t => !t.display && t.key !== Constants.optionalProjectDocTabs.UNSUBSCRIBE_CAC
-    );
-    if (optionalTabs.length === 0) return;
-
-    this.tabsLoading.set(true);
-
-    const checks$ = optionalTabs.map(tabLink => {
-      const filterBy = TAB_FILTER_BY[tabLink.key];
-      if (!filterBy) return of({ key: tabLink.key, hasResults: false });
-
-      return this.typesenseService.searchCollection('documents', {
-        q: '*',
-        query_by: 'displayName',
-        filter_by: `projectId:=${projectId} && ${filterBy}`,
-        per_page: '0',
-      }).pipe(
-        take(1),
-        map((res: any) => ({ key: tabLink.key, hasResults: (res.found ?? 0) > 0 })),
-        catchError(() => of({ key: tabLink.key, hasResults: false }))
-      );
-    });
-
-    this.applyTabChecks(checks$);
-  }
-
-  private applyTabChecks(checks$: Observable<{ key: string; hasResults: boolean }>[]): void {
-    forkJoin(checks$)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(results => {
-        const currentTabs = this.tabLinks();
-        let changed = false;
-        results.forEach(({ key, hasResults }) => {
-          if (hasResults) {
-            const tab = currentTabs.find(t => t.key === key);
-            if (tab && !tab.display) { tab.display = true; changed = true; }
-          }
-        });
-        if (changed) this.tabLinks.set([...currentTabs]);
-        this.tabsLoading.set(false);
+    this.configService.lists.pipe(
+      take(1),
+      takeUntil(this.ngUnsubscribe)
+    ).subscribe(list => {
+      const currentTabs = this.tabLinks();
+      currentTabs.forEach(tabLink => {
+        if (!tabLink.display && tabLink.key !== Constants.optionalProjectDocTabs.UNSUBSCRIBE_CAC) {
+          const tabModifier = this.utils.createProjectTabModifiers(tabLink.key, list);
+          this.tabLinkIfNotEmpty(tabLink.key, tabModifier);
+        }
       });
+    });
   }
 
   public goToViewComments() {
@@ -489,13 +556,10 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   ngOnDestroy() {
-    this.loadCancel$.complete();
-    if (this.mapRetryTimeout !== null) {
-      clearTimeout(this.mapRetryTimeout);
-    }
     if (this.map) {
       this.map.remove();
     }
-    this.tabArrowsHandle?.cleanup();
+    this.ngUnsubscribe.next(true);
+    this.ngUnsubscribe.complete();
   }
 }

@@ -1,6 +1,5 @@
 import { Injectable, signal, WritableSignal, inject } from '@angular/core';
 import { SearchParamObject, SearchService } from './search.service';
-import { LoadingStateService } from './loading-state.service';
 
 /**
  * Signal-based table data service.
@@ -13,7 +12,6 @@ import { LoadingStateService } from './loading-state.service';
 export class TableService {
   private tables = new Map<string, WritableSignal<any>>();
   private searchService = inject(SearchService);
-  private loadingState = inject(LoadingStateService);
 
   /**
    * Get or create a signal for a table
@@ -27,27 +25,21 @@ export class TableService {
 
   /**
    * Fetch data for a table and update its signal.
+   * Note: Loading state is managed by SearchService since it makes the actual API calls.
    */
   async fetchData(searchParamObject: SearchParamObject): Promise<void> {
     const tableSignal = this.getTableSignal(searchParamObject.tableId);
     
     try {
       const res = await this.searchService.fetchData(searchParamObject);
+      // Always trigger an update by creating a new object reference
+      // This ensures subscribers are notified even if data is identical
       tableSignal.set({ ...res, _timestamp: Date.now() });
     } catch (error) {
       // On error, still update signal to show empty state
       tableSignal.set({ data: [], totalSearchCount: 0, error: true, _timestamp: Date.now() });
       throw error;
     }
-  }
-
-  /**
-   * Clear a single table's signal and start loading immediately to prevent
-   * the stale-data flash where null signal + loading=false briefly shows "no results".
-   */
-  clearTable(tableId: string): void {
-    this.loadingState.startLoading(`table-${tableId}`);
-    this.tables.get(tableId)?.set(null);
   }
 
   /**

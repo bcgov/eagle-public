@@ -1,4 +1,4 @@
-<div [id]="id()" class="custom-multi-select" [class.custom-multi-select--open]="isOpen()" [class.custom-multi-select--disabled]="disabled">
+<div [id]="id" class="custom-multi-select" [class.custom-multi-select--open]="isOpen()" [class.custom-multi-select--disabled]="disabled">
   <!-- Selected values display / dropdown trigger -->
   <div class="custom-multi-select__control" 
        (click)="toggleDropdown()" 
@@ -7,8 +7,8 @@
        tabindex="0" 
        role="combobox" 
        [attr.aria-expanded]="isOpen()" 
-       [attr.aria-controls]="id() + '-listbox'"
-       [attr.aria-label]="placeholder()">
+       [attr.aria-controls]="id + '-listbox'"
+       [attr.aria-label]="placeholder">
     
     <!-- Selected items as chips -->
     @if (selectedItems().length > 0) {
@@ -16,8 +16,8 @@
         @for (item of selectedItems(); track $index) {
           <div class="custom-multi-select__value">
             <span class="custom-multi-select__value-label">{{ getLabel(item) }}</span>
-            @if (groupBy() && item[groupBy()!]) {
-              <span class="custom-multi-select__value-group">({{ item[groupBy()!] }})</span>
+            @if (groupBy && item[groupBy]) {
+              <span class="custom-multi-select__value-group">({{ item[groupBy] }})</span>
             }
             <button 
               type="button"
@@ -33,7 +33,7 @@
     
     <!-- Placeholder when empty -->
     @if (selectedItems().length === 0) {
-      <span class="custom-multi-select__placeholder">{{ placeholder() }}</span>
+      <span class="custom-multi-select__placeholder">{{ placeholder }}</span>
     }
     
     <!-- Clear all button -->
@@ -57,7 +57,7 @@
   
   <!-- Dropdown panel -->
   @if (isOpen()) {
-    <div class="custom-multi-select__dropdown" [id]="id() + '-listbox'" role="listbox" [attr.aria-label]="'Options for ' + placeholder()">
+    <div class="custom-multi-select__dropdown" [id]="id + '-listbox'" role="listbox" [attr.aria-label]="'Options for ' + placeholder">
       
       <!-- Search input -->
       <div class="custom-multi-select__search-wrapper">
@@ -82,7 +82,7 @@
           @if (group.items.length > 0) {
             
             <!-- Group header -->
-            @if (groupBy() && group.name) {
+            @if (groupBy && group.name) {
               <div class="custom-multi-select__group-header">
                 {{ group.name }}
               </div>

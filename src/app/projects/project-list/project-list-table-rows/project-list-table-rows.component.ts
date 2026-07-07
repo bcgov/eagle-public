@@ -1,5 +1,4 @@
-import { Component, inject, output } from '@angular/core';
-import { Subject } from 'rxjs';
+import { Component, EventEmitter, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { TableRowComponent, ITableMessage } from 'app/shared/components/table-template/table-row-component';
 import { TableObject } from 'app/shared/components/table-template/table-object';
@@ -8,6 +7,7 @@ import { AnalyticsService } from 'app/services/analytics/analytics.service';
 @Component({
   selector: 'app-project-list-table-rows',
   templateUrl: './project-list-table-rows.component.html',
+  standalone: true
 })
 export class ProjectListTableRowsComponent implements TableRowComponent {
   private router = inject(Router);
@@ -16,8 +16,8 @@ export class ProjectListTableRowsComponent implements TableRowComponent {
   // TableRowComponent interface properties
   rowData: any;
   tableData!: TableObject;
-  messageOut = output<ITableMessage>();
-  messageIn = new Subject<ITableMessage>();
+  messageOut = new EventEmitter<ITableMessage>();
+  messageIn = new EventEmitter<ITableMessage>();
 
   goToProject(project: any): void {
     // Track project view from list

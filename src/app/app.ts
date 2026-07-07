@@ -12,7 +12,8 @@ import { filter } from 'rxjs/operators';
   imports: [RouterOutlet, HeaderComponent, FooterComponent, ToastContainerComponent],
   templateUrl: './app.html',
   styleUrl: './app.css',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  standalone: true
 })
 export class App implements OnInit, OnDestroy {
   private analyticsService = inject(AnalyticsService);
@@ -36,7 +37,7 @@ export class App implements OnInit, OnDestroy {
       .subscribe((event: NavigationEnd) => {
         const routePath = event.urlAfterRedirects || event.url;
         this.currentUrl.set(routePath);
-
+        
         // Track page view
         const pageName = this.getPageName(routePath);
         this.analyticsService.page(pageName, { path: routePath });

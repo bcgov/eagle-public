@@ -9,6 +9,7 @@ import { ApiService } from 'app/services/api';
   styleUrl: './footer.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterModule],
+  standalone: true
 })
 export class FooterComponent implements AfterViewInit, OnDestroy {
   public api = inject(ApiService);

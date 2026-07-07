@@ -1,7 +1,6 @@
 /* App Root Layout */
 :host {
   display: block;
-  min-height: 100dvh;
 }
 
 .app-wrapper {
@@ -9,7 +8,6 @@
   flex-direction: column;
   min-height: 100vh;
 }
-
 
 /* Main Content Area */
 .app-content {
@@ -23,5 +21,3 @@
 .app-content.projects-route {
   padding-top: 0;
 }
-
-

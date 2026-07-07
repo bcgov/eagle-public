@@ -1,9 +1,0 @@
-/* Reuses global .ais-*, .filter-sidebar*, and .facet-section* CSS from instantsearch.css */
-
-:host { display: flex; flex-direction: column; flex: 1; min-height: 0; }
-
-/* ── Notification card list (replaces lib-table-template for notifications tab) ── */
-
-.notif-card-list {
-  overflow: hidden;
-}

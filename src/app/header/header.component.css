@@ -135,18 +135,13 @@
   margin: 0;
   padding: 0.875rem 1rem;
   border-top: 1px solid var(--mn-border-color);
-  color: var(--bs-white) !important;
+  color: var(--gold) !important;
   font-size: var(--mn-font-size);
   font-weight: var(--bs-font-weight-bold);
   text-transform: uppercase;
   text-decoration: none !important;
   cursor: pointer;
   background-color: transparent;
-}
-
-.nav-link:hover,
-.nav-link:focus {
-  color: var(--gold) !important;
 }
 
 /* Add border around nav items in collapsed mobile menu */
@@ -204,6 +199,25 @@
 .dropdown-item:focus {
   background-color: rgba(0, 0, 0, 0.2) !important;
   color: var(--mn-color) !important;
+}
+
+.dropdown-item .dd-item-header {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  white-space: nowrap;
+}
+
+.dropdown-item .icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  line-height: 1;
+}
+
+.dropdown-item .icon i {
+  display: block;
+  line-height: 1;
 }
 
 .dropdown-item strong {

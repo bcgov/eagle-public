@@ -1,38 +1,13 @@
-@if (isTypesense()) {
-  <app-typesense-document-table [projId]="projId" [tabKey]="'certificate'" />
 
-} @else {
+  @if (!loading() && tableData().totalListItems === 0) {
+      <div>
+        There are no certificate documents associated with this project.
+      </div>
+    } @else {
+      <lib-table-template
+        [data]="tableData()"
+        [loading]="loading()"
+        (messageOut)="onMessageOut($event)">
+      </lib-table-template>
+    }
 
-
-  @if (loading() && tableData().items.length === 0) {
-    <table class="table fade-in" aria-busy="true" aria-label="Loading certificate documents">
-      <thead>
-        <tr>
-          @for (col of tableColumns; track col.value) {
-            <th [class]="col.width"><div class="skeleton-cell" style="width:55%;height:.85rem"></div></th>
-          }
-        </tr>
-      </thead>
-      <tbody>
-        @for (i of [1,2,3,4,5]; track i) {
-          <tr>
-            @for (col of tableColumns; track col.value) {
-              <td [class]="col.width"><div class="skeleton-cell"></div></td>
-            }
-          </tr>
-        }
-      </tbody>
-    </table>
-  } @else if (!loading() && tableData().totalListItems === 0) {
-    <div>
-      There are no certificate documents associated with this project.
-    </div>
-  } @else {
-    <lib-table-template
-      [data]="tableData()"
-      [loading]="loading()"
-      (messageOut)="onMessageOut($event)">
-    </lib-table-template>
-  }
-
-}

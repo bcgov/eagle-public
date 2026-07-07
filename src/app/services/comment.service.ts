@@ -6,7 +6,6 @@ import { ApiService } from './api';
 import { Comment } from 'app/models/comment';
 import { DocumentService } from './document.service';
 import { LoadingStateService } from './loading-state.service';
-import { withLoading } from 'app/shared/utils/rxjs-operators';
 
 @Injectable({providedIn:'root'})
 export class CommentService {
@@ -28,15 +27,30 @@ export class CommentService {
   // (without documents)
   getByPeriodId(periodId: string, pageNum: number | null = null, pageSize: number | null = null, getCount = false): Observable<object> {
     const loadingId = pageNum && pageNum > 1 ? 'comments-list' : 'comments';
+    this.loadingState.startLoading(loadingId, pageNum ? `Loading page ${pageNum}` : 'Loading comments');
+    
     return this.api.getCommentsByPeriodId(pageNum ? pageNum - 1 : null, pageSize, getCount, periodId)
       .pipe(
-        withLoading(this.loadingState, loadingId, pageNum ? `Loading page ${pageNum}` : 'Loading comments'),
         map((res: any) => {
-          if (!res) return null;
-          const comments: Comment[] = res.body.map((c: any) => new Comment(c));
-          return { totalCount: parseInt(res.headers.get('x-total-count') || '0', 10), currentComments: comments };
+          if (res) {
+            const comments = res.body;
+            comments.forEach((comment: any, i: number) => {
+              comments[i] = new Comment(comment);
+            });
+            const commentsDataSet = {
+              totalCount: res.headers.get('x-total-count'),
+              currentComments: comments as Comment[]
+            };
+            this.loadingState.stopLoading(loadingId);
+            return commentsDataSet;
+          }
+          this.loadingState.stopLoading(loadingId);
+          return null;
         }),
-        catchError(error => this.api.handleError(error))
+        catchError(error => {
+          this.loadingState.stopLoading(loadingId);
+          return this.api.handleError(error);
+        })
       );
   }
 

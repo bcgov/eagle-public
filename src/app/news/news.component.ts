@@ -1,9 +1,10 @@
-import { Component, ChangeDetectionStrategy, signal, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, signal, inject, effect, untracked } from '@angular/core';
 
 import { Router, ActivatedRoute, Params } from '@angular/router';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { takeWhile } from 'rxjs/operators';
 
-import { TypesenseService } from 'app/services/typesense.service';
+import { SearchParamObject } from 'app/services/search.service';
+import { TableService } from 'app/services/table.service';
 import { LoadingStateService } from 'app/services/loading-state.service';
 import { IColumnObject, TableObject } from 'app/shared/components/table-template/table-object';
 import { ITableMessage } from 'app/shared/components/table-template/table-row-component';
@@ -19,17 +20,19 @@ import { SearchFilterTemplateComponent } from 'app/shared/components/search-filt
   styleUrl: './news.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [TableTemplateComponent, HeroBannerComponent, SearchFilterTemplateComponent],
+  standalone: true
 })
-export class NewsListComponent {
+export class NewsListComponent implements OnInit, OnDestroy {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private tableTemplateUtils = inject(TableTemplate);
-  private typesense = inject(TypesenseService);
+  private tableService = inject(TableService);
   private loadingState = inject(LoadingStateService);
 
-  private readonly loadingId = 'table-news';
+  private tableId = 'news';
+  private alive = true;
 
-  loading = this.loadingState.getOperationState(this.loadingId);
+  loading = this.loadingState.getOperationState('table-news');
   tableData = signal<TableObject>(new TableObject({ component: ActivityCardComponent }));
   
   tableColumns: IColumnObject[] = [
@@ -48,78 +51,61 @@ export class NewsListComponent {
   ];
 
   constructor() {
-    this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe(data => {
-      const params = (data as any)['params'] || {};
+    // Watch for table data changes from service
+    const tableSignal = this.tableService.getTableSignal(this.tableId);
+    effect(() => {
+      const searchResults = tableSignal();
       
-      const updatedTableData = this.tableTemplateUtils.updateTableObjectWithUrlParams(params, this.tableData());
-      if (updatedTableData.sortBy === '-datePosted') {
-        updatedTableData.sortBy = '-dateAdded';
-      }
-      this.tableData.set(updatedTableData);
+      // Only process if we have valid data and it's not the initial null state
+      if (searchResults && searchResults.data && searchResults.totalSearchCount !== undefined) {
+        // Use untracked to read current tableData without creating a dependency
+        const currentTableData = untracked(() => this.tableData());
+        const newTableData = new TableObject({
+          component: ActivityCardComponent,
+          pageSize: currentTableData.pageSize,
+          currentPage: currentTableData.currentPage,
+          sortBy: currentTableData.sortBy
+        });
 
-      this.fetchActivities(params, updatedTableData);
+        newTableData.totalListItems = searchResults.totalSearchCount;
+        newTableData.items = searchResults.data.map((record: any) => ({ rowData: record }));
+        newTableData.columns = this.tableColumns;
+        newTableData.options.showPageCountDisplay = true;
+        newTableData.options.showPagination = true;
+        newTableData.options.showAllPicker = true;
+        newTableData.options.disableRowHighlight = true;
+
+        this.tableData.set(newTableData);
+      }
     });
   }
 
-  private fetchActivities(params: Record<string, any>, tableState: TableObject): void {
-    const keywords = params['keywords'] || '';
-    const sortBy   = tableState.sortBy || '-dateAdded';
-    const page     = tableState.currentPage || 1;
-    const pageSize = tableState.pageSize || 10;
+  ngOnInit(): void {
+    // Subscribe to query params and fetch data
+    this.route.queryParamMap.pipe(takeWhile(() => this.alive)).subscribe(data => {
+      const params = (data as any)['params'] || {};
+      
+      const updatedTableData = this.tableTemplateUtils.updateTableObjectWithUrlParams(params, this.tableData());
 
-    // Convert URL sort to Typesense sort_by
-    const dir = sortBy.charAt(0) === '-' ? 'desc' : 'asc';
-    const field = sortBy.replace(/^[+-]/, '');
-    const tsSortBy = field === 'score'
-      ? '_text_match:desc,dateAdded:desc'
-      : `${field}:${dir}`;
+      if (updatedTableData.sortBy === '-datePosted') {
+        updatedTableData.sortBy = '-dateAdded';
+      }
 
-    const searchParams: Record<string, string> = {
-      q:        keywords || '*',
-      query_by: 'headline,content',
-      sort_by:  tsSortBy,
-      page:     String(page),
-      per_page: String(pageSize),
-    };
+      this.tableData.set(updatedTableData);
 
-    this.loadingState.startLoading(this.loadingId, 'Loading activities');
-    this.typesense.searchCollection('activities', searchParams)
-      .pipe(takeUntilDestroyed())
-      .subscribe({
-        next: (res) => {
-          const items = (res.hits ?? []).map((hit: any) => {
-            const d = hit.document;
-            return {
-              rowData: {
-                _id:      d.id,
-                headline: d.headline,
-                content:  d.contentHtml || d.content,
-                dateAdded: d.dateAdded ? d.dateAdded * 1000 : null,
-                type:     d.type,
-                documentUrl: d.documentUrl || null,
-                notificationName: d.notificationName || null,
-                project: d.projectId ? { _id: d.projectId, name: d.projectName || '' } : null,
-              },
-            };
-          });
-          const newTableData = new TableObject({
-            component: ActivityCardComponent,
-            pageSize:    tableState.pageSize,
-            currentPage: tableState.currentPage,
-            sortBy:      tableState.sortBy,
-          });
-          newTableData.totalListItems = res.found ?? 0;
-          newTableData.items = items;
-          newTableData.columns = this.tableColumns;
-          newTableData.options.showPageCountDisplay = true;
-          newTableData.options.showPagination = true;
-          newTableData.options.showAllPicker = true;
-          newTableData.options.disableRowHighlight = true;
-          this.tableData.set(newTableData);
-          this.loadingState.stopLoading(this.loadingId);
-        },
-        error: () => this.loadingState.stopLoading(this.loadingId),
-      });
+      // Fetch data with current params
+      this.tableService.fetchData(new SearchParamObject(
+        this.tableId,
+        params['keywords'] || '',
+        'RecentActivity',
+        [],
+        updatedTableData.currentPage,
+        updatedTableData.pageSize,
+        updatedTableData.sortBy,
+        {},
+        true
+      ));
+    });
   }
 
   onMessageOut(msg: ITableMessage): void {
@@ -160,6 +146,10 @@ export class NewsListComponent {
       queryParams: params,
       relativeTo: this.route
     });
+  }
+
+  ngOnDestroy(): void {
+    this.alive = false;
   }
 
   executeSearch(searchEvent: any): void {

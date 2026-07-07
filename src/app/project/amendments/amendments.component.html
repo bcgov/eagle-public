@@ -1,8 +1,3 @@
-@if (isTypesense()) {
-  <app-typesense-document-table [projId]="projId" [tabKey]="'amendment'" />
-
-} @else {
-
 <section class="mb-4 pt-0 pb-0">
   <search-filter-template
     (searchEvent)="executeSearch($event)"
@@ -16,26 +11,7 @@
   </search-filter-template>
 </section>
 
-@if (loading() && tableData().items.length === 0) {
-  <table class="table fade-in" aria-busy="true" aria-label="Loading amendment documents">
-    <thead>
-      <tr>
-        @for (col of tableColumns; track col.value) {
-          <th [class]="col.width"><div class="skeleton-cell" style="width:55%;height:.85rem"></div></th>
-        }
-      </tr>
-    </thead>
-    <tbody>
-      @for (i of [1,2,3,4,5]; track i) {
-        <tr>
-          @for (col of tableColumns; track col.value) {
-            <td [class]="col.width"><div class="skeleton-cell"></div></td>
-          }
-        </tr>
-      }
-    </tbody>
-  </table>
-} @else if (!loading() && tableData().totalListItems === 0) {
+@if (!loading() && tableData().totalListItems === 0) {
   <div>
     There are no amendment documents associated with this project.
   </div>
@@ -47,4 +23,3 @@
   </lib-table-template>
 }
 
-}

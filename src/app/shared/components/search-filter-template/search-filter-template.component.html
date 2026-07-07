@@ -139,7 +139,7 @@
           </div>
         }
         <div class="row"
-          [class]="searching() ? 'disable-div' : ''">
+          [ngClass]="searching() ? 'disable-div' : ''">
           <!-- for each filter, create a block for each filter type -->
           @for (filter of filters(); track filter.id) {
             <div [class]="'pb-1 filter-panel col-md-' + (filter.itemPanelSize ? filter.itemPanelSize : filterItemPanelSize())">

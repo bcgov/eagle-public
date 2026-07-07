@@ -1,12 +1,11 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable, of } from 'rxjs';
-import { map, catchError, switchMap } from 'rxjs/operators';
+import { map, catchError, mergeMap } from 'rxjs/operators';
 
 import { ApiService } from './api';
 import { DocumentService } from './document.service';
 import { Decision } from 'app/models/decision';
 import { LoadingStateService } from './loading-state.service';
-import { withLoading } from 'app/shared/utils/rxjs-operators';
 
 @Injectable({providedIn:'root'})
 export class DecisionService {
@@ -21,7 +20,39 @@ export class DecisionService {
     if (this.decision && this.decision._application === appId && !forceReload) {
       return of(this.decision);
     }
-    return this.fetchAndHydrate(this.api.getDecisionByAppId(appId), `decision-app-${appId}`);
+
+    const loadingId = `decision-app-${appId}`;
+    this.loadingState.startLoading(loadingId, 'Loading decision');
+    // first get the decision data
+    return this.api.getDecisionByAppId(appId)
+      .pipe(
+        map((res: any) => {
+          const decisions = res.text() ? res.json() : [];
+          // return the first (only) decision
+          return decisions.length > 0 ? new Decision(decisions[0]) : null;
+        }),
+        mergeMap((decision: Decision | null) => {
+          if (!decision) { 
+            this.loadingState.stopLoading(loadingId);
+            return of(null as unknown as Decision); 
+          }
+
+          // now get the decision documents
+          const promise = this.documentService.getAllByDecisionId(decision._id)
+            .toPromise()
+            .then(documents => decision.documents = documents || []);
+
+          return Promise.resolve(promise).then(() => {
+            this.decision = decision;
+            this.loadingState.stopLoading(loadingId);
+            return decision;
+          });
+        }),
+        catchError(error => {
+          this.loadingState.stopLoading(loadingId);
+          return this.api.handleError(error);
+        })
+      );
   }
 
   // get a specific decision by its id
@@ -29,27 +60,38 @@ export class DecisionService {
     if (this.decision && this.decision._id === decisionId && !forceReload) {
       return of(this.decision);
     }
-    return this.fetchAndHydrate(this.api.getDecision(decisionId), `decision-${decisionId}`);
-  }
 
-  private fetchAndHydrate(source$: Observable<any>, loadingId: string): Observable<Decision> {
-    return source$.pipe(
-      withLoading(this.loadingState, loadingId, 'Loading decision'),
-      map((res: any) => {
-        const decisions = Array.isArray(res) ? res : [];
-        return decisions.length > 0 ? new Decision(decisions[0]) : null;
-      }),
-      switchMap((decision: Decision | null) => {
-        if (!decision) return of(null as unknown as Decision);
-        return this.documentService.getAllByDecisionId(decision._id).pipe(
-          map(documents => {
-            decision.documents = documents || [];
+    const loadingId = `decision-${decisionId}`;
+    this.loadingState.startLoading(loadingId, 'Loading decision');
+    // first get the decision data
+    return this.api.getDecision(decisionId)
+      .pipe(
+        map((res: any) => {
+          const decisions = res.text() ? res.json() : [];
+          // return the first (only) decision
+          return decisions.length > 0 ? new Decision(decisions[0]) : null;
+        }),
+        mergeMap((decision: Decision | null) => {
+          if (!decision) { 
+            this.loadingState.stopLoading(loadingId);
+            return of(null as unknown as Decision); 
+          }
+
+          // now get the decision documents
+          const promise = this.documentService.getAllByDecisionId(decision._id)
+            .toPromise()
+            .then(documents => decision.documents = documents || []);
+
+          return Promise.resolve(promise).then(() => {
             this.decision = decision;
+            this.loadingState.stopLoading(loadingId);
             return decision;
-          })
-        );
-      }),
-      catchError(error => this.api.handleError(error))
-    );
+          });
+        }),
+        catchError(error => {
+          this.loadingState.stopLoading(loadingId);
+          return this.api.handleError(error);
+        })
+      );
   }
 }

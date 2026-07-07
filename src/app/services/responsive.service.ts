@@ -1,6 +1,7 @@
-import { Injectable, signal, inject, DestroyRef } from '@angular/core';
+import { Injectable, signal, inject, OnDestroy } from '@angular/core';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 /**
  * Centralized responsive service for consistent breakpoint detection across components.
@@ -9,9 +10,9 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 @Injectable({
   providedIn: 'root'
 })
-export class ResponsiveService {
+export class ResponsiveService implements OnDestroy {
   private breakpointObserver = inject(BreakpointObserver);
-  private destroyRef = inject(DestroyRef);
+  private destroy$ = new Subject<void>();
 
   // Reactive signals for breakpoint states
   isMobile = signal(false);
@@ -22,7 +23,7 @@ export class ResponsiveService {
     // Observe both tablet and desktop breakpoints in a single subscription
     this.breakpointObserver
       .observe([Breakpoints.Tablet, Breakpoints.Web])
-      .pipe(takeUntilDestroyed(this.destroyRef))
+      .pipe(takeUntil(this.destroy$))
       .subscribe(result => {
         const isTablet = result.breakpoints[Breakpoints.Tablet];
         const isDesktop = result.breakpoints[Breakpoints.Web];
@@ -33,5 +34,8 @@ export class ResponsiveService {
       });
   }
 
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
 }
-

@@ -46,66 +46,43 @@
   text-decoration: none;
 }
 
-/* Button on dark background — white bg/blue text, arrow appears on hover.
- * Use .btn-on-dark (preferred) or .hero-banner-btn (alias, legacy).
- * Add .btn-on-dark__arrow inside for hover arrow. */
-.btn-on-dark,
+/* Hero Banner Button - Common styles for hero banner action buttons */
 .hero-banner-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
   padding: 0.5rem 1rem;
-  border: 2px solid var(--bs-white);
+  border: 2px solid var(--bs-warning);
   border-radius: 0.2rem;
   text-transform: none;
   font-size: var(--bs-font-size-6);
   font-weight: var(--bs-font-weight-bold);
   line-height: 1.5;
-  color: var(--bc-blue);
-  background: var(--bs-white);
+  color: var(--bs-warning);
+  background: var(--hero-btn-overlay);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   transition: all ease-out 0.2s;
 }
 
-.btn-on-dark:hover,
-.btn-on-dark:focus,
 .hero-banner-btn:hover,
 .hero-banner-btn:focus {
   color: var(--bc-blue);
-  background: var(--bs-white);
-  border-color: var(--bs-white);
-  filter: brightness(0.95);
+  background: var(--bs-warning);
+  border-color: var(--bs-warning);
   text-decoration: none;
 }
 
-.btn-on-dark i,
-.btn-on-dark .material-icons,
 .hero-banner-btn i,
 .hero-banner-btn .material-icons {
   font-size: var(--bs-font-size-5);
   line-height: 1;
+  vertical-align: middle;
 }
 
-.btn-on-dark span,
 .hero-banner-btn span {
   line-height: 1.5;
-}
-
-/* Right-pointing arrow — hidden by default, slides in on hover */
-.btn-on-dark__arrow,
-.hero-banner-btn__arrow {
-  opacity: 0;
-  max-width: 0;
-  overflow: hidden;
-  margin-left: -0.25rem;
-  transition: opacity 0.2s ease-out, max-width 0.2s ease-out, margin-left 0.2s ease-out;
-}
-
-:is(.btn-on-dark, .hero-banner-btn):hover :is(.btn-on-dark__arrow, .hero-banner-btn__arrow),
-:is(.btn-on-dark, .hero-banner-btn):focus :is(.btn-on-dark__arrow, .hero-banner-btn__arrow) {
-  opacity: 1;
-  max-width: 1.5rem;
-  margin-left: 0;
+  vertical-align: middle;
 }
 
 /* Slide animation buttons - used in hero banners and feature blocks */

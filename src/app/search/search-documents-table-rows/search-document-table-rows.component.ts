@@ -1,6 +1,5 @@
-import { Component, OnDestroy, inject, output } from '@angular/core';
-import { Subject } from 'rxjs';
-import { DatePipe } from '@angular/common';
+import { Component, OnDestroy, EventEmitter, inject } from '@angular/core';
+import { CommonModule, DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { Utils } from 'app/shared/utils/utils';
 import { TableRowComponent, ITableMessage } from 'app/shared/components/table-template/table-row-component';
@@ -11,10 +10,12 @@ import { TableObject } from 'app/shared/components/table-template/table-object';
   templateUrl: './search-document-table-rows.component.html',
   styleUrls: ['./search-document-table-rows.component.css'],
   imports: [
+    CommonModule,
     DatePipe,
     RouterLink
   ],
   providers: [DatePipe],
+  standalone: true
 })
 export class DocSearchTableRowsComponent implements TableRowComponent, OnDestroy {
   private alive = true;
@@ -23,8 +24,8 @@ export class DocSearchTableRowsComponent implements TableRowComponent, OnDestroy
   // Required by TableRowComponent interface
   rowData: any;
   tableData!: TableObject;
-  messageOut = output<ITableMessage>();
-  messageIn = new Subject<ITableMessage>();
+  messageOut = new EventEmitter<ITableMessage>();
+  messageIn = new EventEmitter<ITableMessage>();
 
   // Get lists from tableData.data (passed from parent, no HTTP subscription)
   private get lists(): any[] {

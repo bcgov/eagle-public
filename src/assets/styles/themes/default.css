@@ -63,7 +63,7 @@
 
     /* Feature Blocks */
     --feature-block-color: var(--white);
-    --feature-block-bg: var(--bc-blue);
+    --feature-block-bg: #244278;
     --feature-block-light-bg: var(--white);
     --feature-block-light-color: #666;
     --feature-block-primary: var(--primary);

@@ -1,14 +1,15 @@
 import {
   Component,
   Input,
+  Output,
+  EventEmitter,
   SimpleChanges,
   OnChanges,
   ChangeDetectionStrategy,
   computed,
-  signal,
-  output
+  signal
 } from '@angular/core';
-import { Subject } from 'rxjs';
+import { CommonModule } from '@angular/common';
 
 import { TableObject } from './table-object';
 import { ITableMessage } from './table-row-component';
@@ -26,18 +27,20 @@ import { inject } from '@angular/core';
   styleUrl: './table-template.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    CommonModule,
     PageSizePickerComponent,
     PageCountDisplayComponent,
     PaginationComponent,
     TableRowDirective
   ],
+  standalone: true
 })
 export class TableTemplateComponent implements OnChanges {
   @Input() data!: TableObject;
   @Input() loading = false;
 
-  @Input() messageIn: Subject<ITableMessage> = new Subject<ITableMessage>();
-  messageOut = output<ITableMessage>();
+  @Input() messageIn: EventEmitter<ITableMessage> = new EventEmitter<ITableMessage>();
+  @Output() messageOut: EventEmitter<ITableMessage> = new EventEmitter<ITableMessage>();
 
   private analytics = inject(AnalyticsService);
   private lastTotalItems = 0;

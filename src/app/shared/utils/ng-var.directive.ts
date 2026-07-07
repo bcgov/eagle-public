@@ -6,6 +6,7 @@ import { Directive, Input, ViewContainerRef, TemplateRef, inject } from '@angula
 
 @Directive({
   selector: '[ngVar]',
+  standalone: true
 })
 export class VarDirective {
   private vcRef = inject(ViewContainerRef);

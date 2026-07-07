@@ -1,44 +1,41 @@
-import { Component, inject, signal, DestroyRef, ChangeDetectorRef, ViewEncapsulation, computed } from '@angular/core';
-import { DatePipe } from '@angular/common';
+import { Component, inject, signal, OnDestroy, ChangeDetectorRef, ViewEncapsulation, computed } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DomSanitizer } from '@angular/platform-browser';
-import { from, lastValueFrom } from 'rxjs';
-import { switchMap } from 'rxjs/operators';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { ToastService } from '../services/toast.service';
 import { CommentPeriod } from '../models/commentperiod';
 import { CommentPeriodService } from '../services/commentperiod.service';
 import { ProjectService } from '../services/project.service';
-import { NotificationProjectService } from '../services/notification-project.service';
 import { CommentService } from '../services/comment.service';
 import { AddCommentComponent } from './add-comment/add-comment.component';
 import { Project } from '../models/project';
 import { DocumentService } from '../services/document.service';
+import { ApiService } from '../services/api';
 import { LoadingStateService } from '../services/loading-state.service';
-import { StorageService } from '../services/storage.service';
 import { CommentsTableRowsComponent } from './comments-table-rows/comments-table-rows.component';
 import { TableObject } from '../shared/components/table-template/table-object';
 import { TableTemplateComponent } from '../shared/components/table-template/table-template.component';
-import { ApiService } from '../services/api';
 import { LoggingService } from '../services/logging.service';
 import { AnalyticsService } from '../services/analytics/analytics.service';
 
 @Component({
   selector: 'app-comments',
-  imports: [DatePipe, TableTemplateComponent, AddCommentComponent],
+  imports: [CommonModule, TableTemplateComponent, AddCommentComponent],
   templateUrl: './comments.component.html',
   styleUrls: ['./comments.component.css'],
-  encapsulation: ViewEncapsulation.None
+  encapsulation: ViewEncapsulation.None,
+  standalone: true
 })
-export class CommentsComponent {
+export class CommentsComponent implements OnDestroy {
   private toastService = inject(ToastService);
   private route = inject(ActivatedRoute);
   private api = inject(ApiService);
   private commentService = inject(CommentService);
   private commentPeriodService = inject(CommentPeriodService);
   private projectService = inject(ProjectService);
-  private notificationProjectService = inject(NotificationProjectService);
   private documentService = inject(DocumentService);
   private changeDetectionRef = inject(ChangeDetectorRef);
   private modalService = inject(NgbModal);
@@ -47,9 +44,6 @@ export class CommentsComponent {
   private logger = inject(LoggingService);
   private sanitizer = inject(DomSanitizer);
   private analytics = inject(AnalyticsService);
-  private storageService = inject(StorageService);
-
-  private destroyRef = inject(DestroyRef);
 
   loading = this.loadingState.getOperationState('comments');
   // True while comment period is not yet loaded.
@@ -63,24 +57,17 @@ export class CommentsComponent {
   project = signal<Project | null>(null);
   comments = signal<any[]>([]);
   commentPeriodDocs = signal<any[]>([]);
-  notificationDocs = signal<any[]>([]);
-  allDocs = computed(() => [...this.notificationDocs(), ...this.commentPeriodDocs()]);
   
-  // Sanitized instructions for safe HTML rendering.
-  // For PN routes, strip <a> tags — documents are surfaced in the doc-list below.
+  // Sanitized instructions for safe HTML rendering
   sanitizedInstructions = computed(() => {
     const instructions = this.commentPeriod()?.instructions;
-    if (!instructions) return '';
-    let html = instructions;
-    if (this.type() === 'PROJECT-NOTIFICATION') {
-      html = html.replace(/<a\b[^>]*>[\s\S]*?<\/a>/gi, '');
-    }
-    return this.sanitizer.bypassSecurityTrustHtml(html);
+    return instructions ? this.sanitizer.bypassSecurityTrustHtml(String(instructions)) : '';
   });
   
   tableData = signal<TableObject>(new TableObject({ component: CommentsTableRowsComponent }));
   commentPeriodHeader = signal('');
 
+  private ngUnsubscribe = new Subject<boolean>();
   private commentPeriodId: string | null = null;
   private ngbModal: NgbModalRef | null = null;
 
@@ -102,7 +89,7 @@ export class CommentsComponent {
 
     // Load data from route params (modern pattern - no resolvers)
     this.route.paramMap
-      .pipe(takeUntilDestroyed(this.destroyRef))
+      .pipe(takeUntil(this.ngUnsubscribe))
       .subscribe(params => {
         const projId = params.get('projId');
         const commentPeriodId = params.get('commentPeriodId');
@@ -117,48 +104,81 @@ export class CommentsComponent {
         const isProjectNotification = this.router.url.includes('/pn/');
         this.type.set(isProjectNotification ? 'PROJECT-NOTIFICATION' : 'PROJECT');
 
+        // Load project data
         if (isProjectNotification) {
           // For PN routes, projId is a ProjectNotification ID — do NOT call projectService.getById
           // (which queries /api/project/ and returns empty for PN IDs, causing a TypeError).
           // Fetch the notification name via search instead.
-          this.notificationProjectService.getById(projId)
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe({
-              next: (notification) => {
-                if (notification) {
-                  // Synthesise a minimal Project-shaped object so the template renders the name.
-                  this.project.set({ name: notification.name } as any);
-                }
-                // If null, project stays null — template shows '-' for name, which is fine.
-              },
-              error: () => { /* notification name is non-critical — swallow */ }
-            });
-
-          this.api.getDocumentsByNotificationId(projId)
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe({
-              next: (docs: any) => this.notificationDocs.set(Array.isArray(docs) ? docs : []),
-              error: () => { /* non-critical — swallow */ }
-            });
+          this.api.searchKeywords(
+            '',
+            'ProjectNotification',
+            [],
+            1, 1,
+            '',
+            '',
+            { _id: projId },
+            false,
+            null,
+            {},
+            false,
+          ).pipe(
+            takeUntil(this.ngUnsubscribe)
+          ).subscribe({
+            next: (raw: any) => {
+              const hit = raw?.[0]?.searchResults?.[0];
+              if (hit) {
+                // Synthesise a minimal Project-shaped object so the template renders the name.
+                this.project.set({ name: hit.name } as any);
+              }
+              // If null, project stays null — template shows '-' for name, which is fine.
+            },
+            error: () => { /* notification name is non-critical — swallow */ }
+          });
         } else {
-          // Load project data — use StorageService if already loaded (in-page navigation),
-          // otherwise fall back to API (direct navigation / bookmark).
-          const storedProject = this.storageService.currentProject();
-          if (storedProject && storedProject._id === projId && storedProject.name) {
-            this.project.set(storedProject);
-          } else {
-            this.projectService.getById(projId)
-              .pipe(takeUntilDestroyed(this.destroyRef))
-              .subscribe({
-                next: (project) => this.project.set(project),
-                error: (error) => this.logger.error('Error loading project', 'CommentsComponent', error)
-              });
-          }
+          this.projectService.getById(projId)
+            .pipe(takeUntil(this.ngUnsubscribe))
+            .subscribe({
+              next: (project) => {
+                if (project) {
+                  this.project.set(project);
+                } else {
+                  // Fallback: If not found as Project, try searching as Project Notification!
+                  this.logger.warn(`Project ${projId} not found, trying as ProjectNotification`, 'CommentsComponent');
+                  this.type.set('PROJECT-NOTIFICATION');
+                  this.api.searchKeywords(
+                    '',
+                    'ProjectNotification',
+                    [],
+                    1, 1,
+                    '',
+                    '',
+                    { _id: projId },
+                    false,
+                    null,
+                    {},
+                    false,
+                  ).pipe(
+                    takeUntil(this.ngUnsubscribe)
+                  ).subscribe({
+                    next: (raw: any) => {
+                      const hit = raw?.[0]?.searchResults?.[0];
+                      if (hit) {
+                        this.project.set({ name: hit.name } as any);
+                      }
+                    },
+                    error: () => { /* notification name is non-critical — swallow */ }
+                  });
+                }
+              },
+              error: (error) => {
+                this.logger.error('Error loading project', 'CommentsComponent', error);
+              }
+            });
         }
 
         // Load comment period data
         this.commentPeriodService.getById(commentPeriodId)
-          .pipe(takeUntilDestroyed(this.destroyRef))
+          .pipe(takeUntil(this.ngUnsubscribe))
           .subscribe({
             next: (period) => {
               if (!period) {
@@ -180,7 +200,7 @@ export class CommentsComponent {
 
               if (period.relatedDocuments && period.relatedDocuments.length > 0) {
                 this.documentService.getByMultiId(period.relatedDocuments)
-                  .pipe(takeUntilDestroyed(this.destroyRef))
+                  .pipe(takeUntil(this.ngUnsubscribe))
                   .subscribe(docs => {
                     this.commentPeriodDocs.set(docs);
                     this.changeDetectionRef.detectChanges();
@@ -203,71 +223,78 @@ export class CommentsComponent {
 
     const currentTableData = this.tableData();
     this.commentService.getByPeriodId(this.commentPeriodId, currentTableData.currentPage, currentTableData.pageSize, true)
-      .pipe(
-        takeUntilDestroyed(this.destroyRef),
-        switchMap((res: any) => from(this.enrichWithDocuments(res)))
-      )
-      .subscribe(({ res, currentComments }) => {
+      .pipe(takeUntil(this.ngUnsubscribe))
+      .subscribe(async (res: any) => {
+        const currentComments = res.currentComments;
+
+        // Initialize expanded property
+        currentComments.forEach((comment: any) => {
+          comment.expanded = false;
+        });
+
+        // Collect all document IDs from all comments
+        const allDocIds: string[] = [];
+        const commentDocMap = new Map<string, string[]>(); // Map comment index to its document IDs
+
+        currentComments.forEach((comment: any, index: number) => {
+          if (comment.documents && comment.documents.length > 0) {
+            const docIds = comment.documents.map((doc: any) => {
+              // Handle both string IDs and objects with _id property
+              return typeof doc === 'string' ? doc : (doc._id || doc);
+            });
+            commentDocMap.set(index.toString(), docIds);
+            allDocIds.push(...docIds);
+          }
+        });
+
+        // Load all documents in a single batch request
+        if (allDocIds.length > 0) {
+          try {
+            const allDocs = await this.documentService.getByMultiId(allDocIds).toPromise();
+            
+            // Create a map of document ID to document object for quick lookup
+            const docMap = new Map<string, any>();
+            allDocs?.forEach((doc: any) => {
+              if (doc && doc._id) {
+                docMap.set(doc._id, doc);
+              }
+            });
+
+            // Assign documents back to their respective comments
+            currentComments.forEach((comment: any, index: number) => {
+              const docIds = commentDocMap.get(index.toString());
+              if (docIds) {
+                comment.documents = docIds
+                  .map(id => docMap.get(id))
+                  .filter(doc => doc !== undefined);
+              }
+            });
+          } catch (error) {
+            this.logger.error('Error loading documents for comments', 'CommentsComponent', error);
+            currentComments.forEach((comment: any) => {
+              if (comment.documents) {
+                comment.documents = [];
+              }
+            });
+          }
+        }
+
         this.comments.set(currentComments);
 
-        const snapshotTableData = this.tableData();
+        // Create new TableObject with updated data
+        const currentTableData = this.tableData();
         const newTableData = new TableObject({ component: CommentsTableRowsComponent });
-        newTableData.options = snapshotTableData.options;
-        newTableData.currentPage = snapshotTableData.currentPage;
-        newTableData.pageSize = snapshotTableData.pageSize;
+        newTableData.options = currentTableData.options;
+        newTableData.currentPage = currentTableData.currentPage;
+        newTableData.pageSize = currentTableData.pageSize;
         newTableData.totalListItems = res.totalCount;
         newTableData.items = currentComments.map((comment: any) => ({ rowData: comment }));
 
-        this.logger.debug(`Loaded ${currentComments.length} comments, totalListItems: ${newTableData.totalListItems}`, 'CommentsComponent');
+        this.logger.debug(`Loaded ${currentComments.length} comments, tableData.items length: ${newTableData.items.length}, totalListItems: ${newTableData.totalListItems}`, 'CommentsComponent');
 
         this.tableData.set(newTableData);
         this.changeDetectionRef.detectChanges();
       });
-  }
-
-  private async enrichWithDocuments(res: any): Promise<{ res: any; currentComments: any[] }> {
-    const currentComments = res.currentComments;
-
-    currentComments.forEach((comment: any) => {
-      comment.expanded = false;
-    });
-
-    const allDocIds: string[] = [];
-    const commentDocMap = new Map<string, string[]>();
-
-    currentComments.forEach((comment: any, index: number) => {
-      if (comment.documents && comment.documents.length > 0) {
-        const docIds = comment.documents.map((doc: any) =>
-          typeof doc === 'string' ? doc : (doc._id || doc)
-        );
-        commentDocMap.set(index.toString(), docIds);
-        allDocIds.push(...docIds);
-      }
-    });
-
-    if (allDocIds.length > 0) {
-      try {
-        const allDocs = await lastValueFrom(this.documentService.getByMultiId(allDocIds));
-        const docMap = new Map<string, any>();
-        allDocs?.forEach((doc: any) => {
-          if (doc && doc._id) docMap.set(doc._id, doc);
-        });
-
-        currentComments.forEach((comment: any, index: number) => {
-          const docIds = commentDocMap.get(index.toString());
-          if (docIds) {
-            comment.documents = docIds.map(id => docMap.get(id)).filter(doc => doc !== undefined);
-          }
-        });
-      } catch (error) {
-        this.logger.error('Error loading documents for comments', 'CommentsComponent', error);
-        currentComments.forEach((comment: any) => {
-          if (comment.documents) comment.documents = [];
-        });
-      }
-    }
-
-    return { res, currentComments };
   }
 
   onMessageOut(msg: any) {
@@ -348,5 +375,10 @@ export class CommentsComponent {
     this.tableData.set(currentTableData);
     this.getPaginatedComments(1);
     this.changeDetectionRef.detectChanges();
+  }
+
+  ngOnDestroy() {
+    this.ngUnsubscribe.next(true);
+    this.ngUnsubscribe.complete();
   }
 }

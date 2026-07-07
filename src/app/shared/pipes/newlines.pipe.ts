@@ -5,6 +5,7 @@ import { Pipe, PipeTransform } from '@angular/core';
 //
 @Pipe({
   name: 'newlines',
+  standalone: true
 })
 
 export class NewlinesPipe implements PipeTransform {

@@ -1,6 +1,7 @@
-import { Component, OnInit, ChangeDetectorRef, DestroyRef, inject, signal, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, OnDestroy, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { Router, ActivatedRoute, RouterLink } from '@angular/router';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { DatePipe } from '@angular/common';
 import { Document } from '../../../models/document';
 import { Project } from '../../../models/project';
@@ -14,15 +15,17 @@ import { ListConverterPipe } from '../../../shared/pipes/list-converter.pipe';
   styleUrls: ['./detail.component.css'],
   imports: [RouterLink, DatePipe, ListConverterPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  standalone: true
 })
-export class DocumentDetailComponent implements OnInit {
+export class DocumentDetailComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   public readonly api = inject(ApiService);
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
   private readonly storageService = inject(StorageService);
 
-  private readonly destroyRef = inject(DestroyRef);
+  private readonly ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
+  
   public readonly document = signal<Document | null>(null);
   public readonly currentProject = signal<Project | null>(null);
 
@@ -30,7 +33,7 @@ export class DocumentDetailComponent implements OnInit {
     this.currentProject.set(this.storageService.state.currentProject.data);
 
     this.route.data
-      .pipe(takeUntilDestroyed(this.destroyRef))
+      .pipe(takeUntil(this.ngUnsubscribe))
       .subscribe((res: any) => {
         this.document.set(res.document);
         this.changeDetectorRef.detectChanges();
@@ -50,4 +53,8 @@ export class DocumentDetailComponent implements OnInit {
     }
   }
 
+  ngOnDestroy() {
+    this.ngUnsubscribe.next(true);
+    this.ngUnsubscribe.complete();
+  }
 }

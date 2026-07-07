@@ -1,4 +1,4 @@
-import { Component, output, computed, input, ChangeDetectionStrategy } from '@angular/core';
+import { Component, Output, EventEmitter, computed, input, ChangeDetectionStrategy } from '@angular/core';
 
 
 @Component({
@@ -7,6 +7,7 @@ import { Component, output, computed, input, ChangeDetectionStrategy } from '@an
   styleUrl: './pagination.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [],
+  standalone: true
 })
 export class PaginationComponent {
   // Input signals - automatically reactive
@@ -15,7 +16,7 @@ export class PaginationComponent {
   totalItems = input<number>(0);
   ariaLabel = input<string>('Pagination navigation');
 
-  pageChange = output<number>();
+  @Output() pageChange = new EventEmitter<number>();
 
   /**
    * Computed signal for total number of pages

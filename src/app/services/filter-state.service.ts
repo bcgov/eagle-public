@@ -38,15 +38,11 @@ export class FilterStateService {
   private publishFrom = signal<Date | null>(null);
   private publishTo = signal<Date | null>(null);
 
-  // Typesense suggestion IDs — null = no active text search; string[] = IDs of projects Typesense matched
-  private typesenseSuggestionIds = signal<string[] | null>(null);
-
   // Public readonly signals
   public readonly selectedRegions = this.regions.asReadonly();
   public readonly selectedPhases = this.phases.asReadonly();
   public readonly selectedTypes = this.types.asReadonly();
   public readonly applicantFilter = this.applicant.asReadonly();
-  public readonly typesenseSuggestionIdsFilter = this.typesenseSuggestionIds.asReadonly();
   public readonly clFileFilter = this.clFile.asReadonly();
   public readonly dispIdFilter = this.dispId.asReadonly();
   public readonly purposeFilter = this.purpose.asReadonly();
@@ -187,7 +183,6 @@ export class FilterStateService {
     this.purpose.set(null);
     this.publishFrom.set(null);
     this.publishTo.set(null);
-    this.typesenseSuggestionIds.set(null);
     
     // Only sync to URL if explicitly requested
     // Avoid syncing on component destroy as it interferes with navigation
@@ -211,13 +206,5 @@ export class FilterStateService {
     if (filters.publishTo !== undefined) this.publishTo.set(filters.publishTo);
     
     this.syncToUrl();
-  }
-
-  /**
-   * Update Typesense suggestion IDs used to filter markers by name.
-   * Pass null to clear (no active search). Pass [] if search returned 0 results.
-   */
-  updateSuggestionIds(ids: string[] | null): void {
-    this.typesenseSuggestionIds.set(ids);
   }
 }

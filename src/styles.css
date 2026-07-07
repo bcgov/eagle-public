@@ -22,7 +22,6 @@
 /* Components */
 @import url("assets/styles/components/buttons.css");
 @import url("assets/styles/components/datepicker.css");
-@import url("assets/styles/components/instantsearch.css");
 @import url("assets/styles/components/feature-block.css");
 @import url("assets/styles/components/form-elements.css");
 @import url("assets/styles/components/leaflet.css");
@@ -30,18 +29,6 @@
 @import url("assets/styles/components/table.css");
 
 /* === CSS RULES START HERE === */
-
-/* Typesense search highlight — [innerHTML] bypasses component encapsulation; <mark> tags from adapter */
-.activity-card__headline mark,
-.lh-base mark,
-.autocomplete-dropdown mark {
-  background-color: #fff3a3;
-  border-radius: 2px;
-  padding: 0;
-  font-weight: inherit;
-  color: inherit;
-}
-
 
 /* Global Resets */
 * {
@@ -74,70 +61,3 @@ body {
 }
 
 /* Word-paste inline style overrides removed — sanitized in word-html-sanitizer.ts at render time */
-
-/* === ENTRANCE ANIMATION ===
- * Used wherever Angular @if blocks reveal content after loading.
- * A 220 ms fade + subtle upward lift (4 px) follows Material/Bootstrap
- * micro-animation conventions and is imperceptible at line with no delay.
- * Respects prefers-reduced-motion (WCAG 2.1 SC 2.3.3).
- */
-@keyframes fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.fade-in {
-  animation: fade-in 220ms ease-out both;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .fade-in {
-    animation: none;
-  }
-}
-
-/* === SKELETON LOADING ROWS ===
- * Shared by table-template, search-card-list, featured-documents, and any
- * other component that needs shimmer placeholders.  Defined globally because
- * Angular's default view-encapsulation would otherwise prevent one component's
- * skeleton CSS from styling skeleton markup in another component.
- */
-@keyframes shimmer {
-  from { background-position: -600px 0; }
-  to   { background-position:  600px 0; }
-}
-
-.skeleton-row {
-  display: flex;
-  gap: 1rem;
-  padding: 0.75rem 0;
-  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
-}
-
-.skeleton-cell {
-  height: 1rem;
-  border-radius: 4px;
-  background: linear-gradient(90deg, #e8eaed 25%, #f4f5f6 50%, #e8eaed 75%);
-  background-size: 600px 100%;
-  animation: shimmer 1.4s ease-in-out infinite;
-}
-
-/* Inside <td>/<th> the cell is block-level by default; be explicit so
-   width/height constraints apply correctly in both flex and table contexts. */
-td > .skeleton-cell,
-th > .skeleton-cell {
-  display: block;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .skeleton-cell {
-    animation: none;
-    background: #e8eaed;
-  }
-}

@@ -1,57 +1,55 @@
 import { DateTime } from 'luxon';
 import { Project } from './project';
-import { assignFromObj } from 'app/shared/utils/model-utils';
 
 
 export class CommentPeriod {
-  _id!: string;
-  __v!: number;
-  _schemaName!: string;
-  addedBy!: string;
-  additionalText!: string;
-  ceaaAdditionalText!: string;
-  ceaaInformationLabel!: string;
-  ceaaRelatedDocuments!: string;
-  classificationRoles!: string;
-  classifiedPercent!: number;
-  commenterRoles!: string;
-  commentTip!: string;
-  dateAdded!: string;
+  _id: string;
+  __v: number;
+  _schemaName: string;
+  addedBy: string;
+  additionalText: string;
+  ceaaAdditionalText: string;
+  ceaaInformationLabel: string;
+  ceaaRelatedDocuments: string;
+  classificationRoles: string;
+  classifiedPercent: number;
+  commenterRoles: string;
+  commentTip: string;
+  dateAdded: string;
   dateCompleted!: Date;
-  dateCompletedEst!: string;
+  dateCompletedEst: string;
   dateStarted!: Date;
-  dateStartedEst!: string;
-  dateUpdated!: string;
-  downloadRoles!: string;
-  informationLabel!: string;
-  instructions!: string;
-  isClassified!: boolean;
-  isMet!: boolean;
-  isPublished!: boolean;
-  isResolved!: boolean;
-  isVetted!: string;
-  metURL!: string;
-  metBannerImageUrl!: string;
-  milestone!: string;
+  dateStartedEst: string;
+  dateUpdated: string;
+  downloadRoles: string;
+  informationLabel: string;
+  instructions: string;
+  isClassified: boolean;
+  isMet: boolean;
+  isPublished: boolean;
+  isResolved: boolean;
+  isVetted: string;
+  metURL: string;
+  metBannerImageUrl: string;
+  milestone: string;
   openCommentPeriod!: string;
-  openHouses!: { eventDate: string; description: string }[] | any;
-  periodType!: string;
-  phase!: string;
-  phaseName!: string;
-  project!: Project;
-  publishedPercent!: number;
-  rangeOption!: string;
-  rangeType!: string;
+  openHouses: { eventDate: string; description: string }[] | any;
+  periodType: string;
+  phase: string;
+  phaseName: string;
+  project: Project;
+  publishedPercent: number;
+  rangeOption: string;
+  rangeType: string;
   relatedDocuments: string[] = [];
-  resolvedPercent!: number;
-  updatedBy!: string;
-  userCan!: string;
-  vettedPercent!: number;
-  vettingRoles!: string;
-  daysRemainingCount!: number;
+  resolvedPercent: number;
+  updatedBy: string;
+  userCan: string;
+  vettedPercent: number;
+  vettingRoles: string;
+  daysRemainingCount: number;
 
-  longEndDate!: DateTime;
-  endDateDisplay!: string;
+  longEndDate: DateTime;
   // Permissions
   read: string[] = [];
   write: string[] = [];
@@ -60,18 +58,54 @@ export class CommentPeriod {
   // Not from API
   commentPeriodStatus!: string;
   daysRemaining!: string;
+  endDateDisplay!: string;
 
   constructor(obj?: any) {
-    assignFromObj(this, obj, [
-      '_id', '__v', '_schemaName', 'addedBy', 'additionalText', 'ceaaAdditionalText',
-      'ceaaInformationLabel', 'ceaaRelatedDocuments', 'classificationRoles', 'classifiedPercent',
-      'commenterRoles', 'commentTip', 'dateAdded', 'dateCompletedEst', 'dateStartedEst',
-      'dateUpdated', 'downloadRoles', 'informationLabel', 'instructions', 'isMet', 'isClassified',
-      'isPublished', 'isResolved', 'isVetted', 'metURL', 'metBannerImageUrl', 'milestone', 'openHouses', 'periodType',
-      'phase', 'phaseName', 'project', 'publishedPercent', 'rangeOption', 'rangeType',
-      'relatedDocuments', 'resolvedPercent', 'updatedBy', 'userCan', 'vettedPercent',
-      'vettingRoles', 'read', 'write', 'delete',
-    ]);
+    this._id = obj && obj._id || null;
+    this.__v = obj && obj.__v || null;
+    this._schemaName = obj && obj._schemaName || null;
+    this.addedBy = obj && obj.addedBy || null;
+    this.additionalText = obj && obj.additionalText || null;
+    this.ceaaAdditionalText = obj && obj.ceaaAdditionalText || null;
+    this.ceaaInformationLabel = obj && obj.ceaaInformationLabel || null;
+    this.ceaaRelatedDocuments = obj && obj.ceaaRelatedDocuments || null;
+    this.classificationRoles = obj && obj.classificationRoles || null;
+    this.classifiedPercent = obj && obj.classifiedPercent || null;
+    this.commenterRoles = obj && obj.commenterRoles || null;
+    this.commentTip = obj && obj.commentTip || null;
+    this.dateAdded = obj && obj.dateAdded || null;
+    this.dateCompletedEst = obj && obj.dateCompletedEst || null;
+    this.dateStartedEst = obj && obj.dateStartedEst || null;
+    this.dateUpdated = obj && obj.dateUpdated || null;
+    this.downloadRoles = obj && obj.downloadRoles || null;
+    this.informationLabel = obj && obj.informationLabel || null;
+    this.instructions = obj && obj.instructions || null;
+    this.isMet = obj && obj.isMet || null;
+    this.isClassified = obj && obj.isClassified || null;
+    this.isPublished = obj && obj.isPublished || null;
+    this.isResolved = obj && obj.isResolved || null;
+    this.isVetted = obj && obj.isVetted || null;
+    this.metURL = obj && obj.metURL || null;
+    this.metBannerImageUrl = obj && obj.metBannerImageUrl || null;
+    this.milestone = obj && obj.milestone || null;
+    this.openHouses = obj && obj.openHouses || null;
+    this.periodType = obj && obj.periodType || null;
+    this.phase = obj && obj.phase || null;
+    this.phaseName = obj && obj.phaseName || null;
+    this.project = obj && obj.project || null;
+    this.publishedPercent = obj && obj.publishedPercent || null;
+    this.rangeOption = obj && obj.rangeOption || null;
+    this.rangeType = obj && obj.rangeType || null;
+    this.relatedDocuments = obj && obj.relatedDocuments || null;
+    this.resolvedPercent = obj && obj.resolvedPercent || null;
+    this.updatedBy = obj && obj.updatedBy || null;
+    this.userCan = obj && obj.userCan || null;
+    this.vettedPercent = obj && obj.vettedPercent || null;
+    this.vettingRoles = obj && obj.vettingRoles || null;
+
+    this.read = obj && obj.read || null;
+    this.write = obj && obj.write || null;
+    this.delete = obj && obj.delete || null;
 
     this.daysRemainingCount = 0;
 

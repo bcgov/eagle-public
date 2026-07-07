@@ -1,13 +1,13 @@
-import { Component, ChangeDetectionStrategy, signal, inject, DestroyRef } from '@angular/core';
+import { Component, OnDestroy, ChangeDetectionStrategy, signal, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { withLoading } from 'app/shared/utils/rxjs-operators';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
+import { SearchService } from 'app/services/search.service';
+import { ApiService } from 'app/services/api';
 import { LoggingService } from 'app/services/logging.service';
 import { LoadingStateService } from 'app/services/loading-state.service';
-import { TypesenseService } from 'app/services/typesense.service';
-import { ApiService } from 'app/services/api';
-import { StorageService } from 'app/services/storage.service';
 import { News } from 'app/models/news';
 import { HeroBannerComponent, HeroBannerAction } from '../shared/hero-banner/hero-banner.component';
 import { InfoCardComponent, InfoCardButton } from '../shared/info-card/info-card.component';
@@ -18,15 +18,15 @@ import { ActivityCardComponent } from '../shared/components/activity-card/activi
   templateUrl: './home.component.html',
   styleUrl: './home.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterModule, HeroBannerComponent, InfoCardComponent, ActivityCardComponent],
+  imports: [CommonModule, RouterModule, HeroBannerComponent, InfoCardComponent, ActivityCardComponent],
+  standalone: true
 })
-export class HomeComponent {
+export class HomeComponent implements OnDestroy {
+  private searchService = inject(SearchService);
   private apiService = inject(ApiService);
   private logger = inject(LoggingService);
   private loadingState = inject(LoadingStateService);
-  private typesenseService = inject(TypesenseService);
-  private storageService = inject(StorageService);
-  private destroyRef = inject(DestroyRef);
+  private destroy$ = new Subject<boolean>();
 
   results = signal<News[]>([]);
   surveyUrl = signal<string>('');
@@ -37,16 +37,20 @@ export class HomeComponent {
   readonly heroBannerDescription = "British Columbia's environmental assessment process provides opportunities for Indigenous Nations, government agencies and the public to influence the outcome of environmental assessments in British Columbia.";
   readonly heroBannerActions: HeroBannerAction[] = [
     {
-      label: 'Search',
-      routerLink: '/search',
-      queryParams: { tab: 'projects' },
-      icon: 'search'
+      label: 'Find Environmental Assessment Projects',
+      routerLink: '/projects',
+      icon: 'list'
     },
     {
-      label: 'Project Map',
-      routerLink: '/projects',
-      icon: 'map'
+      label: 'List of Projects',
+      routerLink: '/projects-list',
+      icon: 'list'
     },
+    {
+      label: 'Project Notifications',
+      routerLink: '/project-notifications',
+      icon: 'list'
+    }
   ];
 
   readonly aboutCards = [
@@ -80,43 +84,24 @@ export class HomeComponent {
   ];
 
   constructor() {
-    const source$ = this.typesenseService.getTopActivities(5);
-
-    const cached = this.storageService.getCachedActivities();
-    if (cached) {
-      // Serve cached data instantly, then refresh in background
-      this.results.set(cached);
-      source$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+    this.searchService.getTopNewsItems()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
         next: (res: News[]) => {
-          const activities = res || [];
-          this.results.set(activities);
-          this.storageService.cacheActivities(activities);
+          this.results.set(res || []);
         },
         error: (err) => {
-          this.logger.error('Error refreshing recent activities', 'HomeComponent', err);
+          this.logger.error('Error loading recent activities', 'HomeComponent', err);
+          this.results.set([]);
         }
       });
-    } else {
-      source$
-        .pipe(
-          withLoading(this.loadingState, 'home', 'Loading recent activities'),
-          takeUntilDestroyed(this.destroyRef)
-        )
-        .subscribe({
-          next: (res: News[]) => {
-            const activities = res || [];
-            this.results.set(activities);
-            this.storageService.cacheActivities(activities);
-          },
-          error: (err) => {
-            this.logger.error('Error loading recent activities', 'HomeComponent', err);
-            this.results.set([]);
-          }
-        });
-    }
 
     this.surveyUrl.set(this.apiService.surveyUrl || '');
     this.showSurveyBanner.set(this.apiService.showSurveyBanner);
   }
 
+  ngOnDestroy(): void {
+    this.destroy$.next(true);
+    this.destroy$.complete();
+  }
 }

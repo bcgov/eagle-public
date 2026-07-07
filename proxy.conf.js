@@ -18,11 +18,5 @@ const proxyRule = { target, secure: false, changeOrigin: true };
 
 module.exports = {
   '/api':       proxyRule,
-  '/analytics': proxyRule,
-  '/engage-api': {
-    target: 'https://epic-engage-web-test.apps.gold.devops.gov.bc.ca',
-    pathRewrite: { '^/engage-api': '/api' },
-    secure: false,
-    changeOrigin: true,
-  },
+  '/analytics': proxyRule
 };

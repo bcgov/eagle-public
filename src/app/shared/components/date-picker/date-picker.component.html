@@ -1,4 +1,4 @@
-<div class="date-picker-container" [class.is-invalid]="isValidate() && !isValidDate(dateValue())">
+<div class="date-picker-container" [ngClass]="{ 'is-invalid': isValidate() && !isValidDate(dateValue()) }">
   <div class="date-input-wrapper">
     <input 
       class="date-input"
@@ -10,8 +10,6 @@
       [required]="required()"
       ngbDatepicker
       #d="ngbDatepicker"
-      [minDate]="$any(minDateForPicker())"
-      [maxDate]="$any(maxDateForPicker())"
       aria-label="Date input field" />
     
     <button 

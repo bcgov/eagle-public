@@ -5,7 +5,6 @@ import { RouterModule } from '@angular/router';
 export interface HeroBannerAction {
   label: string;
   routerLink?: string;
-  queryParams?: Record<string, string>;
   href?: string;
   icon?: string;
   target?: string;
@@ -19,6 +18,7 @@ export interface HeroBannerAction {
   styleUrl: './hero-banner.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterModule],
+  standalone: true
 })
 export class HeroBannerComponent {
   title = input.required<string>();

@@ -1,11 +1,12 @@
-import { Component, OnInit, OnDestroy, Renderer2, ViewChild, inject, signal, computed, DestroyRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, Renderer2, ViewChild, inject, signal, computed } from '@angular/core';
 
 import { Router, NavigationEnd } from '@angular/router';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { finalize } from 'rxjs/operators';
+import { Subject } from 'rxjs';
+import { takeUntil, finalize } from 'rxjs/operators';
 declare const L: any;
 
 import { Project } from 'app/models/project';
+import { ProjectService } from 'app/services/project.service';
 import { ConfigService } from 'app/services/config.service';
 import { StorageService } from 'app/services/storage.service';
 import { ProjectFilterService } from 'app/services/project-filter.service';
@@ -13,8 +14,6 @@ import { MapStateService } from 'app/services/map-state.service';
 import { FilterStateService } from 'app/services/filter-state.service';
 import { LoggingService } from 'app/services/logging.service';
 import { AnalyticsService } from 'app/services/analytics/analytics.service';
-import { TypesenseService } from 'app/services/typesense.service';
-import { LoadingStateService } from 'app/services/loading-state.service';
 import { ProjlistFiltersComponent } from './projlist-filters/projlist-filters.component';
 import { ProjlistListComponent } from './projlist-list/projlist-list.component';
 import { ProjlistMapComponent } from './projlist-map/projlist-map.component';
@@ -28,12 +27,14 @@ import { ProjlistMapComponent } from './projlist-map/projlist-map.component';
     ProjlistListComponent,
     ProjlistMapComponent
 ],
+  standalone: true
 })
 export class ProjectsComponent implements OnInit, OnDestroy {
   @ViewChild('appmap', { static: true }) appmap!: ProjlistMapComponent;
   @ViewChild('applist', { static: true }) applist!: ProjlistListComponent;
 
   private router = inject(Router);
+  private projectService = inject(ProjectService);
   public configService = inject(ConfigService);
   private renderer = inject(Renderer2);
   private storageService = inject(StorageService);
@@ -42,8 +43,6 @@ export class ProjectsComponent implements OnInit, OnDestroy {
   private mapStateService = inject(MapStateService);
   private logger = inject(LoggingService);
   private analytics = inject(AnalyticsService);
-  private typesenseService = inject(TypesenseService);
-  private loadingState = inject(LoadingStateService);
 
   // null = not yet loaded; [] = loaded but empty; Project[] = loaded with results
   public allApps = signal<Project[] | null>(null);
@@ -67,12 +66,12 @@ export class ProjectsComponent implements OnInit, OnDestroy {
     return filtered.filter(project => this.mapStateService.isProjectInBounds(project));
   });
   
-  private destroyRef = inject(DestroyRef);
+  private destroy$ = new Subject<void>();
 
   constructor() {
     // Clean up body class on navigation
     this.router.events
-      .pipe(takeUntilDestroyed(this.destroyRef))
+      .pipe(takeUntil(this.destroy$))
       .subscribe((event) => {
         if (event instanceof NavigationEnd) {
           this.renderer.removeClass(document.body, 'no-scroll');
@@ -80,7 +79,22 @@ export class ProjectsComponent implements OnInit, OnDestroy {
       });
 
     // Kick off data fetch immediately — no need to wait for the DOM (ngOnInit)
-    this.getApps();
+    this.storageService.getCachedProjects$()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (cachedProjects) => {
+          if (cachedProjects && cachedProjects.length > 0) {
+            this.logger.info(`Using ${cachedProjects.length} cached projects`, 'ProjectsComponent');
+            this.allApps.set(cachedProjects);
+          } else {
+            this.getApps();
+          }
+        },
+        error: () => {
+          // Preload failed, load projects normally
+          this.getApps();
+        }
+      });
   }
 
   ngOnInit() {
@@ -100,15 +114,10 @@ export class ProjectsComponent implements OnInit, OnDestroy {
 
   private getApps(): void {
     const start = Date.now();
-    const loadingId = 'projects-full-page-1';
-    this.loadingState.startLoading(loadingId, 'Loading projects');
-    const source$ = this.typesenseService.getAllProjects().pipe(
-      finalize(() => this.loadingState.stopLoading(loadingId))
-    );
 
-    source$
+    this.projectService.getAllFull(1, 1000000)
       .pipe(
-        takeUntilDestroyed(this.destroyRef),
+        takeUntil(this.destroy$),
         finalize(() => {
           this.logger.info(`Loaded ${this.allApps()?.length ?? 0} projects in ${Date.now() - start}ms`, 'ProjectsComponent');
         })
@@ -142,5 +151,8 @@ export class ProjectsComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     // Clear filters and reset state when leaving the page
     this.filterStateService.clearAll();
+    
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 }

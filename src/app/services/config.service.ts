@@ -16,7 +16,6 @@ export interface EnvConfig {
   ANALYTICS_DEBUG?: boolean;
   ANALYTICS_ENHANCED_TRACKING?: boolean;
   ANALYTICS_TRAFFIC_TRACKING?: boolean;
-  ENGAGE_API_URL?: string;
   GH_HASH?: string;
 }
 
@@ -153,8 +152,6 @@ export class ConfigService {
     }
     return this._lists$.asObservable();
   }
-
-  get listItems(): any[] { return this._lists; }
 
   get isApplistListVisible(): boolean { return this._isApplistListVisible; }
   set isApplistListVisible(val: boolean) { this._isApplistListVisible = val; }

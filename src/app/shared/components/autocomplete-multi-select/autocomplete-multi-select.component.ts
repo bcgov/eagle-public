@@ -16,6 +16,7 @@ import { FilterObject } from '../search-filter-template/filter-object';
   templateUrl: './autocomplete-multi-select.component.html',
   styleUrls: ['./autocomplete-multi-select.component.css'],
   imports: [FormsModule, CustomMultiSelectComponent],
+  standalone: true
 })
 export class AutoCompleteMultiSelectComponent implements OnInit {
   private _changeDetectionRef = inject(ChangeDetectorRef);

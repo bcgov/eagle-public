@@ -16,7 +16,7 @@
         
           @if (commentPeriod() !== null && commentPeriod()?._id) {
             <h2>{{commentPeriodHeader() || '-'}}</h2>
-            <h2>{{commentPeriod()!.dateStarted | date:'mediumDate'}} - {{commentPeriod()!.endDateDisplay}}</h2>
+            <h2>{{commentPeriod()!.dateStarted | date:'mediumDate'}} - {{commentPeriod()!.longEndDate.toFormat('MMMM dd @ hh:mm a ZZZZ')}}</h2>
             <hr class="comment-period-divider">
             
             <div class="header-section">
@@ -52,12 +52,12 @@
           }
 
           <!-- Related Documents -->
-          @if (allDocs().length > 0) {
+          @if (commentPeriodDocs() && commentPeriodDocs().length > 0) {
             <div class="mb-3">
               <div class="card-header">Related Documents</div>
               <ul class="doc-list mb-0">
-                @for (doc of allDocs(); track doc) {
-                  <li class="clickable-row"
+                @for (doc of commentPeriodDocs(); track doc) {
+                  <li class="clickable-row" 
                       role="button"
                       tabindex="0"
                       (click)="downloadDocument(doc)"
@@ -126,7 +126,7 @@
         </lib-table-template>
       </div>
     }
-    @if (tableData().totalListItems < 1) {
+    @if (tableData().totalListItems === 0) {
       <div>
         There are no comments.
       </div>

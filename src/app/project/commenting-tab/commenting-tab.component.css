@@ -25,6 +25,19 @@
   pointer-events: none;
 }
 
+/* Shimmer animation for skeleton cells */
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+.skeleton-cell {
+  display: block;
+  background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%);
+  background-size: 800px 100%;
+  animation: shimmer 1.4s infinite linear;
+}
+
 /* Header: status dot + label + pill badge */
 .cp-card__header {
   display: flex;
@@ -32,6 +45,20 @@
   gap: 0.5rem;
   padding: 0.55rem 1rem;
   background: var(--bs-primary);
+}
+
+.cp-card--skeleton .cp-card__header {
+  background: #c8cdd3;
+}
+
+.cp-card--skeleton .cp-card__body {
+  background: #f0f2f4;
+  min-height: 72px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.75rem 1rem;
 }
 
 .cp-card__status-dot {
@@ -96,4 +123,3 @@
   line-clamp: 3;
   overflow: hidden;
 }
-

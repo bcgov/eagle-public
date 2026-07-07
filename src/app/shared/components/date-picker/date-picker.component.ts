@@ -2,19 +2,20 @@ import {
   Component,
   input,
   OnInit,
-  DestroyRef,
+  OnDestroy,
   signal,
   computed,
   effect,
   ChangeDetectionStrategy,
   inject
 } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { NgbDatepickerModule, NgbDateStruct } from '@ng-bootstrap/ng-bootstrap';
 import { Utils } from '../../utils/utils';
 import { Subject } from 'rxjs';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { takeUntil } from 'rxjs/operators';
 import { LoggingService } from 'app/services/logging.service';
 
 @Component({
@@ -22,9 +23,10 @@ import { LoggingService } from 'app/services/logging.service';
   templateUrl: './date-picker.component.html',
   styleUrl: './date-picker.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, ReactiveFormsModule, NgbDatepickerModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, NgbDatepickerModule],
+  standalone: true
 })
-export class DatePickerComponent implements OnInit {
+export class DatePickerComponent implements OnInit, OnDestroy {
   control = input.required<FormControl>();
   isValidate = input(false);
   isDisabled = input(false);
@@ -33,7 +35,7 @@ export class DatePickerComponent implements OnInit {
   reset = input<Subject<any>>();
   required = input(false);
 
-  private destroyRef = inject(DestroyRef);
+  private ngUnsubscribe = new Subject<boolean>();
   private utils = inject(Utils);
   private logger = inject(LoggingService);
 
@@ -98,12 +100,12 @@ export class DatePickerComponent implements OnInit {
     
     const resetSubject = this.reset();
     if (resetSubject) {
-      resetSubject.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.clearDate());
+      resetSubject.pipe(takeUntil(this.ngUnsubscribe)).subscribe(() => this.clearDate());
     }
     
     // Subscribe to control value changes to sync dateValue
     ctrl.valueChanges
-      .pipe(takeUntilDestroyed(this.destroyRef))
+      .pipe(takeUntil(this.ngUnsubscribe))
       .subscribe(value => {
         if (value) {
           if (typeof value === 'string') {
@@ -155,5 +157,10 @@ export class DatePickerComponent implements OnInit {
     }
     // Check if date is valid
     return dateStruct.year > 0 && dateStruct.month > 0 && dateStruct.month <= 12 && dateStruct.day > 0 && dateStruct.day <= 31;
+  }
+
+  ngOnDestroy() {
+    this.ngUnsubscribe.next(true);
+    this.ngUnsubscribe.complete();
   }
 }

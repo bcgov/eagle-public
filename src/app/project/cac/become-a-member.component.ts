@@ -11,6 +11,7 @@ import { LoggingService } from '../../services/logging.service';
   imports: [FormsModule],
   templateUrl: './become-a-member.component.html',
   styleUrls: ['./become-a-member.component.css'],
+  standalone: true
 })
 export class BecomeAMemberComponent {
   private projectService = inject(ProjectService);

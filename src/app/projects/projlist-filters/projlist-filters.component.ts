@@ -1,9 +1,8 @@
-import { Component, ElementRef, signal, ChangeDetectionStrategy, inject, DestroyRef, OnDestroy } from '@angular/core';
+import { Component, OnDestroy, ElementRef, signal, ChangeDetectionStrategy, inject } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject } from 'rxjs';
-import { debounceTime, distinctUntilChanged, switchMap, of, catchError } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { DateTime } from 'luxon';
 import { CustomMultiSelectComponent } from '../../shared/components/custom-multi-select/custom-multi-select.component';
 
@@ -11,7 +10,6 @@ import { Constants } from '../../shared/utils/constants';
 import { ConfigService } from '../../services/config.service';
 import { FilterStateService } from '../../services/filter-state.service';
 import { AnalyticsService } from '../../services/analytics/analytics.service';
-import { TypesenseService } from '../../services/typesense.service';
 
 @Component({
   selector: 'app-projlist-filters',
@@ -19,14 +17,13 @@ import { TypesenseService } from '../../services/typesense.service';
   styleUrls: ['./projlist-filters.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FormsModule, CustomMultiSelectComponent],
+  standalone: true
 })
 export class ProjlistFiltersComponent implements OnDestroy {
   private configService = inject(ConfigService);
   private filterState = inject(FilterStateService);
   private elementRef = inject(ElementRef);
   private analytics = inject(AnalyticsService);
-  private typesenseService = inject(TypesenseService);
-  private destroyRef = inject(DestroyRef);
 
   readonly minDate = DateTime.fromISO('2018-03-23').toJSDate();
   readonly maxDate = DateTime.now().toJSDate();
@@ -39,12 +36,7 @@ export class ProjlistFiltersComponent implements OnDestroy {
   // UI state
   public showFilters = false;
   public showSearchMobile = signal(false);
-
-  // Autocomplete
-  public suggestions = signal<{ id: string; name: string; highlighted: string }[]>([]);
-  public showSuggestions = signal(false);
-  private search$ = new Subject<string>();
-
+  
   // Local filter models bound to template
   public regions = signal<any[]>([]);
   public phases = signal<any[]>([]);
@@ -55,33 +47,13 @@ export class ProjlistFiltersComponent implements OnDestroy {
   public publishFrom = signal<Date | null>(null);
   public publishTo = signal<Date | null>(null);
 
-  constructor() {
-    // Autocomplete: debounce keystrokes and query Typesense for project name suggestions
-    this.search$.pipe(
-      debounceTime(120),
-      distinctUntilChanged(),
-      switchMap(query => {
-        if (query.length < 2) {
-          return of([]);
-        }
-        return this.typesenseService.getProjectSuggestions(query).pipe(
-          catchError(() => of([]))  // keep stream alive on network errors
-        );
-      }),
-      takeUntilDestroyed(this.destroyRef)
-    ).subscribe(results => {
-      this.suggestions.set(results);
-      this.showSuggestions.set(results.length > 0);
-      // Drive marker filtering via Typesense IDs so fuzzy/prefix matching is respected.
-      // null = no search active; [] = search active but no results; [...] = matched IDs.
-      const activeSearch = this.applicant().trim().length >= 2;
-      this.filterState.updateSuggestionIds(activeSearch ? results.map(r => r.id) : null);
-    });
+  private destroy$ = new Subject<void>();
 
+  constructor() {
     // Load metadata (regions, phases, types)
     this.configService.lists
       .pipe(
-        takeUntilDestroyed(this.destroyRef)
+        takeUntil(this.destroy$)
       )
       .subscribe(list => {
         list.forEach((item: any) => {
@@ -120,7 +92,8 @@ export class ProjlistFiltersComponent implements OnDestroy {
   }
 
   ngOnDestroy() {
-    this.search$.complete();
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   /**
@@ -197,33 +170,7 @@ export class ProjlistFiltersComponent implements OnDestroy {
 
   public clearSearch(): void {
     this.applicant.set('');
-    this.filterState.updateSuggestionIds(null);
-    this.suggestions.set([]);
-    this.showSuggestions.set(false);
     this.applyFilters();
-  }
-
-  public onSearchInput(value: string): void {
-    this.search$.next(value);
-    if (value.length >= 2) {
-      this.showSuggestions.set(true);
-    } else {
-      this.suggestions.set([]);
-      this.showSuggestions.set(false);
-    }
-  }
-
-  public selectSuggestion(s: { id: string; name: string; highlighted: string }): void {
-    this.applicant.set(s.name);
-    this.suggestions.set([]);
-    this.showSuggestions.set(false);
-    this.filterState.updateSuggestionIds([s.id]);
-    this.applyFilters();
-  }
-
-  public hideSuggestions(): void {
-    // Delay so mousedown on a suggestion item fires before the dropdown disappears
-    setTimeout(() => this.showSuggestions.set(false), 150);
   }
 
   public toggleFilters(): void {

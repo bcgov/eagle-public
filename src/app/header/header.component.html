@@ -24,18 +24,27 @@
             <span>Project Information</span><span class="caret"></span>
           </a>
           <div class="dropdown-menu dropdown-menu-end" aria-labelledby="searchProjects">
-            <a class="dropdown-item" [routerLink]="['/projects-list']" title="All Projects" (click)="closeMenus()">
-              <strong>All Projects</strong>
+            <a class="dropdown-item" [routerLink]="['/projects-list']" title="List Projects" (click)="closeMenus()">
+              <div class="dd-item-header">
+                <span class="icon align-middle"><i class="material-icons">list</i></span>
+                <strong>List of Projects</strong>
+              </div>
               <span class="dd-item-desc">Access all information relating to projects that have been involved with an
                 environmental assessment in British Columbia</span>
             </a>
-            <a class="dropdown-item" [routerLink]="['/project-notifications']" title="All Project Notifications"
+            <a class="dropdown-item" [routerLink]="['/project-notifications']" title="Project Notifications"
               (click)="closeMenus()">
-              <strong>All Project Notifications</strong>
+              <div class="dd-item-header">
+                <span class="icon align-middle"><i class="material-icons">view_list</i></span>
+                <strong>List of Project Notifications</strong>
+              </div>
               <span class="dd-item-desc">Access information related to Project Notifications</span>
             </a>
-            <a class="dropdown-item" [routerLink]="['/search']" [queryParams]="{tab: 'documents'}" title="All Documents" (click)="closeMenus()">
-              <strong>All Documents</strong>
+            <a class="dropdown-item" [routerLink]="['/search']" title="Search Documents" (click)="closeMenus()">
+              <div class="dd-item-header">
+                <span class="icon align-middle"><i class="material-icons">search</i></span>
+                <strong>All Documents</strong>
+              </div>
               <span class="dd-item-desc">Access a list of all documents associated with any projects involved with an
                 environmental assessment in British Columbia</span>
             </a>

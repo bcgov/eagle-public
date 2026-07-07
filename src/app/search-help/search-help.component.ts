@@ -7,5 +7,6 @@ import { HeroBannerComponent } from 'app/shared/hero-banner/hero-banner.componen
   styleUrl: './search-help.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [HeroBannerComponent],
+  standalone: true
 })
 export class SearchHelpComponent {}

@@ -1,38 +1,45 @@
-import { Component, inject, ChangeDetectionStrategy, effect, signal, DestroyRef } from '@angular/core';
-import { DatePipe } from '@angular/common';
+import { Component, OnDestroy, inject, ChangeDetectionStrategy, effect, signal, computed } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { Subscription } from 'rxjs';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 import { CommentPeriodService } from '../../services/commentperiod.service';
 import { CommentPeriod } from '../../models/commentperiod';
+import { LoadingStateService } from '../../services/loading-state.service';
 import { StorageService } from '../../services/storage.service';
 
 @Component({
   selector: 'app-commenting-tab',
-  imports: [DatePipe],
+  imports: [CommonModule],
   templateUrl: './commenting-tab.component.html',
   styleUrls: ['./commenting-tab.component.css'],
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  standalone: true
 })
-export class CommentingTabComponent {
+export class CommentingTabComponent implements OnDestroy {
   private router = inject(Router);
   private storageService = inject(StorageService);
   public commentPeriodService = inject(CommentPeriodService);
-  private destroyRef = inject(DestroyRef);
+  public loadingState = inject(LoadingStateService);
 
-  public readonly project = this.storageService.currentProject;
-  public readonly commentPeriods = signal<CommentPeriod[]>([]);
-  public readonly loading = signal(true);
+  // Use the reactive signal from storageService
+  public project = this.storageService.currentProject;
+  public commentPeriods = signal<CommentPeriod[] | null>(null);
+  private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
   private loadedProjectId: string | null = null;
-  private commentPeriodSub: Subscription | null = null;
+
+  // Computed loading state based on null-sentinel
+  public loading = computed(() => this.commentPeriods() === null);
 
   constructor() {
+    // Load comment periods when project is available
     effect(() => {
-      const projectId = this.project()?._id;
-      if (projectId && projectId !== this.loadedProjectId) {
-        this.loadedProjectId = projectId;
-        this.getCommentPeriods(projectId);
+      const project = this.project();
+      if (project?._id && project._id !== this.loadedProjectId) {
+        this.loadedProjectId = project._id;
+        this.commentPeriods.set(null); // Show loading skeleton
+        this.getCommentPeriods(project._id);
       }
     });
   }
@@ -47,13 +54,11 @@ export class CommentingTabComponent {
   }
 
   getCommentPeriods(projectId: string) {
-    this.commentPeriodSub?.unsubscribe();
-    this.loading.set(true);
-    this.commentPeriodSub = this.commentPeriodService.getAllByProjectId(projectId)
-      .pipe(takeUntilDestroyed(this.destroyRef))
+    this.commentPeriodService.getAllByProjectId(projectId)
+      .pipe(takeUntil(this.ngUnsubscribe))
       .subscribe({
         next: (res: any) => {
-          if (res.data) {
+          if (res && res.data) {
             const periods = res.data.map((element: CommentPeriod) => {
               const fullText = element.instructions
                 ? element.instructions.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
@@ -77,11 +82,18 @@ export class CommentingTabComponent {
               return true;
             });
             this.commentPeriods.set(deduped);
+          } else {
+            this.commentPeriods.set([]);
           }
-          this.loading.set(false);
         },
-        error: () => this.loading.set(false),
+        error: () => {
+          this.commentPeriods.set([]);
+        }
       });
   }
 
+  ngOnDestroy() {
+    this.ngUnsubscribe.next(true);
+    this.ngUnsubscribe.complete();
+  }
 }

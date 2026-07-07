@@ -2,30 +2,32 @@ import {
   Directive,
   ViewContainerRef,
   Input,
+  Output,
+  EventEmitter,
   OnInit,
   OnChanges,
   SimpleChanges,
-  DestroyRef,
-  inject,
-  output
+  OnDestroy,
+  inject
 } from '@angular/core';
 import { IRowObject, TableObject } from './table-object';
 import { TableRowComponent, ITableMessage } from './table-row-component';
 import { InjectComponentService } from '../../services/inject-component.service';
-import { takeUntilDestroyed, outputToObservable } from '@angular/core/rxjs-interop';
 import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 @Directive({
   selector: '[libTableRow]',
+  standalone: true
 })
-export class TableRowDirective implements OnInit, OnChanges {
+export class TableRowDirective implements OnInit, OnChanges, OnDestroy {
   @Input('libTableRow') rowObject!: IRowObject;
   @Input() tableData!: TableObject;
 
-  @Input() messageIn: Subject<ITableMessage> = new Subject<ITableMessage>();
-  messageOut = output<ITableMessage>();
+  @Input() messageIn: EventEmitter<ITableMessage> = new EventEmitter<ITableMessage>();
+  @Output() messageOut: EventEmitter<ITableMessage> = new EventEmitter<ITableMessage>();
 
-  private destroyRef = inject(DestroyRef);
+  private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
   
   private viewContainerRef = inject(ViewContainerRef);
   private injectComponentService = inject(InjectComponentService);
@@ -83,13 +85,18 @@ export class TableRowDirective implements OnInit, OnChanges {
     componentInstance.tableData = this.tableData;
 
     // subscribe to the components outbound messages and forward them to table template
-    outputToObservable(componentInstance.messageOut).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(msg => {
+    componentInstance.messageOut.pipe(takeUntil(this.ngUnsubscribe)).subscribe(msg => {
       this.messageOut.emit(msg);
     });
 
     // subscribe to table templates inbound messages and forward them to row component
-    this.messageIn.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(msg => {
-      componentInstance.messageIn.next(msg);
+    this.messageIn.pipe(takeUntil(this.ngUnsubscribe)).subscribe(msg => {
+      componentInstance.messageIn.emit(msg);
     });
+  }
+
+  ngOnDestroy() {
+    this.ngUnsubscribe.next(true);
+    this.ngUnsubscribe.complete();
   }
 }

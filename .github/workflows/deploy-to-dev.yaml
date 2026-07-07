@@ -188,6 +188,7 @@ jobs:
       - name: Log into OpenShift
         run: |
           oc login --server=${{ secrets.OPENSHIFT_URL }} --token=${{ secrets.OPENSHIFT_TOKEN }}
+          oc project ${{ env.OPENSHIFT_NAMESPACE_DEV }}
 
       - name: Deploy with Helm
         run: |

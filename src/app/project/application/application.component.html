@@ -1,41 +1,18 @@
-@if (isTypesense()) {
-  <app-typesense-document-table [projId]="projId" [tabKey]="'application'" />
-
-} @else {
 
   <section class="mb-4 pt-0 pb-0">
-    <search-filter-template
-      (searchEvent)="executeSearch($event)"
-      [advancedFilters]="true"
-      [showAdvancedFilters]="showAdvancedFilters()"
-      [searchOnFilterChange]="true"
-      [filters]="filters()"
-      (resetControls)="onResetControls()"
-      (toggleFiltersPanelEvent)="onToggleFiltersPanel($event)"
-      [searchHelpLinkArray]="['/search-help']">
-    </search-filter-template>
-  </section>
+      <search-filter-template
+        (searchEvent)="executeSearch($event)"
+        [advancedFilters]="true"
+        [showAdvancedFilters]="showAdvancedFilters()"
+        [searchOnFilterChange]="true"
+        [filters]="filters()"
+        (resetControls)="onResetControls()"
+        (toggleFiltersPanelEvent)="onToggleFiltersPanel($event)"
+        [searchHelpLinkArray]="['/search-help']">
+      </search-filter-template>
+    
 
-  @if (loading() && tableData().items.length === 0) {
-      <table class="table fade-in" aria-busy="true" aria-label="Loading application documents">
-        <thead>
-          <tr>
-            @for (col of tableColumns; track col.value) {
-              <th [class]="col.width"><div class="skeleton-cell" style="width:55%;height:.85rem"></div></th>
-            }
-          </tr>
-        </thead>
-        <tbody>
-          @for (i of [1,2,3,4,5]; track i) {
-            <tr>
-              @for (col of tableColumns; track col.value) {
-                <td [class]="col.width"><div class="skeleton-cell"></div></td>
-              }
-            </tr>
-          }
-        </tbody>
-      </table>
-    } @else if (!loading() && tableData().totalListItems === 0) {
+    @if (!loading() && tableData().totalListItems === 0) {
       <div>
         There are no application documents associated with this project.
       </div>
@@ -47,4 +24,3 @@
       </lib-table-template>
     }
 
-}

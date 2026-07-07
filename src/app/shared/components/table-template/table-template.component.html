@@ -22,51 +22,16 @@
 
   <div [class.table-loading]="loading && data.items.length > 0">
   @if (loading && data.items.length === 0) {
-    @if (data.columns.length > 0) {
-      <!-- Structured skeleton: mirrors real table layout so no layout shift on load -->
-      <table class="table fade-in" aria-busy="true" aria-label="Loading table data">
-        @if (data.options.showHeader) {
-          <thead>
-            <tr>
-              @for (col of data.columns; track col.value) {
-                <th [class]="col.width">
-                  <div class="skeleton-cell" style="width: 55%; height: 0.85rem;"></div>
-                </th>
-              }
-            </tr>
-          </thead>
-        }
-        <tbody>
-          @for (i of [1,2,3,4,5]; track i) {
-            <tr>
-              @for (col of data.columns; track col.value) {
-                <td [class]="col.width">
-                  <div class="skeleton-cell"></div>
-                </td>
-              }
-            </tr>
-          }
-        </tbody>
-      </table>
-    } @else {
-      <!-- Fallback: column definitions not yet available -->
-      <div class="fade-in" aria-busy="true" aria-label="Loading table data">
-        @for (i of [1,2,3,4,5]; track i) {
-          <div class="skeleton-row">
-            <div class="skeleton-cell" style="flex: 3"></div>
-            <div class="skeleton-cell" style="flex: 2"></div>
-            <div class="skeleton-cell" style="flex: 2"></div>
-            <div class="skeleton-cell" style="flex: 1"></div>
-          </div>
-        }
+    <div class="text-center my-5">
+      <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+        <span class="visually-hidden">Loading...</span>
       </div>
-    }
+    </div>
   } @else if (!loading && data.items.length === 0 && data.totalListItems === 0) {
     <div class="text-center my-5">
       <p class="text-muted">No results found</p>
     </div>
   } @else {
-  <div class="fade-in">
   <table class="table" aria-label="table-template">
     @if (data.options.showHeader) {
     <thead>
@@ -75,7 +40,7 @@
         <th tabindex="0" [attr.aria-label]="'Column header ' + entry.name + (!entry.nosort ? ' sortable' : '')"
           id="table-template-header" class="project-table__name-col"
           (keyup.enter)="!entry.nosort && onSort(entry.value!)" (click)="!entry.nosort && onSort(entry.value!)"
-          [class]="entry.width" [class.sortable]="!entry.nosort" [class.header-empty]="!entry.name">
+          [ngClass]="[entry.width, !entry.nosort ? 'sortable' : '']">
           {{ entry.name }}
           @if (entry.nosort !== true) {
           <i class="sort" 
@@ -96,34 +61,28 @@
       }
     </tbody>
   </table>
-  </div><!-- /.fade-in -->
 
   @if (data.items.length > 0 || !loading) {
-    @let showSizer = data.options.showPageSizePicker && data.totalListItems > 10;
-    @let showPager = shouldShowPagination();
-    @if (showSizer || showPager) {
-    <div class="table-controls-bottom mt-4 mb-4">
-      <div class="row">
-        <div class="col-12 col-md-6 text-center text-md-start"
-          [class.mb-3]="showSizer && showPager" [class.mb-md-0]="showSizer && showPager">
-          @if (showSizer) {
-          <lib-page-size-picker [isHidden]="false" [currentPageSize]="data.pageSize" [sizeOptions]="data.pageSizeOptions"
-            (pageSizeChosen)="onUpdatePageSize($event)" id="table-template-page-size-picker" />
-          }
-        </div>
-        <div class="col-12 col-md-6 text-center text-md-end">
-          @if (showPager) {
-          <lib-pagination 
-            [currentPage]="data.currentPage"
-            [pageSize]="data.pageSize"
-            [totalItems]="data.totalListItems"
-            [ariaLabel]="'Table pagination'"
-            (pageChange)="onUpdatePageNumber($event)" />
-          }
-        </div>
+  <div class="table-controls-bottom mt-4">
+    <div class="row">
+      <div class="col-12 col-md-6 text-center text-md-start mb-3 mb-md-0">
+        @if (data.options.showPageSizePicker && data.totalListItems > 10) {
+        <lib-page-size-picker [isHidden]="false" [currentPageSize]="data.pageSize" [sizeOptions]="data.pageSizeOptions"
+          (pageSizeChosen)="onUpdatePageSize($event)" id="table-template-page-size-picker" />
+        }
+      </div>
+      <div class="col-12 col-md-6 text-center text-md-end">
+        @if (shouldShowPagination()) {
+        <lib-pagination 
+          [currentPage]="data.currentPage"
+          [pageSize]="data.pageSize"
+          [totalItems]="data.totalListItems"
+          [ariaLabel]="'Table pagination'"
+          (pageChange)="onUpdatePageNumber($event)" />
+        }
       </div>
     </div>
-    }
+  </div>
   }
   }
   </div>

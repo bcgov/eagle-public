@@ -28,6 +28,19 @@
           Documents
         </button>
       </li>
+      @if (showCommentingTab()) {
+        <li class="nav-item" role="presentation">
+          <button 
+            class="nav-link" 
+            [class.active]="activeTab() === 'commenting'"
+            (click)="setActiveTab('commenting')"
+            type="button" 
+            role="tab"
+            [attr.aria-selected]="activeTab() === 'commenting'">
+            Engagement
+          </button>
+        </li>
+      }
     </ul>
     <div class="tab-content">
       <div 
@@ -55,6 +68,63 @@
           </div>
         }
       </div>
+      @if (showCommentingTab()) {
+        <div 
+          class="tab-pane fade" 
+          [class.show]="activeTab() === 'commenting'"
+          [class.active]="activeTab() === 'commenting'"
+          role="tabpanel">
+          <div class="tab-section pn-info-block py-2">
+            @if (commentPeriods() === null) {
+              @for (i of [1]; track i) {
+                <div class="cp-card cp-card--skeleton">
+                  <div class="cp-card__header">
+                    <div class="skeleton-cell" style="width: 90px; height: 12px; border-radius: 4px"></div>
+                    <div class="skeleton-cell" style="width: 70px; height: 20px; border-radius: 999px; margin-left: auto"></div>
+                  </div>
+                  <div class="cp-card__body">
+                    <div class="skeleton-cell" style="width: 55%; height: 14px; border-radius: 4px; margin-bottom: 0.5rem"></div>
+                    <div class="skeleton-cell" style="width: 38%; height: 11px; border-radius: 4px; margin-bottom: 0.5rem"></div>
+                    <div class="skeleton-cell" style="width: 88%; height: 11px; border-radius: 4px"></div>
+                  </div>
+                </div>
+              }
+            } @else if (commentPeriods()!.length < 1) {
+              <div class="py-2 px-3">No comment periods are currently scheduled for this project notification.</div>
+            } @else {
+              @for (cp of commentPeriods(); track cp._id) {
+                <article class="card cp-card" role="button" tabindex="0"
+                         (click)="goToCP(cp)" (keyup.enter)="goToCP(cp)">
+                  <div class="cp-card__header">
+                    <span class="cp-card__status-dot"
+                          [class.cp-card__status-dot--open]="commentPeriodService.isOpen(cp)"
+                          [class.cp-card__status-dot--pending]="commentPeriodService.isNotStarted(cp)"
+                          [class.cp-card__status-dot--closed]="commentPeriodService.isClosed(cp)">
+                    </span>
+                    <span class="cp-card__status-label">{{ cp.commentPeriodStatus }}</span>
+                    @if (commentPeriodService.isOpen(cp)) {
+                      <span class="cp-card__pill cp-card__pill--open">{{ cp.daysRemaining }}</span>
+                    } @else if (commentPeriodService.isClosed(cp)) {
+                      <span class="cp-card__pill cp-card__pill--closed">Closed {{ cp.dateCompleted | date:'MMM d, y' }}</span>
+                    } @else if (commentPeriodService.isNotStarted(cp)) {
+                      <span class="cp-card__pill cp-card__pill--pending">Starts {{ cp.dateStarted | date:'MMM d, y' }}</span>
+                    }
+                  </div>
+                  <div class="cp-card__body">
+                    <h3 class="cp-card__title">{{ cp.instructions || 'Public Comment Period' }}</h3>
+                    @if (cp.dateStarted) {
+                      <p class="cp-card__dates">{{ cp.dateStarted | date:'MMM d, y' }} – {{ cp.dateCompleted | date:'MMM d, y' }}</p>
+                    }
+                    @if (cp.additionalText) {
+                      <p class="cp-card__description">{{ cp.additionalText }}</p>
+                    }
+                  </div>
+                </article>
+              }
+            }
+          </div>
+        </div>
+      }
     </div>
   </div>
   </div>

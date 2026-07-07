@@ -1,33 +1,26 @@
-@if (isTypesense()) {
+<section class="mb-4 pt-0 pb-0">
+      <search-filter-template
+        #explorePanel
+        (searchEvent)="executeSearch($event)"
+        [advancedFilters]="true"
+        [showAdvancedFilters]="showAdvancedFilters()"
+        [searchOnFilterChange]="true"
+        [filters]="filters()"
+        (resetControls)="onResetControls()"
+        (toggleFiltersPanelEvent)="onToggleFiltersPanel($event)"
+        [searchHelpLinkArray]="['/search-help']">
+      </search-filter-template>
+    </section>
 
-  <app-typesense-document-table [projId]="projId" [tabKey]="'documents'" />
-
-} @else {
-
-  <!-- ── MongoDB fallback path ──────────────────────────────────────── -->
-  <section class="mb-4 pt-0 pb-0">
-    <search-filter-template
-      #explorePanel
-      (searchEvent)="executeSearch($event)"
-      [advancedFilters]="true"
-      [showAdvancedFilters]="showAdvancedFilters()"
-      [searchOnFilterChange]="true"
-      [filters]="filters()"
-      (resetControls)="onResetControls()"
-      (toggleFiltersPanelEvent)="onToggleFiltersPanel($event)"
-      [searchHelpLinkArray]="['/search-help']">
-    </search-filter-template>
-  </section>
-
-  @if (!loading() && tableData().totalListItems === 0) {
-    <div>No results found.</div>
-  } @else {
-    <lib-table-template
-      [data]="tableData()"
-      [loading]="loading()"
-      (messageOut)="onMessageOut($event)">
-    </lib-table-template>
-  }
-
-}
+    @if (!loading() && tableData().totalListItems === 0) {
+      <div>
+        No results found.
+      </div>
+    } @else {
+      <lib-table-template
+        [data]="tableData()"
+        [loading]="loading()"
+        (messageOut)="onMessageOut($event)">
+      </lib-table-template>
+    }
 

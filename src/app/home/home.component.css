@@ -24,11 +24,6 @@ main h2 {
   margin-bottom: 1.5rem;
 }
 
-main h2.home-news-feed__header {
-  text-align: left;
-  margin-bottom: 0;
-}
-
 @media (max-width: 767px) {
   main h2 {
     font-size: var(--bs-font-size-4);
@@ -59,28 +54,6 @@ main p {
   .hero-banner__version {
     margin-top: -0.3rem;
   }
-}
-
-.activity-panel {
-  border: 1px solid #dee2e6;
-  border-bottom: none;
-  border-radius: 0.5rem 0.5rem 0 0;
-  overflow: hidden;
-}
-
-.home-news-feed__header {
-  background-color: var(--bs-secondary);
-  color: var(--card-header-color);
-  margin: 0;
-  padding: 0.75rem 1.5rem;
-  font-size: var(--bs-font-size-4);
-  text-align: left;
-}
-
-/* Activity feed container */
-.activity-feed {
-  display: flex;
-  flex-direction: column;
 }
 
 /* Survey Banner Styles */
@@ -185,10 +158,9 @@ main p {
   }
 }
 
-.home-news-feed__footer {
-  background-color: var(--bs-secondary);
+.home-news-feed .mt-4 {
   padding: 1.5rem;
-  text-align: center;
+  padding-top: 0;
 }
 
 .news-block-more {

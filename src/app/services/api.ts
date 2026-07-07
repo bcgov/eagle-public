@@ -222,10 +222,6 @@ export class ApiService {
     return this.http.get<any>(`${this.apiPath}/${queryString}`, {});
   }
 
-  getProjectFeaturedDocuments(projId: string): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiPath}/public/project/${projId}/FeaturedDocuments`, {});
-  }
-
   // CAC
   cacSignUp(project: Project, meta: any) {
     // We are just looking for a 200 OK
@@ -476,22 +472,6 @@ export class ApiService {
       'isFeatured'
     ];
     const queryString = 'document?_decision=' + decisionId + '&fields=' + this.buildValues(fields);
-    return this.http.get<Document[]>(`${this.apiPath}/${queryString}`, {});
-  }
-
-  getDocumentsByNotificationId(notificationId: string): Observable<Document[]> {
-    const fields = [
-      'displayName',
-      'documentFileName',
-      'datePosted',
-      'documentAuthor',
-      'internalURL',
-      'internalMime',
-      'internalExt',
-    ];
-    const queryString = 'document?project=' + notificationId
-      + '&documentSource=PROJECT-NOTIFICATION'
-      + '&fields=' + this.buildValues(fields);
     return this.http.get<Document[]>(`${this.apiPath}/${queryString}`, {});
   }
 

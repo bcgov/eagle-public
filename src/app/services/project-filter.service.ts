@@ -52,17 +52,10 @@ export class ProjectFilterService {
       }
     }
 
-    // Phase filter - match by phase ID (MongoDB) or phase name resolved via metadata (Typesense)
+    // Phase filter - match by phase ID
     if (filters.phases.length > 0) {
-      const currentPhaseMongoId = project.currentPhaseName?._id;
-      const currentPhaseName = project.currentPhaseName?.name;
-      const phaseMatch = filters.phases.some(filterId => {
-        if (currentPhaseMongoId === filterId) return true;
-        // Typesense: currentPhaseName has no _id — match by name via metadata
-        const meta = this.phaseMetadata.find(p => p._id === filterId);
-        return !!meta && meta.name === currentPhaseName;
-      });
-      if (!phaseMatch) {
+      const currentPhaseId = project.currentPhaseName?._id;
+      if (!currentPhaseId || !filters.phases.includes(currentPhaseId)) {
         return false;
       }
     }
@@ -78,22 +71,11 @@ export class ProjectFilterService {
       }
     }
 
-    // Applicant / name filter.
-    // When Typesense suggestion IDs are available, use them (fuzzy-accurate).
-    // Fallback: substring match for non-Typesense environments or URL-loaded filters.
+    // Applicant filter (case-insensitive substring match on project name)
     if (filters.applicant) {
-      const suggestionIds = this.filterState.typesenseSuggestionIdsFilter();
-      if (suggestionIds !== null) {
-        // Typesense did the fuzzy match — trust its results
-        if (!suggestionIds.includes(project._id)) return false;
-      } else {
-        const projectName = project.name?.toLowerCase() || '';
-        const query = filters.applicant.toLowerCase();
-        const nameNoSpaces = projectName.replace(/\s+/g, '');
-        const queryNoSpaces = query.replace(/\s+/g, '');
-        if (!projectName.includes(query) && !nameNoSpaces.includes(queryNoSpaces)) {
-          return false;
-        }
+      const projectName = project.name?.toLowerCase() || '';
+      if (!projectName.includes(filters.applicant.toLowerCase())) {
+        return false;
       }
     }
 

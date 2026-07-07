@@ -12,10 +12,10 @@
       </div>
     </div>
   }
-} @else if (commentPeriods().length < 1) {
+} @else if (commentPeriods()!.length < 1) {
   <div>No comment periods are currently scheduled for this project.</div>
 } @else {
-  @for (cp of commentPeriods(); track cp._id) {
+  @for (cp of commentPeriods()!; track cp._id) {
     <article class="card cp-card" role="button" tabindex="0"
              (click)="goToCP(cp)" (keyup.enter)="goToCP(cp)">
       <div class="cp-card__header">
@@ -45,4 +45,3 @@
     </article>
   }
 }
-

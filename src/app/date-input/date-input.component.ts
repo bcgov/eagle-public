@@ -7,6 +7,7 @@ import { FormsModule } from '@angular/forms';
   styleUrls: ['./date-input.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FormsModule],
+  standalone: true
 })
 export class DateInputComponent {
   date = input<Date | null>(null);

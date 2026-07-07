@@ -5,7 +5,6 @@ import { map, catchError } from 'rxjs/operators';
 import { ApiService } from './api';
 import { CommentPeriod } from 'app/models/commentperiod';
 import { LoadingStateService } from './loading-state.service';
-import { withLoading } from 'app/shared/utils/rxjs-operators';
 
 @Injectable({providedIn:'root'})
 export class CommentPeriodService {
@@ -32,30 +31,60 @@ export class CommentPeriodService {
   // get all comment periods for the specified application id
   getAllByProjectId(projId: string): Observable<object> {
     const loadingId = `commentperiods-${projId}`;
+    this.loadingState.startLoading(loadingId, 'Loading comment periods');
     return this.api.getPeriodsByProjId(projId)
       .pipe(
-        withLoading(this.loadingState, loadingId, 'Loading comment periods'),
         map((res: any) => {
-          if (!res || res.length === 0) return { totalCount: 0, data: [] };
-          const periods: CommentPeriod[] = (res as any[]).map(cp => new CommentPeriod(cp));
-          return { totalCount: periods.length, data: periods };
+          if (res) {
+            const periods: CommentPeriod[] = [];
+            if (!res || res.length === 0) {
+              this.loadingState.stopLoading(loadingId);
+              return periods;
+            }
+            res.forEach((cp: any) => {
+              periods.push(new CommentPeriod(cp));
+            });
+            this.loadingState.stopLoading(loadingId);
+            return { totalCount: res.length, data: periods };
+          }
+          this.loadingState.stopLoading(loadingId);
+          return {};
         }),
-        catchError(error => this.api.handleError(error))
+        catchError(error => {
+          this.loadingState.stopLoading(loadingId);
+          return this.api.handleError(error);
+        })
       );
   }
 
   // get a specific comment period by its id
   getById(periodId: string): Observable<CommentPeriod> {
     const loadingId = `commentperiod-${periodId}`;
+    this.loadingState.startLoading(loadingId, 'Loading comment period');
     return this.api.getPeriod(periodId)
       .pipe(
-        withLoading(this.loadingState, loadingId, 'Loading comment period'),
         map((res: any) => {
-          if (!res || res.length === 0) return null as unknown as CommentPeriod;
-          this.commentPeriod = new CommentPeriod(res[0]);
+          if (res) {
+            const periods = res;
+            // return the first (only) comment period
+            return periods.length > 0 ? new CommentPeriod(periods[0]) : null;
+          }
+          return null;
+        }),
+        map((period: CommentPeriod | null) => {
+          if (!period) { 
+            this.loadingState.stopLoading(loadingId);
+            return null as unknown as CommentPeriod; 
+          }
+
+          this.commentPeriod = period;
+          this.loadingState.stopLoading(loadingId);
           return this.commentPeriod;
         }),
-        catchError(error => this.api.handleError(error))
+        catchError(error => {
+          this.loadingState.stopLoading(loadingId);
+          return this.api.handleError(error);
+        })
       );
   }
   // returns first period - multiple comment periods are currently not supported
@@ -65,9 +94,6 @@ export class CommentPeriodService {
 
   /**
    * Given a comment period, returns status abbreviation.
-   * Delegates to the commentPeriodStatus set on the model, which correctly
-   * handles midnight-stored dates (admin picked a date with no time) by
-   * treating them as end-of-day so the period stays Open all closing day.
    */
   getStatusCode(commentPeriod: CommentPeriod): string {
     if (!commentPeriod || !commentPeriod.dateStarted || !commentPeriod.dateCompleted) {

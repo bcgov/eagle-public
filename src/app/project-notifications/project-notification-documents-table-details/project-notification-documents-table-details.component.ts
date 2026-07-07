@@ -1,6 +1,8 @@
 import { Component, ChangeDetectionStrategy, input, computed } from '@angular/core';
+
 import { DatePipe } from '@angular/common';
 import { RouterModule } from '@angular/router';
+
 import { NewlinesPipe } from '../../shared/pipes/newlines.pipe';
 
 @Component({
@@ -9,15 +11,16 @@ import { NewlinesPipe } from '../../shared/pipes/newlines.pipe';
   styleUrls: ['./project-notification-documents-table-details.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterModule, NewlinesPipe, DatePipe],
+  standalone: true
 })
 export class ProjectNotificationDocumentsTableDetailsComponent {
   rowData = input.required<any>();
-
+  
   decisionText = computed(() => {
     const data = this.rowData();
     const decision = data.decision || '-';
     const dateStr = data.decisionDate?.toString().split('T')[0];
-    return dateStr
+    return dateStr 
       ? `Notification Decision - ${decision} | ${dateStr}`
       : `Notification Decision - ${decision}`;
   });

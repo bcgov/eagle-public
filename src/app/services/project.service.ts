@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, of, forkJoin, concat } from 'rxjs';
-import { map, catchError, mergeMap, tap } from 'rxjs/operators';
+import { Observable, of, forkJoin } from 'rxjs';
+import { map, catchError, mergeMap, flatMap, tap } from 'rxjs/operators';
 
 import { Project } from 'app/models/project';
 import { ApiService } from './api';
@@ -11,7 +11,6 @@ import { SearchService } from './search.service';
 import { Utils } from 'app/shared/utils/utils';
 import { DataQueryResponse } from 'app/models/api-response';
 import { LoadingStateService } from './loading-state.service';
-import { withLoading } from 'app/shared/utils/rxjs-operators';
 
 interface GetParameters {
   getresponsibleEPD?: boolean;
@@ -73,14 +72,18 @@ export class ProjectService {
     
     // Create new request and cache it
     const loadingId = 'projects-count';
+    this.loadingState.startLoading(loadingId, 'Counting projects');
     this.count$ = this.api.getCountProjects()
       .pipe(
-        withLoading(this.loadingState, loadingId, 'Counting projects'),
         map(count => {
           this.cachedCount = count;
+          this.loadingState.stopLoading(loadingId);
           return count;
         }),
-        catchError(error => this.api.handleError(error))
+        catchError(error => {
+          this.loadingState.stopLoading(loadingId);
+          return this.api.handleError(error);
+        })
       );
     
     return this.count$;
@@ -126,42 +129,30 @@ export class ProjectService {
       .pipe(
         map((projects: Project[]) => {
           // get upcoming comment period if there is one and convert it into a comment period object.
-          // If there are multiple comment periods any that is currently running is a higher priority than a past comment period.
-          // For Engage-managed (isMet) CPs, the engage-banner component fetches live status from Engage API.
-          if (projects) {
-            const cpf = projects[0]?.commentPeriodForBanner;
-            // Guard: only process when commentPeriodForBanner is a raw array from the API.
-            // The HTTP cache stores response objects by reference, so a cache hit delivers
-            // the already-mutated object (CommentPeriod instance, not an array). Without
-            // Array.isArray() the length checks silently fail and commentPeriodForBanner
-            // gets overwritten with null on every cached request.
-            if (projects[0] && Array.isArray(cpf) && cpf.length === 1) {
-              projects[0].commentPeriodForBanner = new CommentPeriod(cpf[0]);
-            } else if (projects[0] && Array.isArray(cpf) && cpf.length > 1) {
+          // If there are multiple comment periods any that is currently running is a higher priority than a past comment period
+          if (projects && projects.length > 0 && projects[0]) {
+            if (projects[0].commentPeriodForBanner && projects[0].commentPeriodForBanner.length === 1) {
+              projects[0].commentPeriodForBanner = new CommentPeriod(projects[0].commentPeriodForBanner[0]);
+            } else if (projects[0].commentPeriodForBanner && projects[0].commentPeriodForBanner.length > 1) {
               const now = new Date
               const currentDate = now.toISOString();
-              // Default to the first comment period; prefer isMet (Engage-managed) if available.
-              let finalCommentPeriod = new CommentPeriod(cpf[0]);
-              for (const commentPeriod in cpf) {
-                const cp = cpf[commentPeriod];
-                if (Date.parse(cp.dateCompleted) > Date.parse(currentDate)
-                  && Date.parse(cp.dateStarted) < Date.parse(currentDate)) {
-                  finalCommentPeriod = new CommentPeriod(cp);
-                  // If this active CP is Engage-managed, prefer it — break immediately.
-                  if (cp.isMet) break;
+              // Default to the same comment period we're using currently in case one is not active
+              let finalCommentPeriod = new CommentPeriod(projects[0].commentPeriodForBanner[0]);
+              for (const commentPeriod in projects[0].commentPeriodForBanner) {
+                if (Date.parse(projects[0].commentPeriodForBanner[commentPeriod].dateCompleted) > Date.parse(currentDate)
+                  && Date.parse(projects[0].commentPeriodForBanner[commentPeriod].dateStarted) < Date.parse(currentDate)) {
+                  finalCommentPeriod = new CommentPeriod(projects[0].commentPeriodForBanner[commentPeriod]);
                 }
               }
-              projects[0].commentPeriodForBanner = finalCommentPeriod;
-            } else if (projects[0] && Array.isArray(cpf)) {
-              // Empty array from API → no active comment period.
+              projects[0].commentPeriodForBanner = finalCommentPeriod
+            } else {
               projects[0].commentPeriodForBanner = null;
             }
-            // If cpf is already a CommentPeriod (cached hit) or null/undefined, leave it unchanged.
           }
           // return the first (only) project
-          return projects.length > 0 ? new Project(projects[0]) : null;
+          return projects && projects.length > 0 && projects[0] ? new Project(projects[0]) : null;
         }),
-        mergeMap(res => {
+        flatMap(res => {
           const project = res;
           if (!project) {
             this.loadingState.stopLoading(loadingId);
@@ -169,27 +160,21 @@ export class ProjectService {
           }
           // Map the build to the human readable nature field
           project.nature = this.utils.natureBuildMapper(project.build);
-          const partialProject = new Project(project);
           if (project.projectLeadId == null && project.responsibleEPDId == null) {
             this.loadingState.stopLoading(loadingId);
-            return of(partialProject);
+            return of(new Project(project));
           }
-          // Emit partial project immediately to clear the spinner, then fetch staff data.
-          // The component's subscribe handler fires on each emission, so isLoading is
-          // cleared on the first emission without waiting for User API calls to complete.
-          this.loadingState.stopLoading(loadingId);
-          return concat(
-            of(partialProject),
-            this._getExtraAppData(
-              partialProject,
-              {
-                getresponsibleEPD: project.responsibleEPDId !== null && project.responsibleEPDId !== '' || project.responsibleEPDId !== undefined,
-                getprojectLead: project.projectLeadId !== null && project.projectLeadId !== '' || project.projectLeadId !== undefined
-              }
-            )
+          // now get the rest of the data for this project
+          return this._getExtraAppData(
+            new Project(project),
+            {
+              getresponsibleEPD: project.responsibleEPDId !== null && project.responsibleEPDId !== '' || project.responsibleEPDId !== undefined,
+              getprojectLead: project.projectLeadId !== null && project.projectLeadId !== '' || project.projectLeadId !== undefined
+            }
+          ).pipe(
+            tap(() => this.loadingState.stopLoading(loadingId))
           );
         }),
-        tap(project => { if (project) this.project = project; }),
         catchError(error => {
           this.loadingState.stopLoading(loadingId);
           return this.api.handleError(error);
@@ -199,10 +184,17 @@ export class ProjectService {
 
   getPins(proj: string, pageNum: number, pageSize: number, sortBy: any): Observable<DataQueryResponse<Org>[]> {
     const loadingId = `project-pins-${proj}-page-${pageNum}`;
+    this.loadingState.startLoading(loadingId, 'Loading pins');
     return this.api.getProjectPins(proj, pageNum, pageSize, sortBy)
       .pipe(
-        withLoading(this.loadingState, loadingId, 'Loading pins'),
-        catchError(error => this.api.handleError(error))
+        map(res => {
+          this.loadingState.stopLoading(loadingId);
+          return res;
+        }),
+        catchError(error => {
+          this.loadingState.stopLoading(loadingId);
+          return this.api.handleError(error);
+        })
       );
   }
 
@@ -276,19 +268,33 @@ export class ProjectService {
   // Send this users' information to our CAC back-end
   cacSignUp(project: Project, meta: any): Observable<any> {
     const loadingId = `cac-signup-${project._id}`;
+    this.loadingState.startLoading(loadingId, 'Signing up for CAC');
     return this.api.cacSignUp(project, meta)
       .pipe(
-        withLoading(this.loadingState, loadingId, 'Signing up for CAC'),
-        catchError(error => this.api.handleError(error))
+        map(res => {
+          this.loadingState.stopLoading(loadingId);
+          return res;
+        }),
+        catchError(error => {
+          this.loadingState.stopLoading(loadingId);
+          return this.api.handleError(error);
+        })
       );
   }
 
   // Remove this user from the CAC membership on this project
   cacRemoveMember(projectId: string, meta: any): Observable<any> {
+    this.loadingState.startLoading('cac-unsubscribe', 'Unsubscribing from CAC');
     return this.api.cacRemoveMember(projectId, meta)
       .pipe(
-        withLoading(this.loadingState, 'cac-unsubscribe', 'Unsubscribing from CAC'),
-        catchError(error => this.api.handleError(error))
+        map(result => {
+          this.loadingState.stopLoading('cac-unsubscribe');
+          return result;
+        }),
+        catchError(error => {
+          this.loadingState.stopLoading('cac-unsubscribe');
+          return this.api.handleError(error);
+        })
       );
   }
 }

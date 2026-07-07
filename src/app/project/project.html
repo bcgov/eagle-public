@@ -3,11 +3,7 @@
         <div class="project-info">
            <details-sidebar [project]="project()" (sidebarToggle)="handleSidebarToggle($event)"></details-sidebar>
             <div class="content">
-                @if (isLoading()) {
-                    <div class="banner-skeleton">
-                        <div class="banner-skeleton__shimmer"></div>
-                    </div>
-                } @else if (project()?.commentPeriodForBanner) {
+                @if (project()?.commentPeriodForBanner) {
                     @if (project()!.commentPeriodForBanner!.isMet && project()!.commentPeriodForBanner!.metURL) {
                         <app-engage-banner [data]="project()!.commentPeriodForBanner!" />
                     } @else {
@@ -45,14 +41,6 @@
                 }
 
                 <div class="main-content">
-                    @if (isLoading()) {
-                      <div class="d-flex justify-content-center align-items-center py-5">
-                        <div class="spinner-border text-secondary" role="status">
-                          <span class="visually-hidden">Loading project&hellip;</span>
-                        </div>
-                      </div>
-                    } @else {
-                    <div class="fade-in">
                     <section class="project-tabs">
                         <div class="tabs-container">
                             <ul class="nav-tabs" role="tablist">
@@ -72,22 +60,14 @@
                                     </li>
                                 }
                             }
-                            @if (tabsLoading()) {
-                                <li class="nav-item" aria-hidden="true"><a class="nav-link disabled"><div class="skeleton-cell" style="width:5rem;height:.75rem;margin:auto"></div></a></li>
-                                <li class="nav-item" aria-hidden="true"><a class="nav-link disabled"><div class="skeleton-cell" style="width:4rem;height:.75rem;margin:auto"></div></a></li>
-                                <li class="nav-item" aria-hidden="true"><a class="nav-link disabled"><div class="skeleton-cell" style="width:5.5rem;height:.75rem;margin:auto"></div></a></li>
-                            }
                             </ul>
                         </div>
                         <div class="tab-content">
                             <router-outlet></router-outlet>
                         </div>
                     </section>
-                    </div><!-- /.fade-in -->
-                    } <!-- end @else -->
                 </div>
 
-                @if (currentTab() === 'project-details') {
                 <section class="people">
                     <div class="container">
                         <h2 class="mb-4">Contact Us</h2>
@@ -105,7 +85,6 @@
                         </div>
                     </div>
                 </section>
-                }
             </div>
         </div>
     </main>

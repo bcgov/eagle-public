@@ -4,8 +4,3 @@
   margin-right: auto;
   display: block;
 }
-
-/* Reserve height while loading to prevent CLS when activities appear */
-.tab-section {
-  min-height: 80px;
-}

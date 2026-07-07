@@ -90,7 +90,7 @@
 }
 
 @media (max-width: 1023px) {
-  .hero-banner__actions .btn .hero-banner-btn__arrow {
+  .hero-banner__actions .btn i {
     display: none;
   }
 
