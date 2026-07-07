@@ -116,6 +116,24 @@ server {
         add_header Content-Type text/plain;
     }
 
+    # Proxy config requests to the main rproxy service to get test env config
+    location = /api/config {
+        proxy_pass http://rproxy:8080/api/config;
+        proxy_pass_request_headers on;
+    }
+
+    # Proxy API requests to eagle-api
+    location /api {
+        proxy_pass http://eagle-api:3000;
+        proxy_pass_request_headers on;
+    }
+
+    # Proxy Analytics requests to penguin-analytics-api
+    location /analytics {
+        proxy_pass http://penguin-analytics-api:3000/analytics;
+        proxy_pass_request_headers on;
+    }
+
     # Angular SPA - serve static files with fallback to index.html
     # Note: /api/* requests are handled by rproxy (eao-nginx) which routes directly to eagle-api
     location / {
