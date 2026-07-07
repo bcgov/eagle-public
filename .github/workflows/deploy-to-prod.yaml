@@ -60,9 +60,7 @@ jobs:
           rm -f openshift-client-linux.tar.gz
 
       - name: Log into OpenShift
-        run: |
-          oc login --server=${{ secrets.OPENSHIFT_URL }} --token=${{ secrets.OPENSHIFT_TOKEN }}
-          oc project ${{ env.OPENSHIFT_NAMESPACE_TOOLS }}
+        run: oc login --server=${{ secrets.OPENSHIFT_URL }} --token=${{ secrets.OPENSHIFT_TOKEN }}
 
       - name: Verify image tag exists
         run: |
