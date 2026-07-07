@@ -1,3 +1,4 @@
+import { DatePipe } from '@angular/common';
 import { Component, ViewEncapsulation, ChangeDetectionStrategy, inject, signal, output } from '@angular/core';
 import { Subject } from 'rxjs';
 
@@ -15,6 +16,7 @@ import { ProjectNotificationDocumentsTableComponent } from '../project-notificat
   encapsulation: ViewEncapsulation.None,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    DatePipe,
     ProjectNotificationDocumentsTableDetailsComponent,
     ProjectNotificationDocumentsTableComponent
 ],
