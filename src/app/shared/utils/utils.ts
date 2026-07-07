@@ -1,23 +1,24 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { ISearchResults } from 'app/models/search';
 import { Constants } from './constants';
+import { AnalyticsService } from 'app/services/analytics/analytics.service';
 
 const encode = encodeURIComponent;
-window['encodeURIComponent'] = (component: string) => {
-  return encode(component).replace(/[!'()*]/g, (c) => {
+window['encodeURIComponent'] = (component: string | number | boolean) => {
+  return encode(String(component)).replace(/[!'()*]/g, (c) => {
   // Also encode !, ', (, ), and *
     return '%' + c.charCodeAt(0).toString(16);
   });
 };
 
-@Injectable()
+@Injectable({providedIn:'root'})
 export class Utils {
-  constructor() { }
+  private analytics = inject(AnalyticsService);
 
   public encodeString(filename: string, isUrl: boolean) {
     let safeName;
     if (isUrl) {
-      safeName = encode(filename).replace(/\(/g, '%28').replace(/\)/g, '%29').replace(/\\/g, '_').replace(/\//g, '_').replace(/\%2F/g, '_').replace(/ /g, '_');
+      safeName = encode(filename).replace(/\(/g, '%28').replace(/\)/g, '%29').replace(/\\/g, '_').replace(/\//g, '_').replace(/%2F/g, '_').replace(/ /g, '_');
         return safeName;
     } else {
         safeName = filename.replace(/\(/g, '%28').replace(/\)/g, '%29').replace(/\\/g, '_').replace(/\//g, '_');
@@ -27,13 +28,13 @@ export class Utils {
   }
 
   // This function will take in a ISearchResults of some type and return an array of that same type
-  public extractFromSearchResults<T>(results: ISearchResults<T>[]): T[] {
+  public extractFromSearchResults<T>(results: ISearchResults<T>[]): T[] | null {
     if (!results || !Array.isArray(results)) {
       return null;
     }
     const data = results[0].data;
     if (!data) { return null; }
-    return <T[]>data.searchResults;
+    return data.searchResults as T[];
   }
    // Mapping the build database field to the human readable nature field
    public natureBuildMapper(key: string): string {
@@ -45,15 +46,15 @@ export class Utils {
   }
 
   // Creates query modifiers used for tab display in a project.
-  public createProjectTabModifiers(projectTab: string, list: Array<any>) {
-    let types: Array<object>;
-    let milestones: Array<object>;
-    let phases: string;
+  public createProjectTabModifiers(projectTab: string, list: any[]) {
+    let types: object[] = [];
+    let milestones: object[] = [];
+    let phases: string | undefined;
 
     switch (projectTab) {
       case Constants.optionalProjectDocTabs.UNSUBSCRIBE_CAC:
         break;
-      case Constants.optionalProjectDocTabs.AMENDMENT:
+      case Constants.optionalProjectDocTabs.AMENDMENT: {
         types = [
           { legislation: 2002, name: 'Amendment Package' },
           { legislation: 2018, name: 'Amendment Package' },
@@ -76,6 +77,7 @@ export class Utils {
         // Special case for phases.
         phases = this.getIdsByName(amendPhase, list).map(phase => phase.id).join(',');
         break;
+      }
       case Constants.optionalProjectDocTabs.CERTIFICATE:
         types = [
           { legislation: 2002, name: 'Certificate Package' },
@@ -94,7 +96,9 @@ export class Utils {
           { legislation: 2018, name: 'Transfer of Certificate/Order' }
         ];
         break;
-      case Constants.optionalProjectDocTabs.APPLICATION:
+      case Constants.optionalProjectDocTabs.APPLICATION: {
+        // Application documents are identified by type and milestone only.
+        // Adding projectPhase filter causes query issues with many AND conditions.
         types = [
           { legislation: 2002, name: 'Application Materials' },
           { legislation: 2018, name: 'Application Materials' },
@@ -106,33 +110,14 @@ export class Utils {
           { legislation: 2018, name: 'EAC Application' },
           { legislation: 2018, name: 'Revised EAC Application' },
         ];
-
-        const applications = [
-          { legislation: 2002, name: 'Post Decision - Amendment' },
-          { legislation: 2018, name: 'Post Decision - Amendment' }
-        ];
-
-        // Special case for phases.
-        const amendmentPhaseIds = this.getIdsByName(applications, list).map(type => type.id);
-
-        // Get all phase list items excluding the matched applications.
-        phases = list.filter(item => {
-          if (item.type === 'projectPhase' && !amendmentPhaseIds.includes(item._id)) {
-            return true;
-          }
-
-          return false;
-        })
-        .map(item => item._id)
-        .join(',');
-
         break;
+      }
     }
 
     const typeIds = this.getIdsByName(types, list).map(type => type.id).join(',');
     const milestoneIds = this.getIdsByName(milestones, list).map(milestone => milestone.id).join(',');
 
-    const queryModifier = {
+    const queryModifier: Record<string, string> = {
       documentSource: 'PROJECT',
       type: typeIds,
       milestone: milestoneIds,
@@ -146,7 +131,7 @@ export class Utils {
   }
 
   // Searches the list of terms for a name and legislation year.
-  public getIdsByName(terms: Array<any>, list: Array<any>) {
+  public getIdsByName(terms: any[], list: any[]) {
     const matchedItems = terms.map(term => {
       const listItem = list.find(item => item.name === term.name && item.legislation === term.legislation)
       return {
@@ -157,27 +142,46 @@ export class Utils {
     return matchedItems;
   }
 
-  public convertJSDateToNGBDate(jSDate: Date) {
-    if (!jSDate) {
-      return null;
-    }
-
-    return {
-      year: jSDate.getFullYear(),
-      month: jSDate.getMonth() + 1,
-      day: jSDate.getDate()
-    };
+  /**
+   * Looks up a list item by ID and returns its name.
+   * Commonly used in table rows to display human-readable names for IDs.
+   * @param id The ID to look up
+   * @param lists Array of list items with _id and name properties
+   * @returns The name of the matching item, or '-' if not found
+   */
+  public idToListName(id: string, lists: any[]): string {
+    if (!id) return '-';
+    if (!lists?.length) return '-';
+    
+    const item = lists.find(listItem => listItem._id === id);
+    return item?.name ?? '-';
   }
 
-  public convertJSDateToString(jSDate: Date) {
-    if (!jSDate) {
-      return null;
-    }
-
-    return `${jSDate.getFullYear()}-${jSDate.getMonth() + 1}-${jSDate.getDate()}`;
+  /**
+   * Opens a document download in a new browser tab.
+   * @param document Document object with _id, documentFileName, displayName, or internalOriginalName
+   */
+  public openDocumentDownload(document: { _id: string; documentFileName?: string; displayName?: string; internalOriginalName?: string }): void {
+    const filename = document.documentFileName || document.displayName || document.internalOriginalName || 'document';
+    
+    // Track document download
+    this.analytics.track('Document Downloaded', {
+      document_id: document._id,
+      document_name: filename,
+      document_type: 'unknown'
+    });
+    
+    const safeName = this.encodeString(filename, true);
+    window.open(`/api/public/document/${document._id}/download/${safeName}`, '_blank');
   }
 
-  public convertFormGroupNGBDateToJSDate(nGBDate, nGBTime = null) {
+  /**
+   * Converts an NgbDateStruct (and optional NgbTimeStruct) to a JavaScript Date.
+   * @param nGBDate NgbDateStruct with year, month, day properties
+   * @param nGBTime Optional NgbTimeStruct with hour, minute properties
+   * @returns JavaScript Date object or null if input is invalid
+   */
+  public convertFormGroupNGBDateToJSDate(nGBDate: { year: number; month: number; day: number }, nGBTime: { hour: number; minute: number } | null = null): Date | null {
     if (!nGBDate) {
       return null;
     }

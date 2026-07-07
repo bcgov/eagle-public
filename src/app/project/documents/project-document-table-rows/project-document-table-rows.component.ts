@@ -1,59 +1,56 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
-import { Utils } from 'app/shared/utils/utils';
-import { TableRowComponent } from 'app/shared/components/table-template-2/table-row-component';
-import { ConfigService } from 'app/services/config.service';
-import { takeWhile } from 'rxjs/operators';
+import { Component, OnDestroy, OnInit, EventEmitter, inject, ChangeDetectionStrategy, signal, ChangeDetectorRef } from '@angular/core';
 import { Router } from '@angular/router';
+import { takeWhile } from 'rxjs/operators';
+import { DatePipe } from '@angular/common';
+import { Utils } from '../../../shared/utils/utils';
+import { TableRowComponent, ITableMessage } from '../../../shared/components/table-template/table-row-component';
+import { ConfigService } from '../../../services/config.service';
 
 @Component({
   selector: 'app-document-table-rows',
   templateUrl: './project-document-table-rows.component.html',
-  styleUrls: ['./project-document-table-rows.component.scss']
+  styleUrls: ['./project-document-table-rows.component.css'],
+  imports: [DatePipe],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  standalone: true
 })
+export class DocumentTableRowsComponent implements TableRowComponent, OnInit, OnDestroy {
+  private readonly configService = inject(ConfigService);
+  private readonly utils = inject(Utils);
+  private readonly router = inject(Router);
+  private readonly cdr = inject(ChangeDetectorRef);
 
-export class DocumentTableRowsComponent extends TableRowComponent implements OnInit, OnDestroy {
-  private lists: any[] = [];
+  // TableRowComponent properties
+  rowData: any;
+  tableData: any;
+  messageOut = new EventEmitter<ITableMessage>();
+  messageIn = new EventEmitter<ITableMessage>();
+
+  private lists = signal<any[]>([]);
   private alive = true;
-  public currentUrl: String = '';
+  public currentUrl: string;
 
-  constructor(
-    private configService: ConfigService,
-    private utils: Utils,
-    private router: Router
-  ) {
-    super();
-    let currRoute = this.router.url.split(';')[0];
+  constructor() {
+    const currRoute = this.router.url.split(';')[0];
     this.currentUrl = currRoute.substring(currRoute.lastIndexOf('/') + 1);
   }
 
   ngOnInit() {
     this.configService.lists.pipe(takeWhile(() => this.alive)).subscribe((list) => {
-      this.lists = list;
+      if (list && list.length > 0) {
+        this.lists.set(list);
+        // Trigger change detection when lists are loaded
+        this.cdr.markForCheck();
+      }
     });
   }
 
-  idToList(id: string) {
-    if (!id) {
-      return '-';
-    }
-    // Grab the item from the constant lists, returning the name field of the object.
-    const items = this.lists.filter(listItem => listItem._id === id);
-    if (items.length !== 0) {
-      return items[0].name;
-    } else {
-      return '-';
-    }
+  idToList(id: string): string {
+    return this.utils.idToListName(id, this.lists());
   }
 
-  goToItem(item) {
-    const filename = item.documentFileName || item.displayName || item.internalOriginalName;
-    let safeName = filename;
-    try {
-      safeName = this.utils.encodeString(filename, true)
-    } catch (e) {
-      console.log('error:', e);
-    }
-    window.open('/api/public/document/' + item._id + '/download/' + safeName, '_blank');
+  goToItem(item: any): void {
+    this.utils.openDocumentDownload(item);
   }
 
   ngOnDestroy() {

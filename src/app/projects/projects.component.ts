@@ -1,183 +1,158 @@
-import { Component, OnInit, OnDestroy, Renderer2, ViewChild, ChangeDetectorRef } from '@angular/core';
-import { MatSnackBarRef, SimpleSnackBar, MatSnackBar } from '@angular/material';
+import { Component, OnInit, OnDestroy, Renderer2, ViewChild, inject, signal, computed } from '@angular/core';
+
 import { Router, NavigationEnd } from '@angular/router';
-import { Subject } from 'rxjs/Subject';
-import { Observable } from 'rxjs/Observable';
-import 'rxjs/add/operator/takeUntil';
-import 'rxjs/add/operator/concat';
-import 'rxjs/add/operator/finally';
-import * as L from 'leaflet';
-import * as _ from 'lodash';
+import { Subject } from 'rxjs';
+import { takeUntil, finalize } from 'rxjs/operators';
+declare const L: any;
 
 import { Project } from 'app/models/project';
 import { ProjectService } from 'app/services/project.service';
 import { ConfigService } from 'app/services/config.service';
-
-const PAGE_SIZE = 100;
+import { StorageService } from 'app/services/storage.service';
+import { ProjectFilterService } from 'app/services/project-filter.service';
+import { MapStateService } from 'app/services/map-state.service';
+import { FilterStateService } from 'app/services/filter-state.service';
+import { LoggingService } from 'app/services/logging.service';
+import { AnalyticsService } from 'app/services/analytics/analytics.service';
+import { ProjlistFiltersComponent } from './projlist-filters/projlist-filters.component';
+import { ProjlistListComponent } from './projlist-list/projlist-list.component';
+import { ProjlistMapComponent } from './projlist-map/projlist-map.component';
 
 @Component({
   selector: 'app-projects',
   templateUrl: './projects.component.html',
-  styleUrls: ['./projects.component.scss']
+  styleUrls: ['./projects.component.css'],
+  imports: [
+    ProjlistFiltersComponent,
+    ProjlistListComponent,
+    ProjlistMapComponent
+],
+  standalone: true
 })
-
 export class ProjectsComponent implements OnInit, OnDestroy {
-  @ViewChild('appmap', {static: true}) appmap;
-  @ViewChild('applist', {static: true}) applist;
-  @ViewChild('appfilters', {static: true}) appfilters;
+  @ViewChild('appmap', { static: true }) appmap!: ProjlistMapComponent;
+  @ViewChild('applist', { static: true }) applist!: ProjlistListComponent;
 
-  // FUTURE: change this to an observable and components subscribe to changes ?
-  // ref: https://github.com/escardin/angular2-community-faq/blob/master/services.md#how-do-i-communicate-between-components-using-a-shared-service
-  // ref: https://stackoverflow.com/questions/34700438/global-events-in-angular
-  public _loading = false;
-  set isLoading(val: boolean) {
-    this._loading = val;
-    if (val) {
-      this.appfilters.onLoadStart();
-      this.appmap.onLoadStart();
-      this.applist.onLoadStart();
-    } else {
-      this.appfilters.onLoadEnd();
-      this.appmap.onLoadEnd();
-      this.applist.onLoadEnd();
-    }
-  }
+  private router = inject(Router);
+  private projectService = inject(ProjectService);
+  public configService = inject(ConfigService);
+  private renderer = inject(Renderer2);
+  private storageService = inject(StorageService);
+  private filterService = inject(ProjectFilterService);
+  private filterStateService = inject(FilterStateService);
+  private mapStateService = inject(MapStateService);
+  private logger = inject(LoggingService);
+  private analytics = inject(AnalyticsService);
 
-  private snackBarRef: MatSnackBarRef<SimpleSnackBar> = null;
-  public allApps: Array<Project> = [];
-  public filterApps: Array<Project> = [];
-  public mapApps: Array<Project> = [];
-  public listApps: Array<Project> = [];
-  private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
+  // null = not yet loaded; [] = loaded but empty; Project[] = loaded with results
+  public allApps = signal<Project[] | null>(null);
 
+  // Filtered projects — null while loading, Project[] once data arrives
+  public filterApps = computed(() => {
+    const apps = this.allApps();
+    return apps === null ? null : this.filterService.filterProjects(apps);
+  });
 
-  previousUrl: string;
+  // Projects visible on map — always an array (map renders empty markers while loading)
+  public mapApps = computed(() => this.filterApps() ?? []);
 
-  constructor(
-    public snackBar: MatSnackBar,
-    private router: Router,
-    private _changeDetectionRef: ChangeDetectorRef,
-    private projectService: ProjectService,
-    public configService: ConfigService, // used in template
-    private renderer: Renderer2
-  ) {
+  // Projects visible in list — null while loading so the list can distinguish
+  // "not yet loaded" from "loaded but empty"
+  public listApps = computed(() => {
+    const filtered = this.filterApps();
+    if (filtered === null) return null;
+    const bounds = this.mapStateService.currentBounds();
+    if (!bounds) return filtered;
+    return filtered.filter(project => this.mapStateService.isProjectInBounds(project));
+  });
+  
+  private destroy$ = new Subject<void>();
 
-    // add a class to the body tag here to limit the height of the viewport when on the Projects page
+  constructor() {
+    // Clean up body class on navigation
     this.router.events
-      .takeUntil(this.ngUnsubscribe)
+      .pipe(takeUntil(this.destroy$))
       .subscribe((event) => {
         if (event instanceof NavigationEnd) {
           this.renderer.removeClass(document.body, 'no-scroll');
-          this._changeDetectionRef.detectChanges();
+        }
+      });
+
+    // Kick off data fetch immediately — no need to wait for the DOM (ngOnInit)
+    this.storageService.getCachedProjects$()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (cachedProjects) => {
+          if (cachedProjects && cachedProjects.length > 0) {
+            this.logger.info(`Using ${cachedProjects.length} cached projects`, 'ProjectsComponent');
+            this.allApps.set(cachedProjects);
+          } else {
+            this.getApps();
+          }
+        },
+        error: () => {
+          // Preload failed, load projects normally
+          this.getApps();
         }
       });
   }
 
   ngOnInit() {
-    // prevent underlying map actions for list and filters components
-    const applist_list = <HTMLElement>document.getElementById('applist-list');
-    L.DomEvent.disableClickPropagation(applist_list);
-    L.DomEvent.disableScrollPropagation(applist_list);
+    // Prevent underlying map actions for list and filter overlays
+    const applist_list = document.getElementById('applist-list') as HTMLElement;
+    if (applist_list) {
+      L.DomEvent.disableClickPropagation(applist_list);
+      L.DomEvent.disableScrollPropagation(applist_list);
+    }
 
-    const applist_filters = <HTMLElement>document.getElementById('applist-filters');
-    L.DomEvent.disableClickPropagation(applist_filters);
-    L.DomEvent.disableScrollPropagation(applist_filters);
-
-    // get initial filters
-    // this.filters = { ...this.appfilters.getFilters() }; // FUTURE
-
-    // load initial apps
-    this.getApps();
+    const applist_filters = document.getElementById('applist-filters') as HTMLElement;
+    if (applist_filters) {
+      L.DomEvent.disableClickPropagation(applist_filters);
+      L.DomEvent.disableScrollPropagation(applist_filters);
+    }
   }
 
-  private getApps() {
-    // do this in another event so it's not in current change detection cycle
-    setTimeout(() => {
-      const start = (new Date()).getTime(); // for profiling
-      this.isLoading = true;
-      this.snackBarRef = this.snackBar.open('Loading projects ...');
-      this.allApps = []; // empty the list
+  private getApps(): void {
+    const start = Date.now();
 
-      this.projectService.getCount()
-        .takeUntil(this.ngUnsubscribe)
-        .subscribe(count => {
-          // prepare 'pages' of gets
-          const observables: Array<Observable<Project[]>> = [];
-          for (let page = 1; page < Math.ceil(count / PAGE_SIZE) + 1; page++) {
-            observables.push(this.projectService.getAllFull(page, PAGE_SIZE));
-          }
-
-          // get all observables sequentially
-          Observable.of([] as Project[]).concat(...observables)
-            .takeUntil(this.ngUnsubscribe)
-            .finally(() => {
-              this.snackBarRef.dismiss();
-              this.isLoading = false;
-              console.log('got', this.allApps.length, 'apps in', (new Date()).getTime() - start, 'ms');
-            })
-            .subscribe(projects => {
-              this.allApps = _.concat(this.allApps, projects);
-              // filter component gets all apps
-              this.filterApps = this.allApps;
-            }, error => {
-              console.log(error);
-              alert('Uh-oh, couldn\'t load projects');
-              // projects not found --> navigate back to home
-              this.router.navigate(['/']);
-            });
-        }, error => {
-          console.log(error);
-          alert('Uh-oh, couldn\'t count projects');
-          // projects not found --> navigate back to home
+    this.projectService.getAllFull(1, 1000000)
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => {
+          this.logger.info(`Loaded ${this.allApps()?.length ?? 0} projects in ${Date.now() - start}ms`, 'ProjectsComponent');
+        })
+      )
+      .subscribe({
+        next: (projects: Project[]) => {
+          this.allApps.set(projects);
+          this.storageService.cacheProjects(projects);
+        },
+        error: (error) => {
+          // Set empty array (not null) so the list shows "No projects found" on error
+          this.allApps.set([]);
+          this.logger.error('Error loading projects', 'ProjectsComponent', error);
           this.router.navigate(['/']);
-          this.snackBarRef.dismiss();
-          this.isLoading = false;
-        });
-    }, 0);
+        }
+      });
   }
 
-  /**
-   * Event handler called when filters component updates list of matching apps.
-   */
-  public updateMatching() {
-    // map component gets filtered apps
-    this.mapApps = this.filterApps.filter(a => a.isMatches);
-    // NB: OnChanges event will update the map
-    this.appmap.resetMap();
-  }
-
-  /**
-   * Event handler called when map component updates list of visible apps.
-   */
-  public updateVisible() {
-    // list component gets visible apps
-    this.listApps = this.mapApps.filter(a => a.isVisible);
-    // NB: OnChanges event will update the list
-  }
-
-  /**
-   * Event handler called when map component reset button is clicked.
-   */
-  public reloadApps() {
-    this.getApps();
-  }
-
-  /**
-   * Event handler called when list component selects or unselects an app.
-   */
-  public highlightProject(app: Project, show: boolean) {
-    this.appmap.onHighlightProject(app, show);
-  }
-
-  /**
-   * Called when list component visibility is toggled.
-   */
-  public toggleAppList() {
+  public toggleAppList(): void {
     this.configService.isApplistListVisible = !this.configService.isApplistListVisible;
+    
+    // Track projects view toggle
+    this.analytics.track('Projects View Changed', {
+      view: this.configService.isApplistListVisible ? 'list' : 'map',
+      total_projects: this.allApps()?.length ?? 0,
+      filtered_projects: this.filterApps()?.length ?? 0,
+      list_projects: this.listApps()?.length ?? 0
+    });
   }
 
-  ngOnDestroy() {
-    this.ngUnsubscribe.next();
-    this.ngUnsubscribe.complete();
+  ngOnDestroy(): void {
+    // Clear filters and reset state when leaving the page
+    this.filterStateService.clearAll();
+    
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 }

@@ -1,28 +1,87 @@
-import { Component, OnInit, ChangeDetectorRef, OnDestroy } from '@angular/core';
-// TableParamsObject removed - using simple object instead
-import { ActivatedRoute, Router } from '@angular/router';
-import { SearchResults } from 'app/models/search';
-import { IColumnObject, TableObject2 } from 'app/shared/components/table-template-2/table-object-2';
-import { DocumentTableRowsComponent } from '../documents/project-document-table-rows/project-document-table-rows.component';
+import { Component, OnDestroy, inject, signal, ChangeDetectionStrategy } from '@angular/core';
+import { ActivatedRoute, Router, Params } from '@angular/router';
 import { takeWhile } from 'rxjs/operators';
-import { TableTemplate } from 'app/shared/components/table-template-2/table-template';
-import { ITableMessage } from 'app/shared/components/table-template-2/table-row-component';
-import { TableService } from 'app/services/table.service';
+import { toObservable } from '@angular/core/rxjs-interop';
+import { SearchParamObject } from '../../services/search.service';
+import { IColumnObject, TableObject } from '../../shared/components/table-template/table-object';
+import { DocumentTableRowsComponent } from '../documents/project-document-table-rows/project-document-table-rows.component';
+import { TableTemplate } from '../../shared/components/table-template/table-template';
+import { ITableMessage } from '../../shared/components/table-template/table-row-component';
+import { TableService } from '../../services/table.service';
+import { TableTemplateComponent } from '../../shared/components/table-template/table-template.component';
+import { LoadingStateService } from '../../services/loading-state.service';
+import { ConfigService } from '../../services/config.service';
+import { Utils } from '../../shared/utils/utils';
+import { Constants } from '../../shared/utils/constants';
 
 @Component({
   selector: 'app-certificates',
   templateUrl: './certificates.component.html',
-  styleUrls: ['./certificates.component.scss']
+  imports: [TableTemplateComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  standalone: true
 })
-export class CertificatesComponent implements OnInit, OnDestroy {
-  private tableId = 'certificates';
-  public tableParams: any = { totalListItems: 0, currentPage: 1, pageSize: 10, sortBy: '' };
-  public loading: Boolean = true;
+export class CertificatesComponent implements OnDestroy {
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly tableTemplateUtils = inject(TableTemplate);
+  private readonly tableService = inject(TableService);
+  private readonly loadingState = inject(LoadingStateService);
+  private readonly configService = inject(ConfigService);
+  private readonly utils = inject(Utils);
 
+  private readonly tableId = 'certificates';
   private alive = true;
+  private projId = '';
+  private lists: any[] = [];
 
-  public tableData: TableObject2 = new TableObject2({ component: DocumentTableRowsComponent });
-  public tableColumns: IColumnObject[] = [
+  public readonly loading = this.loadingState.getOperationState('table-certificates');
+  public readonly tableData = signal<TableObject>(new TableObject({ component: DocumentTableRowsComponent }));
+  private readonly tableSignal$ = toObservable(this.tableService.getTableSignal(this.tableId));
+
+  constructor() {
+    // Get project ID from parent route
+    this.projId = this.route.parent?.snapshot.params['projId'] || '';
+
+    // Watch for table data changes from service
+    this.tableSignal$.pipe(takeWhile(() => this.alive)).subscribe(searchResults => {
+      
+      if (searchResults && searchResults.data) {
+        const currentTableData = this.tableData();
+        const newTableData = new TableObject({
+          component: DocumentTableRowsComponent,
+          pageSize: currentTableData.pageSize,
+          currentPage: currentTableData.currentPage,
+          sortBy: currentTableData.sortBy
+        });
+
+        newTableData.totalListItems = searchResults.totalSearchCount;
+        newTableData.items = searchResults.data.map((record: any) => {
+          record.showFeatured = false;
+          return { rowData: record };
+        });
+        newTableData.columns = this.tableColumns;
+        newTableData.options.showAllPicker = true;
+
+        this.tableData.set(newTableData);
+      }
+    });
+
+    // Load config lists and trigger initial fetch
+    this.configService.lists.pipe(takeWhile(() => this.alive)).subscribe(list => {
+      this.lists = list;
+      this.fetchDataWithCurrentParams();
+    });
+
+    // Subscribe to query params and fetch data
+    this.route.queryParamMap.pipe(takeWhile(() => this.alive)).subscribe(() => {
+      if (this.lists.length > 0) {
+        this.fetchDataWithCurrentParams();
+      }
+    });
+  }
+
+  public readonly tableColumns: IColumnObject[] = [
     {
       name: 'Name',
       value: 'displayName',
@@ -49,83 +108,78 @@ export class CertificatesComponent implements OnInit, OnDestroy {
       width: 'col-2'
     }
   ];
-  constructor(
-    private _changeDetectionRef: ChangeDetectorRef,
-    private route: ActivatedRoute,
-    private router: Router,
-    private tableTemplateUtils: TableTemplate,
-    private tableService: TableService
-  ) { }
 
-  ngOnInit() {
-    this.route.queryParamMap.pipe(takeWhile(() => this.alive)).subscribe(data => {
-      // Get params from route, shove into the tableTemplateUtils so that we get a new dataset to work with.
-      this.tableData = this.tableTemplateUtils.updateTableObjectWithUrlParams(data['params'], this.tableData);
-      this._changeDetectionRef.detectChanges();
-    });
+  private fetchDataWithCurrentParams() {
+    const currentParams = this.route.snapshot.queryParamMap;
+    const queryParams = { ...(currentParams as any)['params'] };
+    
+    const updatedTableData = this.tableTemplateUtils.updateTableObjectWithUrlParams(
+      queryParams,
+      this.tableData()
+    );
+    
+    // Set default sort if not provided
+    if (!queryParams['sortBy']) {
+      updatedTableData.sortBy = '-datePosted';
+    }
+    
+    this.tableData.set(updatedTableData);
 
-    this.tableService.getValue(this.tableId).pipe(takeWhile(() => this.alive)).subscribe((searchResults: SearchResults) => {
-      if (searchResults.data !== 0) {
-        this.tableData.totalListItems = searchResults.totalSearchCount;
-        this.tableData.items = searchResults.data.map(record => {
-          record.showFeatured = false;
-          return { rowData: record };
-        });
-        this.tableData.columns = this.tableColumns;
-        this.tableData.options.showAllPicker = true;
+    // Determine secondary sort
+    const secondarySort = updatedTableData.sortBy.includes('displayName') ? '' : '+displayName';
 
-        this.loading = false;
-        this._changeDetectionRef.detectChanges();
-      }
-    });
+    // Fetch data with current params
+    this.tableService.fetchData(new SearchParamObject(
+      this.tableId,
+      '',
+      'Document',
+      [{ 'name': 'project', 'value': this.projId }],
+      updatedTableData.currentPage,
+      updatedTableData.pageSize,
+      updatedTableData.sortBy,
+      this.utils.createProjectTabModifiers(Constants.optionalProjectDocTabs.CERTIFICATE, this.lists),
+      false,
+      secondarySort
+    ));
   }
 
   onMessageOut(msg: ITableMessage) {
-    let params = {};
+    const params: Params = {};
+    
     switch (msg.label) {
       case 'columnSort':
-        if (this.tableData.sortBy.charAt(0) === '+') {
-          params['sortBy'] = '-' + msg.data;
-        } else {
-          params['sortBy'] = '+' + msg.data;
-        }
-
-        if (params['sortBy'].includes('displayName')) {
-          this.tableService.data[this.tableId].cachedConfig.secondarySort = '';
-        } else {
-          this.tableService.data[this.tableId].cachedConfig.secondarySort = '+displayName';
-        }
-
-        this.tableService.data[this.tableId].cachedConfig.sortBy = params['sortBy'];
+        params['sortBy'] = this.toggleSortDirection(msg.data);
+        params['currentPage'] = 1;
         break;
       case 'pageNum':
         params['currentPage'] = msg.data;
-        this.tableService.data[this.tableId].cachedConfig.currentPage = params['currentPage'];
         break;
       case 'pageSize':
         params['pageSize'] = msg.data.value;
-        if (params['pageSize'] === this.tableData.totalListItems) {
-          this.loading = true;
-        }
         params['currentPage'] = 1;
-        this.tableService.data[this.tableId].cachedConfig.pageSize = params['pageSize'];
-        this.tableService.data[this.tableId].cachedConfig.currentPage = params['currentPage'];
-        break;
-      default:
         break;
     }
-    this.submit(params);
+    
+    this.submit({ ...this.route.snapshot.queryParams, ...params });
   }
 
-  submit(params, filters = null) {
-    this.router.navigate(
-      [],
-      {
-        queryParams: filters ? { ...params, ...filters } : params,
-        relativeTo: this.route,
-        queryParamsHandling: 'merge'
-      });
-    this.tableService.refreshData(this.tableId);
+  private toggleSortDirection(field: string): string {
+    const currentSort = this.tableData().sortBy;
+    
+    // If we're sorting by the same field, toggle direction
+    if (currentSort?.includes(field)) {
+      return (currentSort?.[0] === '+' ? '-' : '+') + field;
+    }
+    
+    // Default to descending for new field
+    return '-' + field;
+  }
+
+  submit(params: Params) {
+    this.router.navigate([], {
+      queryParams: params,
+      relativeTo: this.route
+    });
   }
 
   ngOnDestroy() {

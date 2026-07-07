@@ -1,0 +1,28 @@
+# Production environment values
+replicaCount: 3
+
+image:
+  tag: "prod"
+
+route:
+  enabled: false  # Route 'prod-external' already exists and routes through rproxy
+  host: projects.eao.gov.bc.ca
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+  requests:
+    cpu: 250m
+    memory: 512Mi
+
+# Pod Disruption Budget - ensure at least 1 pod during disruptions
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 6
+  targetCPUUtilizationPercentage: 70

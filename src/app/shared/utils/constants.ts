@@ -1,14 +1,9 @@
-import { NgbDateStruct } from '@ng-bootstrap/ng-bootstrap';
-
 export interface BuildNature {
   build: string;
   nature: string;
 }
 
 export class Constants {
-
-  public static readonly minPickerDate: NgbDateStruct = { year: 1900, month: 1, day: 1 };
-  public static readonly maxPickerDate: NgbDateStruct = { year: (new Date().getFullYear() + 20), month: 1, day: 1 };
 
   public static readonly searchDisclaimer = 'Note: Some documents within this project have not yet been categorized by author, document type, and/or milestone and may not be displayed when using some of the search filters. We are actively processing these documents so they can be searched and filtered, making it easier to find what you’re looking for. Clearing the filters and searching based on a keyword will show all results.';
   public static readonly docSearchDisclaimer = 'Note: Some documents have not yet been categorized by author, document type, and/or milestone and may not be displayed when using some of the search filters. We are actively processing these documents so they can be searched and filtered, making it easier to find what you’re looking for. Clearing the filters and searching based on a keyword will show all results.';
@@ -33,6 +28,7 @@ export class Constants {
     DEFAULT_KEYWORDS: '',
     DEFAULT_SHOW_MORE_INCREMENT: 5,
     DEFAULT_DATASET: '',
+    MAX_SHOW_ALL_ITEMS: 500,
     DEFAULT_PAGE_SIZE_OPTIONS: [
       { displayText: '10', value: 10 },
       { displayText: '25', value: 25 },
@@ -76,7 +72,7 @@ export class Constants {
     { code: 'Water Management', name: 'Water Management' }
   ];
 
-  public static readonly REGIONS_COLLECTION: Array<object> = [
+  public static readonly REGIONS_COLLECTION: object[] = [
     { code: 'Cariboo', name: 'Cariboo' },
     { code: 'Kootenay', name: 'Kootenay' },
     { code: 'Lower Mainland', name: 'Lower Mainland' },
@@ -88,7 +84,7 @@ export class Constants {
     { code: 'Vancouver Island', name: 'Vancouver Island' }
   ];
 
-  public static readonly PROJECT_NOTIFICATION_DECISIONS: Array<object> = [
+  public static readonly PROJECT_NOTIFICATION_DECISIONS: object[] = [
     { code: 'In Progress', name: 'In Progress' },
     { code: 'Referred for s.11 consideration', name: 'Referred for s.11 consideration' },
     { code: 'Not referred for s.11 consideration', name: 'Not referred for s.11 consideration' }

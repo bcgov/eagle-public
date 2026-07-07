@@ -1,56 +1,50 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
-import { ConfigService } from 'app/services/config.service';
-
-import { TableRowComponent } from 'app/shared/components/table-template-2/table-row-component';
-import { Utils } from 'app/shared/utils/utils';
+import { Component, OnDestroy, OnInit, ChangeDetectionStrategy, inject, EventEmitter } from '@angular/core';
 import { takeWhile } from 'rxjs/operators';
+import { CommonModule, DatePipe } from '@angular/common';
+
+import { ConfigService } from '../../services/config.service';
+import { TableRowComponent, ITableMessage } from '../../shared/components/table-template/table-row-component';
+import { TableObject } from '../../shared/components/table-template/table-object';
+import { Utils } from '../../shared/utils/utils';
 
 @Component({
-    selector: 'app-project-notification-documents-table-rows',
-    templateUrl: './project-notification-documents-table-rows.component.html',
-    styleUrls: ['./project-notification-documents-table-rows.component.scss']
+  selector: 'app-project-notification-documents-table-rows',
+  templateUrl: './project-notification-documents-table-rows.component.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [CommonModule, DatePipe],
+  standalone: true,
+  host: {
+    '(keyup.enter)': 'goToItem(rowData)',
+    'tabindex': '0'
+  }
 })
+export class ProjectNotificationDocumentsTableRowsComponent implements TableRowComponent, OnInit, OnDestroy {
+  rowData: any;
+  tableData!: TableObject;
+  messageOut = new EventEmitter<ITableMessage>();
+  messageIn = new EventEmitter<ITableMessage>();
+  
+  private configService = inject(ConfigService);
+  private utils = inject(Utils);
 
-export class ProjectNotificationDocumentsTableRowsComponent extends TableRowComponent implements OnInit, OnDestroy {
-    private lists: any[] = [];
-    private alive = true;
-    constructor(
-        private configService: ConfigService,
-        private utils: Utils
-    ) {
-        super();
-    }
-    ngOnInit() {
-        this.configService.lists.pipe(takeWhile(() => this.alive)).subscribe((list) => {
-            this.lists = list;
-        });
-    }
+  private lists: any[] = [];
+  private alive = true;
 
-    idToList(id: string) {
-        if (!id) {
-            return '-';
-        }
-        // Grab the item from the constant lists, returning the name field of the object.
-        const items = this.lists.filter(listItem => listItem._id === id);
-        if (items.length !== 0) {
-            return items[0].name;
-        } else {
-            return '-';
-        }
-    }
+  ngOnInit() {
+    this.configService.lists.pipe(takeWhile(() => this.alive)).subscribe((list) => {
+      this.lists = list;
+    });
+  }
 
-    goToItem(item) {
-        const filename = item.documentFileName || item.displayName || item.internalOriginalName;
-        let safeName = filename;
-        try {
-            safeName = this.utils.encodeString(filename, true)
-        } catch (e) {
-            console.log('error:', e);
-        }
-        window.open('/api/public/document/' + item._id + '/download/' + safeName, '_blank');
-    }
+  idToList(id: string) {
+    return this.utils.idToListName(id, this.lists);
+  }
 
-    ngOnDestroy() {
-        this.alive = false;
-    }
+  goToItem(item: any) {
+    this.utils.openDocumentDownload(item);
+  }
+
+  ngOnDestroy() {
+    this.alive = false;
+  }
 }

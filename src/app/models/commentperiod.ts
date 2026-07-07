@@ -1,62 +1,64 @@
-import * as moment from 'moment-timezone';
+import { DateTime } from 'luxon';
 import { Project } from './project';
 
 
 export class CommentPeriod {
   _id: string;
-  __v: Number;
-  _schemaName: String;
-  addedBy: String;
-  additionalText: String;
-  ceaaAdditionalText: String;
-  ceaaInformationLabel: String;
-  ceaaRelatedDocuments: String;
-  classificationRoles: String;
-  classifiedPercent: Number;
-  commenterRoles: String;
-  commentTip: String;
-  dateAdded: String;
-  dateCompleted: Date;
-  dateCompletedEst: String;
-  dateStarted: Date;
-  dateStartedEst: String;
-  dateUpdated: String;
-  downloadRoles: String;
-  informationLabel: String;
-  instructions: String;
-  isClassified: Boolean;
+  __v: number;
+  _schemaName: string;
+  addedBy: string;
+  additionalText: string;
+  ceaaAdditionalText: string;
+  ceaaInformationLabel: string;
+  ceaaRelatedDocuments: string;
+  classificationRoles: string;
+  classifiedPercent: number;
+  commenterRoles: string;
+  commentTip: string;
+  dateAdded: string;
+  dateCompleted!: Date;
+  dateCompletedEst: string;
+  dateStarted!: Date;
+  dateStartedEst: string;
+  dateUpdated: string;
+  downloadRoles: string;
+  informationLabel: string;
+  instructions: string;
+  isClassified: boolean;
   isMet: boolean;
-  isPublished: Boolean;
-  isResolved: Boolean;
-  isVetted: String;
+  isPublished: boolean;
+  isResolved: boolean;
+  isVetted: string;
   metURL: string;
-  milestone: String;
-  openCommentPeriod: String;
-  openHouses: String;
-  periodType: String;
-  phase: String;
-  phaseName: String;
+  metBannerImageUrl: string;
+  milestone: string;
+  openCommentPeriod!: string;
+  openHouses: { eventDate: string; description: string }[] | any;
+  periodType: string;
+  phase: string;
+  phaseName: string;
   project: Project;
-  publishedPercent: Number;
-  rangeOption: String;
-  rangeType: String;
-  relatedDocuments: Array<String> = [];
-  resolvedPercent: Number;
-  updatedBy: String;
-  userCan: String;
-  vettedPercent: Number;
-  vettingRoles: String;
+  publishedPercent: number;
+  rangeOption: string;
+  rangeType: string;
+  relatedDocuments: string[] = [];
+  resolvedPercent: number;
+  updatedBy: string;
+  userCan: string;
+  vettedPercent: number;
+  vettingRoles: string;
   daysRemainingCount: number;
 
-  longEndDate: moment.Moment;
+  longEndDate: DateTime;
   // Permissions
-  read: Array<String> = [];
-  write: Array<String> = [];
-  delete: Array<String> = [];
+  read: string[] = [];
+  write: string[] = [];
+  delete: string[] = [];
 
   // Not from API
-  commentPeriodStatus: String;
-  daysRemaining: String;
+  commentPeriodStatus!: string;
+  daysRemaining!: string;
+  endDateDisplay!: string;
 
   constructor(obj?: any) {
     this._id = obj && obj._id || null;
@@ -84,6 +86,7 @@ export class CommentPeriod {
     this.isResolved = obj && obj.isResolved || null;
     this.isVetted = obj && obj.isVetted || null;
     this.metURL = obj && obj.metURL || null;
+    this.metBannerImageUrl = obj && obj.metBannerImageUrl || null;
     this.milestone = obj && obj.milestone || null;
     this.openHouses = obj && obj.openHouses || null;
     this.periodType = obj && obj.periodType || null;
@@ -116,18 +119,23 @@ export class CommentPeriod {
 
     // get comment period days remaining and determine commentPeriodStatus of the period
     if (obj && obj.dateStarted && obj.dateCompleted) {
-      const now = new Date();
-      const dateStarted = moment(obj.dateStarted);
-      const dateCompleted = moment(obj.dateCompleted);
+      const now = DateTime.now().setZone('America/Vancouver');
+      const dateStarted = DateTime.fromJSDate(new Date(obj.dateStarted)).setZone('America/Vancouver');
+      // When dateCompleted is midnight (admin picked a date with no time), treat the period
+      // as closing at end of that day (11:59:59 PM Pacific) to satisfy "open until 11:59 PM" requirement.
+      const rawEnd = DateTime.fromJSDate(new Date(obj.dateCompleted)).setZone('America/Vancouver');
+      const dateCompleted = (rawEnd.hour === 0 && rawEnd.minute === 0 && rawEnd.second === 0)
+        ? rawEnd.endOf('day')
+        : rawEnd;
 
-      if (moment(now).isBefore(dateStarted)) {
+      if (now < dateStarted) {
         this.commentPeriodStatus = 'Pending';
         this.daysRemaining = 'Pending';
-      } else if (moment(now).isBetween(dateStarted, dateCompleted)) {
+      } else if (now >= dateStarted && now <= dateCompleted) {
         this.commentPeriodStatus = 'Open';
-        this.daysRemainingCount = dateCompleted.diff(moment(now), 'days');
+        this.daysRemainingCount = Math.floor(dateCompleted.diff(now, 'days').days);
         this.daysRemaining = this.daysRemainingCount === 0 ? 'Final Day' : this.daysRemainingCount + (this.daysRemainingCount === 1 ? ' Day ' : ' Days ') + 'Remaining';
-      } else if (moment(now).isAfter(dateCompleted)) {
+      } else if (now > dateCompleted) {
         this.commentPeriodStatus = 'Closed';
         this.daysRemaining = 'Completed';
       } else {
@@ -136,6 +144,19 @@ export class CommentPeriod {
       }
     }
 
-    this.longEndDate = moment.tz(this.dateCompleted, moment.tz.guess());
+    // Always display dates in Pacific time — BC-based engagement deadlines.
+    this.longEndDate = DateTime.fromJSDate(this.dateCompleted).setZone('America/Vancouver');
+
+    // Build a display string that avoids misleading "12:00 AM" times.
+    // Midnight (00:00) = admin picked that date as closing day (start-of-day stored) — show date-only.
+    // 23:59 means "end of that day" — show date-only.
+    // Any other time — show full datetime in Pacific.
+    const h = this.longEndDate.hour;
+    const m = this.longEndDate.minute;
+    if ((h === 0 && m === 0) || (h === 23 && m === 59)) {
+      this.endDateDisplay = this.longEndDate.toFormat('MMMM dd, yyyy');
+    } else {
+      this.endDateDisplay = this.longEndDate.toFormat('MMMM dd @ h:mm a ZZZZ');
+    }
   }
 }

@@ -1,33 +1,37 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
-import { StorageService } from 'app/services/storage.service';
-import { ConfigService } from 'app/services/config.service';
+import { Component, OnDestroy, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { StorageService } from '../../services/storage.service';
+import { ConfigService } from '../../services/config.service';
 import { NavigationEnd, Router } from '@angular/router';
 import { takeWhile } from 'rxjs/operators';
+import { NewlinesPipe } from '../../shared/pipes/newlines.pipe';
+import { FeaturedDocumentsComponent } from '../featured-documents/featured-documents.component';
+import { PinsComponent } from '../pins/pins.component';
+import { ProjectActivitesComponent } from '../project-activites/project-activites.component';
 
 @Component({
   selector: 'app-project-details-tab',
+  imports: [CommonModule, NewlinesPipe, FeaturedDocumentsComponent, PinsComponent, ProjectActivitesComponent],
   templateUrl: './project-details-tab.component.html',
-  styleUrls: ['./project-details-tab-sm.component.scss', './project-details-tab-md-lg.component.scss'],
+  styleUrl: './project-details-tab.component.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  standalone: true
 })
 export class ProjectDetailsTabComponent implements OnInit, OnDestroy {
-  public project;
+  private storageService = inject(StorageService);
+  public configService = inject(ConfigService);
+  private router = inject(Router);
+
+  // Use the reactive signal from storageService
+  public project = this.storageService.currentProject;
   private alive = true;
 
-  constructor(
-    private storageService: StorageService,
-    public configService: ConfigService,
-    private router: Router
-  ) { }
-
   ngOnInit() {
-    this.project = this.storageService.state.currentProject.data;
-
     this.router.events.pipe(takeWhile(() => this.alive)).subscribe((evt) => {
       if (!(evt instanceof NavigationEnd)) {
         return;
       }
-      const x = this.storageService.state.scrollPosition.data[0] ? this.storageService.state.scrollPosition.data[0] : 0;
-      const y = this.storageService.state.scrollPosition.data[1] ? this.storageService.state.scrollPosition.data[1] : 0;
+      const [x = 0, y = 0] = this.storageService.state.scrollPosition?.data || [0, 0];
       if (x !== 0 || y !== 0) {
         window.scrollTo(x, y);
       }

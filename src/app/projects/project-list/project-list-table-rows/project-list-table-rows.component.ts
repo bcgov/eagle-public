@@ -1,22 +1,32 @@
-import { Component } from '@angular/core';
-
+import { Component, EventEmitter, inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { TableRowComponent } from 'app/shared/components/table-template-2/table-row-component';
+import { TableRowComponent, ITableMessage } from 'app/shared/components/table-template/table-row-component';
+import { TableObject } from 'app/shared/components/table-template/table-object';
+import { AnalyticsService } from 'app/services/analytics/analytics.service';
 
 @Component({
-    selector: 'app-project-list-table-rows',
-    templateUrl: './project-list-table-rows.component.html',
-    styleUrls: ['./project-list-table-rows.component.scss']
+  selector: 'app-project-list-table-rows',
+  templateUrl: './project-list-table-rows.component.html',
+  standalone: true
 })
+export class ProjectListTableRowsComponent implements TableRowComponent {
+  private router = inject(Router);
+  private analytics = inject(AnalyticsService);
 
-export class ProjectListTableRowsComponent extends TableRowComponent {
-    constructor(
-        private router: Router
-    ) {
-        super();
-    }
+  // TableRowComponent interface properties
+  rowData: any;
+  tableData!: TableObject;
+  messageOut = new EventEmitter<ITableMessage>();
+  messageIn = new EventEmitter<ITableMessage>();
 
-    goToProject(project) {
-        this.router.navigate([`p/${project._id}/project-details`]);
-    }
+  goToProject(project: any): void {
+    // Track project view from list
+    this.analytics.track('Project Viewed', {
+      project_id: project._id,
+      project_name: project.name,
+      source: 'list_view'
+    });
+    
+    this.router.navigate([`p/${project._id}/project-details`]);
+  }
 }

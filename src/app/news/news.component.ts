@@ -1,31 +1,44 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, signal, inject, effect, untracked } from '@angular/core';
+
 import { Router, ActivatedRoute, Params } from '@angular/router';
-import { SearchResults } from 'app/models/search';
-import { TableService } from 'app/services/table.service';
-import { IColumnObject, TableObject2 } from 'app/shared/components/table-template-2/table-object-2';
-import { ITableMessage } from 'app/shared/components/table-template-2/table-row-component';
-import { TableTemplate } from 'app/shared/components/table-template-2/table-template';
 import { takeWhile } from 'rxjs/operators';
-import { NewsListTableRowsComponent } from './news-list-table-rows/news-list-table-rows.component';
+
+import { SearchParamObject } from 'app/services/search.service';
+import { TableService } from 'app/services/table.service';
+import { LoadingStateService } from 'app/services/loading-state.service';
+import { IColumnObject, TableObject } from 'app/shared/components/table-template/table-object';
+import { ITableMessage } from 'app/shared/components/table-template/table-row-component';
+import { TableTemplate } from 'app/shared/components/table-template/table-template';
+import { TableTemplateComponent } from 'app/shared/components/table-template/table-template.component';
+import { ActivityCardComponent } from 'app/shared/components/activity-card/activity-card.component';
+import { HeroBannerComponent } from 'app/shared/hero-banner/hero-banner.component';
+import { SearchFilterTemplateComponent } from 'app/shared/components/search-filter-template/search-filter-template.component';
 
 @Component({
   selector: 'app-news',
   templateUrl: './news.component.html',
-  styleUrls: ['./news.component.scss']
+  styleUrl: './news.component.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [TableTemplateComponent, HeroBannerComponent, SearchFilterTemplateComponent],
+  standalone: true
 })
-
 export class NewsListComponent implements OnInit, OnDestroy {
-  private tableId = 'news';
-  public loading = true;
-  private alive = true;
-  public queryParams: Params;
-  private isSearch = false;
+  private router = inject(Router);
+  private route = inject(ActivatedRoute);
+  private tableTemplateUtils = inject(TableTemplate);
+  private tableService = inject(TableService);
+  private loadingState = inject(LoadingStateService);
 
-  public tableData: TableObject2 = new TableObject2({ component: NewsListTableRowsComponent });
-  public tableColumns: IColumnObject[] = [
+  private tableId = 'news';
+  private alive = true;
+
+  loading = this.loadingState.getOperationState('table-news');
+  tableData = signal<TableObject>(new TableObject({ component: ActivityCardComponent }));
+  
+  tableColumns: IColumnObject[] = [
     {
       name: 'Headline',
-      value: 'headine',
+      value: 'headline',
       width: 'col-10',
       nosort: true
     },
@@ -36,121 +49,121 @@ export class NewsListComponent implements OnInit, OnDestroy {
       nosort: false
     }
   ];
-  constructor(
-    private router: Router,
-    private route: ActivatedRoute,
-    private tableTemplateUtils: TableTemplate,
-    private tableService: TableService,
-    private _changeDetectionRef: ChangeDetectorRef) { }
 
-  ngOnInit() {
-    this.tableData.options.showPageCountDisplay = true;
-    this.tableData.options.showPagination = true;
-
-    this.route.queryParamMap.pipe(takeWhile(() => this.alive)).subscribe(data => {
-      this.queryParams = { ...data['params'] };
-      // Get params from route, shove into the tableTemplateUtils so that we get a new dataset to work with.
-      this.tableData = this.tableTemplateUtils.updateTableObjectWithUrlParams(data['params'], this.tableData);
-
-      if (this.tableData.sortBy === '-datePosted') {
-        this.tableData.sortBy = '-dateAdded';
-      }
-
-      this._changeDetectionRef.detectChanges();
-    });
-
-    this.tableService.getValue(this.tableId).pipe(takeWhile(() => this.alive)).subscribe((searchResults: SearchResults) => {
-      if (searchResults.data !== 0) {
-        this.tableData.totalListItems = searchResults.totalSearchCount;
-        this.tableData.items = searchResults.data.map(record => {
-          return { rowData: record };
+  constructor() {
+    // Watch for table data changes from service
+    const tableSignal = this.tableService.getTableSignal(this.tableId);
+    effect(() => {
+      const searchResults = tableSignal();
+      
+      // Only process if we have valid data and it's not the initial null state
+      if (searchResults && searchResults.data && searchResults.totalSearchCount !== undefined) {
+        // Use untracked to read current tableData without creating a dependency
+        const currentTableData = untracked(() => this.tableData());
+        const newTableData = new TableObject({
+          component: ActivityCardComponent,
+          pageSize: currentTableData.pageSize,
+          currentPage: currentTableData.currentPage,
+          sortBy: currentTableData.sortBy
         });
-        this.tableData.columns = this.tableColumns;
-        this.tableData.options.showAllPicker = true;
 
-        this.loading = false;
-        this._changeDetectionRef.detectChanges();
+        newTableData.totalListItems = searchResults.totalSearchCount;
+        newTableData.items = searchResults.data.map((record: any) => ({ rowData: record }));
+        newTableData.columns = this.tableColumns;
+        newTableData.options.showPageCountDisplay = true;
+        newTableData.options.showPagination = true;
+        newTableData.options.showAllPicker = true;
+        newTableData.options.disableRowHighlight = true;
+
+        this.tableData.set(newTableData);
       }
     });
   }
 
-  sortDateDescending(): ITableMessage {
-    return {
-      label: 'columnSort',
-      data: 'dateAdded'
-    }
+  ngOnInit(): void {
+    // Subscribe to query params and fetch data
+    this.route.queryParamMap.pipe(takeWhile(() => this.alive)).subscribe(data => {
+      const params = (data as any)['params'] || {};
+      
+      const updatedTableData = this.tableTemplateUtils.updateTableObjectWithUrlParams(params, this.tableData());
+
+      if (updatedTableData.sortBy === '-datePosted') {
+        updatedTableData.sortBy = '-dateAdded';
+      }
+
+      this.tableData.set(updatedTableData);
+
+      // Fetch data with current params
+      this.tableService.fetchData(new SearchParamObject(
+        this.tableId,
+        params['keywords'] || '',
+        'RecentActivity',
+        [],
+        updatedTableData.currentPage,
+        updatedTableData.pageSize,
+        updatedTableData.sortBy,
+        {},
+        true
+      ));
+    });
   }
 
-  onMessageOut(msg: ITableMessage) {
-    let params = {};
+  onMessageOut(msg: ITableMessage): void {
+    const params: Params = {};
+    const currentParams = this.route.snapshot.queryParams;
+    
     switch (msg.label) {
       case 'columnSort':
-        if (this.isSearch) {
-          params['sortBy'] = '-' + msg.data;
-          this.isSearch = false;
-        } else {
-          if (this.tableData.sortBy.charAt(0) === '+') {
-            params['sortBy'] = '-' + msg.data;
-          } else {
-            params['sortBy'] = '+' + msg.data;
-          }
-        }
-        this.tableService.data[this.tableId].cachedConfig.sortBy = params['sortBy'];
+        params['sortBy'] = this.toggleSortDirection(msg.data);
+        params['currentPage'] = 1;
         break;
       case 'pageNum':
         params['currentPage'] = msg.data;
-        this.tableService.data[this.tableId].cachedConfig.currentPage = params['currentPage'];
         break;
       case 'pageSize':
         params['pageSize'] = msg.data.value;
-        if (params['pageSize'] === this.tableData.totalListItems) {
-          this.loading = true;
-        }
         params['currentPage'] = 1;
-        this.tableService.data[this.tableId].cachedConfig.pageSize = params['pageSize'];
-        this.tableService.data[this.tableId].cachedConfig.currentPage = params['currentPage'];
-        break;
-      default:
         break;
     }
-    this.submit(params);
+    
+    this.submit({ ...currentParams, ...params });
   }
 
-  submit(params) {
-    this.router.navigate(
-      [],
-      {
-        queryParams: params,
-        relativeTo: this.route,
-        queryParamsHandling: 'merge'
-      });
-    this.tableService.refreshData(this.tableId);
-  }
-
-  executeSearch(searchPackage) {
-    this.isSearch = true;
-    let params = {};
-    if (searchPackage.keywords) {
-      params['keywords'] = searchPackage.keywords;
-      this.tableService.data[this.tableId].cachedConfig.keywords = params['keywords'];
-      // always change sortBy to '-score' if keyword search is directly triggered by user
-      if (searchPackage.keywordsChanged) {
-        params['sortBy'] = '-score';
-        this.tableService.data[this.tableId].cachedConfig.sortBy = params['sortBy'];
-      }
-    } else {
-      params['keywords'] = null;
-      params['sortBy'] = '-dateAdded';
-      this.tableService.data[this.tableId].cachedConfig.keywords = '';
-      this.tableService.data[this.tableId].cachedConfig.sortBy = params['sortBy'];
+  private toggleSortDirection(field: string): string {
+    const currentSort = this.tableData().sortBy;
+    
+    // If we're sorting by the same field, toggle direction
+    if (currentSort?.includes(field)) {
+      return (currentSort?.[0] === '+' ? '-' : '+') + field;
     }
-    params['currentPage'] = 1;
-    this.tableService.data[this.tableId].cachedConfig.currentPage = params['currentPage'];
-    this.submit(params);
-    this.onMessageOut(this.sortDateDescending());
+    
+    // Default to descending for new field
+    return '-' + field;
   }
 
-  ngOnDestroy() {
+  submit(params: Params): void {
+    this.router.navigate([], {
+      queryParams: params,
+      relativeTo: this.route
+    });
+  }
+
+  ngOnDestroy(): void {
     this.alive = false;
+  }
+
+  executeSearch(searchEvent: any): void {
+    const params: Params = {
+      ...this.route.snapshot.queryParams,
+      currentPage: 1
+    };
+    
+    if (searchEvent.keywords) {
+      params['keywords'] = searchEvent.keywords;
+    } else {
+      delete params['keywords'];
+    }
+    
+    this.submit(params);
   }
 }

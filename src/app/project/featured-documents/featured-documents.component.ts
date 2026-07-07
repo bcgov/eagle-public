@@ -1,24 +1,56 @@
-
-import { Component, OnInit, ChangeDetectorRef, OnDestroy } from '@angular/core';
+import { Component, OnInit, inject, signal, ChangeDetectionStrategy, effect } from '@angular/core';
 import { Location } from '@angular/common';
-import { SearchResults } from 'app/models/search';
-import { IColumnObject, TableObject2 } from 'app/shared/components/table-template-2/table-object-2';
-import { takeWhile } from 'rxjs/operators';
+import { ActivatedRoute } from '@angular/router';
+import { IColumnObject, TableObject } from '../../shared/components/table-template/table-object';
 import { DocumentTableRowsComponent } from '../documents/project-document-table-rows/project-document-table-rows.component';
-import { TableService } from 'app/services/table.service';
+import { TableService } from '../../services/table.service';
+import { TableTemplateComponent } from '../../shared/components/table-template/table-template.component';
+import { SearchParamObject } from '../../services/search.service';
+import { LoadingStateService } from '../../services/loading-state.service';
 
 @Component({
   selector: 'app-featured-documents',
   templateUrl: './featured-documents.component.html',
-  styleUrls: ['./featured-documents.component.scss']
+  imports: [TableTemplateComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  standalone: true
 })
-export class FeaturedDocumentsComponent implements OnInit, OnDestroy {
-  public loading = true;
-  private alive = true;
-  private tableId = 'featuredDocuments';
+export class FeaturedDocumentsComponent implements OnInit {
+  public readonly location = inject(Location);
+  private readonly route = inject(ActivatedRoute);
+  private readonly tableService = inject(TableService);
+  private readonly loadingState = inject(LoadingStateService);
 
-  public tableData: TableObject2 = new TableObject2({ component: DocumentTableRowsComponent });
-  public tableColumns: IColumnObject[] = [
+  private readonly tableId = 'featuredDocuments';
+  private projId = '';
+  private readonly tableSignal = this.tableService.getTableSignal(this.tableId);
+
+  public readonly loading = this.loadingState.getOperationState('table-featuredDocuments');
+  public readonly tableData = signal<TableObject>(new TableObject({ component: DocumentTableRowsComponent }));
+
+  constructor() {
+    effect(() => {
+      const searchResults = this.tableSignal();
+      // Only process when we have actual API results (not initial null value)
+      if (searchResults !== null && searchResults !== undefined) {
+        const updatedTableData = this.tableData();
+        if (searchResults.data && Array.isArray(searchResults.data) && searchResults.data.length > 0) {
+          updatedTableData.totalListItems = searchResults.totalSearchCount;
+          updatedTableData.items = searchResults.data.map((record: any) => {
+            record['showFeatured'] = true;
+            return { rowData: record };
+          });
+          updatedTableData.columns = this.tableColumns;
+        } else {
+          updatedTableData.totalListItems = 0;
+          updatedTableData.items = [];
+        }
+        this.tableData.set(updatedTableData);
+      }
+    });
+  }
+  
+  public readonly tableColumns: IColumnObject[] = [
     {
       name: '★',
       value: 'isFeatured',
@@ -57,40 +89,31 @@ export class FeaturedDocumentsComponent implements OnInit, OnDestroy {
     }
   ];
 
-  constructor(
-    public location: Location,
-    private tableService: TableService,
-    private _changeDetectionRef: ChangeDetectorRef) { }
-
   ngOnInit() {
-    this.tableData.options.showPageCountDisplay = false;
-    this.tableData.options.showPagination = false;
-    this.tableData.options.showPageSizePicker = false;
+    const currentTableData = this.tableData();
+    currentTableData.options.showPageCountDisplay = false;
+    currentTableData.options.showPagination = false;
+    currentTableData.options.showPageSizePicker = false;
+    currentTableData.tableId = 'documents-table';
+    currentTableData.currentPage = 1;
+    currentTableData.pageSize = 5;
+    currentTableData.sortBy = '-datePosted';
+    this.tableData.set(currentTableData);
 
-    this.tableData.tableId = 'documents-table';
+    // Get project ID from parent route
+    this.projId = this.route.parent?.snapshot.params['projId'] || '';
 
-    this.tableData.currentPage = 1;
-    this.tableData.pageSize = 5;
-    this.tableData.sortBy = '-datePosted';
-
-    this.tableService.getValue(this.tableId).pipe(takeWhile(() => this.alive)).subscribe((searchResults: SearchResults) => {
-      if (searchResults.data !== 0) {
-        this.tableData.totalListItems = searchResults.totalSearchCount;
-        this.tableData.items = searchResults.data.map(record => {
-          record['showFeatured'] = true;
-          return { rowData: record };
-        });
-
-        this.tableData.columns = this.tableColumns;
-        this.loading = false;
-
-        this._changeDetectionRef.detectChanges();
-      }
-    });
-  }
-
-  ngOnDestroy() {
-    this.alive = false;
+    this.tableService.fetchData(new SearchParamObject(
+      this.tableId,
+      '',
+      'Document',
+      [{ name: 'project', value: this.projId }],
+      1,
+      5,
+      '-datePosted',
+      { isFeatured: 'true' },
+      false,
+      ''
+    ));
   }
 }
-

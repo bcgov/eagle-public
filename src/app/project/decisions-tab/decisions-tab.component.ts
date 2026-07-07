@@ -1,47 +1,40 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
-import { Subject } from 'rxjs/Subject';
-import 'rxjs/add/operator/takeUntil';
+import { Component, inject, ChangeDetectionStrategy, signal, effect } from '@angular/core';
 
-import { Project } from 'app/models/project';
-import { ApiService } from 'app/services/api';
-import { ProjectService } from 'app/services/project.service';
+import { ActivatedRoute, Router } from '@angular/router';
+
+import { Project } from '../../models/project';
+import { ApiService } from '../../services/api';
+import { ProjectService } from '../../services/project.service';
 
 @Component({
+  selector: 'app-decisions-tab',
+  imports: [],
   templateUrl: './decisions-tab.component.html',
-  styleUrls: ['./decisions-tab.component.scss']
+  styleUrl: './decisions-tab.component.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  standalone: true
 })
-export class DecisionsTabComponent implements OnInit, OnDestroy {
-  public project: Project = new Project();
-  private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
+export class DecisionsTabComponent {
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
+  public api = inject(ApiService);
+  public projectService = inject(ProjectService);
 
-  constructor(
-    private route: ActivatedRoute,
-    private router: Router,
-    public api: ApiService, // used in template
-    public projectService: ProjectService // used in template
-  ) { }
+  public project = signal<Project>(new Project());
 
-  ngOnInit() {
-    // get project
-    this.route.parent.data
-      .takeUntil(this.ngUnsubscribe)
-      .subscribe(
-        (data: { project: Project }) => {
-          if (data.project) {
-            this.project = data.project;
-          } else {
-            this.project = null;
-            alert('Uh-oh, couldn\'t load project');
-            // project not found --> navigate back to project list
-            this.router.navigate(['/projects']);
-          }
+  constructor() {
+    // Use effect to react to route data changes
+    effect(() => {
+      this.route.parent?.data.subscribe((data: any) => {
+        if (data.project) {
+          this.project.set(data.project);
+        } else {
+          this.project.set(new Project());
+          alert('Uh-oh, couldn\'t load project');
+          // project not found --> navigate back to project list
+          this.router.navigate(['/projects']);
         }
-      );
-  }
-
-  ngOnDestroy() {
-    this.ngUnsubscribe.next();
-    this.ngUnsubscribe.complete();
+      });
+    });
   }
 }

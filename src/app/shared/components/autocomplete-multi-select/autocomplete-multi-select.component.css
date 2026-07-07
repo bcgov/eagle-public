@@ -1,0 +1,14 @@
+/* TODO: Convert from SCSS - autocomplete-multi-select-2.component.scss */
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.ng-value-icon.left {
+  cursor: pointer;
+  margin-right: 0.5rem;
+}
+
+.ng-value-label {
+  font-size: var(--bs-font-size-sm);
+}

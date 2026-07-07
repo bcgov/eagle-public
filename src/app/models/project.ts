@@ -2,74 +2,80 @@ export class Project {
   // the following are retrieved from the API
   _id: string;
   CEAAInvolvement: any;
-  CELead: String;
-  CELeadEmail: String;
-  CELeadPhone: String;
-  centroid: Array<number> = [];
-  description: String;
+  CELead: string;
+  CELeadEmail: string;
+  CELeadPhone: string;
+  centroid: number[] = [];
+  description: string;
   eacDecision: any;
-  location: String;
-  name: String;
-  projectLeadId: String;
+  location: string;
+  name: string;
+  projectLeadId: string;
   projectLeadObj?: any;
-  projectLead: String;
-  projectLeadEmail: String;
-  projectLeadPhone: String;
+  projectLead: string;
+  projectLeadEmail: string;
+  projectLeadPhone: string;
   proponent: any;
-  region: String;
-  responsibleEPDId: String;
+  region: string;
+  responsibleEPDId: string;
   responsibleEPDObj?: any;
-  responsibleEPD: String;
-  responsibleEPDEmail: String;
-  responsibleEPDPhone: String;
-  type: String;
-  legislation: String;
+  responsibleEPD: string;
+  responsibleEPDEmail: string;
+  responsibleEPDPhone: string;
+  type: string;
+  legislation: string;
 
   // Everything else
-  addedBy: String;
+  addedBy: string;
   build: string;
-  CEAALink: String;
-  code: String;
-  commodity: String;
+  CEAALink: string;
+  code: string;
+  commodity: string;
   currentPhaseName: any;
+  currentPeriod?: any;
   phaseHistory: any[];
-  dateAdded: String;
-  dateCommentsClosed: String;
-  dateUpdated: String;
-  decisionDate: String;
-  duration: String;
+  dateAdded: string;
+  dateCommentsClosed!: string;
+  dateUpdated: string;
+  decisionDate: string;
+  duration: string;
   // TODO: directoryStructure
-  eaoMember: String;
-  epicProjectID?: Number;
-  fedElecDist: String;
+  eaoMember: string;
+  epicProjectID?: number;
+  fedElecDist: string;
   // TODO: intake
-  isTermsAgreed: Boolean;
-  overallProgress: Number;
-  primaryContact: String;
-  proMember: String;
-  provElecDist: String;
-  sector: String;
-  shortName: String;
-  status: String;
-  substitution: Boolean;
-  updatedBy?: String;
+  isTermsAgreed: boolean;
+  overallProgress: number;
+  primaryContact: string;
+  proMember: string;
+  provElecDist: string;
+  sector: string;
+  shortName: string;
+  status: string;
+  substitution: boolean;
+  updatedBy?: string;
   operational?: any;
   nature?: any;
   commentPeriodForBanner: any;
-  projectCAC: Boolean;
-  projectCACPublished: Boolean;
+  projectCAC: boolean;
+  projectCACPublished: boolean;
   cacEmail: any;
+  appStatus?: string; // Application status for display
+  cpStatus?: string; // Comment period status for display
+  clFile?: string; // CL File number
+  purpose?: string; // Project purpose
+  subpurpose?: string; // Project sub-purpose
+  tantalisID?: string; // Tantalis ID number
+  client?: string; // Client/applicant name
 
   // Permissions
-  read?: Array<String> = [];
-  write?: Array<String> = [];
-  delete?: Array<String> = [];
+  read?: string[] = [];
+  write?: string[] = [];
+  delete?: string[] = [];
 
-  isMatches?: Boolean = true;
-  isVisible?: Boolean = true;
-  isLoaded?: Boolean = false;
+  isLoaded?: boolean = false;
 
-  featuredDocuments?: Array<Document> = [];
+  featuredDocuments?: Document[] = [];
 
 
   constructor(obj?: any) {
@@ -132,11 +138,57 @@ export class Project {
 
     this.featuredDocuments   = obj && obj.featuredDocuments   || [];
 
-    // copy centroid
-    if (obj && obj.centroid) {
-      obj.centroid.forEach(num => {
-        this.centroid.push(num);
-      });
+    // copy centroid - convert DMS strings to decimal if needed
+    if (obj && obj.centroid && obj.centroid.length === 2) {
+      const lon = Project.parseCoordinate(obj.centroid[0]);
+      const lat = Project.parseCoordinate(obj.centroid[1]);
+      if (lon !== null && lat !== null) {
+        this.centroid = [lon, lat];
+      }
     }
+  }
+
+  /**
+   * Parse a coordinate value - handles both decimal numbers and DMS strings
+   * DMS format examples: "53°49'42.9\"N", "122°43'20.8\"W"
+   */
+  static parseCoordinate(value: any): number | null {
+    if (typeof value === 'number' && !isNaN(value)) {
+      return value;
+    }
+    
+    if (typeof value === 'string') {
+      // Try parsing DMS format first: 53°49'42.9"N or 122°43'20.8"W
+      const dmsRegex = /^(\d+)°(\d+)'([\d.]+)"?([NSEW])?$/i;
+      const match = value.match(dmsRegex);
+      if (match) {
+        const degrees = parseFloat(match[1]);
+        const minutes = parseFloat(match[2]);
+        const seconds = parseFloat(match[3]);
+        const direction = match[4]?.toUpperCase();
+        
+        let decimal = degrees + (minutes / 60) + (seconds / 3600);
+        
+        // Make negative for West or South
+        if (direction === 'W' || direction === 'S') {
+          decimal = -decimal;
+        }
+        
+        return decimal;
+      }
+      
+      // Try parsing as a simple number (must be the entire string)
+      const num = parseFloat(value);
+      if (!isNaN(num) && String(num) === value.trim()) {
+        return num;
+      }
+      
+      // Also accept numbers with optional whitespace
+      if (!isNaN(num) && /^-?\d+\.?\d*$/.test(value.trim())) {
+        return num;
+      }
+    }
+    
+    return null;
   }
 }

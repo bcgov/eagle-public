@@ -1,0 +1,51 @@
+<div class="sidebar-wrapper">
+  <aside class="side-banner p-0" [class.closed]="!sidebarOpen()">
+    <div class="sidebar-content">
+      <h1 class="project-name">{{project()?.name || '-'}}</h1>
+      
+      <div class="info-section">
+        <div class="info-block">
+          <span class="info-label">Environmental Assessment</span>
+          <p><span class="ea-decision">{{project()?.eacDecision?.name || "-"}}</span></p>
+        </div>
+        
+        <div class="info-block">
+          <span class="info-label">Legislation</span>
+          <a target="_blank" [href]="legislationLink()" class="info-link">
+            <p class="info-value hyperlink">{{project()?.legislation || "-"}}</p>
+          </a>
+        </div>
+        
+        <hr class="divider">
+        
+        <div class="info-block">
+          <span class="info-label">Region</span>
+          <p class="info-value">{{project()?.region || "-"}}</p>
+        </div>
+        
+        <div class="info-block">
+          <span class="info-label">Location</span>
+          <p class="info-value">{{project()?.location || "-"}}</p>
+        </div>
+        
+        <div class="map-wrapper">
+          @if (!project()?.centroid || project()!.centroid.length !== 2) {
+            <div class="map-placeholder">
+              <span>No map available</span>
+            </div>
+          } @else {
+            <div class="map-container">
+              <div class="map" id="map"></div>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  </aside>
+  
+  <button class="sidebar-toggle" 
+          (click)="toggleSidebar()"
+          [attr.aria-label]="sidebarOpen() ? 'Close sidebar' : 'Open sidebar'">
+    <i class="material-icons">{{ sidebarOpen() ? 'keyboard_arrow_left' : 'keyboard_arrow_right' }}</i>
+  </button>
+</div>

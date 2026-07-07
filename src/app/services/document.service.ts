@@ -1,117 +1,152 @@
-import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs/Observable';
-import 'rxjs/add/operator/map';
-import 'rxjs/add/operator/catch';
-import 'rxjs/add/observable/of';
+import { Injectable, inject } from '@angular/core';
+import { Observable, of } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
 
 import { ApiService } from './api';
 import { Document } from 'app/models/document';
+import { LoadingStateService } from './loading-state.service';
 
-@Injectable()
+@Injectable({providedIn:'root'})
 export class DocumentService {
+  private api = inject(ApiService);
+  private loadingState = inject(LoadingStateService);
 
-  private document: Document = null;
 
-  constructor(
-    private api: ApiService
-  ) { }
+  private document: Document | null = null;
 
   // get a specific document by its id
-  getByMultiId(ids: Array<String>): Observable<Document[]> {
+  getByMultiId(ids: string[]): Observable<Document[]> {
+    const loadingId = `documents-multi-${ids.length}`;
+    this.loadingState.startLoading(loadingId, `Loading ${ids.length} documents`);
     return this.api.getDocumentsByMultiId(ids)
-      .map((res: any) => {
-        if (res) {
-          const documents = res;
-          if (documents.length > 0) {
-            // return the first (only) document
-            let docs = [];
-            documents.forEach(doc => {
-              docs.push(new Document(doc));
-            });
-            return docs;
+      .pipe(
+        map((res: any) => {
+          if (res) {
+            const documents = res;
+            if (documents.length > 0) {
+              // return the first (only) document
+              const docs: Document[] = [];
+              documents.forEach((doc: any) => {
+                docs.push(new Document(doc));
+              });
+              this.loadingState.stopLoading(loadingId);
+              return docs;
+            }
+            this.loadingState.stopLoading(loadingId);
+            return [];
           }
-          return null;
-        }
-      })
-      .catch(error => this.api.handleError(error));
-  }
-
-  // get all documents for the specified application id
-  getAllByProjectId(appId: string): Observable<Document[]> {
-    return this.api.getDocumentsByAppId(appId)
-      .map((res: any) => {
-        if (res) {
-          const documents = res;
-          documents.forEach((document, i) => {
-            documents[i] = new Document(document);
-          });
-          return documents;
-        }
-      })
-      .catch(this.api.handleError);
-  }
-
-  // get all documents for the specified comment id
-  getAllByCommentId(commentId: string): Observable<Document[]> {
-    return this.api.getDocumentsByCommentId(commentId)
-      .map((res: any) => {
-        if (res) {
-          const documents = res;
-          documents.forEach((document, i) => {
-            documents[i] = new Document(document);
-          });
-          return documents;
-        }
-      })
-      .catch(this.api.handleError);
+          this.loadingState.stopLoading(loadingId);
+          return [];
+        }),
+        catchError(error => {
+          this.loadingState.stopLoading(loadingId);
+          return this.api.handleError(error);
+        })
+      );
   }
 
   // get all documents for the specified decision id
   getAllByDecisionId(decisionId: string): Observable<Document[]> {
+    const loadingId = `documents-decision-${decisionId}`;
+    this.loadingState.startLoading(loadingId, 'Loading decision documents');
     return this.api.getDocumentsByDecisionId(decisionId)
-      .map((res: any) => {
-        if (res) {
-          const documents = res;
-          documents.forEach((document, i) => {
-            documents[i] = new Document(document);
-          });
-          return documents;
-        }
-      })
-      .catch(this.api.handleError);
+      .pipe(
+        map((res: any) => {
+          if (res) {
+            const documents = res;
+            documents.forEach((document: any, i: number) => {
+              documents[i] = new Document(document);
+            });
+            this.loadingState.stopLoading(loadingId);
+            return documents;
+          }
+          this.loadingState.stopLoading(loadingId);
+          return [];
+        }),
+        catchError(error => {
+          this.loadingState.stopLoading(loadingId);
+          return this.api.handleError(error);
+        })
+      );
+  }
+
+  // get all documents for the specified comment id
+  getAllByCommentId(commentId: string): Observable<Document[]> {
+    const loadingId = `documents-comment-${commentId}`;
+    this.loadingState.startLoading(loadingId, 'Loading comment documents');
+    return this.api.getDocumentsByCommentId(commentId)
+      .pipe(
+        map((res: any) => {
+          if (res) {
+            const documents = res;
+            documents.forEach((document: any, i: number) => {
+              documents[i] = new Document(document);
+            });
+            this.loadingState.stopLoading(loadingId);
+            return documents;
+          }
+          this.loadingState.stopLoading(loadingId);
+          return [];
+        }),
+        catchError(error => {
+          this.loadingState.stopLoading(loadingId);
+          return this.api.handleError(error);
+        })
+      );
   }
 
   // get a specific document by its id
-  getById(documentId: string, forceReload: boolean = false): Observable<Document> {
+  getById(documentId: string, forceReload = false): Observable<Document> {
     if (this.document && this.document._id === documentId && !forceReload) {
-      return Observable.of(this.document);
+      return of(this.document);
     }
 
+    const loadingId = `document-${documentId}`;
+    this.loadingState.startLoading(loadingId, 'Loading document');
     return this.api.getDocument(documentId)
-      .map((res: any) => {
-        if (res) {
-          const documents = res;
-          // return the first (only) document
-          return documents.length > 0 ? new Document(documents[0]) : null;
-        }
-      })
-      .map((document: Document) => {
-        if (!document) { return null as Document; }
+      .pipe(
+        map((res: any) => {
+          if (res) {
+            const documents = res;
+            // return the first (only) document
+            return documents.length > 0 ? new Document(documents[0]) : null;
+          }
+          return null;
+        }),
+        map((document: Document | null) => {
+          if (!document) { 
+            this.loadingState.stopLoading(loadingId);
+            return null as unknown as Document; 
+          }
 
-        this.document = document;
-        return this.document;
-      })
-      .catch(this.api.handleError);
+          this.document = document;
+          this.loadingState.stopLoading(loadingId);
+          return this.document;
+        }),
+        catchError(error => {
+          this.loadingState.stopLoading(loadingId);
+          return this.api.handleError(error);
+        })
+      );
   }
 
-  add(formData: FormData): Observable<Document> {
+  add(formData: FormData): Observable<Document | null> {
+    this.loadingState.startLoading('document-upload', 'Uploading document');
     return this.api.uploadDocument(formData)
-      .map((res: any) => {
-        if (res) {
-          const d = res;
-          return d ? new Document(d) : null;
-        }
-      })
-      .catch(this.api.handleError);
+      .pipe(
+        map((res: any) => {
+          if (res) {
+            const d = res;
+            this.loadingState.stopLoading('document-upload');
+            return d ? new Document(d) : null;
+          }
+          this.loadingState.stopLoading('document-upload');
+          return null;
+        }),
+        catchError(error => {
+          this.loadingState.stopLoading('document-upload');
+          return this.api.handleError(error);
+        })
+      );
   }
 }

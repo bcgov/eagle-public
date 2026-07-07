@@ -1,53 +1,49 @@
-import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
-import { NgbDateStruct } from '@ng-bootstrap/ng-bootstrap';
+import { Component, ChangeDetectionStrategy, input, output, effect, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-date-input',
   templateUrl: './date-input.component.html',
-  styleUrls: ['./date-input.component.scss']
+  styleUrls: ['./date-input.component.css'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [FormsModule],
+  standalone: true
 })
+export class DateInputComponent {
+  date = input<Date | null>(null);
+  isValidate = input<boolean>(false);
+  minDate = input<Date | null>(null);
+  maxDate = input<Date | null>(null);
+  dateChange = output<Date | null>();
 
-export class DateInputComponent implements OnChanges {
+  dateString = signal<string>('');
+  minDateString = signal<string>('');
+  maxDateString = signal<string>('');
 
-  @Input() date: Date = null;
-  @Input() isValidate = false; // whether to validate (FUTURE)
-  @Input() minDate: Date = null;
-  @Input() maxDate: Date = null;
-  @Output() dateChange = new EventEmitter<Date>();
+  constructor() {
+    effect(() => {
+      this.dateString.set(this.dateToISO(this.date()));
+    });
 
-  public ngbDate: NgbDateStruct = null;
-  public minNgbDate: NgbDateStruct = null;
-  public maxNgbDate: NgbDateStruct = null;
+    effect(() => {
+      this.minDateString.set(this.dateToISO(this.minDate()));
+    });
 
-  constructor() { }
-
-  ngOnChanges(changes: SimpleChanges) {
-    if (changes.date) {
-      this.ngbDate = this.dateToNgbDate(this.date);
-    }
-    if (changes.minDate) {
-      this.minNgbDate = this.dateToNgbDate(this.minDate);
-    }
-    if (changes.maxDate) {
-      this.maxNgbDate = this.dateToNgbDate(this.maxDate);
-    }
+    effect(() => {
+      this.maxDateString.set(this.dateToISO(this.maxDate()));
+    });
   }
 
-  onDateChg(ngbDate: NgbDateStruct) {
-    this.dateChange.emit(ngbDate ? this.ngbDateToDate(this.ngbDate) : null);
+  onDateChg(dateStr: string) {
+    this.dateString.set(dateStr);
+    this.dateChange.emit(dateStr ? new Date(dateStr) : null);
   }
 
-  // used in template
-  public isValidDate(date: NgbDateStruct): boolean {
-    return (date && !isNaN(date.year) && !isNaN(date.month) && !isNaN(date.day));
+  isValidDate(date: string): boolean {
+    return date !== '' && !isNaN(Date.parse(date));
   }
 
-  private dateToNgbDate(date: Date): NgbDateStruct {
-    return date ? { 'year': date.getFullYear(), 'month': date.getMonth() + 1, 'day': date.getDate() } : null;
+  private dateToISO(date: Date | null): string {
+    return date ? date.toISOString().split('T')[0] : '';
   }
-
-  private ngbDateToDate(date: NgbDateStruct): Date {
-    return date ? new Date(date.year, (date.month - 1), date.day) : null;
-  }
-
 }

@@ -1,89 +1,88 @@
-import { Component, OnInit, OnChanges, OnDestroy, Input, Output, EventEmitter, SimpleChanges, ElementRef } from '@angular/core';
-import * as _ from 'lodash';
+import { Component, ElementRef, ChangeDetectionStrategy, input, output, signal, computed, effect, untracked, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
 
 import { Project } from 'app/models/project';
 import { CommentPeriodService } from 'app/services/commentperiod.service';
 import { ConfigService } from 'app/services/config.service';
+import { LoadingStateService } from 'app/services/loading-state.service';
+import { VarDirective } from '../../shared/utils/ng-var.directive';
 
 @Component({
   selector: 'app-projlist-list',
   templateUrl: './projlist-list.component.html',
-  styleUrls: ['./projlist-list.component.scss']
+  styleUrl: './projlist-list.component.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [CommonModule, RouterModule, VarDirective],
+  standalone: true
 })
-
-export class ProjlistListComponent implements OnInit, OnChanges, OnDestroy {
+export class ProjlistListComponent {
   // NB: this component is bound to the same list of apps as the other components
-  @Input() projects: Array<Project> = []; // from projects component
-  @Output() setCurrentApp = new EventEmitter(); // to projects component
-  @Output() unsetCurrentApp = new EventEmitter(); // to projects component
+  projects = input<Project[] | null>(null); // from projects component
+  setCurrentApp = output<Project>(); // to projects component
+  unsetCurrentApp = output<Project>(); // to projects component
 
-  private currentApp: Project = null; // for selecting app in list
-  public loading = false;
-  private numToLoad = 0;
+  public commentPeriodService = inject(CommentPeriodService); // used in template
+  public configService = inject(ConfigService);
+  private elementRef = inject(ElementRef);
+  private loadingState = inject(LoadingStateService);
 
-  constructor(
-    public commentPeriodService: CommentPeriodService, // used in template
-    public configService: ConfigService,
-    private elementRef: ElementRef
-  ) { }
+  private currentApp: Project | null = null; // for selecting app in list
+  public loading = this.loadingState.isLoading;
+  private numToLoad = signal<number>(0);
+
+  // Computed signal for loaded projects (no mutation)
+  public loadedApps = computed(() => {
+    const projects = this.projects();
+    if (projects === null) return [];
+    const limit = this.numToLoad();
+    return projects.slice(0, limit);
+  });
+
+  // Computed signal for projects with valid coordinates
+  public appsWithShapes = computed(() => {
+    return (this.projects() ?? []).filter(a => a.centroid?.length === 2);
+  });
 
   get clientWidth(): number {
-    return this.elementRef.nativeElement.firstElementChild.clientWidth; // div.app-list__container
+    return this.elementRef.nativeElement.firstElementChild?.clientWidth ?? 0;
   }
 
-  public ngOnInit() { }
+  constructor() {
+    // Initialize with first page of results
+    effect(() => {
+      const currentProjects = this.projects();
+      if (currentProjects === null) return;
 
-  // called when apps list changes
-  public ngOnChanges(changes: SimpleChanges) {
-    if (changes.projects && !changes.projects.firstChange && changes.projects.currentValue) {
-      // console.log('list: got visible apps from map component');
-      // console.log('# visible apps =', this.projects.length);
+      untracked(() => {
+        // Clear current selection if the selected app is no longer in the list
+        if (this.currentApp && !currentProjects.some(p => p._id === this.currentApp?._id)) {
+          this.currentApp = null;
+        }
 
-      this.numToLoad = this.configService.listPageSize; // init/reset
-      this.setLoaded();
+        // Initialize page size if not set
+        if (this.numToLoad() === 0 && currentProjects.length > 0) {
+          this.numToLoad.set(this.configService.listPageSize);
+        }
+      });
+    });
+  }
+
+  public isCurrentApp(item: Project): boolean {
+    return item === this.currentApp;
+  }
+
+  public toggleCurrentApp(item: Project): void {
+    if (this.isCurrentApp(item)) {
+      this.currentApp = null;
+      this.unsetCurrentApp.emit(item);
+    } else {
+      this.currentApp = item;
+      this.setCurrentApp.emit(item);
     }
   }
-
-  public ngOnDestroy() { }
-
-  private isCurrentApp(item: Project): boolean {
-    return (item === this.currentApp);
-  }
-
-  public toggleCurrentApp(item: Project) {
-    const index = _.findIndex(this.projects, { _id: item._id });
-    if (index >= 0) {
-      if (!this.isCurrentApp(item)) {
-        this.currentApp = item; // set
-        this.setCurrentApp.emit(item);
-      } else {
-        this.currentApp = null; // unset
-        this.unsetCurrentApp.emit(item);
-      }
-    }
-  }
-
-  public loadedApps(): Array<Project> {
-    return this.projects.filter(a => a.isLoaded);
-  }
-
-  public appsWithShapes(): Array<Project> {
-    return this.projects.filter(a => a.centroid.length === 2);
-  }
-
-  public onLoadStart() { this.loading = true; }
-
-  public onLoadEnd() { this.loading = false; }
 
   public loadMore() {
-    this.numToLoad += this.configService.listPageSize;
-    this.setLoaded();
-  }
-
-  private setLoaded() {
-    // set first 'n' apps as 'loaded'
-    for (let i = 0; i < this.projects.length; i++) {
-      this.projects[i].isLoaded = (i < this.numToLoad);
-    }
+    this.numToLoad.update(n => n + this.configService.listPageSize);
   }
 }

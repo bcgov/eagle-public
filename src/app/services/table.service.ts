@@ -1,61 +1,51 @@
-import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { Injectable, signal, WritableSignal, inject } from '@angular/core';
 import { SearchParamObject, SearchService } from './search.service';
 
+/**
+ * Signal-based table data service.
+ * Each table is identified by a unique tableId and has its own signal for data updates.
+ * Loading state is managed through LoadingStateService (in SearchService).
+ */
 @Injectable({
   providedIn: 'root'
 })
-
-// TODO: Migrate all services to use this universal table service.
-// Data allows for multiple pieces of data to be cached.
-// This means id and iteration version is required.
 export class TableService {
-  public data: Object;
+  private tables = new Map<string, WritableSignal<any>>();
+  private searchService = inject(SearchService);
 
-  constructor(
-    private searchService: SearchService,
-  ) {
-    this.data = {};
+  /**
+   * Get or create a signal for a table
+   */
+  getTableSignal(tableId: string): WritableSignal<any> {
+    if (!this.tables.has(tableId)) {
+      this.tables.set(tableId, signal(null));
+    }
+    return this.tables.get(tableId)!;
   }
 
-  // You need to init the table before fetchData.
-  // This allows our component to subscribe before data is provided.
-  initTableData(tableId) {
-    this.data[tableId] = {
-      behaviorSubject: new BehaviorSubject({ data: 0 }),
-      cachedConfig: new SearchParamObject()
+  /**
+   * Fetch data for a table and update its signal.
+   * Note: Loading state is managed by SearchService since it makes the actual API calls.
+   */
+  async fetchData(searchParamObject: SearchParamObject): Promise<void> {
+    const tableSignal = this.getTableSignal(searchParamObject.tableId);
+    
+    try {
+      const res = await this.searchService.fetchData(searchParamObject);
+      // Always trigger an update by creating a new object reference
+      // This ensures subscribers are notified even if data is identical
+      tableSignal.set({ ...res, _timestamp: Date.now() });
+    } catch (error) {
+      // On error, still update signal to show empty state
+      tableSignal.set({ data: [], totalSearchCount: 0, error: true, _timestamp: Date.now() });
+      throw error;
     }
   }
 
-  setValue(tableId, value): void {
-    this.data[tableId].behaviorSubject.next(value);
-  }
-
-  getValue(tableId): Observable<Object> {
-    return this.data[tableId].behaviorSubject.asObservable();
-  }
-
-  async refreshData(tableId) {
-    await this.fetchData(this.data[tableId].cachedConfig);
-  }
-
+  /**
+   * Clear all tables
+   */
   clearAll(): void {
-    this.data = {};
-  }
-
-  clearTable(tableId): void {
-    if (this.checkIfTableDataExists(tableId)) {
-      this.setValue(tableId, { data: 0 });
-    }
-  }
-
-  async fetchData(searchParamObject: SearchParamObject) {
-    const res = await this.searchService.fetchData(searchParamObject);
-    this.data[searchParamObject.tableId].cachedConfig = searchParamObject;
-    this.setValue(searchParamObject.tableId, res);
-  }
-
-  private checkIfTableDataExists(tableId) {
-    return Object.keys(this.data).includes(tableId)
+    this.tables.clear();
   }
 }

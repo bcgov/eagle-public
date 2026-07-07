@@ -1,142 +1,57 @@
-<div class="mt-5 px-3">
-    <div class="row mb-1"
-        tabindex="0">
-        <div class="col-md-12 col-lg-6">
-            <h4>{{(rowData.name.toUpperCase() || '-')}}</h4>
-        </div>
-        <div class="col-md-12 col-lg-6 text-lg-right">
-            <a *ngIf="
-                    rowData.commentPeriod?.commentPeriodStatus === 'Open' &&
-                    (!rowData.commentPeriod?.isMet || !rowData.commentPeriod?.metURL)
-                "
-                class="btn btn-primary view-pcp-btn"
-                title="View this Public Comment Period"
-                [routerLink]="['/pn', rowData._id, 'cp', rowData.commentPeriod?._id]"
-            >
-                <div class="pcp-indicator pcp-indicator-active"></div>
-                Open Comment Period - View/Submit
-            </a>
-            <a *ngIf="
-                    rowData.commentPeriod?.commentPeriodStatus === 'Open' &&
-                    rowData.commentPeriod?.isMet &&
-                    rowData.commentPeriod?.metURL
-                "
-                class="btn btn-primary view-pcp-btn"
-                href="{{ rowData.commentPeriod.metURL }}"
-                rel="noopener"
-                target="_blank"
-                title="View this Public Comment Period"
-            >
-                <div class="pcp-indicator pcp-indicator-active"></div>
-                Open Comment Period - View/Submit
-            </a>
-            <a *ngIf="
-                    rowData.commentPeriod?.commentPeriodStatus === 'Closed' &&
-                    (!rowData.commentPeriod?.isMet || !rowData.commentPeriod?.metURL)
-                "
-                class="btn btn-primary view-pcp-btn"
-                title="View this Public Comment Period"
-                [routerLink]="['/pn', rowData._id, 'cp', rowData.commentPeriod?._id]"
-            >
-                <div class="pcp-indicator pcp-indicator-inactive"></div>
-                View Completed Comment Period
-            </a>
-            <a *ngIf="
-                    rowData.commentPeriod?.commentPeriodStatus === 'Closed' &&
-                    rowData.commentPeriod?.isMet &&
-                    rowData.commentPeriod?.metURL
-                "
-                class="btn btn-primary view-pcp-btn"
-                href="{{ rowData.commentPeriod.metURL }}"
-                rel="noopener"
-                target="_blank"
-                title="View this Public Comment Period"
-            >
-                <div class="pcp-indicator pcp-indicator-inactive"></div>
-                View Completed Comment Period
-            </a>
-            <a *ngIf="
-                    rowData.commentPeriod?.commentPeriodStatus === 'Pending' &&
-                    rowData.commentPeriod?.isMet &&
-                    rowData.commentPeriod?.metURL
-                "
-                class="btn btn-primary view-pcp-btn"
-                href="{{ rowData.commentPeriod.metURL }}"
-                rel="noopener"
-                target="_blank"
-                title="View this Public Comment Period"
-            >
-                <div class="pcp-indicator pcp-indicator-pending"></div>
-                View Pending Comment Period
-            </a>
-            <a *ngIf="
-                rowData.commentPeriod?.commentPeriodStatus === 'Pending' &&
-                !rowData.commentPeriod?.isMet"
-                class="btn btn-primary view-pcp-btn"
-                title="View this Public Comment Period"
-            >
-                <div class="pcp-indicator pcp-indicator-pending"></div>
-                Comment Period Pending
-            </a>
-        </div>
+<div>
+  <div class="row mb-3 mt-2" tabindex="0">
+    <div class="col-12">
+      <h4>{{rowData().name?.toUpperCase() || '-'}}</h4>
     </div>
-    <div class="row mb-4"
-        tabindex="0">
-        <div class="pn-decision">
-            <a [routerLink]="['/p', rowData.associatedProjectId ]"
-                *ngIf="rowData.associatedProjectId; else noHyperlink">
-                <p class="value"
-                    *ngIf="rowData.decisionDate; else noDate">Notification Decision - {{ rowData.decision
-                    }} |
-                    {{rowData.decisionDate?.toString().split('T')[0] || "-" }} </p>
-                <ng-template #noDate>
-                    <p class="value">Notification Decision - {{ rowData.decision }}</p>
-                </ng-template>
-            </a>
-            <ng-template #noHyperlink>
-                <p class="value"
-                    *ngIf="rowData.decisionDate; else noDate">Notification Decision - {{ rowData.decision
-                    }} |
-                    {{rowData.decisionDate?.toString().split('T')[0] || "-" }} </p>
-                <ng-template #noDate>
-                    <p class="value">Notification Decision - {{ rowData.decision }}</p>
-                </ng-template>
-            </ng-template>
-        </div>
+  </div>
+  
+  <div class="row mb-4" tabindex="0">
+    <div class="col-12">
+      <div class="pn-decision">
+        @if (rowData().associatedProjectId) {
+          <a [routerLink]="['/p', rowData().associatedProjectId]">
+            <p class="value">{{ decisionText() }}</p>
+          </a>
+        } @else {
+          <p class="value">{{ decisionText() }}</p>
+        }
+      </div>
     </div>
-    <div class="row mb-4"
-        tabindex="0">
-        <div class="col-12 pn-info-block">
-            <label>Description:</label>
-            <p class="value"
-                [innerHTML]="(rowData.description || '-') | newlines"></p>
-        </div>
+  </div>
+
+  <div class="row mb-4" tabindex="0">
+    <div class="col-12 pn-info-block">
+      <span class="info-label">Description:</span>
+      <p class="value" [innerHTML]="(rowData().description || '-') | newlines"></p>
     </div>
-    <div class="row"
-        tabindex="0">
-        <div class="col-sm-12 col-md-4 pn-info-block">
-            <label>Type</label>
-            <p class="value">{{rowData.type || "-" }}</p>
-        </div>
-        <div class="col-sm-12 col-md-4 pn-info-block">
-            <label>Location</label>
-            <p class="value">{{rowData.location || "-" }}</p>
-        </div>
-        <div class="col-sm-12 col-md-4 pn-info-block">
-            <label>Proponent</label>
-            <p class="value">{{rowData.proponent || "-" }}</p>
-        </div>
-        <div class="col-sm-12 col-md-4 pn-info-block">
-            <label>Sub-Type</label>
-            <p class="value">{{rowData.subType || "-" }}</p>
-        </div>
-        <div class="col-sm-12 col-md-4 pn-info-block">
-            <label>Region</label>
-            <p class="value">{{rowData.region || "-" }}</p>
-        </div>
-        <div class="col-sm-12 col-md-4 pn-info-block">
-            <label>Notification Trigger</label>
-            <p class="value">{{getTrigger(rowData) || "-" }}</p>
-        </div>
+  </div>
+
+  <div class="row" tabindex="0">
+    <div class="col-sm-12 col-md-4 pn-info-block">
+      <span class="info-label">Type</span>
+      <p class="value">{{rowData().type || "-"}}</p>
     </div>
+    <div class="col-sm-12 col-md-4 pn-info-block">
+      <span class="info-label">Location</span>
+      <p class="value">{{rowData().location || "-"}}</p>
+    </div>
+    <div class="col-sm-12 col-md-4 pn-info-block">
+      <span class="info-label">Proponent</span>
+      <p class="value">{{rowData().proponent || "-"}}</p>
+    </div>
+    <div class="col-sm-12 col-md-4 pn-info-block">
+      <span class="info-label">Sub-Type</span>
+      <p class="value">{{rowData().subType || "-"}}</p>
+    </div>
+    <div class="col-sm-12 col-md-4 pn-info-block">
+      <span class="info-label">Region</span>
+      <p class="value">{{rowData().region || "-"}}</p>
+    </div>
+    <div class="col-sm-12 col-md-4 pn-info-block">
+      <span class="info-label">Notification Trigger</span>
+      <p class="value">{{ getTrigger(rowData()) || '-' }}</p>
+    </div>
+  </div>
 </div>
+
+

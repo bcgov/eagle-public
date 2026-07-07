@@ -1,0 +1,63 @@
+/* You can add global styles to this file, and also import other style files */
+
+/* === ALL @import RULES MUST COME FIRST === */
+
+/* BCSans Font */
+@import url("assets/fonts/BCSans.css");
+
+/* BC Gov Bootstrap Theme - Reusable across projects */
+@import url("assets/styles/themes/bcgov-bootstrap-theme.css");
+
+/* EAGLE Project-Specific Overrides */
+@import url("assets/styles/themes/bootstrap-override.css");
+
+/* EAGLE Theme Variables */
+@import url("assets/styles/themes/default.css");
+
+/* Base */
+@import url("assets/styles/base/accessibility.css");
+@import url("assets/styles/base/typography.css");
+@import url("assets/styles/base/material-icons.css");
+
+/* Components */
+@import url("assets/styles/components/buttons.css");
+@import url("assets/styles/components/datepicker.css");
+@import url("assets/styles/components/feature-block.css");
+@import url("assets/styles/components/form-elements.css");
+@import url("assets/styles/components/leaflet.css");
+@import url("assets/styles/components/tab-nav.css");
+@import url("assets/styles/components/table.css");
+
+/* === CSS RULES START HERE === */
+
+/* Global Resets */
+* {
+  box-sizing: border-box;
+}
+
+html, 
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'BCSans', 'Noto Sans', Arial, sans-serif;
+  background-color: var(--bc-gray-light);
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+/* Global Content Styles */
+.content-wrapper {
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--bc-gray);
+}
+
+.content-wrapper p {
+  margin-bottom: 0;
+}
+
+.content-wrapper p + p {
+  margin-top: 1.5rem;
+}
+
+/* Word-paste inline style overrides removed — sanitized in word-html-sanitizer.ts at render time */

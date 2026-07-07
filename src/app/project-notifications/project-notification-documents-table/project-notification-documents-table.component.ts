@@ -1,161 +1,181 @@
-import { Component, OnInit, ChangeDetectorRef, OnDestroy, Input } from '@angular/core';
-import { SearchResults } from 'app/models/search';
-import { takeWhile } from 'rxjs/operators';
-import { TableObject2 } from 'app/shared/components/table-template-2/table-object-2';
-import { ITableMessage } from 'app/shared/components/table-template-2/table-row-component';
+import { Component, OnInit, ChangeDetectionStrategy, inject, input, signal, effect, untracked } from '@angular/core';
+import { MediaMatcher, Breakpoints } from '@angular/cdk/layout';
+
+
+import { TableObject } from '../../shared/components/table-template/table-object';
+import { ITableMessage } from '../../shared/components/table-template/table-row-component';
+import { TableService } from '../../services/table.service';
+import { SearchParamObject } from '../../services/search.service';
+import { LoadingStateService } from '../../services/loading-state.service';
+import { ApiService } from '../../services/api';
+import { TableTemplateComponent } from '../../shared/components/table-template/table-template.component';
+import { LoggingService } from '../../services/logging.service';
 import { ProjectNotificationDocumentsTableRowsComponent } from '../project-notification-documents-table-rows/project-notification-documents-table-rows.component';
-import { TableService } from 'app/services/table.service';
-import { SearchParamObject } from 'app/services/search.service';
-import { BreakpointObserver, Breakpoints, MediaMatcher } from '@angular/cdk/layout';
-
+import { HttpCacheService } from '../../interceptors/http-cache.interceptor';
 @Component({
-    selector: 'app-project-notification-documents-table',
-    templateUrl: './project-notification-documents-table.component.html',
-    styleUrls: ['./project-notification-documents-table.component.scss']
+  selector: 'app-project-notification-documents-table',
+  templateUrl: './project-notification-documents-table.component.html',
+  styleUrls: ['./project-notification-documents-table.component.css'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [TableTemplateComponent],
+  standalone: true
 })
-export class ProjectNotificationDocumentsTableComponent implements OnInit, OnDestroy {
-    @Input() tableId: string;
-    @Input() header: string;
+export class ProjectNotificationDocumentsTableComponent implements OnInit {
+  tableId = input.required<string>();
+  header = input.required<string>();
+  backgroundColor = input<string>('transparent');
+  rowBackgroundColor = input<string>('#F7F8FA');
 
-    private alive = true;
-    public loading: Boolean = true;
+  private tableService = inject(TableService);
+  private mediaMatcher = inject(MediaMatcher);
+  public loadingState = inject(LoadingStateService);
+  private logger = inject(LoggingService);
+  private api = inject(ApiService);
 
-    public tableData: TableObject2 = new TableObject2({ component: ProjectNotificationDocumentsTableRowsComponent });
-    private mobileTableColumns: any[] = [
-        {
-            name: 'Name',
-            value: 'displayName',
-            width: 'col-6'
-        },
-        {
-            name: 'Date',
-            value: 'datePosted',
-            width: 'col-3'
-        },
-        {
-            name: 'Author',
-            value: 'documentAuthor',
-            width: 'col-3'
+  tableData = signal<TableObject>(new TableObject());
+  
+  private readonly mobileTableColumns = [
+    { name: 'Name', value: 'displayName', width: 'col-6' },
+    { name: 'Date', value: 'datePosted', width: 'col-3' },
+    { name: 'Author', value: 'documentAuthor', width: 'col-3' }
+  ];
+
+  private readonly tableColumns = [
+    { name: 'Document Name', value: 'displayName', width: 'col-6' },
+    { name: 'Date', value: 'datePosted', width: 'col-3' },
+    { name: 'Document Author', value: 'documentAuthor', width: 'col-3' }
+  ];
+
+  constructor() {
+    // Watch for table data changes from service
+    effect(() => {
+      const tableId = this.tableId();
+      if (!tableId) return;
+      
+      const tableSignal = this.tableService.getTableSignal(tableId);
+      const searchResults = tableSignal();
+      
+      if (searchResults && searchResults.data && searchResults.data !== 0) {
+        // Use untracked to read current state without creating dependencies
+        untracked(() => {
+          const currentTableData = this.tableData();
+          
+          // Prevent infinite loop by checking timestamp
+          if (currentTableData.data?.lastTimestamp === searchResults._timestamp) {
+            return;
+          }
+          
+          const mediaQueryList = this.mediaMatcher.matchMedia(Breakpoints.Web);
+          
+          // Create a new TableObject to trigger change detection
+          const updatedTableData = new TableObject({
+            tableId: currentTableData.tableId,
+            component: currentTableData.component ?? undefined,
+            columns: mediaQueryList.matches ? this.tableColumns : this.mobileTableColumns,
+            items: searchResults.data.map((record: any) => ({ rowData: record })),
+            dataset: currentTableData.dataset,
+            currentPage: currentTableData.currentPage,
+            pageSizeOptions: currentTableData.pageSizeOptions,
+            pageSize: currentTableData.pageSize,
+            sortBy: currentTableData.sortBy,
+            totalListItems: searchResults.totalSearchCount,
+            options: currentTableData.options,
+            data: { ...currentTableData.data, lastTimestamp: searchResults._timestamp }
+          });
+
+          this.tableData.set(updatedTableData);
+        });
+      }
+    });
+  }
+
+  async ngOnInit() {
+    const currentTableData = this.tableData();
+    currentTableData.tableId = this.tableId();
+    currentTableData.component = ProjectNotificationDocumentsTableRowsComponent;
+    currentTableData.pageSize = 5;
+    currentTableData.sortBy = '-datePosted';
+    currentTableData.options.showPageSizePicker = false;
+    currentTableData.options.showPageCountDisplay = false;
+    currentTableData.options.showAllPicker = false;
+    currentTableData.options.showPagination = true;
+    currentTableData.options.showTopControls = false;
+    currentTableData.options.disableRowHighlight = false;
+    currentTableData.options.rowSpacing = 0;
+    currentTableData.data = { rowBackgroundColor: this.rowBackgroundColor() };
+    this.tableData.set(currentTableData);
+
+    await this.tableService.fetchData(new SearchParamObject(
+      this.tableId(),
+      '',
+      'Document',
+      [{ 'name': 'project', 'value': this.tableId() }],
+      1,
+      5,
+      this.invertSortForBackend('-datePosted'),
+      { documentSource: 'PROJECT-NOTIFICATION' },
+      true
+    ));
+  }
+
+  onMessageOut(msg: ITableMessage) {
+    switch (msg.label) {
+      case 'columnSort': {
+        const currentTableData = this.tableData();
+        const currentSortBy = currentTableData.sortBy || '-datePosted';
+        const currentSortField = currentSortBy.replace(/^[+-]/, '');
+        
+        // Determine new sort direction
+        let newSortBy: string;
+        if (currentSortField === msg.data) {
+          // Toggle: if currently descending (-), go to ascending (+), and vice versa
+          newSortBy = currentSortBy.startsWith('-') ? `+${msg.data}` : `-${msg.data}`;
+        } else {
+          // New column: default to descending (-)
+          newSortBy = `-${msg.data}`;
         }
-    ];
-    public tableColumns: any[] = [
-        {
-            name: 'Document Name',
-            value: 'displayName',
-            width: 'col-6'
-        },
-        {
-            name: 'Date',
-            value: 'datePosted',
-            width: 'col-3'
-        },
-        {
-            name: 'Document Author',
-            value: 'documentAuthor',
-            width: 'col-3'
-        }
-    ];
-    constructor(
-        private _changeDetectionRef: ChangeDetectorRef,
-        private tableService: TableService,
-        private breakpointObserver: BreakpointObserver,
-        private mediaMatcher: MediaMatcher
-    ) {
-    }
-
-    async ngOnInit() {
-        this.breakpointObserver.observe([
-            Breakpoints.Tablet
-        ])
-            .pipe(takeWhile(() => this.alive))
-            .subscribe(result => {
-                if (result.matches) {
-                    this.tableData.columns = this.mobileTableColumns;
-                    this._changeDetectionRef.detectChanges();
-                }
-            });
-        this.breakpointObserver.observe([
-            Breakpoints.Web
-        ])
-            .pipe(takeWhile(() => this.alive))
-            .subscribe(result => {
-                if (result.matches) {
-                    this.tableData.columns = this.tableColumns;
-                    this._changeDetectionRef.detectChanges();
-                }
-            });
-
-        this.tableData.tableId = this.tableId;
-        this.tableData.pageSize = 5;
-        this.tableData.options.showPageSizePicker = false;
-        this.tableData.options.showPageCountDisplay = false;
-        this.tableData.options.showAllPicker = false;
-        this.tableData.options.showPagination = true;
-        this.tableData.options.showTopControls = false;
-
-        this.tableService.initTableData(this.tableId);
-        await this.tableService.fetchData(new SearchParamObject(
-            this.tableId,
-            '',
-            'Document',
-            [{ 'name': 'project', 'value': this.tableId }],
-            1,
-            5,
-            '-datePosted',
-            { documentSource: 'PROJECT-NOTIFICATION' },
-            true,
-            '+displayName'
-        ));
-
-        this.tableService.getValue(this.tableId)
-            .pipe(takeWhile(() => this.alive))
-            .subscribe((searchResults: SearchResults) => {
-                if (searchResults.data !== 0) {
-                    this.tableData.totalListItems = searchResults.totalSearchCount;
-                    if (this.tableData.totalListItems > 0) {
-                        this.tableData.items = searchResults.data.map(record => {
-                            return { rowData: record };
-                        });
-                    } else {
-                        this.tableData.items = [];
-                    }
-                    const mediaQueryList = this.mediaMatcher.matchMedia(Breakpoints.Web);
-                    this.tableData.columns = mediaQueryList.matches ? this.tableColumns : this.mobileTableColumns;
-
-                    this.loading = false;
-                    this._changeDetectionRef.detectChanges();
-                }
-            });
-    }
-
-    onMessageOut(msg: ITableMessage) {
-        let params = {};
-        switch (msg.label) {
-            case 'columnSort':
-                if (this.tableData.sortBy.charAt(0) === '+') {
-                    params['sortBy'] = '-' + msg.data;
-                } else {
-                    params['sortBy'] = '+' + msg.data;
-                }
-                this.tableService.data[this.tableId].cachedConfig.sortBy = params['sortBy'];
-                this.tableData.sortBy = params['sortBy'];
-                break;
-            case 'pageNum':
-                params['currentPage'] = msg.data;
-                this.tableService.data[this.tableId].cachedConfig.currentPage = params['currentPage'];
-                this.tableData.currentPage = params['currentPage'];
-                break;
-            default:
-                break;
-        }
+        
+        currentTableData.sortBy = newSortBy;
+        this.tableData.set(currentTableData);
         this.submit();
+        break;
+      }
+      case 'pageNum': {
+        const tableData = this.tableData();
+        tableData.currentPage = msg.data;
+        this.tableData.set(tableData);
+        this.submit();
+        break;
+      }
     }
+  }
 
-    submit() {
-        this.tableService.refreshData(this.tableId);
-    }
+  submit() {
+    const currentTableData = this.tableData();
+    const sortBy = currentTableData.sortBy || '-datePosted';
+    
+    HttpCacheService.clearByPrefix(`${this.api.apiPath}/search?dataset=Document`);
+    
+    this.tableService.fetchData(new SearchParamObject(
+      this.tableId(),
+      '',
+      'Document',
+      [{ 'name': 'project', 'value': this.tableId() }],
+      currentTableData.currentPage,
+      currentTableData.pageSize,
+      this.invertSortForBackend(sortBy),
+      { documentSource: 'PROJECT-NOTIFICATION' },
+      true
+    ));
+  }
 
-    ngOnDestroy() {
-        this.alive = false;
-    }
+  /**
+   * Backend uses inverted sort convention: + = descending, - = ascending
+   * UI uses standard convention: - = descending, + = ascending
+   */
+  private invertSortForBackend(sortBy: string): string {
+    return sortBy.startsWith('+') 
+      ? `-${sortBy.substring(1)}` 
+      : `+${sortBy.substring(1)}`;
+  }
 }

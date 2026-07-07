@@ -1,0 +1,65 @@
+<td class="activity-card col-10" tabindex="0">
+  <div class="activity-card__meta mb-2">
+    @if (rowData?.project?.name) {
+      <div class="activity-card__project-name">{{ rowData.project.name }}</div>
+    }
+    @if (rowData?.notificationName) {
+      <div class="activity-card__project-name">{{ rowData.notificationName }}</div>
+    }
+    @if (rowData?.projectNotification?.name) {
+      <div class="activity-card__project-name">{{ rowData.projectNotification.name }}</div>
+    }
+    <div class="activity-card__headline">{{ rowData?.headline }}</div>
+  </div>
+
+  @if (!tableMode) {
+    <small class="d-block text-muted mb-3">{{ rowData?.dateAdded | date: 'longDate' }}</small>
+  }
+
+  <div class="mb-3 lh-base" [innerHTML]="getSafeHtml(rowData?.content)"></div>
+
+  <div class="d-flex flex-wrap gap-2">
+    @if (rowData?.type === 'Project Notification News') {
+      <a class="btn btn-sm btn-outline-primary"
+         [routerLink]="['/project-notifications']">
+        View Project Notifications Page
+      </a>
+    }
+    @if (showProjectInfoEffective && rowData?.type !== 'Project Notification News' && rowData?.project?._id) {
+      <a class="btn btn-sm btn-outline-primary"
+         [routerLink]="['/p', rowData.project._id]"
+         [title]="'View more information about ' + rowData.project.name">
+        Project Info
+      </a>
+    }
+    @if (rowData?.pcp && rowData?.type === 'Public Comment Period') {
+      <button class="btn btn-sm btn-outline-primary"
+        (click)="goToCP(rowData)">
+        View Engagement
+      </button>
+    }
+    @if (isSingleDoc(rowData?.documentUrl) && !rowData?.documentUrl?.includes('docs?folder')) {
+      @if (rowData?.notificationName && rowData?.type === 'Project Notification Public Comment Period') {
+        <a class="btn btn-sm btn-outline-primary"
+           [href]="rowData.documentUrl"
+           target="_blank"
+           rel="noopener">
+          View Project Notification Public Comment Period
+        </a>
+      } @else if (!rowData?.notificationName) {
+        <a class="btn btn-sm btn-outline-primary"
+           [href]="rowData.documentUrl"
+           target="_blank"
+           rel="noopener">
+          View Document(s)
+        </a>
+      }
+    }
+  </div>
+</td>
+
+@if (tableMode) {
+  <td class="col-2 activity-card__date" tabindex="0">
+    {{ rowData?.dateAdded | date: 'longDate' }}
+  </td>
+}

@@ -19,8 +19,8 @@ export class SubsetsObject {
    */
   constructor(
     public options: SubsetOption[],
-    public defaultSubset: SubsetOption = null,
-    public selectedSubset: SubsetOption = null
+    public defaultSubset: SubsetOption | null = null,
+    public selectedSubset: SubsetOption | null = null
   ) {
     if (!defaultSubset) {
       this.defaultSubset = options[0];

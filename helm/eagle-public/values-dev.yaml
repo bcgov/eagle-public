@@ -1,0 +1,16 @@
+# Development environment values
+replicaCount: 1
+
+image:
+  tag: "dev"
+
+route:
+  host: eagle-dev.apps.silver.devops.gov.bc.ca
+
+resources:
+  limits:
+    cpu: 250m
+    memory: 256Mi
+  requests:
+    cpu: 50m
+    memory: 128Mi

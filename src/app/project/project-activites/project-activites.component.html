@@ -1,25 +1,22 @@
-<div class="spinner-container" *ngIf="loading">
-  <div class="spinner-new rotating"></div>
-</div>
+<h3 #activitiesHeader class="mb-4">Activities and Updates</h3>
 
-<h2 #activitiesHeader>Activities and Updates</h2>
-
-<section>
-  <search-filter-template
-    #explorePanel
-    [keywordOverride]='queryParams.keywordsActivities'
-    (searchEvent)='executeSearch($event)'>
-  </search-filter-template>
-</section>
+<search-filter-template
+  #explorePanel
+  [keywordOverride]='queryParams["keywordsActivities"]'
+  (searchEvent)='executeSearch($event)'>
+</search-filter-template>
 
 <section class="tab-section">
-  <div *ngIf="tableData.totalListItems === 0">
-    No recent activities.
-  </div>
-
-  <lib-table-template-2
-    *ngIf="!loading && tableData.totalListItems > 0"
-    [data]="tableData"
-    (messageOut)="onMessageOut($event)">
-  </lib-table-template-2>
+  @if (tableData().totalListItems === 0 && !loading()) {
+    <div>
+      No recent activities.
+    </div>
+  } @else {
+    <lib-table-template
+      [data]="tableData()"
+      [loading]="loading()"
+      (messageOut)="onMessageOut($event)">
+    </lib-table-template>
+  }
 </section>
+
