@@ -28,7 +28,6 @@
   left: 1.5rem;
   margin: 0;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  border-left: 4px solid #003366;
   z-index: 10;
 }
 
@@ -88,16 +87,43 @@
   color: #fff;
 }
 
-.engage-banner__status-chip--open {
-  background-color: rgb(46, 125, 50);
+.engage-banner__status-chip--upcoming {
+  background-color: #ffca28;
+  color: #1a1a1a;
 }
 
-.engage-banner__status-chip--pending {
-  background-color: #1565c0;
+.engage-banner__status-chip--open {
+  background-color: rgb(46, 125, 50);
+  color: #fff;
 }
 
 .engage-banner__status-chip--closed {
-  background-color: #616161;
+  background-color: #c62828;
+  color: #fff;
+}
+
+.engage-banner__timer-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.75rem;
+  border-radius: 16px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.engage-banner__timer-pill--upcoming {
+  background-color: #ffca28;
+  color: #1a1a1a;
+}
+
+.engage-banner__timer-pill--open {
+  background-color: rgb(46, 125, 50);
+  color: #fff;
+}
+
+.engage-banner__timer-pill--closed {
+  background-color: #c62828;
+  color: #fff;
 }
 
 .engage-banner__cta {

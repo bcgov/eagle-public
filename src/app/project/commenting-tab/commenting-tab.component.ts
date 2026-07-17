@@ -64,11 +64,9 @@ export class CommentingTabComponent implements OnDestroy {
                 ? element.instructions.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
                 : '';
               const match = fullText.match(/Comment Period on the (.*?) for /);
-              return {
-                ...element,
-                instructions: match ? match[1] : '',
-                additionalText: element.additionalText || fullText || element.informationLabel,
-              };
+              element.instructions = match ? match[1] : '';
+              element.additionalText = element.additionalText || fullText || element.informationLabel;
+              return element;
             });
             const seenIds = new Set<string>();
             const seenUrls = new Set<string>();

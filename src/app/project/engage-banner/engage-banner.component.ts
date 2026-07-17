@@ -18,7 +18,7 @@ export class EngageBannerComponent {
   data = input.required<CommentPeriod>();
 
   statusClass = computed(() => {
-    const status = this.data().commentPeriodStatus;
+    const status = this.data().bannerState;
     return status ? `engage-banner__status-chip--${status.toLowerCase()}` : '';
   });
 }

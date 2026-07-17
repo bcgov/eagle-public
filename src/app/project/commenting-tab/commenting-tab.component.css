@@ -91,7 +91,7 @@
 }
 .cp-card__pill--open    { background: var(--bc-success, #2e8540); color: #fff; }
 .cp-card__pill--closed  { background: var(--bc-danger, #d8292f); color: #fff; }
-.cp-card__pill--pending { background: var(--bs-warning, #fcba19); color: #fff; }
+.cp-card__pill--pending { background: var(--bs-warning, #fcba19); color: #1a1a1a; }
 
 /* Card body */
 .cp-card__body {

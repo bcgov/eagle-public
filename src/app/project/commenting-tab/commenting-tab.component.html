@@ -34,7 +34,7 @@
         }
       </div>
       <div class="cp-card__body">
-        <h3 class="cp-card__title">{{ cp.instructions || 'Public Comment Period' }}</h3>
+        <h3 class="cp-card__title">{{ cp.informationLabel || cp.instructions || 'Public Comment Period' }}</h3>
         @if (cp.dateStarted) {
           <p class="cp-card__dates">{{ cp.dateStarted | date:'MMM d, y' }} – {{ cp.dateCompleted | date:'MMM d, y' }}</p>
         }

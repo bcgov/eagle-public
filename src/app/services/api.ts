@@ -345,6 +345,7 @@ export class ApiService {
       'instructions',
       'isMet',
       'metURL',
+      'informationLabel',
     ];
     const queryString = `commentperiod?project=${projId}&sortBy=-dateStarted&fields=${this.buildValues(fields)}`;
     return this.http.get<object>(`${this.apiPath}/${queryString}`, {});

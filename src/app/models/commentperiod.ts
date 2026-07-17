@@ -159,4 +159,57 @@ export class CommentPeriod {
       this.endDateDisplay = this.longEndDate.toFormat('MMMM dd @ h:mm a ZZZZ');
     }
   }
+
+  public get isBannerVisible(): boolean {
+    if (!this.dateStarted || !this.dateCompleted) return false;
+    
+    const now = DateTime.now().setZone('America/Vancouver');
+    const start = DateTime.fromJSDate(this.dateStarted).setZone('America/Vancouver');
+    const end = DateTime.fromJSDate(this.dateCompleted).setZone('America/Vancouver');
+    
+    const dateCompleted = (end.hour === 0 && end.minute === 0 && end.second === 0)
+      ? end.endOf('day')
+      : end;
+
+    const isUpcoming = now >= start.minus({ days: 7 }) && now < start;
+    const isOpen = now >= start && now <= dateCompleted;
+    const isClosed = now > dateCompleted && now <= dateCompleted.plus({ days: 7 });
+
+    return isUpcoming || isOpen || isClosed;
+  }
+
+  public get bannerState(): 'Upcoming' | 'Open' | 'Closed' | 'None' {
+    if (!this.dateStarted || !this.dateCompleted) return 'None';
+
+    const now = DateTime.now().setZone('America/Vancouver');
+    const start = DateTime.fromJSDate(this.dateStarted).setZone('America/Vancouver');
+    const end = DateTime.fromJSDate(this.dateCompleted).setZone('America/Vancouver');
+    const dateCompleted = (end.hour === 0 && end.minute === 0 && end.second === 0)
+      ? end.endOf('day')
+      : end;
+
+    if (now < start) return 'Upcoming';
+    if (now >= start && now <= dateCompleted) return 'Open';
+    return 'Closed';
+  }
+
+  public get bannerCTA(): string {
+    return this.bannerState === 'Open' ? 'Share your thoughts' : 'View engagement';
+  }
+
+  public get bannerTimerPillText(): string {
+    const start = DateTime.fromJSDate(this.dateStarted).setZone('America/Vancouver');
+    const end = DateTime.fromJSDate(this.dateCompleted).setZone('America/Vancouver');
+    const dateCompleted = (end.hour === 0 && end.minute === 0 && end.second === 0)
+      ? end.endOf('day')
+      : end;
+
+    if (this.bannerState === 'Upcoming') {
+      return `Starts ${start.toFormat('MMM d, yyyy')}`;
+    }
+    if (this.bannerState === 'Open') {
+      return this.daysRemaining;
+    }
+    return `Closed ${dateCompleted.toFormat('MMM d, yyyy')}`;
+  }
 }
