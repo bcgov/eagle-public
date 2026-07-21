@@ -195,8 +195,11 @@ jobs:
 
       - name: Import image from GHCR
         run: |
-          oc -n ${{ env.OPENSHIFT_NAMESPACE_TOOLS }} import-image ${{ env.IMAGE_NAME }}:dev \
-            --from=ghcr.io/${{ github.repository }}:dev --confirm
+          # Point local ImageStreamTag to GHCR to allow clean override of any existing internal image pointers
+          oc -n ${{ env.OPENSHIFT_NAMESPACE_TOOLS }} tag ghcr.io/${{ github.repository }}:dev ${{ env.IMAGE_NAME }}:dev --reference-policy=local
+          
+          # Force instant metadata synchronization/import of the new image from GHCR
+          oc -n ${{ env.OPENSHIFT_NAMESPACE_TOOLS }} import-image ${{ env.IMAGE_NAME }}:dev --confirm
 
       - name: Deploy with Helm
         run: |
