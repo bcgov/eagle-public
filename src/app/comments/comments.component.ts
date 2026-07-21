@@ -192,8 +192,8 @@ export class CommentsComponent implements OnDestroy {
               
               if (period.commentPeriodStatus === 'Closed') {
                 this.commentPeriodHeader.set('Public Comment Period is Now Closed');
-              } else if (period.commentPeriodStatus === 'Pending') {
-                this.commentPeriodHeader.set('Public Comment Period is Pending');
+              } else if (period.commentPeriodStatus === 'Upcoming') {
+                this.commentPeriodHeader.set('Public Comment Period is Upcoming');
               } else if (period.commentPeriodStatus === 'Open') {
                 this.commentPeriodHeader.set('Public Comment Period is Now Open');
               }

@@ -93,8 +93,7 @@
               <div class="py-2 px-3">No comment periods are currently scheduled for this project notification.</div>
             } @else {
               @for (cp of commentPeriods(); track cp._id) {
-                <article class="card cp-card" role="button" tabindex="0"
-                         (click)="goToCP(cp)" (keyup.enter)="goToCP(cp)">
+                <article class="card cp-card">
                   <div class="cp-card__header">
                     <span class="cp-card__status-dot"
                           [class.cp-card__status-dot--open]="commentPeriodService.isOpen(cp)"
@@ -118,6 +117,9 @@
                     @if (cp.additionalText) {
                       <p class="cp-card__description">{{ cp.additionalText }}</p>
                     }
+                    <button class="btn btn-epic-cta" (click)="goToCP(cp)">
+                      {{ cp.commentPeriodStatus === 'Open' ? 'Share your thoughts' : 'View Engagement' }}
+                    </button>
                   </div>
                 </article>
               }

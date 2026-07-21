@@ -28,6 +28,7 @@ export class ProjectNotificationDocumentsTableDetailsComponent {
   cpStatus = computed(() => {
     const pcp = this.rowData().pcp as string | undefined;
     if (!pcp || pcp === 'none') return null;
+    if (pcp === 'pending') return 'Upcoming';
     return pcp.charAt(0).toUpperCase() + pcp.slice(1);
   });
 

@@ -39,7 +39,7 @@ export class Constants {
 
   public static readonly PCP_COLLECTION: object[] = [
     { code: 'none', name: 'None'},
-    { code: 'pending', name: 'Pending' },
+    { code: 'pending', name: 'Upcoming' },
     { code: 'open', name: 'Open' },
     { code: 'closed', name: 'Closed' }
   ];

@@ -101,7 +101,7 @@ export class CommentPeriodService {
     }
     switch (commentPeriod.commentPeriodStatus) {
       case 'Open':    return this.OPEN;
-      case 'Pending': return this.NOT_STARTED;
+      case 'Upcoming': return this.NOT_STARTED;
       case 'Closed':  return this.CLOSED;
       default:        return this.NOT_OPEN;
     }

@@ -70,6 +70,7 @@ export class ProjectNotificationsTableRowsComponent implements TableRowComponent
 
   cpStatus(pcp: string): string {
     if (!pcp || pcp === 'none') return '';
+    if (pcp === 'pending') return 'Upcoming';
     return pcp.charAt(0).toUpperCase() + pcp.slice(1);
   }
 

@@ -1,23 +1,8 @@
 .cp-card {
-  cursor: pointer;
   border: 1px solid var(--bc-gray-border, #ced4da);
   border-radius: var(--bs-border-radius);
   overflow: hidden;
   margin-bottom: 0.75rem;
-  transition: box-shadow 0.15s ease;
-}
-
-.cp-card:hover {
-  box-shadow: 0 2px 8px rgba(0, 51, 102, 0.08);
-}
-
-.cp-card:hover .cp-card__body {
-  background: var(--table-row-hover-bg, #d8dce0);
-}
-
-.cp-card:focus-visible {
-  outline: 3px solid var(--bs-primary);
-  outline-offset: 2px;
 }
 
 /* Skeleton variant — no hover effect */
@@ -98,7 +83,42 @@
   padding: 0.75rem 1rem;
   background: #e9ecef;
   transition: background 0.15s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
 }
+
+/* Premium EPIC Navy CTA Button */
+.btn-epic-cta {
+  color: #ffffff;
+  background-color: var(--bc-blue, #003366);
+  border: 2px solid var(--bc-blue, #003366);
+  font-weight: 700;
+  font-size: var(--bs-font-size-sm, 0.875rem);
+  padding: 0.375rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  white-space: nowrap;
+  margin-top: 0.25rem;
+}
+
+.btn-epic-cta:hover,
+.btn-epic-cta:focus {
+  color: var(--bc-blue, #003366);
+  background-color: transparent;
+  border-color: var(--bc-blue, #003366);
+  outline: none;
+}
+
+@media (max-width: 576px) {
+  .btn-epic-cta {
+    width: 100%;
+    text-align: center;
+  }
+}
+
 
 .cp-card__title {
   font-size: var(--bs-font-size-sm, 0.875rem);
