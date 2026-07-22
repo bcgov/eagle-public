@@ -9,6 +9,9 @@ spec:
   {{- if .Values.route.host }}
   host: {{ .Values.route.host }}
   {{- end }}
+  {{- if .Values.route.path }}
+  path: {{ .Values.route.path }}
+  {{- end }}
   port:
     targetPort: {{ .Values.route.targetPort | default "8080-tcp" }}
   tls:

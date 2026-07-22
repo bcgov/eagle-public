@@ -6,9 +6,10 @@ image:
 
 route:
   enabled: true
-  serviceName: eagle-public
-  targetPort: "http"
-  host: eagle-public-6cdc9e-dev.apps.silver.devops.gov.bc.ca
+  serviceName: rproxy
+  targetPort: "8080-tcp"
+  host: eagle-dev.apps.silver.devops.gov.bc.ca
+  path: "/"
 
 resources:
   limits:

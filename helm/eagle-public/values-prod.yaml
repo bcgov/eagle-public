@@ -5,8 +5,11 @@ image:
   tag: "prod"
 
 route:
-  enabled: false  # Route 'prod-external' already exists and routes through rproxy
+  enabled: true
+  serviceName: rproxy
+  targetPort: "8080-tcp"
   host: projects.eao.gov.bc.ca
+  path: "/"
 
 resources:
   limits:
