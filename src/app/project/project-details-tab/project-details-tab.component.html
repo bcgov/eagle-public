@@ -21,7 +21,7 @@
               <dt class="fw-bold text-primary mb-0 lh-sm">Nature</dt>
               <dd class="mb-1">{{project()?.nature || "No nature description available" }}</dd>
             </div>
-            @if (project()?.status) {
+            @if (project()) {
               <div class="col-sm-6 col-md-4 col-lg-3">
                 <dt class="fw-bold text-primary mb-0 lh-sm">IAAC Involvement</dt>
                 @if (project()?.CEAAInvolvement?.name==='None') {
@@ -40,10 +40,10 @@
                 }
               </div>
             }
-            @if (project()?.status) {
+            @if (project()?.currentPhaseName) {
               <div class="col-sm-6 col-md-4 col-lg-3">
                 <dt class="fw-bold text-primary mb-0 lh-sm">Project Status</dt>
-                <dd class="mb-1">{{project()?.status || "-"}}</dd>
+                <dd class="mb-1">{{project()?.currentPhaseName?.name || "-"}}</dd>
               </div>
             }
             @if (project()?.eacDecision) {
