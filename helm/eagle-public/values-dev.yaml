@@ -5,8 +5,9 @@ image:
   tag: "dev"
 
 route:
-  enabled: false
-  host: eagle-dev.apps.silver.devops.gov.bc.ca
+  enabled: true
+  serviceName: eagle-public
+  host: eagle-public-6cdc9e-dev.apps.silver.devops.gov.bc.ca
 
 resources:
   limits:
