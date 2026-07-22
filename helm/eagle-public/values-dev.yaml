@@ -7,6 +7,7 @@ image:
 route:
   enabled: true
   serviceName: eagle-public
+  targetPort: "http"
   host: eagle-public-6cdc9e-dev.apps.silver.devops.gov.bc.ca
 
 resources:
