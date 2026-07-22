@@ -53,6 +53,7 @@ export class PinsComponent implements OnDestroy {
     initialTableData.tableId = 'pins-table';
     initialTableData.options.showPageCountDisplay = false;
     initialTableData.options.showPageSizePicker = false;
+    initialTableData.options.disableRowHighlight = true;
     this.tableData.set(initialTableData);
 
     // Get project ID from parent route
