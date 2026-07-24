@@ -8,6 +8,7 @@ export class Project {
   centroid: number[] = [];
   description: string;
   eacDecision: any;
+  applicableRegulation?: any;
   location: string;
   name: string;
   projectLeadId: string;
@@ -88,6 +89,7 @@ export class Project {
     this.CELeadPhone         = obj && obj.CELeadPhone         || null;
     this.description         = obj && obj.description         || null;
     this.eacDecision         = obj && obj.eacDecision         || null;
+    this.applicableRegulation = obj && obj.applicableRegulation || null;
     this.location            = obj && obj.location            || null;
     this.name                = obj && obj.name                || null;
     this.projectLeadId         = obj && obj.projectLeadId         || null;

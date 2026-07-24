@@ -49,11 +49,16 @@
             @if (project()?.eacDecision) {
               <div class="col-sm-6 col-md-4 col-lg-3">
                 <dt class="fw-bold text-primary mb-0 lh-sm">EAC Status</dt>
-                @if (project()?.decisionDate) {
+                @if (project()?.eacDecision?.name === 'Regulatory Transfer') {
+                  <dd class="mb-1">
+                    <a [href]="project()?.applicableRegulation?.item || 'https://www.bc-er.ca/data-reports/data-centre/'" target="_blank" rel="noopener noreferrer">
+                      {{ project()?.applicableRegulation?.name || 'BC Energy Regulator' }}
+                    </a>
+                  </dd>
+                } @else if (project()?.decisionDate) {
                   <dd class="mb-1">{{project()?.eacDecision?.name || '-'}} |
                     {{project()?.decisionDate?.toString() | date: 'longDate'}}</dd>
-                }
-                @if (!project()?.decisionDate) {
+                } @else {
                   <dd class="mb-1">{{project()?.eacDecision?.name || '-'}}</dd>
                 }
               </div>

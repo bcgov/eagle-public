@@ -23,16 +23,16 @@
   window.__env.logLevel = 0;
 
   // Environment label
-  window.__env.ENVIRONMENT = 'test';
+  window.__env.ENVIRONMENT = 'dev';
 
   // API target — proxy.conf.js reads this to route /api and /analytics.
   // To use the dev environment: change to 'https://eagle-dev.apps.silver.devops.gov.bc.ca'
   // and set configEndpoint = true above so config is fetched from /api/config.
-  window.__env.API_LOCATION = 'https://eagle-test.apps.silver.devops.gov.bc.ca';
+  window.__env.API_LOCATION = 'https://eagle-dev.apps.silver.devops.gov.bc.ca';
   window.__env.API_PATH = '/api';
 
   // eagle-admin link
-  window.__env.ADMIN_PATH = 'https://eagle-test.apps.silver.devops.gov.bc.ca/admin/';
+  window.__env.ADMIN_PATH = 'https://eagle-dev.apps.silver.devops.gov.bc.ca/admin/';
 
   // Analytics — proxied through /analytics (eagle-api forwards to penguin-analytics)
   window.__env.ANALYTICS_API_URL = '/analytics';
