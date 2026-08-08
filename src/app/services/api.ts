@@ -37,6 +37,20 @@ export class ApiService {
     return this.configService.getApiPath();
   }
 
+  /**
+   * Base URL for search. eagle-search when SEARCH_API_PATH is set, eagle-api otherwise.
+   *
+   * Only the datasets in AZURE_DATASETS move; RecentActivity and ProjectNotification stay on
+   * eagle-api, as do getItem() and getFullDataSet(). The two backends answer the same query
+   * language and the same `[{searchResults, meta}]` envelope, which is why nothing downstream —
+   * search.service.ts, SearchResults, SearchParamObject, ~40 call sites — has to change.
+   */
+  get searchPath(): string {
+    return this.configService.getSearchApiPath();
+  }
+
+  private static readonly AZURE_DATASETS = new Set(['Project', 'Document', 'DocumentChunk']);
+
   get adminUrl(): string {
     return this.configService.config().ADMIN_PATH || 'http://localhost:4200/admin/';
   }
@@ -181,7 +195,8 @@ export class ApiService {
     queryString += `&fields=${this.buildValues(fields)}`;
     queryString += '&fuzzy=' + fuzzy;
     
-    const fullUrl = `${this.apiPath}/${queryString}`;
+    const base = ApiService.AZURE_DATASETS.has(dataset) ? this.searchPath : this.apiPath;
+    const fullUrl = `${base}/${queryString}`;
     this.logger.trace(`API call URL: ${fullUrl}`, 'ApiService');
     
     return this.http.get<SearchResults[]>(fullUrl, {});
