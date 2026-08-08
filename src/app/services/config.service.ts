@@ -9,6 +9,16 @@ export interface EnvConfig {
   BANNER_COLOUR?: string;
   API_PATH?: string;
   API_LOCATION?: string;
+  /**
+   * Base URL for Project/Document/DocumentChunk search, when it is served by eagle-search
+   * (Azure AI Search) rather than eagle-api. Absolute, e.g.
+   * https://eagle-search-api-dev.azurewebsites.net — unlike API_PATH this cannot be relative,
+   * because the service is a different origin.
+   *
+   * EMPTY OR UNSET FALLS BACK TO eagle-api, and that is also the kill switch: clear the setting in
+   * the nginx ConfigMap and search reverts with no redeploy.
+   */
+  SEARCH_API_PATH?: string;
   ADMIN_PATH?: string;
   SURVEY_URL?: string | null;
   SHOW_SURVEY_BANNER?: boolean;
@@ -99,6 +109,14 @@ export class ConfigService {
    */
   public getApiPath(): string {
     return this._config().API_PATH || '/api';
+  }
+
+  /**
+   * Base URL for search, when it is served by eagle-search. Falls back to the eagle-api path, so an
+   * unconfigured environment keeps working unchanged.
+   */
+  public getSearchApiPath(): string {
+    return this._config().SEARCH_API_PATH || this.getApiPath();
   }
 
   /**
