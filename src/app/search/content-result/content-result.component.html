@@ -1,6 +1,6 @@
 <article class="content-result">
   <h3 class="result-title">
-    <a [href]="pageUrl(result().pages?.[0])" target="_blank" rel="noopener">{{result().documentName || 'Untitled document'}}</a>
+    <a [href]="documentUrl()" target="_blank" rel="noopener">{{result().documentName || 'Untitled document'}}</a>
   </h3>
 
   <p class="result-meta">
@@ -28,14 +28,6 @@
   }
 
   <div class="result-actions">
-    @if (result().pages?.length) {
-      <span class="pages-label">Jump to page:</span>
-      @for (page of result().pages; track page) {
-        <a class="page-link" [href]="pageUrl(page)" target="_blank" rel="noopener"
-           [attr.aria-label]="'Open page ' + page + ' of ' + result().documentName">{{page}}</a>
-      }
-      @if (result().morePages) { <span class="more-pages">+{{result().morePages}} more</span> }
-    }
     <button type="button" class="result-download" (click)="download()"
       [attr.aria-label]="'Download ' + result().documentName">
       <span class="material-icons" aria-hidden="true">cloud_download</span> Download

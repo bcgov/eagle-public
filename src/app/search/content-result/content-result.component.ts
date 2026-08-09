@@ -25,27 +25,24 @@ export class ContentResultComponent {
   readonly result = input.required<any>();
 
   /**
-   * eagle-api serves PDFs INLINE (`allowedInlineMimes` in its document controller), so `#page=N`
-   * opens the browser's PDF viewer on that page. Without the inline disposition this would download
-   * the file and ignore the fragment, which is why the deep link is worth having at all.
+   * The document itself. eagle-api serves PDFs inline, so this opens in the browser's viewer.
    *
-   * Page numbers are already 1-based here — eagle-search's `group.js` converts them once, so the
-   * link, the list and the "+N more" count cannot disagree.
+   * There is deliberately no `#page=N` fragment. This card briefly rendered "Jump to page N" links
+   * built from the chunk's `pageNumber`, and every one of them was wrong: `pageNumber` is a passage
+   * SEQUENCE number, not a PDF page — the chunker increments it per emitted block and the extraction
+   * host flattens pages before posting. Measured, a 63-chunk document carries 51 distinct values.
+   * Page links come back when the extractor emits real per-page markdown, and not before.
    */
-  pageUrl(page?: number): string {
+  documentUrl(): string {
     const r = this.result();
     const name = this.utils.encodeString(r.documentName || 'document', true);
-    const base = `/api/public/document/${r._id}/download/${name}`;
-    return page ? `${base}#page=${page}` : base;
+    return `/api/public/document/${r._id}/download/${name}`;
   }
 
-  /** "29 matches on 24 pages" reads better than either number alone. */
+  /** Matches only. There is no trustworthy page count to pair it with. */
   readonly matchSummary = computed(() => {
-    const r = this.result();
-    const matches = r.matchCount || 0;
-    const pages = (r.pages || []).length + (r.morePages || 0);
-    const m = `${matches} match${matches === 1 ? '' : 'es'}`;
-    return pages > 1 ? `${m} on ${pages} pages` : m;
+    const matches = this.result().matchCount || 0;
+    return `${matches} match${matches === 1 ? '' : 'es'}`;
   });
 
   download(): void {
