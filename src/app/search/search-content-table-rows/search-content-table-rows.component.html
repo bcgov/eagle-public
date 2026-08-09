@@ -1,0 +1,30 @@
+<td data-label="Name"
+  class="col-3">
+  {{rowData.documentName}}
+</td>
+<td data-label="ProjectName"
+  class="col-2">
+  @if (rowData.project?._id) {
+    <a
+      [attr.aria-label]="'Link to project ' + rowData.project.name"
+      [routerLink]="['/p', rowData.project._id, 'project-details']"
+      tabindex="0">{{rowData.project.name}}</a>
+  } @else {
+    {{rowData.project?.name || '-'}}
+  }
+</td>
+<td data-label="Page"
+  class="col-1">{{rowData.pageNumber + 1}}</td>
+<td data-label="Match"
+  class="col-5">
+  <!-- Escaped and balanced by eagle-search before it ever reaches the browser; only <mark> survives. -->
+  <span class="content-snippet" [innerHTML]="rowData.snippet"></span>
+</td>
+<td data-label="Download"
+  class="col-1 d-flex justify-content-center">
+  <span class="material-icons download-icon"
+    (click)="goToItem(rowData)"
+    (keyup.enter)="goToItem(rowData)"
+    tabindex="0"
+    [attr.aria-label]="'Download document button'">cloud_download</span>
+</td>

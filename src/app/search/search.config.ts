@@ -7,6 +7,15 @@ import { FilterObject, FilterType, MultiSelectDefinition, DateFilterDefinition }
 
 export const SEARCH_TABLE_ID = 'search';
 
+/**
+ * Tabs shared by both search views. Defined here, the base config, so the dependency runs one way:
+ * the content config imports from this file and nothing imports back.
+ */
+export const SEARCH_TABS = [
+  { label: 'Documents', link: '/search' },
+  { label: 'Document Content', link: '/search/content' }
+];
+
 export const SEARCH_TABLE_COLUMNS: IColumnObject[] = [
   {
     name: 'Document Name',
@@ -52,8 +61,11 @@ const LEGISLATION_FILTER_GROUP = {
 
 /**
  * Builds filters for document search from config data
+ *
+ * Exported so the content tab can take the subset the chunk index supports, rather than
+ * reimplementing the same five FilterObjects against the same lists.
  */
-function buildSearchFilters(lists: any[]): FilterObject[] {
+export function buildSearchFilters(lists: any[]): FilterObject[] {
   const milestones: any[] = [];
   const authors: any[] = [];
   const docTypes: any[] = [];
@@ -169,6 +181,7 @@ export function createSearchConfig(): TableListConfig {
     tableOptions: {
       disableRowHighlight: true
     },
+    tabs: SEARCH_TABS,
     filterList: SEARCH_FILTER_LIST,
     dateFilterList: SEARCH_DATE_FILTER_LIST,
     filterDataSource: configService.lists,

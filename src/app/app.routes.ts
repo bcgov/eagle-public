@@ -80,6 +80,14 @@ export const routes: Routes = [
     path: 'search',
     component: SearchComponent
   },
+
+  // Separate route, not a query parameter: each tab has to be linkable, and TableListComponent
+  // reads its config once on init, so the router must build a new instance per tab.
+  {
+    path: 'search/content',
+    component: SearchComponent,
+    data: { content: true }
+  },
   
   {
     path: 'search-help',

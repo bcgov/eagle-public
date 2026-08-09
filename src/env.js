@@ -58,8 +58,12 @@
   // EMPTY MEANS eagle-api, and that is the kill switch: clear it and search reverts with no
   // redeploy. Everything else (RecentActivity, ProjectNotification, item reads) stays on API_PATH
   // regardless.
-  //   dev: 'https://eagle-search-api-dev.azurewebsites.net'
-  window.__env.SEARCH_API_PATH = 'https://eagle-search-api-dev.azurewebsites.net';
+  // INCLUDE `/api`. This is a base path, not a host: `searchKeywords()` appends `search?...` to it,
+  // and `getSearchApiPath()` falls back to `getApiPath()`, which already ends in `/api`. Without it
+  // every search requests `/search` and gets a 404 that surfaces as the toast "No data was returned
+  // from the server" — measured in a browser, not reasoned about.
+  //   dev: 'https://eagle-search-api-dev.azurewebsites.net/api'
+  window.__env.SEARCH_API_PATH = 'https://eagle-search-api-dev.azurewebsites.net/api';
 
   // eagle-admin link
   window.__env.ADMIN_PATH = 'https://eagle-dev.apps.silver.devops.gov.bc.ca/admin/';

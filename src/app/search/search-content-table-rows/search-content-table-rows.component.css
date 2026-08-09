@@ -1,0 +1,21 @@
+/* A chunk is a page of a PDF, so a snippet can be long and can carry newlines from extraction.
+   Clamp it rather than letting one result push the rest of the table off the screen. */
+.content-snippet {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  white-space: pre-line;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.content-snippet ::ng-deep mark {
+  background-color: #fcba19; /* BC Gov gold */
+  padding: 0 0.1em;
+}
+
+.download-icon {
+  cursor: pointer;
+}

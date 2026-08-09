@@ -11,8 +11,8 @@ export interface TableListConfig {
   /** Unique identifier for the table (used for loading state and table service) */
   tableId: string;
   
-  /** Type of dataset being displayed ('Project', 'Document', or 'ProjectNotification') */
-  datasetType: 'Project' | 'Document' | 'ProjectNotification';
+  /** Type of dataset being displayed */
+  datasetType: 'Project' | 'Document' | 'DocumentChunk' | 'ProjectNotification';
   
   /** Default sort field with direction (e.g., '+name', '-datePosted') */
   defaultSort: string;
@@ -51,4 +51,13 @@ export interface TableListConfig {
   
   /** Optional: Table display options */
   tableOptions?: Partial<ITableOptions>;
+
+  /**
+   * Optional: sibling views shown as tabs under the hero banner.
+   *
+   * Rendered here rather than in the host component so the tabs sit between the banner and the
+   * filters, where the project page puts them. Each entry is a route; the active one is matched
+   * exactly, so a parent path does not stay highlighted while a child is open.
+   */
+  tabs?: { label: string; link: string }[];
 }
