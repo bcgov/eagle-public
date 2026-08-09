@@ -6,17 +6,18 @@ import { TableRowComponent, ITableMessage } from 'app/shared/components/table-te
 import { TableObject } from 'app/shared/components/table-template/table-object';
 
 /**
- * One row of a document-content search result: the parent document, its project, the page the
- * match was on, and the highlighted snippet.
+ * One content-search result: a DOCUMENT, with the passages that matched inside it.
  *
- * The snippet arrives as markup and is bound with `[innerHTML]`. That is safe because
- * eagle-search escapes the document text BEFORE turning its highlight sentinels into `<mark>`, and
- * balances the tags per fragment — see `service/snippet.js` there. Angular's sanitizer keeps
- * `<mark>` and would strip anything else, so this is belt and braces rather than the only guard.
+ * This is a result card rather than a table row. Chunk hits used to be listed one per row, which
+ * meant a single long PDF filled the page — a measured page of 10 held 4 distinct documents. The
+ * service now groups by document (`service/group.js` in eagle-search), and the card shows what a
+ * reader actually needs to judge a hit: the document, where it sits, the text around the match, and
+ * which pages to open.
  *
- * Download goes through the same `Utils.openDocumentDownload` the Documents tab uses, which builds
- * a relative `/api/public/document/{_id}/download/...`. That URL is served by eagle-api: the Azure
- * search service holds no files and never will.
+ * The snippets arrive as markup and are bound with `[innerHTML]`. That is safe because eagle-search
+ * escapes the document text BEFORE turning its highlight sentinels into `<mark>`, and balances the
+ * tags per fragment — see `service/snippet.js` there. Angular's sanitizer keeps `<mark>` and strips
+ * anything else, so this is belt and braces rather than the only guard.
  */
 @Component({
   selector: 'tr[app-content-table-rows]',
@@ -35,10 +36,28 @@ export class ContentSearchTableRowsComponent implements TableRowComponent {
   messageIn = new EventEmitter<ITableMessage>();
 
   /**
-   * A chunk's key is `${documentId}_p{page}_c{index}`, but the download needs the DOCUMENT id.
-   * Passing `rowData` straight through would request a document that does not exist.
+   * eagle-api serves PDFs INLINE (`allowedInlineMimes` in its document controller), so `#page=N`
+   * opens the browser's PDF viewer on that page. Without the inline disposition this would download
+   * the file and ignore the fragment, which is why the deep link is worth having at all.
+   *
+   * Page numbers are already 1-based here — `group.js` converts them once, so the link, the list and
+   * the "+N more" count cannot disagree.
    */
+  pageUrl(page?: number): string {
+    const name = this.utils.encodeString(this.rowData.documentName || 'document', true);
+    const base = `/api/public/document/${this.rowData._id}/download/${name}`;
+    return page ? `${base}#page=${page}` : base;
+  }
+
   goToItem(item: any) {
-    this.utils.openDocumentDownload({ _id: item.documentId, displayName: item.documentName });
+    this.utils.openDocumentDownload({ _id: item._id, displayName: item.documentName });
+  }
+
+  /** "29 matches on 12 pages" reads better than either number alone. */
+  get matchSummary(): string {
+    const matches = this.rowData.matchCount || 0;
+    const pages = (this.rowData.pages || []).length + (this.rowData.morePages || 0);
+    const m = `${matches} match${matches === 1 ? '' : 'es'}`;
+    return pages > 1 ? `${m} on ${pages} pages` : m;
   }
 }

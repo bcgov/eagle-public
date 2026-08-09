@@ -1,21 +1,122 @@
-/* A chunk is a page of a PDF, so a snippet can be long and can carry newlines from extraction.
-   Clamp it rather than letting one result push the rest of the table off the screen. */
-.content-snippet {
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+/* A search result card, not a table cell. The table element is reused only for its pagination,
+   filter and loading plumbing; everything visual here is the result list. */
+.content-result {
+  display: block;
+  padding: 1.25rem 0;
+  border-bottom: 1px solid #dbdcdc;
+}
+
+.result-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 0 0 0.25rem;
+  line-height: 1.35;
+}
+
+.result-title a {
+  color: #1a5a96; /* BC Gov link blue */
+  text-decoration: none;
+}
+
+.result-title a:hover,
+.result-title a:focus {
+  text-decoration: underline;
+}
+
+.result-meta {
+  font-size: 0.85rem;
+  color: #494949; /* 7.4:1 on white — passes AA for small text with room to spare */
+  margin: 0 0 0.5rem;
+}
+
+.result-meta .sep {
+  margin: 0 0.4rem;
+  color: #9a9a9a;
+}
+
+.match-count {
+  font-weight: 600;
+}
+
+.result-snippet {
+  font-size: 0.925rem;
+  line-height: 1.5;
+  margin: 0 0 0.4rem;
+  color: #313132;
+  /* Extracted PDF text carries its own line breaks; preserving them keeps a table of contents or a
+     column of figures readable instead of running it into one paragraph. */
   white-space: pre-line;
-  font-size: 0.9rem;
-  line-height: 1.4;
+  /* Long unbroken strings in extracted text (file paths, coordinate lists) would otherwise push the
+     card wider than the page. */
+  overflow-wrap: anywhere;
 }
 
-.content-snippet ::ng-deep mark {
-  background-color: #fcba19; /* BC Gov gold */
-  padding: 0 0.1em;
+.no-snippet {
+  font-style: italic;
+  color: #494949;
 }
 
-.download-icon {
+/* The matched terms. BC Gov gold with near-black text is ~11:1, so the highlight itself never
+   becomes the reason a word is hard to read. */
+.result-snippet ::ng-deep mark {
+  background-color: #fcba19;
+  color: #1a1a1a;
+  padding: 0 0.15em;
+  border-radius: 2px;
+}
+
+.result-pages {
+  font-size: 0.85rem;
+  margin: 0.5rem 0 0;
+  color: #494949;
+}
+
+.pages-label {
+  margin-right: 0.35rem;
+}
+
+.page-link {
+  display: inline-block;
+  min-width: 1.9rem;
+  padding: 0.1rem 0.35rem;
+  margin: 0 0.2rem 0.2rem 0;
+  text-align: center;
+  border: 1px solid #c5c5c5;
+  border-radius: 3px;
+  color: #1a5a96;
+  text-decoration: none;
+}
+
+.page-link:hover,
+.page-link:focus {
+  background-color: #f2f2f2;
+  text-decoration: underline;
+}
+
+.more-pages {
+  margin-left: 0.25rem;
+  color: #6a6a6a;
+}
+
+.result-download {
+  margin-top: 0.6rem;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.85rem;
+  background: none;
+  border: 1px solid #c5c5c5;
+  border-radius: 3px;
+  color: #1a5a96;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.result-download:hover,
+.result-download:focus {
+  background-color: #f2f2f2;
+}
+
+.result-download .material-icons {
+  font-size: 1.1rem;
 }

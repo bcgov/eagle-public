@@ -8,37 +8,20 @@ import { buildSearchFilters, SEARCH_DATE_FILTER_LIST, SEARCH_TABS } from './sear
 export const CONTENT_SEARCH_TABLE_ID = 'search-content';
 
 /**
- * Only `documentName`, `pageNumber` and `datePosted` are sortable on the chunk index — `projectName`
- * is not, and the snippet is a per-query artefact with nothing to sort on. Marking those `nosort`
- * keeps the header from offering a sort the backend will silently drop.
+ * One full-width column, and the header is switched off below — the rows render result CARDS, not
+ * cells. The table element is kept only for the pagination, filter and loading-state plumbing that
+ * `table-list` already provides.
+ *
+ * No sortable columns, on purpose. Relevance is the only meaningful order for a content search:
+ * sorting by document name would replace BM25's ranking with an alphabetical one, and the fields
+ * that could be sorted (`documentName`, `pageNumber`) describe a passage rather than the document
+ * a result now represents.
  */
 export const CONTENT_SEARCH_TABLE_COLUMNS: IColumnObject[] = [
   {
-    name: 'Document Name',
-    value: 'documentName',
-    width: 'col-3'
-  },
-  {
-    name: 'Project',
-    value: 'project.name',
-    width: 'col-2',
-    nosort: true
-  },
-  {
-    name: 'Page',
-    value: 'pageNumber',
-    width: 'col-1'
-  },
-  {
-    name: 'Match',
+    name: 'Results',
     value: '',
-    width: 'col-5',
-    nosort: true
-  },
-  {
-    name: ' ',
-    value: '',
-    width: 'col-1',
+    width: 'col-12',
     nosort: true
   },
 ];
@@ -78,7 +61,9 @@ export function createContentSearchConfig(): TableListConfig {
     tableColumns: CONTENT_SEARCH_TABLE_COLUMNS,
     tableRowComponent: ContentSearchTableRowsComponent,
     tableOptions: {
-      disableRowHighlight: true
+      disableRowHighlight: true,
+      // The rows are cards; a column header above them would describe nothing.
+      showHeader: false
     },
     tabs: SEARCH_TABS,
     filterList: CONTENT_SEARCH_FILTER_LIST,

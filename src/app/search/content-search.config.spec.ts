@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 import { ConfigService } from 'app/services/config.service';
@@ -44,23 +44,30 @@ describe('content search config', () => {
 });
 
 describe('content search row', () => {
-  it('downloads the parent document, not the chunk', () => {
-    const openDocumentDownload = vi.fn();
-    TestBed.configureTestingModule({
-      providers: [{ provide: Utils, useValue: { openDocumentDownload } }],
-    });
-    const row = TestBed.runInInjectionContext(() => new ContentSearchTableRowsComponent());
+  function row(data: any) {
+    // Reset first: TestBed refuses to be reconfigured once instantiated, and each case builds its
+    // own component.
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({ providers: [Utils] });
+    const c = TestBed.runInInjectionContext(() => new ContentSearchTableRowsComponent());
+    c.rowData = data;
+    return c;
+  }
 
-    // A chunk's own key is `${documentId}_p{page}_c{index}`; requesting it as a document 404s.
-    row.goToItem({
-      _id: '5886aa8ae036fb0105769453_p7_c11',
-      documentId: '5886aa8ae036fb0105769453',
-      documentName: 'Fish and Fish Habitat Assessment',
-    });
+  // Results are DOCUMENTS now, not chunks — the service groups them — so the download and the link
+  // both resolve against the document id directly.
+  it('links to the document, opening at its first matching page', () => {
+    const c = row({ _id: 'doc1', documentName: 'Fish and Fish Habitat.pdf', pages: [8, 33] });
+    expect(c.pageUrl(8)).toContain('/api/public/document/doc1/download/');
+    // eagle-api serves PDFs inline, so the fragment opens the viewer on that page.
+    expect(c.pageUrl(8).endsWith('#page=8')).toBe(true);
+    // No page means the plain document URL, with no dangling fragment.
+    expect(c.pageUrl().includes('#')).toBe(false);
+  });
 
-    expect(openDocumentDownload).toHaveBeenCalledWith({
-      _id: '5886aa8ae036fb0105769453',
-      displayName: 'Fish and Fish Habitat Assessment',
-    });
+  it('summarises matches and pages', () => {
+    expect(row({ matchCount: 29, pages: [1, 2, 3], morePages: 9 }).matchSummary).toBe('29 matches on 12 pages');
+    // Singular, and no page clause when there is only one — "1 matches on 1 pages" reads as a bug.
+    expect(row({ matchCount: 1, pages: [4] }).matchSummary).toBe('1 match');
   });
 });
