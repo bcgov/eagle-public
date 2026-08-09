@@ -1,9 +1,16 @@
-/* A search result card, not a table cell. The table element is reused only for its pagination,
-   filter and loading plumbing; everything visual here is the result list. */
+/* A search result card. Full width of the results column — the first attempt rendered this inside
+   `lib-table-template`, which laid every child out as a table cell and squeezed the title, each
+   snippet and the page links into separate vertical ribbons. */
 .content-result {
   display: block;
   padding: 1.25rem 0;
   border-bottom: 1px solid #dbdcdc;
+}
+
+/* Snippets are the whole point of this view, so they get the width. Long extracted text is capped
+   for readability rather than for layout — a measure beyond ~90 characters is hard to scan. */
+.content-result > * {
+  max-width: 62rem;
 }
 
 .result-title {
@@ -43,9 +50,10 @@
   line-height: 1.5;
   margin: 0 0 0.4rem;
   color: #313132;
-  /* Extracted PDF text carries its own line breaks; preserving them keeps a table of contents or a
-     column of figures readable instead of running it into one paragraph. */
-  white-space: pre-line;
+  /* Collapse the PDF's own line breaks. They are extraction artifacts — a wrapped sentence, a page
+     header, a column edge — not meaning, and preserving them rendered snippets as ragged stacks of
+     three-word lines. A snippet is one flowing line of context. */
+  white-space: normal;
   /* Long unbroken strings in extracted text (file paths, coordinate lists) would otherwise push the
      card wider than the page. */
   overflow-wrap: anywhere;
@@ -65,9 +73,13 @@
   border-radius: 2px;
 }
 
-.result-pages {
+.result-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem;
   font-size: 0.85rem;
-  margin: 0.5rem 0 0;
+  margin-top: 0.6rem;
   color: #494949;
 }
 
@@ -99,7 +111,7 @@
 }
 
 .result-download {
-  margin-top: 0.6rem;
+  margin-left: auto;
   padding: 0.25rem 0.6rem;
   font-size: 0.85rem;
   background: none;

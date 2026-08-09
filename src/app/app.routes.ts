@@ -12,6 +12,7 @@ import { ProjectListComponent } from './projects/project-list/project-list.compo
 import { ProjectNotificationsListComponent } from './project-notifications/project-notifications.component';
 import { CommentsComponent } from './comments/comments.component';
 import { SearchComponent } from './search/search.component';
+import { ContentSearchComponent } from './search/content-search.component';
 import { ProjectComponent } from './project/project';
 import { ProjectDetailsTabComponent } from './project/project-details-tab/project-details-tab.component';
 import { CertificatesComponent } from './project/certificates/certificates.component';
@@ -81,12 +82,11 @@ export const routes: Routes = [
     component: SearchComponent
   },
 
-  // Separate route, not a query parameter: each tab has to be linkable, and TableListComponent
-  // reads its config once on init, so the router must build a new instance per tab.
+  // Its own component, not the table-driven one: content results are a list of documents with the
+  // matched text, which a table layout cannot render.
   {
     path: 'search/content',
-    component: SearchComponent,
-    data: { content: true }
+    component: ContentSearchComponent
   },
   
   {
