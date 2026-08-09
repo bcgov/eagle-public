@@ -94,25 +94,43 @@ http {
 }
 EOF
 
+# Security headers, in an include rather than inline.
+#
+# `add_header` DOES NOT INHERIT ONCE A BLOCK DECLARES ITS OWN. nginx replaces the whole inherited
+# set, so the `add_header Cache-Control` in the caching locations below silently discarded every
+# security header. That is not theoretical: the dev pod served `/` with two Cache-Control headers
+# and NO Content-Security-Policy at all, because `/` renders index.html and matches the
+# `\.(html|json)$` location. The header existed in this file and reached nobody.
+#
+# There is no "append" form, so the only fix is to repeat the set in every block that adds a header
+# of its own — hence the include, so the list exists once.
+#
+# `https://unpkg.com` is part of the policy, not an afterthought: index.html loads Leaflet and its
+# marker-cluster plugin from there (only their @types are npm dependencies). Fixing the delivery
+# without this would enforce a policy that blocks the map library and white-screen the site.
+COPY <<'EOF' /etc/nginx/security-headers.conf
+add_header Content-Security-Policy "default-src 'self' https://*.gov.bc.ca; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com; style-src 'self' 'unsafe-inline' https://unpkg.com; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://*.gov.bc.ca; frame-ancestors 'none';" always;
+add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
+add_header X-Content-Type-Options "nosniff" always;
+add_header X-Frame-Options "DENY" always;
+add_header X-XSS-Protection "1; mode=block" always;
+add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+add_header Permissions-Policy "browsing-topics=(), run-ad-auction=(), join-ad-interest-group=(), private-state-token-redemption=(), private-state-token-issuance=(), private-aggregation=(), attribution-reporting=()" always;
+EOF
+
 # Copy server configuration
 COPY <<'EOF' /etc/nginx/conf.d/default.conf
 server {
     listen 8080 default_server;
     server_name localhost;
 
-    # Security headers
-    add_header Content-Security-Policy "default-src 'self' https://*.gov.bc.ca; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://*.gov.bc.ca; frame-ancestors 'none';" always;
-    add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
-    add_header X-Content-Type-Options "nosniff" always;
-    add_header X-Frame-Options "DENY" always;
-    add_header X-XSS-Protection "1; mode=block" always;
-    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
-    add_header Permissions-Policy "browsing-topics=(), run-ad-auction=(), join-ad-interest-group=(), private-state-token-redemption=(), private-state-token-issuance=(), private-aggregation=(), attribution-reporting=()" always;
+    include /etc/nginx/security-headers.conf;
 
     # Health check endpoint
     location /health {
         access_log off;
         return 200 'healthy';
+        include /etc/nginx/security-headers.conf;
         add_header Content-Type text/plain;
     }
 
@@ -144,18 +162,21 @@ server {
         # Runtime config — must never be cached (changes between deployments)
         location = /env.js {
             expires -1;
+            include /etc/nginx/security-headers.conf;
             add_header Cache-Control "no-cache, no-store, must-revalidate";
         }
 
         # Cache static assets (hashed filenames safe to cache long-term)
         location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
             expires 1y;
+            include /etc/nginx/security-headers.conf;
             add_header Cache-Control "public, immutable";
         }
 
         # Don't cache HTML or config files
         location ~* \.(html|json)$ {
             expires -1;
+            include /etc/nginx/security-headers.conf;
             add_header Cache-Control "no-cache, no-store, must-revalidate";
         }
     }
