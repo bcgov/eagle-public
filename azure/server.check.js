@@ -68,6 +68,17 @@ const cleanup = () => {
   assert.ok(csp.includes('https://eagle-search-api-dev.azurewebsites.net'), 'connect-src must name the search host');
   assert.ok(!csp.includes('*.azurewebsites.net'), 'must not wildcard azurewebsites.net');
 
+  // Every external origin that the REAL index.html loads must be permitted, or the page white-screens
+  // with nothing but a CSP violation in the console. This is a regression test for exactly that: the
+  // policy was copied from the OpenShift Dockerfile, which is never actually applied (the dev site
+  // behind rproxy sends no CSP header), so it had never been checked against what the page needs.
+  const realIndex = fs.readFileSync(path.join(__dirname, '..', 'src', 'index.html'), 'utf8');
+  const origins = [...new Set([...realIndex.matchAll(/(?:src|href)="(https:\/\/[^/"]+)/g)].map((m) => m[1]))];
+  assert.ok(origins.length > 0, 'index.html should reference at least one external origin');
+  for (const origin of origins) {
+    assert.ok(csp.includes(origin), `CSP must allow ${origin}, which index.html loads`);
+  }
+
   // SPA fallback: a client-side route is not a file and must still return index.html.
   const deep = await fetch(`${base}/projects/abc/documents`);
   assert.strictEqual(deep.status, 200);

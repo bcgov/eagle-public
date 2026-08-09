@@ -29,10 +29,24 @@ const PORT = process.env.PORT || 8080;
  * named explicitly rather than wildcarding `*.azurewebsites.net`, which would let this page reach
  * every Azure web app in existence.
  */
+/**
+ * Leaflet and its marker-cluster plugin are loaded from unpkg by `index.html` — they are not npm
+ * dependencies of this app, only their `@types` are. Omitting this origin blocks both, `L` comes out
+ * undefined, and the whole SPA dies on a white screen with nothing but a CSP violation in the
+ * console.
+ *
+ * This was not caught by copying the OpenShift policy because that policy is never applied: the
+ * dev site behind rproxy returns no `Content-Security-Policy` header at all, so its `add_header` in
+ * the Dockerfile has never actually constrained anything. Self-hosting Leaflet would let this go —
+ * it also removes a third-party CDN from a government page — but that is a change to the shared app,
+ * not to this preview.
+ */
+const CDN = 'https://unpkg.com';
+
 const CSP = [
   "default-src 'self' https://*.gov.bc.ca",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-  "style-src 'self' 'unsafe-inline'",
+  `script-src 'self' 'unsafe-inline' 'unsafe-eval' ${CDN}`,
+  `style-src 'self' 'unsafe-inline' ${CDN}`,
   "img-src 'self' data: https:",
   "font-src 'self' data:",
   "connect-src 'self' https://*.gov.bc.ca https://eagle-search-api-dev.azurewebsites.net",
