@@ -1,0 +1,36 @@
+<article class="content-result">
+  <h3 class="result-title">
+    <a [href]="documentUrl()" target="_blank" rel="noopener">{{result().documentName || 'Untitled document'}}</a>
+  </h3>
+
+  <p class="result-meta">
+    @if (result().project?._id) {
+      <a [routerLink]="['/p', result().project._id, 'project-details']">{{result().project.name}}</a>
+    } @else if (result().project?.name) {
+      <span>{{result().project.name}}</span>
+    }
+    @if (result().documentType) { <span class="sep">·</span><span>{{result().documentType}}</span> }
+    @if (result().milestone) { <span class="sep">·</span><span>{{result().milestone}}</span> }
+    @if (result().datePosted && result().datePosted !== '1900-01-01T08:00:00.000Z') {
+      <span class="sep">·</span><span>{{result().datePosted | date:'longDate'}}</span>
+    }
+    <span class="sep">·</span><span class="match-count">{{matchSummary()}}</span>
+  </p>
+
+  @for (snippet of result().snippets; track $index) {
+    <!-- Escaped and mark-balanced by eagle-search before it ever reaches the browser. -->
+    <p class="result-snippet" [innerHTML]="snippet"></p>
+  }
+  @if (!result().snippets?.length) {
+    <!-- Azure returns no highlights for a fuzzy or wildcard match. An empty card reads as a bug, so
+         say what happened instead of showing nothing. -->
+    <p class="result-snippet no-snippet">Match found in the document text.</p>
+  }
+
+  <div class="result-actions">
+    <button type="button" class="result-download" (click)="download()"
+      [attr.aria-label]="'Download ' + result().documentName">
+      <span class="material-icons" aria-hidden="true">cloud_download</span> Download
+    </button>
+  </div>
+</article>

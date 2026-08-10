@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy, signal, input, inject, ChangeDetectionStrategy, computed, Injector, runInInjectionContext } from '@angular/core';
 
-import { Router, ActivatedRoute, Params, RouterLink } from '@angular/router';
+import { Router, ActivatedRoute, Params, RouterLink, RouterLinkActive } from '@angular/router';
 import { takeWhile, distinctUntilChanged, skip } from 'rxjs/operators';
 import { toObservable } from '@angular/core/rxjs-interop';
 
@@ -26,6 +26,7 @@ import { LoadingStateService } from 'app/services/loading-state.service';
   styleUrls: ['./table-list.component.css'],
   imports: [
     RouterLink,
+    RouterLinkActive,
     TableTemplateComponent,
     SearchFilterTemplateComponent,
     HeroBannerComponent
