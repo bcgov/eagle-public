@@ -15,24 +15,15 @@
   //
   // ==========================================================================
 
-  // ==========================================================================
-  // BRANCH `azure-search-preview` — NOT FOR MERGE AS-IS
-  // ==========================================================================
-  // This branch is deployed to an Azure App Service (eagle-public-preview-dev) to try the
-  // Azure-hosted end state, so every value below is ABSOLUTE and baked in at build time. There is
-  // no /api/config to fetch on that host and no rproxy in front of it, so the usual
-  // "relative paths, config from the API" arrangement does not apply.
-  //
-  // Before merging to develop: revert configEndpoint to true's build-time sed, put API_PATH and
-  // ANALYTICS_API_URL back to relative, and move SEARCH_API_PATH into the nginx ConfigMap so it is
-  // per-environment rather than compiled in.
-  // ==========================================================================
+  // THE AZURE PREVIEW APP DOES NOT USE THIS FILE'S DEFAULTS.
+  // `eagle-public-preview-dev` is a static Azure App Service with no rproxy and no /api/config, so
+  // its build sets configEndpoint = false and bakes ABSOLUTE values in — API_PATH,
+  // ANALYTICS_API_URL and SEARCH_API_PATH all pointing at named hosts. Do not copy that arrangement
+  // back into this file: on OpenShift every one of these is either relative or supplied by the
+  // ConfigMap, and an absolute value baked in here would follow the image into test and prod.
 
   // false = use values below (local dev)
   // true  = fetch from /api/config (Dockerfile sed changes this at build time)
-  //
-  // FALSE on this branch even when deployed: the Azure host serves static files only and has no
-  // /api/config to proxy, so a fetch would fail and leave every value below standing anyway.
   window.__env.configEndpoint = false;
 
   // Log level: 0 = All, 1 = Debug, 2 = Info, 3 = Warn, 4 = Error
@@ -46,32 +37,30 @@
   // and set configEndpoint = true above so config is fetched from /api/config.
   window.__env.API_LOCATION = 'https://eagle-dev.apps.silver.devops.gov.bc.ca';
 
-  // ABSOLUTE on this branch. getApiPath() returns `API_PATH || '/api'`, so an absolute value makes
-  // every call absolute with no code change. eagle-api already answers cross-origin — verified: an
-  // arbitrary Azure origin gets `access-control-allow-origin: *` (app.js:44-70) — and eagle-public
-  // is anonymous, so `*` is sufficient.
-  window.__env.API_PATH = 'https://eagle-dev.apps.silver.devops.gov.bc.ca/api';
+  window.__env.API_PATH = '/api';
 
   // Search backend for Project, Document and DocumentChunk (eagle-search / Azure AI Search).
-  // Absolute, because it is a different origin — unlike API_PATH it cannot be relative.
+  // Everything else — RecentActivity, ProjectNotification, item reads — stays on API_PATH whatever
+  // this says.
   //
-  // EMPTY MEANS eagle-api, and that is the kill switch: clear it and search reverts with no
-  // redeploy. Everything else (RecentActivity, ProjectNotification, item reads) stays on API_PATH
-  // regardless.
-  // INCLUDE `/api`. This is a base path, not a host: `searchKeywords()` appends `search?...` to it,
-  // and `getSearchApiPath()` falls back to `getApiPath()`, which already ends in `/api`. Without it
-  // every search requests `/search` and gets a 404 that surfaces as the toast "No data was returned
-  // from the server" — measured in a browser, not reasoned about.
-  //   dev: 'https://eagle-search-api-dev.azurewebsites.net/api'
-  window.__env.SEARCH_API_PATH = 'https://eagle-search-api-dev.azurewebsites.net/api';
+  // EMPTY MEANS eagle-api, and that is the kill switch: `getSearchApiPath()` falls back to
+  // `getApiPath()`, so clearing it reverts search with no redeploy. Deployed environments get their
+  // value from the rproxy ConfigMap at /api/config, which is why it must stay empty HERE — a value
+  // baked in at build time would follow the image into test and prod, where the ConfigMap is empty
+  // precisely because those environments have no search service.
+  //
+  // WHATEVER IT IS SET TO MUST RESOLVE TO SOMETHING ENDING IN `/api`. It is a base path, not a host:
+  // `searchKeywords()` appends `search?...`, and the eagle-api fallback already ends in `/api`. On
+  // OpenShift the ConfigMap supplies `/eagle-search` and nginx adds the `/api`; the Azure preview,
+  // which has no nginx, bakes in the full `https://…/api`. Get this wrong and every search requests
+  // `/search`, 404s, and surfaces as the toast "No data was returned from the server".
+  window.__env.SEARCH_API_PATH = '';
 
   // eagle-admin link
   window.__env.ADMIN_PATH = 'https://eagle-dev.apps.silver.devops.gov.bc.ca/admin/';
 
-  // Analytics — absolute on this branch, same reason as API_PATH. Cross-origin analytics is
-  // unverified and its failure is non-fatal: the plugin swallows the error, so a blocked request
-  // costs telemetry, not function.
-  window.__env.ANALYTICS_API_URL = 'https://eagle-dev.apps.silver.devops.gov.bc.ca/analytics';
+  // Analytics — proxied through /analytics (eagle-api forwards to penguin-analytics)
+  window.__env.ANALYTICS_API_URL = '/analytics';
   window.__env.ANALYTICS_DEBUG = true;
   window.__env.ANALYTICS_ENHANCED_TRACKING = true;
   window.__env.ANALYTICS_TRAFFIC_TRACKING = true;
