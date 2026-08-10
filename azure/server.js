@@ -19,9 +19,47 @@
 const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
+const crypto = require('node:crypto');
 
 const ROOT = path.join(__dirname, 'browser');
 const PORT = process.env.PORT || 8080;
+
+/**
+ * HTTP Basic Auth, the same gate rproxy puts in front of eagle-public on OpenShift dev and test
+ * (`eao-nginx/helm/rproxy/values-{dev,test}.yaml` — `auth_basic "Restricted Content"`). Prod has it
+ * off, and so does this: **unset credentials mean no gate**, matching `httpBasic.enabled: false`.
+ *
+ * Not App Service's own Easy Auth, which would be the native answer: it needs an Entra app
+ * registration, which is a permissions request rather than a deploy. Ten lines here do the same job
+ * with the same credentials the OpenShift environments already use.
+ *
+ * This gates the FRONTEND only. `eagle-search-api-dev` stays anonymous — a browser will not send
+ * these credentials to a different origin, so gating it there would break every search call while
+ * protecting data that is already public (anonymous callers match `read: public` and nothing else).
+ */
+const AUTH_USER = process.env.BASIC_AUTH_USER || '';
+const AUTH_PASSWORD = process.env.BASIC_AUTH_PASSWORD || '';
+const AUTH_REALM = process.env.BASIC_AUTH_REALM || 'Restricted Content';
+
+/** Constant-time over digests, so neither length nor content leaks through timing. */
+function matches(a, b) {
+  const da = crypto.createHash('sha256').update(a).digest();
+  const db = crypto.createHash('sha256').update(b).digest();
+  return crypto.timingSafeEqual(da, db);
+}
+
+function authorised(req) {
+  if (!AUTH_USER || !AUTH_PASSWORD) return true;
+  const header = req.headers.authorization || '';
+  if (!header.startsWith('Basic ')) return false;
+  const decoded = Buffer.from(header.slice(6), 'base64').toString('utf8');
+  const sep = decoded.indexOf(':');
+  if (sep < 0) return false;
+  // Both compared before the `&&`, so a wrong username costs the same time as a wrong password.
+  const okUser = matches(decoded.slice(0, sep), AUTH_USER);
+  const okPassword = matches(decoded.slice(sep + 1), AUTH_PASSWORD);
+  return okUser && okPassword;
+}
 
 /**
  * `connect-src` differs from the OpenShift copy, and that difference is the whole point of this
@@ -98,7 +136,16 @@ function send(res, status, body, headers = {}) {
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, 'http://localhost');
 
+  // Before anything else, and before `/health` — except that App Service's own health probe sends
+  // no credentials, so exempting it is what keeps the gate from taking the app out of rotation.
   if (url.pathname === '/health') return send(res, 200, 'healthy', { 'Content-Type': 'text/plain' });
+
+  if (!authorised(req)) {
+    return send(res, 401, 'unauthorized', {
+      'WWW-Authenticate': `Basic realm="${AUTH_REALM}", charset="UTF-8"`,
+      'Content-Type': 'text/plain',
+    });
+  }
 
   // Resolve inside ROOT and verify it stayed there: `..` in a request path is a directory
   // traversal, and this process can read the whole filesystem.

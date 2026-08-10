@@ -95,6 +95,45 @@ const cleanup = () => {
   assert.match((await fetch(`${base}/main.css`)).headers.get('cache-control'), /immutable/);
   assert.match((await fetch(`${base}/`)).headers.get('cache-control'), /no-store/);
 
+  // ── the basic-auth gate ────────────────────────────────────────────────────
+  // Same gate rproxy applies on OpenShift dev/test. Run against a SECOND server, because the
+  // credentials are read once at startup — and assert the ungated case above stayed ungated, since
+  // the failure mode nobody notices is a gate that silently does nothing.
+  assert.strictEqual(index.status, 200, 'no credentials configured must mean no gate');
+
+  const gatedPort = PORT + 1;
+  const gatedBase = `http://127.0.0.1:${gatedPort}`;
+  const gated = spawn(process.execPath, [path.join(tmp, 'server.js')], {
+    env: { ...process.env, PORT: String(gatedPort), BASIC_AUTH_USER: 'epic', BASIC_AUTH_PASSWORD: 's3cret' },
+    stdio: 'ignore',
+  });
+  for (let i = 0; i < 50; i++) {
+    try {
+      await fetch(`${gatedBase}/health`);
+      break;
+    } catch {
+      await new Promise((r) => setTimeout(r, 100));
+    }
+  }
+  try {
+    const anon = await fetch(`${gatedBase}/`);
+    assert.strictEqual(anon.status, 401, 'gated: anonymous must be refused');
+    assert.match(anon.headers.get('www-authenticate') || '', /^Basic realm=/, 'a 401 without this does not prompt');
+
+    const auth = (u, p) => ({ Authorization: `Basic ${Buffer.from(`${u}:${p}`).toString('base64')}` });
+    assert.strictEqual((await fetch(`${gatedBase}/`, { headers: auth('epic', 'wrong') })).status, 401);
+    assert.strictEqual((await fetch(`${gatedBase}/`, { headers: auth('wrong', 's3cret') })).status, 401);
+    assert.strictEqual((await fetch(`${gatedBase}/`, { headers: auth('epic', 's3cret') })).status, 200);
+
+    // Deep links are behind the gate too — the SPA fallback must not become a way around it.
+    assert.strictEqual((await fetch(`${gatedBase}/projects/abc`)).status, 401);
+
+    // App Service's health probe sends no credentials. Gating it would take the app out of rotation.
+    assert.strictEqual((await fetch(`${gatedBase}/health`)).status, 200, '/health must stay open');
+  } finally {
+    gated.kill();
+  }
+
   console.log('azure preview server selftest OK');
   cleanup();
 })().catch((e) => {
