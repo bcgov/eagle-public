@@ -108,10 +108,18 @@ jobs:
           sed -i "s|window.__env.API_PATH = .*|window.__env.API_PATH = 'https://eagle-test.apps.silver.devops.gov.bc.ca/api';|" src/env.js
           sed -i "s|window.__env.SEARCH_API_PATH = .*|window.__env.SEARCH_API_PATH = 'https://eagle-search-api-test.azurewebsites.net/api';|" src/env.js
           sed -i "s|window.__env.ANALYTICS_API_URL = .*|window.__env.ANALYTICS_API_URL = 'https://eagle-test.apps.silver.devops.gov.bc.ca/analytics';|" src/env.js
+          # ENVIRONMENT drives the on-page banner; API_LOCATION/ADMIN_PATH are the remaining
+          # eagle hosts. Left at 'dev' the deployed preview announces the wrong environment.
+          sed -i "s|window.__env.ENVIRONMENT = .*|window.__env.ENVIRONMENT = 'test';|" src/env.js
+          sed -i "s|window.__env.API_LOCATION = .*|window.__env.API_LOCATION = 'https://eagle-test.apps.silver.devops.gov.bc.ca';|" src/env.js
+          sed -i "s|window.__env.ADMIN_PATH = .*|window.__env.ADMIN_PATH = 'https://eagle-test.apps.silver.devops.gov.bc.ca/admin/';|" src/env.js
           for expected in \
             "API_PATH = 'https://eagle-test.apps.silver.devops.gov.bc.ca/api'" \
             "SEARCH_API_PATH = 'https://eagle-search-api-test.azurewebsites.net/api'" \
-            "ANALYTICS_API_URL = 'https://eagle-test.apps.silver.devops.gov.bc.ca/analytics'"; do
+            "ANALYTICS_API_URL = 'https://eagle-test.apps.silver.devops.gov.bc.ca/analytics'" \
+            "ENVIRONMENT = 'test'" \
+            "API_LOCATION = 'https://eagle-test.apps.silver.devops.gov.bc.ca'" \
+            "ADMIN_PATH = 'https://eagle-test.apps.silver.devops.gov.bc.ca/admin/'"; do
             grep -qF "$expected" src/env.js \
               || { echo "::error::env.js rewrite did not take: $expected"; exit 1; }
           done
