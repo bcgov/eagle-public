@@ -87,7 +87,9 @@ const CSP = [
   `style-src 'self' 'unsafe-inline' ${CDN}`,
   "img-src 'self' data: https:",
   "font-src 'self' data:",
-  "connect-src 'self' https://*.gov.bc.ca https://eagle-search-api-test.azurewebsites.net",
+  // CDN in connect-src too: DevTools fetches the libraries' .js.map source maps over fetch(),
+  // and without it every session with DevTools open logs CSP violations that read like breakage.
+  `connect-src 'self' https://*.gov.bc.ca https://eagle-search-api-test.azurewebsites.net ${CDN}`,
   "frame-ancestors 'none'",
 ].join('; ');
 
