@@ -65,7 +65,7 @@ const cleanup = () => {
   // The Azure search host must be reachable from the page, and by name — not via a wildcard that
   // would also permit every other Azure web app.
   const csp = index.headers.get('content-security-policy');
-  assert.ok(csp.includes('https://eagle-search-api-dev.azurewebsites.net'), 'connect-src must name the search host');
+  assert.ok(csp.includes('https://eagle-search-api-test.azurewebsites.net'), 'connect-src must name the search host');
   assert.ok(!csp.includes('*.azurewebsites.net'), 'must not wildcard azurewebsites.net');
 
   // Every external origin that the REAL index.html loads must be permitted, or the page white-screens

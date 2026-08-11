@@ -33,7 +33,7 @@ const PORT = process.env.PORT || 8080;
  * registration, which is a permissions request rather than a deploy. Ten lines here do the same job
  * with the same credentials the OpenShift environments already use.
  *
- * This gates the FRONTEND only. `eagle-search-api-dev` stays anonymous — a browser will not send
+ * This gates the FRONTEND only. `eagle-search-api-test` stays anonymous — a browser will not send
  * these credentials to a different origin, so gating it there would break every search call while
  * protecting data that is already public (anonymous callers match `read: public` and nothing else).
  */
@@ -87,7 +87,7 @@ const CSP = [
   `style-src 'self' 'unsafe-inline' ${CDN}`,
   "img-src 'self' data: https:",
   "font-src 'self' data:",
-  "connect-src 'self' https://*.gov.bc.ca https://eagle-search-api-dev.azurewebsites.net",
+  "connect-src 'self' https://*.gov.bc.ca https://eagle-search-api-test.azurewebsites.net",
   "frame-ancestors 'none'",
 ].join('; ');
 

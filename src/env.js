@@ -21,6 +21,11 @@
   // ANALYTICS_API_URL and SEARCH_API_PATH all pointing at named hosts. Do not copy that arrangement
   // back into this file: on OpenShift every one of these is either relative or supplied by the
   // ConfigMap, and an absolute value baked in here would follow the image into test and prod.
+  //
+  // Those three values are applied by `.github/workflows/deploy-azure-staging.yaml`, with `sed`
+  // before `yarn build` — the same technique the Dockerfile already uses for the OpenShift image.
+  // If you rename one of the three keys below, rename it there too: `sed` exits 0 when it matches
+  // nothing, so the workflow verifies each rewrite rather than trusting it.
 
   // false = use values below (local dev)
   // true  = fetch from /api/config (Dockerfile sed changes this at build time)
