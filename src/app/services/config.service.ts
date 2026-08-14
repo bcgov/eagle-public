@@ -27,6 +27,12 @@ export interface EnvConfig {
   ANALYTICS_ENHANCED_TRACKING?: boolean;
   ANALYTICS_TRAFFIC_TRACKING?: boolean;
   GH_HASH?: string;
+  /**
+   * Azure preview only. Puts a passphrase prompt in front of the app — obfuscation, not access
+   * control; see `preview-gate.component.ts` for why that is the right size of tool here.
+   */
+  PREVIEW_GATE?: boolean;
+  PREVIEW_GATE_PASSPHRASE?: string;
 }
 
 // env.js sets window.__env before Angular loads (via script tag in index.html)

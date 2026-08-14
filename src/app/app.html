@@ -1,13 +1,22 @@
-<div class="app-wrapper">
-  <app-header></app-header>
-  <main class="app-content" [class.projects-route]="currentUrl().startsWith('/projects')">
-    <router-outlet id="scrollTop"></router-outlet>
-  </main>
-  <app-footer [class.hide-mobile-projects]="currentUrl().startsWith('/projects')"></app-footer>
-</div>
+<app-preview-gate></app-preview-gate>
 
-<a href="#scrollTop" class="btn scroll-top-btn" [class.visible]="showScrollButton()" (click)="scrollToTop($event)">
-  <i class="material-icons" aria-label="Button to go to top of the page">arrow_upward</i>
-</a>
+<!--
+  Everything below is INSIDE the gate, not behind a dialog on top of it. While the gate is armed and
+  unsatisfied the outlet is not in the DOM, so no route component is constructed and no API call
+  goes out — the old sibling layout painted the whole app under a translucent ::backdrop.
+-->
+@if (gateSatisfied()) {
+  <div class="app-wrapper">
+    <app-header></app-header>
+    <main class="app-content" [class.projects-route]="currentUrl().startsWith('/projects')">
+      <router-outlet id="scrollTop"></router-outlet>
+    </main>
+    <app-footer [class.hide-mobile-projects]="currentUrl().startsWith('/projects')"></app-footer>
+  </div>
 
-<app-toast-container></app-toast-container>
+  <a href="#scrollTop" class="btn scroll-top-btn" [class.visible]="showScrollButton()" (click)="scrollToTop($event)">
+    <i class="material-icons" aria-label="Button to go to top of the page">arrow_upward</i>
+  </a>
+
+  <app-toast-container></app-toast-container>
+}
