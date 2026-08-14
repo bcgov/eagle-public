@@ -2,8 +2,16 @@
 
 <!--
   Everything below is INSIDE the gate, not behind a dialog on top of it. While the gate is armed and
-  unsatisfied the outlet is not in the DOM, so no route component is constructed and no API call
-  goes out — the old sibling layout painted the whole app under a translucent ::backdrop.
+  unsatisfied the outlet is not in the DOM, so no route component is constructed and no project or
+  document data is fetched — the old sibling layout painted the whole app under a translucent
+  ::backdrop.
+
+  ANALYTICS IS THE ONE EXCEPTION, and it is not gated. `provideAppInitializer` in app.config.ts
+  starts the analytics plugin during bootstrap, before `App` exists, and `App.ngOnInit` reports the
+  page view regardless of this template — so an ungated visitor still emits Session Started and
+  Page Viewed. It is preview-environment noise carrying no unreleased content (event payloads are
+  URLs and button labels), which is why it is left alone rather than threaded through the gate.
+
 -->
 @if (gateSatisfied()) {
   <div class="app-wrapper">

@@ -20,7 +20,8 @@ const MARKER = 'eagle-public-preview-gate';
 
 /**
  * False = `App` renders NOTHING (see `app.html`): no header, no router outlet, so no route
- * component is constructed and no API call is made.
+ * component is constructed and no project or document data is fetched. Analytics is the exception —
+ * it boots in an app initializer, before `App` exists; see the comment in `app.html`.
  *
  * A modal over a live app was not enough. `<app-preview-gate>` was a sibling of the app wrapper, so
  * the outlet bootstrapped underneath it and `::backdrop` — translucent — left the unreleased UI
@@ -62,9 +63,20 @@ export function passphraseMatches(entered: string, expected: string): boolean {
             class="form-control"
             type="password"
             autocomplete="off"
-            aria-describedby="preview-gate-error" />
+            aria-describedby="preview-gate-error"
+            (input)="error.set('')" />
 
-          <!-- Always rendered, so the live region exists before the text changes into it. -->
+          <!--
+            Always rendered, so the live region exists before the text changes into it.
+
+            It is cleared on (input) above, and that is what makes a SECOND wrong passphrase
+            announce. A live region fires on content mutation, and setting a signal to the string it
+            already holds is a no-op twice over — signalSetFn skips the write on Object.is, and
+            bindingUpdated skips the text-node write on Object.is — so without the clear, attempt 2
+            and every attempt after it are silent for a screen reader while sighted users see the
+            message sit there. Clearing as the user types is also the right moment: the text is
+            about a value that no longer exists.
+          -->
           <p id="preview-gate-error" class="text-danger small mt-2 mb-0" role="alert" aria-live="polite">{{ error() }}</p>
 
           <button class="btn btn-primary mt-3" type="submit">Continue</button>
