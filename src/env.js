@@ -9,8 +9,11 @@
   //   Uses these values directly. Set URLs to your local services.
   //
   // DEPLOYED (configEndpoint = true):
-  //   Dockerfile runs: sed -i 's/configEndpoint = false/configEndpoint = true/'
-  //   App then fetches runtime config from /api/config (nginx ConfigMap).
+  //   The Dockerfile flips configEndpoint below with sed, then greps the BUILT copy to prove the
+  //   rewrite took — sed exits 0 when it matches nothing. The sed is anchored on the full
+  //   `window.__env.` assignment so it rewrites only that line, never these comments.
+  //   App then fetches runtime config from /api/config — rproxy answers it from a ConfigMap
+  //   today, eagle-api from MongoDB after the cutover.
   //   Those values override everything below.
   //
   // ==========================================================================
