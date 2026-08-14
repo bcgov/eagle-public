@@ -1,13 +1,30 @@
-<div class="app-wrapper">
-  <app-header></app-header>
-  <main class="app-content" [class.projects-route]="currentUrl().startsWith('/projects')">
-    <router-outlet id="scrollTop"></router-outlet>
-  </main>
-  <app-footer [class.hide-mobile-projects]="currentUrl().startsWith('/projects')"></app-footer>
-</div>
+<app-preview-gate></app-preview-gate>
 
-<a href="#scrollTop" class="btn scroll-top-btn" [class.visible]="showScrollButton()" (click)="scrollToTop($event)">
-  <i class="material-icons" aria-label="Button to go to top of the page">arrow_upward</i>
-</a>
+<!--
+  Everything below is INSIDE the gate, not behind a dialog on top of it. While the gate is armed and
+  unsatisfied the outlet is not in the DOM, so no route component is constructed and no project or
+  document data is fetched — the old sibling layout painted the whole app under a translucent
+  ::backdrop.
 
-<app-toast-container></app-toast-container>
+  ANALYTICS IS THE ONE EXCEPTION, and it is not gated. `provideAppInitializer` in app.config.ts
+  starts the analytics plugin during bootstrap, before `App` exists, and `App.ngOnInit` reports the
+  page view regardless of this template — so an ungated visitor still emits Session Started and
+  Page Viewed. It is preview-environment noise carrying no unreleased content (event payloads are
+  URLs and button labels), which is why it is left alone rather than threaded through the gate.
+
+-->
+@if (gateSatisfied()) {
+  <div class="app-wrapper">
+    <app-header></app-header>
+    <main class="app-content" [class.projects-route]="currentUrl().startsWith('/projects')">
+      <router-outlet id="scrollTop"></router-outlet>
+    </main>
+    <app-footer [class.hide-mobile-projects]="currentUrl().startsWith('/projects')"></app-footer>
+  </div>
+
+  <a href="#scrollTop" class="btn scroll-top-btn" [class.visible]="showScrollButton()" (click)="scrollToTop($event)">
+    <i class="material-icons" aria-label="Button to go to top of the page">arrow_upward</i>
+  </a>
+
+  <app-toast-container></app-toast-container>
+}
