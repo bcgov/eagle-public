@@ -31,13 +31,19 @@ COPY . .
 # - logLevel=4: Only show errors in production (not debug/info logs)
 # - ANALYTICS_DEBUG=false: Disable analytics debug logs in production
 # - All other config (ENVIRONMENT, ANALYTICS_API_URL, etc.) comes from API
-RUN sed -i 's/configEndpoint = false/configEndpoint = true/' src/env.js && \
+RUN sed -i 's/window.__env.configEndpoint = false/window.__env.configEndpoint = true/' src/env.js && \
     sed -i "s/window.__env.API_LOCATION = .*/window.__env.API_LOCATION = null;/" src/env.js && \
     sed -i 's/window.__env.logLevel = 0/window.__env.logLevel = 4/' src/env.js && \
     sed -i 's/window.__env.ANALYTICS_DEBUG = true/window.__env.ANALYTICS_DEBUG = false/' src/env.js
 
 # Build production bundle
 RUN yarn build
+
+# Fail the build if the sed above missed: sed exits 0 when it matches nothing, so renaming that key
+# would ship an image running production on baked-in dev values. Checking the BUILT copy also
+# catches env.js dropping out of the angular.json assets list.
+RUN grep -qF 'window.__env.configEndpoint = true;' dist/eagle-public/browser/env.js \
+    || { echo 'env.js rewrite did not take: configEndpoint'; exit 1; }
 
 # -----------------------------------------------------------------------------
 # Stage 2: Production nginx Server
