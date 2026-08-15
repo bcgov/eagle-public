@@ -101,10 +101,12 @@ jobs:
       # Point env.js at Azure.
       #
       # The committed `src/env.js` is the RELATIVE, merge-safe one — `API_PATH = '/api'`,
-      # `SEARCH_API_PATH = ''` — and it is byte-identical to the copy on `develop`. That
-      # is deliberate (`076bc94d chore: make env.js safe to merge`) and must stay that
-      # way, because an absolute env.js reaching an OpenShift image would point every
-      # environment at test.
+      # `SEARCH_API_PATH = ''`. It is the copy on `develop` plus the two preview keys,
+      # `PREVIEW_GATE = false` and `PREVIEW_GATE_PASSPHRASE = ''`, which default to off
+      # and empty and so change nothing anywhere else. Everything in it stays relative,
+      # which is deliberate (`076bc94d chore: make env.js safe to merge`) and must stay
+      # that way, both so this file remains safe to merge back and because an absolute
+      # env.js reaching an OpenShift image would point every environment at test.
       #
       # So the Azure values are applied here instead, at build time. This is the same
       # thing the Dockerfile already does for the OpenShift image (`Dockerfile:34-37`
@@ -361,6 +363,22 @@ jobs:
 
           curl -s --max-time 15 "$host/env.js" | grep -qF 'eagle-search-api-test.azurewebsites.net/api' \
             || { echo "::error::the deployed env.js is not the Azure one"; exit 1; }
+
+          # Front Door's own headers say nothing about whether the search API will answer this
+          # origin. `allowedOrigins` lives in eagle-search's bicep and cannot be deployed from
+          # here, so it can drift out from under this site: the page looks perfect and every
+          # search fails. Assert it directly. App Service takes a couple of minutes to publish a
+          # CORS change, so this retries rather than fail an otherwise-good deploy on a slow
+          # rollout — a genuine mismatch still fails, just later.
+          for i in $(seq 1 8); do
+            pf=$(curl -s -o /dev/null -D - -X OPTIONS --max-time 15 \
+              "https://eagle-search-api-test.azurewebsites.net/api/search" \
+              -H "Origin: $host" -H 'Access-Control-Request-Method: GET')
+            echo "$pf" | grep -qi "^access-control-allow-origin: $host" && break
+            [ "$i" = 8 ] && { echo "::error::the search API does not echo origin $host — add it to allowedOrigins in eagle-search/azure/main.test.bicepparam and redeploy, or every search on this preview is CORS-blocked. (If allowedOrigins was deliberately set to '*', App Service returns '*' rather than echoing the origin and this check fails by design — that is a configuration choice, not an outage.)"; exit 1; }
+            echo "attempt $i: the search API has not allowed $host yet"; sleep 15
+          done
+
           echo "deployed, gated and correctly cached"
 
       - name: Report failure to job summary
