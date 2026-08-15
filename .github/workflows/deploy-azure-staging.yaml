@@ -375,7 +375,7 @@ jobs:
               "https://eagle-search-api-test.azurewebsites.net/api/search" \
               -H "Origin: $host" -H 'Access-Control-Request-Method: GET')
             echo "$pf" | grep -qi "^access-control-allow-origin: $host" && break
-            [ "$i" = 8 ] && { echo "::error::the search API does not allow origin $host — add it to allowedOrigins in eagle-search/azure/main.test.bicepparam and redeploy, or every search on this preview is CORS-blocked"; exit 1; }
+            [ "$i" = 8 ] && { echo "::error::the search API does not echo origin $host — add it to allowedOrigins in eagle-search/azure/main.test.bicepparam and redeploy, or every search on this preview is CORS-blocked. (If allowedOrigins was deliberately set to '*', App Service returns '*' rather than echoing the origin and this check fails by design — that is a configuration choice, not an outage.)"; exit 1; }
             echo "attempt $i: the search API has not allowed $host yet"; sleep 15
           done
 
