@@ -47,3 +47,4 @@ Thumbs.db
 .github/instructions/
 CLAUDE.md
 GEMINI.md
+.yarn/install-state.gz
