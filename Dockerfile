@@ -17,7 +17,6 @@ WORKDIR /app
 
 # Copy package files and yarn configuration
 COPY package.json yarn.lock .yarnrc.yml ./
-COPY .yarn ./.yarn
 
 # Install dependencies (uses node-modules linker per .yarnrc.yml)
 RUN corepack enable && yarn install --immutable
