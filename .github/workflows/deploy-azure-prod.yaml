@@ -415,12 +415,17 @@ jobs:
       # so there is no cross-origin request to preflight, and production has no search API to
       # preflight against — `SEARCH_API_PATH` is empty and search falls back to eagle-api.
       #
-      # Front Door propagates a fresh route for a few minutes, hence the retry.
+      # Front Door propagates a fresh route for a few minutes, hence the retry. FIVE MINUTES IS NOT
+      # ENOUGH ON A BRAND-NEW PROFILE: the first deploy into the prod estate on 2026-08-17 exhausted
+      # 20 attempts and failed, then the endpoint began serving 200 shortly after — the bundle had
+      # been published correctly the whole time. A first deploy is exactly when this step is least
+      # able to distinguish "not propagated yet" from "broken", so the budget is 20 minutes. Redeploys
+      # into an existing endpoint still pass on the first attempt and cost nothing.
       - name: Smoke test
         run: |
           set -uo pipefail
           host="https://$AFD_ENDPOINT"
-          for i in $(seq 1 20); do
+          for i in $(seq 1 80); do
             [ "$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 "$host/")" = "200" ] && break
             echo "attempt $i: $host/ not ready yet"; sleep 15
           done
