@@ -19,11 +19,16 @@
   // ==========================================================================
 
   // THE AZURE PREVIEW APP DOES NOT USE THIS FILE'S DEFAULTS.
-  // `eagle-public-preview-dev` is a static Azure App Service with no rproxy and no /api/config, so
-  // its build sets configEndpoint = false and bakes ABSOLUTE values in — API_PATH,
+  // It is served from an Azure Storage `$web` container behind Front Door — no rproxy, no
+  // /api/config — so its build sets configEndpoint = false and bakes ABSOLUTE values in — API_PATH,
   // ANALYTICS_API_URL and SEARCH_API_PATH all pointing at named hosts. Do not copy that arrangement
   // back into this file: on OpenShift every one of these is either relative or supplied by the
   // ConfigMap, and an absolute value baked in here would follow the image into test and prod.
+  //
+  // Those three values are applied by `.github/workflows/deploy-azure-staging.yaml`, with `sed`
+  // before `yarn build` — the same technique the Dockerfile already uses for the OpenShift image.
+  // If you rename one of the three keys below, rename it there too: `sed` exits 0 when it matches
+  // nothing, so the workflow verifies each rewrite rather than trusting it.
 
   // false = use values below (local dev)
   // true  = fetch from /api/config (Dockerfile sed changes this at build time)
@@ -67,6 +72,17 @@
   window.__env.ANALYTICS_DEBUG = true;
   window.__env.ANALYTICS_ENHANCED_TRACKING = true;
   window.__env.ANALYTICS_TRAFFIC_TRACKING = true;
+
+  // Passphrase prompt in front of the whole app, for the Azure preview only. OFF here and OFF on
+  // OpenShift, where rproxy's `auth_basic` already does this job at the edge.
+  //
+  // The Azure preview is served from blob storage `$web`, which cannot authenticate at all, so the
+  // gate had to move into the bundle — which means the passphrase is readable in devtools. It is
+  // obfuscation, not access control; `preview-gate.component.ts` says so at length. Both values are
+  // set by `.github/workflows/deploy-azure-staging.yaml` with `sed` before `yarn build`, the
+  // passphrase from a repository secret. Committed defaults stay harmless: gate off, no secret here.
+  window.__env.PREVIEW_GATE = false;
+  window.__env.PREVIEW_GATE_PASSPHRASE = '';
 
   // Build hash — replaced during CI build
   window.__env.GH_HASH = 'local-build';
