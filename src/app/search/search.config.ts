@@ -12,8 +12,13 @@ export const SEARCH_TABLE_ID = 'search';
  * the content config imports from this file and nothing imports back.
  */
 export const SEARCH_TABS = [
-  { label: 'Documents', link: '/search' },
-  { label: 'Document Content', link: '/search/content' }
+  { label: 'Documents', link: '/search' }
+  // 'Document Content' (/search/content) is HIDDEN, not removed. The route and its component are
+  // still there and still work if you type the URL — only the way in is gone, because content
+  // search is not ready to be shown to the public. Restore by putting the entry back here:
+  //   { label: 'Document Content', link: '/search/content' }
+  // and re-adding `tabs: SEARCH_TABS` to the config below. With one tab left, the strip renders as
+  // a lone tab, which is why the Documents view drops it entirely.
 ];
 
 export const SEARCH_TABLE_COLUMNS: IColumnObject[] = [
@@ -181,7 +186,9 @@ export function createSearchConfig(): TableListConfig {
     tableOptions: {
       disableRowHighlight: true
     },
-    tabs: SEARCH_TABS,
+    // No `tabs` while Document Content is hidden — `tabs?` is optional on the config
+    // (table-list-config.interface.ts:62) and table-list.component.html:9 skips the whole strip
+    // when it is absent.
     filterList: SEARCH_FILTER_LIST,
     dateFilterList: SEARCH_DATE_FILTER_LIST,
     filterDataSource: configService.lists,
