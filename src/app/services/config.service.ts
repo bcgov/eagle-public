@@ -15,7 +15,7 @@ export interface EnvConfig {
    *
    * Normally RELATIVE — `/eagle-search` — because rproxy proxies that location to the Azure host,
    * which keeps the call same-origin and needs no CORS. Absolute (`https://…/api`) only where there
-   * is no rproxy in front, which today means the static Azure Front Door builds.
+   * is no rproxy in front, which today means the static Azure Front Door build for test.
    *
    * EMPTY OR UNSET FALLS BACK TO eagle-api, and that is also the kill switch. In dev and test the
    * switch is eagle-api's Mongo `Config` document; prod still reads it from the rproxy ConfigMap

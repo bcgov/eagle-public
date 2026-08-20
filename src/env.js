@@ -59,8 +59,9 @@
   // WHATEVER IT IS SET TO MUST RESOLVE TO SOMETHING ENDING IN `/api`. It is a base path, not a host:
   // `searchKeywords()` appends `search?...`, and the eagle-api fallback already ends in `/api`. On
   // OpenShift `/api/config` supplies `/eagle-search` and nginx adds the `/api`; the Azure static
-  // sites, which have no nginx, bake in the full `https://…/api`. Get this wrong and every search requests
-  // `/search`, 404s, and surfaces as the toast "No data was returned from the server".
+  // sites, which have no nginx, bake in the full `https://…/api`. Get this wrong and every
+  // search requests `/search`, 404s, and surfaces as the toast "No data was returned from the
+  // server".
   window.__env.SEARCH_API_PATH = '';
 
   // eagle-admin link
