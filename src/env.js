@@ -25,8 +25,8 @@
   // configEndpoint = false and bakes ABSOLUTE values in: API_PATH, ANALYTICS_API_URL and
   // SEARCH_API_PATH all pointing at named hosts. (The prod build leaves configEndpoint = true, so it
   // asks its own origin for /api/config and gets index.html back; it is not in use.) Do not copy
-  // back into this file: on OpenShift every one of these is either relative or supplied by the
-  // ConfigMap, and an absolute value baked in here would follow the image into test and prod.
+  // back into this file: on OpenShift every one of these is either relative or supplied at runtime
+  // by /api/config, and an absolute value baked in here would follow the image into test and prod.
 
   // false = use values below (local dev)
   // true  = fetch from /api/config (Dockerfile sed changes this at build time)
