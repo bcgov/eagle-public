@@ -11,12 +11,15 @@ export interface EnvConfig {
   API_LOCATION?: string;
   /**
    * Base URL for Project/Document/DocumentChunk search, when it is served by eagle-search
-   * (Azure AI Search) rather than eagle-api. Absolute, e.g.
-   * https://eagle-search-api-dev.azurewebsites.net — unlike API_PATH this cannot be relative,
-   * because the service is a different origin.
+   * (Azure AI Search) rather than eagle-api.
    *
-   * EMPTY OR UNSET FALLS BACK TO eagle-api, and that is also the kill switch: clear the setting in
-   * the nginx ConfigMap and search reverts with no redeploy.
+   * Normally RELATIVE — `/eagle-search` — because rproxy proxies that location to the Azure host,
+   * which keeps the call same-origin and needs no CORS. Absolute (`https://…/api`) only where there
+   * is no rproxy in front, which today means the static Azure Front Door builds.
+   *
+   * EMPTY OR UNSET FALLS BACK TO eagle-api, and that is also the kill switch. In dev and test the
+   * switch is eagle-api's Mongo `Config` document; prod still reads it from the rproxy ConfigMap
+   * until prod moves to rproxy v2.7.11. Either way it reverts with no redeploy.
    */
   SEARCH_API_PATH?: string;
   ADMIN_PATH?: string;
