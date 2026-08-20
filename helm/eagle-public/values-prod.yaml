@@ -5,11 +5,14 @@ image:
   tag: "prod"
 
 route:
-  enabled: true
-  serviceName: rproxy
-  targetPort: "8080-tcp"
+  # Disabled, and it must stay that way until the certificate question is settled. `prod-external`
+  # already serves this host through rproxy AND carries the Entrust certificate for it; the route
+  # this chart renders has no `tls.certificate` at all, so a second route for the same host with
+  # `path: /` — which matches every request — risks the public site being served the router's
+  # default certificate instead. Enabling it (6b929939) is fine in dev and test, where the host is
+  # an *.apps.silver hostname covered by the router's wildcard, and wrong here.
+  enabled: false
   host: projects.eao.gov.bc.ca
-  path: "/"
 
 resources:
   limits:
