@@ -11,8 +11,12 @@ route:
   # `path: /` — which matches every request — risks the public site being served the router's
   # default certificate instead. Enabling it (6b929939) is fine in dev and test, where the host is
   # an *.apps.silver hostname covered by the router's wildcard, and wrong here.
+  #
+  # `host` is deliberately NOT set here either. Leaving it behind would mean flipping `enabled`
+  # back to true silently re-creates a route for projects.eao.gov.bc.ca with no certificate — the
+  # exact failure this removes. Re-enabling must be a deliberate act that also supplies a host and
+  # a cert.
   enabled: false
-  host: projects.eao.gov.bc.ca
 
 resources:
   limits:
