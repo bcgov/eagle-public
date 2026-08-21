@@ -65,7 +65,9 @@ jobs:
   deploy:
     name: Build & deploy the dark production estate
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # 40, not 30: the smoke test's own budget is 20 minutes of waiting for the purged edge to
+    # serve this build, and 30 left no room for it on top of install/lint/test/build.
+    timeout-minutes: 40
     # Declaring an environment CHANGES THE OIDC SUBJECT CLAIM — it becomes
     # `repo:bcgov/eagle-public:environment:azure-prod`, which must be the subject on the
     # federated credential of the production CI app registration. Rename this environment,
@@ -161,8 +163,11 @@ jobs:
       # OpenShift production image (`Dockerfile:34-37`): configEndpoint on, API_LOCATION
       # cleared, logLevel to errors-only, analytics debug off. Nothing else is touched —
       # API_PATH stays `/api`, ANALYTICS_API_URL stays `/analytics`, ADMIN_PATH stays
-      # `/admin/`, SEARCH_API_PATH stays empty (empty is the kill switch that routes search
-      # back to eagle-api, and prod has no search service). The result is a bundle whose
+      # `/admin/`, SEARCH_API_PATH stays empty. EMPTY IS NOT "NO SEARCH SERVICE" ANY MORE —
+      # prod cut over to eagle-search on 2026-08-20 and `/api/config` now answers
+      # `/eagle-search`, which merges over this file at runtime. Empty here is what keeps the
+      # bundle neutral: the environment decides, and clearing the setting is still the kill
+      # switch that reverts search to eagle-api with no redeploy. The result is a bundle whose
       # configuration is byte-identical to the OpenShift image's, which IS THE POINT: at
       # cutover the only thing that changes is which server hands the browser these files.
       # If the Azure copy misbehaves and the OpenShift copy does not, the difference is
@@ -336,7 +341,8 @@ jobs:
           # whose UrlFileExtension is <= 0 to /index.html, so an EXTENSIONLESS probe file would come
           # back as the SPA shell with 200 and `no-store` — and both assertions below would then
           # pass without ever testing an asset. The probe must have an extension to reach the blob.
-          echo "ASSET_PROBE=$(cd "$src" && find assets -type f -name '*.*' -print -quit)" >> "$GITHUB_ENV"
+          probe=$(cd "$src" && find assets -type f -name '*.*' -print -quit)
+          echo "ASSET_PROBE=$probe" >> "$GITHUB_ENV"
 
           # `assets/**` is the same problem and the bigger half of it: 3.2MB of files that
           # Angular does NOT content-hash (`angular.json` sets `outputHashing: 'bundles'`, so
@@ -395,7 +401,72 @@ jobs:
             --content-cache-control "$nostore" --content-type 'text/javascript; charset=utf-8' \
             --output none
 
+          # PROVE IT LANDED, AND PROVE IT AT THE ORIGIN.
+          #
+          # Everything above is fire-and-forget in two separate ways. `upload-batch` exits 0 when a
+          # file fails its precondition — it only logs "N of M files not uploaded" as a warning — and
+          # the smoke test at the end of this job asks FRONT DOOR, which answers from its own cache.
+          # Put together, those two produced a green deploy over a wrong estate: on 2026-08-17 the
+          # smoke test confirmed `no-store` on env.js four seconds after upload, and by 2026-08-21
+          # `index.html` and `env.js` carried no `Cache-Control` at all, with nothing red anywhere.
+          # (The cause that time was a hand `az storage blob upload` of a smoke bundle, which
+          # overwrote every stable-named blob without content settings — the two `main-<hash>.js`
+          # blobs from CI kept `immutable` only because their names were not reused, which is what
+          # made it look like the `$nostore` batch alone was failing.)
+          #
+          # These four assertions read the blob's own properties, so no cache can answer for them,
+          # and they cover one file from each rule: the shell, the runtime config, a content-hashed
+          # bundle, and an unhashed asset.
+          assert_cc() {
+            got=$(az storage blob show --account-name "$STORAGE_ACCOUNT" --auth-mode login \
+              -c '$web' -n "$1" --query 'properties.contentSettings.cacheControl' -o tsv)
+            [ "$got" = "$2" ] \
+              || { echo "::error::$1 carries Cache-Control '$got' at the origin, expected '$2' — the upload batch that owns it did not land"; exit 1; }
+            printf '  %-44s %s\n' "$1" "$got"
+          }
+          main=$(cd "$src" && find . -maxdepth 1 -name 'main-*.js' -printf '%f\n' -quit)
+          [ -n "$main" ] || { echo "::error::the build emitted no main-*.js bundle"; exit 1; }
+          assert_cc index.html "$nostore"
+          assert_cc env.js "$nostore"
+          assert_cc "$main" "$immutable"
+          assert_cc "$probe" 'no-cache'
+
+          # Handed to the smoke test so it can wait for THIS bundle to reach the edge rather than
+          # for any 200 at all — see the retry loop there.
+          echo "MAIN_BUNDLE=$main" >> "$GITHUB_ENV"
+
           echo "published to $STORAGE_ACCOUNT/\$web"
+
+      # ---------------------------------------------------------------------------
+      # Purge the edge, or the upload above is not a publish.
+      #
+      # Front Door caches `$web` objects and serves them from the POP (`x-cache: TCP_REMOTE_HIT`).
+      # `index.html` and `env.js` are the whole problem: they keep the same names across deploys, so
+      # without a purge the edge keeps handing out the previous shell — which references the
+      # previous asset hashes — and the smoke test below then verifies the PREVIOUS deploy and
+      # passes. Content-hashed bundles never need this, but `/*` is one call and enumerating the two
+      # that do is a list somebody has to maintain.
+      #
+      # THE COMMAND RETURNING IS NOT PROOF THE EDGE UPDATED. `az` returns when the purge has been
+      # accepted; propagation across the POPs is measured at ~20 MINUTES on this profile. A curl run
+      # straight afterwards can still be served the old object, so nothing here or downstream may
+      # treat a successful purge as evidence the new bundle is live — that is what the smoke test's
+      # 20-minute retry budget is for, and why it now waits for THIS build's bundle by name.
+      #
+      # Profile, endpoint and resource group are hardcoded rather than taken from repository
+      # variables on purpose: `AZURE_FRONTDOOR_ENDPOINT` is the generated *hostname*, which the
+      # purge API does not accept, and inventing two more variables to hold names that change only
+      # when the Bicep does is more configuration to drift, not less.
+      # ---------------------------------------------------------------------------
+      - name: Purge the Front Door edge
+        run: |
+          set -euo pipefail
+          az afd endpoint purge \
+            --profile-name eagle-edge-prod \
+            --endpoint-name eagle-public-prod \
+            --resource-group rg-eagle-public-prod \
+            --content-paths '/*' --no-wait --output none
+          echo "purge accepted for /* — the edge takes ~20 minutes to catch up, so this is not proof"
 
       # These assertions used to live in `azure/server.check.js`, which tested the Node
       # server that no longer exists. They belong against the real deployment now,
@@ -412,8 +483,9 @@ jobs:
       #
       # The staging file's CORS preflight against the search API is NOT here and must not be
       # added: this bundle is same-origin by construction (`/api`, `/analytics`, `/admin/`),
-      # so there is no cross-origin request to preflight, and production has no search API to
-      # preflight against — `SEARCH_API_PATH` is empty and search falls back to eagle-api.
+      # so there is no cross-origin request to preflight. Production DOES have a search API now
+      # (cut over 2026-08-20), but the bundle reaches it as the same-origin `/eagle-search` that
+      # `/api/config` hands out, proxied by rproxy — still nothing to preflight.
       #
       # Front Door propagates a fresh route for a few minutes, hence the retry. FIVE MINUTES IS NOT
       # ENOUGH ON A BRAND-NEW PROFILE: the first deploy into the prod estate on 2026-08-17 exhausted
@@ -425,10 +497,19 @@ jobs:
         run: |
           set -uo pipefail
           host="https://$AFD_ENDPOINT"
+          # WAIT FOR THIS BUILD, NOT FOR ANY 200. A 200 was satisfied by the previous deploy's
+          # cached shell, so every assertion below it — the asset's `immutable`, env.js's
+          # `no-store`, `configEndpoint = true` — could be answered by the bundle we just replaced,
+          # and the run went green having verified the deploy before this one. Waiting for the
+          # hashed bundle this run built is the same loop with a condition that only the new content
+          # can satisfy, and it doubles as the purge-propagation wait: 80 x 15s = 20 minutes, which
+          # is the measured propagation time on this profile.
           for i in $(seq 1 80); do
-            [ "$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 "$host/")" = "200" ] && break
-            echo "attempt $i: $host/ not ready yet"; sleep 15
+            curl -s --max-time 15 "$host/" | grep -q "$MAIN_BUNDLE" && break
+            echo "attempt $i: $host/ is not serving $MAIN_BUNDLE yet"; sleep 15
           done
+          curl -s --max-time 15 "$host/" | grep -q "$MAIN_BUNDLE" \
+            || { echo "::error::$host/ still does not reference $MAIN_BUNDLE after 20 minutes — the blobs are published (asserted at the origin) but the edge has not picked them up; check the purge"; exit 1; }
 
           root=$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 "$host/")
           [ "$root" = "200" ] || { echo "::error::/ returned $root, expected 200"; exit 1; }
