@@ -73,14 +73,14 @@
   window.__env.ANALYTICS_ENHANCED_TRACKING = true;
   window.__env.ANALYTICS_TRAFFIC_TRACKING = true;
 
-  // Passphrase prompt in front of the whole app, for the Azure preview only. OFF here and OFF on
-  // OpenShift, where rproxy's `auth_basic` already does this job at the edge.
+  // VESTIGIAL. Nothing reads these two keys and nothing writes them. The component that consumed
+  // them (`preview-gate.component.ts`) was deleted, and so was the staging workflow's sed step that
+  // set them from a repository secret — that step wrote the passphrase into this world-readable file
+  // while the gate it belonged to no longer existed, so it published a secret and protected nothing.
   //
-  // The Azure preview is served from blob storage `$web`, which cannot authenticate at all, so the
-  // gate had to move into the bundle — which means the passphrase is readable in devtools. It is
-  // obfuscation, not access control; `preview-gate.component.ts` says so at length. Both values are
-  // set by `.github/workflows/deploy-azure-staging.yaml` with `sed` before `yarn build`, the
-  // passphrase from a repository secret. Committed defaults stay harmless: gate off, no secret here.
+  // They stay declared, at these values, only because this file is deliberately merge-safe: the
+  // committed copy must differ from `develop` as little as possible, and false/'' change no
+  // behaviour anywhere. Delete them when the Azure branches merge back.
   window.__env.PREVIEW_GATE = false;
   window.__env.PREVIEW_GATE_PASSPHRASE = '';
 

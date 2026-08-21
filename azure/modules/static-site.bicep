@@ -53,9 +53,21 @@ var blobDataContributorRoleId = 'ba92f5b4-2d11-453d-a403-e96b0029c9fe'
 // dataAction behind it, so Blob Data Contributor above does NOT grant it: the workflow's very
 // first storage step fails with AuthorizationFailed, before a single blob is uploaded.
 //
-// It is broader than we would like — it carries listKeys — but `allowSharedKeyAccess: false` below
-// makes the keys it hands out unusable for authentication, so the grant reduces to what it is needed
-// for. Do not re-enable shared keys without revisiting this role.
+// IT IS BROADER THAN IT LOOKS, AND THE MITIGATION BELOW DOES NOT CONTAIN IT. An earlier version of
+// this comment argued that `allowSharedKeyAccess: false` makes the keys listKeys hands out unusable,
+// so the grant reduces to what it needs. That is false: the role's action list is
+// `Microsoft.Storage/storageAccounts/*`, which carries `write` as well as `listKeys/action`, so the
+// same principal can PATCH `allowSharedKeyAccess` back to true and then listKeys returns working
+// credentials. A control the grant can itself undo is not a control.
+//
+// It is kept anyway, deliberately. The principal already holds Blob Data Contributor on this same
+// account (above), so the path reaches no data it cannot already read and write — the real delta is
+// a long-lived bearer key that would survive outside the OIDC federation and outside any future
+// conditional-access or audit story, not an escalation.
+//
+// The tighter fix is a custom role carrying only `Microsoft.Storage/storageAccounts/blobServices/write`,
+// which is the single control-plane action the `$web` enable actually needs. Not done here: a custom
+// role definition is subscription-scoped and needs privileges this template's deployer does not have.
 var storageAccountContributorRoleId = '17d1049b-9a84-46fb-8f53-869881c3d3ab'
 
 resource storage 'Microsoft.Storage/storageAccounts@2023-05-01' = {

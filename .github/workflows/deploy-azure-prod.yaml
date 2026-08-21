@@ -160,11 +160,13 @@ jobs:
       # cross-origin request where none exists, which means CORS config to maintain, a CSP
       # to widen, and a second thing to change at cutover.
       #
-      # So the FOUR rewrites below are exactly the four the Dockerfile performs for the
-      # OpenShift production image (`Dockerfile:34-37`): configEndpoint on, API_LOCATION
-      # cleared, logLevel to errors-only, analytics debug off. Nothing else is touched —
-      # API_PATH stays `/api`, ANALYTICS_API_URL stays `/analytics`, ADMIN_PATH stays
-      # `/admin/`, SEARCH_API_PATH stays empty. EMPTY IS NOT "NO SEARCH SERVICE" ANY MORE —
+      # So the rewrites below start from the four the Dockerfile performs for the OpenShift
+      # production image (`Dockerfile:34-37`): configEndpoint on, API_LOCATION cleared,
+      # logLevel to errors-only, analytics debug off. TWO MORE run here, and the body below
+      # says why: ENVIRONMENT and ADMIN_PATH, both of which the committed file holds at dev
+      # values (`dev`, and an absolute eagle-dev URL) that would otherwise ship to prod.
+      # Six in total. API_PATH stays `/api`, ANALYTICS_API_URL stays `/analytics`, and
+      # SEARCH_API_PATH stays empty. EMPTY IS NOT "NO SEARCH SERVICE" ANY MORE —
       # prod cut over to eagle-search on 2026-08-20 and `/api/config` now answers
       # `/eagle-search`, which merges over this file at runtime. Empty here is what keeps the
       # bundle neutral: the environment decides, and clearing the setting is still the kill
