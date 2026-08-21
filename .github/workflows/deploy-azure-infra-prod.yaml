@@ -2,7 +2,7 @@
 # Deploy the eagle-public PRODUCTION Azure infrastructure — DARK
 # =============================================================================
 # Applies `azure/main.publicprod.bicep` to `rg-eagle-public-prod`. This is the estate itself — the
-# storage account, the Front Door profile and its rules — NOT the site
+# storage account, the Front Door profile, its rules and the availability test — NOT the site
 # content. `deploy-azure-prod.yaml` publishes the bundle into the estate this creates; the two are
 # separate because content ships many times a day and infrastructure changes a few times a year.
 #
@@ -81,6 +81,22 @@ jobs:
     env:
       # Empty on a push; a push must never apply.
       MODE: ${{ inputs.mode || 'what-if' }}
+      # AVAILABILITY ALERT ADDRESS — A REPOSITORY VARIABLE, DELIBERATELY NOT A workflow_dispatch
+      # INPUT. The reverted version (c4d6dd10) used an input; that cannot work here. This file is
+      # push-triggered — see the trigger comment above, dispatch is unaddressable while the file
+      # lives only on `azure-prod-preview` — and on a push `inputs.*` is empty, so an input would
+      # silently deploy the availability test with no alerting on every run. That is precisely the
+      # "reads like a test that is not running" failure the module header warns about.
+      #
+      # `availabilityAlertEmail` is a REQUIRED parameter with no default, so an unset variable fails
+      # the deployment at submit with BCP258 rather than deploying a silent test. That is the
+      # forcing function. Set it before the first apply:
+      #   gh variable set AVAILABILITY_ALERT_EMAIL --repo bcgov/eagle-public --body '<address>'
+      # An explicitly empty value is still honoured by the module — `if (!empty(alertEmail))` guards
+      # both the action group and the metric alert — so measurement-without-notification stays
+      # available for collecting a pre-cutover baseline. It now takes a deliberate empty variable
+      # rather than happening by omission.
+      ALERT_EMAIL: ${{ vars.AVAILABILITY_ALERT_EMAIL }}
       RESOURCE_GROUP: rg-eagle-public-prod
       TEMPLATE: ./azure/main.publicprod.bicep
       PARAMS: ./azure/main.publicprod.bicepparam
@@ -103,7 +119,8 @@ jobs:
           az deployment group what-if \
             --resource-group "$RESOURCE_GROUP" \
             --template-file "$TEMPLATE" \
-            --parameters "$PARAMS"
+            --parameters "$PARAMS" \
+            --parameters availabilityAlertEmail="$ALERT_EMAIL"
 
       # ---------------------------------------------------------------------------
       # ONE-TIME RECONCILIATION, BEFORE THE FIRST `deploy` RUN.
@@ -137,6 +154,7 @@ jobs:
             --resource-group "$RESOURCE_GROUP" \
             --template-file "$TEMPLATE" \
             --parameters "$PARAMS" \
+            --parameters availabilityAlertEmail="$ALERT_EMAIL" \
             --query "properties.provisioningState" -o tsv
 
       # The two values nothing may compose by hand. The storage account name embeds a uniqueString()
