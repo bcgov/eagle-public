@@ -2,7 +2,7 @@
 # Deploy the eagle-public PRODUCTION Azure infrastructure — DARK
 # =============================================================================
 # Applies `azure/main.publicprod.bicep` to `rg-eagle-public-prod`. This is the estate itself — the
-# storage account, the Front Door profile, its rules and the availability test — NOT the site
+# storage account, the Front Door profile and its rules — NOT the site
 # content. `deploy-azure-prod.yaml` publishes the bundle into the estate this creates; the two are
 # separate because content ships many times a day and infrastructure changes a few times a year.
 #
@@ -37,11 +37,6 @@ on:
         default: what-if
         type: choice
         options: [what-if, deploy]
-      alertEmail:
-        description: "Availability alert address. Empty deploys the test with no alerting."
-        required: false
-        default: ""
-        type: string
 
 concurrency:
   group: deploy-azure-infra-prod
@@ -84,8 +79,7 @@ jobs:
           az deployment group what-if \
             --resource-group "$RESOURCE_GROUP" \
             --template-file "$TEMPLATE" \
-            --parameters "$PARAMS" \
-            --parameters availabilityAlertEmail='${{ inputs.alertEmail }}'
+            --parameters "$PARAMS"
 
       # ---------------------------------------------------------------------------
       # ONE-TIME RECONCILIATION, BEFORE THE FIRST `deploy` RUN.
@@ -119,7 +113,6 @@ jobs:
             --resource-group "$RESOURCE_GROUP" \
             --template-file "$TEMPLATE" \
             --parameters "$PARAMS" \
-            --parameters availabilityAlertEmail='${{ inputs.alertEmail }}' \
             --query "properties.provisioningState" -o tsv
 
       # The two values nothing may compose by hand. The storage account name embeds a uniqueString()

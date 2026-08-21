@@ -63,14 +63,6 @@ param environmentName string = 'prod'
 @description('Principal (object) id of the user-assigned identity eagle-public-cicd-prod. Created by `az identity create` BEFORE this template runs.')
 param publicUploaderPrincipalId string
 
-// Empty by default, and empty is a supported state rather than an oversight: the availability test
-// records results either way, so leaving this unset costs notification, not measurement. It is a
-// parameter rather than a literal because the destination is an operational decision — who gets
-// woken up — and hardcoding one person's address into infrastructure is how alerts end up going to
-// someone who left.
-@description('Address for availability alerts. Empty deploys the test with no alerting.')
-param availabilityAlertEmail string = ''
-
 // The five mandatory Cost Management tags, identical in shape to main.bicep's `defaultTags` so the
 // prod estate and the test estate are comparable on a bill they share. Application is `eagle-public`
 // and not `eagle-search`: nothing in this resource group belongs to the search service, and a tag
@@ -196,21 +188,6 @@ module frontDoor './modules/front-door.bicep' = {
         frameOptions: 'DENY'
       }
     ]
-  }
-}
-
-// 3. Synthetic availability monitoring for the PUBLIC hostname. Deliberately not scoped to this
-//    estate's endpoint: after cutover, rproxy stays healthy when Front Door fails, so nothing in
-//    OpenShift would notice the site being down. Deployed now rather than at cutover so it watches
-//    the OpenShift path first and has a baseline. See the module header for what it does and does
-//    not prove.
-module availability './modules/availability.bicep' = {
-  name: 'deploy-availability'
-  params: {
-    location: location
-    environmentName: environmentName
-    tags: defaultTags
-    alertEmail: availabilityAlertEmail
   }
 }
 
