@@ -4,13 +4,12 @@ import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
 import { HeaderComponent } from './header/header.component';
 import { FooterComponent } from './footer/footer.component';
 import { ToastContainerComponent } from './shared/components/toast-container/toast-container.component';
-import { PreviewGateComponent, previewGateSatisfied } from './preview-gate/preview-gate.component';
 import { AnalyticsService } from './services/analytics/analytics.service';
 import { filter } from 'rxjs/operators';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, HeaderComponent, FooterComponent, ToastContainerComponent, PreviewGateComponent],
+  imports: [RouterOutlet, HeaderComponent, FooterComponent, ToastContainerComponent],
   templateUrl: './app.html',
   styleUrl: './app.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -20,10 +19,6 @@ export class App implements OnInit, OnDestroy {
   private analyticsService = inject(AnalyticsService);
   public router = inject(Router);
   
-  // Gates the entire template. Off on OpenShift and locally (env.js PREVIEW_GATE = false), so this
-  // reads `true` everywhere except the Azure preview.
-  protected readonly gateSatisfied = previewGateSatisfied;
-
   title = 'EPIC - Environmental Assessment Office';
   showScrollButton = signal(false);
   currentUrl = signal<string>('');
