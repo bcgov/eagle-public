@@ -63,6 +63,24 @@ param environmentName string = 'prod'
 @description('Principal (object) id of the user-assigned identity eagle-public-cicd-prod. Created by `az identity create` BEFORE this template runs.')
 param publicUploaderPrincipalId string
 
+// NO DEFAULT, deliberately, and this is a change from how the parameter was first written. It
+// carried `= ''` then, which meant a deploy that never supplied an address still succeeded and left
+// behind an availability test that measured the site perfectly and notified nobody — the one
+// failure this monitoring exists to catch, reproduced in the monitoring itself. Required means the
+// deployment does not submit until someone has decided who gets woken up.
+//
+// It is a parameter rather than a literal for the original reason, which has not changed: the
+// destination is an operational decision, and hardcoding one person's address into infrastructure is
+// how alerts end up going to someone who left. Passing an explicit empty string is still supported
+// and still deploys the test with no alerting — that is now a choice on the command line rather than
+// a default nobody read.
+//
+// NOTHING SUPPLIES THIS YET. The .bicepparam does not set it and neither does
+// `.github/workflows/deploy-azure-infra-prod.yaml`, whose `alertEmail` input was removed alongside
+// the module and has not been put back. Both need the real address before this template can deploy.
+@description('Address for availability alerts. Required. An explicit empty string deploys the test with no alerting.')
+param availabilityAlertEmail string
+
 // The five mandatory Cost Management tags, identical in shape to main.bicep's `defaultTags` so the
 // prod estate and the test estate are comparable on a bill they share. Application is `eagle-public`
 // and not `eagle-search`: nothing in this resource group belongs to the search service, and a tag
@@ -188,6 +206,22 @@ module frontDoor './modules/front-door.bicep' = {
         frameOptions: 'DENY'
       }
     ]
+  }
+}
+
+// 3. Synthetic availability monitoring for the PUBLIC hostname. Deliberately not scoped to this
+//    estate's endpoint: after cutover, rproxy stays healthy when Front Door fails, so nothing in
+//    OpenShift would notice the site being down. Deployed now rather than at cutover so it watches
+//    the OpenShift path first and has a baseline — the flip is approved, so the window in which
+//    that baseline can still be collected is the one we are in. See the module header for what it
+//    does and does not prove.
+module availability './modules/availability.bicep' = {
+  name: 'deploy-availability'
+  params: {
+    location: location
+    environmentName: environmentName
+    tags: defaultTags
+    alertEmail: availabilityAlertEmail
   }
 }
 

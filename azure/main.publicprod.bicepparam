@@ -14,7 +14,20 @@ using './main.publicprod.bicep'
 //   az group create -n rg-eagle-public-prod -l canadacentral \
 //     --tags Project=EPIC Application=eagle-public Environment=prod ManagedBy=Bicep CostCenter=c4b0a8
 //   az deployment group create -g rg-eagle-public-prod \
-//     -f azure/main.publicprod.bicep -p azure/main.publicprod.bicepparam
+//     -f azure/main.publicprod.bicep -p azure/main.publicprod.bicepparam \
+//     -p availabilityAlertEmail='<the address that gets the outage mail>'
+//
+// THAT LAST `-p` IS NOT OPTIONAL AND ITS ABSENCE HERE IS DELIBERATE. `availabilityAlertEmail` is
+// declared required in the template and is assigned nowhere in this file, so
+// `az bicep build-params` on it fails today with:
+//
+//   BCP258: The following parameters are declared in the Bicep file but are missing an assignment
+//   in the params file: "availabilityAlertEmail".
+//
+// That error is the feature. No address has been agreed yet, and the alternative — an empty default
+// — produces an availability test that watches the site correctly and tells nobody, which is the
+// exact failure the test exists to catch. Assign it below once there is a real destination, and the
+// error goes away. Do not assign a placeholder to silence it.
 //
 // A NEW group, not c4b0a8-prod-rg alongside anything else: this template is the whole description of
 // what lives here, so a `what-if` against an empty group shows exactly the delta and nothing else's
