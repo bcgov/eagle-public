@@ -6,22 +6,6 @@
     [backgroundImage]="config().heroBanner.backgroundImage"
   />
 
-  @if (config().tabs; as tabs) {
-    <div class="container">
-      <ul class="nav nav-tabs search-tabs" role="tablist">
-        @for (tab of tabs; track tab.link) {
-          <li class="nav-item" role="presentation">
-            <a class="nav-link"
-               role="tab"
-               [routerLink]="tab.link"
-               routerLinkActive="active"
-               [routerLinkActiveOptions]="{ exact: true }">{{ tab.label }}</a>
-          </li>
-        }
-      </ul>
-    </div>
-  }
-
   <section class="table-container">
     <div class="container">
       <section class="mb-4 pt-0 pb-0">

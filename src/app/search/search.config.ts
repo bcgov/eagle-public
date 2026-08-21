@@ -7,20 +7,6 @@ import { FilterObject, FilterType, MultiSelectDefinition, DateFilterDefinition }
 
 export const SEARCH_TABLE_ID = 'search';
 
-/**
- * Tabs shared by both search views. Defined here, the base config, so the dependency runs one way:
- * the content config imports from this file and nothing imports back.
- */
-export const SEARCH_TABS = [
-  { label: 'Documents', link: '/search' }
-  // 'Document Content' (/search/content) is HIDDEN, not removed. The route and its component are
-  // still there and still work if you type the URL — only the way in is gone, because content
-  // search is not ready to be shown to the public. Restore by putting the entry back here:
-  //   { label: 'Document Content', link: '/search/content' }
-  // and re-adding `tabs: SEARCH_TABS` to the config below. With one tab left, the strip renders as
-  // a lone tab, which is why the Documents view drops it entirely.
-];
-
 export const SEARCH_TABLE_COLUMNS: IColumnObject[] = [
   {
     name: 'Document Name',
@@ -66,11 +52,8 @@ const LEGISLATION_FILTER_GROUP = {
 
 /**
  * Builds filters for document search from config data
- *
- * Exported so the content tab can take the subset the chunk index supports, rather than
- * reimplementing the same five FilterObjects against the same lists.
  */
-export function buildSearchFilters(lists: any[]): FilterObject[] {
+function buildSearchFilters(lists: any[]): FilterObject[] {
   const milestones: any[] = [];
   const authors: any[] = [];
   const docTypes: any[] = [];
@@ -186,9 +169,6 @@ export function createSearchConfig(): TableListConfig {
     tableOptions: {
       disableRowHighlight: true
     },
-    // No `tabs` while Document Content is hidden — `tabs?` is optional on the config
-    // (table-list-config.interface.ts:62) and table-list.component.html:9 skips the whole strip
-    // when it is absent.
     filterList: SEARCH_FILTER_LIST,
     dateFilterList: SEARCH_DATE_FILTER_LIST,
     filterDataSource: configService.lists,
