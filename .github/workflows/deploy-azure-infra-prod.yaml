@@ -28,7 +28,28 @@
 
 name: Deploy Azure Infra to Prod
 
+# PUSH, NOT workflow_dispatch ALONE — and the dispatch entry below is currently decorative.
+# GitHub only offers "Run workflow", and only accepts `gh workflow run`, for a workflow file that
+# exists on the repository's DEFAULT BRANCH. This file lives on `azure-prod-preview`, which is never
+# merged to `develop` (that is what "dark" means), so dispatch is unaddressable: `gh workflow run
+# "Deploy Azure Infra to Prod"` answers `could not find any workflows named ...` no matter what
+# `--ref` is passed. deploy-azure-prod.yaml documents this same trap; this file was written next to
+# it and fell into it anyway.
+#
+# So the trigger is a push that touches the templates. That is also the right shape: the estate
+# should be re-planned exactly when its description changes. The dispatch entry is kept for the day
+# this file does reach the default branch, and costs nothing until then.
+#
+# A push always runs what-if and never applies — see MODE below. Applying is a deliberate act that
+# needs the one-time role reconciliation, so it stays behind an input that only exists once this is
+# dispatchable.
+
 on:
+  push:
+    branches: [azure-prod-preview]
+    paths:
+      - "azure/**"
+      - ".github/workflows/deploy-azure-infra-prod.yaml"
   workflow_dispatch:
     inputs:
       mode:
@@ -48,7 +69,8 @@ permissions:
 
 jobs:
   infra:
-    name: ${{ inputs.mode }} — eagle-public prod estate
+    # `inputs.mode` is empty on a push, so it is defaulted in one place and read from `env` after.
+    name: eagle-public prod estate
     runs-on: ubuntu-latest
     timeout-minutes: 30
     # Declaring an environment CHANGES THE OIDC SUBJECT CLAIM to
@@ -57,6 +79,8 @@ jobs:
     # change it and Azure Login fails with AADSTS700213, a message that names no environment.
     environment: azure-prod
     env:
+      # Empty on a push; a push must never apply.
+      MODE: ${{ inputs.mode || 'what-if' }}
       RESOURCE_GROUP: rg-eagle-public-prod
       TEMPLATE: ./azure/main.publicprod.bicep
       PARAMS: ./azure/main.publicprod.bicepparam
@@ -106,7 +130,7 @@ jobs:
       # rewrite its own permissions is not a pipeline anyone can reason about.
       # ---------------------------------------------------------------------------
       - name: Apply
-        if: inputs.mode == 'deploy'
+        if: env.MODE == 'deploy'
         run: |
           set -euo pipefail
           az deployment group create \
@@ -120,7 +144,7 @@ jobs:
       # not the `z01` the docs imply. Printing them here means the cutover reads them from a run log
       # rather than guessing.
       - name: Report outputs
-        if: inputs.mode == 'deploy'
+        if: env.MODE == 'deploy'
         run: |
           set -euo pipefail
           az deployment group show \
