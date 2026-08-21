@@ -130,7 +130,7 @@ var eaglePublicProdCsp = join(
     'font-src \'self\' data:'
     // 'self' PLUS UNPKG, AND NOTHING ELSE — the test policy's search API host is gone and no API
     // host replaces it. Prod's search API is reached through rproxy at the RELATIVE path
-    // /eagle-search, and prod SEARCH_API_PATH is still empty so nothing calls it yet, and
+    // /eagle-search — live since 2026-08-20, when prod SEARCH_API_PATH became '/eagle-search' — and
     // every other call the bundle makes — /api to eagle-api, /analytics to penguin-analytics,
     // /api/config for env.js — is RELATIVE and therefore same-origin, because rproxy serves this
     // bundle and those backends from one hostname. That is the design, not a coincidence: the
@@ -150,11 +150,13 @@ var eaglePublicProdCsp = join(
     // `https://*.gov.bc.ca` IS RETAINED FROM THE TEST POLICY, deliberately, even though the design
     // above says every call is relative. The design is a statement about the bundle's DEFAULTS; the
     // running app also merges whatever `/api/config` returns over them at startup
-    // (eagle-public src/app/services/config.service.ts), and the production Config document has NOT
-    // been read. If it carries one absolute gov.bc.ca URL — an analytics host, a banner target — a
-    // tightened connect-src turns that into a console-only failure on a live site. The wildcard adds
-    // no origin that default-src does not already permit, and it costs nothing to keep. Tighten it
-    // after the dark window has proven, from the console, that nothing needs it.
+    // (eagle-public src/app/services/config.service.ts). The live prod payload HAS now been read
+    // (2026-08-21): all 15 keys are relative or null — API_PATH '/api', ANALYTICS_API_URL
+    // '/analytics', ADMIN_PATH '/admin/', SEARCH_API_PATH '/eagle-search' — so nothing there needs
+    // the wildcard today. It is still retained: the Config document is editable at runtime without a
+    // deploy, so one absolute gov.bc.ca URL added later — an analytics host, a banner target — would
+    // turn a tightened connect-src into a console-only failure on a live site. The wildcard adds no
+    // origin that default-src does not already permit, and it costs nothing to keep.
     'connect-src \'self\' https://*.gov.bc.ca'
     // Nothing frames eagle-public and eagle-public frames nothing — no Keycloak, no silent SSO, so
     // none of DEMI's SAMEORIGIN rationale applies here.
