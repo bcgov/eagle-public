@@ -104,8 +104,11 @@ jobs:
       # module edit reaching the prod estate template broken, which used to be caught only when
       # somebody hand-ran a deployment.
       #
-      # The .bicepparam is compiled too. It carries no secrets and no readEnvironmentVariable, so
-      # build-params needs no credentials and no dummy values.
+      # The .bicepparam is compiled too. It carries no secrets, and its one readEnvironmentVariable
+      # (AVAILABILITY_ALERT_EMAIL) has a '' default precisely so this job needs no credentials, no
+      # environment and no dummy values. Do not make that parameter required-with-no-default: it
+      # fails BCP258 here on every pull request, and az cannot rescue it with `-p` because the first
+      # of its two .bicepparam compiles carries no overrides.
       - name: Compile templates
         run: |
           az bicep build --file ./azure/main.publicprod.bicep

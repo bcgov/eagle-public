@@ -88,15 +88,20 @@ jobs:
       # silently deploy the availability test with no alerting on every run. That is precisely the
       # "reads like a test that is not running" failure the module header warns about.
       #
-      # `availabilityAlertEmail` is a REQUIRED parameter with no default, so an unset variable fails
-      # the deployment at submit with BCP258 rather than deploying a silent test. That is the
-      # forcing function. Set it before the first apply:
+      # THE NAME MATTERS: main.publicprod.bicepparam reads this variable by name with
+      # readEnvironmentVariable('AVAILABILITY_ALERT_EMAIL', ''). It is deliberately NOT passed as
+      # `-p availabilityAlertEmail=...` — az compiles a .bicepparam twice and the first compile
+      # carries no overrides, so a `-p` cannot rescue an unassigned required parameter, and an
+      # override from an unset variable would arrive as an empty string that BEATS the file. The
+      # param file header records the measurement behind both halves.
+      #
       #   gh variable set AVAILABILITY_ALERT_EMAIL --repo bcgov/eagle-public --body '<address>'
-      # An explicitly empty value is still honoured by the module — `if (!empty(alertEmail))` guards
-      # both the action group and the metric alert — so measurement-without-notification stays
-      # available for collecting a pre-cutover baseline. It now takes a deliberate empty variable
-      # rather than happening by omission.
-      ALERT_EMAIL: ${{ vars.AVAILABILITY_ALERT_EMAIL }}
+      #
+      # Unset is fine for `what-if` and for collecting a pre-cutover baseline: the module's
+      # `if (!empty(alertEmail))` guards drop the action group and the metric alert, so the test
+      # measures without notifying. The Apply step refuses to run on an empty value, which is where
+      # the forcing function lives now.
+      AVAILABILITY_ALERT_EMAIL: ${{ vars.AVAILABILITY_ALERT_EMAIL }}
       RESOURCE_GROUP: rg-eagle-public-prod
       TEMPLATE: ./azure/main.publicprod.bicep
       PARAMS: ./azure/main.publicprod.bicepparam
@@ -119,8 +124,7 @@ jobs:
           az deployment group what-if \
             --resource-group "$RESOURCE_GROUP" \
             --template-file "$TEMPLATE" \
-            --parameters "$PARAMS" \
-            --parameters availabilityAlertEmail="$ALERT_EMAIL"
+            --parameters "$PARAMS"
 
       # ---------------------------------------------------------------------------
       # ONE-TIME RECONCILIATION, BEFORE THE FIRST `deploy` RUN.
@@ -146,6 +150,21 @@ jobs:
       # Access Administrator, which the CI identity deliberately does not have — a pipeline that can
       # rewrite its own permissions is not a pipeline anyone can reason about.
       # ---------------------------------------------------------------------------
+      # An apply with no alert address deploys an availability test that watches the site correctly
+      # and tells nobody. That is acceptable for `what-if` and for a pre-cutover baseline, and it is
+      # not acceptable for an apply — so it is refused here rather than in the template, which must
+      # stay compilable with no environment for pr.yaml's Compile Bicep job.
+      - name: Require an alert address before applying
+        if: env.MODE == 'deploy'
+        run: |
+          set -euo pipefail
+          if [ -z "${AVAILABILITY_ALERT_EMAIL:-}" ]; then
+            echo "AVAILABILITY_ALERT_EMAIL is not set." >&2
+            echo "Set it before applying, or the availability test deploys with no alerting:" >&2
+            echo "  gh variable set AVAILABILITY_ALERT_EMAIL --repo bcgov/eagle-public --body '<address>'" >&2
+            exit 1
+          fi
+
       - name: Apply
         if: env.MODE == 'deploy'
         run: |
@@ -154,7 +173,6 @@ jobs:
             --resource-group "$RESOURCE_GROUP" \
             --template-file "$TEMPLATE" \
             --parameters "$PARAMS" \
-            --parameters availabilityAlertEmail="$ALERT_EMAIL" \
             --query "properties.provisioningState" -o tsv
 
       # The two values nothing may compose by hand. The storage account name embeds a uniqueString()
