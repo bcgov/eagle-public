@@ -118,32 +118,26 @@ jobs:
       # to name a host. `API_LOCATION` and `ADMIN_PATH` are already absolute in the
       # committed file, so exactly three values change.
       #
-      # PREVIEW_GATE replaces the HTTP basic auth that `azure/server.js` used to apply:
-      # blob storage cannot authenticate, so the gate is now in the bundle. That also
-      # means the passphrase is readable in devtools — it is obfuscation, deliberately,
-      # over data that is already public. It still comes from a secret rather than a
-      # literal here, so it is not in the git history of a public repository.
+      # THE PREVIEW IS UNGATED, AND SAYING SO IS THE POINT. A PREVIEW_GATE component briefly
+      # existed in the bundle (77b60e54, deleted 41ce1e0e) and this job kept requiring a
+      # passphrase secret and writing it into a world-readable /env.js long after nothing
+      # consumed it. The workflow then reported the preview as "gated", which is worse than
+      # being ungated: it published a repository secret in cleartext AND asserted a protection
+      # that a browser load disproved in one page render. The keys stay declared as `false`/`''`
+      # in the committed env.js so the file remains merge-safe; nothing writes them.
+      #
+      # What actually keeps this preview private is that its hostname is unadvertised. That is
+      # weak, and it is the honest description. Real gating needs something in front of blob
+      # storage that can authenticate — Front Door Premium's WAF, or an rproxy — not a
+      # passphrase shipped inside the bundle it protects.
       #
       # `sed` exits 0 when it matches nothing, so each rewrite is verified. Without the
       # check a renamed key ships a bundle that silently calls the static server for
       # its API and 404s on everything, and the build stays green.
       # ---------------------------------------------------------------------------
       - name: Point env.js at Azure
-        env:
-          # MUST BE A NEW, DISPOSABLE VALUE. It is published in cleartext at `/env.js`, which is
-          # world-readable — never reuse the rproxy basic-auth password, or any other live credential.
-          PREVIEW_GATE_PASSPHRASE: ${{ secrets.PREVIEW_GATE_PASSPHRASE }}
         run: |
           set -euo pipefail
-          [ -n "${PREVIEW_GATE_PASSPHRASE:-}" ] \
-            || { echo "::error::secret PREVIEW_GATE_PASSPHRASE is empty — the preview would deploy ungated"; exit 1; }
-          # The passphrase is interpolated into a sed replacement and then into a JS string
-          # literal. Restricting the alphabet is cheaper than escaping both layers correctly.
-          case "$PREVIEW_GATE_PASSPHRASE" in
-            *[!A-Za-z0-9._-]*)
-              echo "::error::PREVIEW_GATE_PASSPHRASE must use only [A-Za-z0-9._-]"; exit 1;;
-          esac
-
           sed -i "s|window.__env.API_PATH = .*|window.__env.API_PATH = 'https://eagle-test.apps.silver.devops.gov.bc.ca/api';|" src/env.js
           sed -i "s|window.__env.SEARCH_API_PATH = .*|window.__env.SEARCH_API_PATH = 'https://eagle-search-api-test.azurewebsites.net/api';|" src/env.js
           sed -i "s|window.__env.ANALYTICS_API_URL = .*|window.__env.ANALYTICS_API_URL = 'https://eagle-test.apps.silver.devops.gov.bc.ca/analytics';|" src/env.js
@@ -152,22 +146,16 @@ jobs:
           sed -i "s|window.__env.ENVIRONMENT = .*|window.__env.ENVIRONMENT = 'test';|" src/env.js
           sed -i "s|window.__env.API_LOCATION = .*|window.__env.API_LOCATION = 'https://eagle-test.apps.silver.devops.gov.bc.ca';|" src/env.js
           sed -i "s|window.__env.ADMIN_PATH = .*|window.__env.ADMIN_PATH = 'https://eagle-test.apps.silver.devops.gov.bc.ca/admin/';|" src/env.js
-          sed -i "s|window.__env.PREVIEW_GATE = .*|window.__env.PREVIEW_GATE = true;|" src/env.js
-          sed -i "s|window.__env.PREVIEW_GATE_PASSPHRASE = .*|window.__env.PREVIEW_GATE_PASSPHRASE = '$PREVIEW_GATE_PASSPHRASE';|" src/env.js
           for expected in \
             "API_PATH = 'https://eagle-test.apps.silver.devops.gov.bc.ca/api'" \
             "SEARCH_API_PATH = 'https://eagle-search-api-test.azurewebsites.net/api'" \
             "ANALYTICS_API_URL = 'https://eagle-test.apps.silver.devops.gov.bc.ca/analytics'" \
             "ENVIRONMENT = 'test'" \
             "API_LOCATION = 'https://eagle-test.apps.silver.devops.gov.bc.ca'" \
-            "ADMIN_PATH = 'https://eagle-test.apps.silver.devops.gov.bc.ca/admin/'" \
-            "PREVIEW_GATE = true"; do
+            "ADMIN_PATH = 'https://eagle-test.apps.silver.devops.gov.bc.ca/admin/'"; do
             grep -qF "$expected" src/env.js \
               || { echo "::error::env.js rewrite did not take: $expected"; exit 1; }
           done
-          # Verified separately, and never echoed: this one is the secret.
-          grep -qF "PREVIEW_GATE_PASSPHRASE = '$PREVIEW_GATE_PASSPHRASE'" src/env.js \
-            || { echo "::error::env.js rewrite did not take: PREVIEW_GATE_PASSPHRASE"; exit 1; }
           grep -n 'window.__env' src/env.js | grep -v PASSPHRASE
 
       - name: Build
@@ -379,7 +367,7 @@ jobs:
             echo "attempt $i: the search API has not allowed $host yet"; sleep 15
           done
 
-          echo "deployed, gated and correctly cached"
+          echo "deployed and correctly cached (UNGATED — the hostname is unadvertised, nothing authenticates)"
 
       - name: Report failure to job summary
         if: failure()
