@@ -17,9 +17,10 @@ export interface EnvConfig {
    * which keeps the call same-origin and needs no CORS. Absolute (`https://…/api`) only where there
    * is no rproxy in front, which today means the static Azure Front Door build for test.
    *
-   * EMPTY OR UNSET FALLS BACK TO eagle-api, and that is also the kill switch. In dev and test the
-   * switch is eagle-api's Mongo `Config` document; prod still reads it from the rproxy ConfigMap
-   * until prod moves to rproxy v2.7.11. Either way it reverts with no redeploy.
+   * EMPTY OR UNSET FALLS BACK TO eagle-api, and that is also the kill switch. In every deployed
+   * environment, prod included, the switch is eagle-api's Mongo `Config` document — prod moved off
+   * the rproxy ConfigMap with rproxy v2.7.11 and now runs v2.7.12. Test and prod are both set to
+   * `/eagle-search`; dev is still empty. Either way it reverts with no redeploy.
    */
   SEARCH_API_PATH?: string;
   ADMIN_PATH?: string;
@@ -47,10 +48,10 @@ declare global {
  *
  * DEPLOYED (configEndpoint = true):
  *   - Dockerfile sed sets configEndpoint to true
- *   - App fetches /api/config on startup. In dev and test rproxy proxies that to eagle-api, which
- *     serves it from its Mongo `Config` document; prod still answers it from the rproxy ConfigMap
- *     until prod moves to rproxy v2.7.11, the image that relocates the source.
- *   - Whichever side serves it, those values override env.js
+ *   - App fetches /api/config on startup. In every environment, prod included, rproxy proxies that
+ *     to eagle-api, which serves it from its Mongo `Config` document. Prod relocated to that source
+ *     with rproxy v2.7.11 and now runs v2.7.12; the rproxy ConfigMap copy is still rendered but inert.
+ *   - Those values override env.js
  *
  * Lists (filter dropdowns) are lazy-loaded on first subscription, not during init.
  */
@@ -126,8 +127,9 @@ export class ConfigService {
 
   /**
    * Fetch remote config from /api/config (deployed only, non-blocking).
-   * Served by eagle-api from Mongo in dev and test, by the rproxy ConfigMap in prod until it moves
-   * to rproxy v2.7.11 — same URL either way, which is why this method does not care which.
+   * Served by eagle-api from its Mongo `Config` document in every environment, prod included, since
+   * prod moved there with rproxy v2.7.11 — same URL regardless, which is why this method does not
+   * care who answers.
    * On success, merges over env.js values. On failure, env.js defaults stand.
    */
   private async fetchRemoteConfig(): Promise<void> {

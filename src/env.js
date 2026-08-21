@@ -12,9 +12,9 @@
   //   The Dockerfile flips configEndpoint below with sed, then greps the BUILT copy to prove the
   //   rewrite took — sed exits 0 when it matches nothing. The sed is anchored on the full
   //   `window.__env.` assignment so it rewrites only that line, never these comments.
-  //   App then fetches runtime config from /api/config — in dev and test that is already eagle-api
-  //   reading its Mongo `Config` document; prod still gets it from the rproxy ConfigMap until prod
-  //   moves to rproxy v2.7.11, which is the image that swaps the source.
+  //   App then fetches runtime config from /api/config — in every environment, prod included, that
+  //   is eagle-api reading its Mongo `Config` document. Prod moved off the rproxy ConfigMap with
+  //   rproxy v2.7.11 and now runs v2.7.12; the ConfigMap copy is still rendered but is inert.
   //   Those values override everything below.
   //
   // ==========================================================================
@@ -52,9 +52,9 @@
   // EMPTY MEANS eagle-api, and that is the kill switch: `getSearchApiPath()` falls back to
   // `getApiPath()`, so clearing it reverts search with no redeploy. Deployed environments get their
   // value from /api/config, which is why it must stay empty HERE — a value baked in at build time
-  // would follow the image into every environment. Test serves `/eagle-search` from eagle-api's
-  // Mongo `Config` document; prod's is still empty, which is why prod search still comes from
-  // eagle-api even though the prod search estate exists and is indexed.
+  // would follow the image into every environment. Test and prod both serve `/eagle-search` from
+  // eagle-api's Mongo `Config` document, so prod search comes from the prod eagle-search estate.
+  // Dev is still empty and still falls back to eagle-api.
   //
   // WHATEVER IT IS SET TO MUST RESOLVE TO SOMETHING ENDING IN `/api`. It is a base path, not a host:
   // `searchKeywords()` appends `search?...`, and the eagle-api fallback already ends in `/api`. On
