@@ -33,7 +33,8 @@
 # account: Storage Blob Data Contributor to write blobs, plus Storage Account Contributor
 # for the single data-plane call that turns `$web` on (see that step). The Bicep that
 # describes the account, the Front Door endpoint and its rule set lives in
-# `digitalspace/eagle-search`, not here.
+# `azure/main.publicprod.bicep` in THIS repository, deployed by `deploy-azure-infra-prod.yaml`.
+# (It lived in `digitalspace/eagle-search` until 50bede21; that repo is slated for archive.)
 # =============================================================================
 
 name: Deploy eagle-public to Azure production (dark)
@@ -271,7 +272,7 @@ jobs:
       #
       # WHY THIS IS IN CI AND NOT IN THE BICEP: `staticWebsite` is a DATA-PLANE property of
       # the blob service, not an ARM property, so no amount of redeploying
-      # `eagle-search/azure/modules/static-site.bicep` can set it and no ARM template can
+      # `azure/modules/static-site.bicep` can set it and no ARM template can
       # create `$web`. Until this command has run once the container does not exist, and the
       # failure is misleading: the upload below errors on a missing container, or Front Door
       # answers 404 for `/` and the smoke test points at the rule set — for a data-plane step
@@ -594,4 +595,4 @@ jobs:
           echo "### ❌ Dark Azure production deploy failed" >> $GITHUB_STEP_SUMMARY
           echo "No production traffic is affected — this endpoint is dark and OpenShift still serves the public site." >> $GITHUB_STEP_SUMMARY
           echo "If the security headers or the deep-link rewrite are missing, the Front Door rule set is not attached to this route." >> $GITHUB_STEP_SUMMARY
-          echo "Re-apply it from \`eagle-search/azure/modules/front-door.bicep\`; the storage account and its \`\$web\` container come from \`eagle-search/azure/modules/static-site.bicep\`." >> $GITHUB_STEP_SUMMARY
+          echo "Re-apply it with the \`Deploy Azure Infra to Prod\` workflow; the rules come from \`azure/modules/front-door.bicep\` and the storage account and its \`\$web\` container from \`azure/modules/static-site.bicep\`." >> $GITHUB_STEP_SUMMARY

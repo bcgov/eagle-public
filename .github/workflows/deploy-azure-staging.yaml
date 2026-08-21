@@ -31,7 +31,8 @@
 # to write blobs, plus Storage Account Contributor for the one data-plane call that turns
 # `$web` on (see the "Enable static website hosting" step — that write is not a blob write
 # and the data role does not cover it). The Bicep that describes the account, the Front
-# Door endpoint and its rule set lives in `digitalspace/eagle-search`, not here.
+# Door endpoint and its rule set lives in `digitalspace/eagle-search` — the TEST estate only.
+# The prod equivalent moved into this repo at 50bede21 (`azure/main.publicprod.bicep`).
 # =============================================================================
 
 name: Deploy eagle-public to Azure staging
@@ -173,7 +174,7 @@ jobs:
       #
       # WHY THIS IS IN CI AND NOT IN THE BICEP: `staticWebsite` is a DATA-PLANE property of
       # the blob service, not an ARM property, so no amount of redeploying
-      # `eagle-search/azure/modules/static-site.bicep` can set it and no ARM template can
+      # eagle-search's `azure/modules/static-site.bicep` can set it and no ARM template can
       # create `$web`. Until this command has run once the container does not exist, and the
       # failure is misleading: the upload below errors on a missing container, or Front Door
       # answers 404 for `/` and the smoke test points at the rule set — for a data-plane step
@@ -374,4 +375,4 @@ jobs:
         run: |
           echo "### ❌ Azure preview deploy failed" >> $GITHUB_STEP_SUMMARY
           echo "If the security headers or the deep-link rewrite are missing, the Front Door rule set is not attached to this route." >> $GITHUB_STEP_SUMMARY
-          echo "Re-apply it from \`eagle-search/azure/modules/front-door.bicep\`; the storage account and its \`\$web\` container come from \`eagle-search/azure/modules/static-site.bicep\`." >> $GITHUB_STEP_SUMMARY
+          echo "This is the TEST estate: re-apply it from eagle-search's \`azure/modules/front-door.bicep\`; the storage account and its \`\$web\` container come from its \`azure/modules/static-site.bicep\`." >> $GITHUB_STEP_SUMMARY

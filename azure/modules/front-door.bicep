@@ -35,8 +35,29 @@ param tags object
 //                   shipped a CSP and would otherwise break on its first deploy.
 //   frameOptions    optional X-Frame-Options value, default 'DENY'. Per site rather than shared
 //                   because DEMI needs 'SAMEORIGIN' — see below.
-@description('Sites to publish. See the comment above for the object shape.')
-param sites array
+// TYPED, not `array`. Untyped, the contract above was enforced nowhere: renaming `originHostName`
+// to `originHostNameTypo` in the consumer compiled clean and `az bicep lint` stayed silent, so the
+// PR compile gate could not catch the one mistake this shape invites. A typo would have surfaced as
+// a Front Door origin pointed at nothing, after a deployment.
+type siteConfig = {
+  @description('Names the endpoint, origin group and rule set. Lowercase, hyphens allowed — they are stripped for the rule set, which must be alphanumeric.')
+  name: string
+
+  @description('Bare host of the storage static website endpoint, e.g. xxx.z13.web.core.windows.net')
+  originHostName: string
+
+  @description('The site\'s Content-Security-Policy. NOT shared: two apps talk to different APIs, and one policy wide enough for both is wide enough for neither.')
+  csp: string
+
+  @description('True emits Content-Security-Policy-Report-Only instead, for a site that has never shipped a CSP and would otherwise break on its first deploy.')
+  cspReportOnly: bool
+
+  @description('X-Frame-Options value, default DENY. Per site because DEMI needs SAMEORIGIN — see below.')
+  frameOptions: string?
+}
+
+@description('Sites to publish.')
+param sites siteConfig[]
 
 @description('CI principal that purges the edge after a publish. Empty skips the grant.')
 param purgePrincipalId string = ''
