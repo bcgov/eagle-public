@@ -1,0 +1,136 @@
+# =============================================================================
+# Deploy the eagle-public PRODUCTION Azure infrastructure — DARK
+# =============================================================================
+# Applies `azure/main.publicprod.bicep` to `rg-eagle-public-prod`. This is the estate itself — the
+# storage account, the Front Door profile, its rules and the availability test — NOT the site
+# content. `deploy-azure-prod.yaml` publishes the bundle into the estate this creates; the two are
+# separate because content ships many times a day and infrastructure changes a few times a year.
+#
+# WHY THIS WORKFLOW EXISTS. Until it did, nothing deployed this template. It was only *compiled* in
+# CI, so the estate was stood up by hand and every hand edit silently diverged from the file that
+# claimed to describe it. That is not hypothetical: reconciling the two on 2026-08-21 found three
+# live drifts, and one of them would have LOOSENED the production CSP.
+#
+#   - `X-XSS-Protection` was on the live rule and absent from the template.
+#   - `Permissions-Policy` carried seven directives live and three in the template.
+#   - `connect-src` allowed `https://unpkg.com` in the template and not live.
+#
+# A template nobody deploys is a comment, and comments drift. Running this — even as a no-op — is
+# what keeps the file honest.
+#
+# THIS DOES NOT MOVE TRAFFIC. Production still flows to OpenShift: `eao-nginx`'s `location /`
+# proxies to the eagle-public pod, and nothing here touches that. The cutover is one upstream value
+# in one ConfigMap, and it is not this workflow.
+#
+# RUN WHAT-IF FIRST, EVERY TIME. The `mode` input defaults to `what-if` deliberately. Deploying an
+# ARM template is not additive — an undeclared property is a DELETED property, which is exactly how
+# the drifts above would have been applied rather than caught.
+
+name: Deploy Azure Infra to Prod
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "what-if previews changes and applies nothing. deploy applies them."
+        required: true
+        default: what-if
+        type: choice
+        options: [what-if, deploy]
+      alertEmail:
+        description: "Availability alert address. Empty deploys the test with no alerting."
+        required: false
+        default: ""
+        type: string
+
+concurrency:
+  group: deploy-azure-infra-prod
+  cancel-in-progress: false
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  infra:
+    name: ${{ inputs.mode }} — eagle-public prod estate
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Declaring an environment CHANGES THE OIDC SUBJECT CLAIM to
+    # `repo:bcgov/eagle-public:environment:azure-prod`, which must match the federated credential on
+    # the production CI app registration. Same value as deploy-azure-prod.yaml, for the same reason:
+    # change it and Azure Login fails with AADSTS700213, a message that names no environment.
+    environment: azure-prod
+    env:
+      RESOURCE_GROUP: rg-eagle-public-prod
+      TEMPLATE: ./azure/main.publicprod.bicep
+      PARAMS: ./azure/main.publicprod.bicepparam
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Azure Login
+        uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      # Always, including on a deploy run: the log of what was about to change is the only record of
+      # why a deployment did what it did, and it costs about twenty seconds.
+      - name: Preview changes
+        run: |
+          set -euo pipefail
+          az deployment group what-if \
+            --resource-group "$RESOURCE_GROUP" \
+            --template-file "$TEMPLATE" \
+            --parameters "$PARAMS" \
+            --parameters availabilityAlertEmail='${{ inputs.alertEmail }}'
+
+      # ---------------------------------------------------------------------------
+      # ONE-TIME RECONCILIATION, BEFORE THE FIRST `deploy` RUN.
+      #
+      # The CDN Profile Contributor grant that lets CI purge the edge was created by hand on
+      # 2026-08-21 with a CLI-generated name (`6f95d867-6959-4205-87fd-c05de9f2ddea`). Bicep names
+      # role assignments deterministically — `guid(profile.id, principalId, roleDefinitionId)` —
+      # so it wants to create the SAME grant under a different name
+      # (`0fc768a9-8203-58da-81bb-73144bd34170`). Azure treats an identical
+      # (scope, principal, role) triple as already existing, so the first deploy is expected to fail
+      # on it.
+      #
+      # Delete the hand-made one immediately before the first deploy, not earlier: between the
+      # delete and a successful apply, CI cannot purge the edge, so a content deploy in that window
+      # publishes the bundle and leaves the old `index.html` cached.
+      #
+      #   az role assignment delete --ids \
+      #     "/subscriptions/be5924ac-1083-4a1b-be92-7b444882cfd9/resourceGroups/rg-eagle-public-prod\
+      # /providers/Microsoft.Cdn/profiles/eagle-edge-prod/providers/Microsoft.Authorization\
+      # /RoleAssignments/6f95d867-6959-4205-87fd-c05de9f2ddea"
+      #
+      # After that, this template owns the grant and the step is never needed again. Requires User
+      # Access Administrator, which the CI identity deliberately does not have — a pipeline that can
+      # rewrite its own permissions is not a pipeline anyone can reason about.
+      # ---------------------------------------------------------------------------
+      - name: Apply
+        if: inputs.mode == 'deploy'
+        run: |
+          set -euo pipefail
+          az deployment group create \
+            --resource-group "$RESOURCE_GROUP" \
+            --template-file "$TEMPLATE" \
+            --parameters "$PARAMS" \
+            --parameters availabilityAlertEmail='${{ inputs.alertEmail }}' \
+            --query "properties.provisioningState" -o tsv
+
+      # The two values nothing may compose by hand. The storage account name embeds a uniqueString()
+      # and the endpoint host embeds an Azure-assigned zone code — the test profile came back `a02`,
+      # not the `z01` the docs imply. Printing them here means the cutover reads them from a run log
+      # rather than guessing.
+      - name: Report outputs
+        if: inputs.mode == 'deploy'
+        run: |
+          set -euo pipefail
+          az deployment group show \
+            --resource-group "$RESOURCE_GROUP" --name main.publicprod \
+            --query "properties.outputs" -o json 2>/dev/null || \
+            echo "outputs unavailable — deployment name differs; see the Apply step log"
