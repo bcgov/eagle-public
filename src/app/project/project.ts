@@ -201,7 +201,7 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
           // so the guard - not the handler - is what fixes it. Reuse the shared extractor,
           // which returns null for a null, empty, or envelope-less response.
           const searchResults = this.utils.extractFromSearchResults(res);
-          if (searchResults === null) {
+          if (!searchResults) {
             // The one path this guard exists for is also the one the `error` callback cannot
             // see: an HTTP failure is already `null` by the time it arrives, so without this
             // line a 502 leaves no trace anywhere - the tab just stays hidden. Silent

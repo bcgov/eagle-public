@@ -39,7 +39,11 @@ export class Utils {
     // Optional-chaining here fixes it once for every caller instead of at each call site.
     const data = results[0]?.data;
     if (!data) { return null; }
-    return data.searchResults as T[];
+    // `?? null` because the declared `T[] | null` was a lie without it: a data-bearing envelope
+    // carrying no `searchResults` returned `undefined`, and the `as T[]` cast hid that from every
+    // caller's type. One call site discriminated on `=== null` and silently skipped its diagnostic
+    // for that shape while its sibling used `!results` and did not.
+    return (data.searchResults ?? null) as T[] | null;
   }
    // Mapping the build database field to the human readable nature field
    public natureBuildMapper(key: string): string {

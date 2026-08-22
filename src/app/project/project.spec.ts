@@ -115,6 +115,19 @@ describe('ProjectComponent', () => {
       expect(component.tabLinks().find(tab => tab.key === key)?.display).toBe(false);
     });
 
+    it('logs an envelope that carries data but no searchResults', async () => {
+      // Not the same shape as `null`. extractFromSearchResults used to return `undefined` here —
+      // the `as T[]` cast hid it from the declared `T[] | null` — so a `=== null` guard skipped
+      // the diagnostic for exactly this case while the sibling call site logged it.
+      mockSearchService.getSearchResults.mockReturnValue(of([{ data: { meta: [] } }]));
+
+      (component as any).tabLinkIfNotEmpty(key, modifier);
+
+      await flushUnhandled();
+      expect(mockLogger.error).toHaveBeenCalled();
+      expect(component.tabLinks().find(tab => tab.key === key)?.display).toBe(false);
+    });
+
     it('does not log when the search legitimately finds nothing', async () => {
       // The control for the test above: a well-formed empty result must stay quiet, or the log
       // above is satisfied by logging on every no-hit search and says nothing.
