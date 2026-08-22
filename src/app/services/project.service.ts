@@ -11,6 +11,7 @@ import { SearchService } from './search.service';
 import { Utils } from 'app/shared/utils/utils';
 import { DataQueryResponse } from 'app/models/api-response';
 import { LoadingStateService } from './loading-state.service';
+import { LoggingService } from './logging.service';
 
 interface GetParameters {
   getresponsibleEPD?: boolean;
@@ -23,6 +24,7 @@ export class ProjectService {
   private searchService = inject(SearchService);
   private utils = inject(Utils);
   private loadingState = inject(LoadingStateService);
+  private logger = inject(LoggingService);
 
   private project: Project | null = null; // for caching
   private projectList: Project[] = [];
@@ -36,20 +38,29 @@ export class ProjectService {
     return this.searchService.getSearchResults('', 'Project', [], pageNum, pageSize, '', {}, true, '', {}, '')
       .pipe(
         map((res: ISearchResults<Project>[]) => {
-          if (res) {
-            const results = this.utils.extractFromSearchResults(res);
-            // let projects: Array<Project> = [];
-            this.projectList = [];
-            if (results) {
-              results.forEach(project => {
-                this.projectList.push(new Project(project));
-              });
-            }
-            this.loadingState.stopLoading(loadingId);
-            return { totalCount: res[0].data.meta[0].searchResultsTotal, data: this.projectList };
+          // WHY: search.service.getSearchResults collapses ANY non-2xx into a single `null`,
+          // not an array (search.service.ts:65-69), and demi-api - the incoming search backend -
+          // answers non-2xx when a search fails rather than 200-with-an-empty-result-set. So on
+          // a failed search `res` is null here, and on a malformed one it can be `[]` or a body
+          // carrying no `data.meta`. The old `res[0].data.meta[0].searchResultsTotal` threw a
+          // TypeError on all three. That TypeError did not stay local: api.handleError re-throws
+          // (api.ts:74-78), so it escaped this catchError and getAllFull's, landing in the error
+          // handler at projects.component.ts:130-135, which calls router.navigate(['/']) - a
+          // failed search bounced the visitor off /projects onto the home page.
+          // Degrade to an empty result set instead; the list then renders "No projects found".
+          const results = this.utils.extractFromSearchResults(res);
+          if (!results) {
+            // Logged only, deliberately no toast: EventService.setError feeds errorEvent, but
+            // getError() (event.service.ts:57) has zero subscribers in this repo, so raising an
+            // event here would notify nobody. Surfacing it in the UI is a separate change.
+            this.logger.error('Project search returned no usable results, showing an empty list', 'ProjectService', { res });
           }
+          this.projectList = [];
+          (results ?? []).forEach(project => {
+            this.projectList.push(new Project(project));
+          });
           this.loadingState.stopLoading(loadingId);
-          return {};
+          return { totalCount: res?.[0]?.data?.meta?.[0]?.searchResultsTotal ?? 0, data: this.projectList };
         }),
         catchError(error => {
           this.loadingState.stopLoading(loadingId);

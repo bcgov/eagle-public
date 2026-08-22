@@ -188,15 +188,44 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
         ''
       )
       .pipe(take(1))
-      .subscribe((res: any) => {
-        if (res[0].data.searchResults.length) {
-          const currentTabs = this.tabLinks();
-          const tab = currentTabs.find(docTab => docTab.key === key);
-          if (tab) {
-            tab.display = true;
-            this.tabLinks.set([...currentTabs]);
+      .subscribe({
+        next: (res: any) => {
+          // WHY: this used to dereference `res[0].data.searchResults` directly.
+          // search.service.getSearchResults turns ANY non-2xx into a single `null`, not an
+          // array (search.service.ts:65-69), and demi-api - the incoming search backend -
+          // answers non-2xx when a search fails instead of 200-with-an-empty-result-set.
+          // This dataset COULD already answer non-2xx - eagle-search's own /api/search has a
+          // catch that 500s - so the deref was reachable before demi-api too; the incoming
+          // backend widens how often it happens, it does not create the case.
+          // A TypeError thrown inside a next handler is NOT caught by the error handler below,
+          // so the guard - not the handler - is what fixes it. Reuse the shared extractor,
+          // which returns null for a null, empty, or envelope-less response.
+          const searchResults = this.utils.extractFromSearchResults(res);
+          if (!searchResults) {
+            // The one path this guard exists for is also the one the `error` callback cannot
+            // see: an HTTP failure is already `null` by the time it arrives, so without this
+            // line a 502 leaves no trace anywhere - the tab just stays hidden. Silent
+            // degradation is the right BEHAVIOUR and the wrong amount of evidence.
+            this.logger.error(
+              `Could not determine whether the ${key} tab has documents; leaving it hidden`,
+              'ProjectComponent'
+            );
+            return;
           }
-        }
+          if (searchResults?.length) {
+            const currentTabs = this.tabLinks();
+            const tab = currentTabs.find(docTab => docTab.key === key);
+            if (tab) {
+              tab.display = true;
+              this.tabLinks.set([...currentTabs]);
+            }
+          }
+        },
+        // getSearchResults' catchError already swallows HTTP failures into `null`, so this
+        // fires only if the stream errors for some other reason. Log it rather than leaving
+        // the subscribe argument-less: an optional tab silently staying hidden is the correct
+        // degradation, but it should not be invisible in the console.
+        error: (error: any) => this.logger.error(`Failed checking documents for the ${key} tab`, 'ProjectComponent', error)
       });
     }
   }
