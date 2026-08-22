@@ -32,7 +32,12 @@ export class Utils {
     if (!results || !Array.isArray(results)) {
       return null;
     }
-    const data = results[0].data;
+    // WHY: the Array.isArray guard above does not cover an EMPTY array - `results[0].data`
+    // on `[]` threw a TypeError before anything downstream could handle it. Both callers
+    // (project.service.ts:51 and :249) hand us whatever search.service.getSearchResults
+    // produced, and that is `[]` whenever the backend answers 2xx with no result envelope.
+    // Optional-chaining here fixes it once for every caller instead of at each call site.
+    const data = results[0]?.data;
     if (!data) { return null; }
     return data.searchResults as T[];
   }
