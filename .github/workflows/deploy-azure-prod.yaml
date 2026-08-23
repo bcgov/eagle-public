@@ -107,9 +107,9 @@ jobs:
       STORAGE_ACCOUNT: ${{ vars.AZURE_STORAGE_ACCOUNT }}
     steps:
       - name: Checkout repository
-        # Full history: the ancestry guard below runs `git merge-base` against
-        # `origin/develop`, and the default shallow single-ref checkout has neither the
-        # commits nor the remote-tracking ref to answer it.
+        # Full history, kept after the ancestry guard was removed: the tag guard below resolves
+        # `refs/tags/<version>^{commit}`, and a shallow single-ref checkout does not carry the tag
+        # objects to answer it.
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
@@ -155,18 +155,19 @@ jobs:
             *) echo "::error::AZURE_STORAGE_ACCOUNT is '$STORAGE_ACCOUNT', which does not start with 'eaglepubprod' — this run is pointed at a non-production account; fix the variable on the azure-prod environment"; exit 1;;
           esac
 
-          # ANCESTRY, INVERTED WHEN THIS WENT MAINLINE. It used to require that `origin/develop`
-          # was an ancestor of HEAD, because the workflow lived on a long-lived preview branch
-          # that was never merged back, and the risk was a stale fork deploying six-month-old
-          # code under a production name.
+          # ~~ANCESTRY CHECK~~ REMOVED, and the measurement is why. It began as "origin/develop must
+          # be an ancestor of HEAD", which suited a preview branch that was never merged back. When
+          # this went mainline I inverted it to "the tag must be an ancestor of develop" — and that
+          # REJECTS v2.7.28, the tag currently live in production, along with v2.7.27. Both are on
+          # `origin/release/prod-search-no-public124`: this repository cuts release tags from
+          # release branches, not from `develop`, so an ancestry assertion in either direction is
+          # wrong here. It would have made this workflow unable to publish or roll back the live
+          # bundle, which is the opposite of the point.
           #
-          # Now the deploy source is a TAG and the file is on `develop`, so that assertion is not
-          # merely unnecessary — it is FALSE BY CONSTRUCTION and would fail every run: a release
-          # tag is an ancestor of `develop`, never the reverse. The real risk this replaces it
-          # with is deploying a tag that was never on the mainline at all.
-          git fetch --no-tags origin +refs/heads/develop:refs/remotes/origin/develop
-          git merge-base --is-ancestor HEAD origin/develop \
-            || { echo "::error::this tag is not an ancestor of origin/develop — it was cut from a branch that never merged, so the code it carries was never released. Merge it to develop and cut a new tag"; exit 1; }
+          # What guards the real risk instead is above: the version must match a release-tag format
+          # AND resolve under `refs/tags/`, so a branch tip cannot be published whatever it is
+          # named. That is the same pair the sibling `deploy-to-prod.yaml` runs, and it has never
+          # had an ancestry check.
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -382,7 +383,13 @@ jobs:
           # whose UrlFileExtension is <= 0 to /index.html, so an EXTENSIONLESS probe file would come
           # back as the SPA shell with 200 and `no-store` — and both assertions below would then
           # pass without ever testing an asset. The probe must have an extension to reach the blob.
-          probe=$(cd "$src" && find assets -type f -name '*.*' -print -quit)
+          # DETERMINISTIC, and biased to the case that actually breaks. `find -print -quit` returned
+          # whichever file the filesystem yielded first — 7 different ones across 12 identical runs
+          # — so deleting the `rm -rf "$src/assets"` ordering below could give `immutable` to 15
+          # unhashed CSS files and this probe would still pass 11 times out of 12. Prefer a .css,
+          # fall back to any extensioned file, and sort so the choice is stable.
+          probe=$(cd "$src" && { find assets -type f -name '*.css' | sort | head -1; } )
+          [ -n "$probe" ] || probe=$(cd "$src" && find assets -type f -name '*.*' | sort | head -1)
           echo "ASSET_PROBE=$probe" >> "$GITHUB_ENV"
 
           # `assets/**` is the same problem and the bigger half of it: 3.2MB of files that

@@ -387,6 +387,18 @@ jobs:
           # hashed bundle that this page actually asks for is the one that got uploaded.
           asset=$(curl -s --max-time 15 "$host/" | grep -o 'main-[A-Za-z0-9]*\.js' | head -1)
           [ -n "$asset" ] || { echo "::error::no hashed main bundle referenced by the deployed index.html"; exit 1; }
+
+          # AND THAT IT IS THIS BUILD'S BUNDLE. Without this the smoke test passes on whatever was
+          # already there: every assertion above is satisfied by the PREVIOUS deploy, and there is
+          # no Front Door purge step to rule that out. The bundle name is content-hashed, so
+          # comparing it against dist/ is the whole check.
+          # The path is spelled out, NOT inherited: each `run:` is its own shell, so the `src=`
+          # set in the publish step is empty here. An unset path would make `ls` match nothing and
+          # this check fail open on the very thing it exists to catch.
+          built=$(ls dist/eagle-public/browser/main-*.js 2>/dev/null | head -1); built=${built##*/}
+          [ -n "$built" ] || { echo "::error::no hashed main bundle in the build output — cannot prove the deploy is this build"; exit 1; }
+          [ "$asset" = "$built" ] \
+            || { echo "::error::the site serves $asset but this build produced $built — the upload did not take, or Front Door is serving a cached page from the previous deploy"; exit 1; }
           curl -s -I --max-time 15 "$host/$asset" | grep -qi '^cache-control:.*immutable' \
             || { echo "::error::$asset is not cached immutable"; exit 1; }
 
