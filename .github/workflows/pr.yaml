@@ -92,3 +92,30 @@ jobs:
           cache: "yarn"
       - run: yarn install --immutable
       - run: yarn build
+
+  bicep:
+    name: Compile Bicep
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      # Compiles only — nothing here logs in to Azure and nothing deploys. This is what stops a
+      # module edit reaching the prod estate template broken, which used to be caught only when
+      # somebody hand-ran a deployment.
+      #
+      # The .bicepparam is compiled too. It carries no secrets, and its one readEnvironmentVariable
+      # (AVAILABILITY_ALERT_EMAIL) has a '' default precisely so this job needs no credentials, no
+      # environment and no dummy values. Do not make that parameter required-with-no-default: it
+      # fails BCP258 here on every pull request, and az cannot rescue it with `-p` because the first
+      # of its two .bicepparam compiles carries no overrides.
+      - name: Compile templates
+        run: |
+          az bicep build --file ./azure/main.publicprod.bicep
+          az bicep build-params --file ./azure/main.publicprod.bicepparam --outfile /dev/null
+
+      - name: Report failure to job summary
+        if: failure()
+        run: |
+          echo "### Bicep failed to compile" >> $GITHUB_STEP_SUMMARY
+          echo "Fix \`azure/main.publicprod.bicep\` or \`azure/main.publicprod.bicepparam\`." >> $GITHUB_STEP_SUMMARY

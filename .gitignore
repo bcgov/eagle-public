@@ -48,3 +48,9 @@ Thumbs.db
 CLAUDE.md
 GEMINI.md
 .yarn/install-state.gz
+
+# Compiled ARM output. `az bicep build` without --stdout writes <name>.json beside the
+# source, so a local run of the CI compile step drops one of these in the tree. It is a build
+# artifact of the .bicep next to it and committing it creates a second, silently stale copy of
+# the estate — one that kept declaring an availability test after the .bicep had dropped it.
+azure/**/*.json
