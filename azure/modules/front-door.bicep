@@ -16,8 +16,9 @@
 // `server.js`. No RULE SET rule can challenge a request — the actions are rewrite and set-header,
 // and that is the whole list. A WAF policy on this SKU can Block (custom rules are Standard;
 // only the MANAGED rule sets are Premium), but Block is not a credential prompt. Anything that
-// actually asks for one is an Entra app registration in front. What ships instead is the in-bundle
-// passphrase dialog described in the README — obfuscation, not access control.
+// actually asks for one is an Entra app registration in front. ~~What ships instead is the
+// in-bundle passphrase dialog~~ — that component was deleted and nothing replaced it; the origin
+// hostname is simply unadvertised, and on prod it is rproxy in front that does the gating.
 
 @description('Environment name (e.g. dev, test, prod)')
 param environmentName string

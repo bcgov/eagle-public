@@ -89,6 +89,17 @@ jobs:
       - name: Verify the deployment targets are configured
         run: |
           set -euo pipefail
+          # THE VERSION MUST BE A TAG, and this is what enforces it. `ref: ${{ inputs.version }}` on
+          # the checkout accepts any ref — including a branch name — so without this
+          # `version=develop` publishes a moving branch tip to test. The ancestry check
+          # below cannot catch it either: a commit is its own ancestor, so `develop` passes.
+          # Same pair of checks the sibling `deploy-to-test.yaml` runs, for the same reason.
+          [[ "${{ inputs.version }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] \
+            || { echo "::error::version '${{ inputs.version }}' is not a release tag of the form v1.2.3 — the deploy source is a TAG, never a branch"; exit 1; }
+          git fetch --tags --quiet origin
+          git rev-parse -q --verify "refs/tags/${{ inputs.version }}^{commit}" >/dev/null \
+            || { echo "::error::tag ${{ inputs.version }} does not exist in this repository — deploy to test first to create it"; exit 1; }
+
           [ -n "$STORAGE_ACCOUNT" ] \
             || { echo "::error::repository variable AZURE_STORAGE_ACCOUNT is empty"; exit 1; }
           [ -n "$AFD_ENDPOINT" ] \
@@ -357,11 +368,17 @@ jobs:
             echo "$csp" | grep -qF "$origin" \
               || { echo "::error::the CSP does not name $origin, which index.html loads — the page will white-screen"; exit 1; }
           done
-          echo "$csp" | grep -qF 'https://eagle-search-api-test.azurewebsites.net' \
-            || { echo "::error::the CSP does not name the search host — every search request will be blocked"; exit 1; }
-          # A wildcard here would let ANY tenant's *.azurewebsites.net site be a connect-src target.
+          # ~~the CSP must name eagle-search-api-test.azurewebsites.net~~ — REMOVED with the
+          # same-origin change. That assertion belonged to the standalone preview, where the browser
+          # called the search API cross-origin. rproxy serves this bundle now and `/eagle-search/`
+          # and `/demi-search/search` are its own locations, so search is same-origin and covered by
+          # `connect-src 'self'`. Keeping it would have deadlocked against tightening the test CSP
+          # to match prod's — the check would fail the day the App Service host was removed from it.
+          #
+          # The wildcard guard stays: it is about what the policy must NOT permit, which is true
+          # under either topology.
           echo "$csp" | grep -qF '*.azurewebsites.net' \
-            && { echo "::error::the CSP wildcards *.azurewebsites.net — name the search host exactly"; exit 1; }
+            && { echo "::error::the CSP wildcards *.azurewebsites.net — name a host exactly or, better, do not name one at all now that search is same-origin"; exit 1; }
 
           deep=$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 "$host/projects/deadbeef")
           [ "$deep" = "200" ] || { echo "::error::/projects/deadbeef returned $deep, expected 200 — the SPA rewrite rule is not working, every deep link is broken"; exit 1; }

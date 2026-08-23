@@ -65,16 +65,15 @@ name: Deploy Azure Infra to Prod
 # DEFAULT branch. So dispatch was unaddressable and a push to that branch was the only way to run
 # it. On `develop` both work.
 #
-# The push trigger is kept, retargeted and still path-scoped: the estate should be re-planned
-# exactly when its description changes. A push always runs what-if and never applies — see MODE
-# below. Applying stays a deliberate dispatch, because it needs the one-time role reconciliation
-# CI cannot grant itself.
+# DISPATCH ONLY. The push trigger came along with mainlining and was withdrawn before it ever
+# fired: this job declares `environment: azure-prod` and, per the header above, fails
+# `AuthorizationFailed` on EVERY run until the group-scope what-if role exists — which an ABAC
+# condition on the c4b0a8 management group currently forbids granting. On `develop` that would
+# mean every `azure/**` push produced a red run and a pending production approval, which is how a
+# team learns to ignore both.
+#
+# Re-add it the day the role lands and a run can actually go green.
 on:
-  push:
-    branches: [develop]
-    paths:
-      - "azure/**"
-      - ".github/workflows/deploy-azure-infra-prod.yaml"
   workflow_dispatch:
     inputs:
       mode:

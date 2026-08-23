@@ -55,25 +55,17 @@ on:
         description: 'Version tag verified on test (e.g., v2.7.28)'
         required: true
         type: string
-    # PATHS THAT CANNOT CHANGE THE BUNDLE, AND THEREFORE MUST NOT QUEUE A PUBLISH. Before this
-    # existed, any push to this branch queued a production frontend release awaiting approval —
-    # including a push that only edited a Bicep comment. A release request sitting in the approval
-    # queue for a docs commit is one somebody eventually rubber-stamps, and the whole reason this
-    # workflow is environment-gated is that approving it is meant to be a decision.
-    #
-    # DENY-LIST, NOT AN ALLOW-LIST, deliberately. The default has to stay "this push publishes":
-    # an allow-list that forgets a path silently skips a real release, which fails in the direction
-    # nobody checks. These two paths are the infrastructure estate and its own deploy workflow;
-    # neither is read by `yarn build`.
-    paths-ignore:
-      - "azure/**"
-      - ".github/workflows/deploy-azure-infra-prod.yaml"
-  # NO `workflow_dispatch`, and it would not work if it were here. GitHub only offers the
-  # "Run workflow" button, and only accepts `gh workflow run`, for a workflow file that exists on
-  # the repository's DEFAULT branch, and it reads the definition from there. While this file lived
-  # only on `azure-prod-preview` it was invisible in the UI and unaddressable — `gh workflow run`
-  # answered "Workflow does not have 'workflow_dispatch' trigger" whatever `--ref` was passed — so
-  # a push to that branch was the only way to run it.
+  # ~~paths-ignore~~ DELETED WITH THE PUSH TRIGGER, and it had to be: `workflow_dispatch` accepts
+  # only `inputs`, so a `paths-ignore` nested under it makes the whole file schema-invalid and the
+  # workflow UNDISPATCHABLE — which would have defeated the point of mainlining it. It existed
+  # because any push to the preview branch queued a production release awaiting approval, even for
+  # a Bicep comment; a dispatch is already deliberate, so nothing replaces it.
+  #
+  # GitHub offers the "Run workflow" button, and accepts `gh workflow run`, only for a workflow
+  # file that exists on the repository's DEFAULT branch, and it reads the definition from there.
+  # While this file lived only on `azure-prod-preview` it was invisible in the UI and
+  # unaddressable — `gh workflow run` answered "Workflow does not have 'workflow_dispatch'
+  # trigger" whatever `--ref` was passed.
   #
   # It is on `develop` now, so dispatch is the way to run it:
   #   gh workflow run "Deploy eagle-public to Azure production (LIVE SITE)" -f version=v2.7.28
@@ -133,6 +125,17 @@ jobs:
       - name: Verify the deployment targets and the branch
         run: |
           set -euo pipefail
+          # THE VERSION MUST BE A TAG, and this is what enforces it. `ref: ${{ inputs.version }}` on
+          # the checkout accepts any ref — including a branch name — so without this
+          # `version=develop` publishes a moving branch tip to the LIVE PUBLIC SITE. The ancestry check
+          # below cannot catch it either: a commit is its own ancestor, so `develop` passes.
+          # Same pair of checks the sibling `deploy-to-prod.yaml` runs, for the same reason.
+          [[ "${{ inputs.version }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] \
+            || { echo "::error::version '${{ inputs.version }}' is not a release tag of the form v1.2.3 — the deploy source is a TAG, never a branch"; exit 1; }
+          git fetch --tags --quiet origin
+          git rev-parse -q --verify "refs/tags/${{ inputs.version }}^{commit}" >/dev/null \
+            || { echo "::error::tag ${{ inputs.version }} does not exist in this repository — deploy to test first to create it"; exit 1; }
+
           # Both are supplied from outside this repository, and both fail late and
           # confusingly if empty — an unset storage account uploads nothing anywhere, an
           # unset endpoint smoke-tests `https:///`. Fail here instead, before the build.
@@ -222,12 +225,11 @@ jobs:
       # so asserting them here would fail every run; the gate component itself was removed
       # (false, empty), so no gate is built.
       #
-      # BE ACCURATE ABOUT WHAT IS EXPOSED, because the obvious justification is wrong. It is NOT
-      # true that this endpoint serves the same thing as
-      # https://epic-6cdc9e-prod.apps.silver.devops.gov.bc.ca. While the estate is dark there is no
-      # /api route in front of it at all, so what it actually serves is the production bundle with
-      # NO data: the shell renders, every API call 404s, and the SPA rewrite turns those 404s into
-      # index.html. There is less to protect here than on the live site, not the same amount.
+      # BE ACCURATE ABOUT WHAT IS EXPOSED. ~~While the estate is dark~~ — it is not dark any more:
+      # rproxy fetches this bundle and serves it on projects.eao.gov.bc.ca, so what lands here IS
+      # what the public gets. The raw `*.azurefd.net` hostname still has no /api in front of it, so
+      # visiting THAT directly renders a shell whose API calls 404 — but that is a statement about
+      # the origin hostname, not about the blast radius of a publish.
       #
       # So the case for no gate rests on the second reason alone, which is the real one: a gated
       # bundle is not the bundle we intend to serve, so cutover would become rebuild-then-switch —
@@ -259,13 +261,14 @@ jobs:
           sed -i "s|window.__env.API_LOCATION = .*|window.__env.API_LOCATION = null;|" src/env.js
           sed -i "s|window.__env.logLevel = .*|window.__env.logLevel = 4;|" src/env.js
           sed -i "s|window.__env.ANALYTICS_DEBUG = .*|window.__env.ANALYTICS_DEBUG = false;|" src/env.js
-          # TWO MORE THAN THE DOCKERFILE DOES, and the reason is the dark window.
+          # TWO MORE THAN THE DOCKERFILE DOES, and the reason outlived the dark window.
           #
           # On OpenShift these two are left alone safely, because `configEndpoint = true` means the
-          # SPA immediately fetches /api/config and overwrites them from the rproxy ConfigMap. This
-          # estate has NO /api route while it is dark — rproxy is not in front of it yet — so that
-          # fetch cannot succeed, and whatever ships in the file is what the page actually uses.
-          # Unrewritten, src/env.js ships ENVIRONMENT = 'dev' and an ADMIN_PATH pointing at
+          # SPA immediately fetches /api/config and overwrites them from the rproxy ConfigMap. That
+          # now happens here too — rproxy IS in front of this bundle — so on the public hostname
+          # these values are merged over at boot. They still matter on the raw `*.azurefd.net`
+          # origin, which has no /api route, and they are cheap insurance either way: unrewritten,
+          # src/env.js ships ENVIRONMENT = 'dev' and an ADMIN_PATH pointing at
           # eagle-dev: a production-data endpoint wearing a dev banner and linking staff to the dev
           # admin console. Neither value is a hostname bake — 'prod' is simply true, and '/admin/'
           # is the same-origin relative path rproxy already serves — so both stay correct after
@@ -624,12 +627,14 @@ jobs:
           echo "$deployed_env" | grep -qF "window.__env.API_PATH = '/api';" \
             || { echo "::error::the deployed env.js does not use the relative /api path — the production bundle must stay same-origin"; exit 1; }
 
-          echo "deployed dark, same-origin and correctly cached"
+          echo "PUBLISHED TO THE LIVE PRODUCTION ORIGIN, same-origin and correctly cached"
 
       - name: Report failure to job summary
         if: failure()
         run: |
-          echo "### ❌ Dark Azure production deploy failed" >> $GITHUB_STEP_SUMMARY
-          echo "No production traffic is affected — this endpoint is dark and OpenShift still serves the public site." >> $GITHUB_STEP_SUMMARY
+          echo "### ❌ Azure production deploy failed — THE LIVE SITE MAY ALREADY BE SERVING THE NEW BUNDLE" >> $GITHUB_STEP_SUMMARY
+          echo "This endpoint is NOT dark. rproxy's \`location /\` has fetched the bundle from Front Door since eao-nginx v2.7.14, so projects.eao.gov.bc.ca serves whatever is in \`\$web\`." >> $GITHUB_STEP_SUMMARY
+          echo "The publish step writes and verifies every blob BEFORE the purge and the smoke test, so a failure here most likely means the new bundle is already live and something after it failed." >> $GITHUB_STEP_SUMMARY
+          echo "CHECK THE SITE, then decide: re-run this workflow for the previous good tag to roll the bundle back, or \`oc set env deploy/rproxy NGINX__EPIC__PROXY__ROOT=http://eagle-public:8080 -n 6cdc9e-prod\` to fall back to the OpenShift pods." >> $GITHUB_STEP_SUMMARY
           echo "If the security headers or the deep-link rewrite are missing, the Front Door rule set is not attached to this route." >> $GITHUB_STEP_SUMMARY
           echo "Re-apply it with the \`Deploy Azure Infra to Prod\` workflow; the rules come from \`azure/modules/front-door.bicep\` and the storage account and its \`\$web\` container from \`azure/modules/static-site.bicep\`." >> $GITHUB_STEP_SUMMARY

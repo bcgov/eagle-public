@@ -85,9 +85,11 @@ param publicUploaderPrincipalId string
 // and still deploys the test with no alerting — that is now a choice on the command line rather than
 // a default nobody read.
 //
-// NOTHING SUPPLIES THIS YET. The .bicepparam does not set it and neither does
-// `.github/workflows/deploy-azure-infra-prod.yaml`, whose `alertEmail` input was removed alongside
-// the module and has not been put back. Both need the real address before this template can deploy.
+// BOTH ENDS ARE WIRED: `main.publicprod.bicepparam` reads AVAILABILITY_ALERT_EMAIL through
+// `readEnvironmentVariable` with an '' default, and `deploy-azure-infra-prod.yaml` supplies it from
+// a repository variable. Verified by compiling the chain — set, the value reaches the param; unset,
+// it is ''. What is still true is the consequence of leaving it empty: the availability test
+// deploys and records results, and notifies nobody.
 @description('Address for availability alerts. Required. An explicit empty string deploys the test with no alerting.')
 param availabilityAlertEmail string
 
