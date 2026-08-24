@@ -21,10 +21,7 @@
       <section class="mb-4 pt-0 pb-0">
         <search-filter-template
           (searchEvent)="executeSearch($event)"
-          [advancedFilters]="true"
-          [showAdvancedFilters]="showAdvancedFilters()"
-          [searchOnFilterChange]="true"
-          [filters]="filters()"
+          [advancedFilters]="false"
           [searchHelpLinkArray]='["/search-help"]'
           [searching]="loading()">
         </search-filter-template>

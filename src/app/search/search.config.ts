@@ -59,12 +59,7 @@ const LEGISLATION_FILTER_GROUP = {
   labelPostfix: ' Act Terms'
 };
 
-/**
- * Builds filters for document search from config data
- *
- * Exported so the content tab can take the subset the chunk index supports, rather than
- * reimplementing the same five FilterObjects against the same lists.
- */
+/** Builds filters for document search from config data. */
 export function buildSearchFilters(lists: any[]): FilterObject[] {
   const milestones: any[] = [];
   const authors: any[] = [];

@@ -4,17 +4,14 @@ import { ActivatedRoute, Router, Params, RouterLink, RouterLinkActive } from '@a
 import { takeWhile, distinctUntilChanged, skip } from 'rxjs/operators';
 import { toObservable } from '@angular/core/rxjs-interop';
 
-import { ConfigService } from 'app/services/config.service';
 import { TableService } from 'app/services/table.service';
 import { SearchParamObject } from 'app/services/search.service';
 import { LoadingStateService } from 'app/services/loading-state.service';
-import { TableTemplate } from 'app/shared/components/table-template/table-template';
-import { FilterObject } from 'app/shared/components/search-filter-template/filter-object';
 import { SearchFilterTemplateComponent } from 'app/shared/components/search-filter-template/search-filter-template.component';
 import { PaginationComponent } from 'app/shared/components/pagination/pagination.component';
 import { HeroBannerComponent } from 'app/shared/hero-banner/hero-banner.component';
 import { ContentResultComponent } from './content-result/content-result.component';
-import { SEARCH_TABS, buildSearchFilters, SEARCH_DATE_FILTER_LIST } from './search.config';
+import { SEARCH_TABS } from './search.config';
 
 /**
  * Document content search.
@@ -46,9 +43,7 @@ import { SEARCH_TABS, buildSearchFilters, SEARCH_DATE_FILTER_LIST } from './sear
 export class ContentSearchComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
-  private configService = inject(ConfigService);
   private tableService = inject(TableService);
-  private tableUtils = inject(TableTemplate);
   private injector = inject(Injector);
   readonly loadingState = inject(LoadingStateService);
 
@@ -56,8 +51,6 @@ export class ContentSearchComponent implements OnInit, OnDestroy {
   readonly tabs = SEARCH_TABS;
 
   readonly results = signal<any[]>([]);
-  readonly filters = signal<FilterObject[]>([]);
-  readonly showAdvancedFilters = signal(false);
   readonly currentPage = signal(1);
   readonly pageSize = signal(10);
   /**
@@ -71,10 +64,6 @@ export class ContentSearchComponent implements OnInit, OnDestroy {
 
   private alive = true;
 
-  /** The chunk index carries `documentTypeId` and `milestoneId`; author and phase are not on a chunk. */
-  private readonly FILTER_IDS = ['milestone', 'type', 'issuedDate'];
-  private readonly FILTER_LIST = ['milestone', 'type'];
-
   ngOnInit(): void {
     runInInjectionContext(this.injector, () => {
       toObservable(this.tableService.getTableSignal(this.TABLE_ID))
@@ -86,13 +75,14 @@ export class ContentSearchComponent implements OnInit, OnDestroy {
         });
     });
 
-    this.configService.lists
-      .pipe(takeWhile(() => this.alive))
-      .subscribe((lists: any[]) => {
-        if (!lists?.length || this.filters().length) return;
-        this.filters.set(buildSearchFilters(lists).filter(f => this.FILTER_IDS.includes(f.id)));
-        this.fetch(this.route.snapshot.queryParams);
-      });
+    // NO FILTER CONTROLS on this tab. A chunk filter has to resolve to a document id set first,
+    // and a corpus-wide value exceeds DOCUMENT_SCOPE_CAP, so the key comes back in `meta.dropped`
+    // and the passages come back unfiltered. Document Type and the date range are dropped that way
+    // on every search this tab makes; `milestone` is dropped for the 20 highest-volume values of
+    // 50 and honoured for the other 30 — which is worse, not better, because whether the control
+    // works depends on the value picked and nothing on screen says which happened.
+    // The Documents tab keeps all five — they work there.
+    this.fetch(this.route.snapshot.queryParams);
 
     this.route.queryParams
       .pipe(
@@ -100,15 +90,12 @@ export class ContentSearchComponent implements OnInit, OnDestroy {
         skip(1),
         distinctUntilChanged((a, b) => JSON.stringify(a) === JSON.stringify(b))
       )
-      .subscribe(params => { if (this.filters().length) this.fetch(params); });
+      .subscribe(params => this.fetch(params));
   }
 
   private fetch(params: Params): void {
     this.currentPage.set(+(params['currentPage'] || 1));
     this.pageSize.set(+(params['pageSize'] || 10));
-    if (this.hasFilterParams(params)) this.showAdvancedFilters.set(true);
-
-    const filters = this.tableUtils.getFiltersFromParams(params, [...this.FILTER_LIST, ...SEARCH_DATE_FILTER_LIST]);
 
     this.tableService.fetchData(new SearchParamObject(
       this.TABLE_ID,
@@ -123,17 +110,12 @@ export class ContentSearchComponent implements OnInit, OnDestroy {
       {},
       true,
       '',
-      filters
+      {}
     ));
   }
 
-  private hasFilterParams(params: Params): boolean {
-    return this.FILTER_LIST.some(f => params[f]);
-  }
-
   executeSearch(searchPackage: any): void {
-    const filters = this.tableUtils.getFiltersFromSearchPackage(searchPackage, this.FILTER_LIST, SEARCH_DATE_FILTER_LIST);
-    this.submit({ currentPage: 1, keywords: searchPackage.keywords?.trim() || null, ...filters });
+    this.submit({ currentPage: 1, keywords: searchPackage.keywords?.trim() || null });
   }
 
   onPageChange(page: number): void {

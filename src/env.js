@@ -30,7 +30,11 @@
 
   // false = use values below (local dev)
   // true  = fetch from /api/config (Dockerfile sed changes this at build time)
-  window.__env.configEndpoint = false;
+  //
+  // TRUE by default now: local dev points at test, and asking test for its own config is what
+  // keeps SEARCH_API_PATH out of this file — the block below says why baking one in here is
+  // dangerous. Set false and fill in the values to work against something else.
+  window.__env.configEndpoint = true;
 
   // Log level: 0 = All, 1 = Debug, 2 = Info, 3 = Warn, 4 = Error
   window.__env.logLevel = 0;
@@ -38,10 +42,14 @@
   // Environment label
   window.__env.ENVIRONMENT = 'dev';
 
-  // API target — proxy.conf.js reads this to route /api and /analytics.
-  // To use the dev environment: change to 'https://eagle-dev.apps.silver.devops.gov.bc.ca'
-  // and set configEndpoint = true above so config is fetched from /api/config.
-  window.__env.API_LOCATION = 'https://eagle-dev.apps.silver.devops.gov.bc.ca';
+  // API target — proxy.conf.js reads this to route /api, /analytics and /demi-search.
+  //
+  // TEST, not dev: the OpenShift dev environment is being decommissioned, and the Azure estate is
+  // staging-and-prod rather than dev-test-prod, so test IS staging and is the only deployed
+  // environment worth developing against. `configEndpoint` is true above for the same reason —
+  // test's /api/config supplies SEARCH_API_PATH, ADMIN_PATH and the rest, so this file no longer
+  // has to name any of them and cannot drift from what test actually serves.
+  window.__env.API_LOCATION = 'https://eagle-test.apps.silver.devops.gov.bc.ca';
 
   window.__env.API_PATH = '/api';
 
@@ -65,7 +73,7 @@
   window.__env.SEARCH_API_PATH = '';
 
   // eagle-admin link
-  window.__env.ADMIN_PATH = 'https://eagle-dev.apps.silver.devops.gov.bc.ca/admin/';
+  window.__env.ADMIN_PATH = 'https://eagle-test.apps.silver.devops.gov.bc.ca/admin/';
 
   // Analytics — proxied through /analytics (eagle-api forwards to penguin-analytics)
   window.__env.ANALYTICS_API_URL = '/analytics';

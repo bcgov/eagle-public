@@ -90,14 +90,6 @@ export const FILTER_CONFIGS: FilterConfig[] = [
     matchId: true
   },
   {
-    id: 'pcp',
-    type: FilterType.MultiSelect,
-    label: 'Public Comment Period',
-    options: Constants.PCP_COLLECTION,
-    panelSize: 4,
-    matchId: true
-  },
-  {
     id: 'proponent',
     type: FilterType.MultiSelect,
     label: 'Proponent',
@@ -133,5 +125,5 @@ export const FILTER_CONFIGS: FilterConfig[] = [
   }
 ];
 
-export const FILTER_LIST: string[] = ['type', 'eacDecision', 'decisionDateStart', 'decisionDateEnd', 'pcp', 'proponent', 'region', 'CEAAInvolvement', 'currentPhaseName'];
+export const FILTER_LIST: string[] = ['type', 'eacDecision', 'decisionDateStart', 'decisionDateEnd', 'proponent', 'region', 'CEAAInvolvement', 'currentPhaseName'];
 export const DATE_FILTER_LIST: string[] = ['decisionDateStart', 'decisionDateEnd'];
