@@ -75,11 +75,13 @@ export class ContentSearchComponent implements OnInit, OnDestroy {
         });
     });
 
-    // NO FILTER CONTROLS on this tab. Milestone, Document Type and the date range were rendered
-    // here and dropped by the API on every search it makes: a chunk filter has to resolve to a
-    // document id set first, and a corpus-wide value exceeds DOCUMENT_SCOPE_CAP at any cap one
-    // request can fill, so the key came back in `meta.dropped` and the passages came back
-    // unfiltered. The Documents tab keeps all five — they work there.
+    // NO FILTER CONTROLS on this tab. A chunk filter has to resolve to a document id set first,
+    // and a corpus-wide value exceeds DOCUMENT_SCOPE_CAP, so the key comes back in `meta.dropped`
+    // and the passages come back unfiltered. Document Type and the date range are dropped that way
+    // on every search this tab makes; `milestone` is dropped for the 20 highest-volume values of
+    // 50 and honoured for the other 30 — which is worse, not better, because whether the control
+    // works depends on the value picked and nothing on screen says which happened.
+    // The Documents tab keeps all five — they work there.
     this.fetch(this.route.snapshot.queryParams);
 
     this.route.queryParams
