@@ -1,0 +1,213 @@
+# =============================================================================
+# Deploy the eagle-public PRODUCTION Azure infrastructure
+# =============================================================================
+# Applies `azure/main.publicprod.bicep` to `rg-eagle-public-prod`. This is the estate itself — the
+# storage account, the Front Door profile, its rules and the availability test — NOT the site
+# content. `deploy-azure-prod.yaml` publishes the bundle into the estate this creates; the two are
+# separate because content ships many times a day and infrastructure changes a few times a year.
+#
+# WHY THIS WORKFLOW EXISTS. Until it did, nothing deployed this template. It was only *compiled* in
+# CI, so the estate was stood up by hand and every hand edit silently diverged from the file that
+# claimed to describe it. That is not hypothetical: reconciling the two on 2026-08-21 found three
+# live drifts, and one of them would have LOOSENED the production CSP.
+#
+#   - `X-XSS-Protection` was on the live rule and absent from the template.
+#   - `Permissions-Policy` carried seven directives live and three in the template.
+#   - `connect-src` allowed `https://unpkg.com` in the template and not live.
+#
+# A template nobody deploys is a comment, and comments drift. Running this — even as a no-op — is
+# what keeps the file honest.
+#
+# THIS DOES NOT MOVE TRAFFIC, BUT THE ESTATE IT APPLIES TO IS NOW LIVE. The cutover happened on
+# 2026-08-21: eao-nginx v2.7.14 repointed `location /` at the Front Door endpoint, so the profile,
+# its rules and the storage account described by this template are what `projects.eao.gov.bc.ca`
+# serves. Nothing in this file touches that upstream value — the cutover was one value in one
+# ConfigMap and it was not this workflow — but a `deploy` run here can break the public site by
+# changing a rule or deleting an undeclared property. Read the what-if.
+
+# WHAT THIS IDENTITY CAN DO, AND WHY THE PREVIEW BELOW DOES NOT RUN YET. `eagle-public-cicd-prod`
+# holds three RESOURCE-scoped grants and nothing at GROUP scope: Storage Blob Data Contributor and
+# Storage Account Contributor on the storage account, CDN Profile Contributor on the profile. The
+# preview needs `Microsoft.Resources/deployments/whatIf/action` at the group, so as things stand
+# every run of this workflow fails on AuthorizationFailed before it previews anything.
+#
+# THE OBVIOUS FIX IS UNAVAILABLE, NOT MERELY UNGRANTED. Contributor at group scope cannot be assigned
+# by anyone operating in this subscription: an ABAC condition on the `c4b0a8` management group's
+# Owner assignment denies `Microsoft.Authorization/roleAssignments/write` for six role-definition
+# GUIDs — Owner, Contributor, User Access Administrator, RBAC Administrator and two custom roles.
+# That is a deliberate landing-zone guardrail against privilege escalation. Measured 2026-08-22.
+#
+# 264 of the 938 built-in roles DO carry the what-if action, because most service Contributor roles
+# include `Microsoft.Resources/deployments/*` — but they are roles for unrelated services (Azure Maps
+# Contributor, DevCenter Project Admin), and granting one to obtain a what-if is unexplainable to
+# whoever reads the assignment next. The honest shape is a custom role: `*/read` plus
+# `Microsoft.Resources/deployments/whatIf/action`, scoped to this group.
+# `Microsoft.Authorization/roleDefinitions/write` is NOT on the deny-list and a new role's GUID
+# cannot be, so that is assignable today. Until it exists, run the preview by hand:
+#
+#   az deployment group what-if -g rg-eagle-public-prod \
+#     -f azure/main.publicprod.bicep -p azure/main.publicprod.bicepparam
+#
+# APPLY FROM CI IS OUT OF REACH REGARDLESS, and that is the right posture. This template declares
+# three role assignments (two in static-site.bicep, one in front-door.bicep), no assignable role here
+# carries `Microsoft.Authorization/roleAssignments/write`, and a pipeline that can rewrite its own
+# permissions is not one anyone can reason about. Applying is a hand operation from an Owner of the
+# group. What CI is for here is the preview, so the template stops drifting.
+#
+# RUN WHAT-IF FIRST, EVERY TIME. The `mode` input defaults to `what-if` deliberately. Deploying an
+# ARM template is not additive — an undeclared property is a DELETED property, which is exactly how
+# the drifts above would have been applied rather than caught.
+
+name: Deploy Azure Infra to Prod
+
+# DISPATCH IS REAL NOW. This file used to live only on `azure-prod-preview`, and GitHub offers
+# "Run workflow" — and accepts `gh workflow run` — only for a workflow file on the repository's
+# DEFAULT branch. So dispatch was unaddressable and a push to that branch was the only way to run
+# it. On `develop` both work.
+#
+# DISPATCH ONLY. The push trigger came along with mainlining and was withdrawn before it ever
+# fired: this job declares `environment: azure-prod` and, per the header above, fails
+# `AuthorizationFailed` on EVERY run until the group-scope what-if role exists — which an ABAC
+# condition on the c4b0a8 management group currently forbids granting. On `develop` that would
+# mean every `azure/**` push produced a red run and a pending production approval, which is how a
+# team learns to ignore both.
+#
+# Re-add it the day the role lands and a run can actually go green.
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "what-if previews changes and applies nothing. deploy applies them."
+        required: true
+        default: what-if
+        type: choice
+        options: [what-if, deploy]
+
+concurrency:
+  group: deploy-azure-infra-prod
+  cancel-in-progress: false
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  infra:
+    # `inputs.mode` is empty on a push, so it is defaulted in one place and read from `env` after.
+    name: eagle-public prod estate
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Declaring an environment CHANGES THE OIDC SUBJECT CLAIM to
+    # `repo:bcgov/eagle-public:environment:azure-prod`, which must match the federated credential on
+    # the production CI app registration. Same value as deploy-azure-prod.yaml, for the same reason:
+    # change it and Azure Login fails with AADSTS700213, a message that names no environment.
+    environment: azure-prod
+    env:
+      # Empty on a push; a push must never apply.
+      MODE: ${{ inputs.mode || 'what-if' }}
+      # AVAILABILITY ALERT ADDRESS — A REPOSITORY VARIABLE, DELIBERATELY NOT A workflow_dispatch
+      # INPUT. The reverted version (c4d6dd10) used an input; that cannot work here. This file is
+      # push-triggered as well as dispatchable — see the trigger comment above — and on a PUSH
+      # `inputs.*` is empty, so an input would silently deploy the availability test with no
+      # alerting on every push-triggered run. That is precisely the
+      # "reads like a test that is not running" failure the module header warns about.
+      #
+      # THE NAME MATTERS: main.publicprod.bicepparam reads this variable by name with
+      # readEnvironmentVariable('AVAILABILITY_ALERT_EMAIL', ''). It is deliberately NOT passed as
+      # `-p availabilityAlertEmail=...` — az compiles a .bicepparam twice and the first compile
+      # carries no overrides, so a `-p` cannot rescue an unassigned required parameter, and an
+      # override from an unset variable would arrive as an empty string that BEATS the file. The
+      # param file header records the measurement behind both halves.
+      #
+      #   gh variable set AVAILABILITY_ALERT_EMAIL --repo bcgov/eagle-public --body '<address>'
+      #
+      # Unset is fine for `what-if` and for collecting a pre-cutover baseline: the module's
+      # `if (!empty(alertEmail))` guards drop the action group and the metric alert, so the test
+      # measures without notifying. The Apply step refuses to run on an empty value, which is where
+      # the forcing function lives now.
+      AVAILABILITY_ALERT_EMAIL: ${{ vars.AVAILABILITY_ALERT_EMAIL }}
+      RESOURCE_GROUP: rg-eagle-public-prod
+      TEMPLATE: ./azure/main.publicprod.bicep
+      PARAMS: ./azure/main.publicprod.bicepparam
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Azure Login
+        uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      # Always, including on a deploy run: the log of what was about to change is the only record of
+      # why a deployment did what it did, and it costs about twenty seconds.
+      - name: Preview changes
+        run: |
+          set -euo pipefail
+          az deployment group what-if \
+            --resource-group "$RESOURCE_GROUP" \
+            --template-file "$TEMPLATE" \
+            --parameters "$PARAMS"
+
+      # ---------------------------------------------------------------------------
+      # ONE-TIME RECONCILIATION, BEFORE THE FIRST `deploy` RUN.
+      #
+      # The CDN Profile Contributor grant that lets CI purge the edge was created by hand on
+      # 2026-08-21 with a CLI-generated name (`6f95d867-6959-4205-87fd-c05de9f2ddea`). Bicep names
+      # role assignments deterministically — `guid(profile.id, principalId, roleDefinitionId)` —
+      # so it wants to create the SAME grant under a different name
+      # (`0fc768a9-8203-58da-81bb-73144bd34170`). Azure treats an identical
+      # (scope, principal, role) triple as already existing, so the first deploy is expected to fail
+      # on it.
+      #
+      # Delete the hand-made one immediately before the first deploy, not earlier: between the
+      # delete and a successful apply, CI cannot purge the edge, so a content deploy in that window
+      # publishes the bundle and leaves the old `index.html` cached.
+      #
+      #   az role assignment delete --ids \
+      #     "/subscriptions/be5924ac-1083-4a1b-be92-7b444882cfd9/resourceGroups/rg-eagle-public-prod\
+      # /providers/Microsoft.Cdn/profiles/eagle-edge-prod/providers/Microsoft.Authorization\
+      # /RoleAssignments/6f95d867-6959-4205-87fd-c05de9f2ddea"
+      #
+      # After that, this template owns the grant and the step is never needed again. Requires User
+      # Access Administrator, which the CI identity deliberately does not have — a pipeline that can
+      # rewrite its own permissions is not a pipeline anyone can reason about.
+      # ---------------------------------------------------------------------------
+      # An apply with no alert address deploys an availability test that watches the site correctly
+      # and tells nobody. That is acceptable for `what-if` and for a pre-cutover baseline, and it is
+      # not acceptable for an apply — so it is refused here rather than in the template, which must
+      # stay compilable with no environment for pr.yaml's Compile Bicep job.
+      - name: Require an alert address before applying
+        if: env.MODE == 'deploy'
+        run: |
+          set -euo pipefail
+          if [ -z "${AVAILABILITY_ALERT_EMAIL:-}" ]; then
+            echo "AVAILABILITY_ALERT_EMAIL is not set." >&2
+            echo "Set it before applying, or the availability test deploys with no alerting:" >&2
+            echo "  gh variable set AVAILABILITY_ALERT_EMAIL --repo bcgov/eagle-public --body '<address>'" >&2
+            exit 1
+          fi
+
+      - name: Apply
+        if: env.MODE == 'deploy'
+        run: |
+          set -euo pipefail
+          az deployment group create \
+            --resource-group "$RESOURCE_GROUP" \
+            --template-file "$TEMPLATE" \
+            --parameters "$PARAMS" \
+            --query "properties.provisioningState" -o tsv
+
+      # The two values nothing may compose by hand. The storage account name embeds a uniqueString()
+      # and the endpoint host embeds an Azure-assigned zone code — the test profile came back `a02`,
+      # not the `z01` the docs imply. Printing them here means the cutover reads them from a run log
+      # rather than guessing.
+      - name: Report outputs
+        if: env.MODE == 'deploy'
+        run: |
+          set -euo pipefail
+          az deployment group show \
+            --resource-group "$RESOURCE_GROUP" --name main.publicprod \
+            --query "properties.outputs" -o json 2>/dev/null || \
+            echo "outputs unavailable — deployment name differs; see the Apply step log"
