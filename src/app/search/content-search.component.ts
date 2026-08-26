@@ -7,11 +7,12 @@ import { toObservable } from '@angular/core/rxjs-interop';
 import { TableService } from 'app/services/table.service';
 import { SearchParamObject } from 'app/services/search.service';
 import { LoadingStateService } from 'app/services/loading-state.service';
+import { ConfigService } from 'app/services/config.service';
 import { SearchFilterTemplateComponent } from 'app/shared/components/search-filter-template/search-filter-template.component';
 import { PaginationComponent } from 'app/shared/components/pagination/pagination.component';
 import { HeroBannerComponent } from 'app/shared/hero-banner/hero-banner.component';
 import { ContentResultComponent } from './content-result/content-result.component';
-import { SEARCH_TABS } from './search.config';
+import { visibleSearchTabs } from './search.config';
 
 /**
  * Document content search.
@@ -48,7 +49,7 @@ export class ContentSearchComponent implements OnInit, OnDestroy {
   readonly loadingState = inject(LoadingStateService);
 
   readonly TABLE_ID = 'search-content';
-  readonly tabs = SEARCH_TABS;
+  readonly tabs = visibleSearchTabs(inject(ConfigService).contentSearchEnabled());
 
   readonly results = signal<any[]>([]);
   readonly currentPage = signal(1);

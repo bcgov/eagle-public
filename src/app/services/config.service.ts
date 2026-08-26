@@ -22,6 +22,12 @@ export interface EnvConfig {
    * until prod moves to rproxy v2.7.11. Either way it reverts with no redeploy.
    */
   SEARCH_API_PATH?: string;
+  /**
+   * Shows the Document Content search tab and route. The API serves content search everywhere, so
+   * this only decides whether the UI offers it — false or unset hides it, with no redeploy needed
+   * to change either way.
+   */
+  CONTENT_SEARCH?: boolean;
   ADMIN_PATH?: string;
   SURVEY_URL?: string | null;
   SHOW_SURVEY_BANNER?: boolean;
@@ -122,6 +128,11 @@ export class ConfigService {
    */
   public getSearchApiPath(): string {
     return this._config().SEARCH_API_PATH || this.getApiPath();
+  }
+
+  /** Whether the Document Content search tab is offered. Only a literal `true` turns it on. */
+  public contentSearchEnabled(): boolean {
+    return this._config().CONTENT_SEARCH === true;
   }
 
   /**

@@ -16,6 +16,13 @@ export const SEARCH_TABS = [
   { label: 'Document Content', link: '/search/content' }
 ];
 
+export const CONTENT_SEARCH_LINK = '/search/content';
+
+/** The tabs to render. The content tab is gated on the CONTENT_SEARCH runtime config flag. */
+export function visibleSearchTabs(contentSearchEnabled: boolean) {
+  return contentSearchEnabled ? SEARCH_TABS : SEARCH_TABS.filter(tab => tab.link !== CONTENT_SEARCH_LINK);
+}
+
 export const SEARCH_TABLE_COLUMNS: IColumnObject[] = [
   {
     name: 'Document Name',
@@ -176,7 +183,7 @@ export function createSearchConfig(): TableListConfig {
     tableOptions: {
       disableRowHighlight: true
     },
-    tabs: SEARCH_TABS,
+    tabs: visibleSearchTabs(configService.contentSearchEnabled()),
     filterList: SEARCH_FILTER_LIST,
     dateFilterList: SEARCH_DATE_FILTER_LIST,
     filterDataSource: configService.lists,
