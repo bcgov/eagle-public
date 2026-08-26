@@ -54,3 +54,4 @@ GEMINI.md
 # artifact of the .bicep next to it and committing it creates a second, silently stale copy of
 # the estate — one that kept declaring an availability test after the .bicep had dropped it.
 azure/**/*.json
+.claude/

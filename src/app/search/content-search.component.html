@@ -5,6 +5,7 @@
     [actions]="[{ label: 'List of Projects', icon: 'list', routerLink: '/projects-list', title: 'List of Projects' }]"
   />
 
+  @if (tabs.length) {
   <div class="container">
     <ul class="nav nav-tabs search-tabs" role="tablist">
       @for (tab of tabs; track tab.link) {
@@ -15,6 +16,7 @@
       }
     </ul>
   </div>
+  }
 
   <section class="results-container">
     <div class="container">

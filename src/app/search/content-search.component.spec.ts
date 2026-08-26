@@ -77,6 +77,6 @@ describe('ContentSearchComponent', () => {
 
   it('hides its own tab when content search is disabled', () => {
     // Reachable only by a stale link once the flag is off, and the tab must not advertise itself.
-    expect(build(false).tabs.map(tab => tab.label)).toEqual(['Documents']);
+    expect(build(false).tabs).toEqual([]);
   });
 });
