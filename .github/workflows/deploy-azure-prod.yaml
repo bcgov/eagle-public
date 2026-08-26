@@ -39,7 +39,7 @@
 # account: Storage Blob Data Contributor to write blobs, plus Storage Account Contributor
 # for the single data-plane call that turns `$web` on (see that step). The Bicep that
 # describes the account, the Front Door endpoint and its rule set lives in
-# `azure/main.publicprod.bicep` in THIS repository, deployed by `deploy-azure-infra-prod.yaml`.
+# `azure/main.prod.bicepparam` in `digitalspace/eagle-edge`, deployed by hand (`scripts/deploy-infra.sh prod`).
 # (It lived in `digitalspace/eagle-search` until 50bede21; that repo is slated for archive.)
 # =============================================================================
 
@@ -644,4 +644,4 @@ jobs:
           echo "The publish step writes and verifies every blob BEFORE the purge and the smoke test, so a failure here most likely means the new bundle is already live and something after it failed." >> $GITHUB_STEP_SUMMARY
           echo "CHECK THE SITE, then decide: re-run this workflow for the previous good tag to roll the bundle back, or \`oc set env deploy/rproxy NGINX__EPIC__PROXY__ROOT=http://eagle-public:8080 -n 6cdc9e-prod\` to fall back to the OpenShift pods." >> $GITHUB_STEP_SUMMARY
           echo "If the security headers or the deep-link rewrite are missing, the Front Door rule set is not attached to this route." >> $GITHUB_STEP_SUMMARY
-          echo "Re-apply it with the \`Deploy Azure Infra to Prod\` workflow; the rules come from \`azure/modules/front-door.bicep\` and the storage account and its \`\$web\` container from \`azure/modules/static-site.bicep\`." >> $GITHUB_STEP_SUMMARY
+          echo "Re-apply it from eagle-edge (\`scripts/deploy-infra.sh prod\`); the rules come from its \`azure/modules/front-door.bicep\` and the storage account and its \`\$web\` container from \`azure/modules/static-site.bicep\`." >> $GITHUB_STEP_SUMMARY
