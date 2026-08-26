@@ -34,7 +34,7 @@
 # `$web` on (see the "Enable static website hosting" step — that write is not a blob write
 # and the data role does not cover it). The Bicep that describes the account, the Front
 # Door endpoint and its rule set lives in `digitalspace/eagle-edge` — the TEST estate only.
-# The prod equivalent moved into this repo at 50bede21 (`azure/main.publicprod.bicep`).
+# The prod equivalent lives in `digitalspace/eagle-edge` (`azure/main.prod.bicepparam`).
 # =============================================================================
 
 name: Deploy eagle-public to Azure staging
@@ -432,4 +432,4 @@ jobs:
         run: |
           echo "### ❌ Azure preview deploy failed" >> $GITHUB_STEP_SUMMARY
           echo "If the security headers or the deep-link rewrite are missing, the Front Door rule set is not attached to this route." >> $GITHUB_STEP_SUMMARY
-          echo "This is the TEST estate: re-apply it from eagle-search's \`azure/modules/front-door.bicep\`; the storage account and its \`\$web\` container come from its \`azure/modules/static-site.bicep\`." >> $GITHUB_STEP_SUMMARY
+          echo "This is the TEST estate: re-apply it from eagle-edge's \`azure/modules/front-door.bicep\`; the storage account and its \`\$web\` container come from its \`azure/modules/static-site.bicep\`." >> $GITHUB_STEP_SUMMARY
