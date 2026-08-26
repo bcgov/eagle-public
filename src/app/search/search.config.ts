@@ -20,7 +20,8 @@ export const CONTENT_SEARCH_LINK = '/search/content';
 
 /** The tabs to render. The content tab is gated on the CONTENT_SEARCH runtime config flag. */
 export function visibleSearchTabs(contentSearchEnabled: boolean) {
-  return contentSearchEnabled ? SEARCH_TABS : SEARCH_TABS.filter(tab => tab.link !== CONTENT_SEARCH_LINK);
+  // One tab is no tab bar: with content search off there is nothing to switch between.
+  return contentSearchEnabled ? SEARCH_TABS : [];
 }
 
 export const SEARCH_TABLE_COLUMNS: IColumnObject[] = [

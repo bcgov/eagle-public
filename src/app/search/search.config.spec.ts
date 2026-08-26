@@ -11,7 +11,7 @@ describe('visibleSearchTabs', () => {
   });
 
   it('drops the Document Content tab when content search is disabled', () => {
-    expect(visibleSearchTabs(false).map(tab => tab.label)).toEqual(['Documents']);
+    expect(visibleSearchTabs(false)).toEqual([]);
   });
 });
 
@@ -27,7 +27,7 @@ describe('createSearchConfig', () => {
   }
 
   it('hides the Document Content tab when the flag is off', () => {
-    expect(configWith(false).tabs?.map(tab => tab.label)).toEqual(['Documents']);
+    expect(configWith(false).tabs).toEqual([]);
   });
 
   it('shows the Document Content tab when the flag is on', () => {

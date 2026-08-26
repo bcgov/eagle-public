@@ -6,7 +6,8 @@
     [backgroundImage]="config().heroBanner.backgroundImage"
   />
 
-  @if (config().tabs; as tabs) {
+  @if (config().tabs?.length) {
+    @let tabs = config().tabs!;
     <div class="container">
       <ul class="nav nav-tabs search-tabs" role="tablist">
         @for (tab of tabs; track tab.link) {
