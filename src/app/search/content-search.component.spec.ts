@@ -7,6 +7,7 @@ import { signal } from '@angular/core';
 import { ContentSearchComponent } from './content-search.component';
 import { TableService } from 'app/services/table.service';
 import { SearchParamObject } from 'app/services/search.service';
+import { ConfigService } from 'app/services/config.service';
 
 /**
  * What this tab asks the API for. The filter controls were removed because the chunk index cannot
@@ -15,8 +16,10 @@ import { SearchParamObject } from 'app/services/search.service';
  */
 describe('ContentSearchComponent', () => {
   let sent: SearchParamObject[];
+  let component: ContentSearchComponent;
 
-  beforeEach(() => {
+  function build(contentSearchEnabled = true): ContentSearchComponent {
+    TestBed.resetTestingModule();
     sent = [];
     TestBed.configureTestingModule({
       imports: [ContentSearchComponent],
@@ -27,6 +30,10 @@ describe('ContentSearchComponent', () => {
             fetchData: vi.fn((param: SearchParamObject) => { sent.push(param); return Promise.resolve(); }),
             getTableSignal: () => signal(null)
           }
+        },
+        {
+          provide: ConfigService,
+          useValue: { contentSearchEnabled: () => contentSearchEnabled }
         },
         {
           provide: ActivatedRoute,
@@ -41,7 +48,13 @@ describe('ContentSearchComponent', () => {
     // ngOnInit directly, never detectChanges: rendering the template pulls in the shared filter
     // template and the pagination component, and what is under test is which request this tab
     // sends — not its markup.
-    TestBed.createComponent(ContentSearchComponent).componentInstance.ngOnInit();
+    const instance = TestBed.createComponent(ContentSearchComponent).componentInstance;
+    instance.ngOnInit();
+    return instance;
+  }
+
+  beforeEach(() => {
+    component = build();
   });
 
   it('searches the chunk index for the keyword', () => {
@@ -56,5 +69,14 @@ describe('ContentSearchComponent', () => {
     // `milestone` is dropped for the highest-volume values, so a forwarded key comes back as the
     // whole corpus wearing the label of a filtered result.
     expect(sent[0].filters).toEqual({});
+  });
+
+  it('shows both tabs when content search is enabled', () => {
+    expect(component.tabs.map(tab => tab.label)).toEqual(['Documents', 'Document Content']);
+  });
+
+  it('hides its own tab when content search is disabled', () => {
+    // Reachable only by a stale link once the flag is off, and the tab must not advertise itself.
+    expect(build(false).tabs.map(tab => tab.label)).toEqual(['Documents']);
   });
 });

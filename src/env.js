@@ -72,6 +72,11 @@
   // server".
   window.__env.SEARCH_API_PATH = '';
 
+  // Document Content search tab. FALSE here and unset in prod's /api/config: the API answers
+  // content search everywhere, but the tab stays hidden until the business signs off. Only a
+  // literal true shows it, and /api/config flips it with no redeploy.
+  window.__env.CONTENT_SEARCH = false;
+
   // eagle-admin link
   window.__env.ADMIN_PATH = 'https://eagle-test.apps.silver.devops.gov.bc.ca/admin/';
 

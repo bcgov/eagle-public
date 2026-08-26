@@ -1,4 +1,6 @@
-import { Routes } from '@angular/router';
+import { inject } from '@angular/core';
+import { CanMatchFn, Router, Routes } from '@angular/router';
+import { ConfigService } from './services/config.service';
 import { HomeComponent } from './home/home.component';
 import { ContactComponent } from './contact/contact.component';
 import { LegislationComponent } from './legislation/legislation.component';
@@ -21,6 +23,14 @@ import { ApplicationComponent } from './project/application/application.componen
 import { CommentingTabComponent } from './project/commenting-tab/commenting-tab.component';
 import { DocumentsTabComponent } from './project/documents/documents-tab.component';
 import { DecisionsTabComponent } from './project/decisions-tab/decisions-tab.component';
+
+/**
+ * Content search is served by the API in every environment, but the UI is offered only where the
+ * CONTENT_SEARCH config flag says so. Redirects rather than falling through, so a bookmarked or
+ * shared link lands on document search instead of the home page.
+ */
+export const contentSearchGuard: CanMatchFn = () =>
+  inject(ConfigService).contentSearchEnabled() || inject(Router).createUrlTree(['/search']);
 
 export const routes: Routes = [
   {
@@ -86,7 +96,8 @@ export const routes: Routes = [
   // matched text, which a table layout cannot render.
   {
     path: 'search/content',
-    component: ContentSearchComponent
+    component: ContentSearchComponent,
+    canMatch: [contentSearchGuard]
   },
   
   {
