@@ -33,15 +33,13 @@ src/
 
 ## Phases
 
-- [ ] 1. Scaffold + foundation + shell + static pages + placeholder pages for every route. Build, lint, test green.
+- [x] 1. Scaffold + foundation + shell + static pages + placeholder pages for every route. Build, lint, test green.
 - [x] 2. Table/filter engine + pagination + query-param sync (`components/table`, `components/filters`).
-- [ ] 3a. List pages: ~~projects-list, news, project-notifications~~ (done in phase 2); project shell + 7 tabs.
-- [x] 3b. Map page (`/projects`): projlist-map, filters, list, detail popup.
 - [x] 3a. List pages: ~~projects-list, news, project-notifications~~ (done in phase 2); project shell + 7 tabs.
 - [x] 3b. Map page (`/projects`): projlist-map, filters, list, detail popup.
 - [x] 3c. Comments + add-comment + file upload + cac-unsubscribe.
 - [x] 3d. Search + content search + search-help.
-- [ ] 4. Parity pass, a11y, delete leftovers, README/CLAUDE.md update.
+- [x] 4. Parity pass, a11y, delete leftovers, README/CLAUDE.md update.
   - [x] 4a. Phase-3 findings (project card fields, `fields=[object Object]`, CAC location), dependency audit, leftovers, a11y basics, docs.
     - [x] `models/project.ts` fields that no payload carries.
     - [x] `&fields=` dropped from the search request.
