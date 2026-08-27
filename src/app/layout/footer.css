@@ -1,0 +1,185 @@
+.app-footer {
+  background: var(--footer-bg);
+  color: var(--footer-color);
+  position: relative;
+  z-index: 150;
+}
+
+/* Hide footer on mobile when on /projects route */
+@media (max-width: 768px) {
+  .app-footer.hide-mobile-projects {
+    display: none !important;
+  }
+}
+
+footer.app-footer--sm {
+  display: block;
+}
+
+@media (max-width: 768px) {
+  footer.app-footer--sm {
+    display: none !important;
+  }
+}
+
+.app-footer .container {
+  padding-top: 0.75rem;
+  padding-right: 1.5rem;
+  padding-bottom: 0.75rem;
+  padding-left: 1.5rem;
+}
+
+.app-footer section {
+  text-align: center;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--bg-dark-border-color);
+}
+
+.app-footer section.last {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.app-footer h4 {
+  margin-bottom: 1rem;
+  font-size: var(--bs-font-size-6);
+  font-weight: bold;
+}
+
+.app-footer p {
+  font-size: var(--bs-font-size-sm);
+  line-height: 1.5;
+}
+
+.app-footer ul {
+  padding: 0;
+  font-size: var(--bs-font-size-sm);
+  list-style-type: none;
+}
+
+.app-footer ul li {
+  margin-bottom: 0.25rem;
+}
+
+.app-footer .nav-links {
+  margin: 0;
+}
+
+.app-footer a {
+  color: var(--footer-color);
+}
+
+.app-footer a.feedback-link {
+  color: var(--gold);
+}
+
+.app-footer a:focus,
+.app-footer a:hover {
+  color: var(--gold);
+}
+
+.app-footer .footer-admin {
+  text-align: center;
+}
+
+.app-footer .footer-admin .gov-links {
+  text-align: center;
+  margin: 0;
+  padding: 0;
+}
+
+.app-footer .footer-admin .gov-links li {
+  display: inline-block;
+  margin: 0;
+  line-height: 1;
+}
+
+.app-footer .footer-admin .gov-links li:after {
+  position: relative;
+  top: -1px;
+  display: inline-block;
+  margin-left: 0.5rem;
+  margin-right: 0.25rem;
+  content: '|';
+}
+
+.app-footer .footer-admin .gov-links li:last-child:after {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .app-footer section {
+    text-align: left;
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+  }
+
+  .app-footer h4 {
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--bg-dark-border-color);
+  }
+}
+
+/* Compact footer for map view */
+.app-footer--sm {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: auto;
+  min-height: 1.5rem;
+  padding: 0.25rem 0;
+  border: none;
+}
+
+.app-footer--sm .container {
+  max-width: 100%;
+  padding: 0 0.5rem;
+}
+
+.app-footer--sm .footer-admin {
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.app-footer--sm .footer-info {
+  display: none;
+}
+
+.app-footer--sm .gov-links {
+  margin: 0;
+  padding: 0;
+  line-height: 1;
+}
+
+.app-footer--sm ul {
+  font-size: var(--bs-font-size-xs);
+  margin: 0;
+}
+
+.app-footer--sm .gov-links li {
+  line-height: 1;
+}
+
+.app-footer-sm {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .app-footer--sm {
+    font-size: var(--bs-font-size-xs);
+    padding: 0.3rem 0;
+  }
+
+  .app-footer--sm .container {
+    padding: 0 1rem;
+  }
+
+  .app-footer--sm ul {
+    font-size: var(--bs-font-size-xs);
+  }
+}

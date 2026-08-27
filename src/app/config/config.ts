@@ -1,0 +1,134 @@
+export interface EnvConfig {
+  logLevel?: number;
+  LOG_LEVEL?: number;
+  configEndpoint?: boolean;
+  ENVIRONMENT?: string;
+  BANNER_COLOUR?: string;
+  API_PATH?: string;
+  API_LOCATION?: string;
+  /**
+   * Base URL for Project/Document/DocumentChunk search, when it is served by eagle-search
+   * (Azure AI Search) rather than eagle-api.
+   *
+   * Normally RELATIVE — `/eagle-search` — because rproxy proxies that location to the Azure host,
+   * which keeps the call same-origin and needs no CORS. Absolute (`https://…/api`) only where there
+   * is no rproxy in front, which today means the static Azure Front Door build for test.
+   *
+   * EMPTY OR UNSET FALLS BACK TO eagle-api, and that is also the kill switch. In dev and test the
+   * switch is eagle-api's Mongo `Config` document; prod still reads it from the rproxy ConfigMap
+   * until prod moves to rproxy v2.7.11. Either way it reverts with no redeploy.
+   */
+  SEARCH_API_PATH?: string;
+  /**
+   * Shows the Document Content search tab and route. The API serves content search everywhere, so
+   * this only decides whether the UI offers it — false or unset hides it, with no redeploy needed
+   * to change either way.
+   */
+  CONTENT_SEARCH?: boolean;
+  ADMIN_PATH?: string;
+  SURVEY_URL?: string | null;
+  SHOW_SURVEY_BANNER?: boolean;
+  ANALYTICS_API_URL?: string | null;
+  ANALYTICS_DEBUG?: boolean;
+  ANALYTICS_ENHANCED_TRACKING?: boolean;
+  ANALYTICS_TRAFFIC_TRACKING?: boolean;
+  GH_HASH?: string;
+}
+
+// env.js sets window.__env before the app bundle loads (via script tag in index.html)
+declare global {
+  interface Window { __env: EnvConfig; }
+}
+
+let config: EnvConfig = {};
+
+/**
+ * Load the runtime configuration.
+ *
+ * LOCAL DEV (configEndpoint = false):
+ *   - Uses env.js values directly (src/env.js)
+ *   - vite.config.ts reads API_LOCATION from env.js to generate dev server proxy rules
+ *   - App uses relative paths (/api, /analytics) — never API_LOCATION directly
+ *
+ * DEPLOYED (configEndpoint = true):
+ *   - The Azure deploy workflows sed configEndpoint to true
+ *   - App fetches /api/config on startup. rproxy proxies that to eagle-api, which serves it from
+ *     its Mongo `Config` document.
+ *   - Those values override env.js
+ *
+ * Must be awaited so that dependent code (analytics) initializes with the correct
+ * environment-specific values.
+ */
+export async function loadConfig(): Promise<void> {
+  config = { ...(window.__env || {}) };
+
+  if (config.logLevel === 0) {
+    console.log('config: env.js values:', config);
+  }
+
+  if (config.configEndpoint === true) {
+    await fetchRemoteConfig();
+  }
+}
+
+export function getConfig(): EnvConfig {
+  return config;
+}
+
+/**
+ * The API path for making API calls.
+ * Always relative — the dev server proxy (local) or rproxy (deployed) handles routing.
+ */
+export function getApiPath(): string {
+  return config.API_PATH || '/api';
+}
+
+/**
+ * Base URL for search, when it is served by eagle-search. Falls back to the eagle-api path, so an
+ * unconfigured environment keeps working unchanged.
+ */
+export function getSearchApiPath(): string {
+  return config.SEARCH_API_PATH || getApiPath();
+}
+
+/** Whether the Document Content search tab is offered. Only a literal `true` turns it on. */
+export function contentSearchEnabled(): boolean {
+  return config.CONTENT_SEARCH === true;
+}
+
+/**
+ * Fetch remote config from /api/config (deployed only).
+ * On success, merges over env.js values. On failure, env.js defaults stand.
+ */
+async function fetchRemoteConfig(): Promise<void> {
+  try {
+    const response = await fetch('/api/config', {
+      signal: AbortSignal.timeout(5000)
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    const apiConfig: EnvConfig = await response.json();
+    config = { ...config, ...apiConfig };
+    if (config.logLevel === 0) {
+      console.log('config: merged with API config:', config);
+    }
+  } catch (e) {
+    console.error('config: API config fetch failed, using env.js defaults:', e);
+  }
+}
+
+/** Dropdown/filter list items, lazily fetched and cached by TanStack Query. */
+export function listsQueryOptions() {
+  return {
+    queryKey: ['lists'],
+    queryFn: async (): Promise<any[]> => {
+      const response = await fetch(`${getApiPath()}/search?pageSize=250&dataset=List`);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      const data = await response.json();
+      return data?.[0]?.searchResults ?? [];
+    }
+  };
+}

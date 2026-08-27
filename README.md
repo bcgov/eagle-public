@@ -1,13 +1,13 @@
 # EaglePublic
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.0.2.
+Public web app for EPIC: React 19, Vite, TypeScript, react-router and TanStack Query. Node 24, Yarn 4 (Corepack).
 
 ## Documentation
 
 All documentation has been consolidated in the [Eagle Documentation Wiki](https://github.com/bcgov/eagle-dev-guides/wiki):
 
 * **[Architecture Overview](https://github.com/bcgov/eagle-dev-guides/wiki/Architecture-Overview)** - System components and request flow
-* **[Configuration Management](https://github.com/bcgov/eagle-dev-guides/wiki/Configuration-Management)** - ConfigService pattern and environment variables
+* **[Configuration Management](https://github.com/bcgov/eagle-dev-guides/wiki/Configuration-Management)** - runtime config pattern and environment variables
 * **[Deployment Pipeline](https://github.com/bcgov/eagle-dev-guides/wiki/Deployment-Pipeline)** - CI/CD workflows and procedures
 * **[Local Development](https://github.com/bcgov/eagle-dev-guides/wiki/Local-Development)** - Setting up your development environment
 * **[Troubleshooting](https://github.com/bcgov/eagle-dev-guides/wiki/Troubleshooting)** - Common issues and solutions
@@ -38,58 +38,36 @@ To roll back, re-run the deploy workflow for the previous good tag.
 
 ## Development server
 
-To start a local development server, run:
-
 ```bash
-npm start
-# or
-ng serve
+yarn install
+yarn start
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
-
-```bash
-ng generate --help
-```
+Open `http://localhost:4200/`. The page reloads when you change a source file. The dev server
+proxies `/api`, `/analytics`, `/eagle-search` and `/demi-search`; the target comes from
+`API_LOCATION` in `src/env.js`, so change it there and restart.
 
 ## Building
 
-To build the project run:
-
 ```bash
-ng build
+yarn build
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+Type-checks, then writes the bundle to `dist/eagle-public/browser`. `env.js` lands there unhashed
+so the deploy workflows can rewrite it per environment.
 
 ## Running unit tests
 
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
 ```bash
-ng test
+yarn test           # single run
+yarn test:watch     # watch mode
+yarn test:coverage  # with coverage
 ```
 
-## Running end-to-end tests
+Tests run on [Vitest](https://vitest.dev/) with jsdom and Testing Library.
 
-For end-to-end (e2e) testing, run:
+## Linting
 
 ```bash
-ng e2e
+yarn lint
 ```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.

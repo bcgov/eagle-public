@@ -1,5 +1,3 @@
-import { Params } from '@angular/router';
-
 export class SearchResults {
   _schemaName: string;
   data: any;
@@ -42,8 +40,8 @@ export class SearchTerms {
     this.sortDirection = obj && obj.sortDirection || null;
   }
 
-  getParams(): Params {
-    const params: Params = {};
+  getParams(): Record<string, string> {
+    const params: Record<string, string> = {};
 
     if (this.keywords) {
       // tokenize by comma, space, etc and remove duplicate items
@@ -57,13 +55,13 @@ export class SearchTerms {
       params['dateend'] = this.dateEnd;
     }
     if (this.currentPage) {
-      params['currentPage'] = this.currentPage;
+      params['currentPage'] = String(this.currentPage);
     }
     if (this.sortBy) {
       params['sortBy'] = this.sortBy;
     }
     if (this.sortDirection) {
-      params['sortDirection'] = this.sortDirection;
+      params['sortDirection'] = String(this.sortDirection);
     }
 
     return params;

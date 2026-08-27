@@ -1,0 +1,564 @@
+import type { Project } from 'app/models/project';
+import type { Comment } from 'app/models/comment';
+import type { CommentPeriod } from 'app/models/commentperiod';
+import type { Document } from 'app/models/document';
+import type { SearchResults } from 'app/models/search';
+import type { Org } from 'app/models/organization';
+import type { Decision } from 'app/models/decision';
+import { encodeString } from 'app/utils/utils';
+import { logger } from 'app/config/logging';
+import { getApiPath, getSearchApiPath, getConfig } from 'app/config/config';
+import { track } from 'app/analytics/analytics';
+
+export class ApiError extends Error {
+  constructor(public status: number, public statusText: string) {
+    super(`${status} - ${statusText}`);
+    this.name = 'ApiError';
+  }
+}
+
+export interface ResponseWithHeaders<T> {
+  body: T;
+  headers: Headers;
+}
+
+// IE, Edge, etc
+export const isMS = !!(window.navigator as any).msSaveOrOpenBlob;
+
+export function apiPath(): string {
+  return getApiPath();
+}
+
+/**
+ * Base URL for search. eagle-search when SEARCH_API_PATH is set, eagle-api otherwise.
+ *
+ * Only the datasets in AZURE_DATASETS move; RecentActivity and ProjectNotification stay on
+ * eagle-api, as do getItem() and getFullDataSet(). The two backends answer the same query
+ * language and the same `[{searchResults, meta}]` envelope, which is why nothing downstream has
+ * to change.
+ */
+export function searchPath(): string {
+  return getSearchApiPath();
+}
+
+const AZURE_DATASETS = new Set(['Project', 'Document', 'DocumentChunk']);
+
+export function adminUrl(): string {
+  return getConfig().ADMIN_PATH || 'http://localhost:4200/admin/';
+}
+
+export function env(): string {
+  return getConfig().ENVIRONMENT || 'local';
+}
+
+export function bannerColour(): string {
+  return getConfig().BANNER_COLOUR || 'red';
+}
+
+export function surveyUrl(): string | null {
+  return getConfig().SURVEY_URL || null;
+}
+
+export function showSurveyBanner(): boolean {
+  return getConfig().SHOW_SURVEY_BANNER ?? false;
+}
+
+async function send(url: string, init: RequestInit = {}): Promise<Response> {
+  const method = init.method ?? 'GET';
+  logger.logHttpRequest(method, url, 'api');
+
+  let response: Response;
+  try {
+    response = await fetch(url, init);
+  } catch (error) {
+    logger.logHttpError(method, url, error, 'api');
+    throw error;
+  }
+
+  logger.logHttpResponse(method, url, response.status, undefined, 'api');
+  if (!response.ok) {
+    throw new ApiError(response.status, response.statusText);
+  }
+  return response;
+}
+
+async function getJson<T>(url: string): Promise<T> {
+  return (await send(url)).json() as Promise<T>;
+}
+
+async function getWithHeaders<T>(url: string): Promise<ResponseWithHeaders<T>> {
+  const response = await send(url);
+  return { body: (await response.json()) as T, headers: response.headers };
+}
+
+async function postJson<T>(url: string, body: unknown): Promise<T> {
+  const response = await send(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  return response.json() as Promise<T>;
+}
+
+export async function getFullDataSet(dataSet: string, pageSize = 250): Promise<any> {
+  return getJson(`${apiPath()}/search?pageSize=${pageSize}&dataset=${dataSet}`);
+}
+
+export async function downloadDocument(document: Document): Promise<void> {
+  track('Document Downloaded', {
+    document_id: document._id,
+    document_name: document.displayName,
+    document_type: document.internalMime || 'unknown'
+  });
+
+  let blob;
+  try {
+    blob = await downloadResource(document._id)
+  } catch (e) {
+    throw new Error(String(e))
+  }
+  if (!blob) {
+    throw new Error()
+  }
+  let filename = document.displayName;
+  filename = encodeString(filename, false)
+  if (isMS) {
+    (window.navigator as any).msSaveBlob(blob, filename);
+  } else {
+    const url = window.URL.createObjectURL(blob);
+    const a = window.document.createElement('a');
+    window.document.body.appendChild(a);
+    a.setAttribute('style', 'display: none');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    window.URL.revokeObjectURL(url);
+    a.remove();
+  }
+}
+
+export async function openDocument(document: Document): Promise<void> {
+  track('Document Opened', {
+    document_id: document._id,
+    document_name: document.displayName || document.documentFileName,
+    document_source: document.documentSource || 'unknown'
+  });
+
+  let filename;
+  if (document.documentSource === 'COMMENT') {
+    filename = document.internalOriginalName;
+  } else {
+    filename = document.documentFileName;
+  }
+  logger.debug('Opening document', 'api', { document });
+  let safeName = '';
+  try {
+    safeName = encodeString(filename || '', true);
+  } catch (e) {
+    logger.warn('Failed to encode document filename', 'api', e);
+  }
+  logger.debug('Opening document with safe name', 'api', { safeName });
+  window.open('/api/public/document/' + document._id + '/download/' + safeName, '_blank');
+}
+
+async function downloadResource(id: string): Promise<Blob> {
+  const queryString = `document/${id}/download`;
+  const blob = await (await send(apiPath() + '/' + queryString)).blob();
+  if (!blob) {
+    throw new Error('Failed to download document');
+  }
+  return blob;
+}
+
+export async function getItem(_id: string, schema: string): Promise<SearchResults[]> {
+  const queryString = `search?dataset=Item&_id=${_id}&_schemaName=${schema}`;
+  return getJson<SearchResults[]>(`${apiPath()}/${queryString}`);
+}
+
+//
+// Searching
+//
+export async function searchKeywords(keys: string, dataset: string, fields: any[], pageNum: number, pageSize: number, projectLegislation = '', sortBy: string | null = null, queryModifier: Record<string, string> = {}, populate = false, secondarySort: string | null = null, filter: Record<string, string> = {}, fuzzy = false): Promise<SearchResults[]> {
+  logger.debug(`api.searchKeywords called with keys: ${keys}`, 'api', { filter });
+
+  projectLegislation = (projectLegislation === '') ? 'default' : projectLegislation;
+  let queryString = `search?dataset=${dataset}`;
+  if (fields && fields.length > 0) {
+    fields.forEach(item => {
+      queryString += `&${item.name}=${item.value}`;
+    });
+  }
+  if (keys) {
+    queryString += `&keywords=${keys}`;
+  }
+  if (pageNum !== null) { queryString += `&pageNum=${pageNum - 1}`; }
+  if (pageSize !== null) { queryString += `&pageSize=${pageSize}`; }
+  if (projectLegislation !== '') { queryString += `&projectLegislation=${projectLegislation}`; }
+  if (sortBy !== null) { queryString += `&sortBy=${sortBy}`; }
+  if (secondarySort !== null) { queryString += `&sortBy=${secondarySort}`; }
+  queryString += `&populate=${populate}`;
+  Object.keys(queryModifier).forEach((key: string) => {
+    queryModifier[key].split(',').forEach((item: string) => {
+      queryString += `&and[${key}]=${item}`;
+    });
+  });
+  let safeItem: string;
+  Object.keys(filter).map((key: string) => {
+    filter[key].split(',').map((item: string) => {
+      if (item.includes('&')) {
+        safeItem = encodeString(item, true);
+      } else {
+        safeItem = item;
+      }
+      queryString += `&and[${key}]=${safeItem}`;
+    });
+  });
+  queryString += `&fields=${buildValues(fields)}`;
+  queryString += '&fuzzy=' + fuzzy;
+
+  const base = AZURE_DATASETS.has(dataset) ? searchPath() : apiPath();
+  const fullUrl = `${base}/${queryString}`;
+  logger.trace(`API call URL: ${fullUrl}`, 'api');
+
+  return getJson<SearchResults[]>(fullUrl);
+}
+
+//
+// Projects
+//
+export async function getCountProjects(): Promise<number> {
+  const queryString = `project`;
+  const response = await send(`${apiPath()}/${queryString}`, { method: 'HEAD' });
+  // retrieve the count from the response headers
+  return parseInt(response.headers.get('x-total-count') || '0', 10);
+}
+
+export async function getProjectPins(id: string, pageNum: number, pageSize: number, sortBy: any): Promise<Org> {
+  let queryString = `project/${id}/pin`;
+  if (pageNum !== null) { queryString += `?pageNum=${pageNum - 1}`; }
+  if (pageSize !== null) { queryString += `&pageSize=${pageSize}`; }
+  if (sortBy !== '' && sortBy !== null) { queryString += `&sortBy=${sortBy}`; }
+  return getJson<Org>(`${apiPath()}/${queryString}`);
+}
+
+// CAC
+export async function cacSignUp(project: Project, meta: any): Promise<any> {
+  // We are just looking for a 200 OK
+  return postJson(`${apiPath()}/project/${project._id}/cacSignUp`, meta);
+}
+
+export async function cacRemoveMember(projectId: string, meta: any): Promise<any> {
+  // We are just looking for a 200 OK
+  const response = await send(`${apiPath()}/project/${projectId}/cacRemoveMember`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(meta)
+  });
+  return response.json();
+}
+
+// Organizations
+
+export async function getOrgsByCompanyType(type: string): Promise<Org[]> {
+  const fields = [
+    'name'
+  ];
+
+  const queryString = `organization?companyType=${type}&sortBy=+name&fields=${buildValues(fields)}`;
+  return getJson<Org[]>(`${apiPath()}/${queryString}`);
+}
+
+export async function getProject(id: string, cpStart: string | null, cpEnd: string | null): Promise<Project[]> {
+  const fields = [
+    'CEAAInvolvement',
+    'CELead',
+    'CELeadEmail',
+    'CELeadPhone',
+    'centroid',
+    'description',
+    'eacDecision',
+    'location',
+    'name',
+    'projectLeadId',
+    'projectLead',
+    'projectLeadEmail',
+    'projectLeadPhone',
+    'proponent',
+    'region',
+    'responsibleEPDId',
+    'responsibleEPD',
+    'responsibleEPDEmail',
+    'responsibleEPDPhone',
+    'type',
+    'legislation',
+    'addedBy',
+    'build',
+    'CEAALink',
+    'code',
+    'commodity',
+    'currentPhaseName',
+    'dateAdded',
+    'dateCommentsClosed',
+    'commentPeriodStatus',
+    'dateUpdated',
+    'decisionDate',
+    'duration',
+    'eaoMember',
+    'epicProjectID',
+    'fedElecDist',
+    'isTermsAgreed',
+    'overallProgress',
+    'primaryContact',
+    'proMember',
+    'provElecDist',
+    'sector',
+    'shortName',
+    'status',
+    'legislation',
+    'substitution',
+    'featuredDocuments',
+    'updatedBy',
+    'read',
+    'write',
+    'delete',
+    'featuredDocuments',
+    'projectCAC',
+    'projectCACPublished',
+    'cacEmail'
+  ];
+  let queryString = `project/${id}?populate=true`;
+  if (cpStart !== null) { queryString += `&cpStart[since]=${cpStart}`; }
+  if (cpEnd !== null) { queryString += `&cpEnd[until]=${cpEnd}`; }
+  queryString += `&fields=${buildValues(fields)}`;
+  return getJson<Project[]>(`${apiPath()}/${queryString}`);
+}
+
+//
+// Decisions
+//
+export async function getDecisionByAppId(appId: string): Promise<Decision[]> {
+  const fields = [
+    '_addedBy',
+    '_application',
+    'name',
+    'description'
+  ];
+  const queryString = 'decision?_application=' + appId + '&fields=' + buildValues(fields);
+  return getJson<Decision[]>(`${apiPath()}/${queryString}`);
+}
+
+export async function getDecision(id: string): Promise<Decision[]> {
+  const fields = [
+    '_addedBy',
+    '_application',
+    'name',
+    'description'
+  ];
+  const queryString = 'decision/' + id + '?fields=' + buildValues(fields);
+  return getJson<Decision[]>(`${apiPath()}/${queryString}`);
+}
+
+//
+// Comment Periods
+//
+export async function getPeriodsByProjId(projId: string): Promise<any> {
+  const fields = [
+    'project',
+    'dateStarted',
+    'dateCompleted',
+    'instructions',
+    'isMet',
+    'metURL',
+    'informationLabel',
+  ];
+  const queryString = `commentperiod?project=${projId}&sortBy=-dateStarted&fields=${buildValues(fields)}`;
+  return getJson<any>(`${apiPath()}/${queryString}`);
+}
+
+export async function getPeriod(id: string): Promise<CommentPeriod[]> {
+  const fields = [
+    'additionalText',
+    'dateCompleted',
+    'dateStarted',
+    'informationLabel',
+    'instructions',
+    'openHouses',
+    'project',
+    'relatedDocuments',
+    'commentTip'
+  ];
+  const queryString = 'commentperiod/' + id + '?fields=' + buildValues(fields);
+  return getJson<CommentPeriod[]>(`${apiPath()}/${queryString}`);
+}
+
+//
+// Comments
+//
+export async function getCountCommentsById(commentPeriodId: string): Promise<number> {
+  const queryString = `public/comment?period=${commentPeriodId}`;
+  const response = await send(`${apiPath()}/${queryString}`, { method: 'HEAD' });
+  // retrieve the count from the response headers
+  return parseInt(response.headers.get('x-total-count') || '0', 10);
+}
+
+export async function getCommentsByPeriodId(pageNum: number | null, pageSize: number | null, getCount: boolean, periodId: string): Promise<ResponseWithHeaders<any>> {
+  const fields = [
+    'author',
+    'comment',
+    'documents',
+    'commentId',
+    'dateAdded',
+    'dateUpdated',
+    'isAnonymous',
+    'location',
+    'period',
+    'read',
+    'write',
+    'delete'
+  ];
+  // TODO: May want to pass this as a parameter in the future.
+  const sort = '-commentId';
+
+  let queryString = 'public/comment?period=' + periodId + '&fields=' + buildValues(fields) + '&';
+  if (sort !== null) { queryString += `sortBy=${sort}&`; }
+  if (pageNum !== null) { queryString += `pageNum=${pageNum}&`; }
+  if (pageSize !== null) { queryString += `pageSize=${pageSize}&`; }
+  if (getCount !== null) { queryString += `count=${getCount}&`; }
+  return getWithHeaders<any>(`${apiPath()}/${queryString}`);
+}
+
+export async function getComment(id: string): Promise<ResponseWithHeaders<any>> {
+  const fields = [
+    'author',
+    'comment',
+    'commentId',
+    'dateAdded',
+    'dateUpdated',
+    'isAnonymous',
+    'location',
+    'period',
+    'read',
+    'write',
+    'delete'
+  ];
+  const queryString = 'public/comment/' + id + '?fields=' + buildValues(fields);
+  return getWithHeaders<any>(`${apiPath()}/${queryString}`);
+}
+
+export async function addComment(comment: Comment): Promise<Comment> {
+  const fields = [
+    'comment',
+    'author'
+  ];
+  const queryString = 'public/comment?fields=' + buildValues(fields);
+  return postJson<Comment>(`${apiPath()}/${queryString}`, comment);
+}
+
+//
+// Documents
+//
+export async function getDocumentsByAppId(appId: string): Promise<Document[]> {
+  const fields = [
+    '_application',
+    'documentFileName',
+    'displayName',
+    'internalURL',
+    'internalMime',
+    'isFeatured'
+  ];
+  const queryString = 'document?_application=' + appId + '&fields=' + buildValues(fields);
+  return getJson<Document[]>(`${apiPath()}/${queryString}`);
+}
+
+export async function getDocumentsByCommentId(commentId: string): Promise<Document[]> {
+  const fields = [
+    '_comment',
+    'documentFileName',
+    'displayName',
+    'internalURL',
+    'internalMime',
+    'isFeatured'
+  ];
+  const queryString = 'document?_comment=' + commentId + '&fields=' + buildValues(fields);
+  return getJson<Document[]>(`${apiPath()}/${queryString}`);
+}
+
+export async function getDocumentsByDecisionId(decisionId: string): Promise<Document[]> {
+  const fields = [
+    '_decision',
+    'documentFileName',
+    'displayName',
+    'internalURL',
+    'internalMime',
+    'isFeatured'
+  ];
+  const queryString = 'document?_decision=' + decisionId + '&fields=' + buildValues(fields);
+  return getJson<Document[]>(`${apiPath()}/${queryString}`);
+}
+
+export async function getDocument(id: string): Promise<Document[]> {
+  const queryString = 'document/' + id + '?fields=internalOriginalName|documentSource';
+  return getJson<Document[]>(`${apiPath()}/${queryString}`);
+}
+
+export async function getDocumentsByMultiId(ids: string[]): Promise<Document[]> {
+  const fields = [
+    'eaoStatus',
+    'internalOriginalName',
+    'documentFileName',
+    'labels',
+    'internalOriginalName',
+    'displayName',
+    'documentType',
+    'datePosted',
+    'dateUploaded',
+    'dateReceived',
+    'documentFileSize',
+    'documentSource',
+    'internalURL',
+    'internalMime',
+    'checkbox',
+    'project',
+    'type',
+    'documentAuthor',
+    'documentAuthorType',
+    'milestone',
+    'description',
+    'isPublished',
+    'isFeatured'
+  ];
+  const queryString = `document?docIds=${buildValues(ids)}&fields=${buildValues(fields)}`;
+  return getJson<Document[]>(`${apiPath()}/${queryString}`);
+}
+
+export async function uploadDocument(formData: FormData): Promise<Document> {
+  const fields = [
+    'documentFileName',
+    'displayName',
+    'internalURL',
+    'internalMime'
+  ];
+  const queryString = 'document/?fields=' + buildValues(fields);
+  const response = await send(`${apiPath()}/${queryString}`, { method: 'POST', body: formData });
+  return response.json() as Promise<Document>;
+}
+
+export async function getTopNewsItems(): Promise<any[]> {
+  const queryString = 'public/recentActivity?top=true';
+  return getJson<any[]>(`${apiPath()}/${queryString}`);
+}
+
+//
+// Local helpers
+//
+function buildValues(collection: any[]): string {
+  if (!collection || collection.length === 0) {
+    return '';
+  }
+  let values = '';
+  collection.forEach(function (a) {
+    values += a + '|';
+  });
+  // trim the last |
+  return values.replace(/\|$/, '');
+}
