@@ -27,6 +27,31 @@ export function Header() {
   const hasValidColour = !!bannerColour && bannerColour !== 'no-banner-colour-set';
   const showBanner = envName === 'local' || (!!envName && hasValidColour);
 
+  // What Bootstrap's dropdown JS did before it was dropped: a click outside shuts the open menu,
+  // and Escape shuts it and hands focus back to the toggle.
+  useEffect(() => {
+    if (!openDropdown) {
+      return;
+    }
+    const onPointerDown = (event: MouseEvent) => {
+      if (!(event.target as Element | null)?.closest('.nav-item.dropdown')) {
+        setOpenDropdown(null);
+      }
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setOpenDropdown(null);
+        document.getElementById(openDropdown)?.focus();
+      }
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [openDropdown]);
+
   useEffect(() => {
     updateHeaderHeight();
     let timeout: ReturnType<typeof setTimeout>;

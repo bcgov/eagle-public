@@ -170,6 +170,7 @@ deviations. The deviations the pass turned up are below.
 - components/filters/date-picker: the date range is a native `<input type="date">`, so it shows the browser's locale format and the browser's calendar icon rather than ng-bootstrap's `yyyy-mm-dd` field with its own icon button. Same values on the wire.
 - projects/projlist-list: the card's action row is `justify-content-end`. It was `justify-content-between` to spread the comment-period badge and the button; with the badge gone (above) that would push the lone button left.
 - projects/projlist-map: its leaflet control and popup styling is present on every page, because the CSS ships with the bundle. Angular injected a component's styles only while that component was mounted, so the project detail sidebar's map renders with leaflet's own control z-indexes on test.
+- layout/header: Escape and a click outside close an open nav dropdown, which Bootstrap's dropdown JS did before it was dropped. Desktop opens the menus on hover (`.dropdown > .nav-link.dropdown-toggle` is `pointer-events: none`), so this only reaches the keyboard path the port opened up.
 
 ## Follow-ups
 
