@@ -184,46 +184,45 @@ export function ProjectPage() {
                 </div>
               </section>
             </div>
-
-            <section className="people">
-              <div className="container">
-                <h2 className="mb-4">Contact Us</h2>
-                <div className="d-flex flex-column flex-md-row gap-3 gap-md-5">
-                  <div className="flex-md-1">
-                    <p className="fw-bold mb-2">Project Assessment Team</p>
-                    <p className="d-flex align-items-center mb-2">
-                      <i className="material-icons me-2" aria-hidden="true">
-                        email
-                      </i>
-                      <a href="mailto:eao.operations@gov.bc.ca">EAO.operations@gov.bc.ca</a>
-                    </p>
-                    <p className="d-flex align-items-center mb-2 text-muted">
-                      <i className="material-icons me-2" aria-hidden="true">
-                        phone
-                      </i>
-                      -
-                    </p>
-                  </div>
-                  <div className="flex-md-1 contact-divider">
-                    <p className="fw-bold mb-2">Compliance &amp; Enforcement</p>
-                    <p className="d-flex align-items-center mb-2">
-                      <i className="material-icons me-2" aria-hidden="true">
-                        email
-                      </i>
-                      <a href="mailto:eao.compliance@gov.bc.ca">EAO.compliance@gov.bc.ca</a>
-                    </p>
-                    <p className="d-flex align-items-center mb-2">
-                      <i className="material-icons me-2" aria-hidden="true">
-                        phone
-                      </i>
-                      250-387-0131
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </section>
           </div>
         </div>
+        <section className="people">
+          <div className="container">
+            <h2 className="mb-4">Contact Us</h2>
+            <div className="d-flex flex-column flex-md-row gap-3 gap-md-5">
+              <div className="flex-md-1">
+                <p className="fw-bold mb-2">Project Assessment Team</p>
+                <p className="d-flex align-items-center mb-2">
+                  <i className="material-icons me-2" aria-hidden="true">
+                    email
+                  </i>
+                  <a href="mailto:eao.operations@gov.bc.ca">EAO.operations@gov.bc.ca</a>
+                </p>
+                <p className="d-flex align-items-center mb-2 text-muted">
+                  <i className="material-icons me-2" aria-hidden="true">
+                    phone
+                  </i>
+                  -
+                </p>
+              </div>
+              <div className="flex-md-1 contact-divider">
+                <p className="fw-bold mb-2">Compliance &amp; Enforcement</p>
+                <p className="d-flex align-items-center mb-2">
+                  <i className="material-icons me-2" aria-hidden="true">
+                    email
+                  </i>
+                  <a href="mailto:eao.compliance@gov.bc.ca">EAO.compliance@gov.bc.ca</a>
+                </p>
+                <p className="d-flex align-items-center mb-2">
+                  <i className="material-icons me-2" aria-hidden="true">
+                    phone
+                  </i>
+                  250-387-0131
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
       </main>
     </div>
   );

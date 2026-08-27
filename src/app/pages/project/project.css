@@ -16,6 +16,10 @@
   flex: 1;
 }
 
+.project[data-sidebar-state] .project-info {
+  flex: 1;
+}
+
 .project[data-sidebar-state] .content {
   display: flex;
   flex-direction: column;
@@ -168,11 +172,10 @@
   }
 }
 
-/* Contact Us section */
+/* Contact Us sits below the sidebar/content grid, full width above the footer. */
 .project[data-sidebar-state] .people {
   padding: 3rem 1rem;
   background-color: var(--table-row-bg);
-  margin-top: auto;
 }
 
 .project[data-sidebar-state] .people h2 {
