@@ -8,6 +8,7 @@ import { ComplianceOversight } from './pages/compliance-oversight';
 import { SearchHelp } from './pages/search-help';
 import { Placeholder } from './pages/placeholder';
 import { ProjectList } from './pages/project-list/project-list';
+import { Projects } from './pages/projects/projects';
 import { News } from './pages/news';
 import { ProjectNotifications } from './pages/project-notifications/project-notifications';
 import { Search } from './pages/search/search';
@@ -37,7 +38,7 @@ export const routes: RouteObject[] = [
 
       { path: 'cac-unsubscribe', element: <Placeholder name="CAC Unsubscribe" /> },
 
-      { path: 'projects', element: <Placeholder name="Projects" /> },
+      { path: 'projects', Component: Projects },
       { path: 'projects-list', Component: ProjectList },
 
       { path: 'project-notifications', Component: ProjectNotifications },

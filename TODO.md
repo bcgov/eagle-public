@@ -36,7 +36,7 @@ src/
 - [ ] 1. Scaffold + foundation + shell + static pages + placeholder pages for every route. Build, lint, test green.
 - [x] 2. Table/filter engine + pagination + query-param sync (`components/table`, `components/filters`).
 - [ ] 3a. List pages: ~~projects-list, news, project-notifications~~ (done in phase 2); project shell + 7 tabs.
-- [ ] 3b. Map page (`/projects`): projlist-map, filters, list, detail popup.
+- [x] 3b. Map page (`/projects`): projlist-map, filters, list, detail popup.
 - [ ] 3c. Comments + add-comment + file upload + cac-unsubscribe.
 - [x] 3d. Search + content search + search-help.
 - [ ] 4. Parity pass, a11y, delete leftovers, README/CLAUDE.md update.
@@ -73,3 +73,19 @@ src/
 - pages/content-search: an empty result set now clears the list and shows "No documents contain that text". Angular's table-service subscriber returned early on an empty payload (`res.data === 0`), leaving the previous search's cards on screen under the new keyword.
 - pages/content-search: a keyword search keeps the current `pageSize`, matching the table-list fix above. Angular rebuilt the params without it.
 - pages/content-search: snippets are escaped and re-opened for `<mark>` only before `dangerouslySetInnerHTML`. eagle-search already escapes them, but Angular's `[innerHTML]` ran the DomSanitizer over the result and React's has no equivalent, so that guard is restored in three lines rather than dropped.
+- state/map-ui: ConfigService's `mapBounds` getter dropped; nothing in the app ever read it.
+- state/map-ui: `storage.service` dropped. Its background preload was never called from anywhere, and TanStack Query's cache already gives "fetch the project list once, reuse it on the way back".
+- pages/projects: the `no-scroll` body class handling is gone; the app only ever removed that class, never added it.
+- pages/projects: a failed project load leaves the page showing "No projects found" instead of redirecting to the home page. `api/project` already degrades a failed search to an empty list, so the redirect only hid the failure.
+- pages/projects: filters are no longer cleared when leaving the page — the URL holds them, so navigating away drops them anyway. Angular's `clearAll()` on destroy also skipped the URL, leaving a stale query string behind.
+- pages/projects: filter state lives only in the URL, so the filter bar has no second copy to fall out of step with it.
+- projects/projlist-filters: `clearAllFilters` dropped; no template called it, and it cleared the filter signals without updating the URL.
+- projects/project-filter: the type filter resolves the dropdown's camelCase code (`energyElectricity`) to its display name before comparing with `project.type` (`Energy-Electricity`). Comparing the code directly never matched, so Project Type filtered nothing. URL values are unchanged.
+- projects/proj-detail-popup: the comment period status reads `response.data[0]`. Angular tested `.length` on the `{ totalCount, data }` wrapper, so the "Comment Period Status" row never rendered.
+- projects/proj-detail-popup: the project description goes through `sanitizeWordHtml` before rendering. Angular bound it raw through `[innerHTML]`.
+- projects/projlist-list: the card's details link points at `/p/:id`. Angular linked `/a/:id`, which matches no route and fell through to the home-page redirect.
+- projects/projlist-map: marker visibility is no longer tracked per marker in a store. Only "exactly one marker in view" — the single thing that read it, for popup auto-open — is recomputed on map move.
+- projects/projlist-map: the map is created immediately and a `ResizeObserver` calls `invalidateSize` (and replays a fit that came before the container had a size). Angular polled the container every 50 ms and defined the observer but never wired it up.
+- projects/projlist-map, projlist-list: the `name` attribute on the map and list `div`s became `aria-label`; `name` is not valid on a `div`.
+- projects/projects.css: `.toggle-app-list-btn` rules dropped; no template renders that button.
+- projects/projlist-filters: the search box keeps its raw text locally and writes the trimmed value to the URL, so a space typed between words survives.
