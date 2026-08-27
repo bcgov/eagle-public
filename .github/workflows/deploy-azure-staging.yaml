@@ -4,17 +4,11 @@
 # Builds this branch and ships the bundle to the `$web` container of an Azure Storage
 # account, which is published through a shared Azure Front Door Standard profile.
 #
-# THE SWITCHOVER IS DECIDED: eagle-public is hosted on Azure. Prod has served its bundle from
-# Front Door since eao-nginx v2.7.14, so this stopped being a preview the day that shipped, and
-# this file stopped belonging on a branch.
+# eagle-public is hosted on Azure. Prod has served its bundle from Front Door since
+# eao-nginx v2.7.14. This workflow is the only way a build reaches test.
 #
-# `deploy-to-dev.yaml`, `deploy-to-test.yaml`, `deploy-to-prod.yaml`,
-# `preview-branch-in-test.yaml` and `teardown-branch-preview.yaml` still own OpenShift, which
-# stays as the rollback target — rproxy can be pointed back at the in-cluster Service with one
-# `oc set env`, and that only works while those pods are running.
-#
-# So the two pipelines run for the SAME TAG, not on different triggers: publish the bundle here,
-# deploy the image there, and the hostname serves whichever rproxy points at.
+# Rollback is a re-run of this workflow for the previous good tag. The OpenShift pipelines and
+# their pods are retired, so there is no in-cluster Service to point rproxy back at.
 #
 # WHY STORAGE + FRONT DOOR AND NOT APP SERVICE: this is an Angular bundle, so the App
 # Service plan was paying for a Node process whose only job was to read files off disk
@@ -25,8 +19,7 @@
 #
 # Staging is spelled `-test` in Azure: the storage account, the Front Door profile and
 # the search API all live in the `c4b0a8-test` subscription. The GitHub environment
-# here is `azure-test` rather than `test` so it can never be confused with the
-# OpenShift pipeline in this same repository.
+# here is `azure-test` rather than `test`.
 #
 # Application only — never infrastructure. `eagle-public-cicd-test` is scoped to this one
 # storage account and holds nothing at resource-group scope: Storage Blob Data Contributor
@@ -39,10 +32,8 @@
 
 name: Deploy eagle-public to Azure staging
 
-# TAG-DRIVEN, exactly like `deploy-to-test.yaml`. This was a push trigger on the
-# `azure-search-preview` branch while the Azure estate was a preview; mainlining it means the
-# Azure bundle and the OpenShift image for the same environment must come from the SAME tag,
-# or test serves a frontend no release ever produced. Run both after cutting a tag.
+# TAG-DRIVEN. The deploy source is a release tag, never a branch, so test always serves a
+# frontend some release produced. Cut the tag with `release.yaml` first.
 on:
   workflow_dispatch:
     inputs:
@@ -93,7 +84,7 @@ jobs:
           # the checkout accepts any ref — including a branch name — so without this
           # `version=develop` publishes a moving branch tip to test. The ancestry check
           # below cannot catch it either: a commit is its own ancestor, so `develop` passes.
-          # Same pair of checks the sibling `deploy-to-test.yaml` runs, for the same reason.
+          # Same pair of checks `release.yaml` runs, for the same reason.
           [[ "${{ inputs.version }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] \
             || { echo "::error::version '${{ inputs.version }}' is not a release tag of the form v1.2.3 — the deploy source is a TAG, never a branch"; exit 1; }
           git fetch --tags --quiet origin
@@ -126,11 +117,10 @@ jobs:
       #
       # The committed `src/env.js` is the RELATIVE one — `API_PATH = '/api'`,
       # `SEARCH_API_PATH = ''`, `ANALYTICS_API_URL = '/analytics'` — and it must stay that way
-      # (`076bc94d chore: make env.js safe to merge`): an absolute env.js reaching the OpenShift
-      # image would point every environment at test.
+      # (`076bc94d chore: make env.js safe to merge`): an absolute env.js would point every
+      # environment at test.
       #
-      # So the per-environment values are applied here, at build time — the same thing the
-      # Dockerfile does for the OpenShift image (`Dockerfile:34-37`). The pattern is the repo's.
+      # So the per-environment values are applied here, at build time.
       #
       # RELATIVE, NOT ABSOLUTE, and that is the change that came with mainlining. While this was a
       # standalone preview the browser reached blob storage directly, so there was no `/api` and no
@@ -169,9 +159,8 @@ jobs:
           sed -i "s|window.__env.API_LOCATION = .*|window.__env.API_LOCATION = null;|" src/env.js
           sed -i "s|window.__env.logLevel = .*|window.__env.logLevel = 4;|" src/env.js
           sed -i "s|window.__env.ANALYTICS_DEBUG = .*|window.__env.ANALYTICS_DEBUG = false;|" src/env.js
-          # Two the Dockerfile does not do, for the reason prod's workflow gives at length: until
-          # rproxy points here, /api/config cannot answer, so whatever ships is what the page uses.
-          # Both stay correct after the flip, when /api/config merges the same values over them.
+          # These two are belt and braces: if /api/config cannot answer, whatever ships is what
+          # the page uses. Both stay correct when /api/config merges the same values over them.
           sed -i "s|window.__env.ENVIRONMENT = .*|window.__env.ENVIRONMENT = 'test';|" src/env.js
           sed -i "s|window.__env.ADMIN_PATH = .*|window.__env.ADMIN_PATH = '/admin/';|" src/env.js
           for expected in \

@@ -52,11 +52,10 @@ declare global {
  *   - App uses relative paths (/api, /analytics) — never API_LOCATION directly
  *
  * DEPLOYED (configEndpoint = true):
- *   - Dockerfile sed sets configEndpoint to true
- *   - App fetches /api/config on startup. In dev and test rproxy proxies that to eagle-api, which
- *     serves it from its Mongo `Config` document; prod still answers it from the rproxy ConfigMap
- *     until prod moves to rproxy v2.7.11, the image that relocates the source.
- *   - Whichever side serves it, those values override env.js
+ *   - The Azure deploy workflows sed configEndpoint to true
+ *   - App fetches /api/config on startup. rproxy proxies that to eagle-api, which serves it from
+ *     its Mongo `Config` document.
+ *   - Those values override env.js
  *
  * Lists (filter dropdowns) are lazy-loaded on first subscription, not during init.
  */

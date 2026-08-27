@@ -40,7 +40,7 @@ export class LoggingService {
       }
     }
     
-    // Fallback: check window.__env (set by env.js or Dockerfile)
+    // Fallback: check window.__env (set by env.js)
     const envLogLevel = (window as any).__env?.logLevel;
     if (typeof envLogLevel === 'number') {
       return envLogLevel;
