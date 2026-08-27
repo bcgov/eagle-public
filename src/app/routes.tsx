@@ -10,6 +10,8 @@ import { Placeholder } from './pages/placeholder';
 import { ProjectList } from './pages/project-list/project-list';
 import { News } from './pages/news';
 import { ProjectNotifications } from './pages/project-notifications/project-notifications';
+import { Search } from './pages/search/search';
+import { ContentSearch } from './pages/search/content-search';
 import { contentSearchEnabled } from './config/config';
 
 /**
@@ -54,14 +56,14 @@ export const routes: RouteObject[] = [
 
       { path: 'process', Component: Process },
 
-      { path: 'search', element: <Placeholder name="Search" /> },
+      { path: 'search', Component: Search },
 
       // Its own component, not the table-driven one: content results are a list of documents with
       // the matched text, which a table layout cannot render.
       {
         path: 'search/content',
         loader: contentSearchLoader,
-        element: <Placeholder name="Content Search" />
+        Component: ContentSearch
       },
 
       { path: 'search-help', Component: SearchHelp },
