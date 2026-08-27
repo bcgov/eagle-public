@@ -25,6 +25,11 @@ export interface EnvConfig {
    * to change either way.
    */
   CONTENT_SEARCH?: boolean;
+  /**
+   * Puts a shared-password curtain in front of the whole app. Only a literal `true` closes it, so
+   * prod (false or unset) renders unchanged. eagle-api checks the password; see state/gate.ts.
+   */
+  ACCESS_GATE?: boolean;
   ADMIN_PATH?: string;
   SURVEY_URL?: string | null;
   SHOW_SURVEY_BANNER?: boolean;

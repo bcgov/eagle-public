@@ -3,6 +3,8 @@ import { Outlet, useLocation } from 'react-router';
 import { Header } from './header';
 import { Footer } from './footer';
 import { ToastContainer } from 'app/components/toast-container';
+import { Gate } from './gate';
+import { useGateOpen } from 'app/state/gate';
 import { page } from 'app/analytics/analytics';
 import './app-shell.css';
 
@@ -36,6 +38,7 @@ function getPageName(path: string): string {
 export function AppShell() {
   const { pathname, search } = useLocation();
   const [showScrollButton, setShowScrollButton] = useState(false);
+  const gateOpen = useGateOpen();
   const isProjectsRoute = pathname.startsWith('/projects');
 
   useEffect(() => {
@@ -53,6 +56,10 @@ export function AppShell() {
   function scrollToTop(event: React.MouseEvent): void {
     event.preventDefault();
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  if (!gateOpen) {
+    return <Gate />;
   }
 
   return (

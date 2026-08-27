@@ -70,6 +70,9 @@
   // literal true shows it, and /api/config flips it with no redeploy.
   window.__env.CONTENT_SEARCH = false;
 
+  // Shared-password curtain. Only a literal true closes it; /api/config flips it with no redeploy.
+  window.__env.ACCESS_GATE = false;
+
   // eagle-admin link
   window.__env.ADMIN_PATH = 'https://eagle-test.apps.silver.devops.gov.bc.ca/admin/';
 

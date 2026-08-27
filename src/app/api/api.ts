@@ -546,6 +546,15 @@ export async function uploadDocument(formData: FormData): Promise<Document> {
   return response.json() as Promise<Document>;
 }
 
+/** Checks the shared access password. Resolves when accepted; throws ApiError 401 when not. */
+export async function checkGatePassword(password: string): Promise<void> {
+  await send(`${apiPath()}/public/gate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password })
+  });
+}
+
 export async function getTopNewsItems(): Promise<any[]> {
   const queryString = 'public/recentActivity?top=true';
   return getJson<any[]>(`${apiPath()}/${queryString}`);
