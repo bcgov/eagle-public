@@ -1,0 +1,205 @@
+/* Ported from Angular project.css. The `:host` rule folded into `.project`, the component's
+   root element, and the `details-sidebar` element selector became `.sidebar-wrapper`. */
+.project {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow-x: hidden;
+}
+
+.project main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.project .content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  position: relative;
+  /* For spinner positioning */
+}
+
+.project .main-content {
+  flex: 1;
+  padding-bottom: 3rem;
+}
+
+.project .project-tabs {
+  padding-top: 3rem;
+  padding-inline: 3.5rem;
+}
+
+/* Public Comment Period Banner */
+.project .pcp-banner {
+  background-color: var(--bc-blue);
+  color: var(--bs-white);
+  padding: 4rem 2rem 3rem 2rem;
+}
+
+.project .pcp-banner-content {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding-left: calc(1.5rem * 0.5);
+  padding-right: calc(1.5rem * 0.5);
+}
+
+.project .pcp-banner-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.project .pcp-banner-info {
+  flex: 1;
+}
+
+.project .pcp-banner h2 {
+  color: var(--bs-white);
+  font-size: var(--bs-font-size-4);
+  font-weight: var(--bs-font-weight-bold);
+}
+
+.project .pcp-banner h5 {
+  color: var(--gold);
+  font-size: var(--bs-font-size-6);
+  font-weight: var(--bs-font-weight-normal);
+  margin-bottom: 0;
+}
+
+.project .pcp-banner-actions {
+  flex-shrink: 0;
+}
+
+.project .pcp-banner-description {
+  margin-top: 1.5rem;
+  color: var(--bs-white);
+}
+
+.project .pcp-banner-description p {
+  margin-bottom: 0;
+  color: var(--bs-white);
+}
+
+/* Tab navigation */
+.project .project-tabs .nav-tabs {
+  max-width: 1100px;
+  margin-inline: auto;
+  padding-inline: 2rem;
+}
+
+/* Tab content padding - applies to all tab children */
+.project .project-tabs .tab-content {
+  max-width: 1100px;
+  margin-inline: auto;
+  margin-top: 0;
+  padding-top: 3rem;
+}
+
+/* Tablet and mobile styles */
+@media (max-width: 1126px) {
+  /* Extra bottom padding for PCP banner on mobile */
+  .project .pcp-banner {
+    padding-bottom: 3rem !important;
+  }
+
+  .project .project-tabs {
+    padding-inline: .5rem;
+  }
+
+  .project .project-tabs .tab-content {
+    padding: 1rem;
+  }
+
+  .project .pcp-banner {
+    padding: 1.5rem 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .project .pcp-banner h2 {
+    font-size: 1.25rem;
+  }
+
+  .project .pcp-banner h5 {
+    font-size: var(--bs-font-size-sm);
+  }
+
+  .project .pcp-banner-header {
+    flex-direction: column;
+  }
+
+  .project .pcp-banner-actions {
+    width: 100%;
+    margin-top: 1rem;
+  }
+
+  .project .pcp-banner-actions .btn {
+    width: 100%;
+  }
+
+  .project .pcp-banner .text-end {
+    text-align: left !important;
+    margin-top: 1rem;
+  }
+
+  /* Stack sidebar on top in mobile view */
+  .project .project-info {
+    display: flex !important;
+    flex-direction: column !important;
+    grid-template-columns: none !important;
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+
+  .project .project-info .sidebar-wrapper {
+    width: 100% !important;
+    order: -1;
+    /* Ensure sidebar appears first */
+  }
+
+  .project .project-info .content {
+    flex: 1;
+    width: 100%;
+  }
+}
+
+/* Contact Us section */
+.project .people {
+  padding: 3rem 1rem;
+  background-color: var(--table-row-bg);
+  margin-top: auto;
+}
+
+.project .people h2 {
+  color: var(--bc-blue);
+}
+
+/* Desktop-specific styles */
+@media (min-width: 1127px) {
+  .project .project-info {
+    display: grid;
+    grid-template-columns: var(--sidebar-width) 1fr;
+    flex: 1;
+    transition: grid-template-columns 0.5s ease;
+  }
+
+  .project .project-info:has(.side-banner.closed) {
+    grid-template-columns: 0 1fr;
+  }
+
+  .project .project-info .side-banner {
+    align-self: flex-start;
+  }
+
+  .project .project-info .content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .project .people .contact-divider {
+    border-left: 1px solid var(--bs-border-color);
+    padding-left: 2rem;
+  }
+}

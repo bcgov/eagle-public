@@ -35,7 +35,7 @@ src/
 
 - [ ] 1. Scaffold + foundation + shell + static pages + placeholder pages for every route. Build, lint, test green.
 - [x] 2. Table/filter engine + pagination + query-param sync (`components/table`, `components/filters`).
-- [ ] 3a. List pages: ~~projects-list, news, project-notifications~~ (done in phase 2); project shell + 7 tabs.
+- [x] 3a. List pages: ~~projects-list, news, project-notifications~~ (done in phase 2); project shell + 7 tabs.
 - [ ] 3b. Map page (`/projects`): projlist-map, filters, list, detail popup.
 - [ ] 3c. Comments + add-comment + file upload + cac-unsubscribe.
 - [ ] 3d. Search + content search + search-help.
@@ -66,3 +66,23 @@ src/
 - pages/project-notifications: the comment-period lookup runs once per notification. Angular fetched it on row init to decide whether to show the Engagement tab, then fetched the same URL again when the tab opened.
 - pages/project-notifications: `.skeleton-cell` and its shimmer are now in this page's CSS. In Angular they lived in `commenting-tab`, a different component with view encapsulation, so the notification skeleton rendered unstyled.
 - pages/project-notifications: sorting the documents sub-table returns to page 1. Angular kept the current page, showing a slice of the old ordering.
+- pages/project: `documents/detail/`, `cac/become-a-member`, `toggle-button/` dropped. No route or template in the Angular app reaches any of them.
+- pages/project: the `project-unsubscribe` tab dropped. `initTabLinks` skipped it and its `display` started false, so it could never render.
+- pages/project: `project.ts`'s `legislationLink`, `period` and `commentPeriod` signals dropped; nothing read them (the sidebar computes its own legislation link).
+- pages/project: the shell shares the loaded project and the `List` items with its tabs through the router outlet context. Angular pushed them into `StorageService` and each tab re-read them; `commenting-tab` and `documents` also refetched the lists per row.
+- pages/project: the scroll-position save/restore between `pins`/`project-activites` and `project-details-tab` dropped. It existed because the Angular router scrolled on every query-param navigation; react-router's `setSearchParams` does not move the page.
+- pages/project/details-sidebar: the map initialises from a ref in an effect. Angular polled `getElementById` every 100 ms until the element appeared, then `fixMap` polled `offsetParent` every 50 ms and re-centred twice more on a timer.
+- pages/project/details-sidebar: the Leaflet `featureGroup`, `fitBounds` and `defaultBounds` dropped. The map only renders when the project has a centroid, so fitting the bounds of that single marker at `maxZoom: 8` was the `setView(centre, 8)` the code already did.
+- pages/project/details-sidebar: `ResizeObserver` on the map container replaces the window `resize` handler, so the sidebar's open/close animation also triggers `invalidateSize`.
+- config: the chosen base map layer moved from Angular's `ConfigService` to `get/setBaseLayerName` in `config.ts`; it is session state, not env config.
+- pages/project: the tab overflow arrows are JSX driven by a `ResizeObserver`, not `document.createElement` appended once per shell mount with a 100 ms retry loop and re-checks on every `NavigationEnd`.
+- pages/project: one `ProjectDocumentTab` serves the Documents, Application, Certificate and Amendment tabs. The four Angular components differed only in which documents they select, whether they offer filters, and their empty message.
+- pages/project: the document tabs return to page 1 when a column is sorted. Angular's Documents tab kept the page, showing a slice of the old ordering; its three siblings already reset.
+- pages/project: a keyword search on a document tab keeps the current sort when the keyword itself did not change, and keeps the chosen page size. Angular reset both to `-datePosted` and dropped the page size.
+- pages/project: `onResetControls` dropped from all four document tabs. `search-filter-template` already emits an empty search package on reset, which clears the keyword, every filter and the sort in one navigation.
+- pages/project: `showFeatured` is passed to the rows through `tableData.data` instead of being written onto each record of the API response, which mutated the query cache.
+- pages/project/pins: the table reads `/api/project/:id/pin` through a TanStack query. `api/pins.ts` — a module-scoped store with its own `fetchDataConfig` mirror of the table state — is deleted; nothing imported it.
+- pages/project: the unstyled `spinner-container`/`spinner-new rotating` markup in `featured-documents` and `pins` dropped. Neither class is defined anywhere in the app, so it rendered as bare divs; `TableTemplate` already shows a spinner while loading.
+- pages/project: `decisions-tab` renders nothing. Its Angular template was entirely commented out; the route is kept so `/p/:projId/decisions` still resolves.
+- pages/project: `project-details-tab-{sm,md-lg}.component.css`, `application.component.css`, `project-activites.component.css` and `decisions-tab.component.css` not ported. No template in those components carries the selectors they define.
+- pages/project: `services/storage.service.ts` (project preload cache) and `services/project-filter.service.ts` are left for phase 3b. Only `projects.component` — the map page — uses what remains of either.

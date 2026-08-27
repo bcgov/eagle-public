@@ -10,6 +10,14 @@ import { Placeholder } from './pages/placeholder';
 import { ProjectList } from './pages/project-list/project-list';
 import { News } from './pages/news';
 import { ProjectNotifications } from './pages/project-notifications/project-notifications';
+import { ProjectPage } from './pages/project/project';
+import { ProjectDetailsTab } from './pages/project/project-details-tab';
+import { Certificates } from './pages/project/certificates';
+import { Amendments } from './pages/project/amendments';
+import { Application } from './pages/project/application';
+import { CommentingTab } from './pages/project/commenting-tab';
+import { DocumentsTab } from './pages/project/documents-tab';
+import { DecisionsTab } from './pages/project/decisions-tab';
 import { contentSearchEnabled } from './config/config';
 
 /**
@@ -76,16 +84,16 @@ export const routes: RouteObject[] = [
       // Project detail routes with tabs
       {
         path: 'p/:projId',
-        element: <Placeholder name="Project" withOutlet />,
+        Component: ProjectPage,
         children: [
           { index: true, loader: ({ params }) => redirect(`/p/${params['projId']}/project-details`) },
-          { path: 'project-details', element: <Placeholder name="Project Details" /> },
-          { path: 'certificates', element: <Placeholder name="Certificates" /> },
-          { path: 'amendments', element: <Placeholder name="Amendments" /> },
-          { path: 'application', element: <Placeholder name="Application" /> },
-          { path: 'commenting', element: <Placeholder name="Commenting" /> },
-          { path: 'documents', element: <Placeholder name="Documents" /> },
-          { path: 'decisions', element: <Placeholder name="Decisions" /> }
+          { path: 'project-details', Component: ProjectDetailsTab },
+          { path: 'certificates', Component: Certificates },
+          { path: 'amendments', Component: Amendments },
+          { path: 'application', Component: Application },
+          { path: 'commenting', Component: CommentingTab },
+          { path: 'documents', Component: DocumentsTab },
+          { path: 'decisions', Component: DecisionsTab }
         ]
       },
 

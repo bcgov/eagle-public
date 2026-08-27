@@ -1,0 +1,129 @@
+/* Ported from Angular engage-banner.component.css. `:host` became `.engage-banner`; the
+   `--has-image` host class is now a plain class on the same element. */
+
+.engage-banner {
+  display: block;
+  width: 100%;
+  animation: engageBannerFadeIn 0.25s ease;
+}
+
+.engage-banner--has-image {
+  position: relative;
+  min-height: 300px;
+}
+
+@keyframes engageBannerFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.engage-banner__image {
+  display: block;
+  width: 100%;
+  height: 480px;
+  object-fit: cover;
+  object-position: center;
+}
+
+.engage-banner--has-image .engage-banner__card {
+  position: absolute;
+  top: 1.5rem;
+  left: 1.5rem;
+  margin: 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 10;
+}
+
+.engage-banner__card {
+  display: flex;
+  flex-direction: column;
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 1.25rem;
+  margin: 1rem;
+  max-width: 580px;
+  color: rgb(33, 37, 41);
+}
+
+@media (min-width: 768px) {
+  .engage-banner--has-image .engage-banner__card {
+    left: 3.5rem;
+    top: 3.5rem;
+    padding: 1.75rem 2.25rem;
+    margin: 0;
+  }
+}
+
+.engage-banner__title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.engage-banner__description {
+  font-size: 1rem;
+  margin-bottom: 0.75rem;
+  line-height: 1.4;
+}
+
+.engage-banner__dates {
+  font-size: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.engage-banner__status-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.engage-banner__status-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.75rem;
+  border-radius: 16px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.engage-banner__status-chip--upcoming {
+  background-color: #ffca28;
+  color: #1a1a1a;
+}
+
+.engage-banner__status-chip--open {
+  background-color: rgb(46, 125, 50);
+  color: #fff;
+}
+
+.engage-banner__status-chip--closed {
+  background-color: #c62828;
+  color: #fff;
+}
+
+.engage-banner__cta {
+  display: inline-flex;
+  align-self: flex-end;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: #003366;
+  color: #fff;
+  font-weight: 600;
+  padding: 0.5rem 1.25rem;
+  border-radius: 4px;
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: background-color 0.2s;
+}
+
+.engage-banner__cta:hover {
+  background-color: #002244;
+}
+
+.engage-banner__cta .material-icons {
+  font-size: 1rem;
+}
