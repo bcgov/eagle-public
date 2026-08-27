@@ -1,0 +1,10 @@
+/* Ported from Angular project-details-tab.component.css. */
+
+.project .tab-content h2,
+.project .tab-content h3 {
+  color: var(--bc-blue);
+}
+
+.project .tab-content dd {
+  font-size: var(--bs-font-size-sm);
+}

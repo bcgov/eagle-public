@@ -1,0 +1,16 @@
+/* Ported from Angular project-document-table-rows.component.css. */
+
+.table-template td:hover {
+  cursor: pointer;
+}
+
+.featured-star {
+  color: var(--bs-warning);
+  font-size: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .featured-star {
+    font-size: 1.75rem;
+  }
+}
