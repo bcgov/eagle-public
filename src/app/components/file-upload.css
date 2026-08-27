@@ -1,0 +1,11 @@
+.dragDropStyling {
+  border-style: dotted;
+  border-color: var(--bc-gray-medium);
+  background-color: rgba(211, 211, 211, 0.48);
+  padding-bottom: 20px;
+  padding-top: 20px;
+}
+
+.fileInfo {
+  font-size: 10pt;
+}

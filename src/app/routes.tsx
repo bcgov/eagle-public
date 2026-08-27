@@ -6,7 +6,6 @@ import { Legislation } from './pages/legislation';
 import { Process } from './pages/process';
 import { ComplianceOversight } from './pages/compliance-oversight';
 import { SearchHelp } from './pages/search-help';
-import { Placeholder } from './pages/placeholder';
 import { ProjectList } from './pages/project-list/project-list';
 import { Projects } from './pages/projects/projects';
 import { News } from './pages/news';
@@ -21,6 +20,8 @@ import { Application } from './pages/project/application';
 import { CommentingTab } from './pages/project/commenting-tab';
 import { DocumentsTab } from './pages/project/documents-tab';
 import { DecisionsTab } from './pages/project/decisions-tab';
+import { Comments } from './pages/comments/comments';
+import { CacUnsubscribe } from './pages/cac-unsubscribe';
 import { contentSearchEnabled } from './config/config';
 
 /**
@@ -44,7 +45,14 @@ export const routes: RouteObject[] = [
 
       { path: 'contact', Component: Contact },
 
-      { path: 'cac-unsubscribe', element: <Placeholder name="CAC Unsubscribe" /> },
+      { path: 'cac-unsubscribe', Component: CacUnsubscribe },
+      // The unsubscribe link eagle-api mails out carries Angular matrix parameters
+      // (`/cac-unsubscribe;project=…;email=…`), which react-router sees as one path segment.
+      {
+        path: ':cacUnsubscribe',
+        loader: ({ params }) => (params['cacUnsubscribe']?.startsWith('cac-unsubscribe;') ? null : redirect('/')),
+        Component: CacUnsubscribe
+      },
 
       { path: 'projects', Component: Projects },
       { path: 'projects-list', Component: ProjectList },
@@ -55,7 +63,7 @@ export const routes: RouteObject[] = [
         path: 'pn/:projId/cp/:commentPeriodId',
         loader: ({ params }) => redirect(`/pn/${params['projId']}/cp/${params['commentPeriodId']}/details`)
       },
-      { path: 'pn/:projId/cp/:commentPeriodId/details', element: <Placeholder name="Comments" /> },
+      { path: 'pn/:projId/cp/:commentPeriodId/details', Component: Comments },
 
       { path: 'news', Component: News },
 
@@ -82,7 +90,7 @@ export const routes: RouteObject[] = [
         path: 'p/:projId/cp/:commentPeriodId',
         loader: ({ params }) => redirect(`/p/${params['projId']}/cp/${params['commentPeriodId']}/details`)
       },
-      { path: 'p/:projId/cp/:commentPeriodId/details', element: <Placeholder name="Comments" /> },
+      { path: 'p/:projId/cp/:commentPeriodId/details', Component: Comments },
 
       // Project detail routes with tabs
       {

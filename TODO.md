@@ -38,8 +38,8 @@ src/
 - [ ] 3a. List pages: ~~projects-list, news, project-notifications~~ (done in phase 2); project shell + 7 tabs.
 - [x] 3b. Map page (`/projects`): projlist-map, filters, list, detail popup.
 - [x] 3a. List pages: ~~projects-list, news, project-notifications~~ (done in phase 2); project shell + 7 tabs.
-- [ ] 3b. Map page (`/projects`): projlist-map, filters, list, detail popup.
-- [ ] 3c. Comments + add-comment + file upload + cac-unsubscribe.
+- [x] 3b. Map page (`/projects`): projlist-map, filters, list, detail popup.
+- [x] 3c. Comments + add-comment + file upload + cac-unsubscribe.
 - [x] 3d. Search + content search + search-help.
 - [ ] 4. Parity pass, a11y, delete leftovers, README/CLAUDE.md update.
 
@@ -111,3 +111,16 @@ src/
 - pages/project: `decisions-tab` renders nothing. Its Angular template was entirely commented out; the route is kept so `/p/:projId/decisions` still resolves.
 - pages/project: `project-details-tab-{sm,md-lg}.component.css`, `application.component.css`, `project-activites.component.css` and `decisions-tab.component.css` not ported. No template in those components carries the selectors they define.
 - pages/project: `services/storage.service.ts` (project preload cache) and `services/project-filter.service.ts` are left for phase 3b. Only `projects.component` — the map page — uses what remains of either.
+- pages/comments: NgbModal replaced by a native `<dialog>`; `showModal()` supplies the focus trap and Escape, and the static backdrop still refuses to dismiss on a backdrop click. Dismiss reasons are readable strings, not ng-bootstrap's enum ordinals.
+- pages/comments: the "Comment Modal Dismissed" event reports the page the modal was actually on. Angular read `currentPage` at open time, so it always reported 1.
+- pages/comments: the hero spinner clears once both lookups settle. Angular blocked on a non-null project, so a project that failed to load spun forever.
+- pages/comments: instructions and `commentTip` render through `utils/safe-html`. Angular used `bypassSecurityTrustHtml` and a raw `[innerHTML]`.
+- pages/comments: row CSS is scoped to the `.comments` container instead of a host class, so its bare `.mt-2` rule cannot reach Bootstrap's utility class elsewhere on the page.
+- pages/comments/add-comment: `commentFiles` dropped. It mirrored `documents` and was emptied on every change, so `maxFiles` only ever counted the current selection; attached files now count against the cap.
+- pages/comments/add-comment: `progressValue` / `progressBufferValue` dropped; nothing has rendered them since the Material progress bar was removed. `totalSize` stays, it gates the "Submitting your comment..." panel.
+- pages/comments/add-comment: the submission size is measured after the comment fields are filled in. Angular measured the still-empty comment, so a long comment with no attachments never showed the panel.
+- pages/comments/add-comment: `documentAuthorType` is omitted from the upload when the `List` lookup yields none. Angular sent the string "undefined". `documentSource` is appended once, not twice.
+- components/file-upload: `showInfo` input dropped; no template read it. Dead CSS dropped (`.form-text`, `.file-upload*`, `.doc-list`) — those classes are absent from the template, and `.doc-list` is styled globally by comments.css.
+- components/file-upload: drag handlers sit on the drop area rather than a component host, and the browse link is `href="#"` with `preventDefault` in place of `javascript:void(0)`. One 5-second timer clears the error list; Angular started one per invalid file.
+- pages/cac-unsubscribe: the emailed matrix-parameter link (`/cac-unsubscribe;project=…;email=…`) gets its own route, because react-router reads that as one path segment. Query-string parameters are accepted too.
+- pages/cac-unsubscribe: buttons are `type="button"`; Angular relied on NgForm to swallow the implicit form submit. `cac-unsubscribe.component.css` dropped — it only set `:host { display: block }`.
