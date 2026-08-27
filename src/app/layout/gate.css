@@ -1,0 +1,94 @@
+.gate {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bc-gray-light);
+  font-family: 'BCSans', sans-serif;
+}
+
+.gate__header {
+  background: var(--bc-blue);
+  border-bottom: 4px solid var(--bc-gold);
+  padding: 0.9rem 1.5rem;
+}
+
+.gate__brand {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  color: var(--bc-white);
+  max-width: 1140px;
+  margin: 0 auto;
+}
+
+.gate__brand strong {
+  font-size: 1.5rem;
+  letter-spacing: 0.04em;
+}
+
+.gate__brand span {
+  font-size: 0.95rem;
+  opacity: 0.85;
+}
+
+.gate__body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+
+.gate__card {
+  background: var(--bc-white);
+  border: 1px solid var(--bc-gray-border);
+  border-top: 6px solid var(--bc-blue);
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  padding: 2.5rem;
+  width: 100%;
+  max-width: 440px;
+}
+
+.gate__card h1 {
+  font-size: 1.6rem;
+  color: var(--bc-blue);
+  margin: 0 0 0.5rem;
+}
+
+.gate__card p {
+  color: var(--bc-gray-medium);
+  margin-bottom: 1.5rem;
+}
+
+.gate__card .form-group {
+  margin-bottom: 1rem;
+}
+
+.gate__card label {
+  font-weight: 700;
+  color: var(--bc-gray);
+  margin-bottom: 0.35rem;
+}
+
+.gate__card .form-control {
+  border-color: var(--bc-gray-border);
+  padding: 0.6rem 0.75rem;
+}
+
+.gate__card .btn-primary {
+  width: 100%;
+  padding: 0.65rem;
+  font-weight: 700;
+}
+
+.gate__card .text-danger {
+  margin: 0.5rem 0 1rem;
+}
+
+.gate__footer {
+  text-align: center;
+  color: var(--bc-gray-medium);
+  font-size: 0.85rem;
+  padding: 1rem;
+}

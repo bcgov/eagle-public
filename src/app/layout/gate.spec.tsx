@@ -68,7 +68,7 @@ describe('the curtain', () => {
   it('replaces the whole shell when the flag is true', async () => {
     await renderShell({ ACCESS_GATE: true });
     expect(await screen.findByLabelText('Password')).toBeInTheDocument();
-    expect(screen.queryByText('EPIC')).not.toBeInTheDocument();
+    expect(document.querySelector('.app-header')).toBe(null);
     expect(screen.queryByText('Admin Login')).not.toBeInTheDocument();
     expect(document.querySelector('.app-footer')).toBe(null);
     expect(document.querySelector('.toast-container')).toBe(null);
