@@ -13,19 +13,11 @@
 # Running it publishes to the live site and purges the live edge. It is not a preview and
 # there is no separate "real" deploy behind it.
 #
-# The OpenShift pipelines — `deploy-to-dev.yaml`, `deploy-to-test.yaml`,
-# `deploy-to-prod.yaml`, `preview-branch-in-test.yaml`, `teardown-branch-preview.yaml` —
-# are still untouched and still run. `deploy-to-prod.yaml` in particular now rolls a pod
-# that nothing routes to: it will go green and change nothing a user sees. Anyone shipping
-# a public hotfix has to come through here.
+# The OpenShift pipelines and their pods are retired, so this is the only way a public
+# hotfix ships. Rollback is a re-run of this workflow for the previous good tag.
 #
-# The cutover was one value in one ConfigMap and NOT a DNS change: the public hostname
-# never moved, so rollback is `oc set env deploy/rproxy
-# NGINX__EPIC__PROXY__ROOT=http://eagle-public:8080 -n 6cdc9e-prod` in 30-60 seconds, with
-# no TTL to wait out and no certificate to re-issue. It needs the OpenShift `eagle-public`
-# Service to still have endpoints, so that Deployment stays at 3 replicas. Because rproxy
-# is still in front, this estate needs only its `/*` static route: no API passthrough
-# route, no custom domain, no CORS anywhere. Those remain deliberately absent.
+# Because rproxy is still in front, this estate needs only its `/*` static route: no API
+# passthrough route, no custom domain, no CORS anywhere. Those remain deliberately absent.
 #
 # WHY STORAGE + FRONT DOOR AND NOT APP SERVICE: unchanged from staging — this is a static
 # Angular bundle, so an App Service plan would be paying for a Node process whose only job
@@ -45,7 +37,7 @@
 
 name: Deploy eagle-public to Azure production (LIVE SITE)
 
-# TAG-DRIVEN, like `deploy-to-prod.yaml`. A push trigger on a preview branch was right while
+# TAG-DRIVEN. A push trigger on a preview branch was right while
 # this estate was a preview; it is not right for the pipeline that deploys the live site, where
 # the standing rule is that the deploy source is a TAG, never a branch, and never `develop`.
 on:
@@ -129,7 +121,7 @@ jobs:
           # the checkout accepts any ref — including a branch name — so without this
           # `version=develop` publishes a moving branch tip to the LIVE PUBLIC SITE. The ancestry check
           # below cannot catch it either: a commit is its own ancestor, so `develop` passes.
-          # Same pair of checks the sibling `deploy-to-prod.yaml` runs, for the same reason.
+          # Same pair of checks the staging workflow runs, for the same reason.
           [[ "${{ inputs.version }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] \
             || { echo "::error::version '${{ inputs.version }}' is not a release tag of the form v1.2.3 — the deploy source is a TAG, never a branch"; exit 1; }
           git fetch --tags --quiet origin
@@ -166,8 +158,7 @@ jobs:
           #
           # What guards the real risk instead is above: the version must match a release-tag format
           # AND resolve under `refs/tags/`, so a branch tip cannot be published whatever it is
-          # named. That is the same pair the sibling `deploy-to-prod.yaml` runs, and it has never
-          # had an ancestry check.
+          # named.
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -193,13 +184,12 @@ jobs:
       # Azure preview stands alone: no rproxy in front, no `/api/config` to fetch, so every
       # backend had to be named at build time. Production is the opposite arrangement. The
       # cutover puts this bundle BEHIND eao-nginx (`location /` proxies to Front Door), so
-      # `/api`, `/analytics` and `/admin/` are same-origin and resolve through the same
-      # rproxy the OpenShift-served bundle uses today. Baking a hostname in would create a
+      # `/api`, `/analytics` and `/admin/` are same-origin and resolve through rproxy.
+      # Baking a hostname in would create a
       # cross-origin request where none exists, which means CORS config to maintain, a CSP
       # to widen, and a second thing to change at cutover.
       #
-      # So the rewrites below start from the four the Dockerfile performs for the OpenShift
-      # production image (`Dockerfile:34-37`): configEndpoint on, API_LOCATION cleared,
+      # So the rewrites below start from four: configEndpoint on, API_LOCATION cleared,
       # logLevel to errors-only, analytics debug off. TWO MORE run here, and the body below
       # says why: ENVIRONMENT and ADMIN_PATH, both of which the committed file holds at dev
       # values (`dev`, and an absolute eagle-dev URL) that would otherwise ship to prod.
@@ -208,11 +198,7 @@ jobs:
       # prod cut over to eagle-search on 2026-08-20 and `/api/config` now answers
       # `/eagle-search`, which merges over this file at runtime. Empty here is what keeps the
       # bundle neutral: the environment decides, and clearing the setting is still the kill
-      # switch that reverts search to eagle-api with no redeploy. The result is a bundle whose
-      # configuration is byte-identical to the OpenShift image's, which IS THE POINT: at
-      # cutover the only thing that changes is which server hands the browser these files.
-      # If the Azure copy misbehaves and the OpenShift copy does not, the difference is
-      # infrastructure, never configuration.
+      # switch that reverts search to eagle-api with no redeploy.
       #
       # `configEndpoint = true` means the SPA fetches `/api/config` same-origin at runtime
       # and merges the response over these defaults (`src/app/services/config.service.ts`),
@@ -250,7 +236,7 @@ jobs:
       # and the build stays green.
       #
       # Each `sed` is anchored on the full `window.__env.<KEY> = ` assignment, not on the
-      # bare value the Dockerfile matches. `src/env.js` discusses these keys in its own
+      # bare value. `src/env.js` discusses these keys in its own
       # comments — the phrase `configEndpoint = false` appears in prose there — and an
       # unanchored pattern rewrites the comment too. Harmless today, but the anchored form
       # is what `src/env.js` documents and what the staging workflow uses.
@@ -262,12 +248,11 @@ jobs:
           sed -i "s|window.__env.API_LOCATION = .*|window.__env.API_LOCATION = null;|" src/env.js
           sed -i "s|window.__env.logLevel = .*|window.__env.logLevel = 4;|" src/env.js
           sed -i "s|window.__env.ANALYTICS_DEBUG = .*|window.__env.ANALYTICS_DEBUG = false;|" src/env.js
-          # TWO MORE THAN THE DOCKERFILE DOES, and the reason outlived the dark window.
+          # TWO MORE, and the reason outlived the dark window.
           #
-          # On OpenShift these two are left alone safely, because `configEndpoint = true` means the
-          # SPA immediately fetches /api/config and overwrites them from the rproxy ConfigMap. That
-          # now happens here too — rproxy IS in front of this bundle — so on the public hostname
-          # these values are merged over at boot. They still matter on the raw `*.azurefd.net`
+          # `configEndpoint = true` means the SPA immediately fetches /api/config and overwrites
+          # them from the rproxy ConfigMap — rproxy IS in front of this bundle — so on the public
+          # hostname these values are merged over at boot. They still matter on the raw `*.azurefd.net`
           # origin, which has no /api route, and they are cheap insurance either way: unrewritten,
           # src/env.js ships ENVIRONMENT = 'dev' and an ADMIN_PATH pointing at
           # eagle-dev: a production-data endpoint wearing a dev banner and linking staff to the dev
@@ -642,6 +627,6 @@ jobs:
           echo "### ❌ Azure production deploy failed — THE LIVE SITE MAY ALREADY BE SERVING THE NEW BUNDLE" >> $GITHUB_STEP_SUMMARY
           echo "This endpoint is NOT dark. rproxy's \`location /\` has fetched the bundle from Front Door since eao-nginx v2.7.14, so projects.eao.gov.bc.ca serves whatever is in \`\$web\`." >> $GITHUB_STEP_SUMMARY
           echo "The publish step writes and verifies every blob BEFORE the purge and the smoke test, so a failure here most likely means the new bundle is already live and something after it failed." >> $GITHUB_STEP_SUMMARY
-          echo "CHECK THE SITE, then decide: re-run this workflow for the previous good tag to roll the bundle back, or \`oc set env deploy/rproxy NGINX__EPIC__PROXY__ROOT=http://eagle-public:8080 -n 6cdc9e-prod\` to fall back to the OpenShift pods." >> $GITHUB_STEP_SUMMARY
+          echo "CHECK THE SITE, then re-run this workflow for the previous good tag to roll the bundle back." >> $GITHUB_STEP_SUMMARY
           echo "If the security headers or the deep-link rewrite are missing, the Front Door rule set is not attached to this route." >> $GITHUB_STEP_SUMMARY
           echo "Re-apply it from eagle-edge (\`scripts/deploy-infra.sh prod\`); the rules come from its \`azure/modules/front-door.bicep\` and the storage account and its \`\$web\` container from \`azure/modules/static-site.bicep\`." >> $GITHUB_STEP_SUMMARY

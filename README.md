@@ -9,15 +9,32 @@ All documentation has been consolidated in the [Eagle Documentation Wiki](https:
 * **[Architecture Overview](https://github.com/bcgov/eagle-dev-guides/wiki/Architecture-Overview)** - System components and request flow
 * **[Configuration Management](https://github.com/bcgov/eagle-dev-guides/wiki/Configuration-Management)** - ConfigService pattern and environment variables
 * **[Deployment Pipeline](https://github.com/bcgov/eagle-dev-guides/wiki/Deployment-Pipeline)** - CI/CD workflows and procedures
-* **[Helm Charts](https://github.com/bcgov/eagle-dev-guides/wiki/Helm-Charts)** - Kubernetes deployment configuration
 * **[Local Development](https://github.com/bcgov/eagle-dev-guides/wiki/Local-Development)** - Setting up your development environment
-* **[Rollback Procedures](https://github.com/bcgov/eagle-dev-guides/wiki/Rollback-Procedures)** - How to rollback deployments
 * **[Troubleshooting](https://github.com/bcgov/eagle-dev-guides/wiki/Troubleshooting)** - Common issues and solutions
 
 **Environments:**
-- Dev: https://eagle-dev.apps.silver.devops.gov.bc.ca
-- Test: https://eagle-test.apps.silver.devops.gov.bc.ca
-- Prod: https://eagle.gov.bc.ca
+- Test: https://test.projects.eao.gov.bc.ca
+- Prod: https://projects.eao.gov.bc.ca
+
+## Deployment
+
+Test and prod serve this app as a static bundle from an Azure Storage `$web` container behind
+Azure Front Door. eao-nginx (rproxy) sits in front of Front Door, so `/api`, `/analytics` and
+`/admin/` stay same-origin. There are no containers and no Helm charts.
+
+Deploys run from a release tag, never a branch. Cut the tag first, then deploy:
+
+```bash
+gh workflow run "Create Release Tag" -f version=v1.2.3
+gh workflow run "Deploy eagle-public to Azure staging" -f version=v1.2.3
+gh workflow run "Deploy eagle-public to Azure production (LIVE SITE)" -f version=v1.2.3
+```
+
+Both deploy workflows reject a `version` that is not an existing `vX.Y.Z` tag. They rewrite
+`src/env.js` for the target environment at build time, publish the bundle, purge the Front Door
+edge and smoke test the result.
+
+To roll back, re-run the deploy workflow for the previous good tag.
 
 ## Development server
 
