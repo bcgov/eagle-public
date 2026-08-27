@@ -127,6 +127,14 @@ describe('document search', () => {
     expect(request).toContain('&and[datePostedEnd]=2021-12-31T00:00:00.000Z');
   });
 
+  it('shows the date range the URL carries in the two date inputs', async () => {
+    renderAt('/search?datePostedStart=2020-01-01T00:00:00.000Z&datePostedEnd=2021-12-31T00:00:00.000Z');
+
+    await screen.findByText('Fish and Fish Habitat.pdf');
+    const inputs = screen.getAllByLabelText('Date input field') as HTMLInputElement[];
+    expect(inputs.map(input => input.value)).toEqual(['2020-01-01', '2021-12-31']);
+  });
+
   it('opens the advanced filter panel when the URL already carries a filter', async () => {
     renderAt('/search?milestone=m1');
 

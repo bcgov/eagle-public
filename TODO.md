@@ -169,6 +169,7 @@ deviations. The deviations the pass turned up are below.
 - components/table: mobile list rows keep the 1rem gap `assets/styles/components/table.css` asks for. Angular wraps every row in its own component host element, so `.table-template .table tbody tr:last-child { margin-bottom: 0 }` matches every row there and the cards butt together. Reproducing that needs a junk wrapper element around each row.
 - components/filters/date-picker: the date range is a native `<input type="date">`, so it shows the browser's locale format and the browser's calendar icon rather than ng-bootstrap's `yyyy-mm-dd` field with its own icon button. Same values on the wire.
 - projects/projlist-list: the card's action row is `justify-content-end`. It was `justify-content-between` to spread the comment-period badge and the button; with the badge gone (above) that would push the lone button left.
+- pages/search: a `datePostedStart`/`datePostedEnd` deep link shows its dates in the two date inputs. Both builds send the same `and[datePosted*]` request, but on test the inputs stay empty and Reset Filters stays disabled, so the panel claims no date filter is set.
 - projects/projlist-map: its leaflet control and popup styling is present on every page, because the CSS ships with the bundle. Angular injected a component's styles only while that component was mounted, so the project detail sidebar's map renders with leaflet's own control z-indexes on test.
 
 ## Follow-ups
