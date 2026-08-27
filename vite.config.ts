@@ -23,6 +23,7 @@ export default defineConfig({
     alias: { app: fileURLToPath(new URL('./src/app', import.meta.url)) }
   },
   server: {
+    allowedHosts: true,
     port: 4200,
     proxy: {
       '/api': proxyRule,
