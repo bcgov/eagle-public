@@ -1,0 +1,100 @@
+/* Native <dialog> replaces ng-bootstrap's modal window; Bootstrap's .modal-dialog expects to sit
+   inside a .modal, so the dialog element supplies the framing itself. */
+dialog.modal-dialog {
+  padding: 0;
+  border: none;
+  background: transparent;
+  width: calc(100% - 1rem);
+  max-height: calc(100% - 1rem);
+  overflow: auto;
+}
+
+dialog.modal-dialog::backdrop {
+  background-color: #000;
+  opacity: 0.5;
+}
+
+.understandText {
+  font-size: var(--bs-font-size-sm) !important;
+}
+
+.modal-content {
+  h4, h5 {
+    font-weight: var(--bs-font-weight-semibold);
+  }
+
+  h5 {
+    margin-bottom: 0.5rem;
+  }
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+
+  .btn {
+    min-width: 6rem;
+    text-transform: uppercase;
+    font-size: var(--bs-font-size-sm);
+    font-weight: var(--bs-font-weight-bold);
+  }
+}
+
+@media (max-width: 768px) {
+  .modal-footer {
+    flex-direction: column;
+    align-items: stretch;
+
+    .btn {
+      width: 100%;
+      margin-top: 0.5rem;
+    }
+  }
+}
+
+.progress-content {
+  text-align: center;
+}
+
+.thank-you-content {
+  text-align: center;
+
+  .modal-header {
+    padding-bottom: 0;
+    border: none;
+  }
+
+  .modal-body {
+    padding-top: 0;
+  }
+}
+
+.thank-you-icon {
+  display: inline-block;
+  width: 96px;
+  height: 96px;
+  border: 6px solid var(--bs-primary);
+  border-radius: 50%;
+  background: url('/assets/images/baseline-check-24px.svg') center / 72px no-repeat;
+}
+
+.comment-tip-container {
+  background-color: var(--bc-blue);
+  color: var(--bs-white);
+  display: flex;
+  align-items: flex-start;
+  padding: 0.625rem;
+  margin-bottom: 0.625rem;
+
+  .material-icons {
+    color: var(--bs-warning);
+    margin-right: 0.625rem;
+  }
+
+  p {
+    margin-bottom: 0;
+    font-size: var(--bs-font-size-sm);
+  }
+}
