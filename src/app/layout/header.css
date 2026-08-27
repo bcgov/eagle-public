@@ -144,6 +144,16 @@
   background-color: transparent;
 }
 
+/* The two dropdown toggles are <button>, so the UA chrome has to go for them to match the links. */
+button.nav-link {
+  width: 100%;
+  border-left: none;
+  border-right: none;
+  border-bottom: none;
+  font-family: inherit;
+  text-align: left;
+}
+
 /* Add border around nav items in collapsed mobile menu */
 @media (max-width: 767px) {
   .nav-item:first-child .nav-link {

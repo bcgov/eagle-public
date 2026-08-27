@@ -213,7 +213,10 @@ export async function searchKeywords(keys: string, dataset: string, fields: any[
       queryString += `&and[${key}]=${safeItem}`;
     });
   });
-  queryString += `&fields=${buildValues(fields)}`;
+  // No `&fields=`: neither backend reads it on /search. eagle-api's search controller never
+  // touches the parameter and swagger does not declare it; demi-search accepts it only to keep
+  // saved URLs out of its unknown-parameter 400. Angular sent `fields=[object Object]` here
+  // because `fields` holds `{name, value}` pairs, already emitted above as `&name=value`.
   queryString += '&fuzzy=' + fuzzy;
 
   const base = AZURE_DATASETS.has(dataset) ? searchPath() : apiPath();

@@ -143,14 +143,12 @@ describe('project shell', () => {
 
     await waitFor(() => expect(requests.filter(url => url.includes('dataset=Document'))).toHaveLength(3));
 
-    // `fields=[object Object]` is what the Angular app sent too: it passes the field/value pairs
-    // where buildValues expects names. Kept as-is so the request is byte-identical.
     expect(requests.find(url => url.includes('and[type]=type-app-2002'))).toBe(
       '/api/search?dataset=Document&project=proj-1&pageNum=0&pageSize=1&projectLegislation=default&sortBy=&sortBy=&populate=true' +
         '&and[documentSource]=PROJECT' +
         '&and[type]=type-app-2002&and[type]=type-app-2018&and[type]=type-memo-2002&and[type]=type-memo-2018' +
         '&and[milestone]=ms-appreview&and[milestone]=ms-eac&and[milestone]=ms-eac-rev' +
-        '&fields=[object Object]&fuzzy=false'
+        '&fuzzy=false'
     );
   });
 

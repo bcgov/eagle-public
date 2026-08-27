@@ -92,19 +92,14 @@ export function ProjDetailPopup({ project }: { project: Project }) {
 
           <hr />
 
-          <a
+          <button
+            type="button"
             className="app-link btn btn-primary"
             onClick={navigateToProject}
-            onKeyDown={event => {
-              if (event.key === 'Enter') navigateToProject();
-            }}
-            tabIndex={0}
-            role="button"
-            style={{ cursor: 'pointer' }}
             title="View more information about this project"
           >
             View Project Details
-          </a>
+          </button>
         </div>
       </div>
     </div>

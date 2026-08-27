@@ -36,8 +36,10 @@ export function DocSearchTableRow({ rowData, tableData }: TableRowProps) {
         <span
           className="material-icons download-icon"
           onClick={() => openDocumentDownload(rowData)}
-          onKeyUp={event => {
-            if (event.key === 'Enter') openDocumentDownload(rowData);
+          onKeyDown={event => {
+            if (event.key !== 'Enter' && event.key !== ' ') return;
+            event.preventDefault();
+            openDocumentDownload(rowData);
           }}
           tabIndex={0}
           role="button"

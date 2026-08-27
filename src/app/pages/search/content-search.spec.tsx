@@ -77,7 +77,7 @@ describe('content search', () => {
 
     expect(await screen.findByText('Fish and Fish Habitat.pdf')).toBeInTheDocument();
     expect(requests.at(-1)).toBe(
-      '/api/search?dataset=DocumentChunk&keywords=pipeline&pageNum=0&pageSize=10&projectLegislation=default&sortBy=-score&sortBy=&populate=true&fields=&fuzzy=false'
+      '/api/search?dataset=DocumentChunk&keywords=pipeline&pageNum=0&pageSize=10&projectLegislation=default&sortBy=-score&sortBy=&populate=true&fuzzy=false'
     );
   });
 

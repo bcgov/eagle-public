@@ -42,6 +42,15 @@ src/
 - [x] 3c. Comments + add-comment + file upload + cac-unsubscribe.
 - [x] 3d. Search + content search + search-help.
 - [ ] 4. Parity pass, a11y, delete leftovers, README/CLAUDE.md update.
+  - [x] 4a. Phase-3 findings (project card fields, `fields=[object Object]`, CAC location), dependency audit, leftovers, a11y basics, docs.
+    - [x] `models/project.ts` fields that no payload carries.
+    - [x] `&fields=` dropped from the search request.
+    - [x] CAC `caclocationInput` — investigated, see Follow-ups.
+    - [x] Dependency audit; `bootstrap.bundle.min.js` no longer shipped.
+    - [x] Leftovers deleted (`assets/styles/layout/`, retina marker icons, dead badge CSS).
+    - [x] a11y: skip link, `aria-live` toast container, popup CTA is a real `<button>`.
+    - [x] `README.md` / `CLAUDE.md` describe the React stack.
+  - [ ] 4b. Parity run against prod.
 
 ## Port rules (added 2026-08-27)
 
@@ -124,3 +133,20 @@ src/
 - components/file-upload: drag handlers sit on the drop area rather than a component host, and the browse link is `href="#"` with `preventDefault` in place of `javascript:void(0)`. One 5-second timer clears the error list; Angular started one per invalid file.
 - pages/cac-unsubscribe: the emailed matrix-parameter link (`/cac-unsubscribe;project=…;email=…`) gets its own route, because react-router reads that as one path segment. Query-string parameters are accepted too.
 - pages/cac-unsubscribe: buttons are `type="button"`; Angular relied on NgForm to swallow the implicit form submit. `cac-unsubscribe.component.css` dropped — it only set `:host { display: block }`.
+- models/project: `client`, `purpose`, `subpurpose`, `tantalisID`, `clFile`, `cpStatus`, `currentPeriod`, `appStatus` and `isLoaded` deleted. No eagle-api Project schema path and no `/api/public/search?dataset=Project` response carries any of them (checked against prod 2026-08-27); they are ACRFD leftovers, so the constructor could never have populated them.
+- projects/projlist-list: the card reads fields the payload actually has. Applicant is `proponent.name` instead of the absent `client`, "Purpose / Subpurpose" became "Type / Sector" (`type` / `sector`), and the "Disposition Transaction" (`tantalisID`) and "EAO Project #" (`clFile`) rows are gone — no EPIC field holds either. Angular rendered "Unknown Client" and two "Not Available" rows on every card in prod.
+- projects/projlist-list: the comment-period badge dropped. It read `project.currentPeriod`, which the search payload never carries, so every card rendered an empty grey badge; filling it would cost one `/api/commentperiod` request per card.
+- api/searchKeywords: `&fields=` no longer sent. eagle-api's `search.js` never reads the parameter and swagger does not declare it on `/public/search`; demi-search lists `fields` in `KNOWN_PARAMS` only so a saved URL does not hit its unknown-parameter 400. Verified on prod: absent, `[object Object]` and real field names all return byte-identical responses. The `{name, value}` pairs are still emitted as `&name=value` above, which is the part that works.
+- deps: `bootstrap.bundle.min.js` is no longer imported. The four `data-bs-*` attributes in `header.tsx` were the only Bootstrap JS in the app; the mobile collapse and the two nav dropdowns are React state now. `bootstrap` stays a dependency for `dist/css/bootstrap.min.css`.
+- layout/header: the two dropdown toggles are `<button>` instead of `<a role="button">`. They had neither `href` nor `tabindex`, so a keyboard user could not open either menu.
+- assets: `styles/layout/layout.css` deleted — never imported by `styles.css` or `index.html`, and it styled `app-root`. `images/marker-icon-2x-yellow.svg` and `marker-icon-2x-yellow-lg.svg` deleted; nothing sets Leaflet's `iconRetinaUrl`. `public/assets` symlinks the whole tree into `dist`, so unreferenced files were being shipped.
+- layout/app-shell: a skip-to-main link wired to the existing `.skip-to-main` rules, and `<main id="main-content" tabindex="-1">` as its target. The CSS was already there with nothing using it.
+- components/toast-container: `aria-live="polite"` on the container, and the per-toast `role="alert" aria-live="assertive"` removed. A live region created at the same moment as its content is announced unreliably, and two nested regions announce twice.
+- projects/proj-detail-popup: "View Project Details" is a `<button>`. It was an `<a>` with no `href`, a `role`, a `tabindex`, a hand-rolled Enter handler and `cursor: pointer` — all of which a button gives for free, Space included.
+- pages/search: the download icon activates on Space as well as Enter, and on keydown rather than keyup, which is what a real button does.
+
+## Follow-ups
+
+- CAC sign-up drops the Location field. `add-comment.tsx` collects `caclocationInput` but does not send it, and sending it would change nothing: eagle-api's `publicCACSignUp` (`api/controllers/cac.js`) casts the body through `new CACUser(...)`, and `api/helpers/models/cacUser.js` has no location path — mongoose would strip it. `CACObject` in swagger declares only `name`, `email` and `comment`. Fixing this needs an eagle-api change (add the field to the model and the swagger definition) before the frontend can send it. Angular had the same gap.
+- `luxon` kept. `models/commentperiod.ts` does America/Vancouver arithmetic, not formatting: `endOf('day')` in Pacific, `minus({days: 7})`, `plus({days: 7})`, `diff(now, 'days')`, hour/minute reads in Pacific and a `ZZZZ` zone name. `Intl.DateTimeFormat` formats in a zone but cannot do zone-aware arithmetic across DST, and `Temporal` is not available. Revisit when `Temporal` ships.
+- Non-interactive `tabIndex={0}` on `<td>`, `<h2>`, `<p>`, `<span>` and `<label>` in `pins`, `activity-card`, `home`, `search-filter-template` and `project-notification-documents-table-details` is an Angular-era idiom that puts unactionable content in the tab order (WCAG 2.4.3). Out of scope for the a11y basics pass; needs a decision on how those tables should be navigated.

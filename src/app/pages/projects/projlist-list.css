@@ -109,19 +109,9 @@
   }
 }
 
-/* App Card Actions & Comment Status */
+/* App Card Actions */
 .app-card__actions {
   margin-top: 1rem;
-
-  .comment-status-badge {
-    padding: 0.5rem;
-    text-transform: none;
-    font-size: var(--bs-font-size-sm);
-  
-    .date {
-      font-weight: normal;
-    }
-  }
 
   .app-details-link {
     padding: 0;

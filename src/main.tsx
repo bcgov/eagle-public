@@ -4,7 +4,6 @@ import { RouterProvider, createBrowserRouter } from 'react-router';
 import { QueryClientProvider } from '@tanstack/react-query';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './styles.css';
-import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 import { loadConfig, getConfig } from './app/config/config';
 import { initAnalytics } from './app/analytics/analytics';
 import { queryClient } from './app/api/query-client';

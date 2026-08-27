@@ -57,9 +57,12 @@ export function AppShell() {
 
   return (
     <div className="app-root">
+      <a className="skip-to-main" href="#main-content">
+        Skip to main content
+      </a>
       <div className="app-wrapper">
         <Header />
-        <main className={`app-content${isProjectsRoute ? ' projects-route' : ''}`}>
+        <main id="main-content" tabIndex={-1} className={`app-content${isProjectsRoute ? ' projects-route' : ''}`}>
           <div id="scrollTop">
             <Outlet />
           </div>

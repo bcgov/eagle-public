@@ -77,7 +77,7 @@ describe('projects list', () => {
     expect(await screen.findByText('Alpha Mine')).toBeInTheDocument();
     expect(screen.getByText('Beta Dam')).toBeInTheDocument();
     expect(lastProjectRequest()).toBe(
-      '/api/search?dataset=Project&pageNum=0&pageSize=10&projectLegislation=default&sortBy=+name&sortBy=&populate=true&fields=&fuzzy=false'
+      '/api/search?dataset=Project&pageNum=0&pageSize=10&projectLegislation=default&sortBy=+name&sortBy=&populate=true&fuzzy=false'
     );
   });
 
@@ -86,7 +86,7 @@ describe('projects list', () => {
 
     await screen.findByText('Alpha Mine');
     expect(lastProjectRequest()).toBe(
-      '/api/search?dataset=Project&pageNum=2&pageSize=25&projectLegislation=default&sortBy=-region&sortBy=&populate=true&fields=&fuzzy=false'
+      '/api/search?dataset=Project&pageNum=2&pageSize=25&projectLegislation=default&sortBy=-region&sortBy=&populate=true&fuzzy=false'
     );
   });
 

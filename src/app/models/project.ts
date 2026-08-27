@@ -33,7 +33,6 @@ export class Project {
   code: string;
   commodity: string;
   currentPhaseName: any;
-  currentPeriod?: any;
   phaseHistory: any[];
   dateAdded: string;
   dateCommentsClosed!: string;
@@ -61,20 +60,11 @@ export class Project {
   projectCAC: boolean;
   projectCACPublished: boolean;
   cacEmail: any;
-  appStatus?: string; // Application status for display
-  cpStatus?: string; // Comment period status for display
-  clFile?: string; // CL File number
-  purpose?: string; // Project purpose
-  subpurpose?: string; // Project sub-purpose
-  tantalisID?: string; // Tantalis ID number
-  client?: string; // Client/applicant name
 
   // Permissions
   read?: string[] = [];
   write?: string[] = [];
   delete?: string[] = [];
-
-  isLoaded?: boolean = false;
 
   featuredDocuments?: Document[] = [];
 

@@ -80,7 +80,7 @@ describe('project notifications', () => {
 
     expect(await screen.findByText('CEDAR QUARRY')).toBeInTheDocument();
     expect(lastRequestFor('ProjectNotification')).toBe(
-      '/api/search?dataset=ProjectNotification&pageNum=0&pageSize=10&projectLegislation=default&sortBy=-_id&sortBy=&populate=true&fields=&fuzzy=false'
+      '/api/search?dataset=ProjectNotification&pageNum=0&pageSize=10&projectLegislation=default&sortBy=-_id&sortBy=&populate=true&fuzzy=false'
     );
   });
 
@@ -128,7 +128,7 @@ describe('project notifications', () => {
     await waitFor(() => expect(screen.getByText('Notification Form')).toBeInTheDocument());
     // Scoped to the parent notification, page size 5, and the backend's inverted sort convention.
     expect(lastRequestFor('Document')).toBe(
-      '/api/search?dataset=Document&project=n1&pageNum=0&pageSize=5&projectLegislation=default&sortBy=+datePosted&sortBy=&populate=true&and[documentSource]=PROJECT-NOTIFICATION&fields=[object Object]&fuzzy=false'
+      '/api/search?dataset=Document&project=n1&pageNum=0&pageSize=5&projectLegislation=default&sortBy=+datePosted&sortBy=&populate=true&and[documentSource]=PROJECT-NOTIFICATION&fuzzy=false'
     );
   });
 

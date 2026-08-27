@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import type { Project } from 'app/models/project';
-import { isClosed, isNotOpen, isNotStarted, isOpen } from 'app/api/commentperiod';
 import { LIST_PAGE_SIZE } from 'app/state/map-ui';
 import './projlist-list.css';
 
@@ -11,31 +10,6 @@ interface ProjlistListProps {
   loading: boolean;
   currentAppId: string | null;
   onToggleCurrentApp: (project: Project) => void;
-}
-
-/** Angular's `titlecase` pipe: first letter of each word up, the rest down. */
-function titleCase(value: string | undefined): string {
-  return (value ?? '').replace(/\w\S*/g, word => word[0].toUpperCase() + word.slice(1).toLowerCase());
-}
-
-/** Angular's `date:'MMM d'`, e.g. "Aug 27". */
-function shortDate(value: string | Date | undefined | null): string {
-  if (!value) return '';
-  return new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
-
-/** Angular's `date:'mediumDate'`, e.g. "Aug 27, 2026". */
-function mediumDate(value: string | Date | undefined | null): string {
-  if (!value) return '';
-  return new Date(value).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-}
-
-function badgeClass(period: any): string {
-  if (isOpen(period)) return 'badge-success';
-  if (isClosed(period)) return 'badge-danger';
-  if (isNotStarted(period)) return 'badge-primary';
-  if (isNotOpen(period)) return 'badge-secondary';
-  return '';
 }
 
 export function ProjlistList({ projects, loading, currentAppId, onToggleCurrentApp }: ProjlistListProps) {
@@ -89,26 +63,23 @@ export function ProjlistList({ projects, loading, currentAppId, onToggleCurrentA
                 <ul className="app-card__details">
                   <li>
                     <span className="key">Applicant</span>
-                    <span className="value client-name">{item.client || 'Unknown Client'}</span>
+                    <span className="value client-name">{item.proponent?.name || 'Unknown Client'}</span>
                   </li>
                   <li>
-                    <span className="key">Purpose / Subpurpose</span>
+                    <span className="key">Type / Sector</span>
                     <span className="value">
-                      {(item.purpose || item.subpurpose) && (
+                      {item.type || item.sector ? (
                         <span>
-                          {titleCase(item.purpose)} / {titleCase(item.subpurpose)}
+                          {item.type} / {item.sector}
                         </span>
+                      ) : (
+                        <span>Not Available</span>
                       )}
-                      {(!item.purpose || !item.subpurpose) && <span>Not Available</span>}
                     </span>
                   </li>
                   <li>
-                    <span className="key">Disposition Transaction</span>
-                    <span className="value">{item.tantalisID}</span>
-                  </li>
-                  <li>
-                    <span className="key">EAO Project #</span>
-                    <span className="value">{item.clFile || 'Not Available'}</span>
+                    <span className="key">Region</span>
+                    <span className="value">{item.region || 'Not Available'}</span>
                   </li>
                   <li>
                     <span className="key">Status</span>
@@ -116,23 +87,7 @@ export function ProjlistList({ projects, loading, currentAppId, onToggleCurrentA
                   </li>
                 </ul>
 
-                <div className="app-card__actions d-flex justify-content-between">
-                  <div className="badges">
-                    <div className={`comment-status-badge badge ${badgeClass(item.currentPeriod)}`}>
-                      <span>{item.cpStatus}</span>
-                      {isNotStarted(item.currentPeriod) && (
-                        <span className="date">:&nbsp;{mediumDate(item.currentPeriod?.startDate)}</span>
-                      )}
-                      {isClosed(item.currentPeriod) && (
-                        <span className="date">:&nbsp;{mediumDate(item.currentPeriod?.endDate)}</span>
-                      )}
-                      {isOpen(item.currentPeriod) && (
-                        <span className="date">
-                          :&nbsp;{shortDate(item.currentPeriod?.startDate)} - {shortDate(item.currentPeriod?.endDate)}
-                        </span>
-                      )}
-                    </div>
-                  </div>
+                <div className="app-card__actions d-flex justify-content-end">
                   <Link
                     className="app-details-link btn"
                     onClick={event => event.stopPropagation()}

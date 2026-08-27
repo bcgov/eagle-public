@@ -123,7 +123,7 @@ describe('project document tabs', () => {
         '&and[type]=type-dm-2002&and[type]=type-dm-2018' +
         '&and[milestone]=ms-cert-2002&and[milestone]=ms-certdec-2018&and[milestone]=ms-decision-2002' +
         '&and[milestone]=ms-certext-2002&and[milestone]=ms-certext-2018&and[milestone]=ms-transfer-2018' +
-        '&fields=[object Object]&fuzzy=false'
+        '&fuzzy=false'
     );
   });
 
@@ -167,7 +167,7 @@ describe('project document tabs', () => {
         '&and[type]=type-dm-2018&and[type]=type-tt-2002&and[type]=type-tt-2018' +
         '&and[milestone]=ms-amend-2002&and[milestone]=ms-amend-2018' +
         '&and[projectPhase]=ph-amend-2002&and[projectPhase]=ph-amend-2018' +
-        '&fields=[object Object]&fuzzy=false'
+        '&fuzzy=false'
     );
     expect(screen.getByRole('button', { name: /Open Advanced Filters/ })).toBeInTheDocument();
   });
@@ -183,7 +183,7 @@ describe('project document tabs', () => {
         '&and[type]=type-app-2002&and[type]=type-app-2018&and[type]=type-memo-2002&and[type]=type-memo-2018' +
         '&and[milestone]=ms-appreview&and[milestone]=ms-eac&and[milestone]=ms-eac-rev' +
         '&and[milestone]=ms-eac' +
-        '&fields=[object Object]&fuzzy=false'
+        '&fuzzy=false'
     );
   });
 
@@ -201,7 +201,7 @@ describe('project document tabs', () => {
     expect(documentRequests().at(-1)).toBe(
       '/api/search?dataset=Document&pageNum=0&pageSize=10&projectLegislation=default' +
         '&sortBy=-datePosted&sortBy=+displayName&populate=true' +
-        '&and[project]=proj-1&fields=&fuzzy=false'
+        '&and[project]=proj-1&fuzzy=false'
     );
     expect(screen.getByRole('cell', { name: 'Cedar Quarry Certificate' })).toHaveClass('col-3');
     expect(screen.getByText('star')).toBeInTheDocument();

@@ -112,7 +112,7 @@ describe('project details tab', () => {
     await screen.findByText('Featured Report');
     expect(requests.find(url => url.includes('isFeatured'))).toBe(
       '/api/search?dataset=Document&project=proj-1&pageNum=0&pageSize=5&projectLegislation=default' +
-        '&sortBy=-datePosted&sortBy=&populate=false&and[isFeatured]=true&fields=[object Object]&fuzzy=false'
+        '&sortBy=-datePosted&sortBy=&populate=false&and[isFeatured]=true&fuzzy=false'
     );
     expect(screen.getByText('Featured Documents')).toBeInTheDocument();
   });
@@ -156,7 +156,7 @@ describe('project details tab', () => {
     expect(await screen.findByText('Application accepted')).toBeInTheDocument();
     expect(requests.find(url => url.includes('dataset=RecentActivity'))).toBe(
       '/api/search?dataset=RecentActivity&pageNum=0&pageSize=10&projectLegislation=default' +
-        '&sortBy=-dateAdded&sortBy=&populate=true&and[project]=proj-1&fields=&fuzzy=false'
+        '&sortBy=-dateAdded&sortBy=&populate=true&and[project]=proj-1&fuzzy=false'
     );
   });
 

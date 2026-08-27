@@ -46,7 +46,7 @@ describe('news', () => {
 
     expect(await screen.findByText('Permit granted')).toBeInTheDocument();
     expect(requests.at(-1)).toBe(
-      '/api/search?dataset=RecentActivity&pageNum=0&pageSize=10&projectLegislation=default&sortBy=-dateAdded&sortBy=&populate=true&fields=&fuzzy=false'
+      '/api/search?dataset=RecentActivity&pageNum=0&pageSize=10&projectLegislation=default&sortBy=-dateAdded&sortBy=&populate=true&fuzzy=false'
     );
   });
 

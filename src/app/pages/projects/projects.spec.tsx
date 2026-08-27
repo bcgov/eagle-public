@@ -13,7 +13,8 @@ const PROJECTS = [
   {
     _id: 'p1',
     name: 'Cedar Quarry',
-    client: 'Cedar Holdings',
+    proponent: { _id: 'o1', name: 'Cedar Holdings' },
+    sector: 'Mining',
     type: 'Mines',
     region: 'Skeena',
     description: '<p class="MsoNormal">A quarry near Cedar Creek.</p>',
@@ -24,7 +25,8 @@ const PROJECTS = [
   {
     _id: 'p2',
     name: 'Fir Transmission Line',
-    client: 'Fir Power',
+    proponent: { _id: 'o2', name: 'Fir Power' },
+    sector: 'Energy Storage',
     type: 'Energy-Electricity',
     region: 'Peace',
     description: 'A transmission line.',
@@ -151,15 +153,15 @@ describe('projects page', () => {
   it('requests every project once and renders a card per result', async () => {
     renderAt();
 
-    // The card shows the phase, not the name: the Project model never populates `client`.
     expect(await screen.findByText('Application Review')).toBeInTheDocument();
     expect(screen.getByText('Pre-Application')).toBeInTheDocument();
-    expect(screen.getAllByText('Unknown Client')).toHaveLength(2);
+    expect(screen.getByText('Cedar Holdings')).toBeInTheDocument();
+    expect(screen.getByText('Fir Power')).toBeInTheDocument();
     expect(screen.getByText('2 results on map')).toBeInTheDocument();
 
     const projectRequests = requests.filter(url => url.includes('dataset=Project'));
     expect(projectRequests).toEqual([
-      '/api/search?dataset=Project&pageNum=0&pageSize=1000000&projectLegislation=default&sortBy=&sortBy=&populate=true&fields=&fuzzy=false'
+      '/api/search?dataset=Project&pageNum=0&pageSize=1000000&projectLegislation=default&sortBy=&sortBy=&populate=true&fuzzy=false'
     ]);
   });
 

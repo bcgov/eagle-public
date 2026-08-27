@@ -10,15 +10,17 @@ function updateHeaderHeight(): void {
   document.documentElement.style.setProperty('--header-total-height', totalHeight);
 }
 
-function closeMenus(): void {
-  document.getElementById('mainNav')?.classList.remove('show');
-  document.querySelectorAll('.dropdown-menu.show').forEach(dropdown => dropdown.classList.remove('show'));
-}
-
 export function Header() {
   const { pathname } = useLocation();
   const isLoading = useIsLoading();
   const [config] = useState(getConfig);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+
+  function closeMenus(): void {
+    setMenuOpen(false);
+    setOpenDropdown(null);
+  }
 
   const envName = config.ENVIRONMENT || 'local';
   const bannerColour = config.BANNER_COLOUR ?? 'red';
@@ -50,6 +52,7 @@ export function Header() {
           title="Environmental Assessment Office Project Information Centre"
           tabIndex={0}
           to="/"
+          onClick={closeMenus}
         >
           <span className="navbar-brand__title">EPIC</span>
         </Link>
@@ -58,34 +61,33 @@ export function Header() {
           tabIndex={0}
           type="button"
           title="Toggle Main Navigation"
-          data-bs-toggle="collapse"
-          data-bs-target="#mainNav"
-          aria-controls="navbarText"
-          aria-expanded="false"
+          onClick={() => setMenuOpen(open => !open)}
+          aria-controls="mainNav"
+          aria-expanded={menuOpen}
           aria-label="Toggle navigation"
         >
           <i className="material-icons">menu</i>
           <span>MENU</span>
         </button>
-        <div className="collapse navbar-collapse" id="mainNav">
+        <div className={`collapse navbar-collapse${menuOpen ? ' show' : ''}`} id="mainNav">
           <ul className="navbar-nav">
             <li className="nav-item">
               <Link className="nav-link" to="/projects" title="Find EAO Projects in British Columbia" onClick={closeMenus}>
                 <span>Map View</span>
               </Link>
             </li>
-            <li className="nav-item dropdown">
-              <a
+            <li className={`nav-item dropdown${openDropdown === 'searchProjects' ? ' show' : ''}`}>
+              <button
                 className="nav-link dropdown-toggle"
                 id="searchProjects"
-                role="button"
-                data-bs-toggle="dropdown"
+                type="button"
+                onClick={() => setOpenDropdown(open => (open === 'searchProjects' ? null : 'searchProjects'))}
                 aria-haspopup="true"
-                aria-expanded="false"
+                aria-expanded={openDropdown === 'searchProjects'}
               >
                 <span>Project Information</span><span className="caret"></span>
-              </a>
-              <div className="dropdown-menu dropdown-menu-end" aria-labelledby="searchProjects">
+              </button>
+              <div className={`dropdown-menu dropdown-menu-end${openDropdown === 'searchProjects' ? ' show' : ''}`} aria-labelledby="searchProjects">
                 <Link className="dropdown-item" to="/projects-list" title="List Projects" onClick={closeMenus}>
                   <div className="dd-item-header">
                     <span className="icon align-middle"><i className="material-icons">list</i></span>
@@ -111,18 +113,18 @@ export function Header() {
                 </Link>
               </div>
             </li>
-            <li className="nav-item dropdown">
-              <a
+            <li className={`nav-item dropdown${openDropdown === 'aboutMMTI' ? ' show' : ''}`}>
+              <button
                 className="nav-link dropdown-toggle"
                 id="aboutMMTI"
-                role="button"
-                data-bs-toggle="dropdown"
+                type="button"
+                onClick={() => setOpenDropdown(open => (open === 'aboutMMTI' ? null : 'aboutMMTI'))}
                 aria-haspopup="true"
-                aria-expanded="false"
+                aria-expanded={openDropdown === 'aboutMMTI'}
               >
                 <span>The EA Process</span><span className="caret"></span>
-              </a>
-              <div className="dropdown-menu dropdown-menu-end" aria-labelledby="aboutMMTI">
+              </button>
+              <div className={`dropdown-menu dropdown-menu-end${openDropdown === 'aboutMMTI' ? ' show' : ''}`} aria-labelledby="aboutMMTI">
                 <Link className="dropdown-item" to="/legislation" onClick={closeMenus}>
                   <strong>Legislation</strong>
                   <span className="dd-item-desc">Learn about the legislation and regulations that apply to environmental
