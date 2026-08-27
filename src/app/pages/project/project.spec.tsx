@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryRouter } from 'react-router';
 import { logger } from 'app/config/logging';
 import { ProjectPage } from './project';
+import { ProjectDetailsTab } from './project-details-tab';
 
 const LISTS = [
   { _id: 'type-app-2002', name: 'Application Materials', legislation: 2002, type: 'doctype' },
@@ -217,5 +218,115 @@ describe('project shell', () => {
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/projects'));
     expect(window.alert).toHaveBeenCalledWith("Uh-oh, couldn't load project");
+  });
+});
+
+/** A fetch stub that records URLs and hands back promises the test resolves when it chooses. */
+function deferredFetch() {
+  const urls: string[] = [];
+  const pending: { url: string; resolve: () => void }[] = [];
+  vi.stubGlobal(
+    'fetch',
+    vi.fn((input: RequestInfo | URL) => {
+      const url = String(input);
+      urls.push(url);
+      return new Promise<Response>(resolve => {
+        pending.push({
+          url,
+          resolve: () => {
+            if (url.includes('dataset=List')) {
+              return resolve(jsonResponse([{ searchResults: LISTS, meta: [{ searchResultsTotal: LISTS.length }] }]));
+            }
+            if (url.startsWith('/api/project/') && !url.includes('/pin')) {
+              return resolve(jsonResponse([PROJECT]));
+            }
+            if (url.includes('/pin')) {
+              return resolve(jsonResponse([{ results: [], total_items: 0 }]));
+            }
+            resolve(jsonResponse([{ searchResults: [], meta: [{ searchResultsTotal: 0 }] }]));
+          }
+        });
+      });
+    })
+  );
+  return {
+    urls,
+    /** Resolves every request recorded so far, including any queued since the last flush. */
+    flush: () => pending.splice(0).forEach(entry => entry.resolve())
+  };
+}
+
+function renderShellWithDetailsTab() {
+  const router = createMemoryRouter(
+    [
+      {
+        path: '/p/:projId',
+        Component: ProjectPage,
+        children: [{ path: 'project-details', Component: ProjectDetailsTab }]
+      },
+      { path: '/projects', element: <div>projects page</div> }
+    ],
+    { initialEntries: ['/p/proj-1/project-details'] }
+  );
+  render(
+    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>
+  );
+}
+
+describe('project page first paint', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it('fires every projId-only query before any of them resolves', async () => {
+    const fetchStub = deferredFetch();
+
+    renderShellWithDetailsTab();
+
+    // Nothing has been resolved, so anything in this list was issued from the project id alone
+    // rather than from another request's answer.
+    await waitFor(() => expect(fetchStub.urls).toHaveLength(5));
+    const issued = fetchStub.urls.join('\n');
+    expect(issued).toMatch(/^\/api\/project\/proj-1\?/m);
+    expect(issued).toMatch(/^\/api\/project\/proj-1\/pin\?/m);
+    expect(issued).toMatch(/dataset=List/);
+    expect(issued).toMatch(/dataset=RecentActivity/);
+    expect(issued).toMatch(/dataset=Document.*pageSize=5/);
+  });
+
+  it('fires the three optional-tab probes as soon as the List query answers, project still pending', async () => {
+    const fetchStub = deferredFetch();
+
+    renderShellWithDetailsTab();
+
+    await waitFor(() => expect(fetchStub.urls).toHaveLength(5));
+    // Only the List response is needed to build the probe filters; releasing it must not wait on
+    // the project fetch, which is still outstanding here.
+    fetchStub.urls.splice(0);
+    fetchStub.flush();
+
+    await waitFor(() => expect(fetchStub.urls.filter(url => url.includes('pageSize=1'))).toHaveLength(3));
+  });
+
+  it('shows a spinner in the hero and the details block, then swaps both for the project', async () => {
+    const fetchStub = deferredFetch();
+
+    renderShellWithDetailsTab();
+
+    expect(await screen.findByText('Loading project')).toBeInTheDocument();
+    expect(screen.getByText('Loading project details')).toBeInTheDocument();
+    expect(screen.queryByText('Cedar Quarry')).not.toBeInTheDocument();
+
+    fetchStub.flush();
+    // The tab probes and the featured-document search start after the first flush.
+    await waitFor(() => expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Cedar Quarry'));
+    fetchStub.flush();
+
+    await waitFor(() => expect(screen.queryByText('Loading project')).not.toBeInTheDocument());
+    expect(screen.queryByText('Loading project details')).not.toBeInTheDocument();
+    expect(screen.getByText('Proponent')).toBeInTheDocument();
   });
 });

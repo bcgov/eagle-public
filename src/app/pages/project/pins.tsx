@@ -43,7 +43,7 @@ export function Pins() {
   const pageSize = +(params['pageSizePins'] || Constants.tableDefaults.DEFAULT_PAGE_SIZE);
   const sortBy = params['sortByPins'] ? normalizeSortBy(params['sortByPins']) : DEFAULT_SORT;
 
-  const { data: result } = useQuery({
+  const { data: result, isPending } = useQuery({
     queryKey: ['pins', projId, currentPage, pageSize, sortBy],
     enabled: !!projId,
     queryFn: async () => {
@@ -54,7 +54,7 @@ export function Pins() {
   });
 
   const totalListItems = result?.totalListItems ?? 0;
-  if (totalListItems === 0) {
+  if (!isPending && totalListItems === 0) {
     return null;
   }
 
@@ -93,7 +93,7 @@ export function Pins() {
   return (
     <div className="mb-4">
       <h3 className="mb-4">Participating Indigenous Nations</h3>
-      <TableTemplate data={data} onMessage={onMessage} />
+      <TableTemplate data={data} loading={isPending} onMessage={onMessage} />
     </div>
   );
 }

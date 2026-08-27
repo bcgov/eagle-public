@@ -51,6 +51,7 @@ export function ProjectPage() {
   const {
     data: project,
     isError,
+    isPending: projectLoading,
     isSuccess
   } = useQuery({
     queryKey: ['project', projId],
@@ -133,6 +134,7 @@ export function ProjectPage() {
         <div className="project-info">
           <DetailsSidebar
             project={project ?? null}
+            loading={projectLoading}
             open={sidebarOpen}
             onToggle={() => setSidebarOpen(open => !open)}
           />
@@ -178,7 +180,7 @@ export function ProjectPage() {
               <section className="project-tabs">
                 <TabBar projId={projId} tabs={tabs} projectName={project?.name} />
                 <div className="tab-content">
-                  <Outlet context={{ project: project ?? null, projId, lists }} />
+                  <Outlet context={{ project: project ?? null, projId, lists, projectLoading }} />
                 </div>
               </section>
             </div>

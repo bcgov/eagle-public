@@ -7,6 +7,8 @@ import './details-sidebar.css';
 
 interface DetailsSidebarProps {
   project: Project | null;
+  /** The shell's project fetch is still in flight. */
+  loading?: boolean;
   open: boolean;
   onToggle: () => void;
 }
@@ -81,7 +83,7 @@ function resetViewControl(onReset: () => void): any {
   return new Control();
 }
 
-export function DetailsSidebar({ project, open, onToggle }: DetailsSidebarProps) {
+export function DetailsSidebar({ project, loading = false, open, onToggle }: DetailsSidebarProps) {
   const mapElement = useRef<HTMLDivElement>(null);
   const hasMap = project?.centroid?.length === 2;
 
@@ -155,7 +157,15 @@ export function DetailsSidebar({ project, open, onToggle }: DetailsSidebarProps)
     <div className="sidebar-wrapper">
       <aside className={`side-banner p-0${open ? '' : ' closed'}`}>
         <div className="sidebar-content">
-          <h1 className="project-name">{project?.name || '-'}</h1>
+          <h1 className="project-name">
+            {loading ? (
+              <span className="spinner-border project-name-spinner" role="status">
+                <span className="visually-hidden">Loading project</span>
+              </span>
+            ) : (
+              project?.name || '-'
+            )}
+          </h1>
 
           <div className="info-section">
             <div className="info-block">

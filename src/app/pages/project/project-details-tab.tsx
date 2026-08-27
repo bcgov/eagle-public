@@ -10,7 +10,7 @@ import './project-details-tab.css';
 const BC_ENERGY_REGULATOR_LINK = 'https://www.bc-er.ca/data-reports/data-centre/';
 
 export function ProjectDetailsTab() {
-  const { project } = useProjectContext();
+  const { project, projectLoading } = useProjectContext();
 
   return (
     <>
@@ -18,7 +18,16 @@ export function ProjectDetailsTab() {
 
       <div className="row">
         <div className="col-12">
-          <div className="location-info">
+          <div className="location-info" aria-busy={projectLoading}>
+            {projectLoading && (
+              <div className="text-center my-5">
+                <div className="spinner-border text-primary" role="status" style={{ width: '3rem', height: '3rem' }}>
+                  <span className="visually-hidden">Loading project details</span>
+                </div>
+              </div>
+            )}
+            {!projectLoading && (
+              <>
             <p
               className="desc mb-4"
               dangerouslySetInnerHTML={safeHtml(newlines(project?.description?.toString() || '-'))}
@@ -107,6 +116,8 @@ export function ProjectDetailsTab() {
                 </div>
               )}
             </dl>
+              </>
+            )}
           </div>
         </div>
       </div>

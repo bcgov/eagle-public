@@ -5,7 +5,6 @@
     "GET /api/document?docIds=&fields=eaoStatus|internalOriginalName|documentFileName|labels|internalOriginalName|displayName|documentType|datePosted|dateUploaded|dateReceived|documentFileSize|documentSource|internalURL|internalMime|checkbox|project|type|documentAuthor|documentAuthorType|milestone|description|isPublished|isFeatured",
     "GET /api/project/:id?fields=CEAAInvolvement|CELead|CELeadEmail|CELeadPhone|centroid|description|eacDecision|location|name|projectLeadId|projectLead|projectLeadEmail|projectLeadPhone|proponent|region|responsibleEPDId|responsibleEPD|responsibleEPDEmail|responsibleEPDPhone|type|legislation|addedBy|build|CEAALink|code|commodity|currentPhaseName|dateAdded|dateCommentsClosed|commentPeriodStatus|dateUpdated|decisionDate|duration|eaoMember|epicProjectID|fedElecDist|isTermsAgreed|overallProgress|primaryContact|proMember|provElecDist|sector|shortName|status|legislation|substitution|featuredDocuments|updatedBy|read|write|delete|featuredDocuments|projectCAC|projectCACPublished|cacEmail&populate=true",
     "GET /api/public/comment?count=true&fields=author|comment|documents|commentId|dateAdded|dateUpdated|isAnonymous|location|period|read|write|delete&pageNum=0&pageSize=10&period=:id&sortBy=-commentId",
-    "GET /api/search?_id=:id&_schemaName=User&dataset=Item",
     "POST /analytics"
   ],
   "home": [
@@ -22,7 +21,6 @@
     "GET /api/config",
     "GET /api/project/:id/pin?pageNum=0&pageSize=10&sortBy=-datePosted",
     "GET /api/project/:id?fields=CEAAInvolvement|CELead|CELeadEmail|CELeadPhone|centroid|description|eacDecision|location|name|projectLeadId|projectLead|projectLeadEmail|projectLeadPhone|proponent|region|responsibleEPDId|responsibleEPD|responsibleEPDEmail|responsibleEPDPhone|type|legislation|addedBy|build|CEAALink|code|commodity|currentPhaseName|dateAdded|dateCommentsClosed|commentPeriodStatus|dateUpdated|decisionDate|duration|eaoMember|epicProjectID|fedElecDist|isTermsAgreed|overallProgress|primaryContact|proMember|provElecDist|sector|shortName|status|legislation|substitution|featuredDocuments|updatedBy|read|write|delete|featuredDocuments|projectCAC|projectCACPublished|cacEmail&populate=true",
-    "GET /api/search?_id=:id&_schemaName=User&dataset=Item",
     "GET /api/search?and[project]=:id&dataset=RecentActivity&fields=&fuzzy=false&pageNum=0&pageSize=10&populate=true&projectLegislation=default&sortBy=&sortBy=-dateAdded",
     "GET /api/search?dataset=List&pageSize=250",
     "GET /demi-search/search?and[documentSource]=PROJECT&and[milestone]=:id&and[milestone]=:id&and[milestone]=:id&and[milestone]=:id&and[milestone]=:id&and[milestone]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&dataset=Document&fields=[object Object]&fuzzy=false&pageNum=0&pageSize=1&populate=true&project=:id&projectLegislation=default&sortBy=&sortBy=",
@@ -34,7 +32,6 @@
   "project-documents-tab": [
     "GET /api/config",
     "GET /api/project/:id?fields=CEAAInvolvement|CELead|CELeadEmail|CELeadPhone|centroid|description|eacDecision|location|name|projectLeadId|projectLead|projectLeadEmail|projectLeadPhone|proponent|region|responsibleEPDId|responsibleEPD|responsibleEPDEmail|responsibleEPDPhone|type|legislation|addedBy|build|CEAALink|code|commodity|currentPhaseName|dateAdded|dateCommentsClosed|commentPeriodStatus|dateUpdated|decisionDate|duration|eaoMember|epicProjectID|fedElecDist|isTermsAgreed|overallProgress|primaryContact|proMember|provElecDist|sector|shortName|status|legislation|substitution|featuredDocuments|updatedBy|read|write|delete|featuredDocuments|projectCAC|projectCACPublished|cacEmail&populate=true",
-    "GET /api/search?_id=:id&_schemaName=User&dataset=Item",
     "GET /api/search?dataset=List&pageSize=250",
     "GET /demi-search/search?and[documentSource]=PROJECT&and[milestone]=:id&and[milestone]=:id&and[milestone]=:id&and[milestone]=:id&and[milestone]=:id&and[milestone]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&dataset=Document&fields=[object Object]&fuzzy=false&pageNum=0&pageSize=1&populate=true&project=:id&projectLegislation=default&sortBy=&sortBy=",
     "GET /demi-search/search?and[documentSource]=PROJECT&and[milestone]=:id&and[milestone]=:id&and[milestone]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&dataset=Document&fields=[object Object]&fuzzy=false&pageNum=0&pageSize=1&populate=true&project=:id&projectLegislation=default&sortBy=&sortBy=",

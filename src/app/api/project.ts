@@ -9,11 +9,6 @@ import type { DataQueryResponse } from 'app/models/api-response';
 import { startLoading, stopLoading } from 'app/state/loading-state';
 import { logger } from 'app/config/logging';
 
-interface GetParameters {
-  getresponsibleEPD?: boolean;
-  getprojectLead?: boolean;
-}
-
 let cachedCount: number | null = null;
 let countRequest: Promise<number> | null = null;
 
@@ -108,17 +103,7 @@ export async function getById(projId: string, _forceReload = false, cpStart: str
     }
     // Map the build to the human readable nature field
     found.nature = natureBuildMapper(found.build);
-    if (found.projectLeadId == null && found.responsibleEPDId == null) {
-      return new Project(found);
-    }
-    // now get the rest of the data for this project
-    return await getExtraAppData(
-      new Project(found),
-      {
-        getresponsibleEPD: found.responsibleEPDId !== null && found.responsibleEPDId !== '' || found.responsibleEPDId !== undefined,
-        getprojectLead: found.projectLeadId !== null && found.projectLeadId !== '' || found.projectLeadId !== undefined
-      }
-    );
+    return found;
   } finally {
     stopLoading(loadingId);
   }
@@ -132,59 +117,6 @@ export async function getPins(proj: string, pageNum: number, pageSize: number, s
   } finally {
     stopLoading(loadingId);
   }
-}
-
-async function getExtraAppData(project: Project, { getresponsibleEPD = false, getprojectLead = false }: GetParameters): Promise<Project> {
-  // Check if both roles are the same person to avoid duplicate API calls
-  const sameUser = getresponsibleEPD && getprojectLead &&
-                   project.responsibleEPDId && project.projectLeadId &&
-                   project.responsibleEPDId.toString() === project.projectLeadId.toString();
-
-  if (sameUser) {
-    // Fetch user data once and assign to both roles
-    const payload = await search.getItem(project.responsibleEPDId.toString(), 'User');
-    project.responsibleEPDObj = payload.data;
-    project.projectLeadObj = payload.data;
-    return project;
-  }
-
-  const payloads = await Promise.all([
-    getresponsibleEPD ? search.getItem(project.responsibleEPDId.toString(), 'User') : null,
-    getprojectLead ? search.getItem(project.projectLeadId.toString(), 'User') : null
-  ]);
-  if (getresponsibleEPD) {
-    project.responsibleEPDObj = payloads[0].data;
-  }
-  if (getprojectLead) {
-    project.projectLeadObj = payloads[1].data;
-  }
-  return project;
-}
-
-export async function getPeopleObjs(data: any): Promise<any> {
-  const projectSearchData = extractFromSearchResults(data);
-  if (!projectSearchData) {
-    return data;
-  }
-  const project = projectSearchData[0] as Project;
-
-  if (!project) {
-    return data;
-  }
-  const epdId = (project.responsibleEPDId) ? project.responsibleEPDId.toString() : '';
-  const leadId = (project.projectLeadId) ? project.projectLeadId.toString() : '';
-  if (!epdId && !leadId) {
-    return data;
-  }
-  const payloads = await Promise.all([
-    search.getItem(epdId, 'User'),
-    search.getItem(leadId, 'User')
-  ]);
-  if (payloads) {
-    project.responsibleEPDObj = payloads[0].data;
-    project.projectLeadObj = payloads[1].data;
-  }
-  return data;
 }
 
 // Send this users' information to our CAC back-end

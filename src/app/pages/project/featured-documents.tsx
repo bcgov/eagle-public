@@ -29,7 +29,7 @@ export function FeaturedDocuments() {
     queryModifiers: { isFeatured: 'true' }
   });
 
-  if (result.loading || result.totalListItems === 0) {
+  if (!result.loading && result.totalListItems === 0) {
     return null;
   }
 
@@ -51,7 +51,7 @@ export function FeaturedDocuments() {
   return (
     <div className="mb-4">
       <h3 className="mb-4">Featured Documents</h3>
-      <TableTemplate data={data} onMessage={() => undefined} />
+      <TableTemplate data={data} loading={result.loading} onMessage={() => undefined} />
     </div>
   );
 }
