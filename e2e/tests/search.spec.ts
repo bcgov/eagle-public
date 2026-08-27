@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../support/fixtures';
 import { ready, recordApiCalls, checkBaseline, waitForSearch, total, pageCount } from '../support/helpers';
 
 const ROWS = 'table[aria-label="table-template"] tbody tr';
@@ -70,9 +70,17 @@ test('@data the Milestone facet narrows the results and adds a milestone query p
   const milestone = new URL(page.url()).searchParams.get('milestone');
   expect(milestone, `no milestone param after picking "${label}"`).toMatch(/^[0-9a-f]{24}$/i);
 
-  const after = await pageCount(page);
-  expect(after.total).toBe(total(env));
-  expect(after.total).toBeLessThan(before);
+  // The facet list is alphabetical, so which milestone comes first - and whether this
+  // environment's corpus has any document under it - is data, not behaviour.
+  const filtered = total(env);
+  await expect(page.locator(ROWS)).toHaveCount(Math.min(10, filtered));
+  if (filtered === 0) {
+    await expect(page.getByText('No results found')).toBeVisible();
+  } else {
+    const after = await pageCount(page);
+    expect(after.total).toBe(filtered);
+    expect(after.total).toBeLessThan(before);
+  }
 });
 
 test('pagination moves to page 2 and reflects it in the URL', async ({ page }) => {

@@ -150,6 +150,27 @@ src/
 - pages/project/pins: the pins request asks for the sort the table header shows (`+name`). Angular's `PinsService` sent its own default, `-datePosted`, so the header claimed one order and the rows arrived in another.
 - layout/footer: the compact fixed footer for the map page (`app-footer--sm`) is dropped, CSS included. Its Angular binding read a non-signal `router.url` under OnPush, so no deployed build has ever rendered it, and applying it also caught /projects-list, where a fixed footer covers the table.
 
+### Found in the 2026-08-27 parity pass against test
+
+Angular gave every component stylesheet a `[_ngcontent]` attribute on its last compound selector, so
+a rule reached only markup that component's own template wrote — never a child component's, never
+`[innerHTML]` content — and every selector carried one extra unit of specificity. The port turned
+those files into plain global CSS, which drops both effects. Rules that Angular scoped are now
+scoped by hand; rules that Angular's scoping made dead are not ported. Those are ports, not
+deviations. The deviations the pass turned up are below.
+
+- layout/gate: the curtain is a BC Gov styled page (header bar, card, footer). Angular renders a bare `section.container.static-content`.
+- pages/cac-unsubscribe: the hero banner renders styled. The page hand-writes `div.hero-banner.hb-sm` rather than using the hero-banner component, so on test that markup gets no styling at all and the heading sits on a white page.
+- pages/comments: an empty comment list says "There are no comments.". Angular's `tableData().totalListItems` starts `undefined`, so neither its `> 0` nor its `=== 0` branch renders and the deployed page shows nothing under the hero.
+- state/responsive: `isMobile` tracks the viewport. Angular's `ResponsiveService` read `result.breakpoints[Breakpoints.Tablet]`, a key `BreakpointObserver` never emits (it splits the comma-joined query first), so `isMobile` was true at every width. The project-notification row tab therefore reads "Details" on test at any size and "Project Notification Details" here above 840px. The queries themselves are now the CDK's verbatim, orientation clauses included.
+- projects/projlist-map: the opening fit reserves the real filter-card height (`filterHeight() + 80` top padding). Angular passed the `app-projlist-filters` component instance as `appfilters`, so `.clientHeight` was `undefined` and the padding was 80 — test opens the map about one zoom level closer, with the top markers under the floating filter card.
+- project-notifications: the `info-label` spans are unstyled, as on test. Angular's rule targets `label`, and the template labels the fields with `span.info-label`, so it styled nothing.
+- pages/search-help: the stray unbalanced `<section>` that ends the Angular template is not reproduced; it renders as an empty section on test.
+- components/table: mobile list rows keep the 1rem gap `assets/styles/components/table.css` asks for. Angular wraps every row in its own component host element, so `.table-template .table tbody tr:last-child { margin-bottom: 0 }` matches every row there and the cards butt together. Reproducing that needs a junk wrapper element around each row.
+- components/filters/date-picker: the date range is a native `<input type="date">`, so it shows the browser's locale format and the browser's calendar icon rather than ng-bootstrap's `yyyy-mm-dd` field with its own icon button. Same values on the wire.
+- projects/projlist-list: the card's action row is `justify-content-end`. It was `justify-content-between` to spread the comment-period badge and the button; with the badge gone (above) that would push the lone button left.
+- projects/projlist-map: its leaflet control and popup styling is present on every page, because the CSS ships with the bundle. Angular injected a component's styles only while that component was mounted, so the project detail sidebar's map renders with leaflet's own control z-indexes on test.
+
 ## Follow-ups
 
 - CAC sign-up drops the Location field. `add-comment.tsx` collects `caclocationInput` but does not send it, and sending it would change nothing: eagle-api's `publicCACSignUp` (`api/controllers/cac.js`) casts the body through `new CACUser(...)`, and `api/helpers/models/cacUser.js` has no location path — mongoose would strip it. `CACObject` in swagger declares only `name`, `email` and `comment`. Fixing this needs an eagle-api change (add the field to the model and the swagger definition) before the frontend can send it. Angular had the same gap.

@@ -7,6 +7,12 @@
   margin-bottom: 1.5rem;
 }
 
+/* Angular's `.table-template .row:has(lib-pagination)` also caught the bottom controls row, so the
+   pager keeps a 1.5rem gap below it. `mb-4` already gives the top row the same gap. */
+.table-template .table-controls-bottom > .row:has(nav) {
+  margin-bottom: 1.5rem;
+}
+
 .table-controls-bottom:not(:empty) {
   margin-top: 1.5rem;
 }

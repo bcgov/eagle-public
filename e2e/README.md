@@ -32,6 +32,24 @@ BASIC_AUTH_USER=... BASIC_AUTH_PASS=... yarn test
 Without it the whole suite fails on test with a 401 page. That is an environment gate, not a
 behaviour difference.
 
+## The password curtain
+
+`ACCESS_GATE: true` in `/api/config` puts a shared-password page in front of the whole app, and
+both test and a dev server proxying to test have it on. The flag it remembers is a plain
+`sessionStorage['eagle-gate'] = '1'`, so `support/fixtures.ts` seeds that in an init script and
+every spec that imports `test` from there sees the app rather than the curtain. Import from
+`support/fixtures`, not from `@playwright/test`, in any new spec.
+
+`tests/gate.spec.ts` is the exception: it imports the plain Playwright `test` so the curtain
+renders, and exercises the real password. Give it the password:
+
+```bash
+GATE_PASSWORD=... yarn test tests/gate.spec.ts
+```
+
+Without `GATE_PASSWORD` the unlock case is skipped; the rejection and labelling cases still run.
+On an environment with `ACCESS_GATE` off the whole file skips.
+
 Retries are 1, trace is captured on the first retry.
 
 ## Baseline request capture
@@ -124,6 +142,14 @@ the test will fail and should be updated deliberately.
 - **Project detail shows 3 fixed tabs** (Project Details, Commenting, Documents) plus
   Application / Certificate / Amendment(s) / Unsubscribe only when that project has the matching
   documents.
+- **The open comment period's entry point is labelled "Submit Comment".** The suite was first
+  recorded against a build that said "Add Comment"; the regex accepts both.
+- **A milestone facet value can have no documents.** The facet list is alphabetical, so the first
+  option differs by corpus. The test asserts the milestone query param and that the rendered rows
+  match the response - an empty result shows "No results found" and no page-count line.
+- **A document row can point at an object the environment does not hold.** test is a partial copy
+  of prod's storage, so `HEAD` on the download URL answers 404 for some rows. The URL shape is
+  asserted; the status is only required to be below 500 and is recorded as an annotation.
 
 ## Data parity
 
@@ -150,6 +176,32 @@ environment:
 - `latestCommentPeriod()` - newest comment period with a project. Tests branch on whether it is
   open. **No test ever submits a comment.** The cac-unsubscribe form is rendered but never posted.
 
+## Comparing two environments
+
+Three tools under `tools/` dump one environment so two dumps can be diffed. All three take
+`BASE_URL`, `OUT` (the name to write under) and the basic-auth pair, seed the gate flag, and write
+into `screenshots/`, which is gitignored.
+
+| Tool | Writes | Use |
+|---|---|---|
+| `node tools/shots.ts` | `screenshots/<OUT>/<shot>-{desktop,mobile}.png` | every route at 1280x800 and 390x844, plus the map list panel and popup, the open header menus, the mobile menu, the search filters and the three add-comment pages |
+| `node tools/dom-dump.ts` | `screenshots/<OUT>.dom.txt` | `tag.class \| text` for every element, framework wrapper elements dropped, so an Angular tree and a React tree line up under `diff` |
+| `node tools/style-dump.ts` | `screenshots/<OUT>.styles.json` | ~50 computed properties per element; `python3 tools/style-diff.py a.styles.json b.styles.json` aligns the two and prints only what differs |
+
+Two smaller tools answer "why" once a diff points at an element:
+`node tools/probe.mjs <url> <selector> [property ...]` prints its computed values and box, and
+`node tools/rules.mjs <url> <selector> <property>` prints every CSS rule that sets that property on
+it, in cascade order.
+
+`WIDTH` / `HEIGHT` change the viewport for the two dumps (they default to 1280x800; the mobile pass
+uses `WIDTH=390 HEIGHT=844`). `ONLY=<regex>` limits `shots.ts` to matching shot names.
+
+The style diff is what finds the port's characteristic defect: Angular scoped every component
+stylesheet with a `[_ngcontent]` attribute on its last compound selector, so a rule reached only
+that component's own markup and carried one extra unit of specificity. As plain global CSS a rule
+can reach a child component's markup, and it can lose a cascade fight it used to win. Both show up
+as one line of computed-style difference rather than a screenshot to squint at.
+
 ## Environment differences observed 2026-08-27
 
 Run against `https://test.projects.eao.gov.bc.ca` with no credential: **1 passed, 60 failed,
@@ -160,8 +212,9 @@ one open path. Nothing behavioural could be compared; rerun with `BASIC_AUTH_USE
 `BASIC_AUTH_PASS` set to get a real diff.
 
 Config differences between the two environments (`/api/config`): test sets
-`BANNER_COLOUR: orange`, `LOG_LEVEL: 0`, `ANALYTICS_DEBUG: true` and the test Keycloak URL.
-`SEARCH_API_PATH` is `/demi-search` on both, and neither carries a `CONTENT_SEARCH` flag.
+`BANNER_COLOUR: orange`, `LOG_LEVEL: 0`, `ANALYTICS_DEBUG: true`, `ACCESS_GATE: true` and the test
+Keycloak URL. `SEARCH_API_PATH` is `/demi-search` on both, and neither carries a `CONTENT_SEARCH`
+flag.
 
 ## Tags
 
@@ -180,3 +233,6 @@ is applied, a keyword returning hits). Deselect with `yarn test --grep-invert @d
 | `tests/project-detail.spec.ts` | 10 | tab strip and all 7 child routes, download link shape |
 | `tests/comment-period.spec.ts` | 5 | `/p/../cp/../details`, `/pn/../cp/../details`, closed and open states |
 | `tests/routing.spec.ts` | 6 | 404 fallback, `/p/:id`, `/p/../cp/:id`, `/pn/../cp/:id`, `/search/content`, header nav |
+| `tests/gate.spec.ts` | 3 | the `ACCESS_GATE` curtain: wrong password, right password, focus and label |
+| `tests/interactions.spec.ts` | 5 | every sortable column, page-size picker, map region filter, header tab order, Escape on the comment modal |
+| `tests/css-scoping.spec.ts` | 7 | computed styles that a lost Angular view-encapsulation boundary broke in the port |

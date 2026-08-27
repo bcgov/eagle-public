@@ -1,8 +1,7 @@
-/* Ported from Angular project-document-table-rows.component.css. */
-
-.table-template td:hover {
-  cursor: pointer;
-}
+/* Ported from Angular project-document-table-rows.component.css. Its `td:hover { cursor: pointer }`
+   is dropped: it only ever reached this row's own cells, which the global
+   `.table-template .table tbody.highlight tr:hover td` already covers, and as a global it put a
+   pointer on every table that sets `disableRowHighlight`. */
 
 .featured-star {
   color: var(--bs-warning);

@@ -1,3 +1,7 @@
+/* Ported from hero-banner.component.css. `.hero-banner__*` is anchored to this component's root:
+   the comments page hand-writes a `.hero-banner-alt > .hero-banner__content` of its own, which
+   Angular's view encapsulation kept these rules away from. cac-unsubscribe's hand-written
+   `.hero-banner.hb-sm` still matches - see TODO.md Deviations. */
 /* Hero Banner Component */
 
 .hero-banner {
@@ -16,23 +20,23 @@
   padding-bottom: 1rem;
 }
 
-.hero-banner__content {
+.hero-banner .hero-banner__content {
   padding-top: 5rem;
   padding-bottom: 2rem;
   color: var(--bs-white);
 }
 
-.hero-banner__content h1 {
+.hero-banner .hero-banner__content h1 {
   margin-bottom: 1.15rem;
   line-height: 2.15rem;
   font-size: var(--bs-font-size-1);
 }
 
-.hero-banner__content h1 .wb {
+.hero-banner .hero-banner__content h1 .wb {
   display: block;
 }
 
-.hero-banner__content p {
+.hero-banner .hero-banner__content p {
   margin-bottom: 0;
   line-height: 1.5;
   font-size: var(--bs-font-size-3);
@@ -41,18 +45,18 @@
   orphans: 3;
 }
 
-.hero-banner__actions {
+.hero-banner .hero-banner__actions {
   margin-top: 1.75rem;
 }
 
 /* Hero banner button styles are now in assets/styles/components/buttons.css as .hero-banner-btn */
 
-.hero-banner__actions-title {
+.hero-banner .hero-banner__actions-title {
   display: block;
   margin-bottom: 0.5rem;
 }
 
-.hero-banner__actions-buttons .btn {
+.hero-banner .hero-banner__actions-buttons .btn {
   border: 2px solid var(--bs-warning);
   padding: 0.5rem;
   text-transform: none;
@@ -63,38 +67,38 @@
   margin-bottom: 10px;
 }
 
-.hero-banner__actions-buttons .btn:hover {
+.hero-banner .hero-banner__actions-buttons .btn:hover {
   color: var(--bc-blue);
 }
 
-.hero-banner__actions-buttons .btn + span {
+.hero-banner .hero-banner__actions-buttons .btn + span {
   padding: 0.65rem 0.4rem;
   vertical-align: middle;
 }
 
 /* Mobile/Tablet */
 @media (max-width: 767px) {
-  .hero-banner__content {
+  .hero-banner .hero-banner__content {
     padding-top: 2rem;
     padding-bottom: 1rem;
   }
 
-  .hero-banner__content h1 {
+  .hero-banner .hero-banner__content h1 {
     font-size: var(--bs-font-size-3);
     font-weight: bold;
   }
 
-  .hero-banner__content p {
+  .hero-banner .hero-banner__content p {
     font-size: var(--bs-font-size-5);
   }
 }
 
 @media (max-width: 1023px) {
-  .hero-banner__actions .btn i {
+  .hero-banner .hero-banner__actions .btn i {
     display: none;
   }
 
-  .hero-banner__actions .btn span {
+  .hero-banner .hero-banner__actions .btn span {
     display: inline-block;
     transform: none;
   }
@@ -117,17 +121,17 @@
     min-height: 30rem;
   }
 
-  .hero-banner__content {
+  .hero-banner .hero-banner__content {
     padding-top: 8rem;
     padding-bottom: 6rem;
   }
 
-  .hero-banner__content h1 {
+  .hero-banner .hero-banner__content h1 {
     line-height: 2.8rem;
     font-size: var(--bs-font-size-1);
   }
 
-  .hero-banner__content p {
+  .hero-banner .hero-banner__content p {
     line-height: 1.75;
     font-size: var(--bs-font-size-4);
   }
@@ -138,7 +142,7 @@
     background-size: 150%;
   }
 
-  .hero-banner__content h1 .wb {
+  .hero-banner .hero-banner__content h1 .wb {
     display: inline;
   }
 }

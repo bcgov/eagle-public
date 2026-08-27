@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../support/fixtures';
 import { ready, recordApiCalls, checkBaseline, waitForSearch, total, pageCount } from '../support/helpers';
 
 test.describe('content pages', () => {

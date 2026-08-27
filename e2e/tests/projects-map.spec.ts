@@ -1,4 +1,4 @@
-import { test, expect, Page } from '@playwright/test';
+import { test, expect, Page } from '../support/fixtures';
 import { recordApiCalls, checkBaseline, waitForSearch, total } from '../support/helpers';
 
 const CARDS = '#applist-list .app-card';

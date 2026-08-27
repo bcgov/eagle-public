@@ -74,7 +74,7 @@ export function AppShell() {
             <Outlet />
           </div>
         </main>
-        <Footer className={pathname === '/projects' ? 'hide-mobile-projects' : ''} />
+        <Footer className={isProjectsRoute ? 'hide-mobile-projects' : ''} />
       </div>
 
       <a

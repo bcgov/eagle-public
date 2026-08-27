@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../support/fixtures';
 import { ready, latestCommentPeriod, unwrap, firstProjects } from '../support/helpers';
 
 test('an unknown route falls back to the home page', async ({ page }) => {

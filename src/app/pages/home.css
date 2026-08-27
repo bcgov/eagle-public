@@ -13,26 +13,29 @@
   vertical-align: top;
 }
 
-/* Scoped to the page's own <main>: as a global stylesheet a bare `main` also hits the app
-   shell's <main>, which wraps the hero banner. Angular's view encapsulation kept it here. */
+/* Scoped to the page's own <main>, and the headings/copy to the blocks this page writes itself:
+   as global CSS a bare `main h2`/`main p` also reaches the app shell's <main> and the API HTML the
+   activity cards render, neither of which Angular's view encapsulation let it touch. */
 .home-main {
   padding: 3rem 0 3.75rem;
   text-align: center;
 }
 
-.home-main h2 {
+.home-main .home-news-feed > h2,
+.home-main .bg-faded h2 {
   text-align: center;
   font-size: var(--bs-font-size-4);
   margin-bottom: 1.5rem;
 }
 
 @media (max-width: 767px) {
-  .home-main h2 {
+  .home-main .home-news-feed > h2,
+  .home-main .bg-faded h2 {
     font-size: var(--bs-font-size-4);
   }
 }
 
-.home-main p {
+.home-main .bg-faded p {
   line-height: 1.75;
   font-size: var(--bs-font-size-5);
   max-width: 780px;
@@ -47,12 +50,9 @@
   color: var(--bc-blue-dark);
 }
 
+/* Angular's `.hero-banner h1` override is not ported: the h1 belongs to the hero-banner component,
+   so encapsulation made it dead here, and as a global it would restyle every page's hero. */
 @media (max-width: 767px) {
-  .hero-banner h1 {
-    line-height: 2rem;
-    font-size: var(--bs-font-size-3);
-  }
-
   .hero-banner__version {
     margin-top: -0.3rem;
   }
@@ -144,21 +144,9 @@
   background: var(--bs-secondary-bg) !important;
 }
 
-/* In home page context, render td as a full-width block (card mode) */
-.home-news-feed .table tbody td {
-  display: block;
-  padding: 1.25rem 0.5rem;
-  border: none;
-  width: 100%;
-  background: var(--bs-secondary-bg) !important;
-}
-
-@media (min-width: 768px) {
-  .home-news-feed .table tbody td {
-    padding-left: 1rem;
-    padding-right: 1rem;
-  }
-}
+/* Angular's `.home-news-feed .table tbody td` rules are not ported. The `tr` is in this page's own
+   template so its rule still applies, but the `td` comes from the activity-card component, which
+   view encapsulation kept these away from — `activity-card.css` is what actually styles it. */
 
 .home-news-feed .mt-4 {
   padding: 1.5rem;

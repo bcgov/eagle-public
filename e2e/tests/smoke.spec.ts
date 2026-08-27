@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../support/fixtures';
 import { ready, expectA11ySmoke } from '../support/helpers';
 
 /**

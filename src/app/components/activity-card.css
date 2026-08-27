@@ -14,8 +14,10 @@
   margin-bottom: 0;
 }
 
-/* Date column (table mode only) */
-.activity-card__date {
+/* Date column (table mode only). Two classes, not three: Angular's encapsulated form of this rule
+   was also outranked by the global `.table-template .table tbody tr td`, so the date cell takes the
+   table's font size and padding and only the colour here survives. */
+.table .activity-card__date {
   white-space: nowrap;
   vertical-align: top;
   padding-top: 1.25rem;
@@ -23,8 +25,10 @@
   font-size: var(--bs-font-size-6);
 }
 
-/* Card cell — remove default td border, add spacing */
-.activity-card {
+/* Card cell — remove default td border, add spacing. Two classes deep so it still outranks the
+   global `.table-template .table tbody tr td`, which Angular's `:host .activity-card` did. */
+.table td.activity-card,
+.table-template .table td.activity-card {
   border-bottom: none;
   padding: 1.25rem 0.75rem;
 }

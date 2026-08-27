@@ -1,8 +1,11 @@
 import { useCallback, useSyncExternalStore } from 'react';
 
-// The breakpoints the Angular CDK used, so the layout switches at the same widths.
-const TABLET = '(min-width: 600px) and (max-width: 839.98px), (min-width: 960px) and (max-width: 1279.98px)';
-const WEB = '(min-width: 840px)';
+// Verbatim `Breakpoints.Tablet` and `Breakpoints.Web` from the Angular CDK, orientation clauses
+// included: without them a 1024px-wide landscape window reads as web here and as tablet there.
+const TABLET =
+  '(min-width: 600px) and (max-width: 839.98px) and (orientation: portrait), ' +
+  '(min-width: 960px) and (max-width: 1279.98px) and (orientation: landscape)';
+const WEB = '(min-width: 840px) and (orientation: portrait), (min-width: 1280px) and (orientation: landscape)';
 
 function useMediaQuery(query: string): boolean {
   const subscribe = useCallback((onChange: () => void) => {

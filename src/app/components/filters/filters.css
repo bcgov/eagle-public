@@ -65,7 +65,9 @@
   box-shadow: 0 0 8px rgba(0, 51, 102, 0.4);
 }
 
-.search-clear-btn {
+/* Two classes deep so it still outranks Bootstrap's `.input-group .btn { position: relative }`,
+   which Angular's encapsulation attribute used to break the tie against. */
+.search-filter-wrapper .search-clear-btn {
   position: absolute;
   top: 50%;
   right: 0.5rem;

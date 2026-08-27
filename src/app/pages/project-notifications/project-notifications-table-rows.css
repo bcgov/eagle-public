@@ -34,26 +34,26 @@
   font-weight: bold;
 }
 
-.pn-info-block {
+/* These came from project-notification-documents-table-details.component.css, which Angular
+   encapsulated to that component. The Engagement tab's own wrapper also carries `pn-info-block`
+   (with `tab-section`), and `.value` is used by the comment-period hero and the map popup, so both
+   are scoped back to the detail block they were written for. Angular's sibling
+   `label { font-weight: bold; color: var(--bc-blue) }` is not ported: the template labels the
+   fields with `span.info-label`, so that rule styled nothing. */
+.pn-info-block:not(.tab-section) {
   padding: 10px 10px 10px 15px;
   vertical-align: top;
   overflow-wrap: break-word;
 }
 
-.pn-info-block p,
-.pn-info-block a {
+.pn-info-block:not(.tab-section) p,
+.pn-info-block:not(.tab-section) a {
   font-size: var(--bs-font-size-6);
   line-height: 1.8;
 }
 
-.pn-info-block .info-label {
-  font-weight: bold;
-  color: var(--bc-blue);
-  margin-bottom: 0;
-  line-height: 1.2;
-}
-
-.value {
+.pn-info-block .value,
+.pn-decision .value {
   font-size: var(--bs-font-size-6);
   line-height: 1.25;
   margin-bottom: 5px;

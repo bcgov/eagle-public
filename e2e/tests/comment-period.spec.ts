@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../support/fixtures';
 import { ready, recordApiCalls, checkBaseline, latestCommentPeriod, isOpen, unwrap } from '../support/helpers';
 
 test('comment period details page renders the period status and dates', async ({ page, request }) => {
@@ -36,7 +36,7 @@ test('an open comment period exposes the add-comment entry point but is never su
   await page.goto(`/p/${cp.project}/cp/${cp._id}/details`);
   await ready(page);
 
-  await expect(page.getByRole('button', { name: /Add (a )?Comment/i }).first()).toBeVisible();
+  await expect(page.getByRole('button', { name: /(Add|Submit) (a )?Comment/i }).first()).toBeVisible();
   // Deliberately not clicked through to submit: this is a live public inbox.
 });
 

@@ -3,7 +3,10 @@
   min-height: 0;
 }
 
-.map-container {
+/* Scoped to this component's root. The project detail sidebar renders its own `.map-container`
+   with an `#map` inside it, which Angular's encapsulation kept these rules away from — the `#map`
+   rule in particular outranks everything the sidebar sets. */
+.app-map .map-container {
   position: absolute;
   top: 0;
   right: 0;
@@ -13,7 +16,7 @@
   width: 100%;
 }
 
-.map-container #map {
+.app-map .map-container #map {
   position: absolute;
   top: 0;
   right: 0;
@@ -25,7 +28,7 @@
   transition: left ease-out 0.2s, filter 0.3s ease, opacity 0.3s ease;
 }
 
-.map-container.loading #map {
+.app-map .map-container.loading #map {
   filter: blur(2px);
   opacity: 0.6;
   pointer-events: none;
