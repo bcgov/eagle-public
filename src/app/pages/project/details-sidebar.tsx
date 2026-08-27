@@ -156,7 +156,7 @@ export function DetailsSidebar({ project, loading = false, open, onToggle }: Det
   return (
     <div className="sidebar-wrapper">
       <aside className={`side-banner p-0${open ? '' : ' closed'}`}>
-        <div className={`sidebar-content${loading ? ' placeholder-glow' : ''}`} aria-busy={loading || undefined}>
+        <div className={`sidebar-content${loading ? ' placeholder-wave' : ''}`} aria-busy={loading || undefined}>
           {loading && <span className="visually-hidden">Loading project</span>}
           <h1 className="project-name">
             {loading ? <span className="placeholder col-9" aria-hidden="true"></span> : project?.name || '-'}

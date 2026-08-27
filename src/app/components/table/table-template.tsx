@@ -119,7 +119,7 @@ export function TableTemplate({ data, loading = false, rowComponent, onMessage }
               <tbody className={!data.options.disableRowHighlight ? 'highlight' : undefined}>
                 {showSkeleton &&
                   Array.from({ length: skeletonRows }, (_, row) => (
-                    <tr key={`skeleton-${row}`} className="placeholder-glow" aria-hidden="true">
+                    <tr key={`skeleton-${row}`} className="placeholder-wave" aria-hidden="true">
                       {data.columns.map(entry => (
                         <td key={entry.value} className={entry.width}>
                           <span className="placeholder w-100"></span>

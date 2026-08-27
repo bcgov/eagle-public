@@ -23,7 +23,7 @@ export function ProjectDetailsTab() {
         <div className="col-12">
           <div className="location-info" aria-busy={projectLoading}>
             {projectLoading && (
-              <div className="placeholder-glow">
+              <div className="placeholder-wave">
                 <span className="visually-hidden">Loading project details</span>
                 <p className="desc mb-4" aria-hidden="true">
                   <span className="placeholder w-100"></span>
