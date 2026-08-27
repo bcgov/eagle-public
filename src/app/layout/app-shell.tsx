@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Outlet, useLocation } from 'react-router';
 import { Header } from './header';
 import { Footer } from './footer';
@@ -41,8 +41,15 @@ export function AppShell() {
   const gateOpen = useGateOpen();
   const isProjectsRoute = pathname.startsWith('/projects');
 
+  // Ref guard, not a dep-array change: React StrictMode re-runs this effect once on mount
+  // (setup, cleanup, setup) in dev without an intervening path change, which would otherwise
+  // double-post the same page view. Skipping a repeat of the same path absorbs that without
+  // ever skipping a real navigation.
+  const lastTrackedPath = useRef<string | null>(null);
   useEffect(() => {
     const path = pathname + search;
+    if (lastTrackedPath.current === path) return;
+    lastTrackedPath.current = path;
     page(getPageName(path), { path });
   }, [pathname, search]);
 

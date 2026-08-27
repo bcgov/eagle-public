@@ -33,7 +33,7 @@ export function apiPath(): string {
  * Base URL for search. eagle-search when SEARCH_API_PATH is set, eagle-api otherwise.
  *
  * Only the datasets in AZURE_DATASETS move; RecentActivity and ProjectNotification stay on
- * eagle-api, as do getItem() and getFullDataSet(). The two backends answer the same query
+ * eagle-api, as does getFullDataSet(). The two backends answer the same query
  * language and the same `[{searchResults, meta}]` envelope, which is why nothing downstream has
  * to change.
  */
@@ -168,11 +168,6 @@ async function downloadResource(id: string): Promise<Blob> {
     throw new Error('Failed to download document');
   }
   return blob;
-}
-
-export async function getItem(_id: string, schema: string): Promise<SearchResults[]> {
-  const queryString = `search?dataset=Item&_id=${_id}&_schemaName=${schema}`;
-  return getJson<SearchResults[]>(`${apiPath()}/${queryString}`);
 }
 
 //

@@ -1,13 +1,18 @@
+import { StrictMode } from 'react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { RouterProvider, createMemoryRouter } from 'react-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { routes } from 'app/routes';
+import { page } from 'app/analytics/analytics';
+
+vi.mock('app/analytics/analytics', () => ({ page: vi.fn() }));
 
 describe('app shell', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response('[]', { status: 200 })));
+    vi.mocked(page).mockClear();
   });
 
   afterEach(() => vi.unstubAllGlobals());
@@ -51,6 +56,29 @@ describe('app shell', () => {
 
     await userEvent.click(toggler);
     expect(document.getElementById('mainNav')).not.toHaveClass('show');
+  });
+
+  it('posts one Page Viewed on mount and one per navigation, even under StrictMode', async () => {
+    const router = createMemoryRouter(routes, { initialEntries: ['/'] });
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+
+    render(
+      <StrictMode>
+        <QueryClientProvider client={queryClient}>
+          <RouterProvider router={router} />
+        </QueryClientProvider>
+      </StrictMode>
+    );
+
+    await screen.findByText('EPIC');
+    // StrictMode remounts effects once on mount in dev; the ref guard must absorb that.
+    expect(page).toHaveBeenCalledTimes(1);
+    expect(page).toHaveBeenCalledWith('Home', { path: '/' });
+
+    await router.navigate('/contact');
+
+    await waitFor(() => expect(page).toHaveBeenCalledTimes(2));
+    expect(page).toHaveBeenLastCalledWith('Contact', { path: '/contact' });
   });
 
   it('opens one nav dropdown at a time', async () => {

@@ -5,21 +5,6 @@ import { Constants } from 'app/utils/constants';
 import { startLoading, stopLoading } from 'app/state/loading-state';
 import { logger } from 'app/config/logging';
 
-export async function getItem(_id: string, schema: string): Promise<any> {
-  const loadingId = `search-item-${_id}`;
-  startLoading(loadingId, 'Loading item');
-  try {
-    const res = await api.getItem(_id, schema);
-    const allResults = res.map((item: any) => new SearchResults({ type: item._schemaName, data: item }));
-    return allResults.length === 1 ? allResults[0] : {};
-  } catch {
-    // if call fails, return null results
-    return null as unknown as SearchResults;
-  } finally {
-    stopLoading(loadingId);
-  }
-}
-
 export async function getFullList(schema: string): Promise<any> {
   return api.getFullDataSet(schema);
 }
