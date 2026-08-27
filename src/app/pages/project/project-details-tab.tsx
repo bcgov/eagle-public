@@ -9,6 +9,9 @@ import './project-details-tab.css';
 
 const BC_ENERGY_REGULATOR_LINK = 'https://www.bc-er.ca/data-reports/data-centre/';
 
+/** One entry per detail the loaded tab shows; the value width varies so the block does not read as a grid of identical bars. */
+const SKELETON_FIELDS = ['col-9', 'col-7', 'col-8', 'col-10', 'col-6', 'col-11'];
+
 export function ProjectDetailsTab() {
   const { project, projectLoading } = useProjectContext();
 
@@ -20,10 +23,25 @@ export function ProjectDetailsTab() {
         <div className="col-12">
           <div className="location-info" aria-busy={projectLoading}>
             {projectLoading && (
-              <div className="text-center my-5">
-                <div className="spinner-border text-primary" role="status" style={{ width: '3rem', height: '3rem' }}>
-                  <span className="visually-hidden">Loading project details</span>
-                </div>
+              <div className="placeholder-glow">
+                <span className="visually-hidden">Loading project details</span>
+                <p className="desc mb-4" aria-hidden="true">
+                  <span className="placeholder w-100"></span>
+                  <span className="placeholder w-100"></span>
+                  <span className="placeholder col-7"></span>
+                </p>
+                <dl className="row g-3 mb-4" aria-hidden="true">
+                  {SKELETON_FIELDS.map(width => (
+                    <div className="col-sm-6 col-md-4 col-lg-3" key={width}>
+                      <dt className="fw-bold text-primary mb-0 lh-sm">
+                        <span className="placeholder col-6"></span>
+                      </dt>
+                      <dd className="mb-1">
+                        <span className={`placeholder ${width}`}></span>
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
               </div>
             )}
             {!projectLoading && (

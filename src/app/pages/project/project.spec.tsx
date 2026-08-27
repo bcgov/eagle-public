@@ -268,7 +268,7 @@ function renderShellWithDetailsTab() {
     ],
     { initialEntries: ['/p/proj-1/project-details'] }
   );
-  render(
+  return render(
     <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })}>
       <RouterProvider router={router} />
     </QueryClientProvider>
@@ -311,13 +311,24 @@ describe('project page first paint', () => {
     await waitFor(() => expect(fetchStub.urls.filter(url => url.includes('pageSize=1'))).toHaveLength(3));
   });
 
-  it('shows a spinner in the hero and the details block, then swaps both for the project', async () => {
+  it('shows skeleton placeholders in the hero and the details block, then swaps both for the project', async () => {
     const fetchStub = deferredFetch();
 
-    renderShellWithDetailsTab();
+    const { container } = renderShellWithDetailsTab();
 
     expect(await screen.findByText('Loading project')).toBeInTheDocument();
     expect(screen.getByText('Loading project details')).toBeInTheDocument();
+    // Placeholder bars stand in for the hero name and every detail row, and the regions holding
+    // them are marked busy.
+    expect(container.querySelector('h1 .placeholder')).toBeInTheDocument();
+    expect(container.querySelector('.sidebar-content[aria-busy="true"]')).toBeInTheDocument();
+    expect(container.querySelector('.location-info[aria-busy="true"]')).toBeInTheDocument();
+    expect(container.querySelectorAll('.location-info .placeholder').length).toBeGreaterThan(1);
+    // Every placeholder sits under an aria-hidden node, so the only thing announced is the
+    // visually-hidden loading text.
+    for (const bar of container.querySelectorAll('.placeholder')) {
+      expect(bar.closest('[aria-hidden="true"]')).not.toBeNull();
+    }
     expect(screen.queryByText('Cedar Quarry')).not.toBeInTheDocument();
 
     fetchStub.flush();
@@ -327,6 +338,9 @@ describe('project page first paint', () => {
 
     await waitFor(() => expect(screen.queryByText('Loading project')).not.toBeInTheDocument());
     expect(screen.queryByText('Loading project details')).not.toBeInTheDocument();
+    expect(container.querySelector('h1 .placeholder')).toBeNull();
+    expect(container.querySelector('.location-info .placeholder')).toBeNull();
+    expect(container.querySelector('[aria-busy="true"]')).toBeNull();
     expect(screen.getByText('Proponent')).toBeInTheDocument();
   });
 });

@@ -17,6 +17,9 @@ export function TableTemplate({ data, loading = false, rowComponent, onMessage }
   const totalPages = Math.ceil((data.totalListItems || 0) / (data.pageSize || 10));
   const showPagination = !!data.options.showPagination && totalPages > 1;
   const tableType = (rowComponent ?? data.component)?.name || 'unknown';
+  const showSkeleton = loading && data.items.length === 0;
+  // Enough rows to read as a table; a full page of them would be a bigger jump than it saves.
+  const skeletonRows = Math.min(data.pageSize || 5, 5);
   const pageSizeOptions = data.options.showAllPicker
     ? withAllPicker(data.pageSizeOptions, data.totalListItems)
     : data.pageSizeOptions;
@@ -74,14 +77,9 @@ export function TableTemplate({ data, loading = false, rowComponent, onMessage }
         </div>
       )}
 
-      <div className={loading && data.items.length > 0 ? 'table-loading' : undefined}>
-        {loading && data.items.length === 0 ? (
-          <div className="text-center my-5">
-            <div className="spinner-border text-primary" role="status" style={{ width: '3rem', height: '3rem' }}>
-              <span className="visually-hidden">Loading...</span>
-            </div>
-          </div>
-        ) : !loading && data.items.length === 0 && data.totalListItems === 0 ? (
+      <div className={loading && data.items.length > 0 ? 'table-loading' : undefined} aria-busy={loading || undefined}>
+        {showSkeleton && <span className="visually-hidden">Loading</span>}
+        {!loading && data.items.length === 0 && data.totalListItems === 0 ? (
           <div className="text-center my-5">
             <p className="text-muted">No results found</p>
           </div>
@@ -119,6 +117,16 @@ export function TableTemplate({ data, loading = false, rowComponent, onMessage }
               )}
 
               <tbody className={!data.options.disableRowHighlight ? 'highlight' : undefined}>
+                {showSkeleton &&
+                  Array.from({ length: skeletonRows }, (_, row) => (
+                    <tr key={`skeleton-${row}`} className="placeholder-glow" aria-hidden="true">
+                      {data.columns.map(entry => (
+                        <td key={entry.value} className={entry.width}>
+                          <span className="placeholder w-100"></span>
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
                 {data.items.map((item, index) => {
                   const Row = item.component ?? rowComponent ?? data.component;
                   if (!Row) return null;

@@ -156,46 +156,59 @@ export function DetailsSidebar({ project, loading = false, open, onToggle }: Det
   return (
     <div className="sidebar-wrapper">
       <aside className={`side-banner p-0${open ? '' : ' closed'}`}>
-        <div className="sidebar-content">
+        <div className={`sidebar-content${loading ? ' placeholder-glow' : ''}`} aria-busy={loading || undefined}>
+          {loading && <span className="visually-hidden">Loading project</span>}
           <h1 className="project-name">
-            {loading ? (
-              <span className="spinner-border project-name-spinner" role="status">
-                <span className="visually-hidden">Loading project</span>
-              </span>
-            ) : (
-              project?.name || '-'
-            )}
+            {loading ? <span className="placeholder col-9" aria-hidden="true"></span> : project?.name || '-'}
           </h1>
 
           <div className="info-section">
             <div className="info-block">
               <span className="info-label">Environmental Assessment</span>
               <p>
-                <span className="ea-decision">{project?.eacDecision?.name || '-'}</span>
+                {loading ? (
+                  <span className="ea-decision placeholder col-7" aria-hidden="true">{'\u00a0'}</span>
+                ) : (
+                  <span className="ea-decision">{project?.eacDecision?.name || '-'}</span>
+                )}
               </p>
             </div>
 
             <div className="info-block">
               <span className="info-label">Legislation</span>
-              <a target="_blank" href={legislationLink(project)} className="info-link" rel="noreferrer">
-                <p className="info-value hyperlink">{project?.legislation || '-'}</p>
-              </a>
+              {loading ? (
+                <p className="info-value">
+                  <span className="placeholder col-10" aria-hidden="true"></span>
+                </p>
+              ) : (
+                <a target="_blank" href={legislationLink(project)} className="info-link" rel="noreferrer">
+                  <p className="info-value hyperlink">{project?.legislation || '-'}</p>
+                </a>
+              )}
             </div>
 
             <hr className="divider" />
 
             <div className="info-block">
               <span className="info-label">Region</span>
-              <p className="info-value">{project?.region || '-'}</p>
+              <p className="info-value">
+                {loading ? <span className="placeholder col-6" aria-hidden="true"></span> : project?.region || '-'}
+              </p>
             </div>
 
             <div className="info-block">
               <span className="info-label">Location</span>
-              <p className="info-value">{project?.location || '-'}</p>
+              <p className="info-value">
+                {loading ? <span className="placeholder col-8" aria-hidden="true"></span> : project?.location || '-'}
+              </p>
             </div>
 
             <div className="map-wrapper">
-              {hasMap ? (
+              {loading ? (
+                <div className="map-container">
+                  <span className="placeholder w-100 h-100" aria-hidden="true" />
+                </div>
+              ) : hasMap ? (
                 <div className="map-container">
                   <div className="map" id="map" ref={mapElement}></div>
                 </div>

@@ -39,8 +39,7 @@
   z-index: 1;
 }
 
-.table-loading .table-controls-bottom,
-.table-loading .spinner-border {
+.table-loading .table-controls-bottom {
   position: relative;
   z-index: 2;
 }

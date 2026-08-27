@@ -153,6 +153,7 @@ src/
 - utils/getIdsByName: a term with no `List` entry is skipped instead of reading `_id` off the missing match. The document tabs render before the lists resolve, so Angular's version threw and took the tab down with it.
 - pages/project/pins: the pins request asks for the sort the table header shows (`+name`). Angular's `PinsService` sent its own default, `-datePosted`, so the header claimed one order and the rows arrived in another.
 - layout/footer: the compact fixed footer for the map page (`app-footer--sm`) is dropped, CSS included. Its Angular binding read a non-signal `router.url` under OnPush, so no deployed build has ever rendered it, and applying it also caught /projects-list, where a fixed footer covers the table.
+- pages/project + components/table: the project page's loading states are Bootstrap `.placeholder` skeletons (hero, sidebar details, mini-map, table rows) instead of `spinner-border`; a table that already has rows keeps them dimmed on refetch. Angular showed spinners everywhere.
 
 ### Found in the 2026-08-27 parity pass against test
 
