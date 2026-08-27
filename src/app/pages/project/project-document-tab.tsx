@@ -159,7 +159,7 @@ export function ProjectDocumentTab({
   function onMessage(msg: ITableMessage): void {
     switch (msg.label) {
       case 'columnSort':
-        submit({ ...params, sortBy: toggleSortDirection(base.sortBy, msg.data, '-'), currentPage: 1 });
+        submit({ ...params, sortBy: toggleSortDirection(base.sortBy, msg.data), currentPage: 1 });
         break;
       case 'pageNum':
         submit({ ...params, currentPage: msg.data });
