@@ -35,7 +35,7 @@
   }
 }
 
-.home-main .bg-faded p {
+.home-main .bg-faded > .container > p {
   line-height: 1.75;
   font-size: var(--bs-font-size-5);
   max-width: 780px;
@@ -116,28 +116,30 @@
   overflow: hidden;
 }
 
-.home-news-feed h2 {
+/* Child combinators throughout: the activity cards render API HTML that can carry its own
+   headings and tables, which Angular's view encapsulation kept these rules away from. */
+.home-main .home-news-feed > h2 {
   padding: 1.5rem;
   margin: 0;
 }
 
-.home-news-feed .table {
+.home-news-feed > .table {
   border: none;
   margin: 0;
   padding: 0 1.5rem;
   width: 100%;
 }
 
-.home-news-feed .table tbody {
+.home-news-feed > .table > tbody {
   display: block;
   border-bottom: 2px solid var(--bs-border-color);
 }
 
-.home-news-feed .table tbody:last-child {
+.home-news-feed > .table > tbody:last-child {
   border-bottom: none;
 }
 
-.home-news-feed .table tbody tr {
+.home-news-feed > .table > tbody > tr {
   display: block;
   border: none;
   width: 100%;
@@ -148,7 +150,7 @@
    template so its rule still applies, but the `td` comes from the activity-card component, which
    view encapsulation kept these away from — `activity-card.css` is what actually styles it. */
 
-.home-news-feed .mt-4 {
+.home-news-feed > .mt-4 {
   padding: 1.5rem;
   padding-top: 0;
 }

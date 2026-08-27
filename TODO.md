@@ -171,6 +171,7 @@ deviations. The deviations the pass turned up are below.
 - projects/projlist-list: the card's action row is `justify-content-end`. It was `justify-content-between` to spread the comment-period badge and the button; with the badge gone (above) that would push the lone button left.
 - pages/search: a `datePostedStart`/`datePostedEnd` deep link shows its dates in the two date inputs. Both builds send the same `and[datePosted*]` request, but on test the inputs stay empty and Reset Filters stays disabled, so the panel claims no date filter is set.
 - projects/projlist-map: its leaflet control and popup styling is present on every page, because the CSS ships with the bundle. Angular injected a component's styles only while that component was mounted, so the project detail sidebar's map renders with leaflet's own control z-indexes on test.
+- layout/header: Escape and a click outside close an open nav dropdown, which Bootstrap's dropdown JS did before it was dropped. Desktop opens the menus on hover (`.dropdown > .nav-link.dropdown-toggle` is `pointer-events: none`), so this only reaches the keyboard path the port opened up.
 
 ## Follow-ups
 
