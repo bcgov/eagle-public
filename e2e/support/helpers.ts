@@ -63,7 +63,21 @@ export function checkBaseline(key: string, observed: Set<string>): void {
   }
   const expected = loadBaseline()[key];
   expect(expected, `no baseline entry "${key}" - run: yarn baseline`).toBeDefined();
-  expect(list).toEqual(expected);
+  expect(list.map(applyDeviations)).toEqual(expected.map(applyDeviations));
+}
+
+/**
+ * Deliberate request changes in the React port, listed in TODO.md under Deviations. Applied to
+ * both sides so the baseline still fails on anything undocumented.
+ */
+function applyDeviations(line: string): string {
+  return line
+    // `&fields=` is no longer sent on search calls: eagle-api never read it, and prod sends either
+    // an empty value or the literal `[object Object]`.
+    .replace(/&fields=(\[object Object\])?(?=&|$)/, '')
+    // The pins table asks for the sort its header shows (+name). Angular's pins service sent its
+    // own default, -datePosted, while the header displayed +name.
+    .replace('/pin?pageNum=0&pageSize=10&sortBy=-datePosted', '/pin?pageNum=0&pageSize=10&sortBy= name');
 }
 
 /** Envelope both /api/search and /demi-search/search answer with. */
@@ -96,6 +110,9 @@ export function waitForSearch(page: Page, dataset: string, mustContain = '') {
 /** The app hydrates client-side; wait for the h1 to exist, then let XHRs settle. */
 export async function ready(page: Page, settleMs = 2500): Promise<void> {
   await page.locator('h1').first().waitFor({ state: 'attached', timeout: 90_000 });
+  // The page fetches in waves after hydration - config, then the lists, then the table, then the
+  // per-row lookups - so wait for the network to go quiet instead of guessing how long that takes.
+  await page.waitForLoadState('networkidle', { timeout: 60_000 }).catch(() => {});
   await page.waitForTimeout(settleMs);
 }
 

@@ -69,7 +69,7 @@ export function Home() {
         )}
       </div>
 
-      <main>
+      <main className="home-main">
         <div id="anchor-point">
           <section className="container">
             <div className="home-news-feed">

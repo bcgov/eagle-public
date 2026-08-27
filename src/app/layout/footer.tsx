@@ -22,7 +22,7 @@ export function Footer({ className = '' }: { className?: string }) {
   return (
     <footer
       ref={footerRef}
-      className={`app-footer${pathname.startsWith('/projects') ? ' app-footer--sm' : ''}${className ? ' ' + className : ''}`}
+      className={`app-footer${className ? ' ' + className : ''}`}
       id="footer"
     >
       <div className="container">

@@ -12,16 +12,6 @@
   }
 }
 
-footer.app-footer--sm {
-  display: block;
-}
-
-@media (max-width: 768px) {
-  footer.app-footer--sm {
-    display: none !important;
-  }
-}
-
 .app-footer .container {
   padding-top: 0.75rem;
   padding-right: 1.5rem;
@@ -120,66 +110,5 @@ footer.app-footer--sm {
   .app-footer h4 {
     padding-bottom: 1rem;
     border-bottom: 1px solid var(--bg-dark-border-color);
-  }
-}
-
-/* Compact footer for map view */
-.app-footer--sm {
-  position: fixed;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  height: auto;
-  min-height: 1.5rem;
-  padding: 0.25rem 0;
-  border: none;
-}
-
-.app-footer--sm .container {
-  max-width: 100%;
-  padding: 0 0.5rem;
-}
-
-.app-footer--sm .footer-admin {
-  margin: 0;
-  padding: 0;
-  border: none;
-}
-
-.app-footer--sm .footer-info {
-  display: none;
-}
-
-.app-footer--sm .gov-links {
-  margin: 0;
-  padding: 0;
-  line-height: 1;
-}
-
-.app-footer--sm ul {
-  font-size: var(--bs-font-size-xs);
-  margin: 0;
-}
-
-.app-footer--sm .gov-links li {
-  line-height: 1;
-}
-
-.app-footer-sm {
-  display: none;
-}
-
-@media (min-width: 768px) {
-  .app-footer--sm {
-    font-size: var(--bs-font-size-xs);
-    padding: 0.3rem 0;
-  }
-
-  .app-footer--sm .container {
-    padding: 0 1rem;
-  }
-
-  .app-footer--sm ul {
-    font-size: var(--bs-font-size-xs);
   }
 }

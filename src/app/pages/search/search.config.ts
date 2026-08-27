@@ -91,7 +91,6 @@ export function createSearchConfig(filters: FilterObject[], lists: any[]): Table
       title: 'Search All Documents',
       description:
         'Search through all documents from the Environmental Assessment Office. Click on a project name to view the project details page, or click the download button to download a document.',
-      backgroundImage: '/assets/images/hero-banner.jpg',
       actions: [
         {
           label: 'List of Projects',

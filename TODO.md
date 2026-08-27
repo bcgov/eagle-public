@@ -50,7 +50,11 @@ src/
     - [x] Leftovers deleted (`assets/styles/layout/`, retina marker icons, dead badge CSS).
     - [x] a11y: skip link, `aria-live` toast container, popup CTA is a real `<button>`.
     - [x] `README.md` / `CLAUDE.md` describe the React stack.
-  - [ ] 4b. Parity run against prod.
+  - [x] 4b. Parity run against prod (`e2e/` against `https://projects.eao.gov.bc.ca` data, 2026-08-27).
+    - [x] Dev proxy follows `API_LOCATION` from the environment, `/demi-search` included, so a run can point at prod without prod URLs in `src/env.js`.
+    - [x] Playwright suite green; the two request-baseline diffs (`&fields=`, pins `sortBy`) are Deviations, applied in `e2e/support/helpers.ts`.
+    - [x] CSS scoping regressions fixed: `header.css`, `home.css`, the popup `hr` and the table pagination rules leaked or lost to Bootstrap once view encapsulation went away.
+    - [x] Map opening view matches prod again (fit padding), and the map page footer is prod's.
 
 ## Port rules (added 2026-08-27)
 
@@ -77,7 +81,7 @@ src/
 - pages/project-notifications: the comment-period lookup runs once per notification. Angular fetched it on row init to decide whether to show the Engagement tab, then fetched the same URL again when the tab opened.
 - pages/project-notifications: `.skeleton-cell` and its shimmer are now in this page's CSS. In Angular they lived in `commenting-tab`, a different component with view encapsulation, so the notification skeleton rendered unstyled.
 - pages/project-notifications: sorting the documents sub-table returns to page 1. Angular kept the current page, showing a slice of the old ordering.
-- pages/search: `search.component.css` dropped. Every selector in it was dead under Angular's view encapsulation (the template is a single `<app-table-list>`); the one live rule was the `::ng-deep` hero-banner background, now passed as `heroBanner.backgroundImage` like every other list page.
+- pages/search: `search.component.css` dropped. Every selector in it was dead under Angular's view encapsulation (the template is a single `<app-table-list>`), the `::ng-deep` hero-banner background included — prod renders the default banner on /search, so the port does too.
 - pages/search: `search-document-table-rows.component.css` keeps `.download-icon` only; `.download-icon-wrap` matched nothing in the template.
 - pages/search: the download icon gets `role="button"`. It was already a focusable span with a keyup handler and an aria-label, so screen readers announced it as plain text.
 - pages/search: `LEGISLATION_FILTER_GROUP.labelPrefix`/`labelPostfix` are kept on the group object but unread — Angular's multi-select only ever passed `group.name` as the groupBy key.
@@ -144,6 +148,9 @@ src/
 - components/toast-container: `aria-live="polite"` on the container, and the per-toast `role="alert" aria-live="assertive"` removed. A live region created at the same moment as its content is announced unreliably, and two nested regions announce twice.
 - projects/proj-detail-popup: "View Project Details" is a `<button>`. It was an `<a>` with no `href`, a `role`, a `tabindex`, a hand-rolled Enter handler and `cursor: pointer` — all of which a button gives for free, Space included.
 - pages/search: the download icon activates on Space as well as Enter, and on keydown rather than keyup, which is what a real button does.
+- utils/getIdsByName: a term with no `List` entry is skipped instead of reading `_id` off the missing match. The document tabs render before the lists resolve, so Angular's version threw and took the tab down with it.
+- pages/project/pins: the pins request asks for the sort the table header shows (`+name`). Angular's `PinsService` sent its own default, `-datePosted`, so the header claimed one order and the rows arrived in another.
+- layout/footer: the compact fixed footer for the map page (`app-footer--sm`) is dropped, CSS included. Its Angular binding read a non-signal `router.url` under OnPush, so no deployed build has ever rendered it, and applying it also caught /projects-list, where a fixed footer covers the table.
 
 ## Follow-ups
 

@@ -11,7 +11,10 @@ const envJs = readFileSync(fileURLToPath(new URL('./src/env.js', import.meta.url
 const sandbox: { __env: Record<string, string> } = { __env: {} };
 runInNewContext(envJs, sandbox);
 
-const target = sandbox.__env['API_LOCATION'] || 'http://localhost:3000';
+// API_LOCATION in the environment wins over env.js, so a parity run can point the whole dev
+// server at prod without prod URLs landing in a committed file.
+const envTarget = process.env['API_LOCATION'];
+const target = envTarget || sandbox.__env['API_LOCATION'] || 'http://localhost:3000';
 const proxyRule = { target, secure: false, changeOrigin: true };
 
 export default defineConfig({
@@ -35,14 +38,18 @@ export default defineConfig({
       // (only `/` and `/demi-search` are gated there; `/api` is open), so routing it through the
       // site would 401 every Project, Document and DocumentChunk search. It goes straight to the
       // App Service the rproxy itself proxies to, which answers anonymously.
-      '/demi-search': {
-        target: 'https://demi-api-test.azurewebsites.net',
-        secure: false,
-        changeOrigin: true,
-        // The base path is `/demi-search` because nginx supplies the `/api`. Nothing supplies it
-        // here.
-        rewrite: (path: string) => path.replace(/^\/demi-search/, '/api')
-      }
+      // When API_LOCATION is set in the environment the whole site is being pointed at one
+      // deployed host, so `/demi-search` follows it (that host's nginx supplies the `/api`).
+      '/demi-search': envTarget
+        ? proxyRule
+        : {
+            target: 'https://demi-api-test.azurewebsites.net',
+            secure: false,
+            changeOrigin: true,
+            // The base path is `/demi-search` because nginx supplies the `/api`. Nothing supplies
+            // it here.
+            rewrite: (path: string) => path.replace(/^\/demi-search/, '/api')
+          }
     }
   },
   build: {

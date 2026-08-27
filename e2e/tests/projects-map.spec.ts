@@ -62,9 +62,18 @@ test('@data the project-name filter narrows the list and the map', async ({ page
 test('clicking a marker opens the project detail popup', async ({ page }) => {
   await openMap(page);
 
+  // Whether any project sits unclustered at the opening zoom depends on the viewport, the data
+  // volume and the fitted zoom, so drill into clusters until a single marker exists rather than
+  // assuming one is on screen already.
   const marker = page.locator('.leaflet-marker-icon:not(.marker-cluster)').first();
+  for (let attempt = 0; attempt < 5 && (await marker.count()) === 0; attempt++) {
+    await page.locator('.marker-cluster').first().click();
+    await page.waitForTimeout(1500);
+  }
   await marker.waitFor();
-  await marker.click();
+  // Dispatched, not a coordinate click: the header and the filter card float over the map, so a
+  // marker under either of them is unhittable by pointer. Leaflet listens for the DOM event.
+  await marker.dispatchEvent('click');
 
   await expect(page.locator('.leaflet-popup')).toHaveCount(1);
   await expect(page.locator('.popup-title')).toContainText('Project');

@@ -3,7 +3,9 @@
  * The routed page sits inside #scrollTop here; Angular rendered it as a sibling of the
  * router-outlet, so the wrapper has to become the flex row that lets the map fill the viewport.
  */
-.app-content.projects-route > #scrollTop {
+/* `:has` keys this on the map page's own markup: `projects-route` is also set on /projects-list,
+   which must stay a normal block layout. */
+.app-content.projects-route:has(.projects-view) > #scrollTop {
   display: flex;
   flex: 1;
   min-height: 0;

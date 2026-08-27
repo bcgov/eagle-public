@@ -40,12 +40,14 @@
 }
 
 /* === PAGINATION === */
+/* `.pagination` prefix: these override Bootstrap's `.pagination .page-link` theme rules, which
+   Angular's encapsulated `.page-link[_ngcontent]` matched in specificity and beat on order. */
 
 .pagination {
   gap: 0.0625rem;
 }
 
-.page-link {
+.pagination .page-link {
   padding: 0.1875rem 0.625rem;
   border: none;
   background: transparent;
@@ -56,13 +58,13 @@
   transition: none;
 }
 
-.page-link:hover {
+.pagination .page-link:hover {
   background: var(--bs-secondary-bg);
   border-radius: 6px;
   color: var(--bs-body-color);
 }
 
-.page-item.active .page-link {
+.pagination .page-item.active .page-link {
   padding: 0.1875rem 0.625rem;
   color: var(--bs-white);
   background: var(--bs-primary);
@@ -71,18 +73,18 @@
   text-decoration: none;
 }
 
-.page-item.active .page-link:hover {
+.pagination .page-item.active .page-link:hover {
   text-decoration: none;
 }
 
-.page-item.disabled .page-link {
+.pagination .page-item.disabled .page-link {
   opacity: 0.4;
   cursor: not-allowed;
   pointer-events: none;
   background: transparent;
 }
 
-.page-link:focus {
+.pagination .page-link:focus {
   border: 1px solid black;
   border-radius: 6px;
   box-shadow: none;

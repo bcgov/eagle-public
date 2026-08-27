@@ -94,7 +94,7 @@
   word-break: break-word;
 }
 
-hr {
+.popup-content hr {
   margin: 0.875em 0;
   border: none;
   border-top: 1px solid var(--bs-border-color);

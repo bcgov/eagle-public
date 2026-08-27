@@ -149,11 +149,9 @@ export function ProjlistMap({
 
   const isMobile = (): boolean => window.innerWidth <= MOBILE_BREAKPOINT;
 
-  /** Where the filter bar ends, so fitted bounds and popups stay below it. */
+  /** The filter bar's height, so fitted bounds and popups clear the card floating over the map. */
   function filterHeight(): number {
-    const host = latest.current.filtersRef.current;
-    const inner = host?.firstElementChild?.firstElementChild as HTMLElement | undefined;
-    return host ? host.offsetTop + (inner?.clientHeight ?? 0) : 0;
+    return latest.current.filtersRef.current?.clientHeight ?? 0;
   }
 
   function fitBounds(bounds: any): void {
@@ -368,12 +366,23 @@ export function ProjlistMap({
 
     map.on('moveend', () => {
       const bounds = map.getBounds();
-      mapBounds.set({
+      const next = {
         north: bounds.getNorth(),
         south: bounds.getSouth(),
         east: bounds.getEast(),
         west: bounds.getWest()
-      });
+      };
+      // Publish only a view that actually moved. The store compares by identity, so a fresh
+      // object from every `moveend` — Leaflet fires one for programmatic pans too — re-renders
+      // the page, which can pan the map again.
+      const current = mapBounds.get();
+      const same =
+        current &&
+        current.north === next.north &&
+        current.south === next.south &&
+        current.east === next.east &&
+        current.west === next.west;
+      if (!same) mapBounds.set(next);
       scheduleVisibilityUpdate();
     });
     map.on('baselayerchange', (event: any) => baseLayerName.set(event.name));
