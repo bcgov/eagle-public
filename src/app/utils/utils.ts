@@ -170,3 +170,15 @@ export function openDocumentDownload(document: { _id: string; documentFileName?:
   const safeName = encodeString(filename, true);
   window.open(`/api/public/document/${document._id}/download/${safeName}`, '_blank');
 }
+
+/** Angular's `date:'longDate'`, e.g. "August 27, 2026". Empty string for a missing date. */
+export function longDate(value: string | Date | undefined | null): string {
+  if (!value) return '';
+  return new Date(value).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+}
+
+/** Angular's `date:'MMM d, y'`, e.g. "Aug 27, 2026". Empty string for a missing date. */
+export function mediumDate(value: string | Date | undefined | null): string {
+  if (!value) return '';
+  return new Date(value).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+}

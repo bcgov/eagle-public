@@ -2,6 +2,7 @@ import { Link, useNavigate } from 'react-router';
 import { track } from 'app/analytics/analytics';
 import { sanitizeWordHtml } from 'app/utils/word-html-sanitizer';
 import { safeHtml } from 'app/utils/safe-html';
+import { longDate } from 'app/utils/utils';
 import './activity-card.css';
 
 interface ActivityCardProps {
@@ -10,11 +11,6 @@ interface ActivityCardProps {
   tableMode?: boolean;
   /** Controls "Project Info" button visibility. */
   showProjectInfo?: boolean;
-}
-
-function longDate(value: string | undefined): string {
-  if (!value) return '';
-  return new Date(value).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
 function isSingleDoc(item: any): boolean {

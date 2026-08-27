@@ -7,6 +7,9 @@ import { Process } from './pages/process';
 import { ComplianceOversight } from './pages/compliance-oversight';
 import { SearchHelp } from './pages/search-help';
 import { Placeholder } from './pages/placeholder';
+import { ProjectList } from './pages/project-list/project-list';
+import { News } from './pages/news';
+import { ProjectNotifications } from './pages/project-notifications/project-notifications';
 import { contentSearchEnabled } from './config/config';
 
 /**
@@ -33,9 +36,9 @@ export const routes: RouteObject[] = [
       { path: 'cac-unsubscribe', element: <Placeholder name="CAC Unsubscribe" /> },
 
       { path: 'projects', element: <Placeholder name="Projects" /> },
-      { path: 'projects-list', element: <Placeholder name="Projects List" /> },
+      { path: 'projects-list', Component: ProjectList },
 
-      { path: 'project-notifications', element: <Placeholder name="Project Notifications" /> },
+      { path: 'project-notifications', Component: ProjectNotifications },
 
       {
         path: 'pn/:projId/cp/:commentPeriodId',
@@ -43,7 +46,7 @@ export const routes: RouteObject[] = [
       },
       { path: 'pn/:projId/cp/:commentPeriodId/details', element: <Placeholder name="Comments" /> },
 
-      { path: 'news', element: <Placeholder name="News" /> },
+      { path: 'news', Component: News },
 
       { path: 'legislation', Component: Legislation },
 

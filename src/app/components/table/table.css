@@ -1,0 +1,132 @@
+/* Table engine: table-template, pagination, page-size-picker, table-list. */
+/* Table rendering styles are global, in assets/styles/components/table.css. */
+
+/* === TABLE TEMPLATE LAYOUT === */
+
+.table-template .table-controls-top {
+  margin-bottom: 1.5rem;
+}
+
+.table-controls-bottom:not(:empty) {
+  margin-top: 1.5rem;
+}
+
+/* === LOADING STATE === */
+
+/* Frost/freeze the table while a request is in flight. */
+.table-loading {
+  position: relative;
+  pointer-events: none;
+  opacity: 0.6;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.table-loading::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(1px);
+  z-index: 1;
+}
+
+.table-loading .table-controls-bottom,
+.table-loading .spinner-border {
+  position: relative;
+  z-index: 2;
+}
+
+/* === PAGINATION === */
+
+.pagination {
+  gap: 0.0625rem;
+}
+
+.page-link {
+  padding: 0.1875rem 0.625rem;
+  border: none;
+  background: transparent;
+  color: var(--bs-body-color);
+  outline: none;
+  box-shadow: none;
+  cursor: pointer;
+  transition: none;
+}
+
+.page-link:hover {
+  background: var(--bs-secondary-bg);
+  border-radius: 6px;
+  color: var(--bs-body-color);
+}
+
+.page-item.active .page-link {
+  padding: 0.1875rem 0.625rem;
+  color: var(--bs-white);
+  background: var(--bs-primary);
+  border-radius: 6px;
+  cursor: default;
+  text-decoration: none;
+}
+
+.page-item.active .page-link:hover {
+  text-decoration: none;
+}
+
+.page-item.disabled .page-link {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+  background: transparent;
+}
+
+.page-link:focus {
+  border: 1px solid black;
+  border-radius: 6px;
+  box-shadow: none;
+}
+
+/* === PAGE SIZE PICKER === */
+
+.lib-page-size-message {
+  margin-left: 10px;
+}
+
+.size-picker-option {
+  margin-right: 0.0625rem;
+  padding: 0.1875rem 0.625rem;
+  outline: none;
+  box-shadow: none;
+}
+
+.size-picker-option:not(.current):hover {
+  background: var(--bs-secondary-bg);
+  border-radius: 6px;
+  border-color: var(--bs-secondary-bg);
+  transition: none;
+}
+
+.size-picker-option.current {
+  padding: 0.1875rem 0.625rem;
+  color: var(--bs-white);
+  background: var(--bs-primary);
+  border-radius: 6px;
+  border-color: var(--bs-primary);
+  cursor: default;
+}
+
+.size-picker-option:focus {
+  border-color: black;
+}
+
+@media screen and (max-width: 768px) {
+  .lib-page-size-display {
+    text-align: center;
+  }
+
+  .lib-page-size-message {
+    margin: 0;
+  }
+}

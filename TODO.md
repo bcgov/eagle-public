@@ -34,8 +34,8 @@ src/
 ## Phases
 
 - [ ] 1. Scaffold + foundation + shell + static pages + placeholder pages for every route. Build, lint, test green.
-- [ ] 2. Table/filter engine + pagination + query-param sync (`components/table`, `components/filters`).
-- [ ] 3a. List pages: projects-list, news, project-notifications; project shell + 7 tabs.
+- [x] 2. Table/filter engine + pagination + query-param sync (`components/table`, `components/filters`).
+- [ ] 3a. List pages: ~~projects-list, news, project-notifications~~ (done in phase 2); project shell + 7 tabs.
 - [ ] 3b. Map page (`/projects`): projlist-map, filters, list, detail popup.
 - [ ] 3c. Comments + add-comment + file upload + cac-unsubscribe.
 - [ ] 3d. Search + content search + search-help.
@@ -51,3 +51,18 @@ src/
 
 - api: dead `comment.getById` / `project.getById` caches removed (never assigned, every call refetched anyway).
 - api: `event.service` error bus dropped; no subscribers existed. Callers log directly.
+- api: `date-input/` component dropped; no consumer anywhere in the Angular app.
+- assets: `styles/components/datepicker.css` deleted; it only styled ng-bootstrap's calendar, which the native `<input type="date">` replaces.
+- filters: `subsets`, `attachPanelToDiv`, `advancedFilterTitle`/`advancedFilterText` and the Checkbox / RadioPicker / SliderToggle / Dropdown filter types dropped; no consumer in the Angular app uses any of them. The `FilterType` enum keeps every member.
+- filters: `skipNextSearch` in `search-filter-template` dropped; nothing ever set it true.
+- filters/custom-multi-select: search box focus and option highlight are per-instance; Angular queried `document` globally, so two selects on one page fought over focus.
+- table/table-object: `ITableOptions.rowSpacing` kept as a field but still unread — no CSS or template ever consumed it in Angular either.
+- table/table-params: `toggleSortDirection` matches the whole field name. Angular used `currentSort.includes(field)`, so sorting `name` while sorted by `+displayName` flipped instead of starting fresh.
+- table/table-params: a `sortBy` that `URLSearchParams` form-decoded from `+name` to `" name"` is restored to `+name`. Angular's router never form-decoded, so its deep links need this on the way in.
+- table/table-list: a filter or keyword search keeps the current `pageSize`. Angular rebuilt the params without it, dropping the user's page-size choice on every filter change.
+- table/table-list: the table request no longer waits for the filter option lists (orgs, `List`) to load; the request only needs URL params, so the two now run in parallel.
+- pages/project-list: `useGroup` / `LEGISLATION_FILTER_GROUP` dropped. `autocomplete-multi-select` grouped on `filterDefinition.group`, which project-list never set, so the flag grouped nothing. Rendering is unchanged.
+- pages/project-list: `project-list.component.css` dropped; every selector in it (`.project-table__*-col`, `.project-table__project-details*`, `.project-list__options`, `.loading-overlay`) is unused by any template in the app.
+- pages/project-notifications: the comment-period lookup runs once per notification. Angular fetched it on row init to decide whether to show the Engagement tab, then fetched the same URL again when the tab opened.
+- pages/project-notifications: `.skeleton-cell` and its shimmer are now in this page's CSS. In Angular they lived in `commenting-tab`, a different component with view encapsulation, so the notification skeleton rendered unstyled.
+- pages/project-notifications: sorting the documents sub-table returns to page 1. Angular kept the current page, showing a slice of the old ordering.
