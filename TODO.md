@@ -40,3 +40,14 @@ src/
 - [ ] 3c. Comments + add-comment + file upload + cac-unsubscribe.
 - [ ] 3d. Search + content search + search-help.
 - [ ] 4. Parity pass, a11y, delete leftovers, README/CLAUDE.md update.
+
+## Port rules (added 2026-08-27)
+
+- Do not port bugs or inefficiencies. When the Angular code is wrong, wasteful (redundant fetches, N+1, dead caches, needless re-renders), or dead, fix or drop it in the port.
+- Every deliberate behaviour change goes in the Deviations list below, one line: file, what changed, why. Parity tests against prod may flag these; the list explains them.
+- Cut dependencies where a native API or a few lines do the job. Justify each dependency kept in `package.json` by real use; remove anything unused.
+
+## Deviations from Angular behaviour
+
+- api: dead `comment.getById` / `project.getById` caches removed (never assigned, every call refetched anyway).
+- api: `event.service` error bus dropped; no subscribers existed. Callers log directly.
