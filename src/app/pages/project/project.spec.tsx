@@ -210,14 +210,13 @@ describe('project shell', () => {
     expect(await screen.findByText('No map available')).toBeInTheDocument();
   });
 
-  it('sends the visitor back to the project list when the project cannot be loaded', async () => {
-    vi.spyOn(window, 'alert').mockImplementation(() => undefined);
+  it('shows a not-found page when the project cannot be loaded', async () => {
     project = undefined as unknown as Record<string, unknown>;
 
-    const router = renderShell();
+    renderShell();
 
-    await waitFor(() => expect(router.state.location.pathname).toBe('/projects'));
-    expect(window.alert).toHaveBeenCalledWith("Uh-oh, couldn't load project");
+    expect(await screen.findByText('Project not found')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Back to all projects' })).toHaveAttribute('href', '/projects');
   });
 });
 

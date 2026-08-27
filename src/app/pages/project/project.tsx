@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { NavLink, Outlet, useNavigate, useParams } from 'react-router';
+import { Link, NavLink, Outlet, useNavigate, useParams } from 'react-router';
 import { useQueries, useQuery } from '@tanstack/react-query';
 import { track } from 'app/analytics/analytics';
 import { getById } from 'app/api/project';
@@ -96,12 +96,7 @@ export function ProjectPage() {
     }))
   });
 
-  useEffect(() => {
-    if (isError || (isSuccess && !project)) {
-      window.alert("Uh-oh, couldn't load project");
-      navigate('/projects');
-    }
-  }, [isError, isSuccess, project, navigate]);
+  const notFound = isError || (isSuccess && !project);
 
   const tabs = [
     ...FIXED_TABS,
@@ -126,6 +121,16 @@ export function ProjectPage() {
     } else {
       navigate(`/p/${project._id}/cp/${banner._id}/details`);
     }
+  }
+
+  if (notFound) {
+    return (
+      <div className="container py-5">
+        <h1>Project not found</h1>
+        <p>This project is not available. It may have been removed, or the link may be wrong.</p>
+        <Link to="/projects">Back to all projects</Link>
+      </div>
+    );
   }
 
   return (
