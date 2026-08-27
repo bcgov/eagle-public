@@ -4,12 +4,14 @@ import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
 import { HeaderComponent } from './header/header.component';
 import { FooterComponent } from './footer/footer.component';
 import { ToastContainerComponent } from './shared/components/toast-container/toast-container.component';
+import { GateComponent } from './gate/gate.component';
 import { AnalyticsService } from './services/analytics/analytics.service';
+import { GateService } from './services/gate.service';
 import { filter } from 'rxjs/operators';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, HeaderComponent, FooterComponent, ToastContainerComponent],
+  imports: [RouterOutlet, HeaderComponent, FooterComponent, ToastContainerComponent, GateComponent],
   templateUrl: './app.html',
   styleUrl: './app.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -18,6 +20,7 @@ import { filter } from 'rxjs/operators';
 export class App implements OnInit, OnDestroy {
   private analyticsService = inject(AnalyticsService);
   public router = inject(Router);
+  public gate = inject(GateService);
   
   title = 'EPIC - Environmental Assessment Office';
   showScrollButton = signal(false);
