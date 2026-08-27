@@ -217,6 +217,15 @@ describe('project document tabs', () => {
     expect(router.state.location.search).toContain('sortBy=%2BdatePosted');
   });
 
+  it('sorting a column that was not sorted starts ascending', async () => {
+    const router = renderTab(DocumentsTab, '/p/proj-1/documents');
+
+    await screen.findByText('Cedar Quarry Certificate');
+    await userEvent.click(screen.getByRole('columnheader', { name: /Name/ }));
+
+    await waitFor(() => expect(router.state.location.search).toContain('sortBy=%2BdisplayName'));
+  });
+
   it('documents keeps the chosen page size when a keyword search runs', async () => {
     const router = renderTab(DocumentsTab, '/p/proj-1/documents?pageSize=50');
 

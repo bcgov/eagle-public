@@ -115,6 +115,8 @@ src/
 - pages/project: one `ProjectDocumentTab` serves the Documents, Application, Certificate and Amendment tabs. The four Angular components differed only in which documents they select, whether they offer filters, and their empty message.
 - pages/project: the document tabs return to page 1 when a column is sorted. Angular's Documents tab kept the page, showing a slice of the old ordering; its three siblings already reset.
 - pages/project: a keyword search on a document tab keeps the current sort when the keyword itself did not change, and keeps the chosen page size. Angular reset both to `-datePosted` and dropped the page size.
+- pages/project: sorting a column the table was not already sorted by starts ascending on all four document tabs. Angular's Documents tab flipped the sign of whatever the current sort was, and its three siblings always started descending, so on test the same click sorts Documents ascending and Certificates descending.
+- pages/project: `/p/:projId/decisions` resolves and renders the shell with an empty tab. The route exists on `develop` but not in the build deployed to test, where the URL falls through to the map page.
 - pages/project: `onResetControls` dropped from all four document tabs. `search-filter-template` already emits an empty search package on reset, which clears the keyword, every filter and the sort in one navigation.
 - pages/project: `showFeatured` is passed to the rows through `tableData.data` instead of being written onto each record of the API response, which mutated the query cache.
 - pages/project/pins: the table reads `/api/project/:id/pin` through a TanStack query. `api/pins.ts` — a module-scoped store with its own `fetchDataConfig` mirror of the table state — is deleted; nothing imported it.
