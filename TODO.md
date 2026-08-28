@@ -190,6 +190,8 @@ Fixes shipped on `develop` (Angular) not yet re-implemented here. One line each:
 
 ## Follow-ups
 
+- Unscheduled ideas live in `docs/FUTURE.md` (per-branch preview URLs, automatic create and teardown).
+
 - CAC sign-up drops the Location field. `add-comment.tsx` collects `caclocationInput` but does not send it, and sending it would change nothing: eagle-api's `publicCACSignUp` (`api/controllers/cac.js`) casts the body through `new CACUser(...)`, and `api/helpers/models/cacUser.js` has no location path — mongoose would strip it. `CACObject` in swagger declares only `name`, `email` and `comment`. Fixing this needs an eagle-api change (add the field to the model and the swagger definition) before the frontend can send it. Angular had the same gap.
 - `luxon` kept. `models/commentperiod.ts` does America/Vancouver arithmetic, not formatting: `endOf('day')` in Pacific, `minus({days: 7})`, `plus({days: 7})`, `diff(now, 'days')`, hour/minute reads in Pacific and a `ZZZZ` zone name. `Intl.DateTimeFormat` formats in a zone but cannot do zone-aware arithmetic across DST, and `Temporal` is not available. Revisit when `Temporal` ships.
 - Non-interactive `tabIndex={0}` on `<td>`, `<h2>`, `<p>`, `<span>` and `<label>` in `pins`, `activity-card`, `home`, `search-filter-template` and `project-notification-documents-table-details` is an Angular-era idiom that puts unactionable content in the tab order (WCAG 2.4.3). Out of scope for the a11y basics pass; needs a decision on how those tables should be navigated.
