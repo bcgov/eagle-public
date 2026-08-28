@@ -17,7 +17,7 @@ yarn test tests/search.spec.ts                                # one file
 yarn report                                                   # open the HTML report
 ```
 
-`BASE_URL` defaults to `https://projects.eao.gov.bc.ca`. Browsers come from
+`yarn test` runs only when `BASE_URL` is set, so the pre-push verifier never drives production by accident; `yarn playwright test` on its own defaults to `https://projects.eao.gov.bc.ca`. Browsers come from
 `/root/.cache/ms-playwright`; no download step is needed.
 
 The **test environment serves every HTML route and `/demi-search` behind HTTP basic auth**

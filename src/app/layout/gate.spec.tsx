@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 /**
@@ -32,6 +32,12 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('the curtain', () => {
+  /** The header exists only outside the curtain; the curtain's own brand block also says "EPIC". */
+  async function expectOpen(): Promise<void> {
+    await waitFor(() => expect(document.querySelector('.app-header')).not.toBe(null));
+    expect(screen.queryByLabelText('Password')).not.toBeInTheDocument();
+  }
+
   async function renderShell(env: Record<string, unknown>) {
     await loadWith(env);
     const [{ routes }, { RouterProvider, createMemoryRouter }, { QueryClient, QueryClientProvider }] =
@@ -51,18 +57,17 @@ describe('the curtain', () => {
 
   it('is open when the flag is absent', async () => {
     await renderShell({});
-    expect(await screen.findByText('EPIC')).toBeInTheDocument();
-    expect(screen.queryByLabelText('Password')).not.toBeInTheDocument();
+    await expectOpen();
   });
 
   it('is open when the flag is false', async () => {
     await renderShell({ ACCESS_GATE: false });
-    expect(await screen.findByText('EPIC')).toBeInTheDocument();
+    await expectOpen();
   });
 
   it('is open for a value that is merely truthy', async () => {
     await renderShell({ ACCESS_GATE: 'true' });
-    expect(await screen.findByText('EPIC')).toBeInTheDocument();
+    await expectOpen();
   });
 
   it('replaces the whole shell when the flag is true', async () => {
@@ -77,7 +82,7 @@ describe('the curtain', () => {
   it('stays open for a session that already unlocked', async () => {
     sessionStorage.setItem('eagle-gate', '1');
     await renderShell({ ACCESS_GATE: true });
-    expect(await screen.findByText('EPIC')).toBeInTheDocument();
+    await expectOpen();
   });
 });
 
