@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { track } from 'app/analytics/analytics';
-import { getBaseLayerName, setBaseLayerName } from 'app/config/config';
+import { baseLayerName } from 'app/state/map-ui';
 import type { Project } from 'app/models/project';
 import { Constants } from 'app/utils/constants';
 import './details-sidebar.css';
@@ -118,10 +118,10 @@ export function DetailsSidebar({ project, loading = false, open, onToggle }: Det
       ])
     );
     L.control.layers(layers).addTo(map);
-    layers[getBaseLayerName()]?.addTo(map);
+    layers[baseLayerName.get()]?.addTo(map);
 
     map.on('baselayerchange', (event: any) => {
-      setBaseLayerName(event.name);
+      baseLayerName.set(event.name);
       track('Map Base Layer Changed', { project_id: project._id, project_name: project.name, layer_name: event.name });
     });
     map.scrollWheelZoom.disable();

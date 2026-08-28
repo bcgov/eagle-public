@@ -129,18 +129,6 @@ async function fetchRemoteConfig(): Promise<void> {
   }
 }
 
-// The base map layer the visitor last picked. In memory for the session only, and shared by every
-// Leaflet map in the app so switching layers on one carries to the next.
-let baseLayerName = 'World Topographic';
-
-export function getBaseLayerName(): string {
-  return baseLayerName;
-}
-
-export function setBaseLayerName(name: string): void {
-  baseLayerName = name;
-}
-
 /** Dropdown/filter list items, lazily fetched and cached by TanStack Query. */
 export function listsQueryOptions() {
   return {
