@@ -382,7 +382,7 @@ jobs:
 
           # Taken from the deployed index.html rather than from dist/, so it also proves the
           # hashed bundle that this page actually asks for is the one that got uploaded.
-          asset=$(curl -s --max-time 15 "$host/" | grep -o 'main-[A-Za-z0-9]*\.js' | head -1)
+          asset=$(curl -s --max-time 15 "$host/" | grep -o 'main-[A-Za-z0-9_-]*\.js' | head -1)
           [ -n "$asset" ] || { echo "::error::no hashed main bundle referenced by the deployed index.html"; exit 1; }
 
           # AND THAT IT IS THIS BUILD'S BUNDLE. Without this the smoke test passes on whatever was
