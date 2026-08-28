@@ -9,7 +9,7 @@ Angular source of truth for behaviour: `/root/repos/eagle-public` (branch `devel
 - Styles: port existing global CSS unchanged (bootstrap.min.css, `src/assets/styles/**`, BCSans, material icons). Component CSS becomes plain global CSS files imported by the component (`:host` becomes a root class). No CSS modules, no design-system library yet.
 - Leaflet + markercluster stay CDN globals in `index.html` (typed via `src/types/global.d.ts`).
 - `env.js` + `/api/config` runtime config pattern unchanged. `index.html` keeps `<script src="env.js">` before the app bundle.
-- Build output must stay `dist/eagle-public/browser` with entry chunk named `main-[hash].js` (deploy workflows `deploy-azure-*.yaml` grep for both). Do not edit workflows.
+- Build output must stay `dist/eagle-public/browser` with entry chunk named `main-[hash].js` (deploy workflows `deploy-azure-*.yaml` grep for both).
 - Node 24, Yarn 4.12 (Corepack). Never npm.
 - No `any` unless the Angular source had it. ESLint flat config: @eslint/js, typescript-eslint, react-hooks, react-refresh.
 
@@ -181,6 +181,12 @@ deviations. The deviations the pass turned up are below.
 - utils/safe-html: `safeHtml` runs DOMPurify. Angular's plain `[innerHTML]` went through the DomSanitizer, which strips scripts and event handlers; React's `dangerouslySetInnerHTML` strips nothing. `dompurify` is the one dependency added for it.
 - config: a failed `/api/config` is retried three times and then fatal, with an "EPIC is temporarily unavailable" page; `index.html` shows "Loading EPIC…" until the first render. Angular fell back to `env.js` after one 5 s timeout, which shipped `ACCESS_GATE` false and an empty `SEARCH_API_PATH`: the curtain opened and search hit the wrong backend.
 - project/project: the Contact Us section sits below the sidebar/content layout, full width above the footer, rather than inside the content column where it started after the sidebar.
+
+## Ports pending
+
+Fixes shipped on `develop` (Angular) not yet re-implemented here. One line each: tag, commit, what. Delete the line when ported.
+
+- none
 
 ## Follow-ups
 

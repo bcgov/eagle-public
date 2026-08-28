@@ -30,11 +30,31 @@ gh workflow run "Deploy eagle-public to Azure staging" -f version=v1.2.3
 gh workflow run "Deploy eagle-public to Azure production (LIVE SITE)" -f version=v1.2.3
 ```
 
-Both deploy workflows reject a `version` that is not an existing `vX.Y.Z` tag. They rewrite
-`src/env.js` for the target environment at build time, publish the bundle, purge the Front Door
-edge and smoke test the result.
+Both deploy workflows reject a `version` that is not an existing tag. They rewrite `src/env.js`
+for the target environment at build time, publish the bundle, purge the Front Door edge and smoke
+test the result.
 
 To roll back, re-run the deploy workflow for the previous good tag.
+
+### Two release lines
+
+- `develop` is the release line: what prod runs, tags `vX.Y.Z`, the commands above.
+- `react` is the next line: the next major, tags `vX.0.0-beta.N`. Feature branches open PRs
+  against `react`. Its builds publish to the `eagle-public-next` endpoint on the test Front Door
+  profile (hostname in the `azure-next` GitHub environment), never to test or prod:
+
+```bash
+gh workflow run "Create Release Tag" --ref react -f version=v3.0.0-beta.1
+gh workflow run "Deploy eagle-public to Azure staging" --ref v3.0.0-beta.1 -f version=v3.0.0-beta.1 -f target=next
+```
+
+A prod bug is fixed on `develop` first, tagged and shipped, then ported to `react` in its own
+commit. Never the other way round. The two branches share no source files, so a port is a
+re-implementation, not a cherry-pick; `TODO.md` lists ports still pending.
+
+Cutover: merge `react` into `develop` (conflicts resolve to `react`), tag `vX.0.0`, deploy to
+staging then prod with the commands above. Rollback is the previous `vX.Y.Z` tag. Delete `react`
+afterwards; the next endpoint stays for the next big change.
 
 `ACCESS_GATE: true` in `/api/config` puts a password curtain over the site. It is a courtesy
 screen for a not-yet-launched environment, not an access control: the unlock is a flag in the

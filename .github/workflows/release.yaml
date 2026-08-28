@@ -30,8 +30,8 @@ jobs:
 
       - name: Validate version format
         run: |
-          if [[ ! "${{ inputs.version }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Error: Version must be in format v1.2.3"
+          if [[ ! "${{ inputs.version }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-beta\.[0-9]+)?$ ]]; then
+            echo "Error: Version must be in format v1.2.3 or v1.2.3-beta.4"
             exit 1
           fi
 

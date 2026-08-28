@@ -38,12 +38,18 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version tag (e.g., v2.7.28)'
+        description: 'Version tag (e.g., v2.7.28 or v3.0.0-beta.1)'
         required: true
         type: string
+      target:
+        description: 'test = test.projects.eao.gov.bc.ca (release line); next = the eagle-public-next endpoint (next line, pre-release tags)'
+        required: true
+        type: choice
+        default: test
+        options: [test, next]
 
 concurrency:
-  group: deploy-azure-staging
+  group: deploy-azure-staging-${{ inputs.target }}
   cancel-in-progress: false
 
 permissions:
@@ -58,8 +64,10 @@ jobs:
     # Declaring an environment CHANGES THE OIDC SUBJECT CLAIM — it becomes
     # `repo:bcgov/eagle-public:environment:azure-test`, which is the subject on the
     # federated credential of `eagle-public-cicd-test`. Rename this environment, or
-    # drop the line, and Azure Login fails with AADSTS700213.
-    environment: azure-test
+    # drop the line, and Azure Login fails with AADSTS700213. `azure-next` is a second
+    # subject on the same identity; its vars name the eagle-public-next storage account
+    # and endpoint from the eagle-edge test deployment.
+    environment: ${{ inputs.target == 'next' && 'azure-next' || 'azure-test' }}
     env:
       # `<name>-<hash>.z01.azurefd.net` — THE HASH IS ASSIGNED AT DEPLOY TIME, so this
       # hostname cannot be derived from the endpoint name and must not be guessed. Set
@@ -85,8 +93,8 @@ jobs:
           # `version=develop` publishes a moving branch tip to test. The ancestry check
           # below cannot catch it either: a commit is its own ancestor, so `develop` passes.
           # Same pair of checks `release.yaml` runs, for the same reason.
-          [[ "${{ inputs.version }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] \
-            || { echo "::error::version '${{ inputs.version }}' is not a release tag of the form v1.2.3 — the deploy source is a TAG, never a branch"; exit 1; }
+          [[ "${{ inputs.version }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-beta\.[0-9]+)?$ ]] \
+            || { echo "::error::version '${{ inputs.version }}' is not a release tag of the form v1.2.3 or v1.2.3-beta.4 — the deploy source is a TAG, never a branch"; exit 1; }
           git fetch --tags --quiet origin
           git rev-parse -q --verify "refs/tags/${{ inputs.version }}^{commit}" >/dev/null \
             || { echo "::error::tag ${{ inputs.version }} does not exist in this repository — deploy to test first to create it"; exit 1; }
