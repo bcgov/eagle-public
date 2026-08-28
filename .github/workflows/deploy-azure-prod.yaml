@@ -20,7 +20,7 @@
 # passthrough route, no custom domain, no CORS anywhere. Those remain deliberately absent.
 #
 # WHY STORAGE + FRONT DOOR AND NOT APP SERVICE: unchanged from staging — this is a static
-# Angular bundle, so an App Service plan would be paying for a Node process whose only job
+# bundle, so an App Service plan would be paying for a Node process whose only job
 # is to read files off disk and set six response headers. Storage `$web` serves the files;
 # Front Door supplies what `$web` cannot: the security headers, the SPA fallback rewrite,
 # and TLS on a stable hostname. Azure Static Web Apps is still ruled out — the
@@ -331,7 +331,7 @@ jobs:
       # that used to live in `azure/server.js`'s `cacheFor()`, with one correction:
       # `cacheFor()` keyed `immutable` off the EXTENSION, which handed a year-long cache to
       # every unhashed file under `assets/`. Only content-hashed filenames are safe to cache
-      # for a year, and those are the bundles Angular emits at the root — nothing else.
+      # for a year, and those are the bundles the build emits at the root — nothing else.
       #
       # `--content-cache-control` applies to a whole batch, so this is one batch per
       # rule. The patterns must therefore be EXHAUSTIVE — a file matched by no pattern
@@ -378,8 +378,8 @@ jobs:
           echo "ASSET_PROBE=$probe" >> "$GITHUB_ENV"
 
           # `assets/**` is the same problem and the bigger half of it: 3.2MB of files that
-          # Angular does NOT content-hash (`angular.json` sets `outputHashing: 'bundles'`, so
-          # only emitted bundles get a hash — everything under `assets/` keeps a stable name
+          # the build does NOT content-hash (`vite.config.ts` hashes emitted bundles only —
+          # everything under `assets/` is copied from `public/` and keeps a stable name
           # across builds). An extension rule like `*.css` or `*.png` would hand `immutable`
           # to those files, pinning a year-old stylesheet, logo or font in the browser of
           # every returning visitor: change the theme, redeploy, and they never see it, with

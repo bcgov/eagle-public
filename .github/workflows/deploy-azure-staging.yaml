@@ -10,7 +10,7 @@
 # Rollback is a re-run of this workflow for the previous good tag. The OpenShift pipelines and
 # their pods are retired, so there is no in-cluster Service to point rproxy back at.
 #
-# WHY STORAGE + FRONT DOOR AND NOT APP SERVICE: this is an Angular bundle, so the App
+# WHY STORAGE + FRONT DOOR AND NOT APP SERVICE: this is a static bundle, so the App
 # Service plan was paying for a Node process whose only job was to read files off disk
 # and set six response headers. Storage `$web` serves the files; Front Door supplies
 # what `$web` cannot — the security headers, the SPA fallback rewrite, and TLS on a
@@ -241,7 +241,7 @@ jobs:
       # that used to live in `azure/server.js`'s `cacheFor()`, with one correction:
       # `cacheFor()` keyed `immutable` off the EXTENSION, which handed a year-long cache to
       # every unhashed file under `assets/`. Only content-hashed filenames are safe to cache
-      # for a year, and those are the bundles Angular emits at the root — nothing else.
+      # for a year, and those are the bundles the build emits at the root — nothing else.
       #
       # `--content-cache-control` applies to a whole batch, so this is one batch per
       # rule. The patterns must therefore be EXHAUSTIVE — a file matched by no pattern
@@ -264,10 +264,10 @@ jobs:
           # simpler than trying to carve it back out of a pattern.
           mv "$src/env.js" ./env.js.deploy
 
-          # `assets/**` is the same problem and the bigger half of it. Angular content-hashes only
-          # the bundles it emits — every file under `assets/` keeps a stable name across builds, so
-          # an extension rule like `*.css` or `*.png` hands `immutable` to 30 files that are not
-          # hashed at all. That pins a year-old stylesheet, logo or font in the browser of exactly
+          # `assets/**` is the same problem and the bigger half of it. Only the emitted bundles
+          # are content-hashed — every file under `assets/` is copied from `public/` and keeps a
+          # stable name across builds, so an extension rule like `*.css` or `*.png` hands
+          # `immutable` to 30 files that are not hashed at all. That pins a year-old stylesheet, logo or font in the browser of exactly
           # the reviewers this preview exists for: change the theme, redeploy, and they never see
           # it. Uploaded on its own with `no-cache` and then removed from the tree — the same trick
           # as env.js above — which leaves a directory where every remaining `.js`/`.css` really is
