@@ -1,5 +1,5 @@
-import { describe, it, expect, afterEach } from 'vitest';
-import { contentSearchEnabled, loadConfig } from './config';
+import { describe, it, expect, afterEach, vi } from 'vitest';
+import { contentSearchEnabled, getConfig, loadConfig } from './config';
 
 /**
  * CONTENT_SEARCH decides whether the Document Content tab and route are offered at all, so a
@@ -36,5 +36,41 @@ describe('contentSearchEnabled', () => {
   it('is off for a value that is merely truthy', async () => {
     await configuredWith({ CONTENT_SEARCH: 'false' });
     expect(contentSearchEnabled()).toBe(false);
+  });
+});
+
+/**
+ * env.js ships ACCESS_GATE false and an empty search path, so a silent fallback to it would open
+ * the curtain and point search at the wrong backend. A failed /api/config is retried, then fatal.
+ */
+describe('loadConfig with a config endpoint', () => {
+  const original = window.__env;
+
+  afterEach(() => {
+    window.__env = original;
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+  });
+
+  it('merges /api/config over env.js', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => Response.json({ ACCESS_GATE: true })));
+    window.__env = { logLevel: 4, configEndpoint: true, ACCESS_GATE: false };
+    await loadConfig();
+    expect(getConfig().ACCESS_GATE).toBe(true);
+  });
+
+  it('retries, then rejects instead of falling back to env.js', async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi.fn(async () => new Response(null, { status: 502, statusText: 'Bad Gateway' }));
+    vi.stubGlobal('fetch', fetchMock);
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    window.__env = { logLevel: 4, configEndpoint: true, ACCESS_GATE: false };
+
+    const pending = loadConfig();
+    const outcome = pending.then(() => 'resolved', () => 'rejected');
+    await vi.runAllTimersAsync();
+
+    expect(await outcome).toBe('rejected');
+    expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 });

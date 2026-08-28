@@ -102,24 +102,30 @@ export function contentSearchEnabled(): boolean {
 }
 
 /**
- * Fetch remote config from /api/config (deployed only).
- * On success, merges over env.js values. On failure, env.js defaults stand.
+ * Fetch remote config from /api/config (deployed only) and merge it over env.js. A failure is
+ * retried, then thrown: env.js ships ACCESS_GATE false and no search path, so falling back to it
+ * would open the access curtain and point search at the wrong backend.
  */
+const CONFIG_ATTEMPTS = 3;
+
 async function fetchRemoteConfig(): Promise<void> {
-  try {
-    const response = await fetch('/api/config', {
-      signal: AbortSignal.timeout(5000)
-    });
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+  for (let attempt = 1; ; attempt++) {
+    try {
+      const response = await fetch('/api/config', { signal: AbortSignal.timeout(5000) });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      const apiConfig: EnvConfig = await response.json();
+      config = { ...config, ...apiConfig };
+      if (config.logLevel === 0) {
+        console.log('config: merged with API config:', config);
+      }
+      return;
+    } catch (e) {
+      console.error(`config: /api/config attempt ${attempt} of ${CONFIG_ATTEMPTS} failed:`, e);
+      if (attempt >= CONFIG_ATTEMPTS) throw e;
+      await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
     }
-    const apiConfig: EnvConfig = await response.json();
-    config = { ...config, ...apiConfig };
-    if (config.logLevel === 0) {
-      console.log('config: merged with API config:', config);
-    }
-  } catch (e) {
-    console.error('config: API config fetch failed, using env.js defaults:', e);
   }
 }
 

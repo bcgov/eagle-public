@@ -9,10 +9,22 @@ import { initAnalytics } from './app/analytics/analytics';
 import { queryClient } from './app/api/query-client';
 import { routes } from './app/routes';
 
-await loadConfig();
+const root = createRoot(document.getElementById('root')!);
+
+try {
+  await loadConfig();
+} catch {
+  root.render(
+    <main className="container py-5">
+      <h1>EPIC is temporarily unavailable</h1>
+      <p>The site could not load its configuration. Reload the page to try again.</p>
+    </main>
+  );
+  throw new Error('config: giving up');
+}
 initAnalytics(getConfig());
 
-createRoot(document.getElementById('root')!).render(
+root.render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <RouterProvider router={createBrowserRouter(routes)} />
