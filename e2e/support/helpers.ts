@@ -63,13 +63,23 @@ export function checkBaseline(key: string, observed: Set<string>): void {
   }
   const expected = loadBaseline()[key];
   expect(expected, `no baseline entry "${key}" - run: yarn baseline`).toBeDefined();
-  expect(list.map(applyDeviations)).toEqual(expected.map(applyDeviations));
+  expect(normalise(list)).toEqual(normalise(expected));
 }
 
 /**
  * Deliberate request changes in the React port, listed in TODO.md under Deviations. Applied to
  * both sides so the baseline still fails on anything undocumented.
  */
+function normalise(lines: string[]): string[] {
+  return lines.filter(line => !DROPPED.some(pattern => pattern.test(line))).map(applyDeviations);
+}
+
+/** Calls Angular made that the port no longer makes; each is a Deviations entry in TODO.md. */
+const DROPPED = [
+  // `getExtraAppData`: two `dataset=Item&_schemaName=User` lookups whose results nothing rendered.
+  /^GET \/api\/search\?_id=:id&_schemaName=User&dataset=Item$/,
+];
+
 function applyDeviations(line: string): string {
   return line
     // `&fields=` is no longer sent on search calls: eagle-api never read it, and prod sends either
