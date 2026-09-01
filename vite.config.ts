@@ -38,13 +38,13 @@ export default defineConfig({
       // API_LOCATION: test's rproxy answers that location with `401 WWW-Authenticate: Basic`
       // (only `/` and `/demi-search` are gated there; `/api` is open), so routing it through the
       // site would 401 every Project, Document and DocumentChunk search. It goes straight to the
-      // App Service the rproxy itself proxies to, which answers anonymously.
+      // APIM gateway the rproxy itself proxies to, whose `/api` answers anonymously.
       // When API_LOCATION is set in the environment the whole site is being pointed at one
       // deployed host, so `/demi-search` follows it (that host's nginx supplies the `/api`).
       '/demi-search': envTarget
         ? proxyRule
         : {
-            target: 'https://demi-api-test.azurewebsites.net',
+            target: 'https://demi-apim-test.azure-api.net',
             secure: false,
             changeOrigin: true,
             // The base path is `/demi-search` because nginx supplies the `/api`. Nothing supplies
