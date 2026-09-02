@@ -1,56 +1,61 @@
 # Map technology
 
-Status: Proposed
-Date: 2026-08-28
+Status: Accepted
+Date: 2026-09-01
 
 The library comparison lives once, in `eagle-demi/docs/map-technology.md`. This page
-covers eagle-public's own map and what a revision would change here.
+covers eagle-public's own map.
 
-## What we run today
+## Stack
 
-`src/app/pages/projects/projlist-map.tsx`, 501 lines. Leaflet 1.9.4 with
-leaflet.markercluster 1.5.3, both loaded as script tags from unpkg.com
-(`index.html` lines 21-34) rather than installed. Only the `@types` packages are in
-`package.json`, so `L` is a global the bundler never sees.
+MapLibre GL 6 with the `@vis.gl/react-maplibre` 8 React binding. Both are installed
+and bundled; nothing loads from a CDN.
 
-The map shows one thing: a clustered marker per project, positioned from the
-project's `centroid`, with a popup. Basemaps are three Esri layers from
-`server.arcgisonline.com`.
+`src/app/map/basemaps.tsx` holds what both maps share: the empty style, the three
+Esri raster basemaps, the map controls and the BC bounds. The project map
+(`/projects`) and the project detail mini-map (`/p/:projId`) import it.
+
+The style starts empty — `{ version: 8, sources: {}, layers: [] }` — and each basemap
+is a raster source with its own layer. The Layers menu switches basemap by toggling
+layer visibility, so no style reload happens and the project data stays on the map.
+
+The project map puts every project centroid into one GeoJSON source with clustering
+on, reads the tiled result back with `querySourceFeatures` on each repaint where the
+source reports itself loaded, and renders one HTML `<Marker>` per feature: a pin for a
+project, a count bubble for a cluster. The markers
+are HTML rather than a symbol layer because a raster-only style carries no glyphs, so
+`text-field` cannot draw the cluster counts.
+
+The nine EAO region polygons come from a static GeoJSON asset,
+`src/assets/geojson/eao-regions.geojson`, copied from DEMI; `eagle-api` serves no shapes.
+The projects map draws them as a fill and a line layer under the pins, filtered to the
+regions the Region filter selects, and the Layers menu's Regions checkbox switches them off. A region
+filter also sets the opening view: the map frames the selected regions whole, rather
+than the projects left inside them.
+
+The selected project shows in a card fixed to the map's bottom-left corner, not in a
+pin-anchored popup, so the card never moves with the map or covers the pin it describes.
+
+## Why MapLibre here
+
+The binding gives React components — `<Map>`, `<Source>`, `<Layer>`, `<Marker>` — so the
+map is described in JSX instead of managed through refs and imperative calls. An overlay layer is another `<Source>`/`<Layer>` pair, which is what
+the coming boundary and wildfire layers need. Rendering is WebGL.
+
+DEMI's page weighs the libraries against DEMI's requirements, which include drawing
+tools and BC Gov WMS and ArcGIS REST services. This app has neither.
+
+## Data model
 
 There are no polygons and no drawing, and the data model would not support them.
 `eagle-api` stores `centroid` only (`api/helpers/models/project.js:13`) — a
 two-number point. There is no geometry field and no shape endpoint anywhere in the
 API.
 
-## What a revision changes
+## Accessibility
 
-The recommendation is **OpenLayers 10.10**, for the reasons in the DEMI page: the
-drawing tools are core modules rather than a plugin, it reads BC Gov WMS and ArcGIS
-REST without help, it tree-shakes to about 82 kB gzipped, and it is plain TypeScript
-that both this app and DEMI's Angular frontend can share.
-
-For this repo specifically:
-
-1. **Install the library.** Moving to OpenLayers removes the unpkg.com script tags
-   as a side effect. A public service should not depend on a third party CDN being
-   up to render its map.
-2. **There is no React binding, and that is fine.** About 30 lines: a `useRef` div, a
-   `useEffect` that constructs `new Map({target})`, and `map.setTarget(undefined)`
-   for cleanup. `projlist-map.tsx` already manages the Leaflet instance by hand
-   through refs and effects, so the shape of the component does not change much.
-3. **Polygons need backend work first.** Storing project boundaries or user-drawn
-   shapes needs a geometry field and endpoints that do not exist yet. Decide where
-   that lives — DEMI's Cosmos NoSQL already has spatial indexes and 281 boundary
-   polygons, so pushing this into eagle-api may be the wrong direction given eagle-api
-   is being retired.
-4. **Ship a list view for accessibility.** No screen reader can read a map, whichever
-   library draws it. WCAG 2.2 AA needs a keyboard-reachable list of the same projects
-   with the same filters. This page already has a project list beside the map, so the
-   work is making sure it stays in step with the map's filter state rather than
-   building something new.
-
-## When not to do this
-
-If the map stays as pins on a basemap, Leaflet already does that and a migration buys
-nothing. The case for changing rests on the layers and drawing we do not have yet.
-Move when those become real requirements with a ticket behind them.
+No screen reader can read a map. The project list beside the map is the keyboard and
+screen-reader surface: it holds the same projects under the same filters, each card is
+a button, and selecting one moves the map. Markers are `aria-hidden` and out of the
+tab order, the map is a labelled `role="region"`, and the result count is an
+`aria-live` region. Attribution renders on both maps.

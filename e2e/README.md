@@ -86,8 +86,9 @@ contract: keep the hook, or update the test in the same change.
 |---|---|---|
 | `#table-template-page-count-display` | every table page | "Showing 10 of 348 results" |
 | `#tableTop` | home | recent activity table |
-| `#map` | map page, project detail | Leaflet container |
-| `#applist-list` | map page | project list panel |
+| `#applist-panel` | map page | the panel beside the map |
+| `#applist-list` | map page | project list inside the panel |
+| `#applist-filters` | map page | the advanced filters, `data-open` and `inert` while collapsed |
 | `#applicantInput` | map page | project-name filter box |
 | `#Milestone` | search advanced filters | facet combobox wrapper |
 | `#emailInput` | cac-unsubscribe | email field |
@@ -96,16 +97,28 @@ contract: keep the hook, or update the test in the same change.
 
 | Hook | Where | Used for |
 |---|---|---|
-| `.projects-view.app-list-open` / `.app-list-closed` | map page | list panel state |
-| `.overlay` | map page | the only control that toggles the list panel |
-| `.app-card` (and `.app-card.active`) | map list panel | project cards and selection |
-| `.app-list__options` | map list panel | "348 results on map" |
-| `.client-name` | map project card | applicant value |
-| `.leaflet-container`, `.leaflet-marker-icon`, `.marker-cluster`, `.leaflet-popup` | map | Leaflet DOM |
-| `.popup-title`, `.popup-content .app-link` | map popup | project popup body |
+| `.sheet-handle`, `.app-list[data-state]` | map page, mobile | bottom sheet and its height |
+| `.maplibregl-canvas` | map | the WebGL canvas MapLibre draws into |
+| `.map-info` | map | the selected project's card, bottom-left of the map (desktop only) |
+| `.popup-title`, `.popup-subtitle` | project card | project name and its proponent/type meta line |
+| `.map-container` | project detail | the mini-map box |
 | `.project-tabs .nav-tabs .nav-link` | project detail | tab strip |
 | `.tab-content` | project detail | active tab body |
 | `.download-icon` | search results | per-row download control |
+
+### Test ids
+
+The map page carries `data-testid` hooks, because pins and clusters are `aria-hidden`
+decoration over a canvas and the list is the accessible surface.
+
+| Hook | Where | Used for |
+|---|---|---|
+| `project-map` | map page | the map region |
+| `map-cluster` | map | a cluster bubble; `data-size` is `s`, `m` or `l` |
+| `map-marker` | map | a single-project pin; `data-project-id` names the project |
+| `map-popup` | map | the bottom-left card a pin or card selection opens; on mobile the selected list card expands instead |
+| `project-card` | list panel | a project card; `data-project-id`, `aria-current` when selected |
+| `results-count` | list panel | "348 projects in view" |
 
 ### Attribute selectors that are already semantic
 
@@ -131,10 +144,6 @@ the test will fail and should be updated deliberately.
 - **`/p/:projId/decisions` is not routable.** The deployed build alerts
   `Uh-oh, couldn't load project` and lands on `/projects`. The route exists in `app.routes.ts` but
   no tab links to it.
-- **The map list panel has no "open" control.** It starts closed and only the transparent
-  `.overlay` (`aria-label="Close project list"`) toggles it, in both directions.
-- **A map list card does not open the map popup.** It only marks the card `.active`. Only a marker
-  click opens `.leaflet-popup`.
 - **Map project cards carry no project name** - only applicant, purpose, disposition, EAO project
   number and status. Filtering is therefore asserted on the result counts.
 - **`fields=[object Object]`** appears in the project detail document probes. Left in the baseline
@@ -184,7 +193,7 @@ into `screenshots/`, which is gitignored.
 
 | Tool | Writes | Use |
 |---|---|---|
-| `node tools/shots.ts` | `screenshots/<OUT>/<shot>-{desktop,mobile}.png` | every route at 1280x800 and 390x844, plus the map list panel and popup, the open header menus, the mobile menu, the search filters and the three add-comment pages |
+| `node tools/shots.ts` | `screenshots/<OUT>/<shot>-{desktop,mobile}.png` | every route at 1280x800 and 390x844, plus the map project card (the expanded list card on mobile), the mobile list sheet, the open header menus, the mobile menu, the search filters and the three add-comment pages |
 | `node tools/dom-dump.ts` | `screenshots/<OUT>.dom.txt` | `tag.class \| text` for every element, framework wrapper elements dropped, so an Angular tree and a React tree line up under `diff` |
 | `node tools/style-dump.ts` | `screenshots/<OUT>.styles.json` | ~50 computed properties per element; `python3 tools/style-diff.py a.styles.json b.styles.json` aligns the two and prints only what differs |
 
@@ -228,7 +237,7 @@ is applied, a keyword returning hits). Deselect with `yarn test --grep-invert @d
 | `tests/smoke.spec.ts` | 12 | every top-level route loads, posts `/analytics`, one `h1`, no `img` without `alt` |
 | `tests/static-pages.spec.ts` | 12 | home, contact, legislation, compliance-oversight, process, search-help, news, project-notifications, cac-unsubscribe |
 | `tests/projects-list.spec.ts` | 5 | table, sort, pagination, keyword filter, deep link |
-| `tests/projects-map.spec.ts` | 6 | map, clusters, list toggle, filter, marker popup, card selection |
+| `tests/projects-map.spec.ts` | 6 | map and clusters, inline filters panel, filter, pin card, list-card card, basemap switch |
 | `tests/search.spec.ts` | 6 | table, keyword, milestone facet, pagination, deep link, row links |
 | `tests/project-detail.spec.ts` | 10 | tab strip and all 7 child routes, download link shape |
 | `tests/comment-period.spec.ts` | 5 | `/p/../cp/../details`, `/pn/../cp/../details`, closed and open states |

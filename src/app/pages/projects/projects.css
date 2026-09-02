@@ -1,121 +1,134 @@
+/* The map page is a fixed viewport shell: the list scrolls inside the panel, the page never
+   scrolls. Only a definite height lets the flex chain below resolve against the viewport. */
+.app-wrapper:has(.projects-view) {
+  height: 100dvh;
+}
 
-/*
- * The routed page sits inside #scrollTop here; Angular rendered it as a sibling of the
- * router-outlet, so the wrapper has to become the flex row that lets the map fill the viewport.
- */
-/* `:has` keys this on the map page's own markup: `projects-route` is also set on /projects-list,
-   which must stay a normal block layout. */
+/* `:has` keys these on the map page's own markup: `projects-route` is also set on /projects-list,
+   which must stay a normal block layout. Without min-height:0 the list's height grows the page. */
+.app-content.projects-route:has(.projects-view),
+.app-content.projects-route:has(.projects-view) > #scrollTop {
+  min-height: 0;
+}
+
 .app-content.projects-route:has(.projects-view) > #scrollTop {
   display: flex;
   flex: 1;
-  min-height: 0;
+  overflow: hidden;
+}
+
+/* Registered so the sheet's drag handler reads the peek back in px, not as the "5.5rem" token. */
+@property --sheet-peek {
+  syntax: '<length>';
+  inherits: true;
+  initial-value: 88px;
 }
 
 .projects-view {
-  display: flex;
-  flex-flow: column nowrap;
+  --sheet-peek: 5.5rem;
+  --sheet-cover: var(--sheet-peek);
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr;
+  /* Not `auto`: an auto row grows to its content, which is the whole list. */
+  grid-template-rows: minmax(0, 1fr);
   flex: 1;
   min-height: 0;
+  overflow: hidden;
 }
 
-.app-filters {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 1000;
-  box-shadow: 0.1rem 0.1rem 1rem rgba(0, 0, 0, 0.15);
-}
-
-@media (min-width: 768px) {
-  .app-filters {
-    top: calc(var(--header-total-height) + 1rem);
-    left: 50%;
-    right: auto;
-    transform: translateX(-50%);
-    width: 48rem;
-    box-shadow: 0.1rem 0.1rem 0.5rem rgba(0,0,0,0.25);
-  }
-}
-
-@media (min-width: 1200px) {
-  .app-filters {
-    transition: left ease-out 0.2s;
-  }
-}
-
-/* List Container */
-.app-list-container {
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 3rem;
-  transform: translateX(-100%) translateX(-3rem);
-  transition: transform ease-out 0.2s;
-  border-top: 1px solid var(--bs-border-color);
-}
-
-@media (min-width: 768px) {
-  .app-list-container {
-    width: 22rem;
-  }
-}
-
-@media (min-width: 1200px) {
-  .app-list-container {
-    border-top: none;
-  }
-}
-
-.overlay {
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  background: rgba(0,0,0,0.5);
-  opacity: 0;
-  transform: translateX(-100%);
-  transition: opacity ease-out 0.2s;
-}
-
-/* Container for the List and Map components */
-.app-list-map-container {
-  flex: 1;
+/* Map */
+.projects-map {
   position: relative;
-  min-height: 0; /* Important for flexbox children */
+  min-width: 0;
 }
 
-/* Only apply loading effects to list and map, never filters */
-.app-list-container,
-.app-map {
+.projects-map .app-map {
   position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
+  inset: 0;
 }
 
-/* Project List Open / Closed State */
-.app-list-open .app-list-container {
-  box-shadow: 0.1rem 0.1rem 0.5rem rgba(0,0,0,0.25);
-  transform: translateX(0) translateX(-3rem);
+/* Panel */
+.projects-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--bs-white);
 }
 
-.app-list-open .overlay {
-  opacity: 1;
-  transform: translateX(0);
+/* Desktop: panel beside the map. `data-mobile` rather than a width query, so this file and
+   `useResponsive` — which the sheet markup keys on — can never disagree. A 844x390 phone in
+   landscape reads as mobile there and would read as desktop here. */
+.projects-view:not([data-mobile]) {
+  grid-template-columns: 26rem 1fr;
 }
 
-@media (min-width: 768px) {
-  .app-list-open .overlay {
+.projects-view:not([data-mobile]) .projects-panel {
+  border-right: 1px solid var(--bs-border-color);
+}
+
+/* Mobile: map fills the page, the panel holds the bottom sheet over it. */
+.projects-view[data-mobile] {
+  .projects-panel {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 3;
+    /* Stops below the fixed filter card; the view already starts under the header. */
+    height: calc(100% - 6rem);
+    /* `clip`, not `hidden`: the translated sheet overflows the panel, and a scrollable panel lets
+       the list's `scrollIntoView` drag the whole sheet up. */
+    overflow: clip;
+    background: none;
+    /* The sheet covers only part of the map; the rest of the panel lets clicks through. */
+    pointer-events: none;
+  }
+
+  .projects-panel > * {
+    pointer-events: auto;
+  }
+
+  /* How much of the map the sheet covers, so the controls below clear it in every state. */
+  &:has(.app-list[data-state='half']) {
+    --sheet-cover: 50%;
+  }
+
+  &:has(.app-list[data-state='full']) {
+    --sheet-cover: 100%;
+  }
+
+  /* Keep the map controls clear of the fixed filter bar above and the sheet below. */
+  .projects-map .map-controls__layers {
+    top: 5.5rem;
+  }
+
+  /* Landscape: the filter card has stepped aside, so the controls start at the top. The peek
+     gives up the count row as well — 390px of height does not hold both. */
+  @media (max-height: 500px) {
+    --sheet-peek: 3rem;
+
+    .projects-map .map-controls__layers {
+      top: 10px;
+    }
+  }
+
+  .projects-map .map-controls__reset {
+    bottom: calc(var(--sheet-cover) + 0.75rem);
+  }
+
+  .projects-map .maplibregl-ctrl-bottom-right {
+    bottom: calc(var(--sheet-cover) + 0.75rem + 44px);
+  }
+
+  /* Phones pinch to zoom; the +/- group would push the stack into the Layers button at half. */
+  .projects-map .maplibregl-ctrl-group:has(.maplibregl-ctrl-zoom-in) {
     display: none;
   }
-}
 
-@media (min-width: 1200px) {
-  .app-list-open .app-filters {
-    left: calc(50% + 12.5rem);
+  /* The stack rides up with the sheet; the scale bar is the part a phone can spare. */
+  .projects-map .maplibregl-ctrl-scale {
+    display: none;
   }
 }

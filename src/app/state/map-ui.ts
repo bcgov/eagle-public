@@ -11,11 +11,41 @@ export interface MapBounds {
 /** How many list cards the projects page reveals per "Load More". */
 export const LIST_PAGE_SIZE = 10;
 
-/** Whether the project list panel is open over the map. Outlives the page, as ConfigService did. */
-export const applistVisible = createStore(false);
+/** How far the mobile list sheet is pulled up over the map. */
+export type SheetState = 'peek' | 'half' | 'full';
+export const sheetState = createStore<SheetState>('peek');
+
+/** A drag shorter than this reads as a tap, so the sheet keeps the state it started in. */
+export const SHEET_DRAG_THRESHOLD = 40;
+
+/** How far each stop translates the sheet down, in px, for a sheet `height` tall showing `peek`. */
+function sheetOffsets(height: number, peek: number): Record<SheetState, number> {
+  return { peek: height - peek, half: height / 2, full: 0 };
+}
+
+/**
+ * The stop a drag of `dy` px from `from` lands on: the nearest one the drag headed towards, so a
+ * deliberate drag always moves the sheet rather than rubber-banding back to where it started.
+ */
+export function snapSheet(from: SheetState, dy: number, height: number, peek: number): SheetState {
+  if (Math.abs(dy) < SHEET_DRAG_THRESHOLD) return from;
+  const offsets = sheetOffsets(height, peek);
+  const target = offsets[from] + dy;
+  const ahead = (Object.keys(offsets) as SheetState[]).filter(state =>
+    dy < 0 ? offsets[state] < offsets[from] : offsets[state] > offsets[from]
+  );
+  if (ahead.length === 0) return from;
+  return ahead.reduce((best, state) =>
+    Math.abs(offsets[state] - target) < Math.abs(offsets[best] - target) ? state : best
+  );
+}
 
 /** Name of the selected Esri base layer, remembered across visits to the map. */
-export const baseLayerName = createStore('World Topographic');
+export const DEFAULT_BASEMAP = 'World Topographic';
+export const baseLayerName = createStore(DEFAULT_BASEMAP);
+
+/** Whether the EAO region polygons draw on the projects map. */
+export const regionsVisible = createStore(true);
 
 /** Bounds of the current map view; null before the map exists. */
 export const mapBounds = createStore<MapBounds | null>(null);

@@ -1,145 +1,86 @@
 .app-map {
-  display: block;
+  position: relative;
+  width: 100%;
+  height: 100%;
   min-height: 0;
+  background-color: var(--bc-gray-light, #f7f8fa);
 }
 
-/* Scoped to this component's root. The project detail sidebar renders its own `.map-container`
-   with an `#map` inside it, which Angular's encapsulation kept these rules away from — the `#map`
-   rule in particular outranks everything the sidebar sets. */
-.app-map .map-container {
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  height: 100%;
-  width: 100%;
-}
-
-.app-map .map-container #map {
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: var(--bc-gray-light);
-  transition: left ease-out 0.2s, filter 0.3s ease, opacity 0.3s ease;
-}
-
-.app-map .map-container.loading #map {
-  filter: blur(2px);
-  opacity: 0.6;
+.app-map.is-loading .maplibregl-canvas-container {
+  opacity: 0.7;
   pointer-events: none;
 }
 
-/* Smooth marker icon transitions */
-.marker-icon-transition {
-  transition: all 0.2s ease-out;
+/* Dim while projects load; `placeholder-wave` on the same element sweeps the shimmer. */
+.app-map__shimmer {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: var(--bs-white, #fff);
+  opacity: 0.4;
+  pointer-events: none;
 }
 
-/* Map Control Customization */
-.leaflet-container a.leaflet-popup-close-button {
-  top: 0.5rem;
-  right: 0.5rem;
-  padding: 0.35rem 0;
-  width: 2rem;
-  height: 2rem;
-  color: var(--bs-white);
-  font-size: 1.5rem;
-  font-weight: normal;
-  opacity: 0.5;
+@media (prefers-reduced-motion: reduce) {
+  .app-map__shimmer {
+    mask-image: none;
+    animation: none;
+  }
 }
 
-.leaflet-container a.leaflet-popup-close-button:hover,
-.leaflet-container a.leaflet-popup-close-button:focus {
-  color: var(--bs-white);
-  opacity: 1;
-}
-
-.leaflet-popup {
-  margin-bottom: 30px;
-}
-
-.leaflet-popup-content-wrapper {
-  padding: 0;
-  border-radius: 0.2rem;
-}
-
-.leaflet-popup-content {
-  width: 20rem !important;
-  margin: 0;
+/* Name of the EAO region under the pointer. */
+.map-region-tip {
+  position: absolute;
+  z-index: 2;
+  max-width: 14rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  background: var(--bs-white, #fff);
+  box-shadow: 0 1px 4px var(--shadow-subtle, rgba(0, 0, 0, 0.1));
+  color: var(--font-color, #494949);
+  font-size: var(--bs-font-size-sm, 0.875rem);
+  line-height: 1.2;
+  white-space: nowrap;
   overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
 }
 
-.leaflet-popup-tip-container {
-  display: none !important;
-  visibility: hidden !important;
-  opacity: 0 !important;
-  width: 0 !important;
-  height: 0 !important;
+/* Selected project card, fixed in the map's bottom-left corner. */
+.map-info {
+  position: absolute;
+  left: 1rem;
+  bottom: 1rem;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  width: 24rem;
+  max-width: calc(100% - 2rem);
+  border: 1px solid var(--bs-border-color, #ddd);
+  border-radius: 0.5rem;
+  background: var(--bs-white, #fff);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.22);
 }
 
-.leaflet-popup-tip {
-  display: none !important;
-  visibility: hidden !important;
-  opacity: 0 !important;
-  width: 0 !important;
-  height: 0 !important;
-  border: none !important;
-}
+@media (prefers-reduced-motion: no-preference) {
+  .map-info {
+    animation: map-info-in 0.2s ease-out;
+  }
 
-.leaflet-popup::after,
-.leaflet-popup::before {
-  display: none !important;
-  content: none !important;
-}
+  .map-region-tip {
+    animation: map-region-tip-in 0.15s ease-out;
+  }
 
-.leaflet-control-attribution {
-  padding: 0.5rem;
-  height: 3rem;
-  line-height: 0.75rem;
-  font-size: var(--bs-font-size-xs);
-}
+  @keyframes map-region-tip-in {
+    from {
+      opacity: 0;
+    }
+  }
 
-.leaflet-control-layers {
-  z-index: 1003 !important;
-}
-
-.leaflet-control-zoom {
-  z-index: 1003 !important;
-}
-
-.leaflet-control-scale {
-  margin-bottom: 10px !important;
-}
-
-.leaflet-bottom.leaflet-left {
-  bottom: 0;
-}
-
-.map-reset-control {
-  margin-right: 12px !important;
-  padding: 0;
-  width: 30px;
-  height: 30px;
-  background: var(--bs-white);
-  color: var(--bc-gray);
-  text-align: center;
-  line-height: 30px;
-  border-radius: 2px;
-  border: none;
-  box-shadow: 0 0 0 2px rgba(0,0,0,0.2);
-  cursor: pointer;
-}
-
-.map-reset-control:hover {
-  background: var(--bs-tertiary-bg);
-}
-
-@media (min-width: 1024px) {
-  .leaflet-popup-content {
-    width: 24rem !important;
+  @keyframes map-info-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
   }
 }

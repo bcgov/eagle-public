@@ -25,5 +25,14 @@ export default defineConfig({
       ? { httpCredentials: { username: BASIC_AUTH_USER, password: BASIC_AUTH_PASS } }
       : {}),
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  projects: [
+    {
+      name: 'chromium',
+      use: {
+        ...devices['Desktop Chrome'],
+        // MapLibre needs WebGL; headless chromium has no GPU, so it software-renders.
+        launchOptions: { args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader'] },
+      },
+    },
+  ],
 });

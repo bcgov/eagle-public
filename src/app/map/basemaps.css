@@ -1,0 +1,276 @@
+/* Shared MapLibre styling: controls, pins, clusters. Loaded once by basemaps.tsx. */
+
+/* --- Controls -------------------------------------------------------------- */
+
+/* Overlay that hosts the custom controls; the map keeps the pointer events it needs. */
+.map-controls {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  font-family: 'BCSans', 'Noto Sans', Arial, sans-serif;
+}
+
+.map-controls__layers {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  pointer-events: auto;
+}
+
+.map-controls__reset {
+  position: absolute;
+  right: 10px;
+  bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  pointer-events: auto;
+}
+
+.map-control-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: var(--bs-white, #fff);
+  color: var(--bc-blue, #003366);
+  box-shadow: 0 1px 4px var(--shadow-subtle, rgba(0, 0, 0, 0.1)), 0 0 0 1px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+}
+
+.map-control-btn:hover {
+  background: var(--lightgray, #eee);
+}
+
+.map-control-btn .material-icons {
+  font-size: 22px;
+}
+
+/* Lift the zoom buttons clear of the reset button below them. */
+.maplibregl-ctrl-bottom-right {
+  bottom: calc(54px + env(safe-area-inset-bottom, 0px));
+}
+
+.maplibregl-ctrl-group {
+  border-radius: 8px;
+  box-shadow: 0 1px 4px var(--shadow-subtle, rgba(0, 0, 0, 0.1)), 0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+.maplibregl-ctrl-group button {
+  width: 44px;
+  height: 44px;
+}
+
+.maplibregl-ctrl-attrib,
+.maplibregl-ctrl-scale {
+  font-family: 'BCSans', 'Noto Sans', Arial, sans-serif;
+}
+
+/* The attribution sets no colour of its own, so it inherits white inside a dark panel. Both
+   classes, to outrank maplibre's own background rule. */
+.maplibregl-ctrl.maplibregl-ctrl-attrib {
+  background: rgba(255, 255, 255, 0.8);
+  color: var(--bs-body-color, #494949);
+}
+
+.map-layers-menu {
+  position: absolute;
+  top: 50px;
+  right: 0;
+  min-width: 12rem;
+  padding: 0.5rem;
+  border-radius: 8px;
+  background: var(--bs-white, #fff);
+  box-shadow: 0 2px 8px var(--shadow-subtle, rgba(0, 0, 0, 0.1)), 0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+.map-layers-menu__row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0 0.5rem;
+  border-radius: 4px;
+  color: var(--font-color, #494949);
+  font-size: var(--bs-font-size-sm, 0.875rem);
+  cursor: pointer;
+}
+
+.map-layers-menu__overlays {
+  margin-top: 0.25rem;
+  padding-top: 0.25rem;
+  border-top: 1px solid var(--lightgray, #eee);
+}
+
+.map-layers-menu__heading {
+  margin: 0;
+  padding: 0 0.5rem;
+  color: var(--font-color, #494949);
+  font-size: var(--bs-font-size-sm, 0.875rem);
+  font-weight: 700;
+}
+
+.map-layers-menu__row:hover {
+  background: var(--hover-tint, rgba(0, 0, 0, 0.02));
+}
+
+/* --- Pins ------------------------------------------------------------------ */
+
+/* Each marker gets its own stacking context, so a hovered or selected pin has to be lifted or
+   later markers paint over its label. */
+.maplibregl-marker:has(.map-pin.is-hovered),
+.maplibregl-marker:has(.map-pin.is-selected) {
+  z-index: 2;
+}
+
+.map-pin {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  position: relative;
+}
+
+/* 36px of art, 44px of tap target: WCAG 2.5.5 without a bigger pin. */
+.map-pin::after,
+.map-cluster[data-size='s']::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+}
+
+/* The image is a pseudo-element so hover and selection can scale it without scaling the label. */
+.map-pin::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url('/assets/images/marker-icon-yellow.svg') center / contain no-repeat;
+  transform-origin: bottom center;
+}
+
+.map-pin.is-hovered::before {
+  transform: scale(1.1);
+}
+
+.map-pin.is-selected::before {
+  transform: scale(1.33);
+}
+
+.map-pin.is-selected.is-hovered::before {
+  transform: scale(1.45);
+}
+
+/* Touch leaves `:hover` stuck on the last thing tapped, so the pointer rules are hover-only. */
+@media (hover: hover) {
+  .map-pin:hover::before {
+    transform: scale(1.1);
+  }
+
+  .map-pin.is-selected:hover::before {
+    transform: scale(1.45);
+  }
+
+  .map-pin:hover .map-pin__label {
+    transform: translate(-50%, 0);
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .map-cluster:hover {
+    transform: scale(1.1);
+  }
+}
+
+.map-pin.is-hovered {
+  filter: drop-shadow(0 0 2px var(--map-pin-stroke));
+}
+
+.map-pin__label {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translate(-50%, 4px);
+  opacity: 0;
+  visibility: hidden;
+  max-width: 14rem;
+  margin-bottom: 4px;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  background: var(--bs-white, #fff);
+  box-shadow: 0 1px 4px var(--shadow-subtle, rgba(0, 0, 0, 0.1));
+  color: var(--font-color, #494949);
+  font-size: var(--bs-font-size-sm, 0.875rem);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.map-pin.is-hovered .map-pin__label {
+  transform: translate(-50%, 0);
+  opacity: 1;
+  visibility: visible;
+}
+
+/* --- Clusters -------------------------------------------------------------- */
+
+.map-cluster {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 6px solid var(--map-cluster-bg);
+  border-radius: 50%;
+  background: var(--map-cluster-inner-bg);
+  background-clip: padding-box;
+  color: var(--bs-white, #fff);
+  font-family: 'BCSans', 'Noto Sans', Arial, sans-serif;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.map-cluster[data-size='m'] {
+  width: 44px;
+  height: 44px;
+  font-size: 0.875rem;
+}
+
+.map-cluster[data-size='l'] {
+  width: 54px;
+  height: 54px;
+  border-width: 8px;
+  font-size: 1rem;
+}
+
+/* --- Motion ---------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: no-preference) {
+  .map-pin,
+  .map-cluster {
+    animation: marker-in 0.2s ease-out;
+  }
+
+  .map-pin::before,
+  .map-cluster {
+    transition: transform 0.15s ease;
+  }
+
+  .map-pin__label {
+    transition:
+      opacity 0.15s ease,
+      transform 0.15s ease,
+      visibility 0.15s;
+  }
+
+  @keyframes marker-in {
+    from {
+      opacity: 0;
+    }
+  }
+}

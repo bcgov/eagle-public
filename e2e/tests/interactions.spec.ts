@@ -51,12 +51,12 @@ test('@data the map region filter narrows the result count and syncs the URL', a
   await ready(page, 4000);
 
   const before = await waitForSearch(page, 'Project').catch(() => null);
-  const options = page.locator('.app-list__options');
+  const options = page.locator('[data-testid="results-count"]');
   const unfiltered = (await options.innerText()).trim();
   expect(unfiltered, 'no result count on the map').toMatch(/\d/);
   expect(before === null || total(before) >= 0).toBeTruthy();
 
-  await page.getByText(/Show Advanced Filters/).click();
+  await page.getByRole('button', { name: /Filters/ }).click();
   const region = page.locator('#region input, #region').first();
   await region.click();
   const option = page.getByRole('option').first();

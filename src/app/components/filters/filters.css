@@ -396,15 +396,6 @@
   background-color: var(--bc-gray-hover);
 }
 
-.custom-multi-select__option--selected {
-  background-color: var(--bc-blue-interactive);
-  color: var(--bs-white);
-}
-
-.custom-multi-select__option--selected:hover,
-.custom-multi-select__option--selected.custom-multi-select__option--focused {
-  background-color: var(--bc-blue);
-}
 
 .custom-multi-select__checkbox {
   display: inline-flex;
@@ -417,9 +408,11 @@
   flex-shrink: 0;
 }
 
+/* The checkbox alone marks selection; the row keeps its normal colours. */
 .custom-multi-select__option--selected .custom-multi-select__checkbox {
-  border-color: var(--bs-white);
-  background-color: rgba(255, 255, 255, 0.2);
+  border-color: var(--bc-blue-interactive);
+  background-color: var(--bc-blue-interactive);
+  color: var(--bs-white);
 }
 
 .custom-multi-select__checkbox svg {

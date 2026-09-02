@@ -1,16 +1,37 @@
 import { test, expect, Page } from '../support/fixtures';
 import { recordApiCalls, checkBaseline, waitForSearch, total } from '../support/helpers';
 
-const CARDS = '#applist-list .app-card';
+const CARDS = '[data-testid="project-card"]';
+const COUNT = '[data-testid="results-count"]';
+const CLUSTERS = '[data-testid="map-cluster"]';
+const MARKERS = '[data-testid="map-marker"]';
+/** The selected project's card, fixed in the map's bottom-left corner. */
+const POPUP = '.map-info[data-testid="map-popup"]';
 
 async function openMap(page: Page) {
   const search = waitForSearch(page, 'Project');
   await page.goto('/projects');
   const env = await search;
-  await page.locator('.leaflet-container').waitFor();
-  await expect(page.locator('.marker-cluster').first()).toBeVisible();
+  // The WebGL canvas is inside the map region; it has no size until the style loads.
+  await page.locator(`[data-testid="project-map"] .maplibregl-canvas`).waitFor({ state: 'attached' });
+  await expect(page.locator(CLUSTERS).first()).toBeVisible();
   await page.waitForTimeout(2000);
   return env;
+}
+
+function countIn(text: string): number {
+  return Number(text.match(/(\d+) projects? in view/)?.[1] ?? 0);
+}
+
+/** Zoom into clusters until the map shows a single-project pin. */
+async function firstMarker(page: Page) {
+  const marker = page.locator(MARKERS).first();
+  for (let attempt = 0; attempt < 6 && !(await marker.isVisible()); attempt++) {
+    await page.locator(CLUSTERS).first().click();
+    await page.waitForTimeout(1500);
+  }
+  await expect(marker).toBeVisible();
+  return marker;
 }
 
 test('map page renders the map, clusters and the project list', async ({ page }) => {
@@ -19,93 +40,83 @@ test('map page renders the map, clusters and the project list', async ({ page })
 
   // The h1 is deliberately visually hidden, so assert presence rather than visibility.
   await expect(page.locator('h1')).toHaveText('Find Environmental Assessment Projects in British Columbia');
-  await expect(page.locator('#map.leaflet-container')).toBeAttached();
-  await expect(page.locator('.marker-cluster')).not.toHaveCount(0);
+  await expect(page.locator('[data-testid="project-map"] .maplibregl-canvas')).toBeAttached();
+  await expect(page.locator(CLUSTERS)).not.toHaveCount(0);
   await expect(page.locator(CARDS)).not.toHaveCount(0);
-  await expect(page.locator('.app-list__options')).toContainText(`${total(env)} results on map`);
+
+  // Projects without a centroid are not on the map, so the count is bounded by the result total.
+  const shown = countIn(await page.locator(COUNT).innerText());
+  expect(shown).toBeGreaterThan(0);
+  expect(shown).toBeLessThanOrEqual(total(env));
 
   checkBaseline('projects-map', calls);
 });
 
-test('the list panel starts closed and the overlay toggles it', async ({ page }) => {
+test('the Filters button expands the advanced filters inline', async ({ page }) => {
   await openMap(page);
 
-  const view = page.locator('.projects-view');
-  await expect(view).toHaveClass(/app-list-closed/);
+  const panel = page.locator('#applist-filters');
+  const toggle = page.getByRole('button', { name: /Filters/ });
+  await expect(panel).toHaveAttribute('data-open', 'false');
+  await expect(page.locator('#region')).toBeHidden();
 
-  // The overlay is the only toggle prod exposes; it is transparent while closed.
-  const overlay = page.locator('.overlay');
-  await overlay.dispatchEvent('click');
-  await expect(view).toHaveClass(/app-list-open/);
-  await expect(page.locator(CARDS).first()).toBeVisible();
+  await toggle.click();
 
-  await overlay.dispatchEvent('click');
-  await expect(view).toHaveClass(/app-list-closed/);
+  await expect(panel).toHaveAttribute('data-open', 'true');
+  await expect(page.locator('#region')).toBeVisible();
+
+  await page.keyboard.press('Escape');
+
+  await expect(panel).toHaveAttribute('data-open', 'false');
+  await expect(toggle).toBeFocused();
 });
 
 test('@data the project-name filter narrows the list and the map', async ({ page }) => {
-  const env = await openMap(page);
+  await openMap(page);
 
-  const filtered = page.locator('.app-list__options');
+  const before = countIn(await page.locator(COUNT).innerText());
   await page.fill('#applicantInput', 'Coal');
-  await expect(filtered).not.toContainText(`${total(env)} results on map`);
+  await expect(page.locator(COUNT)).not.toHaveText(`${before} projects in view`);
 
-  const text = await filtered.innerText();
-  const remaining = Number(text.match(/(\d+) results on map/)?.[1] ?? 0);
-  expect(remaining).toBeGreaterThan(0);
-  expect(remaining).toBeLessThan(total(env));
-  // The card body carries applicant/purpose/status, never the project name, so the
-  // narrowing is asserted on the counts rather than on row text.
+  const after = countIn(await page.locator(COUNT).innerText());
+  expect(after).toBeGreaterThan(0);
+  expect(after).toBeLessThan(before);
   expect(await page.locator(CARDS).count()).toBeGreaterThan(0);
 });
 
-test('clicking a marker opens the project detail popup', async ({ page }) => {
+test('clicking a pin opens the project card', async ({ page }) => {
   await openMap(page);
 
-  // Whether any project sits unclustered at the opening zoom depends on the viewport, the data
-  // volume and the fitted zoom, so drill into clusters until a single marker exists rather than
-  // assuming one is on screen already.
-  const marker = page.locator('.leaflet-marker-icon:not(.marker-cluster)').first();
-  for (let attempt = 0; attempt < 5 && (await marker.count()) === 0; attempt++) {
-    await page.locator('.marker-cluster').first().click();
-    await page.waitForTimeout(1500);
-  }
-  await marker.waitFor();
-  // Dispatched, not a coordinate click: the header and the filter card float over the map, so a
-  // marker under either of them is unhittable by pointer. Leaflet listens for the DOM event.
-  await marker.dispatchEvent('click');
+  const marker = await firstMarker(page);
+  const projectId = await marker.getAttribute('data-project-id');
+  await marker.click();
 
-  await expect(page.locator('.leaflet-popup')).toHaveCount(1);
-  await expect(page.locator('.popup-title')).toContainText('Project');
-  await expect(page.locator('.popup-content .app-link')).toHaveText(/View Project Details/i);
+  const popup = page.locator(POPUP);
+  await expect(popup).toHaveCount(1);
+  await expect(popup.locator('.popup-title')).not.toBeEmpty();
+  await expect(popup.locator('.popup-subtitle')).toBeVisible();
+  await expect(popup.getByRole('button', { name: 'View project' })).toBeVisible();
+  // The pin and the card are two views of one selection.
+  await expect(page.locator(`${CARDS}[data-project-id="${projectId}"]`)).toHaveAttribute('aria-current', 'true');
 });
 
-test('clicking a cluster drills into it', async ({ page }) => {
+test('clicking a list card selects it and opens the project card', async ({ page }) => {
   await openMap(page);
 
-  const clusters = page.locator('.marker-cluster');
-  const before = await clusters.count();
-  await clusters.first().click();
-  await page.waitForTimeout(2500);
-
-  // Zoom or spiderfy: either way the cluster layout must change.
-  const after = await clusters.count();
-  const markers = await page.locator('.leaflet-marker-icon:not(.marker-cluster)').count();
-  expect(after !== before || markers > 0).toBeTruthy();
-});
-
-test('a list card selects its project in the list', async ({ page }) => {
-  await openMap(page);
-
-  await page.locator('.overlay').dispatchEvent('click');
   const card = page.locator(CARDS).first();
   await expect(card).toBeVisible();
+  await card.click();
 
-  // The map canvas covers the list panel, so a coordinate click lands on the map;
-  // the app listens for the click event itself.
-  await card.dispatchEvent('click');
-  await expect(card).toHaveClass(/active/);
-  // Recorded prod behaviour: selecting from the list does NOT open the map popup;
-  // only a marker click does.
-  await expect(page.locator('.leaflet-popup')).toHaveCount(0);
+  await expect(card).toHaveAttribute('aria-current', 'true');
+  await expect(page.locator(POPUP)).toHaveCount(1);
+});
+
+test('the Layers menu switches the base map tiles', async ({ page }) => {
+  await openMap(page);
+
+  const topoTile = page.waitForRequest(/World_Topo_Map/, { timeout: 30_000 });
+  await page.getByRole('button', { name: 'Map layers' }).click();
+  await page.getByRole('radio', { name: 'World Topographic' }).click();
+
+  await topoTile;
 });

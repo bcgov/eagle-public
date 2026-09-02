@@ -1,501 +1,458 @@
-import { useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+// Aliased: `Map` would shadow the built-in used for the id lookup below.
+import { Layer, Map as MapGL, Marker, Source } from '@vis.gl/react-maplibre';
+import type { MapLayerMouseEvent, MapRef } from '@vis.gl/react-maplibre';
+import type { FilterSpecification, GeoJSONSource, MapGeoJSONFeature } from 'maplibre-gl';
+import type { FeatureCollection, Point } from 'geojson';
 import type { Project } from 'app/models/project';
+import { track } from 'app/analytics/analytics';
 import { logger } from 'app/config/logging';
-import { baseLayerName, mapBounds } from 'app/state/map-ui';
+import { mapBounds, regionsVisible } from 'app/state/map-ui';
+import { useStore } from 'app/state/store';
+import {
+  BC_BOUNDS,
+  BC_CENTER,
+  Basemaps,
+  DEFAULT_ZOOM,
+  EMPTY_STYLE,
+  MapControls,
+  WORKER_URL,
+  flyOptions,
+  hasValidCentroid
+} from 'app/map/basemaps';
 import { ProjDetailPopup } from './proj-detail-popup';
 import './projlist-map.css';
 
-interface ProjlistMapProps {
+export interface ProjlistMapProps {
   projects: Project[];
   loading: boolean;
-  /** The filter bar, measured to keep markers clear of it when fitting bounds. */
-  filtersRef: React.RefObject<HTMLDivElement | null>;
-  hasActiveSearch: boolean;
-  showSearchMobile: boolean;
-  onCloseSearchMobile: () => void;
-  onToggleCurrentApp: (project: Project) => void;
+  selectedId: string | null;
+  hoveredId: string | null;
+  onSelect: (project: Project | null) => void;
+  onHover: (id: string | null) => void;
+  /** EAO region polygons to draw; empty means all of them. */
+  regionNames: string[];
+  /** Mobile shows the selected project in the page's bottom sheet, so the map renders no card. */
+  mobile: boolean;
 }
 
-const MOBILE_BREAKPOINT = 768;
-const VISIBILITY_UPDATE_DEBOUNCE_MS = 100;
-const BC_CENTER: [number, number] = [55.5, -125.5];
-const DEFAULT_ZOOM = 5.7;
+const CLUSTER_MAX_ZOOM = 9;
+const SOURCE_ID = 'projects';
+const REGION_SOURCE_ID = 'eao-regions';
+const REGION_HIT_LAYERS = ['eao-regions-fill'];
+const FIT_PADDING = 48;
+const REGION_COLOUR = '#003366';
+/** Pointer offset for the region tip, so the cursor never sits on top of the label. */
+const TIP_OFFSET = 12;
+/** How long a tapped region keeps its name on screen. */
+const TIP_LINGER_MS = 1500;
 
-// Built on first use rather than at module load, because L is a CDN global.
-let icons: { normal: any; large: any } | null = null;
-function markerIcons(): { normal: any; large: any } {
-  icons ??= {
-    normal: L.icon({
-      iconUrl: 'assets/images/marker-icon-yellow.svg',
-      iconSize: [36, 36],
-      iconAnchor: [18, 36],
-      tooltipAnchor: [16, -28],
-      className: 'marker-icon-transition'
-    }),
-    large: L.icon({
-      iconUrl: 'assets/images/marker-icon-yellow-lg.svg',
-      iconSize: [48, 48],
-      iconAnchor: [24, 48],
-      className: 'marker-icon-transition'
-    })
-  };
-  return icons;
+interface RegionHover {
+  name: string;
+  x: number;
+  y: number;
 }
 
-function createBaseLayers(): Record<string, any> {
-  return {
-    'Nat Geo World Map': L.tileLayer(
-      'https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/{z}/{y}/{x}',
-      { attribution: 'Tiles &copy; Esri', maxZoom: 16, noWrap: true }
-    ),
-    'World Topographic': L.tileLayer(
-      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
-      { attribution: 'Tiles &copy; Esri', maxZoom: 16, noWrap: true }
-    ),
-    'World Imagery': L.tileLayer(
-      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-      { attribution: 'Tiles &copy; Esri', maxZoom: 17, noWrap: true }
-    )
-  };
+interface MapFeature {
+  key: string;
+  lng: number;
+  lat: number;
+  /** null for a single project pin. */
+  clusterId: number | null;
+  count: number;
+  id: string;
+  name: string;
 }
 
-/** BC only: anything outside this box is bad data, not a project somewhere else. */
-function hasValidCentroid(project: Project): boolean {
-  if (!project.centroid || project.centroid.length !== 2) return false;
+/** Polygon rings and MultiPolygon members both bottom out in `[lng, lat]`, so recurse to the pairs. */
+function eachPosition(coordinates: unknown, visit: (lng: number, lat: number) => void): void {
+  if (!Array.isArray(coordinates)) return;
+  if (typeof coordinates[0] === 'number') visit(coordinates[0] as number, coordinates[1] as number);
+  else for (const part of coordinates) eachPosition(part, visit);
+}
 
-  const [lon, lat] = project.centroid;
-  if (typeof lon !== 'number' || typeof lat !== 'number') {
-    logger.warn(`Invalid centroid type for project ${project._id}: [${typeof lon}, ${typeof lat}]`, 'ProjlistMap');
-    return false;
+type Bbox = [number, number, number, number];
+
+function regionsBbox(shapes: FeatureCollection, names: string[]): Bbox | null {
+  let west = Infinity;
+  let south = Infinity;
+  let east = -Infinity;
+  let north = -Infinity;
+  for (const feature of shapes.features) {
+    if (!names.includes(String(feature.properties?.['regionName']))) continue;
+    eachPosition((feature.geometry as { coordinates?: unknown }).coordinates, (lng, lat) => {
+      west = Math.min(west, lng);
+      east = Math.max(east, lng);
+      south = Math.min(south, lat);
+      north = Math.max(north, lat);
+    });
   }
-  if (isNaN(lon) || isNaN(lat)) {
-    logger.warn(`NaN centroid for project ${project._id}`, 'ProjlistMap');
-    return false;
-  }
-  if (lat < 48 || lat > 60 || lon < -139 || lon > -114) {
-    logger.warn(`Out-of-range centroid for project ${project._id}: [${lon}, ${lat}]`, 'ProjlistMap');
-    return false;
-  }
-  return true;
+  return west === Infinity ? null : [west, south, east, north];
 }
 
-function expandBounds(bounds: any, percent: number): any {
-  const expandLat = (bounds.getNorth() - bounds.getSouth()) * percent;
-  const expandLng = (bounds.getEast() - bounds.getWest()) * percent;
-  return L.latLngBounds(
-    L.latLng(bounds.getSouth() - expandLat, bounds.getWest() - expandLng),
-    L.latLng(bounds.getNorth() + expandLat, bounds.getEast() + expandLng)
-  );
+function clusterSize(count: number): string {
+  if (count < 10) return 's';
+  if (count < 100) return 'm';
+  return 'l';
 }
 
 export function ProjlistMap({
   projects,
   loading,
-  filtersRef,
-  hasActiveSearch,
-  showSearchMobile,
-  onCloseSearchMobile,
-  onToggleCurrentApp
+  selectedId,
+  hoveredId,
+  onSelect,
+  onHover,
+  regionNames,
+  mobile
 }: ProjlistMapProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<any>(null);
-  const clusterRef = useRef<any>(null);
-  const markersRef = useRef(new Map<string, any>());
-  const popupRef = useRef<any>(null);
+  const mapRef = useRef<MapRef>(null);
+  const [loaded, setLoaded] = useState(false);
+  const [features, setFeatures] = useState<MapFeature[]>([]);
+  const [hoverRegion, setHoverRegion] = useState<RegionHover | null>(null);
+  const hoverRegionId = useRef<string | number | null>(null);
+  const signatureRef = useRef('');
+  /** Set by a pin click so the card-selection flyTo does not fight the marker the visitor just hit. */
+  const lastMarkerSelectId = useRef<string | null>(null);
 
-  const visibilityTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const autoSelectTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const recentlyClosedTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const recentlyClosedId = useRef<string | null>(null);
-  const lastAutoSelectedId = useRef<string | null>(null);
-  const autoSelectInProgress = useRef(false);
-  const isPopupOpening = useRef(false);
-  /** Set when a fit was asked for before the container had a size; the resize observer replays it. */
-  const pendingFit = useRef(false);
-
-  // The node Leaflet renders the popup into; React fills it through a portal.
-  const [popupHost] = useState(() => {
-    const host = document.createElement('div');
-    host.className = 'app-proj-detail-popup';
-    return host;
+  const overlayVisible = useStore(regionsVisible);
+  const { data: regionShapes } = useQuery({
+    queryKey: ['geojson', 'eao-regions'],
+    queryFn: async (): Promise<FeatureCollection> => (await fetch('/assets/geojson/eao-regions.geojson')).json(),
+    staleTime: Infinity
   });
-  const [popupProject, setPopupProject] = useState<Project | null>(null);
-  const [singleVisibleId, setSingleVisibleId] = useState<string | null>(null);
+  const regionFilter: FilterSpecification = regionNames.length
+    ? ['in', ['get', 'regionName'], ['literal', regionNames]]
+    : true;
+  const regionLayout = { visibility: overlayVisible ? ('visible' as const) : ('none' as const) };
 
-  // Leaflet callbacks outlive the render that created them, so they read props through this ref.
-  const latest = useRef({
-    projects,
-    filtersRef,
-    hasActiveSearch,
-    showSearchMobile,
-    onCloseSearchMobile,
-    onToggleCurrentApp,
-    popupProject,
-    singleVisibleId
-  });
-  useEffect(() => {
-    latest.current = {
-      projects,
-      filtersRef,
-      hasActiveSearch,
-      showSearchMobile,
-      onCloseSearchMobile,
-      onToggleCurrentApp,
-      popupProject,
-      singleVisibleId
-    };
-  });
+  const valid = useMemo(() => projects.filter(hasValidCentroid), [projects]);
 
-  const isMobile = (): boolean => window.innerWidth <= MOBILE_BREAKPOINT;
+  const byId = useMemo(() => new Map(valid.map(project => [project._id, project])), [valid]);
 
-  /** The filter bar's height, so fitted bounds and popups clear the card floating over the map. */
-  function filterHeight(): number {
-    return latest.current.filtersRef.current?.clientHeight ?? 0;
-  }
+  const fc = useMemo<FeatureCollection<Point, { id: string; name: string }>>(
+    () => ({
+      type: 'FeatureCollection',
+      features: valid.map(project => ({
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [project.centroid[0], project.centroid[1]] },
+        properties: { id: project._id, name: project.name }
+      }))
+    }),
+    [valid]
+  );
 
-  function fitBounds(bounds: any): void {
-    const map = mapRef.current;
-    if (!map || !bounds?.isValid()) return;
-    if (map.getSize().x === 0 || map.getSize().y === 0) {
-      pendingFit.current = true;
-      return;
-    }
-    pendingFit.current = false;
-
-    const mobile = isMobile();
-    map.fitBounds(expandBounds(bounds, mobile ? 0.05 : 0.08), {
-      paddingTopLeft: L.point(mobile ? 20 : 100, mobile ? 50 : filterHeight() + 80),
-      paddingBottomRight: L.point(mobile ? 20 : 100, mobile ? 50 : 80),
-      animate: false,
-      maxZoom: 10
-    });
-  }
-
-  function fitToMarkers(): void {
-    const cluster = clusterRef.current;
-    if (cluster) fitBounds(cluster.getBounds());
-  }
-
-  /** Exactly one marker in view is the trigger for auto-opening its popup; nothing else reads this. */
-  function updateVisibility(): void {
-    const map = mapRef.current;
-    if (!map) return;
-    const bounds = map.getBounds();
-    let visibleId: string | null = null;
-    let count = 0;
-    markersRef.current.forEach((marker, id) => {
-      if (bounds.contains(marker.getLatLng())) {
-        count += 1;
-        visibleId = id;
-      }
-    });
-    setSingleVisibleId(count === 1 ? visibleId : null);
-  }
-
-  function scheduleVisibilityUpdate(): void {
-    if (autoSelectInProgress.current) return;
-    clearTimeout(visibilityTimeout.current);
-    visibilityTimeout.current = setTimeout(updateVisibility, VISIBILITY_UPDATE_DEBOUNCE_MS);
-  }
-
-  function centerMapOnMarker(marker: any): void {
-    const map = mapRef.current;
-    if (!map) return;
-    const offset = isMobile() ? 150 : filterHeight() / 2 + 180;
-    const point = map.latLngToContainerPoint(marker.getLatLng());
-    map.panTo(map.containerPointToLatLng(L.point(point.x, point.y - offset)), { animate: true, duration: 0.25 });
-  }
-
-  function createProjectPopup(project: Project, marker: any): void {
-    if (isPopupOpening.current) {
-      logger.warn('Popup creation already in progress', 'ProjlistMap');
-      return;
-    }
-    const map = mapRef.current;
-    if (!map || !marker || !clusterRef.current?.hasLayer(marker)) {
-      logger.error('Cannot create popup: map or marker not ready', 'ProjlistMap');
-      return;
-    }
-
-    map.closePopup();
-
-    const existingPopup = marker.getPopup();
-    if (existingPopup?.isOpen()) {
-      marker.closePopup();
-      return;
-    }
-
-    try {
-      isPopupOpening.current = true;
-      setPopupProject(project);
-      latest.current.onToggleCurrentApp(project);
-
-      const viewportWidth = window.innerWidth;
-      const isNarrow = viewportWidth < 400;
-      const popup = L.popup({
-        className: 'map-popup-content',
-        autoPan: false,
-        offset: L.point(0, -30),
-        closeButton: true,
-        maxWidth: isNarrow ? Math.min(viewportWidth - 40, 280) : 300,
-        minWidth: isNarrow ? Math.min(viewportWidth - 60, 220) : 250
-      })
-        .setLatLng(marker.getLatLng())
-        .setContent(popupHost)
-        .on('remove', () => {
-          latest.current.onToggleCurrentApp(project);
-          setPopupProject(null);
-          // Stops the auto-open effect from immediately reopening what was just dismissed.
-          recentlyClosedId.current = project._id;
-          clearTimeout(recentlyClosedTimeout.current);
-          recentlyClosedTimeout.current = setTimeout(() => {
-            recentlyClosedId.current = null;
-          }, 500);
-        });
-
-      if (existingPopup) marker.unbindPopup();
-      marker.bindPopup(popup).openPopup();
-      popupRef.current = popup;
-
-      isPopupOpening.current = false;
-      autoSelectInProgress.current = false;
-      updateVisibility();
-    } catch (error) {
-      logger.error('Failed to create popup', 'ProjlistMap', error);
-      setPopupProject(null);
-      isPopupOpening.current = false;
-      autoSelectInProgress.current = false;
-    }
-  }
-
-  function selectMarker(project: Project, marker: any, isAutoSelect = false): void {
-    if (isMobile()) {
-      // An auto-select while the visitor is mid-search should not close the search panel on them.
-      if ((!isAutoSelect || !latest.current.hasActiveSearch) && latest.current.showSearchMobile) {
-        latest.current.onCloseSearchMobile();
-      }
-    }
-
-    centerMapOnMarker(marker);
-
-    if (isAutoSelect) {
-      clearTimeout(autoSelectTimeout.current);
-      autoSelectTimeout.current = setTimeout(() => createProjectPopup(project, marker), 300);
-    } else {
-      createProjectPopup(project, marker);
-    }
-  }
-
-  function createMarker(project: Project): any {
-    const marker = L.marker(L.latLng(project.centroid[1], project.centroid[0]), {
-      title: `${project.name}\n${project.sector}\n${project.location}`
-    })
-      .setIcon(markerIcons().normal)
-      .on('click', () => selectMarker(project, marker, false));
-    return marker;
-  }
-
-  /** Reuses the markers that survive a filter change instead of redrawing the whole layer. */
-  function updateMarkers(nextProjects: Project[]): void {
-    const cluster = clusterRef.current;
-    if (!mapRef.current || !cluster) return;
-
-    const valid = nextProjects.filter(hasValidCentroid);
-    const ids = new Set(valid.map(project => project._id));
-
-    const toRemove: any[] = [];
-    markersRef.current.forEach((marker, id) => {
-      if (!ids.has(id)) {
-        toRemove.push(marker);
-        markersRef.current.delete(id);
-      }
-    });
-
-    const toAdd: any[] = [];
+  const bbox = useMemo<Bbox | null>(() => {
+    if (valid.length === 0) return null;
+    let west = Infinity;
+    let south = Infinity;
+    let east = -Infinity;
+    let north = -Infinity;
     for (const project of valid) {
-      const existing = markersRef.current.get(project._id);
-      if (!existing) {
-        const marker = createMarker(project);
-        markersRef.current.set(project._id, marker);
-        toAdd.push(marker);
-      } else {
-        const latLng = L.latLng(project.centroid[1], project.centroid[0]);
-        if (!existing.getLatLng().equals(latLng)) existing.setLatLng(latLng);
-      }
+      const [lng, lat] = project.centroid;
+      west = Math.min(west, lng);
+      east = Math.max(east, lng);
+      south = Math.min(south, lat);
+      north = Math.max(north, lat);
     }
+    return [west, south, east, north];
+  }, [valid]);
 
-    if (toRemove.length > 0) cluster.removeLayers(toRemove);
-    if (toAdd.length > 0) cluster.addLayers(toAdd);
+  // Filtering by region frames the whole regions, not just the projects left inside them.
+  const regionBbox = useMemo(
+    () => (regionShapes && regionNames.length ? regionsBbox(regionShapes, regionNames) : null),
+    [regionShapes, regionNames]
+  );
+  const fitBox = regionBbox ?? bbox;
+  const fitKey = fitBox ? fitBox.join(',') : '';
 
-    scheduleVisibilityUpdate();
-  }
-
-  // Create the map once. Everything else updates the instance in place.
+  // Callbacks outlive the render that created them, so they read the current props through this ref.
+  const latest = useRef({ byId, onSelect, selectedId });
   useEffect(() => {
-    const element = containerRef.current;
-    if (!element) {
-      logger.error('Map container not found', 'ProjlistMap');
-      return;
-    }
+    latest.current = { byId, onSelect, selectedId };
+  });
 
-    const cluster = L.markerClusterGroup({
-      showCoverageOnHover: false,
-      maxClusterRadius: 60,
-      spiderfyOnMaxZoom: true,
-      zoomToBoundsOnClick: true,
-      disableClusteringAtZoom: 10,
-      removeOutsideVisibleBounds: true,
-      animate: true,
-      animateAddingMarkers: false,
-      spiderfyDistanceMultiplier: 1.5
-    });
-    clusterRef.current = cluster;
-
-    const map = L.map(element, {
-      center: BC_CENTER,
-      zoom: DEFAULT_ZOOM,
-      zoomControl: false,
-      maxBounds: L.latLngBounds(L.latLng(-90, -180), L.latLng(90, 180)),
-      maxZoom: 17,
-      minZoom: 4,
-      zoomSnap: 0.1,
-      attributionControl: false
-    });
-    mapRef.current = map;
-
-    map.on('moveend', () => {
-      const bounds = map.getBounds();
-      const next = {
-        north: bounds.getNorth(),
-        south: bounds.getSouth(),
-        east: bounds.getEast(),
-        west: bounds.getWest()
-      };
-      // Publish only a view that actually moved. The store compares by identity, so a fresh
-      // object from every `moveend` — Leaflet fires one for programmatic pans too — re-renders
-      // the page, which can pan the map again.
-      const current = mapBounds.get();
-      const same =
-        current &&
-        current.north === next.north &&
-        current.south === next.south &&
-        current.east === next.east &&
-        current.west === next.west;
-      if (!same) mapBounds.set(next);
-      scheduleVisibilityUpdate();
-    });
-    map.on('baselayerchange', (event: any) => baseLayerName.set(event.name));
-
-    map.addLayer(cluster);
-
-    const baseLayers = createBaseLayers();
-    map.addLayer(baseLayers[baseLayerName.get()] ?? baseLayers['World Topographic']);
-
-    L.control.scale({ position: 'bottomleft' }).addTo(map);
-    L.control.layers(baseLayers, undefined, { position: 'bottomleft' }).addTo(map);
-    L.control.zoom({ position: 'bottomright' }).addTo(map);
-
-    const ResetViewControl = L.Control.extend({
-      options: { position: 'bottomright' },
-      onAdd: () => {
-        const button = L.DomUtil.create('button');
-        button.title = 'Reset view';
-        button.innerText = 'refresh';
-        button.onclick = () => map.setView(BC_CENTER, DEFAULT_ZOOM);
-        button.className = 'material-icons map-reset-control';
-        L.DomEvent.disableClickPropagation(button);
-        L.DomEvent.disableScrollPropagation(button);
-        return button;
-      }
-    });
-    map.addControl(new ResetViewControl());
-
-    const initialBounds = map.getBounds();
-    mapBounds.set({
-      north: initialBounds.getNorth(),
-      south: initialBounds.getSouth(),
-      east: initialBounds.getEast(),
-      west: initialBounds.getWest()
-    });
-
-    // The map is created before the flex layout has given the container its height, so Leaflet
-    // needs telling once it has one. This also replays a fit that was asked for too early.
-    const observer =
-      typeof ResizeObserver === 'undefined'
-        ? null
-        : new ResizeObserver(() => {
-            map.invalidateSize(true);
-            if (pendingFit.current) fitToMarkers();
-          });
-    observer?.observe(element);
-
-    const markers = markersRef.current;
-    return () => {
-      observer?.disconnect();
-      clearTimeout(visibilityTimeout.current);
-      clearTimeout(autoSelectTimeout.current);
-      clearTimeout(recentlyClosedTimeout.current);
-      cluster.clearLayers();
-      markers.clear();
-      map.remove();
-      mapRef.current = null;
-      clusterRef.current = null;
-      popupRef.current = null;
-      mapBounds.set(null);
+  const publishBounds = useCallback((map: MapRef) => {
+    const bounds = map.getBounds();
+    const next = {
+      north: bounds.getNorth(),
+      south: bounds.getSouth(),
+      east: bounds.getEast(),
+      west: bounds.getWest()
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Publish only a view that actually moved. The store compares by identity, so a fresh object
+    // from every `moveend` — fired for programmatic pans too — re-renders the page, which can pan
+    // the map again.
+    const current = mapBounds.get();
+    const same =
+      current &&
+      current.north === next.north &&
+      current.south === next.south &&
+      current.east === next.east &&
+      current.west === next.west;
+    if (!same) mapBounds.set(next);
   }, []);
 
-  // Markers follow the filtered project list.
-  useEffect(() => {
-    if (!mapRef.current) return;
-    // A new project list means new candidates for auto-select.
-    lastAutoSelectedId.current = null;
-    autoSelectInProgress.current = false;
-
-    updateMarkers(projects);
-
-    if (!latest.current.popupProject && !latest.current.singleVisibleId) {
-      fitToMarkers();
+  /** Only the polygon under the pointer carries `hover`, so the paint expression lights just it. */
+  const setRegionHover = useCallback((id: string | number | null) => {
+    const map = mapRef.current;
+    if (!map || hoverRegionId.current === id) return;
+    if (hoverRegionId.current !== null) {
+      map.setFeatureState({ source: REGION_SOURCE_ID, id: hoverRegionId.current }, { hover: false });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projects]);
+    hoverRegionId.current = id;
+    if (id !== null) map.setFeatureState({ source: REGION_SOURCE_ID, id }, { hover: true });
+  }, []);
 
-  // Open the popup by itself once filtering has narrowed the map down to a single project.
+  // The canonical HTML-cluster refresh: every frame, once the clustering worker has caught up with
+  // the view. `sourcedata` and `moveend` both fire mid-animation, leaving stale clusters on screen.
+  const refreshFeatures = useCallback(() => {
+    const map = mapRef.current;
+    // `isSourceLoaded` throws for a source the style has not got yet, and the first frames render
+    // before React has added it.
+    if (!map || !map.getSource(SOURCE_ID) || !map.isSourceLoaded(SOURCE_ID)) return;
+
+    const seen = new Set<string>();
+    const next: MapFeature[] = [];
+    for (const feature of map.querySourceFeatures(SOURCE_ID)) {
+      if (feature.geometry.type !== 'Point') continue;
+      const properties = feature.properties;
+      const clusterId = properties['cluster'] ? (properties['cluster_id'] as number) : null;
+      const id = clusterId === null ? String(properties['id']) : '';
+      const key = clusterId === null ? `p${id}` : `c${clusterId}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const [lng, lat] = feature.geometry.coordinates;
+      next.push({
+        key,
+        lng,
+        lat,
+        clusterId,
+        count: clusterId === null ? 1 : (properties['point_count'] as number),
+        id,
+        name: clusterId === null ? String(properties['name'] ?? '') : ''
+      });
+    }
+
+    // Most frames draw the same markers, so only a changed set costs a React render.
+    const signature = next
+      .map(feature => `${feature.key}@${feature.lng.toFixed(4)},${feature.lat.toFixed(4)}x${feature.count}`)
+      .join('|');
+    if (signature === signatureRef.current) return;
+    signatureRef.current = signature;
+    setFeatures(next);
+  }, []);
+
+  // The ref is only guaranteed after commit, so `load` sets a flag and this effect does the work.
   useEffect(() => {
-    if (!singleVisibleId || popupProject) return;
-    if (autoSelectInProgress.current) return;
-    if (lastAutoSelectedId.current === singleVisibleId) return;
-    if (recentlyClosedId.current === singleVisibleId) return;
+    const map = mapRef.current;
+    if (!loaded || !map) return;
+    publishBounds(map);
+  }, [loaded, publishBounds]);
 
-    const project = projects.find(item => item._id === singleVisibleId);
-    const marker = markersRef.current.get(singleVisibleId);
-    if (!project || !marker) return;
+  useEffect(() => () => mapBounds.set(null), []);
 
-    autoSelectInProgress.current = true;
-    lastAutoSelectedId.current = singleVisibleId;
-    selectMarker(project, marker, true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [singleVisibleId, popupProject, projects]);
-
-  // The project with the open popup gets the large marker; every other marker is reset.
+  // Refit whenever the extent to frame changes, unless a project is selected.
   useEffect(() => {
-    if (!mapRef.current) return;
-    const { normal, large } = markerIcons();
-    markersRef.current.forEach((marker, id) => {
-      marker.setIcon(id === popupProject?._id ? large : normal);
+    const map = mapRef.current;
+    if (!loaded || !map || !fitBox || latest.current.selectedId !== null) return;
+    map.fitBounds(fitBox, { padding: FIT_PADDING, maxZoom: 10, ...flyOptions() });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fitKey, loaded]);
+
+  // Fly to a project the visitor picked from the list; a pin click already centred itself.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!loaded || !map) return;
+    const project = selectedId ? latest.current.byId.get(selectedId) : undefined;
+    if (project && lastMarkerSelectId.current !== selectedId) {
+      map.flyTo({
+        center: [project.centroid[0], project.centroid[1]],
+        // One past the cluster ceiling, so the selected pin is drawn on its own.
+        zoom: Math.max(map.getZoom(), CLUSTER_MAX_ZOOM + 1),
+        ...flyOptions()
+      });
+    }
+    lastMarkerSelectId.current = null;
+  }, [selectedId, loaded]);
+
+  const selected = selectedId ? byId.get(selectedId) : undefined;
+  const cardProject = !mobile && selected ? selected : null;
+
+  // Touch has no hover, so a tap names the region for a moment instead of holding the tip open.
+  useEffect(() => {
+    if (!hoverRegion || !mobile) return;
+    const timer = setTimeout(() => setHoverRegion(null), TIP_LINGER_MS);
+    return () => clearTimeout(timer);
+  }, [hoverRegion, mobile]);
+
+  /** Names the region under the pointer, or clears the tip when there is no region there. */
+  function showRegionTip(feature: MapGeoJSONFeature | undefined, point: { x: number; y: number }): void {
+    const name = feature?.properties?.['regionName'];
+    setHoverRegion(name ? { name: String(name), x: point.x, y: point.y } : null);
+    setRegionHover(name ? (feature?.id ?? null) : null);
+  }
+
+  async function expandCluster(feature: MapFeature): Promise<void> {
+    const map = mapRef.current;
+    if (!map || feature.clusterId === null) return;
+    const source = map.getSource(SOURCE_ID) as GeoJSONSource | undefined;
+    if (!source) return;
+    try {
+      const zoom = await source.getClusterExpansionZoom(feature.clusterId);
+      map.easeTo({ center: [feature.lng, feature.lat], zoom, ...flyOptions() });
+    } catch (error) {
+      logger.error('Failed to expand cluster', 'ProjlistMap', error);
+    }
+  }
+
+  function selectPin(feature: MapFeature): void {
+    const project = byId.get(feature.id);
+    if (!project) return;
+    lastMarkerSelectId.current = project._id;
+    onSelect(project);
+    track('Map Marker Clicked', {
+      project_id: project._id,
+      project_name: project.name,
+      map_zoom_level: mapRef.current?.getZoom()
     });
-    // Leaflet sized the popup around an empty node, so re-measure now that React has filled it.
-    popupRef.current?.update?.();
-  }, [popupProject]);
+  }
 
   return (
-    <div className="app-map">
-      <div className={`map-container${loading ? ' loading' : ''}`}>
-        <div ref={containerRef} id="map" aria-label="Map of B.C. that displays EAO Projects" />
-      </div>
-      {popupProject && createPortal(<ProjDetailPopup project={popupProject} />, popupHost)}
+    <div
+      className={`app-map${loading ? ' is-loading' : ''}`}
+      data-testid="project-map"
+      role="region"
+      aria-label="Map of B.C. showing environmental assessment projects"
+    >
+      <MapGL
+        ref={mapRef}
+        initialViewState={{ bounds: BC_BOUNDS, fitBoundsOptions: { padding: FIT_PADDING } }}
+        mapStyle={EMPTY_STYLE}
+        workerUrl={WORKER_URL}
+        minZoom={4}
+        maxZoom={17}
+        attributionControl={false}
+        cooperativeGestures={false}
+        style={{ width: '100%', height: '100%' }}
+        onLoad={() => setLoaded(true)}
+        onRender={refreshFeatures}
+        // Not `moveend`: a touch tap ends a zero-length move after the click that set the tip.
+        onMoveStart={() => setHoverRegion(null)}
+        onMoveEnd={() => {
+          const map = mapRef.current;
+          if (map) publishBounds(map);
+        }}
+        interactiveLayerIds={REGION_HIT_LAYERS}
+        // Touch synthesises mouse events around every tap, which would wipe the tip the tap set.
+        onMouseMove={
+          mobile
+            ? undefined
+            : (event: MapLayerMouseEvent) =>
+                // A hovered pin already names its project; two labels at one pointer read as noise.
+                showRegionTip(hoveredId ? undefined : event.features?.[0], event.point)
+        }
+        onMouseLeave={mobile ? undefined : () => showRegionTip(undefined, { x: 0, y: 0 })}
+        onClick={(event: MapLayerMouseEvent) => {
+          // Marker buttons live inside the canvas container, so their clicks reach the map too.
+          if ((event.originalEvent.target as Element).closest('.maplibregl-marker')) return;
+          onSelect(null);
+          showRegionTip(event.features?.[0], event.point);
+        }}
+      >
+        <Basemaps />
+        <MapControls
+          overlays
+          onReset={() => mapRef.current?.flyTo({ center: BC_CENTER, zoom: DEFAULT_ZOOM, ...flyOptions() })}
+        />
+
+        {/* Before the projects source, so the pins and their hit layer draw above the polygons. */}
+        {regionShapes && (
+          <Source id={REGION_SOURCE_ID} type="geojson" data={regionShapes} promoteId="regionNumber">
+            <Layer
+              id="eao-regions-fill"
+              type="fill"
+              filter={regionFilter}
+              layout={regionLayout}
+              paint={{
+                'fill-color': REGION_COLOUR,
+                'fill-opacity': ['case', ['boolean', ['feature-state', 'hover'], false], 0.18, 0.08]
+              }}
+            />
+            <Layer
+              id="eao-regions-line"
+              type="line"
+              filter={regionFilter}
+              layout={regionLayout}
+              paint={{ 'line-color': REGION_COLOUR, 'line-width': 1, 'line-opacity': 0.5 }}
+            />
+          </Source>
+        )}
+
+        <Source id={SOURCE_ID} type="geojson" data={fc} cluster clusterRadius={60} clusterMaxZoom={CLUSTER_MAX_ZOOM}>
+          {/* Nothing renders this layer, but a source with no layer is never tiled and so has no features to query. */}
+          <Layer id="projects-hit" type="circle" paint={{ 'circle-opacity': 0, 'circle-radius': 1 }} />
+        </Source>
+
+        {features.map(feature =>
+          feature.clusterId === null ? (
+            <Marker key={feature.key} longitude={feature.lng} latitude={feature.lat} anchor="bottom">
+              <button
+                type="button"
+                className={`map-pin${feature.id === hoveredId ? ' is-hovered' : ''}${
+                  feature.id === selectedId ? ' is-selected' : ''
+                }`}
+                data-testid="map-marker"
+                data-project-id={feature.id}
+                tabIndex={-1}
+                aria-hidden="true"
+                onClick={() => selectPin(feature)}
+                // The label is a hover affordance; on touch the synthesised enter leaves it stuck on.
+                onMouseEnter={mobile ? undefined : () => onHover(feature.id)}
+                onMouseLeave={mobile ? undefined : () => onHover(null)}
+              >
+                <span className="map-pin__label">{feature.name}</span>
+              </button>
+            </Marker>
+          ) : (
+            <Marker key={feature.key} longitude={feature.lng} latitude={feature.lat} anchor="center">
+              <button
+                type="button"
+                className="map-cluster"
+                data-testid="map-cluster"
+                data-size={clusterSize(feature.count)}
+                tabIndex={-1}
+                aria-hidden="true"
+                onClick={() => void expandCluster(feature)}
+              >
+                {feature.count}
+              </button>
+            </Marker>
+          )
+        )}
+      </MapGL>
+
+      {loading && <div className="app-map__shimmer placeholder-wave" aria-hidden="true" />}
+
+      {hoverRegion && (
+        <div
+          className="map-region-tip"
+          data-testid="map-region-tip"
+          role="status"
+          aria-live="polite"
+          style={{ left: hoverRegion.x + TIP_OFFSET, top: hoverRegion.y + TIP_OFFSET }}
+        >
+          {hoverRegion.name}
+        </div>
+      )}
+
+      {/* Outside the MapLibre container: the card is a page overlay, not anchored to the pin. */}
+      {cardProject && (
+        <div className="map-info" data-testid="map-popup" role="dialog" aria-label={cardProject.name}>
+          <ProjDetailPopup project={cardProject} onClose={() => onSelect(null)} />
+        </div>
+      )}
     </div>
   );
 }

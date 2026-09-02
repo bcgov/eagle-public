@@ -1,6 +1,8 @@
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
+import { Map, Marker } from '@vis.gl/react-maplibre';
+import type { MapRef } from '@vis.gl/react-maplibre';
 import { track } from 'app/analytics/analytics';
-import { baseLayerName } from 'app/state/map-ui';
+import { Basemaps, EMPTY_STYLE, MapControls, WORKER_URL, flyOptions } from 'app/map/basemaps';
 import type { Project } from 'app/models/project';
 import { Constants } from 'app/utils/constants';
 import './details-sidebar.css';
@@ -12,37 +14,6 @@ interface DetailsSidebarProps {
   open: boolean;
   onToggle: () => void;
 }
-
-const BASE_LAYERS: { name: string; url: string; maxZoom: number; attribution: string }[] = [
-  {
-    name: 'Ocean Base',
-    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Ocean_Basemap/MapServer/tile/{z}/{y}/{x}',
-    maxZoom: 13,
-    attribution:
-      'Tiles &copy; Esri &mdash; Sources: GEBCO, NOAA, CHS, OSU, UNH, CSUMB, National Geographic, DeLorme, NAVTEQ, and Esri'
-  },
-  {
-    name: 'Nat Geo World Map',
-    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/{z}/{y}/{x}',
-    maxZoom: 16,
-    attribution:
-      'Tiles &copy; Esri &mdash; National Geographic, Esri, DeLorme, NAVTEQ, UNEP-WCMC, USGS, NASA, ESA, METI, NRCAN, GEBCO, NOAA, iPC'
-  },
-  {
-    name: 'World Topographic',
-    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
-    maxZoom: 16,
-    attribution:
-      'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ, TomTom, Intermap, iPC, USGS, FAO, NPS, NRCAN, GeoBase, Kadaster NL, Ordnance Survey, Esri Japan, METI, Esri China (Hong Kong), and the GIS User Community'
-  },
-  {
-    name: 'World Imagery',
-    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    maxZoom: 17,
-    attribution:
-      'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
-  }
-];
 
 const MARKER_ZOOM = 8;
 
@@ -57,101 +28,9 @@ function legislationLink(project: Project | null): string {
   return Constants.legislationLinks.ENVIRONMENTAL_ASSESSMENT_ACT_2018_LINK;
 }
 
-/** Adds the "reset view" button that recentres the map on the project marker. */
-function resetViewControl(onReset: () => void): any {
-  const Control = L.Control.extend({
-    options: { position: 'topleft' },
-    onAdd() {
-      const element = L.DomUtil.create('i', 'material-icons leaflet-bar leaflet-control leaflet-control-custom');
-      element.title = 'Reset view';
-      element.innerText = 'refresh';
-      element.style.width = '34px';
-      element.style.height = '20%';
-      element.style.lineHeight = '30px';
-      element.style.textAlign = 'center';
-      element.style.cursor = 'pointer';
-      element.style.backgroundColor = '#fff';
-      element.style.color = '#333';
-      element.onmouseover = () => (element.style.backgroundColor = '#f4f4f4');
-      element.onmouseout = () => (element.style.backgroundColor = '#fff');
-      element.onclick = onReset;
-      L.DomEvent.disableClickPropagation(element);
-      L.DomEvent.disableScrollPropagation(element);
-      return element;
-    }
-  });
-  return new Control();
-}
-
 export function DetailsSidebar({ project, loading = false, open, onToggle }: DetailsSidebarProps) {
-  const mapElement = useRef<HTMLDivElement>(null);
-  const hasMap = project?.centroid?.length === 2;
-
-  useEffect(() => {
-    const element = mapElement.current;
-    if (!element || !project || project.centroid?.length !== 2) {
-      return;
-    }
-
-    const [longitude, latitude] = project.centroid;
-    const centre: [number, number] = [latitude, longitude];
-
-    const map = L.map(element, {
-      zoomControl: false,
-      maxBounds: L.latLngBounds(L.latLng(-90, -180), L.latLng(90, 180)),
-      zoomSnap: 0.1,
-      attributionControl: false
-    });
-
-    map.addControl(
-      resetViewControl(() => {
-        track('Map Reset View Clicked', { project_id: project._id, project_name: project.name });
-        map.setView(centre, MARKER_ZOOM);
-      })
-    );
-    L.control.zoom({ position: 'topleft' }).addTo(map);
-
-    const layers = Object.fromEntries(
-      BASE_LAYERS.map(layer => [
-        layer.name,
-        L.tileLayer(layer.url, { attribution: layer.attribution, maxZoom: layer.maxZoom, noWrap: true })
-      ])
-    );
-    L.control.layers(layers).addTo(map);
-    layers[baseLayerName.get()]?.addTo(map);
-
-    map.on('baselayerchange', (event: any) => {
-      baseLayerName.set(event.name);
-      track('Map Base Layer Changed', { project_id: project._id, project_name: project.name, layer_name: event.name });
-    });
-    map.scrollWheelZoom.disable();
-
-    const marker = L.marker(L.latLng(latitude, longitude), {
-      title: `${project.name}\n${project.sector}\n${project.location}\n`
-    }).setIcon(
-      L.icon({
-        iconUrl: 'assets/images/marker-icon-yellow.svg',
-        iconSize: [36, 36],
-        iconAnchor: [18, 36],
-        tooltipAnchor: [16, -28]
-      })
-    );
-    marker.on('click', () =>
-      track('Map Marker Clicked', { project_id: project._id, project_name: project.name, map_zoom_level: map.getZoom() })
-    );
-    map.addLayer(marker);
-    map.setView(centre, MARKER_ZOOM);
-
-    // The sidebar animates open and closed, so the container's size changes without a window
-    // resize; Leaflet needs telling either way.
-    const observer = new ResizeObserver(() => map.invalidateSize());
-    observer.observe(element);
-
-    return () => {
-      observer.disconnect();
-      map.remove();
-    };
-  }, [project]);
+  const mapRef = useRef<MapRef>(null);
+  const centroid = project?.centroid?.length === 2 ? project.centroid : null;
 
   return (
     <div className="sidebar-wrapper">
@@ -208,9 +87,51 @@ export function DetailsSidebar({ project, loading = false, open, onToggle }: Det
                 <div className="map-container">
                   <span className="placeholder w-100 h-100" aria-hidden="true" />
                 </div>
-              ) : hasMap ? (
+              ) : centroid && project ? (
                 <div className="map-container">
-                  <div className="map" id="map" ref={mapElement}></div>
+                  <div className="map">
+                    <Map
+                      key={project._id}
+                      ref={mapRef}
+                      initialViewState={{ longitude: centroid[0], latitude: centroid[1], zoom: MARKER_ZOOM }}
+                      mapStyle={EMPTY_STYLE}
+                      workerUrl={WORKER_URL}
+                      scrollZoom={false}
+                      // A one-finger drag on a map this small traps the page scroll; pinch and
+                      // the zoom buttons still move it.
+                      dragPan={false}
+                      attributionControl={false}
+                      style={{ width: '100%', height: '100%' }}
+                    >
+                      <Basemaps />
+                      <MapControls
+                        onReset={() =>
+                          mapRef.current?.flyTo({
+                            center: [centroid[0], centroid[1]],
+                            zoom: MARKER_ZOOM,
+                            ...flyOptions()
+                          })
+                        }
+                        trackContext={{ project_id: project._id, project_name: project.name }}
+                      />
+                      <Marker
+                        longitude={centroid[0]}
+                        latitude={centroid[1]}
+                        anchor="bottom"
+                        onClick={() =>
+                          track('Map Marker Clicked', {
+                            project_id: project._id,
+                            project_name: project.name,
+                            map_zoom_level: mapRef.current?.getZoom()
+                          })
+                        }
+                      >
+                        <button type="button" className="map-pin" aria-hidden="true" tabIndex={-1}>
+                          <span className="map-pin__label">{project.name}</span>
+                        </button>
+                      </Marker>
+                    </Map>
+                  </div>
                 </div>
               ) : (
                 <div className="map-placeholder">

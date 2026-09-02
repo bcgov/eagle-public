@@ -15,7 +15,7 @@
     "verbatimModuleSyntax": true,
     "resolveJsonModule": true,
     "noEmit": true,
-    "types": ["node", "vitest/globals", "leaflet", "leaflet.markercluster"],
+    "types": ["node", "vite/client", "vitest/globals"],
     "baseUrl": "src",
     "paths": { "app/*": ["app/*"] }
   },

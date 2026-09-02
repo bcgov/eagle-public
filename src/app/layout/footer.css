@@ -5,11 +5,10 @@
   z-index: 150;
 }
 
-/* Hide footer on mobile when on /projects route */
-@media (max-width: 768px) {
-  .app-footer.hide-mobile-projects {
-    display: none !important;
-  }
+/* The map page fills the viewport on a phone, so the footer gives way. Keyed on the page's own
+   `data-mobile` rather than a width query: a landscape phone is wider than 768px. */
+.app-wrapper:has(.projects-view[data-mobile]) .app-footer {
+  display: none;
 }
 
 .app-footer .container {

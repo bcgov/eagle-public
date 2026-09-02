@@ -112,6 +112,7 @@
     --map-cluster-highlight: var(--bc-gold, #fcba19);
     --map-cluster-bg: rgba(80, 145, 205, 0.6); /* BC blue light - lighter */
     --map-cluster-inner-bg: rgba(80, 145, 205, 0.9); /* BC blue light - darker */
+    --map-pin-stroke: var(--bc-blue, #003366);
 
     /* Hero Banner */
     --hero-shadow-color: #00264d;
@@ -123,14 +124,4 @@
     /* Shadows & Overlays */
     --shadow-subtle: rgba(0, 0, 0, 0.1);
     --hover-tint: rgba(0, 0, 0, 0.02);
-
-    /* Map Popup */
-    --map-popup-color: var(--white);
-    --map-popup-bg: #244278;
-    --map-popup-footer-bg: var(--primary);
-    --map-popup-header-bg: var(--primary);
-    --map-popup-font-size: var(--bs-font-size-6);
-    --map-popup-menu-active-bg: #5091cd;
-    --map-popup-btn-color: var(--white);
-    --map-popup-border-color: var(--white);
 }

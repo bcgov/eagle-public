@@ -1,113 +1,178 @@
+/* Project card. Rendered in the map's bottom-left corner on desktop and, as `--inline`, in the
+   accordion body under the selected list card on mobile; the parent sets the width. */
 
-.app-proj-detail-popup {
-  display: block;
-  width: 100%;
-}
-
-.popup-content {
+.popup-card {
   display: flex;
   flex-direction: column;
-  width: 100%;
+  min-height: 0;
+  font-family: var(--bs-font-sans-serif);
+  font-size: var(--bs-font-size-sm, 0.875rem);
+  line-height: 1.4;
+  color: var(--bc-gray, #494949);
+}
+
+.popup-head {
+  flex: 0 0 auto;
+  padding: 0.75rem 1rem 0.25rem;
+}
+
+.popup-head__row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.375rem;
+}
+
+/* Wraps so a long phase chip drops under the name instead of squeezing it into a column. */
+.popup-head__title {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.375rem;
 }
 
 .popup-title {
-  padding: 0.75rem 2rem 0.75rem 1rem;
-  border-top-right-radius: 0.2rem;
-  border-top-left-radius: 0.2rem;
-  background: var(--bc-blue);
-  color: var(--bs-white);
+  flex: 1 1 12rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  margin: 0;
+  font-size: 1rem;
+  font-weight: var(--bs-font-weight-bold, 700);
+  line-height: 1.3;
+  color: var(--bc-blue, #003366);
 }
 
-.popup-title span {
-  display: block;
+.popup-title:focus-visible {
+  outline: 2px solid var(--bc-blue-interactive, #38598a);
+  outline-offset: 2px;
 }
 
-.client-name__label {
-  font-size: 0.75em;
-  font-weight: var(--bs-font-weight-bold);
-}
-
-.client-name__value {
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  font-size: 0.875em;
-  font-weight: var(--bs-font-weight-bold);
-}
-
-.popup-body {
-  padding: 1rem;
-  border-bottom-right-radius: 0.2rem;
-  border-bottom-left-radius: 0.2rem;
-  font-family: "BCSans", "Noto Sans", sans-serif;
-  line-height: 1.4em;
-  font-size: 0.875em;
-}
-
-.popup-body ul {
-  margin-bottom: 0;
-  padding-left: 0;
-  list-style-type: none;
-  font-size: inherit;
-}
-
-.app-details {
-  display: flex;
-  flex-direction: column;
-}
-
-.app-link {
-  margin-top: 0.875em;
-  color: var(--bs-white);
-  font-size: 1em;
-  text-align: center;
-}
-
-.meta-container {
+.popup-close {
   position: relative;
-  overflow: hidden;
+  flex: 0 0 auto;
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--bc-gray-medium, #666);
+  cursor: pointer;
 }
 
-.meta-container li {
-  overflow: hidden;
-  text-overflow: ellipsis;
+/* 28px of button, 44px of tap target. */
+.popup-close::after {
+  content: '';
+  position: absolute;
+  inset: -8px;
 }
 
-.meta-container li.app-description {
-  margin-bottom: 0.5em;
+.popup-close:hover,
+.popup-close:focus-visible {
+  background: var(--bc-gray-light, #f7f8fa);
+  color: var(--bc-blue, #003366);
 }
 
-.meta-container li:not(.app-description) {
+.popup-close .material-icons {
+  font-size: 1.125rem;
+}
+
+.popup-subtitle {
+  margin: 0.125rem 0 0;
+  color: var(--bc-gray-medium, #666);
+  font-size: var(--bs-font-size-xs, 0.75rem);
+}
+
+.chip {
+  flex: 0 0 auto;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background: var(--bs-secondary-bg-subtle, #ccd6e0);
+  color: var(--bs-secondary-text-emphasis, #001a33);
+  font-size: var(--bs-font-size-xs, 0.75rem);
+  font-weight: var(--bs-font-weight-bold, 700);
   white-space: nowrap;
 }
 
-.meta-container li:not(.app-description) + li {
-  margin-top: 0.1em;
+.chip--open {
+  background: var(--bc-success, #2e8540);
+  color: var(--bc-white, #fff);
 }
 
-.meta-container .key {
-  padding-right: 0.25em;
-  font-weight: var(--bs-font-weight-bold);
+/* Scrolls once the description is expanded; the clamped card is shorter than this. */
+.popup-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: 40vh;
+  overflow-y: auto;
+  padding: 0.5rem 1rem 0;
 }
 
-.meta-container .value {
+/* The accordion body grows with its content: the list around it is what scrolls. */
+.popup-card--inline .popup-body {
+  max-height: none;
+  overflow: visible;
+}
+
+.popup-desc {
+  margin-bottom: 0.25rem;
+  overflow-wrap: anywhere;
+}
+
+.popup-desc.is-clamped {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.popup-desc p {
+  margin: 0 0 0.5rem;
+}
+
+.popup-desc p:last-child {
+  margin-bottom: 0;
+}
+
+.popup-more {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--bs-link-color, #1a5a96);
+  font-size: var(--bs-font-size-xs, 0.75rem);
+  font-weight: var(--bs-font-weight-bold, 700);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.popup-meta {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.15rem 0.5rem;
+  margin: 0.625rem 0 0;
+}
+
+.popup-meta dt {
+  font-weight: var(--bs-font-weight-bold, 700);
+}
+
+.popup-meta dd {
+  margin: 0;
   word-break: break-word;
 }
 
-.popup-content hr {
-  margin: 0.875em 0;
-  border: none;
-  border-top: 1px solid var(--bs-border-color);
+.popup-foot {
+  flex: 0 0 auto;
+  margin-top: 0.75rem;
+  padding: 0.625rem 1rem 0.75rem;
+  border-top: 1px solid var(--bs-border-color, #ddd);
 }
 
-@media (max-width: 1023px) {
-  .popup-content {
-    font-size: var(--bs-font-size-sm);
-  }
-}
-
-@media (min-width: 1024px) {
-  .popup-content {
-    font-size: var(--bs-font-size-6);
-  }
+.popup-view {
+  width: 100%;
 }

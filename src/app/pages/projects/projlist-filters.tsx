@@ -1,18 +1,15 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CustomMultiSelect, type CustomMultiSelectOption } from 'app/components/filters/custom-multi-select';
 import { Constants } from 'app/utils/constants';
 import { track } from 'app/analytics/analytics';
-import { countFilters, hasActiveFilters, type FilterCriteria } from './filter-state';
+import { countFilters, EMPTY_FILTERS, type FilterCriteria } from './filter-state';
 import './projlist-filters.css';
 
 interface ProjlistFiltersProps {
-  ref?: React.Ref<HTMLDivElement>;
   filters: FilterCriteria;
   updateFilters: (next: Partial<FilterCriteria>) => void;
   regions: CustomMultiSelectOption[];
   phases: CustomMultiSelectOption[];
-  showSearchMobile: boolean;
-  onToggleSearchMobile: () => void;
 }
 
 const PROJECT_TYPES = Constants.PROJECT_TYPE_COLLECTION as CustomMultiSelectOption[];
@@ -26,22 +23,36 @@ function optionsFor(
   return ids.map(id => collection.find(item => item[key] === id)).filter((item): item is CustomMultiSelectOption => !!item);
 }
 
-export function ProjlistFilters({
-  ref,
-  filters,
-  updateFilters,
-  regions,
-  phases,
-  showSearchMobile,
-  onToggleSearchMobile
-}: ProjlistFiltersProps) {
-  const [showFilters, setShowFilters] = useState(() => hasActiveFilters(filters));
+export function ProjlistFilters({ filters, updateFilters, regions, phases }: ProjlistFiltersProps) {
+  const [showFilters, setShowFilters] = useState(false);
   // Kept locally so typing a space between words survives; only the trimmed value reaches the URL.
   const [applicantInput, setApplicantInput] = useState(filters.applicant ?? '');
+  const toggleRef = useRef<HTMLButtonElement>(null);
 
+  // The search box has its own field, so the badge counts only the advanced filters.
+  const activeCount = countFilters({ ...filters, applicant: null });
   const selectedTypes = useMemo(() => optionsFor(filters.types, PROJECT_TYPES, 'code'), [filters.types]);
   const selectedRegions = useMemo(() => optionsFor(filters.regions, regions, '_id'), [filters.regions, regions]);
   const selectedPhases = useMemo(() => optionsFor(filters.phases, phases, '_id'), [filters.phases, phases]);
+
+  const setFiltersOpen = useCallback(
+    (open: boolean) => {
+      setShowFilters(open);
+      track('Project Filters Panel Toggled', { is_open: open, current_filter_count: countFilters(filters) });
+    },
+    [filters]
+  );
+
+  useEffect(() => {
+    if (!showFilters) return;
+    function onKeyDown(event: KeyboardEvent): void {
+      if (event.key !== 'Escape') return;
+      setFiltersOpen(false);
+      toggleRef.current?.focus();
+    }
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [showFilters, setFiltersOpen]);
 
   function applyFilters(next: Partial<FilterCriteria>): void {
     const applied = { ...filters, ...next };
@@ -58,115 +69,121 @@ export function ProjlistFilters({
     });
   }
 
-  function toggleFilters(): void {
-    setShowFilters(open => {
-      track('Project Filters Panel Toggled', { is_open: !open, current_filter_count: countFilters(filters) });
-      return !open;
-    });
-  }
-
   return (
-    <div className="app-filters" ref={ref}>
-      <div className="app-filters__container d-flex flex-column">
-        <button className="mobile-search-toggle" onClick={onToggleSearchMobile} aria-label="Toggle search">
-          <i className="material-icons">{showSearchMobile ? 'close' : 'search'}</i>
+    <div className="projlist-filters">
+      <div className="projlist-filters__bar">
+        <label className="visually-hidden" htmlFor="applicantInput">
+          Search Environmental Assessment Projects
+        </label>
+        <div className="projlist-filters__search">
+          <i className="material-icons" aria-hidden="true">search</i>
+          <input
+            type="search"
+            enterKeyHint="search"
+            autoCapitalize="off"
+            autoCorrect="off"
+            className="form-control gtm-filter-applicant"
+            placeholder="Start typing a project name"
+            id="applicantInput"
+            value={applicantInput}
+            onChange={event => {
+              setApplicantInput(event.target.value);
+              applyFilters({ applicant: event.target.value.trim() || null });
+            }}
+          />
+          {applicantInput && (
+            <button
+              type="button"
+              className="btn-clear"
+              onClick={() => {
+                setApplicantInput('');
+                applyFilters({ applicant: null });
+              }}
+              aria-label="Clear search"
+            >
+              <i className="material-icons">close</i>
+            </button>
+          )}
+        </div>
+
+        <button
+          type="button"
+          className="projlist-filters__toggle"
+          ref={toggleRef}
+          onClick={() => setFiltersOpen(!showFilters)}
+          aria-expanded={showFilters}
+          aria-controls="applist-filters"
+        >
+          <i className="material-icons" aria-hidden="true">
+            tune
+          </i>
+          <span>Filters</span>
+          {activeCount > 0 && (
+            <span className="badge" aria-label={`${activeCount} filters active`}>
+              {activeCount}
+            </span>
+          )}
         </button>
-        <div className={`search-container${showSearchMobile ? ' show-mobile' : ''}`} id="applist-filters">
-          <div className="additional-filters">
-            <div className="mobile-header">
-              <label className="header-label" htmlFor="applicantInput">
-                Search Environmental Assessment Projects
-              </label>
-              <button type="button" className="btn-close" onClick={onToggleSearchMobile} aria-label="Close search"></button>
+      </div>
+
+      {/* Always rendered: the open state is a grid-row transition, and `inert` keeps the collapsed
+          filters out of the tab order. */}
+      <div id="applist-filters" className="filters-panel" data-open={showFilters} inert={!showFilters}>
+        <div className="filters-panel__inner">
+          <div className="filters-panel__body">
+            <div className="filter-container">
+              <label htmlFor="type">Project Type</label>
+              <div className="filter-select">
+                <CustomMultiSelect
+                  id="type"
+                  bindLabel="name"
+                  placeholder="Type Project Type"
+                  items={PROJECT_TYPES}
+                  selected={selectedTypes}
+                  onChange={selected => applyFilters({ types: selected.map(item => item['code']) })}
+                />
+              </div>
             </div>
-            <div className="search-box position-relative">
-              <input
-                type="text"
-                className="form-control gtm-filter-applicant"
-                placeholder="Start typing a project name"
-                id="applicantInput"
-                value={applicantInput}
-                onChange={event => {
-                  setApplicantInput(event.target.value);
-                  applyFilters({ applicant: event.target.value.trim() || null });
-                }}
-              />
-              {applicantInput && (
-                <button
-                  type="button"
-                  className="btn-clear"
-                  onClick={() => {
-                    setApplicantInput('');
-                    applyFilters({ applicant: null });
-                  }}
-                  aria-label="Clear search"
-                >
-                  <i className="material-icons">close</i>
-                </button>
-              )}
+            <div className="filter-container">
+              <label htmlFor="region">Region</label>
+              <div className="filter-select">
+                <CustomMultiSelect
+                  id="region"
+                  bindLabel="name"
+                  placeholder="Type Project Region"
+                  items={regions}
+                  selected={selectedRegions}
+                  onChange={selected => applyFilters({ regions: selected.map(item => item['_id']) })}
+                />
+              </div>
             </div>
-            <div className="toggle-container">
-              <div
-                className="toggle-btn"
-                role="button"
-                tabIndex={0}
-                onClick={toggleFilters}
-                onKeyDown={event => {
-                  if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault();
-                    toggleFilters();
-                  }
+            <div className="filter-container">
+              <label htmlFor="phase">Project Phase</label>
+              <div className="filter-select">
+                <CustomMultiSelect
+                  id="phase"
+                  bindLabel="name"
+                  groupBy="legislation"
+                  placeholder="Type Project Phase"
+                  items={phases}
+                  selected={selectedPhases}
+                  onChange={selected => applyFilters({ phases: selected.map(item => item['_id']) })}
+                />
+              </div>
+            </div>
+
+            <div className="filters-panel__actions">
+              <button
+                type="button"
+                className="btn btn-link"
+                onClick={() => {
+                  setApplicantInput('');
+                  applyFilters(EMPTY_FILTERS);
                 }}
-                aria-expanded={showFilters}
               >
-                <span>{showFilters ? 'Hide' : 'Show'} Advanced Filters</span>
-                <i className="material-icons">{showFilters ? 'keyboard_arrow_up' : 'keyboard_arrow_down'}</i>
-              </div>
+                Clear all
+              </button>
             </div>
-            {showFilters && (
-              <div className="filters-container">
-                <div className="filter-container">
-                  <label htmlFor="type">Project Type</label>
-                  <div className="filter-select">
-                    <CustomMultiSelect
-                      id="type"
-                      bindLabel="name"
-                      placeholder="Type Project Type"
-                      items={PROJECT_TYPES}
-                      selected={selectedTypes}
-                      onChange={selected => applyFilters({ types: selected.map(item => item['code']) })}
-                    />
-                  </div>
-                </div>
-                <div className="filter-container">
-                  <label htmlFor="region">Region</label>
-                  <div className="filter-select">
-                    <CustomMultiSelect
-                      id="region"
-                      bindLabel="name"
-                      placeholder="Type Project Region"
-                      items={regions}
-                      selected={selectedRegions}
-                      onChange={selected => applyFilters({ regions: selected.map(item => item['_id']) })}
-                    />
-                  </div>
-                </div>
-                <div className="filter-container">
-                  <label htmlFor="phase">Project Phase</label>
-                  <div className="filter-select">
-                    <CustomMultiSelect
-                      id="phase"
-                      bindLabel="name"
-                      groupBy="legislation"
-                      placeholder="Type Project Phase"
-                      items={phases}
-                      selected={selectedPhases}
-                      onChange={selected => applyFilters({ phases: selected.map(item => item['_id']) })}
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>

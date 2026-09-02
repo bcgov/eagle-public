@@ -105,27 +105,30 @@ async function main(): Promise<void> {
 
     { name: 'projects-map', go: p => goto(p, '/projects', 5000) },
     {
-      name: 'projects-map-list-open',
+      name: 'projects-map-popup',
       go: async p => {
         await goto(p, '/projects', 5000);
-        // The overlay is transparent while the panel is closed, so it is not click-actionable.
-        await p.locator('.overlay').dispatchEvent('click');
+        // Drill through clusters until a single-project pin is on screen, then open its card.
+        for (let i = 0; i < 6; i++) {
+          const marker = p.locator('[data-testid="map-marker"]').first();
+          if (await marker.isVisible()) break;
+          await p.locator('[data-testid="map-cluster"]').first().click();
+          await p.waitForTimeout(1200);
+        }
+        await p.locator('[data-testid="map-marker"]').first().click();
         await p.waitForTimeout(1500);
       },
     },
     {
-      name: 'projects-map-popup',
+      name: 'projects-map-sheet-full',
+      mobileOnly: true,
       go: async p => {
         await goto(p, '/projects', 5000);
-        // Drill through clusters until a plain marker is on screen, then open its popup.
-        for (let i = 0; i < 6; i++) {
-          const marker = p.locator('.leaflet-marker-icon:not(.marker-cluster)').first();
-          if (await marker.count()) break;
-          await p.locator('.marker-cluster').first().click();
-          await p.waitForTimeout(1200);
-        }
-        await p.locator('.leaflet-marker-icon:not(.marker-cluster)').first().click();
-        await p.waitForTimeout(1500);
+        // The handle cycles peek -> half -> full.
+        await p.locator('.sheet-handle').click();
+        await p.waitForTimeout(600);
+        await p.locator('.sheet-handle').click();
+        await p.waitForTimeout(1200);
       },
     },
     {
@@ -222,7 +225,10 @@ async function main(): Promise<void> {
   ];
 
   fs.mkdirSync(OUT, { recursive: true });
-  const browser: Browser = await chromium.launch();
+  // MapLibre needs WebGL; headless chromium has no GPU, so it software-renders.
+  const browser: Browser = await chromium.launch({
+    args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader'],
+  });
 
   for (const vp of VIEWPORTS) {
     const context: BrowserContext = await browser.newContext({
