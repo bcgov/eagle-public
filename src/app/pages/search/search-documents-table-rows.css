@@ -1,9 +1,0 @@
-.download-icon {
-  color: var(--font-color);
-  cursor: pointer;
-}
-
-.download-icon:hover {
-  color: var(--gold);
-  transform: scale(1.1);
-}

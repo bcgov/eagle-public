@@ -1,17 +1,19 @@
 import { useRef } from 'react';
 import { track } from 'app/analytics/analytics';
+import { Constants } from 'app/utils/constants';
 import {
   CAP_MESSAGE,
   clearSelection,
   SELECT_ALL_MAX,
   setSelected,
   startDownload,
-  toggleSelected,
-  useJob,
+  useDownloadInProgress,
   useSelection,
   type SelectedDocument
 } from 'app/state/bulk-download';
 import { showToast } from 'app/state/toast';
+import { openDocumentDownload } from 'app/utils/utils';
+import { toggleRow } from './document-row';
 import { PageCountDisplay } from './page-count-display';
 import { PageSizePicker } from './page-size-picker';
 import { Pagination } from './pagination';
@@ -23,18 +25,33 @@ export function SelectCell({ rowData, tableId }: { rowData: any; tableId: string
   const selected = useSelection(tableId).has(rowData._id);
 
   return (
-    // The rest of the row is a download link; a click in here must not follow it.
-    <td data-label="Select" className="select-col" onClick={event => event.stopPropagation()}>
+    <td data-label="Select" className="select-col">
       <input
         type="checkbox"
         className="form-check-input"
         aria-label={`Select ${rowData.displayName}`}
         checked={selected}
-        onChange={() => {
-          const added = toggleSelected(tableId, { id: rowData._id, displayName: rowData.displayName });
-          if (!added) showToast(CAP_MESSAGE, { type: 'warning' });
-        }}
+        onChange={() => toggleRow(tableId, rowData)}
       />
+    </td>
+  );
+}
+
+/** The per-row download button. Downloading is always a link or a button, never the row. */
+export function DownloadCell({ rowData }: { rowData: any }) {
+  return (
+    <td data-label="Download" className="download-col">
+      <button
+        type="button"
+        className="btn btn-link download-button"
+        aria-label={`Download ${rowData.displayName}`}
+        onClick={() => openDocumentDownload(rowData)}
+      >
+        <i className="material-icons" aria-hidden="true">
+          cloud_download
+        </i>
+        <span className="download-button__label">Download</span>
+      </button>
     </td>
   );
 }
@@ -63,7 +80,7 @@ export function TableTemplate({ data, loading = false, rowComponent, onMessage }
   const selection = useSelection(data.tableId);
   // Download posts every table's selection as one job, so the toolbar counts them all.
   const selectedCount = useSelection().size;
-  const downloadInProgress = !!useJob();
+  const downloadInProgress = useDownloadInProgress();
   const pageDocs: SelectedDocument[] = data.items
     .filter(item => item.rowData?._id)
     .map(item => ({ id: item.rowData._id, displayName: item.rowData.displayName }));
@@ -261,7 +278,7 @@ export function TableTemplate({ data, loading = false, rowComponent, onMessage }
               <div className="table-controls-bottom mt-4">
                 <div className="row">
                   <div className="col-12 col-md-6 text-center text-md-start mb-3 mb-md-0">
-                    {data.options.showPageSizePicker && data.totalListItems > 10 && (
+                    {data.options.showPageSizePicker && data.totalListItems > Constants.tableDefaults.DEFAULT_PAGE_SIZE && (
                       <PageSizePicker
                         isHidden={false}
                         currentPageSize={data.pageSize}

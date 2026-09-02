@@ -80,8 +80,8 @@ src/
 - pages/project-notifications: `.skeleton-cell` and its shimmer are now in this page's CSS. In Angular they lived in `commenting-tab`, a different component with view encapsulation, so the notification skeleton rendered unstyled.
 - pages/project-notifications: sorting the documents sub-table returns to page 1. Angular kept the current page, showing a slice of the old ordering.
 - pages/search: `search.component.css` dropped. Every selector in it was dead under Angular's view encapsulation (the template is a single `<app-table-list>`), the `::ng-deep` hero-banner background included — prod renders the default banner on /search, so the port does too.
-- pages/search: `search-document-table-rows.component.css` keeps `.download-icon` only; `.download-icon-wrap` matched nothing in the template.
-- pages/search: the download icon gets `role="button"`. It was already a focusable span with a keyup handler and an aria-label, so screen readers announced it as plain text.
+- pages/search: `search-document-table-rows.component.css` is dropped; the download button is styled with the shared table CSS, and `.download-icon-wrap` matched nothing in the template.
+- pages/search: the download icon is a real `<button>` labelled "Download <name>", not a focusable span with a keyup handler. Its gold hover colour is gone: gold on the row background is about 1.7:1.
 - pages/search: `LEGISLATION_FILTER_GROUP.labelPrefix`/`labelPostfix` are kept on the group object but unread — Angular's multi-select only ever passed `group.name` as the groupBy key.
 - pages/content-search: an empty result set now clears the list and shows "No documents contain that text". Angular's table-service subscriber returned early on an empty payload (`res.data === 0`), leaving the previous search's cards on screen under the new keyword.
 - pages/content-search: a keyword search keeps the current `pageSize`, matching the table-list fix above. Angular rebuilt the params without it.
@@ -197,6 +197,9 @@ deviations. The deviations the pass turned up are below.
 - components/table: per-column header filters (PUBLIC-146, marked stretch) are not built. The filter bar above the table already covers the same fields.
 - components/table, components/download-panel: document tables gain a checkbox column, a selection toolbar above the grid, and a transfer panel that downloads the selection through demi-api. New here; Angular downloads one document at a time. The column only appears where `SEARCH_API_PATH` names a backend, so an empty one leaves the grid exactly as it was.
 - components/table/table-template: select-all across the filtered set is offered only while the result set is 100 documents or fewer, demi-api's anonymous per-job cap; past that the banner asks for narrower filters rather than selecting a set the backend would refuse.
+- table/document rows: a click on a row selects it for download instead of downloading it. Angular downloaded the document on a click in any cell but Name, so a reader picking a row got a file. Now the row body is a second target for the checkbox, the Name link and a per-row Download button are the only things that download, Space selects and Enter opens. The project documents, search results and project-notification document tables all follow it.
+- table/document rows: every document table carries a Download column, and the project-notification table's Name is a link like the others. Angular gave the download icon to search results only.
+- table: the pointer cursor is limited to rows that answer a click (`clickable-row`, `selectable-row`). It used to sit on every row of every highlighted table, including tables where a click does nothing.
 
 ## Cutover prerequisites
 

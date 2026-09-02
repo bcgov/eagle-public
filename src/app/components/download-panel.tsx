@@ -3,14 +3,9 @@ import { useQuery } from '@tanstack/react-query';
 import { track } from 'app/analytics/analytics';
 import { ApiError, getBulkDownload, type BulkDownloadStatus } from 'app/api/api';
 import { logger } from 'app/config/logging';
-import { dismissDownload, forgetStoredJob, useJob, useStartError } from 'app/state/bulk-download';
+import { dismissDownload, forgetStoredJob, isTerminal, setJobStatus, useJob, useStartError } from 'app/state/bulk-download';
 import { triggerDownload } from 'app/utils/utils';
 import './download-panel.css';
-
-/** demi-api stops moving the job at these; polling stops with it. */
-function isTerminal(status?: string): boolean {
-  return status === 'ready' || status === 'failed' || status === 'expired';
-}
 
 function plural(count: number, noun: string): string {
   return `${count} ${noun}${count === 1 ? '' : 's'}`;
@@ -74,6 +69,7 @@ export function DownloadPanel() {
   const job = useJob();
   const startError = useStartError();
   const [collapsed, setCollapsed] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
   // StrictMode runs effects twice and a re-render must not re-fire either; the job id fires once.
   const firedFor = useRef<string | null>(null);
 
@@ -120,6 +116,23 @@ export function DownloadPanel() {
     if (status === 'failed' || status === 'expired') track('Bulk Download Failed', { status });
   }, [status]);
 
+  useEffect(() => {
+    if (status) setJobStatus(status);
+  }, [status]);
+
+  // The panel is fixed over the page; without this it covers the pagination, the page-size picker
+  // and the footer links. No dependencies: collapsing changes its height, so every render measures.
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!panel) return;
+    const body = window.document.body;
+    // The panel's own 1rem inset from the bottom of the viewport.
+    body.style.paddingBottom = `${panel.offsetHeight + 16}px`;
+    return () => {
+      body.style.paddingBottom = '';
+    };
+  });
+
   if (!job && !startError) return null;
 
   const canRetry = query.isError && !jobGone;
@@ -160,7 +173,7 @@ export function DownloadPanel() {
   }
 
   return (
-    <div className="download-panel">
+    <div className="download-panel" ref={panelRef}>
       <div className="download-panel__header">
         <h2 className="download-panel__title">Document download</h2>
         <button

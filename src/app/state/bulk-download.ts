@@ -1,6 +1,6 @@
 import { createStore, useStore } from './store';
 import { track } from 'app/analytics/analytics';
-import { ApiError, createBulkDownload } from 'app/api/api';
+import { ApiError, createBulkDownload, type BulkDownloadStatus } from 'app/api/api';
 import { fetchData, type SearchParamObject } from 'app/api/search';
 import { logger } from 'app/config/logging';
 import { triggerDownload } from 'app/utils/utils';
@@ -25,6 +25,13 @@ export interface BulkDownloadJob {
   id: string;
   count: number;
   startedAt: number;
+  /** Last status demi-api reported. Absent until the panel has polled once. */
+  status?: BulkDownloadStatus['status'];
+}
+
+/** demi-api stops moving the job at these; polling stops with it, and so does the wait. */
+export function isTerminal(status?: string): boolean {
+  return status === 'ready' || status === 'failed' || status === 'expired';
 }
 
 type TableSelection = Map<string, SelectedDocument>;
@@ -165,6 +172,19 @@ export function clearJob(): void {
 
 export function useJob(): BulkDownloadJob | null {
   return useStore(job);
+}
+
+/** Records what the panel last read, so the toolbar knows a finished job is not still running. */
+export function setJobStatus(status: BulkDownloadStatus['status']): void {
+  const current = job.get();
+  if (!current || current.status === status) return;
+  setJob({ ...current, status });
+}
+
+/** True only while a job is still being prepared: a ready, failed or expired one is not. */
+export function useDownloadInProgress(): boolean {
+  const current = useStore(job);
+  return !!current && !isTerminal(current.status);
 }
 
 /** What each refused POST tells the reader. Anything else is a fault they cannot act on. */

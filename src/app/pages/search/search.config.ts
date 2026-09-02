@@ -7,6 +7,7 @@ import {
 } from 'app/components/filters/filter-object';
 import type { TableListConfig } from 'app/components/table/table-list';
 import type { IColumnObject } from 'app/components/table/table-object';
+import { DOWNLOAD_COLUMN } from 'app/components/table/document-row';
 import { bulkDownloadEnabled, contentSearchEnabled } from 'app/config/config';
 import { DocSearchTableRow } from './search-documents-table-rows';
 
@@ -35,7 +36,7 @@ export const SEARCH_TABLE_COLUMNS: IColumnObject[] = [
   { name: 'Date', value: 'datePosted', width: 'col-2' },
   { name: 'Type', value: 'type', width: 'col-2' },
   { name: 'Milestone', value: 'milestone', width: 'col-2' },
-  { name: ' ', value: '', width: 'col-1', nosort: true }
+  DOWNLOAD_COLUMN
 ];
 
 export const SEARCH_FILTER_LIST = ['milestone', 'documentAuthorType', 'type', 'projectPhase'];

@@ -309,11 +309,21 @@ describe('TableTemplate selection toolbar', () => {
 
   // One job slot: a second POST would replace the running one and lose the zip it was building.
   it('refuses a second download while one is still running', () => {
-    setJob({ id: 'job-9', count: 3, startedAt: Date.now() });
+    setJob({ id: 'job-9', count: 3, startedAt: Date.now(), status: 'running' });
     setSelected('documents', [{ id: 'doc-a', displayName: 'Alpha' }]);
 
     render(<TableTemplate data={selectableTable()} onMessage={() => undefined} />);
 
     expect(screen.getByRole('button', { name: 'Download' })).toBeDisabled();
+  });
+
+  // A job that reached its last status is not still running; the panel only shows what it did.
+  it.each(['ready', 'failed', 'expired'] as const)('offers Download again once a job is %s', status => {
+    setJob({ id: 'job-9', count: 3, startedAt: Date.now(), status });
+    setSelected('documents', [{ id: 'doc-a', displayName: 'Alpha' }]);
+
+    render(<TableTemplate data={selectableTable()} onMessage={() => undefined} />);
+
+    expect(screen.getByRole('button', { name: 'Download' })).toBeEnabled();
   });
 });

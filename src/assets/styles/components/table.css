@@ -120,13 +120,42 @@
   outline-offset: -2px;
 }
 
-/* Selection: a blue tint, distinct from the grey hover fill, and `!important` to beat it. */
+/* Selection: a blue tint plus a blue bar down the leading edge, so it never reads as hover.
+   The tint stops at 18%: past that the row's links fall under 4.5:1. */
 .table tbody tr.selected td {
-  background-color: color-mix(in srgb, var(--bs-primary) 12%, var(--table-row-bg)) !important;
+  background-color: color-mix(in srgb, var(--bs-primary) 14%, var(--table-row-bg)) !important;
 }
 
 .table tbody tr.selected td:first-child {
   box-shadow: inset 3px 0 0 var(--bs-primary);
+}
+
+/* Hovering a selected row still answers: a deeper tint and a wider bar. */
+.table tbody.highlight tr.selected:hover td {
+  background-color: color-mix(in srgb, var(--bs-primary) 18%, var(--table-row-bg)) !important;
+}
+
+.table tbody.highlight tr.selected:hover td:first-child {
+  box-shadow: inset 5px 0 0 var(--bs-primary);
+}
+
+/* === PER-ROW DOWNLOAD BUTTON === */
+
+.table .download-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  color: var(--bs-link-color);
+  text-decoration: none;
+}
+
+.table .download-button:hover {
+  color: var(--bs-link-hover-color);
+}
+
+.table .download-button .material-icons {
+  font-size: 1.375rem;
 }
 
 /* === TABLE-TEMPLATE COMPONENT STYLES === */
@@ -160,8 +189,9 @@
   border-bottom: 2px solid var(--table-border-color);
 }
 
-/* Only project list table rows should be clickable */
-.table-template .table tbody.highlight tr:hover td {
+/* Only rows that answer a click say so: project cards and selectable document rows. */
+.table-template .table tbody tr.clickable-row:hover td,
+.table-template .table tbody tr.selectable-row:hover td {
   cursor: pointer;
 }
 
@@ -212,9 +242,32 @@
     text-align: center;
   }
 
-  /* The col-* widths add up to the whole table on their own, so they give up the 2.5rem. */
+  /* Download column: wide enough for its header word, and its button centred under it. */
+  .table-template .table th.download-col,
+  .table-template .table td.download-col {
+    flex: 0 0 6rem;
+    width: 6rem;
+    min-width: 6rem;
+    max-width: 6rem;
+    justify-content: center;
+    text-align: center;
+  }
+
+  /* The download button reads as an icon here; the word is the column header. */
+  .table-template .table td.download-col .download-button__label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  /* The col-* widths add up to the whole table on their own, so they give up the fixed columns. */
   .table-template .table tr:has(.select-col) th[class*="col-"],
-  .table-template .table tr:has(.select-col) td[class*="col-"] {
+  .table-template .table tr:has(.select-col) td[class*="col-"],
+  .table-template .table tr:has(.download-col) th[class*="col-"],
+  .table-template .table tr:has(.download-col) td[class*="col-"] {
     flex-shrink: 1;
     min-width: 0;
   }
@@ -327,8 +380,16 @@
     border-bottom: none;
   }
 
-  .table-template .table tbody.highlight tr:hover td[data-label="Name"] {
+  .table-template .table tbody.highlight tr:hover td[data-label="Name"],
+  .table-template .table tbody tr.selected td[data-label="Name"],
+  .table-template .table tbody.highlight tr.selected:hover td[data-label="Name"] {
     background-color: var(--bs-primary) !important;
+  }
+
+  /* A selected card is called out by its border and tint; the title bar stays readable. */
+  .table-template .table tbody tr.selected {
+    border-color: var(--bs-primary);
+    box-shadow: 0 0 0 1px var(--bs-primary);
   }
 
   .table-template td[data-label="Name"]::before {
@@ -349,8 +410,29 @@
     line-height: 1.5;
   }
 
+  /* The download button carries its own word on a card, and the checkbox has its own label. */
+  .table-template td[data-label="Download"]::before,
+  .table-template td[data-label="Select"]::before {
+    content: none;
+  }
+
+  /* The checkbox sits in a slim strip above the card's title, not in a field of its own. */
+  .table-template .table tbody tr td.select-col {
+    padding: 0.75rem 1rem 0.25rem;
+  }
+
+  .table-template td.download-col .download-button {
+    width: 100%;
+    justify-content: center;
+    min-height: 2.75rem;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.25rem;
+    font-weight: var(--bs-font-weight-semibold);
+  }
+
   /* Labels above values */
-  .table-template td[data-label]:not([data-label="Name"]):not([data-label="★"])::before {
+  .table-template
+    td[data-label]:not([data-label="Name"]):not([data-label="★"]):not([data-label="Download"]):not([data-label="Select"])::before {
     content: attr(data-label);
     display: block;
     font-size: var(--bs-font-size-xs);

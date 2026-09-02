@@ -349,4 +349,46 @@ describe('DownloadPanel', () => {
 
     expect(fetchMock.mock.calls.length).toBe(pollsSoFar);
   });
+  /**
+   * The panel is fixed over the bottom-right of the page. Without the body padding it sits on top
+   * of the pagination, the page-size picker and the footer links, which is where the reader is
+   * heading next.
+   */
+  it('keeps the page clear of the panel while it shows, and gives the space back on close', async () => {
+    const height = vi
+      .spyOn(HTMLElement.prototype, 'offsetHeight', 'get')
+      .mockReturnValue(120);
+    statusResponses = [{ id: 'job-9', status: 'running', partCount: 1, partsReady: 0 }];
+    const panel = await mount({ id: 'job-9', count: 4, startedAt: Date.now() });
+    panel.render();
+    await tick(0);
+
+    // The panel's own height plus the 1rem it sits above the bottom of the viewport.
+    expect(document.body.style.paddingBottom).toBe('136px');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Close download panel' }));
+
+    expect(document.body.style.paddingBottom).toBe('');
+    height.mockRestore();
+  });
+
+  /** The toolbar's Download is disabled while a job runs; a finished job must release it. */
+  it('records the job status so a finished download stops blocking the next one', async () => {
+    statusResponses = [
+      {
+        id: 'job-9',
+        status: 'ready',
+        partCount: 1,
+        partsReady: 1,
+        includedCount: 2,
+        errorCount: 0,
+        parts: [{ n: 1, fileName: 'documents.zip', url: 'https://nrs.example/part1.zip' }]
+      }
+    ];
+    const panel = await mount({ id: 'job-9', count: 2, startedAt: Date.now() });
+    panel.render();
+    await tick(0);
+
+    expect(JSON.parse(localStorage.getItem(JOB_KEY) ?? '{}').status).toBe('ready');
+  });
 });
