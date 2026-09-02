@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { lazy, Suspense, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { Project } from 'app/models/project';
 import { getAllFull } from 'app/api/project';
@@ -10,8 +10,10 @@ import { useProjectFilters } from './filter-state';
 import { filterProjects } from './project-filter';
 import { ProjlistFilters } from './projlist-filters';
 import { ProjlistList } from './projlist-list';
-import { ProjlistMap } from './projlist-map';
 import './projects.css';
+
+// maplibre-gl is ~1 MB; keep it and its wrapper out of the main bundle until this page renders.
+const ProjlistMap = lazy(() => import('./projlist-map').then(m => ({ default: m.ProjlistMap })));
 
 /** eagle-api's region list names the Thompson polygon "Thompson-Nicola"; the shapefile does not. */
 const POLYGON_NAME: Record<string, string> = { 'Thompson-Nicola': 'Thompson' };
@@ -76,20 +78,22 @@ export function Projects() {
       </aside>
 
       <div className="projects-map">
-        <ProjlistMap
-          projects={mapApps}
-          loading={isPending}
-          selectedId={selectedId}
-          hoveredId={hoveredId}
-          onSelect={project => {
-            setSelectedId(project?._id ?? null);
-            // The card expands inside the list, so the sheet opens fully to show it.
-            if (mobile && project) sheetState.set('full');
-          }}
-          onHover={setHoveredId}
-          regionNames={regionNames}
-          mobile={mobile}
-        />
+        <Suspense fallback={<div className="app-map is-loading"><div className="app-map__shimmer placeholder-wave" aria-hidden="true" /></div>}>
+          <ProjlistMap
+            projects={mapApps}
+            loading={isPending}
+            selectedId={selectedId}
+            hoveredId={hoveredId}
+            onSelect={project => {
+              setSelectedId(project?._id ?? null);
+              // The card expands inside the list, so the sheet opens fully to show it.
+              if (mobile && project) sheetState.set('full');
+            }}
+            onHover={setHoveredId}
+            regionNames={regionNames}
+            mobile={mobile}
+          />
+        </Suspense>
       </div>
     </div>
   );

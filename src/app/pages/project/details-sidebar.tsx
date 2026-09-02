@@ -1,11 +1,10 @@
-import { useRef } from 'react';
-import { Map, Marker } from '@vis.gl/react-maplibre';
-import type { MapRef } from '@vis.gl/react-maplibre';
-import { track } from 'app/analytics/analytics';
-import { Basemaps, EMPTY_STYLE, MapControls, WORKER_URL, flyOptions } from 'app/map/basemaps';
+import { lazy, Suspense } from 'react';
 import type { Project } from 'app/models/project';
 import { Constants } from 'app/utils/constants';
 import './details-sidebar.css';
+
+// maplibre-gl is ~1 MB; keep it and its wrapper out of the main bundle until this map renders.
+const DetailsMap = lazy(() => import('./details-map').then(m => ({ default: m.DetailsMap })));
 
 interface DetailsSidebarProps {
   project: Project | null;
@@ -14,8 +13,6 @@ interface DetailsSidebarProps {
   open: boolean;
   onToggle: () => void;
 }
-
-const MARKER_ZOOM = 8;
 
 function legislationLink(project: Project | null): string {
   const legislation = project?.legislation ?? '';
@@ -29,7 +26,6 @@ function legislationLink(project: Project | null): string {
 }
 
 export function DetailsSidebar({ project, loading = false, open, onToggle }: DetailsSidebarProps) {
-  const mapRef = useRef<MapRef>(null);
   const centroid = project?.centroid?.length === 2 ? project.centroid : null;
 
   return (
@@ -89,49 +85,9 @@ export function DetailsSidebar({ project, loading = false, open, onToggle }: Det
                 </div>
               ) : centroid && project ? (
                 <div className="map-container">
-                  <div className="map">
-                    <Map
-                      key={project._id}
-                      ref={mapRef}
-                      initialViewState={{ longitude: centroid[0], latitude: centroid[1], zoom: MARKER_ZOOM }}
-                      mapStyle={EMPTY_STYLE}
-                      workerUrl={WORKER_URL}
-                      scrollZoom={false}
-                      // A one-finger drag on a map this small traps the page scroll; pinch and
-                      // the zoom buttons still move it.
-                      dragPan={false}
-                      attributionControl={false}
-                      style={{ width: '100%', height: '100%' }}
-                    >
-                      <Basemaps />
-                      <MapControls
-                        onReset={() =>
-                          mapRef.current?.flyTo({
-                            center: [centroid[0], centroid[1]],
-                            zoom: MARKER_ZOOM,
-                            ...flyOptions()
-                          })
-                        }
-                        trackContext={{ project_id: project._id, project_name: project.name }}
-                      />
-                      <Marker
-                        longitude={centroid[0]}
-                        latitude={centroid[1]}
-                        anchor="bottom"
-                        onClick={() =>
-                          track('Map Marker Clicked', {
-                            project_id: project._id,
-                            project_name: project.name,
-                            map_zoom_level: mapRef.current?.getZoom()
-                          })
-                        }
-                      >
-                        <button type="button" className="map-pin" aria-hidden="true" tabIndex={-1}>
-                          <span className="map-pin__label">{project.name}</span>
-                        </button>
-                      </Marker>
-                    </Map>
-                  </div>
+                  <Suspense fallback={<span className="placeholder w-100 h-100" aria-hidden="true" />}>
+                    <DetailsMap project={project} />
+                  </Suspense>
                 </div>
               ) : (
                 <div className="map-placeholder">

@@ -25,10 +25,10 @@ function renderSidebar(project: Project | null) {
 beforeEach(() => fakeMap.reset());
 
 describe('project details sidebar map', () => {
-  it('pins the project at its centroid', () => {
+  it('pins the project at its centroid', async () => {
     renderSidebar(PROJECT);
 
-    expect(screen.getByTestId('map')).toBeInTheDocument();
+    expect(await screen.findByTestId('map')).toBeInTheDocument();
     const markers = screen.getAllByTestId('marker');
     expect(markers).toHaveLength(1);
     expect(markers[0]).toHaveAttribute('data-lng', '-127.5');
@@ -38,7 +38,7 @@ describe('project details sidebar map', () => {
   it('recentres on the project when the view is reset', async () => {
     renderSidebar(PROJECT);
 
-    await userEvent.click(screen.getByRole('button', { name: 'Reset view' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Reset view' }));
 
     expect(fakeMap.flyTo).toHaveBeenCalledWith(expect.objectContaining({ center: [-127.5, 54.2], zoom: 8 }));
   });
