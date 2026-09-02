@@ -45,13 +45,10 @@ export function DocumentsPage() {
         const results = extractFromSearchResults(response ?? []);
         if (!results) {
           // getSearchResults turns any non-2xx into `null`, so a 502 and a project with no
-          // documents of this kind look the same. Hiding the segment is the right degradation, but
-          // it should not be invisible.
-          logger.error(
-            `Could not determine whether the ${tab.key} segment has documents; leaving it hidden`,
-            'DocumentsPage',
-          );
-          return false;
+          // documents of this kind look the same. Throwing lets TanStack retry; returning `false`
+          // would cache one bad gateway as "no documents" for the rest of the visit.
+          logger.error(`Could not determine whether the ${tab.key} segment has documents`, 'DocumentsPage');
+          throw new Error(`${tab.key} probe failed`);
         }
         return results.length > 0;
       },
