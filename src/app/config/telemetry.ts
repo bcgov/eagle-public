@@ -7,8 +7,12 @@ const MAX_BUFFERED = 20;
 /** Errors reported before initTelemetry finishes. Flushed through trackException once the SDK is up. */
 const buffered: { error: unknown; properties?: Record<string, string> }[] = [];
 
-/** Query strings carry search terms, which are personal data. Global: strips every `?...` token, including inside multi-line stacks. */
-const QUERY_STRING = /\?\S*/g;
+/**
+ * Query strings carry search terms, which are personal data. Global: strips every `?key=value...`
+ * token, including inside multi-line stacks, without eating stack positions (`:1:1)`) or prose
+ * ("Unexpected token '?'") that a bare `?\S*` would swallow.
+ */
+const QUERY_STRING = /\?[\w%.~-]+=[^\s:)#'"]*(?:&[\w%.~-]+=[^\s:)#'"]*)*/g;
 const REDACTED_FIELDS = ['uri', 'target', 'name', 'message'];
 
 /**
@@ -26,19 +30,26 @@ export async function initTelemetry(
     return;
   }
 
-  const { ApplicationInsights } = await import('@microsoft/applicationinsights-web');
-  const instance = new ApplicationInsights({
-    config: {
-      connectionString,
-      enableCorsCorrelation: true,
-      correlationHeaderDomains: correlationHosts,
-      disableFetchTracking: false,
-      // Off by default in the SDK, and rejections are half of what a React app throws.
-      enableUnhandledPromiseRejectionTracking: true,
-      enableAutoRouteTracking: false
-    }
-  });
-  instance.loadAppInsights();
+  let instance: ApplicationInsights;
+  try {
+    const { ApplicationInsights } = await import('@microsoft/applicationinsights-web');
+    instance = new ApplicationInsights({
+      config: {
+        connectionString,
+        enableCorsCorrelation: true,
+        correlationHeaderDomains: correlationHosts,
+        disableFetchTracking: false,
+        // Off by default in the SDK, and rejections are half of what a React app throws.
+        enableUnhandledPromiseRejectionTracking: true,
+        enableAutoRouteTracking: false
+      }
+    });
+    instance.loadAppInsights();
+  } catch {
+    // Stale hashed chunk after a redeploy, or the SDK itself throwing. Telemetry stays off;
+    // the app must not fail to start over it. Buffered errors stay buffered, capped at MAX_BUFFERED.
+    return;
+  }
 
   instance.addTelemetryInitializer((item: ITelemetryItem) => {
     item.tags = item.tags || {};

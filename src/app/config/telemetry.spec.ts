@@ -9,19 +9,26 @@ const sdk = vi.hoisted(() => ({
   loadAppInsights: vi.fn(),
   addTelemetryInitializer: vi.fn(),
   trackException: vi.fn(),
-  constructed: vi.fn()
+  constructed: vi.fn(),
+  // Set true for one test to simulate a stale hashed chunk failing to fetch after a redeploy.
+  importShouldFail: false
 }));
 
-vi.mock('@microsoft/applicationinsights-web', () => ({
-  ApplicationInsights: class {
-    loadAppInsights = sdk.loadAppInsights;
-    addTelemetryInitializer = sdk.addTelemetryInitializer;
-    trackException = sdk.trackException;
-    constructor(options: unknown) {
-      sdk.constructed(options);
-    }
+vi.mock('@microsoft/applicationinsights-web', () => {
+  if (sdk.importShouldFail) {
+    throw new Error('stale chunk: failed to fetch dynamically imported module');
   }
-}));
+  return {
+    ApplicationInsights: class {
+      loadAppInsights = sdk.loadAppInsights;
+      addTelemetryInitializer = sdk.addTelemetryInitializer;
+      trackException = sdk.trackException;
+      constructor(options: unknown) {
+        sdk.constructed(options);
+      }
+    }
+  };
+});
 
 const CONNECTION_STRING = 'InstrumentationKey=00000000-0000-0000-0000-000000000000';
 
@@ -48,6 +55,7 @@ beforeEach(() => {
   sdk.addTelemetryInitializer.mockClear();
   sdk.trackException.mockClear();
   sdk.constructed.mockClear();
+  sdk.importShouldFail = false;
 });
 
 describe('initTelemetry', () => {
@@ -57,6 +65,16 @@ describe('initTelemetry', () => {
     await initTelemetry(undefined, 'eagle-public', ['epic.example.gov.bc.ca']);
     expect(sdk.constructed).not.toHaveBeenCalled();
     expect(sdk.loadAppInsights).not.toHaveBeenCalled();
+  });
+
+  it('resolves without throwing when the SDK chunk fails to load', async () => {
+    sdk.importShouldFail = true;
+    const { initTelemetry, trackException } = await telemetry();
+
+    await expect(
+      initTelemetry(CONNECTION_STRING, 'eagle-public', ['epic.example.gov.bc.ca'])
+    ).resolves.toBeUndefined();
+    expect(() => trackException(new Error('after failed init'))).not.toThrow();
   });
 
   it('loads the SDK once a connection string is configured', async () => {
@@ -132,6 +150,8 @@ describe('the telemetry initializer', () => {
     expect(exception.message).toContain('401');
     expect(exception.stack).toContain('/api/projects');
     expect(exception.stack).toContain('401');
+    // Stack position (`:1:1)`) is not part of the query string and must survive.
+    expect(exception.stack).toContain('http://h/app.js:1:1)');
   });
 
   it('strips a query string token and keeps the rest of the message', async () => {
@@ -141,6 +161,24 @@ describe('the telemetry initializer', () => {
     initializer(item);
 
     expect((item.baseData as { message: string }).message).toBe('HTTP GET /api/x 500 tail');
+  });
+
+  it('leaves a bare question mark in prose alone', async () => {
+    const initializer = await initialized();
+    const item = dependency({ message: "Unexpected token '?' at line 3", success: false });
+
+    initializer(item);
+
+    expect((item.baseData as { message: string }).message).toBe("Unexpected token '?' at line 3");
+  });
+
+  it('strips multiple query params in one string', async () => {
+    const initializer = await initialized();
+    const item = dependency({ message: '/x?a=1&b=2 tail', success: false });
+
+    initializer(item);
+
+    expect((item.baseData as { message: string }).message).toBe('/x tail');
   });
 
   it('stamps the cloud role', async () => {
