@@ -199,6 +199,10 @@ deviations. The deviations the pass turned up are below.
 - components/table, components/bulk-download-bar: document tables gain a checkbox column and a fixed bar that downloads the selection through demi-api. New here; Angular downloads one document at a time. The column only appears where `SEARCH_API_PATH` names a backend, so an empty one leaves the grid exactly as it was.
 - components/table/table-template: select-all across the filtered set is offered only while the result set is 100 documents or fewer, demi-api's anonymous per-job cap; past that the banner asks for narrower filters rather than selecting a set the backend would refuse.
 
+## Cutover prerequisites
+
+- Bulk download needs eao-nginx v2.7.29+ and the eagle-edge bulk-downloads patterns on prod before the React cutover; until then the UI is staging-only.
+
 ## Ports pending
 
 Fixes shipped on `develop` (Angular) not yet re-implemented here. One line each: tag, commit, what. Delete the line when ported.

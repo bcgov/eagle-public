@@ -8,6 +8,9 @@ export const SELECT_ALL_MAX = 100;
 /** What every refused selection says, wherever it is refused. */
 export const CAP_MESSAGE = `You can select up to ${SELECT_ALL_MAX} documents at a time.`;
 
+/** The banner only ever renders once the table already found matches; an empty answer is a failed request, not a real zero. */
+export const SELECT_ALL_FAILED_MESSAGE = 'Could not select all matching documents. Try again.';
+
 /** Only what the bulk bar needs: the id to post and a name to show. */
 export interface SelectedDocument {
   id: string;
@@ -95,15 +98,25 @@ export function useSelection(tableId?: string): TableSelection {
 /**
  * Selects every document the current filters match, in one request: the anonymous cap is 100 and
  * DEMI pages up to 500, so there is no paging loop to run.
+ *
+ * Only called from the select-all banner, which only renders once the table already holds more
+ * than a page of matches. `fetchData` swallows its own errors into an empty result rather than
+ * rejecting, so zero rows here means the request failed, not that the count dropped to zero; the
+ * existing selection is left as it was rather than replaced with nothing.
  */
-export async function selectAllMatching(tableId: string, params: SearchParamObject): Promise<void> {
+export async function selectAllMatching(tableId: string, params: SearchParamObject): Promise<boolean> {
   const results = await fetchData({ ...params, pageSize: SELECT_ALL_MAX, currentPage: 1 });
   const rows: any[] = Array.isArray(results.data) ? results.data : [];
+  if (rows.length === 0) {
+    showToast(SELECT_ALL_FAILED_MESSAGE, { type: 'warning' });
+    return false;
+  }
   const added = setSelected(
     tableId,
     rows.map(row => ({ id: row._id, displayName: row.displayName }))
   );
   if (!added) showToast(CAP_MESSAGE, { type: 'warning' });
+  return added;
 }
 
 const JOB_KEY = 'epic-bulk-download-job';

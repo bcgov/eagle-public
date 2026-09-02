@@ -6,6 +6,7 @@ import {
   clearJob,
   clearSelection,
   selectAllMatching,
+  SELECT_ALL_FAILED_MESSAGE,
   SELECT_ALL_MAX,
   setJob,
   setSelected,
@@ -129,12 +130,13 @@ describe('selectAllMatching', () => {
     const params = new SearchParamObject('documents', '', 'Document', [], 4, 10, '-datePosted');
     params.filters = { milestone: 'ms-1' };
 
-    await selectAllMatching('documents', params);
+    const ok = await selectAllMatching('documents', params);
 
     const sent = vi.mocked(fetchData).mock.calls[0][0];
     expect(sent.pageSize).toBe(100);
     expect(sent.currentPage).toBe(1);
     expect(sent.filters).toEqual({ milestone: 'ms-1' });
+    expect(ok).toBe(true);
     expect([...selectionOf('documents').values()]).toEqual([
       { id: 'doc-a', displayName: 'Alpha' },
       { id: 'doc-b', displayName: 'Beta' }
@@ -158,13 +160,20 @@ describe('selectAllMatching', () => {
     expect(selectionOf('documents').size).toBe(0);
   });
 
-  it('selects nothing when the search comes back empty', async () => {
+  // fetchData never rejects, so an empty result here is a failed request masquerading as a real
+  // zero: the banner only renders once the table already found more than a page of matches.
+  it('says so and keeps the prior selection when the request comes back empty', async () => {
+    setSelected('documents', [ALPHA]);
     // SearchResults defaults `data` to 0, not an empty array, when the response carried no results.
     vi.mocked(fetchData).mockResolvedValue({ data: 0, totalSearchCount: 0 } as any);
+    clearToasts();
+    const toasts = renderHook(() => useToasts());
 
-    await selectAllMatching('documents', new SearchParamObject('documents'));
+    const ok = await selectAllMatching('documents', new SearchParamObject('documents'));
 
-    expect(selectionOf('documents').size).toBe(0);
+    expect(ok).toBe(false);
+    expect(toasts.result.current.map(toast => toast.message)).toEqual([SELECT_ALL_FAILED_MESSAGE]);
+    expect([...selectionOf('documents').keys()]).toEqual(['doc-a']);
   });
 });
 

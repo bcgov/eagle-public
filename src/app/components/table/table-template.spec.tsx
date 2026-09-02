@@ -184,6 +184,20 @@ describe('TableTemplate select-all banner', () => {
     expect(screen.queryByRole('button', { name: /Select all/ })).not.toBeInTheDocument();
   });
 
+  // Boundary at the page size itself, e.g. page size "All" showing 19 of 19: nothing is left off
+  // the page, so the banner must not appear. Catches `>` in the guard regressing to `>=`.
+  it('stays hidden when the result count exactly equals the page size', () => {
+    render(<TableTemplate data={selectableTable({ totalListItems: 10, pageSize: 10 })} onMessage={() => undefined} />);
+
+    expect(screen.queryByRole('button', { name: /Select all/ })).not.toBeInTheDocument();
+  });
+
+  it('offers select-all once the result count passes the page size by one', () => {
+    render(<TableTemplate data={selectableTable({ totalListItems: 11, pageSize: 10 })} onMessage={() => undefined} />);
+
+    expect(screen.getByRole('button', { name: 'Select all 11 matching documents' })).toBeInTheDocument();
+  });
+
   it('offers the rest of the result set once the page is fully selected', async () => {
     const onMessage = vi.fn();
     render(<TableTemplate data={selectableTable()} onMessage={onMessage} />);
