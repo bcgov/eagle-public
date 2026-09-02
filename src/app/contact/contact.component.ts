@@ -47,11 +47,11 @@ export class ContactComponent {
     },
     {
       title: 'Report Natural Resource Violations',
-      description: 'If you have seen misconduct involving wildlife, ecosystems, heritage sites or natural resources, you can report it at this <a href="http://www2.gov.bc.ca/gov/content/environment/natural-resource-stewardship/natural-resource-law-enforcement/report-natural-resource-violations" target="_blank" rel="noopener">link here</a>.',
+      description: 'If you have seen misconduct involving wildlife, ecosystems, heritage sites or natural resources, you can report it at this <a href="https://www2.gov.bc.ca/gov/content/environment/natural-resource-stewardship/natural-resource-law-enforcement/natural-resource-officers/identifying-reporting-violations" target="_blank" rel="noopener">link here</a>.',
       icon: 'report_problem',
       button: {
         text: 'Report a Natural Resource Violation',
-        href: 'http://www2.gov.bc.ca/gov/content/environment/natural-resource-stewardship/natural-resource-law-enforcement/report-natural-resource-violations',
+        href: 'https://www2.gov.bc.ca/gov/content/environment/natural-resource-stewardship/natural-resource-law-enforcement/natural-resource-officers/identifying-reporting-violations',
         target: '_blank',
         rel: 'noopener',
         title: 'Report a Natural Resource Violation'
