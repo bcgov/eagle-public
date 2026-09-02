@@ -16,6 +16,8 @@ export interface ITableOptions {
   disableRowHighlight?: boolean;
   showTopControls?: boolean;
   rowSpacing?: number;
+  /** Adds the checkbox column and the bulk-download selection controls. */
+  selectable?: boolean;
 }
 
 export const DEFAULT_TABLE_OPTIONS: ITableOptions = {

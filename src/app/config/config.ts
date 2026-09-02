@@ -96,6 +96,14 @@ export function getSearchApiPath(): string {
   return config.SEARCH_API_PATH || getApiPath();
 }
 
+/**
+ * Whether bulk (and presigned single) download is offered. The routes live on the DEMI search base,
+ * so an empty SEARCH_API_PATH means no DEMI at all: hide the UI and fall back to eagle-api.
+ */
+export function bulkDownloadEnabled(): boolean {
+  return !!config.SEARCH_API_PATH;
+}
+
 /** Whether the Document Content search tab is offered. Only a literal `true` turns it on. */
 export function contentSearchEnabled(): boolean {
   return config.CONTENT_SEARCH === true;

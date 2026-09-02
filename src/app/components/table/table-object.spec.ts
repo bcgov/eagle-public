@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { pageCountMessage, pageNumbers, withAllPicker } from './table-object';
+import { DEFAULT_TABLE_OPTIONS, pageCountMessage, pageNumbers, tableObject, withAllPicker } from './table-object';
 
 describe('pageCountMessage', () => {
   it('is empty when there are no results', () => {
@@ -55,5 +55,13 @@ describe('withAllPicker', () => {
   it('never stacks two Show All options', () => {
     const once = withAllPicker(options, 300);
     expect(withAllPicker(once, 400)).toEqual([...options, { displayText: 'Show All', value: 400 }]);
+  });
+});
+
+describe('table options', () => {
+  it('leaves selection off unless a table asks for it', () => {
+    // Every table shares these defaults; on by default would grow a checkbox column everywhere.
+    expect(DEFAULT_TABLE_OPTIONS.selectable).toBeUndefined();
+    expect(tableObject().options.selectable).toBeUndefined();
   });
 });

@@ -1,6 +1,10 @@
 import type { ISearchResults } from 'app/models/search';
 import { Constants } from './constants';
 import { track } from 'app/analytics/analytics';
+import { createBulkDownload } from 'app/api/api';
+import { bulkDownloadEnabled } from 'app/config/config';
+import { logger } from 'app/config/logging';
+import { showToast } from 'app/state/toast';
 
 const encode = encodeURIComponent;
 (window as any)['encodeURIComponent'] = (component: string | number | boolean) => {
@@ -167,18 +171,64 @@ export function idToListName(id: string, lists: any[]): string {
   return item?.name ?? '-';
 }
 
-/** Opens a document download in a new browser tab. */
-export function openDocumentDownload(document: { _id: string; documentFileName?: string; displayName?: string; internalOriginalName?: string }): void {
-  const filename = document.documentFileName || document.displayName || document.internalOriginalName || 'document';
+export interface DownloadableDocument {
+  _id: string;
+  documentFileName?: string;
+  displayName?: string;
+  internalOriginalName?: string;
+}
 
+function downloadFileName(document: DownloadableDocument): string {
+  return document.documentFileName || document.displayName || document.internalOriginalName || 'document';
+}
+
+/** The eagle-api download URL. Also the anchor href, so middle-click and copy-link still work. */
+export function documentDownloadUrl(document: DownloadableDocument): string {
+  return `/api/public/document/${document._id}/download/${encodeString(downloadFileName(document), true)}`;
+}
+
+/**
+ * Navigates the current tab to a download. Same-tab, because Safari blocks an async `window.open`
+ * and the presigned URLs carry `Content-Disposition: attachment` anyway.
+ */
+export function triggerDownload(url: string): void {
+  const anchor = window.document.createElement('a');
+  anchor.href = url;
+  anchor.setAttribute('style', 'display: none');
+  window.document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+}
+
+/**
+ * Starts a single document download: presigned through demi-api when it is configured, the
+ * eagle-api URL otherwise. Never rejects - a failure surfaces as a toast, not an unhandled promise
+ * in a click handler.
+ */
+export function openDocumentDownload(document: DownloadableDocument): void {
   track('Document Downloaded', {
     document_id: document._id,
-    document_name: filename,
+    document_name: downloadFileName(document),
     document_type: 'unknown'
   });
 
-  const safeName = encodeString(filename, true);
-  window.open(`/api/public/document/${document._id}/download/${safeName}`, '_blank');
+  if (!bulkDownloadEnabled()) {
+    window.open(documentDownloadUrl(document), '_blank');
+    return;
+  }
+
+  void createBulkDownload([document._id])
+    .then(result => {
+      const url = (result as { url?: string }).url;
+      if (!url) {
+        throw new Error('bulk download answered without a url');
+      }
+      triggerDownload(url);
+    })
+    .catch(error => {
+      logger.warn('Document download failed', 'utils', error);
+      showToast('That download could not be started. Please try again.', { type: 'error' });
+    });
 }
 
 /** Angular's `date:'longDate'`, e.g. "August 27, 2026". Empty string for a missing date. */

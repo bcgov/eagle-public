@@ -134,7 +134,8 @@ describe('projects list', () => {
     const router = renderAt('/projects-list?currentPage=3');
     await screen.findByText('Alpha Mine');
 
-    await userEvent.click(screen.getByTitle('Show 25 records per page'));
+    // The picker renders above and below the table; either drives the same URL.
+    await userEvent.click(screen.getAllByTitle('Show 25 records per page')[0]);
 
     await waitFor(() => {
       const params = new URLSearchParams(router.state.location.search);

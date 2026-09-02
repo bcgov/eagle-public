@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { contentSearchEnabled, getConfig, loadConfig } from './config';
+import { bulkDownloadEnabled, contentSearchEnabled, getConfig, loadConfig } from './config';
 
 /**
  * CONTENT_SEARCH decides whether the Document Content tab and route are offered at all, so a
@@ -36,6 +36,38 @@ describe('contentSearchEnabled', () => {
   it('is off for a value that is merely truthy', async () => {
     await configuredWith({ CONTENT_SEARCH: 'false' });
     expect(contentSearchEnabled()).toBe(false);
+  });
+});
+
+/**
+ * The bulk download routes live on the DEMI search base. No search path means no DEMI, so the UI
+ * has to hide rather than post to eagle-api, which has no such route.
+ */
+describe('bulkDownloadEnabled', () => {
+  const original = window.__env;
+
+  afterEach(() => {
+    window.__env = original;
+  });
+
+  async function configuredWith(env: Record<string, unknown>): Promise<void> {
+    window.__env = { logLevel: 4, ...env };
+    await loadConfig();
+  }
+
+  it('is off when SEARCH_API_PATH is absent', async () => {
+    await configuredWith({});
+    expect(bulkDownloadEnabled()).toBe(false);
+  });
+
+  it('is off when SEARCH_API_PATH is empty, which is the kill switch', async () => {
+    await configuredWith({ SEARCH_API_PATH: '' });
+    expect(bulkDownloadEnabled()).toBe(false);
+  });
+
+  it('is on when SEARCH_API_PATH names a backend', async () => {
+    await configuredWith({ SEARCH_API_PATH: '/demi-search' });
+    expect(bulkDownloadEnabled()).toBe(true);
   });
 });
 

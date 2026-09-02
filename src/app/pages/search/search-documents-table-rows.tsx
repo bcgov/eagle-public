@@ -1,6 +1,8 @@
 import { Link } from 'react-router';
 import type { TableRowProps } from 'app/components/table/table-object';
-import { idToListName, longDate, openDocumentDownload } from 'app/utils/utils';
+import { SelectCell } from 'app/components/table/table-template';
+import { useSelection } from 'app/state/bulk-download';
+import { documentDownloadUrl, idToListName, longDate, openDocumentDownload } from 'app/utils/utils';
 import './search-documents-table-rows.css';
 
 /** Placeholder date the API stores for a document with no posting date; never shown. */
@@ -8,11 +10,24 @@ const NO_DATE = '1900-01-01T08:00:00.000Z';
 
 export function DocSearchTableRow({ rowData, tableData }: TableRowProps) {
   const lists: any[] = tableData?.data?.lists || [];
+  const selectable = !!tableData.options?.selectable;
+  const selected = useSelection(tableData.tableId).has(rowData._id);
 
   return (
-    <tr>
+    <tr className={selected ? 'selected' : undefined}>
+      {selectable && <SelectCell rowData={rowData} tableId={tableData.tableId} />}
       <td data-label="Name" className="col-3">
-        {rowData.displayName}
+        <a
+          href={documentDownloadUrl(rowData)}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={event => {
+            event.preventDefault();
+            openDocumentDownload(rowData);
+          }}
+        >
+          {rowData.displayName}
+        </a>
       </td>
       <td data-label="ProjectName" className="col-2">
         <Link

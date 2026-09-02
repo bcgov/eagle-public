@@ -15,7 +15,8 @@ import {
   updateTableObjectWithUrlParams,
   type Params
 } from './table-params';
-import { useTable } from './use-table';
+import { tableSearchParams, useTable, type TableQueryConfig } from './use-table';
+import { selectAllMatching } from 'app/state/bulk-download';
 
 export interface TableListConfig {
   /** Identifies the table's cache entry and loading state. */
@@ -58,7 +59,7 @@ export function TableList({ config }: { config: TableListConfig }) {
   const filters = useMemo(() => getFiltersFromParams(params, allFilterKeys), [params, allFilterKeys]);
   const sortBy = params['sortBy'] ? normalizeSortBy(params['sortBy']) : config.defaultSort;
 
-  const table = useTable(config.tableId, {
+  const query: TableQueryConfig = {
     dataset: config.datasetType,
     keywords: params['keywords'] || '',
     currentPage: +(params['currentPage'] || 1),
@@ -66,12 +67,14 @@ export function TableList({ config }: { config: TableListConfig }) {
     sortBy,
     populate: true,
     filters
-  });
+  };
+
+  const table = useTable(config.tableId, query);
 
   const data = useMemo(() => {
     const base = updateTableObjectWithUrlParams(
       params,
-      tableObject({ component: config.tableRowComponent, sortBy: config.defaultSort })
+      tableObject({ component: config.tableRowComponent, sortBy: config.defaultSort, tableId: config.tableId })
     );
     return {
       ...base,
@@ -113,6 +116,9 @@ export function TableList({ config }: { config: TableListConfig }) {
         break;
       case 'columnSort':
         submit({ ...params, sortBy: toggleSortDirection(data.sortBy, msg.data), currentPage: 1 });
+        break;
+      case 'selectAllMatching':
+        void selectAllMatching(config.tableId, tableSearchParams(config.tableId, query));
         break;
     }
   }
