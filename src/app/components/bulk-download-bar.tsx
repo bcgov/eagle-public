@@ -15,6 +15,7 @@ function isTerminal(status?: string): boolean {
 function jobMessage(state?: BulkDownloadStatus): string {
   switch (state?.status) {
     case 'ready':
+      if (state.includedCount === 0) return 'None of the selected documents could be downloaded.';
       return state.errorCount
         ? `Download started (${state.errorCount} files could not be included; see errors.txt)`
         : 'Download started';
@@ -66,6 +67,11 @@ export function BulkDownloadBar() {
   useEffect(() => {
     if (!job || state?.status !== 'ready' || firedFor.current === job.id) return;
     firedFor.current = job.id;
+    // An empty zip has parts, and each one answers with an error page; downloading them is noise.
+    if (state.includedCount === 0) {
+      track('Bulk Download Failed', { status: 'empty' });
+      return;
+    }
     track('Bulk Download Ready', {
       count: job.count,
       part_count: state.partCount,

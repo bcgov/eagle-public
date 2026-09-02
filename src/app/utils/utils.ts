@@ -187,16 +187,19 @@ export function documentDownloadUrl(document: DownloadableDocument): string {
 }
 
 /**
- * Navigates the current tab to a download. Same-tab, because Safari blocks an async `window.open`
- * and the presigned URLs carry `Content-Disposition: attachment` anyway.
+ * Starts a download in a hidden iframe. A `Content-Disposition: attachment` response downloads
+ * without navigating; an error body (an object-store 404 XML, say) renders inside the invisible
+ * iframe instead of replacing the app.
  */
 export function triggerDownload(url: string): void {
-  const anchor = window.document.createElement('a');
-  anchor.href = url;
-  anchor.setAttribute('style', 'display: none');
-  window.document.body.appendChild(anchor);
-  anchor.click();
-  anchor.remove();
+  const frame = window.document.createElement('iframe');
+  frame.hidden = true;
+  frame.setAttribute('aria-hidden', 'true');
+  frame.setAttribute('tabindex', '-1');
+  frame.src = url;
+  window.document.body.appendChild(frame);
+  // Removing the iframe cancels a transfer that has not started yet, so give it a minute.
+  window.setTimeout(() => frame.remove(), 60_000);
 }
 
 /**

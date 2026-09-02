@@ -10,12 +10,16 @@ const BETA = { id: 'doc-b', displayName: 'Beta' };
 let postResponse: () => Response;
 let statusStatus: number;
 let statusResponses: unknown[];
-let clickedHrefs: string[];
 let fetchMock: ReturnType<typeof vi.fn>;
+
+/** The src of every download iframe currently in the document. */
+function downloadUrls(): string[] {
+  return [...document.body.querySelectorAll('iframe')].map(frame => frame.getAttribute('src') ?? '');
+}
 
 /**
  * The bar is the only place the browser learns a zip is ready, so its states are driven end to end
- * here: the POST, the poll, and the anchor navigations that actually fetch the parts.
+ * here: the POST, the poll, and the hidden iframes that actually fetch the parts.
  */
 describe('BulkDownloadBar', () => {
   const originalEnv = window.__env;
@@ -23,14 +27,9 @@ describe('BulkDownloadBar', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     localStorage.clear();
-    clickedHrefs = [];
     statusResponses = [];
     statusStatus = 200;
     postResponse = () => new Response('{}', { status: 500 });
-
-    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
-      clickedHrefs.push(this.getAttribute('href') ?? '');
-    });
 
     fetchMock = vi.fn(async (_url: string, init?: RequestInit) => {
       if (init?.method === 'POST') return postResponse();
@@ -43,6 +42,7 @@ describe('BulkDownloadBar', () => {
 
   afterEach(() => {
     window.__env = originalEnv;
+    document.body.querySelectorAll('iframe').forEach(frame => frame.remove());
     vi.useRealTimers();
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
@@ -87,7 +87,7 @@ describe('BulkDownloadBar', () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it('downloads every part of a finished job, one navigation each', async () => {
+  it('downloads every part of a finished job, one iframe each', async () => {
     postResponse = () =>
       new Response(JSON.stringify({ id: 'job-1', status: 'queued', documentCount: 2 }), { status: 202 });
     statusResponses = [
@@ -97,6 +97,7 @@ describe('BulkDownloadBar', () => {
         status: 'ready',
         partCount: 2,
         partsReady: 2,
+        includedCount: 2,
         errorCount: 0,
         parts: [
           { n: 1, url: 'https://nrs.example/part1.zip' },
@@ -117,16 +118,16 @@ describe('BulkDownloadBar', () => {
     // One poll interval later the job is ready and the first part goes.
     await tick(4000);
     // Two more turns of the clock: one for React to commit the ready status, one for the first
-    // part's navigation, which the component schedules from that render.
+    // part's download, which the component schedules from that render.
     await tick(1);
     await tick(1);
 
-    expect(clickedHrefs).toEqual(['https://nrs.example/part1.zip']);
+    expect(downloadUrls()).toEqual(['https://nrs.example/part1.zip']);
 
     // The next follows a second later, so the browser asks once to allow multiple downloads.
     await tick(1000);
 
-    expect(clickedHrefs).toEqual(['https://nrs.example/part1.zip', 'https://nrs.example/part2.zip']);
+    expect(downloadUrls()).toEqual(['https://nrs.example/part1.zip', 'https://nrs.example/part2.zip']);
     expect(screen.getByText('Download started')).toBeInTheDocument();
   });
 
@@ -138,6 +139,7 @@ describe('BulkDownloadBar', () => {
         status: 'ready',
         partCount: 1,
         partsReady: 1,
+        includedCount: 5,
         errorCount: 3,
         parts: [{ n: 1, url: 'https://nrs.example/part1.zip' }]
       }
@@ -154,6 +156,36 @@ describe('BulkDownloadBar', () => {
     ).toBeInTheDocument();
   });
 
+  /**
+   * Every document in the selection failed: the zip holds nothing but errors.txt, and each part
+   * answers with an error page, so fetching them buys the reader nothing.
+   */
+  it('downloads nothing when the finished zip included no documents', async () => {
+    postResponse = () => new Response(JSON.stringify({ id: 'job-1', status: 'queued' }), { status: 202 });
+    statusResponses = [
+      {
+        id: 'job-1',
+        status: 'ready',
+        partCount: 1,
+        partsReady: 1,
+        includedCount: 0,
+        errorCount: 2,
+        parts: [{ n: 1, url: 'https://nrs.example/part1.zip' }]
+      }
+    ];
+    const bar = await mount();
+    bar.store.setSelected('documents', [ALPHA, BETA]);
+    bar.render();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Download' }));
+    await tick(0);
+    await tick(2000);
+
+    expect(screen.getByText('None of the selected documents could be downloaded.')).toBeInTheDocument();
+    expect(downloadUrls()).toEqual([]);
+    expect(screen.getByRole('button', { name: 'Dismiss' })).toBeInTheDocument();
+  });
+
   it('explains a 429 rather than looking like a failure', async () => {
     postResponse = () => new Response('{}', { status: 429, statusText: 'Too Many Requests' });
     const bar = await mount();
@@ -164,7 +196,7 @@ describe('BulkDownloadBar', () => {
     await tick(0);
 
     expect(screen.getByText("You've reached the download limit. Try again later.")).toBeInTheDocument();
-    expect(clickedHrefs).toEqual([]);
+    expect(downloadUrls()).toEqual([]);
   });
 
   it('says so when bulk download is switched off at the backend', async () => {
@@ -189,7 +221,7 @@ describe('BulkDownloadBar', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Download' }));
     await tick(0);
 
-    expect(clickedHrefs).toEqual(['https://nrs.example/one.pdf']);
+    expect(downloadUrls()).toEqual(['https://nrs.example/one.pdf']);
     expect(localStorage.getItem(JOB_KEY)).toBeNull();
     expect(container).toBeEmptyDOMElement();
   });
