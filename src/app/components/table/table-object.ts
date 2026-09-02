@@ -1,4 +1,5 @@
 import type { ComponentType } from 'react';
+import { randomId } from 'app/utils/random-id';
 import { Constants } from 'app/utils/constants';
 
 /** A single page size option. */
@@ -87,7 +88,7 @@ export function tableObject(params: Partial<TableObject> = {}): TableObject {
     pageSize: params.pageSize ?? Constants.tableDefaults.DEFAULT_PAGE_SIZE,
     sortBy: params.sortBy ?? Constants.tableDefaults.DEFAULT_SORT_BY,
     totalListItems: params.totalListItems ?? 0,
-    tableId: params.tableId ?? crypto.randomUUID(),
+    tableId: params.tableId ?? randomId(),
     data: params.data ?? null
   };
 }
