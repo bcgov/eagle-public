@@ -140,7 +140,8 @@ function storedJob(): BulkDownloadJob | null {
   try {
     const raw = localStorage.getItem(JOB_KEY);
     const job: BulkDownloadJob | null = raw ? JSON.parse(raw) : null;
-    if (!job?.id || Date.now() - job.startedAt > JOB_MAX_AGE_MS) {
+    // A downloaded job has nothing left to resume; only a zip still being built survives a reload.
+    if (!job?.id || job.downloadedAt || Date.now() - job.startedAt > JOB_MAX_AGE_MS) {
       localStorage.removeItem(JOB_KEY);
       return null;
     }

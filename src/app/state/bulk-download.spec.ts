@@ -215,6 +215,19 @@ describe('bulk download job', () => {
     expect(renderHook(() => store.useJob()).result.current).toMatchObject({ id: 'job-1' });
   });
 
+  it('drops a downloaded job on reload; only a zip still being built resumes', async () => {
+    localStorage.setItem(
+      JOB_KEY,
+      JSON.stringify({ id: 'job-1', count: 3, startedAt: Date.now() - 60_000, downloadedAt: Date.now() - 1_000 })
+    );
+    vi.resetModules();
+
+    const store = await import('./bulk-download');
+
+    expect(renderHook(() => store.useJob()).result.current).toBeNull();
+    expect(localStorage.getItem(JOB_KEY)).toBeNull();
+  });
+
   it('drops a job older than an hour, zip and all', async () => {
     localStorage.setItem(
       JOB_KEY,

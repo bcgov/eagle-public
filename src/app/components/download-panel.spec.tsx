@@ -381,8 +381,8 @@ describe('DownloadPanel', () => {
     expect(downloadUrls()).toEqual(['https://nrs.example/part1.zip', 'https://nrs.example/part1.zip']);
   });
 
-  /** A reload used to re-fire every part, because the once-per-job guard lived in a ref. */
-  it('fires nothing for a stored job that is already ready and already downloaded', async () => {
+  /** A reload used to re-fire every part; a downloaded job is dropped at load instead. */
+  it('shows nothing and fires nothing for a stored job that was already downloaded', async () => {
     statusResponses = [
       {
         id: 'job-9',
@@ -405,8 +405,8 @@ describe('DownloadPanel', () => {
     await tick(2000);
 
     expect(downloadUrls()).toEqual([]);
-    expect(screen.getByText('documents.zip')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Download again documents.zip' })).toBeInTheDocument();
+    expect(screen.queryByText('documents.zip')).not.toBeInTheDocument();
+    expect(localStorage.getItem(JOB_KEY)).toBeNull();
   });
 
   /** The toolbar's Download is disabled while a job runs; a finished job must release it. */
