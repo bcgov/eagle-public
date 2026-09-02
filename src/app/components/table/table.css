@@ -7,6 +7,35 @@
   margin-bottom: 1.5rem;
 }
 
+/* The page count and the selection controls share one line, so nothing is ever inserted above the
+   grid. Selectable tables reserve two lines: the select-all note wraps at most that far, so the
+   grid sits at the same offset whether nothing, one document or the whole page is selected. */
+.table-template .table-controls-left {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem 1rem;
+  min-height: 2rem;
+}
+
+.table-template .table-controls-left--selectable {
+  min-height: 4.5rem;
+}
+
+.table-template .table-selection__note {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+@media (min-width: 768px) {
+  .table-template .table-controls-left {
+    justify-content: flex-start;
+  }
+}
+
 /* Angular's `.table-template .row:has(lib-pagination)` also caught the bottom controls row, so the
    pager keeps a 1.5rem gap below it. `mb-4` already gives the top row the same gap. */
 .table-template .table-controls-bottom > .row:has(nav) {

@@ -159,6 +159,45 @@ describe('TableTemplate selection', () => {
     expect(screen.getByLabelText(SELECT_ALL_PAGE)).not.toBeChecked();
   });
 
+  /**
+   * The reason the controls live in the top row: a toolbar or a banner inserted above the grid
+   * pushed every row down the moment a document was selected, under the reader's pointer.
+   */
+  it('inserts nothing above the grid when a document is selected', async () => {
+    const { container } = render(<TableTemplate data={selectableTable()} onMessage={() => undefined} />);
+    const layout = () => [...container.querySelector('.table-template')!.children].map(el => el.className);
+    const before = layout();
+
+    await userEvent.click(screen.getByLabelText(SELECT_ALL_PAGE));
+
+    expect(screen.getByText('2 selected')).toBeInTheDocument();
+    expect(screen.getByText('All 2 on this page are selected.')).toBeInTheDocument();
+    expect(layout()).toEqual(before);
+  });
+
+  /** A table with no page count and no pager still gets the row, so its height never changes. */
+  it('keeps one controls row above a selectable table that has no top controls', async () => {
+    const data = selectableTable({ options: { showHeader: true, selectable: true, showTopControls: false } });
+    const { container } = render(<TableTemplate data={data} onMessage={() => undefined} />);
+    const layout = () => [...container.querySelector('.table-template')!.children].map(el => el.className);
+
+    expect(container.querySelectorAll('.table-controls-top')).toHaveLength(1);
+    expect(screen.getByText('Select documents to download')).toBeInTheDocument();
+    const before = layout();
+
+    await userEvent.click(screen.getByLabelText(SELECT_ALL_PAGE));
+
+    expect(screen.getByText('2 selected')).toBeInTheDocument();
+    expect(layout()).toEqual(before);
+  });
+
+  it('leaves the controls row out of a table that is not selectable and has no top controls', () => {
+    const data = selectableTable({ options: { showHeader: true, selectable: false, showTopControls: false } });
+    const { container } = render(<TableTemplate data={data} onMessage={() => undefined} />);
+
+    expect(container.querySelectorAll('.table-controls-top')).toHaveLength(0);
+  });
+
   it('reads as indeterminate while only part of the page is selected', () => {
     toggleSelected('documents', { id: 'doc-a', displayName: 'Alpha' });
 

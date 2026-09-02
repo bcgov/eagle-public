@@ -42,8 +42,16 @@ function Row({
 }
 
 const SPINNER = <span className="spinner-border spinner-border-sm"></span>;
-const CHECK = <i className="material-icons md-18">check_circle</i>;
-const WARNING = <i className="material-icons md-18">error_outline</i>;
+const CHECK = (
+  <i className="material-icons md-18" aria-hidden="true">
+    check_circle
+  </i>
+);
+const WARNING = (
+  <i className="material-icons md-18" aria-hidden="true">
+    error_outline
+  </i>
+);
 
 function progressRows(job: { count: number }, state?: BulkDownloadStatus): ReactNode {
   const partCount = state?.partCount ?? 0;

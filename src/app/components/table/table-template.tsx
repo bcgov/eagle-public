@@ -67,8 +67,7 @@ export function TableTemplate({ data, loading = false, rowComponent, onMessage }
   const selectedOnPage = pageDocs.filter(doc => selection.has(doc.id)).length;
   const pageAllSelected = pageDocs.length > 0 && selectedOnPage === pageDocs.length;
   // Offered once the page is fully selected and there is more behind it than one page.
-  const showSelectAllBanner = selectable && pageAllSelected && data.totalListItems > data.pageSize;
-  const showSelectionToolbar = selectable && selection.size > 0;
+  const showSelectAll = selectable && pageAllSelected && data.totalListItems > data.pageSize;
   const documentNoun = data.tableId === 'application' ? 'Application documents' : 'matching documents';
 
   function onSort(property: string): void {
@@ -108,12 +107,21 @@ export function TableTemplate({ data, loading = false, rowComponent, onMessage }
     />
   ) : null;
 
+  const showPageCount = !!data.options.showTopControls && !!data.options.showPageCountDisplay;
+  // Nothing is ever inserted above the grid: the selection controls share the row the page count
+  // and the pager already occupy, and that row is rendered whenever the table is selectable.
+  const showTopRow = (!!data.options.showTopControls && (showPageCount || showPagination)) || selectable;
+
   return (
     <div className="table-template" ref={containerRef}>
-      {data.options.showTopControls && (data.options.showPageCountDisplay || showPagination) && (
+      {showTopRow && (
         <div className="row mb-4 table-controls-top">
-          <div className="col-12 col-md-6 text-center text-md-start mb-3 mb-md-0">
-            {data.options.showPageCountDisplay && (
+          <div
+            className={`col-12 col-md-6 mb-3 mb-md-0 table-controls-left${
+              selectable ? ' table-controls-left--selectable' : ''
+            }`}
+          >
+            {showPageCount && (
               <PageCountDisplay
                 isHidden={false}
                 currentPageNum={data.currentPage}
@@ -122,49 +130,52 @@ export function TableTemplate({ data, loading = false, rowComponent, onMessage }
                 id="table-template-page-count-display"
               />
             )}
+            {selectable &&
+              (selection.size === 0 ? (
+                <span className="text-muted">Select documents to download</span>
+              ) : (
+                <>
+                  <span className="fw-semibold" role="status">
+                    {selectedCount} selected
+                  </span>
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-sm d-inline-flex align-items-center gap-1"
+                    disabled={downloadInProgress}
+                    title={downloadInProgress ? 'Wait for the download in progress to finish.' : undefined}
+                    onClick={() => void startDownload()}
+                  >
+                    {/* The bundled Material Icons build has no `download`; this is the app's glyph. */}
+                    <i className="material-icons md-18" aria-hidden="true">
+                      cloud_download
+                    </i>
+                    Download
+                  </button>
+                  <button type="button" className="btn btn-link btn-sm" onClick={() => clearSelection()}>
+                    Clear
+                  </button>
+                  {showSelectAll && (
+                    <span className="table-selection__note" role="status">
+                      {data.totalListItems <= SELECT_ALL_MAX ? (
+                        <>
+                          <span>All {pageDocs.length} on this page are selected.</span>
+                          <button
+                            type="button"
+                            className="btn btn-link btn-sm p-0 align-baseline"
+                            onClick={() => onMessage({ label: 'selectAllMatching' })}
+                          >
+                            Select all {data.totalListItems} {documentNoun}
+                          </button>
+                        </>
+                      ) : (
+                        <span>Narrow your filters to {SELECT_ALL_MAX} or fewer documents to select them all.</span>
+                      )}
+                    </span>
+                  )}
+                </>
+              ))}
           </div>
           <div className="col-12 col-md-6 text-center text-md-end">{paginationControl}</div>
-        </div>
-      )}
-
-      {showSelectionToolbar && (
-        <div className="d-flex flex-wrap align-items-center gap-2 mb-3">
-          <span className="fw-semibold">{selectedCount} selected</span>
-          <button
-            type="button"
-            className="btn btn-primary btn-sm d-inline-flex align-items-center gap-1"
-            disabled={downloadInProgress}
-            title={downloadInProgress ? 'Wait for the download in progress to finish.' : undefined}
-            onClick={() => void startDownload()}
-          >
-            {/* The bundled Material Icons build has no `download`; this is the app's download glyph. */}
-            <i className="material-icons md-18" aria-hidden="true">
-              cloud_download
-            </i>
-            Download
-          </button>
-          <button type="button" className="btn btn-link btn-sm" onClick={() => clearSelection()}>
-            Clear
-          </button>
-        </div>
-      )}
-
-      {showSelectAllBanner && (
-        <div className="alert alert-info d-flex flex-wrap align-items-center gap-2" role="status">
-          {data.totalListItems <= SELECT_ALL_MAX ? (
-            <>
-              <span>All {pageDocs.length} on this page are selected.</span>
-              <button
-                type="button"
-                className="btn btn-link p-0"
-                onClick={() => onMessage({ label: 'selectAllMatching' })}
-              >
-                Select all {data.totalListItems} {documentNoun}
-              </button>
-            </>
-          ) : (
-            <span>Narrow your filters to {SELECT_ALL_MAX} or fewer documents to select them all.</span>
-          )}
         </div>
       )}
 

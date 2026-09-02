@@ -68,8 +68,27 @@ function check(name, ok, detail) {
 
   await page.screenshot({ path: '/tmp/final-docs.png', fullPage: true });
 
-  // Open the panel through the real flow: select a row, then Download in the toolbar.
+  // 3. Selecting a document must not move the grid: the controls share the row above it.
+  // Document coordinates, not viewport: clicking the checkbox scrolls it into view.
+  const tableTop = () =>
+    page.evaluate(() => document.querySelector('.table-template .table').getBoundingClientRect().top + window.scrollY);
+  const topEmpty = await tableTop();
   await page.locator('.table-template .table tbody input[type="checkbox"]').first().check();
+  await page.getByText('1 selected').waitFor();
+  const topOne = await tableTop();
+  // The whole page selected is the tallest the controls get: the select-all note joins the line.
+  await page.locator('.table-template thead input[type="checkbox"]').click();
+  await page.getByText(/Narrow your filters|on this page are selected/).first().waitFor();
+  const topAll = await tableTop();
+  check(
+    'grid top unchanged by selecting one row or the whole page',
+    topEmpty === topOne && topOne === topAll,
+    `${topEmpty} / ${topOne} / ${topAll}`
+  );
+  await page.getByRole('button', { name: 'Clear' }).click();
+  await page.locator('.table-template .table tbody input[type="checkbox"]').first().check();
+  await page.getByText('1 selected').waitFor();
+
   await page.getByRole('button', { name: 'Download', exact: true }).click();
   await page.locator('.download-panel').waitFor();
   await page.waitForFunction(() => document.querySelector('.download-panel').textContent.includes('Downloaded'));
