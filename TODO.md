@@ -164,7 +164,7 @@ src/
 - pages/project/pins: the pins request asks for the sort the table header shows (`+name`). Angular's `PinsService` sent its own default, `-datePosted`, so the header claimed one order and the rows arrived in another.
 - layout/footer: the compact fixed footer for the map page (`app-footer--sm`) is dropped, CSS included. Its Angular binding read a non-signal `router.url` under OnPush, so no deployed build has ever rendered it, and applying it also caught /projects-list, where a fixed footer covers the table.
 - pages/project + components/table: the project page's loading states are Bootstrap `.placeholder` skeletons (hero, sidebar details, mini-map, table rows) instead of `spinner-border`; a table that already has rows keeps them dimmed on refetch. Angular showed spinners everywhere.
-- pages/project/project-activites: the eagle-notify subscribe link sits beside the "Activities and Updates" heading on Project Details. The React line has no separate Updates tab to hang it off.
+- pages/project/project-activites: a Subscribe button sits at the right end of the "Activities and Updates" heading row on Project Details, opening a popover that is the sign-up form itself: it posts the address to eagle-notify's `POST /api/subscriptions` from the page, so the reader never leaves EPIC. eagle-notify still owns everything after that — the confirmation link and the preference centre. The React line has no separate Updates tab to hang the button off. The News page carries the same control under the hero.
 
 ### Found in the 2026-08-27 parity pass against test
 

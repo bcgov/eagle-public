@@ -128,8 +128,8 @@ describe('news', () => {
   });
 });
 
-/** The hero action is the only route to eagle-notify from this page, and NOTIFY_URL gates it. */
-describe('news subscribe action', () => {
+/** The subscribe control is the only route to eagle-notify from this page, and NOTIFY_API gates it. */
+describe('news subscribe control', () => {
   const originalEnv = window.__env;
 
   afterEach(async () => {
@@ -138,27 +138,27 @@ describe('news subscribe action', () => {
     vi.unstubAllGlobals();
   });
 
-  async function configure(notifyUrl: string): Promise<void> {
-    window.__env = { logLevel: 4, NOTIFY_URL: notifyUrl };
+  async function configure(notifyApi: string): Promise<void> {
+    window.__env = { logLevel: 4, NOTIFY_API: notifyApi };
     await loadConfig();
   }
 
-  it('subscribes to all updates when NOTIFY_URL is set', async () => {
-    await configure('https://notify.example/');
+  it('offers the all-updates subscription when NOTIFY_API is set', async () => {
+    await configure('https://notify-api.example');
     renderAt('/news');
 
-    // The link shape is config.spec's; this page owns which service it subscribes to.
-    expect(await screen.findByRole('link', { name: 'Subscribe to all updates' })).toHaveAttribute(
-      'href',
-      expect.stringContaining('?s=eao:updates')
-    );
+    expect(await screen.findByRole('button', { name: 'Subscribe' })).toBeInTheDocument();
+    // The form is the popover's own spec; this page owns which subscription it offers.
+    expect(
+      screen.getByText(/Get an email each time any project publishes an Update\./)
+    ).toBeInTheDocument();
   });
 
-  it('renders no subscribe action when NOTIFY_URL is empty', async () => {
+  it('renders no subscribe control when NOTIFY_API is empty', async () => {
     await configure('');
     renderAt('/news');
 
     await screen.findByText('Permit granted');
-    expect(screen.queryByRole('link', { name: 'Subscribe to all updates' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Subscribe' })).toBeNull();
   });
 });

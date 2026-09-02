@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { bulkDownloadEnabled, contentSearchEnabled, getConfig, getNotifyUrl, loadConfig, notifySubscribeUrl } from './config';
+import { bulkDownloadEnabled, contentSearchEnabled, getConfig, getNotifyApi, loadConfig } from './config';
 
 /**
  * CONTENT_SEARCH decides whether the Document Content tab and route are offered at all, so a
@@ -39,8 +39,8 @@ describe('contentSearchEnabled', () => {
   });
 });
 
-/** The subscribe links join this base to `/#/?s=...`, so a trailing slash would double the one there. */
-describe('getNotifyUrl', () => {
+/** The form posts to `${base}/api/subscriptions`, so a trailing slash would double the one there. */
+describe('getNotifyApi', () => {
   const original = window.__env;
 
   afterEach(async () => {
@@ -48,29 +48,16 @@ describe('getNotifyUrl', () => {
     await loadConfig();
   });
 
-  it('is empty when unset', async () => {
+  it('is empty when unset, so the pages hide the subscribe control', async () => {
     window.__env = { logLevel: 4 };
     await loadConfig();
-    expect(getNotifyUrl()).toBe('');
+    expect(getNotifyApi()).toBe('');
   });
 
   it('trims the value and drops trailing slashes', async () => {
-    window.__env = { logLevel: 4, NOTIFY_URL: '  https://notify.example//  ' };
+    window.__env = { logLevel: 4, NOTIFY_API: '  https://notify-api.example//  ' };
     await loadConfig();
-    expect(getNotifyUrl()).toBe('https://notify.example');
-  });
-
-  /** eagle-notify is hash-routed, so the `/#/` between the base and the query is load-bearing. */
-  it('builds the hash-routed subscribe link', async () => {
-    window.__env = { logLevel: 4, NOTIFY_URL: 'https://notify.example/' };
-    await loadConfig();
-    expect(notifySubscribeUrl('project:proj-1')).toBe('https://notify.example/#/?s=project:proj-1');
-  });
-
-  it('builds no link when unset, so the pages hide theirs', async () => {
-    window.__env = { logLevel: 4 };
-    await loadConfig();
-    expect(notifySubscribeUrl('eao:updates')).toBe('');
+    expect(getNotifyApi()).toBe('https://notify-api.example');
   });
 });
 

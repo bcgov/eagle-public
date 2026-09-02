@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useSearchParams } from 'react-router';
 import { ActivityCard } from 'app/components/activity-card';
 import { HeroBanner } from 'app/components/hero-banner';
+import { SubscribePopover } from 'app/components/subscribe-popover';
 import { SearchFilterTemplate } from 'app/components/filters/search-filter-template';
 import { TableTemplate } from 'app/components/table/table-template';
 import { tableObject, type IColumnObject, type ITableMessage, type TableRowProps } from 'app/components/table/table-object';
@@ -12,7 +13,6 @@ import {
   updateTableObjectWithUrlParams
 } from 'app/components/table/table-params';
 import { useTable } from 'app/components/table/use-table';
-import { notifySubscribeUrl } from 'app/config/config';
 
 const TABLE_ID = 'news';
 
@@ -26,7 +26,6 @@ function NewsRow({ rowData }: TableRowProps) {
 }
 
 export function News() {
-  const subscribeUrl = notifySubscribeUrl('eao:updates');
   const [searchParams, setSearchParams] = useSearchParams();
   const params = useMemo(() => paramsToObject(searchParams), [searchParams]);
 
@@ -83,17 +82,11 @@ export function News() {
         title="Activities & Updates"
         description="Find activities and updates for environmental assessment projects in British Columbia. Click on the project info button to view the project details page."
         backgroundImage="/assets/images/hero-banner.jpg"
-        actions={
-          subscribeUrl
-            ? [{
-              label: 'Subscribe to all updates',
-              href: subscribeUrl,
-              target: '_blank',
-              rel: 'noopener noreferrer'
-            }]
-            : []
-        }
       />
+
+      <div className="container d-flex justify-content-end pt-4">
+        <SubscribePopover serviceName="eao:updates" variant="all" />
+      </div>
 
       <section className="project-list table-container">
         <div className="container">

@@ -13,8 +13,8 @@ vi.mock('./project-context', async importOriginal => {
   };
 });
 
-async function renderTab(env: Record<string, unknown>): Promise<void> {
-  window.__env = { logLevel: 4, ...env };
+async function renderTab(notifyApi: string): Promise<void> {
+  window.__env = { logLevel: 4, NOTIFY_API: notifyApi };
   await loadConfig();
   vi.stubGlobal(
     'fetch',
@@ -37,30 +37,31 @@ async function renderTab(env: Record<string, unknown>): Promise<void> {
   );
 }
 
-/** The subscribe link is the only route to eagle-notify from a project, and NOTIFY_URL gates it. */
-describe('project activities subscribe link', () => {
-  const original = window.__env;
+/** The subscribe control is the only route to eagle-notify from a project, and NOTIFY_API gates it. */
+describe('project activities subscribe control', () => {
+  const originalEnv = window.__env;
 
   afterEach(async () => {
-    window.__env = original;
+    window.__env = originalEnv;
     await loadConfig();
     vi.unstubAllGlobals();
   });
 
-  it('subscribes to this project when NOTIFY_URL is set', async () => {
-    await renderTab({ NOTIFY_URL: 'https://notify.example/' });
+  it('sits in the heading row and subscribes to this project', async () => {
+    await renderTab('https://notify-api.example');
 
-    // The link shape is config.spec's; this page owns which service it subscribes to.
-    expect(await screen.findByRole('link', { name: 'Subscribe to updates' })).toHaveAttribute(
-      'href',
-      expect.stringContaining('?s=project:proj-1')
-    );
+    const trigger = await screen.findByRole('button', { name: 'Subscribe' });
+    expect(trigger.closest('div')).toContainElement(screen.getByRole('heading', { name: 'Activities and Updates' }));
+    // The form is the popover's own spec; this page owns which subscription it offers.
+    expect(
+      screen.getByText(/Get an email each time this project publishes an Update\./)
+    ).toBeInTheDocument();
   });
 
-  it('renders no subscribe link when NOTIFY_URL is empty', async () => {
-    await renderTab({ NOTIFY_URL: '' });
+  it('renders no subscribe control when NOTIFY_API is empty', async () => {
+    await renderTab('');
 
     expect(await screen.findByText('Activities and Updates')).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: 'Subscribe to updates' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Subscribe' })).toBeNull();
   });
 });
