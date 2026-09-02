@@ -39,6 +39,11 @@ export interface EnvConfig {
   ANALYTICS_DEBUG?: boolean;
   ANALYTICS_ENHANCED_TRACKING?: boolean;
   ANALYTICS_TRAFFIC_TRACKING?: boolean;
+  /**
+   * Azure Application Insights connection string for browser error reporting. Empty or unset
+   * sends nothing and loads no SDK. Served from /api/config like SEARCH_API_PATH.
+   */
+  APPINSIGHTS_CONNECTION_STRING?: string;
   GH_HASH?: string;
 }
 
