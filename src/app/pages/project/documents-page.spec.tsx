@@ -57,12 +57,12 @@ function renderDocuments(path = '/p/proj-1/documents') {
 }
 
 /** The same route tree, with whatever fetch stub the test installed. */
-function renderRouter(path = '/p/proj-1/documents') {
+function renderRouter(path = '/p/proj-1/documents', context: ProjectContext = CONTEXT) {
   const router = createMemoryRouter(
     [
       {
         path: '/p/:projId',
-        element: <ShellStub />,
+        element: <ShellStub context={context} />,
         children: [
           {
             path: 'documents',
@@ -95,8 +95,8 @@ function ContextProbe() {
   return <div>application documents for {projId}</div>;
 }
 
-function ShellStub() {
-  return <Outlet context={CONTEXT} />;
+function ShellStub({ context }: { context: ProjectContext }) {
+  return <Outlet context={context} />;
 }
 
 /** The segmented control's links, by their accessible name. */
@@ -120,6 +120,21 @@ describe('documents page', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
+  });
+
+  it('falls back to All Documents when the lists never arrive', async () => {
+    // A disabled TanStack query reports `isPending`, so keying the placeholders on that alone left
+    // the control shimmering for good whenever the List fetch failed.
+    const withoutLists = { ...CONTEXT, lists: [] };
+    requests = [];
+    vi.stubGlobal('fetch', vi.fn(async () => jsonResponse([{ searchResults: [], meta: [] }])));
+
+    renderRouter('/p/proj-1/documents', withoutLists);
+
+    expect(await findSegment('All Documents')).toBeInTheDocument();
+    expect(document.querySelector('.document-type-filter [aria-busy="true"]')).toBeNull();
+    expect(querySegment('C&E Documents')).not.toBeInTheDocument();
+    expect(requests).toHaveLength(0);
   });
 
   it('holds the group as placeholders until every probe has answered', async () => {

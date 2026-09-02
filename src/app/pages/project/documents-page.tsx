@@ -62,8 +62,10 @@ export function DocumentsPage() {
   // Documents marked active everywhere. `end` keeps it inactive while a filtered view is open.
   const documentsPath = `/p/${projId}/documents`;
   // Every probe resolves on its own, so rendering each segment as its answer lands makes them pop
-  // in one at a time. Hold the group as placeholders until they have all settled.
-  const probing = optionalTabResults.some(result => result.isPending);
+  // in one at a time. Hold the group as placeholders until they have all settled. A disabled query
+  // also reports `isPending`, so a failed `List` fetch would otherwise leave this shimmering for
+  // good; with no lists there is nothing left to wait for.
+  const probing = lists.length > 0 && optionalTabResults.some(result => result.isPending);
 
   const tabs = [
     { label: 'All Documents', link: documentsPath, end: true },

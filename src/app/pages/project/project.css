@@ -205,18 +205,16 @@
     min-width: 0;
   }
 
+  /* Inset by the sidebar, then the column the tab content occupies: `.project-tabs` inline
+     padding, then its max-width. */
   .project[data-sidebar-state] .people {
     margin-left: var(--sidebar-width);
+    padding-inline: 3.5rem;
     transition: margin-left 0.5s ease;
   }
 
   .project[data-sidebar-state='closed'] .people {
     margin-left: 0;
-  }
-
-  /* Same column the tab content occupies: `.project-tabs` inline padding, then its max-width. */
-  .project[data-sidebar-state] .people {
-    padding-inline: 3.5rem;
   }
 
   .project[data-sidebar-state] .people .container {
