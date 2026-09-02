@@ -30,11 +30,11 @@
 
 .project[data-sidebar-state] .main-content {
   flex: 1;
-  padding-bottom: 3rem;
+  padding-bottom: 1.5rem;
 }
 
 .project[data-sidebar-state] .project-tabs {
-  padding-top: 3rem;
+  padding-top: 1.5rem;
   padding-inline: 3.5rem;
 }
 
@@ -102,7 +102,7 @@
   max-width: 1100px;
   margin-inline: auto;
   margin-top: 0;
-  padding-top: 3rem;
+  padding-top: 1.5rem;
 }
 
 /* Tablet and mobile styles */
@@ -172,9 +172,10 @@
   }
 }
 
-/* Contact Us sits below the sidebar/content grid, full width above the footer. */
+/* Contact Us sits below the tab content, in the content column: the sidebar keeps running down
+   the left to the footer, so this band is inset by the sidebar's width on desktop. */
 .project[data-sidebar-state] .people {
-  padding: 3rem 1rem;
+  padding: 1.5rem 1rem;
   background-color: var(--table-row-bg);
 }
 
@@ -202,6 +203,25 @@
   .project[data-sidebar-state] .project-info .content {
     flex: 1;
     min-width: 0;
+  }
+
+  .project[data-sidebar-state] .people {
+    margin-left: var(--sidebar-width);
+    transition: margin-left 0.5s ease;
+  }
+
+  .project[data-sidebar-state='closed'] .people {
+    margin-left: 0;
+  }
+
+  /* Same column the tab content occupies: `.project-tabs` inline padding, then its max-width. */
+  .project[data-sidebar-state] .people {
+    padding-inline: 3.5rem;
+  }
+
+  .project[data-sidebar-state] .people .container {
+    max-width: 1100px;
+    padding-inline: 0;
   }
 
   .project[data-sidebar-state] .people .contact-divider {

@@ -1,30 +1,20 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useNavigate, useParams } from 'react-router';
-import { useQueries, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { track } from 'app/analytics/analytics';
 import { getById } from 'app/api/project';
-import { getSearchResults } from 'app/api/search';
 import { listsQueryOptions } from 'app/config/config';
-import { logger } from 'app/config/logging';
-import { Constants } from 'app/utils/constants';
-import { createProjectTabModifiers, extractFromSearchResults } from 'app/utils/utils';
 import { safeHtml } from 'app/utils/safe-html';
 import { DetailsSidebar } from './details-sidebar';
 import { EngageBanner } from './engage-banner';
 import './project.css';
 
-/** Always-visible tabs, in the order the Angular template rendered them. */
-const FIXED_TABS = [
+/** Top-level tabs, in the order the Angular template rendered them. The document-type tabs live
+ * under Documents now; DocumentsPage owns that strip. */
+const TABS = [
   { label: 'Project Details', link: 'project-details' },
   { label: 'Commenting', link: 'commenting' },
   { label: 'Documents', link: 'documents' }
-];
-
-/** Tabs shown only when the project actually has documents of that kind. */
-const OPTIONAL_TABS = [
-  { key: Constants.optionalProjectDocTabs.APPLICATION, label: 'Application', link: 'application' },
-  { key: Constants.optionalProjectDocTabs.CERTIFICATE, label: 'Certificate', link: 'certificates' },
-  { key: Constants.optionalProjectDocTabs.AMENDMENT, label: 'Amendment(s)', link: 'amendments' }
 ];
 
 /** Comment periods near today, the window the banner draws from. */
@@ -62,46 +52,7 @@ export function ProjectPage() {
     }
   });
 
-  // Each optional tab costs one 1-result search; TanStack keys them so revisiting a tab or the
-  // project does not re-ask.
-  const optionalTabResults = useQueries({
-    queries: OPTIONAL_TABS.map(tab => ({
-      queryKey: ['project-tab-has-documents', projId, tab.key],
-      enabled: !!projId && lists.length > 0,
-      queryFn: async () => {
-        const response = await getSearchResults(
-          '',
-          'Document',
-          [{ name: 'project', value: projId }],
-          1,
-          1,
-          '',
-          createProjectTabModifiers(tab.key, lists),
-          true,
-          ''
-        );
-        const results = extractFromSearchResults(response ?? []);
-        if (!results) {
-          // getSearchResults turns any non-2xx into `null`, so a 502 and a project with no
-          // documents of this kind look the same. Hiding the tab is the right degradation, but
-          // it should not be invisible.
-          logger.error(
-            `Could not determine whether the ${tab.key} tab has documents; leaving it hidden`,
-            'ProjectPage'
-          );
-          return false;
-        }
-        return results.length > 0;
-      }
-    }))
-  });
-
   const notFound = isError || (isSuccess && !project);
-
-  const tabs = [
-    ...FIXED_TABS,
-    ...OPTIONAL_TABS.filter((_, index) => optionalTabResults[index]?.data === true)
-  ];
 
   const banner = project?.commentPeriodForBanner;
   const showBanner = !!banner?.isBannerVisible;
@@ -183,7 +134,7 @@ export function ProjectPage() {
 
             <div className="main-content">
               <section className="project-tabs">
-                <TabBar projId={projId} tabs={tabs} projectName={project?.name} />
+                <TabBar projId={projId} tabs={TABS} projectName={project?.name} ariaLabel="Project sections" />
                 <div className="tab-content">
                   <Outlet context={{ project: project ?? null, projId, lists, projectLoading }} />
                 </div>
@@ -237,12 +188,14 @@ interface TabBarProps {
   projId: string;
   tabs: { label: string; link: string }[];
   projectName?: string;
+  /** Names the strip for screen readers. */
+  ariaLabel: string;
 }
 
 const SCROLL_STEP = 200;
 
 /** Tab strip with scroll arrows, shown only while the strip actually overflows. */
-function TabBar({ projId, tabs, projectName }: TabBarProps) {
+export function TabBar({ projId, tabs, projectName, ariaLabel }: TabBarProps) {
   const navTabs = useRef<HTMLUListElement>(null);
   const [arrows, setArrows] = useState({ left: false, right: false });
 
@@ -274,7 +227,7 @@ function TabBar({ projId, tabs, projectName }: TabBarProps) {
 
   return (
     <div className="tabs-container">
-      <ul className="nav-tabs" role="tablist" ref={navTabs}>
+      <ul className="nav-tabs" role="tablist" aria-label={ariaLabel} ref={navTabs}>
         {tabs.map(tab => (
           <li className="nav-item" role="presentation" key={tab.link}>
             <NavLink

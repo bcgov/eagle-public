@@ -86,6 +86,7 @@ src/
 - pages/content-search: an empty result set now clears the list and shows "No documents contain that text". Angular's table-service subscriber returned early on an empty payload (`res.data === 0`), leaving the previous search's cards on screen under the new keyword.
 - pages/content-search: a keyword search keeps the current `pageSize`, matching the table-list fix above. Angular rebuilt the params without it.
 - pages/content-search: snippets are escaped and re-opened for `<mark>` only before `dangerouslySetInnerHTML`. eagle-search already escapes them, but Angular's `[innerHTML]` ran the DomSanitizer over the result and React's has no equivalent, so that guard is restored in three lines rather than dropped.
+- pages/project: the document-type tabs (Application, Certificate, Amendment(s)) are sub-tabs of Documents, joined by a new C&E Documents sub-tab, so their pageSize=1 presence probes fire on the Documents tab instead of on every project page. The request baseline drops those probe lines; `documents-page.spec.tsx` covers them instead. Old top-level paths redirect to the sub-tab, query string intact.
 - state/map-ui: ConfigService's `mapBounds` getter dropped; nothing in the app ever read it.
 - state/map-ui: `storage.service` dropped. Its background preload was never called from anywhere, and TanStack Query's cache already gives "fetch the project list once, reuse it on the way back".
 - pages/projects: the `no-scroll` body class handling is gone; the app only ever removed that class, never added it.

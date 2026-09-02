@@ -2,20 +2,22 @@
 
 /* === SEARCH FILTER TEMPLATE === */
 
+/* One vertical step for the whole filter block, so pages stacking it under other content keep an
+   even rhythm instead of the old 3rem / 2rem / 1.5rem mix. */
 .search-filter-wrapper {
-  margin-bottom: 3rem;
+  margin-bottom: 1.5rem;
 }
 
 .search-bar-section {
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
 }
 
 .action-buttons-section {
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
 }
 
 .advanced-filters-section {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
 
 .reset-button-container {

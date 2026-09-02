@@ -2,7 +2,6 @@ import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryRouter } from 'react-router';
-import { logger } from 'app/config/logging';
 import { ProjectPage } from './project';
 import { ProjectDetailsTab } from './project-details-tab';
 
@@ -126,65 +125,22 @@ describe('project shell', () => {
     vi.restoreAllMocks();
   });
 
-  it('renders the always-visible tabs and hides the optional ones with no documents', async () => {
+  it('renders the three top-level tabs, with the document types left to the Documents tab', async () => {
     renderShell();
 
     expect(await screen.findByRole('tab', { name: 'Project Details' })).toHaveAttribute('id', 'project-details-tab');
     expect(screen.getByRole('tab', { name: 'Commenting' })).toHaveAttribute('href', '/p/proj-1/commenting');
     expect(screen.getByRole('tab', { name: 'Documents' })).toHaveAttribute('href', '/p/proj-1/documents');
-
-    await waitFor(() => expect(requests.filter(url => url.includes('dataset=Document'))).toHaveLength(3));
-    expect(screen.queryByRole('tab', { name: 'Application' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('tab', { name: 'Certificate' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('tab', { name: 'Amendment(s)' })).not.toBeInTheDocument();
+    expect(screen.getAllByRole('tab')).toHaveLength(3);
+    expect(screen.getByRole('tablist')).toHaveAccessibleName('Project sections');
   });
 
-  it('asks for one document per optional tab, filtered by that tab type and milestone ids', async () => {
+  it('runs no document search of its own; the sub-tab probes belong to the Documents tab', async () => {
     renderShell();
 
-    await waitFor(() => expect(requests.filter(url => url.includes('dataset=Document'))).toHaveLength(3));
-
-    expect(requests.find(url => url.includes('and[type]=type-app-2002'))).toBe(
-      '/api/search?dataset=Document&project=proj-1&pageNum=0&pageSize=1&projectLegislation=default&sortBy=&sortBy=&populate=true' +
-        '&and[documentSource]=PROJECT' +
-        '&and[type]=type-app-2002&and[type]=type-app-2018&and[type]=type-memo-2002&and[type]=type-memo-2018' +
-        '&and[milestone]=ms-appreview&and[milestone]=ms-eac&and[milestone]=ms-eac-rev' +
-        '&fuzzy=false'
-    );
-  });
-
-  it('shows an optional tab once its search finds a document', async () => {
-    tabSearchResponse = url =>
-      url.includes('and[milestone]=ms-amend-2002')
-        ? [{ searchResults: [{ _id: 'doc-1' }], meta: [{ searchResultsTotal: 1 }] }]
-        : [{ searchResults: [], meta: [{ searchResultsTotal: 0 }] }];
-
-    renderShell();
-
-    expect(await screen.findByRole('tab', { name: 'Amendment(s)' })).toHaveAttribute('href', '/p/proj-1/amendments');
-    expect(screen.queryByRole('tab', { name: 'Certificate' })).not.toBeInTheDocument();
-  });
-
-  it('leaves an optional tab hidden and logs when the search answers unusably', async () => {
-    // getSearchResults turns a non-2xx into `null`, so a 502 and a document-less project are
-    // indistinguishable downstream. The tab must stay hidden, and the console must say why.
-    const error = vi.spyOn(logger, 'error').mockImplementation(() => undefined);
-    tabSearchResponse = () => [{ meta: [] }];
-
-    renderShell();
-
-    await waitFor(() => expect(error).toHaveBeenCalled());
-    expect(screen.queryByRole('tab', { name: 'Amendment(s)' })).not.toBeInTheDocument();
-    expect(error.mock.calls.some(call => String(call[0]).includes('leaving it hidden'))).toBe(true);
-  });
-
-  it('does not log when the search legitimately finds nothing', async () => {
-    const error = vi.spyOn(logger, 'error').mockImplementation(() => undefined);
-
-    renderShell();
-
-    await waitFor(() => expect(requests.filter(url => url.includes('dataset=Document'))).toHaveLength(3));
-    expect(error.mock.calls.some(call => String(call[0]).includes('leaving it hidden'))).toBe(false);
+    await screen.findByRole('tab', { name: 'Documents' });
+    await waitFor(() => expect(requests.some(url => url.includes('dataset=List'))).toBe(true));
+    expect(requests.filter(url => url.includes('dataset=Document'))).toHaveLength(0);
   });
 
   it('renders the comment period banner for an open period', async () => {
@@ -294,20 +250,6 @@ describe('project page first paint', () => {
     expect(issued).toMatch(/dataset=List/);
     expect(issued).toMatch(/dataset=RecentActivity/);
     expect(issued).toMatch(/dataset=Document.*pageSize=5/);
-  });
-
-  it('fires the three optional-tab probes as soon as the List query answers, project still pending', async () => {
-    const fetchStub = deferredFetch();
-
-    renderShellWithDetailsTab();
-
-    await waitFor(() => expect(fetchStub.urls).toHaveLength(5));
-    // Only the List response is needed to build the probe filters; releasing it must not wait on
-    // the project fetch, which is still outstanding here.
-    fetchStub.urls.splice(0);
-    fetchStub.flush();
-
-    await waitFor(() => expect(fetchStub.urls.filter(url => url.includes('pageSize=1'))).toHaveLength(3));
   });
 
   it('shows skeleton placeholders in the hero and the details block, then swaps both for the project', async () => {

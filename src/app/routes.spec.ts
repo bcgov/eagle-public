@@ -51,17 +51,44 @@ describe('routes', () => {
     expect(response.headers.get('Location')).toBe('/p/abc/cp/def/details');
   });
 
-  it('gives the project route its seven tabs plus an index redirect', () => {
+  it('gives the project route its top-level tabs plus an index redirect', () => {
     const project = findRoute('p/:projId');
     expect(project?.children?.map(child => child.path)).toEqual([
       undefined,
       'project-details',
-      'certificates',
-      'amendments',
-      'application',
       'commenting',
       'documents',
+      'application',
+      'certificates',
+      'amendments',
       'decisions'
     ]);
   });
+
+  it('nests the document-type tabs under documents', () => {
+    const documents = findRoute('p/:projId')?.children?.find(child => child.path === 'documents');
+    expect(documents?.children?.map(child => child.path)).toEqual([
+      undefined,
+      'application',
+      'certificates',
+      'amendments',
+      'compliance'
+    ]);
+  });
+
+  it.each(['application', 'certificates', 'amendments'])(
+    'redirects the old top-level /%s path to its sub-tab, filters intact',
+    async tab => {
+      const route = findRoute('p/:projId')?.children?.find(
+        child => child.path === tab && !!child.loader
+      );
+      const response = await (route!.loader as any)({
+        params: { projId: 'abc' },
+        request: new Request(`http://localhost/p/abc/${tab}?currentPage=2&sortBy=-datePosted`)
+      });
+      expect(response.headers.get('Location')).toBe(
+        `/p/abc/documents/${tab}?currentPage=2&sortBy=-datePosted`
+      );
+    }
+  );
 });

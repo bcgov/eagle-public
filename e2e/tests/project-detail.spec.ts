@@ -7,6 +7,7 @@ import {
 const ROWS = 'table[aria-label="table-template"] tbody tr';
 const NAME = 'td[data-label="Name"]';
 const TABS = '.project-tabs .nav-tabs .nav-link';
+const DOC_TYPE_SEGMENTS = '.document-type-filter__segment';
 
 /** Two real projects, resolved per environment instead of hard-coded. */
 async function twoProjects(request: any) {
@@ -31,15 +32,25 @@ test('project detail defaults to the project-details tab', async ({ page, reques
   checkBaseline('project-details-tab', calls);
 });
 
-test('the tab strip always offers Project Details, Commenting and Documents', async ({ page, request }) => {
+test('the tab strip offers Project Details, Commenting and Documents, and nothing else', async ({ page, request }) => {
   for (const project of await twoProjects(request)) {
     await page.goto(`/p/${project._id}/project-details`);
     await ready(page);
     const labels = (await page.locator(TABS).allInnerTexts()).map(t => t.trim());
-    expect(labels.slice(0, 3)).toEqual(['Project Details', 'Commenting', 'Documents']);
-    // Certificate / Amendment(s) / Unsubscribe appear only when that project has the documents.
-    expect(labels.every(l => ['Project Details', 'Commenting', 'Documents', 'Application', 'Certificate', 'Amendment(s)', 'Unsubscribe'].includes(l))).toBeTruthy();
+    expect(labels).toEqual(['Project Details', 'Commenting', 'Documents']);
   }
+});
+
+test('the Documents tab carries a document-type filter', async ({ page, request }) => {
+  const [project] = await twoProjects(request);
+  await page.goto(`/p/${project._id}/documents`);
+  await ready(page);
+
+  const labels = (await page.locator(DOC_TYPE_SEGMENTS).allInnerTexts()).map(t => t.trim());
+  expect(labels[0]).toBe('All Documents');
+  // Application / Certificate / Amendment(s) / C&E Documents appear only when that project has
+  // the documents.
+  expect(labels.every(l => ['All Documents', 'Application', 'Certificate', 'Amendment(s)', 'C&E Documents'].includes(l))).toBeTruthy();
 });
 
 test('documents tab renders a paged document table', async ({ page, request }) => {
@@ -65,7 +76,7 @@ test('documents tab renders a paged document table', async ({ page, request }) =
 test('certificates tab lists certificate documents', async ({ page, request }) => {
   const [project] = await twoProjects(request);
   const search = waitForSearch(page, 'Document', 'pageSize=10');
-  await page.goto(`/p/${project._id}/certificates`);
+  await page.goto(`/p/${project._id}/documents/certificates`);
   const env = await search;
   await ready(page);
 
@@ -76,7 +87,7 @@ test('certificates tab lists certificate documents', async ({ page, request }) =
 test('amendments tab lists amendment documents', async ({ page, request }) => {
   const [project] = await twoProjects(request);
   const search = waitForSearch(page, 'Document', 'pageSize=10');
-  await page.goto(`/p/${project._id}/amendments`);
+  await page.goto(`/p/${project._id}/documents/amendments`);
   const env = await search;
   await ready(page);
 
@@ -86,10 +97,11 @@ test('amendments tab lists amendment documents', async ({ page, request }) => {
 
 test('application tab renders, with an empty-state when the project has no application documents', async ({ page, request }) => {
   const [project] = await twoProjects(request);
+  // The old top-level path, which must still land on the sub-tab.
   await page.goto(`/p/${project._id}/application`);
   await ready(page);
 
-  expect(new URL(page.url()).pathname).toBe(`/p/${project._id}/application`);
+  expect(new URL(page.url()).pathname).toBe(`/p/${project._id}/documents/application`);
   await expect(page.getByRole('heading', { level: 1, name: project.name })).toBeVisible();
 
   const rows = await page.locator(ROWS).count();

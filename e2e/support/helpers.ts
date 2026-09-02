@@ -78,6 +78,10 @@ function normalise(lines: string[]): string[] {
 const DROPPED = [
   // `getExtraAppData`: two `dataset=Item&_schemaName=User` lookups whose results nothing rendered.
   /^GET \/api\/search\?_id=:id&_schemaName=User&dataset=Item$/,
+  // The pageSize=1 probes that decide which document-type tabs to show. They now belong to the
+  // Documents tab rather than every project page, and one of them asks about Compliance &
+  // Enforcement documents, which Angular has no tab for. `documents-page.spec.tsx` covers them.
+  /^GET \/(api|demi-search|eagle-search)\/search\?.*&pageSize=1&/,
 ];
 
 function applyDeviations(line: string): string {

@@ -99,6 +99,14 @@ export function createProjectTabModifiers(projectTab: string, list: any[]): Reco
         { legislation: 2018, name: 'Transfer of Certificate/Order' }
       ];
       break;
+    case Constants.optionalProjectDocTabs.COMPLIANCE:
+      // Compliance & Enforcement documents carry the milestone but no dedicated document type,
+      // so this tab filters on milestone alone.
+      milestones = [
+        { legislation: 2002, name: 'Compliance & Enforcement' },
+        { legislation: 2018, name: 'Compliance & Enforcement' }
+      ];
+      break;
     case Constants.optionalProjectDocTabs.APPLICATION: {
       // Application documents are identified by type and milestone only.
       // Adding projectPhase filter causes query issues with many AND conditions.
@@ -120,12 +128,16 @@ export function createProjectTabModifiers(projectTab: string, list: any[]): Reco
   const typeIds = getIdsByName(types, list).map(type => type.id).join(',');
   const milestoneIds = getIdsByName(milestones, list).map(milestone => milestone.id).join(',');
 
-  const queryModifier: Record<string, string> = {
-    documentSource: 'PROJECT',
-    type: typeIds,
-    milestone: milestoneIds,
-  };
+  // Empty ids must not reach the query: api.searchKeywords turns `''` into `&and[type]=`, and
+  // eagle-api answers that with nothing at all.
+  const queryModifier: Record<string, string> = { documentSource: 'PROJECT' };
 
+  if (typeIds) {
+    queryModifier['type'] = typeIds;
+  }
+  if (milestoneIds) {
+    queryModifier['milestone'] = milestoneIds;
+  }
   if (phases) {
     queryModifier['projectPhase'] = phases;
   }

@@ -1,4 +1,4 @@
-import { redirect, type RouteObject } from 'react-router';
+import { redirect, type LoaderFunctionArgs, type RouteObject } from 'react-router';
 import { AppShell } from './layout/app-shell';
 import { Home } from './pages/home';
 import { Contact } from './pages/contact';
@@ -18,7 +18,9 @@ import { Certificates } from './pages/project/certificates';
 import { Amendments } from './pages/project/amendments';
 import { Application } from './pages/project/application';
 import { CommentingTab } from './pages/project/commenting-tab';
+import { DocumentsPage } from './pages/project/documents-page';
 import { DocumentsTab } from './pages/project/documents-tab';
+import { ComplianceDocumentsTab } from './pages/project/compliance-documents-tab';
 import { DecisionsTab } from './pages/project/decisions-tab';
 import { Comments } from './pages/comments/comments';
 import { CacUnsubscribe } from './pages/cac-unsubscribe';
@@ -99,11 +101,25 @@ export const routes: RouteObject[] = [
         children: [
           { index: true, loader: ({ params }) => redirect(`/p/${params['projId']}/project-details`) },
           { path: 'project-details', Component: ProjectDetailsTab },
-          { path: 'certificates', Component: Certificates },
-          { path: 'amendments', Component: Amendments },
-          { path: 'application', Component: Application },
           { path: 'commenting', Component: CommentingTab },
-          { path: 'documents', Component: DocumentsTab },
+          {
+            path: 'documents',
+            Component: DocumentsPage,
+            children: [
+              { index: true, Component: DocumentsTab },
+              { path: 'application', Component: Application },
+              { path: 'certificates', Component: Certificates },
+              { path: 'amendments', Component: Amendments },
+              { path: 'compliance', Component: ComplianceDocumentsTab }
+            ]
+          },
+          // The document-type tabs used to sit at the top level. Keep the old paths pointing at
+          // their sub-tab, filters and paging intact, so published links still work.
+          ...['application', 'certificates', 'amendments'].map(tab => ({
+            path: tab,
+            loader: ({ params, request }: LoaderFunctionArgs) =>
+              redirect(`/p/${params['projId']}/documents/${tab}${new URL(request.url).search}`)
+          })),
           { path: 'decisions', Component: DecisionsTab }
         ]
       },

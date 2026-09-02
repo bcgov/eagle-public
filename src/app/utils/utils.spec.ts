@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { extractFromSearchResults } from './utils';
+import { Constants } from './constants';
+import { createProjectTabModifiers, extractFromSearchResults } from './utils';
 
 describe('extractFromSearchResults()', () => {
   // The Array.isArray guard never covered an empty array, so `results[0].data` threw a
@@ -28,5 +29,38 @@ describe('extractFromSearchResults()', () => {
     // The declared return type is `T[] | null`. Without the `?? null` this returned `undefined`
     // and the `as T[]` cast made every caller's type wrong about it.
     expect(extractFromSearchResults([{ data: { meta: [] } }] as any)).toBeNull();
+  });
+});
+
+describe('createProjectTabModifiers()', () => {
+  const LISTS = [
+    { _id: 'ms-ce-2002', name: 'Compliance & Enforcement', legislation: 2002, type: 'label' },
+    { _id: 'ms-ce-2018', name: 'Compliance & Enforcement', legislation: 2018, type: 'label' },
+    { _id: 'ms-amend-2002', name: 'Amendment', legislation: 2002, type: 'label' },
+    { _id: 'type-amend-2002', name: 'Amendment Package', legislation: 2002, type: 'doctype' },
+    { _id: 'ph-amend-2002', name: 'Post Decision - Amendment', legislation: 2002, type: 'projectPhase' }
+  ];
+
+  it('selects compliance documents by milestone alone', () => {
+    expect(createProjectTabModifiers(Constants.optionalProjectDocTabs.COMPLIANCE, LISTS)).toEqual({
+      documentSource: 'PROJECT',
+      milestone: 'ms-ce-2002,ms-ce-2018'
+    });
+  });
+
+  it('omits a field it has no ids for rather than sending it empty', () => {
+    // api.searchKeywords turns '' into `&and[type]=`, and eagle-api answers that with nothing at
+    // all, so an empty value silently empties the tab.
+    const modifiers = createProjectTabModifiers(Constants.optionalProjectDocTabs.UNSUBSCRIBE_CAC, LISTS);
+    expect(modifiers).toEqual({ documentSource: 'PROJECT' });
+  });
+
+  it('still sends type, milestone and phase for the amendment tab', () => {
+    expect(createProjectTabModifiers(Constants.optionalProjectDocTabs.AMENDMENT, LISTS)).toEqual({
+      documentSource: 'PROJECT',
+      type: 'type-amend-2002',
+      milestone: 'ms-amend-2002',
+      projectPhase: 'ph-amend-2002'
+    });
   });
 });

@@ -173,7 +173,7 @@ export function ProjectDocumentTab({
   return (
     <>
       {panelSizes && (
-        <section className="mb-4 pt-0 pb-0">
+        <section>
           <SearchFilterTemplate
             onSearch={executeSearch}
             advancedFilters

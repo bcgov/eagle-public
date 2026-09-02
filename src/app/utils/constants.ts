@@ -12,6 +12,7 @@ export class Constants {
     APPLICATION: 'application',
     CERTIFICATE: 'certificate',
     AMENDMENT: 'amendment',
+    COMPLIANCE: 'compliance',
     UNSUBSCRIBE_CAC: 'project-unsubscribe'
   };
 
