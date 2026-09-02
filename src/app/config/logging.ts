@@ -1,4 +1,5 @@
 import { getConfig } from './config';
+import { trackException } from './telemetry';
 
 export enum LogLevel {
   ALL = 0,
@@ -37,6 +38,14 @@ function shouldLog(level: LogLevel): boolean {
 }
 
 function output(entry: LogEntry): void {
+  // Reported before the console gate: a quiet LOG_LEVEL must not stop errors reaching Azure.
+  if (entry.level === LogLevel.ERROR) {
+    trackException(
+      entry.data instanceof Error ? entry.data : entry.message,
+      entry.source ? { source: entry.source } : undefined
+    );
+  }
+
   if (!shouldLog(entry.level)) {
     return;
   }
