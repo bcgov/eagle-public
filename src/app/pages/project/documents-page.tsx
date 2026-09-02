@@ -62,7 +62,9 @@ export function DocumentsPage() {
   // in one at a time. Hold the group as placeholders until they have all settled. A disabled query
   // also reports `isPending`, so a failed `List` fetch would otherwise leave this shimmering for
   // good; with no lists there is nothing left to wait for.
-  const probing = lists.length > 0 && optionalTabResults.some(result => result.isPending);
+  // A probe that failed once keeps retrying in the background; the control renders without it
+  // rather than holding All Documents hostage for the whole retry backoff.
+  const probing = lists.length > 0 && optionalTabResults.some(result => result.isPending && result.failureCount === 0);
 
   const tabs = [
     { label: 'All Documents', link: documentsPath, end: true },
