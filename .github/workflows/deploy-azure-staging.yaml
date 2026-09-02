@@ -140,10 +140,11 @@ jobs:
       # THE AZURE HOSTNAME IS NOT PROTECTED, and saying so is the point. A `PREVIEW_GATE`
       # component once existed here and this job wrote a passphrase into a world-readable
       # `/env.js` long after nothing consumed it — publishing a repository secret in cleartext
-      # AND claiming a protection one page load disproved. Both are gone. What keeps the raw
-      # `*.azurefd.net` host from being useful is that it is unadvertised and, once this bundle is
-      # relative, has no API behind it. Real gating needs something in front of blob storage that
-      # can authenticate — Front Door's WAF, or the rproxy that now fronts it.
+      # AND claiming a protection one page load disproved. Both are gone. All that keeps the raw
+      # `*.azurefd.net` host from being useful is that it is unadvertised: the `next` endpoint
+      # reaches the test `/api` through its own Front Door backend route, so it is a working site,
+      # not a bundle with nothing behind it. Real gating needs something in front of blob storage
+      # that can authenticate — Front Door's WAF, or the rproxy that now fronts it.
       #
       # `sed` exits 0 when it matches nothing, so each rewrite is verified. Without the
       # check a renamed key ships a bundle that silently 404s on every API call, and the
@@ -421,8 +422,14 @@ jobs:
           echo "$deployed_env" | grep -qF "window.__env.ENVIRONMENT = 'test';" \
             || { echo "::error::the deployed env.js does not announce the test environment — the banner would be wrong"; exit 1; }
 
-          echo "deployed and correctly cached. NOTE: this raw Front Door hostname has no /api behind it —"
-          echo "the working site is the one rproxy serves, where the same bundle is same-origin."
+          echo "deployed and correctly cached."
+          if [ "${{ inputs.target }}" = "next" ]; then
+            echo "NOTE: this endpoint has the test /api behind it (eagle-edge gives the next site a backend route),"
+            echo "so it is the site to share for review. It shows test data."
+          else
+            echo "NOTE: this raw Front Door hostname has no /api behind it —"
+            echo "the working site is the one rproxy serves, where the same bundle is same-origin."
+          fi
 
       - name: Report failure to job summary
         if: failure()
