@@ -65,7 +65,6 @@ export async function fetchData(searchParamObject: SearchParamObject): Promise<S
   } catch (error) {
     logger.error(`Error in fetchData for ${loadingId}`, 'search', error);
     stopLoading(loadingId);
-    logger.error(String(error), searchParamObject.dataset + ' Service');
     // Return empty results on error
     return new SearchResults();
   }
