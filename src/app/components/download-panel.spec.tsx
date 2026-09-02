@@ -18,10 +18,10 @@ function downloadUrls(): string[] {
 }
 
 /**
- * The bar is the only place the browser learns a zip is ready, so its states are driven end to end
- * here: the POST, the poll, and the hidden iframes that actually fetch the parts.
+ * The panel is the only place the browser learns a zip is ready, so its states are driven end to
+ * end here: the POST, the poll, and the hidden iframes that actually fetch the parts.
  */
-describe('BulkDownloadBar', () => {
+describe('DownloadPanel', () => {
   const originalEnv = window.__env;
 
   beforeEach(() => {
@@ -49,8 +49,8 @@ describe('BulkDownloadBar', () => {
   });
 
   /**
-   * Fresh module state per test: the selection and the persisted job are module-level stores, and
-   * the job is rehydrated at import time.
+   * Fresh module state per test: the selection, the failed start and the persisted job are
+   * module-level stores, and the job is rehydrated at import time.
    */
   async function mount(storedJob?: BulkDownloadJob) {
     if (storedJob) localStorage.setItem(JOB_KEY, JSON.stringify(storedJob));
@@ -59,7 +59,7 @@ describe('BulkDownloadBar', () => {
     const config = await import('app/config/config');
     await config.loadConfig();
     const store = await import('app/state/bulk-download');
-    const { BulkDownloadBar } = await import('./bulk-download-bar');
+    const { DownloadPanel } = await import('./download-panel');
 
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     return {
@@ -67,7 +67,7 @@ describe('BulkDownloadBar', () => {
       render: () =>
         render(
           <QueryClientProvider client={client}>
-            <BulkDownloadBar />
+            <DownloadPanel />
           </QueryClientProvider>
         )
     };
@@ -79,15 +79,22 @@ describe('BulkDownloadBar', () => {
     });
   }
 
-  it('stays out of the way with nothing selected and no job', async () => {
-    const bar = await mount();
+  /** What the toolbar's Download button does, from the state module both share. */
+  async function startDownload(store: typeof import('app/state/bulk-download')): Promise<void> {
+    await act(async () => {
+      await store.startDownload();
+    });
+  }
 
-    const { container } = bar.render();
+  it('stays out of the way with no job and no failed start', async () => {
+    const panel = await mount();
+
+    const { container } = panel.render();
 
     expect(container).toBeEmptyDOMElement();
   });
 
-  it('downloads every part of a finished job, one iframe each', async () => {
+  it('reports progress, then downloads every part of a finished job, one iframe each', async () => {
     postResponse = () =>
       new Response(JSON.stringify({ id: 'job-1', status: 'queued', documentCount: 2 }), { status: 202 });
     statusResponses = [
@@ -100,20 +107,20 @@ describe('BulkDownloadBar', () => {
         includedCount: 2,
         errorCount: 0,
         parts: [
-          { n: 1, url: 'https://nrs.example/part1.zip' },
-          { n: 2, url: 'https://nrs.example/part2.zip' }
+          { n: 1, fileName: 'documents-1.zip', url: 'https://nrs.example/part1.zip' },
+          { n: 2, fileName: 'documents-2.zip', url: 'https://nrs.example/part2.zip' }
         ]
       }
     ];
-    const bar = await mount();
-    bar.store.setSelected('documents', [ALPHA, BETA]);
-    bar.render();
+    const panel = await mount();
+    panel.store.setSelected('documents', [ALPHA, BETA]);
+    panel.render();
 
-    expect(screen.getByText('2 documents selected')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Download' }));
+    await startDownload(panel.store);
     await tick(0);
 
-    expect(screen.getByText('Preparing download… 1 of 2 parts')).toBeInTheDocument();
+    expect(screen.getByText('Zipping 2 files…')).toBeInTheDocument();
+    expect(screen.getByText('part 2 of 2')).toBeInTheDocument();
 
     // One poll interval later the job is ready and the first part goes.
     await tick(4000);
@@ -122,38 +129,35 @@ describe('BulkDownloadBar', () => {
     await tick(1);
     await tick(1);
 
+    expect(screen.getByText('Downloading documents-1.zip')).toBeInTheDocument();
     expect(downloadUrls()).toEqual(['https://nrs.example/part1.zip']);
 
     // The next follows a second later, so the browser asks once to allow multiple downloads.
     await tick(1000);
 
     expect(downloadUrls()).toEqual(['https://nrs.example/part1.zip', 'https://nrs.example/part2.zip']);
-    expect(screen.getByText('Download started')).toBeInTheDocument();
+    expect(screen.getByText('Downloading documents-2.zip')).toBeInTheDocument();
   });
 
   it('names the files the zip could not include', async () => {
-    postResponse = () => new Response(JSON.stringify({ id: 'job-1', status: 'queued' }), { status: 202 });
     statusResponses = [
       {
-        id: 'job-1',
+        id: 'job-9',
         status: 'ready',
         partCount: 1,
         partsReady: 1,
         includedCount: 5,
         errorCount: 3,
-        parts: [{ n: 1, url: 'https://nrs.example/part1.zip' }]
+        parts: [{ n: 1, fileName: 'documents.zip', url: 'https://nrs.example/part1.zip' }]
       }
     ];
-    const bar = await mount();
-    bar.store.setSelected('documents', [ALPHA, BETA]);
-    bar.render();
+    const panel = await mount({ id: 'job-9', count: 8, startedAt: Date.now() });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Download' }));
+    panel.render();
     await tick(0);
 
-    expect(
-      screen.getByText('Download started (3 files could not be included; see errors.txt)')
-    ).toBeInTheDocument();
+    expect(screen.getByText('Downloading documents.zip')).toBeInTheDocument();
+    expect(screen.getByText('3 files could not be included (see errors.txt)')).toBeInTheDocument();
   });
 
   /**
@@ -161,65 +165,69 @@ describe('BulkDownloadBar', () => {
    * answers with an error page, so fetching them buys the reader nothing.
    */
   it('downloads nothing when the finished zip included no documents', async () => {
-    postResponse = () => new Response(JSON.stringify({ id: 'job-1', status: 'queued' }), { status: 202 });
     statusResponses = [
       {
-        id: 'job-1',
+        id: 'job-9',
         status: 'ready',
         partCount: 1,
         partsReady: 1,
         includedCount: 0,
         errorCount: 2,
-        parts: [{ n: 1, url: 'https://nrs.example/part1.zip' }]
+        parts: [{ n: 1, fileName: 'documents.zip', url: 'https://nrs.example/part1.zip' }]
       }
     ];
-    const bar = await mount();
-    bar.store.setSelected('documents', [ALPHA, BETA]);
-    bar.render();
+    const panel = await mount({ id: 'job-9', count: 2, startedAt: Date.now() });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Download' }));
-    await tick(0);
+    panel.render();
     await tick(2000);
 
     expect(screen.getByText('None of the selected documents could be downloaded.')).toBeInTheDocument();
     expect(downloadUrls()).toEqual([]);
-    expect(screen.getByRole('button', { name: 'Dismiss' })).toBeInTheDocument();
   });
 
-  it('explains a 429 rather than looking like a failure', async () => {
+  it('explains a 429 in the panel rather than looking like a failure', async () => {
     postResponse = () => new Response('{}', { status: 429, statusText: 'Too Many Requests' });
-    const bar = await mount();
-    bar.store.setSelected('documents', [ALPHA, BETA]);
-    bar.render();
+    const panel = await mount();
+    panel.store.setSelected('documents', [ALPHA, BETA]);
+    panel.render();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Download' }));
-    await tick(0);
+    await startDownload(panel.store);
 
     expect(screen.getByText("You've reached the download limit. Try again later.")).toBeInTheDocument();
     expect(downloadUrls()).toEqual([]);
+    expect(localStorage.getItem(JOB_KEY)).toBeNull();
   });
 
   it('says so when bulk download is switched off at the backend', async () => {
     postResponse = () => new Response('{}', { status: 503, statusText: 'Service Unavailable' });
-    const bar = await mount();
-    bar.store.setSelected('documents', [ALPHA, BETA]);
-    bar.render();
+    const panel = await mount();
+    panel.store.setSelected('documents', [ALPHA, BETA]);
+    panel.render();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Download' }));
-    await tick(0);
+    await startDownload(panel.store);
 
     expect(screen.getByText('Bulk download is not available right now.')).toBeInTheDocument();
   });
 
-  it('takes the presigned URL straight away for a single document, with no job', async () => {
+  it('shows any other failed start in the panel', async () => {
+    postResponse = () => new Response('{}', { status: 500, statusText: 'Server Error' });
+    const panel = await mount();
+    panel.store.setSelected('documents', [ALPHA, BETA]);
+    panel.render();
+
+    await startDownload(panel.store);
+
+    expect(screen.getByText('That download could not be started. Please try again.')).toBeInTheDocument();
+  });
+
+  it('takes the presigned URL straight away for a single document, with no job or panel', async () => {
     postResponse = () =>
       new Response(JSON.stringify({ url: 'https://nrs.example/one.pdf', single: true }), { status: 200 });
-    const bar = await mount();
-    bar.store.setSelected('documents', [ALPHA]);
-    const { container } = bar.render();
+    const panel = await mount();
+    panel.store.setSelected('documents', [ALPHA]);
+    const { container } = panel.render();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Download' }));
-    await tick(0);
+    await startDownload(panel.store);
 
     expect(downloadUrls()).toEqual(['https://nrs.example/one.pdf']);
     expect(localStorage.getItem(JOB_KEY)).toBeNull();
@@ -228,37 +236,49 @@ describe('BulkDownloadBar', () => {
 
   it('resumes a job left running by the previous page load', async () => {
     statusResponses = [{ id: 'job-9', status: 'running', partCount: 3, partsReady: 2 }];
-    const bar = await mount({ id: 'job-9', count: 40, startedAt: Date.now() - 60_000 });
+    const panel = await mount({ id: 'job-9', count: 40, startedAt: Date.now() - 60_000 });
 
-    bar.render();
+    panel.render();
     await tick(0);
 
-    expect(screen.getByText('Preparing download… 2 of 3 parts')).toBeInTheDocument();
+    expect(screen.getByText('Zipping 40 files…')).toBeInTheDocument();
+    expect(screen.getByText('part 3 of 3')).toBeInTheDocument();
   });
 
   it('drops a job left over from more than an hour ago', async () => {
-    const bar = await mount({ id: 'job-9', count: 40, startedAt: Date.now() - 3_700_000 });
+    const panel = await mount({ id: 'job-9', count: 40, startedAt: Date.now() - 3_700_000 });
 
-    const { container } = bar.render();
+    const { container } = panel.render();
     await tick(0);
 
     expect(container).toBeEmptyDOMElement();
   });
 
+  it('says a failed job failed, with nothing to retry', async () => {
+    statusResponses = [{ id: 'job-9', status: 'failed', partCount: 0, partsReady: 0 }];
+    const panel = await mount({ id: 'job-9', count: 40, startedAt: Date.now() });
+
+    panel.render();
+    await tick(0);
+
+    expect(screen.getByText('That download could not be completed. Please try again.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Retry' })).not.toBeInTheDocument();
+  });
+
   /**
    * A job id demi-api no longer knows - swept, expired, or left over from another environment -
-   * used to pin the bar on "Preparing download…" and poll for the rest of the hour.
+   * used to pin the panel on "Zipping…" and poll for the rest of the hour.
    */
   it('drops a job the status endpoint answers 404 for, and stops polling', async () => {
     statusStatus = 404;
-    const bar = await mount({ id: 'job-gone', count: 40, startedAt: Date.now() });
+    const panel = await mount({ id: 'job-gone', count: 40, startedAt: Date.now() });
 
-    bar.render();
+    panel.render();
     await tick(0);
 
     expect(screen.getByText('That download is no longer available.')).toBeInTheDocument();
     expect(localStorage.getItem(JOB_KEY)).toBeNull();
-    expect(screen.getByRole('button', { name: 'Dismiss' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Retry' })).not.toBeInTheDocument();
 
     const pollsSoFar = fetchMock.mock.calls.length;
     await tick(60_000);
@@ -268,9 +288,9 @@ describe('BulkDownloadBar', () => {
 
   it('offers a retry when the status check fails for any other reason', async () => {
     statusStatus = 500;
-    const bar = await mount({ id: 'job-9', count: 40, startedAt: Date.now() });
+    const panel = await mount({ id: 'job-9', count: 40, startedAt: Date.now() });
 
-    bar.render();
+    panel.render();
     await tick(0);
 
     expect(screen.getByText('Could not check the download.')).toBeInTheDocument();
@@ -288,34 +308,45 @@ describe('BulkDownloadBar', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
     await tick(0);
 
-    expect(screen.getByText('Preparing download… 2 of 3 parts')).toBeInTheDocument();
+    expect(screen.getByText('Zipping 40 files…')).toBeInTheDocument();
   });
 
-  // A fixed bar over the page hides the last rows and the footer unless the body makes room.
-  it('pads the body by its own height while it is showing', async () => {
-    vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(71);
-    const bar = await mount();
-    bar.store.setSelected('documents', [ALPHA]);
-    bar.render();
+  it('keeps polling while it is collapsed, and stops showing the rows', async () => {
+    statusResponses = [{ id: 'job-9', status: 'running', partCount: 1, partsReady: 0 }];
+    const panel = await mount({ id: 'job-9', count: 4, startedAt: Date.now() });
 
-    expect(document.body.style.paddingBottom).toBe('71px');
-
-    act(() => bar.store.clearSelection());
-
-    expect(document.body.style.paddingBottom).toBe('');
-  });
-
-  it('clears the job and the selection on dismiss', async () => {
-    statusResponses = [{ id: 'job-9', status: 'failed', partCount: 0, partsReady: 0 }];
-    const bar = await mount({ id: 'job-9', count: 40, startedAt: Date.now() });
-    bar.store.setSelected('documents', [ALPHA, BETA]);
-    const { container } = bar.render();
+    panel.render();
     await tick(0);
 
-    expect(screen.getByText('That download could not be completed. Please try again.')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Collapse download panel' }));
+
+    expect(screen.queryByText('Zipping 4 files…')).not.toBeInTheDocument();
+    const pollsSoFar = fetchMock.mock.calls.length;
+
+    await tick(4000);
+
+    expect(fetchMock.mock.calls.length).toBeGreaterThan(pollsSoFar);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Expand download panel' }));
+
+    expect(screen.getByText('Zipping 4 files…')).toBeInTheDocument();
+  });
+
+  it('forgets the job on close', async () => {
+    statusResponses = [{ id: 'job-9', status: 'running', partCount: 1, partsReady: 0 }];
+    const panel = await mount({ id: 'job-9', count: 4, startedAt: Date.now() });
+    const { container } = panel.render();
+    await tick(0);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Close download panel' }));
 
     expect(container).toBeEmptyDOMElement();
     expect(localStorage.getItem(JOB_KEY)).toBeNull();
+
+    // Nothing left to poll for: the job is gone, not just hidden.
+    const pollsSoFar = fetchMock.mock.calls.length;
+    await tick(60_000);
+
+    expect(fetchMock.mock.calls.length).toBe(pollsSoFar);
   });
 });

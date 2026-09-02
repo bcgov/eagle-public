@@ -1,0 +1,110 @@
+/* Transfer panel: parked bottom-right over the page while a download is being prepared. */
+
+.download-panel {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 11000;
+  width: 360px;
+  max-width: calc(100vw - 2rem);
+  background-color: var(--bs-white);
+  border-radius: 0.25rem;
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+}
+
+.download-panel__header {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.5rem 0.5rem 0.5rem 0.75rem;
+  background-color: var(--bs-primary);
+  color: var(--bs-white);
+}
+
+.download-panel__title {
+  flex: 1 1 auto;
+  margin: 0;
+  font-size: var(--bs-font-size-sm);
+  font-weight: var(--bs-font-weight-semibold);
+  line-height: 1.5;
+}
+
+.download-panel__control {
+  display: inline-flex;
+  padding: 0.25rem;
+  border: none;
+  border-radius: 0.2rem;
+  background-color: transparent;
+  color: inherit;
+}
+
+.download-panel__control:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.download-panel__control:focus-visible {
+  outline: 2px solid var(--bs-white);
+  outline-offset: 1px;
+}
+
+.download-panel__body {
+  max-height: 40vh;
+  overflow-y: auto;
+}
+
+.download-panel__rows {
+  margin: 0;
+  padding: 0.25rem 0;
+  list-style: none;
+}
+
+.download-panel__row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  font-size: var(--bs-font-size-sm);
+  color: var(--bs-body-color);
+  overflow-wrap: anywhere;
+}
+
+.download-panel__row--muted {
+  color: var(--bs-secondary-color);
+}
+
+.download-panel__icon {
+  display: inline-flex;
+  flex: 0 0 1.125rem;
+  justify-content: center;
+  /* Sits on the first line of text rather than the top of the box. */
+  padding-top: 0.125rem;
+  color: var(--bs-primary);
+}
+
+.download-panel__row--muted .download-panel__icon {
+  color: inherit;
+}
+
+.download-panel__row--error .download-panel__icon {
+  color: var(--bs-danger);
+}
+
+.download-panel__detail {
+  display: block;
+  color: var(--bs-secondary-color);
+}
+
+.download-panel__actions {
+  padding: 0 0.75rem 0.75rem;
+}
+
+@media (max-width: 575px) {
+  .download-panel {
+    right: 0.5rem;
+    left: 0.5rem;
+    bottom: 0.5rem;
+    width: auto;
+    max-width: none;
+  }
+}

@@ -5,7 +5,9 @@ import {
   clearSelection,
   SELECT_ALL_MAX,
   setSelected,
+  startDownload,
   toggleSelected,
+  useJob,
   useSelection,
   type SelectedDocument
 } from 'app/state/bulk-download';
@@ -22,7 +24,7 @@ export function SelectCell({ rowData, tableId }: { rowData: any; tableId: string
 
   return (
     // The rest of the row is a download link; a click in here must not follow it.
-    <td data-label="Select" className="col-1" onClick={event => event.stopPropagation()}>
+    <td data-label="Select" className="select-col" onClick={event => event.stopPropagation()}>
       <input
         type="checkbox"
         className="form-check-input"
@@ -59,6 +61,9 @@ export function TableTemplate({ data, loading = false, rowComponent, onMessage }
 
   const selectable = !!data.options.selectable;
   const selection = useSelection(data.tableId);
+  // Download posts every table's selection as one job, so the toolbar counts them all.
+  const selectedCount = useSelection().size;
+  const downloadInProgress = !!useJob();
   const pageDocs: SelectedDocument[] = data.items
     .filter(item => item.rowData?._id)
     .map(item => ({ id: item.rowData._id, displayName: item.rowData.displayName }));
@@ -66,6 +71,7 @@ export function TableTemplate({ data, loading = false, rowComponent, onMessage }
   const pageAllSelected = pageDocs.length > 0 && selectedOnPage === pageDocs.length;
   // Offered once the page is fully selected and there is more behind it than one page.
   const showSelectAllBanner = selectable && pageAllSelected && data.totalListItems > data.pageSize;
+  const showSelectionToolbar = selectable && selection.size > 0;
   const documentNoun = data.tableId === 'application' ? 'Application documents' : 'matching documents';
 
   function onSort(property: string): void {
@@ -105,22 +111,9 @@ export function TableTemplate({ data, loading = false, rowComponent, onMessage }
     />
   ) : null;
 
-  // Rendered top and bottom, so `id` is a parameter: the e2e suite and any label still need one
-  // picker per unique id.
-  const pageSizePickerControl = (id: string) =>
-    data.options.showPageSizePicker ? (
-      <PageSizePicker
-        isHidden={false}
-        currentPageSize={data.pageSize}
-        sizeOptions={pageSizeOptions}
-        onPageSizeChosen={onUpdatePageSize}
-        id={id}
-      />
-    ) : null;
-
   return (
     <div className="table-template" ref={containerRef}>
-      {data.options.showTopControls && (data.options.showPageCountDisplay || data.options.showPageSizePicker || showPagination) && (
+      {data.options.showTopControls && (data.options.showPageCountDisplay || showPagination) && (
         <div className="row mb-4 table-controls-top">
           <div className="col-12 col-md-6 text-center text-md-start mb-3 mb-md-0">
             {data.options.showPageCountDisplay && (
@@ -132,9 +125,30 @@ export function TableTemplate({ data, loading = false, rowComponent, onMessage }
                 id="table-template-page-count-display"
               />
             )}
-            {pageSizePickerControl('table-template-page-size-picker-top')}
           </div>
           <div className="col-12 col-md-6 text-center text-md-end">{paginationControl}</div>
+        </div>
+      )}
+
+      {showSelectionToolbar && (
+        <div className="d-flex flex-wrap align-items-center gap-2 mb-3">
+          <span className="fw-semibold">{selectedCount} selected</span>
+          <button
+            type="button"
+            className="btn btn-primary btn-sm d-inline-flex align-items-center gap-1"
+            disabled={downloadInProgress}
+            title={downloadInProgress ? 'Wait for the download in progress to finish.' : undefined}
+            onClick={() => void startDownload()}
+          >
+            {/* The bundled Material Icons build has no `download`; this is the app's download glyph. */}
+            <i className="material-icons md-18" aria-hidden="true">
+              cloud_download
+            </i>
+            Download
+          </button>
+          <button type="button" className="btn btn-link btn-sm" onClick={() => clearSelection()}>
+            Clear
+          </button>
         </div>
       )}
 
@@ -170,7 +184,7 @@ export function TableTemplate({ data, loading = false, rowComponent, onMessage }
                 <thead>
                   <tr>
                     {selectable && (
-                      <th className="col-1">
+                      <th className="select-col">
                         <input
                           type="checkbox"
                           className="form-check-input"
@@ -219,7 +233,7 @@ export function TableTemplate({ data, loading = false, rowComponent, onMessage }
                 {showSkeleton &&
                   Array.from({ length: skeletonRows }, (_, row) => (
                     <tr key={`skeleton-${row}`} className="placeholder-wave" aria-hidden="true">
-                      {selectable && <td className="col-1"></td>}
+                      {selectable && <td className="select-col"></td>}
                       {data.columns.map(entry => (
                         <td key={entry.value} className={entry.width}>
                           <span className="placeholder w-100"></span>
@@ -247,7 +261,15 @@ export function TableTemplate({ data, loading = false, rowComponent, onMessage }
               <div className="table-controls-bottom mt-4">
                 <div className="row">
                   <div className="col-12 col-md-6 text-center text-md-start mb-3 mb-md-0">
-                    {pageSizePickerControl('table-template-page-size-picker')}
+                    {data.options.showPageSizePicker && data.totalListItems > 10 && (
+                      <PageSizePicker
+                        isHidden={false}
+                        currentPageSize={data.pageSize}
+                        sizeOptions={pageSizeOptions}
+                        onPageSizeChosen={onUpdatePageSize}
+                        id="table-template-page-size-picker"
+                      />
+                    )}
                   </div>
                   <div className="col-12 col-md-6 text-center text-md-end">{paginationControl}</div>
                 </div>

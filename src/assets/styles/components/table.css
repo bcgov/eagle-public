@@ -201,6 +201,24 @@
     font-size: var(--bs-font-size-sm);
   }
 
+  /* Checkbox column: only as wide as the control. */
+  .table-template .table th.select-col,
+  .table-template .table td.select-col {
+    flex: 0 0 2.5rem;
+    width: 2.5rem;
+    min-width: 2.5rem;
+    max-width: 2.5rem;
+    justify-content: center;
+    text-align: center;
+  }
+
+  /* The col-* widths add up to the whole table on their own, so they give up the 2.5rem. */
+  .table-template .table tr:has(.select-col) th[class*="col-"],
+  .table-template .table tr:has(.select-col) td[class*="col-"] {
+    flex-shrink: 1;
+    min-width: 0;
+  }
+
   /* Column width definitions */
   .table-template .table col.col-1,
   .table-template .table th.col-1,
@@ -315,6 +333,12 @@
 
   .table-template td[data-label="Name"]::before {
     content: none;
+  }
+
+  /* The card header is primary blue, so the link colour cannot carry over onto it. */
+  .table-template td[data-label="Name"] a {
+    color: var(--bs-white);
+    text-decoration: underline;
   }
 
   /* All metadata fields (except Name and star) */

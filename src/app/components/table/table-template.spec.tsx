@@ -1,8 +1,8 @@
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
 import { useState } from 'react';
-import { render, renderHook, screen, within } from '@testing-library/react';
+import { render, renderHook, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { clearSelection, SELECT_ALL_MAX, setSelected, toggleSelected } from 'app/state/bulk-download';
+import { clearJob, clearSelection, SELECT_ALL_MAX, setJob, setSelected, toggleSelected } from 'app/state/bulk-download';
 import { clearToasts, useToasts } from 'app/state/toast';
 import { TableTemplate } from './table-template';
 import { tableObject, type ITableMessage, type TableObject } from './table-object';
@@ -18,14 +18,14 @@ function NameRow({ rowData }: { rowData: any }) {
 }
 
 /** Owns the page state the way the real consumers do, so a control's effect is observable. */
-function Harness() {
+function Harness({ totalListItems = 42 }: { totalListItems?: number }) {
   const [pageSize, setPageSize] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
 
   const data = {
     ...tableObject({ component: NameRow as any, columns: COLUMNS }),
     items: [{ rowData: { _id: 'a', name: 'Alpha' } }],
-    totalListItems: 42,
+    totalListItems,
     pageSize,
     currentPage
   };
@@ -51,29 +51,30 @@ describe('TableTemplate page controls', () => {
     delete (Element.prototype as any).scrollIntoView;
   });
 
-  it('offers a page size picker above and below the table', () => {
+  it('offers one page size picker, below the table', () => {
     render(<Harness />);
 
-    expect(document.getElementById('table-template-page-size-picker-top')).toBeInTheDocument();
-    expect(document.getElementById('table-template-page-size-picker')).toBeInTheDocument();
+    expect(document.querySelectorAll('.lib-page-size-display')).toHaveLength(1);
+    const picker = document.getElementById('table-template-page-size-picker')!;
+    expect(picker.compareDocumentPosition(screen.getByLabelText('table-template'))).toBe(
+      Node.DOCUMENT_POSITION_PRECEDING
+    );
   });
 
-  it('drives the shared page size from the top picker', async () => {
+  it('drives the page size from the picker', async () => {
     render(<Harness />);
-    const top = document.getElementById('table-template-page-size-picker-top')!;
+    const picker = document.getElementById('table-template-page-size-picker')!;
 
-    await userEvent.click(within(top).getByTitle('Show 25 records per page'));
-
-    expect(screen.getByText('Showing 25 of 42 results')).toBeInTheDocument();
-  });
-
-  it('drives the same page size from the bottom picker', async () => {
-    render(<Harness />);
-    const bottom = document.getElementById('table-template-page-size-picker')!;
-
-    await userEvent.click(within(bottom).getByTitle('Show 50 records per page'));
+    await userEvent.click(within(picker).getByTitle('Show 50 records per page'));
 
     expect(screen.getByText('Showing 42 of 42 results')).toBeInTheDocument();
+  });
+
+  // Angular hid the picker under 11 results: nothing there to page through.
+  it('hides the picker while the whole result set fits on one page', () => {
+    render(<Harness totalListItems={10} />);
+
+    expect(document.getElementById('table-template-page-size-picker')).not.toBeInTheDocument();
   });
 
   it('scrolls back to the top of the grid on a page change', async () => {
@@ -225,5 +226,94 @@ describe('TableTemplate select-all banner', () => {
 
     expect(screen.getByText('Narrow your filters to 100 or fewer documents to select them all.')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Select all/ })).not.toBeInTheDocument();
+  });
+});
+
+/**
+ * The toolbar is where a selection turns into a download: it replaces the fixed bar, so the POST
+ * and the Clear are driven from here.
+ */
+describe('TableTemplate selection toolbar', () => {
+  let fetchMock: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    clearSelection();
+    clearJob();
+    fetchMock = vi.fn(
+      async () => new Response(JSON.stringify({ id: 'job-1', status: 'queued' }), { status: 202 })
+    );
+    vi.stubGlobal('fetch', fetchMock);
+  });
+
+  afterEach(() => {
+    clearJob();
+    vi.unstubAllGlobals();
+  });
+
+  it('stays hidden while nothing is selected', () => {
+    render(<TableTemplate data={selectableTable()} onMessage={() => undefined} />);
+
+    expect(screen.queryByRole('button', { name: 'Download' })).not.toBeInTheDocument();
+  });
+
+  it('counts the selection and offers Download', async () => {
+    setSelected('documents', [{ id: 'doc-a', displayName: 'Alpha' }]);
+    render(<TableTemplate data={selectableTable()} onMessage={() => undefined} />);
+
+    expect(screen.getByText('1 selected')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Download' })).toBeEnabled();
+
+    await userEvent.click(screen.getByLabelText('Select all on this page'));
+
+    expect(screen.getByText('2 selected')).toBeInTheDocument();
+  });
+
+  // Both tabs of a project's documents post as one job, so the count is every table's.
+  it('counts what another table holds selected as well', () => {
+    setSelected('documents', [{ id: 'doc-a', displayName: 'Alpha' }]);
+    setSelected('search', [{ id: 'doc-z', displayName: 'Zulu' }]);
+
+    render(<TableTemplate data={selectableTable()} onMessage={() => undefined} />);
+
+    expect(screen.getByText('2 selected')).toBeInTheDocument();
+  });
+
+  it('posts every selected document and keeps the job it gets back', async () => {
+    setSelected('documents', [
+      { id: 'doc-a', displayName: 'Alpha' },
+      { id: 'doc-b', displayName: 'Beta' }
+    ]);
+    render(<TableTemplate data={selectableTable()} onMessage={() => undefined} />);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Download' }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toContain('/bulk-downloads');
+    expect(JSON.parse(init.body)).toEqual({ documentIds: ['doc-a', 'doc-b'] });
+    await waitFor(() => expect(localStorage.getItem('epic-bulk-download-job')).toContain('job-1'));
+    // The job owns the download now, so the toolbar goes with the selection it posted.
+    expect(screen.queryByRole('button', { name: 'Download' })).not.toBeInTheDocument();
+  });
+
+  it('drops the selection on Clear without posting anything', async () => {
+    setSelected('documents', [{ id: 'doc-a', displayName: 'Alpha' }]);
+    render(<TableTemplate data={selectableTable()} onMessage={() => undefined} />);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Clear' }));
+
+    expect(screen.queryByText('1 selected')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Select all on this page')).not.toBeChecked();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  // One job slot: a second POST would replace the running one and lose the zip it was building.
+  it('refuses a second download while one is still running', () => {
+    setJob({ id: 'job-9', count: 3, startedAt: Date.now() });
+    setSelected('documents', [{ id: 'doc-a', displayName: 'Alpha' }]);
+
+    render(<TableTemplate data={selectableTable()} onMessage={() => undefined} />);
+
+    expect(screen.getByRole('button', { name: 'Download' })).toBeDisabled();
   });
 });

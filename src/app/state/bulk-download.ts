@@ -1,5 +1,9 @@
 import { createStore, useStore } from './store';
+import { track } from 'app/analytics/analytics';
+import { ApiError, createBulkDownload } from 'app/api/api';
 import { fetchData, type SearchParamObject } from 'app/api/search';
+import { logger } from 'app/config/logging';
+import { triggerDownload } from 'app/utils/utils';
 import { showToast } from './toast';
 
 /** Anonymous cap demi-api enforces per job. Also the ceiling on "select all matching". */
@@ -11,7 +15,7 @@ export const CAP_MESSAGE = `You can select up to ${SELECT_ALL_MAX} documents at 
 /** The banner only ever renders once the table already found matches; an empty answer is a failed request, not a real zero. */
 export const SELECT_ALL_FAILED_MESSAGE = 'Could not select all matching documents. Try again.';
 
-/** Only what the bulk bar needs: the id to post and a name to show. */
+/** Only what bulk download needs: the id to post and a name to show. */
 export interface SelectedDocument {
   id: string;
   displayName: string;
@@ -45,7 +49,7 @@ function merged(tables: Map<string, TableSelection>): TableSelection {
   return all;
 }
 
-/** Every table's selection counts against the cap: the bar posts them merged, as one job. */
+/** Every table's selection counts against the cap: they are posted merged, as one job. */
 function selectedElsewhere(tableId: string): number {
   let total = 0;
   selection.get().forEach((docs, id) => {
@@ -79,7 +83,7 @@ export function setSelected(tableId: string, docs: SelectedDocument[]): boolean 
   return true;
 }
 
-/** Clears one table's selection, or every table's when called with no id (the bar's Clear). */
+/** Clears one table's selection, or every table's when called with no id (the toolbar's Clear). */
 export function clearSelection(tableId?: string): void {
   if (tableId === undefined) {
     selection.set(new Map());
@@ -88,7 +92,7 @@ export function clearSelection(tableId?: string): void {
   write(tableId, EMPTY);
 }
 
-/** One table's selection, or every table's merged, which is what the bulk bar downloads. */
+/** One table's selection, or every table's merged, which is what Download posts. */
 export function useSelection(tableId?: string): TableSelection {
   const tables = useStore(selection);
   if (tableId === undefined) return merged(tables);
@@ -147,8 +151,8 @@ export function setJob(next: BulkDownloadJob): void {
 }
 
 /**
- * Drops the persisted copy but leaves the bar's, so a dead job id cannot come back on reload while
- * the reader still has the failure in front of them.
+ * Drops the persisted copy but leaves the panel's, so a dead job id cannot come back on reload
+ * while the reader still has the failure in front of them.
  */
 export function forgetStoredJob(): void {
   localStorage.removeItem(JOB_KEY);
@@ -161,4 +165,49 @@ export function clearJob(): void {
 
 export function useJob(): BulkDownloadJob | null {
   return useStore(job);
+}
+
+/** What each refused POST tells the reader. Anything else is a fault they cannot act on. */
+const START_ERRORS: Record<number, string> = {
+  429: "You've reached the download limit. Try again later.",
+  503: 'Bulk download is not available right now.'
+};
+const START_FAILED = 'That download could not be started. Please try again.';
+
+const startError = createStore<string | null>(null);
+
+export function useStartError(): string | null {
+  return useStore(startError);
+}
+
+/** Forgets the job and any failed start: the panel is closed and nothing is left to show. */
+export function dismissDownload(): void {
+  startError.set(null);
+  clearJob();
+}
+
+/**
+ * Posts every selected document as one job. The selection is cleared once demi-api has it, so a
+ * failed start leaves the reader their selection to try again with.
+ */
+export async function startDownload(): Promise<void> {
+  const ids = [...merged(selection.get()).keys()];
+  if (ids.length === 0) return;
+  startError.set(null);
+  track('Bulk Download Started', { count: ids.length });
+
+  try {
+    const result = await createBulkDownload(ids);
+    clearSelection();
+    // One document never gets a job: demi-api answers with the presigned URL itself.
+    if ('single' in result) {
+      triggerDownload(result.url);
+      return;
+    }
+    setJob({ id: result.id, count: ids.length, startedAt: Date.now() });
+  } catch (failure) {
+    logger.warn('Bulk download could not be started', 'bulk-download', failure);
+    const status = failure instanceof ApiError ? failure.status : 0;
+    startError.set(START_ERRORS[status] ?? START_FAILED);
+  }
 }
