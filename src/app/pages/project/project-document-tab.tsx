@@ -14,7 +14,9 @@ import {
   updateTableObjectWithUrlParams,
   type Params
 } from 'app/components/table/table-params';
-import { useTable } from 'app/components/table/use-table';
+import { tableSearchParams, useTable, type TableQueryConfig } from 'app/components/table/use-table';
+import { bulkDownloadEnabled } from 'app/config/config';
+import { selectAllMatching } from 'app/state/bulk-download';
 import { createProjectTabModifiers } from 'app/utils/utils';
 import { DocumentTableRow } from './document-table-rows';
 import { buildDocumentFilters, DATE_FILTER_LIST, filterListFrom } from './document-filters';
@@ -102,7 +104,7 @@ export function ProjectDocumentTab({
     [tabKey, lists, projId]
   );
 
-  const result = useTable(tableId, {
+  const query: TableQueryConfig = {
     dataset: 'Document',
     // The optional tabs identify their documents through query modifiers built from the lists, so
     // they cannot run until those have loaded.
@@ -116,14 +118,16 @@ export function ProjectDocumentTab({
     populate: !tabKey,
     secondarySort: base.sortBy.includes('displayName') ? '' : '+displayName',
     filters: activeFilters
-  });
+  };
+
+  const result = useTable(tableId, query);
 
   const data = {
     ...base,
     columns: showFeatured ? [FEATURED_COLUMN, { name: 'Name', value: 'displayName', width: 'col-3' }, ...DOCUMENT_COLUMNS] : [{ name: 'Name', value: 'displayName', width: 'col-4' }, ...DOCUMENT_COLUMNS],
     items: result.data.map(record => ({ rowData: record })),
     totalListItems: result.totalListItems,
-    options: { ...base.options, showAllPicker: true },
+    options: { ...base.options, showAllPicker: true, selectable: bulkDownloadEnabled() },
     data: { lists, showFeatured }
   };
 
@@ -166,6 +170,9 @@ export function ProjectDocumentTab({
         break;
       case 'pageSize':
         submit({ ...params, pageSize: msg.data.value, currentPage: 1 });
+        break;
+      case 'selectAllMatching':
+        void selectAllMatching(tableId, tableSearchParams(tableId, query));
         break;
     }
   }

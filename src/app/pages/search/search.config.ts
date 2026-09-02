@@ -7,7 +7,7 @@ import {
 } from 'app/components/filters/filter-object';
 import type { TableListConfig } from 'app/components/table/table-list';
 import type { IColumnObject } from 'app/components/table/table-object';
-import { contentSearchEnabled } from 'app/config/config';
+import { bulkDownloadEnabled, contentSearchEnabled } from 'app/config/config';
 import { DocSearchTableRow } from './search-documents-table-rows';
 
 export const SEARCH_TABLE_ID = 'search';
@@ -102,7 +102,7 @@ export function createSearchConfig(filters: FilterObject[], lists: any[]): Table
     },
     tableColumns: SEARCH_TABLE_COLUMNS,
     tableRowComponent: DocSearchTableRow,
-    tableOptions: { disableRowHighlight: true },
+    tableOptions: { disableRowHighlight: true, selectable: bulkDownloadEnabled() },
     tabs: visibleSearchTabs(contentSearchEnabled()),
     filterList: SEARCH_FILTER_LIST,
     dateFilterList: SEARCH_DATE_FILTER_LIST,

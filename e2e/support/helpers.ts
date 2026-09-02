@@ -82,6 +82,10 @@ const DROPPED = [
   // Documents tab rather than every project page, and one of them asks about Compliance &
   // Enforcement documents, which Angular has no tab for. `documents-page.spec.tsx` covers them.
   /^GET \/(api|demi-search|eagle-search)\/search\?.*&pageSize=1&/,
+  // Bulk download. Angular had none: single downloads now go through demi-api for a presigned
+  // URL, and the bulk bar polls the job. Both are Deviations entries in TODO.md.
+  /^POST \/(api|demi-search)\/bulk-downloads$/,
+  /^GET \/(api|demi-search)\/bulk-downloads\//,
 ];
 
 function applyDeviations(line: string): string {

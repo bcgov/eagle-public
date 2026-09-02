@@ -25,6 +25,25 @@ export interface TableResult {
   loading: boolean;
 }
 
+/** The request a table config describes. Select-all reruns the same one at page 1, size 100. */
+export function tableSearchParams(id: string, config: TableQueryConfig): SearchParamObject {
+  return new SearchParamObject(
+    id,
+    config.keywords ?? '',
+    config.dataset,
+    config.fields ?? [],
+    config.currentPage,
+    config.pageSize,
+    config.sortBy,
+    config.queryModifiers ?? {},
+    config.populate ?? false,
+    config.secondarySort ?? '',
+    config.filters ?? {},
+    config.projectLegislation ?? '',
+    config.fuzzy ?? false
+  );
+}
+
 /**
  * One table's server state, keyed by table id so two tables on a page never share a cache entry.
  * Replaces the Angular TableService signal map; TanStack Query dedupes concurrent identical
@@ -36,24 +55,7 @@ export function useTable(id: string, config: TableQueryConfig): TableResult {
   const query = useQuery({
     queryKey: ['table', id, params],
     enabled,
-    queryFn: () =>
-      fetchData(
-        new SearchParamObject(
-          id,
-          params.keywords ?? '',
-          params.dataset,
-          params.fields ?? [],
-          params.currentPage,
-          params.pageSize,
-          params.sortBy,
-          params.queryModifiers ?? {},
-          params.populate ?? false,
-          params.secondarySort ?? '',
-          params.filters ?? {},
-          params.projectLegislation ?? '',
-          params.fuzzy ?? false
-        )
-      )
+    queryFn: () => fetchData(tableSearchParams(id, params))
   });
 
   // SearchResults defaults `data` to 0, not [], when the response carried no results.

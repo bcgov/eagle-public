@@ -1,6 +1,8 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
+import { waitFor } from '@testing-library/react';
 import { Constants } from './constants';
-import { createProjectTabModifiers, extractFromSearchResults } from './utils';
+import { loadConfig } from 'app/config/config';
+import { createProjectTabModifiers, documentDownloadUrl, extractFromSearchResults, openDocumentDownload } from './utils';
 
 describe('extractFromSearchResults()', () => {
   // The Array.isArray guard never covered an empty array, so `results[0].data` threw a
@@ -62,5 +64,87 @@ describe('createProjectTabModifiers()', () => {
       milestone: 'ms-amend-2002',
       projectPhase: 'ph-amend-2002'
     });
+  });
+});
+
+/**
+ * A single download goes through demi-api for a presigned, forced-attachment URL and lands in the
+ * current tab; Safari blocks an async `window.open`. With no DEMI configured, or when DEMI does not
+ * answer with a URL, it falls back to the eagle-api URL, which is also the anchor href.
+ */
+describe('openDocumentDownload()', () => {
+  const originalEnv = window.__env;
+  const DOCUMENT = { _id: 'doc-1', documentFileName: 'Fish Habitat.pdf', displayName: 'Fish Habitat' };
+  let clickedHrefs: string[];
+  let openSpy: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    clickedHrefs = [];
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
+      clickedHrefs.push(this.getAttribute('href') ?? '');
+    });
+    openSpy = vi.fn();
+    vi.stubGlobal('open', openSpy);
+  });
+
+  afterEach(() => {
+    window.__env = originalEnv;
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  async function configuredWith(searchApiPath: string): Promise<void> {
+    window.__env = { logLevel: 4, API_PATH: '/api', SEARCH_API_PATH: searchApiPath };
+    await loadConfig();
+  }
+
+  it('builds the eagle-api download URL from the file name', () => {
+    expect(documentDownloadUrl(DOCUMENT)).toBe('/api/public/document/doc-1/download/Fish%20Habitat.pdf');
+  });
+
+  it('navigates the current tab to the presigned URL when DEMI is configured', async () => {
+    await configuredWith('/demi-search');
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => Response.json({ url: 'https://nrs.example/zip?sig=abc', single: true }))
+    );
+
+    openDocumentDownload(DOCUMENT);
+
+    await waitFor(() => expect(clickedHrefs).toEqual(['https://nrs.example/zip?sig=abc']));
+    expect(openSpy).not.toHaveBeenCalled();
+  });
+
+  it('opens the eagle-api URL when no search backend is configured', async () => {
+    await configuredWith('');
+
+    openDocumentDownload(DOCUMENT);
+
+    expect(openSpy).toHaveBeenCalledWith('/api/public/document/doc-1/download/Fish%20Habitat.pdf', '_blank');
+  });
+
+  // The deployed hosts do not route /demi-search/bulk-downloads; the file still has to arrive.
+  it('falls back to the eagle-api URL when demi-api refuses the POST', async () => {
+    await configuredWith('/demi-search');
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('', { status: 405, statusText: 'Not Allowed' })));
+
+    expect(() => openDocumentDownload(DOCUMENT)).not.toThrow();
+
+    await waitFor(() =>
+      expect(openSpy).toHaveBeenCalledWith('/api/public/document/doc-1/download/Fish%20Habitat.pdf', '_blank')
+    );
+    expect(clickedHrefs).toEqual([]);
+  });
+
+  it('falls back to the eagle-api URL when the POST answers with HTML', async () => {
+    await configuredWith('/demi-search');
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('<!doctype html>', { status: 200 })));
+
+    openDocumentDownload(DOCUMENT);
+
+    await waitFor(() =>
+      expect(openSpy).toHaveBeenCalledWith('/api/public/document/doc-1/download/Fish%20Habitat.pdf', '_blank')
+    );
+    expect(clickedHrefs).toEqual([]);
   });
 });

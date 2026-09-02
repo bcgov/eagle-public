@@ -1,9 +1,41 @@
+import { useRef } from 'react';
 import { track } from 'app/analytics/analytics';
+import {
+  CAP_MESSAGE,
+  clearSelection,
+  SELECT_ALL_MAX,
+  setSelected,
+  toggleSelected,
+  useSelection,
+  type SelectedDocument
+} from 'app/state/bulk-download';
+import { showToast } from 'app/state/toast';
 import { PageCountDisplay } from './page-count-display';
 import { PageSizePicker } from './page-size-picker';
 import { Pagination } from './pagination';
 import { withAllPicker, type IPageSizePickerOption, type ITableMessage, type TableObject } from './table-object';
 import './table.css';
+
+/** The checkbox column's cell. Rendered by the row components, which own their own `<tr>`. */
+export function SelectCell({ rowData, tableId }: { rowData: any; tableId: string }) {
+  const selected = useSelection(tableId).has(rowData._id);
+
+  return (
+    // The rest of the row is a download link; a click in here must not follow it.
+    <td data-label="Select" className="col-1" onClick={event => event.stopPropagation()}>
+      <input
+        type="checkbox"
+        className="form-check-input"
+        aria-label={`Select ${rowData.displayName}`}
+        checked={selected}
+        onChange={() => {
+          const added = toggleSelected(tableId, { id: rowData._id, displayName: rowData.displayName });
+          if (!added) showToast(CAP_MESSAGE, { type: 'warning' });
+        }}
+      />
+    </td>
+  );
+}
 
 interface TableTemplateProps {
   data: TableObject;
@@ -14,6 +46,7 @@ interface TableTemplateProps {
 }
 
 export function TableTemplate({ data, loading = false, rowComponent, onMessage }: TableTemplateProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
   const totalPages = Math.ceil((data.totalListItems || 0) / (data.pageSize || 10));
   const showPagination = !!data.options.showPagination && totalPages > 1;
   const tableType = (rowComponent ?? data.component)?.name || 'unknown';
@@ -23,6 +56,17 @@ export function TableTemplate({ data, loading = false, rowComponent, onMessage }
   const pageSizeOptions = data.options.showAllPicker
     ? withAllPicker(data.pageSizeOptions, data.totalListItems)
     : data.pageSizeOptions;
+
+  const selectable = !!data.options.selectable;
+  const selection = useSelection(data.tableId);
+  const pageDocs: SelectedDocument[] = data.items
+    .filter(item => item.rowData?._id)
+    .map(item => ({ id: item.rowData._id, displayName: item.rowData.displayName }));
+  const selectedOnPage = pageDocs.filter(doc => selection.has(doc.id)).length;
+  const pageAllSelected = pageDocs.length > 0 && selectedOnPage === pageDocs.length;
+  // Offered once the page is fully selected and there is more behind it than one page.
+  const showSelectAllBanner = selectable && pageAllSelected && data.totalListItems > data.pageSize;
+  const documentNoun = data.tableId === 'application' ? 'Application documents' : 'matching documents';
 
   function onSort(property: string): void {
     track('Table Column Sorted', {
@@ -40,6 +84,9 @@ export function TableTemplate({ data, loading = false, rowComponent, onMessage }
       to_page: pageNum,
       total_pages: totalPages
     });
+    // Paging from the bottom control otherwise leaves the reader at the foot of the new page.
+    // Optional call: jsdom has no scrollIntoView.
+    containerRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
     onMessage({ label: 'pageNum', data: pageNum });
   }
 
@@ -58,9 +105,22 @@ export function TableTemplate({ data, loading = false, rowComponent, onMessage }
     />
   ) : null;
 
+  // Rendered top and bottom, so `id` is a parameter: the e2e suite and any label still need one
+  // picker per unique id.
+  const pageSizePickerControl = (id: string) =>
+    data.options.showPageSizePicker ? (
+      <PageSizePicker
+        isHidden={false}
+        currentPageSize={data.pageSize}
+        sizeOptions={pageSizeOptions}
+        onPageSizeChosen={onUpdatePageSize}
+        id={id}
+      />
+    ) : null;
+
   return (
-    <div className="table-template">
-      {data.options.showTopControls && (data.options.showPageCountDisplay || showPagination) && (
+    <div className="table-template" ref={containerRef}>
+      {data.options.showTopControls && (data.options.showPageCountDisplay || data.options.showPageSizePicker || showPagination) && (
         <div className="row mb-4 table-controls-top">
           <div className="col-12 col-md-6 text-center text-md-start mb-3 mb-md-0">
             {data.options.showPageCountDisplay && (
@@ -72,8 +132,28 @@ export function TableTemplate({ data, loading = false, rowComponent, onMessage }
                 id="table-template-page-count-display"
               />
             )}
+            {pageSizePickerControl('table-template-page-size-picker-top')}
           </div>
           <div className="col-12 col-md-6 text-center text-md-end">{paginationControl}</div>
+        </div>
+      )}
+
+      {showSelectAllBanner && (
+        <div className="alert alert-info d-flex flex-wrap align-items-center gap-2" role="status">
+          {data.totalListItems <= SELECT_ALL_MAX ? (
+            <>
+              <span>All {pageDocs.length} on this page are selected.</span>
+              <button
+                type="button"
+                className="btn btn-link p-0"
+                onClick={() => onMessage({ label: 'selectAllMatching' })}
+              >
+                Select all {data.totalListItems} {documentNoun}
+              </button>
+            </>
+          ) : (
+            <span>Narrow your filters to {SELECT_ALL_MAX} or fewer documents to select them all.</span>
+          )}
         </div>
       )}
 
@@ -89,6 +169,25 @@ export function TableTemplate({ data, loading = false, rowComponent, onMessage }
               {data.options.showHeader && (
                 <thead>
                   <tr>
+                    {selectable && (
+                      <th className="col-1">
+                        <input
+                          type="checkbox"
+                          className="form-check-input"
+                          aria-label="Select all on this page"
+                          checked={pageAllSelected}
+                          ref={input => {
+                            if (input) input.indeterminate = selectedOnPage > 0 && !pageAllSelected;
+                          }}
+                          // ponytail: unchecking drops the whole table's selection, other pages
+                          // included; deselect page-by-page if anyone paging around complains.
+                          onChange={() => {
+                            if (pageAllSelected) clearSelection(data.tableId);
+                            else if (!setSelected(data.tableId, pageDocs)) showToast(CAP_MESSAGE, { type: 'warning' });
+                          }}
+                        />
+                      </th>
+                    )}
                     {data.columns.map(entry => (
                       <th
                         key={entry.value}
@@ -120,6 +219,7 @@ export function TableTemplate({ data, loading = false, rowComponent, onMessage }
                 {showSkeleton &&
                   Array.from({ length: skeletonRows }, (_, row) => (
                     <tr key={`skeleton-${row}`} className="placeholder-wave" aria-hidden="true">
+                      {selectable && <td className="col-1"></td>}
                       {data.columns.map(entry => (
                         <td key={entry.value} className={entry.width}>
                           <span className="placeholder w-100"></span>
@@ -147,15 +247,7 @@ export function TableTemplate({ data, loading = false, rowComponent, onMessage }
               <div className="table-controls-bottom mt-4">
                 <div className="row">
                   <div className="col-12 col-md-6 text-center text-md-start mb-3 mb-md-0">
-                    {data.options.showPageSizePicker && data.totalListItems > 10 && (
-                      <PageSizePicker
-                        isHidden={false}
-                        currentPageSize={data.pageSize}
-                        sizeOptions={pageSizeOptions}
-                        onPageSizeChosen={onUpdatePageSize}
-                        id="table-template-page-size-picker"
-                      />
-                    )}
+                    {pageSizePickerControl('table-template-page-size-picker')}
                   </div>
                   <div className="col-12 col-md-6 text-center text-md-end">{paginationControl}</div>
                 </div>
