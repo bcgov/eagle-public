@@ -3,8 +3,12 @@ import type { ApplicationInsights, ITelemetryItem } from '@microsoft/application
 let appInsights: ApplicationInsights | null = null;
 let lastReported: Error | null = null;
 
-/** Query strings carry search terms, which are personal data. */
-const QUERY_STRING = /\?.*$/;
+const MAX_BUFFERED = 20;
+/** Errors reported before initTelemetry finishes. Flushed through trackException once the SDK is up. */
+const buffered: { error: unknown; properties?: Record<string, string> }[] = [];
+
+/** Query strings carry search terms, which are personal data. Global: strips every `?...` token, including inside multi-line stacks. */
+const QUERY_STRING = /\?\S*/g;
 const REDACTED_FIELDS = ['uri', 'target', 'name', 'message'];
 
 /**
@@ -54,10 +58,37 @@ export async function initTelemetry(
         data[field] = value.replace(QUERY_STRING, '');
       }
     }
+    const exceptions: unknown = data['exceptions'];
+    if (Array.isArray(exceptions)) {
+      for (const exception of exceptions as Record<string, unknown>[]) {
+        for (const field of ['message', 'stack']) {
+          const value: unknown = exception[field];
+          if (typeof value === 'string') {
+            exception[field] = value.replace(QUERY_STRING, '');
+          }
+        }
+        const parsedStack: unknown = exception['parsedStack'];
+        if (Array.isArray(parsedStack)) {
+          for (const frame of parsedStack as Record<string, unknown>[]) {
+            for (const field of ['fileName', 'assembly']) {
+              const value: unknown = frame[field];
+              if (typeof value === 'string') {
+                frame[field] = value.replace(QUERY_STRING, '');
+              }
+            }
+          }
+        }
+      }
+    }
     return true;
   });
 
   appInsights = instance;
+
+  const toFlush = buffered.splice(0, buffered.length);
+  for (const item of toFlush) {
+    trackException(item.error, item.properties);
+  }
 }
 
 /**
@@ -67,7 +98,13 @@ export async function initTelemetry(
  * (it has the component stack) and then logs it, and the logger reports too.
  */
 export function trackException(error: unknown, properties?: Record<string, string>): void {
-  if (!appInsights || (error instanceof Error && error === lastReported)) {
+  if (!appInsights) {
+    if (buffered.length < MAX_BUFFERED) {
+      buffered.push({ error, properties });
+    }
+    return;
+  }
+  if (error instanceof Error && error === lastReported) {
     return;
   }
   const exception = error instanceof Error ? error : new Error(String(error));

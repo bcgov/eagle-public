@@ -101,8 +101,46 @@ describe('the telemetry initializer', () => {
       uri: 'https://epic.example.gov.bc.ca/api/search',
       target: 'epic.example.gov.bc.ca',
       name: 'GET /api/search',
-      message: 'GET /api/search'
+      message: 'GET /api/search failed'
     });
+  });
+
+  it('strips query strings from exception message and stack, everywhere they appear', async () => {
+    const initializer = await initialized();
+    const item: ITelemetryItem = {
+      name: 'exception',
+      baseType: 'ExceptionData',
+      baseData: {
+        exceptions: [
+          {
+            message: 'HTTP GET /api/projects?token=SECRET 401',
+            stack:
+              'Error: HTTP GET /api/projects?token=SECRET 401\n    at x (http://h/app.js?v=1:1:1)'
+          }
+        ]
+      }
+    };
+
+    initializer(item);
+
+    const baseData = item.baseData as { exceptions: [{ message: string; stack: string }] };
+    const [exception] = baseData.exceptions;
+    expect(exception.message).not.toContain('token=SECRET');
+    expect(exception.stack).not.toContain('token=SECRET');
+    expect(exception.stack).not.toContain('?v=1');
+    expect(exception.message).toContain('/api/projects');
+    expect(exception.message).toContain('401');
+    expect(exception.stack).toContain('/api/projects');
+    expect(exception.stack).toContain('401');
+  });
+
+  it('strips a query string token and keeps the rest of the message', async () => {
+    const initializer = await initialized();
+    const item = dependency({ message: 'HTTP GET /api/x?q=a 500 tail', success: false });
+
+    initializer(item);
+
+    expect((item.baseData as { message: string }).message).toBe('HTTP GET /api/x 500 tail');
   });
 
   it('stamps the cloud role', async () => {
@@ -151,5 +189,31 @@ describe('trackException', () => {
     trackException(error, { source: 'logger' });
 
     expect(sdk.trackException).toHaveBeenCalledTimes(1);
+  });
+
+  it('flushes errors reported before initialization once the SDK is up', async () => {
+    const { trackException, initTelemetry } = await telemetry();
+
+    trackException(new Error('early'));
+    expect(sdk.trackException).not.toHaveBeenCalled();
+
+    await initTelemetry(CONNECTION_STRING, 'eagle-public', ['epic.example.gov.bc.ca']);
+
+    expect(sdk.trackException).toHaveBeenCalledTimes(1);
+    expect(sdk.trackException).toHaveBeenCalledWith(
+      expect.objectContaining({ exception: expect.objectContaining({ message: 'early' }) })
+    );
+  });
+
+  it('drops buffered errors beyond the cap', async () => {
+    const { trackException, initTelemetry } = await telemetry();
+
+    for (let i = 0; i < 21; i++) {
+      trackException(new Error(`early-${i}`));
+    }
+
+    await initTelemetry(CONNECTION_STRING, 'eagle-public', ['epic.example.gov.bc.ca']);
+
+    expect(sdk.trackException).toHaveBeenCalledTimes(20);
   });
 });
