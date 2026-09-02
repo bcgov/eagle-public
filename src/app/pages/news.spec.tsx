@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryRouter } from 'react-router';
+import { loadConfig } from 'app/config/config';
 import { News } from './news';
 
 const ACTIVITIES = [
@@ -124,5 +125,39 @@ describe('news', () => {
     );
 
     expect(await screen.findByText('No activities found')).toBeInTheDocument();
+  });
+});
+
+/** The hero action is the only route to eagle-notify from this page, and NOTIFY_URL gates it. */
+describe('news subscribe action', () => {
+  const originalEnv = window.__env;
+
+  afterEach(async () => {
+    window.__env = originalEnv;
+    await loadConfig();
+    vi.unstubAllGlobals();
+  });
+
+  async function configure(notifyUrl: string): Promise<void> {
+    window.__env = { logLevel: 4, NOTIFY_URL: notifyUrl };
+    await loadConfig();
+  }
+
+  it('subscribes to all updates when NOTIFY_URL is set', async () => {
+    await configure('https://notify.example/');
+    renderAt('/news');
+
+    expect(await screen.findByRole('link', { name: 'Subscribe to all updates' })).toHaveAttribute(
+      'href',
+      'https://notify.example/#/?s=eao:updates'
+    );
+  });
+
+  it('renders no subscribe action when NOTIFY_URL is empty', async () => {
+    await configure('');
+    renderAt('/news');
+
+    await screen.findByText('Permit granted');
+    expect(screen.queryByRole('link', { name: 'Subscribe to all updates' })).toBeNull();
   });
 });

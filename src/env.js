@@ -76,6 +76,9 @@
   // eagle-admin link
   window.__env.ADMIN_PATH = 'https://eagle-test.apps.silver.devops.gov.bc.ca/admin/';
 
+  // eagle-notify site base. Empty hides the subscribe links; /api/config sets it per environment.
+  window.__env.NOTIFY_URL = '';
+
   // Analytics — proxied through /analytics (eagle-api forwards to penguin-analytics)
   window.__env.ANALYTICS_API_URL = '/analytics';
   window.__env.ANALYTICS_DEBUG = true;
