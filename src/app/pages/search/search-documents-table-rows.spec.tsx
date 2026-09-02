@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { loadConfig } from 'app/config/config';
 import { tableObject } from 'app/components/table/table-object';
-import { clearSelection, selectedCount } from 'app/state/bulk-download';
+import { clearSelection } from 'app/state/bulk-download';
 import { DocSearchTableRow } from './search-documents-table-rows';
 
 const DOCUMENT = {
@@ -104,7 +104,7 @@ describe('DocSearchTableRow selection', () => {
 
     await userEvent.click(screen.getByRole('checkbox', { name: 'Select Fish Habitat Report' }));
 
-    expect(selectedCount('search')).toBe(1);
+    expect(screen.getByRole('checkbox', { name: 'Select Fish Habitat Report' })).toBeChecked();
     expect(screen.getByRole('row')).toHaveClass('selected');
   });
 });

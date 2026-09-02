@@ -3,14 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { track } from 'app/analytics/analytics';
 import { ApiError, createBulkDownload, getBulkDownload, type BulkDownloadStatus } from 'app/api/api';
 import { logger } from 'app/config/logging';
-import {
-  clearJob,
-  clearSelection,
-  selectedTableIds,
-  setJob,
-  useJob,
-  useSelection
-} from 'app/state/bulk-download';
+import { clearJob, clearSelection, forgetStoredJob, setJob, useJob, useSelection } from 'app/state/bulk-download';
 import { showToast } from 'app/state/toast';
 import { triggerDownload } from 'app/utils/utils';
 
@@ -46,16 +39,29 @@ export function BulkDownloadBar() {
   const [error, setError] = useState<string | null>(null);
   // StrictMode runs effects twice and a re-render must not re-fire either; the job id fires once.
   const firedFor = useRef<string | null>(null);
+  const barRef = useRef<HTMLDivElement>(null);
 
   const query = useQuery({
     queryKey: ['bulk-download', job?.id],
     queryFn: () => getBulkDownload(job!.id),
     enabled: !!job,
-    refetchInterval: q => (isTerminal(q.state.data?.status) ? false : 4000)
+    retry: false,
+    // A poll that failed keeps failing; stop the 4s beat and let the reader retry or dismiss.
+    refetchInterval: q => (q.state.status === 'error' || isTerminal(q.state.data?.status) ? false : 4000)
   });
 
   const state = query.data;
   const status = state?.status;
+  const queryError = query.error;
+  // demi-api no longer knows the job: the zip is swept or expired, so retrying cannot bring it back.
+  const jobGone =
+    query.isError && queryError instanceof ApiError && (queryError.status === 404 || queryError.status === 410);
+
+  useEffect(() => {
+    if (!query.isError) return;
+    logger.warn('Bulk download status could not be read', 'bulk-download', queryError);
+    if (jobGone) forgetStoredJob();
+  }, [query.isError, jobGone, queryError]);
 
   useEffect(() => {
     if (!job || state?.status !== 'ready' || firedFor.current === job.id) return;
@@ -73,6 +79,17 @@ export function BulkDownloadBar() {
     if (status === 'failed' || status === 'expired') track('Bulk Download Failed', { status });
   }, [status]);
 
+  // The bar is fixed over the page; without this the last rows and the footer cannot be reached.
+  useEffect(() => {
+    const bar = barRef.current;
+    if (!bar) return;
+    const body = window.document.body;
+    body.style.paddingBottom = `${bar.offsetHeight}px`;
+    return () => {
+      body.style.paddingBottom = '';
+    };
+  });
+
   async function startDownload(): Promise<void> {
     const ids = [...selection.keys()];
     setError(null);
@@ -86,7 +103,7 @@ export function BulkDownloadBar() {
         clearSelection();
         return;
       }
-      setJob({ id: result.id, tableId: selectedTableIds()[0] ?? '', count: ids.length, startedAt: Date.now() });
+      setJob({ id: result.id, count: ids.length, startedAt: Date.now() });
     } catch (failure) {
       logger.warn('Bulk download could not be started', 'bulk-download', failure);
       const httpStatus = failure instanceof ApiError ? failure.status : 0;
@@ -109,13 +126,28 @@ export function BulkDownloadBar() {
 
   return (
     <div
+      ref={barRef}
       className="position-fixed bottom-0 start-0 end-0 bg-white border-top shadow p-3"
       style={{ zIndex: 11000 }}
       role="status"
       aria-live="polite"
     >
       <div className="container d-flex flex-wrap align-items-center justify-content-between gap-2">
-        {job ? (
+        {query.isError ? (
+          <>
+            <span>{jobGone ? 'That download is no longer available.' : 'Could not check the download.'}</span>
+            <div className="d-flex gap-2">
+              {!jobGone && (
+                <button type="button" className="btn btn-primary" onClick={() => void query.refetch()}>
+                  Retry
+                </button>
+              )}
+              <button type="button" className="btn btn-outline-secondary" onClick={dismiss}>
+                Dismiss
+              </button>
+            </div>
+          </>
+        ) : job ? (
           <>
             <span>{jobMessage(state)}</span>
             {isTerminal(status) && (

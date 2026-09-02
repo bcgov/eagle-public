@@ -1,8 +1,7 @@
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { waitFor } from '@testing-library/react';
 import { Constants } from './constants';
 import { loadConfig } from 'app/config/config';
-import { clearToasts, useToasts } from 'app/state/toast';
 import { createProjectTabModifiers, documentDownloadUrl, extractFromSearchResults, openDocumentDownload } from './utils';
 
 describe('extractFromSearchResults()', () => {
@@ -70,8 +69,8 @@ describe('createProjectTabModifiers()', () => {
 
 /**
  * A single download goes through demi-api for a presigned, forced-attachment URL and lands in the
- * current tab; Safari blocks an async `window.open`. With no DEMI configured it falls back to the
- * eagle-api URL, which is also the anchor href a reader can middle-click.
+ * current tab; Safari blocks an async `window.open`. With no DEMI configured, or when DEMI does not
+ * answer with a URL, it falls back to the eagle-api URL, which is also the anchor href.
  */
 describe('openDocumentDownload()', () => {
   const originalEnv = window.__env;
@@ -80,7 +79,6 @@ describe('openDocumentDownload()', () => {
   let openSpy: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    clearToasts();
     clickedHrefs = [];
     vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
       clickedHrefs.push(this.getAttribute('href') ?? '');
@@ -125,14 +123,28 @@ describe('openDocumentDownload()', () => {
     expect(openSpy).toHaveBeenCalledWith('/api/public/document/doc-1/download/Fish%20Habitat.pdf', '_blank');
   });
 
-  it('shows a toast instead of rejecting when demi-api refuses', async () => {
+  // The deployed hosts do not route /demi-search/bulk-downloads; the file still has to arrive.
+  it('falls back to the eagle-api URL when demi-api refuses the POST', async () => {
     await configuredWith('/demi-search');
-    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 429, statusText: 'Too Many Requests' })));
-    const { result } = renderHook(() => useToasts());
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('', { status: 405, statusText: 'Not Allowed' })));
 
     expect(() => openDocumentDownload(DOCUMENT)).not.toThrow();
 
-    await waitFor(() => expect(result.current.map(toast => toast.type)).toEqual(['error']));
+    await waitFor(() =>
+      expect(openSpy).toHaveBeenCalledWith('/api/public/document/doc-1/download/Fish%20Habitat.pdf', '_blank')
+    );
+    expect(clickedHrefs).toEqual([]);
+  });
+
+  it('falls back to the eagle-api URL when the POST answers with HTML', async () => {
+    await configuredWith('/demi-search');
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('<!doctype html>', { status: 200 })));
+
+    openDocumentDownload(DOCUMENT);
+
+    await waitFor(() =>
+      expect(openSpy).toHaveBeenCalledWith('/api/public/document/doc-1/download/Fish%20Habitat.pdf', '_blank')
+    );
     expect(clickedHrefs).toEqual([]);
   });
 });

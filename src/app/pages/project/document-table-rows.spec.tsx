@@ -1,10 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, renderHook, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { loadConfig } from 'app/config/config';
 import { tableObject } from 'app/components/table/table-object';
-import { clearSelection, selectedCount } from 'app/state/bulk-download';
+import { clearSelection, SELECT_ALL_MAX, setSelected } from 'app/state/bulk-download';
+import { clearToasts, useToasts } from 'app/state/toast';
 import { DocumentTableRow } from './document-table-rows';
 
 const DOCUMENT = {
@@ -96,6 +97,7 @@ describe('DocumentTableRow selection', () => {
     openSpy = vi.fn();
     vi.stubGlobal('open', openSpy);
     clearSelection();
+    clearToasts();
   });
 
   afterEach(() => {
@@ -131,8 +133,24 @@ describe('DocumentTableRow selection', () => {
 
     await userEvent.click(screen.getByRole('checkbox', { name: 'Select Fish Habitat Report' }));
 
-    expect(selectedCount('documents')).toBe(1);
+    expect(screen.getByRole('checkbox', { name: 'Select Fish Habitat Report' })).toBeChecked();
     expect(screen.getByRole('row')).toHaveClass('selected');
+  });
+
+  it('says so rather than selecting past the 100-document cap', async () => {
+    setSelected(
+      'documents',
+      Array.from({ length: SELECT_ALL_MAX }, (_, i) => ({ id: `other-${i}`, displayName: `Other ${i}` }))
+    );
+    const toasts = renderHook(() => useToasts());
+    renderRow(true);
+
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Select Fish Habitat Report' }));
+
+    expect(toasts.result.current.map(toast => toast.message)).toEqual([
+      'You can select up to 100 documents at a time.'
+    ]);
+    expect(screen.getByRole('checkbox', { name: 'Select Fish Habitat Report' })).not.toBeChecked();
   });
 
   it('does not start a download when the checkbox is clicked', async () => {

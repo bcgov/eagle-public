@@ -8,8 +8,10 @@ const ALPHA = { id: 'doc-a', displayName: 'Alpha' };
 const BETA = { id: 'doc-b', displayName: 'Beta' };
 
 let postResponse: () => Response;
+let statusStatus: number;
 let statusResponses: unknown[];
 let clickedHrefs: string[];
+let fetchMock: ReturnType<typeof vi.fn>;
 
 /**
  * The bar is the only place the browser learns a zip is ready, so its states are driven end to end
@@ -23,20 +25,20 @@ describe('BulkDownloadBar', () => {
     localStorage.clear();
     clickedHrefs = [];
     statusResponses = [];
+    statusStatus = 200;
     postResponse = () => new Response('{}', { status: 500 });
 
     vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
       clickedHrefs.push(this.getAttribute('href') ?? '');
     });
 
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (_url: string, init?: RequestInit) => {
-        if (init?.method === 'POST') return postResponse();
-        const body = statusResponses.length > 1 ? statusResponses.shift() : statusResponses[0];
-        return new Response(JSON.stringify(body), { status: 200 });
-      })
-    );
+    fetchMock = vi.fn(async (_url: string, init?: RequestInit) => {
+      if (init?.method === 'POST') return postResponse();
+      if (statusStatus !== 200) return new Response('{}', { status: statusStatus, statusText: 'Nope' });
+      const body = statusResponses.length > 1 ? statusResponses.shift() : statusResponses[0];
+      return new Response(JSON.stringify(body), { status: 200 });
+    });
+    vi.stubGlobal('fetch', fetchMock);
   });
 
   afterEach(() => {
@@ -194,7 +196,7 @@ describe('BulkDownloadBar', () => {
 
   it('resumes a job left running by the previous page load', async () => {
     statusResponses = [{ id: 'job-9', status: 'running', partCount: 3, partsReady: 2 }];
-    const bar = await mount({ id: 'job-9', tableId: 'documents', count: 40, startedAt: Date.now() - 60_000 });
+    const bar = await mount({ id: 'job-9', count: 40, startedAt: Date.now() - 60_000 });
 
     bar.render();
     await tick(0);
@@ -203,7 +205,7 @@ describe('BulkDownloadBar', () => {
   });
 
   it('drops a job left over from more than an hour ago', async () => {
-    const bar = await mount({ id: 'job-9', tableId: 'documents', count: 40, startedAt: Date.now() - 3_700_000 });
+    const bar = await mount({ id: 'job-9', count: 40, startedAt: Date.now() - 3_700_000 });
 
     const { container } = bar.render();
     await tick(0);
@@ -211,9 +213,69 @@ describe('BulkDownloadBar', () => {
     expect(container).toBeEmptyDOMElement();
   });
 
+  /**
+   * A job id demi-api no longer knows - swept, expired, or left over from another environment -
+   * used to pin the bar on "Preparing download…" and poll for the rest of the hour.
+   */
+  it('drops a job the status endpoint answers 404 for, and stops polling', async () => {
+    statusStatus = 404;
+    const bar = await mount({ id: 'job-gone', count: 40, startedAt: Date.now() });
+
+    bar.render();
+    await tick(0);
+
+    expect(screen.getByText('That download is no longer available.')).toBeInTheDocument();
+    expect(localStorage.getItem(JOB_KEY)).toBeNull();
+    expect(screen.getByRole('button', { name: 'Dismiss' })).toBeInTheDocument();
+
+    const pollsSoFar = fetchMock.mock.calls.length;
+    await tick(60_000);
+
+    expect(fetchMock.mock.calls.length).toBe(pollsSoFar);
+  });
+
+  it('offers a retry when the status check fails for any other reason', async () => {
+    statusStatus = 500;
+    const bar = await mount({ id: 'job-9', count: 40, startedAt: Date.now() });
+
+    bar.render();
+    await tick(0);
+
+    expect(screen.getByText('Could not check the download.')).toBeInTheDocument();
+    // The job is still demi-api's, so it stays: a 500 says nothing about the zip.
+    expect(localStorage.getItem(JOB_KEY)).not.toBeNull();
+
+    // The 4s beat stops until the reader asks again, rather than hammering a failing endpoint.
+    const pollsSoFar = fetchMock.mock.calls.length;
+    await tick(60_000);
+
+    expect(fetchMock.mock.calls.length).toBe(pollsSoFar);
+
+    statusStatus = 200;
+    statusResponses = [{ id: 'job-9', status: 'running', partCount: 3, partsReady: 2 }];
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+    await tick(0);
+
+    expect(screen.getByText('Preparing download… 2 of 3 parts')).toBeInTheDocument();
+  });
+
+  // A fixed bar over the page hides the last rows and the footer unless the body makes room.
+  it('pads the body by its own height while it is showing', async () => {
+    vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(71);
+    const bar = await mount();
+    bar.store.setSelected('documents', [ALPHA]);
+    bar.render();
+
+    expect(document.body.style.paddingBottom).toBe('71px');
+
+    act(() => bar.store.clearSelection());
+
+    expect(document.body.style.paddingBottom).toBe('');
+  });
+
   it('clears the job and the selection on dismiss', async () => {
     statusResponses = [{ id: 'job-9', status: 'failed', partCount: 0, partsReady: 0 }];
-    const bar = await mount({ id: 'job-9', tableId: 'documents', count: 40, startedAt: Date.now() });
+    const bar = await mount({ id: 'job-9', count: 40, startedAt: Date.now() });
     bar.store.setSelected('documents', [ALPHA, BETA]);
     const { container } = bar.render();
     await tick(0);

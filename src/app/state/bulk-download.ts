@@ -1,8 +1,12 @@
 import { createStore, useStore } from './store';
 import { fetchData, type SearchParamObject } from 'app/api/search';
+import { showToast } from './toast';
 
 /** Anonymous cap demi-api enforces per job. Also the ceiling on "select all matching". */
 export const SELECT_ALL_MAX = 100;
+
+/** What every refused selection says, wherever it is refused. */
+export const CAP_MESSAGE = `You can select up to ${SELECT_ALL_MAX} documents at a time.`;
 
 /** Only what the bulk bar needs: the id to post and a name to show. */
 export interface SelectedDocument {
@@ -12,7 +16,6 @@ export interface SelectedDocument {
 
 export interface BulkDownloadJob {
   id: string;
-  tableId: string;
   count: number;
   startedAt: number;
 }
@@ -39,21 +42,38 @@ function merged(tables: Map<string, TableSelection>): TableSelection {
   return all;
 }
 
-export function toggleSelected(tableId: string, doc: SelectedDocument): void {
+/** Every table's selection counts against the cap: the bar posts them merged, as one job. */
+function selectedElsewhere(tableId: string): number {
+  let total = 0;
+  selection.get().forEach((docs, id) => {
+    if (id !== tableId) total += docs.size;
+  });
+  return total;
+}
+
+/** False when the cap refuses the addition; removals always go through. */
+export function toggleSelected(tableId: string, doc: SelectedDocument): boolean {
   const docs = new Map(selection.get().get(tableId) ?? EMPTY);
   if (docs.has(doc.id)) {
     docs.delete(doc.id);
   } else {
+    if (selectedElsewhere(tableId) + docs.size >= SELECT_ALL_MAX) return false;
     docs.set(doc.id, doc);
   }
   write(tableId, docs);
+  return true;
 }
 
-/** Adds documents to a table's selection; the ones already selected elsewhere in it stay. */
-export function setSelected(tableId: string, docs: SelectedDocument[]): void {
+/**
+ * Adds documents to a table's selection; the ones already selected elsewhere in it stay. All or
+ * nothing: false when the whole batch would take the selection past the cap.
+ */
+export function setSelected(tableId: string, docs: SelectedDocument[]): boolean {
   const next = new Map(selection.get().get(tableId) ?? EMPTY);
   docs.forEach(doc => next.set(doc.id, doc));
+  if (selectedElsewhere(tableId) + next.size > SELECT_ALL_MAX) return false;
   write(tableId, next);
+  return true;
 }
 
 /** Clears one table's selection, or every table's when called with no id (the bar's Clear). */
@@ -72,15 +92,6 @@ export function useSelection(tableId?: string): TableSelection {
   return tables.get(tableId) ?? EMPTY;
 }
 
-export function selectedCount(tableId: string): number {
-  return selection.get().get(tableId)?.size ?? 0;
-}
-
-/** Table ids holding a selection. The bar stamps the first onto the job it starts. */
-export function selectedTableIds(): string[] {
-  return [...selection.get().keys()];
-}
-
 /**
  * Selects every document the current filters match, in one request: the anonymous cap is 100 and
  * DEMI pages up to 500, so there is no paging loop to run.
@@ -88,10 +99,11 @@ export function selectedTableIds(): string[] {
 export async function selectAllMatching(tableId: string, params: SearchParamObject): Promise<void> {
   const results = await fetchData({ ...params, pageSize: SELECT_ALL_MAX, currentPage: 1 });
   const rows: any[] = Array.isArray(results.data) ? results.data : [];
-  setSelected(
+  const added = setSelected(
     tableId,
     rows.map(row => ({ id: row._id, displayName: row.displayName }))
   );
+  if (!added) showToast(CAP_MESSAGE, { type: 'warning' });
 }
 
 const JOB_KEY = 'epic-bulk-download-job';
@@ -119,6 +131,14 @@ const job = createStore<BulkDownloadJob | null>(storedJob());
 export function setJob(next: BulkDownloadJob): void {
   localStorage.setItem(JOB_KEY, JSON.stringify(next));
   job.set(next);
+}
+
+/**
+ * Drops the persisted copy but leaves the bar's, so a dead job id cannot come back on reload while
+ * the reader still has the failure in front of them.
+ */
+export function forgetStoredJob(): void {
+  localStorage.removeItem(JOB_KEY);
 }
 
 export function clearJob(): void {

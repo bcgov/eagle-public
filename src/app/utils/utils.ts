@@ -4,7 +4,6 @@ import { track } from 'app/analytics/analytics';
 import { createBulkDownload } from 'app/api/api';
 import { bulkDownloadEnabled } from 'app/config/config';
 import { logger } from 'app/config/logging';
-import { showToast } from 'app/state/toast';
 
 const encode = encodeURIComponent;
 (window as any)['encodeURIComponent'] = (component: string | number | boolean) => {
@@ -202,8 +201,8 @@ export function triggerDownload(url: string): void {
 
 /**
  * Starts a single document download: presigned through demi-api when it is configured, the
- * eagle-api URL otherwise. Never rejects - a failure surfaces as a toast, not an unhandled promise
- * in a click handler.
+ * eagle-api URL otherwise. Never rejects - anything demi-api does other than answer with a URL
+ * falls back to eagle-api, which still serves the file.
  */
 export function openDocumentDownload(document: DownloadableDocument): void {
   track('Document Downloaded', {
@@ -212,8 +211,10 @@ export function openDocumentDownload(document: DownloadableDocument): void {
     document_type: 'unknown'
   });
 
+  const eagleApiDownload = () => window.open(documentDownloadUrl(document), '_blank');
+
   if (!bulkDownloadEnabled()) {
-    window.open(documentDownloadUrl(document), '_blank');
+    eagleApiDownload();
     return;
   }
 
@@ -226,8 +227,8 @@ export function openDocumentDownload(document: DownloadableDocument): void {
       triggerDownload(url);
     })
     .catch(error => {
-      logger.warn('Document download failed', 'utils', error);
-      showToast('That download could not be started. Please try again.', { type: 'error' });
+      logger.warn('Presigned download failed, falling back to eagle-api', 'utils', error);
+      eagleApiDownload();
     });
 }
 

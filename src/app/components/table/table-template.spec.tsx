@@ -1,8 +1,9 @@
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
 import { useState } from 'react';
-import { render, screen, within } from '@testing-library/react';
+import { render, renderHook, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { clearSelection, selectedCount, setSelected, toggleSelected } from 'app/state/bulk-download';
+import { clearSelection, SELECT_ALL_MAX, setSelected, toggleSelected } from 'app/state/bulk-download';
+import { clearToasts, useToasts } from 'app/state/toast';
 import { TableTemplate } from './table-template';
 import { tableObject, type ITableMessage, type TableObject } from './table-object';
 
@@ -108,6 +109,7 @@ describe('TableTemplate selection', () => {
 
   beforeEach(() => {
     clearSelection();
+    clearToasts();
   });
 
   it('offers no checkbox column while the table is not selectable', () => {
@@ -121,8 +123,8 @@ describe('TableTemplate selection', () => {
 
     await userEvent.click(screen.getByLabelText(SELECT_ALL_PAGE));
 
-    expect(selectedCount('documents')).toBe(2);
     expect(screen.getByLabelText(SELECT_ALL_PAGE)).toBeChecked();
+    expect(screen.getByText('All 2 on this page are selected.')).toBeInTheDocument();
   });
 
   it('clears the selection when the header checkbox is unchecked', async () => {
@@ -134,7 +136,26 @@ describe('TableTemplate selection', () => {
 
     await userEvent.click(screen.getByLabelText(SELECT_ALL_PAGE));
 
-    expect(selectedCount('documents')).toBe(0);
+    const header = screen.getByLabelText(SELECT_ALL_PAGE) as HTMLInputElement;
+    expect(header).not.toBeChecked();
+    expect(header.indeterminate).toBe(false);
+  });
+
+  // Page 2 of a grid where the reader already holds the whole anonymous quota.
+  it('says so instead of selecting a page that would pass the 100-document cap', async () => {
+    setSelected(
+      'documents',
+      Array.from({ length: SELECT_ALL_MAX }, (_, i) => ({ id: `other-${i}`, displayName: `Other ${i}` }))
+    );
+    const toasts = renderHook(() => useToasts());
+    render(<TableTemplate data={selectableTable()} onMessage={() => undefined} />);
+
+    await userEvent.click(screen.getByLabelText(SELECT_ALL_PAGE));
+
+    expect(toasts.result.current.map(toast => toast.message)).toEqual([
+      'You can select up to 100 documents at a time.'
+    ]);
+    expect(screen.getByLabelText(SELECT_ALL_PAGE)).not.toBeChecked();
   });
 
   it('reads as indeterminate while only part of the page is selected', () => {

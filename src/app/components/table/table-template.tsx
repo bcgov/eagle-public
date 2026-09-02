@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { track } from 'app/analytics/analytics';
 import {
+  CAP_MESSAGE,
   clearSelection,
   SELECT_ALL_MAX,
   setSelected,
@@ -8,6 +9,7 @@ import {
   useSelection,
   type SelectedDocument
 } from 'app/state/bulk-download';
+import { showToast } from 'app/state/toast';
 import { PageCountDisplay } from './page-count-display';
 import { PageSizePicker } from './page-size-picker';
 import { Pagination } from './pagination';
@@ -26,7 +28,10 @@ export function SelectCell({ rowData, tableId }: { rowData: any; tableId: string
         className="form-check-input"
         aria-label={`Select ${rowData.displayName}`}
         checked={selected}
-        onChange={() => toggleSelected(tableId, { id: rowData._id, displayName: rowData.displayName })}
+        onChange={() => {
+          const added = toggleSelected(tableId, { id: rowData._id, displayName: rowData.displayName });
+          if (!added) showToast(CAP_MESSAGE, { type: 'warning' });
+        }}
       />
     </td>
   );
@@ -176,9 +181,10 @@ export function TableTemplate({ data, loading = false, rowComponent, onMessage }
                           }}
                           // ponytail: unchecking drops the whole table's selection, other pages
                           // included; deselect page-by-page if anyone paging around complains.
-                          onChange={() =>
-                            pageAllSelected ? clearSelection(data.tableId) : setSelected(data.tableId, pageDocs)
-                          }
+                          onChange={() => {
+                            if (pageAllSelected) clearSelection(data.tableId);
+                            else if (!setSelected(data.tableId, pageDocs)) showToast(CAP_MESSAGE, { type: 'warning' });
+                          }}
                         />
                       </th>
                     )}

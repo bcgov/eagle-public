@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { fetchData, SearchParamObject } from 'app/api/search';
+import { clearToasts, useToasts } from './toast';
 import {
   clearJob,
   clearSelection,
   selectAllMatching,
-  selectedCount,
-  selectedTableIds,
+  SELECT_ALL_MAX,
   setJob,
   setSelected,
   toggleSelected,
@@ -38,7 +38,7 @@ describe('bulk download selection', () => {
     expect([...selectionOf('documents').keys()]).toEqual(['doc-a']);
 
     toggleSelected('documents', ALPHA);
-    expect(selectedCount('documents')).toBe(0);
+    expect(selectionOf('documents').size).toBe(0);
   });
 
   it('adds a page of documents without dropping what is already selected', () => {
@@ -55,9 +55,8 @@ describe('bulk download selection', () => {
 
     clearSelection('documents');
 
-    expect(selectedCount('documents')).toBe(0);
-    expect(selectedCount('search')).toBe(1);
-    expect(selectedTableIds()).toEqual(['search']);
+    expect(selectionOf('documents').size).toBe(0);
+    expect([...selectionOf('search').keys()]).toEqual(['doc-b']);
   });
 
   it('merges every table for the bar, and clears them all at once', () => {
@@ -69,6 +68,47 @@ describe('bulk download selection', () => {
     clearSelection();
 
     expect(selectionOf().size).toBe(0);
+  });
+});
+
+/** demi-api caps an anonymous job at 100 documents, and every table's selection goes in one job. */
+describe('the selection cap', () => {
+  const page = (from: number, count: number) =>
+    Array.from({ length: count }, (_, i) => ({ id: `doc-${from + i}`, displayName: `Doc ${from + i}` }));
+
+  beforeEach(() => {
+    clearSelection();
+  });
+
+  it('refuses the document past the cap and keeps the ones already selected', () => {
+    setSelected('documents', page(1, SELECT_ALL_MAX));
+
+    expect(toggleSelected('documents', { id: 'doc-101', displayName: 'Doc 101' })).toBe(false);
+    expect(selectionOf('documents').size).toBe(SELECT_ALL_MAX);
+    expect(selectionOf('documents').has('doc-101')).toBe(false);
+  });
+
+  it('deselects at the cap, which frees a slot', () => {
+    setSelected('documents', page(1, SELECT_ALL_MAX));
+
+    expect(toggleSelected('documents', { id: 'doc-1', displayName: 'Doc 1' })).toBe(true);
+    expect(toggleSelected('documents', { id: 'doc-101', displayName: 'Doc 101' })).toBe(true);
+    expect(selectionOf('documents').size).toBe(SELECT_ALL_MAX);
+  });
+
+  it('refuses a whole page rather than filling the last slots of it', () => {
+    setSelected('documents', page(1, SELECT_ALL_MAX));
+
+    expect(setSelected('documents', page(101, 100))).toBe(false);
+    expect(selectionOf('documents').size).toBe(SELECT_ALL_MAX);
+  });
+
+  // The bar posts every table merged, so a second table cannot start its own 100.
+  it('counts what other tables hold against the cap', () => {
+    setSelected('documents', page(1, SELECT_ALL_MAX));
+
+    expect(setSelected('search', page(101, 1))).toBe(false);
+    expect(selectionOf('search').size).toBe(0);
   });
 });
 
@@ -101,13 +141,30 @@ describe('selectAllMatching', () => {
     ]);
   });
 
+  it('says so when the whole matching set would pass the cap', async () => {
+    setSelected(
+      'search',
+      Array.from({ length: SELECT_ALL_MAX }, (_, i) => ({ id: `other-${i}`, displayName: `Other ${i}` }))
+    );
+    vi.mocked(fetchData).mockResolvedValue({ data: [{ _id: 'doc-a', displayName: 'Alpha' }] } as any);
+    clearToasts();
+    const toasts = renderHook(() => useToasts());
+
+    await selectAllMatching('documents', new SearchParamObject('documents'));
+
+    expect(toasts.result.current.map(toast => toast.message)).toEqual([
+      'You can select up to 100 documents at a time.'
+    ]);
+    expect(selectionOf('documents').size).toBe(0);
+  });
+
   it('selects nothing when the search comes back empty', async () => {
     // SearchResults defaults `data` to 0, not an empty array, when the response carried no results.
     vi.mocked(fetchData).mockResolvedValue({ data: 0, totalSearchCount: 0 } as any);
 
     await selectAllMatching('documents', new SearchParamObject('documents'));
 
-    expect(selectedCount('documents')).toBe(0);
+    expect(selectionOf('documents').size).toBe(0);
   });
 });
 
@@ -122,14 +179,14 @@ describe('bulk download job', () => {
   });
 
   it('persists the job it is given', () => {
-    setJob({ id: 'job-1', tableId: 'documents', count: 3, startedAt: Date.now() });
+    setJob({ id: 'job-1', count: 3, startedAt: Date.now() });
 
     expect(JSON.parse(localStorage.getItem(JOB_KEY)!)).toMatchObject({ id: 'job-1', count: 3 });
     expect(renderHook(() => useJob()).result.current).toMatchObject({ id: 'job-1' });
   });
 
   it('forgets the job on clear', () => {
-    setJob({ id: 'job-1', tableId: 'documents', count: 3, startedAt: Date.now() });
+    setJob({ id: 'job-1', count: 3, startedAt: Date.now() });
 
     clearJob();
 
@@ -140,7 +197,7 @@ describe('bulk download job', () => {
   it('rehydrates a job stored less than an hour ago', async () => {
     localStorage.setItem(
       JOB_KEY,
-      JSON.stringify({ id: 'job-1', tableId: 'documents', count: 3, startedAt: Date.now() - 60_000 })
+      JSON.stringify({ id: 'job-1', count: 3, startedAt: Date.now() - 60_000 })
     );
     vi.resetModules();
 
@@ -152,7 +209,7 @@ describe('bulk download job', () => {
   it('drops a job older than an hour, zip and all', async () => {
     localStorage.setItem(
       JOB_KEY,
-      JSON.stringify({ id: 'job-1', tableId: 'documents', count: 3, startedAt: Date.now() - 3_700_000 })
+      JSON.stringify({ id: 'job-1', count: 3, startedAt: Date.now() - 3_700_000 })
     );
     vi.resetModules();
 
