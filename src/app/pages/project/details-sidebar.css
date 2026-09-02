@@ -11,12 +11,18 @@
 .sidebar-wrapper .side-banner {
   background-color: var(--bc-blue);
   color: var(--bs-white);
-  transition: margin-left 0.5s ease;
   position: relative;
 }
 
+/* Slides out with a transform; the grid column in project.css does the layout part. */
 .sidebar-wrapper .side-banner.closed {
-  margin-left: calc(-1 * var(--sidebar-width));
+  transform: translateX(-100%);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .sidebar-wrapper .side-banner {
+    transition: transform 0.5s ease;
+  }
 }
 
 .sidebar-wrapper .sidebar-content {
