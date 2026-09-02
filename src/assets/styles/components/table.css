@@ -113,6 +113,22 @@
   background-color: var(--bs-table-hover-bg) !important;
 }
 
+/* Keyboard focus: an outline, so it still reads over the hover and selection fills. */
+.table tbody tr:focus-visible,
+.table tbody tr:focus-within {
+  outline: 2px solid var(--bs-primary);
+  outline-offset: -2px;
+}
+
+/* Selection: a blue tint, distinct from the grey hover fill, and `!important` to beat it. */
+.table tbody tr.selected td {
+  background-color: color-mix(in srgb, var(--bs-primary) 12%, var(--table-row-bg)) !important;
+}
+
+.table tbody tr.selected td:first-child {
+  box-shadow: inset 3px 0 0 var(--bs-primary);
+}
+
 /* === TABLE-TEMPLATE COMPONENT STYLES === */
 
 .table-template .table {

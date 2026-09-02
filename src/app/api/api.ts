@@ -161,6 +161,63 @@ export async function openDocument(document: Document): Promise<void> {
   window.open('/api/public/document/' + document._id + '/download/' + safeName, '_blank');
 }
 
+//
+// Bulk download (demi-api). Rides the search base path, so an empty SEARCH_API_PATH turns it off.
+//
+
+/** One document: demi-api answers 200 with a presigned URL instead of queueing a job. */
+export interface BulkDownloadSingle {
+  url: string;
+  expiresIn: number;
+  fileName: string;
+  displayName: string;
+  single: true;
+}
+
+/** Two or more documents: 202 and a job to poll. */
+export interface BulkDownloadAccepted {
+  id: string;
+  status: string;
+  documentCount: number;
+  estimatedPartCount: number;
+  statusUrl: string;
+}
+
+export interface BulkDownloadPart {
+  n: number;
+  url: string;
+  fileName: string;
+  bytes: number;
+  count: number;
+}
+
+export interface BulkDownloadError {
+  documentId: string;
+  name: string;
+  reason: string;
+}
+
+export interface BulkDownloadStatus {
+  id: string;
+  status: 'queued' | 'running' | 'ready' | 'failed' | 'expired';
+  documentCount: number;
+  partCount: number;
+  partsReady: number;
+  includedCount: number;
+  errorCount: number;
+  errors: BulkDownloadError[];
+  bytes?: number;
+  parts?: BulkDownloadPart[];
+}
+
+export async function createBulkDownload(documentIds: string[]): Promise<BulkDownloadSingle | BulkDownloadAccepted> {
+  return postJson(`${searchPath()}/bulk-downloads`, { documentIds });
+}
+
+export async function getBulkDownload(id: string): Promise<BulkDownloadStatus> {
+  return getJson(`${searchPath()}/bulk-downloads/${id}`);
+}
+
 async function downloadResource(id: string): Promise<Blob> {
   const queryString = `document/${id}/download`;
   const blob = await (await send(apiPath() + '/' + queryString)).blob();

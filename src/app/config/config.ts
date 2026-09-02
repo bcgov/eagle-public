@@ -98,6 +98,14 @@ export function getSearchApiPath(): string {
   return config.SEARCH_API_PATH || getApiPath();
 }
 
+/**
+ * Whether bulk (and presigned single) download is offered. The routes live on the DEMI search base,
+ * so an empty SEARCH_API_PATH means no DEMI at all: hide the UI and fall back to eagle-api.
+ */
+export function bulkDownloadEnabled(): boolean {
+  return !!config.SEARCH_API_PATH;
+}
+
 /** eagle-notify site base, without a trailing slash. Empty when unset, which hides the subscribe links. */
 export function getNotifyUrl(): string {
   return (config.NOTIFY_URL || '').trim().replace(/\/+$/, '');

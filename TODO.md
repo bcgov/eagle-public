@@ -191,6 +191,17 @@ deviations. The deviations the pass turned up are below.
 - utils/safe-html: `safeHtml` runs DOMPurify. Angular's plain `[innerHTML]` went through the DomSanitizer, which strips scripts and event handlers; React's `dangerouslySetInnerHTML` strips nothing. `dompurify` is the one dependency added for it.
 - config: a failed `/api/config` is retried three times and then fatal, with an "EPIC is temporarily unavailable" page; `index.html` shows "Loading EPIC…" until the first render. Angular fell back to `env.js` after one 5 s timeout, which shipped `ACCESS_GATE` false and an empty `SEARCH_API_PATH`: the curtain opened and search hit the wrong backend.
 - project/project: the Contact Us section sits below the sidebar/content layout, full width above the footer, rather than inside the content column where it started after the sidebar.
+- components/table/table-template: the page-size picker renders above the table as well as below it, and both are always offered. Angular put one below the table and hid it under 11 results, so the control a reader needs before paging sat past the page they were trying to shorten.
+- components/table/table-template: changing page scrolls the grid back to its own top. Angular left the reader at the foot of the table, looking at the last rows of the new page.
+- pages/project/document-table-rows, pages/search/search-documents-table-rows: the Name cell is a real `<a>`. Angular made the whole `<td>` a click handler, so the link could not be middle-clicked, copied or opened in a new tab.
+- utils/openDocumentDownload: a single download asks demi-api for a presigned URL and loads it in a hidden iframe, so the file arrives as an attachment and an error response cannot navigate the app away. Angular opened the eagle-api URL in a new tab; that stays the anchor `href` and the fallback whenever `SEARCH_API_PATH` is empty or demi-api answers with anything other than a URL.
+- components/table: per-column header filters (PUBLIC-146, marked stretch) are not built. The filter bar above the table already covers the same fields.
+- components/table, components/bulk-download-bar: document tables gain a checkbox column and a fixed bar that downloads the selection through demi-api. New here; Angular downloads one document at a time. The column only appears where `SEARCH_API_PATH` names a backend, so an empty one leaves the grid exactly as it was.
+- components/table/table-template: select-all across the filtered set is offered only while the result set is 100 documents or fewer, demi-api's anonymous per-job cap; past that the banner asks for narrower filters rather than selecting a set the backend would refuse.
+
+## Cutover prerequisites
+
+- Bulk download needs eao-nginx v2.7.29+ and the eagle-edge bulk-downloads patterns on prod before the React cutover; until then the UI is staging-only.
 
 ## Ports pending
 

@@ -1,6 +1,9 @@
 import type { ISearchResults } from 'app/models/search';
 import { Constants } from './constants';
 import { track } from 'app/analytics/analytics';
+import { createBulkDownload } from 'app/api/api';
+import { bulkDownloadEnabled } from 'app/config/config';
+import { logger } from 'app/config/logging';
 
 const encode = encodeURIComponent;
 (window as any)['encodeURIComponent'] = (component: string | number | boolean) => {
@@ -167,18 +170,69 @@ export function idToListName(id: string, lists: any[]): string {
   return item?.name ?? '-';
 }
 
-/** Opens a document download in a new browser tab. */
-export function openDocumentDownload(document: { _id: string; documentFileName?: string; displayName?: string; internalOriginalName?: string }): void {
-  const filename = document.documentFileName || document.displayName || document.internalOriginalName || 'document';
+export interface DownloadableDocument {
+  _id: string;
+  documentFileName?: string;
+  displayName?: string;
+  internalOriginalName?: string;
+}
 
+function downloadFileName(document: DownloadableDocument): string {
+  return document.documentFileName || document.displayName || document.internalOriginalName || 'document';
+}
+
+/** The eagle-api download URL. Also the anchor href, so middle-click and copy-link still work. */
+export function documentDownloadUrl(document: DownloadableDocument): string {
+  return `/api/public/document/${document._id}/download/${encodeString(downloadFileName(document), true)}`;
+}
+
+/**
+ * Starts a download in a hidden iframe. A `Content-Disposition: attachment` response downloads
+ * without navigating; an error body (an object-store 404 XML, say) renders inside the invisible
+ * iframe instead of replacing the app.
+ */
+export function triggerDownload(url: string): void {
+  const frame = window.document.createElement('iframe');
+  frame.hidden = true;
+  frame.setAttribute('aria-hidden', 'true');
+  frame.setAttribute('tabindex', '-1');
+  frame.src = url;
+  window.document.body.appendChild(frame);
+  // Removing the iframe cancels a transfer that has not started yet, so give it a minute.
+  window.setTimeout(() => frame.remove(), 60_000);
+}
+
+/**
+ * Starts a single document download: presigned through demi-api when it is configured, the
+ * eagle-api URL otherwise. Never rejects - anything demi-api does other than answer with a URL
+ * falls back to eagle-api, which still serves the file.
+ */
+export function openDocumentDownload(document: DownloadableDocument): void {
   track('Document Downloaded', {
     document_id: document._id,
-    document_name: filename,
+    document_name: downloadFileName(document),
     document_type: 'unknown'
   });
 
-  const safeName = encodeString(filename, true);
-  window.open(`/api/public/document/${document._id}/download/${safeName}`, '_blank');
+  const eagleApiDownload = () => window.open(documentDownloadUrl(document), '_blank');
+
+  if (!bulkDownloadEnabled()) {
+    eagleApiDownload();
+    return;
+  }
+
+  void createBulkDownload([document._id])
+    .then(result => {
+      const url = (result as { url?: string }).url;
+      if (!url) {
+        throw new Error('bulk download answered without a url');
+      }
+      triggerDownload(url);
+    })
+    .catch(error => {
+      logger.warn('Presigned download failed, falling back to eagle-api', 'utils', error);
+      eagleApiDownload();
+    });
 }
 
 /** Angular's `date:'longDate'`, e.g. "August 27, 2026". Empty string for a missing date. */

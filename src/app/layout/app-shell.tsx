@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Outlet, useLocation } from 'react-router';
 import { Header } from './header';
 import { Footer } from './footer';
+import { BulkDownloadBar } from 'app/components/bulk-download-bar';
 import { ToastContainer } from 'app/components/toast-container';
 import { Gate } from './gate';
 import { useGateOpen } from 'app/state/gate';
@@ -92,6 +93,7 @@ export function AppShell() {
         <i className="material-icons" aria-label="Button to go to top of the page">arrow_upward</i>
       </a>
 
+      <BulkDownloadBar />
       <ToastContainer />
     </div>
   );
