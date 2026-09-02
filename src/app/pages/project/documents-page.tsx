@@ -58,12 +58,8 @@ export function DocumentsPage() {
   // Absolute links: a relative `.` resolves against the open view, which would leave All
   // Documents marked active everywhere. `end` keeps it inactive while a filtered view is open.
   const documentsPath = `/p/${projId}/documents`;
-  // Every probe resolves on its own, so rendering each segment as its answer lands makes them pop
-  // in one at a time. Hold the group as placeholders until they have all settled. A disabled query
-  // also reports `isPending`, so a failed `List` fetch would otherwise leave this shimmering for
-  // good; with no lists there is nothing left to wait for.
-  // A probe that failed once keeps retrying in the background; the control renders without it
-  // rather than holding All Documents hostage for the whole retry backoff.
+  // Placeholders only until each probe's first attempt settles: a disabled query (no lists) and a
+  // retrying one both report `isPending`, and neither should hold All Documents back.
   const probing = lists.length > 0 && optionalTabResults.some(result => result.isPending && result.failureCount === 0);
 
   const tabs = [
