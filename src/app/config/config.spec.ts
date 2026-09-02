@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { bulkDownloadEnabled, contentSearchEnabled, getConfig, loadConfig } from './config';
+import { bulkDownloadEnabled, contentSearchEnabled, getConfig, getNotifyUrl, loadConfig, notifySubscribeUrl } from './config';
 
 /**
  * CONTENT_SEARCH decides whether the Document Content tab and route are offered at all, so a
@@ -36,6 +36,41 @@ describe('contentSearchEnabled', () => {
   it('is off for a value that is merely truthy', async () => {
     await configuredWith({ CONTENT_SEARCH: 'false' });
     expect(contentSearchEnabled()).toBe(false);
+  });
+});
+
+/** The subscribe links join this base to `/#/?s=...`, so a trailing slash would double the one there. */
+describe('getNotifyUrl', () => {
+  const original = window.__env;
+
+  afterEach(async () => {
+    window.__env = original;
+    await loadConfig();
+  });
+
+  it('is empty when unset', async () => {
+    window.__env = { logLevel: 4 };
+    await loadConfig();
+    expect(getNotifyUrl()).toBe('');
+  });
+
+  it('trims the value and drops trailing slashes', async () => {
+    window.__env = { logLevel: 4, NOTIFY_URL: '  https://notify.example//  ' };
+    await loadConfig();
+    expect(getNotifyUrl()).toBe('https://notify.example');
+  });
+
+  /** eagle-notify is hash-routed, so the `/#/` between the base and the query is load-bearing. */
+  it('builds the hash-routed subscribe link', async () => {
+    window.__env = { logLevel: 4, NOTIFY_URL: 'https://notify.example/' };
+    await loadConfig();
+    expect(notifySubscribeUrl('project:proj-1')).toBe('https://notify.example/#/?s=project:proj-1');
+  });
+
+  it('builds no link when unset, so the pages hide theirs', async () => {
+    window.__env = { logLevel: 4 };
+    await loadConfig();
+    expect(notifySubscribeUrl('eao:updates')).toBe('');
   });
 });
 
