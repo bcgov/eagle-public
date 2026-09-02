@@ -147,9 +147,10 @@ describe('news subscribe action', () => {
     await configure('https://notify.example/');
     renderAt('/news');
 
+    // The link shape is config.spec's; this page owns which service it subscribes to.
     expect(await screen.findByRole('link', { name: 'Subscribe to all updates' })).toHaveAttribute(
       'href',
-      'https://notify.example/#/?s=eao:updates'
+      expect.stringContaining('?s=eao:updates')
     );
   });
 

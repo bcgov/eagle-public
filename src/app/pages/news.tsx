@@ -12,7 +12,7 @@ import {
   updateTableObjectWithUrlParams
 } from 'app/components/table/table-params';
 import { useTable } from 'app/components/table/use-table';
-import { getNotifyUrl } from 'app/config/config';
+import { notifySubscribeUrl } from 'app/config/config';
 
 const TABLE_ID = 'news';
 
@@ -26,7 +26,7 @@ function NewsRow({ rowData }: TableRowProps) {
 }
 
 export function News() {
-  const notifyUrl = getNotifyUrl();
+  const subscribeUrl = notifySubscribeUrl('eao:updates');
   const [searchParams, setSearchParams] = useSearchParams();
   const params = useMemo(() => paramsToObject(searchParams), [searchParams]);
 
@@ -84,10 +84,10 @@ export function News() {
         description="Find activities and updates for environmental assessment projects in British Columbia. Click on the project info button to view the project details page."
         backgroundImage="/assets/images/hero-banner.jpg"
         actions={
-          notifyUrl
+          subscribeUrl
             ? [{
               label: 'Subscribe to all updates',
-              href: `${notifyUrl}/#/?s=eao:updates`,
+              href: subscribeUrl,
               target: '_blank',
               rel: 'noopener noreferrer'
             }]

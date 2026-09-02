@@ -10,7 +10,7 @@ import {
   updateTableObjectWithUrlParams
 } from 'app/components/table/table-params';
 import { useTable } from 'app/components/table/use-table';
-import { getNotifyUrl } from 'app/config/config';
+import { notifySubscribeUrl } from 'app/config/config';
 import { useProjectContext } from './project-context';
 
 const COLUMNS: IColumnObject[] = [
@@ -27,7 +27,7 @@ function ActivityRow({ rowData }: TableRowProps) {
 /** Recent activities for this project. Its own `*Activities` query params. */
 export function ProjectActivites() {
   const { projId } = useProjectContext();
-  const notifyUrl = getNotifyUrl();
+  const subscribeUrl = notifySubscribeUrl(`project:${projId}`);
   const [searchParams, setSearchParams] = useSearchParams();
   const params = useMemo(() => paramsToObject(searchParams), [searchParams]);
 
@@ -74,10 +74,10 @@ export function ProjectActivites() {
     <>
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h3 className="mb-0">Activities and Updates</h3>
-        {notifyUrl && (
+        {subscribeUrl && (
           <a
             className="btn btn-sm btn-outline-primary"
-            href={`${notifyUrl}/#/?s=project:${projId}`}
+            href={subscribeUrl}
             target="_blank"
             rel="noopener noreferrer"
           >

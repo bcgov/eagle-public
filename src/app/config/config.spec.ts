@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { contentSearchEnabled, getConfig, getNotifyUrl, loadConfig } from './config';
+import { contentSearchEnabled, getConfig, getNotifyUrl, loadConfig, notifySubscribeUrl } from './config';
 
 /**
  * CONTENT_SEARCH decides whether the Document Content tab and route are offered at all, so a
@@ -58,6 +58,19 @@ describe('getNotifyUrl', () => {
     window.__env = { logLevel: 4, NOTIFY_URL: '  https://notify.example//  ' };
     await loadConfig();
     expect(getNotifyUrl()).toBe('https://notify.example');
+  });
+
+  /** eagle-notify is hash-routed, so the `/#/` between the base and the query is load-bearing. */
+  it('builds the hash-routed subscribe link', async () => {
+    window.__env = { logLevel: 4, NOTIFY_URL: 'https://notify.example/' };
+    await loadConfig();
+    expect(notifySubscribeUrl('project:proj-1')).toBe('https://notify.example/#/?s=project:proj-1');
+  });
+
+  it('builds no link when unset, so the pages hide theirs', async () => {
+    window.__env = { logLevel: 4 };
+    await loadConfig();
+    expect(notifySubscribeUrl('eao:updates')).toBe('');
   });
 });
 

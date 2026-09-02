@@ -50,9 +50,10 @@ describe('project activities subscribe link', () => {
   it('subscribes to this project when NOTIFY_URL is set', async () => {
     await renderTab({ NOTIFY_URL: 'https://notify.example/' });
 
+    // The link shape is config.spec's; this page owns which service it subscribes to.
     expect(await screen.findByRole('link', { name: 'Subscribe to updates' })).toHaveAttribute(
       'href',
-      'https://notify.example/#/?s=project:proj-1'
+      expect.stringContaining('?s=project:proj-1')
     );
   });
 

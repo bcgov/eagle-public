@@ -103,6 +103,15 @@ export function getNotifyUrl(): string {
   return (config.NOTIFY_URL || '').trim().replace(/\/+$/, '');
 }
 
+/**
+ * Subscribe link for one eagle-notify service. Empty when NOTIFY_URL is unset, which hides the
+ * link. The `/#/` is load-bearing: eagle-notify is hash-routed.
+ */
+export function notifySubscribeUrl(serviceName: string): string {
+  const base = getNotifyUrl();
+  return base ? `${base}/#/?s=${serviceName}` : '';
+}
+
 /** Whether the Document Content search tab is offered. Only a literal `true` turns it on. */
 export function contentSearchEnabled(): boolean {
   return config.CONTENT_SEARCH === true;
