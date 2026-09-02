@@ -84,7 +84,9 @@ describe('initTelemetry', () => {
       config: expect.objectContaining({
         connectionString: CONNECTION_STRING,
         correlationHeaderDomains: ['epic.example.gov.bc.ca'],
-        enableAutoRouteTracking: false
+        enableAutoRouteTracking: false,
+        // Must not fetch the remote config-sync JSON on every load.
+        extensionConfig: { AppInsightsCfgSyncPlugin: { cfgUrl: '', blkCdnCfg: true } }
       })
     });
   });
@@ -131,9 +133,9 @@ describe('the telemetry initializer', () => {
       baseData: {
         exceptions: [
           {
-            message: 'HTTP GET /api/projects?token=SECRET 401',
+            message: '/r?date=2026-09-02T10:00:00Z&sig=SECRET 401',
             stack:
-              'Error: HTTP GET /api/projects?token=SECRET 401\n    at x (http://h/app.js?v=1:1:1)'
+              'Error: /r?date=2026-09-02T10:00:00Z&sig=SECRET 401\n    at x (http://h/app.js?v=1:1:1)'
           }
         ]
       }
@@ -143,15 +145,10 @@ describe('the telemetry initializer', () => {
 
     const baseData = item.baseData as { exceptions: [{ message: string; stack: string }] };
     const [exception] = baseData.exceptions;
-    expect(exception.message).not.toContain('token=SECRET');
-    expect(exception.stack).not.toContain('token=SECRET');
-    expect(exception.stack).not.toContain('?v=1');
-    expect(exception.message).toContain('/api/projects');
-    expect(exception.message).toContain('401');
-    expect(exception.stack).toContain('/api/projects');
-    expect(exception.stack).toContain('401');
-    // Stack position (`:1:1)`) is not part of the query string and must survive.
-    expect(exception.stack).toContain('http://h/app.js:1:1)');
+    // A colon inside a query value (a timestamp here) must not stop the strip early.
+    expect(exception.message).toBe('/r 401');
+    // A query on a stack frame URL is stripped along with its trailing line:col.
+    expect(exception.stack).toBe('Error: /r 401\n    at x (http://h/app.js)');
   });
 
   it('strips a query string token and keeps the rest of the message', async () => {

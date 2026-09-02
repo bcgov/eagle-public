@@ -9,10 +9,12 @@ const buffered: { error: unknown; properties?: Record<string, string> }[] = [];
 
 /**
  * Query strings carry search terms, which are personal data. Global: strips every `?key=value...`
- * token, including inside multi-line stacks, without eating stack positions (`:1:1)`) or prose
- * ("Unexpected token '?'") that a bare `?\S*` would swallow.
+ * token, including chained `&key=value` and multi-line stacks, without eating prose
+ * ("Unexpected token '?'") that a bare `?\S*` would swallow. Value chars are unbounded except
+ * whitespace/`)#'"`, so a stack frame with a query loses its trailing `:line:col)`; hashed
+ * production bundles carry no query and keep line/col in their own `parsedStack` fields.
  */
-const QUERY_STRING = /\?[\w%.~-]+=[^\s:)#'"]*(?:&[\w%.~-]+=[^\s:)#'"]*)*/g;
+const QUERY_STRING = /\?[\w%.~-]+=[^\s)#'"]*/g;
 const REDACTED_FIELDS = ['uri', 'target', 'name', 'message'];
 
 /**
@@ -41,7 +43,9 @@ export async function initTelemetry(
         disableFetchTracking: false,
         // Off by default in the SDK, and rejections are half of what a React app throws.
         enableUnhandledPromiseRejectionTracking: true,
-        enableAutoRouteTracking: false
+        enableAutoRouteTracking: false,
+        // Skip the remote config-sync fetch on every load; nothing here needs it.
+        extensionConfig: { AppInsightsCfgSyncPlugin: { cfgUrl: '', blkCdnCfg: true } }
       }
     });
     instance.loadAppInsights();
