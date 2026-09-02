@@ -1,9 +1,17 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { track } from 'app/analytics/analytics';
 import { ApiError, getBulkDownload, type BulkDownloadStatus } from 'app/api/api';
 import { logger } from 'app/config/logging';
-import { dismissDownload, forgetStoredJob, isTerminal, setJobStatus, useJob, useStartError } from 'app/state/bulk-download';
+import {
+  claimDownload,
+  dismissDownload,
+  forgetStoredJob,
+  isTerminal,
+  setJobStatus,
+  useJob,
+  useStartError
+} from 'app/state/bulk-download';
 import { triggerDownload } from 'app/utils/utils';
 import './download-panel.css';
 
@@ -11,13 +19,24 @@ function plural(count: number, noun: string): string {
   return `${count} ${noun}${count === 1 ? '' : 's'}`;
 }
 
-function Row({ icon, tone, children }: { icon: ReactNode; tone?: 'muted' | 'error'; children: ReactNode }) {
+function Row({
+  icon,
+  tone,
+  action,
+  children
+}: {
+  icon: ReactNode;
+  tone?: 'muted' | 'error';
+  action?: ReactNode;
+  children: ReactNode;
+}) {
   return (
     <li className={`download-panel__row${tone ? ` download-panel__row--${tone}` : ''}`}>
       <span className="download-panel__icon" aria-hidden="true">
         {icon}
       </span>
-      <span>{children}</span>
+      <span className="download-panel__text">{children}</span>
+      {action}
     </li>
   );
 }
@@ -33,24 +52,46 @@ function progressRows(job: { count: number }, state?: BulkDownloadStatus): React
 
   return (
     <Row icon={SPINNER}>
-      Zipping {plural(job.count, 'file')}…
+      Zipping {plural(job.count, 'document')}…
       {partCount > 1 && <span className="download-panel__detail">part {part} of {partCount}</span>}
     </Row>
   );
 }
 
-function readyRows(state: BulkDownloadStatus): ReactNode {
+function readyRows(state: BulkDownloadStatus, downloaded: boolean): ReactNode {
   if (state.includedCount === 0) {
     return <Row icon={WARNING} tone="error">None of the selected documents could be downloaded.</Row>;
   }
 
   return (
     <>
-      {(state.parts ?? []).map(part => (
-        <Row key={part.n} icon={CHECK}>
-          Downloading {part.fileName || `part ${part.n}`}
-        </Row>
-      ))}
+      {(state.parts ?? []).map(part => {
+        // demi-api names the zip; the reader must see that name, not one this app made up.
+        const name = part.fileName || `part ${part.n}`;
+        return (
+          <Row
+            key={part.n}
+            icon={CHECK}
+            action={
+              downloaded && (
+                <button
+                  type="button"
+                  className="download-panel__again"
+                  aria-label={`Download again ${name}`}
+                  onClick={() => triggerDownload(part.url)}
+                >
+                  <i className="material-icons md-18" aria-hidden="true">
+                    file_download
+                  </i>
+                </button>
+              )
+            }
+          >
+            <span className="download-panel__name">{name}</span>
+            <span className="download-panel__detail">{downloaded ? 'Downloaded' : 'Downloading…'}</span>
+          </Row>
+        );
+      })}
       {state.errorCount > 0 && (
         <Row icon={WARNING} tone="muted">
           {plural(state.errorCount, 'file')} could not be included (see errors.txt)
@@ -69,9 +110,6 @@ export function DownloadPanel() {
   const job = useJob();
   const startError = useStartError();
   const [collapsed, setCollapsed] = useState(false);
-  const panelRef = useRef<HTMLDivElement>(null);
-  // StrictMode runs effects twice and a re-render must not re-fire either; the job id fires once.
-  const firedFor = useRef<string | null>(null);
 
   const query = useQuery({
     queryKey: ['bulk-download', job?.id],
@@ -95,9 +133,9 @@ export function DownloadPanel() {
     if (jobGone) forgetStoredJob();
   }, [query.isError, jobGone, queryError]);
 
+  // `downloadedAt` on the stored job is the guard, not a ref: a reload must not re-fire the zip.
   useEffect(() => {
-    if (!job || state?.status !== 'ready' || firedFor.current === job.id) return;
-    firedFor.current = job.id;
+    if (!job || job.downloadedAt || state?.status !== 'ready' || !claimDownload()) return;
     // An empty zip has parts, and each one answers with an error page; downloading them is noise.
     if (state.includedCount === 0) {
       track('Bulk Download Failed', { status: 'empty' });
@@ -119,19 +157,6 @@ export function DownloadPanel() {
   useEffect(() => {
     if (status) setJobStatus(status);
   }, [status]);
-
-  // The panel is fixed over the page; without this it covers the pagination, the page-size picker
-  // and the footer links. No dependencies: collapsing changes its height, so every render measures.
-  useEffect(() => {
-    const panel = panelRef.current;
-    if (!panel) return;
-    const body = window.document.body;
-    // The panel's own 1rem inset from the bottom of the viewport.
-    body.style.paddingBottom = `${panel.offsetHeight + 16}px`;
-    return () => {
-      body.style.paddingBottom = '';
-    };
-  });
 
   if (!job && !startError) return null;
 
@@ -168,12 +193,12 @@ export function DownloadPanel() {
           That download has expired. Please start it again.
         </Row>
       );
-    if (state?.status === 'ready') return readyRows(state);
+    if (state?.status === 'ready') return readyRows(state, !!job?.downloadedAt);
     return progressRows(job!, state);
   }
 
   return (
-    <div className="download-panel" ref={panelRef}>
+    <div className="download-panel">
       <div className="download-panel__header">
         <h2 className="download-panel__title">Document download</h2>
         <button

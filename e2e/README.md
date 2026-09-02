@@ -104,7 +104,6 @@ contract: keep the hook, or update the test in the same change.
 | `.map-container` | project detail | the mini-map box |
 | `.project-tabs .nav-tabs .nav-link` | project detail | tab strip |
 | `.tab-content` | project detail | active tab body |
-| `.download-icon` | search results | per-row download control |
 
 ### Test ids
 

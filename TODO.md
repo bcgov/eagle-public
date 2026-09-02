@@ -80,8 +80,7 @@ src/
 - pages/project-notifications: `.skeleton-cell` and its shimmer are now in this page's CSS. In Angular they lived in `commenting-tab`, a different component with view encapsulation, so the notification skeleton rendered unstyled.
 - pages/project-notifications: sorting the documents sub-table returns to page 1. Angular kept the current page, showing a slice of the old ordering.
 - pages/search: `search.component.css` dropped. Every selector in it was dead under Angular's view encapsulation (the template is a single `<app-table-list>`), the `::ng-deep` hero-banner background included — prod renders the default banner on /search, so the port does too.
-- pages/search: `search-document-table-rows.component.css` is dropped; the download button is styled with the shared table CSS, and `.download-icon-wrap` matched nothing in the template.
-- pages/search: the download icon is a real `<button>` labelled "Download <name>", not a focusable span with a keyup handler. Its gold hover colour is gone: gold on the row background is about 1.7:1.
+- pages/search: `search-document-table-rows.component.css` is dropped; `.download-icon-wrap` matched nothing in the template.
 - pages/search: `LEGISLATION_FILTER_GROUP.labelPrefix`/`labelPostfix` are kept on the group object but unread — Angular's multi-select only ever passed `group.name` as the groupBy key.
 - pages/content-search: an empty result set now clears the list and shows "No documents contain that text". Angular's table-service subscriber returned early on an empty payload (`res.data === 0`), leaving the previous search's cards on screen under the new keyword.
 - pages/content-search: a keyword search keeps the current `pageSize`, matching the table-list fix above. Angular rebuilt the params without it.
@@ -159,7 +158,6 @@ src/
 - layout/app-shell: a skip-to-main link wired to the existing `.skip-to-main` rules, and `<main id="main-content" tabindex="-1">` as its target. The CSS was already there with nothing using it.
 - components/toast-container: `aria-live="polite"` on the container, and the per-toast `role="alert" aria-live="assertive"` removed. A live region created at the same moment as its content is announced unreliably, and two nested regions announce twice.
 - projects/proj-detail-popup: "View project" is a `<button>`. It was an `<a>` with no `href`, a `role`, a `tabindex`, a hand-rolled Enter handler and `cursor: pointer` — all of which a button gives for free, Space included.
-- pages/search: the download icon activates on Space as well as Enter, and on keydown rather than keyup, which is what a real button does.
 - utils/getIdsByName: a term with no `List` entry is skipped instead of reading `_id` off the missing match. The document tabs render before the lists resolve, so Angular's version threw and took the tab down with it.
 - pages/project/pins: the pins request asks for the sort the table header shows (`+name`). Angular's `PinsService` sent its own default, `-datePosted`, so the header claimed one order and the rows arrived in another.
 - layout/footer: the compact fixed footer for the map page (`app-footer--sm`) is dropped, CSS included. Its Angular binding read a non-signal `router.url` under OnPush, so no deployed build has ever rendered it, and applying it also caught /projects-list, where a fixed footer covers the table.
@@ -197,8 +195,8 @@ deviations. The deviations the pass turned up are below.
 - components/table: per-column header filters (PUBLIC-146, marked stretch) are not built. The filter bar above the table already covers the same fields.
 - components/table, components/download-panel: document tables gain a checkbox column, a selection toolbar above the grid, and a transfer panel that downloads the selection through demi-api. New here; Angular downloads one document at a time. The column only appears where `SEARCH_API_PATH` names a backend, so an empty one leaves the grid exactly as it was.
 - components/table/table-template: select-all across the filtered set is offered only while the result set is 100 documents or fewer, demi-api's anonymous per-job cap; past that the banner asks for narrower filters rather than selecting a set the backend would refuse.
-- table/document rows: a click on a row selects it for download instead of downloading it. Angular downloaded the document on a click in any cell but Name, so a reader picking a row got a file. Now the row body is a second target for the checkbox, the Name link and a per-row Download button are the only things that download, Space selects and Enter opens. The project documents, search results and project-notification document tables all follow it.
-- table/document rows: every document table carries a Download column, and the project-notification table's Name is a link like the others. Angular gave the download icon to search results only.
+- table/document rows: a click on a row selects it for download instead of downloading it. Angular downloaded the document on a click in any cell but Name, so a reader picking a row got a file. Now the row body is a second target for the checkbox, the Name link is the only thing that downloads, Space selects and Enter opens. The project documents, search results and project-notification document tables all follow it.
+- table/document rows: the search results' download icon column is dropped, and the project-notification table's Name is a link like the others. The Name link is the only per-row download in every table.
 - table: the pointer cursor is limited to rows that answer a click (`clickable-row`, `selectable-row`). It used to sit on every row of every highlighted table, including tables where a click does nothing.
 
 ## Cutover prerequisites

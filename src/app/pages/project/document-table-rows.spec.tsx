@@ -89,8 +89,8 @@ describe('DocumentTableRow name cell', () => {
 });
 
 /**
- * One model for the whole row: the body selects, the link and the button download. Nothing else
- * in the row starts a transfer, which is what the Angular table did on every cell.
+ * One model for the whole row: the body selects, the Name link downloads. Nothing else in the row
+ * starts a transfer, which is what the Angular table did on every cell.
  */
 describe('DocumentTableRow row interaction', () => {
   const originalEnv = window.__env;
@@ -170,14 +170,20 @@ describe('DocumentTableRow row interaction', () => {
     expect(openSpy).not.toHaveBeenCalled();
   });
 
-  it('downloads from the row download button', async () => {
+  it('downloads from the name link without selecting the row', async () => {
     renderRow();
 
-    await userEvent.click(screen.getByRole('button', { name: 'Download Fish Habitat Report' }));
+    await userEvent.click(screen.getByRole('link', { name: 'Fish Habitat Report' }));
 
     expect(openSpy).toHaveBeenCalledTimes(1);
     expect(openSpy).toHaveBeenCalledWith(DOWNLOAD_URL, '_blank');
     expect(checkbox()).not.toBeChecked();
+  });
+
+  it('renders no download button; the name link is the only per-row download', () => {
+    renderRow();
+
+    expect(screen.queryByRole('button', { name: /^Download/ })).not.toBeInTheDocument();
   });
 
   it('selects on Space and downloads on Enter, never the other way round', async () => {
@@ -195,7 +201,7 @@ describe('DocumentTableRow row interaction', () => {
     expect(checkbox()).toBeChecked();
   });
 
-  it('ignores a row click while the table is not selectable, and still downloads from its controls', async () => {
+  it('ignores a row click while the table is not selectable, and still downloads from the name link', async () => {
     renderRow(false);
 
     await userEvent.click(screen.getByText('May 4, 2026'));
@@ -204,9 +210,8 @@ describe('DocumentTableRow row interaction', () => {
     expect(openSpy).not.toHaveBeenCalled();
 
     await userEvent.click(screen.getByRole('link', { name: 'Fish Habitat Report' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Download Fish Habitat Report' }));
 
-    expect(openSpy).toHaveBeenCalledTimes(2);
+    expect(openSpy).toHaveBeenCalledTimes(1);
   });
 });
 

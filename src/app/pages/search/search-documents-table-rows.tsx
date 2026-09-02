@@ -1,7 +1,7 @@
 import { Link } from 'react-router';
 import type { TableRowProps } from 'app/components/table/table-object';
 import { useDocumentRow } from 'app/components/table/document-row';
-import { DownloadCell, SelectCell } from 'app/components/table/table-template';
+import { SelectCell } from 'app/components/table/table-template';
 import { documentDownloadUrl, idToListName, longDate, openDocumentDownload } from 'app/utils/utils';
 
 /** Placeholder date the API stores for a document with no posting date; never shown. */
@@ -15,7 +15,7 @@ export function DocSearchTableRow({ rowData, tableData }: TableRowProps) {
     <tr {...rowProps}>
       {selectable && <SelectCell rowData={rowData} tableId={tableData.tableId} />}
 
-      <td data-label="Name" className="col-3">
+      <td data-label="Name" className="col-4">
         <a
           href={documentDownloadUrl(rowData)}
           target="_blank"
@@ -46,8 +46,6 @@ export function DocSearchTableRow({ rowData, tableData }: TableRowProps) {
       <td data-label="Milestone" className="col-2">
         {idToListName(rowData.milestone, lists)}
       </td>
-
-      <DownloadCell rowData={rowData} />
     </tr>
   );
 }

@@ -17,7 +17,7 @@ const DOCUMENT = {
 
 const DOWNLOAD_URL = '/api/public/document/doc-1/download/fish-habitat.pdf';
 
-/** The Name cell is a real link here too, alongside the row's download button. */
+/** The Name cell is a real link here too, and the row's only download. */
 describe('DocSearchTableRow name cell', () => {
   const originalEnv = window.__env;
   let openSpy: ReturnType<typeof vi.fn>;
@@ -54,10 +54,8 @@ describe('DocSearchTableRow name cell', () => {
     expect(openSpy).toHaveBeenCalledWith(DOWNLOAD_URL, '_blank');
   });
 
-  it('downloads from the row download button', async () => {
-    await userEvent.click(screen.getByRole('button', { name: 'Download Fish Habitat Report' }));
-
-    expect(openSpy).toHaveBeenCalledTimes(1);
+  it('renders no download button; the name link is the only per-row download', () => {
+    expect(screen.queryByRole('button', { name: /^Download/ })).not.toBeInTheDocument();
   });
 });
 
@@ -145,7 +143,7 @@ describe('DocSearchTableRow row interaction', () => {
     expect(openSpy).toHaveBeenCalledTimes(1);
   });
 
-  it('ignores a row click while the table is not selectable, and still downloads from its controls', async () => {
+  it('ignores a row click while the table is not selectable, and still downloads from the name link', async () => {
     renderRow(false);
 
     await userEvent.click(screen.getByText('May 4, 2026'));
@@ -153,7 +151,7 @@ describe('DocSearchTableRow row interaction', () => {
     expect(screen.getByRole('row')).not.toHaveClass('selected');
     expect(openSpy).not.toHaveBeenCalled();
 
-    await userEvent.click(screen.getByRole('button', { name: 'Download Fish Habitat Report' }));
+    await userEvent.click(screen.getByRole('link', { name: 'Fish Habitat Report' }));
 
     expect(openSpy).toHaveBeenCalledTimes(1);
   });

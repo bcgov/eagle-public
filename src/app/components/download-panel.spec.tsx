@@ -119,7 +119,7 @@ describe('DownloadPanel', () => {
     await startDownload(panel.store);
     await tick(0);
 
-    expect(screen.getByText('Zipping 2 files…')).toBeInTheDocument();
+    expect(screen.getByText('Zipping 2 documents…')).toBeInTheDocument();
     expect(screen.getByText('part 2 of 2')).toBeInTheDocument();
 
     // One poll interval later the job is ready and the first part goes.
@@ -129,14 +129,14 @@ describe('DownloadPanel', () => {
     await tick(1);
     await tick(1);
 
-    expect(screen.getByText('Downloading documents-1.zip')).toBeInTheDocument();
+    expect(screen.getByText('documents-1.zip')).toBeInTheDocument();
     expect(downloadUrls()).toEqual(['https://nrs.example/part1.zip']);
 
     // The next follows a second later, so the browser asks once to allow multiple downloads.
     await tick(1000);
 
     expect(downloadUrls()).toEqual(['https://nrs.example/part1.zip', 'https://nrs.example/part2.zip']);
-    expect(screen.getByText('Downloading documents-2.zip')).toBeInTheDocument();
+    expect(screen.getByText('documents-2.zip')).toBeInTheDocument();
   });
 
   it('names the files the zip could not include', async () => {
@@ -156,7 +156,7 @@ describe('DownloadPanel', () => {
     panel.render();
     await tick(0);
 
-    expect(screen.getByText('Downloading documents.zip')).toBeInTheDocument();
+    expect(screen.getByText('documents.zip')).toBeInTheDocument();
     expect(screen.getByText('3 files could not be included (see errors.txt)')).toBeInTheDocument();
   });
 
@@ -241,7 +241,7 @@ describe('DownloadPanel', () => {
     panel.render();
     await tick(0);
 
-    expect(screen.getByText('Zipping 40 files…')).toBeInTheDocument();
+    expect(screen.getByText('Zipping 40 documents…')).toBeInTheDocument();
     expect(screen.getByText('part 3 of 3')).toBeInTheDocument();
   });
 
@@ -308,7 +308,7 @@ describe('DownloadPanel', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
     await tick(0);
 
-    expect(screen.getByText('Zipping 40 files…')).toBeInTheDocument();
+    expect(screen.getByText('Zipping 40 documents…')).toBeInTheDocument();
   });
 
   it('keeps polling while it is collapsed, and stops showing the rows', async () => {
@@ -320,7 +320,7 @@ describe('DownloadPanel', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Collapse download panel' }));
 
-    expect(screen.queryByText('Zipping 4 files…')).not.toBeInTheDocument();
+    expect(screen.queryByText('Zipping 4 documents…')).not.toBeInTheDocument();
     const pollsSoFar = fetchMock.mock.calls.length;
 
     await tick(4000);
@@ -329,7 +329,7 @@ describe('DownloadPanel', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Expand download panel' }));
 
-    expect(screen.getByText('Zipping 4 files…')).toBeInTheDocument();
+    expect(screen.getByText('Zipping 4 documents…')).toBeInTheDocument();
   });
 
   it('forgets the job on close', async () => {
@@ -350,26 +350,63 @@ describe('DownloadPanel', () => {
     expect(fetchMock.mock.calls.length).toBe(pollsSoFar);
   });
   /**
-   * The panel is fixed over the bottom-right of the page. Without the body padding it sits on top
-   * of the pagination, the page-size picker and the footer links, which is where the reader is
-   * heading next.
+   * demi-api names the zip after the project, so the panel renders `fileName` as it comes. Once the
+   * one automatic download has gone, the row offers it again rather than firing a second copy.
    */
-  it('keeps the page clear of the panel while it shows, and gives the space back on close', async () => {
-    const height = vi
-      .spyOn(HTMLElement.prototype, 'offsetHeight', 'get')
-      .mockReturnValue(120);
-    statusResponses = [{ id: 'job-9', status: 'running', partCount: 1, partsReady: 0 }];
-    const panel = await mount({ id: 'job-9', count: 4, startedAt: Date.now() });
+  it('marks the job downloaded, names the part and offers it again on demand', async () => {
+    statusResponses = [
+      {
+        id: 'job-9',
+        status: 'ready',
+        partCount: 1,
+        partsReady: 1,
+        includedCount: 2,
+        errorCount: 0,
+        parts: [{ n: 1, fileName: 'EPIC documents - Site C Clean Energy.zip', url: 'https://nrs.example/part1.zip' }]
+      }
+    ];
+    const panel = await mount({ id: 'job-9', count: 2, startedAt: Date.now() });
     panel.render();
-    await tick(0);
+    await tick(2000);
 
-    // The panel's own height plus the 1rem it sits above the bottom of the viewport.
-    expect(document.body.style.paddingBottom).toBe('136px');
+    expect(screen.getByText('EPIC documents - Site C Clean Energy.zip')).toBeInTheDocument();
+    expect(screen.getByText('Downloaded')).toBeInTheDocument();
+    expect(downloadUrls()).toEqual(['https://nrs.example/part1.zip']);
+    expect(JSON.parse(localStorage.getItem(JOB_KEY) ?? '{}').downloadedAt).toEqual(expect.any(Number));
 
-    fireEvent.click(screen.getByRole('button', { name: 'Close download panel' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Download again EPIC documents - Site C Clean Energy.zip' })
+    );
 
-    expect(document.body.style.paddingBottom).toBe('');
-    height.mockRestore();
+    expect(downloadUrls()).toEqual(['https://nrs.example/part1.zip', 'https://nrs.example/part1.zip']);
+  });
+
+  /** A reload used to re-fire every part, because the once-per-job guard lived in a ref. */
+  it('fires nothing for a stored job that is already ready and already downloaded', async () => {
+    statusResponses = [
+      {
+        id: 'job-9',
+        status: 'ready',
+        partCount: 1,
+        partsReady: 1,
+        includedCount: 2,
+        errorCount: 0,
+        parts: [{ n: 1, fileName: 'documents.zip', url: 'https://nrs.example/part1.zip' }]
+      }
+    ];
+    const panel = await mount({
+      id: 'job-9',
+      count: 2,
+      startedAt: Date.now(),
+      status: 'ready',
+      downloadedAt: Date.now()
+    });
+    panel.render();
+    await tick(2000);
+
+    expect(downloadUrls()).toEqual([]);
+    expect(screen.getByText('documents.zip')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Download again documents.zip' })).toBeInTheDocument();
   });
 
   /** The toolbar's Download is disabled while a job runs; a finished job must release it. */

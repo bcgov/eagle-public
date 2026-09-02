@@ -3,7 +3,6 @@ import { useSearchParams } from 'react-router';
 import { track } from 'app/analytics/analytics';
 import { SearchFilterTemplate } from 'app/components/filters/search-filter-template';
 import type { SearchPackage } from 'app/components/filters/filter-object';
-import { DOWNLOAD_COLUMN } from 'app/components/table/document-row';
 import { TableTemplate } from 'app/components/table/table-template';
 import { tableObject, type IColumnObject, type ITableMessage } from 'app/components/table/table-object';
 import {
@@ -126,8 +125,8 @@ export function ProjectDocumentTab({
   const data = {
     ...base,
     columns: showFeatured
-      ? [FEATURED_COLUMN, { name: 'Name', value: 'displayName', width: 'col-3' }, ...DOCUMENT_COLUMNS, DOWNLOAD_COLUMN]
-      : [{ name: 'Name', value: 'displayName', width: 'col-4' }, ...DOCUMENT_COLUMNS, DOWNLOAD_COLUMN],
+      ? [FEATURED_COLUMN, { name: 'Name', value: 'displayName', width: 'col-3' }, ...DOCUMENT_COLUMNS]
+      : [{ name: 'Name', value: 'displayName', width: 'col-4' }, ...DOCUMENT_COLUMNS],
     items: result.data.map(record => ({ rowData: record })),
     totalListItems: result.totalListItems,
     options: { ...base.options, showAllPicker: true, selectable: bulkDownloadEnabled() },

@@ -27,6 +27,8 @@ export interface BulkDownloadJob {
   startedAt: number;
   /** Last status demi-api reported. Absent until the panel has polled once. */
   status?: BulkDownloadStatus['status'];
+  /** When the ready parts were fired. Persisted, so a reload never downloads the zip twice. */
+  downloadedAt?: number;
 }
 
 /** demi-api stops moving the job at these; polling stops with it, and so does the wait. */
@@ -179,6 +181,17 @@ export function setJobStatus(status: BulkDownloadStatus['status']): void {
   const current = job.get();
   if (!current || current.status === status) return;
   setJob({ ...current, status });
+}
+
+/**
+ * Claims the job's one automatic download, returning false if it was already claimed. Read off the
+ * store rather than a render's copy, so StrictMode's second effect pass cannot fire a second zip.
+ */
+export function claimDownload(): boolean {
+  const current = job.get();
+  if (!current || current.downloadedAt) return false;
+  setJob({ ...current, downloadedAt: Date.now() });
+  return true;
 }
 
 /** True only while a job is still being prepared: a ready, failed or expired one is not. */

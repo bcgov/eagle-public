@@ -3,7 +3,8 @@
 .download-panel {
   position: fixed;
   right: 1rem;
-  bottom: 1rem;
+  /* Clears the 3rem scroll-to-top button parked at bottom: 1rem. */
+  bottom: 4.5rem;
   z-index: 11000;
   width: 360px;
   max-width: calc(100vw - 2rem);
@@ -73,6 +74,34 @@
   color: var(--bs-secondary-color);
 }
 
+.download-panel__text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.download-panel__name {
+  display: block;
+}
+
+.download-panel__again {
+  flex: 0 0 auto;
+  display: inline-flex;
+  padding: 0.25rem;
+  border: none;
+  border-radius: 0.2rem;
+  background-color: transparent;
+  color: var(--bs-link-color);
+}
+
+.download-panel__again:hover {
+  background-color: var(--bs-secondary-bg);
+}
+
+.download-panel__again:focus-visible {
+  outline: 2px solid var(--bs-primary);
+  outline-offset: 1px;
+}
+
 .download-panel__icon {
   display: inline-flex;
   flex: 0 0 1.125rem;
@@ -103,7 +132,6 @@
   .download-panel {
     right: 0.5rem;
     left: 0.5rem;
-    bottom: 0.5rem;
     width: auto;
     max-width: none;
   }

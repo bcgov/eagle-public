@@ -139,25 +139,6 @@
   box-shadow: inset 5px 0 0 var(--bs-primary);
 }
 
-/* === PER-ROW DOWNLOAD BUTTON === */
-
-.table .download-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.25rem 0.5rem;
-  color: var(--bs-link-color);
-  text-decoration: none;
-}
-
-.table .download-button:hover {
-  color: var(--bs-link-hover-color);
-}
-
-.table .download-button .material-icons {
-  font-size: 1.375rem;
-}
-
 /* === TABLE-TEMPLATE COMPONENT STYLES === */
 
 .table-template .table {
@@ -242,32 +223,9 @@
     text-align: center;
   }
 
-  /* Download column: wide enough for its header word, and its button centred under it. */
-  .table-template .table th.download-col,
-  .table-template .table td.download-col {
-    flex: 0 0 6rem;
-    width: 6rem;
-    min-width: 6rem;
-    max-width: 6rem;
-    justify-content: center;
-    text-align: center;
-  }
-
-  /* The download button reads as an icon here; the word is the column header. */
-  .table-template .table td.download-col .download-button__label {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
-
-  /* The col-* widths add up to the whole table on their own, so they give up the fixed columns. */
+  /* The col-* widths add up to the whole table on their own, so they give up the checkbox's width. */
   .table-template .table tr:has(.select-col) th[class*="col-"],
-  .table-template .table tr:has(.select-col) td[class*="col-"],
-  .table-template .table tr:has(.download-col) th[class*="col-"],
-  .table-template .table tr:has(.download-col) td[class*="col-"] {
+  .table-template .table tr:has(.select-col) td[class*="col-"] {
     flex-shrink: 1;
     min-width: 0;
   }
@@ -410,8 +368,7 @@
     line-height: 1.5;
   }
 
-  /* The download button carries its own word on a card, and the checkbox has its own label. */
-  .table-template td[data-label="Download"]::before,
+  /* The checkbox has its own label. */
   .table-template td[data-label="Select"]::before {
     content: none;
   }
@@ -421,18 +378,9 @@
     padding: 0.75rem 1rem 0.25rem;
   }
 
-  .table-template td.download-col .download-button {
-    width: 100%;
-    justify-content: center;
-    min-height: 2.75rem;
-    border: 1px solid var(--bs-border-color);
-    border-radius: 0.25rem;
-    font-weight: var(--bs-font-weight-semibold);
-  }
-
   /* Labels above values */
   .table-template
-    td[data-label]:not([data-label="Name"]):not([data-label="★"]):not([data-label="Download"]):not([data-label="Select"])::before {
+    td[data-label]:not([data-label="Name"]):not([data-label="★"]):not([data-label="Select"])::before {
     content: attr(data-label);
     display: block;
     font-size: var(--bs-font-size-xs);

@@ -1,7 +1,7 @@
 import { useLocation } from 'react-router';
 import type { TableRowProps } from 'app/components/table/table-object';
 import { useDocumentRow } from 'app/components/table/document-row';
-import { DownloadCell, SelectCell } from 'app/components/table/table-template';
+import { SelectCell } from 'app/components/table/table-template';
 import { documentDownloadUrl, idToListName, longDate, openDocumentDownload } from 'app/utils/utils';
 import './document-table-rows.css';
 
@@ -58,8 +58,6 @@ export function DocumentTableRow({ rowData, tableData }: TableRowProps) {
       <td data-label="Phase" className="col-2">
         {idToListName(rowData.projectPhase, lists)}
       </td>
-
-      <DownloadCell rowData={rowData} />
     </tr>
   );
 }

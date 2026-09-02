@@ -2,7 +2,7 @@ import type { KeyboardEvent, MouseEvent } from 'react';
 import { CAP_MESSAGE, toggleSelected, useSelection } from 'app/state/bulk-download';
 import { showToast } from 'app/state/toast';
 import { openDocumentDownload } from 'app/utils/utils';
-import type { IColumnObject, TableObject } from './table-object';
+import type { TableObject } from './table-object';
 
 /** Adds a document to the table's selection, or says why it cannot. */
 export function toggleRow(tableId: string, rowData: any): void {
@@ -10,18 +10,10 @@ export function toggleRow(tableId: string, rowData: any): void {
   if (!added) showToast(CAP_MESSAGE, { type: 'warning' });
 }
 
-/** Header definition for the column `DownloadCell` fills. */
-export const DOWNLOAD_COLUMN: IColumnObject = {
-  name: 'Download',
-  value: 'download',
-  width: 'download-col',
-  nosort: true
-};
-
 /**
  * What a pointer and the keyboard do on a document row: the row body is a second, larger target
- * for the checkbox, Enter opens the document, Space selects it. Links and buttons inside the row
- * keep their own behaviour, so nothing but them ever downloads.
+ * for the checkbox, Enter opens the document, Space selects it. The Name link inside the row
+ * keeps its own behaviour, so nothing but it ever downloads.
  */
 export function useDocumentRow(rowData: any, tableData: TableObject) {
   const selectable = !!tableData.options?.selectable;

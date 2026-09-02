@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { listsQueryOptions } from 'app/config/config';
 import { useResponsive } from 'app/state/responsive';
-import { DOWNLOAD_COLUMN } from 'app/components/table/document-row';
 import { TableTemplate } from 'app/components/table/table-template';
 import { tableObject, type IColumnObject, type ITableMessage } from 'app/components/table/table-object';
 import { toggleSortDirection } from 'app/components/table/table-params';
@@ -20,15 +19,13 @@ interface ProjectNotificationDocumentsTableProps {
 const MOBILE_COLUMNS: IColumnObject[] = [
   { name: 'Name', value: 'displayName', width: 'col-6' },
   { name: 'Date', value: 'datePosted', width: 'col-3' },
-  { name: 'Author', value: 'documentAuthor', width: 'col-3' },
-  DOWNLOAD_COLUMN
+  { name: 'Author', value: 'documentAuthor', width: 'col-3' }
 ];
 
 const DESKTOP_COLUMNS: IColumnObject[] = [
   { name: 'Document Name', value: 'displayName', width: 'col-6' },
   { name: 'Date', value: 'datePosted', width: 'col-3' },
-  { name: 'Document Author', value: 'documentAuthor', width: 'col-3' },
-  DOWNLOAD_COLUMN
+  { name: 'Document Author', value: 'documentAuthor', width: 'col-3' }
 ];
 
 /** Backend inverts the sort convention: `+` is descending there, `-` is ascending. */

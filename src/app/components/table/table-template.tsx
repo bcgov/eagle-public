@@ -12,7 +12,6 @@ import {
   type SelectedDocument
 } from 'app/state/bulk-download';
 import { showToast } from 'app/state/toast';
-import { openDocumentDownload } from 'app/utils/utils';
 import { toggleRow } from './document-row';
 import { PageCountDisplay } from './page-count-display';
 import { PageSizePicker } from './page-size-picker';
@@ -33,25 +32,6 @@ export function SelectCell({ rowData, tableId }: { rowData: any; tableId: string
         checked={selected}
         onChange={() => toggleRow(tableId, rowData)}
       />
-    </td>
-  );
-}
-
-/** The per-row download button. Downloading is always a link or a button, never the row. */
-export function DownloadCell({ rowData }: { rowData: any }) {
-  return (
-    <td data-label="Download" className="download-col">
-      <button
-        type="button"
-        className="btn btn-link download-button"
-        aria-label={`Download ${rowData.displayName}`}
-        onClick={() => openDocumentDownload(rowData)}
-      >
-        <i className="material-icons" aria-hidden="true">
-          cloud_download
-        </i>
-        <span className="download-button__label">Download</span>
-      </button>
     </td>
   );
 }

@@ -1,4 +1,3 @@
-import { DOWNLOAD_COLUMN } from 'app/components/table/document-row';
 import { TableTemplate } from 'app/components/table/table-template';
 import { tableObject, type IColumnObject } from 'app/components/table/table-object';
 import { useTable } from 'app/components/table/use-table';
@@ -11,8 +10,7 @@ const COLUMNS: IColumnObject[] = [
   { name: 'Date', value: 'datePosted', width: 'col-2', nosort: true },
   { name: 'Type', value: 'type', width: 'col-2', nosort: true },
   { name: 'Milestone', value: 'milestone', width: 'col-2', nosort: true },
-  { name: 'Phase', value: 'projectPhase', width: 'col-2', nosort: true },
-  DOWNLOAD_COLUMN
+  { name: 'Phase', value: 'projectPhase', width: 'col-2', nosort: true }
 ];
 
 const PAGE_SIZE = 5;
