@@ -31,6 +31,8 @@ export interface EnvConfig {
    */
   ACCESS_GATE?: boolean;
   ADMIN_PATH?: string;
+  /** eagle-notify site base. Empty or unset hides the subscribe links. */
+  NOTIFY_URL?: string;
   SURVEY_URL?: string | null;
   SHOW_SURVEY_BANNER?: boolean;
   ANALYTICS_API_URL?: string | null;
@@ -94,6 +96,20 @@ export function getApiPath(): string {
  */
 export function getSearchApiPath(): string {
   return config.SEARCH_API_PATH || getApiPath();
+}
+
+/** eagle-notify site base, without a trailing slash. Empty when unset, which hides the subscribe links. */
+export function getNotifyUrl(): string {
+  return (config.NOTIFY_URL || '').trim().replace(/\/+$/, '');
+}
+
+/**
+ * Subscribe link for one eagle-notify service. Empty when NOTIFY_URL is unset, which hides the
+ * link. The `/#/` is load-bearing: eagle-notify is hash-routed.
+ */
+export function notifySubscribeUrl(serviceName: string): string {
+  const base = getNotifyUrl();
+  return base ? `${base}/#/?s=${serviceName}` : '';
 }
 
 /** Whether the Document Content search tab is offered. Only a literal `true` turns it on. */
