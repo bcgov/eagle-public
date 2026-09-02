@@ -168,6 +168,21 @@ describe('openDocumentDownload()', () => {
     expect(downloadUrls()).toEqual([]);
   });
 
+  it('falls back to the eagle-api URL when the POST answers a job instead of a url', async () => {
+    await configuredWith('/demi-search');
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => Response.json({ id: 'job-1', status: 'queued', documentCount: 1 }, { status: 202 }))
+    );
+
+    openDocumentDownload(DOCUMENT);
+
+    await waitFor(() =>
+      expect(openSpy).toHaveBeenCalledWith('/api/public/document/doc-1/download/Fish%20Habitat.pdf', '_blank')
+    );
+    expect(downloadUrls()).toEqual([]);
+  });
+
   it('falls back to the eagle-api URL when the POST answers with HTML', async () => {
     await configuredWith('/demi-search');
     vi.stubGlobal('fetch', vi.fn(async () => new Response('<!doctype html>', { status: 200 })));
