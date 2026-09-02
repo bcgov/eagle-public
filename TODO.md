@@ -39,7 +39,7 @@ src/
 - [x] 3b. Map page (`/projects`): projlist-map, filters, list, detail popup.
 - [x] 3c. Comments + add-comment + file upload + cac-unsubscribe.
 - [x] 3d. Search + content search + search-help.
-- [x] 4. Parity pass, a11y, delete leftovers, README/CLAUDE.md update.
+- [x] 4. Parity pass, a11y, delete leftovers, README update.
   - [x] 4a. Phase-3 findings (project card fields, `fields=[object Object]`, CAC location), dependency audit, leftovers, a11y basics, docs.
     - [x] `models/project.ts` fields that no payload carries.
     - [x] `&fields=` dropped from the search request.
@@ -47,7 +47,7 @@ src/
     - [x] Dependency audit; `bootstrap.bundle.min.js` no longer shipped.
     - [x] Leftovers deleted (`assets/styles/layout/`, retina marker icons, dead badge CSS).
     - [x] a11y: skip link, `aria-live` toast container, popup CTA is a real `<button>`.
-    - [x] `README.md` / `CLAUDE.md` describe the React stack.
+    - [x] `README.md` describes the React stack.
   - [x] 4b. Parity run against prod (`e2e/` against `https://projects.eao.gov.bc.ca` data, 2026-08-27).
     - [x] Dev proxy follows `API_LOCATION` from the environment, `/demi-search` included, so a run can point at prod without prod URLs in `src/env.js`.
     - [x] Playwright suite green; the two request-baseline diffs (`&fields=`, pins `sortBy`) are Deviations, applied in `e2e/support/helpers.ts`.
@@ -187,7 +187,7 @@ deviations. The deviations the pass turned up are below.
 - pages/search: a `datePostedStart`/`datePostedEnd` deep link shows its dates in the two date inputs. Both builds send the same `and[datePosted*]` request, but on test the inputs stay empty and Reset Filters stays disabled, so the panel claims no date filter is set.
 - map: MapLibre's stylesheet ships with the bundle, so its control styling is present on every page. Angular injected a component's styles only while that component was mounted, so on test the project detail sidebar's map renders with the map library's own control z-indexes.
 - layout/header: Escape and a click outside close an open nav dropdown, which Bootstrap's dropdown JS did before it was dropped. Desktop opens the menus on hover (`.dropdown > .nav-link.dropdown-toggle` is `pointer-events: none`), so this only reaches the keyboard path the port opened up.
-- project/project: a project the API cannot return renders a "Project not found" page instead of `alert("Uh-oh, couldn't load project")` followed by a redirect to `/projects`. The URL stays put, so the visitor can see which link failed. The list is served by demi-search, whose test corpus was seeded from prod, so it can name projects the test eagle-api has never held; the 23 that did were copied across on 2026-08-28 with `.claude/scripts/epic-backfill-projects.py` in the workspace root.
+- project/project: a project the API cannot return renders a "Project not found" page instead of `alert("Uh-oh, couldn't load project")` followed by a redirect to `/projects`. The URL stays put, so the visitor can see which link failed. The list is served by demi-search, whose test corpus was seeded from prod, so it can name projects the test eagle-api has never held; the 23 that did were copied across on 2026-08-28 with `epic-backfill-projects.py` (workspace script).
 - utils/safe-html: `safeHtml` runs DOMPurify. Angular's plain `[innerHTML]` went through the DomSanitizer, which strips scripts and event handlers; React's `dangerouslySetInnerHTML` strips nothing. `dompurify` is the one dependency added for it.
 - config: a failed `/api/config` is retried three times and then fatal, with an "EPIC is temporarily unavailable" page; `index.html` shows "Loading EPIC…" until the first render. Angular fell back to `env.js` after one 5 s timeout, which shipped `ACCESS_GATE` false and an empty `SEARCH_API_PATH`: the curtain opened and search hit the wrong backend.
 - project/project: the Contact Us section sits below the sidebar/content layout, full width above the footer, rather than inside the content column where it started after the sidebar.
