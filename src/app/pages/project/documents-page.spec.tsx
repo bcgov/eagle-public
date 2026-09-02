@@ -42,22 +42,25 @@ const CONTEXT: ProjectContext = {
 };
 
 /** The Documents tab as the shell mounts it: outlet context in, sub-tab body out. */
-function renderDocuments(path = '/p/proj-1/documents') {
+function renderDocuments(path = '/p/proj-1/documents', retry: RetryOptions = {}) {
   requests = [];
   vi.stubGlobal(
     'fetch',
     vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       requests.push(url);
-      return jsonResponse(tabSearchResponse(url));
+      const body = tabSearchResponse(url);
+      return body instanceof Response ? body : jsonResponse(body);
     })
   );
 
-  return renderRouter(path);
+  return renderRouter(path, CONTEXT, retry);
 }
 
+interface RetryOptions { retry?: number | false; retryDelay?: number }
+
 /** The same route tree, with whatever fetch stub the test installed. */
-function renderRouter(path = '/p/proj-1/documents', context: ProjectContext = CONTEXT) {
+function renderRouter(path = '/p/proj-1/documents', context: ProjectContext = CONTEXT, { retry = false, retryDelay = 0 }: RetryOptions = {}) {
   const router = createMemoryRouter(
     [
       {
@@ -82,7 +85,7 @@ function renderRouter(path = '/p/proj-1/documents', context: ProjectContext = CO
   );
 
   render(
-    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })}>
+    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry, retryDelay, gcTime: 0 } } })}>
       <RouterProvider router={router} />
     </QueryClientProvider>
   );
@@ -230,7 +233,39 @@ describe('documents page', () => {
 
     await waitFor(() => expect(error).toHaveBeenCalled());
     expect(querySegment('Amendment(s)')).not.toBeInTheDocument();
-    expect(error.mock.calls.some(call => String(call[0]).includes('leaving it hidden'))).toBe(true);
+    expect(error.mock.calls.some(call => String(call[0]).includes('Could not determine'))).toBe(true);
+  });
+
+  it('retries a probe that hit a bad gateway instead of caching it as "no documents"', async () => {
+    // One rproxy 502 must not hide a segment for the rest of the visit: the probe throws, TanStack
+    // retries, and the segment appears once the retry answers.
+    vi.spyOn(logger, 'error').mockImplementation(() => undefined);
+    let amendmentProbes = 0;
+    tabSearchResponse = url => {
+      if (url.includes('type-amend-2002') && amendmentProbes++ === 0) return new Response('', { status: 502 });
+      return [{ searchResults: [{ _id: 'doc-1' }], meta: [{ searchResultsTotal: 1 }] }];
+    };
+
+    renderDocuments('/p/proj-1/documents', { retry: 1 });
+
+    expect(await findSegment('Amendment(s)')).toBeInTheDocument();
+    expect(amendmentProbes).toBe(2);
+  });
+
+  it('shows the settled segments while a failed probe waits to retry', async () => {
+    // Production backoff is 1s/2s/4s. Holding every segment as a placeholder for that long would
+    // hide All Documents behind one bad gateway.
+    vi.spyOn(logger, 'error').mockImplementation(() => undefined);
+    tabSearchResponse = url =>
+      url.includes('type-amend-2002')
+        ? new Response('', { status: 502 })
+        : [{ searchResults: [{ _id: 'doc-1' }], meta: [{ searchResultsTotal: 1 }] }];
+
+    renderDocuments('/p/proj-1/documents', { retry: 1, retryDelay: 5000 });
+
+    expect(await findSegment('All Documents')).toBeInTheDocument();
+    expect(segment('Certificate')).toBeInTheDocument();
+    expect(querySegment('Amendment(s)')).not.toBeInTheDocument();
   });
 
   it('does not log when the search legitimately finds nothing', async () => {
@@ -239,7 +274,7 @@ describe('documents page', () => {
     renderDocuments();
 
     await waitFor(() => expect(requests.filter(url => url.includes('dataset=Document'))).toHaveLength(4));
-    expect(error.mock.calls.some(call => String(call[0]).includes('leaving it hidden'))).toBe(false);
+    expect(error).not.toHaveBeenCalled();
   });
 
   it('marks only the open segment active, and passes the project context down to it', async () => {

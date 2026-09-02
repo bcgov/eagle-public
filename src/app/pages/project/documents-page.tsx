@@ -45,13 +45,10 @@ export function DocumentsPage() {
         const results = extractFromSearchResults(response ?? []);
         if (!results) {
           // getSearchResults turns any non-2xx into `null`, so a 502 and a project with no
-          // documents of this kind look the same. Hiding the segment is the right degradation, but
-          // it should not be invisible.
-          logger.error(
-            `Could not determine whether the ${tab.key} segment has documents; leaving it hidden`,
-            'DocumentsPage',
-          );
-          return false;
+          // documents of this kind look the same. Throwing lets TanStack retry; returning `false`
+          // would cache one bad gateway as "no documents" for the rest of the visit.
+          logger.error(`Could not determine whether the ${tab.key} segment has documents`, 'DocumentsPage');
+          throw new Error(`${tab.key} probe failed`);
         }
         return results.length > 0;
       },
@@ -61,11 +58,9 @@ export function DocumentsPage() {
   // Absolute links: a relative `.` resolves against the open view, which would leave All
   // Documents marked active everywhere. `end` keeps it inactive while a filtered view is open.
   const documentsPath = `/p/${projId}/documents`;
-  // Every probe resolves on its own, so rendering each segment as its answer lands makes them pop
-  // in one at a time. Hold the group as placeholders until they have all settled. A disabled query
-  // also reports `isPending`, so a failed `List` fetch would otherwise leave this shimmering for
-  // good; with no lists there is nothing left to wait for.
-  const probing = lists.length > 0 && optionalTabResults.some(result => result.isPending);
+  // Placeholders only until each probe's first attempt settles: a disabled query (no lists) and a
+  // retrying one both report `isPending`, and neither should hold All Documents back.
+  const probing = lists.length > 0 && optionalTabResults.some(result => result.isPending && result.failureCount === 0);
 
   const tabs = [
     { label: 'All Documents', link: documentsPath, end: true },
