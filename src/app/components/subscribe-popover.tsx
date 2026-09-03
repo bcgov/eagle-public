@@ -183,7 +183,6 @@ export function SubscribePopover({ serviceName, variant }: SubscribePopoverProps
           </div>
         ) : (
           <form className="subscribe-popover__form" onSubmit={submit} noValidate>
-
             <div className="form-group">
               <label className="control-label" htmlFor={emailId}>
                 Email address
@@ -224,7 +223,6 @@ export function SubscribePopover({ serviceName, variant }: SubscribePopoverProps
                 {status === 'sending' ? 'Signing up…' : 'Sign up'}
               </button>
             </div>
-
           </form>
         )}
       </div>

@@ -88,8 +88,8 @@ describe('subscribe popover', () => {
   it('explains the all-projects subscription and offers no announcements opt-in', async () => {
     await renderControl('/notify-api', { serviceName: 'eao:updates', variant: 'all' });
 
-    // Signing up here also covers announcements, so there is no checkbox to offer.
-    // Signing up here also covers announcements, which the reader only needs to know in the form.
+    expect(screen.getByText('Get an email when any project publishes an Update.')).toBeInTheDocument();
+    // Signing up here already covers announcements, so there is no checkbox to offer.
     expect(screen.queryByRole('checkbox', { hidden: true })).toBeNull();
   });
 

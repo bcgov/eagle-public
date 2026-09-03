@@ -43,7 +43,7 @@ function check(name, ok, detail) {
 /** Past the password curtain, with the job endpoint mocked and the first page of rows rendered. */
 async function open(browser, url, width) {
   const page = await browser.newPage({ viewport: { width, height: 1000 } });
-  await page.addInitScript(() => sessionStorage.setItem('eagle-gate', '1'));
+  await page.addInitScript(() => localStorage.setItem('eagle-gate', '1'));
   await page.route(/bulk-downloads/, route => {
     const post = route.request().method() === 'POST';
     route.fulfill({

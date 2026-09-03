@@ -52,9 +52,9 @@ test.describe('access gate', () => {
     await expect(page.getByRole('heading', { level: 1 })).not.toHaveText(
       'EPIC is not open to the public yet',
     );
-    // The flag is remembered for the session, so a reload does not re-ask.
+    // The flag is remembered in localStorage, so a reload does not re-ask.
     expect(
-      await page.evaluate(() => sessionStorage.getItem('eagle-gate')),
+      await page.evaluate(() => localStorage.getItem('eagle-gate')),
     ).toBe('1');
     await page.reload();
     await expect(page.locator('#gate-password')).toHaveCount(0);

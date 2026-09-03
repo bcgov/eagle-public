@@ -150,6 +150,8 @@ describe('news subscribe control', () => {
     const trigger = await screen.findByRole('button', { name: 'Subscribe' });
     // The form is the popover's own spec; this page owns which subscription it offers.
     expect(trigger.closest('.subscribe-popover')).toHaveAttribute('data-service', 'eao:updates');
+    // The band sits in its own padded wrapper under the hero.
+    expect(document.querySelector('.container.pb-3 > .subscribe-popover')).not.toBeNull();
     expect(
       screen.getByText(/Get an email when any project publishes an Update\./)
     ).toBeInTheDocument();
@@ -162,7 +164,7 @@ describe('news subscribe control', () => {
     await screen.findByText('Permit granted');
     expect(screen.queryByRole('button', { name: 'Subscribe' })).toBeNull();
     expect(document.querySelector('.subscribe-popover')).toBeNull();
-    // An empty wrapper still pads 24px under the hero, which is the prod configuration.
+    // The guard drops the wrapper too, so no empty padding is left under the hero.
     expect(document.querySelector('.container.pb-3')).toBeNull();
   });
 });

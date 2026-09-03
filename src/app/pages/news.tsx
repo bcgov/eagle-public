@@ -85,7 +85,6 @@ export function News() {
         backgroundImage="/assets/images/hero-banner.jpg"
       />
 
-
       {/* Same band, same place as a project's Activities and Updates: under the title, above the
           search. The guard keeps the padding out of the page when NOTIFY_API is unset. */}
       {getNotifyApi() ? (

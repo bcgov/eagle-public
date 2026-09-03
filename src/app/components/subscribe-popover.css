@@ -175,8 +175,8 @@
   color: var(--bc-gray);
 }
 
-/* The collection notice is required text, not part of the task, so it sits below a rule in the
-   quietest type on the panel. */
+/* The collection notice is required text, not part of the task: quietest type on the panel,
+   under the title and ahead of the form. */
 .subscribe-popover__privacy {
   margin: 0 0 1rem;
   font-size: 0.75rem;

@@ -110,7 +110,7 @@ async function main(): Promise<void> {
   });
   await context.addInitScript(() => {
     try {
-      sessionStorage.setItem('eagle-gate', '1');
+      localStorage.setItem('eagle-gate', '1');
     } catch {
       /* ignored */
     }
