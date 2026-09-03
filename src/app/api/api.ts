@@ -35,9 +35,8 @@ export function apiPath(): string {
  * Base URL for search. eagle-search when SEARCH_API_PATH is set, eagle-api otherwise.
  *
  * Only the datasets in AZURE_DATASETS move; RecentActivity and ProjectNotification stay on
- * eagle-api, as does getFullDataSet(). The two backends answer the same query
- * language and the same `[{searchResults, meta}]` envelope, which is why nothing downstream has
- * to change.
+ * eagle-api. The two backends answer the same query language and the same
+ * `[{searchResults, meta}]` envelope, which is why nothing downstream has to change.
  */
 export function searchPath(): string {
   return getSearchApiPath();
@@ -100,10 +99,6 @@ async function postJson<T>(url: string, body: unknown): Promise<T> {
     body: JSON.stringify(body),
   });
   return response.json() as Promise<T>;
-}
-
-export async function getFullDataSet(dataSet: string, pageSize = 250): Promise<any> {
-  return getJson(`${apiPath()}/search?pageSize=${pageSize}&dataset=${dataSet}`);
 }
 
 export async function downloadDocument(document: Document): Promise<void> {
@@ -473,13 +468,6 @@ export async function getPeriod(id: string): Promise<CommentPeriod[]> {
 //
 // Comments
 //
-export async function getCountCommentsById(commentPeriodId: string): Promise<number> {
-  const queryString = `public/comment?period=${commentPeriodId}`;
-  const response = await send(`${apiPath()}/${queryString}`, { method: 'HEAD' });
-  // retrieve the count from the response headers
-  return parseInt(response.headers.get('x-total-count') || '0', 10);
-}
-
 export async function getCommentsByPeriodId(
   pageNum: number | null,
   pageSize: number | null,
