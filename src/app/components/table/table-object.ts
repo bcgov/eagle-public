@@ -143,6 +143,18 @@ export function pageNumbers(total: number, current: number): (number | 'ellipsis
   return pages;
 }
 
+/**
+ * The document table header bar's quiet default line. Separate from `pageCountMessage`: that one
+ * counts "results" for every table, this one names the documents the bar is about to download.
+ */
+export function documentCountMessage(totalItems: number, currentPageNum: number, currentPageSize: number): string {
+  if (totalItems <= 0) return 'No documents';
+  const high = Math.min(totalItems, currentPageNum * currentPageSize);
+  const noun = totalItems === 1 ? 'document' : 'documents';
+  if (high >= totalItems) return `${totalItems.toLocaleString()} ${noun}`;
+  return `Showing ${high.toLocaleString()} of ${totalItems.toLocaleString()} ${noun}`;
+}
+
 export function pageCountMessage(totalItems: number, currentPageNum: number, currentPageSize: number): string {
   const pageCount = Math.max(1, Math.ceil(totalItems / currentPageSize));
 

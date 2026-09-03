@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { DEFAULT_TABLE_OPTIONS, pageCountMessage, pageNumbers, tableObject, withAllPicker } from './table-object';
+import {
+  DEFAULT_TABLE_OPTIONS,
+  documentCountMessage,
+  pageCountMessage,
+  pageNumbers,
+  tableObject,
+  withAllPicker
+} from './table-object';
 
 describe('pageCountMessage', () => {
   it('is empty when there are no results', () => {
@@ -16,6 +23,28 @@ describe('pageCountMessage', () => {
 
   it('warns when the page param is past the end', () => {
     expect(pageCountMessage(50, 10, 25)).toBe('Unable to display results, please clear and re-try');
+  });
+});
+
+describe('documentCountMessage', () => {
+  it('says how much of the result set is on the page', () => {
+    expect(documentCountMessage(2158, 1, 10)).toBe('Showing 10 of 2,158 documents');
+  });
+
+  it('drops the "showing" half once the whole result set fits the page', () => {
+    expect(documentCountMessage(7, 1, 10)).toBe('7 documents');
+  });
+
+  it('counts through to the end of the current page', () => {
+    expect(documentCountMessage(2158, 3, 10)).toBe('Showing 30 of 2,158 documents');
+  });
+
+  it('drops the plural on one document', () => {
+    expect(documentCountMessage(1, 1, 10)).toBe('1 document');
+  });
+
+  it('names the empty result set', () => {
+    expect(documentCountMessage(0, 1, 10)).toBe('No documents');
   });
 });
 

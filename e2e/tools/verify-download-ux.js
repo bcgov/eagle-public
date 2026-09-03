@@ -76,16 +76,16 @@ function check(name, ok, detail) {
   await page.locator('.table-template .table tbody input[type="checkbox"]').first().check();
   await page.getByText('1 selected').waitFor();
   const topOne = await tableTop();
-  // The whole page selected is the tallest the controls get: the select-all note joins the line.
+  // The whole page selected is the busiest the header bar gets: the select-all offer joins the line.
   await page.locator('.table-template thead input[type="checkbox"]').click();
-  await page.getByText(/Narrow your filters|on this page are selected/).first().waitFor();
+  await page.getByText(/\d+ selected/).first().waitFor();
   const topAll = await tableTop();
   check(
     'grid top unchanged by selecting one row or the whole page',
     topEmpty === topOne && topOne === topAll,
     `${topEmpty} / ${topOne} / ${topAll}`
   );
-  await page.getByRole('button', { name: 'Clear' }).click();
+  await page.getByRole('button', { name: 'Clear selection' }).click();
   await page.locator('.table-template .table tbody input[type="checkbox"]').first().check();
   await page.getByText('1 selected').waitFor();
 

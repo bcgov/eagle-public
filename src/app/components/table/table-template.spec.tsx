@@ -4,14 +4,15 @@ import { render, renderHook, screen, waitFor, within } from '@testing-library/re
 import userEvent from '@testing-library/user-event';
 import { clearJob, clearSelection, SELECT_ALL_MAX, setJob, setSelected, toggleSelected } from 'app/state/bulk-download';
 import { clearToasts, useToasts } from 'app/state/toast';
-import { TableTemplate } from './table-template';
+import { SelectCell, TableTemplate } from './table-template';
 import { tableObject, type ITableMessage, type TableObject } from './table-object';
 
 const COLUMNS = [{ name: 'Name', value: 'name' }];
 
-function NameRow({ rowData }: { rowData: any }) {
+function NameRow({ rowData, tableData }: { rowData: any; tableData?: TableObject }) {
   return (
     <tr>
+      {tableData?.options?.selectable && <SelectCell rowData={rowData} tableId={tableData.tableId} />}
       <td>{rowData.name}</td>
     </tr>
   );
@@ -125,7 +126,7 @@ describe('TableTemplate selection', () => {
     await userEvent.click(screen.getByLabelText(SELECT_ALL_PAGE));
 
     expect(screen.getByLabelText(SELECT_ALL_PAGE)).toBeChecked();
-    expect(screen.getByText('All 2 on this page are selected.')).toBeInTheDocument();
+    expect(screen.getByText('2 selected')).toBeInTheDocument();
   });
 
   it('clears the selection when the header checkbox is unchecked', async () => {
@@ -160,35 +161,69 @@ describe('TableTemplate selection', () => {
   });
 
   /**
-   * The reason the controls live in the top row: a toolbar or a banner inserted above the grid
-   * pushed every row down the moment a document was selected, under the reader's pointer.
+   * The bar is one element in two states, never a toolbar inserted above the grid: a bar that is
+   * added, removed or rebuilt on select pushes every row down under the reader's pointer. The
+   * pixel height is measured in `e2e/tools/verify-table-header.js`; jsdom has no layout, so this
+   * pins what makes the height fixed — the same node, in the same place, holding the same two
+   * halves, in every state.
    */
-  it('inserts nothing above the grid when a document is selected', async () => {
+  it('keeps the same header bar, in the same place, through every selection state', async () => {
     const { container } = render(<TableTemplate data={selectableTable()} onMessage={() => undefined} />);
-    const layout = () => [...container.querySelector('.table-template')!.children].map(el => el.className);
-    const before = layout();
+    const shape = () => [...container.querySelector('.table-template')!.children].map(el => el.tagName);
+    const bar = () => container.querySelector('.table-header-bar')!;
+    const halves = () => [
+      bar().querySelectorAll('.table-header-bar__main').length,
+      bar().querySelectorAll('.table-header-bar__actions').length,
+      bar().nextElementSibling!.querySelector('table') !== null
+    ];
+    const barBefore = bar();
+    const shapeBefore = shape();
+
+    await userEvent.click(screen.getByLabelText('Select Alpha'));
+
+    expect(screen.getByText('1 selected')).toBeInTheDocument();
+    expect(bar()).toBe(barBefore);
+    expect(shape()).toEqual(shapeBefore);
+    expect(halves()).toEqual([1, 1, true]);
 
     await userEvent.click(screen.getByLabelText(SELECT_ALL_PAGE));
 
     expect(screen.getByText('2 selected')).toBeInTheDocument();
-    expect(screen.getByText('All 2 on this page are selected.')).toBeInTheDocument();
-    expect(layout()).toEqual(before);
+    expect(bar()).toBe(barBefore);
+    expect(shape()).toEqual(shapeBefore);
+    expect(halves()).toEqual([1, 1, true]);
   });
 
-  /** A table with no page count and no pager still gets the row, so its height never changes. */
-  it('keeps one controls row above a selectable table that has no top controls', async () => {
+  it('counts the result set in plain English, thousands grouped', () => {
+    render(<TableTemplate data={selectableTable({ totalListItems: 2158 })} onMessage={() => undefined} />);
+
+    expect(screen.getByText('Showing 10 of 2,158 documents')).toBeInTheDocument();
+  });
+
+  it('drops the "showing" half once the whole result set is on the page', () => {
+    render(<TableTemplate data={selectableTable({ totalListItems: 2, pageSize: 10 })} onMessage={() => undefined} />);
+
+    expect(screen.getByText('2 documents')).toBeInTheDocument();
+  });
+
+  /** The bar carries its own count and pager, so the old controls row is redundant above it. */
+  it('replaces the top controls row with the header bar on a selectable table', () => {
+    const { container } = render(<TableTemplate data={selectableTable()} onMessage={() => undefined} />);
+
+    expect(container.querySelectorAll('.table-controls-top')).toHaveLength(0);
+    expect(container.querySelectorAll('.table-header-bar')).toHaveLength(1);
+    expect(screen.getByText('Showing 10 of 60 documents')).toBeInTheDocument();
+  });
+
+  it('gives a selectable table with no top controls the same bar', async () => {
     const data = selectableTable({ options: { showHeader: true, selectable: true, showTopControls: false } });
     const { container } = render(<TableTemplate data={data} onMessage={() => undefined} />);
-    const layout = () => [...container.querySelector('.table-template')!.children].map(el => el.className);
 
-    expect(container.querySelectorAll('.table-controls-top')).toHaveLength(1);
-    expect(screen.getByText('Select documents to download')).toBeInTheDocument();
-    const before = layout();
+    expect(container.querySelectorAll('.table-header-bar')).toHaveLength(1);
 
     await userEvent.click(screen.getByLabelText(SELECT_ALL_PAGE));
 
     expect(screen.getByText('2 selected')).toBeInTheDocument();
-    expect(layout()).toEqual(before);
   });
 
   it('leaves the controls row out of a table that is not selectable and has no top controls', () => {
@@ -196,6 +231,18 @@ describe('TableTemplate selection', () => {
     const { container } = render(<TableTemplate data={data} onMessage={() => undefined} />);
 
     expect(container.querySelectorAll('.table-controls-top')).toHaveLength(0);
+    expect(container.querySelectorAll('.table-header-bar')).toHaveLength(0);
+  });
+
+  /** Comments, news and the project list are not selectable: their controls must not move. */
+  it('keeps the page count and the pager above a table that is not selectable', () => {
+    const data = selectableTable({ options: { showHeader: true, showTopControls: true, showPageCountDisplay: true, showPagination: true } });
+    const { container } = render(<TableTemplate data={data} onMessage={() => undefined} />);
+
+    expect(container.querySelectorAll('.table-header-bar')).toHaveLength(0);
+    expect(container.querySelectorAll('.table-controls-top')).toHaveLength(1);
+    expect(document.getElementById('table-template-page-count-display')).toHaveTextContent('Showing 10 of 60 results');
+    expect(within(container.querySelector('.table-controls-top')!).getByLabelText('Table pagination')).toBeInTheDocument();
   });
 
   it('reads as indeterminate while only part of the page is selected', () => {
@@ -209,7 +256,7 @@ describe('TableTemplate selection', () => {
   });
 });
 
-describe('TableTemplate select-all banner', () => {
+describe('TableTemplate select-all offer', () => {
   beforeEach(() => {
     clearSelection();
     setSelected('documents', [
@@ -235,36 +282,28 @@ describe('TableTemplate select-all banner', () => {
   it('offers select-all once the result count passes the page size by one', () => {
     render(<TableTemplate data={selectableTable({ totalListItems: 11, pageSize: 10 })} onMessage={() => undefined} />);
 
-    expect(screen.getByRole('button', { name: 'Select all 11 matching documents' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Select all 11 documents' })).toHaveTextContent('Select all 11');
   });
 
   it('offers the rest of the result set once the page is fully selected', async () => {
     const onMessage = vi.fn();
     render(<TableTemplate data={selectableTable()} onMessage={onMessage} />);
 
-    expect(screen.getByText('All 2 on this page are selected.')).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Select all 60 matching documents' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Select all 60 documents' }));
 
     expect(onMessage).toHaveBeenCalledWith({ label: 'selectAllMatching' });
   });
 
-  it('names the tab on the Application tab', () => {
-    clearSelection();
-    setSelected('application', [
-      { id: 'doc-a', displayName: 'Alpha' },
-      { id: 'doc-b', displayName: 'Beta' }
-    ]);
+  /**
+   * The cap is a limit the reader meets, not a warning they are shown up front: past it the bar
+   * offers nothing and says nothing. `CAP_MESSAGE` is a toast on the attempt that hits the cap,
+   * proved by the header-checkbox case above.
+   */
+  it('offers nothing, and warns about nothing, past the 100-document cap', () => {
+    const { container } = render(<TableTemplate data={selectableTable({ totalListItems: 250 })} onMessage={() => undefined} />);
 
-    render(<TableTemplate data={selectableTable({ tableId: 'application' })} onMessage={() => undefined} />);
-
-    expect(screen.getByRole('button', { name: 'Select all 60 Application documents' })).toBeInTheDocument();
-  });
-
-  it('asks for narrower filters past the 100-document cap instead of offering select-all', () => {
-    render(<TableTemplate data={selectableTable({ totalListItems: 250 })} onMessage={() => undefined} />);
-
-    expect(screen.getByText('Narrow your filters to 100 or fewer documents to select them all.')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Select all/ })).not.toBeInTheDocument();
+    expect(container.querySelector('.table-header-bar')).not.toHaveTextContent(/Narrow|filters|100/);
   });
 });
 
@@ -339,7 +378,7 @@ describe('TableTemplate selection toolbar', () => {
     setSelected('documents', [{ id: 'doc-a', displayName: 'Alpha' }]);
     render(<TableTemplate data={selectableTable()} onMessage={() => undefined} />);
 
-    await userEvent.click(screen.getByRole('button', { name: 'Clear' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Clear selection' }));
 
     expect(screen.queryByText('1 selected')).not.toBeInTheDocument();
     expect(screen.getByLabelText('Select all on this page')).not.toBeChecked();

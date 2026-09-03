@@ -16,7 +16,13 @@ import { toggleRow } from './document-row';
 import { PageCountDisplay } from './page-count-display';
 import { PageSizePicker } from './page-size-picker';
 import { Pagination } from './pagination';
-import { withAllPicker, type IPageSizePickerOption, type ITableMessage, type TableObject } from './table-object';
+import {
+  documentCountMessage,
+  withAllPicker,
+  type IPageSizePickerOption,
+  type ITableMessage,
+  type TableObject
+} from './table-object';
 import './table.css';
 
 /** The checkbox column's cell. Rendered by the row components, which own their own `<tr>`. */
@@ -66,9 +72,11 @@ export function TableTemplate({ data, loading = false, rowComponent, onMessage }
     .map(item => ({ id: item.rowData._id, displayName: item.rowData.displayName }));
   const selectedOnPage = pageDocs.filter(doc => selection.has(doc.id)).length;
   const pageAllSelected = pageDocs.length > 0 && selectedOnPage === pageDocs.length;
-  // Offered once the page is fully selected and there is more behind it than one page.
-  const showSelectAll = selectable && pageAllSelected && data.totalListItems > data.pageSize;
-  const documentNoun = data.tableId === 'application' ? 'Application documents' : 'matching documents';
+  // Offered once the page is fully selected, there is more behind it than one page, and the whole
+  // result set fits the anonymous cap. Over the cap there is nothing to offer, so the bar says
+  // nothing: the cap is explained by the toast on the attempt that actually hits it.
+  const showSelectAll =
+    selectable && pageAllSelected && data.totalListItems > data.pageSize && data.totalListItems <= SELECT_ALL_MAX;
 
   function onSort(property: string): void {
     track('Table Column Sorted', {
@@ -108,19 +116,16 @@ export function TableTemplate({ data, loading = false, rowComponent, onMessage }
   ) : null;
 
   const showPageCount = !!data.options.showTopControls && !!data.options.showPageCountDisplay;
-  // Nothing is ever inserted above the grid: the selection controls share the row the page count
-  // and the pager already occupy, and that row is rendered whenever the table is selectable.
-  const showTopRow = (!!data.options.showTopControls && (showPageCount || showPagination)) || selectable;
+  // Selectable tables trade this row for the header bar below; everything else keeps it.
+  const showTopRow = !selectable && !!data.options.showTopControls && (showPageCount || showPagination);
+  const noResults = !loading && data.items.length === 0 && data.totalListItems === 0;
+  const selectionActive = selectedCount > 0;
 
   return (
     <div className="table-template" ref={containerRef}>
       {showTopRow && (
         <div className="row mb-4 table-controls-top">
-          <div
-            className={`col-12 col-md-6 mb-3 mb-md-0 table-controls-left${
-              selectable ? ' table-controls-left--selectable' : ''
-            }`}
-          >
+          <div className="col-12 col-md-6 mb-3 mb-md-0 table-controls-left">
             {showPageCount && (
               <PageCountDisplay
                 isHidden={false}
@@ -130,58 +135,72 @@ export function TableTemplate({ data, loading = false, rowComponent, onMessage }
                 id="table-template-page-count-display"
               />
             )}
-            {selectable &&
-              (selection.size === 0 ? (
-                <span className="text-muted">Select documents to download</span>
-              ) : (
-                <>
-                  <span className="fw-semibold" role="status">
-                    {selectedCount} selected
-                  </span>
-                  <button
-                    type="button"
-                    className="btn btn-primary btn-sm d-inline-flex align-items-center gap-1"
-                    disabled={downloadInProgress}
-                    title={downloadInProgress ? 'Wait for the download in progress to finish.' : undefined}
-                    onClick={() => void startDownload()}
-                  >
-                    {/* The bundled Material Icons build has no `download`; this is the app's glyph. */}
-                    <i className="material-icons md-18" aria-hidden="true">
-                      cloud_download
-                    </i>
-                    Download
-                  </button>
-                  <button type="button" className="btn btn-link btn-sm" onClick={() => clearSelection()}>
-                    Clear
-                  </button>
-                  {showSelectAll && (
-                    <span className="table-selection__note" role="status">
-                      {data.totalListItems <= SELECT_ALL_MAX ? (
-                        <>
-                          <span>All {pageDocs.length} on this page are selected.</span>
-                          <button
-                            type="button"
-                            className="btn btn-link btn-sm p-0 align-baseline"
-                            onClick={() => onMessage({ label: 'selectAllMatching' })}
-                          >
-                            Select all {data.totalListItems} {documentNoun}
-                          </button>
-                        </>
-                      ) : (
-                        <span>Narrow your filters to {SELECT_ALL_MAX} or fewer documents to select them all.</span>
-                      )}
-                    </span>
-                  )}
-                </>
-              ))}
           </div>
           <div className="col-12 col-md-6 text-center text-md-end">{paginationControl}</div>
         </div>
       )}
 
+      {/* One bar, two states. It is part of the grid rather than a toolbar above it: fixed height,
+          so selecting a row never moves the rows under the reader's pointer. */}
+      {selectable && !noResults && (
+        <div className={`table-header-bar${selectionActive ? ' table-header-bar--selected' : ''}`}>
+          <div className="table-header-bar__main">
+            {/* The one live region: it is the only thing selecting changes for a screen reader. */}
+            <span className="table-header-bar__count" role="status">
+              {selectionActive
+                ? `${selectedCount.toLocaleString()} selected`
+                : documentCountMessage(data.totalListItems, data.currentPage, data.pageSize)}
+            </span>
+            {selectionActive && (
+              <>
+                <button
+                  type="button"
+                  className="table-header-bar__icon-btn"
+                  aria-label="Clear selection"
+                  onClick={() => clearSelection()}
+                >
+                  <i className="material-icons md-18" aria-hidden="true">
+                    close
+                  </i>
+                </button>
+                {showSelectAll && (
+                  <button
+                    type="button"
+                    className="btn btn-link btn-sm table-header-bar__link"
+                    aria-label={`Select all ${data.totalListItems.toLocaleString()} documents`}
+                    onClick={() => onMessage({ label: 'selectAllMatching' })}
+                  >
+                    Select all {data.totalListItems.toLocaleString()}
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+          <div className="table-header-bar__actions">
+            {selectionActive ? (
+              <button
+                type="button"
+                className="btn btn-primary btn-sm d-inline-flex align-items-center gap-1"
+                disabled={downloadInProgress}
+                title={downloadInProgress ? 'Wait for the download in progress to finish.' : undefined}
+                onClick={() => void startDownload()}
+              >
+                {/* The bundled Material Icons build has no `download`; this is the app's glyph. */}
+                <i className="material-icons md-18" aria-hidden="true">
+                  cloud_download
+                </i>
+                Download
+              </button>
+            ) : (
+              paginationControl
+            )}
+          </div>
+        </div>
+      )}
+
       <div className={loading && data.items.length > 0 ? 'table-loading' : undefined} aria-busy={loading || undefined}>
         {showSkeleton && <span className="visually-hidden">Loading</span>}
-        {!loading && data.items.length === 0 && data.totalListItems === 0 ? (
+        {noResults ? (
           <div className="text-center my-5">
             <p className="text-muted">No results found</p>
           </div>

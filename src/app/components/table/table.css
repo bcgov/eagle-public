@@ -7,9 +7,6 @@
   margin-bottom: 1.5rem;
 }
 
-/* The page count and the selection controls share one line, so nothing is ever inserted above the
-   grid. Selectable tables reserve two lines: the select-all note wraps at most that far, so the
-   grid sits at the same offset whether nothing, one document or the whole page is selected. */
 .table-template .table-controls-left {
   display: flex;
   flex-wrap: wrap;
@@ -19,20 +16,91 @@
   min-height: 2rem;
 }
 
-.table-template .table-controls-left--selectable {
-  min-height: 4.5rem;
-}
-
-.table-template .table-selection__note {
-  display: inline-flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.35rem;
-}
-
 @media (min-width: 768px) {
   .table-template .table-controls-left {
     justify-content: flex-start;
+  }
+}
+
+/* === DOCUMENT TABLE HEADER BAR === */
+
+/* Part of the grid, not a toolbar above it: same width, squared corners meeting the blue thead.
+   Its height is fixed in both states, so selecting never moves the rows under the pointer. */
+.table-template .table-header-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  align-content: center;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+  min-height: 3rem;
+  padding: 0.25rem 0.75rem;
+  border: 1px solid var(--bs-table-border-color);
+  border-bottom: none;
+  background-color: var(--bs-white);
+  color: var(--bs-secondary-color);
+}
+
+/* Selection state: the same bar, tinted. #1c2c45 on #d9e1ea is 10.6:1. */
+.table-template .table-header-bar--selected {
+  border-color: var(--bs-primary-border-subtle);
+  background-color: var(--bs-primary-bg-subtle);
+  color: var(--bs-primary-text-emphasis);
+}
+
+/* Both halves reserve the tallest control's line, so a button appearing cannot grow the bar. */
+.table-header-bar__main,
+.table-header-bar__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.25rem;
+}
+
+.table-header-bar__count {
+  font-size: var(--bs-font-size-sm);
+}
+
+.table-header-bar--selected .table-header-bar__count {
+  font-weight: var(--bs-font-weight-semibold);
+}
+
+.table-header-bar__link {
+  padding: 0;
+  border: none;
+  vertical-align: baseline;
+  white-space: nowrap;
+}
+
+.table-header-bar__icon-btn {
+  display: inline-flex;
+  padding: 0.125rem;
+  border: none;
+  border-radius: 0.2rem;
+  background-color: transparent;
+  color: inherit;
+  line-height: 1;
+}
+
+.table-header-bar__icon-btn:hover {
+  background-color: rgba(var(--bs-primary-rgb), 0.15);
+}
+
+.table-header-bar__icon-btn:focus-visible {
+  outline: 2px solid var(--bs-primary);
+  outline-offset: 1px;
+}
+
+/* Phone: two fixed lines, count above actions, and still the same height in both states. */
+@media (max-width: 768px) {
+  .table-template .table-header-bar {
+    min-height: 5.5rem;
+  }
+
+  .table-header-bar__main,
+  .table-header-bar__actions {
+    flex: 1 0 100%;
+    justify-content: center;
   }
 }
 

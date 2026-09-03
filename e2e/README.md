@@ -210,6 +210,17 @@ that component's own markup and carried one extra unit of specificity. As plain 
 can reach a child component's markup, and it can lose a cascade fight it used to win. Both show up
 as one line of computed-style difference rather than a screenshot to squint at.
 
+## Checking a dev server
+
+Two tools assert behaviour on a running dev server rather than comparing environments. Both take
+`BASE_URL` (default `http://localhost:4200`) and `PROJECT_ID`, print one line per assertion and
+exit non-zero on the first failure.
+
+| Tool | Checks |
+|---|---|
+| `node tools/verify-download-ux.js` | no per-row download control, no clipped last column, the transfer panel neither pads the page nor covers the scroll-to-top button |
+| `node tools/verify-table-header.js` | the document table header bar: full table width, no gap to the grid, the same height and grid offset in every selection state at 1920, 1400 and 390, and Download and Clear still working. Writes `/tmp/hdr-<width>-<state>.png` |
+
 ## Environment differences observed 2026-08-27
 
 Run against `https://test.projects.eao.gov.bc.ca` with no credential: **1 passed, 60 failed,
