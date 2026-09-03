@@ -76,6 +76,8 @@ describe('subscribe popover', () => {
 
     // The banner the section shows carries the promise; the panel repeats none of it.
     expect(screen.getByText('Get an email when this project publishes an Update.')).toBeInTheDocument();
+    // The collection notice is required text; it sits under the title in every state.
+    expect(screen.getByText(/Freedom of Information and Protection of Privacy Act/, { exact: false })).toBeInTheDocument();
     expect(
       screen.getByRole('checkbox', {
         name: 'Also send me EAO announcements that are not about a single project',
