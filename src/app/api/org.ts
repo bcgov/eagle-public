@@ -5,23 +5,8 @@ import { startLoading, stopLoading } from 'app/state/loading-state';
 
 const proponents = createStore<Org[]>([]);
 
-export async function getByCompanyType(type: string): Promise<Org[]> {
-  const loadingId = `org-${type}`;
-  startLoading(loadingId, `Loading ${type} organizations`);
-  try {
-    const res = await api.getOrgsByCompanyType(type);
-    return res ? res.map((org: any) => new Org(org)) : [];
-  } finally {
-    stopLoading(loadingId);
-  }
-}
-
 export function setValue(value: Org[] | null): void {
   proponents.set(value || []);
-}
-
-export function getValue(): Org[] {
-  return proponents.get();
 }
 
 export function useProponents(): Org[] {

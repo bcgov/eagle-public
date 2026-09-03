@@ -3,18 +3,10 @@ import { CommentPeriod } from 'app/models/commentperiod';
 import { startLoading, stopLoading } from 'app/state/loading-state';
 
 // statuses / query param options
-export const NOT_STARTED = 'NS';
-export const NOT_OPEN = 'NO';
-export const CLOSED = 'CL';
-export const OPEN = 'OP';
-
-// user-friendly strings for display
-const commentPeriodStatuses: Record<string, string> = {
-  [NOT_STARTED]: 'Commenting Not Started',
-  [NOT_OPEN]: 'Not Open For Commenting',
-  [CLOSED]: 'Commenting Closed',
-  [OPEN]: 'Commenting Open',
-};
+const NOT_STARTED = 'NS';
+const NOT_OPEN = 'NO';
+const CLOSED = 'CL';
+const OPEN = 'OP';
 
 // get all comment periods for the specified application id
 export async function getAllByProjectId(
@@ -50,11 +42,6 @@ export async function getById(periodId: string): Promise<CommentPeriod> {
   }
 }
 
-// returns first period - multiple comment periods are currently not supported
-export function getCurrent(periods: CommentPeriod[]): CommentPeriod | null {
-  return periods.length > 0 ? periods[0] : null;
-}
-
 /** Given a comment period, returns status abbreviation. */
 export function getStatusCode(commentPeriod: CommentPeriod): string {
   if (!commentPeriod || !commentPeriod.dateStarted || !commentPeriod.dateCompleted) {
@@ -70,15 +57,6 @@ export function getStatusCode(commentPeriod: CommentPeriod): string {
     default:
       return NOT_OPEN;
   }
-}
-
-/** Given a status code, returns user-friendly status string. */
-export function getStatusString(statusCode: string): string | null {
-  return commentPeriodStatuses[statusCode] ?? null;
-}
-
-export function isNotOpen(commentPeriod: CommentPeriod): boolean {
-  return getStatusCode(commentPeriod) === NOT_OPEN;
 }
 
 export function isClosed(commentPeriod: CommentPeriod): boolean {
