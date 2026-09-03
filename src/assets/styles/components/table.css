@@ -120,12 +120,12 @@
   outline-offset: -2px;
 }
 
-/* Selection: the design-token blue tint plus a blue bar down the leading edge, so it never
+/* Selection: the hover fill plus a blue bar down the leading edge, so it never
    reads as hover. The bar sits on the row, whose bottom border is the divider, so it runs
    through the dividers; a cell border stopped 2px short of each one. Desktop only: phone
    rows are cards with their own selected ring. */
 .table tbody tr.selected td {
-  background-color: var(--bc-blue-10) !important;
+  background-color: var(--bs-table-hover-bg) !important;
 }
 
 @media (min-width: 769px) {
@@ -134,10 +134,6 @@
   }
 }
 
-/* Hovering a selected row still answers: a deeper tint. */
-.table tbody.highlight tr.selected:hover td {
-  background-color: var(--bc-blue-20) !important;
-}
 
 /* === TABLE-TEMPLATE COMPONENT STYLES === */
 

@@ -40,12 +40,12 @@
   color: var(--bs-secondary-color);
 }
 
-/* Selection state: the bar becomes part of the grid, tinted. #1c2c45 on #d9e1ea is 10.6:1. */
+/* Selection state: the bar becomes part of the grid, in the row hover fill. */
 .table-template .table-header-bar--selected {
   padding: 0.25rem 0.75rem;
-  border-color: var(--bc-blue-20);
+  border-color: var(--bs-table-hover-bg);
   border-radius: 0.25rem 0.25rem 0 0;
-  background-color: var(--bc-blue-20);
+  background-color: var(--bs-table-hover-bg);
   color: var(--bs-primary-text-emphasis);
 }
 
