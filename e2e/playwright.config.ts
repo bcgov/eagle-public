@@ -1,6 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 
-const BASE_URL = process.env.BASE_URL || 'https://projects.eao.gov.bc.ca';
+const BASE_URL = process.env['BASE_URL'] || 'https://projects.eao.gov.bc.ca';
 
 // The test environment puts the whole site (but not /api) behind HTTP basic auth.
 const { BASIC_AUTH_USER, BASIC_AUTH_PASS } = process.env;

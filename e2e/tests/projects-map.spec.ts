@@ -1,4 +1,5 @@
-import { test, expect, Page } from '../support/fixtures';
+import { test, expect } from '../support/fixtures';
+import type { Page } from '../support/fixtures';
 import { recordApiCalls, checkBaseline, waitForSearch, total } from '../support/helpers';
 
 const CARDS = '[data-testid="project-card"]';

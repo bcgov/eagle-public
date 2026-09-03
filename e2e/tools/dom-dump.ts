@@ -13,16 +13,16 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 
 const HERE = path.dirname(new URL(import.meta.url).pathname);
-const BASE_URL = process.env.BASE_URL || 'http://localhost:4200';
-const OUT = path.join(HERE, '..', 'screenshots', `${process.env.OUT || 'local'}.dom.txt`);
+const BASE_URL = process.env['BASE_URL'] || 'http://localhost:4200';
+const OUT = path.join(HERE, '..', 'screenshots', `${process.env['OUT'] || 'local'}.dom.txt`);
 const { BASIC_AUTH_USER, BASIC_AUTH_PASS } = process.env;
-const WIDTH = Number(process.env.WIDTH || 1280);
-const HEIGHT = Number(process.env.HEIGHT || 800);
+const WIDTH = Number(process.env['WIDTH'] || 1280);
+const HEIGHT = Number(process.env['HEIGHT'] || 800);
 
 async function api(q: string): Promise<any> {
   const headers: Record<string, string> = {};
   if (BASIC_AUTH_USER) {
-    headers.Authorization =
+    headers['Authorization'] =
       'Basic ' + Buffer.from(`${BASIC_AUTH_USER}:${BASIC_AUTH_PASS}`).toString('base64');
   }
   const r = await fetch(new URL(q, BASE_URL), { headers });

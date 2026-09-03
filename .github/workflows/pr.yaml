@@ -92,4 +92,8 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: "yarn"
       - run: yarn install --immutable
+      # tsc -p e2e resolves @playwright/test, which lives in the e2e project's own tree.
+      - run: yarn install --immutable
+        working-directory: e2e
+      - run: yarn typecheck:e2e
       - run: yarn build

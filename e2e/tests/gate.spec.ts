@@ -5,7 +5,7 @@ import { test, expect } from '@playwright/test';
  * the curtain is actually rendered. Needs GATE_PASSWORD; skipped when the environment under test
  * has ACCESS_GATE off.
  */
-const PASSWORD = process.env.GATE_PASSWORD;
+const PASSWORD = process.env['GATE_PASSWORD'];
 
 async function gateIsOn(request: import('@playwright/test').APIRequestContext): Promise<boolean> {
   const r = await request.get('/api/config');

@@ -14,10 +14,10 @@ import * as path from 'node:path';
 
 const HERE = path.dirname(new URL(import.meta.url).pathname);
 
-const BASE_URL = process.env.BASE_URL || 'http://localhost:4200';
-const OUT = path.join(HERE, '..', 'screenshots', process.env.OUT || 'local');
+const BASE_URL = process.env['BASE_URL'] || 'http://localhost:4200';
+const OUT = path.join(HERE, '..', 'screenshots', process.env['OUT'] || 'local');
 const { BASIC_AUTH_USER, BASIC_AUTH_PASS } = process.env;
-const ONLY = process.env.ONLY ? new RegExp(process.env.ONLY) : null;
+const ONLY = process.env['ONLY'] ? new RegExp(process.env['ONLY']) : null;
 
 const VIEWPORTS = [
   { name: 'desktop', width: 1280, height: 800 },
@@ -34,7 +34,7 @@ interface Shot {
 async function api(pathAndQuery: string): Promise<any> {
   const headers: Record<string, string> = {};
   if (BASIC_AUTH_USER) {
-    headers.Authorization =
+    headers['Authorization'] =
       'Basic ' + Buffer.from(`${BASIC_AUTH_USER}:${BASIC_AUTH_PASS}`).toString('base64');
   }
   const r = await fetch(new URL(pathAndQuery, BASE_URL), { headers });

@@ -1,4 +1,5 @@
-import { expect, Page, APIRequestContext } from '@playwright/test';
+import { expect } from '@playwright/test';
+import type { APIRequestContext, Page } from '@playwright/test';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -57,7 +58,7 @@ function loadBaseline(): Record<string, string[]> {
  */
 export function checkBaseline(key: string, observed: Set<string>): void {
   const list = [...observed].sort();
-  if (process.env.BASELINE_WRITE) {
+  if (process.env['BASELINE_WRITE']) {
     const all = loadBaseline();
     all[key] = list;
     fs.mkdirSync(path.dirname(BASELINE_FILE), { recursive: true });
