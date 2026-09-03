@@ -67,14 +67,14 @@ export function checkBaseline(key: string, observed: Set<string>): void {
 }
 
 /**
- * Deliberate request changes in the React port, listed in TODO.md under Deviations. Applied to
+ * Deliberate request changes in the React port, listed in `docs/deviations-from-angular.md`. Applied to
  * both sides so the baseline still fails on anything undocumented.
  */
 function normalise(lines: string[]): string[] {
   return lines.filter(line => !DROPPED.some(pattern => pattern.test(line))).map(applyDeviations);
 }
 
-/** Calls Angular made that the port no longer makes; each is a Deviations entry in TODO.md. */
+/** Calls Angular made that the port no longer makes; each is an entry in `docs/deviations-from-angular.md`. */
 const DROPPED = [
   // `getExtraAppData`: two `dataset=Item&_schemaName=User` lookups whose results nothing rendered.
   /^GET \/api\/search\?_id=:id&_schemaName=User&dataset=Item$/,
@@ -83,7 +83,7 @@ const DROPPED = [
   // Enforcement documents, which Angular has no tab for. `documents-page.spec.tsx` covers them.
   /^GET \/(api|demi-search|eagle-search)\/search\?.*&pageSize=1&/,
   // Bulk download. Angular had none: single downloads now go through demi-api for a presigned
-  // URL, and the bulk bar polls the job. Both are Deviations entries in TODO.md.
+  // URL, and the bulk bar polls the job. Both are entries in `docs/deviations-from-angular.md`.
   /^POST \/(api|demi-search)\/bulk-downloads$/,
   /^GET \/(api|demi-search)\/bulk-downloads\//,
 ];

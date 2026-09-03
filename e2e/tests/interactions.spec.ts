@@ -83,7 +83,7 @@ test('the header tabs through its links in visual order', async ({ page }) => {
   }
 
   // Angular renders the two dropdown toggles as `<a>` with no href, so a keyboard user cannot
-  // reach them at all; the port makes them `<button>` (TODO.md Deviations). What has to hold on
+  // reach them at all; the port makes them `<button>` (see `docs/deviations-from-angular.md`). What has to hold on
   // both is that whatever is reachable comes in the order the links are drawn in.
   const order = ['Map View', 'Project Information', 'The EA Process', 'Contact Us'];
   const reached = seen.filter(name => order.includes(name));

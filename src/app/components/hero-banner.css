@@ -1,7 +1,7 @@
 /* Ported from hero-banner.component.css. `.hero-banner__*` is anchored to this component's root:
    the comments page hand-writes a `.hero-banner-alt > .hero-banner__content` of its own, which
    Angular's view encapsulation kept these rules away from. cac-unsubscribe's hand-written
-   `.hero-banner.hb-sm` still matches - see TODO.md Deviations. */
+   `.hero-banner.hb-sm` still matches - see docs/deviations-from-angular.md. */
 /* Hero Banner Component */
 
 .hero-banner {

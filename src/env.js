@@ -36,7 +36,9 @@
   // Environment label
   window.__env.ENVIRONMENT = 'dev';
 
-  // API target — proxy.conf.js reads this to route /api, /analytics and /demi-search.
+  // API target — vite.config.ts reads this to route the dev proxy's /api, /analytics and
+  // /eagle-search. /demi-search goes to the test APIM gateway unless API_LOCATION is set in the
+  // shell, which points it at that host too. /notify-api always has its own target.
   //
   // TEST, not dev: the Azure estate is
   // staging-and-prod rather than dev-test-prod, so test IS staging and is the only deployed
