@@ -161,5 +161,8 @@ describe('news subscribe control', () => {
 
     await screen.findByText('Permit granted');
     expect(screen.queryByRole('button', { name: 'Subscribe' })).toBeNull();
+    expect(document.querySelector('.subscribe-popover')).toBeNull();
+    // An empty wrapper still pads 24px under the hero, which is the prod configuration.
+    expect(document.querySelector('.container.d-flex.justify-content-end.pt-4')).toBeNull();
   });
 });

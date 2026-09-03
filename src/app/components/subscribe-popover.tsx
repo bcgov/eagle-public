@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { getNotifyApi } from 'app/config/config';
+import { logger } from 'app/config/logging';
 import './subscribe-popover.css';
 
 const COPY = {
@@ -40,6 +41,7 @@ export function SubscribePopover({ serviceName, variant }: SubscribePopoverProps
   // Sent and failed never render together, so one ref covers both outcomes.
   const outcome = useRef<HTMLParagraphElement>(null);
 
+  const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<Status>('idle');
   const [fieldError, setFieldError] = useState('');
   const [address, setAddress] = useState('');
@@ -50,7 +52,9 @@ export function SubscribePopover({ serviceName, variant }: SubscribePopoverProps
     const element = panel.current;
     if (!element) return;
     const onToggle = (event: Event) => {
-      if ((event as ToggleEvent).newState === 'open') {
+      const opening = (event as ToggleEvent).newState === 'open';
+      setOpen(opening);
+      if (opening) {
         heading.current?.focus();
       } else {
         setStatus('idle');
@@ -109,8 +113,10 @@ export function SubscribePopover({ serviceName, variant }: SubscribePopoverProps
         email.current?.focus();
         return;
       }
+      logger.error(`eagle-notify answered ${response.status}`, 'SubscribePopover');
       setStatus('failed');
-    } catch {
+    } catch (error) {
+      logger.error('Could not reach eagle-notify', 'SubscribePopover', error);
       setStatus('failed');
     }
   }
@@ -126,6 +132,7 @@ export function SubscribePopover({ serviceName, variant }: SubscribePopoverProps
         className="btn btn-sm btn-outline-primary subscribe-popover__trigger"
         popoverTarget={panelId}
         aria-haspopup="dialog"
+        aria-expanded={open}
       >
         <i className="material-icons" aria-hidden="true">
           email

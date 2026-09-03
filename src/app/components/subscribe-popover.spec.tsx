@@ -2,6 +2,7 @@ import { describe, it, expect, afterEach, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { loadConfig } from 'app/config/config';
+import { logger } from 'app/config/logging';
 import { SubscribePopover } from './subscribe-popover';
 
 /** jsdom never opens a popover, so its contents stay `display: none`: every query passes
@@ -41,6 +42,7 @@ describe('subscribe popover', () => {
     window.__env = originalEnv;
     await loadConfig();
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
   });
 
   it('renders nothing when NOTIFY_API is empty', async () => {
@@ -65,6 +67,8 @@ describe('subscribe popover', () => {
       screen.getByRole('heading', { name: 'Email updates for this project', hidden: true })
     );
     expect(screen.getByRole('button', { name: 'Close', hidden: true })).toHaveAttribute('popovertargetaction', 'hide');
+    // Chromium synthesises no expanded state for a popovertarget invoker, so the component owns it.
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
   });
 
   it('explains the project subscription and offers the announcements opt-in', async () => {
@@ -168,5 +172,21 @@ describe('subscribe popover', () => {
     expect(screen.getByRole('button', { name: 'Sign up', hidden: true })).toBeInTheDocument();
     // The submit button is disabled mid-flight, so focus would otherwise land on <body>.
     expect(document.activeElement).toBe(alert);
+  });
+
+  /** A dead eagle-notify is invisible without this: the reader sees a message, nobody else does. */
+  it('logs through the repo logger when the request fails', async () => {
+    const error = vi.spyOn(logger, 'error').mockImplementation(() => undefined);
+    stubFetch(new TypeError('network down'));
+    await renderControl('/notify-api', { serviceName: 'eao:updates', variant: 'all' });
+
+    await signUpAs('reader@example.com');
+
+    await screen.findByText('We could not reach the subscription service. Try again in a minute.');
+    expect(error).toHaveBeenCalledTimes(1);
+    const [message, source] = error.mock.calls[0];
+    expect(source).toBe('SubscribePopover');
+    // The address is personal information; it belongs in the request, not in telemetry.
+    expect(message).not.toContain('reader@example.com');
   });
 });

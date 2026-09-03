@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useSearchParams } from 'react-router';
+import { getNotifyApi } from 'app/config/config';
 import { ActivityCard } from 'app/components/activity-card';
 import { HeroBanner } from 'app/components/hero-banner';
 import { SubscribePopover } from 'app/components/subscribe-popover';
@@ -84,9 +85,11 @@ export function News() {
         backgroundImage="/assets/images/hero-banner.jpg"
       />
 
-      <div className="container d-flex justify-content-end pt-4">
-        <SubscribePopover serviceName="eao:updates" variant="all" />
-      </div>
+      {getNotifyApi() ? (
+        <div className="container d-flex justify-content-end pt-4">
+          <SubscribePopover serviceName="eao:updates" variant="all" />
+        </div>
+      ) : null}
 
       <section className="project-list table-container">
         <div className="container">

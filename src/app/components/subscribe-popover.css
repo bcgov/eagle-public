@@ -152,6 +152,11 @@
   color: var(--bc-gray-medium);
 }
 
+/* Colour alone does not distinguish the link from the notice text around it (WCAG 1.4.1). */
+.subscribe-popover__privacy a {
+  text-decoration: underline;
+}
+
 .subscribe-popover__actions {
   display: flex;
   justify-content: flex-end;
