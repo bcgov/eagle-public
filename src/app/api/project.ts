@@ -46,11 +46,6 @@ export async function getAll(
   };
 }
 
-// get count of projects
-export function getCount(): Promise<number> {
-  return api.getCountProjects();
-}
-
 // get all projects and related data
 export async function getAllFull(pageNum = 0, pageSize = 1000000): Promise<Project[]> {
   return (await getAll(pageNum, pageSize)).data;

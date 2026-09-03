@@ -174,18 +174,3 @@ async function fetchRemoteConfig(): Promise<void> {
     }
   }
 }
-
-/** Dropdown/filter list items, lazily fetched and cached by TanStack Query. */
-export function listsQueryOptions() {
-  return {
-    queryKey: ['lists'],
-    queryFn: async (): Promise<any[]> => {
-      const response = await fetch(`${getApiPath()}/search?pageSize=250&dataset=List`);
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      const data = await response.json();
-      return data?.[0]?.searchResults ?? [];
-    },
-  };
-}

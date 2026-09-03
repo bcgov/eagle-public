@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { listsQueryOptions } from 'app/config/config';
+import { listsQueryOptions } from 'app/api/api';
 import { useResponsive } from 'app/state/responsive';
 import { TableTemplate } from 'app/components/table/table-template';
 import {

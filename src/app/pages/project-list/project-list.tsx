@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { listsQueryOptions } from 'app/config/config';
+import { listsQueryOptions } from 'app/api/api';
 import { proponentsQueryOptions } from 'app/api/org';
 import { TableList } from 'app/components/table/table-list';
 import { buildProjectListFilters, createProjectListConfig } from './project-list.config';

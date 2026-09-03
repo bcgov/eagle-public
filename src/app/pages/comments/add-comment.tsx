@@ -7,7 +7,7 @@ import { Project } from 'app/models/project';
 import * as commentApi from 'app/api/comment';
 import * as documentApi from 'app/api/document';
 import * as projectApi from 'app/api/project';
-import { listsQueryOptions } from 'app/config/config';
+import { listsQueryOptions } from 'app/api/api';
 import { logger } from 'app/config/logging';
 import { track } from 'app/analytics/analytics';
 import { safeHtml } from 'app/utils/safe-html';
