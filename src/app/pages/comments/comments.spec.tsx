@@ -239,7 +239,7 @@ describe('comments', () => {
     renderComments();
 
     await userEvent.click(await screen.findByRole('button', { name: 'Submit Comment' }));
-    const dialog = screen.getByRole('dialog');
+    const dialog = await screen.findByRole('dialog');
     expect(dialog).toBeInTheDocument();
     expect(within(dialog).getByRole('heading', { name: 'Submit a Comment' })).toBeInTheDocument();
 
