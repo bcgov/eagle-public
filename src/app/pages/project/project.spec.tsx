@@ -1,7 +1,6 @@
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { RouterProvider, createMemoryRouter } from 'react-router';
+import { screen, waitFor } from '@testing-library/react';
+import { renderAt } from '../../../test-utils';
 import { ProjectPage } from './project';
 import { ProjectDetailsTab } from './project-details-tab';
 
@@ -113,26 +112,14 @@ function renderShell(path = '/p/proj-1/decisions') {
     }),
   );
 
-  const router = createMemoryRouter(
-    [
-      {
-        path: '/p/:projId',
-        Component: ProjectPage,
-        children: [{ path: 'decisions', element: <div>tab body</div> }],
-      },
-      { path: '/projects', element: <div>projects page</div> },
-    ],
-    { initialEntries: [path] },
-  );
-
-  render(
-    <QueryClientProvider
-      client={new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })}
-    >
-      <RouterProvider router={router} />
-    </QueryClientProvider>,
-  );
-  return router;
+  return renderAt(path, [
+    {
+      path: '/p/:projId',
+      Component: ProjectPage,
+      children: [{ path: 'decisions', element: <div>tab body</div> }],
+    },
+    { path: '/projects', element: <div>projects page</div> },
+  ]).router;
 }
 
 describe('project shell', () => {
@@ -250,24 +237,14 @@ function deferredFetch() {
 }
 
 function renderShellWithDetailsTab() {
-  const router = createMemoryRouter(
-    [
-      {
-        path: '/p/:projId',
-        Component: ProjectPage,
-        children: [{ path: 'project-details', Component: ProjectDetailsTab }],
-      },
-      { path: '/projects', element: <div>projects page</div> },
-    ],
-    { initialEntries: ['/p/proj-1/project-details'] },
-  );
-  return render(
-    <QueryClientProvider
-      client={new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })}
-    >
-      <RouterProvider router={router} />
-    </QueryClientProvider>,
-  );
+  return renderAt('/p/proj-1/project-details', [
+    {
+      path: '/p/:projId',
+      Component: ProjectPage,
+      children: [{ path: 'project-details', Component: ProjectDetailsTab }],
+    },
+    { path: '/projects', element: <div>projects page</div> },
+  ]);
 }
 
 describe('project page first paint', () => {

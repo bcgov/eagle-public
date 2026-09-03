@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
 import { act, fireEvent, render, renderHook, screen } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { makeQueryClient } from '../../test-utils';
 import type { BulkDownloadJob } from 'app/state/bulk-download';
 
 const ALPHA = { id: 'doc-a', displayName: 'Alpha' };
@@ -85,7 +86,7 @@ describe('DownloadPanel', () => {
     [...initialJobs].reverse().forEach((job) => store.addJob(job));
     const { DownloadPanel } = await import('./download-panel');
 
-    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const client = makeQueryClient();
     return {
       store,
       render: () =>

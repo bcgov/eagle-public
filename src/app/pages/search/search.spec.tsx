@@ -1,8 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { RouterProvider, createMemoryRouter } from 'react-router';
+import { renderAt } from '../../../test-utils';
 import { loadConfig } from 'app/config/config';
 import { Search } from './search';
 
@@ -33,19 +32,8 @@ function jsonResponse(body: unknown) {
   });
 }
 
-function renderAt(path: string) {
-  const router = createMemoryRouter([{ path: '/search', Component: Search }], {
-    initialEntries: [path],
-  });
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
-
-  render(
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>,
-  );
-
-  return router;
+function renderSearch(path: string) {
+  return renderAt(path, [{ path: '/search', Component: Search }]).router;
 }
 
 /** The most recent Document search request. */
@@ -84,7 +72,7 @@ describe('document search', () => {
   });
 
   it('requests page 1 sorted by newest and renders the row', async () => {
-    renderAt('/search');
+    renderSearch('/search');
 
     expect(await screen.findByText('Fish and Fish Habitat.pdf')).toBeInTheDocument();
     expect(lastDocumentRequest()).toBe(
@@ -93,14 +81,14 @@ describe('document search', () => {
   });
 
   it('resolves type and milestone ids against the List collection', async () => {
-    renderAt('/search');
+    renderSearch('/search');
 
     expect(await screen.findByText('Letter')).toBeInTheDocument();
     expect(screen.getByText('Amendment')).toBeInTheDocument();
   });
 
   it('shows both tabs, linking Document Content to /search/content', async () => {
-    renderAt('/search');
+    renderSearch('/search');
 
     await screen.findByText('Fish and Fish Habitat.pdf');
     expect(screen.getByRole('tab', { name: 'Documents' })).toHaveAttribute('href', '/search');
@@ -111,7 +99,7 @@ describe('document search', () => {
   });
 
   it('restores currentPage, pageSize and sortBy from a deep link', async () => {
-    renderAt('/search?currentPage=3&pageSize=25&sortBy=%20displayName');
+    renderSearch('/search?currentPage=3&pageSize=25&sortBy=%20displayName');
 
     await screen.findByText('Fish and Fish Habitat.pdf');
     expect(lastDocumentRequest()).toBe(
@@ -120,7 +108,7 @@ describe('document search', () => {
   });
 
   it('sends every filter from the URL as an and[] param, in filter-list order', async () => {
-    renderAt('/search?milestone=m1,m2&documentAuthorType=a1&type=t1&projectPhase=p1');
+    renderSearch('/search?milestone=m1,m2&documentAuthorType=a1&type=t1&projectPhase=p1');
 
     await screen.findByText('Fish and Fish Habitat.pdf');
     expect(lastDocumentRequest()).toContain(
@@ -129,7 +117,7 @@ describe('document search', () => {
   });
 
   it('sends the date range as and[datePostedStart] and and[datePostedEnd]', async () => {
-    renderAt(
+    renderSearch(
       '/search?datePostedStart=2020-01-01T00:00:00.000Z&datePostedEnd=2021-12-31T00:00:00.000Z',
     );
 
@@ -140,7 +128,7 @@ describe('document search', () => {
   });
 
   it('shows the date range the URL carries in the two date inputs', async () => {
-    renderAt(
+    renderSearch(
       '/search?datePostedStart=2020-01-01T00:00:00.000Z&datePostedEnd=2021-12-31T00:00:00.000Z',
     );
 
@@ -150,7 +138,7 @@ describe('document search', () => {
   });
 
   it('opens the advanced filter panel when the URL already carries a filter', async () => {
-    renderAt('/search?milestone=m1');
+    renderSearch('/search?milestone=m1');
 
     expect(
       await screen.findByRole('button', { name: /Close Advanced Filters/ }),
@@ -158,7 +146,7 @@ describe('document search', () => {
   });
 
   it('writes a chosen filter to the URL and the request', async () => {
-    const router = renderAt('/search');
+    const router = renderSearch('/search');
     await screen.findByText('Fish and Fish Habitat.pdf');
 
     await userEvent.click(screen.getByRole('button', { name: /Open Advanced Filters/ }));
@@ -172,7 +160,7 @@ describe('document search', () => {
   });
 
   it('writes a date range chosen in the panel to the URL as an ISO timestamp', async () => {
-    const router = renderAt('/search');
+    const router = renderSearch('/search');
     await screen.findByText('Fish and Fish Habitat.pdf');
 
     await userEvent.click(screen.getByRole('button', { name: /Open Advanced Filters/ }));
@@ -190,7 +178,7 @@ describe('document search', () => {
   });
 
   it('turns a keyword search into keywords + a -score sort, back on page 1', async () => {
-    const router = renderAt('/search?currentPage=5');
+    const router = renderSearch('/search?currentPage=5');
     await screen.findByText('Fish and Fish Habitat.pdf');
 
     await userEvent.type(screen.getByPlaceholderText('Type keyword to search'), 'caribou');
@@ -206,7 +194,7 @@ describe('document search', () => {
   });
 
   it('writes a column sort to the URL and the request, returning to page 1', async () => {
-    const router = renderAt('/search?currentPage=4');
+    const router = renderSearch('/search?currentPage=4');
     await screen.findByText('Fish and Fish Habitat.pdf');
 
     await userEvent.click(
@@ -222,7 +210,7 @@ describe('document search', () => {
   });
 
   it('writes a page change to the URL and refetches with a 0-based pageNum', async () => {
-    const router = renderAt('/search');
+    const router = renderSearch('/search');
     await screen.findByText('Fish and Fish Habitat.pdf');
 
     await userEvent.click(screen.getAllByRole('button', { name: 'Go to page 2' })[0]!);

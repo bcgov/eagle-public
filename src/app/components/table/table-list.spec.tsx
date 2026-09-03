@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { RouterProvider, createMemoryRouter } from 'react-router';
+import { screen } from '@testing-library/react';
+import { renderAt } from '../../../test-utils';
 import { loadConfig } from 'app/config/config';
 import { TableList, type TableListConfig } from './table-list';
 import type { TableRowProps } from './table-object';
@@ -55,21 +54,7 @@ describe('TableList', () => {
   });
 
   it('hands the configured table id to its rows', async () => {
-    const router = createMemoryRouter(
-      [{ path: '/search', element: <TableList config={CONFIG} /> }],
-      {
-        initialEntries: ['/search'],
-      },
-    );
-    const queryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false, gcTime: 0 } },
-    });
-
-    render(
-      <QueryClientProvider client={queryClient}>
-        <RouterProvider router={router} />
-      </QueryClientProvider>,
-    );
+    renderAt('/search', [{ path: '/search', element: <TableList config={CONFIG} /> }]);
 
     expect(await screen.findByTestId('table-id')).toHaveTextContent('search-documents');
   });

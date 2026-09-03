@@ -1,8 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { RouterProvider, createMemoryRouter } from 'react-router';
+import { renderAt } from '../../../test-utils';
 import { fakeMap, mapProps } from './maplibre-test-stub';
 import { Projects } from './projects';
 import { filtersToParams, parseFilters } from './filter-state';
@@ -155,22 +154,11 @@ function stubViewport(desktop: boolean) {
   }));
 }
 
-function renderAt(path = '/projects') {
-  const router = createMemoryRouter(
-    [
-      { path: '/projects', Component: Projects },
-      { path: '/p/:projId', element: <div>project page</div> },
-    ],
-    { initialEntries: [path] },
-  );
-  render(
-    <QueryClientProvider
-      client={new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })}
-    >
-      <RouterProvider router={router} />
-    </QueryClientProvider>,
-  );
-  return router;
+function renderProjects(path = '/projects') {
+  return renderAt(path, [
+    { path: '/projects', Component: Projects },
+    { path: '/p/:projId', element: <div>project page</div> },
+  ]).router;
 }
 
 function cards(): HTMLElement[] {
@@ -293,7 +281,7 @@ describe('project filter', () => {
 
 describe('projects page', () => {
   it('requests every project once and renders a card per result', async () => {
-    renderAt();
+    renderProjects();
 
     expect(await screen.findByText('Application Review')).toBeInTheDocument();
     expect(screen.getByText('Pre-Application')).toBeInTheDocument();
@@ -308,7 +296,7 @@ describe('projects page', () => {
   });
 
   it('opens the project details page from the info card a card selection opened', async () => {
-    const router = renderAt();
+    const router = renderProjects();
     await screen.findByText('Application Review');
 
     await userEvent.click(cardFor('Cedar Quarry'));
@@ -320,7 +308,7 @@ describe('projects page', () => {
   });
 
   it('writes the search box to the URL and narrows the list', async () => {
-    const router = renderAt();
+    const router = renderProjects();
     await screen.findByText('Application Review');
 
     await userEvent.type(screen.getByPlaceholderText('Start typing a project name'), 'fir');
@@ -332,7 +320,7 @@ describe('projects page', () => {
   });
 
   it('clears the search filter out of the URL again', async () => {
-    const router = renderAt('/projects?applicant=fir');
+    const router = renderProjects('/projects?applicant=fir');
     await screen.findByText('Pre-Application');
 
     await userEvent.click(screen.getByLabelText('Clear search'));
@@ -342,14 +330,14 @@ describe('projects page', () => {
   });
 
   it('applies filters taken from the URL on first load', async () => {
-    renderAt('/projects?regions=r2');
+    renderProjects('/projects?regions=r2');
 
     expect(await screen.findByText('Pre-Application')).toBeInTheDocument();
     expect(screen.queryByText('Application Review')).not.toBeInTheDocument();
   });
 
   it('keeps the filters panel collapsed but counts the filters the URL carries', async () => {
-    renderAt('/projects?regions=r2');
+    renderProjects('/projects?regions=r2');
     await screen.findByText('Pre-Application');
 
     const toggle = screen.getByRole('button', { name: /Filters/ });
@@ -369,7 +357,7 @@ describe('projects page', () => {
   });
 
   it('leaves the search text out of the Filters badge', async () => {
-    renderAt('/projects?applicant=Cedar');
+    renderProjects('/projects?applicant=Cedar');
     await screen.findByText('Cedar Quarry');
 
     const toggle = screen.getByRole('button', { name: /Filters/ });
@@ -377,7 +365,7 @@ describe('projects page', () => {
   });
 
   it('closes the filters panel on Escape and returns focus to the Filters button', async () => {
-    renderAt();
+    renderProjects();
     await screen.findByText('Application Review');
 
     const toggle = screen.getByRole('button', { name: /Filters/ });
@@ -404,7 +392,7 @@ describe('projects page', () => {
       }),
     );
 
-    renderAt();
+    renderProjects();
 
     expect(await screen.findAllByTestId('project-card-skeleton')).toHaveLength(6);
     expect(screen.queryByText('Loading projects...')).toBeNull();
@@ -420,7 +408,7 @@ describe('projects page', () => {
   });
 
   it('shows "No projects found" when nothing matches', async () => {
-    renderAt('/projects?applicant=nothing-matches-this');
+    renderProjects('/projects?applicant=nothing-matches-this');
 
     expect(await screen.findByText('No projects found')).toBeInTheDocument();
   });
@@ -428,7 +416,7 @@ describe('projects page', () => {
 
 describe('projects map', () => {
   it('renders one pin per project and opens the info card on a pin click', async () => {
-    renderAt();
+    renderProjects();
     await screen.findByText('Application Review');
 
     expect(screen.getAllByTestId('map-marker')).toHaveLength(2);
@@ -445,7 +433,7 @@ describe('projects map', () => {
   });
 
   it('highlights the pin from the card and the card from the pin', async () => {
-    renderAt();
+    renderProjects();
     await screen.findByText('Application Review');
 
     await userEvent.hover(cardFor('Cedar Quarry'));
@@ -459,7 +447,7 @@ describe('projects map', () => {
   });
 
   it('flies to the project a card selects', async () => {
-    renderAt();
+    renderProjects();
     await screen.findByText('Application Review');
 
     await userEvent.click(cardFor('Fir Transmission Line'));
@@ -471,7 +459,7 @@ describe('projects map', () => {
   });
 
   it('shrinks the list to the map view without dropping pins', async () => {
-    renderAt();
+    renderProjects();
     await screen.findByText('Application Review');
     expect(cards()).toHaveLength(2);
 
@@ -491,7 +479,7 @@ describe('projects map', () => {
         properties: { cluster: true, cluster_id: 7, point_count: 12 },
       },
     ]);
-    renderAt();
+    renderProjects();
     await screen.findByText('Application Review');
 
     const cluster = await screen.findByTestId('map-cluster');
@@ -508,7 +496,7 @@ describe('projects map', () => {
   });
 
   it('closes the info card on Escape and returns focus to the card that opened it', async () => {
-    renderAt();
+    renderProjects();
     await screen.findByText('Application Review');
 
     const card = cardFor('Cedar Quarry');
@@ -528,7 +516,7 @@ describe('projects map', () => {
       name: `Paged Project ${index}`,
       centroid: [-127.5 + index * 0.01, 54.2],
     }));
-    renderAt();
+    renderProjects();
     await screen.findByText('Paged Project 0');
     expect(cards()).toHaveLength(LIST_PAGE_SIZE);
 
@@ -543,7 +531,7 @@ describe('projects map', () => {
   });
 
   it('rebuilds the marker set when the map repaints, without waiting for a move to end', async () => {
-    renderAt();
+    renderProjects();
     await screen.findByText('Application Review');
     expect(screen.getAllByTestId('map-marker')).toHaveLength(2);
 
@@ -563,7 +551,7 @@ describe('projects map', () => {
   });
 
   it('leaves the markers alone while the source is still clustering', async () => {
-    renderAt();
+    renderProjects();
     await screen.findByText('Application Review');
 
     fakeMap.setSourceLoaded(false);
@@ -582,7 +570,7 @@ describe('projects map', () => {
   });
 
   it('remembers the base layer picked from the Layers menu', async () => {
-    renderAt();
+    renderProjects();
     await screen.findByText('Application Review');
 
     await userEvent.click(screen.getByRole('button', { name: 'Map layers' }));
@@ -594,7 +582,7 @@ describe('projects map', () => {
 
 describe('eao region overlay', () => {
   it('draws every region polygon when no region filter is set', async () => {
-    renderAt();
+    renderProjects();
     await screen.findByText('Application Review');
 
     expect(layerFor('eao-regions-fill')).toHaveAttribute('data-filter', 'true');
@@ -604,7 +592,7 @@ describe('eao region overlay', () => {
   });
 
   it('narrows the polygons to the filtered regions, under the polygon spelling', async () => {
-    renderAt('/projects?regions=r2,r3');
+    renderProjects('/projects?regions=r2,r3');
     await screen.findByText('Pre-Application');
 
     // r3 is "Thompson-Nicola" in the region list and "Thompson" in the shapefile.
@@ -618,7 +606,7 @@ describe('eao region overlay', () => {
   });
 
   it('opens on the whole selected regions, not on the projects left inside them', async () => {
-    renderAt('/projects?regions=r2,r3');
+    renderProjects('/projects?regions=r2,r3');
     await screen.findByText('Pre-Application');
 
     // Union of the two fixture polygons; the one matching project sits at [-120.1, 56.4].
@@ -629,7 +617,7 @@ describe('eao region overlay', () => {
   });
 
   it('names the region under the pointer and highlights that polygon', async () => {
-    renderAt();
+    renderProjects();
     await screen.findByText('Application Review');
 
     moveOverRegion('Peace', 9);
@@ -645,7 +633,7 @@ describe('eao region overlay', () => {
   });
 
   it('drops the region name and the highlight when the pointer leaves', async () => {
-    renderAt();
+    renderProjects();
     await screen.findByText('Application Review');
     moveOverRegion('Peace', 9);
 
@@ -659,7 +647,7 @@ describe('eao region overlay', () => {
   });
 
   it('leaves the region unnamed while a pin is hovered', async () => {
-    renderAt();
+    renderProjects();
     await screen.findByText('Application Review');
 
     await userEvent.hover(pinFor('p1'));
@@ -669,7 +657,7 @@ describe('eao region overlay', () => {
   });
 
   it('hides the polygons when the Layers menu unchecks them', async () => {
-    renderAt();
+    renderProjects();
     await screen.findByText('Application Review');
 
     await userEvent.click(screen.getByRole('button', { name: 'Map layers' }));
@@ -685,7 +673,7 @@ describe('projects map on a phone', () => {
   beforeEach(() => stubViewport(false));
 
   it('cycles the sheet through its three heights', async () => {
-    renderAt();
+    renderProjects();
     await screen.findByText('Application Review');
 
     const sheet = document.querySelector('.app-list') as HTMLElement;
@@ -703,7 +691,7 @@ describe('projects map on a phone', () => {
   });
 
   it('raises and lowers the sheet from the focused handle', async () => {
-    renderAt();
+    renderProjects();
     await screen.findByText('Application Review');
 
     const sheet = document.querySelector('.app-list') as HTMLElement;
@@ -731,7 +719,7 @@ describe('projects map on a phone', () => {
   });
 
   it('drags the sheet to a new height and swallows the click the drag ends in', async () => {
-    renderAt();
+    renderProjects();
     await screen.findByText('Application Review');
 
     const sheet = document.querySelector('.app-list') as HTMLElement;
@@ -754,7 +742,7 @@ describe('projects map on a phone', () => {
   });
 
   it('expands the selected project inside its list card instead of a card on the map', async () => {
-    renderAt();
+    renderProjects();
     await screen.findByText('Application Review');
 
     await userEvent.click(pinFor('p1'));
@@ -780,7 +768,7 @@ describe('projects map on a phone', () => {
   });
 
   it('collapses the expanded card when it is tapped again', async () => {
-    renderAt();
+    renderProjects();
     await screen.findByText('Application Review');
     await userEvent.click(pinFor('p1'));
     const card = cardFor('Cedar Quarry');
@@ -798,7 +786,7 @@ describe('projects map on a phone', () => {
   });
 
   it('moves the expanded body to the card that is tapped next', async () => {
-    renderAt();
+    renderProjects();
     await screen.findByText('Application Review');
     await userEvent.click(pinFor('p1'));
 
@@ -817,7 +805,7 @@ describe('project detail popup', () => {
     commentPeriodResponders.set('p1', async () =>
       jsonResponse([{ _id: 'cp1', dateStarted: '2026-01-01', dateCompleted: '2099-01-01' }]),
     );
-    renderAt();
+    renderProjects();
     await screen.findByText('Application Review');
 
     await userEvent.click(pinFor('p1'));
@@ -830,7 +818,7 @@ describe('project detail popup', () => {
   });
 
   it('expands the clamped description', async () => {
-    renderAt();
+    renderProjects();
     await screen.findByText('Application Review');
 
     await userEvent.click(pinFor('p1'));
@@ -865,7 +853,7 @@ describe('project detail popup', () => {
       jsonResponse([{ _id: 'cp2', dateStarted: '2026-01-01', dateCompleted: '2099-01-01' }]),
     );
 
-    renderAt();
+    renderProjects();
     await screen.findByText('Application Review');
 
     await userEvent.click(pinFor('p1'));

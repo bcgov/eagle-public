@@ -1,8 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { RouterProvider, createMemoryRouter } from 'react-router';
+import { renderAt } from '../../../test-utils';
 import { ProjectNotifications } from './project-notifications';
 
 const NOTIFICATIONS = [
@@ -38,7 +37,7 @@ function jsonResponse(body: unknown) {
   });
 }
 
-function renderAt(path: string) {
+function renderNotifications(path: string) {
   requests = [];
   vi.stubGlobal(
     'fetch',
@@ -63,20 +62,8 @@ function renderAt(path: string) {
     }),
   );
 
-  const router = createMemoryRouter(
-    [{ path: '/project-notifications', Component: ProjectNotifications }],
-    {
-      initialEntries: [path],
-    },
-  );
-  render(
-    <QueryClientProvider
-      client={new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })}
-    >
-      <RouterProvider router={router} />
-    </QueryClientProvider>,
-  );
-  return router;
+  return renderAt(path, [{ path: '/project-notifications', Component: ProjectNotifications }])
+    .router;
 }
 
 function lastRequestFor(dataset: string): string | undefined {
@@ -91,7 +78,7 @@ describe('project notifications', () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it('requests ProjectNotification with the -_id default sort', async () => {
-    renderAt('/project-notifications');
+    renderNotifications('/project-notifications');
 
     expect(await screen.findByText('CEDAR QUARRY')).toBeInTheDocument();
     expect(lastRequestFor('ProjectNotification')).toBe(
@@ -100,14 +87,14 @@ describe('project notifications', () => {
   });
 
   it('renders no table header, since the single column is a label only', async () => {
-    renderAt('/project-notifications');
+    renderNotifications('/project-notifications');
 
     await screen.findByText('CEDAR QUARRY');
     expect(screen.queryByRole('columnheader')).not.toBeInTheDocument();
   });
 
   it('sends the pcp and decision filters from the URL as and[] params', async () => {
-    renderAt('/project-notifications?pcp=open&decision=Not%20Reviewable&region=skeena');
+    renderNotifications('/project-notifications?pcp=open&decision=Not%20Reviewable&region=skeena');
 
     await screen.findByText('CEDAR QUARRY');
     const request = lastRequestFor('ProjectNotification')!;
@@ -117,7 +104,7 @@ describe('project notifications', () => {
   });
 
   it('writes currentPage on a page change', async () => {
-    const router = renderAt('/project-notifications');
+    const router = renderNotifications('/project-notifications');
     await screen.findByText('CEDAR QUARRY');
 
     await userEvent.click(screen.getAllByRole('button', { name: 'Go to page 2' })[0]);
@@ -127,7 +114,7 @@ describe('project notifications', () => {
   });
 
   it('shows the details tab first, with the notification decision', async () => {
-    renderAt('/project-notifications');
+    renderNotifications('/project-notifications');
 
     expect(
       await screen.findByText('Notification Decision - Not Reviewable | 2026-05-04'),
@@ -136,7 +123,7 @@ describe('project notifications', () => {
   });
 
   it('fetches the documents sub-table only once its tab is opened', async () => {
-    renderAt('/project-notifications');
+    renderNotifications('/project-notifications');
     await screen.findByText('CEDAR QUARRY');
     expect(lastRequestFor('Document')).toBeUndefined();
 
@@ -150,7 +137,7 @@ describe('project notifications', () => {
   });
 
   it('offers the engagement tab for a notification with an open comment period', async () => {
-    renderAt('/project-notifications');
+    renderNotifications('/project-notifications');
     await screen.findByText('CEDAR QUARRY');
 
     await userEvent.click(screen.getByRole('tab', { name: 'Engagement' }));

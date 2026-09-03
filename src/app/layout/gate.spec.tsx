@@ -40,22 +40,12 @@ describe('the curtain', () => {
 
   async function renderShell(env: Record<string, unknown>) {
     await loadWith(env);
-    const [
-      { routes },
-      { RouterProvider, createMemoryRouter },
-      { QueryClient, QueryClientProvider },
-    ] = await Promise.all([
+    // Imported after the reset so the harness and the routes share one react-router instance.
+    const [{ routes }, { renderAt }] = await Promise.all([
       import('app/routes'),
-      import('react-router'),
-      import('@tanstack/react-query'),
+      import('../../test-utils'),
     ]);
-    const router = createMemoryRouter(routes, { initialEntries: ['/'] });
-    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    render(
-      <QueryClientProvider client={queryClient}>
-        <RouterProvider router={router} />
-      </QueryClientProvider>,
-    );
+    renderAt('/', routes);
   }
 
   it('is open when the flag is absent', async () => {

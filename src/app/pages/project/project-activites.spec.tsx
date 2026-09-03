@@ -1,7 +1,6 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { RouterProvider, createMemoryRouter } from 'react-router';
+import { screen } from '@testing-library/react';
+import { renderAt } from '../../../test-utils';
 import { loadConfig } from 'app/config/config';
 import { ProjectActivites } from './project-activites';
 
@@ -32,19 +31,9 @@ async function renderTab(notifyApi: string): Promise<void> {
     ),
   );
 
-  const router = createMemoryRouter(
-    [{ path: '/p/:projId/project-activites', Component: ProjectActivites }],
-    {
-      initialEntries: ['/p/proj-1/project-activites'],
-    },
-  );
-  render(
-    <QueryClientProvider
-      client={new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })}
-    >
-      <RouterProvider router={router} />
-    </QueryClientProvider>,
-  );
+  renderAt('/p/proj-1/project-activites', [
+    { path: '/p/:projId/project-activites', Component: ProjectActivites },
+  ]);
 }
 
 /** The subscribe control is the only route to eagle-notify from a project, and NOTIFY_API gates it. */

@@ -1,8 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { RouterProvider, createMemoryRouter } from 'react-router';
+import { renderAt } from '../../../test-utils';
 import { clearValue } from 'app/api/org';
 import { ProjectList } from './project-list';
 
@@ -48,19 +47,8 @@ function mockFetch() {
   });
 }
 
-function renderAt(path: string) {
-  const router = createMemoryRouter([{ path: '/projects-list', Component: ProjectList }], {
-    initialEntries: [path],
-  });
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
-
-  render(
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>,
-  );
-
-  return router;
+function renderList(path: string) {
+  return renderAt(path, [{ path: '/projects-list', Component: ProjectList }]).router;
 }
 
 /** The most recent Project search request. */
@@ -78,7 +66,7 @@ describe('projects list', () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it('requests page 1 with the default sort and renders the rows', async () => {
-    renderAt('/projects-list');
+    renderList('/projects-list');
 
     expect(await screen.findByText('Alpha Mine')).toBeInTheDocument();
     expect(screen.getByText('Beta Dam')).toBeInTheDocument();
@@ -88,7 +76,7 @@ describe('projects list', () => {
   });
 
   it('reads currentPage, pageSize and sortBy off the URL, sending a 0-based pageNum', async () => {
-    renderAt('/projects-list?currentPage=3&pageSize=25&sortBy=-region');
+    renderList('/projects-list?currentPage=3&pageSize=25&sortBy=-region');
 
     await screen.findByText('Alpha Mine');
     expect(lastProjectRequest()).toBe(
@@ -97,14 +85,14 @@ describe('projects list', () => {
   });
 
   it('restores a + sort that arrived form-decoded from an Angular deep link', async () => {
-    renderAt('/projects-list?sortBy=%20name');
+    renderList('/projects-list?sortBy=%20name');
 
     await screen.findByText('Alpha Mine');
     expect(lastProjectRequest()).toContain('&sortBy=+name');
   });
 
   it('writes currentPage to the URL and refetches on a page change', async () => {
-    const router = renderAt('/projects-list');
+    const router = renderList('/projects-list');
     await screen.findByText('Alpha Mine');
 
     await userEvent.click(screen.getAllByRole('button', { name: 'Go to page 2' })[0]);
@@ -114,7 +102,7 @@ describe('projects list', () => {
   });
 
   it('writes sortBy to the URL and the request, and returns to page 1', async () => {
-    const router = renderAt('/projects-list?currentPage=4');
+    const router = renderList('/projects-list?currentPage=4');
     await screen.findByText('Alpha Mine');
 
     await userEvent.click(screen.getByRole('columnheader', { name: /Column header Region/ }));
@@ -128,7 +116,7 @@ describe('projects list', () => {
   });
 
   it('flips the sort direction when the same column is clicked twice', async () => {
-    const router = renderAt('/projects-list');
+    const router = renderList('/projects-list');
     await screen.findByText('Alpha Mine');
 
     await userEvent.click(screen.getByRole('columnheader', { name: /Column header Name/ }));
@@ -139,7 +127,7 @@ describe('projects list', () => {
   });
 
   it('writes a page size change to the URL and returns to page 1', async () => {
-    const router = renderAt('/projects-list?currentPage=3');
+    const router = renderList('/projects-list?currentPage=3');
     await screen.findByText('Alpha Mine');
 
     // The picker renders above and below the table; either drives the same URL.
@@ -153,7 +141,7 @@ describe('projects list', () => {
   });
 
   it('turns a keyword search into keywords + a -score sort, back on page 1', async () => {
-    const router = renderAt('/projects-list?currentPage=5');
+    const router = renderList('/projects-list?currentPage=5');
     await screen.findByText('Alpha Mine');
 
     await userEvent.type(screen.getByPlaceholderText('Type keyword to search'), 'copper');
@@ -169,7 +157,7 @@ describe('projects list', () => {
   });
 
   it('sends a filter from the URL as an and[] param', async () => {
-    renderAt('/projects-list?type=id-mines,id-other&region=skeena');
+    renderList('/projects-list?type=id-mines,id-other&region=skeena');
 
     await screen.findByText('Alpha Mine');
     const request = lastProjectRequest();
@@ -178,7 +166,7 @@ describe('projects list', () => {
   });
 
   it('writes an applied filter to the URL and the request', async () => {
-    const router = renderAt('/projects-list');
+    const router = renderList('/projects-list');
     await screen.findByText('Alpha Mine');
 
     await userEvent.click(screen.getByRole('button', { name: /Open Advanced Filters/ }));
@@ -192,7 +180,7 @@ describe('projects list', () => {
   });
 
   it('opens the advanced filter panel when the URL already carries a filter', async () => {
-    renderAt('/projects-list?region=skeena');
+    renderList('/projects-list?region=skeena');
 
     expect(
       await screen.findByRole('button', { name: /Close Advanced Filters/ }),

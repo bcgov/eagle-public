@@ -1,8 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { RouterProvider, createMemoryRouter } from 'react-router';
+import { renderAt } from '../../test-utils';
 import { loadConfig } from 'app/config/config';
 import { News } from './news';
 
@@ -23,7 +22,7 @@ const ACTIVITIES = [
 
 let requests: string[];
 
-function renderAt(path: string, total = 42) {
+function renderNews(path: string, total = 42) {
   requests = [];
   vi.stubGlobal(
     'fetch',
@@ -36,17 +35,7 @@ function renderAt(path: string, total = 42) {
     }),
   );
 
-  const router = createMemoryRouter([{ path: '/news', Component: News }], {
-    initialEntries: [path],
-  });
-  render(
-    <QueryClientProvider
-      client={new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })}
-    >
-      <RouterProvider router={router} />
-    </QueryClientProvider>,
-  );
-  return router;
+  return renderAt(path, [{ path: '/news', Component: News }]).router;
 }
 
 describe('news', () => {
@@ -57,7 +46,7 @@ describe('news', () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it('requests RecentActivity sorted by dateAdded, not the shared datePosted default', async () => {
-    renderAt('/news');
+    renderNews('/news');
 
     expect(await screen.findByText('Permit granted')).toBeInTheDocument();
     expect(requests.at(-1)).toBe(
@@ -66,14 +55,14 @@ describe('news', () => {
   });
 
   it('reads currentPage and pageSize off the URL', async () => {
-    renderAt('/news?currentPage=2&pageSize=25');
+    renderNews('/news?currentPage=2&pageSize=25');
 
     await screen.findByText('Permit granted');
     expect(requests.at(-1)).toContain('&pageNum=1&pageSize=25&');
   });
 
   it('writes currentPage on a page change', async () => {
-    const router = renderAt('/news');
+    const router = renderNews('/news');
     await screen.findByText('Permit granted');
 
     await userEvent.click(screen.getAllByRole('button', { name: 'Go to page 3' })[0]);
@@ -83,7 +72,7 @@ describe('news', () => {
   });
 
   it('sorts the Date column descending first, then flips', async () => {
-    const router = renderAt('/news');
+    const router = renderNews('/news');
     await screen.findByText('Permit granted');
 
     const dateHeader = () => screen.getByRole('columnheader', { name: /Column header Date/ });
@@ -100,7 +89,7 @@ describe('news', () => {
   });
 
   it('does not sort the Headline column', async () => {
-    const router = renderAt('/news');
+    const router = renderNews('/news');
     await screen.findByText('Permit granted');
 
     await userEvent.click(screen.getByRole('columnheader', { name: /Column header Headline/ }));
@@ -109,7 +98,7 @@ describe('news', () => {
   });
 
   it('puts a keyword search in the URL and the request, back on page 1', async () => {
-    const router = renderAt('/news?currentPage=4');
+    const router = renderNews('/news?currentPage=4');
     await screen.findByText('Permit granted');
 
     await userEvent.type(screen.getByPlaceholderText('Type keyword to search'), 'permit');
@@ -135,16 +124,7 @@ describe('news', () => {
       ),
     );
 
-    const router = createMemoryRouter([{ path: '/news', Component: News }], {
-      initialEntries: ['/news'],
-    });
-    render(
-      <QueryClientProvider
-        client={new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })}
-      >
-        <RouterProvider router={router} />
-      </QueryClientProvider>,
-    );
+    renderAt('/news', [{ path: '/news', Component: News }]);
 
     expect(await screen.findByText('No activities found')).toBeInTheDocument();
   });
@@ -167,7 +147,7 @@ describe('news subscribe control', () => {
 
   it('offers the all-updates subscription when NOTIFY_API is set', async () => {
     await configure('https://notify-api.example');
-    renderAt('/news');
+    renderNews('/news');
 
     const trigger = await screen.findByRole('button', { name: 'Subscribe' });
     // The form is the popover's own spec; this page owns which subscription it offers.
@@ -181,7 +161,7 @@ describe('news subscribe control', () => {
 
   it('renders no subscribe control when NOTIFY_API is empty', async () => {
     await configure('');
-    renderAt('/news');
+    renderNews('/news');
 
     await screen.findByText('Permit granted');
     expect(screen.queryByRole('button', { name: 'Subscribe' })).toBeNull();

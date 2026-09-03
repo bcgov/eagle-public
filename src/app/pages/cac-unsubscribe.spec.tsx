@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { RouterProvider, createMemoryRouter } from 'react-router';
+import { renderAt } from '../../test-utils';
 import { CacUnsubscribe } from './cac-unsubscribe';
 
 interface Sent {
@@ -9,7 +9,7 @@ interface Sent {
   init?: RequestInit;
 }
 
-function renderAt(path: string) {
+function renderUnsubscribe(path: string) {
   const sent: Sent[] = [];
   vi.stubGlobal(
     'fetch',
@@ -19,14 +19,10 @@ function renderAt(path: string) {
     }),
   );
 
-  const router = createMemoryRouter(
-    [
-      { path: '/', element: <h1>Home</h1> },
-      { path: '/*', Component: CacUnsubscribe },
-    ],
-    { initialEntries: [path] },
-  );
-  render(<RouterProvider router={router} />);
+  const { router } = renderAt(path, [
+    { path: '/', element: <h1>Home</h1> },
+    { path: '/*', Component: CacUnsubscribe },
+  ]);
   return { sent, router };
 }
 
@@ -34,21 +30,21 @@ describe('cac-unsubscribe', () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it('reads the emailed matrix parameters', () => {
-    renderAt('/cac-unsubscribe;project=Site%20C;projectId=abc123;email=me@example.com');
+    renderUnsubscribe('/cac-unsubscribe;project=Site%20C;projectId=abc123;email=me@example.com');
 
     expect(screen.getByText('Site C')).toBeInTheDocument();
     expect(screen.getByLabelText('Email Address')).toHaveValue('me@example.com');
   });
 
   it('reads query string parameters too', () => {
-    renderAt('/cac-unsubscribe?project=Site+C&projectId=abc123&email=me@example.com');
+    renderUnsubscribe('/cac-unsubscribe?project=Site+C&projectId=abc123&email=me@example.com');
 
     expect(screen.getByText('Site C')).toBeInTheDocument();
     expect(screen.getByLabelText('Email Address')).toHaveValue('me@example.com');
   });
 
   it('PUTs the email to cacRemoveMember and reports success', async () => {
-    const { sent } = renderAt(
+    const { sent } = renderUnsubscribe(
       '/cac-unsubscribe;project=Site%20C;projectId=abc123;email=me@example.com',
     );
 
@@ -67,7 +63,7 @@ describe('cac-unsubscribe', () => {
   });
 
   it('sends the visitor home on cancel', async () => {
-    const { router } = renderAt('/cac-unsubscribe;projectId=abc123;email=me@example.com');
+    const { router } = renderUnsubscribe('/cac-unsubscribe;projectId=abc123;email=me@example.com');
 
     await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
 

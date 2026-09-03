@@ -1,8 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { RouterProvider, createMemoryRouter } from 'react-router';
+import { renderAt } from '../../../test-utils';
 import { Comments } from './comments';
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -99,24 +98,13 @@ function stubFetch() {
   );
 }
 
-function renderAt(path = '/p/proj1/cp/cp1/details') {
-  const router = createMemoryRouter(
-    [
-      { path: '/p/:projId/cp/:commentPeriodId/details', Component: Comments },
-      { path: '/pn/:projId/cp/:commentPeriodId/details', Component: Comments },
-      { path: '/p/:projId', element: <h1>Project page</h1> },
-      { path: '/project-notifications', element: <h1>Notifications page</h1> },
-    ],
-    { initialEntries: [path] },
-  );
-  render(
-    <QueryClientProvider
-      client={new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })}
-    >
-      <RouterProvider router={router} />
-    </QueryClientProvider>,
-  );
-  return router;
+function renderComments(path = '/p/proj1/cp/cp1/details') {
+  return renderAt(path, [
+    { path: '/p/:projId/cp/:commentPeriodId/details', Component: Comments },
+    { path: '/pn/:projId/cp/:commentPeriodId/details', Component: Comments },
+    { path: '/p/:projId', element: <h1>Project page</h1> },
+    { path: '/project-notifications', element: <h1>Notifications page</h1> },
+  ]).router;
 }
 
 function lastCommentListUrl(): string | undefined {
@@ -129,7 +117,7 @@ function postedTo(fragment: string): Sent[] {
 
 /** Walks pages 1 -> 5 of the modal, the shortest route to the comment form. */
 async function openCommentForm() {
-  renderAt();
+  renderComments();
   await userEvent.click(await screen.findByRole('button', { name: 'Submit Comment' }));
   await userEvent.click(await screen.findByLabelText(/I have read the above/));
   await userEvent.click(screen.getByRole('button', { name: 'Next' }));
@@ -153,7 +141,7 @@ describe('comments', () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it('renders the comment period header, instructions and project details', async () => {
-    renderAt();
+    renderComments();
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Site C' })).toBeInTheDocument();
     expect(
@@ -171,7 +159,7 @@ describe('comments', () => {
   });
 
   it('lists the related documents and open houses', async () => {
-    renderAt();
+    renderComments();
 
     expect(await screen.findByText('Related report.pdf')).toBeInTheDocument();
     expect(screen.getByText('Related Documents')).toBeInTheDocument();
@@ -180,7 +168,7 @@ describe('comments', () => {
   });
 
   it('renders comments through the table engine, resolving attachments in one batch', async () => {
-    renderAt();
+    renderComments();
 
     expect(await screen.findByText('First comment')).toBeInTheDocument();
     expect(screen.getByText('Jane')).toBeInTheDocument();
@@ -195,7 +183,7 @@ describe('comments', () => {
   });
 
   it('requests the first page of comments with a count', async () => {
-    renderAt();
+    renderComments();
 
     await screen.findByText('First comment');
     const listRequest = sent.find((entry) =>
@@ -208,7 +196,7 @@ describe('comments', () => {
 
   it('pages through comments and returns to page one on a page-size change', async () => {
     commentCount = 25;
-    renderAt();
+    renderComments();
 
     await screen.findByText('First comment');
     await userEvent.click(screen.getAllByLabelText('Go to page 2')[0]);
@@ -220,20 +208,20 @@ describe('comments', () => {
 
   it('says so when there are no comments', async () => {
     commentCount = 0;
-    renderAt();
+    renderComments();
 
     expect(await screen.findByText('There are no comments.')).toBeInTheDocument();
   });
 
   it('goes back to the project page', async () => {
-    const router = renderAt();
+    const router = renderComments();
 
     await userEvent.click(await screen.findByRole('button', { name: 'Back to Project Details' }));
     expect(router.state.location.pathname).toBe('/p/proj1');
   });
 
   it('names a project notification from search and sends Back to the notifications list', async () => {
-    const router = renderAt('/pn/pn1/cp/cp1/details');
+    const router = renderComments('/pn/pn1/cp/cp1/details');
 
     expect(
       await screen.findByRole('heading', { level: 1, name: 'Notified Project' }),
@@ -248,7 +236,7 @@ describe('comments', () => {
   });
 
   it('opens the modal and closes it again on the header close button', async () => {
-    renderAt();
+    renderComments();
 
     await userEvent.click(await screen.findByRole('button', { name: 'Submit Comment' }));
     const dialog = screen.getByRole('dialog');
@@ -260,7 +248,7 @@ describe('comments', () => {
   });
 
   it('closes the modal on Escape', async () => {
-    renderAt();
+    renderComments();
 
     await userEvent.click(await screen.findByRole('button', { name: 'Submit Comment' }));
     fireEvent(
@@ -272,7 +260,7 @@ describe('comments', () => {
   });
 
   it('gates page 1 behind the conditions checkbox', async () => {
-    renderAt();
+    renderComments();
 
     await userEvent.click(await screen.findByRole('button', { name: 'Submit Comment' }));
     const next = screen.getByRole('button', { name: 'Next' });

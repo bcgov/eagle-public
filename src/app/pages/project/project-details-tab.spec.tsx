@@ -1,8 +1,7 @@
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { RouterProvider, createMemoryRouter } from 'react-router';
+import { renderAt } from '../../../test-utils';
 import { Project } from 'app/models/project';
 import { ProjectDetailsTab } from './project-details-tab';
 
@@ -92,20 +91,8 @@ function renderTab(path = '/p/proj-1/project-details') {
     }),
   );
 
-  const router = createMemoryRouter(
-    [{ path: '/p/:projId/project-details', Component: ProjectDetailsTab }],
-    {
-      initialEntries: [path],
-    },
-  );
-  render(
-    <QueryClientProvider
-      client={new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })}
-    >
-      <RouterProvider router={router} />
-    </QueryClientProvider>,
-  );
-  return router;
+  return renderAt(path, [{ path: '/p/:projId/project-details', Component: ProjectDetailsTab }])
+    .router;
 }
 
 describe('project details tab', () => {
