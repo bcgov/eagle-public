@@ -14,12 +14,12 @@ yarn install                                                  # first time only
 BASE_URL=http://localhost:4173 yarn test
 ```
 
-A `BASE_URL` on `localhost` or `127.0.0.1` makes Playwright start the server itself
-(`webServer` in `playwright.config.ts`): `vite preview` on port 4173, serving
-`dist/eagle-public/browser` with the dev server's proxy rules, so `/api`, `/demi-search`,
-`/analytics`, `/eagle-search` and `/notify-api` reach the same backends as `yarn start`. It reuses
-a server already listening on 4173 unless `CI` is set. Build first - preview has nothing to serve
-otherwise, and that includes `BASE_URL=http://localhost:4200`, which also starts it.
+A `BASE_URL` on port 4173 makes Playwright start the server itself (`webServer` in
+`playwright.config.ts`): `vite preview`, serving `dist/eagle-public/browser` with the dev server's
+proxy rules, so `/api`, `/demi-search`, `/analytics`, `/eagle-search` and `/notify-api` reach the
+same backends as `yarn start`. Build first, or preview has nothing to serve. It reuses a server
+already listening on 4173 unless `CI` is set. Every other `BASE_URL`, a dev server on 4200
+included, is left alone.
 
 Against a deployed environment:
 
@@ -27,6 +27,7 @@ Against a deployed environment:
 cd e2e
 yarn test                                                     # prod (default)
 BASE_URL=https://test.projects.eao.gov.bc.ca yarn test        # test environment
+BASE_URL=http://localhost:4200 yarn test                      # a dev server you started
 yarn playwright test --grep-invert @data                      # skip live-data-volume tests
 yarn playwright test tests/search.spec.ts                     # one file
 yarn report                                                   # open the HTML report
@@ -104,7 +105,7 @@ contract: keep the hook, or update the test in the same change.
 
 | Hook | Where | Used for |
 |---|---|---|
-| `#table-template-page-count-display` | every table page | "Showing 10 of 348 results" |
+| `#table-template-page-count-display` | plain table pages | "Showing 10 of 348 results" |
 | `#tableTop` | home | recent activity table |
 | `#applist-panel` | map page | the panel beside the map |
 | `#applist-list` | map page | project list inside the panel |
@@ -117,6 +118,7 @@ contract: keep the hook, or update the test in the same change.
 
 | Hook | Where | Used for |
 |---|---|---|
+| `.table-header-bar__count` | selectable table pages | the same line, moved into the bulk-download bar |
 | `.sheet-handle`, `.app-list[data-state]` | map page, mobile | bottom sheet and its height |
 | `.maplibregl-canvas` | map | the WebGL canvas MapLibre draws into |
 | `.map-info` | map | the selected project's card, bottom-left of the map (desktop only) |
@@ -178,19 +180,6 @@ the test will fail and should be updated deliberately.
 - **A document row can point at an object the environment does not hold.** test is a partial copy
   of prod's storage, so `HEAD` on the download URL answers 404 for some rows. The URL shape is
   asserted; the status is only required to be below 500 and is recorded as an annotation.
-
-## Failing against the React build
-
-Three tests fail on a local build. Each is a change in the port rather than a flake, and each needs
-a decision before the test is rewritten.
-
-- `project-detail.spec.ts` "document download links resolve to /api/public/document/:id/download/:name":
-  the row href still has that shape, but clicking it asks demi-api for a presigned URL instead of
-  navigating to it.
-- `projects-map.spec.ts` "the Filters button expands the advanced filters inline": `#region` is
-  visible while `#applist-filters` reports `data-open="false"`.
-- `projects-map.spec.ts` "the Layers menu switches the base map tiles": World Topographic is the
-  port's default basemap, so choosing it loads no new tiles.
 
 ## Data parity
 
