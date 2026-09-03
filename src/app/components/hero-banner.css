@@ -51,33 +51,6 @@
   margin-top: 1.75rem;
 }
 
-/* Hero banner button styles are now in assets/styles/components/buttons.css as .hero-banner-btn */
-
-.hero-banner .hero-banner__actions-title {
-  display: block;
-  margin-bottom: 0.5rem;
-}
-
-.hero-banner .hero-banner__actions-buttons .btn {
-  border: 2px solid var(--bs-warning);
-  padding: 0.5rem;
-  text-transform: none;
-  font-size: var(--bs-font-size-6);
-  font-weight: var(--bs-font-weight-bold);
-  cursor: pointer;
-  color: var(--bs-warning);
-  margin-bottom: 10px;
-}
-
-.hero-banner .hero-banner__actions-buttons .btn:hover {
-  color: var(--bc-blue);
-}
-
-.hero-banner .hero-banner__actions-buttons .btn + span {
-  padding: 0.65rem 0.4rem;
-  vertical-align: middle;
-}
-
 /* Mobile/Tablet */
 @media (max-width: 767px) {
   .hero-banner .hero-banner__content {

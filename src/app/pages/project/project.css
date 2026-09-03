@@ -146,11 +146,6 @@
     width: 100%;
   }
 
-  .project[data-sidebar-state] .pcp-banner .text-end {
-    text-align: left !important;
-    margin-top: 1rem;
-  }
-
   /* Stack sidebar on top in mobile view */
   .project[data-sidebar-state] .project-info {
     display: flex !important;

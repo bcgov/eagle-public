@@ -53,16 +53,8 @@
   margin-bottom: 0.25rem;
 }
 
-.app-footer .nav-links {
-  margin: 0;
-}
-
 .app-footer a {
   color: var(--footer-color);
-}
-
-.app-footer a.feedback-link {
-  color: var(--gold);
 }
 
 .app-footer a:focus,

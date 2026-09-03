@@ -195,10 +195,6 @@
 
 /* === PAGE SIZE PICKER === */
 
-.lib-page-size-message {
-  margin-left: 10px;
-}
-
 .size-picker-option {
   margin-right: 0.0625rem;
   padding: 0.1875rem 0.625rem;
@@ -229,9 +225,5 @@
 @media screen and (max-width: 768px) {
   .lib-page-size-display {
     text-align: center;
-  }
-
-  .lib-page-size-message {
-    margin: 0;
   }
 }

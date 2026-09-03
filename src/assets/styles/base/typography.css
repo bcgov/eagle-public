@@ -5,11 +5,6 @@
  * This file contains only structural overrides not covered by Bootstrap
  */
 
-/* Fix the type flashing bug that occurs when page loads */
-.wf-loading {
-  display: none;
-}
-
 /* Heading letter-spacing adjustments */
 h1 {
   letter-spacing: -0.03rem;
