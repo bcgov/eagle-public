@@ -50,7 +50,8 @@ export function initAnalytics(config: EnvConfig): void {
   analytics = Analytics({ app: 'eagle-public', debug, plugins });
   initialized = true;
 
-  if (debug) {
+  // Deployed configs ship LOG_LEVEL 0, so the level gate alone would print this in production.
+  if (debug && import.meta.env.DEV) {
     logger.debug('Analytics initialized', 'analytics', {
       apiUrl,
       enhancedTracking,

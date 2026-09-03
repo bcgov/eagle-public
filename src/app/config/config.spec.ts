@@ -142,3 +142,27 @@ describe('loadConfig with a config endpoint', () => {
     expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 });
+
+/**
+ * Deployed configs ship logLevel 0, so the level alone must not decide whether the merged config
+ * lands in every visitor's console.
+ */
+describe('config dumps', () => {
+  const original = window.__env;
+
+  afterEach(() => {
+    window.__env = original;
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
+  });
+
+  it('stay out of a production build even at log level 0', async () => {
+    vi.stubEnv('DEV', false);
+    const log = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    window.__env = { logLevel: 0 };
+
+    await loadConfig();
+
+    expect(log).not.toHaveBeenCalled();
+  });
+});
