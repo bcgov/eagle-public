@@ -259,7 +259,8 @@ flag.
 ## Tags
 
 `@data` marks tests whose assertions depend on live data volume (result counts falling when a filter
-is applied, a keyword returning hits). Deselect with `yarn test --grep-invert @data`.
+is applied, a keyword returning hits). Deselect with `yarn playwright test --grep-invert @data`
+(the `test` script does not pass arguments through).
 
 ## Files
 

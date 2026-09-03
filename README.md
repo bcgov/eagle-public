@@ -89,8 +89,14 @@ yarn test:coverage  # with coverage
 
 Tests run on [Vitest](https://vitest.dev/) with jsdom and Testing Library.
 
-## Linting
+## Linting and formatting
 
 ```bash
-yarn lint
+yarn lint             # eslint; `any` is a warning, everything else an error
+yarn format           # prettier over src, e2e and the config files
+yarn format:check     # what CI runs
+yarn typecheck:e2e    # tsc over e2e/, also run by CI
 ```
+
+PR Checks run `lint`, `format:check`, `test`, `typecheck:e2e`, `build`, and the Playwright suite
+against `vite preview` (see `e2e/README.md`).
