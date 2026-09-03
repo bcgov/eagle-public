@@ -124,7 +124,9 @@ export function ProjectDocumentTab({
 
   const data = {
     ...base,
-    columns: showFeatured ? [FEATURED_COLUMN, { name: 'Name', value: 'displayName', width: 'col-3' }, ...DOCUMENT_COLUMNS] : [{ name: 'Name', value: 'displayName', width: 'col-4' }, ...DOCUMENT_COLUMNS],
+    columns: showFeatured
+      ? [FEATURED_COLUMN, { name: 'Name', value: 'displayName', width: 'col-3' }, ...DOCUMENT_COLUMNS]
+      : [{ name: 'Name', value: 'displayName', width: 'col-4' }, ...DOCUMENT_COLUMNS],
     items: result.data.map(record => ({ rowData: record })),
     totalListItems: result.totalListItems,
     options: { ...base.options, showAllPicker: true, selectable: bulkDownloadEnabled() },

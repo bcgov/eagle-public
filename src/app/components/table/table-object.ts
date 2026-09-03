@@ -1,4 +1,5 @@
 import type { ComponentType } from 'react';
+import { randomId } from 'app/utils/random-id';
 import { Constants } from 'app/utils/constants';
 
 /** A single page size option. */
@@ -87,7 +88,7 @@ export function tableObject(params: Partial<TableObject> = {}): TableObject {
     pageSize: params.pageSize ?? Constants.tableDefaults.DEFAULT_PAGE_SIZE,
     sortBy: params.sortBy ?? Constants.tableDefaults.DEFAULT_SORT_BY,
     totalListItems: params.totalListItems ?? 0,
-    tableId: params.tableId ?? crypto.randomUUID(),
+    tableId: params.tableId ?? randomId(),
     data: params.data ?? null
   };
 }
@@ -140,6 +141,18 @@ export function pageNumbers(total: number, current: number): (number | 'ellipsis
   }
 
   return pages;
+}
+
+/**
+ * The document table header bar's quiet default line. Separate from `pageCountMessage`: that one
+ * counts "results" for every table, this one names the documents the bar is about to download.
+ */
+export function documentCountMessage(totalItems: number, currentPageNum: number, currentPageSize: number): string {
+  if (totalItems <= 0) return 'No documents';
+  const high = Math.min(totalItems, currentPageNum * currentPageSize);
+  const noun = totalItems === 1 ? 'document' : 'documents';
+  if (high >= totalItems) return `${totalItems.toLocaleString()} ${noun}`;
+  return `Showing ${high.toLocaleString()} of ${totalItems.toLocaleString()} ${noun}`;
 }
 
 export function pageCountMessage(totalItems: number, currentPageNum: number, currentPageSize: number): string {

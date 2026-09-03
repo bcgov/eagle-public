@@ -3,6 +3,7 @@
  * Auto-tracks: page views, link clicks, button clicks, user activity.
  */
 import type { AnalyticsPlugin, AnalyticsInstance } from 'analytics';
+import { randomId } from 'app/utils/random-id';
 
 export interface PenguinAnalyticsConfig {
   apiUrl: string;
@@ -23,7 +24,7 @@ const getSessionId = (): string => {
   const key = 'penguin_session_id';
   let id = sessionStorage.getItem(key);
   if (!id) {
-    id = crypto.randomUUID();
+    id = randomId();
     sessionStorage.setItem(key, id);
   }
   return id;

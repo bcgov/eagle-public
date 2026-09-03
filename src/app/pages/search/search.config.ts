@@ -30,12 +30,11 @@ export function visibleSearchTabs(isContentSearchEnabled: boolean): { label: str
 }
 
 export const SEARCH_TABLE_COLUMNS: IColumnObject[] = [
-  { name: 'Document Name', value: 'displayName', width: 'col-3' },
+  { name: 'Document Name', value: 'displayName', width: 'col-4' },
   { name: 'Project', value: 'project.name', width: 'col-2' },
   { name: 'Date', value: 'datePosted', width: 'col-2' },
   { name: 'Type', value: 'type', width: 'col-2' },
-  { name: 'Milestone', value: 'milestone', width: 'col-2' },
-  { name: ' ', value: '', width: 'col-1', nosort: true }
+  { name: 'Milestone', value: 'milestone', width: 'col-2' }
 ];
 
 export const SEARCH_FILTER_LIST = ['milestone', 'documentAuthorType', 'type', 'projectPhase'];

@@ -1,24 +1,30 @@
 import type { TableRowProps } from 'app/components/table/table-object';
-import { idToListName, longDate, openDocumentDownload } from 'app/utils/utils';
+import { useDocumentRow } from 'app/components/table/document-row';
+import { documentDownloadUrl, idToListName, longDate, openDocumentDownload } from 'app/utils/utils';
 
 export function ProjectNotificationDocumentsTableRow({ rowData, tableData }: TableRowProps) {
   const background = tableData.data?.rowBackgroundColor || '#F7F8FA';
-  const goToItem = () => openDocumentDownload(rowData);
+  const { rowProps } = useDocumentRow(rowData, tableData);
 
   return (
-    <tr
-      tabIndex={0}
-      onKeyUp={event => {
-        if (event.key === 'Enter') goToItem();
-      }}
-    >
-      <td data-label="Document Name" onClick={goToItem} style={{ backgroundColor: background }}>
-        {rowData.displayName}
+    <tr {...rowProps}>
+      <td data-label="Document Name" style={{ backgroundColor: background }}>
+        <a
+          href={documentDownloadUrl(rowData)}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={event => {
+            event.preventDefault();
+            openDocumentDownload(rowData);
+          }}
+        >
+          {rowData.displayName}
+        </a>
       </td>
-      <td data-label="Date" onClick={goToItem} style={{ backgroundColor: background }}>
+      <td data-label="Date" style={{ backgroundColor: background }}>
         {longDate(rowData.datePosted)}
       </td>
-      <td data-label="Document Author" onClick={goToItem} style={{ backgroundColor: background }}>
+      <td data-label="Document Author" style={{ backgroundColor: background }}>
         {idToListName(rowData.documentAuthor, tableData.data?.lists ?? [])}
       </td>
     </tr>

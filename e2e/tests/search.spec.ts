@@ -116,7 +116,7 @@ test('@data a deep link restores keywords, page and sort', async ({ page }) => {
   await expect(page.locator(ROWS).first().locator(NAME)).toHaveText(env.searchResults[0].displayName);
 });
 
-test('a search result row links to its project and offers a download control', async ({ page }) => {
+test('a search result row links to its project and downloads from its name', async ({ page }) => {
   const search = waitForSearch(page, 'Document');
   await page.goto('/search');
   const env = await search;
@@ -125,5 +125,5 @@ test('a search result row links to its project and offers a download control', a
   const row = page.locator(ROWS).first();
   await expect(row.getByRole('link', { name: `Link to project ${env.searchResults[0].project.name}` }))
     .toHaveAttribute('href', `/p/${env.searchResults[0].project._id}/project-details`);
-  await expect(row.locator('td[data-label="Download"] .download-icon')).toBeVisible();
+  await expect(row.locator('td[data-label="Download"]')).toHaveCount(0);
 });

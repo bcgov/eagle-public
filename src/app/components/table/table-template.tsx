@@ -1,19 +1,28 @@
 import { useRef } from 'react';
 import { track } from 'app/analytics/analytics';
+import { Constants } from 'app/utils/constants';
 import {
   CAP_MESSAGE,
   clearSelection,
   SELECT_ALL_MAX,
   setSelected,
-  toggleSelected,
+  startDownload,
+  useDownloadInProgress,
   useSelection,
   type SelectedDocument
 } from 'app/state/bulk-download';
 import { showToast } from 'app/state/toast';
+import { toggleRow } from './document-row';
 import { PageCountDisplay } from './page-count-display';
 import { PageSizePicker } from './page-size-picker';
 import { Pagination } from './pagination';
-import { withAllPicker, type IPageSizePickerOption, type ITableMessage, type TableObject } from './table-object';
+import {
+  documentCountMessage,
+  withAllPicker,
+  type IPageSizePickerOption,
+  type ITableMessage,
+  type TableObject
+} from './table-object';
 import './table.css';
 
 /** The checkbox column's cell. Rendered by the row components, which own their own `<tr>`. */
@@ -21,17 +30,13 @@ export function SelectCell({ rowData, tableId }: { rowData: any; tableId: string
   const selected = useSelection(tableId).has(rowData._id);
 
   return (
-    // The rest of the row is a download link; a click in here must not follow it.
-    <td data-label="Select" className="col-1" onClick={event => event.stopPropagation()}>
+    <td data-label="Select" className="select-col">
       <input
         type="checkbox"
         className="form-check-input"
         aria-label={`Select ${rowData.displayName}`}
         checked={selected}
-        onChange={() => {
-          const added = toggleSelected(tableId, { id: rowData._id, displayName: rowData.displayName });
-          if (!added) showToast(CAP_MESSAGE, { type: 'warning' });
-        }}
+        onChange={() => toggleRow(tableId, rowData)}
       />
     </td>
   );
@@ -59,14 +64,19 @@ export function TableTemplate({ data, loading = false, rowComponent, onMessage }
 
   const selectable = !!data.options.selectable;
   const selection = useSelection(data.tableId);
+  // Download posts every table's selection as one job, so the toolbar counts them all.
+  const selectedCount = useSelection().size;
+  const downloadInProgress = useDownloadInProgress();
   const pageDocs: SelectedDocument[] = data.items
     .filter(item => item.rowData?._id)
     .map(item => ({ id: item.rowData._id, displayName: item.rowData.displayName }));
   const selectedOnPage = pageDocs.filter(doc => selection.has(doc.id)).length;
   const pageAllSelected = pageDocs.length > 0 && selectedOnPage === pageDocs.length;
-  // Offered once the page is fully selected and there is more behind it than one page.
-  const showSelectAllBanner = selectable && pageAllSelected && data.totalListItems > data.pageSize;
-  const documentNoun = data.tableId === 'application' ? 'Application documents' : 'matching documents';
+  // Offered once the page is fully selected, there is more behind it than one page, and the whole
+  // result set fits the anonymous cap. Over the cap there is nothing to offer, so the bar says
+  // nothing: the cap is explained by the toast on the attempt that actually hits it.
+  const showSelectAll =
+    selectable && pageAllSelected && data.totalListItems > data.pageSize && data.totalListItems <= SELECT_ALL_MAX;
 
   function onSort(property: string): void {
     track('Table Column Sorted', {
@@ -105,25 +115,18 @@ export function TableTemplate({ data, loading = false, rowComponent, onMessage }
     />
   ) : null;
 
-  // Rendered top and bottom, so `id` is a parameter: the e2e suite and any label still need one
-  // picker per unique id.
-  const pageSizePickerControl = (id: string) =>
-    data.options.showPageSizePicker ? (
-      <PageSizePicker
-        isHidden={false}
-        currentPageSize={data.pageSize}
-        sizeOptions={pageSizeOptions}
-        onPageSizeChosen={onUpdatePageSize}
-        id={id}
-      />
-    ) : null;
+  const showPageCount = !!data.options.showTopControls && !!data.options.showPageCountDisplay;
+  // Selectable tables trade this row for the header bar below; everything else keeps it.
+  const showTopRow = !selectable && !!data.options.showTopControls && (showPageCount || showPagination);
+  const noResults = !loading && data.items.length === 0 && data.totalListItems === 0;
+  const selectionActive = selectedCount > 0;
 
   return (
     <div className="table-template" ref={containerRef}>
-      {data.options.showTopControls && (data.options.showPageCountDisplay || data.options.showPageSizePicker || showPagination) && (
+      {showTopRow && (
         <div className="row mb-4 table-controls-top">
-          <div className="col-12 col-md-6 text-center text-md-start mb-3 mb-md-0">
-            {data.options.showPageCountDisplay && (
+          <div className="col-12 col-md-6 mb-3 mb-md-0 table-controls-left">
+            {showPageCount && (
               <PageCountDisplay
                 isHidden={false}
                 currentPageNum={data.currentPage}
@@ -132,34 +135,72 @@ export function TableTemplate({ data, loading = false, rowComponent, onMessage }
                 id="table-template-page-count-display"
               />
             )}
-            {pageSizePickerControl('table-template-page-size-picker-top')}
           </div>
           <div className="col-12 col-md-6 text-center text-md-end">{paginationControl}</div>
         </div>
       )}
 
-      {showSelectAllBanner && (
-        <div className="alert alert-info d-flex flex-wrap align-items-center gap-2" role="status">
-          {data.totalListItems <= SELECT_ALL_MAX ? (
-            <>
-              <span>All {pageDocs.length} on this page are selected.</span>
+      {/* One bar, two states. It is part of the grid rather than a toolbar above it: fixed height,
+          so selecting a row never moves the rows under the reader's pointer. */}
+      {selectable && !noResults && (
+        <div className={`table-header-bar${selectionActive ? ' table-header-bar--selected' : ''}`}>
+          <div className="table-header-bar__main">
+            {/* The one live region: it is the only thing selecting changes for a screen reader. */}
+            <span className="table-header-bar__count" role="status">
+              {selectionActive
+                ? `${selectedCount.toLocaleString()} selected`
+                : documentCountMessage(data.totalListItems, data.currentPage, data.pageSize)}
+            </span>
+            {selectionActive && (
+              <>
+                <button
+                  type="button"
+                  className="table-header-bar__icon-btn"
+                  aria-label="Clear selection"
+                  onClick={() => clearSelection()}
+                >
+                  <i className="material-icons md-18" aria-hidden="true">
+                    close
+                  </i>
+                </button>
+                {showSelectAll && (
+                  <button
+                    type="button"
+                    className="btn btn-link btn-sm table-header-bar__link"
+                    aria-label={`Select all ${data.totalListItems.toLocaleString()} documents`}
+                    onClick={() => onMessage({ label: 'selectAllMatching' })}
+                  >
+                    Select all {data.totalListItems.toLocaleString()}
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+          <div className="table-header-bar__actions">
+            {selectionActive ? (
               <button
                 type="button"
-                className="btn btn-link p-0"
-                onClick={() => onMessage({ label: 'selectAllMatching' })}
+                className="btn btn-primary btn-sm d-inline-flex align-items-center gap-1"
+                disabled={downloadInProgress}
+                title={downloadInProgress ? 'Wait for the download in progress to finish.' : undefined}
+                onClick={() => void startDownload()}
               >
-                Select all {data.totalListItems} {documentNoun}
+                {/* The bundled Material Icons build has no `download`; this is the app's glyph. */}
+                <i className="material-icons md-18" aria-hidden="true">
+                  cloud_download
+                </i>
+                Download
               </button>
-            </>
-          ) : (
-            <span>Narrow your filters to {SELECT_ALL_MAX} or fewer documents to select them all.</span>
-          )}
+            ) : (
+              paginationControl
+            )}
+          </div>
         </div>
       )}
 
       <div className={loading && data.items.length > 0 ? 'table-loading' : undefined} aria-busy={loading || undefined}>
         {showSkeleton && <span className="visually-hidden">Loading</span>}
-        {!loading && data.items.length === 0 && data.totalListItems === 0 ? (
+        {noResults ? (
           <div className="text-center my-5">
             <p className="text-muted">No results found</p>
           </div>
@@ -170,7 +211,7 @@ export function TableTemplate({ data, loading = false, rowComponent, onMessage }
                 <thead>
                   <tr>
                     {selectable && (
-                      <th className="col-1">
+                      <th className="select-col">
                         <input
                           type="checkbox"
                           className="form-check-input"
@@ -219,7 +260,7 @@ export function TableTemplate({ data, loading = false, rowComponent, onMessage }
                 {showSkeleton &&
                   Array.from({ length: skeletonRows }, (_, row) => (
                     <tr key={`skeleton-${row}`} className="placeholder-wave" aria-hidden="true">
-                      {selectable && <td className="col-1"></td>}
+                      {selectable && <td className="select-col"></td>}
                       {data.columns.map(entry => (
                         <td key={entry.value} className={entry.width}>
                           <span className="placeholder w-100"></span>
@@ -247,7 +288,15 @@ export function TableTemplate({ data, loading = false, rowComponent, onMessage }
               <div className="table-controls-bottom mt-4">
                 <div className="row">
                   <div className="col-12 col-md-6 text-center text-md-start mb-3 mb-md-0">
-                    {pageSizePickerControl('table-template-page-size-picker')}
+                    {data.options.showPageSizePicker && data.totalListItems > Constants.tableDefaults.DEFAULT_PAGE_SIZE && (
+                      <PageSizePicker
+                        isHidden={false}
+                        currentPageSize={data.pageSize}
+                        sizeOptions={pageSizeOptions}
+                        onPageSizeChosen={onUpdatePageSize}
+                        id="table-template-page-size-picker"
+                      />
+                    )}
                   </div>
                   <div className="col-12 col-md-6 text-center text-md-end">{paginationControl}</div>
                 </div>

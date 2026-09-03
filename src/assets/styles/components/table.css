@@ -104,13 +104,10 @@
   background-color: var(--hover-tint);
 }
 
-/* Hover state - only for tables with highlight class */
-.table tbody.highlight tr:hover {
-  background-color: var(--bs-table-hover-bg);
-}
-
+/* Hover state - only for tables with highlight class. Bootstrap's own overlay, so a hovered
+   row and a selected row are painted the same way. */
 .table tbody.highlight tr:hover td {
-  background-color: var(--bs-table-hover-bg) !important;
+  --bs-table-bg-state: var(--bs-table-hover-bg);
 }
 
 /* Keyboard focus: an outline, so it still reads over the hover and selection fills. */
@@ -120,14 +117,21 @@
   outline-offset: -2px;
 }
 
-/* Selection: a blue tint, distinct from the grey hover fill, and `!important` to beat it. */
+/* Selection: the hover fill plus a blue bar down the leading edge, so it never
+   reads as hover. The bar sits on the row, whose bottom border is the divider, so it runs
+   through the dividers; a cell border stopped 2px short of each one. Desktop only: phone
+   rows are cards with their own selected ring. */
+/* Same overlay Bootstrap paints on hover, so selected and hovered rows match exactly. */
 .table tbody tr.selected td {
-  background-color: color-mix(in srgb, var(--bs-primary) 12%, var(--table-row-bg)) !important;
+  --bs-table-bg-state: var(--bs-table-hover-bg);
 }
 
-.table tbody tr.selected td:first-child {
-  box-shadow: inset 3px 0 0 var(--bs-primary);
+@media (min-width: 769px) {
+  .table tbody tr.selected {
+    border-left: 3px solid var(--bs-primary);
+  }
 }
+
 
 /* === TABLE-TEMPLATE COMPONENT STYLES === */
 
@@ -160,8 +164,9 @@
   border-bottom: 2px solid var(--table-border-color);
 }
 
-/* Only project list table rows should be clickable */
-.table-template .table tbody.highlight tr:hover td {
+/* Only rows that answer a click say so: project cards and selectable document rows. */
+.table-template .table tbody tr.clickable-row:hover td,
+.table-template .table tbody tr.selectable-row:hover td {
   cursor: pointer;
 }
 
@@ -199,6 +204,24 @@
     vertical-align: middle;
     line-height: 1.5;
     font-size: var(--bs-font-size-sm);
+  }
+
+  /* Checkbox column: only as wide as the control. */
+  .table-template .table th.select-col,
+  .table-template .table td.select-col {
+    flex: 0 0 2.5rem;
+    width: 2.5rem;
+    min-width: 2.5rem;
+    max-width: 2.5rem;
+    justify-content: center;
+    text-align: center;
+  }
+
+  /* The col-* widths add up to the whole table on their own, so they give up the checkbox's width. */
+  .table-template .table tr:has(.select-col) th[class*="col-"],
+  .table-template .table tr:has(.select-col) td[class*="col-"] {
+    flex-shrink: 1;
+    min-width: 0;
   }
 
   /* Column width definitions */
@@ -309,12 +332,26 @@
     border-bottom: none;
   }
 
-  .table-template .table tbody.highlight tr:hover td[data-label="Name"] {
+  .table-template .table tbody.highlight tr:hover td[data-label="Name"],
+  .table-template .table tbody tr.selected td[data-label="Name"],
+  .table-template .table tbody.highlight tr.selected:hover td[data-label="Name"] {
     background-color: var(--bs-primary) !important;
+  }
+
+  /* A selected card is called out by its border and tint; the title bar stays readable. */
+  .table-template .table tbody tr.selected {
+    border-color: var(--bs-primary);
+    box-shadow: 0 0 0 1px var(--bs-primary);
   }
 
   .table-template td[data-label="Name"]::before {
     content: none;
+  }
+
+  /* The card header is primary blue, so the link colour cannot carry over onto it. */
+  .table-template td[data-label="Name"] a {
+    color: var(--bs-white);
+    text-decoration: underline;
   }
 
   /* All metadata fields (except Name and star) */
@@ -325,8 +362,19 @@
     line-height: 1.5;
   }
 
+  /* The checkbox has its own label. */
+  .table-template td[data-label="Select"]::before {
+    content: none;
+  }
+
+  /* The checkbox sits in a slim strip above the card's title, not in a field of its own. */
+  .table-template .table tbody tr td.select-col {
+    padding: 0.75rem 1rem 0.25rem;
+  }
+
   /* Labels above values */
-  .table-template td[data-label]:not([data-label="Name"]):not([data-label="★"])::before {
+  .table-template
+    td[data-label]:not([data-label="Name"]):not([data-label="★"]):not([data-label="Select"])::before {
     content: attr(data-label);
     display: block;
     font-size: var(--bs-font-size-xs);
