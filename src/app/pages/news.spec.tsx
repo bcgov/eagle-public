@@ -151,7 +151,7 @@ describe('news subscribe control', () => {
     // The form is the popover's own spec; this page owns which subscription it offers.
     expect(trigger.closest('.subscribe-popover')).toHaveAttribute('data-service', 'eao:updates');
     expect(
-      screen.getByText(/Get an email each time any project publishes an Update\./)
+      screen.getByText(/Get an email when any project publishes an Update\./)
     ).toBeInTheDocument();
   });
 
@@ -163,6 +163,6 @@ describe('news subscribe control', () => {
     expect(screen.queryByRole('button', { name: 'Subscribe' })).toBeNull();
     expect(document.querySelector('.subscribe-popover')).toBeNull();
     // An empty wrapper still pads 24px under the hero, which is the prod configuration.
-    expect(document.querySelector('.container.d-flex.justify-content-end.pt-4')).toBeNull();
+    expect(document.querySelector('.container.pb-3')).toBeNull();
   });
 });

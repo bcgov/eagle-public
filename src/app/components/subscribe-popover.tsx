@@ -5,12 +5,12 @@ import './subscribe-popover.css';
 
 const COPY = {
   project: {
-    heading: 'Email updates for this project',
-    body: 'Get an email each time this project publishes an Update.'
+    invite: 'Get an email when this project publishes an Update.',
+    heading: 'Email updates for this project'
   },
   all: {
-    heading: 'Email updates for every project',
-    body: 'Get an email each time any project publishes an Update. This also signs you up for EAO announcements.'
+    invite: 'Get an email when any project publishes an Update.',
+    heading: 'Email updates for every project'
   }
 } as const;
 
@@ -25,8 +25,9 @@ interface SubscribePopoverProps {
   variant: 'project' | 'all';
 }
 
-/** Subscribe button whose popover is the sign-up form itself, posting to eagle-notify. eagle-notify
- * owns everything after the confirmation email. Renders nothing when NOTIFY_API is unset. */
+/** A section's email-updates line: what the subscription sends, then a Subscribe link whose popover
+ * is the sign-up form itself, posting to eagle-notify. eagle-notify owns everything after the
+ * confirmation email. Renders nothing when NOTIFY_API is unset. */
 export function SubscribePopover({ serviceName, variant }: SubscribePopoverProps) {
   const baseId = useId();
   const panelId = `${baseId}-panel`;
@@ -122,21 +123,22 @@ export function SubscribePopover({ serviceName, variant }: SubscribePopoverProps
   }
 
   return (
-    <span
+    <div
       className="subscribe-popover"
       data-service={serviceName}
       style={{ ['--subscribe-anchor' as string]: anchorName } as React.CSSProperties}
     >
+      <i className="material-icons subscribe-popover__icon" aria-hidden="true">
+        email
+      </i>
+      <p className="subscribe-popover__invite">{copy.invite}</p>
       <button
         type="button"
-        className="btn btn-sm btn-outline-primary subscribe-popover__trigger"
+        className="btn btn-primary btn-sm subscribe-popover__trigger"
         popoverTarget={panelId}
         aria-haspopup="dialog"
         aria-expanded={open}
       >
-        <i className="material-icons" aria-hidden="true">
-          email
-        </i>
         Subscribe
       </button>
       <div
@@ -150,6 +152,12 @@ export function SubscribePopover({ serviceName, variant }: SubscribePopoverProps
         <h2 id={headingId} className="subscribe-popover__heading" tabIndex={-1} ref={heading}>
           {copy.heading}
         </h2>
+        <p className="subscribe-popover__privacy">
+          Your personal information is collected by the Environmental Assessment Office under section 26(c) of
+          the Freedom of Information and Protection of Privacy Act to send you the updates you asked for. Every
+          email includes an unsubscribe link. Questions:{' '}
+          <a href="mailto:EAO.EPICsystem@gov.bc.ca">EAO.EPICsystem@gov.bc.ca</a>
+        </p>
         <button
           type="button"
           className="subscribe-popover__close"
@@ -175,7 +183,6 @@ export function SubscribePopover({ serviceName, variant }: SubscribePopoverProps
           </div>
         ) : (
           <form className="subscribe-popover__form" onSubmit={submit} noValidate>
-            <p className="subscribe-popover__body">{copy.body}</p>
 
             <div className="form-group">
               <label className="control-label" htmlFor={emailId}>
@@ -218,15 +225,9 @@ export function SubscribePopover({ serviceName, variant }: SubscribePopoverProps
               </button>
             </div>
 
-            <p className="subscribe-popover__privacy">
-              Your personal information is collected by the Environmental Assessment Office under section 26(c) of
-              the Freedom of Information and Protection of Privacy Act to send you the updates you asked for. Every
-              email includes an unsubscribe link. Questions:{' '}
-              <a href="mailto:EAO.EPICsystem@gov.bc.ca">EAO.EPICsystem@gov.bc.ca</a>
-            </p>
           </form>
         )}
       </div>
-    </span>
+    </div>
   );
 }

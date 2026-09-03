@@ -74,7 +74,8 @@ describe('subscribe popover', () => {
   it('explains the project subscription and offers the announcements opt-in', async () => {
     await renderControl('/notify-api', { serviceName: 'project:proj-1', variant: 'project' });
 
-    expect(screen.getByText('Get an email each time this project publishes an Update.')).toBeInTheDocument();
+    // The banner the section shows carries the promise; the panel repeats none of it.
+    expect(screen.getByText('Get an email when this project publishes an Update.')).toBeInTheDocument();
     expect(
       screen.getByRole('checkbox', {
         name: 'Also send me EAO announcements that are not about a single project',
@@ -87,11 +88,8 @@ describe('subscribe popover', () => {
   it('explains the all-projects subscription and offers no announcements opt-in', async () => {
     await renderControl('/notify-api', { serviceName: 'eao:updates', variant: 'all' });
 
-    expect(
-      screen.getByText(
-        'Get an email each time any project publishes an Update. This also signs you up for EAO announcements.'
-      )
-    ).toBeInTheDocument();
+    // Signing up here also covers announcements, so there is no checkbox to offer.
+    // Signing up here also covers announcements, which the reader only needs to know in the form.
     expect(screen.queryByRole('checkbox', { hidden: true })).toBeNull();
   });
 

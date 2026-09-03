@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
 import { useSearchParams } from 'react-router';
-import { getNotifyApi } from 'app/config/config';
 import { ActivityCard } from 'app/components/activity-card';
 import { HeroBanner } from 'app/components/hero-banner';
 import { SubscribePopover } from 'app/components/subscribe-popover';
+import { getNotifyApi } from 'app/config/config';
 import { SearchFilterTemplate } from 'app/components/filters/search-filter-template';
 import { TableTemplate } from 'app/components/table/table-template';
 import { tableObject, type IColumnObject, type ITableMessage, type TableRowProps } from 'app/components/table/table-object';
@@ -85,8 +85,11 @@ export function News() {
         backgroundImage="/assets/images/hero-banner.jpg"
       />
 
+
+      {/* Same band, same place as a project's Activities and Updates: under the title, above the
+          search. The guard keeps the padding out of the page when NOTIFY_API is unset. */}
       {getNotifyApi() ? (
-        <div className="container d-flex justify-content-end pt-4">
+        <div className="container pb-3">
           <SubscribePopover serviceName="eao:updates" variant="all" />
         </div>
       ) : null}
