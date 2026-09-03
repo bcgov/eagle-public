@@ -225,6 +225,59 @@ describe('DownloadPanel', () => {
     expect(screen.getByText('Alpha report.pdf')).toBeInTheDocument();
     expect(screen.getByText('Beta appendix.pdf')).toBeInTheDocument();
     expect(downloadUrls()).toEqual([]);
+    // No zip is fetched, so there is no errors.txt for the reader to open.
+    expect(screen.queryByText(/errors\.txt/)).not.toBeInTheDocument();
+  });
+
+  /** demi-api caps errors[] at 100, so the names can be a short version of the true count. */
+  it('says how many failures it could not name', async () => {
+    statusResponses = [
+      {
+        id: 'job-9',
+        status: 'ready',
+        partCount: 1,
+        partsReady: 1,
+        includedCount: 4,
+        errorCount: 5,
+        parts: [{ n: 1, fileName: 'documents.zip', url: 'https://nrs.example/part1.zip' }],
+        errors: [
+          { documentId: 'doc-a', name: 'Alpha report.pdf', reason: 'not found' },
+          { documentId: 'doc-b', name: 'Beta appendix.pdf', reason: 'too large' },
+          { documentId: 'doc-c', name: 'Gamma map.pdf', reason: 'unreadable' }
+        ]
+      }
+    ];
+    const panel = await mount({ id: 'job-9', count: 9, startedAt: Date.now() });
+
+    panel.render();
+    await tick(2000);
+
+    expect(screen.getByText('5 documents could not be included:')).toBeInTheDocument();
+    expect(screen.getByText('and 2 more')).toBeInTheDocument();
+    expect(document.querySelectorAll('.download-panel__names li')).toHaveLength(3);
+  });
+
+  it('counts the failures with no list when demi-api names none of them', async () => {
+    statusResponses = [
+      {
+        id: 'job-9',
+        status: 'ready',
+        partCount: 1,
+        partsReady: 1,
+        includedCount: 4,
+        errorCount: 2,
+        parts: [{ n: 1, fileName: 'documents.zip', url: 'https://nrs.example/part1.zip' }]
+      }
+    ];
+    const panel = await mount({ id: 'job-9', count: 6, startedAt: Date.now() });
+
+    panel.render();
+    await tick(2000);
+
+    // A colon with nothing after it reads as a page that failed to finish rendering.
+    expect(screen.getByText('2 documents could not be included.')).toBeInTheDocument();
+    expect(document.querySelector('.download-panel__names')).toBeNull();
+    expect(screen.queryByText(/and \d+ more/)).not.toBeInTheDocument();
   });
 
   it('explains a 429 in the panel rather than looking like a failure', async () => {

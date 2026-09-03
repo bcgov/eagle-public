@@ -69,13 +69,15 @@ function progressRows(job: { count: number }, state?: BulkDownloadStatus): React
 function errorRows(state: BulkDownloadStatus): ReactNode {
   // errorCount is the true total; errors[] is capped at 100 by demi-api, so it can be shorter.
   const errors = state.errors ?? [];
+  const unnamed = state.errorCount - errors.length;
+  const allFailed = state.includedCount === 0;
 
   return (
     <>
       <Row icon={WARNING} tone="error">
-        {state.includedCount === 0
+        {allFailed
           ? 'None of the selected documents could be downloaded.'
-          : `${plural(state.errorCount, 'document')} could not be included:`}
+          : `${plural(state.errorCount, 'document')} could not be included${errors.length > 0 ? ':' : '.'}`}
       </Row>
       {errors.length > 0 && (
         <li className="download-panel__errors">
@@ -84,7 +86,9 @@ function errorRows(state: BulkDownloadStatus): ReactNode {
               <li key={error.documentId}>{error.name || error.documentId}</li>
             ))}
           </ul>
-          <span className="download-panel__detail">See errors.txt in the zip for the reasons.</span>
+          {unnamed > 0 && <span className="download-panel__detail">and {unnamed} more</span>}
+          {/* An all-failed job downloads no zip, so there is no errors.txt to read. */}
+          {!allFailed && <span className="download-panel__detail">See errors.txt in the zip for the reasons.</span>}
         </li>
       )}
     </>

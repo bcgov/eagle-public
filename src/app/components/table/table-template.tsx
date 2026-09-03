@@ -122,10 +122,7 @@ export function TableTemplate({ data, loading = false, rowComponent, onMessage }
   const selectionActive = selectedCount > 0;
   // No count is known while the request is in flight, and the live region must not read out
   // "No documents" over a page that is still loading.
-  const countMessage =
-    loading || data.totalListItems == null
-      ? ''
-      : documentCountMessage(data.totalListItems, data.currentPage, data.pageSize);
+  const countMessage = loading ? '' : documentCountMessage(data.totalListItems, data.currentPage, data.pageSize);
 
   return (
     <div className="table-template" ref={containerRef}>
