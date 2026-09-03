@@ -167,7 +167,7 @@ test('decisions tab route either resolves or bounces to /projects', async ({ pag
   }
 });
 
-test('document download links resolve to /api/public/document/:id/download/:name', async ({
+test('a document download presigns through demi-api and keeps the eagle-api href', async ({
   page,
   request,
 }) => {
@@ -177,25 +177,28 @@ test('document download links resolve to /api/public/document/:id/download/:name
   const env = await search;
   await ready(page);
 
-  // The row opens the download in a new tab; intercept the navigation instead of
-  // letting the browser pull the file down.
-  let captured = '';
-  await page.context().route('**/api/public/document/**', async (route) => {
-    captured = route.request().url();
-    await route.abort();
-  });
-  await page.locator(ROWS).first().locator(NAME).click();
-  await expect.poll(() => captured, { timeout: 20_000 }).toContain('/api/public/document/');
+  const documentId = env.searchResults[0]._id;
 
-  const url = new URL(captured);
-  expect(url.pathname).toMatch(
-    new RegExp(`^/api/public/document/${env.searchResults[0]._id}/download/.+`),
+  // The href stays the eagle-api URL so middle-click and copy-link still fetch the file.
+  const link = page.locator(ROWS).first().locator(NAME).locator('a');
+  const href = await link.getAttribute('href');
+  expect(href).toMatch(new RegExp(`^/api/public/document/${documentId}/download/.+`));
+
+  // The click does not follow it: it asks demi-api for a presigned URL for that one document.
+  const presign = page.waitForRequest(
+    (r) =>
+      r.method() === 'POST' &&
+      /\/(api|demi-search)\/bulk-downloads$/.test(new URL(r.url()).pathname),
+    { timeout: 20_000 },
   );
+  await link.click();
+  expect((await presign).postDataJSON().documentIds).toEqual([documentId]);
+  expect(new URL(page.url()).pathname).toBe(`/p/${project._id}/documents`);
 
   // HEAD, so the assertion costs a status line rather than the whole file. Not every environment
   // holds the object behind every row - test is a partial copy - so a 404 is missing storage,
   // not a broken link. Only a server error means the endpoint itself is wrong.
-  const head = await request.head(url.pathname);
+  const head = await request.head(href!);
   expect(head.status()).toBeLessThan(500);
   test.info().annotations.push({ type: 'download HEAD', description: String(head.status()) });
 });
