@@ -1,7 +1,6 @@
 import * as api from './api';
 import { Org } from 'app/models/organization';
 import { createStore, useStore } from 'app/state/store';
-import { startLoading, stopLoading } from 'app/state/loading-state';
 
 const proponents = createStore<Org[]>([]);
 
@@ -23,11 +22,5 @@ export async function fetchProponent(): Promise<void> {
     return;
   }
 
-  const loadingId = 'org-proponent';
-  startLoading(loadingId, 'Loading proponent organizations');
-  try {
-    setValue(await api.getOrgsByCompanyType('Proponent/Certificate Holder'));
-  } finally {
-    stopLoading(loadingId);
-  }
+  setValue(await api.getOrgsByCompanyType('Proponent/Certificate Holder'));
 }

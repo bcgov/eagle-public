@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router';
 import { getConfig } from 'app/config/config';
-import { useIsLoading } from 'app/state/loading-state';
 import './header.css';
 
 function updateHeaderHeight(): void {
@@ -12,7 +11,6 @@ function updateHeaderHeight(): void {
 
 export function Header() {
   const { pathname } = useLocation();
-  const isLoading = useIsLoading();
   const [config] = useState(getConfig);
   const [menuOpen, setMenuOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
@@ -71,9 +69,7 @@ export function Header() {
       className={`app-header${pathname.startsWith('/projects') ? ' app-header--flex' : ''}${pathname.startsWith('/p/') ? ' app-header--solid' : ''}`}
       id="header"
     >
-      <nav
-        className={`navbar navbar-expand-md justify-content-between${isLoading ? ' navbar-loading' : ''}`}
-      >
+      <nav className="navbar navbar-expand-md justify-content-between">
         <Link
           className="navbar-brand"
           title="Environmental Assessment Office Project Information Centre"

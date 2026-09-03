@@ -1,6 +1,5 @@
 import * as api from './api';
 import { CommentPeriod } from 'app/models/commentperiod';
-import { startLoading, stopLoading } from 'app/state/loading-state';
 
 // statuses / query param options
 const NOT_STARTED = 'NS';
@@ -12,34 +11,22 @@ const OPEN = 'OP';
 export async function getAllByProjectId(
   projId: string,
 ): Promise<{ totalCount: number; data: CommentPeriod[] } | CommentPeriod[] | object> {
-  const loadingId = `commentperiods-${projId}`;
-  startLoading(loadingId, 'Loading comment periods');
-  try {
-    const res = await api.getPeriodsByProjId(projId);
-    if (!res) {
-      return {};
-    }
-    if (res.length === 0) {
-      return [] as CommentPeriod[];
-    }
-    return { totalCount: res.length, data: res.map((cp: any) => new CommentPeriod(cp)) };
-  } finally {
-    stopLoading(loadingId);
+  const res = await api.getPeriodsByProjId(projId);
+  if (!res) {
+    return {};
   }
+  if (res.length === 0) {
+    return [] as CommentPeriod[];
+  }
+  return { totalCount: res.length, data: res.map((cp: any) => new CommentPeriod(cp)) };
 }
 
 // get a specific comment period by its id
 export async function getById(periodId: string): Promise<CommentPeriod> {
-  const loadingId = `commentperiod-${periodId}`;
-  startLoading(loadingId, 'Loading comment period');
-  try {
-    const res = await api.getPeriod(periodId);
-    // return the first (only) comment period
-    const period = res && res.length > 0 ? new CommentPeriod(res[0]) : null;
-    return (period ?? null) as unknown as CommentPeriod;
-  } finally {
-    stopLoading(loadingId);
-  }
+  const res = await api.getPeriod(periodId);
+  // return the first (only) comment period
+  const period = res && res.length > 0 ? new CommentPeriod(res[0]) : null;
+  return (period ?? null) as unknown as CommentPeriod;
 }
 
 /** Given a comment period, returns status abbreviation. */

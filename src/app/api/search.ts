@@ -2,7 +2,6 @@ import * as api from './api';
 import { SearchResults } from 'app/models/search';
 import { News } from 'app/models/news';
 import { Constants } from 'app/utils/constants';
-import { startLoading, stopLoading } from 'app/state/loading-state';
 import { logger } from 'app/config/logging';
 
 export async function getSearchResults(
@@ -42,22 +41,16 @@ export async function getSearchResults(
 }
 
 export async function getTopNewsItems(): Promise<News[]> {
-  startLoading('home', 'Loading recent activities');
   try {
     const res = await api.getTopNewsItems();
     return Array.isArray(res) ? res.map((item) => new News(item)) : [];
   } catch (error) {
     logger.error('Error fetching top news items', 'search', error);
     return [];
-  } finally {
-    stopLoading('home');
   }
 }
 
 export async function fetchData(searchParamObject: SearchParamObject): Promise<SearchResults> {
-  const loadingId = `table-${searchParamObject.tableId}`;
-  logger.debug(`Starting loading for ${loadingId}`, 'search');
-  startLoading(loadingId, `Loading ${searchParamObject.dataset} data`);
   let res: any[] | null = null;
 
   logger.debug('search.fetchData called', 'search', searchParamObject);
@@ -88,8 +81,7 @@ export async function fetchData(searchParamObject: SearchParamObject): Promise<S
       searchParamObject.fuzzy,
     );
   } catch (error) {
-    logger.error(`Error in fetchData for ${loadingId}`, 'search', error);
-    stopLoading(loadingId);
+    logger.error(`Error in fetchData for table ${searchParamObject.tableId}`, 'search', error);
     // Return empty results on error
     return new SearchResults();
   }
@@ -120,7 +112,6 @@ export async function fetchData(searchParamObject: SearchParamObject): Promise<S
   } else {
     logger.error('No data was returned from the server.', searchParamObject.dataset + ' Service');
   }
-  stopLoading(loadingId);
   return searchResults;
 }
 
