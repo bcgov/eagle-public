@@ -1,10 +1,8 @@
 import { Link } from 'react-router';
+import { Constants } from 'app/utils/constants';
 import { encodeString, longDate, openDocumentDownload } from 'app/utils/utils';
 import { safeHtml } from 'app/utils/safe-html';
 import './content-result.css';
-
-/** Placeholder date the API stores for a document with no posting date; never shown. */
-const NO_DATE = '1900-01-01T08:00:00.000Z';
 
 const ESCAPES: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;' };
 
@@ -65,7 +63,7 @@ export function ContentResult({ result }: { result: any }) {
             <span>{result.milestone}</span>
           </>
         )}
-        {result.datePosted && result.datePosted !== NO_DATE && (
+        {result.datePosted && result.datePosted !== Constants.NO_DATE && (
           <>
             <span className="sep">·</span>
             <span>{longDate(result.datePosted)}</span>
