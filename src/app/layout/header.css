@@ -79,16 +79,6 @@
   line-height: 1.1rem;
 }
 
-.app-header .navbar-brand__version {
-  display: inline-block;
-  margin: -0.1rem 0 0 0;
-  padding: 0;
-  color: var(--gold);
-  font-size: var(--bs-font-size-xs);
-  font-weight: var(--bs-font-weight-bold);
-  vertical-align: top;
-}
-
 /* Mobile Menu Button */
 .app-header .navbar-toggler {
   flex-shrink: 0;
@@ -319,10 +309,6 @@
     z-index: 200;
   }
 
-  .app-header .dropdown-menu.dm-sm {
-    min-width: 12rem;
-  }
-
   .app-header .dropdown-item {
     padding: 0.5rem 1.5rem 0.5rem 1.25rem !important;
     background-color: transparent !important;
@@ -360,9 +346,5 @@
     margin-left: 88px;
     font-size: var(--bs-font-size-1);
     line-height: 1.2rem;
-  }
-
-  .app-header .navbar-brand__version {
-    font-size: var(--bs-font-size-xs);
   }
 }

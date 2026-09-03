@@ -4,7 +4,6 @@ import type { CommentPeriod } from 'app/models/commentperiod';
 import type { Document } from 'app/models/document';
 import type { SearchResults } from 'app/models/search';
 import type { Org } from 'app/models/organization';
-import type { Decision } from 'app/models/decision';
 import { encodeString } from 'app/utils/utils';
 import { logger } from 'app/config/logging';
 import { getApiPath, getSearchApiPath, getConfig } from 'app/config/config';
@@ -20,7 +19,7 @@ export class ApiError extends Error {
   }
 }
 
-export interface ResponseWithHeaders<T> {
+interface ResponseWithHeaders<T> {
   body: T;
   headers: Headers;
 }
@@ -36,9 +35,8 @@ export function apiPath(): string {
  * Base URL for search. eagle-search when SEARCH_API_PATH is set, eagle-api otherwise.
  *
  * Only the datasets in AZURE_DATASETS move; RecentActivity and ProjectNotification stay on
- * eagle-api, as does getFullDataSet(). The two backends answer the same query
- * language and the same `[{searchResults, meta}]` envelope, which is why nothing downstream has
- * to change.
+ * eagle-api. The two backends answer the same query language and the same
+ * `[{searchResults, meta}]` envelope, which is why nothing downstream has to change.
  */
 export function searchPath(): string {
   return getSearchApiPath();
@@ -101,10 +99,6 @@ async function postJson<T>(url: string, body: unknown): Promise<T> {
     body: JSON.stringify(body),
   });
   return response.json() as Promise<T>;
-}
-
-export async function getFullDataSet(dataSet: string, pageSize = 250): Promise<any> {
-  return getJson(`${apiPath()}/search?pageSize=${pageSize}&dataset=${dataSet}`);
 }
 
 export async function downloadDocument(document: Document): Promise<void> {
@@ -439,21 +433,6 @@ export async function getProject(
 }
 
 //
-// Decisions
-//
-export async function getDecisionByAppId(appId: string): Promise<Decision[]> {
-  const fields = ['_addedBy', '_application', 'name', 'description'];
-  const queryString = 'decision?_application=' + appId + '&fields=' + buildValues(fields);
-  return getJson<Decision[]>(`${apiPath()}/${queryString}`);
-}
-
-export async function getDecision(id: string): Promise<Decision[]> {
-  const fields = ['_addedBy', '_application', 'name', 'description'];
-  const queryString = 'decision/' + id + '?fields=' + buildValues(fields);
-  return getJson<Decision[]>(`${apiPath()}/${queryString}`);
-}
-
-//
 // Comment Periods
 //
 export async function getPeriodsByProjId(projId: string): Promise<any> {
@@ -489,13 +468,6 @@ export async function getPeriod(id: string): Promise<CommentPeriod[]> {
 //
 // Comments
 //
-export async function getCountCommentsById(commentPeriodId: string): Promise<number> {
-  const queryString = `public/comment?period=${commentPeriodId}`;
-  const response = await send(`${apiPath()}/${queryString}`, { method: 'HEAD' });
-  // retrieve the count from the response headers
-  return parseInt(response.headers.get('x-total-count') || '0', 10);
-}
-
 export async function getCommentsByPeriodId(
   pageNum: number | null,
   pageSize: number | null,
@@ -562,50 +534,6 @@ export async function addComment(comment: Comment): Promise<Comment> {
 //
 // Documents
 //
-export async function getDocumentsByAppId(appId: string): Promise<Document[]> {
-  const fields = [
-    '_application',
-    'documentFileName',
-    'displayName',
-    'internalURL',
-    'internalMime',
-    'isFeatured',
-  ];
-  const queryString = 'document?_application=' + appId + '&fields=' + buildValues(fields);
-  return getJson<Document[]>(`${apiPath()}/${queryString}`);
-}
-
-export async function getDocumentsByCommentId(commentId: string): Promise<Document[]> {
-  const fields = [
-    '_comment',
-    'documentFileName',
-    'displayName',
-    'internalURL',
-    'internalMime',
-    'isFeatured',
-  ];
-  const queryString = 'document?_comment=' + commentId + '&fields=' + buildValues(fields);
-  return getJson<Document[]>(`${apiPath()}/${queryString}`);
-}
-
-export async function getDocumentsByDecisionId(decisionId: string): Promise<Document[]> {
-  const fields = [
-    '_decision',
-    'documentFileName',
-    'displayName',
-    'internalURL',
-    'internalMime',
-    'isFeatured',
-  ];
-  const queryString = 'document?_decision=' + decisionId + '&fields=' + buildValues(fields);
-  return getJson<Document[]>(`${apiPath()}/${queryString}`);
-}
-
-export async function getDocument(id: string): Promise<Document[]> {
-  const queryString = 'document/' + id + '?fields=internalOriginalName|documentSource';
-  return getJson<Document[]>(`${apiPath()}/${queryString}`);
-}
-
 export async function getDocumentsByMultiId(ids: string[]): Promise<Document[]> {
   const fields = [
     'eaoStatus',

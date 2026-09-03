@@ -5,7 +5,7 @@
 import type { AnalyticsPlugin, AnalyticsInstance } from 'analytics';
 import { randomId } from 'app/utils/random-id';
 
-export interface PenguinAnalyticsConfig {
+interface PenguinAnalyticsConfig {
   apiUrl: string;
   sourceApp: string;
   debug?: boolean;

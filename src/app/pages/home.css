@@ -1,18 +1,6 @@
 /* Home Component Styles */
 /* Inherits background from .app-content */
 
-/* Hero banner button styles are now in assets/styles/components/buttons.css as .hero-banner-btn */
-
-.hero-banner__version {
-  margin-top: -0.25rem;
-  margin-left: -0.25rem;
-  display: inline-block;
-  color: var(--bc-gold);
-  font-size: var(--bs-font-size-sm);
-  font-weight: var(--bs-font-weight-bold);
-  vertical-align: top;
-}
-
 /* Scoped to the page's own <main>, and the headings/copy to the blocks this page writes itself:
    as global CSS a bare `main h2`/`main p` also reaches the app shell's <main> and the API HTML the
    activity cards render, neither of which Angular's view encapsulation let it touch. */
@@ -40,22 +28,6 @@
   font-size: var(--bs-font-size-5);
   max-width: 780px;
   margin: 0 auto;
-}
-
-.feature-blocks {
-  margin-top: 50px;
-}
-
-.hero-btn:focus {
-  color: var(--bc-blue-dark);
-}
-
-/* Angular's `.hero-banner h1` override is not ported: the h1 belongs to the hero-banner component,
-   so encapsulation made it dead here, and as a global it would restyle every page's hero. */
-@media (max-width: 767px) {
-  .hero-banner__version {
-    margin-top: -0.3rem;
-  }
 }
 
 /* Survey Banner Styles */
@@ -153,15 +125,4 @@
 .home-news-feed > .mt-4 {
   padding: 1.5rem;
   padding-top: 0;
-}
-
-.news-block-more {
-  margin-top: 2rem;
-  text-align: center;
-}
-
-.news-block-more .btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
 }

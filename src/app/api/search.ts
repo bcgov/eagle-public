@@ -5,10 +5,6 @@ import { Constants } from 'app/utils/constants';
 import { startLoading, stopLoading } from 'app/state/loading-state';
 import { logger } from 'app/config/logging';
 
-export async function getFullList(schema: string): Promise<any> {
-  return api.getFullDataSet(schema);
-}
-
 export async function getSearchResults(
   keys: string,
   dataset: string,

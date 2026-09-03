@@ -24,7 +24,7 @@ import {
 import { ProjDetailPopup } from './proj-detail-popup';
 import './projlist-map.css';
 
-export interface ProjlistMapProps {
+interface ProjlistMapProps {
   projects: Project[];
   loading: boolean;
   selectedId: string | null;

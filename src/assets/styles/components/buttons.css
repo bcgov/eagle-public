@@ -269,10 +269,6 @@
   cursor: pointer;
 }
 
-.btn-icon .btn-txt {
-  visibility: hidden;
-}
-
 .btn-icon:active,
 .btn-icon:focus,
 .btn-icon:hover {

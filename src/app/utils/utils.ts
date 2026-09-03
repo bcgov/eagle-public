@@ -6,18 +6,10 @@ import { bulkDownloadEnabled } from 'app/config/config';
 import { logger } from 'app/config/logging';
 import { isSafeUrl } from './safe-url';
 
-const encode = encodeURIComponent;
-(window as any)['encodeURIComponent'] = (component: string | number | boolean) => {
-  return encode(String(component)).replace(/[!'()*]/g, (c) => {
-    // Also encode !, ', (, ), and *
-    return '%' + c.charCodeAt(0).toString(16);
-  });
-};
-
 export function encodeString(filename: string, isUrl: boolean): string {
   let safeName;
   if (isUrl) {
-    safeName = encode(filename)
+    safeName = encodeURIComponent(filename)
       .replace(/\(/g, '%28')
       .replace(/\)/g, '%29')
       .replace(/\\/g, '_')
@@ -168,7 +160,7 @@ export function createProjectTabModifiers(projectTab: string, list: any[]): Reco
 }
 
 // Searches the list of terms for a name and legislation year.
-export function getIdsByName(terms: any[], list: any[]): { name: string; id: string }[] {
+function getIdsByName(terms: any[], list: any[]): { name: string; id: string }[] {
   // A term with no `List` entry yields no id. Angular read `_id` off the undefined match, which
   // threw whenever the lists had not loaded yet and took the whole tab down with it.
   return terms.flatMap((term) => {

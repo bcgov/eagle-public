@@ -19,7 +19,7 @@ import type { Feature, FeatureCollection, Point } from 'geojson';
  *     (await import('app/pages/projects/maplibre-test-stub')).mapLibreStub());
  */
 
-export interface BoundsBox {
+interface BoundsBox {
   north: number;
   south: number;
   east: number;
@@ -90,12 +90,12 @@ export const fakeMap = {
   },
 };
 
-export type FakeMap = typeof fakeMap;
+type FakeMap = typeof fakeMap;
 
 const RenderContext = createContext<(() => void) | undefined>(undefined);
 
 /** The parts of a MapLibre pointer event a spec has to supply. */
-export interface FakeMouseEvent {
+interface FakeMouseEvent {
   features?: Feature[];
   point: { x: number; y: number };
 }

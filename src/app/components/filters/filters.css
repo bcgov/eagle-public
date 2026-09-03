@@ -117,11 +117,6 @@
   pointer-events: none;
 }
 
-.filter-header h3,
-.filter-header p {
-  margin-bottom: 1rem;
-}
-
 /* === DATE PICKER === */
 
 .date-picker-container {

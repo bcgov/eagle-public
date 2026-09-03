@@ -3,6 +3,7 @@ import type { AnalyticsInstance, AnalyticsPlugin } from 'analytics';
 import { originalSourcePlugin } from '@analytics/original-source-plugin';
 import { penguinAnalyticsPlugin } from './penguin-analytics-plugin';
 import type { EnvConfig } from '../config/config';
+import { logger } from '../config/logging';
 
 interface PluginWithStartTracking {
   startTracking?: () => void;
@@ -49,10 +50,13 @@ export function initAnalytics(config: EnvConfig): void {
   analytics = Analytics({ app: 'eagle-public', debug, plugins });
   initialized = true;
 
-  if (debug) {
-    console.log('Analytics initialized with API URL:', apiUrl);
-    console.log('Enhanced tracking (browser context):', enhancedTracking ? 'enabled' : 'disabled');
-    console.log('Traffic source tracking:', trafficTracking ? 'enabled' : 'disabled');
+  // Deployed configs ship LOG_LEVEL 0, so the level gate alone would print this in production.
+  if (debug && import.meta.env.DEV) {
+    logger.debug('Analytics initialized', 'analytics', {
+      apiUrl,
+      enhancedTracking,
+      trafficTracking,
+    });
   }
 
   (plugin as unknown as PluginWithStartTracking).startTracking?.();

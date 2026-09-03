@@ -3,10 +3,6 @@ import * as documentApi from './document';
 import { Comment } from 'app/models/comment';
 import { startLoading, stopLoading } from 'app/state/loading-state';
 
-export async function getCountById(commentPeriodId: string): Promise<number> {
-  return api.getCountCommentsById(commentPeriodId);
-}
-
 // get all comments for the specified comment period id (without documents)
 export async function getByPeriodId(
   periodId: string,

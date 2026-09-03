@@ -16,7 +16,7 @@ export type SheetState = 'peek' | 'half' | 'full';
 export const sheetState = createStore<SheetState>('peek');
 
 /** A drag shorter than this reads as a tap, so the sheet keeps the state it started in. */
-export const SHEET_DRAG_THRESHOLD = 40;
+const SHEET_DRAG_THRESHOLD = 40;
 
 /** How far each stop translates the sheet down, in px, for a sheet `height` tall showing `peek`. */
 function sheetOffsets(height: number, peek: number): Record<SheetState, number> {
