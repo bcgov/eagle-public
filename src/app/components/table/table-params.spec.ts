@@ -11,7 +11,7 @@ import {
 
 describe('updateTableObjectWithUrlParams', () => {
   it('applies defaults when the URL names nothing', () => {
-    const table = updateTableObjectWithUrlParams({}, tableObject());
+    const table = updateTableObjectWithUrlParams({}, tableObject({ tableId: 'test' }));
     expect(table.currentPage).toBe(1);
     expect(table.pageSize).toBe(10);
     expect(table.sortBy).toBe('-datePosted');
@@ -20,7 +20,7 @@ describe('updateTableObjectWithUrlParams', () => {
   it('reads currentPage and pageSize as numbers', () => {
     const table = updateTableObjectWithUrlParams(
       { currentPage: '3', pageSize: '50' },
-      tableObject(),
+      tableObject({ tableId: 'test' }),
     );
     expect(table.currentPage).toBe(3);
     expect(table.pageSize).toBe(50);
@@ -29,7 +29,7 @@ describe('updateTableObjectWithUrlParams', () => {
   it('ignores empty and null params', () => {
     const table = updateTableObjectWithUrlParams(
       { sortBy: '', currentPage: null },
-      tableObject({ sortBy: '+name' }),
+      tableObject({ tableId: 'test', sortBy: '+name' }),
     );
     expect(table.sortBy).toBe('+name');
     expect(table.currentPage).toBe(1);
@@ -38,7 +38,7 @@ describe('updateTableObjectWithUrlParams', () => {
   it('scopes params by suffix so two tables can share a route', () => {
     const table = updateTableObjectWithUrlParams(
       { currentPagePins: '4', sortByPins: '-name', currentPage: '9' },
-      tableObject(),
+      tableObject({ tableId: 'test' }),
       'Pins',
     );
     expect(table.currentPage).toBe(4);
@@ -46,7 +46,9 @@ describe('updateTableObjectWithUrlParams', () => {
   });
 
   it('restores a + sort that URLSearchParams form-decoded to a space', () => {
-    expect(updateTableObjectWithUrlParams({ sortBy: ' name' }, tableObject()).sortBy).toBe('+name');
+    expect(
+      updateTableObjectWithUrlParams({ sortBy: ' name' }, tableObject({ tableId: 'test' })).sortBy,
+    ).toBe('+name');
     expect(normalizeSortBy('-name')).toBe('-name');
   });
 });

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { listsQueryOptions } from 'app/config/config';
 import { useResponsive } from 'app/state/responsive';
@@ -58,28 +58,40 @@ export function ProjectNotificationDocumentsTable({
     populate: true,
   });
 
-  const data = {
-    ...tableObject({
-      tableId,
-      component: ProjectNotificationDocumentsTableRow,
-      columns: isDesktop ? DESKTOP_COLUMNS : MOBILE_COLUMNS,
-      currentPage,
-      pageSize: 5,
-      sortBy,
-      items: result.data.map((record) => ({ rowData: record })),
-      totalListItems: result.totalListItems,
-      data: { rowBackgroundColor, lists },
+  const data = useMemo(
+    () => ({
+      ...tableObject({
+        tableId,
+        component: ProjectNotificationDocumentsTableRow,
+        columns: isDesktop ? DESKTOP_COLUMNS : MOBILE_COLUMNS,
+        currentPage,
+        pageSize: 5,
+        sortBy,
+        items: result.data.map((record) => ({ rowData: record })),
+        totalListItems: result.totalListItems,
+        data: { rowBackgroundColor, lists },
+      }),
+      options: {
+        showHeader: true,
+        showPageSizePicker: false,
+        showPageCountDisplay: false,
+        showAllPicker: false,
+        showPagination: true,
+        showTopControls: false,
+        disableRowHighlight: false,
+      },
     }),
-    options: {
-      showHeader: true,
-      showPageSizePicker: false,
-      showPageCountDisplay: false,
-      showAllPicker: false,
-      showPagination: true,
-      showTopControls: false,
-      disableRowHighlight: false,
-    },
-  };
+    [
+      tableId,
+      isDesktop,
+      currentPage,
+      sortBy,
+      result.data,
+      result.totalListItems,
+      rowBackgroundColor,
+      lists,
+    ],
+  );
 
   function onMessage(msg: ITableMessage): void {
     switch (msg.label) {

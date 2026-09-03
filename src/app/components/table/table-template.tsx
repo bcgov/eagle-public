@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useMemo, useRef } from 'react';
 import { track } from 'app/analytics/analytics';
 import { Constants } from 'app/utils/constants';
 import {
@@ -48,6 +48,7 @@ interface TableTemplateProps {
   loading?: boolean;
   /** Row renderer. `IRowObject.component` overrides it per row; `data.component` is the fallback. */
   rowComponent?: TableObject['component'];
+  emptyMessage?: string;
   onMessage: (msg: ITableMessage) => void;
 }
 
@@ -55,6 +56,7 @@ export function TableTemplate({
   data,
   loading = false,
   rowComponent,
+  emptyMessage = 'No results found',
   onMessage,
 }: TableTemplateProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -73,10 +75,18 @@ export function TableTemplate({
   // Download posts every table's selection as one job, so the toolbar counts them all.
   const selectedCount = useSelection().size;
   const downloadInProgress = useDownloadInProgress();
-  const pageDocs: SelectedDocument[] = data.items
-    .filter((item) => item.rowData?._id)
-    .map((item) => ({ id: item.rowData._id, displayName: item.rowData.displayName }));
-  const selectedOnPage = pageDocs.filter((doc) => selection.has(doc.id)).length;
+  // Every row subscribes to the selection store, so a new array here re-renders the whole page.
+  const pageDocs: SelectedDocument[] = useMemo(
+    () =>
+      data.items
+        .filter((item) => item.rowData?._id)
+        .map((item) => ({ id: item.rowData._id, displayName: item.rowData.displayName })),
+    [data.items],
+  );
+  const selectedOnPage = useMemo(
+    () => pageDocs.filter((doc) => selection.has(doc.id)).length,
+    [pageDocs, selection],
+  );
   const pageAllSelected = pageDocs.length > 0 && selectedOnPage === pageDocs.length;
   // Offered once the page is fully selected, there is more behind it than one page, and the whole
   // result set fits the anonymous cap. Over the cap there is nothing to offer, so the bar says
@@ -226,7 +236,7 @@ export function TableTemplate({
         {showSkeleton && <span className="visually-hidden">Loading</span>}
         {noResults ? (
           <div className="text-center my-5">
-            <p className="text-muted">No results found</p>
+            <p className="text-muted">{emptyMessage}</p>
           </div>
         ) : (
           <>

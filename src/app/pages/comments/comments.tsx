@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { downloadDocument, searchKeywords } from 'app/api/api';
@@ -16,9 +16,13 @@ import { TableTemplate } from 'app/components/table/table-template';
 import { tableObject, type ITableMessage } from 'app/components/table/table-object';
 import { mediumDate } from 'app/utils/utils';
 import { safeHtml } from 'app/utils/safe-html';
-import { AddComment } from './add-comment';
 import { CommentsTableRow } from './comments-table-rows';
 import './comments.css';
+
+// 500-odd lines of form that only readers who submit a comment ever open.
+const AddComment = lazy(() =>
+  import('./add-comment').then((module) => ({ default: module.AddComment })),
+);
 
 type CommentsType = 'PROJECT' | 'PROJECT-NOTIFICATION';
 
@@ -174,6 +178,7 @@ export function Comments() {
   const tableData = useMemo(
     () =>
       tableObject({
+        tableId: 'comments',
         component: CommentsTableRow,
         options: {
           showPageCountDisplay: true,
@@ -404,11 +409,15 @@ export function Comments() {
       </div>
 
       {modalOpen && commentPeriod && (
-        <AddComment
-          currentPeriod={commentPeriod}
-          project={project as Project}
-          onDismiss={onModalDismiss}
-        />
+        <Suspense
+          fallback={<div className="placeholder placeholder-wave w-100" aria-busy="true"></div>}
+        >
+          <AddComment
+            currentPeriod={commentPeriod}
+            project={project as Project}
+            onDismiss={onModalDismiss}
+          />
+        </Suspense>
       )}
     </>
   );

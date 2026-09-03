@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { TableTemplate } from 'app/components/table/table-template';
 import { tableObject, type IColumnObject } from 'app/components/table/table-object';
 import { useTable } from 'app/components/table/use-table';
@@ -29,29 +30,32 @@ export function FeaturedDocuments() {
     queryModifiers: { isFeatured: 'true' },
   });
 
+  const data = useMemo(
+    () => ({
+      ...tableObject({
+        tableId: 'documents-table',
+        component: DocumentTableRow,
+        columns: COLUMNS,
+        currentPage: 1,
+        pageSize: PAGE_SIZE,
+        sortBy: '-datePosted',
+        items: result.data.map((record) => ({ rowData: record })),
+        totalListItems: result.totalListItems,
+        data: { lists, showFeatured: true },
+      }),
+      options: {
+        showHeader: true,
+        showPageCountDisplay: false,
+        showPagination: false,
+        showPageSizePicker: false,
+      },
+    }),
+    [result.data, result.totalListItems, lists],
+  );
+
   if (!result.loading && result.totalListItems === 0) {
     return null;
   }
-
-  const data = {
-    ...tableObject({
-      tableId: 'documents-table',
-      component: DocumentTableRow,
-      columns: COLUMNS,
-      currentPage: 1,
-      pageSize: PAGE_SIZE,
-      sortBy: '-datePosted',
-      items: result.data.map((record) => ({ rowData: record })),
-      totalListItems: result.totalListItems,
-      data: { lists, showFeatured: true },
-    }),
-    options: {
-      showHeader: true,
-      showPageCountDisplay: false,
-      showPagination: false,
-      showPageSizePicker: false,
-    },
-  };
 
   return (
     <div className="mb-4">

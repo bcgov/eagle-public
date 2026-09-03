@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { NavLink, useSearchParams } from 'react-router';
 import { HeroBanner, type HeroBannerAction } from 'app/components/hero-banner';
 import { SearchFilterTemplate } from 'app/components/filters/search-filter-template';
@@ -27,7 +27,7 @@ import { selectAllMatching } from 'app/state/bulk-download';
 export interface TableListConfig {
   /** Identifies the table's cache entry and loading state. */
   tableId: string;
-  datasetType: 'Project' | 'Document' | 'DocumentChunk' | 'ProjectNotification';
+  datasetType: 'Project' | 'Document' | 'DocumentChunk' | 'ProjectNotification' | 'RecentActivity';
   /** Sort applied when the URL names none, e.g. `+name`. */
   defaultSort: string;
   heroBanner: {
@@ -43,6 +43,10 @@ export interface TableListConfig {
   dateFilterList: string[];
   /** Filter definitions. May start empty while their options are still loading. */
   filters: FilterObject[];
+  /** The filter panel and its search-help link. Off leaves the keyword box on its own. */
+  advancedFilters?: boolean;
+  /** Replaces the table's default "No results found". */
+  emptyMessage?: string;
   /** Extra data handed to every row as `tableData.data`. */
   rowData?: any;
   tableOptions?: Partial<ITableOptions>;
@@ -53,10 +57,14 @@ export interface TableListConfig {
   tabs?: { label: string; link: string }[];
 }
 
-/** Config-driven list page: hero banner, optional tabs, filter bar and table, synced to the URL. */
-export function TableList({ config }: { config: TableListConfig }) {
+/**
+ * Config-driven list page: hero banner, optional tabs, filter bar and table, synced to the URL.
+ * `children` render as a band between the banner and the filters.
+ */
+export function TableList({ config, children }: { config: TableListConfig; children?: ReactNode }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const params = useMemo(() => paramsToObject(searchParams), [searchParams]);
+  const advancedFilters = config.advancedFilters ?? true;
 
   const allFilterKeys = useMemo(
     () => [...config.filterList, ...config.dateFilterList],
@@ -68,15 +76,18 @@ export function TableList({ config }: { config: TableListConfig }) {
   );
   const sortBy = params['sortBy'] ? normalizeSortBy(params['sortBy']) : config.defaultSort;
 
-  const query: TableQueryConfig = {
-    dataset: config.datasetType,
-    keywords: params['keywords'] || '',
-    currentPage: +(params['currentPage'] || 1),
-    pageSize: +(params['pageSize'] || 10),
-    sortBy,
-    populate: true,
-    filters,
-  };
+  const query: TableQueryConfig = useMemo(
+    () => ({
+      dataset: config.datasetType,
+      keywords: params['keywords'] || '',
+      currentPage: +(params['currentPage'] || 1),
+      pageSize: +(params['pageSize'] || 10),
+      sortBy,
+      populate: true,
+      filters,
+    }),
+    [config.datasetType, params, sortBy, filters],
+  );
 
   const table = useTable(config.tableId, query);
 
@@ -164,21 +175,28 @@ export function TableList({ config }: { config: TableListConfig }) {
         </div>
       )}
 
+      {children}
+
       <section className="table-container">
         <div className="container">
           <section className="mb-4 pt-0 pb-0">
             <SearchFilterTemplate
               onSearch={executeSearch}
-              advancedFilters
+              advancedFilters={advancedFilters}
               showAdvancedFilters={config.filterList.some((filter) => params[filter])}
               searchOnFilterChange
               filters={config.filters}
-              searchHelpLink="/search-help"
+              searchHelpLink={advancedFilters ? '/search-help' : null}
               searching={table.loading}
             />
           </section>
           <div className={table.loading ? 'table-loading' : undefined}>
-            <TableTemplate data={data} loading={table.loading} onMessage={onMessage} />
+            <TableTemplate
+              data={data}
+              loading={table.loading}
+              emptyMessage={config.emptyMessage}
+              onMessage={onMessage}
+            />
           </div>
         </div>
       </section>

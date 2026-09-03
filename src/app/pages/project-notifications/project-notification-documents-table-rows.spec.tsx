@@ -29,7 +29,7 @@ describe('ProjectNotificationDocumentsTableRow', () => {
         <tbody>
           <ProjectNotificationDocumentsTableRow
             rowData={DOCUMENT}
-            tableData={tableObject()}
+            tableData={tableObject({ tableId: 'test' })}
             columns={[]}
             onMessage={() => undefined}
           />
