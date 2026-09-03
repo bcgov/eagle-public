@@ -1,8 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { RouterProvider, createMemoryRouter } from 'react-router';
+import { renderAt } from '../../../test-utils';
 import { loadConfig } from 'app/config/config';
 import { ContentSearch } from './content-search';
 
@@ -28,19 +27,8 @@ function jsonResponse(body: unknown) {
   });
 }
 
-function renderAt(path: string) {
-  const router = createMemoryRouter([{ path: '/search/content', Component: ContentSearch }], {
-    initialEntries: [path],
-  });
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
-
-  render(
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>,
-  );
-
-  return router;
+function renderContentSearch(path: string) {
+  return renderAt(path, [{ path: '/search/content', Component: ContentSearch }]).router;
 }
 
 async function configure(contentSearch: boolean): Promise<void> {
@@ -76,7 +64,7 @@ describe('content search', () => {
   });
 
   it('searches the chunk index by relevance and renders the card', async () => {
-    renderAt('/search/content?keywords=pipeline');
+    renderContentSearch('/search/content?keywords=pipeline');
 
     expect(await screen.findByText('Fish and Fish Habitat.pdf')).toBeInTheDocument();
     expect(requests.at(-1)).toBe(
@@ -89,14 +77,16 @@ describe('content search', () => {
     // must not be forwarded: `type` and the date range are dropped by the API unconditionally, and
     // `milestone` is dropped for the highest-volume values, so a forwarded key comes back as the
     // whole corpus wearing the label of a filtered result.
-    renderAt('/search/content?keywords=pipeline&milestone=m1&type=t1&datePostedStart=2020-01-01');
+    renderContentSearch(
+      '/search/content?keywords=pipeline&milestone=m1&type=t1&datePostedStart=2020-01-01',
+    );
 
     await screen.findByText('Fish and Fish Habitat.pdf');
     expect(requests.at(-1)).not.toContain('and[');
   });
 
   it('restores currentPage and pageSize from a deep link', async () => {
-    renderAt('/search/content?keywords=pipeline&currentPage=3&pageSize=25');
+    renderContentSearch('/search/content?keywords=pipeline&currentPage=3&pageSize=25');
 
     await screen.findByText('Fish and Fish Habitat.pdf');
     expect(requests.at(-1)).toContain('&pageNum=2&pageSize=25&');
@@ -104,7 +94,7 @@ describe('content search', () => {
   });
 
   it('shows both tabs when content search is enabled', async () => {
-    renderAt('/search/content');
+    renderContentSearch('/search/content');
 
     expect(await screen.findByRole('tab', { name: 'Documents' })).toHaveAttribute(
       'href',
@@ -116,14 +106,14 @@ describe('content search', () => {
   it('hides its own tab bar when content search is disabled', async () => {
     // Reachable only by a stale link once the flag is off, and the tab must not advertise itself.
     await configure(false);
-    renderAt('/search/content');
+    renderContentSearch('/search/content');
 
     await screen.findByText('Fish and Fish Habitat.pdf');
     expect(screen.queryByRole('tab')).not.toBeInTheDocument();
   });
 
   it('writes a keyword search to the URL and refetches, back on page 1', async () => {
-    const router = renderAt('/search/content?keywords=pipeline&currentPage=4');
+    const router = renderContentSearch('/search/content?keywords=pipeline&currentPage=4');
     await screen.findByText('Fish and Fish Habitat.pdf');
 
     const box = screen.getByPlaceholderText('Type keyword to search');
@@ -140,7 +130,7 @@ describe('content search', () => {
   });
 
   it('pages through the passage window, keeping the keyword', async () => {
-    const router = renderAt('/search/content?keywords=pipeline');
+    const router = renderContentSearch('/search/content?keywords=pipeline');
     await screen.findByText('Fish and Fish Habitat.pdf');
 
     await userEvent.click(screen.getByRole('button', { name: 'Go to page 2' }));
@@ -154,7 +144,7 @@ describe('content search', () => {
   it('says nothing matched rather than leaving the previous results on screen', async () => {
     results = [];
     total = 0;
-    renderAt('/search/content?keywords=zzzz');
+    renderContentSearch('/search/content?keywords=zzzz');
 
     expect(await screen.findByText(/No documents contain that text/)).toBeInTheDocument();
   });

@@ -1,9 +1,8 @@
 import { StrictMode } from 'react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { RouterProvider, createMemoryRouter } from 'react-router';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { renderAt } from '../../test-utils';
 import { routes } from 'app/routes';
 import { page } from 'app/analytics/analytics';
 
@@ -21,14 +20,7 @@ describe('app shell', () => {
   afterEach(() => vi.unstubAllGlobals());
 
   function renderShell() {
-    const router = createMemoryRouter(routes, { initialEntries: ['/'] });
-    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-
-    return render(
-      <QueryClientProvider client={queryClient}>
-        <RouterProvider router={router} />
-      </QueryClientProvider>,
-    );
+    return renderAt('/', routes);
   }
 
   it('renders the header, home page and footer at /', async () => {
@@ -64,16 +56,7 @@ describe('app shell', () => {
   });
 
   it('posts one Page Viewed on mount and one per navigation, even under StrictMode', async () => {
-    const router = createMemoryRouter(routes, { initialEntries: ['/'] });
-    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-
-    render(
-      <StrictMode>
-        <QueryClientProvider client={queryClient}>
-          <RouterProvider router={router} />
-        </QueryClientProvider>
-      </StrictMode>,
-    );
+    const { router } = renderAt('/', routes, { wrapper: StrictMode });
 
     await screen.findByText('EPIC');
     // StrictMode remounts effects once on mount in dev; the ref guard must absorb that.

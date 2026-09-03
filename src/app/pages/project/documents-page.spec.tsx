@@ -1,8 +1,8 @@
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Outlet, RouterProvider, createMemoryRouter } from 'react-router';
+import { Outlet } from 'react-router';
+import { makeQueryClient, renderAt } from '../../../test-utils';
 import { logger } from 'app/config/logging';
 import { DocumentsPage } from './documents-page';
 import { useProjectContext, type ProjectContext } from './project-context';
@@ -76,7 +76,8 @@ function renderRouter(
   context: ProjectContext = CONTEXT,
   { retry = false, retryDelay = 0 }: RetryOptions = {},
 ) {
-  const router = createMemoryRouter(
+  return renderAt(
+    path,
     [
       {
         path: '/p/:projId',
@@ -96,17 +97,8 @@ function renderRouter(
         ],
       },
     ],
-    { initialEntries: [path] },
-  );
-
-  render(
-    <QueryClientProvider
-      client={new QueryClient({ defaultOptions: { queries: { retry, retryDelay, gcTime: 0 } } })}
-    >
-      <RouterProvider router={router} />
-    </QueryClientProvider>,
-  );
-  return router;
+    { queryClient: makeQueryClient({ retry, retryDelay }) },
+  ).router;
 }
 
 /** Stands in for a document sub-tab, and proves the context reached it. */
