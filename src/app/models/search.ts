@@ -5,8 +5,8 @@ export class SearchResults {
   totalSearchCount: number;
 
   constructor(search?: any, hostname?: any, totalSearchCount?: number) {
-    this._schemaName = (search && search._schemaName) || 0;
-    this.data = (search && search.data) || 0;
+    this._schemaName = (search && search._schemaName) || '';
+    this.data = (search && search.data) || [];
     this.hostname = hostname || null;
     this.totalSearchCount = totalSearchCount || 0;
   }
