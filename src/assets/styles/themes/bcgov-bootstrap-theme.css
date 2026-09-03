@@ -30,6 +30,8 @@
   --bc-blue-light: #5091cd;     /* Lighter blue for hover states */
   --bc-blue-dark: #002663;      /* Darker blue for depth */
   --bc-gold: #fcba19;           /* BC Gold - accent color */
+  --bc-blue-10: #f1f8fe;        /* Blue scale, @bcgov/design-tokens 5.0.0 - selected surfaces */
+  --bc-blue-20: #d8eafd;        /* Blue scale, @bcgov/design-tokens 5.0.0 - selected surfaces, hover */
   
   /* Neutrals */
   --bc-gray: #494949;           /* Body text */

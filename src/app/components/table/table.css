@@ -43,8 +43,9 @@
 /* Selection state: the bar becomes part of the grid, tinted. #1c2c45 on #d9e1ea is 10.6:1. */
 .table-template .table-header-bar--selected {
   padding: 0.25rem 0.75rem;
-  border-color: var(--bs-primary-border-subtle);
-  background-color: var(--bs-primary-bg-subtle);
+  border-color: var(--bc-blue-20);
+  border-radius: 0.25rem 0.25rem 0 0;
+  background-color: var(--bc-blue-20);
   color: var(--bs-primary-text-emphasis);
 }
 

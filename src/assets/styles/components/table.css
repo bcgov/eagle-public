@@ -120,23 +120,19 @@
   outline-offset: -2px;
 }
 
-/* Selection: a blue tint plus a blue bar down the leading edge, so it never reads as hover.
-   The tint stops at 18%: past that the row's links fall under 4.5:1. */
+/* Selection: the design-token blue tint plus a gold bar down the leading edge, so it never
+   reads as hover. A border, not a shadow, so the bar runs through the row dividers. */
 .table tbody tr.selected td {
-  background-color: color-mix(in srgb, var(--bs-primary) 14%, var(--table-row-bg)) !important;
+  background-color: var(--bc-blue-10) !important;
 }
 
 .table tbody tr.selected td:first-child {
-  box-shadow: inset 3px 0 0 var(--bs-primary);
+  border-left: 3px solid var(--bc-gold);
 }
 
-/* Hovering a selected row still answers: a deeper tint and a wider bar. */
+/* Hovering a selected row still answers: a deeper tint. */
 .table tbody.highlight tr.selected:hover td {
-  background-color: color-mix(in srgb, var(--bs-primary) 18%, var(--table-row-bg)) !important;
-}
-
-.table tbody.highlight tr.selected:hover td:first-child {
-  box-shadow: inset 5px 0 0 var(--bs-primary);
+  background-color: var(--bc-blue-20) !important;
 }
 
 /* === TABLE-TEMPLATE COMPONENT STYLES === */
