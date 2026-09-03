@@ -169,4 +169,11 @@ describe('news subscribe control', () => {
     // The guard drops the wrapper too, so no empty padding is left under the hero.
     expect(document.querySelector('.container.pb-3')).toBeNull();
   });
+
+  it('offers no advanced filters or Search Help link', async () => {
+    renderNews('/news');
+
+    await screen.findByText('Permit granted');
+    expect(screen.queryByRole('link', { name: /search help/i })).toBeNull();
+  });
 });

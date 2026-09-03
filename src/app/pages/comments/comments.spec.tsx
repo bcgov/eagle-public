@@ -252,7 +252,7 @@ describe('comments', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: 'Submit Comment' }));
     fireEvent(
-      screen.getByRole('dialog'),
+      await screen.findByRole('dialog'),
       new Event('cancel', { cancelable: true, bubbles: false }),
     );
 
@@ -263,7 +263,7 @@ describe('comments', () => {
     renderComments();
 
     await userEvent.click(await screen.findByRole('button', { name: 'Submit Comment' }));
-    const next = screen.getByRole('button', { name: 'Next' });
+    const next = await screen.findByRole('button', { name: 'Next' });
     expect(next).toBeDisabled();
 
     await userEvent.click(screen.getByLabelText(/I have read the above/));
