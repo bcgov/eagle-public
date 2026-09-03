@@ -64,9 +64,11 @@ yarn start
 ```
 
 Open `http://localhost:4200/`. The page reloads when you change a source file. The dev server
-proxies `/api`, `/analytics`, `/eagle-search`, `/notify-api` and `/demi-search`. All but
-`/notify-api` take their target from `API_LOCATION` in `src/env.js`, so change it there and
-restart; `/notify-api` points at eagle-notify's test host.
+proxies `/api`, `/analytics`, `/eagle-search`, `/notify-api` and `/demi-search`. `/api`,
+`/analytics` and `/eagle-search` take their target from `API_LOCATION` in `src/env.js`, so change
+it there and restart. `/demi-search` goes straight to the test APIM gateway unless `API_LOCATION`
+is set in the shell, in which case it follows that host too. `/notify-api` always points at
+eagle-notify's test host.
 
 ## Building
 
