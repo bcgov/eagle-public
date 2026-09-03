@@ -22,9 +22,7 @@ test('projects-list renders the table and the API it came from', async ({ page }
     page.getByRole('heading', { level: 1, name: 'Search Environmental Assessment Projects' }),
   ).toBeVisible();
   for (const col of ['Name', 'Proponent', 'Type', 'Region', 'Phase', 'Decision']) {
-    await expect(
-      page.getByRole('columnheader', { name: new RegExp(`Column header ${col}`) }),
-    ).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: col, exact: true })).toBeVisible();
   }
 
   const rows = page.locator(ROWS);
