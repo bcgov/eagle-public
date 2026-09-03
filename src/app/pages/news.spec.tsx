@@ -93,7 +93,9 @@ describe('news', () => {
     const router = renderNews('/news');
     await screen.findByText('Permit granted');
 
-    await userEvent.click(screen.getByRole('columnheader', { name: 'Headline' }));
+    const headline = screen.getByRole('columnheader', { name: 'Headline' });
+    expect(headline.querySelector('button')).toBeNull();
+    await userEvent.click(headline);
 
     expect(router.state.location.search).toBe('');
   });
