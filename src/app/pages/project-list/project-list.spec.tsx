@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderAt } from '../../../test-utils';
 import { ProjectList } from './project-list';
@@ -103,7 +103,9 @@ describe('projects list', () => {
     const router = renderList('/projects-list?currentPage=4');
     await screen.findByText('Alpha Mine');
 
-    await userEvent.click(screen.getByRole('columnheader', { name: /Column header Region/ }));
+    await userEvent.click(
+      within(screen.getByRole('columnheader', { name: 'Region' })).getByRole('button'),
+    );
 
     await waitFor(() => {
       const params = new URLSearchParams(router.state.location.search);
@@ -117,7 +119,9 @@ describe('projects list', () => {
     const router = renderList('/projects-list');
     await screen.findByText('Alpha Mine');
 
-    await userEvent.click(screen.getByRole('columnheader', { name: /Column header Name/ }));
+    await userEvent.click(
+      within(screen.getByRole('columnheader', { name: 'Name' })).getByRole('button'),
+    );
 
     await waitFor(() =>
       expect(new URLSearchParams(router.state.location.search).get('sortBy')).toBe('-name'),

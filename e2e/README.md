@@ -105,7 +105,8 @@ contract: keep the hook, or update the test in the same change.
 
 | Hook | Where | Used for |
 |---|---|---|
-| `#table-template-page-count-display` | plain table pages | "Showing 10 of 348 results" |
+| `#table-template-page-count-display-<tableId>` | plain table pages | "Showing 10 of 348 results" |
+| `#table-template-page-size-picker-<tableId>` | plain table pages | rows-per-page buttons |
 | `#tableTop` | home | recent activity table |
 | `#applist-panel` | map page | the panel beside the map |
 | `#applist-list` | map page | project list inside the panel |

@@ -170,7 +170,7 @@ export async function expectA11ySmoke(page: Page): Promise<{ skipLinks: number }
  */
 export async function pageCount(page: Page): Promise<{ shown: number; total: number }> {
   const text = await page
-    .locator('#table-template-page-count-display, .table-header-bar__count')
+    .locator('[id^="table-template-page-count-display"], .table-header-bar__count')
     .first()
     .innerText();
   const m = text.match(/Showing\s+([\d,]+)\s+of\s+([\d,]+)/i);

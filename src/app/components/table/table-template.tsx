@@ -88,6 +88,7 @@ export function TableTemplate({
     [pageDocs, selection],
   );
   const pageAllSelected = pageDocs.length > 0 && selectedOnPage === pageDocs.length;
+  const pageMixed = selectedOnPage > 0 && !pageAllSelected;
   // Offered once the page is fully selected, there is more behind it than one page, and the whole
   // result set fits the anonymous cap. Over the cap there is nothing to offer, so the bar says
   // nothing: the cap is explained by the toast on the attempt that actually hits it.
@@ -161,7 +162,7 @@ export function TableTemplate({
                 currentPageNum={data.currentPage}
                 currentPageSize={data.pageSize}
                 totalItems={data.totalListItems}
-                id="table-template-page-count-display"
+                id={`table-template-page-count-display-${data.tableId}`}
               />
             )}
           </div>
@@ -251,8 +252,9 @@ export function TableTemplate({
                           className="form-check-input"
                           aria-label="Select all on this page"
                           checked={pageAllSelected}
+                          aria-checked={pageMixed ? 'mixed' : undefined}
                           ref={(input) => {
-                            if (input) input.indeterminate = selectedOnPage > 0 && !pageAllSelected;
+                            if (input) input.indeterminate = pageMixed;
                           }}
                           // ponytail: unchecking drops the whole table's selection, other pages
                           // included; deselect page-by-page if anyone paging around complains.
@@ -264,29 +266,38 @@ export function TableTemplate({
                         />
                       </th>
                     )}
-                    {data.columns.map((entry) => (
-                      <th
-                        key={entry.value}
-                        tabIndex={0}
-                        aria-label={`Column header ${entry.name}${!entry.nosort ? ' sortable' : ''}`}
-                        id="table-template-header"
-                        className={`project-table__name-col ${entry.width ?? ''} ${!entry.nosort ? 'sortable' : ''}`}
-                        onKeyUp={(event) => {
-                          if (event.key === 'Enter' && !entry.nosort) onSort(entry.value!);
-                        }}
-                        onClick={() => !entry.nosort && onSort(entry.value!)}
-                      >
-                        {entry.name}
-                        {entry.nosort !== true && (
-                          <i
-                            className={`sort${data.sortBy === `+${entry.value}` ? ' sort-asc' : ''}${
-                              data.sortBy === `-${entry.value}` ? ' sort-desc' : ''
-                            }`}
-                            aria-hidden="true"
-                          ></i>
-                        )}
-                      </th>
-                    ))}
+                    {data.columns.map((entry) => {
+                      const sortable = entry.nosort !== true;
+                      const ascending = data.sortBy === `+${entry.value}`;
+                      const descending = data.sortBy === `-${entry.value}`;
+                      return (
+                        <th
+                          key={entry.value}
+                          aria-sort={
+                            ascending ? 'ascending' : descending ? 'descending' : undefined
+                          }
+                          className={`project-table__name-col ${entry.width ?? ''} ${sortable ? 'sortable' : ''}`}
+                        >
+                          {sortable ? (
+                            <button
+                              type="button"
+                              className="table-sort-btn"
+                              onClick={() => onSort(entry.value!)}
+                            >
+                              {entry.name}
+                              <i
+                                className={`sort${ascending ? ' sort-asc' : ''}${
+                                  descending ? ' sort-desc' : ''
+                                }`}
+                                aria-hidden="true"
+                              ></i>
+                            </button>
+                          ) : (
+                            entry.name
+                          )}
+                        </th>
+                      );
+                    })}
                   </tr>
                 </thead>
               )}
@@ -330,7 +341,7 @@ export function TableTemplate({
                           currentPageSize={data.pageSize}
                           sizeOptions={pageSizeOptions}
                           onPageSizeChosen={onUpdatePageSize}
-                          id="table-template-page-size-picker"
+                          id={`table-template-page-size-picker-${data.tableId}`}
                         />
                       )}
                   </div>

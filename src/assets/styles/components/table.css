@@ -49,6 +49,20 @@
   border-bottom-color: var(--table-header-hover-border);
 }
 
+/* The sort control is a real button; it fills the cell so the click target stays the whole header. */
+.table thead th.sortable .table-sort-btn {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
 /* Sort indicators */
 .sort {
   display: inline-block;

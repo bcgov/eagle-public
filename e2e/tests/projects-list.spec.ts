@@ -46,7 +46,7 @@ test('sorting by Name flips the order and the sortBy query param', async ({ page
   const ascending = await first.innerText();
 
   const search = waitForSearch(page, 'Project');
-  await page.getByRole('columnheader', { name: /Column header Name sortable/ }).click();
+  await page.getByRole('columnheader', { name: 'Name' }).getByRole('button').click();
   await search;
   await expect(first).not.toHaveText(ascending);
 

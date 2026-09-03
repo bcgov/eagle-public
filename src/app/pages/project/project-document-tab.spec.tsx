@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderAt } from '../../../test-utils';
 import { Amendments } from './amendments';
@@ -223,7 +223,9 @@ describe('project document tabs', () => {
     const router = renderTab(DocumentsTab, '/p/proj-1/documents?currentPage=3');
 
     await screen.findByText('Cedar Quarry Certificate');
-    await userEvent.click(screen.getByRole('columnheader', { name: /Date/ }));
+    await userEvent.click(
+      within(screen.getByRole('columnheader', { name: 'Date' })).getByRole('button'),
+    );
 
     await waitFor(() => expect(router.state.location.search).toContain('currentPage=1'));
     expect(router.state.location.search).toContain('sortBy=%2BdatePosted');
@@ -233,7 +235,9 @@ describe('project document tabs', () => {
     const router = renderTab(DocumentsTab, '/p/proj-1/documents');
 
     await screen.findByText('Cedar Quarry Certificate');
-    await userEvent.click(screen.getByRole('columnheader', { name: /Name/ }));
+    await userEvent.click(
+      within(screen.getByRole('columnheader', { name: 'Name' })).getByRole('button'),
+    );
 
     await waitFor(() => expect(router.state.location.search).toContain('sortBy=%2BdisplayName'));
   });
