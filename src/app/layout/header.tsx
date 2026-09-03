@@ -72,7 +72,6 @@ export function Header() {
         <Link
           className="navbar-brand"
           title="Environmental Assessment Office Project Information Centre"
-          tabIndex={0}
           to="/"
           onClick={closeMenus}
         >
@@ -80,7 +79,6 @@ export function Header() {
         </Link>
         <button
           className="navbar-toggler"
-          tabIndex={0}
           type="button"
           title="Toggle Main Navigation"
           onClick={() => setMenuOpen((open) => !open)}
@@ -235,7 +233,7 @@ export function Header() {
         </div>
       </nav>
       {showBanner && (
-        <div className={`env-banner ${colour}`} tabIndex={0}>
+        <div className={`env-banner ${colour}`}>
           This is the&nbsp;<strong>{envName}</strong>&nbsp;environment. The content you are viewing
           is not final and subject to change.
         </div>

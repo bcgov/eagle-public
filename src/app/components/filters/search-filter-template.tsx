@@ -261,7 +261,6 @@ export function SearchFilterTemplate({
                             <label
                               htmlFor={filter.filterDefinition.startDateId}
                               className="control-label font-weight-bold"
-                              tabIndex={0}
                             >
                               {filter.filterDefinition.startDateLabel}
                             </label>
@@ -279,7 +278,6 @@ export function SearchFilterTemplate({
                             <label
                               htmlFor={filter.filterDefinition.endDateId}
                               className="control-label font-weight-bold"
-                              tabIndex={0}
                             >
                               {filter.filterDefinition.endDateLabel}
                             </label>
@@ -300,9 +298,7 @@ export function SearchFilterTemplate({
                     {filter.type === FilterType.MultiSelect && (
                       <div>
                         {filter.name && filter.name.length > 0 && (
-                          <span className="control-label font-weight-bold" tabIndex={0}>
-                            {filter.name}
-                          </span>
+                          <span className="control-label font-weight-bold">{filter.name}</span>
                         )}
                         <div className="form-group">
                           <CustomMultiSelect

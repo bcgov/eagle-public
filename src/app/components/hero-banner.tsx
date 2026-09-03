@@ -33,7 +33,7 @@ export function HeroBanner({ title, description, actions = [], backgroundImage }
       <div className="container">
         <div className="container-inner">
           <div className="hero-banner__content">
-            <div tabIndex={0}>
+            <div>
               <h1>{title}</h1>
               <p>{description}</p>
             </div>

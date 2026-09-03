@@ -17,13 +17,13 @@ function getTrigger(project: any): string | null {
 export function ProjectNotificationDocumentsTableDetails({ rowData }: { rowData: any }) {
   return (
     <div>
-      <div className="row mb-3 mt-2" tabIndex={0}>
+      <div className="row mb-3 mt-2">
         <div className="col-12">
           <h4>{rowData.name?.toUpperCase() || '-'}</h4>
         </div>
       </div>
 
-      <div className="row mb-4" tabIndex={0}>
+      <div className="row mb-4">
         <div className="col-12">
           <div className="pn-decision">
             {rowData.associatedProjectId ? (
@@ -37,7 +37,7 @@ export function ProjectNotificationDocumentsTableDetails({ rowData }: { rowData:
         </div>
       </div>
 
-      <div className="row mb-4" tabIndex={0}>
+      <div className="row mb-4">
         <div className="col-12 pn-info-block">
           <span className="info-label">Description:</span>
           <p
@@ -47,7 +47,7 @@ export function ProjectNotificationDocumentsTableDetails({ rowData }: { rowData:
         </div>
       </div>
 
-      <div className="row" tabIndex={0}>
+      <div className="row">
         <div className="col-sm-12 col-md-4 pn-info-block">
           <span className="info-label">Type</span>
           <p className="value">{rowData.type || '-'}</p>
