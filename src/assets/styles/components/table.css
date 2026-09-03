@@ -120,14 +120,14 @@
   outline-offset: -2px;
 }
 
-/* Selection: the design-token blue tint plus a gold bar down the leading edge, so it never
+/* Selection: the design-token blue tint plus a blue bar down the leading edge, so it never
    reads as hover. A border, not a shadow, so the bar runs through the row dividers. */
 .table tbody tr.selected td {
   background-color: var(--bc-blue-10) !important;
 }
 
 .table tbody tr.selected td:first-child {
-  border-left: 3px solid var(--bc-gold);
+  border-left: 3px solid var(--bs-primary);
 }
 
 /* Hovering a selected row still answers: a deeper tint. */
