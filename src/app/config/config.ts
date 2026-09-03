@@ -76,7 +76,7 @@ let config: EnvConfig = {};
 export async function loadConfig(): Promise<void> {
   config = { ...(window.__env || {}) };
 
-  if (config.logLevel === 0) {
+  if (import.meta.env.DEV && config.logLevel === 0) {
     console.log('config: env.js values:', config);
   }
 
@@ -142,7 +142,7 @@ async function fetchRemoteConfig(): Promise<void> {
       }
       const apiConfig: EnvConfig = await response.json();
       config = { ...config, ...apiConfig };
-      if (config.logLevel === 0) {
+      if (import.meta.env.DEV && config.logLevel === 0) {
         console.log('config: merged with API config:', config);
       }
       return;
