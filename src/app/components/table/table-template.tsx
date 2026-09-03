@@ -48,6 +48,7 @@ interface TableTemplateProps {
   loading?: boolean;
   /** Row renderer. `IRowObject.component` overrides it per row; `data.component` is the fallback. */
   rowComponent?: TableObject['component'];
+  emptyMessage?: string;
   onMessage: (msg: ITableMessage) => void;
 }
 
@@ -55,6 +56,7 @@ export function TableTemplate({
   data,
   loading = false,
   rowComponent,
+  emptyMessage = 'No results found',
   onMessage,
 }: TableTemplateProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -226,7 +228,7 @@ export function TableTemplate({
         {showSkeleton && <span className="visually-hidden">Loading</span>}
         {noResults ? (
           <div className="text-center my-5">
-            <p className="text-muted">No results found</p>
+            <p className="text-muted">{emptyMessage}</p>
           </div>
         ) : (
           <>
