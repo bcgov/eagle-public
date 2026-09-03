@@ -31,7 +31,8 @@ export function CommentsTableRow({ rowData }: TableRowProps) {
               {rowData.location && <span>, {rowData.location}</span>}
             </b>
           )}
-          {(rowData.author === null || rowData.Anonymous) && <b>Anonymous</b>}
+          {/* eagle-api drops the author field entirely on anonymous comments. */}
+          {(!rowData.author || rowData.Anonymous) && <b>Anonymous</b>}
         </div>
 
         <div className="text-muted mb-3">{longDate(rowData.dateAdded) || '-'}</div>

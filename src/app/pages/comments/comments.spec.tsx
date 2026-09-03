@@ -40,8 +40,8 @@ const COMMENTS = [
     documents: ['commentDoc1'],
   },
   {
+    // eagle-api deletes the author field on anonymous comments rather than nulling it.
     _id: 'c2',
-    author: null,
     comment: 'Anonymous comment',
     dateAdded: '2026-08-02T00:00:00.000Z',
     documents: [],
