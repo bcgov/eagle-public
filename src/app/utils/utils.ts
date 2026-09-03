@@ -160,7 +160,7 @@ export function createProjectTabModifiers(projectTab: string, list: any[]): Reco
 }
 
 // Searches the list of terms for a name and legislation year.
-export function getIdsByName(terms: any[], list: any[]): { name: string; id: string }[] {
+function getIdsByName(terms: any[], list: any[]): { name: string; id: string }[] {
   // A term with no `List` entry yields no id. Angular read `_id` off the undefined match, which
   // threw whenever the lists had not loaded yet and took the whole tab down with it.
   return terms.flatMap((term) => {

@@ -11,7 +11,7 @@ import { visibleSearchTabs } from './search.config';
 import { ContentResult } from './content-result';
 import './content-search.css';
 
-export const CONTENT_SEARCH_TABLE_ID = 'search-content';
+const CONTENT_SEARCH_TABLE_ID = 'search-content';
 
 /**
  * Document content search.

@@ -34,7 +34,7 @@ export const BC_BOUNDS: [[number, number], [number, number]] = [
   [-114, 60],
 ];
 
-export interface Basemap {
+interface Basemap {
   /** Also the value stored in `baseLayerName`. */
   name: string;
   path: string;
@@ -42,7 +42,7 @@ export interface Basemap {
   attribution: string;
 }
 
-export const BASEMAPS: Basemap[] = [
+const BASEMAPS: Basemap[] = [
   {
     name: 'Light Gray',
     path: 'Canvas/World_Light_Gray_Base',

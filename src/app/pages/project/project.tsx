@@ -209,7 +209,7 @@ interface TabBarProps {
 const SCROLL_STEP = 200;
 
 /** Tab strip with scroll arrows, shown only while the strip actually overflows. */
-export function TabBar({ projId, tabs, projectName, ariaLabel }: TabBarProps) {
+function TabBar({ projId, tabs, projectName, ariaLabel }: TabBarProps) {
   const navTabs = useRef<HTMLUListElement>(null);
   const [arrows, setArrows] = useState({ left: false, right: false });
 

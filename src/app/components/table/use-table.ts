@@ -19,7 +19,7 @@ export interface TableQueryConfig {
   enabled?: boolean;
 }
 
-export interface TableResult {
+interface TableResult {
   data: any[];
   totalListItems: number;
   loading: boolean;
