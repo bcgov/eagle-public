@@ -10,7 +10,7 @@ import {
   setJobStatus,
   setSelected,
   toggleSelected,
-  useJobs
+  useJobs,
 } from 'app/state/bulk-download';
 import { clearToasts, useToasts } from 'app/state/toast';
 import { SelectCell, TableTemplate } from './table-template';
@@ -21,7 +21,9 @@ const COLUMNS = [{ name: 'Name', value: 'name' }];
 function NameRow({ rowData, tableData }: { rowData: any; tableData?: TableObject }) {
   return (
     <tr>
-      {tableData?.options?.selectable && <SelectCell rowData={rowData} tableId={tableData.tableId} />}
+      {tableData?.options?.selectable && (
+        <SelectCell rowData={rowData} tableId={tableData.tableId} />
+      )}
       <td>{rowData.name}</td>
     </tr>
   );
@@ -37,7 +39,7 @@ function Harness({ totalListItems = 42 }: { totalListItems?: number }) {
     items: [{ rowData: { _id: 'a', name: 'Alpha' } }],
     totalListItems,
     pageSize,
-    currentPage
+    currentPage,
   };
 
   function onMessage(message: ITableMessage): void {
@@ -67,7 +69,7 @@ describe('TableTemplate page controls', () => {
     expect(document.querySelectorAll('.lib-page-size-display')).toHaveLength(1);
     const picker = document.getElementById('table-template-page-size-picker')!;
     expect(picker.compareDocumentPosition(screen.getByLabelText('table-template'))).toBe(
-      Node.DOCUMENT_POSITION_PRECEDING
+      Node.DOCUMENT_POSITION_PRECEDING,
     );
   });
 
@@ -107,7 +109,7 @@ function selectableTable(overrides: Partial<TableObject> = {}): TableObject {
     totalListItems: 60,
     pageSize: 10,
     options: { ...base.options, selectable: true },
-    ...overrides
+    ...overrides,
   };
 }
 
@@ -124,7 +126,12 @@ describe('TableTemplate selection', () => {
   });
 
   it('offers no checkbox column while the table is not selectable', () => {
-    render(<TableTemplate data={selectableTable({ options: { selectable: false } })} onMessage={() => undefined} />);
+    render(
+      <TableTemplate
+        data={selectableTable({ options: { selectable: false } })}
+        onMessage={() => undefined}
+      />,
+    );
 
     expect(screen.queryByLabelText(SELECT_ALL_PAGE)).not.toBeInTheDocument();
   });
@@ -141,7 +148,7 @@ describe('TableTemplate selection', () => {
   it('clears the selection when the header checkbox is unchecked', async () => {
     setSelected('documents', [
       { id: 'doc-a', displayName: 'Alpha' },
-      { id: 'doc-b', displayName: 'Beta' }
+      { id: 'doc-b', displayName: 'Beta' },
     ]);
     render(<TableTemplate data={selectableTable()} onMessage={() => undefined} />);
 
@@ -156,15 +163,18 @@ describe('TableTemplate selection', () => {
   it('says so instead of selecting a page that would pass the 100-document cap', async () => {
     setSelected(
       'documents',
-      Array.from({ length: SELECT_ALL_MAX }, (_, i) => ({ id: `other-${i}`, displayName: `Other ${i}` }))
+      Array.from({ length: SELECT_ALL_MAX }, (_, i) => ({
+        id: `other-${i}`,
+        displayName: `Other ${i}`,
+      })),
     );
     const toasts = renderHook(() => useToasts());
     render(<TableTemplate data={selectableTable()} onMessage={() => undefined} />);
 
     await userEvent.click(screen.getByLabelText(SELECT_ALL_PAGE));
 
-    expect(toasts.result.current.map(toast => toast.message)).toEqual([
-      'You can select up to 100 documents at a time.'
+    expect(toasts.result.current.map((toast) => toast.message)).toEqual([
+      'You can select up to 100 documents at a time.',
     ]);
     expect(screen.getByLabelText(SELECT_ALL_PAGE)).not.toBeChecked();
   });
@@ -177,13 +187,16 @@ describe('TableTemplate selection', () => {
    * halves, in every state.
    */
   it('keeps the same header bar, in the same place, through every selection state', async () => {
-    const { container } = render(<TableTemplate data={selectableTable()} onMessage={() => undefined} />);
-    const shape = () => [...container.querySelector('.table-template')!.children].map(el => el.tagName);
+    const { container } = render(
+      <TableTemplate data={selectableTable()} onMessage={() => undefined} />,
+    );
+    const shape = () =>
+      [...container.querySelector('.table-template')!.children].map((el) => el.tagName);
     const bar = () => container.querySelector('.table-header-bar')!;
     const halves = () => [
       bar().querySelectorAll('.table-header-bar__main').length,
       bar().querySelectorAll('.table-header-bar__actions').length,
-      bar().nextElementSibling!.querySelector('table') !== null
+      bar().nextElementSibling!.querySelector('table') !== null,
     ];
     const barBefore = bar();
     const shapeBefore = shape();
@@ -204,7 +217,12 @@ describe('TableTemplate selection', () => {
   });
 
   it('counts the result set in plain English, thousands grouped', () => {
-    render(<TableTemplate data={selectableTable({ totalListItems: 2158 })} onMessage={() => undefined} />);
+    render(
+      <TableTemplate
+        data={selectableTable({ totalListItems: 2158 })}
+        onMessage={() => undefined}
+      />,
+    );
 
     expect(screen.getByText('Showing 10 of 2,158 documents')).toBeInTheDocument();
   });
@@ -212,25 +230,36 @@ describe('TableTemplate selection', () => {
   /** The count sits in a live region, so a count the request has not answered yet must say nothing. */
   it('counts nothing while the results are still loading', () => {
     const data = selectableTable({ items: [], totalListItems: 0 });
-    const { container, rerender } = render(<TableTemplate data={data} loading onMessage={() => undefined} />);
+    const { container, rerender } = render(
+      <TableTemplate data={data} loading onMessage={() => undefined} />,
+    );
 
     expect(container.querySelector('.table-header-bar__count')).toHaveTextContent('');
     expect(screen.queryByText('No documents')).not.toBeInTheDocument();
 
-    rerender(<TableTemplate data={selectableTable({ totalListItems: 2 })} onMessage={() => undefined} />);
+    rerender(
+      <TableTemplate data={selectableTable({ totalListItems: 2 })} onMessage={() => undefined} />,
+    );
 
     expect(screen.getByText('2 documents')).toBeInTheDocument();
   });
 
   it('drops the "showing" half once the whole result set is on the page', () => {
-    render(<TableTemplate data={selectableTable({ totalListItems: 2, pageSize: 10 })} onMessage={() => undefined} />);
+    render(
+      <TableTemplate
+        data={selectableTable({ totalListItems: 2, pageSize: 10 })}
+        onMessage={() => undefined}
+      />,
+    );
 
     expect(screen.getByText('2 documents')).toBeInTheDocument();
   });
 
   /** The bar carries its own count and pager, so the old controls row is redundant above it. */
   it('replaces the top controls row with the header bar on a selectable table', () => {
-    const { container } = render(<TableTemplate data={selectableTable()} onMessage={() => undefined} />);
+    const { container } = render(
+      <TableTemplate data={selectableTable()} onMessage={() => undefined} />,
+    );
 
     expect(container.querySelectorAll('.table-controls-top')).toHaveLength(0);
     expect(container.querySelectorAll('.table-header-bar')).toHaveLength(1);
@@ -238,7 +267,9 @@ describe('TableTemplate selection', () => {
   });
 
   it('gives a selectable table with no top controls the same bar', async () => {
-    const data = selectableTable({ options: { showHeader: true, selectable: true, showTopControls: false } });
+    const data = selectableTable({
+      options: { showHeader: true, selectable: true, showTopControls: false },
+    });
     const { container } = render(<TableTemplate data={data} onMessage={() => undefined} />);
 
     expect(container.querySelectorAll('.table-header-bar')).toHaveLength(1);
@@ -249,7 +280,9 @@ describe('TableTemplate selection', () => {
   });
 
   it('leaves the controls row out of a table that is not selectable and has no top controls', () => {
-    const data = selectableTable({ options: { showHeader: true, selectable: false, showTopControls: false } });
+    const data = selectableTable({
+      options: { showHeader: true, selectable: false, showTopControls: false },
+    });
     const { container } = render(<TableTemplate data={data} onMessage={() => undefined} />);
 
     expect(container.querySelectorAll('.table-controls-top')).toHaveLength(0);
@@ -258,13 +291,24 @@ describe('TableTemplate selection', () => {
 
   /** Comments, news and the project list are not selectable: their controls must not move. */
   it('keeps the page count and the pager above a table that is not selectable', () => {
-    const data = selectableTable({ options: { showHeader: true, showTopControls: true, showPageCountDisplay: true, showPagination: true } });
+    const data = selectableTable({
+      options: {
+        showHeader: true,
+        showTopControls: true,
+        showPageCountDisplay: true,
+        showPagination: true,
+      },
+    });
     const { container } = render(<TableTemplate data={data} onMessage={() => undefined} />);
 
     expect(container.querySelectorAll('.table-header-bar')).toHaveLength(0);
     expect(container.querySelectorAll('.table-controls-top')).toHaveLength(1);
-    expect(document.getElementById('table-template-page-count-display')).toHaveTextContent('Showing 10 of 60 results');
-    expect(within(container.querySelector('.table-controls-top')!).getByLabelText('Table pagination')).toBeInTheDocument();
+    expect(document.getElementById('table-template-page-count-display')).toHaveTextContent(
+      'Showing 10 of 60 results',
+    );
+    expect(
+      within(container.querySelector('.table-controls-top')!).getByLabelText('Table pagination'),
+    ).toBeInTheDocument();
   });
 
   it('reads as indeterminate while only part of the page is selected', () => {
@@ -283,12 +327,14 @@ describe('TableTemplate select-all offer', () => {
     clearSelection();
     setSelected('documents', [
       { id: 'doc-a', displayName: 'Alpha' },
-      { id: 'doc-b', displayName: 'Beta' }
+      { id: 'doc-b', displayName: 'Beta' },
     ]);
   });
 
   it('stays hidden while the whole result set fits on the page', () => {
-    render(<TableTemplate data={selectableTable({ totalListItems: 2 })} onMessage={() => undefined} />);
+    render(
+      <TableTemplate data={selectableTable({ totalListItems: 2 })} onMessage={() => undefined} />,
+    );
 
     expect(screen.queryByRole('button', { name: /Select all/ })).not.toBeInTheDocument();
   });
@@ -296,15 +342,27 @@ describe('TableTemplate select-all offer', () => {
   // Boundary at the page size itself, e.g. page size "All" showing 19 of 19: nothing is left off
   // the page, so the banner must not appear. Catches `>` in the guard regressing to `>=`.
   it('stays hidden when the result count exactly equals the page size', () => {
-    render(<TableTemplate data={selectableTable({ totalListItems: 10, pageSize: 10 })} onMessage={() => undefined} />);
+    render(
+      <TableTemplate
+        data={selectableTable({ totalListItems: 10, pageSize: 10 })}
+        onMessage={() => undefined}
+      />,
+    );
 
     expect(screen.queryByRole('button', { name: /Select all/ })).not.toBeInTheDocument();
   });
 
   it('offers select-all once the result count passes the page size by one', () => {
-    render(<TableTemplate data={selectableTable({ totalListItems: 11, pageSize: 10 })} onMessage={() => undefined} />);
+    render(
+      <TableTemplate
+        data={selectableTable({ totalListItems: 11, pageSize: 10 })}
+        onMessage={() => undefined}
+      />,
+    );
 
-    expect(screen.getByRole('button', { name: 'Select all 11 documents' })).toHaveTextContent('Select all 11');
+    expect(screen.getByRole('button', { name: 'Select all 11 documents' })).toHaveTextContent(
+      'Select all 11',
+    );
   });
 
   it('offers the rest of the result set once the page is fully selected', async () => {
@@ -322,10 +380,14 @@ describe('TableTemplate select-all offer', () => {
    * proved by the header-checkbox case above.
    */
   it('offers nothing, and warns about nothing, past the 100-document cap', () => {
-    const { container } = render(<TableTemplate data={selectableTable({ totalListItems: 250 })} onMessage={() => undefined} />);
+    const { container } = render(
+      <TableTemplate data={selectableTable({ totalListItems: 250 })} onMessage={() => undefined} />,
+    );
 
     expect(screen.queryByRole('button', { name: /Select all/ })).not.toBeInTheDocument();
-    expect(container.querySelector('.table-header-bar')).not.toHaveTextContent(/Narrow|filters|100/);
+    expect(container.querySelector('.table-header-bar')).not.toHaveTextContent(
+      /Narrow|filters|100/,
+    );
   });
 });
 
@@ -340,7 +402,7 @@ describe('TableTemplate selection toolbar', () => {
     clearSelection();
     dismissAll();
     fetchMock = vi.fn(
-      async () => new Response(JSON.stringify({ id: 'job-1', status: 'queued' }), { status: 202 })
+      async () => new Response(JSON.stringify({ id: 'job-1', status: 'queued' }), { status: 202 }),
     );
     vi.stubGlobal('fetch', fetchMock);
   });
@@ -381,7 +443,7 @@ describe('TableTemplate selection toolbar', () => {
   it('posts every selected document and keeps the job it gets back', async () => {
     setSelected('documents', [
       { id: 'doc-a', displayName: 'Alpha' },
-      { id: 'doc-b', displayName: 'Beta' }
+      { id: 'doc-b', displayName: 'Beta' },
     ]);
     render(<TableTemplate data={selectableTable()} onMessage={() => undefined} />);
 
@@ -391,7 +453,9 @@ describe('TableTemplate selection toolbar', () => {
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toContain('/bulk-downloads');
     expect(JSON.parse(init.body)).toEqual({ documentIds: ['doc-a', 'doc-b'] });
-    await waitFor(() => expect(renderHook(() => useJobs()).result.current.map(job => job.id)).toEqual(['job-1']));
+    await waitFor(() =>
+      expect(renderHook(() => useJobs()).result.current.map((job) => job.id)).toEqual(['job-1']),
+    );
     // The job owns the download now, so the toolbar goes with the selection it posted.
     expect(screen.queryByRole('button', { name: 'Download' })).not.toBeInTheDocument();
   });
@@ -419,8 +483,8 @@ describe('TableTemplate selection toolbar', () => {
   });
 
   it('refuses a fourth download while three are still running', () => {
-    ['job-7', 'job-8', 'job-9'].forEach(id =>
-      addJob({ id, count: 3, startedAt: Date.now(), status: 'running' })
+    ['job-7', 'job-8', 'job-9'].forEach((id) =>
+      addJob({ id, count: 3, startedAt: Date.now(), status: 'running' }),
     );
     setSelected('documents', [{ id: 'doc-a', displayName: 'Alpha' }]);
 
@@ -428,19 +492,25 @@ describe('TableTemplate selection toolbar', () => {
 
     const button = screen.getByRole('button', { name: 'Download' });
     expect(button).toBeDisabled();
-    expect(button).toHaveAttribute('title', '3 downloads are already in progress. Wait for one to finish.');
+    expect(button).toHaveAttribute(
+      'title',
+      '3 downloads are already in progress. Wait for one to finish.',
+    );
   });
 
   // A job that reached its last status is not still running; the panel only shows what it did.
-  it.each(['ready', 'failed', 'expired'] as const)('offers Download again once a job is %s', status => {
-    ['job-7', 'job-8', 'job-9'].forEach(id =>
-      addJob({ id, count: 3, startedAt: Date.now(), status: 'running' })
-    );
-    setJobStatus('job-9', status);
-    setSelected('documents', [{ id: 'doc-a', displayName: 'Alpha' }]);
+  it.each(['ready', 'failed', 'expired'] as const)(
+    'offers Download again once a job is %s',
+    (status) => {
+      ['job-7', 'job-8', 'job-9'].forEach((id) =>
+        addJob({ id, count: 3, startedAt: Date.now(), status: 'running' }),
+      );
+      setJobStatus('job-9', status);
+      setSelected('documents', [{ id: 'doc-a', displayName: 'Alpha' }]);
 
-    render(<TableTemplate data={selectableTable()} onMessage={() => undefined} />);
+      render(<TableTemplate data={selectableTable()} onMessage={() => undefined} />);
 
-    expect(screen.getByRole('button', { name: 'Download' })).toBeEnabled();
-  });
+      expect(screen.getByRole('button', { name: 'Download' })).toBeEnabled();
+    },
+  );
 });

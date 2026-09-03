@@ -11,7 +11,7 @@ const sdk = vi.hoisted(() => ({
   trackException: vi.fn(),
   constructed: vi.fn(),
   // Set true for one test to simulate a stale hashed chunk failing to fetch after a redeploy.
-  importShouldFail: false
+  importShouldFail: false,
 }));
 
 vi.mock('@microsoft/applicationinsights-web', () => {
@@ -26,7 +26,7 @@ vi.mock('@microsoft/applicationinsights-web', () => {
       constructor(options: unknown) {
         sdk.constructed(options);
       }
-    }
+    },
   };
 });
 
@@ -72,7 +72,7 @@ describe('initTelemetry', () => {
     const { initTelemetry, trackException } = await telemetry();
 
     await expect(
-      initTelemetry(CONNECTION_STRING, 'eagle-public', ['epic.example.gov.bc.ca'])
+      initTelemetry(CONNECTION_STRING, 'eagle-public', ['epic.example.gov.bc.ca']),
     ).resolves.toBeUndefined();
     expect(() => trackException(new Error('after failed init'))).not.toThrow();
   });
@@ -86,8 +86,8 @@ describe('initTelemetry', () => {
         correlationHeaderDomains: ['epic.example.gov.bc.ca'],
         enableAutoRouteTracking: false,
         // Must not fetch the remote config-sync JSON on every load.
-        extensionConfig: { AppInsightsCfgSyncPlugin: { cfgUrl: '', blkCdnCfg: true } }
-      })
+        extensionConfig: { AppInsightsCfgSyncPlugin: { cfgUrl: '', blkCdnCfg: true } },
+      }),
     });
   });
 });
@@ -111,7 +111,7 @@ describe('the telemetry initializer', () => {
       uri: 'https://epic.example.gov.bc.ca/api/search?q=secret',
       target: 'epic.example.gov.bc.ca?q=secret',
       name: 'GET /api/search?q=secret',
-      message: 'GET /api/search?q=secret failed'
+      message: 'GET /api/search?q=secret failed',
     });
 
     initializer(item);
@@ -121,7 +121,7 @@ describe('the telemetry initializer', () => {
       uri: 'https://epic.example.gov.bc.ca/api/search',
       target: 'epic.example.gov.bc.ca',
       name: 'GET /api/search',
-      message: 'GET /api/search failed'
+      message: 'GET /api/search failed',
     });
   });
 
@@ -135,10 +135,10 @@ describe('the telemetry initializer', () => {
           {
             message: '/r?date=2026-09-02T10:00:00Z&sig=SECRET 401',
             stack:
-              'Error: /r?date=2026-09-02T10:00:00Z&sig=SECRET 401\n    at x (http://h/app.js?v=1:1:1)'
-          }
-        ]
-      }
+              'Error: /r?date=2026-09-02T10:00:00Z&sig=SECRET 401\n    at x (http://h/app.js?v=1:1:1)',
+          },
+        ],
+      },
     };
 
     initializer(item);
@@ -200,7 +200,10 @@ describe('trackException', () => {
 
     trackException(error, { source: 'test' });
 
-    expect(sdk.trackException).toHaveBeenCalledWith({ exception: error, properties: { source: 'test' } });
+    expect(sdk.trackException).toHaveBeenCalledWith({
+      exception: error,
+      properties: { source: 'test' },
+    });
   });
 
   it('wraps a value that is not an Error', async () => {
@@ -211,7 +214,7 @@ describe('trackException', () => {
 
     expect(sdk.trackException).toHaveBeenCalledWith({
       exception: expect.objectContaining({ message: 'just a string' }),
-      properties: undefined
+      properties: undefined,
     });
   });
 
@@ -236,7 +239,7 @@ describe('trackException', () => {
 
     expect(sdk.trackException).toHaveBeenCalledTimes(1);
     expect(sdk.trackException).toHaveBeenCalledWith(
-      expect.objectContaining({ exception: expect.objectContaining({ message: 'early' }) })
+      expect.objectContaining({ exception: expect.objectContaining({ message: 'early' }) }),
     );
   });
 

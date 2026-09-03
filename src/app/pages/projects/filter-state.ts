@@ -22,7 +22,7 @@ export const EMPTY_FILTERS: FilterCriteria = {
   dispId: null,
   purpose: null,
   publishFrom: null,
-  publishTo: null
+  publishTo: null,
 };
 
 function parseList(value: string | null): string[] {
@@ -43,7 +43,7 @@ export function parseFilters(params: URLSearchParams): FilterCriteria {
     dispId: params.get('dispId') || null,
     purpose: params.get('purpose') || null,
     publishFrom: parseDate(params.get('publishFrom')),
-    publishTo: parseDate(params.get('publishTo'))
+    publishTo: parseDate(params.get('publishTo')),
   };
 }
 
@@ -57,7 +57,8 @@ export function filtersToParams(filters: FilterCriteria): URLSearchParams {
   if (filters.clFile) params.set('clFile', filters.clFile);
   if (filters.dispId) params.set('dispId', filters.dispId);
   if (filters.purpose) params.set('purpose', filters.purpose);
-  if (filters.publishFrom) params.set('publishFrom', filters.publishFrom.toISOString().split('T')[0]);
+  if (filters.publishFrom)
+    params.set('publishFrom', filters.publishFrom.toISOString().split('T')[0]);
   if (filters.publishTo) params.set('publishTo', filters.publishTo.toISOString().split('T')[0]);
   return params;
 }
@@ -96,7 +97,7 @@ export function useProjectFilters(): {
     (next: Partial<FilterCriteria>) => {
       setParams(filtersToParams({ ...parseFilters(params), ...next }), { replace: true });
     },
-    [params, setParams]
+    [params, setParams],
   );
 
   const clearFilters = useCallback(() => {

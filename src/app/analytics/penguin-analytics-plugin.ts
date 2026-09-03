@@ -9,7 +9,7 @@ export interface PenguinAnalyticsConfig {
   apiUrl: string;
   sourceApp: string;
   debug?: boolean;
-  enhancedTracking?: boolean;  // Include browser context (timezone, screen size, viewport)
+  enhancedTracking?: boolean; // Include browser context (timezone, screen size, viewport)
 }
 
 interface EventPayload {
@@ -38,17 +38,17 @@ const getTrafficSource = (): Record<string, string | null> | null => {
   try {
     // First check localStorage from original-source plugin
     const stored = localStorage.getItem('__user_original_source__');
-    
+
     if (stored) {
       // Parse pipe-separated format: "source=google|medium=cpc|campaign=test"
       const parsed: Record<string, string> = {};
-      stored.split('|').forEach(pair => {
+      stored.split('|').forEach((pair) => {
         const [key, value] = pair.split('=');
         if (key && value) {
           parsed[key] = decodeURIComponent(value);
         }
       });
-      
+
       if (Object.keys(parsed).length > 0) {
         const channel = determineChannel(parsed['source'], parsed['medium']);
         return {
@@ -62,7 +62,7 @@ const getTrafficSource = (): Record<string, string | null> | null => {
         };
       }
     }
-    
+
     // Fallback: parse UTM parameters directly from current URL
     const urlParams = new URLSearchParams(window.location.search);
     const source = urlParams.get('utm_source');
@@ -70,7 +70,7 @@ const getTrafficSource = (): Record<string, string | null> | null => {
     const campaign = urlParams.get('utm_campaign');
     const content = urlParams.get('utm_content');
     const term = urlParams.get('utm_term');
-    
+
     if (source || medium) {
       const channel = determineChannel(source, medium);
       const result: Record<string, string | null> = {
@@ -84,7 +84,7 @@ const getTrafficSource = (): Record<string, string | null> | null => {
       };
       return result;
     }
-    
+
     return null;
   } catch (_e) {
     // Silent fail - traffic source is optional
@@ -98,7 +98,7 @@ const getTrafficSource = (): Record<string, string | null> | null => {
 const determineChannel = (source: string | null, medium: string | null): string => {
   const src = source?.toLowerCase() || '';
   const med = medium?.toLowerCase() || '';
-  
+
   if (src.includes('chatgpt') || src.includes('claude') || src.includes('bard')) {
     return 'chatbot';
   } else if (med === 'email' || src.includes('mail')) {
@@ -114,25 +114,26 @@ const determineChannel = (source: string | null, medium: string | null): string 
   } else if (src && src !== '(direct)') {
     return 'referral';
   }
-  
+
   return 'other';
 };
 
 const getBrowserContext = (config: PenguinAnalyticsConfig): Record<string, unknown> => {
   const basicContext = {
-    url: window.location.pathname,  // Path only (privacy-friendly)
-    title: document.title
+    url: window.location.pathname, // Path only (privacy-friendly)
+    title: document.title,
   };
 
   // Enhanced tracking includes browser fingerprinting data
   if (config.enhancedTracking) {
     // Get connection info (Network Information API)
-    const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    const connection =
+      navigator.connection || navigator.mozConnection || navigator.webkitConnection;
 
     // Get browser info from User-Agent Client Hints API (with fallback)
     const uaData = navigator.userAgentData;
-    const primaryBrand = uaData?.brands?.find(b => !b.brand.includes('Not'))
-      || uaData?.brands?.[0];
+    const primaryBrand =
+      uaData?.brands?.find((b) => !b.brand.includes('Not')) || uaData?.brands?.[0];
 
     // Fallback browser detection from user agent string
     const detectBrowser = (): { name: string; version: string } => {
@@ -173,7 +174,7 @@ const getBrowserContext = (config: PenguinAnalyticsConfig): Record<string, unkno
 
     return {
       ...basicContext,
-      url: window.location.href,  // Full URL (may include query params)
+      url: window.location.href, // Full URL (may include query params)
       referrer: document.referrer,
 
       // Screen & viewport
@@ -194,13 +195,13 @@ const getBrowserContext = (config: PenguinAnalyticsConfig): Record<string, unkno
       platform: uaData?.platform || platformFallback,
       browser: primaryBrand?.brand || browserFallback.name,
       browser_version: primaryBrand?.version || browserFallback.version,
-      mobile: uaData?.mobile ?? (navigator.maxTouchPoints > 0),
+      mobile: uaData?.mobile ?? navigator.maxTouchPoints > 0,
       touch_points: navigator.maxTouchPoints,
 
       // Network info (may not be available in all browsers)
       connection_type: connection?.effectiveType,
       connection_downlink: connection?.downlink,
-      connection_rtt: connection?.rtt
+      connection_rtt: connection?.rtt,
     };
   }
 
@@ -215,13 +216,13 @@ const sendEvent = (config: PenguinAnalyticsConfig, eventData: Partial<EventPaylo
     sourceApp: config.sourceApp,
     sessionId: getSessionId(),
     eventType: (eventData.eventType || 'unknown').trim().substring(0, 100),
-    ...eventData
+    ...eventData,
   };
 
   // Remove undefined properties
   if (payload.properties) {
     payload.properties = Object.fromEntries(
-      Object.entries(payload.properties).filter(([, v]) => v !== undefined)
+      Object.entries(payload.properties).filter(([, v]) => v !== undefined),
     );
     if (Object.keys(payload.properties).length === 0) delete payload.properties;
   }
@@ -232,8 +233,8 @@ const sendEvent = (config: PenguinAnalyticsConfig, eventData: Partial<EventPaylo
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
-    keepalive: true
-  }).catch(err => config.debug && console.warn('[Analytics] Failed:', err));
+    keepalive: true,
+  }).catch((err) => config.debug && console.warn('[Analytics] Failed:', err));
 };
 
 export function penguinAnalyticsPlugin(pluginConfig: PenguinAnalyticsConfig): AnalyticsPlugin {
@@ -243,11 +244,15 @@ export function penguinAnalyticsPlugin(pluginConfig: PenguinAnalyticsConfig): An
   let activityInterval: ReturnType<typeof setInterval> | null = null;
   let lastActivity = Date.now();
 
-  const trackActivity = () => { lastActivity = Date.now(); };
+  const trackActivity = () => {
+    lastActivity = Date.now();
+  };
 
   const deferSend = (fn: () => void) => {
     if ('requestIdleCallback' in window) {
-      (window as Window & { requestIdleCallback: (cb: () => void) => void }).requestIdleCallback(fn);
+      (window as Window & { requestIdleCallback: (cb: () => void) => void }).requestIdleCallback(
+        fn,
+      );
     } else {
       setTimeout(fn, 0);
     }
@@ -261,29 +266,36 @@ export function penguinAnalyticsPlugin(pluginConfig: PenguinAnalyticsConfig): An
     const link = target.closest('a');
     if (link?.href) {
       const href = link.getAttribute('href') || '';
-      deferSend(() => sendEvent(config, {
-        eventType: 'Link Clicked',
-        properties: {
-          link_url: href,
-          link_text: link.textContent?.trim().substring(0, 100) || '',
-          link_type: href.startsWith('http') || href.startsWith('//') ? 'external' : 'internal',
-          path: window.location.pathname
-        }
-      }));
+      deferSend(() =>
+        sendEvent(config, {
+          eventType: 'Link Clicked',
+          properties: {
+            link_url: href,
+            link_text: link.textContent?.trim().substring(0, 100) || '',
+            link_type: href.startsWith('http') || href.startsWith('//') ? 'external' : 'internal',
+            path: window.location.pathname,
+          },
+        }),
+      );
       return;
     }
 
     // Button clicks
     const btn = target.closest('button, [role="button"], input[type="submit"]') as HTMLElement;
     if (btn) {
-      deferSend(() => sendEvent(config, {
-        eventType: 'Button Clicked',
-        properties: {
-          button_text: btn.textContent?.trim().substring(0, 100) || btn.getAttribute('aria-label') || 'unknown',
-          button_type: btn.getAttribute('type') || 'button',
-          path: window.location.pathname
-        }
-      }));
+      deferSend(() =>
+        sendEvent(config, {
+          eventType: 'Button Clicked',
+          properties: {
+            button_text:
+              btn.textContent?.trim().substring(0, 100) ||
+              btn.getAttribute('aria-label') ||
+              'unknown',
+            button_type: btn.getAttribute('type') || 'button',
+            path: window.location.pathname,
+          },
+        }),
+      );
     }
   };
 
@@ -291,7 +303,12 @@ export function penguinAnalyticsPlugin(pluginConfig: PenguinAnalyticsConfig): An
     name: 'penguin-analytics',
     config: pluginConfig,
 
-    initialize: ({ config: cfg }: { config: PenguinAnalyticsConfig; instance: AnalyticsInstance }) => {
+    initialize: ({
+      config: cfg,
+    }: {
+      config: PenguinAnalyticsConfig;
+      instance: AnalyticsInstance;
+    }) => {
       config = cfg;
       document.addEventListener('click', handleClick, { passive: true });
       if (config.debug) console.log('[Analytics] Initialized (anonymous mode)');
@@ -303,8 +320,8 @@ export function penguinAnalyticsPlugin(pluginConfig: PenguinAnalyticsConfig): An
       sessionStart = new Date().toISOString();
 
       // Activity tracking
-      ['mousemove', 'keydown', 'scroll', 'click'].forEach(e =>
-        document.addEventListener(e, trackActivity, { passive: true })
+      ['mousemove', 'keydown', 'scroll', 'click'].forEach((e) =>
+        document.addEventListener(e, trackActivity, { passive: true }),
       );
       activityInterval = setInterval(() => {
         if (!isActive) return;
@@ -313,14 +330,18 @@ export function penguinAnalyticsPlugin(pluginConfig: PenguinAnalyticsConfig): An
           properties: {
             url: window.location.href,
             is_active: Date.now() - lastActivity < 60000,
-            seconds_since_activity: Math.floor((Date.now() - lastActivity) / 1000)
-          }
+            seconds_since_activity: Math.floor((Date.now() - lastActivity) / 1000),
+          },
         });
       }, 30000);
 
       sendEvent(config, {
         eventType: 'Session Started',
-        properties: { session_start: sessionStart, session_id: getSessionId(), ...getBrowserContext(config) }
+        properties: {
+          session_start: sessionStart,
+          session_id: getSessionId(),
+          ...getBrowserContext(config),
+        },
       });
 
       if (config.debug) console.log('[Analytics] Session started:', getSessionId());
@@ -328,21 +349,21 @@ export function penguinAnalyticsPlugin(pluginConfig: PenguinAnalyticsConfig): An
 
     page: ({ payload }: { payload: Record<string, unknown> }) => {
       if (!isActive) return;
-      
+
       const props = payload['properties'] as Record<string, unknown> | undefined;
-      
+
       // Include traffic source data (if available from original-source plugin)
       const trafficSource = getTrafficSource();
       const pageProperties = {
         page_name: props?.['name'] || 'unknown',
         ...getBrowserContext(config),
-        ...(trafficSource || {}),  // Merge traffic source data
-        ...props
+        ...(trafficSource || {}), // Merge traffic source data
+        ...props,
       };
-      
+
       sendEvent(config, {
         eventType: 'Page Viewed',
-        properties: pageProperties
+        properties: pageProperties,
       });
     },
 
@@ -350,11 +371,13 @@ export function penguinAnalyticsPlugin(pluginConfig: PenguinAnalyticsConfig): An
       if (!isActive) return;
       sendEvent(config, {
         eventType: payload['event'] as string,
-        properties: payload['properties'] as Record<string, unknown>
+        properties: payload['properties'] as Record<string, unknown>,
       });
     },
 
-    identify: () => { /* No-op: no PII collection in eagle-public */ },
+    identify: () => {
+      /* No-op: no PII collection in eagle-public */
+    },
 
     loaded: () => true,
 
@@ -362,16 +385,20 @@ export function penguinAnalyticsPlugin(pluginConfig: PenguinAnalyticsConfig): An
       if (isActive) {
         sendEvent(config, {
           eventType: 'Session Ended',
-          properties: { session_end: new Date().toISOString(), session_start: sessionStart, session_id: getSessionId() }
+          properties: {
+            session_end: new Date().toISOString(),
+            session_start: sessionStart,
+            session_id: getSessionId(),
+          },
         });
       }
       isActive = false;
       if (activityInterval) clearInterval(activityInterval);
       activityInterval = null;
-      ['mousemove', 'keydown', 'scroll', 'click'].forEach(e =>
-        document.removeEventListener(e, trackActivity)
+      ['mousemove', 'keydown', 'scroll', 'click'].forEach((e) =>
+        document.removeEventListener(e, trackActivity),
       );
-    }
+    },
   };
 }
 

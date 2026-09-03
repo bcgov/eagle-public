@@ -25,7 +25,9 @@ describe('FileUpload', () => {
     render(<FileUpload onFilesChange={vi.fn()} />);
 
     expect(screen.getByText(/Drop files to attach, or browse\./)).toBeInTheDocument();
-    expect(screen.getByText(new RegExp(DEFAULT_FILE_EXT.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))).toBeInTheDocument();
+    expect(
+      screen.getByText(new RegExp(DEFAULT_FILE_EXT.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))),
+    ).toBeInTheDocument();
     expect(screen.getByText(/Individual file size limit: 10MB/)).toBeInTheDocument();
   });
 
@@ -91,7 +93,13 @@ describe('FileUpload', () => {
 
   it('counts files already attached against maxFiles', () => {
     const onFilesChange = vi.fn();
-    render(<FileUpload maxFiles={2} files={[pdf('a.pdf'), pdf('b.pdf')]} onFilesChange={onFilesChange} />);
+    render(
+      <FileUpload
+        maxFiles={2}
+        files={[pdf('a.pdf'), pdf('b.pdf')]}
+        onFilesChange={onFilesChange}
+      />,
+    );
 
     browse([pdf('c.pdf')]);
 

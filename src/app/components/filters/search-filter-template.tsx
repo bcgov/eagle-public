@@ -10,7 +10,7 @@ import {
   initialFilterValues,
   type FilterObject,
   type FilterValues,
-  type SearchPackage
+  type SearchPackage,
 } from './filter-object';
 import './filters.css';
 
@@ -50,10 +50,12 @@ export function SearchFilterTemplate({
   onSearch,
   onToggleFiltersPanel,
   onFilterChange,
-  onResetControls
+  onResetControls,
 }: SearchFilterTemplateProps) {
   const [searchParams] = useSearchParams();
-  const [keywords, setKeywords] = useState(() => keywordOverride || searchParams.get('keywords') || '');
+  const [keywords, setKeywords] = useState(
+    () => keywordOverride || searchParams.get('keywords') || '',
+  );
   const [values, setValues] = useState<FilterValues>({});
   const [showFiltersPanel, setShowFiltersPanel] = useState(showAdvancedFilters);
   const [lastShowAdvanced, setLastShowAdvanced] = useState(showAdvancedFilters);
@@ -87,7 +89,7 @@ export function SearchFilterTemplate({
       filters,
       nextValues,
       nextKeywords,
-      nextKeywords !== previousKeywords.current
+      nextKeywords !== previousKeywords.current,
     );
     previousKeywords.current = nextKeywords;
 
@@ -96,7 +98,7 @@ export function SearchFilterTemplate({
       has_keywords: !!searchPackage.keywords,
       keyword_count: searchPackage.keywords ? searchPackage.keywords.split(' ').length : 0,
       filter_count: Object.keys(searchPackage.filters).length,
-      subset: null
+      subset: null,
     });
 
     onSearch(searchPackage);
@@ -121,7 +123,10 @@ export function SearchFilterTemplate({
 
   function clearFilters(): void {
     window.hj?.('event', 'FILTERS_CLEARED');
-    track('Filters Cleared', { had_keywords: !!keywords, had_filters: hasActiveFilters(values, keywords) });
+    track('Filters Cleared', {
+      had_keywords: !!keywords,
+      had_filters: hasActiveFilters(values, keywords),
+    });
 
     setValues({});
     setKeywords('');
@@ -158,8 +163,8 @@ export function SearchFilterTemplate({
                   type="text"
                   className="form-control data-hj-allow"
                   value={keywords}
-                  onChange={event => setKeywords(event.target.value)}
-                  onKeyUp={event => {
+                  onChange={(event) => setKeywords(event.target.value)}
+                  onKeyUp={(event) => {
                     if (event.key === 'Enter') emitSearch(values, keywords);
                   }}
                   placeholder={keywordWatermark || 'Type keyword to search'}
@@ -187,7 +192,11 @@ export function SearchFilterTemplate({
                 disabled={searching}
               >
                 {searching ? (
-                  <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                  <span
+                    className="spinner-border spinner-border-sm"
+                    role="status"
+                    aria-hidden="true"
+                  ></span>
                 ) : (
                   <span className="material-icons">search</span>
                 )}
@@ -230,10 +239,14 @@ export function SearchFilterTemplate({
 
       {advancedFilters && (
         <div className="advanced-filters-section">
-          <div id="advancedFilterPanel" className="row border-bottom pb-3" hidden={!showFiltersPanel}>
-            <form className="filter-form" noValidate onSubmit={event => event.preventDefault()}>
+          <div
+            id="advancedFilterPanel"
+            className="row border-bottom pb-3"
+            hidden={!showFiltersPanel}
+          >
+            <form className="filter-form" noValidate onSubmit={(event) => event.preventDefault()}>
               <div className={`row${searching ? ' disable-div' : ''}`}>
-                {filters.map(filter => (
+                {filters.map((filter) => (
                   <div
                     key={filter.id}
                     className={`pb-1 filter-panel col-md-${filter.itemPanelSize ?? filterItemPanelSize}`}
@@ -257,7 +270,9 @@ export function SearchFilterTemplate({
                               value={values[filter.filterDefinition.startDateId] ?? ''}
                               minDate={filter.filterDefinition.minDate}
                               maxDate={filter.filterDefinition.maxDate}
-                              onChange={value => setValue(filter.filterDefinition.startDateId, value)}
+                              onChange={(value) =>
+                                setValue(filter.filterDefinition.startDateId, value)
+                              }
                             />
                           </div>
                           <div className="col-md-6 end-date-padding">
@@ -273,7 +288,9 @@ export function SearchFilterTemplate({
                               value={values[filter.filterDefinition.endDateId] ?? ''}
                               minDate={filter.filterDefinition.minDate}
                               maxDate={filter.filterDefinition.maxDate}
-                              onChange={value => setValue(filter.filterDefinition.endDateId, value)}
+                              onChange={(value) =>
+                                setValue(filter.filterDefinition.endDateId, value)
+                              }
                             />
                           </div>
                         </div>
@@ -295,7 +312,7 @@ export function SearchFilterTemplate({
                             bindLabel="name"
                             groupBy={filter.filterDefinition.group?.name ?? null}
                             placeholder={`Type ${filter.name}`}
-                            onChange={selected => setValue(filter.id, selected)}
+                            onChange={(selected) => setValue(filter.id, selected)}
                           />
                         </div>
                       </div>

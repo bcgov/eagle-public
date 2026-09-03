@@ -8,7 +8,7 @@ import { logger } from 'app/config/logging';
 const encode = encodeURIComponent;
 (window as any)['encodeURIComponent'] = (component: string | number | boolean) => {
   return encode(String(component)).replace(/[!'()*]/g, (c) => {
-  // Also encode !, ', (, ), and *
+    // Also encode !, ', (, ), and *
     return '%' + c.charCodeAt(0).toString(16);
   });
 };
@@ -16,11 +16,21 @@ const encode = encodeURIComponent;
 export function encodeString(filename: string, isUrl: boolean): string {
   let safeName;
   if (isUrl) {
-    safeName = encode(filename).replace(/\(/g, '%28').replace(/\)/g, '%29').replace(/\\/g, '_').replace(/\//g, '_').replace(/%2F/g, '_').replace(/ /g, '_');
-      return safeName;
+    safeName = encode(filename)
+      .replace(/\(/g, '%28')
+      .replace(/\)/g, '%29')
+      .replace(/\\/g, '_')
+      .replace(/\//g, '_')
+      .replace(/%2F/g, '_')
+      .replace(/ /g, '_');
+    return safeName;
   } else {
-      safeName = filename.replace(/\(/g, '%28').replace(/\)/g, '%29').replace(/\\/g, '_').replace(/\//g, '_');
-      return safeName;
+    safeName = filename
+      .replace(/\(/g, '%28')
+      .replace(/\)/g, '%29')
+      .replace(/\\/g, '_')
+      .replace(/\//g, '_');
+    return safeName;
   }
 }
 
@@ -35,7 +45,9 @@ export function extractFromSearchResults<T>(results: ISearchResults<T>[]): T[] |
   // result envelope. Optional-chaining here fixes it once for every caller instead of at each
   // call site.
   const data = results[0]?.data;
-  if (!data) { return null; }
+  if (!data) {
+    return null;
+  }
   // `?? null` because the declared `T[] | null` was a lie without it: a data-bearing envelope
   // carrying no `searchResults` returned `undefined`, and the `as T[]` cast hid that from every
   // caller's type.
@@ -47,8 +59,8 @@ export function natureBuildMapper(key: string): string {
   if (!key) {
     return '';
   }
-  const natureObj = Constants.buildToNature.find(obj => obj.build === key);
-  return (natureObj) ? natureObj.nature : key;
+  const natureObj = Constants.buildToNature.find((obj) => obj.build === key);
+  return natureObj ? natureObj.nature : key;
 }
 
 // Creates query modifiers used for tab display in a project.
@@ -68,20 +80,22 @@ export function createProjectTabModifiers(projectTab: string, list: any[]): Reco
         { legislation: 2002, name: 'Decision Materials' },
         { legislation: 2018, name: 'Decision Materials' },
         { legislation: 2002, name: 'Tracking Table' },
-        { legislation: 2018, name: 'Tracking Table' }
+        { legislation: 2018, name: 'Tracking Table' },
       ];
       milestones = [
         { legislation: 2002, name: 'Amendment' },
-        { legislation: 2018, name: 'Amendment' }
+        { legislation: 2018, name: 'Amendment' },
       ];
 
       const amendPhase = [
         { legislation: 2002, name: 'Post Decision - Amendment' },
-        { legislation: 2018, name: 'Post Decision - Amendment' }
+        { legislation: 2018, name: 'Post Decision - Amendment' },
       ];
 
       // Special case for phases.
-      phases = getIdsByName(amendPhase, list).map(phase => phase.id).join(',');
+      phases = getIdsByName(amendPhase, list)
+        .map((phase) => phase.id)
+        .join(',');
       break;
     }
     case Constants.optionalProjectDocTabs.CERTIFICATE:
@@ -91,7 +105,7 @@ export function createProjectTabModifiers(projectTab: string, list: any[]): Reco
         { legislation: 2002, name: 'Order' },
         { legislation: 2018, name: 'Order' },
         { legislation: 2002, name: 'Decision Materials' },
-        { legislation: 2018, name: 'Decision Materials' }
+        { legislation: 2018, name: 'Decision Materials' },
       ];
       milestones = [
         { legislation: 2002, name: 'Certificate' },
@@ -99,7 +113,7 @@ export function createProjectTabModifiers(projectTab: string, list: any[]): Reco
         { legislation: 2002, name: 'Decision' },
         { legislation: 2002, name: 'Certificate Extension' },
         { legislation: 2018, name: 'Certificate Extension' },
-        { legislation: 2018, name: 'Transfer of Certificate/Order' }
+        { legislation: 2018, name: 'Transfer of Certificate/Order' },
       ];
       break;
     case Constants.optionalProjectDocTabs.COMPLIANCE:
@@ -107,7 +121,7 @@ export function createProjectTabModifiers(projectTab: string, list: any[]): Reco
       // so this tab filters on milestone alone.
       milestones = [
         { legislation: 2002, name: 'Compliance & Enforcement' },
-        { legislation: 2018, name: 'Compliance & Enforcement' }
+        { legislation: 2018, name: 'Compliance & Enforcement' },
       ];
       break;
     case Constants.optionalProjectDocTabs.APPLICATION: {
@@ -117,7 +131,7 @@ export function createProjectTabModifiers(projectTab: string, list: any[]): Reco
         { legislation: 2002, name: 'Application Materials' },
         { legislation: 2018, name: 'Application Materials' },
         { legislation: 2002, name: 'Scientific Memo' },
-        { legislation: 2018, name: 'Independent Memo' }
+        { legislation: 2018, name: 'Independent Memo' },
       ];
       milestones = [
         { legislation: 2002, name: 'Application Review' },
@@ -128,8 +142,12 @@ export function createProjectTabModifiers(projectTab: string, list: any[]): Reco
     }
   }
 
-  const typeIds = getIdsByName(types, list).map(type => type.id).join(',');
-  const milestoneIds = getIdsByName(milestones, list).map(milestone => milestone.id).join(',');
+  const typeIds = getIdsByName(types, list)
+    .map((type) => type.id)
+    .join(',');
+  const milestoneIds = getIdsByName(milestones, list)
+    .map((milestone) => milestone.id)
+    .join(',');
 
   // Empty ids must not reach the query: api.searchKeywords turns `''` into `&and[type]=`, and
   // eagle-api answers that with nothing at all.
@@ -152,8 +170,10 @@ export function createProjectTabModifiers(projectTab: string, list: any[]): Reco
 export function getIdsByName(terms: any[], list: any[]): { name: string; id: string }[] {
   // A term with no `List` entry yields no id. Angular read `_id` off the undefined match, which
   // threw whenever the lists had not loaded yet and took the whole tab down with it.
-  return terms.flatMap(term => {
-    const listItem = list.find(item => item.name === term.name && item.legislation === term.legislation);
+  return terms.flatMap((term) => {
+    const listItem = list.find(
+      (item) => item.name === term.name && item.legislation === term.legislation,
+    );
     return listItem ? [{ name: term.name, id: listItem._id }] : [];
   });
 }
@@ -166,7 +186,7 @@ export function idToListName(id: string, lists: any[]): string {
   if (!id) return '-';
   if (!lists?.length) return '-';
 
-  const item = lists.find(listItem => listItem._id === id);
+  const item = lists.find((listItem) => listItem._id === id);
   return item?.name ?? '-';
 }
 
@@ -178,7 +198,9 @@ export interface DownloadableDocument {
 }
 
 function downloadFileName(document: DownloadableDocument): string {
-  return document.documentFileName || document.displayName || document.internalOriginalName || 'document';
+  return (
+    document.documentFileName || document.displayName || document.internalOriginalName || 'document'
+  );
 }
 
 /** The eagle-api download URL. Also the anchor href, so middle-click and copy-link still work. */
@@ -211,7 +233,7 @@ export function openDocumentDownload(document: DownloadableDocument): void {
   track('Document Downloaded', {
     document_id: document._id,
     document_name: downloadFileName(document),
-    document_type: 'unknown'
+    document_type: 'unknown',
   });
 
   const eagleApiDownload = () => window.open(documentDownloadUrl(document), '_blank');
@@ -222,14 +244,14 @@ export function openDocumentDownload(document: DownloadableDocument): void {
   }
 
   void createBulkDownload([document._id])
-    .then(result => {
+    .then((result) => {
       const url = (result as { url?: string }).url;
       if (!url) {
         throw new Error('bulk download answered without a url');
       }
       triggerDownload(url);
     })
-    .catch(error => {
+    .catch((error) => {
       logger.warn('Presigned download failed, falling back to eagle-api', 'utils', error);
       eagleApiDownload();
     });
@@ -238,11 +260,19 @@ export function openDocumentDownload(document: DownloadableDocument): void {
 /** Angular's `date:'longDate'`, e.g. "August 27, 2026". Empty string for a missing date. */
 export function longDate(value: string | Date | undefined | null): string {
   if (!value) return '';
-  return new Date(value).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  return new Date(value).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
 }
 
 /** Angular's `date:'MMM d, y'`, e.g. "Aug 27, 2026". Empty string for a missing date. */
 export function mediumDate(value: string | Date | undefined | null): string {
   if (!value) return '';
-  return new Date(value).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  return new Date(value).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
 }

@@ -8,7 +8,7 @@ export class FilterObject {
     public type: FilterType,
     public name: string,
     public filterDefinition: any,
-    public itemPanelSize: number | null = null
+    public itemPanelSize: number | null = null,
   ) {}
 }
 
@@ -18,7 +18,7 @@ export enum FilterType {
   MultiSelect = 'multi-select',
   Checkbox = 'check-box',
   RadioPicker = 'radio-picker',
-  SliderToggle = 'slider-toggle'
+  SliderToggle = 'slider-toggle',
 }
 
 /** Maps a date range filter onto the two URL/API params it writes. */
@@ -29,7 +29,7 @@ export class DateFilterDefinition {
     public endDateId: string,
     public endDateLabel = 'End Date',
     public minDate = new Date('01-01-1900'),
-    public maxDate = new Date()
+    public maxDate = new Date(),
   ) {}
 }
 
@@ -37,7 +37,7 @@ export class FilterGroupObject {
   constructor(
     public name: string,
     public labelPrefix: string,
-    public labelPostfix: string
+    public labelPostfix: string,
   ) {}
 }
 
@@ -51,7 +51,7 @@ export class MultiSelectDefinition {
     public selectedOptions: any[] = [],
     public group: FilterGroupObject | null = null,
     public collection: FilterObject[] | null = null,
-    public matchId = false
+    public matchId = false,
   ) {}
 }
 
@@ -67,23 +67,32 @@ export interface SearchPackage {
 /** Splits a comma-joined URL value back into the option objects the multi-select renders. */
 function resolveOptions(raw: string, options: any[]): any[] {
   const wanted = decodeURIComponent(raw).split(',');
-  const matched = options.filter(option => wanted.includes(option._id) || wanted.includes(option.code));
-  return matched.length > 0 ? matched : wanted.filter(value => value !== '');
+  const matched = options.filter(
+    (option) => wanted.includes(option._id) || wanted.includes(option.code),
+  );
+  return matched.length > 0 ? matched : wanted.filter((value) => value !== '');
 }
 
 /** Seeds the filter form from URL params, mirroring the Angular form group construction. */
-export function initialFilterValues(filters: FilterObject[], urlValues: FilterValues = {}): FilterValues {
+export function initialFilterValues(
+  filters: FilterObject[],
+  urlValues: FilterValues = {},
+): FilterValues {
   const values: FilterValues = {};
 
   for (const filter of filters) {
     if (filter.type === FilterType.DateRange) {
       const { startDateId, endDateId } = filter.filterDefinition;
       // Both the picker and the API use plain yyyy-mm-dd, so the URL value needs no conversion.
-      if (urlValues[startDateId]) values[startDateId] = String(urlValues[startDateId]).split('T')[0];
+      if (urlValues[startDateId])
+        values[startDateId] = String(urlValues[startDateId]).split('T')[0];
       if (urlValues[endDateId]) values[endDateId] = String(urlValues[endDateId]).split('T')[0];
     } else if (filter.type === FilterType.MultiSelect) {
       if (urlValues[filter.id]) {
-        values[filter.id] = resolveOptions(String(urlValues[filter.id]), filter.filterDefinition.options ?? []);
+        values[filter.id] = resolveOptions(
+          String(urlValues[filter.id]),
+          filter.filterDefinition.options ?? [],
+        );
       } else if (filter.filterDefinition.selectedOptions?.length) {
         values[filter.id] = filter.filterDefinition.selectedOptions;
       }
@@ -100,7 +109,7 @@ export function buildSearchPackage(
   filters: FilterObject[],
   values: FilterValues,
   keywords: string,
-  keywordsChanged: boolean
+  keywordsChanged: boolean,
 ): SearchPackage {
   const searchFilters: Record<string, any> = {};
 
@@ -118,7 +127,7 @@ export function buildSearchPackage(
     } else if (filter.type === FilterType.MultiSelect) {
       const selected: any[] = values[filter.id] ?? [];
       if (selected.length > 0) {
-        searchFilters[filter.id] = selected.map(item => item._id ?? item.code ?? item);
+        searchFilters[filter.id] = selected.map((item) => item._id ?? item.code ?? item);
       }
     } else if (values[filter.id]) {
       searchFilters[filter.id] = values[filter.id];
@@ -133,7 +142,7 @@ export function hasActiveFilters(values: FilterValues, keywords: string): boolea
     return true;
   }
 
-  return Object.values(values).some(value => {
+  return Object.values(values).some((value) => {
     if (Array.isArray(value)) return value.length > 0;
     if (typeof value === 'string') return value.trim() !== '';
     return !!value;

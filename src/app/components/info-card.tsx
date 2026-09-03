@@ -40,7 +40,11 @@ export function InfoCard({ title, description, icon, button }: InfoCardProps) {
       {button && (
         <div className="feature-block__footer">
           {button.link ? (
-            <Link className="btn btn-sm inverted" to={button.link} aria-label={button.title || button.text}>
+            <Link
+              className="btn btn-sm inverted"
+              to={button.link}
+              aria-label={button.title || button.text}
+            >
               {button.text}
             </Link>
           ) : button.href ? (

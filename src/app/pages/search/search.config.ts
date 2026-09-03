@@ -3,7 +3,7 @@ import {
   FilterGroupObject,
   FilterObject,
   FilterType,
-  MultiSelectDefinition
+  MultiSelectDefinition,
 } from 'app/components/filters/filter-object';
 import type { TableListConfig } from 'app/components/table/table-list';
 import type { IColumnObject } from 'app/components/table/table-object';
@@ -18,13 +18,15 @@ export const SEARCH_TABLE_ID = 'search';
  */
 export const SEARCH_TABS = [
   { label: 'Documents', link: '/search' },
-  { label: 'Document Content', link: '/search/content' }
+  { label: 'Document Content', link: '/search/content' },
 ];
 
 export const CONTENT_SEARCH_LINK = '/search/content';
 
 /** The tabs to render. The content tab is gated on the CONTENT_SEARCH runtime config flag. */
-export function visibleSearchTabs(isContentSearchEnabled: boolean): { label: string; link: string }[] {
+export function visibleSearchTabs(
+  isContentSearchEnabled: boolean,
+): { label: string; link: string }[] {
   // One tab is no tab bar: with content search off there is nothing to switch between.
   return isContentSearchEnabled ? SEARCH_TABS : [];
 }
@@ -34,7 +36,7 @@ export const SEARCH_TABLE_COLUMNS: IColumnObject[] = [
   { name: 'Project', value: 'project.name', width: 'col-2' },
   { name: 'Date', value: 'datePosted', width: 'col-2' },
   { name: 'Type', value: 'type', width: 'col-2' },
-  { name: 'Milestone', value: 'milestone', width: 'col-2' }
+  { name: 'Milestone', value: 'milestone', width: 'col-2' },
 ];
 
 export const SEARCH_FILTER_LIST = ['milestone', 'documentAuthorType', 'type', 'projectPhase'];
@@ -46,7 +48,7 @@ const MULTI_SELECT_FILTERS = [
   { id: 'milestone', label: 'Milestone', listType: 'label' },
   { id: 'documentAuthorType', label: 'Document Author', listType: 'author' },
   { id: 'type', label: 'Document Type', listType: 'doctype' },
-  { id: 'projectPhase', label: 'Project Phase', listType: 'projectPhase' }
+  { id: 'projectPhase', label: 'Project Phase', listType: 'projectPhase' },
 ];
 
 /** Builds filters for document search from the `List` collection, grouped by legislation year. */
@@ -56,27 +58,27 @@ export function buildSearchFilters(lists: any[]): FilterObject[] {
     FilterType.DateRange,
     '',
     new DateFilterDefinition('datePostedStart', 'Start Date', 'datePostedEnd', 'End Date'),
-    8
+    8,
   );
 
   return [
     docDateFilter,
     ...MULTI_SELECT_FILTERS.map(
-      filter =>
+      (filter) =>
         new FilterObject(
           filter.id,
           FilterType.MultiSelect,
           filter.label,
           new MultiSelectDefinition(
-            lists.filter(item => item.type === filter.listType),
+            lists.filter((item) => item.type === filter.listType),
             [],
             LEGISLATION_FILTER_GROUP,
             null,
-            true
+            true,
           ),
-          4
-        )
-    )
+          4,
+        ),
+    ),
   ];
 }
 
@@ -95,9 +97,9 @@ export function createSearchConfig(filters: FilterObject[], lists: any[]): Table
           label: 'List of Projects',
           icon: 'list',
           routerLink: '/projects-list',
-          title: 'List of Projects'
-        }
-      ]
+          title: 'List of Projects',
+        },
+      ],
     },
     tableColumns: SEARCH_TABLE_COLUMNS,
     tableRowComponent: DocSearchTableRow,
@@ -106,6 +108,6 @@ export function createSearchConfig(filters: FilterObject[], lists: any[]): Table
     filterList: SEARCH_FILTER_LIST,
     dateFilterList: SEARCH_DATE_FILTER_LIST,
     filters,
-    rowData: { lists }
+    rowData: { lists },
   };
 }

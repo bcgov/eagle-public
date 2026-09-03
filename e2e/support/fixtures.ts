@@ -9,7 +9,7 @@ export const GATE_KEY = 'eagle-gate';
 
 export const test = base.extend({
   page: async ({ page }, use) => {
-    await page.addInitScript(key => {
+    await page.addInitScript((key) => {
       try {
         localStorage.setItem(key, '1');
       } catch {

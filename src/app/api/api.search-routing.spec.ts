@@ -15,7 +15,9 @@ describe('search routing', () => {
   let fetchMock: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    fetchMock = vi.fn(async () => new Response('[{"searchResults":[],"meta":[]}]', { status: 200 }));
+    fetchMock = vi.fn(
+      async () => new Response('[{"searchResults":[],"meta":[]}]', { status: 200 }),
+    );
     vi.stubGlobal('fetch', fetchMock);
   });
 

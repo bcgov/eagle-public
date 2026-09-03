@@ -4,7 +4,11 @@ import { track } from 'app/analytics/analytics';
 import { SearchFilterTemplate } from 'app/components/filters/search-filter-template';
 import type { SearchPackage } from 'app/components/filters/filter-object';
 import { TableTemplate } from 'app/components/table/table-template';
-import { tableObject, type IColumnObject, type ITableMessage } from 'app/components/table/table-object';
+import {
+  tableObject,
+  type IColumnObject,
+  type ITableMessage,
+} from 'app/components/table/table-object';
 import {
   getFiltersFromParams,
   getFiltersFromSearchPackage,
@@ -12,7 +16,7 @@ import {
   toggleSortDirection,
   toSearchParams,
   updateTableObjectWithUrlParams,
-  type Params
+  type Params,
 } from 'app/components/table/table-params';
 import { tableSearchParams, useTable, type TableQueryConfig } from 'app/components/table/use-table';
 import { bulkDownloadEnabled } from 'app/config/config';
@@ -28,7 +32,7 @@ const DOCUMENT_COLUMNS: IColumnObject[] = [
   { name: 'Date', value: 'datePosted', width: 'col-2' },
   { name: 'Type', value: 'type', width: 'col-2' },
   { name: 'Milestone', value: 'milestone', width: 'col-2' },
-  { name: 'Phase', value: 'projectPhase', width: 'col-2' }
+  { name: 'Phase', value: 'projectPhase', width: 'col-2' },
 ];
 
 interface ProjectDocumentTabProps {
@@ -57,12 +61,16 @@ function countFilters(queryFilters: Params): Record<string, number | boolean> {
     type: count(queryFilters['type']),
     documentAuthorType: count(queryFilters['documentAuthorType']),
     projectPhase: count(queryFilters['projectPhase']),
-    hasDateRange: !!(queryFilters['datePostedStart'] || queryFilters['datePostedEnd'])
+    hasDateRange: !!(queryFilters['datePostedStart'] || queryFilters['datePostedEnd']),
   };
   return {
     ...counts,
     total:
-      counts.milestone + counts.type + counts.documentAuthorType + counts.projectPhase + (counts.hasDateRange ? 1 : 0)
+      counts.milestone +
+      counts.type +
+      counts.documentAuthorType +
+      counts.projectPhase +
+      (counts.hasDateRange ? 1 : 0),
   };
 }
 
@@ -77,7 +85,7 @@ export function ProjectDocumentTab({
   tabKey,
   panelSizes,
   groupedFilters = false,
-  trackFilters = false
+  trackFilters = false,
 }: ProjectDocumentTabProps) {
   const { projId, lists } = useProjectContext();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -86,22 +94,23 @@ export function ProjectDocumentTab({
   const filterList = useMemo(() => (panelSizes ? filterListFrom(panelSizes) : []), [panelSizes]);
   const filters = useMemo(
     () => (panelSizes ? buildDocumentFilters(lists, panelSizes, groupedFilters) : []),
-    [lists, panelSizes, groupedFilters]
+    [lists, panelSizes, groupedFilters],
   );
 
   const base = useMemo(
-    () => updateTableObjectWithUrlParams(params, tableObject({ tableId, component: DocumentTableRow })),
-    [params, tableId]
+    () =>
+      updateTableObjectWithUrlParams(params, tableObject({ tableId, component: DocumentTableRow })),
+    [params, tableId],
   );
 
   const activeFilters = useMemo(
     () => (panelSizes ? getFiltersFromParams(params, [...filterList, ...DATE_FILTER_LIST]) : {}),
-    [params, panelSizes, filterList]
+    [params, panelSizes, filterList],
   );
 
   const queryModifiers = useMemo(
     () => (tabKey ? createProjectTabModifiers(tabKey, lists) : { project: projId }),
-    [tabKey, lists, projId]
+    [tabKey, lists, projId],
   );
 
   const query: TableQueryConfig = {
@@ -117,7 +126,7 @@ export function ProjectDocumentTab({
     queryModifiers,
     populate: !tabKey,
     secondarySort: base.sortBy.includes('displayName') ? '' : '+displayName',
-    filters: activeFilters
+    filters: activeFilters,
   };
 
   const result = useTable(tableId, query);
@@ -125,12 +134,16 @@ export function ProjectDocumentTab({
   const data = {
     ...base,
     columns: showFeatured
-      ? [FEATURED_COLUMN, { name: 'Name', value: 'displayName', width: 'col-3' }, ...DOCUMENT_COLUMNS]
+      ? [
+          FEATURED_COLUMN,
+          { name: 'Name', value: 'displayName', width: 'col-3' },
+          ...DOCUMENT_COLUMNS,
+        ]
       : [{ name: 'Name', value: 'displayName', width: 'col-4' }, ...DOCUMENT_COLUMNS],
-    items: result.data.map(record => ({ rowData: record })),
+    items: result.data.map((record) => ({ rowData: record })),
     totalListItems: result.totalListItems,
     options: { ...base.options, showAllPicker: true, selectable: bulkDownloadEnabled() },
-    data: { lists, showFeatured }
+    data: { lists, showFeatured },
   };
 
   function submit(next: Params): void {
@@ -144,7 +157,7 @@ export function ProjectDocumentTab({
         project_id: projId,
         ...countFilters(queryFilters),
         has_keyword: !!searchPackage.keywords,
-        keyword_length: searchPackage.keywords?.length || 0
+        keyword_length: searchPackage.keywords?.length || 0,
       });
     }
     const hasKeywords = searchPackage.keywords?.trim();
@@ -158,7 +171,7 @@ export function ProjectDocumentTab({
           ? '-score'
           : params['sortBy'] || '-datePosted'
         : '-datePosted',
-      ...queryFilters
+      ...queryFilters,
     });
   }
 
@@ -186,7 +199,7 @@ export function ProjectDocumentTab({
           <SearchFilterTemplate
             onSearch={executeSearch}
             advancedFilters
-            showAdvancedFilters={[...filterList, ...DATE_FILTER_LIST].some(key => params[key])}
+            showAdvancedFilters={[...filterList, ...DATE_FILTER_LIST].some((key) => params[key])}
             searchOnFilterChange
             filters={filters}
             searchHelpLink="/search-help"
@@ -194,7 +207,10 @@ export function ProjectDocumentTab({
             onToggleFiltersPanel={
               trackFilters
                 ? ({ showPanel }) =>
-                    track('Document Filters Panel Toggled', { project_id: projId, is_open: showPanel })
+                    track('Document Filters Panel Toggled', {
+                      project_id: projId,
+                      is_open: showPanel,
+                    })
                 : undefined
             }
           />

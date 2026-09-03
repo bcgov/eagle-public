@@ -4,7 +4,13 @@ import { HeroBanner, type HeroBannerAction } from 'app/components/hero-banner';
 import { SearchFilterTemplate } from 'app/components/filters/search-filter-template';
 import type { FilterObject, SearchPackage } from 'app/components/filters/filter-object';
 import { TableTemplate } from './table-template';
-import { tableObject, type IColumnObject, type ITableMessage, type ITableOptions, type TableRowComponent } from './table-object';
+import {
+  tableObject,
+  type IColumnObject,
+  type ITableMessage,
+  type ITableOptions,
+  type TableRowComponent,
+} from './table-object';
 import {
   getFiltersFromParams,
   getFiltersFromSearchPackage,
@@ -13,7 +19,7 @@ import {
   toggleSortDirection,
   toSearchParams,
   updateTableObjectWithUrlParams,
-  type Params
+  type Params,
 } from './table-params';
 import { tableSearchParams, useTable, type TableQueryConfig } from './use-table';
 import { selectAllMatching } from 'app/state/bulk-download';
@@ -54,9 +60,12 @@ export function TableList({ config }: { config: TableListConfig }) {
 
   const allFilterKeys = useMemo(
     () => [...config.filterList, ...config.dateFilterList],
-    [config.filterList, config.dateFilterList]
+    [config.filterList, config.dateFilterList],
   );
-  const filters = useMemo(() => getFiltersFromParams(params, allFilterKeys), [params, allFilterKeys]);
+  const filters = useMemo(
+    () => getFiltersFromParams(params, allFilterKeys),
+    [params, allFilterKeys],
+  );
   const sortBy = params['sortBy'] ? normalizeSortBy(params['sortBy']) : config.defaultSort;
 
   const query: TableQueryConfig = {
@@ -66,7 +75,7 @@ export function TableList({ config }: { config: TableListConfig }) {
     pageSize: +(params['pageSize'] || 10),
     sortBy,
     populate: true,
-    filters
+    filters,
   };
 
   const table = useTable(config.tableId, query);
@@ -74,15 +83,19 @@ export function TableList({ config }: { config: TableListConfig }) {
   const data = useMemo(() => {
     const base = updateTableObjectWithUrlParams(
       params,
-      tableObject({ component: config.tableRowComponent, sortBy: config.defaultSort, tableId: config.tableId })
+      tableObject({
+        component: config.tableRowComponent,
+        sortBy: config.defaultSort,
+        tableId: config.tableId,
+      }),
     );
     return {
       ...base,
       columns: config.tableColumns,
-      items: table.data.map(record => ({ rowData: record })),
+      items: table.data.map((record) => ({ rowData: record })),
       totalListItems: table.totalListItems,
       options: { ...base.options, showAllPicker: true, ...config.tableOptions },
-      data: config.rowData ?? null
+      data: config.rowData ?? null,
     };
   }, [config, params, table.data, table.totalListItems]);
 
@@ -102,7 +115,7 @@ export function TableList({ config }: { config: TableListConfig }) {
           ? '-score'
           : params['sortBy'] || config.defaultSort
         : config.defaultSort,
-      ...getFiltersFromSearchPackage(searchPackage, config.filterList, config.dateFilterList)
+      ...getFiltersFromSearchPackage(searchPackage, config.filterList, config.dateFilterList),
     });
   }
 
@@ -135,9 +148,14 @@ export function TableList({ config }: { config: TableListConfig }) {
       {config.tabs && config.tabs.length > 0 && (
         <div className="container">
           <ul className="nav nav-tabs search-tabs" role="tablist">
-            {config.tabs.map(tab => (
+            {config.tabs.map((tab) => (
               <li className="nav-item" role="presentation" key={tab.link}>
-                <NavLink className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`} role="tab" to={tab.link} end>
+                <NavLink
+                  className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
+                  role="tab"
+                  to={tab.link}
+                  end
+                >
                   {tab.label}
                 </NavLink>
               </li>
@@ -152,7 +170,7 @@ export function TableList({ config }: { config: TableListConfig }) {
             <SearchFilterTemplate
               onSearch={executeSearch}
               advancedFilters
-              showAdvancedFilters={config.filterList.some(filter => params[filter])}
+              showAdvancedFilters={config.filterList.some((filter) => params[filter])}
               searchOnFilterChange
               filters={config.filters}
               searchHelpLink="/search-help"

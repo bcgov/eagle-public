@@ -5,7 +5,7 @@ import {
   pageCountMessage,
   pageNumbers,
   tableObject,
-  withAllPicker
+  withAllPicker,
 } from './table-object';
 
 describe('pageCountMessage', () => {
@@ -69,11 +69,14 @@ describe('pageNumbers', () => {
 describe('withAllPicker', () => {
   const options = [
     { displayText: '10', value: 10 },
-    { displayText: '25', value: 25 }
+    { displayText: '25', value: 25 },
   ];
 
   it('offers Show All while the result set is small enough', () => {
-    expect(withAllPicker(options, 300)).toEqual([...options, { displayText: 'Show All', value: 300 }]);
+    expect(withAllPicker(options, 300)).toEqual([
+      ...options,
+      { displayText: 'Show All', value: 300 },
+    ]);
   });
 
   it('withholds Show All past the cap, and with no results', () => {

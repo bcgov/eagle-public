@@ -64,9 +64,10 @@ test('@data the map region filter narrows the result count and syncs the URL', a
   await option.click();
   await page.waitForTimeout(2500);
 
-  expect(new URL(page.url()).searchParams.get('regions'), 'regions param after picking one').toMatch(
-    /^[0-9a-f]{24}$/i,
-  );
+  expect(
+    new URL(page.url()).searchParams.get('regions'),
+    'regions param after picking one',
+  ).toMatch(/^[0-9a-f]{24}$/i);
   const filtered = (await options.innerText()).trim();
   expect(filtered).not.toBe(unfiltered);
 });
@@ -79,21 +80,30 @@ test('the header tabs through its links in visual order', async ({ page }) => {
   const seen: string[] = [];
   for (let i = 0; i < 5; i++) {
     await page.keyboard.press('Tab');
-    seen.push((await page.evaluate(() => document.activeElement?.textContent?.trim() ?? '')).replace(/\s+/g, ' '));
+    seen.push(
+      (await page.evaluate(() => document.activeElement?.textContent?.trim() ?? '')).replace(
+        /\s+/g,
+        ' ',
+      ),
+    );
   }
 
   // Angular renders the two dropdown toggles as `<a>` with no href, so a keyboard user cannot
   // reach them at all; the port makes them `<button>` (see `docs/deviations-from-angular.md`). What has to hold on
   // both is that whatever is reachable comes in the order the links are drawn in.
   const order = ['Map View', 'Project Information', 'The EA Process', 'Contact Us'];
-  const reached = seen.filter(name => order.includes(name));
-  expect(reached).toEqual(order.filter(name => reached.includes(name)));
+  const reached = seen.filter((name) => order.includes(name));
+  expect(reached).toEqual(order.filter((name) => reached.includes(name)));
   expect(reached).toContain('Map View');
   expect(reached).toContain('Contact Us');
 });
 
 test('Escape closes the comment modal without submitting', async ({ page, request }) => {
-  const list = await (await request.get('/api/commentperiod?sortBy=-dateStarted&fields=project|dateStarted|dateCompleted')).json();
+  const list = await (
+    await request.get(
+      '/api/commentperiod?sortBy=-dateStarted&fields=project|dateStarted|dateCompleted',
+    )
+  ).json();
   const cp = list.find((c: any) => c.project && c.dateStarted && c.dateCompleted);
   expect(cp, 'no comment period on this environment').toBeTruthy();
 

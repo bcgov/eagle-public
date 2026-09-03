@@ -9,9 +9,35 @@ export async function getFullList(schema: string): Promise<any> {
   return api.getFullDataSet(schema);
 }
 
-export async function getSearchResults(keys: string, dataset: string, fields: any[], pageNum = 1, pageSize = 10, sortBy: string | null = null, queryModifier: Record<string, string> = {}, populate = false, secondarySort: string | null = null, filter: Record<string, string> = {}, projectLegislation = '', fuzzy = false): Promise<any[] | null> {
+export async function getSearchResults(
+  keys: string,
+  dataset: string,
+  fields: any[],
+  pageNum = 1,
+  pageSize = 10,
+  sortBy: string | null = null,
+  queryModifier: Record<string, string> = {},
+  populate = false,
+  secondarySort: string | null = null,
+  filter: Record<string, string> = {},
+  projectLegislation = '',
+  fuzzy = false,
+): Promise<any[] | null> {
   try {
-    const res = await api.searchKeywords(keys, dataset, fields, pageNum, pageSize, projectLegislation, sortBy, queryModifier, populate, secondarySort, filter, fuzzy);
+    const res = await api.searchKeywords(
+      keys,
+      dataset,
+      fields,
+      pageNum,
+      pageSize,
+      projectLegislation,
+      sortBy,
+      queryModifier,
+      populate,
+      secondarySort,
+      filter,
+      fuzzy,
+    );
     return res.map((item: any) => new SearchResults({ type: item._schemaName, data: item }));
   } catch {
     // if call fails, return null results
@@ -23,7 +49,7 @@ export async function getTopNewsItems(): Promise<News[]> {
   startLoading('home', 'Loading recent activities');
   try {
     const res = await api.getTopNewsItems();
-    return Array.isArray(res) ? res.map(item => new News(item)) : [];
+    return Array.isArray(res) ? res.map((item) => new News(item)) : [];
   } catch (error) {
     logger.error('Error fetching top news items', 'search', error);
     return [];
@@ -42,7 +68,10 @@ export async function fetchData(searchParamObject: SearchParamObject): Promise<S
 
   // Remove null/undefined filters
   for (const filter in searchParamObject.filters) {
-    if (searchParamObject.filters[filter] === null || searchParamObject.filters[filter] === undefined) {
+    if (
+      searchParamObject.filters[filter] === null ||
+      searchParamObject.filters[filter] === undefined
+    ) {
       delete searchParamObject.filters[filter];
     }
   }
@@ -60,7 +89,7 @@ export async function fetchData(searchParamObject: SearchParamObject): Promise<S
       searchParamObject.secondarySort,
       searchParamObject.filters,
       searchParamObject.projectLegislation,
-      searchParamObject.fuzzy
+      searchParamObject.fuzzy,
     );
   } catch (error) {
     logger.error(`Error in fetchData for ${loadingId}`, 'search', error);
@@ -77,12 +106,20 @@ export async function fetchData(searchParamObject: SearchParamObject): Promise<S
     } else {
       logger.error('Search results were empty.', searchParamObject.dataset + ' Service');
     }
-    if (res[0].data.meta && res[0].data.meta[0] && res[0].data.meta[0].searchResultsTotal !== undefined && res[0].data.meta[0].searchResultsTotal !== null) {
+    if (
+      res[0].data.meta &&
+      res[0].data.meta[0] &&
+      res[0].data.meta[0].searchResultsTotal !== undefined &&
+      res[0].data.meta[0].searchResultsTotal !== null
+    ) {
       searchResults.totalSearchCount = res[0].data.meta[0].searchResultsTotal;
     } else if (res[0].data.meta && res[0].data.meta.length === 0) {
       searchResults.totalSearchCount = 0;
     } else {
-      logger.error('Total search results count was not returned.', searchParamObject.dataset + ' Service');
+      logger.error(
+        'Total search results count was not returned.',
+        searchParamObject.dataset + ' Service',
+      );
     }
   } else {
     logger.error('No data was returned from the server.', searchParamObject.dataset + ' Service');
@@ -105,6 +142,6 @@ export class SearchParamObject {
     public secondarySort = '',
     public filters: Record<string, string> = {},
     public projectLegislation = '',
-    public fuzzy = false
-  ) { }
+    public fuzzy = false,
+  ) {}
 }

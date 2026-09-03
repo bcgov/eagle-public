@@ -14,7 +14,7 @@ import './project.css';
 const TABS = [
   { label: 'Project Details', link: 'project-details' },
   { label: 'Commenting', link: 'commenting' },
-  { label: 'Documents', link: 'documents' }
+  { label: 'Documents', link: 'documents' },
 ];
 
 /** Comment periods near today, the window the banner draws from. */
@@ -42,14 +42,14 @@ export function ProjectPage() {
     data: project,
     isError,
     isPending: projectLoading,
-    isSuccess
+    isSuccess,
   } = useQuery({
     queryKey: ['project', projId],
     enabled: !!projId,
     queryFn: () => {
       const { start, end } = bannerWindow();
       return getById(projId, false, start, end);
-    }
+    },
   });
 
   const notFound = isError || (isSuccess && !project);
@@ -65,7 +65,7 @@ export function ProjectPage() {
       project_name: project.name,
       status: banner.commentPeriodStatus,
       is_met: external,
-      destination: external ? 'external_met' : 'comment_period_details'
+      destination: external ? 'external_met' : 'comment_period_details',
     });
     if (external) {
       window.open(banner.metURL, '_blank');
@@ -92,7 +92,7 @@ export function ProjectPage() {
             project={project ?? null}
             loading={projectLoading}
             open={sidebarOpen}
-            onToggle={() => setSidebarOpen(open => !open)}
+            onToggle={() => setSidebarOpen((open) => !open)}
           />
           <div className="content">
             {showBanner &&
@@ -110,7 +110,11 @@ export function ProjectPage() {
                       </div>
                       {banner.commentPeriodStatus === 'Open' && (
                         <div className="pcp-banner-actions">
-                          <button type="button" className="btn btn-outline-warning" onClick={goToViewComments}>
+                          <button
+                            type="button"
+                            className="btn btn-outline-warning"
+                            onClick={goToViewComments}
+                          >
                             <span>View Comment Period</span>
                           </button>
                         </div>
@@ -120,11 +124,15 @@ export function ProjectPage() {
                       <div className="pcp-banner-description">
                         {banner.informationLabel && (
                           <p>
-                            This Public Comment Period is regarding the <b>{banner.informationLabel}</b>
+                            This Public Comment Period is regarding the{' '}
+                            <b>{banner.informationLabel}</b>
                           </p>
                         )}
                         {!banner.informationLabel && banner.instructions && (
-                          <div id="instructions" dangerouslySetInnerHTML={safeHtml(banner.instructions)}></div>
+                          <div
+                            id="instructions"
+                            dangerouslySetInnerHTML={safeHtml(banner.instructions)}
+                          ></div>
                         )}
                       </div>
                     )}
@@ -134,7 +142,12 @@ export function ProjectPage() {
 
             <div className="main-content">
               <section className="project-tabs">
-                <TabBar projId={projId} tabs={TABS} projectName={project?.name} ariaLabel="Project sections" />
+                <TabBar
+                  projId={projId}
+                  tabs={TABS}
+                  projectName={project?.name}
+                  ariaLabel="Project sections"
+                />
                 <div className="tab-content">
                   <Outlet context={{ project: project ?? null, projId, lists, projectLoading }} />
                 </div>
@@ -207,7 +220,7 @@ export function TabBar({ projId, tabs, projectName, ariaLabel }: TabBarProps) {
       const overflows = element.scrollWidth > element.clientWidth;
       setArrows({
         left: overflows && element.scrollLeft > 1,
-        right: overflows && element.scrollLeft < element.scrollWidth - element.clientWidth - 1
+        right: overflows && element.scrollLeft < element.scrollWidth - element.clientWidth - 1,
       });
     };
 
@@ -228,7 +241,7 @@ export function TabBar({ projId, tabs, projectName, ariaLabel }: TabBarProps) {
   return (
     <div className="tabs-container">
       <ul className="nav-tabs" role="tablist" aria-label={ariaLabel} ref={navTabs}>
-        {tabs.map(tab => (
+        {tabs.map((tab) => (
           <li className="nav-item" role="presentation" key={tab.link}>
             <NavLink
               className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
@@ -242,7 +255,7 @@ export function TabBar({ projId, tabs, projectName, ariaLabel }: TabBarProps) {
                   project_id: projId,
                   project_name: projectName ?? null,
                   tab_name: tab.label,
-                  tab_path: tab.link
+                  tab_path: tab.link,
                 })
               }
             >

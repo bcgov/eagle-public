@@ -9,7 +9,7 @@ export function ProjectListTableRow({ rowData }: TableRowProps) {
     track('Project Viewed', {
       project_id: project._id,
       project_name: project.name,
-      source: 'list_view'
+      source: 'list_view',
     });
     navigate(`/p/${project._id}/project-details`);
   }
@@ -19,16 +19,28 @@ export function ProjectListTableRow({ rowData }: TableRowProps) {
       tabIndex={0}
       className="clickable-row"
       onClick={() => goToProject(rowData)}
-      onKeyUp={event => {
+      onKeyUp={(event) => {
         if (event.key === 'Enter') goToProject(rowData);
       }}
     >
-      <td data-label="Name" className="col-2">{rowData.name || '-'}</td>
-      <td data-label="Proponent" className="col-2">{rowData.proponent?.name || '-'}</td>
-      <td data-label="Type" className="col-2">{rowData.type || '-'}</td>
-      <td data-label="Region" className="col-2">{rowData.region || '-'}</td>
-      <td data-label="Phase" className="col-2">{rowData.currentPhaseName?.name || '-'}</td>
-      <td data-label="Decision" className="col-2">{rowData.eacDecision?.name || '-'}</td>
+      <td data-label="Name" className="col-2">
+        {rowData.name || '-'}
+      </td>
+      <td data-label="Proponent" className="col-2">
+        {rowData.proponent?.name || '-'}
+      </td>
+      <td data-label="Type" className="col-2">
+        {rowData.type || '-'}
+      </td>
+      <td data-label="Region" className="col-2">
+        {rowData.region || '-'}
+      </td>
+      <td data-label="Phase" className="col-2">
+        {rowData.currentPhaseName?.name || '-'}
+      </td>
+      <td data-label="Decision" className="col-2">
+        {rowData.eacDecision?.name || '-'}
+      </td>
     </tr>
   );
 }

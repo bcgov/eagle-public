@@ -26,7 +26,7 @@ describe('logger.error', () => {
   it('reports the message', () => {
     logger.error('search failed', 'SearchPage');
     expect(reported).toHaveBeenCalledWith(expect.stringContaining('search failed'), {
-      source: 'SearchPage'
+      source: 'SearchPage',
     });
   });
 

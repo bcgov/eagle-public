@@ -3,7 +3,9 @@ import { safeHtml } from './safe-html';
 
 describe('safeHtml', () => {
   it('drops event handlers and scripts', () => {
-    const { __html } = safeHtml('<p>x</p><img src=x onerror="window.__pwned = true"><script>1</script>');
+    const { __html } = safeHtml(
+      '<p>x</p><img src=x onerror="window.__pwned = true"><script>1</script>',
+    );
     expect(__html).toBe('<p>x</p><img src="x">');
   });
 

@@ -28,7 +28,7 @@ export function CustomMultiSelect({
   groupBy = null,
   placeholder = 'Select items',
   disabled = false,
-  onChange
+  onChange,
 }: CustomMultiSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -52,7 +52,7 @@ export function CustomMultiSelect({
   const filteredItems = useMemo(() => {
     const term = searchTerm.toLowerCase();
     if (!term) return items;
-    return items.filter(item => (item[bindLabel] || '').toLowerCase().includes(term));
+    return items.filter((item) => (item[bindLabel] || '').toLowerCase().includes(term));
   }, [items, searchTerm, bindLabel]);
 
   const groupedItems = useMemo(() => {
@@ -68,21 +68,21 @@ export function CustomMultiSelect({
     return Array.from(groups.entries()).map(([name, groupItems]) => ({ name, items: groupItems }));
   }, [filteredItems, groupBy]);
 
-  const flatItems = useMemo(() => groupedItems.flatMap(group => group.items), [groupedItems]);
+  const flatItems = useMemo(() => groupedItems.flatMap((group) => group.items), [groupedItems]);
 
   const isSelected = (item: CustomMultiSelectOption): boolean =>
-    selected.some(entry => sameOption(item, entry));
+    selected.some((entry) => sameOption(item, entry));
 
   function toggleDropdown(): void {
     if (disabled) return;
-    setIsOpen(open => !open);
+    setIsOpen((open) => !open);
     setFocusedIndex(-1);
     setSearchTerm('');
   }
 
   function selectItem(item: CustomMultiSelectOption): void {
     if (isSelected(item)) {
-      onChange(selected.filter(entry => !sameOption(item, entry)));
+      onChange(selected.filter((entry) => !sameOption(item, entry)));
     } else {
       onChange([...selected, item]);
     }
@@ -94,11 +94,11 @@ export function CustomMultiSelect({
     switch (event.key) {
       case 'ArrowDown':
         event.preventDefault();
-        setFocusedIndex(index => Math.min(flatItems.length - 1, index + 1));
+        setFocusedIndex((index) => Math.min(flatItems.length - 1, index + 1));
         break;
       case 'ArrowUp':
         event.preventDefault();
-        setFocusedIndex(index => Math.max(0, index - 1));
+        setFocusedIndex((index) => Math.max(0, index - 1));
         break;
       case 'Enter': {
         event.preventDefault();
@@ -125,7 +125,7 @@ export function CustomMultiSelect({
       <div
         className="custom-multi-select__control"
         onClick={toggleDropdown}
-        onKeyDown={event => {
+        onKeyDown={(event) => {
           if (event.key === 'Enter' || event.key === ' ') {
             event.preventDefault();
             toggleDropdown();
@@ -140,7 +140,10 @@ export function CustomMultiSelect({
         {selected.length > 0 ? (
           <div className="custom-multi-select__values">
             {selected.map((item, index) => (
-              <div className="custom-multi-select__value" key={item['_id'] ?? item['code'] ?? index}>
+              <div
+                className="custom-multi-select__value"
+                key={item['_id'] ?? item['code'] ?? index}
+              >
                 <span className="custom-multi-select__value-label">{getLabel(item)}</span>
                 {groupBy && item[groupBy] && (
                   <span className="custom-multi-select__value-group">({item[groupBy]})</span>
@@ -148,9 +151,9 @@ export function CustomMultiSelect({
                 <button
                   type="button"
                   className="custom-multi-select__value-remove"
-                  onClick={event => {
+                  onClick={(event) => {
                     event.stopPropagation();
-                    onChange(selected.filter(entry => !sameOption(item, entry)));
+                    onChange(selected.filter((entry) => !sameOption(item, entry)));
                   }}
                   aria-label={`Remove ${getLabel(item)}`}
                 >
@@ -167,7 +170,7 @@ export function CustomMultiSelect({
           <button
             type="button"
             className="custom-multi-select__clear"
-            onClick={event => {
+            onClick={(event) => {
               event.stopPropagation();
               onChange([]);
             }}
@@ -177,9 +180,23 @@ export function CustomMultiSelect({
           </button>
         )}
 
-        <span className={`custom-multi-select__arrow${isOpen ? ' custom-multi-select__arrow--up' : ''}`}>
-          <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <span
+          className={`custom-multi-select__arrow${isOpen ? ' custom-multi-select__arrow--up' : ''}`}
+        >
+          <svg
+            width="10"
+            height="6"
+            viewBox="0 0 10 6"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M1 1L5 5L9 1"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           </svg>
         </span>
       </div>
@@ -196,7 +213,7 @@ export function CustomMultiSelect({
               type="text"
               className="custom-multi-select__search"
               value={searchTerm}
-              onChange={event => {
+              onChange={(event) => {
                 setSearchTerm(event.target.value);
                 setFocusedIndex(-1);
               }}
@@ -208,23 +225,27 @@ export function CustomMultiSelect({
           </div>
 
           <div className="custom-multi-select__options">
-            {filteredItems.length === 0 && <div className="custom-multi-select__no-results">No items found</div>}
+            {filteredItems.length === 0 && (
+              <div className="custom-multi-select__no-results">No items found</div>
+            )}
 
-            {groupedItems.map(group =>
+            {groupedItems.map((group) =>
               group.items.length === 0 ? null : (
                 <div key={group.name}>
-                  {groupBy && group.name && <div className="custom-multi-select__group-header">{group.name}</div>}
-                  {group.items.map(item => (
+                  {groupBy && group.name && (
+                    <div className="custom-multi-select__group-header">{group.name}</div>
+                  )}
+                  {group.items.map((item) => (
                     <div
                       key={item['_id'] ?? item['code'] ?? getLabel(item)}
                       className={`custom-multi-select__option${
                         isSelected(item) ? ' custom-multi-select__option--selected' : ''
                       }${flatItems[focusedIndex] === item ? ' custom-multi-select__option--focused' : ''}`}
-                      onClick={event => {
+                      onClick={(event) => {
                         event.stopPropagation();
                         selectItem(item);
                       }}
-                      onKeyDown={event => {
+                      onKeyDown={(event) => {
                         if (event.key === 'Enter' || event.key === ' ') {
                           event.preventDefault();
                           selectItem(item);
@@ -236,7 +257,13 @@ export function CustomMultiSelect({
                     >
                       <span className="custom-multi-select__checkbox">
                         {isSelected(item) && (
-                          <svg width="12" height="10" viewBox="0 0 12 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <svg
+                            width="12"
+                            height="10"
+                            viewBox="0 0 12 10"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
                             <path
                               d="M1 5L4.5 8.5L11 1.5"
                               stroke="currentColor"
@@ -251,7 +278,7 @@ export function CustomMultiSelect({
                     </div>
                   ))}
                 </div>
-              )
+              ),
             )}
           </div>
         </div>

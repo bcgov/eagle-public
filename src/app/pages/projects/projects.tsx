@@ -13,7 +13,7 @@ import { ProjlistList } from './projlist-list';
 import './projects.css';
 
 // maplibre-gl is ~1 MB; keep it and its wrapper out of the main bundle until this page renders.
-const ProjlistMap = lazy(() => import('./projlist-map').then(m => ({ default: m.ProjlistMap })));
+const ProjlistMap = lazy(() => import('./projlist-map').then((m) => ({ default: m.ProjlistMap })));
 
 /** eagle-api's region list names the Thompson polygon "Thompson-Nicola"; the shapefile does not. */
 const POLYGON_NAME: Record<string, string> = { 'Thompson-Nicola': 'Thompson' };
@@ -30,7 +30,7 @@ export function Projects() {
   // Fetched once and served from the query cache on later visits.
   const { data, isPending, isError } = useQuery({
     queryKey: ['projects', 'all'],
-    queryFn: () => getAllFull(1, 1000000)
+    queryFn: () => getAllFull(1, 1000000),
   });
   // null until the projects are known, so the list can tell "loading" from "none found".
   const allApps = useMemo<Project[] | null>(() => data ?? (isError ? [] : null), [data, isError]);
@@ -42,49 +42,64 @@ export function Projects() {
   const regionNames = useMemo(
     () =>
       filters.regions
-        .map(id => regions.find((item: any) => item._id === id)?.name)
+        .map((id) => regions.find((item: any) => item._id === id)?.name)
         .filter((name: string | undefined): name is string => !!name)
         .map((name: string) => POLYGON_NAME[name] ?? name),
-    [filters.regions, regions]
+    [filters.regions, regions],
   );
 
   const filterApps = useMemo(
     () => (allApps === null ? null : filterProjects(allApps, filters, regions)),
-    [allApps, filters, regions]
+    [allApps, filters, regions],
   );
   const mapApps = useMemo(() => filterApps ?? [], [filterApps]);
   const listApps = useMemo(() => {
     if (filterApps === null) return null;
     if (!bounds) return filterApps;
-    return filterApps.filter(project => isProjectInBounds(project, bounds));
+    return filterApps.filter((project) => isProjectInBounds(project, bounds));
   }, [filterApps, bounds]);
 
   return (
     <div className="projects-view" data-mobile={mobile || undefined}>
-      <h1 className="visually-hidden">Find Environmental Assessment Projects in British Columbia</h1>
+      <h1 className="visually-hidden">
+        Find Environmental Assessment Projects in British Columbia
+      </h1>
 
       <aside className="projects-panel" id="applist-panel">
-        <ProjlistFilters filters={filters} updateFilters={updateFilters} regions={regions} phases={phases} />
+        <ProjlistFilters
+          filters={filters}
+          updateFilters={updateFilters}
+          regions={regions}
+          phases={phases}
+        />
 
         <ProjlistList
           projects={listApps}
           loading={isPending}
           selectedId={selectedId}
           hoveredId={hoveredId}
-          onSelect={project => setSelectedId(current => (current === project._id ? null : project._id))}
+          onSelect={(project) =>
+            setSelectedId((current) => (current === project._id ? null : project._id))
+          }
           onHover={setHoveredId}
           mobile={mobile}
         />
       </aside>
 
       <div className="projects-map">
-        <Suspense fallback={<div className="app-map is-loading"><div className="app-map__shimmer placeholder-wave" aria-hidden="true" /></div>}>
+        <Suspense
+          fallback={
+            <div className="app-map is-loading">
+              <div className="app-map__shimmer placeholder-wave" aria-hidden="true" />
+            </div>
+          }
+        >
           <ProjlistMap
             projects={mapApps}
             loading={isPending}
             selectedId={selectedId}
             hoveredId={hoveredId}
-            onSelect={project => {
+            onSelect={(project) => {
               setSelectedId(project?._id ?? null);
               // The card expands inside the list, so the sheet opens fully to show it.
               if (mobile && project) sheetState.set('full');

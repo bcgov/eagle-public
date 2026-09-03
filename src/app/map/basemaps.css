@@ -35,7 +35,9 @@
   border-radius: 8px;
   background: var(--bs-white, #fff);
   color: var(--bc-blue, #003366);
-  box-shadow: 0 1px 4px var(--shadow-subtle, rgba(0, 0, 0, 0.1)), 0 0 0 1px rgba(0, 0, 0, 0.08);
+  box-shadow:
+    0 1px 4px var(--shadow-subtle, rgba(0, 0, 0, 0.1)),
+    0 0 0 1px rgba(0, 0, 0, 0.08);
   cursor: pointer;
 }
 
@@ -54,7 +56,9 @@
 
 .maplibregl-ctrl-group {
   border-radius: 8px;
-  box-shadow: 0 1px 4px var(--shadow-subtle, rgba(0, 0, 0, 0.1)), 0 0 0 1px rgba(0, 0, 0, 0.08);
+  box-shadow:
+    0 1px 4px var(--shadow-subtle, rgba(0, 0, 0, 0.1)),
+    0 0 0 1px rgba(0, 0, 0, 0.08);
 }
 
 .maplibregl-ctrl-group button {
@@ -82,7 +86,9 @@
   padding: 0.5rem;
   border-radius: 8px;
   background: var(--bs-white, #fff);
-  box-shadow: 0 2px 8px var(--shadow-subtle, rgba(0, 0, 0, 0.1)), 0 0 0 1px rgba(0, 0, 0, 0.08);
+  box-shadow:
+    0 2px 8px var(--shadow-subtle, rgba(0, 0, 0, 0.1)),
+    0 0 0 1px rgba(0, 0, 0, 0.08);
 }
 
 .map-layers-menu__row {

@@ -19,7 +19,7 @@ function getPageName(path: string): string {
   const cleanPath = path.split('?')[0].replace(/^\//, '');
   const segments = cleanPath.split('/');
 
-  const filteredSegments = segments.filter(segment => {
+  const filteredSegments = segments.filter((segment) => {
     // Skip segments that look like IDs (UUIDs or long alphanumeric)
     if (/^[0-9a-f-]{20,}$/i.test(segment)) return false;
     // Skip 'p' prefix for project routes
@@ -32,7 +32,7 @@ function getPageName(path: string): string {
   if (filteredSegments.length === 0) return 'Project';
 
   return filteredSegments
-    .map(s => s.charAt(0).toUpperCase() + s.slice(1).replace(/-/g, ' '))
+    .map((s) => s.charAt(0).toUpperCase() + s.slice(1).replace(/-/g, ' '))
     .join(' > ');
 }
 
@@ -77,7 +77,11 @@ export function AppShell() {
       </a>
       <div className="app-wrapper">
         <Header />
-        <main id="main-content" tabIndex={-1} className={`app-content${isProjectsRoute ? ' projects-route' : ''}`}>
+        <main
+          id="main-content"
+          tabIndex={-1}
+          className={`app-content${isProjectsRoute ? ' projects-route' : ''}`}
+        >
           <div id="scrollTop">
             <Outlet />
           </div>
@@ -90,7 +94,9 @@ export function AppShell() {
         className={`btn scroll-top-btn${showScrollButton ? ' visible' : ''}`}
         onClick={scrollToTop}
       >
-        <i className="material-icons" aria-label="Button to go to top of the page">arrow_upward</i>
+        <i className="material-icons" aria-label="Button to go to top of the page">
+          arrow_upward
+        </i>
       </a>
 
       <DownloadPanel />

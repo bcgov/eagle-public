@@ -19,7 +19,7 @@ import {
   MapControls,
   WORKER_URL,
   flyOptions,
-  hasValidCentroid
+  hasValidCentroid,
 } from 'app/map/basemaps';
 import { ProjDetailPopup } from './proj-detail-popup';
 import './projlist-map.css';
@@ -105,7 +105,7 @@ export function ProjlistMap({
   onSelect,
   onHover,
   regionNames,
-  mobile
+  mobile,
 }: ProjlistMapProps) {
   const mapRef = useRef<MapRef>(null);
   const [loaded, setLoaded] = useState(false);
@@ -119,8 +119,9 @@ export function ProjlistMap({
   const overlayVisible = useStore(regionsVisible);
   const { data: regionShapes } = useQuery({
     queryKey: ['geojson', 'eao-regions'],
-    queryFn: async (): Promise<FeatureCollection> => (await fetch('/assets/geojson/eao-regions.geojson')).json(),
-    staleTime: Infinity
+    queryFn: async (): Promise<FeatureCollection> =>
+      (await fetch('/assets/geojson/eao-regions.geojson')).json(),
+    staleTime: Infinity,
   });
   const regionFilter: FilterSpecification = regionNames.length
     ? ['in', ['get', 'regionName'], ['literal', regionNames]]
@@ -129,18 +130,18 @@ export function ProjlistMap({
 
   const valid = useMemo(() => projects.filter(hasValidCentroid), [projects]);
 
-  const byId = useMemo(() => new Map(valid.map(project => [project._id, project])), [valid]);
+  const byId = useMemo(() => new Map(valid.map((project) => [project._id, project])), [valid]);
 
   const fc = useMemo<FeatureCollection<Point, { id: string; name: string }>>(
     () => ({
       type: 'FeatureCollection',
-      features: valid.map(project => ({
+      features: valid.map((project) => ({
         type: 'Feature',
         geometry: { type: 'Point', coordinates: [project.centroid[0], project.centroid[1]] },
-        properties: { id: project._id, name: project.name }
-      }))
+        properties: { id: project._id, name: project.name },
+      })),
     }),
-    [valid]
+    [valid],
   );
 
   const bbox = useMemo<Bbox | null>(() => {
@@ -162,7 +163,7 @@ export function ProjlistMap({
   // Filtering by region frames the whole regions, not just the projects left inside them.
   const regionBbox = useMemo(
     () => (regionShapes && regionNames.length ? regionsBbox(regionShapes, regionNames) : null),
-    [regionShapes, regionNames]
+    [regionShapes, regionNames],
   );
   const fitBox = regionBbox ?? bbox;
   const fitKey = fitBox ? fitBox.join(',') : '';
@@ -179,7 +180,7 @@ export function ProjlistMap({
       north: bounds.getNorth(),
       south: bounds.getSouth(),
       east: bounds.getEast(),
-      west: bounds.getWest()
+      west: bounds.getWest(),
     };
     // Publish only a view that actually moved. The store compares by identity, so a fresh object
     // from every `moveend` — fired for programmatic pans too — re-renders the page, which can pan
@@ -199,7 +200,10 @@ export function ProjlistMap({
     const map = mapRef.current;
     if (!map || hoverRegionId.current === id) return;
     if (hoverRegionId.current !== null) {
-      map.setFeatureState({ source: REGION_SOURCE_ID, id: hoverRegionId.current }, { hover: false });
+      map.setFeatureState(
+        { source: REGION_SOURCE_ID, id: hoverRegionId.current },
+        { hover: false },
+      );
     }
     hoverRegionId.current = id;
     if (id !== null) map.setFeatureState({ source: REGION_SOURCE_ID, id }, { hover: true });
@@ -231,13 +235,16 @@ export function ProjlistMap({
         clusterId,
         count: clusterId === null ? 1 : (properties['point_count'] as number),
         id,
-        name: clusterId === null ? String(properties['name'] ?? '') : ''
+        name: clusterId === null ? String(properties['name'] ?? '') : '',
       });
     }
 
     // Most frames draw the same markers, so only a changed set costs a React render.
     const signature = next
-      .map(feature => `${feature.key}@${feature.lng.toFixed(4)},${feature.lat.toFixed(4)}x${feature.count}`)
+      .map(
+        (feature) =>
+          `${feature.key}@${feature.lng.toFixed(4)},${feature.lat.toFixed(4)}x${feature.count}`,
+      )
       .join('|');
     if (signature === signatureRef.current) return;
     signatureRef.current = signature;
@@ -271,7 +278,7 @@ export function ProjlistMap({
         center: [project.centroid[0], project.centroid[1]],
         // One past the cluster ceiling, so the selected pin is drawn on its own.
         zoom: Math.max(map.getZoom(), CLUSTER_MAX_ZOOM + 1),
-        ...flyOptions()
+        ...flyOptions(),
       });
     }
     lastMarkerSelectId.current = null;
@@ -288,7 +295,10 @@ export function ProjlistMap({
   }, [hoverRegion, mobile]);
 
   /** Names the region under the pointer, or clears the tip when there is no region there. */
-  function showRegionTip(feature: MapGeoJSONFeature | undefined, point: { x: number; y: number }): void {
+  function showRegionTip(
+    feature: MapGeoJSONFeature | undefined,
+    point: { x: number; y: number },
+  ): void {
     const name = feature?.properties?.['regionName'];
     setHoverRegion(name ? { name: String(name), x: point.x, y: point.y } : null);
     setRegionHover(name ? (feature?.id ?? null) : null);
@@ -315,7 +325,7 @@ export function ProjlistMap({
     track('Map Marker Clicked', {
       project_id: project._id,
       project_name: project.name,
-      map_zoom_level: mapRef.current?.getZoom()
+      map_zoom_level: mapRef.current?.getZoom(),
     });
   }
 
@@ -364,7 +374,9 @@ export function ProjlistMap({
         <Basemaps />
         <MapControls
           overlays
-          onReset={() => mapRef.current?.flyTo({ center: BC_CENTER, zoom: DEFAULT_ZOOM, ...flyOptions() })}
+          onReset={() =>
+            mapRef.current?.flyTo({ center: BC_CENTER, zoom: DEFAULT_ZOOM, ...flyOptions() })
+          }
         />
 
         {/* Before the projects source, so the pins and their hit layer draw above the polygons. */}
@@ -377,7 +389,12 @@ export function ProjlistMap({
               layout={regionLayout}
               paint={{
                 'fill-color': REGION_COLOUR,
-                'fill-opacity': ['case', ['boolean', ['feature-state', 'hover'], false], 0.18, 0.08]
+                'fill-opacity': [
+                  'case',
+                  ['boolean', ['feature-state', 'hover'], false],
+                  0.18,
+                  0.08,
+                ],
               }}
             />
             <Layer
@@ -390,14 +407,30 @@ export function ProjlistMap({
           </Source>
         )}
 
-        <Source id={SOURCE_ID} type="geojson" data={fc} cluster clusterRadius={60} clusterMaxZoom={CLUSTER_MAX_ZOOM}>
+        <Source
+          id={SOURCE_ID}
+          type="geojson"
+          data={fc}
+          cluster
+          clusterRadius={60}
+          clusterMaxZoom={CLUSTER_MAX_ZOOM}
+        >
           {/* Nothing renders this layer, but a source with no layer is never tiled and so has no features to query. */}
-          <Layer id="projects-hit" type="circle" paint={{ 'circle-opacity': 0, 'circle-radius': 1 }} />
+          <Layer
+            id="projects-hit"
+            type="circle"
+            paint={{ 'circle-opacity': 0, 'circle-radius': 1 }}
+          />
         </Source>
 
-        {features.map(feature =>
+        {features.map((feature) =>
           feature.clusterId === null ? (
-            <Marker key={feature.key} longitude={feature.lng} latitude={feature.lat} anchor="bottom">
+            <Marker
+              key={feature.key}
+              longitude={feature.lng}
+              latitude={feature.lat}
+              anchor="bottom"
+            >
               <button
                 type="button"
                 className={`map-pin${feature.id === hoveredId ? ' is-hovered' : ''}${
@@ -416,7 +449,12 @@ export function ProjlistMap({
               </button>
             </Marker>
           ) : (
-            <Marker key={feature.key} longitude={feature.lng} latitude={feature.lat} anchor="center">
+            <Marker
+              key={feature.key}
+              longitude={feature.lng}
+              latitude={feature.lat}
+              anchor="center"
+            >
               <button
                 type="button"
                 className="map-cluster"
@@ -429,7 +467,7 @@ export function ProjlistMap({
                 {feature.count}
               </button>
             </Marker>
-          )
+          ),
         )}
       </MapGL>
 
@@ -449,7 +487,12 @@ export function ProjlistMap({
 
       {/* Outside the MapLibre container: the card is a page overlay, not anchored to the pin. */}
       {cardProject && (
-        <div className="map-info" data-testid="map-popup" role="dialog" aria-label={cardProject.name}>
+        <div
+          className="map-info"
+          data-testid="map-popup"
+          role="dialog"
+          aria-label={cardProject.name}
+        >
           <ProjDetailPopup project={cardProject} onClose={() => onSelect(null)} />
         </div>
       )}

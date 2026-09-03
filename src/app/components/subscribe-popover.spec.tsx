@@ -25,7 +25,10 @@ function stubFetch(response: Response | Error) {
 }
 
 function json(status: number, body: unknown): Response {
-  return new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'content-type': 'application/json' },
+  });
 }
 
 const ACCEPTED = () => json(202, { status: 'pending_confirmation' });
@@ -64,9 +67,12 @@ describe('subscribe popover', () => {
     expect(panel).toHaveAttribute('role', 'dialog');
     // The dialog takes its name from the heading it points at.
     expect(document.getElementById(panel!.getAttribute('aria-labelledby') ?? '')).toBe(
-      screen.getByRole('heading', { name: 'Email updates for this project', hidden: true })
+      screen.getByRole('heading', { name: 'Email updates for this project', hidden: true }),
     );
-    expect(screen.getByRole('button', { name: 'Close', hidden: true })).toHaveAttribute('popovertargetaction', 'hide');
+    expect(screen.getByRole('button', { name: 'Close', hidden: true })).toHaveAttribute(
+      'popovertargetaction',
+      'hide',
+    );
     // Chromium synthesises no expanded state for a popovertarget invoker, so the component owns it.
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
   });
@@ -75,14 +81,18 @@ describe('subscribe popover', () => {
     await renderControl('/notify-api', { serviceName: 'project:proj-1', variant: 'project' });
 
     // The banner the section shows carries the promise; the panel repeats none of it.
-    expect(screen.getByText('Get an email when this project publishes an Update.')).toBeInTheDocument();
+    expect(
+      screen.getByText('Get an email when this project publishes an Update.'),
+    ).toBeInTheDocument();
     // The collection notice is required text; it sits under the title in every state.
-    expect(screen.getByText(/Freedom of Information and Protection of Privacy Act/, { exact: false })).toBeInTheDocument();
+    expect(
+      screen.getByText(/Freedom of Information and Protection of Privacy Act/, { exact: false }),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole('checkbox', {
         name: 'Also send me EAO announcements that are not about a single project',
-        hidden: true
-      })
+        hidden: true,
+      }),
     ).toBeInTheDocument();
   });
 
@@ -90,7 +100,9 @@ describe('subscribe popover', () => {
   it('explains the all-projects subscription and offers no announcements opt-in', async () => {
     await renderControl('/notify-api', { serviceName: 'eao:updates', variant: 'all' });
 
-    expect(screen.getByText('Get an email when any project publishes an Update.')).toBeInTheDocument();
+    expect(
+      screen.getByText('Get an email when any project publishes an Update.'),
+    ).toBeInTheDocument();
     // Signing up here already covers announcements, so there is no checkbox to offer.
     expect(screen.queryByRole('checkbox', { hidden: true })).toBeNull();
   });
@@ -105,7 +117,10 @@ describe('subscribe popover', () => {
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe('/notify-api/api/subscriptions');
     expect(init.method).toBe('POST');
-    expect(JSON.parse(init.body as string)).toEqual({ address: 'reader@example.com', serviceName: 'project:proj-1' });
+    expect(JSON.parse(init.body as string)).toEqual({
+      address: 'reader@example.com',
+      serviceName: 'project:proj-1',
+    });
   });
 
   /** eagle-notify only treats a literal `true` as consent, so the key is sent only when ticked. */
@@ -116,8 +131,8 @@ describe('subscribe popover', () => {
     await user.click(
       screen.getByRole('checkbox', {
         name: 'Also send me EAO announcements that are not about a single project',
-        hidden: true
-      })
+        hidden: true,
+      }),
     );
     await signUpAs('reader@example.com');
 
@@ -125,7 +140,7 @@ describe('subscribe popover', () => {
     expect(JSON.parse(init.body as string)).toEqual({
       address: 'reader@example.com',
       serviceName: 'project:proj-1',
-      announcements: true
+      announcements: true,
     });
   });
 
@@ -141,7 +156,7 @@ describe('subscribe popover', () => {
     expect(screen.queryByRole('button', { name: 'Sign up', hidden: true })).toBeNull();
     // The submit button unmounts with the form, so the notice has to claim focus itself.
     expect(document.querySelector('.subscribe-popover__sent')).toContainElement(
-      document.activeElement as HTMLElement
+      document.activeElement as HTMLElement,
     );
   });
 
@@ -167,7 +182,9 @@ describe('subscribe popover', () => {
 
     await signUpAs('reader@example.com');
 
-    const alert = await screen.findByText('We could not reach the subscription service. Try again in a minute.');
+    const alert = await screen.findByText(
+      'We could not reach the subscription service. Try again in a minute.',
+    );
     expect(alert).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Sign up', hidden: true })).toBeInTheDocument();
     // The submit button is disabled mid-flight, so focus would otherwise land on <body>.

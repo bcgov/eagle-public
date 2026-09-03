@@ -28,7 +28,7 @@ export const DEFAULT_TABLE_OPTIONS: ITableOptions = {
   showPageCountDisplay: true,
   disableRowHighlight: false,
   showTopControls: true,
-  rowSpacing: 0
+  rowSpacing: 0,
 };
 
 /** Header cell definition. `value` is emitted on sort; `nosort` disables sorting for the column. */
@@ -84,12 +84,14 @@ export function tableObject(params: Partial<TableObject> = {}): TableObject {
     items: params.items ?? [],
     dataset: params.dataset ?? Constants.tableDefaults.DEFAULT_DATASET,
     currentPage: params.currentPage ?? Constants.tableDefaults.DEFAULT_CURRENT_PAGE,
-    pageSizeOptions: params.pageSizeOptions ?? [...Constants.tableDefaults.DEFAULT_PAGE_SIZE_OPTIONS],
+    pageSizeOptions: params.pageSizeOptions ?? [
+      ...Constants.tableDefaults.DEFAULT_PAGE_SIZE_OPTIONS,
+    ],
     pageSize: params.pageSize ?? Constants.tableDefaults.DEFAULT_PAGE_SIZE,
     sortBy: params.sortBy ?? Constants.tableDefaults.DEFAULT_SORT_BY,
     totalListItems: params.totalListItems ?? 0,
     tableId: params.tableId ?? randomId(),
-    data: params.data ?? null
+    data: params.data ?? null,
   };
 }
 
@@ -97,8 +99,11 @@ export function tableObject(params: Partial<TableObject> = {}): TableObject {
  * Adds or removes the "Show All" page size option. Only offered while the result set is small
  * enough that one page of it is not a denial of service on the browser.
  */
-export function withAllPicker(options: IPageSizePickerOption[], totalListItems: number): IPageSizePickerOption[] {
-  const base = options.filter(option => option.displayText !== 'Show All');
+export function withAllPicker(
+  options: IPageSizePickerOption[],
+  totalListItems: number,
+): IPageSizePickerOption[] {
+  const base = options.filter((option) => option.displayText !== 'Show All');
   if (totalListItems > 0 && totalListItems <= Constants.tableDefaults.MAX_SHOW_ALL_ITEMS) {
     return [...base, { displayText: 'Show All', value: totalListItems }];
   }
@@ -147,7 +152,11 @@ export function pageNumbers(total: number, current: number): (number | 'ellipsis
  * The document table header bar's quiet default line. Separate from `pageCountMessage`: that one
  * counts "results" for every table, this one names the documents the bar is about to download.
  */
-export function documentCountMessage(totalItems: number, currentPageNum: number, currentPageSize: number): string {
+export function documentCountMessage(
+  totalItems: number,
+  currentPageNum: number,
+  currentPageSize: number,
+): string {
   if (totalItems <= 0) return 'No documents';
   const high = Math.min(totalItems, currentPageNum * currentPageSize);
   const noun = totalItems === 1 ? 'document' : 'documents';
@@ -155,7 +164,11 @@ export function documentCountMessage(totalItems: number, currentPageNum: number,
   return `Showing ${high.toLocaleString()} of ${totalItems.toLocaleString()} ${noun}`;
 }
 
-export function pageCountMessage(totalItems: number, currentPageNum: number, currentPageSize: number): string {
+export function pageCountMessage(
+  totalItems: number,
+  currentPageNum: number,
+  currentPageSize: number,
+): string {
   const pageCount = Math.max(1, Math.ceil(totalItems / currentPageSize));
 
   if (totalItems <= 0) {

@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { CustomMultiSelect, type CustomMultiSelectOption } from 'app/components/filters/custom-multi-select';
+import {
+  CustomMultiSelect,
+  type CustomMultiSelectOption,
+} from 'app/components/filters/custom-multi-select';
 import { Constants } from 'app/utils/constants';
 import { track } from 'app/analytics/analytics';
 import { countFilters, EMPTY_FILTERS, type FilterCriteria } from './filter-state';
@@ -18,9 +21,11 @@ const PROJECT_TYPES = Constants.PROJECT_TYPE_COLLECTION as CustomMultiSelectOpti
 function optionsFor(
   ids: string[],
   collection: CustomMultiSelectOption[],
-  key: '_id' | 'code'
+  key: '_id' | 'code',
 ): CustomMultiSelectOption[] {
-  return ids.map(id => collection.find(item => item[key] === id)).filter((item): item is CustomMultiSelectOption => !!item);
+  return ids
+    .map((id) => collection.find((item) => item[key] === id))
+    .filter((item): item is CustomMultiSelectOption => !!item);
 }
 
 export function ProjlistFilters({ filters, updateFilters, regions, phases }: ProjlistFiltersProps) {
@@ -31,16 +36,28 @@ export function ProjlistFilters({ filters, updateFilters, regions, phases }: Pro
 
   // The search box has its own field, so the badge counts only the advanced filters.
   const activeCount = countFilters({ ...filters, applicant: null });
-  const selectedTypes = useMemo(() => optionsFor(filters.types, PROJECT_TYPES, 'code'), [filters.types]);
-  const selectedRegions = useMemo(() => optionsFor(filters.regions, regions, '_id'), [filters.regions, regions]);
-  const selectedPhases = useMemo(() => optionsFor(filters.phases, phases, '_id'), [filters.phases, phases]);
+  const selectedTypes = useMemo(
+    () => optionsFor(filters.types, PROJECT_TYPES, 'code'),
+    [filters.types],
+  );
+  const selectedRegions = useMemo(
+    () => optionsFor(filters.regions, regions, '_id'),
+    [filters.regions, regions],
+  );
+  const selectedPhases = useMemo(
+    () => optionsFor(filters.phases, phases, '_id'),
+    [filters.phases, phases],
+  );
 
   const setFiltersOpen = useCallback(
     (open: boolean) => {
       setShowFilters(open);
-      track('Project Filters Panel Toggled', { is_open: open, current_filter_count: countFilters(filters) });
+      track('Project Filters Panel Toggled', {
+        is_open: open,
+        current_filter_count: countFilters(filters),
+      });
     },
-    [filters]
+    [filters],
   );
 
   useEffect(() => {
@@ -65,7 +82,7 @@ export function ProjlistFilters({ filters, updateFilters, regions, phases }: Pro
       has_cl_file: !!applied.clFile,
       has_disp_id: !!applied.dispId,
       has_date_range: !!(applied.publishFrom || applied.publishTo),
-      total_filters: countFilters(applied)
+      total_filters: countFilters(applied),
     });
   }
 
@@ -76,7 +93,9 @@ export function ProjlistFilters({ filters, updateFilters, regions, phases }: Pro
           Search Environmental Assessment Projects
         </label>
         <div className="projlist-filters__search">
-          <i className="material-icons" aria-hidden="true">search</i>
+          <i className="material-icons" aria-hidden="true">
+            search
+          </i>
           <input
             type="search"
             enterKeyHint="search"
@@ -86,7 +105,7 @@ export function ProjlistFilters({ filters, updateFilters, regions, phases }: Pro
             placeholder="Start typing a project name"
             id="applicantInput"
             value={applicantInput}
-            onChange={event => {
+            onChange={(event) => {
               setApplicantInput(event.target.value);
               applyFilters({ applicant: event.target.value.trim() || null });
             }}
@@ -128,7 +147,12 @@ export function ProjlistFilters({ filters, updateFilters, regions, phases }: Pro
 
       {/* Always rendered: the open state is a grid-row transition, and `inert` keeps the collapsed
           filters out of the tab order. */}
-      <div id="applist-filters" className="filters-panel" data-open={showFilters} inert={!showFilters}>
+      <div
+        id="applist-filters"
+        className="filters-panel"
+        data-open={showFilters}
+        inert={!showFilters}
+      >
         <div className="filters-panel__inner">
           <div className="filters-panel__body">
             <div className="filter-container">
@@ -140,7 +164,9 @@ export function ProjlistFilters({ filters, updateFilters, regions, phases }: Pro
                   placeholder="Type Project Type"
                   items={PROJECT_TYPES}
                   selected={selectedTypes}
-                  onChange={selected => applyFilters({ types: selected.map(item => item['code']) })}
+                  onChange={(selected) =>
+                    applyFilters({ types: selected.map((item) => item['code']) })
+                  }
                 />
               </div>
             </div>
@@ -153,7 +179,9 @@ export function ProjlistFilters({ filters, updateFilters, regions, phases }: Pro
                   placeholder="Type Project Region"
                   items={regions}
                   selected={selectedRegions}
-                  onChange={selected => applyFilters({ regions: selected.map(item => item['_id']) })}
+                  onChange={(selected) =>
+                    applyFilters({ regions: selected.map((item) => item['_id']) })
+                  }
                 />
               </div>
             </div>
@@ -167,7 +195,9 @@ export function ProjlistFilters({ filters, updateFilters, regions, phases }: Pro
                   placeholder="Type Project Phase"
                   items={phases}
                   selected={selectedPhases}
-                  onChange={selected => applyFilters({ phases: selected.map(item => item['_id']) })}
+                  onChange={(selected) =>
+                    applyFilters({ phases: selected.map((item) => item['_id']) })
+                  }
                 />
               </div>
             </div>

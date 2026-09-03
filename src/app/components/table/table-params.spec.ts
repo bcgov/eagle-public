@@ -6,7 +6,7 @@ import {
   normalizeSortBy,
   toggleSortDirection,
   toSearchParams,
-  updateTableObjectWithUrlParams
+  updateTableObjectWithUrlParams,
 } from './table-params';
 
 describe('updateTableObjectWithUrlParams', () => {
@@ -18,13 +18,19 @@ describe('updateTableObjectWithUrlParams', () => {
   });
 
   it('reads currentPage and pageSize as numbers', () => {
-    const table = updateTableObjectWithUrlParams({ currentPage: '3', pageSize: '50' }, tableObject());
+    const table = updateTableObjectWithUrlParams(
+      { currentPage: '3', pageSize: '50' },
+      tableObject(),
+    );
     expect(table.currentPage).toBe(3);
     expect(table.pageSize).toBe(50);
   });
 
   it('ignores empty and null params', () => {
-    const table = updateTableObjectWithUrlParams({ sortBy: '', currentPage: null }, tableObject({ sortBy: '+name' }));
+    const table = updateTableObjectWithUrlParams(
+      { sortBy: '', currentPage: null },
+      tableObject({ sortBy: '+name' }),
+    );
     expect(table.sortBy).toBe('+name');
     expect(table.currentPage).toBe(1);
   });
@@ -33,7 +39,7 @@ describe('updateTableObjectWithUrlParams', () => {
     const table = updateTableObjectWithUrlParams(
       { currentPagePins: '4', sortByPins: '-name', currentPage: '9' },
       tableObject(),
-      'Pins'
+      'Pins',
     );
     expect(table.currentPage).toBe(4);
     expect(table.sortBy).toBe('-name');
@@ -49,7 +55,7 @@ describe('getFiltersFromParams', () => {
   it('keeps only the named filters and comma-joins arrays', () => {
     const filters = getFiltersFromParams(
       { type: 'mines', region: ['a', 'b'], keywords: 'ignored' },
-      ['type', 'region', 'absent']
+      ['type', 'region', 'absent'],
     );
     expect(filters).toEqual({ type: 'mines', region: 'a,b' });
   });
@@ -60,7 +66,7 @@ describe('getFiltersFromSearchPackage', () => {
     const params = getFiltersFromSearchPackage(
       { filters: { type: ['mines'] } },
       ['type', 'region'],
-      ['decisionDateStart']
+      ['decisionDateStart'],
     );
     expect(params).toEqual({ type: 'mines', region: null, decisionDateStart: null });
   });

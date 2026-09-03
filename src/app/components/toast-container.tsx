@@ -4,7 +4,7 @@ const BOOTSTRAP_CLASS: Record<Toast['type'], string> = {
   success: 'success',
   error: 'danger',
   warning: 'warning',
-  info: 'info'
+  info: 'info',
 };
 
 export function ToastContainer() {
@@ -17,7 +17,7 @@ export function ToastContainer() {
       aria-live="polite"
       aria-atomic="false"
     >
-      {toasts.map(toast => (
+      {toasts.map((toast) => (
         <div key={toast.id} className={`toast show bg-${BOOTSTRAP_CLASS[toast.type] ?? 'info'}`}>
           <div className="d-flex align-items-center">
             <div className="toast-body text-white flex-grow-1">{toast.message}</div>

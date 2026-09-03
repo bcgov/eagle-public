@@ -29,7 +29,7 @@ export function ProjlistList({
   hoveredId,
   onSelect,
   onHover,
-  mobile
+  mobile,
 }: ProjlistListProps) {
   const [numToLoad, setNumToLoad] = useState(LIST_PAGE_SIZE);
   // The body that just lost the selection stays mounted until its row has shrunk, so closing animates too.
@@ -52,15 +52,17 @@ export function ProjlistList({
 
   // A pin can select a project the list has not paged to yet, so its page is revealed too.
   const revealed = useMemo(() => {
-    const index = (projects ?? []).findIndex(project => project._id === selectedId);
-    return index < 0 ? numToLoad : Math.max(numToLoad, Math.ceil((index + 1) / LIST_PAGE_SIZE) * LIST_PAGE_SIZE);
+    const index = (projects ?? []).findIndex((project) => project._id === selectedId);
+    return index < 0
+      ? numToLoad
+      : Math.max(numToLoad, Math.ceil((index + 1) / LIST_PAGE_SIZE) * LIST_PAGE_SIZE);
   }, [projects, selectedId, numToLoad]);
 
   const loadedApps = useMemo(() => (projects ?? []).slice(0, revealed), [projects, revealed]);
   const pending = projects === null;
   const numResults = useMemo(
-    () => (projects ?? []).filter(project => project.centroid?.length === 2).length,
-    [projects]
+    () => (projects ?? []).filter((project) => project.centroid?.length === 2).length,
+    [projects],
   );
 
   useEffect(() => {
@@ -107,7 +109,7 @@ export function ProjlistList({
             }
             sheetState.set(NEXT_SHEET_STATE[sheet]);
           }}
-          onKeyDown={event => {
+          onKeyDown={(event) => {
             const next =
               event.key === 'ArrowUp'
                 ? RAISE_SHEET_STATE[sheet]
@@ -118,12 +120,12 @@ export function ProjlistList({
             event.preventDefault();
             sheetState.set(next);
           }}
-          onPointerDown={event => {
+          onPointerDown={(event) => {
             if (event.button !== 0) return;
             event.currentTarget.setPointerCapture?.(event.pointerId);
             dragRef.current = { y0: event.clientY, from: sheet, moved: false };
           }}
-          onPointerMove={event => {
+          onPointerMove={(event) => {
             const drag = dragRef.current;
             if (!drag) return;
             const dy = event.clientY - drag.y0;
@@ -131,8 +133,8 @@ export function ProjlistList({
             drag.moved = true;
             setDragY(dy);
           }}
-          onPointerUp={event => endDrag(event.clientY)}
-          onPointerCancel={event => endDrag(event.clientY)}
+          onPointerUp={(event) => endDrag(event.clientY)}
+          onPointerCancel={(event) => endDrag(event.clientY)}
           aria-expanded={sheet !== 'peek'}
           aria-controls="applist-list"
         >
@@ -140,7 +142,12 @@ export function ProjlistList({
         </button>
       )}
 
-      <p className="app-list__count" data-testid="results-count" aria-live="polite" aria-atomic="true">
+      <p
+        className="app-list__count"
+        data-testid="results-count"
+        aria-live="polite"
+        aria-atomic="true"
+      >
         {numResults > 0
           ? `${numResults} ${numResults === 1 ? 'project' : 'projects'} in view`
           : loading
@@ -183,7 +190,7 @@ export function ProjlistList({
                 </span>
               </li>
             ))}
-          {loadedApps.map(item => {
+          {loadedApps.map((item) => {
             const open = selectedId === item._id;
             return (
               <li key={item._id}>
@@ -205,12 +212,16 @@ export function ProjlistList({
                   onBlur={mobile ? undefined : () => onHover(null)}
                 >
                   <span className="app-card__name">{item.name}</span>
-                  <span className="app-card__proponent">{item.proponent?.name || 'Unknown Client'}</span>
+                  <span className="app-card__proponent">
+                    {item.proponent?.name || 'Unknown Client'}
+                  </span>
                   <span className="app-card__meta">
                     {item.type || item.sector ? `${item.type} / ${item.sector}` : 'Not Available'}
                   </span>
                   <span className="app-card__meta">{item.region || 'Not Available'}</span>
-                  <span className="app-card__phase">{item.currentPhaseName?.name || 'Unknown'}</span>
+                  <span className="app-card__phase">
+                    {item.currentPhaseName?.name || 'Unknown'}
+                  </span>
                 </button>
                 {/* Always rendered so `aria-controls` resolves and the open row animates from 0fr. */}
                 {mobile && (
@@ -219,11 +230,16 @@ export function ProjlistList({
                     id={`project-body-${item._id}`}
                     data-open={open || undefined}
                     inert={!open || undefined}
-                    onTransitionEnd={event => {
-                      if (event.target === event.currentTarget && closingId === item._id) setClosingId(null);
+                    onTransitionEnd={(event) => {
+                      if (event.target === event.currentTarget && closingId === item._id)
+                        setClosingId(null);
                     }}
                   >
-                    <div>{(open || closingId === item._id) && <ProjDetailPopup project={item} variant="inline" />}</div>
+                    <div>
+                      {(open || closingId === item._id) && (
+                        <ProjDetailPopup project={item} variant="inline" />
+                      )}
+                    </div>
                   </div>
                 )}
               </li>

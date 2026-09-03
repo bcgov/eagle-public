@@ -13,7 +13,11 @@ export function normalizeSortBy(value: string): string {
 }
 
 /** Reads the standard table params off the URL. `suffix` scopes them to one table on a page. */
-export function updateTableObjectWithUrlParams(routeParams: Params, table: TableObject, suffix = ''): TableObject {
+export function updateTableObjectWithUrlParams(
+  routeParams: Params,
+  table: TableObject,
+  suffix = '',
+): TableObject {
   const updated = { ...table };
 
   for (const [key, value] of Object.entries(routeParams)) {
@@ -36,7 +40,10 @@ export function updateTableObjectWithUrlParams(routeParams: Params, table: Table
 }
 
 /** Picks the named filters out of the URL params and comma-joins any array values, for the API. */
-export function getFiltersFromParams(params: Params, filterLabels: string[]): Record<string, string> {
+export function getFiltersFromParams(
+  params: Params,
+  filterLabels: string[],
+): Record<string, string> {
   const filterForAPI: Record<string, string> = {};
 
   for (const filterLabel of filterLabels) {
@@ -56,7 +63,7 @@ export function getFiltersFromParams(params: Params, filterLabels: string[]): Re
 export function getFiltersFromSearchPackage(
   searchPackage: { filters: Params },
   filtersList: string[] = [],
-  dateFiltersList: string[] = []
+  dateFiltersList: string[] = [],
 ): Params {
   const allFilters = [...filtersList, ...dateFiltersList];
   const extracted = getFiltersFromParams(searchPackage.filters, allFilters);
@@ -90,7 +97,11 @@ export function toSearchParams(params: Params): URLSearchParams {
  * Flips the sort direction when the same column is clicked again, otherwise starts at `fallback`.
  * Matches the whole field name: `+displayName` and a click on `name` are different columns.
  */
-export function toggleSortDirection(currentSort: string | undefined, field: string, fallback: '+' | '-' = '+'): string {
+export function toggleSortDirection(
+  currentSort: string | undefined,
+  field: string,
+  fallback: '+' | '-' = '+',
+): string {
   if (currentSort && currentSort.replace(/^[+-]/, '') === field) {
     return (currentSort[0] === '+' ? '-' : '+') + field;
   }

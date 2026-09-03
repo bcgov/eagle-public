@@ -13,8 +13,8 @@ const CHUNKS = [
     documentType: 'Letter',
     matchCount: 3,
     snippets: ['the <mark>fish</mark> habitat'],
-    project: { _id: 'p1', name: 'Alpha Mine' }
-  }
+    project: { _id: 'p1', name: 'Alpha Mine' },
+  },
 ];
 
 let requests: string[];
@@ -22,19 +22,22 @@ let total: number;
 let results: unknown[];
 
 function jsonResponse(body: unknown) {
-  return new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } });
+  return new Response(JSON.stringify(body), {
+    status: 200,
+    headers: { 'content-type': 'application/json' },
+  });
 }
 
 function renderAt(path: string) {
   const router = createMemoryRouter([{ path: '/search/content', Component: ContentSearch }], {
-    initialEntries: [path]
+    initialEntries: [path],
   });
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
 
   render(
     <QueryClientProvider client={queryClient}>
       <RouterProvider router={router} />
-    </QueryClientProvider>
+    </QueryClientProvider>,
   );
 
   return router;
@@ -63,7 +66,7 @@ describe('content search', () => {
       vi.fn(async (input: RequestInfo | URL) => {
         requests.push(String(input));
         return jsonResponse([{ searchResults: results, meta: [{ searchResultsTotal: total }] }]);
-      })
+      }),
     );
   });
 
@@ -77,7 +80,7 @@ describe('content search', () => {
 
     expect(await screen.findByText('Fish and Fish Habitat.pdf')).toBeInTheDocument();
     expect(requests.at(-1)).toBe(
-      '/api/search?dataset=DocumentChunk&keywords=pipeline&pageNum=0&pageSize=10&projectLegislation=default&sortBy=-score&sortBy=&populate=true&fuzzy=false'
+      '/api/search?dataset=DocumentChunk&keywords=pipeline&pageNum=0&pageSize=10&projectLegislation=default&sortBy=-score&sortBy=&populate=true&fuzzy=false',
     );
   });
 
@@ -103,7 +106,10 @@ describe('content search', () => {
   it('shows both tabs when content search is enabled', async () => {
     renderAt('/search/content');
 
-    expect(await screen.findByRole('tab', { name: 'Documents' })).toHaveAttribute('href', '/search');
+    expect(await screen.findByRole('tab', { name: 'Documents' })).toHaveAttribute(
+      'href',
+      '/search',
+    );
     expect(screen.getByRole('tab', { name: 'Document Content' })).toBeInTheDocument();
   });
 
@@ -139,7 +145,9 @@ describe('content search', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Go to page 2' }));
 
-    await waitFor(() => expect(new URLSearchParams(router.state.location.search).get('currentPage')).toBe('2'));
+    await waitFor(() =>
+      expect(new URLSearchParams(router.state.location.search).get('currentPage')).toBe('2'),
+    );
     await waitFor(() => expect(requests.at(-1)).toContain('&keywords=pipeline&pageNum=1&'));
   });
 

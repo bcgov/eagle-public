@@ -14,8 +14,9 @@ export function ProjectList() {
   }, []);
 
   const filters = useMemo(
-    () => (proponents.length > 0 && lists.length > 0 ? buildProjectListFilters(proponents, lists) : []),
-    [proponents, lists]
+    () =>
+      proponents.length > 0 && lists.length > 0 ? buildProjectListFilters(proponents, lists) : [],
+    [proponents, lists],
   );
 
   const config = useMemo(() => createProjectListConfig(filters), [filters]);

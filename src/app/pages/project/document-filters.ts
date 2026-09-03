@@ -3,7 +3,7 @@ import {
   FilterObject,
   FilterType,
   FilterGroupObject,
-  MultiSelectDefinition
+  MultiSelectDefinition,
 } from 'app/components/filters/filter-object';
 
 /** The `List` item `type` each document filter draws its options from, and its label. */
@@ -11,7 +11,7 @@ const DOCUMENT_FILTERS: Record<string, { listType: string; label: string }> = {
   milestone: { listType: 'label', label: 'Milestone' },
   documentAuthorType: { listType: 'author', label: 'Document Author' },
   type: { listType: 'doctype', label: 'Document Type' },
-  projectPhase: { listType: 'projectPhase', label: 'Project Phase' }
+  projectPhase: { listType: 'projectPhase', label: 'Project Phase' },
 };
 
 const LEGISLATION_GROUP = new FilterGroupObject('legislation', '', ' Act Terms');
@@ -25,7 +25,7 @@ export const DATE_FILTER_LIST = ['datePostedStart', 'datePostedEnd'];
 export function buildDocumentFilters(
   lists: any[],
   panelSizes: Record<string, number>,
-  grouped = false
+  grouped = false,
 ): FilterObject[] {
   return Object.entries(panelSizes).map(([id, size]) => {
     if (id === 'issuedDate') {
@@ -34,7 +34,7 @@ export function buildDocumentFilters(
         FilterType.DateRange,
         '',
         new DateFilterDefinition('datePostedStart', 'Start Date', 'datePostedEnd', 'End Date'),
-        size
+        size,
       );
     }
     const { listType, label } = DOCUMENT_FILTERS[id];
@@ -43,18 +43,18 @@ export function buildDocumentFilters(
       FilterType.MultiSelect,
       label,
       new MultiSelectDefinition(
-        lists.filter(item => item.type === listType),
+        lists.filter((item) => item.type === listType),
         [],
         grouped ? LEGISLATION_GROUP : null,
         null,
-        true
+        true,
       ),
-      size
+      size,
     );
   });
 }
 
 /** The non-date filter ids of a `panelSizes` map, in URL and request order. */
 export function filterListFrom(panelSizes: Record<string, number>): string[] {
-  return Object.keys(panelSizes).filter(id => id !== 'issuedDate');
+  return Object.keys(panelSizes).filter((id) => id !== 'issuedDate');
 }

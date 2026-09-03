@@ -31,12 +31,12 @@ export function snapSheet(from: SheetState, dy: number, height: number, peek: nu
   if (Math.abs(dy) < SHEET_DRAG_THRESHOLD) return from;
   const offsets = sheetOffsets(height, peek);
   const target = offsets[from] + dy;
-  const ahead = (Object.keys(offsets) as SheetState[]).filter(state =>
-    dy < 0 ? offsets[state] < offsets[from] : offsets[state] > offsets[from]
+  const ahead = (Object.keys(offsets) as SheetState[]).filter((state) =>
+    dy < 0 ? offsets[state] < offsets[from] : offsets[state] > offsets[from],
   );
   if (ahead.length === 0) return from;
   return ahead.reduce((best, state) =>
-    Math.abs(offsets[state] - target) < Math.abs(offsets[best] - target) ? state : best
+    Math.abs(offsets[state] - target) < Math.abs(offsets[best] - target) ? state : best,
   );
 }
 

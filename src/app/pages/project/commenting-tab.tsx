@@ -8,7 +8,12 @@ import './commenting-tab.css';
 
 /** Pulls the subject out of the boilerplate instructions text, e.g. "the Draft Application". */
 function subjectFromInstructions(instructions: string): { subject: string; fullText: string } {
-  const fullText = instructions ? instructions.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim() : '';
+  const fullText = instructions
+    ? instructions
+        .replace(/<[^>]*>/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+    : '';
   const match = fullText.match(/Comment Period on the (.*?) for /);
   return { subject: match ? match[1] : '', fullText };
 }
@@ -21,7 +26,7 @@ function toCards(periods: CommentPeriod[]): CommentPeriod[] {
   const seenIds = new Set<string>();
   const seenUrls = new Set<string>();
 
-  return periods.filter(period => {
+  return periods.filter((period) => {
     const { subject, fullText } = subjectFromInstructions(period.instructions);
     period.instructions = subject;
     period.additionalText = period.additionalText || fullText || period.informationLabel;
@@ -48,7 +53,7 @@ export function CommentingTab() {
     queryFn: async () => {
       const res: any = await getAllByProjectId(projId);
       return res?.data ? toCards(res.data) : [];
-    }
+    },
   });
 
   function goToCP(commentPeriod: CommentPeriod): void {
@@ -62,10 +67,13 @@ export function CommentingTab() {
   if (isPending) {
     return (
       <>
-        {SKELETON_CARDS.map(index => (
+        {SKELETON_CARDS.map((index) => (
           <div className="cp-card cp-card--skeleton" key={index}>
             <div className="cp-card__header">
-              <div className="skeleton-cell" style={{ width: '90px', height: '12px', borderRadius: '4px' }}></div>
+              <div
+                className="skeleton-cell"
+                style={{ width: '90px', height: '12px', borderRadius: '4px' }}
+              ></div>
               <div
                 className="skeleton-cell"
                 style={{ width: '70px', height: '20px', borderRadius: '999px', marginLeft: 'auto' }}
@@ -74,13 +82,26 @@ export function CommentingTab() {
             <div className="cp-card__body">
               <div
                 className="skeleton-cell"
-                style={{ width: '55%', height: '14px', borderRadius: '4px', marginBottom: '0.5rem' }}
+                style={{
+                  width: '55%',
+                  height: '14px',
+                  borderRadius: '4px',
+                  marginBottom: '0.5rem',
+                }}
               ></div>
               <div
                 className="skeleton-cell"
-                style={{ width: '38%', height: '11px', borderRadius: '4px', marginBottom: '0.5rem' }}
+                style={{
+                  width: '38%',
+                  height: '11px',
+                  borderRadius: '4px',
+                  marginBottom: '0.5rem',
+                }}
               ></div>
-              <div className="skeleton-cell" style={{ width: '88%', height: '11px', borderRadius: '4px' }}></div>
+              <div
+                className="skeleton-cell"
+                style={{ width: '88%', height: '11px', borderRadius: '4px' }}
+              ></div>
             </div>
           </div>
         ))}
@@ -94,7 +115,7 @@ export function CommentingTab() {
 
   return (
     <>
-      {commentPeriods.map(cp => (
+      {commentPeriods.map((cp) => (
         <article className="card cp-card" key={cp._id}>
           <div className="cp-card__header">
             <span
@@ -106,13 +127,19 @@ export function CommentingTab() {
             {isOpen(cp) ? (
               <span className="cp-card__pill cp-card__pill--open">{cp.daysRemaining}</span>
             ) : isClosed(cp) ? (
-              <span className="cp-card__pill cp-card__pill--closed">Closed {mediumDate(cp.dateCompleted)}</span>
+              <span className="cp-card__pill cp-card__pill--closed">
+                Closed {mediumDate(cp.dateCompleted)}
+              </span>
             ) : isNotStarted(cp) ? (
-              <span className="cp-card__pill cp-card__pill--pending">Starts {mediumDate(cp.dateStarted)}</span>
+              <span className="cp-card__pill cp-card__pill--pending">
+                Starts {mediumDate(cp.dateStarted)}
+              </span>
             ) : null}
           </div>
           <div className="cp-card__body">
-            <h3 className="cp-card__title">{cp.informationLabel || cp.instructions || 'Public Comment Period'}</h3>
+            <h3 className="cp-card__title">
+              {cp.informationLabel || cp.instructions || 'Public Comment Period'}
+            </h3>
             {cp.dateStarted && (
               <p className="cp-card__dates">
                 {mediumDate(cp.dateStarted)} – {mediumDate(cp.dateCompleted)}

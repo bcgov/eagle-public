@@ -10,7 +10,7 @@ import {
   startDownload,
   useDownloadInProgress,
   useSelection,
-  type SelectedDocument
+  type SelectedDocument,
 } from 'app/state/bulk-download';
 import { showToast } from 'app/state/toast';
 import { toggleRow } from './document-row';
@@ -22,7 +22,7 @@ import {
   withAllPicker,
   type IPageSizePickerOption,
   type ITableMessage,
-  type TableObject
+  type TableObject,
 } from './table-object';
 import './table.css';
 
@@ -51,7 +51,12 @@ interface TableTemplateProps {
   onMessage: (msg: ITableMessage) => void;
 }
 
-export function TableTemplate({ data, loading = false, rowComponent, onMessage }: TableTemplateProps) {
+export function TableTemplate({
+  data,
+  loading = false,
+  rowComponent,
+  onMessage,
+}: TableTemplateProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const totalPages = Math.ceil((data.totalListItems || 0) / (data.pageSize || 10));
   const showPagination = !!data.options.showPagination && totalPages > 1;
@@ -69,21 +74,24 @@ export function TableTemplate({ data, loading = false, rowComponent, onMessage }
   const selectedCount = useSelection().size;
   const downloadInProgress = useDownloadInProgress();
   const pageDocs: SelectedDocument[] = data.items
-    .filter(item => item.rowData?._id)
-    .map(item => ({ id: item.rowData._id, displayName: item.rowData.displayName }));
-  const selectedOnPage = pageDocs.filter(doc => selection.has(doc.id)).length;
+    .filter((item) => item.rowData?._id)
+    .map((item) => ({ id: item.rowData._id, displayName: item.rowData.displayName }));
+  const selectedOnPage = pageDocs.filter((doc) => selection.has(doc.id)).length;
   const pageAllSelected = pageDocs.length > 0 && selectedOnPage === pageDocs.length;
   // Offered once the page is fully selected, there is more behind it than one page, and the whole
   // result set fits the anonymous cap. Over the cap there is nothing to offer, so the bar says
   // nothing: the cap is explained by the toast on the attempt that actually hits it.
   const showSelectAll =
-    selectable && pageAllSelected && data.totalListItems > data.pageSize && data.totalListItems <= SELECT_ALL_MAX;
+    selectable &&
+    pageAllSelected &&
+    data.totalListItems > data.pageSize &&
+    data.totalListItems <= SELECT_ALL_MAX;
 
   function onSort(property: string): void {
     track('Table Column Sorted', {
       table_type: tableType,
       column: property,
-      direction: data.sortBy === `+${property}` ? 'desc' : 'asc'
+      direction: data.sortBy === `+${property}` ? 'desc' : 'asc',
     });
     onMessage({ label: 'columnSort', data: property });
   }
@@ -93,7 +101,7 @@ export function TableTemplate({ data, loading = false, rowComponent, onMessage }
       table_type: tableType,
       from_page: data.currentPage,
       to_page: pageNum,
-      total_pages: totalPages
+      total_pages: totalPages,
     });
     // Paging from the bottom control otherwise leaves the reader at the foot of the new page.
     // Optional call: jsdom has no scrollIntoView.
@@ -102,7 +110,11 @@ export function TableTemplate({ data, loading = false, rowComponent, onMessage }
   }
 
   function onUpdatePageSize(pageSize: IPageSizePickerOption): void {
-    track('Page Size Changed', { table_type: tableType, from_size: data.pageSize, to_size: pageSize.value });
+    track('Page Size Changed', {
+      table_type: tableType,
+      from_size: data.pageSize,
+      to_size: pageSize.value,
+    });
     onMessage({ label: 'pageSize', data: pageSize });
   }
 
@@ -118,12 +130,15 @@ export function TableTemplate({ data, loading = false, rowComponent, onMessage }
 
   const showPageCount = !!data.options.showTopControls && !!data.options.showPageCountDisplay;
   // Selectable tables trade this row for the header bar below; everything else keeps it.
-  const showTopRow = !selectable && !!data.options.showTopControls && (showPageCount || showPagination);
+  const showTopRow =
+    !selectable && !!data.options.showTopControls && (showPageCount || showPagination);
   const noResults = !loading && data.items.length === 0 && data.totalListItems === 0;
   const selectionActive = selectedCount > 0;
   // No count is known while the request is in flight, and the live region must not read out
   // "No documents" over a page that is still loading.
-  const countMessage = loading ? '' : documentCountMessage(data.totalListItems, data.currentPage, data.pageSize);
+  const countMessage = loading
+    ? ''
+    : documentCountMessage(data.totalListItems, data.currentPage, data.pageSize);
 
   return (
     <div className="table-template" ref={containerRef}>
@@ -204,7 +219,10 @@ export function TableTemplate({ data, loading = false, rowComponent, onMessage }
         </div>
       )}
 
-      <div className={loading && data.items.length > 0 ? 'table-loading' : undefined} aria-busy={loading || undefined}>
+      <div
+        className={loading && data.items.length > 0 ? 'table-loading' : undefined}
+        aria-busy={loading || undefined}
+      >
         {showSkeleton && <span className="visually-hidden">Loading</span>}
         {noResults ? (
           <div className="text-center my-5">
@@ -223,26 +241,27 @@ export function TableTemplate({ data, loading = false, rowComponent, onMessage }
                           className="form-check-input"
                           aria-label="Select all on this page"
                           checked={pageAllSelected}
-                          ref={input => {
+                          ref={(input) => {
                             if (input) input.indeterminate = selectedOnPage > 0 && !pageAllSelected;
                           }}
                           // ponytail: unchecking drops the whole table's selection, other pages
                           // included; deselect page-by-page if anyone paging around complains.
                           onChange={() => {
                             if (pageAllSelected) clearSelection(data.tableId);
-                            else if (!setSelected(data.tableId, pageDocs)) showToast(CAP_MESSAGE, { type: 'warning' });
+                            else if (!setSelected(data.tableId, pageDocs))
+                              showToast(CAP_MESSAGE, { type: 'warning' });
                           }}
                         />
                       </th>
                     )}
-                    {data.columns.map(entry => (
+                    {data.columns.map((entry) => (
                       <th
                         key={entry.value}
                         tabIndex={0}
                         aria-label={`Column header ${entry.name}${!entry.nosort ? ' sortable' : ''}`}
                         id="table-template-header"
                         className={`project-table__name-col ${entry.width ?? ''} ${!entry.nosort ? 'sortable' : ''}`}
-                        onKeyUp={event => {
+                        onKeyUp={(event) => {
                           if (event.key === 'Enter' && !entry.nosort) onSort(entry.value!);
                         }}
                         onClick={() => !entry.nosort && onSort(entry.value!)}
@@ -267,7 +286,7 @@ export function TableTemplate({ data, loading = false, rowComponent, onMessage }
                   Array.from({ length: skeletonRows }, (_, row) => (
                     <tr key={`skeleton-${row}`} className="placeholder-wave" aria-hidden="true">
                       {selectable && <td className="select-col"></td>}
-                      {data.columns.map(entry => (
+                      {data.columns.map((entry) => (
                         <td key={entry.value} className={entry.width}>
                           <span className="placeholder w-100"></span>
                         </td>
@@ -294,15 +313,16 @@ export function TableTemplate({ data, loading = false, rowComponent, onMessage }
               <div className="table-controls-bottom mt-4">
                 <div className="row">
                   <div className="col-12 col-md-6 text-center text-md-start mb-3 mb-md-0">
-                    {data.options.showPageSizePicker && data.totalListItems > Constants.tableDefaults.DEFAULT_PAGE_SIZE && (
-                      <PageSizePicker
-                        isHidden={false}
-                        currentPageSize={data.pageSize}
-                        sizeOptions={pageSizeOptions}
-                        onPageSizeChosen={onUpdatePageSize}
-                        id="table-template-page-size-picker"
-                      />
-                    )}
+                    {data.options.showPageSizePicker &&
+                      data.totalListItems > Constants.tableDefaults.DEFAULT_PAGE_SIZE && (
+                        <PageSizePicker
+                          isHidden={false}
+                          currentPageSize={data.pageSize}
+                          sizeOptions={pageSizeOptions}
+                          onPageSizeChosen={onUpdatePageSize}
+                          id="table-template-page-size-picker"
+                        />
+                      )}
                   </div>
                   <div className="col-12 col-md-6 text-center text-md-end">{paginationControl}</div>
                 </div>

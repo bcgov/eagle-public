@@ -26,7 +26,10 @@ function blurOnClick(event: React.MouseEvent<HTMLAnchorElement>): void {
 
 export function HeroBanner({ title, description, actions = [], backgroundImage }: HeroBannerProps) {
   return (
-    <div className="hero-banner" style={{ backgroundImage: backgroundImage ? `url(${backgroundImage})` : '' }}>
+    <div
+      className="hero-banner"
+      style={{ backgroundImage: backgroundImage ? `url(${backgroundImage})` : '' }}
+    >
       <div className="container">
         <div className="container-inner">
           <div className="hero-banner__content">
@@ -36,7 +39,7 @@ export function HeroBanner({ title, description, actions = [], backgroundImage }
             </div>
             {actions.length > 0 && (
               <div className="hero-banner__actions d-flex flex-column flex-sm-row gap-3">
-                {actions.map(action => (
+                {actions.map((action) =>
                   action.routerLink ? (
                     <Link
                       key={action.label}
@@ -60,8 +63,8 @@ export function HeroBanner({ title, description, actions = [], backgroundImage }
                       {action.icon && <i className="material-icons">{action.icon}</i>}
                       <span>{action.label}</span>
                     </a>
-                  ) : null
-                ))}
+                  ) : null,
+                )}
               </div>
             )}
           </div>

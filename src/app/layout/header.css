@@ -26,11 +26,26 @@
   text-align: center;
 }
 
-.app-header .env-banner.red { background-color: #ff8e8e; color: #a70404; }
-.app-header .env-banner.orange { background-color: #ffd47e; color: #bd7e02; }
-.app-header .env-banner.yellow { background-color: #f1ef63; color: #98980f; }
-.app-header .env-banner.green { background-color: #aaf1a0; color: #057713; }
-.app-header .env-banner.purple { background-color: #d39eff; color: #8c00ff; }
+.app-header .env-banner.red {
+  background-color: #ff8e8e;
+  color: #a70404;
+}
+.app-header .env-banner.orange {
+  background-color: #ffd47e;
+  color: #bd7e02;
+}
+.app-header .env-banner.yellow {
+  background-color: #f1ef63;
+  color: #98980f;
+}
+.app-header .env-banner.green {
+  background-color: #aaf1a0;
+  color: #057713;
+}
+.app-header .env-banner.purple {
+  background-color: #d39eff;
+  color: #8c00ff;
+}
 
 /* Navbar */
 .app-header .navbar {
@@ -51,7 +66,7 @@
   min-height: 3.4375rem;
   margin: 0;
   padding: 0.5rem 0;
-  background: url("/assets/images/bcgov-header-vert-SM.png") no-repeat 8px center / 58px 50px;
+  background: url('/assets/images/bcgov-header-vert-SM.png') no-repeat 8px center / 58px 50px;
   text-decoration: none;
 }
 
@@ -89,7 +104,7 @@
   outline: none;
 }
 
-.app-header .navbar-toggler[aria-expanded="true"] {
+.app-header .navbar-toggler[aria-expanded='true'] {
   color: var(--gold) !important;
 }
 
@@ -159,8 +174,8 @@
   .app-header .nav-item:first-child .nav-link {
     border-top: 2px solid var(--gold);
   }
-  
-  .app-header .nav-item:has(.nav-link[href="/contact"]) {
+
+  .app-header .nav-item:has(.nav-link[href='/contact']) {
     border-bottom: 2px solid var(--gold);
   }
 }
@@ -174,7 +189,7 @@
   margin-left: 0.5rem;
 }
 
-.app-header .navbar-nav .nav-item.dropdown.show > .nav-link[aria-expanded="true"] {
+.app-header .navbar-nav .nav-item.dropdown.show > .nav-link[aria-expanded='true'] {
   background-color: var(--bc-blue-dark) !important;
 }
 
@@ -338,7 +353,7 @@
   .app-header .navbar-brand {
     height: 4.2rem;
     min-height: 4.2rem;
-    background: url("/assets/images/bcgov-header-vert-MD.png") no-repeat 10px center;
+    background: url('/assets/images/bcgov-header-vert-MD.png') no-repeat 10px center;
   }
 
   .app-header .navbar-brand__title {
@@ -351,5 +366,3 @@
     font-size: var(--bs-font-size-xs);
   }
 }
-
-

@@ -6,7 +6,7 @@ import { fakeMap } from 'app/pages/projects/maplibre-test-stub';
 import { DetailsSidebar } from './details-sidebar';
 
 vi.mock('@vis.gl/react-maplibre', async () =>
-  (await import('app/pages/projects/maplibre-test-stub')).mapLibreStub()
+  (await import('app/pages/projects/maplibre-test-stub')).mapLibreStub(),
 );
 
 const PROJECT = {
@@ -15,7 +15,7 @@ const PROJECT = {
   legislation: '2018 Environmental Assessment Act',
   region: 'Skeena',
   location: 'Near Cedar Creek',
-  centroid: [-127.5, 54.2]
+  centroid: [-127.5, 54.2],
 } as unknown as Project;
 
 function renderSidebar(project: Project | null) {
@@ -40,7 +40,9 @@ describe('project details sidebar map', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: 'Reset view' }));
 
-    expect(fakeMap.flyTo).toHaveBeenCalledWith(expect.objectContaining({ center: [-127.5, 54.2], zoom: 8 }));
+    expect(fakeMap.flyTo).toHaveBeenCalledWith(
+      expect.objectContaining({ center: [-127.5, 54.2], zoom: 8 }),
+    );
   });
 
   it('says so when the project has no centroid', () => {

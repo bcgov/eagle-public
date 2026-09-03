@@ -1,7 +1,13 @@
 /* eslint-disable react-refresh/only-export-components -- one map module: the components and the
    constants they share (style, bounds, basemap list) are the same unit of change. */
 import { useEffect, useRef, useState } from 'react';
-import { AttributionControl, Layer, NavigationControl, ScaleControl, Source } from '@vis.gl/react-maplibre';
+import {
+  AttributionControl,
+  Layer,
+  NavigationControl,
+  ScaleControl,
+  Source,
+} from '@vis.gl/react-maplibre';
 import type { StyleSpecification } from 'maplibre-gl';
 import mapWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import { track } from 'app/analytics/analytics';
@@ -25,7 +31,7 @@ export const BC_CENTER: [number, number] = [-125.5, 55.5];
 export const DEFAULT_ZOOM = 5.7;
 export const BC_BOUNDS: [[number, number], [number, number]] = [
   [-139, 48],
-  [-114, 60]
+  [-114, 60],
 ];
 
 export interface Basemap {
@@ -41,20 +47,20 @@ export const BASEMAPS: Basemap[] = [
     name: 'Light Gray',
     path: 'Canvas/World_Light_Gray_Base',
     maxzoom: 16,
-    attribution: 'Tiles &copy; Esri'
+    attribution: 'Tiles &copy; Esri',
   },
   {
     name: 'World Topographic',
     path: 'World_Topo_Map',
     maxzoom: 16,
-    attribution: 'Tiles &copy; Esri'
+    attribution: 'Tiles &copy; Esri',
   },
   {
     name: 'World Imagery',
     path: 'World_Imagery',
     maxzoom: 17,
-    attribution: 'Tiles &copy; Esri'
-  }
+    attribution: 'Tiles &copy; Esri',
+  },
 ];
 
 function slug(basemap: Basemap): string {
@@ -62,7 +68,7 @@ function slug(basemap: Basemap): string {
 }
 
 function activeBasemapName(stored: string): string {
-  return BASEMAPS.some(basemap => basemap.name === stored) ? stored : DEFAULT_BASEMAP;
+  return BASEMAPS.some((basemap) => basemap.name === stored) ? stored : DEFAULT_BASEMAP;
 }
 
 export function Basemaps() {
@@ -70,12 +76,14 @@ export function Basemaps() {
 
   return (
     <>
-      {BASEMAPS.map(basemap => (
+      {BASEMAPS.map((basemap) => (
         <Source
           key={basemap.name}
           id={slug(basemap)}
           type="raster"
-          tiles={[`https://server.arcgisonline.com/ArcGIS/rest/services/${basemap.path}/MapServer/tile/{z}/{y}/{x}`]}
+          tiles={[
+            `https://server.arcgisonline.com/ArcGIS/rest/services/${basemap.path}/MapServer/tile/{z}/{y}/{x}`,
+          ]}
           tileSize={256}
           maxzoom={basemap.maxzoom}
           attribution={basemap.attribution}
@@ -141,7 +149,7 @@ export function MapControls({ onReset, trackContext, overlays }: MapControlsProp
             className="map-control-btn"
             aria-label="Map layers"
             aria-expanded={layersOpen}
-            onClick={() => setLayersOpen(open => !open)}
+            onClick={() => setLayersOpen((open) => !open)}
           >
             <i className="material-icons" aria-hidden="true">
               layers
@@ -151,7 +159,7 @@ export function MapControls({ onReset, trackContext, overlays }: MapControlsProp
           {layersOpen && (
             <div className="map-layers-menu">
               <div role="group" aria-label="Base map">
-                {BASEMAPS.map(basemap => (
+                {BASEMAPS.map((basemap) => (
                   <label className="map-layers-menu__row" key={basemap.name}>
                     <input
                       type="radio"
@@ -160,7 +168,10 @@ export function MapControls({ onReset, trackContext, overlays }: MapControlsProp
                       checked={basemap.name === active}
                       onChange={() => {
                         baseLayerName.set(basemap.name);
-                        track('Map Base Layer Changed', { ...trackContext, layer_name: basemap.name });
+                        track('Map Base Layer Changed', {
+                          ...trackContext,
+                          layer_name: basemap.name,
+                        });
                       }}
                     />
                     <span>{basemap.name}</span>
@@ -177,12 +188,12 @@ export function MapControls({ onReset, trackContext, overlays }: MapControlsProp
                     <input
                       type="checkbox"
                       checked={regionsOn}
-                      onChange={event => {
+                      onChange={(event) => {
                         regionsVisible.set(event.target.checked);
                         track('Map Overlay Toggled', {
                           ...trackContext,
                           layer_name: 'Regions',
-                          visible: event.target.checked
+                          visible: event.target.checked,
                         });
                       }}
                     />
@@ -218,7 +229,10 @@ export function hasValidCentroid(project: Project): boolean {
 
   const [lon, lat] = project.centroid;
   if (typeof lon !== 'number' || typeof lat !== 'number') {
-    logger.warn(`Invalid centroid type for project ${project._id}: [${typeof lon}, ${typeof lat}]`, 'ProjlistMap');
+    logger.warn(
+      `Invalid centroid type for project ${project._id}: [${typeof lon}, ${typeof lat}]`,
+      'ProjlistMap',
+    );
     return false;
   }
   if (isNaN(lon) || isNaN(lat)) {
@@ -226,7 +240,10 @@ export function hasValidCentroid(project: Project): boolean {
     return false;
   }
   if (lat < 48 || lat > 60 || lon < -139 || lon > -114) {
-    logger.warn(`Out-of-range centroid for project ${project._id}: [${lon}, ${lat}]`, 'ProjlistMap');
+    logger.warn(
+      `Out-of-range centroid for project ${project._id}: [${lon}, ${lat}]`,
+      'ProjlistMap',
+    );
     return false;
   }
   return true;

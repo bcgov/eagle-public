@@ -10,7 +10,7 @@ export const PROJECT_LIST_TABLE_COLUMNS: IColumnObject[] = [
   { name: 'Type', value: 'type', width: 'col-2' },
   { name: 'Region', value: 'region', width: 'col-2' },
   { name: 'Phase', value: 'currentPhaseName', width: 'col-2' },
-  { name: 'Decision', value: 'eacDecision', width: 'col-2' }
+  { name: 'Decision', value: 'eacDecision', width: 'col-2' },
 ];
 
 export interface FilterConfig {
@@ -35,7 +35,7 @@ export const FILTER_CONFIGS: FilterConfig[] = [
     label: 'EA Decision',
     options: [], // populated from the lists query
     panelSize: 4,
-    matchId: true
+    matchId: true,
   },
   {
     id: 'issuedDate',
@@ -46,8 +46,8 @@ export const FILTER_CONFIGS: FilterConfig[] = [
       startId: 'decisionDateStart',
       startLabel: 'Decision Start',
       endId: 'decisionDateEnd',
-      endLabel: 'Decision End'
-    }
+      endLabel: 'Decision End',
+    },
   },
   {
     id: 'type',
@@ -55,7 +55,7 @@ export const FILTER_CONFIGS: FilterConfig[] = [
     label: 'Project Type',
     options: Constants.TEMPORARY_PROJECT_TYPE,
     panelSize: 4,
-    matchId: true
+    matchId: true,
   },
   {
     id: 'proponent',
@@ -63,7 +63,7 @@ export const FILTER_CONFIGS: FilterConfig[] = [
     label: 'Proponent',
     options: [], // populated from the proponent orgs
     panelSize: 4,
-    matchId: true
+    matchId: true,
   },
   {
     id: 'region',
@@ -71,7 +71,7 @@ export const FILTER_CONFIGS: FilterConfig[] = [
     label: 'Region',
     options: Constants.REGIONS_COLLECTION,
     panelSize: 4,
-    matchId: true
+    matchId: true,
   },
   {
     id: 'CEAAInvolvement',
@@ -79,7 +79,7 @@ export const FILTER_CONFIGS: FilterConfig[] = [
     label: 'IAAC Involvement',
     options: [], // populated from the lists query
     panelSize: 4,
-    matchId: true
+    matchId: true,
   },
   {
     id: 'currentPhaseName',
@@ -87,8 +87,8 @@ export const FILTER_CONFIGS: FilterConfig[] = [
     label: 'Project Phase',
     options: [], // populated from the lists query
     panelSize: 4,
-    matchId: true
-  }
+    matchId: true,
+  },
 ];
 
 export const FILTER_LIST: string[] = [
@@ -99,7 +99,7 @@ export const FILTER_LIST: string[] = [
   'proponent',
   'region',
   'CEAAInvolvement',
-  'currentPhaseName'
+  'currentPhaseName',
 ];
 
 export const DATE_FILTER_LIST: string[] = ['decisionDateStart', 'decisionDateEnd'];

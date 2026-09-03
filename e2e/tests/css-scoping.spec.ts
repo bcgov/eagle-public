@@ -37,7 +37,9 @@ test('home activity cards keep full-width, left-aligned body copy', async ({ pag
   expect(await styleOf(page, '.bg-faded p', 'max-width')).toBe('780px');
 });
 
-test('news activity cells keep the card padding, and the date cell the table padding', async ({ page }) => {
+test('news activity cells keep the card padding, and the date cell the table padding', async ({
+  page,
+}) => {
   await page.goto('/news');
   await ready(page);
   expect(await styleOf(page, 'td.activity-card', 'padding-top')).toBe('20px');
@@ -47,7 +49,9 @@ test('news activity cells keep the card padding, and the date cell the table pad
 
 test('the comment period hero spans the page', async ({ page, request }) => {
   const list = await (
-    await request.get('/api/commentperiod?sortBy=-dateStarted&fields=project|dateStarted|dateCompleted')
+    await request.get(
+      '/api/commentperiod?sortBy=-dateStarted&fields=project|dateStarted|dateCompleted',
+    )
   ).json();
   const cp = list.find((c: any) => c.project && c.dateStarted && c.dateCompleted);
   expect(cp, 'no comment period on this environment').toBeTruthy();
@@ -58,7 +62,9 @@ test('the comment period hero spans the page', async ({ page, request }) => {
   // The page renders its own `.project > main.project-info`; the project shell's grid must not
   // squeeze it into the sidebar column.
   expect(await styleOf(page, 'main.project-info', 'display')).toBe('block');
-  const width = await page.locator('main.project-info').evaluate(el => el.getBoundingClientRect().width);
+  const width = await page
+    .locator('main.project-info')
+    .evaluate((el) => el.getBoundingClientRect().width);
   expect(width).toBeGreaterThan(1000);
   // The hero copy is not the shared hero-banner component's.
   expect(await styleOf(page, '.hero-banner__content p', 'max-width')).toBe('none');
@@ -70,7 +76,10 @@ test('the search keyword clear button stays inside the input', async ({ page }) 
   expect(await styleOf(page, '.search-clear-btn', 'position')).toBe('absolute');
 });
 
-test('the project detail sidebar map is not laid out like the full-page map', async ({ page, request }) => {
+test('the project detail sidebar map is not laid out like the full-page map', async ({
+  page,
+  request,
+}) => {
   const body = await (
     await request.get(
       '/api/search?dataset=Project&pageNum=0&pageSize=1&keywords=Site%20C&projectLegislation=default&sortBy=-score&populate=true&fuzzy=false',
@@ -84,7 +93,10 @@ test('the project detail sidebar map is not laid out like the full-page map', as
   expect(await styleOf(page, '.map-container', 'height')).toBe('272px');
 });
 
-test('project detail child headings are not the details tab heading colour', async ({ page, request }) => {
+test('project detail child headings are not the details tab heading colour', async ({
+  page,
+  request,
+}) => {
   const body = await (
     await request.get(
       '/api/search?dataset=Project&pageNum=0&pageSize=1&keywords=Site%20C&projectLegislation=default&sortBy=-score&populate=true&fuzzy=false',
@@ -97,7 +109,9 @@ test('project detail child headings are not the details tab heading colour', asy
   expect(await styleOf(page, '.tab-content h3', 'color')).toBe('rgb(73, 73, 73)');
 });
 
-test('the notification Engagement panel is not padded like a detail field block', async ({ page }) => {
+test('the notification Engagement panel is not padded like a detail field block', async ({
+  page,
+}) => {
   await page.goto('/project-notifications');
   await ready(page);
   expect(await styleOf(page, '.pn-info-block.tab-section', 'padding-left')).toBe('0px');

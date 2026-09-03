@@ -8,13 +8,15 @@ async function configureWith(contentSearch: boolean): Promise<void> {
 }
 
 function findRoute(path: string) {
-  return routes[0].children?.find(route => route.path === path);
+  return routes[0].children?.find((route) => route.path === path);
 }
 
 describe('contentSearchLoader', () => {
   const original = window.__env;
 
-  afterEach(() => { window.__env = original; });
+  afterEach(() => {
+    window.__env = original;
+  });
 
   it('sends /search/content to /search when content search is disabled', async () => {
     await configureWith(false);
@@ -47,13 +49,15 @@ describe('routes', () => {
 
   it('redirects a bare comment period URL to its details page', async () => {
     const route = findRoute('p/:projId/cp/:commentPeriodId');
-    const response = await (route!.loader as any)({ params: { projId: 'abc', commentPeriodId: 'def' } });
+    const response = await (route!.loader as any)({
+      params: { projId: 'abc', commentPeriodId: 'def' },
+    });
     expect(response.headers.get('Location')).toBe('/p/abc/cp/def/details');
   });
 
   it('gives the project route its top-level tabs plus an index redirect', () => {
     const project = findRoute('p/:projId');
-    expect(project?.children?.map(child => child.path)).toEqual([
+    expect(project?.children?.map((child) => child.path)).toEqual([
       undefined,
       'project-details',
       'commenting',
@@ -61,34 +65,34 @@ describe('routes', () => {
       'application',
       'certificates',
       'amendments',
-      'decisions'
+      'decisions',
     ]);
   });
 
   it('nests the document-type tabs under documents', () => {
-    const documents = findRoute('p/:projId')?.children?.find(child => child.path === 'documents');
-    expect(documents?.children?.map(child => child.path)).toEqual([
+    const documents = findRoute('p/:projId')?.children?.find((child) => child.path === 'documents');
+    expect(documents?.children?.map((child) => child.path)).toEqual([
       undefined,
       'application',
       'certificates',
       'amendments',
-      'compliance'
+      'compliance',
     ]);
   });
 
   it.each(['application', 'certificates', 'amendments'])(
     'redirects the old top-level /%s path to its sub-tab, filters intact',
-    async tab => {
+    async (tab) => {
       const route = findRoute('p/:projId')?.children?.find(
-        child => child.path === tab && !!child.loader
+        (child) => child.path === tab && !!child.loader,
       );
       const response = await (route!.loader as any)({
         params: { projId: 'abc' },
-        request: new Request(`http://localhost/p/abc/${tab}?currentPage=2&sortBy=-datePosted`)
+        request: new Request(`http://localhost/p/abc/${tab}?currentPage=2&sortBy=-datePosted`),
       });
       expect(response.headers.get('Location')).toBe(
-        `/p/abc/documents/${tab}?currentPage=2&sortBy=-datePosted`
+        `/p/abc/documents/${tab}?currentPage=2&sortBy=-datePosted`,
       );
-    }
+    },
   );
 });

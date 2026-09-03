@@ -52,8 +52,9 @@ export const routes: RouteObject[] = [
       // (`/cac-unsubscribe;project=…;email=…`), which react-router sees as one path segment.
       {
         path: ':cacUnsubscribe',
-        loader: ({ params }) => (params['cacUnsubscribe']?.startsWith('cac-unsubscribe;') ? null : redirect('/')),
-        Component: CacUnsubscribe
+        loader: ({ params }) =>
+          params['cacUnsubscribe']?.startsWith('cac-unsubscribe;') ? null : redirect('/'),
+        Component: CacUnsubscribe,
       },
 
       { path: 'projects', Component: Projects },
@@ -63,7 +64,8 @@ export const routes: RouteObject[] = [
 
       {
         path: 'pn/:projId/cp/:commentPeriodId',
-        loader: ({ params }) => redirect(`/pn/${params['projId']}/cp/${params['commentPeriodId']}/details`)
+        loader: ({ params }) =>
+          redirect(`/pn/${params['projId']}/cp/${params['commentPeriodId']}/details`),
       },
       { path: 'pn/:projId/cp/:commentPeriodId/details', Component: Comments },
 
@@ -82,7 +84,7 @@ export const routes: RouteObject[] = [
       {
         path: 'search/content',
         loader: contentSearchLoader,
-        Component: ContentSearch
+        Component: ContentSearch,
       },
 
       { path: 'search-help', Component: SearchHelp },
@@ -90,7 +92,8 @@ export const routes: RouteObject[] = [
       // Project comment period routes
       {
         path: 'p/:projId/cp/:commentPeriodId',
-        loader: ({ params }) => redirect(`/p/${params['projId']}/cp/${params['commentPeriodId']}/details`)
+        loader: ({ params }) =>
+          redirect(`/p/${params['projId']}/cp/${params['commentPeriodId']}/details`),
       },
       { path: 'p/:projId/cp/:commentPeriodId/details', Component: Comments },
 
@@ -99,7 +102,10 @@ export const routes: RouteObject[] = [
         path: 'p/:projId',
         Component: ProjectPage,
         children: [
-          { index: true, loader: ({ params }) => redirect(`/p/${params['projId']}/project-details`) },
+          {
+            index: true,
+            loader: ({ params }) => redirect(`/p/${params['projId']}/project-details`),
+          },
           { path: 'project-details', Component: ProjectDetailsTab },
           { path: 'commenting', Component: CommentingTab },
           {
@@ -110,22 +116,22 @@ export const routes: RouteObject[] = [
               { path: 'application', Component: Application },
               { path: 'certificates', Component: Certificates },
               { path: 'amendments', Component: Amendments },
-              { path: 'compliance', Component: ComplianceDocumentsTab }
-            ]
+              { path: 'compliance', Component: ComplianceDocumentsTab },
+            ],
           },
           // The document-type tabs used to sit at the top level. Keep the old paths pointing at
           // their sub-tab, filters and paging intact, so published links still work.
-          ...['application', 'certificates', 'amendments'].map(tab => ({
+          ...['application', 'certificates', 'amendments'].map((tab) => ({
             path: tab,
             loader: ({ params, request }: LoaderFunctionArgs) =>
-              redirect(`/p/${params['projId']}/documents/${tab}${new URL(request.url).search}`)
+              redirect(`/p/${params['projId']}/documents/${tab}${new URL(request.url).search}`),
           })),
-          { path: 'decisions', Component: DecisionsTab }
-        ]
+          { path: 'decisions', Component: DecisionsTab },
+        ],
       },
 
       // Wildcard route
-      { path: '*', loader: () => redirect('/') }
-    ]
-  }
+      { path: '*', loader: () => redirect('/') },
+    ],
+  },
 ];

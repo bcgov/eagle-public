@@ -12,7 +12,7 @@ const DOCUMENT = {
   displayName: 'Fish Habitat Report',
   documentFileName: 'fish-habitat.pdf',
   datePosted: '2026-05-04T00:00:00.000Z',
-  project: { _id: 'proj-1', name: 'Alpha Mine' }
+  project: { _id: 'proj-1', name: 'Alpha Mine' },
 };
 
 const DOWNLOAD_URL = '/api/public/document/doc-1/download/fish-habitat.pdf';
@@ -31,10 +31,15 @@ describe('DocSearchTableRow name cell', () => {
       <MemoryRouter>
         <table>
           <tbody>
-            <DocSearchTableRow rowData={DOCUMENT} tableData={tableObject()} columns={[]} onMessage={() => undefined} />
+            <DocSearchTableRow
+              rowData={DOCUMENT}
+              tableData={tableObject()}
+              columns={[]}
+              onMessage={() => undefined}
+            />
           </tbody>
         </table>
-      </MemoryRouter>
+      </MemoryRouter>,
     );
   });
 
@@ -44,7 +49,10 @@ describe('DocSearchTableRow name cell', () => {
   });
 
   it('links to the eagle-api download URL', () => {
-    expect(screen.getByRole('link', { name: 'Fish Habitat Report' })).toHaveAttribute('href', DOWNLOAD_URL);
+    expect(screen.getByRole('link', { name: 'Fish Habitat Report' })).toHaveAttribute(
+      'href',
+      DOWNLOAD_URL,
+    );
   });
 
   it('starts the download on click rather than following the href', async () => {
@@ -90,7 +98,7 @@ describe('DocSearchTableRow row interaction', () => {
             />
           </tbody>
         </table>
-      </MemoryRouter>
+      </MemoryRouter>,
     );
   }
 

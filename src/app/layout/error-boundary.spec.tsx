@@ -10,7 +10,7 @@ import { initTelemetry } from 'app/config/telemetry';
 const sdk = vi.hoisted(() => ({
   loadAppInsights: vi.fn(),
   addTelemetryInitializer: vi.fn(),
-  trackException: vi.fn()
+  trackException: vi.fn(),
 }));
 
 vi.mock('@microsoft/applicationinsights-web', () => ({
@@ -18,7 +18,7 @@ vi.mock('@microsoft/applicationinsights-web', () => ({
     loadAppInsights = sdk.loadAppInsights;
     addTelemetryInitializer = sdk.addTelemetryInitializer;
     trackException = sdk.trackException;
-  }
+  },
 }));
 
 function Boom(): never {
@@ -30,7 +30,7 @@ beforeEach(async () => {
   // React prints the caught error itself; the noise is not the test's.
   vi.spyOn(console, 'error').mockImplementation(() => undefined);
   await initTelemetry('InstrumentationKey=00000000-0000-0000-0000-000000000000', 'eagle-public', [
-    'epic.example.gov.bc.ca'
+    'epic.example.gov.bc.ca',
   ]);
 });
 
@@ -41,7 +41,7 @@ describe('the error boundary', () => {
     render(
       <ErrorBoundary>
         <p>the app</p>
-      </ErrorBoundary>
+      </ErrorBoundary>,
     );
     expect(screen.getByText('the app')).toBeInTheDocument();
     expect(sdk.trackException).not.toHaveBeenCalled();
@@ -51,7 +51,7 @@ describe('the error boundary', () => {
     render(
       <ErrorBoundary>
         <Boom />
-      </ErrorBoundary>
+      </ErrorBoundary>,
     );
 
     expect(screen.getByRole('heading', { name: 'Something went wrong' })).toBeInTheDocument();
@@ -62,13 +62,13 @@ describe('the error boundary', () => {
     render(
       <ErrorBoundary>
         <Boom />
-      </ErrorBoundary>
+      </ErrorBoundary>,
     );
 
     expect(sdk.trackException).toHaveBeenCalledTimes(1);
     expect(sdk.trackException).toHaveBeenCalledWith({
       exception: expect.objectContaining({ message: 'render blew up' }),
-      properties: { componentStack: expect.stringContaining('Boom') }
+      properties: { componentStack: expect.stringContaining('Boom') },
     });
   });
 });

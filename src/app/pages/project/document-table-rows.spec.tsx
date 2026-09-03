@@ -12,7 +12,7 @@ const DOCUMENT = {
   _id: 'doc-1',
   displayName: 'Fish Habitat Report',
   documentFileName: 'fish-habitat.pdf',
-  datePosted: '2026-05-04T00:00:00.000Z'
+  datePosted: '2026-05-04T00:00:00.000Z',
 };
 
 const DOWNLOAD_URL = '/api/public/document/doc-1/download/fish-habitat.pdf';
@@ -43,10 +43,15 @@ describe('DocumentTableRow name cell', () => {
       <MemoryRouter>
         <table>
           <tbody>
-            <DocumentTableRow rowData={DOCUMENT} tableData={tableObject()} columns={[]} onMessage={() => undefined} />
+            <DocumentTableRow
+              rowData={DOCUMENT}
+              tableData={tableObject()}
+              columns={[]}
+              onMessage={() => undefined}
+            />
           </tbody>
         </table>
-      </MemoryRouter>
+      </MemoryRouter>,
     );
     return screen.getByRole('link', { name: 'Fish Habitat Report' });
   }
@@ -112,7 +117,7 @@ describe('DocumentTableRow row interaction', () => {
             />
           </tbody>
         </table>
-      </MemoryRouter>
+      </MemoryRouter>,
     );
   }
 
@@ -151,7 +156,7 @@ describe('DocumentTableRow row interaction', () => {
             />
           </tbody>
         </table>
-      </MemoryRouter>
+      </MemoryRouter>,
     );
 
     await userEvent.click(screen.getByText('star'));
@@ -247,7 +252,7 @@ describe('DocumentTableRow selection', () => {
             />
           </tbody>
         </table>
-      </MemoryRouter>
+      </MemoryRouter>,
     );
   }
 
@@ -269,15 +274,18 @@ describe('DocumentTableRow selection', () => {
   it('says so rather than selecting past the 100-document cap', async () => {
     setSelected(
       'documents',
-      Array.from({ length: SELECT_ALL_MAX }, (_, i) => ({ id: `other-${i}`, displayName: `Other ${i}` }))
+      Array.from({ length: SELECT_ALL_MAX }, (_, i) => ({
+        id: `other-${i}`,
+        displayName: `Other ${i}`,
+      })),
     );
     const toasts = renderHook(() => useToasts());
     renderRow(true);
 
     await userEvent.click(screen.getByRole('checkbox', { name: 'Select Fish Habitat Report' }));
 
-    expect(toasts.result.current.map(toast => toast.message)).toEqual([
-      'You can select up to 100 documents at a time.'
+    expect(toasts.result.current.map((toast) => toast.message)).toEqual([
+      'You can select up to 100 documents at a time.',
     ]);
     expect(screen.getByRole('checkbox', { name: 'Select Fish Habitat Report' })).not.toBeChecked();
   });

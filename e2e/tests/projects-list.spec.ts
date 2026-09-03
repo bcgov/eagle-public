@@ -1,5 +1,12 @@
 import { test, expect } from '../support/fixtures';
-import { ready, recordApiCalls, checkBaseline, waitForSearch, total, pageCount } from '../support/helpers';
+import {
+  ready,
+  recordApiCalls,
+  checkBaseline,
+  waitForSearch,
+  total,
+  pageCount,
+} from '../support/helpers';
 
 const ROWS = 'table[aria-label="table-template"] tbody tr';
 const NAME = 'td[data-label="Name"]';
@@ -11,9 +18,13 @@ test('projects-list renders the table and the API it came from', async ({ page }
   const env = await search;
   await ready(page);
 
-  await expect(page.getByRole('heading', { level: 1, name: 'Search Environmental Assessment Projects' })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Search Environmental Assessment Projects' }),
+  ).toBeVisible();
   for (const col of ['Name', 'Proponent', 'Type', 'Region', 'Phase', 'Decision']) {
-    await expect(page.getByRole('columnheader', { name: new RegExp(`Column header ${col}`) })).toBeVisible();
+    await expect(
+      page.getByRole('columnheader', { name: new RegExp(`Column header ${col}`) }),
+    ).toBeVisible();
   }
 
   const rows = page.locator(ROWS);
@@ -66,7 +77,10 @@ test('@data a keyword filter narrows the rows and syncs the query params', async
 
   const search = waitForSearch(page, 'Project');
   await page.getByPlaceholder('Type keyword to search').fill('coal');
-  await page.getByRole('button', { name: /^search Search$|Search/ }).first().click();
+  await page
+    .getByRole('button', { name: /^search Search$|Search/ })
+    .first()
+    .click();
   const env = await search;
   await page.waitForTimeout(1500);
 
@@ -82,7 +96,9 @@ test('@data a keyword filter narrows the rows and syncs the query params', async
 });
 
 test('@data a deep link restores keywords, page and sort', async ({ page }) => {
-  const req = page.waitForRequest(r => r.url().includes('dataset=Project') && r.url().includes('keywords=coal'));
+  const req = page.waitForRequest(
+    (r) => r.url().includes('dataset=Project') && r.url().includes('keywords=coal'),
+  );
   const search = waitForSearch(page, 'Project');
   await page.goto('/projects-list?keywords=coal&currentPage=2&sortBy=-score');
   const env = await search;
@@ -95,6 +111,9 @@ test('@data a deep link restores keywords, page and sort', async ({ page }) => {
   expect(wire.get('sortBy')).toBe('-score');
 
   await expect(page.getByPlaceholder('Type keyword to search')).toHaveValue('coal');
-  await expect(page.getByRole('button', { name: 'Go to page 2' }).first()).toHaveAttribute('aria-current', 'page');
+  await expect(page.getByRole('button', { name: 'Go to page 2' }).first()).toHaveAttribute(
+    'aria-current',
+    'page',
+  );
   await expect(page.locator(ROWS).first().locator(NAME)).toHaveText(env.searchResults[0].name);
 });

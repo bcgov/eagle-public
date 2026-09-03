@@ -47,7 +47,7 @@ describe('project', () => {
 
     it('still reports the total count for a well-formed response', async () => {
       vi.mocked(search.getSearchResults).mockResolvedValue([
-        { data: { searchResults: [{ _id: 'abc' }], meta: [{ searchResultsTotal: 42 }] } }
+        { data: { searchResults: [{ _id: 'abc' }], meta: [{ searchResultsTotal: 42 }] } },
       ]);
 
       const result = await project.getAll(1, 10);
@@ -67,7 +67,9 @@ describe('project', () => {
 
   describe('getById()', () => {
     it('returns the project the api answered with', async () => {
-      vi.mocked(api.getProject).mockResolvedValue([{ _id: '58851197aaecd9001b8227cc', description: 'Test project' }] as any);
+      vi.mocked(api.getProject).mockResolvedValue([
+        { _id: '58851197aaecd9001b8227cc', description: 'Test project' },
+      ] as any);
 
       const result = await project.getById('58851197aaecd9001b8227cc', true);
 

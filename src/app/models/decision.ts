@@ -11,10 +11,10 @@ export class Decision {
   documents: Document[] = [];
 
   constructor(obj?: any) {
-    this._id          = obj && obj._id          || null;
-    this._addedBy     = obj && obj._addedBy     || null;
-    this._application = obj && obj._application || null;
-    this.name         = obj && obj.name         || null;
+    this._id = (obj && obj._id) || null;
+    this._addedBy = (obj && obj._addedBy) || null;
+    this._application = (obj && obj._application) || null;
+    this.name = (obj && obj.name) || null;
 
     // replace \\n (JSON format) with newlines
     if (obj && obj.description) {

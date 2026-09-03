@@ -4,7 +4,7 @@ import { Constants } from 'app/utils/constants';
 import './details-sidebar.css';
 
 // maplibre-gl is ~1 MB; keep it and its wrapper out of the main bundle until this map renders.
-const DetailsMap = lazy(() => import('./details-map').then(m => ({ default: m.DetailsMap })));
+const DetailsMap = lazy(() => import('./details-map').then((m) => ({ default: m.DetailsMap })));
 
 interface DetailsSidebarProps {
   project: Project | null;
@@ -31,10 +31,17 @@ export function DetailsSidebar({ project, loading = false, open, onToggle }: Det
   return (
     <div className="sidebar-wrapper">
       <aside className={`side-banner p-0${open ? '' : ' closed'}`}>
-        <div className={`sidebar-content${loading ? ' placeholder-wave' : ''}`} aria-busy={loading || undefined}>
+        <div
+          className={`sidebar-content${loading ? ' placeholder-wave' : ''}`}
+          aria-busy={loading || undefined}
+        >
           {loading && <span className="visually-hidden">Loading project</span>}
           <h1 className="project-name">
-            {loading ? <span className="placeholder col-9" aria-hidden="true"></span> : project?.name || '-'}
+            {loading ? (
+              <span className="placeholder col-9" aria-hidden="true"></span>
+            ) : (
+              project?.name || '-'
+            )}
           </h1>
 
           <div className="info-section">
@@ -42,7 +49,9 @@ export function DetailsSidebar({ project, loading = false, open, onToggle }: Det
               <span className="info-label">Environmental Assessment</span>
               <p>
                 {loading ? (
-                  <span className="ea-decision placeholder col-7" aria-hidden="true">{'\u00a0'}</span>
+                  <span className="ea-decision placeholder col-7" aria-hidden="true">
+                    {'\u00a0'}
+                  </span>
                 ) : (
                   <span className="ea-decision">{project?.eacDecision?.name || '-'}</span>
                 )}
@@ -56,7 +65,12 @@ export function DetailsSidebar({ project, loading = false, open, onToggle }: Det
                   <span className="placeholder col-10" aria-hidden="true"></span>
                 </p>
               ) : (
-                <a target="_blank" href={legislationLink(project)} className="info-link" rel="noreferrer">
+                <a
+                  target="_blank"
+                  href={legislationLink(project)}
+                  className="info-link"
+                  rel="noreferrer"
+                >
                   <p className="info-value hyperlink">{project?.legislation || '-'}</p>
                 </a>
               )}
@@ -67,14 +81,22 @@ export function DetailsSidebar({ project, loading = false, open, onToggle }: Det
             <div className="info-block">
               <span className="info-label">Region</span>
               <p className="info-value">
-                {loading ? <span className="placeholder col-6" aria-hidden="true"></span> : project?.region || '-'}
+                {loading ? (
+                  <span className="placeholder col-6" aria-hidden="true"></span>
+                ) : (
+                  project?.region || '-'
+                )}
               </p>
             </div>
 
             <div className="info-block">
               <span className="info-label">Location</span>
               <p className="info-value">
-                {loading ? <span className="placeholder col-8" aria-hidden="true"></span> : project?.location || '-'}
+                {loading ? (
+                  <span className="placeholder col-8" aria-hidden="true"></span>
+                ) : (
+                  project?.location || '-'
+                )}
               </p>
             </div>
 
@@ -85,7 +107,9 @@ export function DetailsSidebar({ project, loading = false, open, onToggle }: Det
                 </div>
               ) : centroid && project ? (
                 <div className="map-container">
-                  <Suspense fallback={<span className="placeholder w-100 h-100" aria-hidden="true" />}>
+                  <Suspense
+                    fallback={<span className="placeholder w-100 h-100" aria-hidden="true" />}
+                  >
                     <DetailsMap project={project} />
                   </Suspense>
                 </div>
@@ -99,7 +123,11 @@ export function DetailsSidebar({ project, loading = false, open, onToggle }: Det
         </div>
       </aside>
 
-      <button className="sidebar-toggle" onClick={onToggle} aria-label={open ? 'Close sidebar' : 'Open sidebar'}>
+      <button
+        className="sidebar-toggle"
+        onClick={onToggle}
+        aria-label={open ? 'Close sidebar' : 'Open sidebar'}
+      >
         <i className="material-icons">{open ? 'keyboard_arrow_left' : 'keyboard_arrow_right'}</i>
       </button>
     </div>

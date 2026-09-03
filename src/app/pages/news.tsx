@@ -6,12 +6,17 @@ import { SubscribePopover } from 'app/components/subscribe-popover';
 import { getNotifyApi } from 'app/config/config';
 import { SearchFilterTemplate } from 'app/components/filters/search-filter-template';
 import { TableTemplate } from 'app/components/table/table-template';
-import { tableObject, type IColumnObject, type ITableMessage, type TableRowProps } from 'app/components/table/table-object';
+import {
+  tableObject,
+  type IColumnObject,
+  type ITableMessage,
+  type TableRowProps,
+} from 'app/components/table/table-object';
 import {
   paramsToObject,
   toggleSortDirection,
   toSearchParams,
-  updateTableObjectWithUrlParams
+  updateTableObjectWithUrlParams,
 } from 'app/components/table/table-params';
 import { useTable } from 'app/components/table/use-table';
 
@@ -19,7 +24,7 @@ const TABLE_ID = 'news';
 
 const TABLE_COLUMNS: IColumnObject[] = [
   { name: 'Headline', value: 'headline', width: 'col-10', nosort: true },
-  { name: 'Date', value: 'dateAdded', width: 'col-2', nosort: false }
+  { name: 'Date', value: 'dateAdded', width: 'col-2', nosort: false },
 ];
 
 function NewsRow({ rowData }: TableRowProps) {
@@ -42,21 +47,21 @@ export function News() {
     currentPage: base.currentPage,
     pageSize: base.pageSize,
     sortBy: base.sortBy,
-    populate: true
+    populate: true,
   });
 
   const data = {
     ...base,
     columns: TABLE_COLUMNS,
-    items: result.data.map(record => ({ rowData: record })),
+    items: result.data.map((record) => ({ rowData: record })),
     totalListItems: result.totalListItems,
     options: {
       ...base.options,
       showPageCountDisplay: true,
       showPagination: true,
       showAllPicker: true,
-      disableRowHighlight: true
-    }
+      disableRowHighlight: true,
+    },
   };
 
   function submit(next: Record<string, any>): void {
@@ -66,7 +71,11 @@ export function News() {
   function onMessage(msg: ITableMessage): void {
     switch (msg.label) {
       case 'columnSort':
-        submit({ ...params, sortBy: toggleSortDirection(base.sortBy, msg.data, '-'), currentPage: 1 });
+        submit({
+          ...params,
+          sortBy: toggleSortDirection(base.sortBy, msg.data, '-'),
+          currentPage: 1,
+        });
         break;
       case 'pageNum':
         submit({ ...params, currentPage: msg.data });
@@ -97,7 +106,7 @@ export function News() {
         <div className="container">
           <section className="mb-4 pt-0 pb-0">
             <SearchFilterTemplate
-              onSearch={searchEvent =>
+              onSearch={(searchEvent) =>
                 submit({ ...params, currentPage: 1, keywords: searchEvent.keywords || null })
               }
               searching={result.loading}

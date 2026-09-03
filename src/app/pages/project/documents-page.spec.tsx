@@ -21,24 +21,32 @@ const LISTS = [
 
   { _id: 'type-amend-2002', name: 'Amendment Package', legislation: 2002, type: 'doctype' },
   { _id: 'ms-amend-2002', name: 'Amendment', legislation: 2002, type: 'label' },
-  { _id: 'ph-amend-2002', name: 'Post Decision - Amendment', legislation: 2002, type: 'projectPhase' },
+  {
+    _id: 'ph-amend-2002',
+    name: 'Post Decision - Amendment',
+    legislation: 2002,
+    type: 'projectPhase',
+  },
 
   { _id: 'ms-ce-2002', name: 'Compliance & Enforcement', legislation: 2002, type: 'label' },
-  { _id: 'ms-ce-2018', name: 'Compliance & Enforcement', legislation: 2018, type: 'label' }
+  { _id: 'ms-ce-2018', name: 'Compliance & Enforcement', legislation: 2018, type: 'label' },
 ];
 
 let requests: string[];
 let tabSearchResponse: (url: string) => unknown;
 
 function jsonResponse(body: unknown) {
-  return new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } });
+  return new Response(JSON.stringify(body), {
+    status: 200,
+    headers: { 'content-type': 'application/json' },
+  });
 }
 
 const CONTEXT: ProjectContext = {
   project: { _id: 'proj-1', name: 'Cedar Quarry' } as ProjectContext['project'],
   projId: 'proj-1',
   lists: LISTS,
-  projectLoading: false
+  projectLoading: false,
 };
 
 /** The Documents tab as the shell mounts it: outlet context in, sub-tab body out. */
@@ -51,16 +59,23 @@ function renderDocuments(path = '/p/proj-1/documents', retry: RetryOptions = {})
       requests.push(url);
       const body = tabSearchResponse(url);
       return body instanceof Response ? body : jsonResponse(body);
-    })
+    }),
   );
 
   return renderRouter(path, CONTEXT, retry);
 }
 
-interface RetryOptions { retry?: number | false; retryDelay?: number }
+interface RetryOptions {
+  retry?: number | false;
+  retryDelay?: number;
+}
 
 /** The same route tree, with whatever fetch stub the test installed. */
-function renderRouter(path = '/p/proj-1/documents', context: ProjectContext = CONTEXT, { retry = false, retryDelay = 0 }: RetryOptions = {}) {
+function renderRouter(
+  path = '/p/proj-1/documents',
+  context: ProjectContext = CONTEXT,
+  { retry = false, retryDelay = 0 }: RetryOptions = {},
+) {
   const router = createMemoryRouter(
     [
       {
@@ -75,19 +90,21 @@ function renderRouter(path = '/p/proj-1/documents', context: ProjectContext = CO
               { path: 'application', element: <ContextProbe /> },
               { path: 'compliance', element: <div>compliance documents</div> },
               { path: 'certificates', element: <div>certificate documents</div> },
-              { path: 'amendments', element: <div>amendment documents</div> }
-            ]
-          }
-        ]
-      }
+              { path: 'amendments', element: <div>amendment documents</div> },
+            ],
+          },
+        ],
+      },
     ],
-    { initialEntries: [path] }
+    { initialEntries: [path] },
   );
 
   render(
-    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry, retryDelay, gcTime: 0 } } })}>
+    <QueryClientProvider
+      client={new QueryClient({ defaultOptions: { queries: { retry, retryDelay, gcTime: 0 } } })}
+    >
       <RouterProvider router={router} />
-    </QueryClientProvider>
+    </QueryClientProvider>,
   );
   return router;
 }
@@ -104,15 +121,21 @@ function ShellStub({ context }: { context: ProjectContext }) {
 
 /** The segmented control's links, by their accessible name. */
 function segment(name: string) {
-  return within(screen.getByRole('navigation', { name: 'Document type' })).getByRole('link', { name });
+  return within(screen.getByRole('navigation', { name: 'Document type' })).getByRole('link', {
+    name,
+  });
 }
 
 function findSegment(name: string) {
-  return within(screen.getByRole('navigation', { name: 'Document type' })).findByRole('link', { name });
+  return within(screen.getByRole('navigation', { name: 'Document type' })).findByRole('link', {
+    name,
+  });
 }
 
 function querySegment(name: string) {
-  return within(screen.getByRole('navigation', { name: 'Document type' })).queryByRole('link', { name });
+  return within(screen.getByRole('navigation', { name: 'Document type' })).queryByRole('link', {
+    name,
+  });
 }
 
 describe('documents page', () => {
@@ -130,7 +153,10 @@ describe('documents page', () => {
     // the control shimmering for good whenever the List fetch failed.
     const withoutLists = { ...CONTEXT, lists: [] };
     requests = [];
-    vi.stubGlobal('fetch', vi.fn(async () => jsonResponse([{ searchResults: [], meta: [] }])));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => jsonResponse([{ searchResults: [], meta: [] }])),
+    );
 
     renderRouter('/p/proj-1/documents', withoutLists);
 
@@ -144,7 +170,7 @@ describe('documents page', () => {
     // Four probes resolve independently; rendering each answer as it lands makes the segments pop
     // in one at a time.
     let release: () => void = () => undefined;
-    const gate = new Promise<void>(resolve => {
+    const gate = new Promise<void>((resolve) => {
       release = resolve;
     });
     requests = [];
@@ -153,8 +179,10 @@ describe('documents page', () => {
       vi.fn(async (input: RequestInfo | URL) => {
         requests.push(String(input));
         await gate;
-        return jsonResponse([{ searchResults: [{ _id: 'doc-1' }], meta: [{ searchResultsTotal: 1 }] }]);
-      })
+        return jsonResponse([
+          { searchResults: [{ _id: 'doc-1' }], meta: [{ searchResultsTotal: 1 }] },
+        ]);
+      }),
     );
 
     renderRouter();
@@ -176,7 +204,9 @@ describe('documents page', () => {
     renderDocuments();
 
     expect(await findSegment('All Documents')).toHaveAttribute('href', '/p/proj-1/documents');
-    await waitFor(() => expect(requests.filter(url => url.includes('dataset=Document'))).toHaveLength(4));
+    await waitFor(() =>
+      expect(requests.filter((url) => url.includes('dataset=Document'))).toHaveLength(4),
+    );
     expect(querySegment('Application')).not.toBeInTheDocument();
     expect(querySegment('Certificate')).not.toBeInTheDocument();
     expect(querySegment('Amendment(s)')).not.toBeInTheDocument();
@@ -186,30 +216,34 @@ describe('documents page', () => {
   it('asks for one document per segment, filtered by that view type and milestone ids', async () => {
     renderDocuments();
 
-    await waitFor(() => expect(requests.filter(url => url.includes('dataset=Document'))).toHaveLength(4));
+    await waitFor(() =>
+      expect(requests.filter((url) => url.includes('dataset=Document'))).toHaveLength(4),
+    );
 
-    expect(requests.find(url => url.includes('and[type]=type-app-2002'))).toBe(
+    expect(requests.find((url) => url.includes('and[type]=type-app-2002'))).toBe(
       '/api/search?dataset=Document&project=proj-1&pageNum=0&pageSize=1&projectLegislation=default&sortBy=&sortBy=&populate=true' +
         '&and[documentSource]=PROJECT' +
         '&and[type]=type-app-2002&and[type]=type-app-2018&and[type]=type-memo-2002&and[type]=type-memo-2018' +
         '&and[milestone]=ms-appreview&and[milestone]=ms-eac&and[milestone]=ms-eac-rev' +
-        '&fuzzy=false'
+        '&fuzzy=false',
     );
   });
 
   it('probes for compliance documents by milestone, with no empty type parameter', async () => {
     renderDocuments();
 
-    await waitFor(() => expect(requests.filter(url => url.includes('dataset=Document'))).toHaveLength(4));
+    await waitFor(() =>
+      expect(requests.filter((url) => url.includes('dataset=Document'))).toHaveLength(4),
+    );
 
-    const probe = requests.find(url => url.includes('and[milestone]=ms-ce-2002'));
+    const probe = requests.find((url) => url.includes('and[milestone]=ms-ce-2002'));
     expect(probe).toContain('&and[milestone]=ms-ce-2002&and[milestone]=ms-ce-2018');
     // An empty `and[type]=` makes eagle-api answer with nothing at all, emptying the view.
     expect(probe).not.toContain('and[type]=');
   });
 
   it('shows the C&E segment once its search finds a document', async () => {
-    tabSearchResponse = url =>
+    tabSearchResponse = (url) =>
       url.includes('and[milestone]=ms-ce-2002')
         ? [{ searchResults: [{ _id: 'doc-1' }], meta: [{ searchResultsTotal: 1 }] }]
         : [{ searchResults: [], meta: [{ searchResultsTotal: 0 }] }];
@@ -218,7 +252,7 @@ describe('documents page', () => {
 
     expect(await findSegment('C&E Documents')).toHaveAttribute(
       'href',
-      '/p/proj-1/documents/compliance'
+      '/p/proj-1/documents/compliance',
     );
     expect(querySegment('Certificate')).not.toBeInTheDocument();
   });
@@ -233,7 +267,9 @@ describe('documents page', () => {
 
     await waitFor(() => expect(error).toHaveBeenCalled());
     expect(querySegment('Amendment(s)')).not.toBeInTheDocument();
-    expect(error.mock.calls.some(call => String(call[0]).includes('Could not determine'))).toBe(true);
+    expect(error.mock.calls.some((call) => String(call[0]).includes('Could not determine'))).toBe(
+      true,
+    );
   });
 
   it('retries a probe that hit a bad gateway instead of caching it as "no documents"', async () => {
@@ -241,8 +277,9 @@ describe('documents page', () => {
     // retries, and the segment appears once the retry answers.
     vi.spyOn(logger, 'error').mockImplementation(() => undefined);
     let amendmentProbes = 0;
-    tabSearchResponse = url => {
-      if (url.includes('type-amend-2002') && amendmentProbes++ === 0) return new Response('', { status: 502 });
+    tabSearchResponse = (url) => {
+      if (url.includes('type-amend-2002') && amendmentProbes++ === 0)
+        return new Response('', { status: 502 });
       return [{ searchResults: [{ _id: 'doc-1' }], meta: [{ searchResultsTotal: 1 }] }];
     };
 
@@ -256,7 +293,7 @@ describe('documents page', () => {
     // Production backoff is 1s/2s/4s. Holding every segment as a placeholder for that long would
     // hide All Documents behind one bad gateway.
     vi.spyOn(logger, 'error').mockImplementation(() => undefined);
-    tabSearchResponse = url =>
+    tabSearchResponse = (url) =>
       url.includes('type-amend-2002')
         ? new Response('', { status: 502 })
         : [{ searchResults: [{ _id: 'doc-1' }], meta: [{ searchResultsTotal: 1 }] }];
@@ -273,12 +310,16 @@ describe('documents page', () => {
 
     renderDocuments();
 
-    await waitFor(() => expect(requests.filter(url => url.includes('dataset=Document'))).toHaveLength(4));
+    await waitFor(() =>
+      expect(requests.filter((url) => url.includes('dataset=Document'))).toHaveLength(4),
+    );
     expect(error).not.toHaveBeenCalled();
   });
 
   it('marks only the open segment active, and passes the project context down to it', async () => {
-    tabSearchResponse = () => [{ searchResults: [{ _id: 'doc-1' }], meta: [{ searchResultsTotal: 1 }] }];
+    tabSearchResponse = () => [
+      { searchResults: [{ _id: 'doc-1' }], meta: [{ searchResultsTotal: 1 }] },
+    ];
 
     renderDocuments('/p/proj-1/documents/application');
 
@@ -293,7 +334,9 @@ describe('documents page', () => {
   it('keeps segment links stable when moving between document views', async () => {
     // Relative links compound: from /documents/compliance a `compliance` link would resolve to
     // /documents/compliance/compliance, and `.` would leave All Documents active everywhere.
-    tabSearchResponse = () => [{ searchResults: [{ _id: 'doc-1' }], meta: [{ searchResultsTotal: 1 }] }];
+    tabSearchResponse = () => [
+      { searchResults: [{ _id: 'doc-1' }], meta: [{ searchResultsTotal: 1 }] },
+    ];
 
     renderDocuments();
 
@@ -303,10 +346,7 @@ describe('documents page', () => {
     expect(compliance).toHaveAttribute('href', '/p/proj-1/documents/compliance');
     expect(compliance).toHaveClass('active');
     expect(segment('All Documents')).not.toHaveClass('active');
-    expect(segment('Amendment(s)')).toHaveAttribute(
-      'href',
-      '/p/proj-1/documents/amendments'
-    );
+    expect(segment('Amendment(s)')).toHaveAttribute('href', '/p/proj-1/documents/amendments');
     expect(screen.getByText('compliance documents')).toBeInTheDocument();
 
     await userEvent.click(segment('All Documents'));
@@ -314,7 +354,9 @@ describe('documents page', () => {
   });
 
   it('marks All Documents active only on the documents index', async () => {
-    tabSearchResponse = () => [{ searchResults: [{ _id: 'doc-1' }], meta: [{ searchResultsTotal: 1 }] }];
+    tabSearchResponse = () => [
+      { searchResults: [{ _id: 'doc-1' }], meta: [{ searchResultsTotal: 1 }] },
+    ];
 
     renderDocuments();
 

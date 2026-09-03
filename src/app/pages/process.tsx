@@ -1,7 +1,8 @@
 import { HeroBanner, type HeroBannerAction } from 'app/components/hero-banner';
 
 const HERO_TITLE = 'Process & Procedures';
-const HERO_DESCRIPTION = 'Learn more about how the Environmental Assessment Office neutrally administers a process that is predictable, transparent, timely, procedurally fair, and holds all participants accountable.';
+const HERO_DESCRIPTION =
+  'Learn more about how the Environmental Assessment Office neutrally administers a process that is predictable, transparent, timely, procedurally fair, and holds all participants accountable.';
 const HERO_ACTIONS: HeroBannerAction[] = [
   {
     label: '2002 Environmental Assessment Act',
@@ -9,7 +10,7 @@ const HERO_ACTIONS: HeroBannerAction[] = [
     icon: 'open_in_new',
     target: '_blank',
     rel: 'noopener',
-    title: 'View more information'
+    title: 'View more information',
   },
   {
     label: '2018 Environmental Assessment Act',
@@ -17,8 +18,8 @@ const HERO_ACTIONS: HeroBannerAction[] = [
     icon: 'open_in_new',
     target: '_blank',
     rel: 'noopener',
-    title: 'View more information'
-  }
+    title: 'View more information',
+  },
 ];
 
 export function Process() {
@@ -29,7 +30,12 @@ export function Process() {
       <section>
         <div className="container" id="anchor-point">
           <div className="content-wrapper">
-            <p>On December 16th, 2019, the new Environmental Assessment Act (2018) came in to force. Many projects with an environmental assessment already underway will continue under the old Act (2002) process, while any new projects after December 16th, 2019 will undergo an environmental assessment under the new Act (2018) process.</p>
+            <p>
+              On December 16th, 2019, the new Environmental Assessment Act (2018) came in to force.
+              Many projects with an environmental assessment already underway will continue under
+              the old Act (2002) process, while any new projects after December 16th, 2019 will
+              undergo an environmental assessment under the new Act (2018) process.
+            </p>
           </div>
         </div>
       </section>

@@ -1,6 +1,13 @@
 /* eslint-disable react-refresh/only-export-components -- test double: the fake map and the
    components that expose it are one unit. */
-import { createContext, useContext, useEffect, useImperativeHandle, type ReactNode, type Ref } from 'react';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useImperativeHandle,
+  type ReactNode,
+  type Ref,
+} from 'react';
 import { vi } from 'vitest';
 import type { Feature, FeatureCollection, Point } from 'geojson';
 
@@ -38,7 +45,7 @@ export const fakeMap = {
     getNorth: () => box.north,
     getSouth: () => box.south,
     getEast: () => box.east,
-    getWest: () => box.west
+    getWest: () => box.west,
   })),
   getZoom: vi.fn(() => zoom),
   fitBounds: vi.fn(),
@@ -46,7 +53,9 @@ export const fakeMap = {
   easeTo: vi.fn(),
   getClusterExpansionZoom: vi.fn(async (_clusterId: number) => 11),
   isSourceLoaded: vi.fn((_sourceId: string) => sourceLoaded),
-  querySourceFeatures: vi.fn((sourceId: string) => override ?? sourceData[sourceId]?.features ?? []),
+  querySourceFeatures: vi.fn(
+    (sourceId: string) => override ?? sourceData[sourceId]?.features ?? [],
+  ),
   // Same features either way: the fake map has no tiles, so "in the source" and "on screen" match.
   queryRenderedFeatures: vi.fn(() => override ?? sourceData['projects']?.features ?? []),
   getLayer: vi.fn((id: string) => ({ id })),
@@ -78,7 +87,7 @@ export const fakeMap = {
     for (const value of Object.values(fakeMap)) {
       if (typeof value === 'function' && 'mockClear' in value) value.mockClear();
     }
-  }
+  },
 };
 
 export type FakeMap = typeof fakeMap;
@@ -193,6 +202,6 @@ export function mapLibreStub() {
     NavigationControl: Nothing,
     ScaleControl: Nothing,
     AttributionControl: Nothing,
-    useMap: () => ({ current: fakeMap })
+    useMap: () => ({ current: fakeMap }),
   };
 }

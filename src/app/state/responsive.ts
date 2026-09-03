@@ -5,16 +5,24 @@ import { useCallback, useSyncExternalStore } from 'react';
 const TABLET =
   '(min-width: 600px) and (max-width: 839.98px) and (orientation: portrait), ' +
   '(min-width: 960px) and (max-width: 1279.98px) and (orientation: landscape)';
-const WEB = '(min-width: 840px) and (orientation: portrait), (min-width: 1280px) and (orientation: landscape)';
+const WEB =
+  '(min-width: 840px) and (orientation: portrait), (min-width: 1280px) and (orientation: landscape)';
 
 function useMediaQuery(query: string): boolean {
-  const subscribe = useCallback((onChange: () => void) => {
-    const list = window.matchMedia(query);
-    list.addEventListener('change', onChange);
-    return () => list.removeEventListener('change', onChange);
-  }, [query]);
+  const subscribe = useCallback(
+    (onChange: () => void) => {
+      const list = window.matchMedia(query);
+      list.addEventListener('change', onChange);
+      return () => list.removeEventListener('change', onChange);
+    },
+    [query],
+  );
 
-  return useSyncExternalStore(subscribe, () => window.matchMedia(query).matches, () => false);
+  return useSyncExternalStore(
+    subscribe,
+    () => window.matchMedia(query).matches,
+    () => false,
+  );
 }
 
 export function useResponsive(): { isMobile: boolean; isTablet: boolean; isDesktop: boolean } {

@@ -4,6 +4,6 @@
  */
 declare module '@analytics/original-source-plugin' {
   import type { AnalyticsPlugin } from 'analytics';
-  
+
   export function originalSourcePlugin(): AnalyticsPlugin;
 }

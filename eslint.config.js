@@ -14,11 +14,11 @@ export default tseslint.config(
       ...tseslint.configs.recommended,
       ...tseslint.configs.stylistic,
       reactHooks.configs.flat['recommended-latest'],
-      reactRefresh.configs.vite
+      reactRefresh.configs.vite,
     ],
     languageOptions: {
       ecmaVersion: 2022,
-      globals: globals.browser
+      globals: globals.browser,
     },
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
@@ -27,9 +27,9 @@ export default tseslint.config(
         {
           argsIgnorePattern: '^_',
           varsIgnorePattern: '^_',
-          caughtErrorsIgnorePattern: '^_'
-        }
-      ]
-    }
-  }
+          caughtErrorsIgnorePattern: '^_',
+        },
+      ],
+    },
+  },
 );

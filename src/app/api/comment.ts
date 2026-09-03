@@ -8,18 +8,28 @@ export async function getCountById(commentPeriodId: string): Promise<number> {
 }
 
 // get all comments for the specified comment period id (without documents)
-export async function getByPeriodId(periodId: string, pageNum: number | null = null, pageSize: number | null = null, getCount = false): Promise<{ totalCount: string | null; currentComments: Comment[] } | null> {
+export async function getByPeriodId(
+  periodId: string,
+  pageNum: number | null = null,
+  pageSize: number | null = null,
+  getCount = false,
+): Promise<{ totalCount: string | null; currentComments: Comment[] } | null> {
   const loadingId = pageNum && pageNum > 1 ? 'comments-list' : 'comments';
   startLoading(loadingId, pageNum ? `Loading page ${pageNum}` : 'Loading comments');
 
   try {
-    const res = await api.getCommentsByPeriodId(pageNum ? pageNum - 1 : null, pageSize, getCount, periodId);
+    const res = await api.getCommentsByPeriodId(
+      pageNum ? pageNum - 1 : null,
+      pageSize,
+      getCount,
+      periodId,
+    );
     if (!res) {
       return null;
     }
     return {
       totalCount: res.headers.get('x-total-count'),
-      currentComments: (res.body as any[]).map((comment: any) => new Comment(comment))
+      currentComments: (res.body as any[]).map((comment: any) => new Comment(comment)),
     };
   } finally {
     stopLoading(loadingId);
@@ -35,7 +45,10 @@ export async function getById(commentId: string): Promise<Comment> {
   }
   const comment = new Comment(comments[0]);
   // Safety check for null documents or an empty array of documents.
-  if (comments[0].documents === null || (comments[0].documents && comments[0].documents.length === 0)) {
+  if (
+    comments[0].documents === null ||
+    (comments[0].documents && comments[0].documents.length === 0)
+  ) {
     return comment;
   }
   comment.documentsList = await documentApi.getByMultiId(comment.documents);

@@ -4,22 +4,26 @@ export interface BuildNature {
 }
 
 export class Constants {
-
-  public static readonly searchDisclaimer = 'Note: Some documents within this project have not yet been categorized by author, document type, and/or milestone and may not be displayed when using some of the search filters. We are actively processing these documents so they can be searched and filtered, making it easier to find what you’re looking for. Clearing the filters and searching based on a keyword will show all results.';
-  public static readonly docSearchDisclaimer = 'Note: Some documents have not yet been categorized by author, document type, and/or milestone and may not be displayed when using some of the search filters. We are actively processing these documents so they can be searched and filtered, making it easier to find what you’re looking for. Clearing the filters and searching based on a keyword will show all results.';
+  public static readonly searchDisclaimer =
+    'Note: Some documents within this project have not yet been categorized by author, document type, and/or milestone and may not be displayed when using some of the search filters. We are actively processing these documents so they can be searched and filtered, making it easier to find what you’re looking for. Clearing the filters and searching based on a keyword will show all results.';
+  public static readonly docSearchDisclaimer =
+    'Note: Some documents have not yet been categorized by author, document type, and/or milestone and may not be displayed when using some of the search filters. We are actively processing these documents so they can be searched and filtered, making it easier to find what you’re looking for. Clearing the filters and searching based on a keyword will show all results.';
 
   public static readonly optionalProjectDocTabs = {
     APPLICATION: 'application',
     CERTIFICATE: 'certificate',
     AMENDMENT: 'amendment',
     COMPLIANCE: 'compliance',
-    UNSUBSCRIBE_CAC: 'project-unsubscribe'
+    UNSUBSCRIBE_CAC: 'project-unsubscribe',
   };
 
   public static readonly legislationLinks = {
-    ENVIRONMENTAL_ASSESSMENT_ACT_2002_LINK: 'http://www.bclaws.ca/civix/document/id/complete/statreg/02043_01',
-    ENVIRONMENTAL_ASSESSMENT_ACT_1996_LINK: 'http://www.bclaws.ca/civix/document/id/complete/statreg/96119_pit',
-    ENVIRONMENTAL_ASSESSMENT_ACT_2018_LINK: 'http://www.bclaws.ca/civix/document/id/complete/statreg/18051'
+    ENVIRONMENTAL_ASSESSMENT_ACT_2002_LINK:
+      'http://www.bclaws.ca/civix/document/id/complete/statreg/02043_01',
+    ENVIRONMENTAL_ASSESSMENT_ACT_1996_LINK:
+      'http://www.bclaws.ca/civix/document/id/complete/statreg/96119_pit',
+    ENVIRONMENTAL_ASSESSMENT_ACT_2018_LINK:
+      'http://www.bclaws.ca/civix/document/id/complete/statreg/18051',
   };
 
   public static readonly tableDefaults = {
@@ -34,15 +38,15 @@ export class Constants {
       { displayText: '10', value: 10 },
       { displayText: '25', value: 25 },
       { displayText: '50', value: 50 },
-      { displayText: '100', value: 100 }
-    ]
+      { displayText: '100', value: 100 },
+    ],
   };
 
   public static readonly PCP_COLLECTION: object[] = [
-    { code: 'none', name: 'None'},
+    { code: 'none', name: 'None' },
     { code: 'pending', name: 'Upcoming' },
     { code: 'open', name: 'Open' },
-    { code: 'closed', name: 'Closed' }
+    { code: 'closed', name: 'Closed' },
   ];
 
   public static readonly PROJECT_TYPE_COLLECTION: object[] = [
@@ -55,7 +59,7 @@ export class Constants {
     { code: 'tourist', name: 'Tourist Destination Resorts' },
     { code: 'transportation', name: 'Transportation' },
     { code: 'wasteDisposal', name: 'Waste Disposal' },
-    { code: 'waterManagement', name: 'Water Management' }
+    { code: 'waterManagement', name: 'Water Management' },
   ];
 
   // TODO: At the moment, filters use the type name to communicate with the api.
@@ -70,7 +74,7 @@ export class Constants {
     { code: 'Tourist Destination Resorts', name: 'Tourist Destination Resorts' },
     { code: 'Transportation', name: 'Transportation' },
     { code: 'Waste Disposal', name: 'Waste Disposal' },
-    { code: 'Water Management', name: 'Water Management' }
+    { code: 'Water Management', name: 'Water Management' },
   ];
 
   public static readonly REGIONS_COLLECTION: object[] = [
@@ -82,27 +86,27 @@ export class Constants {
     { code: 'Peace', name: 'Peace' },
     { code: 'Skeena', name: 'Skeena' },
     { code: 'Thompson-Nicola', name: 'Thompson-Nicola' },
-    { code: 'Vancouver Island', name: 'Vancouver Island' }
+    { code: 'Vancouver Island', name: 'Vancouver Island' },
   ];
 
   public static readonly PROJECT_NOTIFICATION_DECISIONS: object[] = [
     { code: 'In Progress', name: 'In Progress' },
     { code: 'Referred for s.11 consideration', name: 'Referred for s.11 consideration' },
-    { code: 'Not referred for s.11 consideration', name: 'Not referred for s.11 consideration' }
+    { code: 'Not referred for s.11 consideration', name: 'Not referred for s.11 consideration' },
   ];
 
   public static readonly buildToNature: BuildNature[] = [
     {
       build: 'new',
-      nature: 'New Construction'
+      nature: 'New Construction',
     },
     {
       build: 'modification',
-      nature: 'Modification of Existing'
+      nature: 'Modification of Existing',
     },
     {
       build: 'dismantling',
-      nature: 'Dismantling or Abandonment'
+      nature: 'Dismantling or Abandonment',
     },
   ];
 
@@ -122,7 +126,7 @@ export class Constants {
     'RESERVE/NOTATION',
     'REVENUE SHARING AGREEMENT',
     'RIGHT-OF-WAY',
-    'TRANSFER OF ADMINISTRATION/CONTROL'
+    'TRANSFER OF ADMINISTRATION/CONTROL',
   ];
 
   public static readonly subtypes = {
@@ -130,7 +134,7 @@ export class Constants {
       'DIRECT SALE',
       'FROM LEASE-PURCHASE OPTION',
       'PRE-TANTALIS CERTIFICATE OF PURCHASE',
-      'TEMPORARY CODE'
+      'TEMPORARY CODE',
     ],
     'CROWN GRANT': [
       'DIRECT SALE',
@@ -141,55 +145,31 @@ export class Constants {
       'LAND EXCHANGE',
       'PRE-EMPTION',
       'PRE-TANTALIS CROWN GRANT',
-      'TEMPORARY CODE'
+      'TEMPORARY CODE',
     ],
-    'DEVELOPMENT AGREEMENT': [
-      'ALPINE SKI DEVELOPMENT',
-      'PRE-TANTALIS DEVELOPMENTAL AGREEMENT'
-    ],
-    'DOMINION PATENTS': [
-      'PRE-TANTALIS DOMINION PATENTS'
-    ],
-    'INCLUSION': [
+    'DEVELOPMENT AGREEMENT': ['ALPINE SKI DEVELOPMENT', 'PRE-TANTALIS DEVELOPMENTAL AGREEMENT'],
+    'DOMINION PATENTS': ['PRE-TANTALIS DOMINION PATENTS'],
+    INCLUSION: [
       'ACCESS',
       'AGREEMENT',
       'INCLUSION',
       'LAND TITLE ACT ACCRETION',
       'LAND TITLE ACT BOUNDARY ADJUSTMENT',
-      'PRE-TANTALIS INCLUSION'
+      'PRE-TANTALIS INCLUSION',
     ],
-    'INVENTORY': [
-      'BCAL INVENTORY'
-    ],
-    'LEASE': [
-      'HEAD LEASE',
-      'LEASE - PURCHASE OPTION',
-      'PRE-TANTALIS LEASE',
-      'STANDARD LEASE'
-    ],
-    'LICENCE': [
-      'LICENCE OF OCCUPATION',
-      'PRE-TANTALIS LICENCE'
-    ],
-    'OIC ECOLOGICAL RESERVE ACT': [
-      'OIC ECOLOGICAL RESERVES',
-      'PRE-TANTALIS OIC ECO RESERVE'
-    ],
-    'PERMIT': [
+    INVENTORY: ['BCAL INVENTORY'],
+    LEASE: ['HEAD LEASE', 'LEASE - PURCHASE OPTION', 'PRE-TANTALIS LEASE', 'STANDARD LEASE'],
+    LICENCE: ['LICENCE OF OCCUPATION', 'PRE-TANTALIS LICENCE'],
+    'OIC ECOLOGICAL RESERVE ACT': ['OIC ECOLOGICAL RESERVES', 'PRE-TANTALIS OIC ECO RESERVE'],
+    PERMIT: [
       'INVESTIGATIVE PERMIT',
       'PRE-TANTALIS PERMIT',
       'ROADS & BRIDGES',
       'TEMPORARY CODE',
-      'TEMPORARY PERMIT'
+      'TEMPORARY PERMIT',
     ],
-    'PRE-TANTALIS': [
-      'PRE-TANTALIS'
-    ],
-    'PROVINCIAL PARK': [
-      'PARKS',
-      'PRE-TANTALIS PARKS',
-      'PRE-TANTALIS PARKS (00 ON TAS/CLR)'
-    ],
+    'PRE-TANTALIS': ['PRE-TANTALIS'],
+    'PROVINCIAL PARK': ['PARKS', 'PRE-TANTALIS PARKS', 'PRE-TANTALIS PARKS (00 ON TAS/CLR)'],
     'RESERVE/NOTATION': [
       'DESIGNATED USE AREA',
       'MAP RESERVE',
@@ -197,21 +177,19 @@ export class Constants {
       'OIC RESERVE',
       'PRE-TANTALIS RESERVE/NOTATION',
       'PROHIBITED USE AREA',
-      'TEMPORARY CODE'
+      'TEMPORARY CODE',
     ],
-    'REVENUE SHARING AGREEMENT': [
-      'REVENUE SHARING AGREEMENT'
-    ],
+    'REVENUE SHARING AGREEMENT': ['REVENUE SHARING AGREEMENT'],
     'RIGHT-OF-WAY': [
       'INTERIM LICENCE',
       'STATUTORY RIGHT OF WAY OR EASEMENT',
-      'PRE-TANTALIS RIGHT-OF-WAY'
+      'PRE-TANTALIS RIGHT-OF-WAY',
     ],
     'TRANSFER OF ADMINISTRATION/CONTROL': [
       'FED TRANSFER OF ADMIN, CONTROL & BEN',
       'PRE-TANTALIS TRANSFER OF ADMIN/CONT',
-      'PROVINCIAL TRANSFER OF ADMIN'
-    ]
+      'PROVINCIAL TRANSFER OF ADMIN',
+    ],
   };
 
   public static readonly statuses = [
@@ -233,7 +211,7 @@ export class Constants {
     'REVERTED',
     'SOLD',
     'SUSPENDED',
-    'WITHDRAWN'
+    'WITHDRAWN',
   ];
 
   public static readonly purposes = [
@@ -259,18 +237,12 @@ export class Constants {
     'TRANSPORTATION',
     'UTILITY',
     'WATERPOWER',
-    'WINDPOWER'
+    'WINDPOWER',
   ];
 
   public static readonly subpurposes = {
-    'AGRICULTURE': [
-      'EXTENSIVE',
-      'GRAZING',
-      'INTENSIVE'
-    ],
-    'ALL SEASONS RESORT': [
-      'MISCELLANEOUS'
-    ],
+    AGRICULTURE: ['EXTENSIVE', 'GRAZING', 'INTENSIVE'],
+    'ALL SEASONS RESORT': ['MISCELLANEOUS'],
     'ALPINE SKIING': [
       'COMMERCIAL RESIDENTIAL',
       'CONTROLLED RECREATION AREA',
@@ -282,15 +254,10 @@ export class Constants {
       'MISCELLANEOUS',
       'PARKING FACILITY',
       'RUNS/TRAILS',
-      'SUPPORT UTILITY'
+      'SUPPORT UTILITY',
     ],
-    'AQUACULTURE': [
-      'CRUSTACEANS',
-      'FIN FISH',
-      'PLANTS',
-      'SHELL FISH'
-    ],
-    'COMMERCIAL': [
+    AQUACULTURE: ['CRUSTACEANS', 'FIN FISH', 'PLANTS', 'SHELL FISH'],
+    COMMERCIAL: [
       'BACK-COUNTRY RECREATION',
       'COMMERCIAL A',
       'COMMERCIAL B',
@@ -305,7 +272,7 @@ export class Constants {
       'MISCELLANEOUS',
       'PRIVATE YACHT CLUB',
       'RESORT HUNT/FISH CAMPS & WHARVES',
-      'TRAPLINE CABIN'
+      'TRAPLINE CABIN',
     ],
     'COMMERCIAL RECREATION': [
       'CAT SKI',
@@ -327,17 +294,10 @@ export class Constants {
       'SNOWMOBILING',
       'SPECIAL ACTIVITIES',
       'TIDAL SPORTS FISHING CAMPS',
-      'TRAIL RIDING'
+      'TRAIL RIDING',
     ],
-    'COMMUNICATION': [
-      'COMBINED USES',
-      'COMMUNICATION SITES'
-    ],
-    'COMMUNITY': [
-      'COMMUNITY FACILITY',
-      'MISCELLANEOUS',
-      'TRAIL MAINTENANCE'
-    ],
+    COMMUNICATION: ['COMBINED USES', 'COMMUNICATION SITES'],
+    COMMUNITY: ['COMMUNITY FACILITY', 'MISCELLANEOUS', 'TRAIL MAINTENANCE'],
     'ENERGY PRODUCTION': [
       'BATTERY SITE',
       'CAMPSITE',
@@ -353,7 +313,7 @@ export class Constants {
       'METER SITE',
       'NON-FIELD TANK FARMS',
       'REFINERY',
-      'WATER ANALYZER'
+      'WATER ANALYZER',
     ],
     'ENVIRONMENT, CONSERVATION, & RECREATION': [
       'BOAT HAVEN',
@@ -371,7 +331,7 @@ export class Constants {
       'SCIENCE MEASUREMENT/RESEARCH',
       'SNOW SURVEY',
       'UREP/RECREATION RESERVE',
-      'WATERSHED RESERVE'
+      'WATERSHED RESERVE',
     ],
     'FIRST NATIONS': [
       'COMMUNITY FACILITY',
@@ -383,18 +343,18 @@ export class Constants {
       'ROADS',
       'SPECIFIC CLAIMS',
       'TRADITIONAL USE',
-      'TREATY AREA'
+      'TREATY AREA',
     ],
-    'INDUSTRIAL': [
+    INDUSTRIAL: [
       'GENERAL',
       'HEAVY INDUSTRIAL',
       'INDUSTRIAL CAMPS',
       'LIGHT INDUSTRIAL',
       'LOG HANDLING/STORAGE',
       'MINERAL PRODUCTION',
-      'MISCELLANEOUS'
+      'MISCELLANEOUS',
     ],
-    'INSTITUTIONAL': [
+    INSTITUTIONAL: [
       'CEMETERY',
       'CORRECTIONS FACILITY',
       'FIRE HALL',
@@ -406,22 +366,17 @@ export class Constants {
       'POLICE FACILITY',
       'PUBLIC WORKS',
       'SCHOOL/OUTDOOR EDUCATION FACILITY',
-      'WASTE DISPOSAL SITE'
+      'WASTE DISPOSAL SITE',
     ],
     'MISCELLANEOUS LAND USES': [
       'LAND EXCHANGE',
       'LAND USE PLAN INTERIM AGREEMENT',
       'OTHER',
-      'PLANNING/MARKETING/DEVELOP PROJECTS'
+      'PLANNING/MARKETING/DEVELOP PROJECTS',
     ],
-    'OCEAN ENERGY': [
-      'GENERAL AREA',
-      'INVESTIGATIVE AND MONITORING PHASE'
-    ],
-    'PRE-TANTALIS': [
-      'PRE-TANTALIS'
-    ],
-    'QUARRYING': [
+    'OCEAN ENERGY': ['GENERAL AREA', 'INVESTIGATIVE AND MONITORING PHASE'],
+    'PRE-TANTALIS': ['PRE-TANTALIS'],
+    QUARRYING: [
       'CONSTRUCTION STONE',
       'LIMESTONE AND DOLOMITE',
       'MISCELLANEOUS',
@@ -430,9 +385,9 @@ export class Constants {
       'PUBLIC SAFETY - FLOOD MITIGATION',
       'RIP RAP',
       'ROCK FOR CRUSHING',
-      'SAND AND GRAVEL'
+      'SAND AND GRAVEL',
     ],
-    'RESIDENTIAL': [
+    RESIDENTIAL: [
       'APPLICATION ONLY - PRIVATE MOORAGE',
       'FLOATING CABIN',
       'FLOATING COMMUNITY',
@@ -443,30 +398,28 @@ export class Constants {
       'RURAL RESIDENTIAL',
       'STRATA MOORAGE',
       'THERMAL LOOPS',
-      'URBAN RESIDENTIAL'
+      'URBAN RESIDENTIAL',
     ],
-    'SOLAR POWER': [
-      'INVESTIGATIVE PHASE'
-    ],
-    'TRANSPORTATION': [
+    'SOLAR POWER': ['INVESTIGATIVE PHASE'],
+    TRANSPORTATION: [
       'AIRPORT/AIRSTRIP',
       'BRIDGES',
       'FERRY TERMINAL',
       'NAVIGATION AID',
       'PUBLIC WHARF',
       'RAILWAY',
-      'ROADWAY'
+      'ROADWAY',
     ],
-    'UTILITY': [
+    UTILITY: [
       'CATHODIC SITE/ANODE BEDS',
       'ELECTRIC POWER LINE',
       'GAS AND OIL PIPELINE',
       'MISCELLANEOUS',
       'SEWER/EFFLUENT LINE',
       'TELECOMMUNICATION LINE',
-      'WATER LINE'
+      'WATER LINE',
     ],
-    'WATERPOWER': [
+    WATERPOWER: [
       'CAMP',
       'COMMUNICATION SITE',
       'GENERAL AREA',
@@ -477,9 +430,9 @@ export class Constants {
       'POWERHOUSE SITE',
       'QUARRY',
       'ROAD',
-      'TRANSMISSION LINE'
+      'TRANSMISSION LINE',
     ],
-    'WINDPOWER': [
+    WINDPOWER: [
       'COMMUNICATION SITE',
       'DEVELOPMENT PHASE',
       'GENERAL AREA',
@@ -489,7 +442,7 @@ export class Constants {
       'OPERATING PHASE',
       'QUARRY',
       'ROAD',
-      'TRANSMISSION LINE'
-    ]
+      'TRANSMISSION LINE',
+    ],
   };
 }

@@ -6,7 +6,9 @@ test('an unknown route falls back to the home page', async ({ page }) => {
   await ready(page);
 
   expect(new URL(page.url()).pathname).toBe('/');
-  await expect(page.getByRole('heading', { level: 1, name: 'Environmental Assessments' })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Environmental Assessments' }),
+  ).toBeVisible();
 });
 
 test('/p/:projId redirects to the project-details tab', async ({ page, request }) => {
@@ -26,14 +28,22 @@ test('/p/:projId/cp/:cpId redirects to /details', async ({ page, request }) => {
 });
 
 test('@data /pn/:projId/cp/:cpId redirects to /details', async ({ page, request }) => {
-  const list = await request.get('/api/search?dataset=ProjectNotification&pageNum=0&pageSize=25&projectLegislation=default&sortBy=-_id&populate=true&fuzzy=false');
+  const list = await request.get(
+    '/api/search?dataset=ProjectNotification&pageNum=0&pageSize=25&projectLegislation=default&sortBy=-_id&populate=true&fuzzy=false',
+  );
   const notifications = unwrap(await list.json()).searchResults;
 
   let pn: any, cp: any;
   for (const n of notifications) {
-    const r = await request.get(`/api/commentperiod?project=${n._id}&sortBy=-dateStarted&fields=project|dateStarted`);
+    const r = await request.get(
+      `/api/commentperiod?project=${n._id}&sortBy=-dateStarted&fields=project|dateStarted`,
+    );
     const periods = await r.json();
-    if (periods.length) { pn = n; cp = periods[0]; break; }
+    if (periods.length) {
+      pn = n;
+      cp = periods[0];
+      break;
+    }
   }
   test.skip(!pn, 'no project notification with a comment period on this environment');
 
@@ -42,7 +52,10 @@ test('@data /pn/:projId/cp/:cpId redirects to /details', async ({ page, request 
   expect(new URL(page.url()).pathname).toBe(`/pn/${pn._id}/cp/${cp._id}/details`);
 });
 
-test('/search/content redirects to /search while CONTENT_SEARCH is off', async ({ page, request }) => {
+test('/search/content redirects to /search while CONTENT_SEARCH is off', async ({
+  page,
+  request,
+}) => {
   const cfg = await (await request.get('/api/config')).json();
   const contentSearchEnabled = Boolean(cfg.CONTENT_SEARCH);
 
@@ -54,7 +67,9 @@ test('/search/content redirects to /search while CONTENT_SEARCH is off', async (
   } else {
     // Recorded prod behaviour: the route guard rewrites a bookmarked link to document search.
     expect(new URL(page.url()).pathname).toBe('/search');
-    await expect(page.getByRole('heading', { level: 1, name: 'Search All Documents' })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Search All Documents' }),
+    ).toBeVisible();
   }
 });
 

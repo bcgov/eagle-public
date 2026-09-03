@@ -111,8 +111,12 @@
 }
 
 @keyframes shimmer {
-  0% { background-position: -400px 0; }
-  100% { background-position: 400px 0; }
+  0% {
+    background-position: -400px 0;
+  }
+  100% {
+    background-position: 400px 0;
+  }
 }
 
 .skeleton-cell {
@@ -138,9 +142,15 @@
   background: rgba(255, 255, 255, 0.5);
 }
 
-.cp-card__status-dot--open { background: #5bcd7a; }
-.cp-card__status-dot--pending { background: #fcba19; }
-.cp-card__status-dot--closed { background: #f87171; }
+.cp-card__status-dot--open {
+  background: #5bcd7a;
+}
+.cp-card__status-dot--pending {
+  background: #fcba19;
+}
+.cp-card__status-dot--closed {
+  background: #f87171;
+}
 
 .cp-card__status-label {
   font-size: var(--bs-font-size-xs, 0.75rem);
@@ -159,9 +169,18 @@
   white-space: nowrap;
 }
 
-.cp-card__pill--open { background: var(--bc-success, #2e8540); color: #fff; }
-.cp-card__pill--closed { background: var(--bc-danger, #d8292f); color: #fff; }
-.cp-card__pill--pending { background: var(--bs-warning, #fcba19); color: #fff; }
+.cp-card__pill--open {
+  background: var(--bc-success, #2e8540);
+  color: #fff;
+}
+.cp-card__pill--closed {
+  background: var(--bc-danger, #d8292f);
+  color: #fff;
+}
+.cp-card__pill--pending {
+  background: var(--bs-warning, #fcba19);
+  color: #fff;
+}
 
 .cp-card__body {
   padding: 0.75rem 1rem;
@@ -182,7 +201,9 @@
   padding: 0.375rem 1rem;
   border-radius: 4px;
   cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
   white-space: nowrap;
   margin-top: 0.25rem;
 }

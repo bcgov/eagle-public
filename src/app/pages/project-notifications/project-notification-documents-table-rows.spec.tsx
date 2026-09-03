@@ -9,7 +9,7 @@ const DOCUMENT = {
   _id: 'doc-1',
   displayName: 'Notification Package',
   documentFileName: 'notification.pdf',
-  datePosted: '2026-05-04T00:00:00.000Z'
+  datePosted: '2026-05-04T00:00:00.000Z',
 };
 
 const DOWNLOAD_URL = '/api/public/document/doc-1/download/notification.pdf';
@@ -34,7 +34,7 @@ describe('ProjectNotificationDocumentsTableRow', () => {
             onMessage={() => undefined}
           />
         </tbody>
-      </table>
+      </table>,
     );
   });
 

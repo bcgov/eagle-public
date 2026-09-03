@@ -23,7 +23,7 @@ const ROUTES = [
 for (const route of ROUTES) {
   test(`${route} loads, posts analytics and passes the a11y smoke`, async ({ page }, testInfo) => {
     const analytics = page.waitForRequest(
-      r => new URL(r.url()).pathname === '/analytics' && r.method() === 'POST',
+      (r) => new URL(r.url()).pathname === '/analytics' && r.method() === 'POST',
       { timeout: 60_000 },
     );
 

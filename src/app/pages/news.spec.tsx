@@ -7,8 +7,18 @@ import { loadConfig } from 'app/config/config';
 import { News } from './news';
 
 const ACTIVITIES = [
-  { _id: 'a1', headline: 'Permit granted', dateAdded: '2026-08-20T00:00:00.000Z', content: '<p>Body</p>' },
-  { _id: 'a2', headline: 'Comment period opens', dateAdded: '2026-08-18T00:00:00.000Z', content: '<p>Body</p>' }
+  {
+    _id: 'a1',
+    headline: 'Permit granted',
+    dateAdded: '2026-08-20T00:00:00.000Z',
+    content: '<p>Body</p>',
+  },
+  {
+    _id: 'a2',
+    headline: 'Comment period opens',
+    dateAdded: '2026-08-18T00:00:00.000Z',
+    content: '<p>Body</p>',
+  },
 ];
 
 let requests: string[];
@@ -21,16 +31,20 @@ function renderAt(path: string, total = 42) {
       requests.push(String(input));
       return new Response(
         JSON.stringify([{ searchResults: ACTIVITIES, meta: [{ searchResultsTotal: total }] }]),
-        { status: 200, headers: { 'content-type': 'application/json' } }
+        { status: 200, headers: { 'content-type': 'application/json' } },
       );
-    })
+    }),
   );
 
-  const router = createMemoryRouter([{ path: '/news', Component: News }], { initialEntries: [path] });
+  const router = createMemoryRouter([{ path: '/news', Component: News }], {
+    initialEntries: [path],
+  });
   render(
-    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })}>
+    <QueryClientProvider
+      client={new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })}
+    >
       <RouterProvider router={router} />
-    </QueryClientProvider>
+    </QueryClientProvider>,
   );
   return router;
 }
@@ -47,7 +61,7 @@ describe('news', () => {
 
     expect(await screen.findByText('Permit granted')).toBeInTheDocument();
     expect(requests.at(-1)).toBe(
-      '/api/search?dataset=RecentActivity&pageNum=0&pageSize=10&projectLegislation=default&sortBy=-dateAdded&sortBy=&populate=true&fuzzy=false'
+      '/api/search?dataset=RecentActivity&pageNum=0&pageSize=10&projectLegislation=default&sortBy=-dateAdded&sortBy=&populate=true&fuzzy=false',
     );
   });
 
@@ -75,10 +89,14 @@ describe('news', () => {
     const dateHeader = () => screen.getByRole('columnheader', { name: /Column header Date/ });
 
     await userEvent.click(dateHeader());
-    await waitFor(() => expect(new URLSearchParams(router.state.location.search).get('sortBy')).toBe('+dateAdded'));
+    await waitFor(() =>
+      expect(new URLSearchParams(router.state.location.search).get('sortBy')).toBe('+dateAdded'),
+    );
 
     await userEvent.click(dateHeader());
-    await waitFor(() => expect(new URLSearchParams(router.state.location.search).get('sortBy')).toBe('-dateAdded'));
+    await waitFor(() =>
+      expect(new URLSearchParams(router.state.location.search).get('sortBy')).toBe('-dateAdded'),
+    );
   });
 
   it('does not sort the Headline column', async () => {
@@ -112,16 +130,20 @@ describe('news', () => {
         async () =>
           new Response(JSON.stringify([{ searchResults: [], meta: [] }]), {
             status: 200,
-            headers: { 'content-type': 'application/json' }
-          })
-      )
+            headers: { 'content-type': 'application/json' },
+          }),
+      ),
     );
 
-    const router = createMemoryRouter([{ path: '/news', Component: News }], { initialEntries: ['/news'] });
+    const router = createMemoryRouter([{ path: '/news', Component: News }], {
+      initialEntries: ['/news'],
+    });
     render(
-      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })}>
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })}
+      >
         <RouterProvider router={router} />
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
 
     expect(await screen.findByText('No activities found')).toBeInTheDocument();
@@ -153,7 +175,7 @@ describe('news subscribe control', () => {
     // The band sits in its own padded wrapper under the hero.
     expect(document.querySelector('.container.pb-3 > .subscribe-popover')).not.toBeNull();
     expect(
-      screen.getByText(/Get an email when any project publishes an Update\./)
+      screen.getByText(/Get an email when any project publishes an Update\./),
     ).toBeInTheDocument();
   });
 

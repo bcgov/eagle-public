@@ -15,11 +15,11 @@ export function PageSizePicker({
   sizeOptions = [],
   currentPageSize,
   id,
-  onPageSizeChosen
+  onPageSizeChosen,
 }: PageSizePickerProps) {
   return (
     <div className="lib-page-size-display" hidden={isHidden} id={id}>
-      {sizeOptions.map(sizeOption => (
+      {sizeOptions.map((sizeOption) => (
         <button
           key={sizeOption.value}
           className={`btn size-picker-option${sizeOption.value === currentPageSize ? ' current' : ''}`}

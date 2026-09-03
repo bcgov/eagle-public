@@ -132,7 +132,6 @@
   }
 }
 
-
 /* === TABLE-TEMPLATE COMPONENT STYLES === */
 
 .table-template .table {
@@ -154,8 +153,8 @@
 }
 
 /* Bootstrap column width mapping - Reset flex properties for table cells */
-.table-template .table th[class*="col-"],
-.table-template .table td[class*="col-"] {
+.table-template .table th[class*='col-'],
+.table-template .table td[class*='col-'] {
   flex: none;
   display: table-cell;
 }
@@ -218,8 +217,8 @@
   }
 
   /* The col-* widths add up to the whole table on their own, so they give up the checkbox's width. */
-  .table-template .table tr:has(.select-col) th[class*="col-"],
-  .table-template .table tr:has(.select-col) td[class*="col-"] {
+  .table-template .table tr:has(.select-col) th[class*='col-'],
+  .table-template .table tr:has(.select-col) td[class*='col-'] {
     flex-shrink: 1;
     min-width: 0;
   }
@@ -295,8 +294,8 @@
   }
 
   /* Hide featured star column completely on mobile */
-  .table-template .table tbody tr td[data-label="★"],
-  .table-template td[data-label="★"] {
+  .table-template .table tbody tr td[data-label='★'],
+  .table-template td[data-label='★'] {
     display: none !important;
     visibility: hidden !important;
     height: 0 !important;
@@ -321,7 +320,7 @@
   }
 
   /* Name field - card header style */
-  .table-template td[data-label="Name"] {
+  .table-template td[data-label='Name'] {
     padding: 1rem;
     margin: 0;
     font-weight: var(--bs-font-weight-medium);
@@ -332,9 +331,9 @@
     border-bottom: none;
   }
 
-  .table-template .table tbody.highlight tr:hover td[data-label="Name"],
-  .table-template .table tbody tr.selected td[data-label="Name"],
-  .table-template .table tbody.highlight tr.selected:hover td[data-label="Name"] {
+  .table-template .table tbody.highlight tr:hover td[data-label='Name'],
+  .table-template .table tbody tr.selected td[data-label='Name'],
+  .table-template .table tbody.highlight tr.selected:hover td[data-label='Name'] {
     background-color: var(--bs-primary) !important;
   }
 
@@ -344,18 +343,18 @@
     box-shadow: 0 0 0 1px var(--bs-primary);
   }
 
-  .table-template td[data-label="Name"]::before {
+  .table-template td[data-label='Name']::before {
     content: none;
   }
 
   /* The card header is primary blue, so the link colour cannot carry over onto it. */
-  .table-template td[data-label="Name"] a {
+  .table-template td[data-label='Name'] a {
     color: var(--bs-white);
     text-decoration: underline;
   }
 
   /* All metadata fields (except Name and star) */
-  .table-template td[data-label]:not([data-label="Name"]):not([data-label="★"]) {
+  .table-template td[data-label]:not([data-label='Name']):not([data-label='★']) {
     padding: 0.75rem 1rem;
     color: var(--bs-body-color);
     font-size: var(--bs-font-size-sm);
@@ -363,7 +362,7 @@
   }
 
   /* The checkbox has its own label. */
-  .table-template td[data-label="Select"]::before {
+  .table-template td[data-label='Select']::before {
     content: none;
   }
 
@@ -374,7 +373,9 @@
 
   /* Labels above values */
   .table-template
-    td[data-label]:not([data-label="Name"]):not([data-label="★"]):not([data-label="Select"])::before {
+    td[data-label]:not([data-label='Name']):not([data-label='★']):not(
+      [data-label='Select']
+    )::before {
     content: attr(data-label);
     display: block;
     font-size: var(--bs-font-size-xs);

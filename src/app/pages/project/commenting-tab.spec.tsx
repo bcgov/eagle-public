@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryRouter } from 'react-router';
 import { CommentingTab } from './commenting-tab';
 
-vi.mock('./project-context', async importOriginal => {
+vi.mock('./project-context', async (importOriginal) => {
   const original = await importOriginal<typeof import('./project-context')>();
   return { ...original, useProjectContext: () => ({ project: null, projId: 'proj-1', lists: [] }) };
 });
@@ -20,21 +20,25 @@ const OPEN_PERIOD = {
   _id: 'cp-open',
   dateStarted: daysFromNow(-3),
   dateCompleted: daysFromNow(4),
-  instructions: '<p>Public   Comment Period on the <b>Draft Application</b> for Cedar Quarry, closing soon.</p>'
+  instructions:
+    '<p>Public   Comment Period on the <b>Draft Application</b> for Cedar Quarry, closing soon.</p>',
 };
 
 const CLOSED_PERIOD = {
   _id: 'cp-closed',
   dateStarted: '2020-01-01T00:00:00.000Z',
   dateCompleted: '2020-02-01T00:00:00.000Z',
-  informationLabel: 'Early Engagement'
+  informationLabel: 'Early Engagement',
 };
 
 let requests: string[];
 let periods: unknown[];
 
 function jsonResponse(body: unknown) {
-  return new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } });
+  return new Response(JSON.stringify(body), {
+    status: 200,
+    headers: { 'content-type': 'application/json' },
+  });
 }
 
 function renderTab() {
@@ -44,20 +48,22 @@ function renderTab() {
     vi.fn(async (input: RequestInfo | URL) => {
       requests.push(String(input));
       return jsonResponse(periods);
-    })
+    }),
   );
 
   const router = createMemoryRouter(
     [
       { path: '/p/:projId/commenting', Component: CommentingTab },
-      { path: '/p/:projId/cp/:cpId', element: <div>comment period page</div> }
+      { path: '/p/:projId/cp/:cpId', element: <div>comment period page</div> },
     ],
-    { initialEntries: ['/p/proj-1/commenting'] }
+    { initialEntries: ['/p/proj-1/commenting'] },
   );
   render(
-    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })}>
+    <QueryClientProvider
+      client={new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })}
+    >
       <RouterProvider router={router} />
-    </QueryClientProvider>
+    </QueryClientProvider>,
   );
   return router;
 }
@@ -76,7 +82,7 @@ describe('commenting tab', () => {
     await screen.findByText('Draft Application');
     expect(requests[0]).toBe(
       '/api/commentperiod?project=proj-1&sortBy=-dateStarted' +
-        '&fields=project|dateStarted|dateCompleted|instructions|isMet|metURL|informationLabel'
+        '&fields=project|dateStarted|dateCompleted|instructions|isMet|metURL|informationLabel',
     );
   });
 
@@ -98,7 +104,7 @@ describe('commenting tab', () => {
   it('drops duplicate periods that point at the same engagement', async () => {
     periods = [
       { ...OPEN_PERIOD, isMet: true, metURL: 'https://engage.example/cedar' },
-      { ...OPEN_PERIOD, _id: 'cp-dupe', isMet: true, metURL: 'https://engage.example/cedar' }
+      { ...OPEN_PERIOD, _id: 'cp-dupe', isMet: true, metURL: 'https://engage.example/cedar' },
     ];
 
     renderTab();
@@ -132,7 +138,7 @@ describe('commenting tab', () => {
     renderTab();
 
     expect(
-      await screen.findByText('No comment periods are currently scheduled for this project.')
+      await screen.findByText('No comment periods are currently scheduled for this project.'),
     ).toBeInTheDocument();
   });
 });

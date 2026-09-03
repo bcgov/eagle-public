@@ -113,7 +113,7 @@
   }
 
   .project[data-sidebar-state] .project-tabs {
-    padding-inline: .5rem;
+    padding-inline: 0.5rem;
   }
 
   .project[data-sidebar-state] .project-tabs .tab-content {

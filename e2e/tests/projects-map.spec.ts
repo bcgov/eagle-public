@@ -13,7 +13,9 @@ async function openMap(page: Page) {
   await page.goto('/projects');
   const env = await search;
   // The WebGL canvas is inside the map region; it has no size until the style loads.
-  await page.locator(`[data-testid="project-map"] .maplibregl-canvas`).waitFor({ state: 'attached' });
+  await page
+    .locator(`[data-testid="project-map"] .maplibregl-canvas`)
+    .waitFor({ state: 'attached' });
   await expect(page.locator(CLUSTERS).first()).toBeVisible();
   await page.waitForTimeout(2000);
   return env;
@@ -39,7 +41,9 @@ test('map page renders the map, clusters and the project list', async ({ page })
   const env = await openMap(page);
 
   // The h1 is deliberately visually hidden, so assert presence rather than visibility.
-  await expect(page.locator('h1')).toHaveText('Find Environmental Assessment Projects in British Columbia');
+  await expect(page.locator('h1')).toHaveText(
+    'Find Environmental Assessment Projects in British Columbia',
+  );
   await expect(page.locator('[data-testid="project-map"] .maplibregl-canvas')).toBeAttached();
   await expect(page.locator(CLUSTERS)).not.toHaveCount(0);
   await expect(page.locator(CARDS)).not.toHaveCount(0);
@@ -97,7 +101,10 @@ test('clicking a pin opens the project card', async ({ page }) => {
   await expect(popup.locator('.popup-subtitle')).toBeVisible();
   await expect(popup.getByRole('button', { name: 'View project' })).toBeVisible();
   // The pin and the card are two views of one selection.
-  await expect(page.locator(`${CARDS}[data-project-id="${projectId}"]`)).toHaveAttribute('aria-current', 'true');
+  await expect(page.locator(`${CARDS}[data-project-id="${projectId}"]`)).toHaveAttribute(
+    'aria-current',
+    'true',
+  );
 });
 
 test('clicking a list card selects it and opens the project card', async ({ page }) => {

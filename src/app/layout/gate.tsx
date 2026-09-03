@@ -40,7 +40,9 @@ export function Gate() {
           <p>Enter the access password to continue.</p>
           <form onSubmit={submit}>
             <div className="form-group">
-              <label htmlFor="gate-password" className="control-label">Password</label>
+              <label htmlFor="gate-password" className="control-label">
+                Password
+              </label>
               <input
                 ref={password}
                 id="gate-password"
@@ -54,9 +56,13 @@ export function Gate() {
               />
             </div>
             {error && (
-              <p id="gate-error" className="text-danger" role="alert">{error}</p>
+              <p id="gate-error" className="text-danger" role="alert">
+                {error}
+              </p>
             )}
-            <button type="submit" className="btn btn-primary" disabled={busy}>Continue</button>
+            <button type="submit" className="btn btn-primary" disabled={busy}>
+              Continue
+            </button>
           </form>
         </section>
       </main>

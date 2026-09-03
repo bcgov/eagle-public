@@ -39,14 +39,30 @@ export function CommentsTableRow({ rowData }: TableRowProps) {
         {rowData.comment && (
           <div>
             {expanded && <p>{rowData.comment}</p>}
-            {!expanded && <p className="comment-truncated" ref={truncatedRef}>{rowData.comment}</p>}
+            {!expanded && (
+              <p className="comment-truncated" ref={truncatedRef}>
+                {rowData.comment}
+              </p>
+            )}
             {!expanded && hasOverflow && (
-              <button className="btn btn-link clickable p-0" onClick={event => { setExpanded(true); event.stopPropagation(); }}>
+              <button
+                className="btn btn-link clickable p-0"
+                onClick={(event) => {
+                  setExpanded(true);
+                  event.stopPropagation();
+                }}
+              >
                 Read More
               </button>
             )}
             {expanded && (
-              <button className="btn btn-link clickable p-0" onClick={event => { setExpanded(false); event.stopPropagation(); }}>
+              <button
+                className="btn btn-link clickable p-0"
+                onClick={(event) => {
+                  setExpanded(false);
+                  event.stopPropagation();
+                }}
+              >
                 Read Less
               </button>
             )}
@@ -61,15 +77,19 @@ export function CommentsTableRow({ rowData }: TableRowProps) {
                 className="attachment clickable"
                 role="button"
                 tabIndex={0}
-                onClick={event => { openDocument(file); event.stopPropagation(); }}
-                onKeyDown={event => {
+                onClick={(event) => {
+                  openDocument(file);
+                  event.stopPropagation();
+                }}
+                onKeyDown={(event) => {
                   if (event.key === 'Enter' || event.key === ' ') {
                     openDocument(file);
                     event.stopPropagation();
                   }
                 }}
               >
-                <i className="material-icons">attach_file</i>{file.internalOriginalName}
+                <i className="material-icons">attach_file</i>
+                {file.internalOriginalName}
               </div>
             ))}
           </div>

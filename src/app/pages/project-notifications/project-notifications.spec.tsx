@@ -16,18 +16,26 @@ const NOTIFICATIONS = [
     description: 'A quarry near Cedar Creek.',
     pcp: 'open',
     dateStarted: '2026-08-01T00:00:00.000Z',
-    dateCompleted: '2099-09-01T00:00:00.000Z'
-  }
+    dateCompleted: '2099-09-01T00:00:00.000Z',
+  },
 ];
 
 const DOCUMENTS = [
-  { _id: 'doc1', displayName: 'Notification Form', datePosted: '2026-05-01T00:00:00.000Z', documentAuthor: 'auth1' }
+  {
+    _id: 'doc1',
+    displayName: 'Notification Form',
+    datePosted: '2026-05-01T00:00:00.000Z',
+    documentAuthor: 'auth1',
+  },
 ];
 
 let requests: string[];
 
 function jsonResponse(body: unknown) {
-  return new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } });
+  return new Response(JSON.stringify(body), {
+    status: 200,
+    headers: { 'content-type': 'application/json' },
+  });
 }
 
 function renderAt(path: string) {
@@ -44,28 +52,35 @@ function renderAt(path: string) {
         return jsonResponse([{ searchResults: DOCUMENTS, meta: [{ searchResultsTotal: 1 }] }]);
       }
       if (url.includes('dataset=List')) {
-        return jsonResponse([{ searchResults: [{ _id: 'auth1', name: 'EAO' }], meta: [{ searchResultsTotal: 1 }] }]);
+        return jsonResponse([
+          { searchResults: [{ _id: 'auth1', name: 'EAO' }], meta: [{ searchResultsTotal: 1 }] },
+        ]);
       }
       if (url.includes('/commentperiod')) {
         return jsonResponse([]);
       }
       return jsonResponse([{ searchResults: [], meta: [] }]);
-    })
+    }),
   );
 
-  const router = createMemoryRouter([{ path: '/project-notifications', Component: ProjectNotifications }], {
-    initialEntries: [path]
-  });
+  const router = createMemoryRouter(
+    [{ path: '/project-notifications', Component: ProjectNotifications }],
+    {
+      initialEntries: [path],
+    },
+  );
   render(
-    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })}>
+    <QueryClientProvider
+      client={new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })}
+    >
       <RouterProvider router={router} />
-    </QueryClientProvider>
+    </QueryClientProvider>,
   );
   return router;
 }
 
 function lastRequestFor(dataset: string): string | undefined {
-  return requests.filter(url => url.includes(`dataset=${dataset}`)).at(-1);
+  return requests.filter((url) => url.includes(`dataset=${dataset}`)).at(-1);
 }
 
 describe('project notifications', () => {
@@ -80,7 +95,7 @@ describe('project notifications', () => {
 
     expect(await screen.findByText('CEDAR QUARRY')).toBeInTheDocument();
     expect(lastRequestFor('ProjectNotification')).toBe(
-      '/api/search?dataset=ProjectNotification&pageNum=0&pageSize=10&projectLegislation=default&sortBy=-_id&sortBy=&populate=true&fuzzy=false'
+      '/api/search?dataset=ProjectNotification&pageNum=0&pageSize=10&projectLegislation=default&sortBy=-_id&sortBy=&populate=true&fuzzy=false',
     );
   });
 
@@ -114,7 +129,9 @@ describe('project notifications', () => {
   it('shows the details tab first, with the notification decision', async () => {
     renderAt('/project-notifications');
 
-    expect(await screen.findByText('Notification Decision - Not Reviewable | 2026-05-04')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Notification Decision - Not Reviewable | 2026-05-04'),
+    ).toBeInTheDocument();
     expect(screen.getByText('A quarry near Cedar Creek.')).toBeInTheDocument();
   });
 
@@ -128,7 +145,7 @@ describe('project notifications', () => {
     await waitFor(() => expect(screen.getByText('Notification Form')).toBeInTheDocument());
     // Scoped to the parent notification, page size 5, and the backend's inverted sort convention.
     expect(lastRequestFor('Document')).toBe(
-      '/api/search?dataset=Document&project=n1&pageNum=0&pageSize=5&projectLegislation=default&sortBy=+datePosted&sortBy=&populate=true&and[documentSource]=PROJECT-NOTIFICATION&fuzzy=false'
+      '/api/search?dataset=Document&project=n1&pageNum=0&pageSize=5&projectLegislation=default&sortBy=+datePosted&sortBy=&populate=true&and[documentSource]=PROJECT-NOTIFICATION&fuzzy=false',
     );
   });
 
@@ -138,7 +155,9 @@ describe('project notifications', () => {
 
     await userEvent.click(screen.getByRole('tab', { name: 'Engagement' }));
 
-    expect(await screen.findByRole('heading', { name: 'Public Comment Period' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: 'Public Comment Period' }),
+    ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Share your thoughts' })).toBeInTheDocument();
   });
 });

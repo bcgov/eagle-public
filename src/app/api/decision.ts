@@ -13,7 +13,7 @@ async function withDocuments(decisions: Decision[], loadingId: string): Promise<
     return null as unknown as Decision;
   }
 
-  decision.documents = await documentApi.getAllByDecisionId(decision._id) || [];
+  decision.documents = (await documentApi.getAllByDecisionId(decision._id)) || [];
   cachedDecision = decision;
   stopLoading(loadingId);
   return decision;

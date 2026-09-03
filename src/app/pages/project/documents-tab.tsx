@@ -1,6 +1,12 @@
 import { ProjectDocumentTab } from './project-document-tab';
 
-const PANEL_SIZES = { issuedDate: 8, milestone: 4, documentAuthorType: 4, type: 4, projectPhase: 4 };
+const PANEL_SIZES = {
+  issuedDate: 8,
+  milestone: 4,
+  documentAuthorType: 4,
+  type: 4,
+  projectPhase: 4,
+};
 
 export function DocumentsTab() {
   return (

@@ -28,32 +28,32 @@ export class Document {
   isFeatured = false;
 
   constructor(obj?: any) {
-    this._id = obj && obj._id || null;
-    this.project = obj && obj.project || null;
+    this._id = (obj && obj._id) || null;
+    this.project = (obj && obj.project) || null;
 
-    this.documentFileName = obj && obj.documentFileName || null;
-    this.internalOriginalName = obj && obj.internalOriginalName || null;
-    this.internalURL = obj && obj.internalURL || null;
-    this.passedAVCheck = obj && obj.passedAVCheck || null;
-    this.internalMime = obj && obj.internalMime || null;
-    this.internalSize = obj && obj.internalSize || null;
-    this.documentSource = obj && obj.documentSource || null;
+    this.documentFileName = (obj && obj.documentFileName) || null;
+    this.internalOriginalName = (obj && obj.internalOriginalName) || null;
+    this.internalURL = (obj && obj.internalURL) || null;
+    this.passedAVCheck = (obj && obj.passedAVCheck) || null;
+    this.internalMime = (obj && obj.internalMime) || null;
+    this.internalSize = (obj && obj.internalSize) || null;
+    this.documentSource = (obj && obj.documentSource) || null;
 
-    this.displayName = obj && obj.displayName || null;
-    this.milestone = obj && obj.milestone || null;
-    this.dateUploaded = obj && obj.dateUploaded || null;
-    this.dateUpdated = obj && obj.dateUpdated || null;
-    this.datePosted = obj && obj.datePosted || null;
-    this.type = obj && obj.type || null;
-    this.description = obj && obj.description || null;
-    this.documentAuthor = obj && obj.documentAuthor || null;
-    this.eaoStatus = obj && obj.eaoStatus || null;
-    this.projectPhase = obj && obj.projectPhase || null;
+    this.displayName = (obj && obj.displayName) || null;
+    this.milestone = (obj && obj.milestone) || null;
+    this.dateUploaded = (obj && obj.dateUploaded) || null;
+    this.dateUpdated = (obj && obj.dateUpdated) || null;
+    this.datePosted = (obj && obj.datePosted) || null;
+    this.type = (obj && obj.type) || null;
+    this.description = (obj && obj.description) || null;
+    this.documentAuthor = (obj && obj.documentAuthor) || null;
+    this.eaoStatus = (obj && obj.eaoStatus) || null;
+    this.projectPhase = (obj && obj.projectPhase) || null;
 
-    this.checkbox = obj && obj.checkbox || null;
-    this.upfile = obj && obj.upfile || null;
-    this.labels = obj && obj.labels || null;
+    this.checkbox = (obj && obj.checkbox) || null;
+    this.upfile = (obj && obj.upfile) || null;
+    this.labels = (obj && obj.labels) || null;
 
-    this.isFeatured = obj && obj.isFeatured || false;
+    this.isFeatured = (obj && obj.isFeatured) || false;
   }
 }

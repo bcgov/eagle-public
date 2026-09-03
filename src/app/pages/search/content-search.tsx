@@ -41,7 +41,7 @@ export function ContentSearch() {
     // filter has to resolve to a document id set first, and a corpus-wide value exceeds
     // DOCUMENT_SCOPE_CAP, so the API drops the key and answers 200 with the whole corpus wearing
     // the label of a filtered result. The Documents tab keeps all five — they work there.
-    filters: {}
+    filters: {},
   });
 
   /**
@@ -57,7 +57,11 @@ export function ContentSearch() {
 
   function executeSearch(searchPackage: SearchPackage): void {
     // Page size is the user's choice, not part of the search.
-    submit({ pageSize: params['pageSize'], currentPage: 1, keywords: searchPackage.keywords?.trim() || null });
+    submit({
+      pageSize: params['pageSize'],
+      currentPage: 1,
+      keywords: searchPackage.keywords?.trim() || null,
+    });
   }
 
   return (
@@ -65,15 +69,27 @@ export function ContentSearch() {
       <HeroBanner
         title="Search Inside Documents"
         description="Search the text inside documents from the Environmental Assessment Office, not just their titles. Results show the matching passages and the text around them."
-        actions={[{ label: 'List of Projects', icon: 'list', routerLink: '/projects-list', title: 'List of Projects' }]}
+        actions={[
+          {
+            label: 'List of Projects',
+            icon: 'list',
+            routerLink: '/projects-list',
+            title: 'List of Projects',
+          },
+        ]}
       />
 
       {tabs.length > 0 && (
         <div className="container">
           <ul className="nav nav-tabs search-tabs" role="tablist">
-            {tabs.map(tab => (
+            {tabs.map((tab) => (
               <li className="nav-item" role="presentation" key={tab.link}>
-                <NavLink className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`} role="tab" to={tab.link} end>
+                <NavLink
+                  className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
+                  role="tab"
+                  to={tab.link}
+                  end
+                >
                   {tab.label}
                 </NavLink>
               </li>
@@ -123,7 +139,7 @@ export function ContentSearch() {
                 pageSize={pageSize}
                 totalItems={passageTotal}
                 ariaLabel="Content search pagination"
-                onPageChange={page => submit({ ...params, currentPage: page })}
+                onPageChange={(page) => submit({ ...params, currentPage: page })}
               />
             </>
           )}
