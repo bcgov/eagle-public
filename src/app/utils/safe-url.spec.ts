@@ -18,6 +18,7 @@ describe('isSafeUrl', () => {
     'data:text/html,x',
     'vbscript:msgbox(1)',
     '//evil.example',
+    '/\\evil.example',
     '',
   ])('rejects %s', (url) => {
     expect(isSafeUrl(url)).toBe(false);

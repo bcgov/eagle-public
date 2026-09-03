@@ -5,7 +5,7 @@ import { track } from 'app/analytics/analytics';
 import { getById } from 'app/api/project';
 import { listsQueryOptions } from 'app/config/config';
 import { safeHtml } from 'app/utils/safe-html';
-import { openExternal } from 'app/utils/safe-url';
+import { isSafeUrl, openExternal } from 'app/utils/safe-url';
 import { DetailsSidebar } from './details-sidebar';
 import { EngageBanner } from './engage-banner';
 import './project.css';
@@ -60,7 +60,7 @@ export function ProjectPage() {
 
   function goToViewComments(): void {
     if (!banner || !project) return;
-    const external = !!(banner.isMet && banner.metURL);
+    const external = !!(banner.isMet && isSafeUrl(banner.metURL));
     track('Comment Period Banner Clicked', {
       project_id: project._id,
       project_name: project.name,
@@ -97,7 +97,7 @@ export function ProjectPage() {
           />
           <div className="content">
             {showBanner &&
-              (banner.isMet && banner.metURL ? (
+              (banner.isMet && isSafeUrl(banner.metURL) ? (
                 <EngageBanner data={banner} />
               ) : (
                 <div className="pcp-banner col-sm-12">
