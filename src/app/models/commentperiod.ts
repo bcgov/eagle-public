@@ -1,6 +1,9 @@
 import { DateTime } from 'luxon';
 import { Project } from './project';
 
+// Deadlines are BC-based, so every date is read and displayed in Pacific time.
+const PACIFIC = 'America/Vancouver';
+
 /** Fields are copied straight off the API payload, so a missing one is `undefined`. */
 export class CommentPeriod {
   _id!: string;
@@ -75,15 +78,9 @@ export class CommentPeriod {
 
     // get comment period days remaining and determine commentPeriodStatus of the period
     if (obj && obj.dateStarted && obj.dateCompleted) {
-      const now = DateTime.now().setZone('America/Vancouver');
-      const dateStarted = DateTime.fromJSDate(this.dateStarted).setZone('America/Vancouver');
-      // When dateCompleted is midnight (admin picked a date with no time), treat the period
-      // as closing at end of that day (11:59:59 PM Pacific) to satisfy "open until 11:59 PM".
-      const rawEnd = DateTime.fromJSDate(this.dateCompleted).setZone('America/Vancouver');
-      const dateCompleted =
-        rawEnd.hour === 0 && rawEnd.minute === 0 && rawEnd.second === 0
-          ? rawEnd.endOf('day')
-          : rawEnd;
+      const now = DateTime.now().setZone(PACIFIC);
+      const dateStarted = DateTime.fromJSDate(this.dateStarted).setZone(PACIFIC);
+      const dateCompleted = this.closesAt;
 
       if (now < dateStarted) {
         this.commentPeriodStatus = 'Upcoming';
@@ -106,7 +103,7 @@ export class CommentPeriod {
       }
     }
 
-    this.longEndDate = DateTime.fromJSDate(this.dateCompleted).setZone('America/Vancouver');
+    this.longEndDate = DateTime.fromJSDate(this.dateCompleted).setZone(PACIFIC);
 
     // Build a display string that avoids misleading "12:00 AM" times.
     // Midnight (00:00) = admin picked that date as closing day (start-of-day stored) — show date-only.
@@ -121,14 +118,21 @@ export class CommentPeriod {
     }
   }
 
+  /**
+   * When dateCompleted is midnight (admin picked a date with no time), the period closes at the
+   * end of that day (11:59:59 PM Pacific) to satisfy the "open until 11:59 PM" requirement.
+   */
+  private get closesAt(): DateTime {
+    const end = DateTime.fromJSDate(this.dateCompleted).setZone(PACIFIC);
+    return end.hour === 0 && end.minute === 0 && end.second === 0 ? end.endOf('day') : end;
+  }
+
   public get isBannerVisible(): boolean {
     if (!this.dateStarted || !this.dateCompleted) return false;
 
-    const now = DateTime.now().setZone('America/Vancouver');
-    const start = DateTime.fromJSDate(this.dateStarted).setZone('America/Vancouver');
-    const end = DateTime.fromJSDate(this.dateCompleted).setZone('America/Vancouver');
-    const dateCompleted =
-      end.hour === 0 && end.minute === 0 && end.second === 0 ? end.endOf('day') : end;
+    const now = DateTime.now().setZone(PACIFIC);
+    const start = DateTime.fromJSDate(this.dateStarted).setZone(PACIFIC);
+    const dateCompleted = this.closesAt;
 
     const isUpcoming = now >= start.minus({ days: 7 }) && now < start;
     const isOpen = now >= start && now <= dateCompleted;
@@ -140,11 +144,9 @@ export class CommentPeriod {
   public get bannerState(): 'Upcoming' | 'Open' | 'Closed' | 'None' {
     if (!this.dateStarted || !this.dateCompleted) return 'None';
 
-    const now = DateTime.now().setZone('America/Vancouver');
-    const start = DateTime.fromJSDate(this.dateStarted).setZone('America/Vancouver');
-    const end = DateTime.fromJSDate(this.dateCompleted).setZone('America/Vancouver');
-    const dateCompleted =
-      end.hour === 0 && end.minute === 0 && end.second === 0 ? end.endOf('day') : end;
+    const now = DateTime.now().setZone(PACIFIC);
+    const start = DateTime.fromJSDate(this.dateStarted).setZone(PACIFIC);
+    const dateCompleted = this.closesAt;
 
     if (now < start) return 'Upcoming';
     if (now >= start && now <= dateCompleted) return 'Open';
@@ -156,7 +158,7 @@ export class CommentPeriod {
   }
 
   public get bannerTimerPillText(): string {
-    const start = DateTime.fromJSDate(this.dateStarted).setZone('America/Vancouver');
+    const start = DateTime.fromJSDate(this.dateStarted).setZone(PACIFIC);
 
     if (this.bannerState === 'Upcoming') {
       return `Starts ${start.toFormat('MMM d, yyyy')}`;
@@ -164,10 +166,6 @@ export class CommentPeriod {
     if (this.bannerState === 'Open') {
       return this.daysRemaining;
     }
-    const end = DateTime.fromJSDate(this.dateCompleted).setZone('America/Vancouver');
-    const dateCompleted =
-      end.hour === 0 && end.minute === 0 && end.second === 0 ? end.endOf('day') : end;
-
-    return `Closed ${dateCompleted.toFormat('MMM d, yyyy')}`;
+    return `Closed ${this.closesAt.toFormat('MMM d, yyyy')}`;
   }
 }
