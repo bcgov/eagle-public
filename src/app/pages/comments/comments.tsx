@@ -312,23 +312,19 @@ export function Comments() {
                         <div className="card-header">Related Documents</div>
                         <ul className="doc-list mb-0">
                           {commentPeriodDocs.map((doc) => (
-                            <li
-                              key={doc._id}
-                              className="clickable-row"
-                              role="button"
-                              tabIndex={0}
-                              onClick={() => onDownloadDocument(doc)}
-                              onKeyDown={(event) => {
-                                if (event.key === 'Enter' || event.key === ' ')
-                                  onDownloadDocument(doc);
-                              }}
-                            >
-                              <span className="cell icon">
-                                <i className="material-icons">insert_drive_file</i>
-                              </span>
-                              <span className="cell name" title={doc.displayName || ''}>
-                                {doc.displayName}
-                              </span>
+                            <li key={doc._id}>
+                              <button
+                                type="button"
+                                className="doc-list__row clickable-row"
+                                onClick={() => onDownloadDocument(doc)}
+                              >
+                                <span className="cell icon">
+                                  <i className="material-icons">insert_drive_file</i>
+                                </span>
+                                <span className="cell name" title={doc.displayName || ''}>
+                                  {doc.displayName}
+                                </span>
+                              </button>
                             </li>
                           ))}
                         </ul>

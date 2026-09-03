@@ -116,17 +116,15 @@ export function FileUpload({
       >
         <div className="row">
           <div className="col-md-12 text-center">
-            <a
-              href="#"
-              onClick={(event) => {
-                event.preventDefault();
-                inputRef.current?.click();
-              }}
+            <button
+              type="button"
+              className="btn btn-link"
+              onClick={() => inputRef.current?.click()}
             >
               <i className="material-icons">file_upload</i>
               Drop files to attach, or browse.
-              <br />
-            </a>
+            </button>
+            <br />
             <span className="fileInfo">
               Accepted file types: {fileExt}
               <br />

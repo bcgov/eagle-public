@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { useLocation } from 'react-router';
+import { Link, useLocation } from 'react-router';
 import { adminUrl } from 'app/config/config';
 import './footer.css';
 
@@ -25,7 +25,7 @@ export function Footer({ className = '' }: { className?: string }) {
         <div className="footer-admin clearfix">
           <ul className="gov-links">
             <li>
-              <a href="#">Home</a>
+              <Link to="/">Home</Link>
             </li>
             <li>
               <a
