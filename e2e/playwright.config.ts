@@ -23,7 +23,8 @@ export default defineConfig({
     baseURL: BASE_URL,
     trace: 'on-first-retry',
     navigationTimeout: 60_000,
-    actionTimeout: 20_000,
+    // Also the `request` fixture's ceiling; the test API answers a GitHub runner in 20-30 s.
+    actionTimeout: 60_000,
     viewport: { width: 1400, height: 900 },
     ignoreHTTPSErrors: false,
     ...(BASIC_AUTH_USER && BASIC_AUTH_PASS

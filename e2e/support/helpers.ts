@@ -184,12 +184,9 @@ export async function pageCount(page: Page): Promise<{ shown: number; total: num
  * answers the same envelope and is the fallback (the test environment gates
  * /demi-search behind HTTP basic auth).
  */
-// The test API answers a GitHub runner slower than the 20 s action timeout allows.
-const API_TIMEOUT = 60_000;
-
 async function searchFixture(request: APIRequestContext, query: string): Promise<any[]> {
   for (const base of ['/demi-search/search', '/api/search']) {
-    const r = await request.get(`${base}?${query}`, { timeout: API_TIMEOUT });
+    const r = await request.get(`${base}?${query}`);
     if (r.status() === 200) {
       try {
         return unwrap(await r.json()).searchResults;
@@ -224,7 +221,6 @@ export async function projectByKeyword(request: APIRequestContext, keyword: stri
 export async function latestCommentPeriod(request: APIRequestContext): Promise<any> {
   const r = await request.get(
     '/api/commentperiod?sortBy=-dateStarted&fields=project|dateStarted|dateCompleted|instructions|informationLabel',
-    { timeout: API_TIMEOUT },
   );
   expect(r.status()).toBe(200);
   const list = await r.json();
