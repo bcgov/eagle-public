@@ -27,13 +27,13 @@ export interface BulkDownloadJob {
   startedAt: number;
   /** Last status demi-api reported. Absent until the panel has polled once. */
   status?: BulkDownloadStatus['status'];
-  /** When the ready parts were fired. Persisted, so a reload never downloads the zip twice. */
+  /** When the ready parts were fired; the guard against firing them a second time. */
   downloadedAt?: number;
 }
 
 /** demi-api stops moving the job at these; polling stops with it, and so does the wait. */
 export function isTerminal(status?: string): boolean {
-  return status === 'ready' || status === 'failed' || status === 'expired';
+  return status === 'ready' || status === 'failed' || status === 'expired' || status === 'cancelled';
 }
 
 type TableSelection = Map<string, SelectedDocument>;
@@ -132,51 +132,13 @@ export async function selectAllMatching(tableId: string, params: SearchParamObje
   return added;
 }
 
-const JOB_KEY = 'epic-bulk-download-job';
-/** A job older than this is demi-api's problem, not ours: the zip has been swept or expired. */
-const JOB_MAX_AGE_MS = 60 * 60 * 1000;
 /** How many jobs demi-api runs at once for one requester; a fourth POST is refused with 429. */
 export const MAX_JOBS_IN_FLIGHT = 3;
 /** How many jobs the panel keeps, finished ones included. */
 const MAX_JOBS = 5;
 
-/** Jobs demi-api no longer knows: the panel still shows them, the store never writes them again. */
-const forgotten = new Set<string>();
-
-function persist(list: BulkDownloadJob[]): void {
-  const keep = list.filter(job => !forgotten.has(job.id));
-  if (keep.length === 0) {
-    localStorage.removeItem(JOB_KEY);
-    return;
-  }
-  localStorage.setItem(JOB_KEY, JSON.stringify(keep));
-}
-
-function storedJobs(): BulkDownloadJob[] {
-  try {
-    const raw = localStorage.getItem(JOB_KEY);
-    const parsed = raw ? JSON.parse(raw) : null;
-    // The panel used to hold one job, so an older visit stored an object rather than a list.
-    const list: BulkDownloadJob[] = Array.isArray(parsed) ? parsed : parsed ? [parsed] : [];
-    // A downloaded job has nothing left to resume; only a zip still being built survives a reload.
-    const kept = list.filter(
-      job => job?.id && !job.downloadedAt && Date.now() - job.startedAt <= JOB_MAX_AGE_MS
-    );
-    if (kept.length !== list.length) persist(kept);
-    return kept;
-  } catch {
-    localStorage.removeItem(JOB_KEY);
-    return [];
-  }
-}
-
-// Read at module load so a reload mid-zip resumes polling instead of losing the jobs.
-const jobs = createStore<BulkDownloadJob[]>(storedJobs());
-
-function writeJobs(list: BulkDownloadJob[]): void {
-  persist(list);
-  jobs.set(list);
-}
+// In memory only: leaving the site cancels whatever is still being zipped, so nothing survives it.
+const jobs = createStore<BulkDownloadJob[]>([]);
 
 /** Newest first. */
 export function useJobs(): BulkDownloadJob[] {
@@ -188,28 +150,19 @@ export function addJob(job: BulkDownloadJob): void {
   if (list.length > MAX_JOBS) {
     // The oldest finished job falls off first; one still zipping only goes if there is no other.
     const oldest = [...list].reverse().find(other => isTerminal(other.status)) ?? list[list.length - 1];
-    writeJobs(list.filter(other => other !== oldest));
+    jobs.set(list.filter(other => other !== oldest));
     return;
   }
-  writeJobs(list);
+  jobs.set(list);
 }
 
 function patchJob(id: string, change: Partial<BulkDownloadJob>): void {
-  writeJobs(jobs.get().map(job => (job.id === id ? { ...job, ...change } : job)));
-}
-
-/**
- * Drops the persisted copy but leaves the panel's, so a dead job id cannot come back on reload
- * while the reader still has the failure in front of them.
- */
-export function forgetStoredJob(id: string): void {
-  forgotten.add(id);
-  persist(jobs.get());
+  jobs.set(jobs.get().map(job => (job.id === id ? { ...job, ...change } : job)));
 }
 
 /** Removes one job; the others keep going. */
 export function dismissJob(id: string): void {
-  writeJobs(jobs.get().filter(job => job.id !== id));
+  jobs.set(jobs.get().filter(job => job.id !== id));
 }
 
 /** Records what the panel last read, so the toolbar knows a finished job is not still running. */
@@ -252,7 +205,7 @@ export function useStartError(): string | null {
 /** Forgets every job and any failed start: the panel is closed and nothing is left to show. */
 export function dismissAll(): void {
   startError.set(null);
-  writeJobs([]);
+  jobs.set([]);
 }
 
 /**

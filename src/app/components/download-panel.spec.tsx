@@ -3,7 +3,6 @@ import { act, fireEvent, render, renderHook, screen } from '@testing-library/rea
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { BulkDownloadJob } from 'app/state/bulk-download';
 
-const JOB_KEY = 'epic-bulk-download-job';
 const ALPHA = { id: 'doc-a', displayName: 'Alpha' };
 const BETA = { id: 'doc-b', displayName: 'Beta' };
 
@@ -13,6 +12,13 @@ let statusResponses: unknown[];
 /** Status bodies for a named job, for the tests that run more than one at a time. */
 let statusByJob: Record<string, unknown>;
 let fetchMock: ReturnType<typeof vi.fn>;
+
+/** Every job id the panel asked demi-api to cancel, in order. */
+function cancelledIds(): string[] {
+  return fetchMock.mock.calls
+    .filter(([, init]) => (init as RequestInit | undefined)?.method === 'DELETE')
+    .map(([url]) => String(url).replace('/demi-search/bulk-downloads/', ''));
+}
 
 /** The src of every download iframe currently in the document. */
 function downloadUrls(): string[] {
@@ -28,7 +34,6 @@ describe('DownloadPanel', () => {
 
   beforeEach(() => {
     vi.useFakeTimers();
-    localStorage.clear();
     statusResponses = [];
     statusByJob = {};
     statusStatus = 200;
@@ -36,6 +41,7 @@ describe('DownloadPanel', () => {
 
     fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
       if (init?.method === 'POST') return postResponse();
+      if (init?.method === 'DELETE') return new Response(null, { status: 204 });
       if (statusStatus !== 200) return new Response('{}', { status: statusStatus, statusText: 'Nope' });
       const named = Object.keys(statusByJob).find(id => url.includes(id));
       const body = named ? statusByJob[named] : statusResponses.length > 1 ? statusResponses.shift() : statusResponses[0];
@@ -53,16 +59,16 @@ describe('DownloadPanel', () => {
   });
 
   /**
-   * Fresh module state per test: the selection, the failed start and the persisted job are
-   * module-level stores, and the job is rehydrated at import time.
+   * Fresh module state per test: the selection, the failed start and the job list are module-level
+   * stores. Jobs are seeded oldest first, so the panel holds them in the order given.
    */
-  async function mount(...storedJobs: BulkDownloadJob[]) {
-    if (storedJobs.length > 0) localStorage.setItem(JOB_KEY, JSON.stringify(storedJobs));
+  async function mount(...initialJobs: BulkDownloadJob[]) {
     vi.resetModules();
     window.__env = { logLevel: 4, API_PATH: '/api', SEARCH_API_PATH: '/demi-search' };
     const config = await import('app/config/config');
     await config.loadConfig();
     const store = await import('app/state/bulk-download');
+    [...initialJobs].reverse().forEach(job => store.addJob(job));
     const { DownloadPanel } = await import('./download-panel');
 
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -299,7 +305,7 @@ describe('DownloadPanel', () => {
 
     expect(screen.getByText("You've reached the download limit. Try again later.")).toBeInTheDocument();
     expect(downloadUrls()).toEqual([]);
-    expect(localStorage.getItem(JOB_KEY)).toBeNull();
+    expect(document.querySelectorAll('.download-panel__job')).toHaveLength(0);
   });
 
   it('says so when bulk download is switched off at the backend', async () => {
@@ -334,11 +340,10 @@ describe('DownloadPanel', () => {
     await startDownload(panel.store);
 
     expect(downloadUrls()).toEqual(['https://nrs.example/one.pdf']);
-    expect(localStorage.getItem(JOB_KEY)).toBeNull();
     expect(container).toBeEmptyDOMElement();
   });
 
-  it('resumes a job left running by the previous page load', async () => {
+  it('reports the progress of a job it is holding', async () => {
     statusResponses = [{ id: 'job-9', status: 'running', partCount: 3, partsReady: 2 }];
     const panel = await mount({ id: 'job-9', count: 40, startedAt: Date.now() - 60_000 });
 
@@ -347,15 +352,6 @@ describe('DownloadPanel', () => {
 
     expect(screen.getByText('Zipping 40 documents…')).toBeInTheDocument();
     expect(screen.getByText('part 3 of 3')).toBeInTheDocument();
-  });
-
-  it('drops a job left over from more than an hour ago', async () => {
-    const panel = await mount({ id: 'job-9', count: 40, startedAt: Date.now() - 3_700_000 });
-
-    const { container } = panel.render();
-    await tick(0);
-
-    expect(container).toBeEmptyDOMElement();
   });
 
   it('says a failed job failed, with nothing to retry', async () => {
@@ -381,7 +377,6 @@ describe('DownloadPanel', () => {
     await tick(0);
 
     expect(screen.getByText('That download is no longer available.')).toBeInTheDocument();
-    expect(localStorage.getItem(JOB_KEY)).toBeNull();
     expect(screen.queryByRole('button', { name: 'Retry' })).not.toBeInTheDocument();
 
     const pollsSoFar = fetchMock.mock.calls.length;
@@ -399,7 +394,7 @@ describe('DownloadPanel', () => {
 
     expect(screen.getByText('Could not check the download.')).toBeInTheDocument();
     // The job is still demi-api's, so it stays: a 500 says nothing about the zip.
-    expect(localStorage.getItem(JOB_KEY)).not.toBeNull();
+    expect(document.querySelectorAll('.download-panel__job')).toHaveLength(1);
 
     // The 4s beat stops until the reader asks again, rather than hammering a failing endpoint.
     const pollsSoFar = fetchMock.mock.calls.length;
@@ -465,7 +460,6 @@ describe('DownloadPanel', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Close download panel' }));
 
     expect(container).toBeEmptyDOMElement();
-    expect(localStorage.getItem(JOB_KEY)).toBeNull();
 
     // Nothing left to poll for: the job is gone, not just hidden.
     const pollsSoFar = fetchMock.mock.calls.length;
@@ -496,41 +490,13 @@ describe('DownloadPanel', () => {
     expect(screen.getByText('EPIC documents - Site C Clean Energy.zip')).toBeInTheDocument();
     expect(screen.getByText('Downloaded')).toBeInTheDocument();
     expect(downloadUrls()).toEqual(['https://nrs.example/part1.zip']);
-    expect(JSON.parse(localStorage.getItem(JOB_KEY)!)[0].downloadedAt).toEqual(expect.any(Number));
+    expect(renderHook(() => panel.store.useJobs()).result.current[0].downloadedAt).toEqual(expect.any(Number));
 
     fireEvent.click(
       screen.getByRole('button', { name: 'Download again EPIC documents - Site C Clean Energy.zip' })
     );
 
     expect(downloadUrls()).toEqual(['https://nrs.example/part1.zip', 'https://nrs.example/part1.zip']);
-  });
-
-  /** A reload used to re-fire every part; a downloaded job is dropped at load instead. */
-  it('shows nothing and fires nothing for a stored job that was already downloaded', async () => {
-    statusResponses = [
-      {
-        id: 'job-9',
-        status: 'ready',
-        partCount: 1,
-        partsReady: 1,
-        includedCount: 2,
-        errorCount: 0,
-        parts: [{ n: 1, fileName: 'documents.zip', url: 'https://nrs.example/part1.zip' }]
-      }
-    ];
-    const panel = await mount({
-      id: 'job-9',
-      count: 2,
-      startedAt: Date.now(),
-      status: 'ready',
-      downloadedAt: Date.now()
-    });
-    panel.render();
-    await tick(2000);
-
-    expect(downloadUrls()).toEqual([]);
-    expect(screen.queryByText('documents.zip')).not.toBeInTheDocument();
-    expect(localStorage.getItem(JOB_KEY)).toBeNull();
   });
 
   /** The toolbar's Download is disabled while a job runs; a finished job must release it. */
@@ -550,7 +516,7 @@ describe('DownloadPanel', () => {
     panel.render();
     await tick(0);
 
-    expect(JSON.parse(localStorage.getItem(JOB_KEY)!)[0].status).toBe('ready');
+    expect(renderHook(() => panel.store.useJobs()).result.current[0].status).toBe('ready');
   });
   /**
    * demi-api takes three jobs at once, so the panel holds a group per job: each one polls, reports
@@ -592,7 +558,6 @@ describe('DownloadPanel', () => {
 
       expect(screen.queryByText('Zipping 4 documents…')).not.toBeInTheDocument();
       expect(screen.getByText('Zipping 7 documents…')).toBeInTheDocument();
-      expect(JSON.parse(localStorage.getItem(JOB_KEY)!).map((job: BulkDownloadJob) => job.id)).toEqual(['job-b']);
 
       const dismissed = pollsFor('job-a');
       const kept = pollsFor('job-b');
@@ -611,25 +576,11 @@ describe('DownloadPanel', () => {
       expect(container).toBeEmptyDOMElement();
       expect(screen.queryByText('Zipping 4 documents…')).not.toBeInTheDocument();
       expect(screen.queryByText('Zipping 7 documents…')).not.toBeInTheDocument();
-      expect(localStorage.getItem(JOB_KEY)).toBeNull();
 
       const pollsSoFar = fetchMock.mock.calls.length;
       await tick(60_000);
 
       expect(fetchMock.mock.calls.length).toBe(pollsSoFar);
-    });
-
-    /** An older visit stored one job as a bare object rather than a list. */
-    it('resumes a job stored by the version that held only one', async () => {
-      statusResponses = [{ id: 'job-9', status: 'running', partCount: 1, partsReady: 0 }];
-      localStorage.setItem(JOB_KEY, JSON.stringify({ id: 'job-9', count: 4, startedAt: Date.now() }));
-      const panel = await mount();
-
-      panel.render();
-      await tick(0);
-
-      expect(screen.getByText('Zipping 4 documents…')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Dismiss download of 4 documents' })).toBeInTheDocument();
     });
 
     /** The toolbar's Download only stops once demi-api is holding as many jobs as it will take. */
@@ -653,6 +604,128 @@ describe('DownloadPanel', () => {
 
       expect(document.querySelectorAll('.download-panel__job')).toHaveLength(3);
       expect(inProgress.result.current).toBe(true);
+    });
+  });
+
+  /**
+   * A job still being zipped is stopped at the backend when the reader dismisses it, and when they
+   * leave the site: nobody is left waiting for a zip.
+   */
+  describe('cancelling', () => {
+    const RUNNING = (id: string) => ({ id, status: 'running', partCount: 1, partsReady: 0 });
+    const READY = (id: string) => ({
+      id,
+      status: 'ready',
+      partCount: 1,
+      partsReady: 1,
+      includedCount: 2,
+      errorCount: 0,
+      parts: [{ n: 1, fileName: `${id}.zip`, url: `https://nrs.example/${id}.zip` }]
+    });
+
+    /** Returns the event so the caller can read what the panel did with it. */
+    function leave(type: 'beforeunload' | 'pagehide'): Event {
+      const event = new Event(type, { cancelable: true });
+      window.dispatchEvent(event);
+      return event;
+    }
+
+    it('cancels the job the reader dismissed, and leaves the other running', async () => {
+      statusByJob = { 'job-a': RUNNING('job-a'), 'job-b': RUNNING('job-b') };
+      const panel = await mount(
+        { id: 'job-a', count: 4, startedAt: Date.now() },
+        { id: 'job-b', count: 7, startedAt: Date.now() }
+      );
+      panel.render();
+      await tick(0);
+
+      fireEvent.click(screen.getByRole('button', { name: 'Dismiss download of 4 documents' }));
+
+      expect(cancelledIds()).toEqual(['job-a']);
+      expect(screen.queryByText('Zipping 4 documents…')).not.toBeInTheDocument();
+      expect(screen.getByText('Zipping 7 documents…')).toBeInTheDocument();
+    });
+
+    /** A zip already downloaded has nothing left to stop, and demi-api would answer 404 anyway. */
+    it('sends no cancel for a job that already finished', async () => {
+      statusByJob = { 'job-a': READY('job-a') };
+      const panel = await mount({ id: 'job-a', count: 2, startedAt: Date.now() });
+      panel.render();
+      await tick(2000);
+
+      fireEvent.click(screen.getByRole('button', { name: 'Dismiss download of 2 documents' }));
+
+      expect(cancelledIds()).toEqual([]);
+    });
+
+    it('cancels every job still in flight when the panel is closed', async () => {
+      statusByJob = { 'job-a': RUNNING('job-a'), 'job-b': READY('job-b'), 'job-c': RUNNING('job-c') };
+      const panel = await mount(
+        { id: 'job-a', count: 4, startedAt: Date.now() },
+        { id: 'job-b', count: 2, startedAt: Date.now() },
+        { id: 'job-c', count: 9, startedAt: Date.now() }
+      );
+      const { container } = panel.render();
+      await tick(2000);
+
+      fireEvent.click(screen.getByRole('button', { name: 'Close download panel' }));
+
+      expect(cancelledIds().sort()).toEqual(['job-a', 'job-c']);
+      expect(container).toBeEmptyDOMElement();
+    });
+
+    /**
+     * jsdom's `returnValue` is the legacy alias of the cancelled flag, so the prompt shows as a
+     * prevented default: the browser only asks when the listener does that.
+     */
+    it('asks the browser to warn before leaving only while a job is in flight', async () => {
+      statusByJob = { 'job-a': RUNNING('job-a') };
+      const panel = await mount({ id: 'job-a', count: 4, startedAt: Date.now() });
+      panel.render();
+      await tick(0);
+
+      expect(leave('beforeunload').defaultPrevented).toBe(true);
+
+      statusByJob = { 'job-a': READY('job-a') };
+      await tick(4000);
+      await tick(1);
+
+      expect(leave('beforeunload').defaultPrevented).toBe(false);
+    });
+
+    it('cancels what is in flight on the way out, with a request that outlives the page', async () => {
+      statusByJob = { 'job-a': RUNNING('job-a'), 'job-b': READY('job-b') };
+      const panel = await mount(
+        { id: 'job-a', count: 4, startedAt: Date.now() },
+        { id: 'job-b', count: 2, startedAt: Date.now() }
+      );
+      panel.render();
+      await tick(2000);
+
+      leave('pagehide');
+
+      expect(cancelledIds()).toEqual(['job-a']);
+      const sent = fetchMock.mock.calls.filter(([, init]) => (init as RequestInit)?.method === 'DELETE');
+      expect(sent.every(([, init]) => (init as RequestInit).keepalive)).toBe(true);
+    });
+
+    it('says a cancelled job was cancelled, and lets the next download start', async () => {
+      statusByJob = {
+        'job-a': { id: 'job-a', status: 'cancelled', partCount: 1, partsReady: 0 },
+        'job-b': RUNNING('job-b'),
+        'job-c': RUNNING('job-c')
+      };
+      const panel = await mount(
+        { id: 'job-a', count: 4, startedAt: Date.now() },
+        { id: 'job-b', count: 7, startedAt: Date.now() },
+        { id: 'job-c', count: 9, startedAt: Date.now() }
+      );
+      panel.render();
+      await tick(0);
+
+      expect(screen.getByText('Download cancelled.')).toBeInTheDocument();
+      // Three jobs is demi-api's limit; the cancelled one no longer counts against it.
+      expect(renderHook(() => panel.store.useDownloadInProgress()).result.current).toBe(false);
     });
   });
 });

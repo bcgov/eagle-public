@@ -9,7 +9,8 @@ import {
   SELECT_ALL_MAX,
   setJobStatus,
   setSelected,
-  toggleSelected
+  toggleSelected,
+  useJobs
 } from 'app/state/bulk-download';
 import { clearToasts, useToasts } from 'app/state/toast';
 import { SelectCell, TableTemplate } from './table-template';
@@ -390,7 +391,7 @@ describe('TableTemplate selection toolbar', () => {
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toContain('/bulk-downloads');
     expect(JSON.parse(init.body)).toEqual({ documentIds: ['doc-a', 'doc-b'] });
-    await waitFor(() => expect(localStorage.getItem('epic-bulk-download-job')).toContain('job-1'));
+    await waitFor(() => expect(renderHook(() => useJobs()).result.current.map(job => job.id)).toEqual(['job-1']));
     // The job owns the download now, so the toolbar goes with the selection it posted.
     expect(screen.queryByRole('button', { name: 'Download' })).not.toBeInTheDocument();
   });

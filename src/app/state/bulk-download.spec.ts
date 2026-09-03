@@ -25,7 +25,6 @@ vi.mock('app/api/search', async importOriginal => ({
   fetchData: vi.fn()
 }));
 
-const JOB_KEY = 'epic-bulk-download-job';
 const ALPHA = { id: 'doc-a', displayName: 'Alpha' };
 const BETA = { id: 'doc-b', displayName: 'Beta' };
 
@@ -182,10 +181,7 @@ describe('selectAllMatching', () => {
   });
 });
 
-/**
- * The job id is the capability token for the zip, so it outlives a reload: the panel resumes
- * polling instead of losing a download that is still building. Several can be in flight at once.
- */
+/** Jobs live in memory only, and several can be in flight at once. */
 describe('bulk download jobs', () => {
   const job = (id: string, extra: Partial<BulkDownloadJob> = {}): BulkDownloadJob => ({
     id,
@@ -196,19 +192,16 @@ describe('bulk download jobs', () => {
 
   /** Every assertion on the store goes through the hook the panel reads. */
   const jobsNow = () => renderHook(() => useJobs()).result.current;
-  const stored = () => JSON.parse(localStorage.getItem(JOB_KEY) ?? 'null');
 
   beforeEach(() => {
-    localStorage.clear();
     dismissAll();
   });
 
-  it('keeps every job, newest first, and persists the list', () => {
+  it('keeps every job, newest first', () => {
     addJob(job('job-1'));
     addJob(job('job-2'));
 
     expect(jobsNow().map(one => one.id)).toEqual(['job-2', 'job-1']);
-    expect(stored().map((one: BulkDownloadJob) => one.id)).toEqual(['job-2', 'job-1']);
   });
 
   it('dismisses the job asked for and leaves the others alone', () => {
@@ -219,7 +212,6 @@ describe('bulk download jobs', () => {
     dismissJob('job-2');
 
     expect(jobsNow().map(one => one.id)).toEqual(['job-3', 'job-1']);
-    expect(stored().map((one: BulkDownloadJob) => one.id)).toEqual(['job-3', 'job-1']);
   });
 
   it('forgets them all on dismissAll', () => {
@@ -229,7 +221,6 @@ describe('bulk download jobs', () => {
     dismissAll();
 
     expect(jobsNow()).toEqual([]);
-    expect(localStorage.getItem(JOB_KEY)).toBeNull();
   });
 
   it('records a status against one job only', () => {
@@ -289,54 +280,16 @@ describe('bulk download jobs', () => {
     expect(inFlight.result.current).toBe(false);
   });
 
-  it('rehydrates the jobs stored less than an hour ago', async () => {
-    localStorage.setItem(
-      JOB_KEY,
-      JSON.stringify([
-        { id: 'job-1', count: 3, startedAt: Date.now() - 60_000 },
-        { id: 'job-2', count: 5, startedAt: Date.now() - 30_000 }
-      ])
-    );
-    vi.resetModules();
+  /** A cancelled job is finished as far as the toolbar is concerned. */
+  it('releases the next download when a job is cancelled', () => {
+    const inFlight = renderHook(() => useDownloadInProgress());
+    ['job-1', 'job-2', 'job-3'].forEach(id => addJob(job(id)));
+    inFlight.rerender();
+    expect(inFlight.result.current).toBe(true);
 
-    const store = await import('./bulk-download');
+    setJobStatus('job-1', 'cancelled');
+    inFlight.rerender();
 
-    expect(renderHook(() => store.useJobs()).result.current.map(one => one.id)).toEqual(['job-1', 'job-2']);
-  });
-
-  /** An older visit stored one job as a bare object; it becomes the only job in the list. */
-  it('migrates a single stored job into the list', async () => {
-    localStorage.setItem(JOB_KEY, JSON.stringify({ id: 'job-1', count: 3, startedAt: Date.now() - 60_000 }));
-    vi.resetModules();
-
-    const store = await import('./bulk-download');
-
-    expect(renderHook(() => store.useJobs()).result.current).toMatchObject([{ id: 'job-1', count: 3 }]);
-  });
-
-  it('drops a downloaded job on reload and keeps the zip still being built', async () => {
-    localStorage.setItem(
-      JOB_KEY,
-      JSON.stringify([
-        { id: 'job-1', count: 3, startedAt: Date.now() - 60_000, downloadedAt: Date.now() - 1_000 },
-        { id: 'job-2', count: 5, startedAt: Date.now() - 30_000 }
-      ])
-    );
-    vi.resetModules();
-
-    const store = await import('./bulk-download');
-
-    expect(renderHook(() => store.useJobs()).result.current.map(one => one.id)).toEqual(['job-2']);
-    expect(stored().map((one: BulkDownloadJob) => one.id)).toEqual(['job-2']);
-  });
-
-  it('drops a job older than an hour, zip and all', async () => {
-    localStorage.setItem(JOB_KEY, JSON.stringify([{ id: 'job-1', count: 3, startedAt: Date.now() - 3_700_000 }]));
-    vi.resetModules();
-
-    const store = await import('./bulk-download');
-
-    expect(renderHook(() => store.useJobs()).result.current).toEqual([]);
-    expect(localStorage.getItem(JOB_KEY)).toBeNull();
+    expect(inFlight.result.current).toBe(false);
   });
 });
