@@ -104,13 +104,10 @@
   background-color: var(--hover-tint);
 }
 
-/* Hover state - only for tables with highlight class */
-.table tbody.highlight tr:hover {
-  background-color: var(--bs-table-hover-bg);
-}
-
+/* Hover state - only for tables with highlight class. Bootstrap's own overlay, so a hovered
+   row and a selected row are painted the same way. */
 .table tbody.highlight tr:hover td {
-  background-color: var(--bs-table-hover-bg) !important;
+  --bs-table-bg-state: var(--bs-table-hover-bg);
 }
 
 /* Keyboard focus: an outline, so it still reads over the hover and selection fills. */
@@ -124,8 +121,9 @@
    reads as hover. The bar sits on the row, whose bottom border is the divider, so it runs
    through the dividers; a cell border stopped 2px short of each one. Desktop only: phone
    rows are cards with their own selected ring. */
+/* Same overlay Bootstrap paints on hover, so selected and hovered rows match exactly. */
 .table tbody tr.selected td {
-  background-color: var(--bs-table-hover-bg) !important;
+  --bs-table-bg-state: var(--bs-table-hover-bg);
 }
 
 @media (min-width: 769px) {
