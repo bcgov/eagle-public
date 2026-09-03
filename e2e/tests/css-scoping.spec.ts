@@ -1,5 +1,5 @@
 import { test, expect } from '../support/fixtures';
-import { ready } from '../support/helpers';
+import { latestCommentPeriod, projectByKeyword, ready } from '../support/helpers';
 
 /**
  * Angular scoped every component stylesheet with a `[_ngcontent]` attribute on its last compound
@@ -48,13 +48,7 @@ test('news activity cells keep the card padding, and the date cell the table pad
 });
 
 test('the comment period hero spans the page', async ({ page, request }) => {
-  const list = await (
-    await request.get(
-      '/api/commentperiod?sortBy=-dateStarted&fields=project|dateStarted|dateCompleted',
-    )
-  ).json();
-  const cp = list.find((c: any) => c.project && c.dateStarted && c.dateCompleted);
-  expect(cp, 'no comment period on this environment').toBeTruthy();
+  const cp = await latestCommentPeriod(request);
 
   await page.goto(`/p/${cp.project}/cp/${cp._id}/details`);
   await ready(page);
@@ -80,12 +74,7 @@ test('the project detail sidebar map is not laid out like the full-page map', as
   page,
   request,
 }) => {
-  const body = await (
-    await request.get(
-      '/api/search?dataset=Project&pageNum=0&pageSize=1&keywords=Site%20C&projectLegislation=default&sortBy=-score&populate=true&fuzzy=false',
-    )
-  ).json();
-  const project = (Array.isArray(body) ? body[0] : body).searchResults[0];
+  const project = await projectByKeyword(request, 'Site C');
 
   await page.goto(`/p/${project._id}/project-details`);
   await ready(page);
@@ -97,12 +86,7 @@ test('project detail child headings are not the details tab heading colour', asy
   page,
   request,
 }) => {
-  const body = await (
-    await request.get(
-      '/api/search?dataset=Project&pageNum=0&pageSize=1&keywords=Site%20C&projectLegislation=default&sortBy=-score&populate=true&fuzzy=false',
-    )
-  ).json();
-  const project = (Array.isArray(body) ? body[0] : body).searchResults[0];
+  const project = await projectByKeyword(request, 'Site C');
 
   await page.goto(`/p/${project._id}/project-details`);
   await ready(page);
