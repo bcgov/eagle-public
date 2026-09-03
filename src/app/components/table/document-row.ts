@@ -19,14 +19,16 @@ export function useDocumentRow(rowData: any, tableData: TableObject) {
   const selected = useSelection(tableData.tableId).has(rowData._id);
 
   const rowProps = {
-    className: [selectable ? 'selectable-row' : '', selected ? 'selected' : ''].join(' ').trim() || undefined,
+    className:
+      [selectable ? 'selectable-row' : '', selected ? 'selected' : ''].join(' ').trim() ||
+      undefined,
     onClick: (event: MouseEvent<HTMLTableRowElement>) => {
       // A click that lands on a link, a button or the checkbox belongs to that control.
       if (!selectable || (event.target as HTMLElement).closest('a, button, input')) return;
       // Letting go after dragging across the text is a text selection, not a row click.
       if (window.getSelection()?.isCollapsed === false) return;
       toggleRow(tableData.tableId, rowData);
-    }
+    },
   };
 
   return { selectable, rowProps };

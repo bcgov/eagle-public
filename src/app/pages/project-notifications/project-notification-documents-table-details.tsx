@@ -5,7 +5,9 @@ import { safeHtml } from 'app/utils/safe-html';
 function decisionText(rowData: any): string {
   const decision = rowData.decision || '-';
   const dateStr = rowData.decisionDate?.toString().split('T')[0];
-  return dateStr ? `Notification Decision - ${decision} | ${dateStr}` : `Notification Decision - ${decision}`;
+  return dateStr
+    ? `Notification Decision - ${decision} | ${dateStr}`
+    : `Notification Decision - ${decision}`;
 }
 
 function getTrigger(project: any): string | null {
@@ -38,7 +40,10 @@ export function ProjectNotificationDocumentsTableDetails({ rowData }: { rowData:
       <div className="row mb-4" tabIndex={0}>
         <div className="col-12 pn-info-block">
           <span className="info-label">Description:</span>
-          <p className="value" dangerouslySetInnerHTML={safeHtml(newlines(rowData.description || '-'))}></p>
+          <p
+            className="value"
+            dangerouslySetInnerHTML={safeHtml(newlines(rowData.description || '-'))}
+          ></p>
         </div>
       </div>
 

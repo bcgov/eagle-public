@@ -3,7 +3,11 @@ import { useQuery } from '@tanstack/react-query';
 import { listsQueryOptions } from 'app/config/config';
 import { useResponsive } from 'app/state/responsive';
 import { TableTemplate } from 'app/components/table/table-template';
-import { tableObject, type IColumnObject, type ITableMessage } from 'app/components/table/table-object';
+import {
+  tableObject,
+  type IColumnObject,
+  type ITableMessage,
+} from 'app/components/table/table-object';
 import { toggleSortDirection } from 'app/components/table/table-params';
 import { useTable } from 'app/components/table/use-table';
 import { ProjectNotificationDocumentsTableRow } from './project-notification-documents-table-rows';
@@ -19,13 +23,13 @@ interface ProjectNotificationDocumentsTableProps {
 const MOBILE_COLUMNS: IColumnObject[] = [
   { name: 'Name', value: 'displayName', width: 'col-6' },
   { name: 'Date', value: 'datePosted', width: 'col-3' },
-  { name: 'Author', value: 'documentAuthor', width: 'col-3' }
+  { name: 'Author', value: 'documentAuthor', width: 'col-3' },
 ];
 
 const DESKTOP_COLUMNS: IColumnObject[] = [
   { name: 'Document Name', value: 'displayName', width: 'col-6' },
   { name: 'Date', value: 'datePosted', width: 'col-3' },
-  { name: 'Document Author', value: 'documentAuthor', width: 'col-3' }
+  { name: 'Document Author', value: 'documentAuthor', width: 'col-3' },
 ];
 
 /** Backend inverts the sort convention: `+` is descending there, `-` is ascending. */
@@ -37,7 +41,7 @@ export function ProjectNotificationDocumentsTable({
   tableId,
   header,
   backgroundColor = 'transparent',
-  rowBackgroundColor = '#F7F8FA'
+  rowBackgroundColor = '#F7F8FA',
 }: ProjectNotificationDocumentsTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortBy, setSortBy] = useState('-datePosted');
@@ -51,7 +55,7 @@ export function ProjectNotificationDocumentsTable({
     pageSize: 5,
     sortBy: invertSortForBackend(sortBy),
     queryModifiers: { documentSource: 'PROJECT-NOTIFICATION' },
-    populate: true
+    populate: true,
   });
 
   const data = {
@@ -62,9 +66,9 @@ export function ProjectNotificationDocumentsTable({
       currentPage,
       pageSize: 5,
       sortBy,
-      items: result.data.map(record => ({ rowData: record })),
+      items: result.data.map((record) => ({ rowData: record })),
       totalListItems: result.totalListItems,
-      data: { rowBackgroundColor, lists }
+      data: { rowBackgroundColor, lists },
     }),
     options: {
       showHeader: true,
@@ -73,8 +77,8 @@ export function ProjectNotificationDocumentsTable({
       showAllPicker: false,
       showPagination: true,
       showTopControls: false,
-      disableRowHighlight: false
-    }
+      disableRowHighlight: false,
+    },
   };
 
   function onMessage(msg: ITableMessage): void {

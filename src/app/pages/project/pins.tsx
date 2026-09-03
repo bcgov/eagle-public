@@ -3,19 +3,24 @@ import { useQuery } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router';
 import { getPins } from 'app/api/project';
 import { TableTemplate } from 'app/components/table/table-template';
-import { tableObject, type IColumnObject, type ITableMessage, type TableRowProps } from 'app/components/table/table-object';
+import {
+  tableObject,
+  type IColumnObject,
+  type ITableMessage,
+  type TableRowProps,
+} from 'app/components/table/table-object';
 import {
   normalizeSortBy,
   paramsToObject,
   toggleSortDirection,
-  toSearchParams
+  toSearchParams,
 } from 'app/components/table/table-params';
 import { Constants } from 'app/utils/constants';
 import { useProjectContext } from './project-context';
 
 const COLUMNS: IColumnObject[] = [
   { name: 'Nation Name', value: 'name', width: 'col-8' },
-  { name: 'Location', value: 'province', width: 'col-4' }
+  { name: 'Location', value: 'province', width: 'col-4' },
 ];
 
 const DEFAULT_SORT = '+name';
@@ -50,7 +55,7 @@ export function Pins() {
       const response = await getPins(projId, currentPage, pageSize, sortBy);
       const page = response?.[0];
       return { data: page?.results ?? [], totalListItems: page?.total_items ?? 0 };
-    }
+    },
   });
 
   const totalListItems = result?.totalListItems ?? 0;
@@ -66,8 +71,8 @@ export function Pins() {
       currentPage,
       pageSize,
       sortBy,
-      items: (result?.data ?? []).map(record => ({ rowData: record })),
-      totalListItems
+      items: (result?.data ?? []).map((record) => ({ rowData: record })),
+      totalListItems,
     }),
     options: {
       showHeader: true,
@@ -75,17 +80,26 @@ export function Pins() {
       showPageCountDisplay: false,
       showPageSizePicker: false,
       showTopControls: true,
-      disableRowHighlight: true
-    }
+      disableRowHighlight: true,
+    },
   };
 
   function onMessage(msg: ITableMessage): void {
     switch (msg.label) {
       case 'columnSort':
-        setSearchParams(toSearchParams({ ...params, sortByPins: toggleSortDirection(sortBy, msg.data), currentPagePins: 1 }), { replace: true });
+        setSearchParams(
+          toSearchParams({
+            ...params,
+            sortByPins: toggleSortDirection(sortBy, msg.data),
+            currentPagePins: 1,
+          }),
+          { replace: true },
+        );
         break;
       case 'pageNum':
-        setSearchParams(toSearchParams({ ...params, currentPagePins: msg.data }), { replace: true });
+        setSearchParams(toSearchParams({ ...params, currentPagePins: msg.data }), {
+          replace: true,
+        });
         break;
     }
   }

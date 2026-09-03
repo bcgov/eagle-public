@@ -13,31 +13,36 @@ const DOCUMENTS = [
     datePosted: '2026-05-04T00:00:00.000Z',
     type: 't1',
     milestone: 'm1',
-    project: { _id: 'p1', name: 'Alpha Mine' }
-  }
+    project: { _id: 'p1', name: 'Alpha Mine' },
+  },
 ];
 
 const LISTS = [
   { _id: 'm1', name: 'Amendment', type: 'label', legislation: 2002 },
   { _id: 'a1', name: 'Proponent', type: 'author', legislation: 2018 },
   { _id: 't1', name: 'Letter', type: 'doctype', legislation: 2002 },
-  { _id: 'p1', name: 'Pre-Application', type: 'projectPhase', legislation: 2018 }
+  { _id: 'p1', name: 'Pre-Application', type: 'projectPhase', legislation: 2018 },
 ];
 
 let requests: string[];
 
 function jsonResponse(body: unknown) {
-  return new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } });
+  return new Response(JSON.stringify(body), {
+    status: 200,
+    headers: { 'content-type': 'application/json' },
+  });
 }
 
 function renderAt(path: string) {
-  const router = createMemoryRouter([{ path: '/search', Component: Search }], { initialEntries: [path] });
+  const router = createMemoryRouter([{ path: '/search', Component: Search }], {
+    initialEntries: [path],
+  });
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
 
   render(
     <QueryClientProvider client={queryClient}>
       <RouterProvider router={router} />
-    </QueryClientProvider>
+    </QueryClientProvider>,
   );
 
   return router;
@@ -45,7 +50,7 @@ function renderAt(path: string) {
 
 /** The most recent Document search request. */
 function lastDocumentRequest(): string {
-  return requests.filter(url => url.includes('dataset=Document')).at(-1)!;
+  return requests.filter((url) => url.includes('dataset=Document')).at(-1)!;
 }
 
 describe('document search', () => {
@@ -61,13 +66,15 @@ describe('document search', () => {
         const url = String(input);
         requests.push(url);
         if (url.includes('dataset=List')) {
-          return jsonResponse([{ searchResults: LISTS, meta: [{ searchResultsTotal: LISTS.length }] }]);
+          return jsonResponse([
+            { searchResults: LISTS, meta: [{ searchResultsTotal: LISTS.length }] },
+          ]);
         }
         if (url.includes('dataset=Document')) {
           return jsonResponse([{ searchResults: DOCUMENTS, meta: [{ searchResultsTotal: 42 }] }]);
         }
         return jsonResponse([{ searchResults: [], meta: [] }]);
-      })
+      }),
     );
   });
 
@@ -81,7 +88,7 @@ describe('document search', () => {
 
     expect(await screen.findByText('Fish and Fish Habitat.pdf')).toBeInTheDocument();
     expect(lastDocumentRequest()).toBe(
-      '/api/search?dataset=Document&pageNum=0&pageSize=10&projectLegislation=default&sortBy=-datePosted&sortBy=&populate=true&fuzzy=false'
+      '/api/search?dataset=Document&pageNum=0&pageSize=10&projectLegislation=default&sortBy=-datePosted&sortBy=&populate=true&fuzzy=false',
     );
   });
 
@@ -97,7 +104,10 @@ describe('document search', () => {
 
     await screen.findByText('Fish and Fish Habitat.pdf');
     expect(screen.getByRole('tab', { name: 'Documents' })).toHaveAttribute('href', '/search');
-    expect(screen.getByRole('tab', { name: 'Document Content' })).toHaveAttribute('href', '/search/content');
+    expect(screen.getByRole('tab', { name: 'Document Content' })).toHaveAttribute(
+      'href',
+      '/search/content',
+    );
   });
 
   it('restores currentPage, pageSize and sortBy from a deep link', async () => {
@@ -105,7 +115,7 @@ describe('document search', () => {
 
     await screen.findByText('Fish and Fish Habitat.pdf');
     expect(lastDocumentRequest()).toBe(
-      '/api/search?dataset=Document&pageNum=2&pageSize=25&projectLegislation=default&sortBy=+displayName&sortBy=&populate=true&fuzzy=false'
+      '/api/search?dataset=Document&pageNum=2&pageSize=25&projectLegislation=default&sortBy=+displayName&sortBy=&populate=true&fuzzy=false',
     );
   });
 
@@ -114,12 +124,14 @@ describe('document search', () => {
 
     await screen.findByText('Fish and Fish Habitat.pdf');
     expect(lastDocumentRequest()).toContain(
-      '&and[milestone]=m1&and[milestone]=m2&and[documentAuthorType]=a1&and[type]=t1&and[projectPhase]=p1'
+      '&and[milestone]=m1&and[milestone]=m2&and[documentAuthorType]=a1&and[type]=t1&and[projectPhase]=p1',
     );
   });
 
   it('sends the date range as and[datePostedStart] and and[datePostedEnd]', async () => {
-    renderAt('/search?datePostedStart=2020-01-01T00:00:00.000Z&datePostedEnd=2021-12-31T00:00:00.000Z');
+    renderAt(
+      '/search?datePostedStart=2020-01-01T00:00:00.000Z&datePostedEnd=2021-12-31T00:00:00.000Z',
+    );
 
     await screen.findByText('Fish and Fish Habitat.pdf');
     const request = lastDocumentRequest();
@@ -128,17 +140,21 @@ describe('document search', () => {
   });
 
   it('shows the date range the URL carries in the two date inputs', async () => {
-    renderAt('/search?datePostedStart=2020-01-01T00:00:00.000Z&datePostedEnd=2021-12-31T00:00:00.000Z');
+    renderAt(
+      '/search?datePostedStart=2020-01-01T00:00:00.000Z&datePostedEnd=2021-12-31T00:00:00.000Z',
+    );
 
     await screen.findByText('Fish and Fish Habitat.pdf');
     const inputs = screen.getAllByLabelText('Date input field') as HTMLInputElement[];
-    expect(inputs.map(input => input.value)).toEqual(['2020-01-01', '2021-12-31']);
+    expect(inputs.map((input) => input.value)).toEqual(['2020-01-01', '2021-12-31']);
   });
 
   it('opens the advanced filter panel when the URL already carries a filter', async () => {
     renderAt('/search?milestone=m1');
 
-    expect(await screen.findByRole('button', { name: /Close Advanced Filters/ })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('button', { name: /Close Advanced Filters/ }),
+    ).toBeInTheDocument();
   });
 
   it('writes a chosen filter to the URL and the request', async () => {
@@ -149,7 +165,9 @@ describe('document search', () => {
     await userEvent.click(screen.getByRole('combobox', { name: 'Type Document Type' }));
     await userEvent.click(await screen.findByRole('option', { name: 'Letter' }));
 
-    await waitFor(() => expect(new URLSearchParams(router.state.location.search).get('type')).toBe('t1'));
+    await waitFor(() =>
+      expect(new URLSearchParams(router.state.location.search).get('type')).toBe('t1'),
+    );
     await waitFor(() => expect(lastDocumentRequest()).toContain('&and[type]=t1'));
   });
 
@@ -163,10 +181,12 @@ describe('document search', () => {
 
     await waitFor(() =>
       expect(new URLSearchParams(router.state.location.search).get('datePostedStart')).toBe(
-        '2020-01-01T00:00:00.000Z'
-      )
+        '2020-01-01T00:00:00.000Z',
+      ),
     );
-    await waitFor(() => expect(lastDocumentRequest()).toContain('&and[datePostedStart]=2020-01-01T00:00:00.000Z'));
+    await waitFor(() =>
+      expect(lastDocumentRequest()).toContain('&and[datePostedStart]=2020-01-01T00:00:00.000Z'),
+    );
   });
 
   it('turns a keyword search into keywords + a -score sort, back on page 1', async () => {
@@ -189,7 +209,9 @@ describe('document search', () => {
     const router = renderAt('/search?currentPage=4');
     await screen.findByText('Fish and Fish Habitat.pdf');
 
-    await userEvent.click(screen.getByRole('columnheader', { name: /Column header Document Name/ }));
+    await userEvent.click(
+      screen.getByRole('columnheader', { name: /Column header Document Name/ }),
+    );
 
     await waitFor(() => {
       const params = new URLSearchParams(router.state.location.search);

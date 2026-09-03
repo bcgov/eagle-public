@@ -1,7 +1,14 @@
 import { test, expect } from '../support/fixtures';
 import {
-  ready, recordApiCalls, checkBaseline, waitForSearch, total, pageCount,
-  firstProjects, projectByKeyword, unwrap,
+  ready,
+  recordApiCalls,
+  checkBaseline,
+  waitForSearch,
+  total,
+  pageCount,
+  firstProjects,
+  projectByKeyword,
+  unwrap,
 } from '../support/helpers';
 
 const ROWS = 'table[aria-label="table-template"] tbody tr';
@@ -26,17 +33,22 @@ test('project detail defaults to the project-details tab', async ({ page, reques
   expect(new URL(page.url()).pathname).toBe(`/p/${project._id}/project-details`);
   await expect(page.getByRole('heading', { level: 1, name: project.name })).toBeVisible();
   await expect(page.getByRole('heading', { level: 2, name: 'Project Details' })).toBeVisible();
-  await expect(page.getByRole('heading', { level: 3, name: 'Activities and Updates' })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { level: 3, name: 'Activities and Updates' }),
+  ).toBeVisible();
   await expect(page.getByRole('heading', { level: 2, name: 'Contact Us' })).toBeVisible();
 
   checkBaseline('project-details-tab', calls);
 });
 
-test('the tab strip offers Project Details, Commenting and Documents, and nothing else', async ({ page, request }) => {
+test('the tab strip offers Project Details, Commenting and Documents, and nothing else', async ({
+  page,
+  request,
+}) => {
   for (const project of await twoProjects(request)) {
     await page.goto(`/p/${project._id}/project-details`);
     await ready(page);
-    const labels = (await page.locator(TABS).allInnerTexts()).map(t => t.trim());
+    const labels = (await page.locator(TABS).allInnerTexts()).map((t) => t.trim());
     expect(labels).toEqual(['Project Details', 'Commenting', 'Documents']);
   }
 });
@@ -46,11 +58,15 @@ test('the Documents tab carries a document-type filter', async ({ page, request 
   await page.goto(`/p/${project._id}/documents`);
   await ready(page);
 
-  const labels = (await page.locator(DOC_TYPE_SEGMENTS).allInnerTexts()).map(t => t.trim());
+  const labels = (await page.locator(DOC_TYPE_SEGMENTS).allInnerTexts()).map((t) => t.trim());
   expect(labels[0]).toBe('All Documents');
   // Application / Certificate / Amendment(s) / C&E Documents appear only when that project has
   // the documents.
-  expect(labels.every(l => ['All Documents', 'Application', 'Certificate', 'Amendment(s)', 'C&E Documents'].includes(l))).toBeTruthy();
+  expect(
+    labels.every((l) =>
+      ['All Documents', 'Application', 'Certificate', 'Amendment(s)', 'C&E Documents'].includes(l),
+    ),
+  ).toBeTruthy();
 });
 
 test('documents tab renders a paged document table', async ({ page, request }) => {
@@ -63,7 +79,9 @@ test('documents tab renders a paged document table', async ({ page, request }) =
   await ready(page);
 
   for (const col of ['Name', 'Date', 'Type', 'Milestone', 'Phase']) {
-    await expect(page.getByRole('columnheader', { name: new RegExp(`Column header ${col}`) })).toBeVisible();
+    await expect(
+      page.getByRole('columnheader', { name: new RegExp(`Column header ${col}`) }),
+    ).toBeVisible();
   }
   const rows = page.locator(ROWS);
   await expect(rows).toHaveCount(Math.min(10, total(env)));
@@ -95,7 +113,10 @@ test('amendments tab lists amendment documents', async ({ page, request }) => {
   await expect(page.locator(ROWS)).toHaveCount(Math.min(10, total(env)));
 });
 
-test('application tab renders, with an empty-state when the project has no application documents', async ({ page, request }) => {
+test('application tab renders, with an empty-state when the project has no application documents', async ({
+  page,
+  request,
+}) => {
   const [project] = await twoProjects(request);
   // The old top-level path, which must still land on the sub-tab.
   await page.goto(`/p/${project._id}/application`);
@@ -106,7 +127,9 @@ test('application tab renders, with an empty-state when the project has no appli
 
   const rows = await page.locator(ROWS).count();
   if (rows === 0) {
-    await expect(page.locator('.tab-content')).toContainText('There are no application documents associated with this project.');
+    await expect(page.locator('.tab-content')).toContainText(
+      'There are no application documents associated with this project.',
+    );
   }
 });
 
@@ -123,7 +146,10 @@ test('commenting tab lists the project comment periods', async ({ page, request 
 test('decisions tab route either resolves or bounces to /projects', async ({ page, request }) => {
   const [project] = await twoProjects(request);
   const dialogs: string[] = [];
-  page.on('dialog', d => { dialogs.push(d.message()); d.dismiss(); });
+  page.on('dialog', (d) => {
+    dialogs.push(d.message());
+    d.dismiss();
+  });
 
   await page.goto(`/p/${project._id}/decisions`);
   await page.waitForTimeout(5_000);
@@ -141,37 +167,47 @@ test('decisions tab route either resolves or bounces to /projects', async ({ pag
   }
 });
 
-test('document download links resolve to /api/public/document/:id/download/:name', async ({ page, request }) => {
+test('a document download presigns through demi-api and keeps the eagle-api href', async ({
+  page,
+  request,
+}) => {
   const [project] = await twoProjects(request);
   const search = waitForSearch(page, 'Document', 'pageSize=10');
   await page.goto(`/p/${project._id}/documents`);
   const env = await search;
   await ready(page);
 
-  // The row opens the download in a new tab; intercept the navigation instead of
-  // letting the browser pull the file down.
-  let captured = '';
-  await page.context().route('**/api/public/document/**', async route => {
-    captured = route.request().url();
-    await route.abort();
-  });
-  await page.locator(ROWS).first().locator(NAME).click();
-  await expect.poll(() => captured, { timeout: 20_000 }).toContain('/api/public/document/');
+  const documentId = env.searchResults[0]._id;
 
-  const url = new URL(captured);
-  expect(url.pathname).toMatch(new RegExp(`^/api/public/document/${env.searchResults[0]._id}/download/.+`));
+  // The href stays the eagle-api URL so middle-click and copy-link still fetch the file.
+  const link = page.locator(ROWS).first().locator(NAME).locator('a');
+  const href = await link.getAttribute('href');
+  expect(href).toMatch(new RegExp(`^/api/public/document/${documentId}/download/.+`));
+
+  // The click does not follow it: it asks demi-api for a presigned URL for that one document.
+  const presign = page.waitForRequest(
+    (r) =>
+      r.method() === 'POST' &&
+      /\/(api|demi-search)\/bulk-downloads$/.test(new URL(r.url()).pathname),
+    { timeout: 20_000 },
+  );
+  await link.click();
+  expect((await presign).postDataJSON().documentIds).toEqual([documentId]);
+  expect(new URL(page.url()).pathname).toBe(`/p/${project._id}/documents`);
 
   // HEAD, so the assertion costs a status line rather than the whole file. Not every environment
   // holds the object behind every row - test is a partial copy - so a 404 is missing storage,
   // not a broken link. Only a server error means the endpoint itself is wrong.
-  const head = await request.head(url.pathname);
+  const head = await request.head(href!);
   expect(head.status()).toBeLessThan(500);
   test.info().annotations.push({ type: 'download HEAD', description: String(head.status()) });
 });
 
 test('@data project search API is scoped to the project', async ({ page, request }) => {
   const [project] = await twoProjects(request);
-  const req = page.waitForRequest(r => r.url().includes('dataset=Document') && r.url().includes(`and[project]=${project._id}`));
+  const req = page.waitForRequest(
+    (r) => r.url().includes('dataset=Document') && r.url().includes(`and[project]=${project._id}`),
+  );
   await page.goto(`/p/${project._id}/documents`);
   const wire = new URL((await req).url()).searchParams;
   expect(wire.get('and[project]')).toBe(project._id);

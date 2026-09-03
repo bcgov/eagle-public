@@ -1,4 +1,5 @@
-import { expect, Page, APIRequestContext } from '@playwright/test';
+import { expect } from '@playwright/test';
+import type { APIRequestContext, Page } from '@playwright/test';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -17,7 +18,10 @@ const API_PATH = /^\/(api|demi-search|eagle-search|analytics)(\/|$|\?)/;
  */
 export function normalizeUrl(raw: string): string {
   const u = new URL(raw);
-  const p = u.pathname.split('/').map(s => (HEX24.test(s) ? ':id' : s)).join('/');
+  const p = u.pathname
+    .split('/')
+    .map((s) => (HEX24.test(s) ? ':id' : s))
+    .join('/');
   const params = [...u.searchParams.entries()]
     .filter(([k]) => !VOLATILE_PARAMS.has(k))
     .map(([k, v]): [string, string] => [k, HEX24.test(v) ? ':id' : ISO_TS.test(v) ? ':ts' : v])
@@ -29,7 +33,7 @@ export function normalizeUrl(raw: string): string {
 /** Starts collecting normalized API calls. Attach before navigating. */
 export function recordApiCalls(page: Page): Set<string> {
   const seen = new Set<string>();
-  page.on('request', r => {
+  page.on('request', (r) => {
     const u = new URL(r.url());
     if (API_PATH.test(u.pathname + (u.search ? '?' : ''))) {
       seen.add(`${r.method()} ${normalizeUrl(r.url())}`);
@@ -54,7 +58,7 @@ function loadBaseline(): Record<string, string[]> {
  */
 export function checkBaseline(key: string, observed: Set<string>): void {
   const list = [...observed].sort();
-  if (process.env.BASELINE_WRITE) {
+  if (process.env['BASELINE_WRITE']) {
     const all = loadBaseline();
     all[key] = list;
     fs.mkdirSync(path.dirname(BASELINE_FILE), { recursive: true });
@@ -71,7 +75,9 @@ export function checkBaseline(key: string, observed: Set<string>): void {
  * both sides so the baseline still fails on anything undocumented.
  */
 function normalise(lines: string[]): string[] {
-  return lines.filter(line => !DROPPED.some(pattern => pattern.test(line))).map(applyDeviations);
+  return lines
+    .filter((line) => !DROPPED.some((pattern) => pattern.test(line)))
+    .map(applyDeviations);
 }
 
 /** Calls Angular made that the port no longer makes; each is an entry in `docs/deviations-from-angular.md`. */
@@ -89,17 +95,25 @@ const DROPPED = [
 ];
 
 function applyDeviations(line: string): string {
-  return line
-    // `&fields=` is no longer sent on search calls: eagle-api never read it, and prod sends either
-    // an empty value or the literal `[object Object]`.
-    .replace(/&fields=(\[object Object\])?(?=&|$)/, '')
-    // The pins table asks for the sort its header shows (+name). Angular's pins service sent its
-    // own default, -datePosted, while the header displayed +name.
-    .replace('/pin?pageNum=0&pageSize=10&sortBy=-datePosted', '/pin?pageNum=0&pageSize=10&sortBy= name');
+  return (
+    line
+      // `&fields=` is no longer sent on search calls: eagle-api never read it, and prod sends either
+      // an empty value or the literal `[object Object]`.
+      .replace(/&fields=(\[object Object\])?(?=&|$)/, '')
+      // The pins table asks for the sort its header shows (+name). Angular's pins service sent its
+      // own default, -datePosted, while the header displayed +name.
+      .replace(
+        '/pin?pageNum=0&pageSize=10&sortBy=-datePosted',
+        '/pin?pageNum=0&pageSize=10&sortBy= name',
+      )
+  );
 }
 
 /** Envelope both /api/search and /demi-search/search answer with. */
-export type SearchEnvelope = { searchResults: any[]; meta: { searchResultsTotal: number }[] };
+export interface SearchEnvelope {
+  searchResults: any[];
+  meta: { searchResultsTotal: number }[];
+}
 
 export function unwrap(body: any): SearchEnvelope {
   const e = Array.isArray(body) ? body[0] : body;
@@ -116,13 +130,16 @@ export function total(env: SearchEnvelope): number {
  * pageSize=5 featured docs), so `mustContain` picks the call that fills the table.
  */
 export function waitForSearch(page: Page, dataset: string, mustContain = '') {
-  return page.waitForResponse(
-    r => /\/(api|demi-search|eagle-search)\/?search\?/.test(r.url())
-      && r.url().includes(`dataset=${dataset}`)
-      && r.url().includes(mustContain)
-      && r.status() === 200,
-    { timeout: 60_000 },
-  ).then(async r => unwrap(await r.json()));
+  return page
+    .waitForResponse(
+      (r) =>
+        /\/(api|demi-search|eagle-search)\/?search\?/.test(r.url()) &&
+        r.url().includes(`dataset=${dataset}`) &&
+        r.url().includes(mustContain) &&
+        r.status() === 200,
+      { timeout: 60_000 },
+    )
+    .then(async (r) => unwrap(await r.json()));
 }
 
 /** The app hydrates client-side; wait for the h1 to exist, then let XHRs settle. */
@@ -130,7 +147,9 @@ export async function ready(page: Page, settleMs = 2500): Promise<void> {
   await page.locator('h1').first().waitFor({ state: 'attached', timeout: 90_000 });
   // The page fetches in waves after hydration - config, then the lists, then the table, then the
   // per-row lookups - so wait for the network to go quiet instead of guessing how long that takes.
-  await page.waitForLoadState('networkidle', { timeout: 60_000 }).catch(() => {});
+  await page.waitForLoadState('networkidle', { timeout: 60_000 }).catch(() => {
+    // networkidle never settles on a page that keeps polling; the timed wait below covers it
+  });
   await page.waitForTimeout(settleMs);
 }
 
@@ -138,12 +157,22 @@ export async function ready(page: Page, settleMs = 2500): Promise<void> {
 export async function expectA11ySmoke(page: Page): Promise<{ skipLinks: number }> {
   await expect(page.locator('h1')).toHaveCount(1);
   await expect(page.locator('img:not([alt])')).toHaveCount(0);
-  return { skipLinks: await page.locator('a.skip-link, a.skip-to-content, a[href="#main"], a[href="#content"]').count() };
+  return {
+    skipLinks: await page
+      .locator('a.skip-link, a.skip-to-content, a[href="#main"], a[href="#content"]')
+      .count(),
+  };
 }
 
-/** "Showing 10 of 348 results" -> { shown: 10, total: 348 } */
+/**
+ * "Showing 10 of 348 results" -> { shown: 10, total: 348 }. A selectable table carries the line in
+ * its header bar instead of the top row, so both hooks are accepted.
+ */
 export async function pageCount(page: Page): Promise<{ shown: number; total: number }> {
-  const text = await page.locator('#table-template-page-count-display').first().innerText();
+  const text = await page
+    .locator('#table-template-page-count-display, .table-header-bar__count')
+    .first()
+    .innerText();
   const m = text.match(/Showing\s+([\d,]+)\s+of\s+([\d,]+)/i);
   expect(m, `unexpected page count text: "${text}"`).not.toBeNull();
   return { shown: Number(m![1].replace(/,/g, '')), total: Number(m![2].replace(/,/g, '')) };

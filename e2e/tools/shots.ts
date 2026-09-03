@@ -14,22 +14,27 @@ import * as path from 'node:path';
 
 const HERE = path.dirname(new URL(import.meta.url).pathname);
 
-const BASE_URL = process.env.BASE_URL || 'http://localhost:4200';
-const OUT = path.join(HERE, '..', 'screenshots', process.env.OUT || 'local');
+const BASE_URL = process.env['BASE_URL'] || 'http://localhost:4200';
+const OUT = path.join(HERE, '..', 'screenshots', process.env['OUT'] || 'local');
 const { BASIC_AUTH_USER, BASIC_AUTH_PASS } = process.env;
-const ONLY = process.env.ONLY ? new RegExp(process.env.ONLY) : null;
+const ONLY = process.env['ONLY'] ? new RegExp(process.env['ONLY']) : null;
 
 const VIEWPORTS = [
   { name: 'desktop', width: 1280, height: 800 },
   { name: 'mobile', width: 390, height: 844 },
 ];
 
-type Shot = { name: string; go: (page: Page) => Promise<void>; mobileOnly?: boolean; desktopOnly?: boolean };
+interface Shot {
+  name: string;
+  go: (page: Page) => Promise<void>;
+  mobileOnly?: boolean;
+  desktopOnly?: boolean;
+}
 
 async function api(pathAndQuery: string): Promise<any> {
   const headers: Record<string, string> = {};
   if (BASIC_AUTH_USER) {
-    headers.Authorization =
+    headers['Authorization'] =
       'Basic ' + Buffer.from(`${BASIC_AUTH_USER}:${BASIC_AUTH_PASS}`).toString('base64');
   }
   const r = await fetch(new URL(pathAndQuery, BASE_URL), { headers });
@@ -44,8 +49,12 @@ function unwrap(body: any) {
 
 /** The app hydrates client-side and fetches in waves; wait for it to go quiet. */
 async function settle(page: Page, ms = 2500): Promise<void> {
-  await page.waitForLoadState('domcontentloaded').catch(() => {});
-  await page.waitForLoadState('networkidle', { timeout: 45_000 }).catch(() => {});
+  await page.waitForLoadState('domcontentloaded').catch(() => {
+    // a page that never fires the event still screenshots; the timed wait below covers it
+  });
+  await page.waitForLoadState('networkidle', { timeout: 45_000 }).catch(() => {
+    // networkidle never settles on a page that keeps polling
+  });
   await page.waitForTimeout(ms);
 }
 
@@ -69,7 +78,7 @@ async function main(): Promise<void> {
   const cps: any[] = await api(
     '/api/commentperiod?sortBy=-dateStarted&fields=project|dateStarted|dateCompleted|instructions|informationLabel',
   );
-  const cp = cps.find(c => c.project && c.dateStarted && c.dateCompleted);
+  const cp = cps.find((c) => c.project && c.dateStarted && c.dateCompleted);
   console.log(`project ${projId}  comment period ${cp._id} (project ${cp.project})`);
 
   const plain: [string, string][] = [
@@ -101,12 +110,12 @@ async function main(): Promise<void> {
   }
 
   const shots: Shot[] = [
-    ...plain.map(([name, url]): Shot => ({ name, go: p => goto(p, url) })),
+    ...plain.map(([name, url]): Shot => ({ name, go: (p) => goto(p, url) })),
 
-    { name: 'projects-map', go: p => goto(p, '/projects', 5000) },
+    { name: 'projects-map', go: (p) => goto(p, '/projects', 5000) },
     {
       name: 'projects-map-popup',
-      go: async p => {
+      go: async (p) => {
         await goto(p, '/projects', 5000);
         // Drill through clusters until a single-project pin is on screen, then open its card.
         for (let i = 0; i < 6; i++) {
@@ -122,7 +131,7 @@ async function main(): Promise<void> {
     {
       name: 'projects-map-sheet-full',
       mobileOnly: true,
-      go: async p => {
+      go: async (p) => {
         await goto(p, '/projects', 5000);
         // The handle cycles peek -> half -> full.
         await p.locator('.sheet-handle').click();
@@ -133,13 +142,13 @@ async function main(): Promise<void> {
     },
     {
       name: 'search-results',
-      go: async p => {
+      go: async (p) => {
         await goto(p, '/search?keywords=water&currentPage=1&pageSize=10&sortBy=-score');
       },
     },
     {
       name: 'search-filtered',
-      go: async p => {
+      go: async (p) => {
         await goto(
           p,
           '/search?keywords=water&currentPage=1&pageSize=10&sortBy=-score&documentAuthorType=Proponent%2FCertificate+Holder',
@@ -148,7 +157,7 @@ async function main(): Promise<void> {
     },
     {
       name: 'search-filters-open',
-      go: async p => {
+      go: async (p) => {
         await goto(p, '/search');
         const toggle = p.getByRole('button', { name: /filter/i }).first();
         if (await toggle.count()) await toggle.click();
@@ -157,14 +166,14 @@ async function main(): Promise<void> {
     },
     {
       name: 'add-comment',
-      go: async p => {
+      go: async (p) => {
         await openCommentModal(p);
       },
     },
     {
       // Page 1's Next is disabled until the conditions box is ticked. Nothing is ever submitted.
       name: 'add-comment-page2',
-      go: async p => {
+      go: async (p) => {
         await openCommentModal(p);
         await p.locator('input[name="agreeConditions"]').check();
         await p.getByRole('button', { name: /^Next$/ }).click();
@@ -173,7 +182,7 @@ async function main(): Promise<void> {
     },
     {
       name: 'add-comment-page3',
-      go: async p => {
+      go: async (p) => {
         await openCommentModal(p);
         await p.locator('input[name="agreeConditions"]').check();
         await p.getByRole('button', { name: /^Next$/ }).click();
@@ -189,7 +198,7 @@ async function main(): Promise<void> {
     {
       name: 'header-dropdown-1',
       desktopOnly: true,
-      go: async p => {
+      go: async (p) => {
         await goto(p, '/');
         // Both builds open these menus on CSS hover; the toggle itself has pointer-events: none.
         await p.locator('header li.dropdown').filter({ hasText: 'Project Information' }).hover();
@@ -199,7 +208,7 @@ async function main(): Promise<void> {
     {
       name: 'header-dropdown-2',
       desktopOnly: true,
-      go: async p => {
+      go: async (p) => {
         await goto(p, '/');
         await p.locator('header li.dropdown').filter({ hasText: 'The EA Process' }).hover();
         await p.waitForTimeout(600);
@@ -208,7 +217,7 @@ async function main(): Promise<void> {
     {
       name: 'mobile-menu',
       mobileOnly: true,
-      go: async p => {
+      go: async (p) => {
         await goto(p, '/');
         await p.locator('button.navbar-toggler, .navbar-toggler').first().click();
         await p.waitForTimeout(800);
@@ -216,7 +225,7 @@ async function main(): Promise<void> {
     },
     {
       name: 'footer',
-      go: async p => {
+      go: async (p) => {
         await goto(p, '/');
         await p.locator('footer').first().scrollIntoViewIfNeeded();
         await p.waitForTimeout(500);
@@ -248,7 +257,7 @@ async function main(): Promise<void> {
       }
     });
     const page = await context.newPage();
-    page.on('pageerror', e => console.log(`  ! pageerror: ${e.message}`));
+    page.on('pageerror', (e) => console.log(`  ! pageerror: ${e.message}`));
 
     for (const shot of shots) {
       if (ONLY && !ONLY.test(shot.name)) continue;
@@ -261,7 +270,9 @@ async function main(): Promise<void> {
         console.log(`  ${vp.name} ${shot.name}`);
       } catch (e) {
         console.log(`  ${vp.name} ${shot.name}  FAILED: ${(e as Error).message.split('\n')[0]}`);
-        await page.screenshot({ path: file }).catch(() => {});
+        await page.screenshot({ path: file }).catch(() => {
+          // the failure above is the reported one; a second shot is best-effort
+        });
       }
     }
     await context.close();
@@ -271,7 +282,7 @@ async function main(): Promise<void> {
   console.log(`written to ${OUT}`);
 }
 
-main().catch(e => {
+main().catch((e) => {
   console.error(e);
   process.exit(1);
 });

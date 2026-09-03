@@ -6,7 +6,7 @@ import {
   FilterType,
   hasActiveFilters,
   initialFilterValues,
-  MultiSelectDefinition
+  MultiSelectDefinition,
 } from './filter-object';
 
 const MINES = { _id: 'id-mines', name: 'Mines' };
@@ -17,15 +17,20 @@ const typeFilter = new FilterObject(
   FilterType.MultiSelect,
   'Project Type',
   new MultiSelectDefinition([MINES, OTHER], [], null, null, true),
-  4
+  4,
 );
 
 const dateFilter = new FilterObject(
   'issuedDate',
   FilterType.DateRange,
   '',
-  new DateFilterDefinition('decisionDateStart', 'Decision Start', 'decisionDateEnd', 'Decision End'),
-  8
+  new DateFilterDefinition(
+    'decisionDateStart',
+    'Decision Start',
+    'decisionDateEnd',
+    'Decision End',
+  ),
+  8,
 );
 
 describe('initialFilterValues', () => {
@@ -35,7 +40,7 @@ describe('initialFilterValues', () => {
 
   it('resolves comma-joined ids back to their option objects', () => {
     expect(initialFilterValues([typeFilter], { type: 'id-mines,id-other' })).toEqual({
-      type: [MINES, OTHER]
+      type: [MINES, OTHER],
     });
   });
 
@@ -44,16 +49,18 @@ describe('initialFilterValues', () => {
       'region',
       FilterType.MultiSelect,
       'Region',
-      new MultiSelectDefinition([{ code: 'skeena', name: 'Skeena' }], [], null, null, true)
+      new MultiSelectDefinition([{ code: 'skeena', name: 'Skeena' }], [], null, null, true),
     );
     expect(initialFilterValues([filter], { region: 'skeena' })).toEqual({
-      region: [{ code: 'skeena', name: 'Skeena' }]
+      region: [{ code: 'skeena', name: 'Skeena' }],
     });
   });
 
   it('trims an ISO date param back to the yyyy-mm-dd the picker takes', () => {
-    expect(initialFilterValues([dateFilter], { decisionDateStart: '2020-01-15T00:00:00.000Z' })).toEqual({
-      decisionDateStart: '2020-01-15'
+    expect(
+      initialFilterValues([dateFilter], { decisionDateStart: '2020-01-15T00:00:00.000Z' }),
+    ).toEqual({
+      decisionDateStart: '2020-01-15',
     });
   });
 });
@@ -74,7 +81,9 @@ describe('buildSearchPackage', () => {
   });
 
   it('drops an unparseable date rather than sending NaN', () => {
-    expect(buildSearchPackage([dateFilter], { decisionDateStart: 'not-a-date' }, '', false).filters).toEqual({});
+    expect(
+      buildSearchPackage([dateFilter], { decisionDateStart: 'not-a-date' }, '', false).filters,
+    ).toEqual({});
   });
 
   it('carries the keywords and whether they changed', () => {

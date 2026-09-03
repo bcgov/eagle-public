@@ -26,7 +26,7 @@ const CONFIG: TableListConfig = {
   tableRowComponent: IdRow,
   filterList: [],
   dateFilterList: [],
-  filters: []
+  filters: [],
 };
 
 /**
@@ -42,8 +42,10 @@ describe('TableList', () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async () =>
-        Response.json([{ searchResults: DOCUMENTS, meta: [{ searchResultsTotal: DOCUMENTS.length }] }])
-      )
+        Response.json([
+          { searchResults: DOCUMENTS, meta: [{ searchResultsTotal: DOCUMENTS.length }] },
+        ]),
+      ),
     );
   });
 
@@ -53,15 +55,20 @@ describe('TableList', () => {
   });
 
   it('hands the configured table id to its rows', async () => {
-    const router = createMemoryRouter([{ path: '/search', element: <TableList config={CONFIG} /> }], {
-      initialEntries: ['/search']
+    const router = createMemoryRouter(
+      [{ path: '/search', element: <TableList config={CONFIG} /> }],
+      {
+        initialEntries: ['/search'],
+      },
+    );
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false, gcTime: 0 } },
     });
-    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
 
     render(
       <QueryClientProvider client={queryClient}>
         <RouterProvider router={router} />
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
 
     expect(await screen.findByTestId('table-id')).toHaveTextContent('search-documents');

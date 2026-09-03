@@ -3,11 +3,16 @@ import { useSearchParams } from 'react-router';
 import { ActivityCard } from 'app/components/activity-card';
 import { SearchFilterTemplate } from 'app/components/filters/search-filter-template';
 import { TableTemplate } from 'app/components/table/table-template';
-import { tableObject, type IColumnObject, type ITableMessage, type TableRowProps } from 'app/components/table/table-object';
+import {
+  tableObject,
+  type IColumnObject,
+  type ITableMessage,
+  type TableRowProps,
+} from 'app/components/table/table-object';
 import {
   paramsToObject,
   toSearchParams,
-  updateTableObjectWithUrlParams
+  updateTableObjectWithUrlParams,
 } from 'app/components/table/table-params';
 import { useTable } from 'app/components/table/use-table';
 import { SubscribePopover } from 'app/components/subscribe-popover';
@@ -15,7 +20,7 @@ import { useProjectContext } from './project-context';
 
 const COLUMNS: IColumnObject[] = [
   { name: 'Headline', value: 'headine', width: 'col-10', nosort: true },
-  { name: 'Date', value: 'dateAdded', width: 'col-2', nosort: true }
+  { name: 'Date', value: 'dateAdded', width: 'col-2', nosort: true },
 ];
 
 const DEFAULT_SORT = '-dateAdded';
@@ -31,7 +36,11 @@ export function ProjectActivites() {
   const params = useMemo(() => paramsToObject(searchParams), [searchParams]);
 
   const base = useMemo(() => {
-    const table = updateTableObjectWithUrlParams(params, tableObject({ tableId: 'activities-table', component: ActivityRow }), 'Activities');
+    const table = updateTableObjectWithUrlParams(
+      params,
+      tableObject({ tableId: 'activities-table', component: ActivityRow }),
+      'Activities',
+    );
     return params['sortByActivities'] ? table : { ...table, sortBy: DEFAULT_SORT };
   }, [params]);
 
@@ -43,15 +52,15 @@ export function ProjectActivites() {
     pageSize: base.pageSize,
     sortBy: base.sortBy,
     queryModifiers: { project: projId },
-    populate: true
+    populate: true,
   });
 
   const data = {
     ...base,
     columns: COLUMNS,
-    items: result.data.map(record => ({ rowData: record })),
+    items: result.data.map((record) => ({ rowData: record })),
     totalListItems: result.totalListItems,
-    options: { ...base.options, showAllPicker: true, disableRowHighlight: true }
+    options: { ...base.options, showAllPicker: true, disableRowHighlight: true },
   };
 
   function submit(next: Record<string, any>): void {
@@ -81,13 +90,14 @@ export function ProjectActivites() {
       <SearchFilterTemplate
         keywordOverride={params['keywordsActivities']}
         searching={result.loading}
-        onSearch={searchPackage => {
+        onSearch={(searchPackage) => {
           const hasKeywords = searchPackage.keywords?.trim();
           submit({
             ...params,
             keywordsActivities: hasKeywords || null,
-            sortByActivities: hasKeywords && searchPackage.keywordsChanged ? '-score' : DEFAULT_SORT,
-            currentPageActivities: 1
+            sortByActivities:
+              hasKeywords && searchPackage.keywordsChanged ? '-score' : DEFAULT_SORT,
+            currentPageActivities: 1,
           });
         }}
       />

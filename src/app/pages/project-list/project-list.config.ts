@@ -2,7 +2,7 @@ import {
   DateFilterDefinition,
   FilterObject,
   FilterType,
-  MultiSelectDefinition
+  MultiSelectDefinition,
 } from 'app/components/filters/filter-object';
 import type { TableListConfig } from 'app/components/table/table-list';
 import { ProjectListTableRow } from './project-list-table-rows';
@@ -12,7 +12,7 @@ import {
   FILTER_LIST,
   PROJECT_LIST_TABLE_COLUMNS,
   PROJECT_LIST_TABLE_ID,
-  type FilterConfig
+  type FilterConfig,
 } from './project-list.constants';
 
 /** Builds one FilterObject, filling multi-select options from the lists and proponent orgs. */
@@ -28,9 +28,9 @@ function createFilter(config: FilterConfig, dynamicOptions: Record<string, any[]
         config.dateConfig.endId,
         config.dateConfig.endLabel,
         new Date('1900-01-01'),
-        new Date()
+        new Date(),
       ),
-      config.panelSize ?? null
+      config.panelSize ?? null,
     );
   }
 
@@ -40,20 +40,20 @@ function createFilter(config: FilterConfig, dynamicOptions: Record<string, any[]
     config.type,
     config.label,
     new MultiSelectDefinition(options, [], null, null, config.matchId ?? false),
-    config.panelSize ?? null
+    config.panelSize ?? null,
   );
 }
 
 /** Groups the `List` collection items the project filters draw their options from. */
 export function buildProjectListFilters(orgs: any[], lists: any[]): FilterObject[] {
   const dynamicOptions: Record<string, any[]> = {
-    eacDecision: lists.filter(item => item.type === 'eaDecisions'),
-    CEAAInvolvement: lists.filter(item => item.type === 'ceaaInvolvements'),
-    currentPhaseName: lists.filter(item => item.type === 'projectPhase'),
-    proponent: orgs
+    eacDecision: lists.filter((item) => item.type === 'eaDecisions'),
+    CEAAInvolvement: lists.filter((item) => item.type === 'ceaaInvolvements'),
+    currentPhaseName: lists.filter((item) => item.type === 'projectPhase'),
+    proponent: orgs,
   };
 
-  return FILTER_CONFIGS.map(config => createFilter(config, dynamicOptions));
+  return FILTER_CONFIGS.map((config) => createFilter(config, dynamicOptions));
 }
 
 export function createProjectListConfig(filters: FilterObject[]): TableListConfig {
@@ -71,14 +71,14 @@ export function createProjectListConfig(filters: FilterObject[]): TableListConfi
           label: 'Search All Documents',
           icon: 'search',
           routerLink: '/search',
-          title: 'Search All Documents'
-        }
-      ]
+          title: 'Search All Documents',
+        },
+      ],
     },
     tableColumns: PROJECT_LIST_TABLE_COLUMNS,
     tableRowComponent: ProjectListTableRow,
     filterList: FILTER_LIST,
     dateFilterList: DATE_FILTER_LIST,
-    filters
+    filters,
   };
 }

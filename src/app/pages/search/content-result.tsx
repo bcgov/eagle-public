@@ -15,7 +15,7 @@ const ESCAPES: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;'
  */
 function markOnly(snippet: string): string {
   return String(snippet ?? '')
-    .replace(/[&<>]/g, character => ESCAPES[character]!)
+    .replace(/[&<>]/g, (character) => ESCAPES[character]!)
     .replace(/&lt;(\/?)mark&gt;/g, '<$1mark>');
 }
 
@@ -76,7 +76,11 @@ export function ContentResult({ result }: { result: any }) {
       </p>
 
       {snippets.map((snippet, index) => (
-        <p className="result-snippet" key={index} dangerouslySetInnerHTML={safeHtml(markOnly(snippet))} />
+        <p
+          className="result-snippet"
+          key={index}
+          dangerouslySetInnerHTML={safeHtml(markOnly(snippet))}
+        />
       ))}
       {snippets.length === 0 && (
         // Azure returns no highlights for a fuzzy or wildcard match. An empty card reads as a bug.
@@ -87,7 +91,9 @@ export function ContentResult({ result }: { result: any }) {
         <button
           type="button"
           className="result-download"
-          onClick={() => openDocumentDownload({ _id: result._id, displayName: result.documentName })}
+          onClick={() =>
+            openDocumentDownload({ _id: result._id, displayName: result.documentName })
+          }
           aria-label={`Download ${result.documentName}`}
         >
           <span className="material-icons" aria-hidden="true">

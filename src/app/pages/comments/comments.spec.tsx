@@ -16,7 +16,7 @@ const PERIOD = {
   informationLabel: 'Information label here',
   commentTip: '<em>Keep it on topic</em>',
   relatedDocuments: ['relatedDoc1'],
-  openHouses: [{ eventDate: '2026-09-01T00:00:00.000Z', description: 'Community hall' }]
+  openHouses: [{ eventDate: '2026-09-01T00:00:00.000Z', description: 'Community hall' }],
 };
 
 const PROJECT = {
@@ -28,23 +28,42 @@ const PROJECT = {
   eacDecision: { name: 'Certificate Issued' },
   projectCAC: true,
   projectCACPublished: true,
-  cacEmail: 'cac@example.com'
+  cacEmail: 'cac@example.com',
 };
 
 const COMMENTS = [
-  { _id: 'c1', author: 'Jane', location: 'Victoria', comment: 'First comment', dateAdded: '2026-08-01T00:00:00.000Z', documents: ['commentDoc1'] },
-  { _id: 'c2', author: null, comment: 'Anonymous comment', dateAdded: '2026-08-02T00:00:00.000Z', documents: [] }
+  {
+    _id: 'c1',
+    author: 'Jane',
+    location: 'Victoria',
+    comment: 'First comment',
+    dateAdded: '2026-08-01T00:00:00.000Z',
+    documents: ['commentDoc1'],
+  },
+  {
+    _id: 'c2',
+    author: null,
+    comment: 'Anonymous comment',
+    dateAdded: '2026-08-02T00:00:00.000Z',
+    documents: [],
+  },
 ];
 
 const LISTS = [{ _id: 'authorTypeId', type: 'author', name: 'Public' }];
 
-interface Sent { url: string; init?: RequestInit }
+interface Sent {
+  url: string;
+  init?: RequestInit;
+}
 
 let sent: Sent[];
 let commentCount: number;
 
 function json(body: unknown, headers: Record<string, string> = {}): Response {
-  return new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json', ...headers } });
+  return new Response(JSON.stringify(body), {
+    status: 200,
+    headers: { 'content-type': 'application/json', ...headers },
+  });
 }
 
 function stubFetch() {
@@ -58,21 +77,25 @@ function stubFetch() {
       if (url.startsWith('/api/commentperiod/')) return json([PERIOD]);
       if (url.startsWith('/api/project/proj1?populate')) return json([PROJECT]);
       if (url.includes('/cacSignUp')) return json({});
-      if (url.startsWith('/api/search?dataset=ProjectNotification')) return json([{ searchResults: [{ _id: 'pn1', name: 'Notified Project' }] }]);
-      if (url.startsWith('/api/search?pageSize=250&dataset=List')) return json([{ searchResults: LISTS }]);
-      if (url.startsWith('/api/public/comment') && method === 'POST') return json({ _id: 'newComment', author: 'Anonymous' });
+      if (url.startsWith('/api/search?dataset=ProjectNotification'))
+        return json([{ searchResults: [{ _id: 'pn1', name: 'Notified Project' }] }]);
+      if (url.startsWith('/api/search?pageSize=250&dataset=List'))
+        return json([{ searchResults: LISTS }]);
+      if (url.startsWith('/api/public/comment') && method === 'POST')
+        return json({ _id: 'newComment', author: 'Anonymous' });
       if (url.startsWith('/api/public/comment')) {
         return json(COMMENTS.slice(0, commentCount), { 'x-total-count': String(commentCount) });
       }
-      if (url.startsWith('/api/document/') && method === 'POST') return json({ _id: 'uploadedDoc' });
+      if (url.startsWith('/api/document/') && method === 'POST')
+        return json({ _id: 'uploadedDoc' });
       if (url.startsWith('/api/document?docIds=')) {
         return json([
           { _id: 'relatedDoc1', displayName: 'Related report.pdf' },
-          { _id: 'commentDoc1', internalOriginalName: 'attachment.pdf', documentSource: 'COMMENT' }
+          { _id: 'commentDoc1', internalOriginalName: 'attachment.pdf', documentSource: 'COMMENT' },
         ]);
       }
       return json([]);
-    })
+    }),
   );
 }
 
@@ -82,24 +105,26 @@ function renderAt(path = '/p/proj1/cp/cp1/details') {
       { path: '/p/:projId/cp/:commentPeriodId/details', Component: Comments },
       { path: '/pn/:projId/cp/:commentPeriodId/details', Component: Comments },
       { path: '/p/:projId', element: <h1>Project page</h1> },
-      { path: '/project-notifications', element: <h1>Notifications page</h1> }
+      { path: '/project-notifications', element: <h1>Notifications page</h1> },
     ],
-    { initialEntries: [path] }
+    { initialEntries: [path] },
   );
   render(
-    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })}>
+    <QueryClientProvider
+      client={new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })}
+    >
       <RouterProvider router={router} />
-    </QueryClientProvider>
+    </QueryClientProvider>,
   );
   return router;
 }
 
 function lastCommentListUrl(): string | undefined {
-  return sent.filter(entry => entry.url.startsWith('/api/public/comment?period=')).at(-1)?.url;
+  return sent.filter((entry) => entry.url.startsWith('/api/public/comment?period=')).at(-1)?.url;
 }
 
 function postedTo(fragment: string): Sent[] {
-  return sent.filter(entry => entry.url.includes(fragment) && entry.init?.method === 'POST');
+  return sent.filter((entry) => entry.url.includes(fragment) && entry.init?.method === 'POST');
 }
 
 /** Walks pages 1 -> 5 of the modal, the shortest route to the comment form. */
@@ -114,8 +139,12 @@ async function openCommentForm() {
 describe('comments', () => {
   beforeEach(() => {
     // jsdom ships the <dialog> element but none of its methods.
-    HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) { this.open = true; };
-    HTMLDialogElement.prototype.close ??= function (this: HTMLDialogElement) { this.open = false; };
+    HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) {
+      this.open = true;
+    };
+    HTMLDialogElement.prototype.close ??= function (this: HTMLDialogElement) {
+      this.open = false;
+    };
     sent = [];
     commentCount = 2;
     stubFetch();
@@ -127,8 +156,12 @@ describe('comments', () => {
     renderAt();
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Site C' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Public Comment Period is Now Open' })).toBeInTheDocument();
-    expect(document.querySelector('#instructions')?.innerHTML).toBe('<p id="instruction-body">Read the guidance</p>');
+    expect(
+      screen.getByRole('heading', { name: 'Public Comment Period is Now Open' }),
+    ).toBeInTheDocument();
+    expect(document.querySelector('#instructions')?.innerHTML).toBe(
+      '<p id="instruction-body">Read the guidance</p>',
+    );
     expect(screen.getByText('Additional text here')).toBeInTheDocument();
     expect(screen.getByText('Information label here')).toBeInTheDocument();
     expect(screen.getByText('Certificate Issued')).toBeInTheDocument();
@@ -155,7 +188,9 @@ describe('comments', () => {
     expect(screen.getByText('Anonymous')).toBeInTheDocument();
     expect(screen.getByText('attachment.pdf')).toBeInTheDocument();
 
-    const docRequests = sent.filter(entry => entry.url.startsWith('/api/document?docIds=commentDoc1'));
+    const docRequests = sent.filter((entry) =>
+      entry.url.startsWith('/api/document?docIds=commentDoc1'),
+    );
     expect(docRequests).toHaveLength(1);
   });
 
@@ -163,9 +198,11 @@ describe('comments', () => {
     renderAt();
 
     await screen.findByText('First comment');
-    const listRequest = sent.find(entry => entry.url.startsWith('/api/public/comment?period=cp1'));
+    const listRequest = sent.find((entry) =>
+      entry.url.startsWith('/api/public/comment?period=cp1'),
+    );
     expect(listRequest?.url).toBe(
-      '/api/public/comment?period=cp1&fields=author|comment|documents|commentId|dateAdded|dateUpdated|isAnonymous|location|period|read|write|delete&sortBy=-commentId&pageNum=0&pageSize=10&count=true&'
+      '/api/public/comment?period=cp1&fields=author|comment|documents|commentId|dateAdded|dateUpdated|isAnonymous|location|period|read|write|delete&sortBy=-commentId&pageNum=0&pageSize=10&count=true&',
     );
   });
 
@@ -198,9 +235,13 @@ describe('comments', () => {
   it('names a project notification from search and sends Back to the notifications list', async () => {
     const router = renderAt('/pn/pn1/cp/cp1/details');
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'Notified Project' })).toBeInTheDocument();
-    expect(sent.some(entry => entry.url.startsWith('/api/search?dataset=ProjectNotification'))).toBe(true);
-    expect(sent.some(entry => entry.url.startsWith('/api/project/pn1'))).toBe(false);
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Notified Project' }),
+    ).toBeInTheDocument();
+    expect(
+      sent.some((entry) => entry.url.startsWith('/api/search?dataset=ProjectNotification')),
+    ).toBe(true);
+    expect(sent.some((entry) => entry.url.startsWith('/api/project/pn1'))).toBe(false);
 
     await userEvent.click(screen.getByRole('button', { name: 'Back to Project Notifications' }));
     expect(router.state.location.pathname).toBe('/project-notifications');
@@ -222,7 +263,10 @@ describe('comments', () => {
     renderAt();
 
     await userEvent.click(await screen.findByRole('button', { name: 'Submit Comment' }));
-    fireEvent(screen.getByRole('dialog'), new Event('cancel', { cancelable: true, bubbles: false }));
+    fireEvent(
+      screen.getByRole('dialog'),
+      new Event('cancel', { cancelable: true, bubbles: false }),
+    );
 
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
@@ -270,7 +314,9 @@ describe('comments', () => {
 
     // page 3 -> 4
     await userEvent.click(complete);
-    expect(await screen.findByText('Thank you for becoming a Community Advisory Committee Member')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Thank you for becoming a Community Advisory Committee Member'),
+    ).toBeInTheDocument();
     const signUp = postedTo('/cacSignUp');
     expect(signUp).toHaveLength(1);
     expect(signUp[0].url).toBe('/api/project/proj1/cacSignUp');
@@ -283,7 +329,7 @@ describe('comments', () => {
       memberOfInput: '',
       knowledgeOf: false,
       knowledgeOfInput: '',
-      additionalNotes: ''
+      additionalNotes: '',
     });
 
     // page 4 -> 5
@@ -292,12 +338,17 @@ describe('comments', () => {
     expect(submit).toBeDisabled();
 
     // the comment tip is rendered as HTML
-    expect(document.querySelector('.comment-tip-container p')?.innerHTML).toBe('<em>Keep it on topic</em>');
+    expect(document.querySelector('.comment-tip-container p')?.innerHTML).toBe(
+      '<em>Keep it on topic</em>',
+    );
 
     await userEvent.type(screen.getByLabelText('Location *'), 'Victoria');
     expect(submit).toBeDisabled(); // still needs a comment or an attachment
 
-    await userEvent.type(screen.getByLabelText('Your Comment Submission*'), 'Please consider the fish.');
+    await userEvent.type(
+      screen.getByLabelText('Your Comment Submission*'),
+      'Please consider the fish.',
+    );
     expect(submit).toBeEnabled();
 
     // attach a file, then take it away again
@@ -336,12 +387,14 @@ describe('comments', () => {
       period: 'cp1',
       read: null,
       submittedCAC: true,
-      write: null
+      write: null,
     });
 
     const documentPost = postedTo('/api/document/');
     expect(documentPost).toHaveLength(1);
-    expect(documentPost[0].url).toBe('/api/document/?fields=documentFileName|displayName|internalURL|internalMime');
+    expect(documentPost[0].url).toBe(
+      '/api/document/?fields=documentFileName|displayName|internalURL|internalMime',
+    );
     const form = documentPost[0].init?.body as FormData;
     expect(form.get('_comment')).toBe('newComment');
     expect(form.get('displayName')).toBe('evidence.pdf');
@@ -378,7 +431,7 @@ describe('comments', () => {
 
     expect(JSON.parse(String(postedTo('/api/public/comment')[0].init?.body))).toMatchObject({
       author: 'Jane Doe',
-      isAnonymous: false
+      isAnonymous: false,
     });
   });
 });

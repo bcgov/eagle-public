@@ -13,7 +13,7 @@ export function PageCountDisplay({
   currentPageNum = 1,
   currentPageSize = 25,
   totalItems = 0,
-  id
+  id,
 }: PageCountDisplayProps) {
   if (isHidden) {
     return null;

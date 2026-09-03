@@ -1,7 +1,12 @@
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { track } from 'app/analytics/analytics';
-import { ApiError, cancelBulkDownload, getBulkDownload, type BulkDownloadStatus } from 'app/api/api';
+import {
+  ApiError,
+  cancelBulkDownload,
+  getBulkDownload,
+  type BulkDownloadStatus,
+} from 'app/api/api';
 import { logger } from 'app/config/logging';
 import {
   claimDownload,
@@ -11,7 +16,7 @@ import {
   setJobStatus,
   useJobs,
   useStartError,
-  type BulkDownloadJob
+  type BulkDownloadJob,
 } from 'app/state/bulk-download';
 import { triggerDownload } from 'app/utils/utils';
 import './download-panel.css';
@@ -21,8 +26,8 @@ import './download-panel.css';
  * backends answer the route with 404 or 405.
  */
 function cancelJob(id: string, keepalive = false): void {
-  void cancelBulkDownload(id, keepalive).catch(failure =>
-    logger.warn('Bulk download could not be cancelled', 'bulk-download', failure)
+  void cancelBulkDownload(id, keepalive).catch((failure) =>
+    logger.warn('Bulk download could not be cancelled', 'bulk-download', failure),
   );
 }
 
@@ -34,7 +39,7 @@ function Row({
   icon,
   tone,
   action,
-  children
+  children,
 }: {
   icon: ReactNode;
   tone?: 'muted' | 'error';
@@ -81,7 +86,11 @@ function progressRows(job: { count: number }, state?: BulkDownloadStatus): React
   return (
     <Row icon={SPINNER}>
       Zipping {plural(job.count, 'document')}…
-      {partCount > 1 && <span className="download-panel__detail">part {part} of {partCount}</span>}
+      {partCount > 1 && (
+        <span className="download-panel__detail">
+          part {part} of {partCount}
+        </span>
+      )}
     </Row>
   );
 }
@@ -102,13 +111,17 @@ function errorRows(state: BulkDownloadStatus): ReactNode {
       {errors.length > 0 && (
         <li className="download-panel__errors">
           <ul className="download-panel__names">
-            {errors.map(error => (
+            {errors.map((error) => (
               <li key={error.documentId}>{error.name || error.documentId}</li>
             ))}
           </ul>
           {unnamed > 0 && <span className="download-panel__detail">and {unnamed} more</span>}
           {/* An all-failed job downloads no zip, so there is no errors.txt to read. */}
-          {!allFailed && <span className="download-panel__detail">See errors.txt in the zip for the reasons.</span>}
+          {!allFailed && (
+            <span className="download-panel__detail">
+              See errors.txt in the zip for the reasons.
+            </span>
+          )}
         </li>
       )}
     </>
@@ -122,7 +135,7 @@ function readyRows(state: BulkDownloadStatus, downloaded: boolean): ReactNode {
 
   return (
     <>
-      {(state.parts ?? []).map(part => {
+      {(state.parts ?? []).map((part) => {
         // demi-api names the zip; the reader must see that name, not one this app made up.
         const name = part.fileName || `part ${part.n}`;
         return (
@@ -145,7 +158,9 @@ function readyRows(state: BulkDownloadStatus, downloaded: boolean): ReactNode {
             }
           >
             <span className="download-panel__name">{name}</span>
-            <span className="download-panel__detail">{downloaded ? 'Downloaded' : 'Downloading…'}</span>
+            <span className="download-panel__detail">
+              {downloaded ? 'Downloaded' : 'Downloading…'}
+            </span>
           </Row>
         );
       })}
@@ -161,7 +176,7 @@ function readyRows(state: BulkDownloadStatus, downloaded: boolean): ReactNode {
 function JobRows({
   job,
   collapsed,
-  closeRef
+  closeRef,
 }: {
   job: BulkDownloadJob;
   collapsed: boolean;
@@ -172,7 +187,8 @@ function JobRows({
     queryFn: () => getBulkDownload(job.id),
     retry: false,
     // A poll that failed keeps failing; stop the 4s beat and let the reader retry or close.
-    refetchInterval: q => (q.state.status === 'error' || isTerminal(q.state.data?.status) ? false : 4000)
+    refetchInterval: (q) =>
+      q.state.status === 'error' || isTerminal(q.state.data?.status) ? false : 4000,
   });
 
   const state = query.data;
@@ -180,7 +196,9 @@ function JobRows({
   const queryError = query.error;
   // demi-api no longer knows the job: the zip is swept or expired, so retrying cannot bring it back.
   const jobGone =
-    query.isError && queryError instanceof ApiError && (queryError.status === 404 || queryError.status === 410);
+    query.isError &&
+    queryError instanceof ApiError &&
+    (queryError.status === 404 || queryError.status === 410);
 
   useEffect(() => {
     if (!query.isError) return;
@@ -201,10 +219,12 @@ function JobRows({
     track('Bulk Download Ready', {
       count: job.count,
       part_count: state.partCount,
-      error_count: state.errorCount
+      error_count: state.errorCount,
     });
     // A second apart: the browser asks once to allow multiple downloads, as Drive's does.
-    (state.parts ?? []).forEach((part, index) => window.setTimeout(() => triggerDownload(part.url), index * 1000));
+    (state.parts ?? []).forEach((part, index) =>
+      window.setTimeout(() => triggerDownload(part.url), index * 1000),
+    );
   }, [job, state]);
 
   useEffect(() => {
@@ -259,7 +279,11 @@ function JobRows({
         <StatusRows>{rows()}</StatusRows>
         {query.isError && !jobGone && (
           <div className="download-panel__actions">
-            <button type="button" className="btn btn-primary btn-sm" onClick={() => void query.refetch()}>
+            <button
+              type="button"
+              className="btn btn-primary btn-sm"
+              onClick={() => void query.refetch()}
+            >
               Retry
             </button>
           </div>
@@ -269,7 +293,7 @@ function JobRows({
         type="button"
         className="download-panel__dismiss"
         aria-label={`Dismiss download of ${plural(job.count, 'document')}`}
-        onClick={event => {
+        onClick={(event) => {
           const next = event.currentTarget
             .closest('.download-panel__job')
             ?.nextElementSibling?.querySelector<HTMLButtonElement>('.download-panel__dismiss');
@@ -298,7 +322,7 @@ export function DownloadPanel() {
   const startError = useStartError();
   const closeRef = useRef<HTMLButtonElement>(null);
   const [collapsed, setCollapsed] = useState(false);
-  const inFlight = jobs.filter(job => !isTerminal(job.status)).map(job => job.id);
+  const inFlight = jobs.filter((job) => !isTerminal(job.status)).map((job) => job.id);
   // A joined key, so the listeners are not torn down and rebuilt on every unrelated render.
   const inFlightKey = inFlight.join(',');
 
@@ -309,7 +333,7 @@ export function DownloadPanel() {
       event.returnValue = '';
     };
     // `pagehide`, not `unload`: a page put in the back/forward cache fires it too.
-    const cancelAll = () => inFlightKey.split(',').forEach(id => cancelJob(id, true));
+    const cancelAll = () => inFlightKey.split(',').forEach((id) => cancelJob(id, true));
     window.addEventListener('beforeunload', warn);
     window.addEventListener('pagehide', cancelAll);
     return () => {
@@ -341,7 +365,7 @@ export function DownloadPanel() {
           className="download-panel__control"
           aria-label="Close download panel"
           onClick={() => {
-            inFlight.forEach(id => cancelJob(id));
+            inFlight.forEach((id) => cancelJob(id));
             dismissAll();
           }}
         >
@@ -359,7 +383,7 @@ export function DownloadPanel() {
             </Row>
           </StatusRows>
         )}
-        {jobs.map(job => (
+        {jobs.map((job) => (
           <JobRows key={job.id} job={job} collapsed={collapsed} closeRef={closeRef} />
         ))}
       </div>

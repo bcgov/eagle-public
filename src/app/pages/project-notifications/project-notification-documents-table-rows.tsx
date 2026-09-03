@@ -13,7 +13,7 @@ export function ProjectNotificationDocumentsTableRow({ rowData, tableData }: Tab
           href={documentDownloadUrl(rowData)}
           target="_blank"
           rel="noopener noreferrer"
-          onClick={event => {
+          onClick={(event) => {
             event.preventDefault();
             openDocumentDownload(rowData);
           }}

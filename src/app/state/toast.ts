@@ -10,12 +10,15 @@ export interface Toast {
 const toasts = createStore<Toast[]>([]);
 let toastCounter = 0;
 
-export function showToast(message: string, config?: { duration?: number; type?: Toast['type'] }): void {
+export function showToast(
+  message: string,
+  config?: { duration?: number; type?: Toast['type'] },
+): void {
   const toast: Toast = {
     id: toastCounter++,
     message,
     type: config?.type || 'info',
-    duration: config?.duration || 3000
+    duration: config?.duration || 3000,
   };
 
   toasts.set([...toasts.get(), toast]);
@@ -26,7 +29,7 @@ export function showToast(message: string, config?: { duration?: number; type?: 
 }
 
 export function removeToast(id: number): void {
-  toasts.set(toasts.get().filter(t => t.id !== id));
+  toasts.set(toasts.get().filter((t) => t.id !== id));
 }
 
 export function clearToasts(): void {

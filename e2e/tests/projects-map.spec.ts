@@ -1,4 +1,5 @@
-import { test, expect, Page } from '../support/fixtures';
+import { test, expect } from '../support/fixtures';
+import type { Page } from '../support/fixtures';
 import { recordApiCalls, checkBaseline, waitForSearch, total } from '../support/helpers';
 
 const CARDS = '[data-testid="project-card"]';
@@ -13,7 +14,9 @@ async function openMap(page: Page) {
   await page.goto('/projects');
   const env = await search;
   // The WebGL canvas is inside the map region; it has no size until the style loads.
-  await page.locator(`[data-testid="project-map"] .maplibregl-canvas`).waitFor({ state: 'attached' });
+  await page
+    .locator(`[data-testid="project-map"] .maplibregl-canvas`)
+    .waitFor({ state: 'attached' });
   await expect(page.locator(CLUSTERS).first()).toBeVisible();
   await page.waitForTimeout(2000);
   return env;
@@ -39,7 +42,9 @@ test('map page renders the map, clusters and the project list', async ({ page })
   const env = await openMap(page);
 
   // The h1 is deliberately visually hidden, so assert presence rather than visibility.
-  await expect(page.locator('h1')).toHaveText('Find Environmental Assessment Projects in British Columbia');
+  await expect(page.locator('h1')).toHaveText(
+    'Find Environmental Assessment Projects in British Columbia',
+  );
   await expect(page.locator('[data-testid="project-map"] .maplibregl-canvas')).toBeAttached();
   await expect(page.locator(CLUSTERS)).not.toHaveCount(0);
   await expect(page.locator(CARDS)).not.toHaveCount(0);
@@ -55,19 +60,25 @@ test('map page renders the map, clusters and the project list', async ({ page })
 test('the Filters button expands the advanced filters inline', async ({ page }) => {
   await openMap(page);
 
+  // The panel is always in the DOM: open is a grid-row transition, and `inert` is what keeps the
+  // collapsed controls out of the tab order.
   const panel = page.locator('#applist-filters');
   const toggle = page.getByRole('button', { name: /Filters/ });
   await expect(panel).toHaveAttribute('data-open', 'false');
-  await expect(page.locator('#region')).toBeHidden();
+  await expect(panel).toHaveAttribute('inert', '');
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
 
   await toggle.click();
 
   await expect(panel).toHaveAttribute('data-open', 'true');
+  await expect(panel).not.toHaveAttribute('inert');
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
   await expect(page.locator('#region')).toBeVisible();
 
   await page.keyboard.press('Escape');
 
   await expect(panel).toHaveAttribute('data-open', 'false');
+  await expect(panel).toHaveAttribute('inert', '');
   await expect(toggle).toBeFocused();
 });
 
@@ -97,7 +108,10 @@ test('clicking a pin opens the project card', async ({ page }) => {
   await expect(popup.locator('.popup-subtitle')).toBeVisible();
   await expect(popup.getByRole('button', { name: 'View project' })).toBeVisible();
   // The pin and the card are two views of one selection.
-  await expect(page.locator(`${CARDS}[data-project-id="${projectId}"]`)).toHaveAttribute('aria-current', 'true');
+  await expect(page.locator(`${CARDS}[data-project-id="${projectId}"]`)).toHaveAttribute(
+    'aria-current',
+    'true',
+  );
 });
 
 test('clicking a list card selects it and opens the project card', async ({ page }) => {
@@ -114,9 +128,11 @@ test('clicking a list card selects it and opens the project card', async ({ page
 test('the Layers menu switches the base map tiles', async ({ page }) => {
   await openMap(page);
 
-  const topoTile = page.waitForRequest(/World_Topo_Map/, { timeout: 30_000 });
+  // World Topographic is the default basemap, so switching has to pick a different one.
+  const imageryTile = page.waitForRequest(/World_Imagery/, { timeout: 30_000 });
   await page.getByRole('button', { name: 'Map layers' }).click();
-  await page.getByRole('radio', { name: 'World Topographic' }).click();
+  await expect(page.getByRole('radio', { name: 'World Topographic' })).toBeChecked();
+  await page.getByRole('radio', { name: 'World Imagery' }).click();
 
-  await topoTile;
+  await imageryTile;
 });

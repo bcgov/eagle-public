@@ -7,9 +7,9 @@ describe('Project', () => {
       const project = new Project({
         _id: 'test-1',
         name: 'Test Project',
-        centroid: [-122.7224, 53.8286]
+        centroid: [-122.7224, 53.8286],
       });
-      
+
       expect(project.centroid).toEqual([-122.7224, 53.8286]);
     });
 
@@ -17,9 +17,9 @@ describe('Project', () => {
       const project = new Project({
         _id: 'test-2',
         name: 'Test Project DMS',
-        centroid: ['122°43\'20.8"W', '53°49\'42.9"N']
+        centroid: ['122°43\'20.8"W', '53°49\'42.9"N'],
       });
-      
+
       // Expected: -122.7224... and 53.8286...
       expect(project.centroid[0]).toBeCloseTo(-122.7224, 3);
       expect(project.centroid[1]).toBeCloseTo(53.8286, 3);
@@ -29,9 +29,9 @@ describe('Project', () => {
       const project = new Project({
         _id: 'test-3',
         name: 'Test Project',
-        centroid: ['122°43\'20.8"', '53°49\'42.9"']
+        centroid: ['122°43\'20.8"', '53°49\'42.9"'],
       });
-      
+
       // Without direction suffix, should be positive
       expect(project.centroid[0]).toBeCloseTo(122.7224, 3);
       expect(project.centroid[1]).toBeCloseTo(53.8286, 3);
@@ -41,9 +41,9 @@ describe('Project', () => {
       const project = new Project({
         _id: 'test-4',
         name: 'Test Project',
-        centroid: ['-122.7224', '53.8286']
+        centroid: ['-122.7224', '53.8286'],
       });
-      
+
       expect(project.centroid).toEqual([-122.7224, 53.8286]);
     });
 
@@ -51,9 +51,9 @@ describe('Project', () => {
       const project = new Project({
         _id: 'test-5',
         name: 'Test Project',
-        centroid: []
+        centroid: [],
       });
-      
+
       expect(project.centroid).toEqual([]);
     });
 
@@ -61,18 +61,18 @@ describe('Project', () => {
       const project = new Project({
         _id: 'test-6',
         name: 'Test Project',
-        centroid: null
+        centroid: null,
       });
-      
+
       expect(project.centroid).toEqual([]);
     });
 
     it('should handle missing centroid', () => {
       const project = new Project({
         _id: 'test-7',
-        name: 'Test Project'
+        name: 'Test Project',
       });
-      
+
       expect(project.centroid).toEqual([]);
     });
 
@@ -80,9 +80,9 @@ describe('Project', () => {
       const project = new Project({
         _id: 'test-8',
         name: 'Test Project',
-        centroid: ['invalid', 'data']
+        centroid: ['invalid', 'data'],
       });
-      
+
       // Invalid coordinates should result in empty centroid
       expect(project.centroid).toEqual([]);
     });

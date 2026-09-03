@@ -7,7 +7,7 @@ function card(data: any) {
   return render(
     <MemoryRouter>
       <ContentResult result={data} />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 }
 
@@ -31,7 +31,11 @@ describe('content result card', () => {
   });
 
   it('renders the highlighted snippet as markup, not as text', () => {
-    const { container } = card({ _id: 'd', documentName: 'x', snippets: ['the <mark>fish</mark> habitat'] });
+    const { container } = card({
+      _id: 'd',
+      documentName: 'x',
+      snippets: ['the <mark>fish</mark> habitat'],
+    });
     expect(container.querySelectorAll('.result-snippet mark')).toHaveLength(1);
   });
 
@@ -39,7 +43,7 @@ describe('content result card', () => {
     const { container } = card({
       _id: 'd',
       documentName: 'x',
-      snippets: ['<img src=x onerror=alert(1)> the <mark>fish</mark>']
+      snippets: ['<img src=x onerror=alert(1)> the <mark>fish</mark>'],
     });
     expect(container.querySelector('.result-snippet img')).toBeNull();
     expect(container.querySelectorAll('.result-snippet mark')).toHaveLength(1);

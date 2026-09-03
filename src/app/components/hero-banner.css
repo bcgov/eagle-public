@@ -7,10 +7,12 @@
 .hero-banner {
   position: relative;
   background-color: var(--header-bg);
-  background-image: url("/assets/images/prc-hero-banner-img.jpg");
+  background-image: url('/assets/images/prc-hero-banner-img.jpg');
   background-position: center bottom;
   background-size: 350%;
-  box-shadow: 0 0 4rem var(--hero-shadow-color) inset, 0 0.1rem 0.5rem rgb(158 158 158 / 24%);
+  box-shadow:
+    0 0 4rem var(--hero-shadow-color) inset,
+    0 0.1rem 0.5rem rgb(158 158 158 / 24%);
   margin-bottom: 3rem;
 }
 

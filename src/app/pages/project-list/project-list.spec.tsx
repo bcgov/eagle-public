@@ -8,22 +8,25 @@ import { ProjectList } from './project-list';
 
 const PROJECTS = [
   { _id: 'p1', name: 'Alpha Mine', type: 'Mines', region: 'Skeena' },
-  { _id: 'p2', name: 'Beta Dam', type: 'Energy', region: 'Cariboo' }
+  { _id: 'p2', name: 'Beta Dam', type: 'Energy', region: 'Cariboo' },
 ];
 
 const LISTS = [
   { _id: 'd1', name: 'Certificate Issued', type: 'eaDecisions' },
   { _id: 'i1', name: 'Coordinated', type: 'ceaaInvolvements' },
-  { _id: 'ph1', name: 'Pre-Application', type: 'projectPhase' }
+  { _id: 'ph1', name: 'Pre-Application', type: 'projectPhase' },
 ];
 
 const ORGS = [{ _id: 'o1', name: 'Acme Resources' }];
 
 function searchResponse(results: unknown[], total: number) {
-  return new Response(JSON.stringify([{ searchResults: results, meta: [{ searchResultsTotal: total }] }]), {
-    status: 200,
-    headers: { 'content-type': 'application/json' }
-  });
+  return new Response(
+    JSON.stringify([{ searchResults: results, meta: [{ searchResultsTotal: total }] }]),
+    {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    },
+  );
 }
 
 /** Every search request URL the app issued, oldest first. */
@@ -35,7 +38,10 @@ function mockFetch() {
     requests.push(url);
     if (url.includes('dataset=List')) return searchResponse(LISTS, LISTS.length);
     if (url.includes('/organization')) {
-      return new Response(JSON.stringify(ORGS), { status: 200, headers: { 'content-type': 'application/json' } });
+      return new Response(JSON.stringify(ORGS), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
     }
     if (url.includes('dataset=Project')) return searchResponse(PROJECTS, 42);
     return searchResponse([], 0);
@@ -44,14 +50,14 @@ function mockFetch() {
 
 function renderAt(path: string) {
   const router = createMemoryRouter([{ path: '/projects-list', Component: ProjectList }], {
-    initialEntries: [path]
+    initialEntries: [path],
   });
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
 
   render(
     <QueryClientProvider client={queryClient}>
       <RouterProvider router={router} />
-    </QueryClientProvider>
+    </QueryClientProvider>,
   );
 
   return router;
@@ -59,7 +65,7 @@ function renderAt(path: string) {
 
 /** The most recent Project search request. */
 function lastProjectRequest(): string {
-  return requests.filter(url => url.includes('dataset=Project')).at(-1)!;
+  return requests.filter((url) => url.includes('dataset=Project')).at(-1)!;
 }
 
 describe('projects list', () => {
@@ -77,7 +83,7 @@ describe('projects list', () => {
     expect(await screen.findByText('Alpha Mine')).toBeInTheDocument();
     expect(screen.getByText('Beta Dam')).toBeInTheDocument();
     expect(lastProjectRequest()).toBe(
-      '/api/search?dataset=Project&pageNum=0&pageSize=10&projectLegislation=default&sortBy=+name&sortBy=&populate=true&fuzzy=false'
+      '/api/search?dataset=Project&pageNum=0&pageSize=10&projectLegislation=default&sortBy=+name&sortBy=&populate=true&fuzzy=false',
     );
   });
 
@@ -86,7 +92,7 @@ describe('projects list', () => {
 
     await screen.findByText('Alpha Mine');
     expect(lastProjectRequest()).toBe(
-      '/api/search?dataset=Project&pageNum=2&pageSize=25&projectLegislation=default&sortBy=-region&sortBy=&populate=true&fuzzy=false'
+      '/api/search?dataset=Project&pageNum=2&pageSize=25&projectLegislation=default&sortBy=-region&sortBy=&populate=true&fuzzy=false',
     );
   });
 
@@ -127,7 +133,9 @@ describe('projects list', () => {
 
     await userEvent.click(screen.getByRole('columnheader', { name: /Column header Name/ }));
 
-    await waitFor(() => expect(new URLSearchParams(router.state.location.search).get('sortBy')).toBe('-name'));
+    await waitFor(() =>
+      expect(new URLSearchParams(router.state.location.search).get('sortBy')).toBe('-name'),
+    );
   });
 
   it('writes a page size change to the URL and returns to page 1', async () => {
@@ -177,13 +185,17 @@ describe('projects list', () => {
     await userEvent.click(screen.getByRole('combobox', { name: 'Type EA Decision' }));
     await userEvent.click(await screen.findByRole('option', { name: 'Certificate Issued' }));
 
-    await waitFor(() => expect(new URLSearchParams(router.state.location.search).get('eacDecision')).toBe('d1'));
+    await waitFor(() =>
+      expect(new URLSearchParams(router.state.location.search).get('eacDecision')).toBe('d1'),
+    );
     await waitFor(() => expect(lastProjectRequest()).toContain('&and[eacDecision]=d1'));
   });
 
   it('opens the advanced filter panel when the URL already carries a filter', async () => {
     renderAt('/projects-list?region=skeena');
 
-    expect(await screen.findByRole('button', { name: /Close Advanced Filters/ })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('button', { name: /Close Advanced Filters/ }),
+    ).toBeInTheDocument();
   });
 });

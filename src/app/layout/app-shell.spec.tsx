@@ -11,7 +11,10 @@ vi.mock('app/analytics/analytics', () => ({ page: vi.fn() }));
 
 describe('app shell', () => {
   beforeEach(() => {
-    vi.stubGlobal('fetch', vi.fn(async () => new Response('[]', { status: 200 })));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('[]', { status: 200 })),
+    );
     vi.mocked(page).mockClear();
   });
 
@@ -24,7 +27,7 @@ describe('app shell', () => {
     return render(
       <QueryClientProvider client={queryClient}>
         <RouterProvider router={router} />
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
   }
 
@@ -32,7 +35,9 @@ describe('app shell', () => {
     renderShell();
 
     expect(await screen.findByText('EPIC')).toBeInTheDocument();
-    expect(await screen.findByRole('heading', { name: 'Environmental Assessments' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: 'Environmental Assessments' }),
+    ).toBeInTheDocument();
     expect(await screen.findByText('Admin Login')).toBeInTheDocument();
   });
 
@@ -67,7 +72,7 @@ describe('app shell', () => {
         <QueryClientProvider client={queryClient}>
           <RouterProvider router={router} />
         </QueryClientProvider>
-      </StrictMode>
+      </StrictMode>,
     );
 
     await screen.findByText('EPIC');

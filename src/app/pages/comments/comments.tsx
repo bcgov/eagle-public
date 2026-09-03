@@ -25,13 +25,26 @@ type CommentsType = 'PROJECT' | 'PROJECT-NOTIFICATION';
 const COMMENT_PERIOD_HEADERS: Record<string, string> = {
   Closed: 'Public Comment Period is Now Closed',
   Upcoming: 'Public Comment Period is Upcoming',
-  Open: 'Public Comment Period is Now Open'
+  Open: 'Public Comment Period is Now Open',
 };
 
 /** Project notifications have no project endpoint, so their name comes out of search. */
 async function getNotificationProject(projId: string): Promise<Project | null> {
   try {
-    const raw = await searchKeywords('', 'ProjectNotification', [], 1, 1, '', '', { _id: projId }, false, null, {}, false);
+    const raw = await searchKeywords(
+      '',
+      'ProjectNotification',
+      [],
+      1,
+      1,
+      '',
+      '',
+      { _id: projId },
+      false,
+      null,
+      {},
+      false,
+    );
     const hit = (raw as any)?.[0]?.searchResults?.[0];
     return hit ? ({ name: hit.name } as Project) : null;
   } catch {
@@ -46,10 +59,12 @@ async function loadComments(periodId: string, pageNum: number, pageSize: number)
 
   // Every comment's attachments come back in one request rather than one request per comment.
   const allDocIds: string[] = [];
-  comments.forEach(comment => {
+  comments.forEach((comment) => {
     if (comment.documents && comment.documents.length > 0) {
       // documents arrive as ids or as objects carrying one
-      comment.documents = comment.documents.map((doc: any) => (typeof doc === 'string' ? doc : doc._id || doc));
+      comment.documents = comment.documents.map((doc: any) =>
+        typeof doc === 'string' ? doc : doc._id || doc,
+      );
       allDocIds.push(...comment.documents);
     }
   });
@@ -57,17 +72,17 @@ async function loadComments(periodId: string, pageNum: number, pageSize: number)
   if (allDocIds.length > 0) {
     try {
       const docMap = new Map<string, Document>();
-      (await documentApi.getByMultiId(allDocIds)).forEach(doc => {
+      (await documentApi.getByMultiId(allDocIds)).forEach((doc) => {
         if (doc?._id) docMap.set(doc._id, doc);
       });
-      comments.forEach(comment => {
+      comments.forEach((comment) => {
         if (comment.documents) {
           comment.documents = comment.documents.map((id: string) => docMap.get(id)).filter(Boolean);
         }
       });
     } catch (error) {
       logger.error('Error loading documents for comments', 'Comments', error);
-      comments.forEach(comment => {
+      comments.forEach((comment) => {
         if (comment.documents) comment.documents = [];
       });
     }
@@ -101,23 +116,24 @@ export function Comments() {
         logger.warn(`Project ${projId} not found, trying as ProjectNotification`, 'Comments');
       }
       return { project: await getNotificationProject(projId!), type: 'PROJECT-NOTIFICATION' };
-    }
+    },
   });
 
   const periodQuery = useQuery({
     queryKey: ['commentPeriod', commentPeriodId],
     enabled: !!commentPeriodId,
-    queryFn: () => commentPeriodApi.getById(commentPeriodId!)
+    queryFn: () => commentPeriodApi.getById(commentPeriodId!),
   });
 
   const commentPeriod = periodQuery.data ?? null;
   const project = projectQuery.data?.project ?? null;
-  const type: CommentsType = projectQuery.data?.type ?? (isProjectNotificationRoute ? 'PROJECT-NOTIFICATION' : 'PROJECT');
+  const type: CommentsType =
+    projectQuery.data?.type ?? (isProjectNotificationRoute ? 'PROJECT-NOTIFICATION' : 'PROJECT');
 
   const docsQuery = useQuery({
     queryKey: ['commentPeriodDocs', commentPeriodId],
     enabled: !!commentPeriod?.relatedDocuments?.length,
-    queryFn: () => documentApi.getByMultiId(commentPeriod!.relatedDocuments)
+    queryFn: () => documentApi.getByMultiId(commentPeriod!.relatedDocuments),
   });
 
   const commentsQuery = useQuery({
@@ -126,7 +142,7 @@ export function Comments() {
     queryFn: () => loadComments(commentPeriod!._id, page, pageSize),
     // Keep the table on screen while the next page loads, matching the Angular page, which only
     // showed the big spinner on the first load.
-    placeholderData: previous => previous
+    placeholderData: (previous) => previous,
   });
 
   useEffect(() => {
@@ -145,7 +161,15 @@ export function Comments() {
       showToast('Comment period not found', { duration: 3000, type: 'error' });
       navigate('/projects');
     }
-  }, [projId, commentPeriodId, periodQuery.isError, periodQuery.isSuccess, periodQuery.data, periodQuery.error, navigate]);
+  }, [
+    projId,
+    commentPeriodId,
+    periodQuery.isError,
+    periodQuery.isSuccess,
+    periodQuery.data,
+    periodQuery.error,
+    navigate,
+  ]);
 
   const tableData = useMemo(
     () =>
@@ -157,14 +181,14 @@ export function Comments() {
           showPageSizePicker: true,
           showTopControls: true,
           showHeader: false,
-          disableRowHighlight: true
+          disableRowHighlight: true,
         },
         currentPage: page,
         pageSize,
         totalListItems: commentsQuery.data?.totalCount ?? 0,
-        items: (commentsQuery.data?.comments ?? []).map(comment => ({ rowData: comment }))
+        items: (commentsQuery.data?.comments ?? []).map((comment) => ({ rowData: comment })),
       }),
-    [page, pageSize, commentsQuery.data]
+    [page, pageSize, commentsQuery.data],
   );
 
   function onMessageOut(msg: ITableMessage) {
@@ -179,7 +203,12 @@ export function Comments() {
   function onDownloadDocument(doc: Document) {
     downloadDocument(doc)
       .then(() => showToast('Downloading document', { duration: 2000, type: 'info' }))
-      .catch(() => showToast('Error opening document! Please try again later', { duration: 2000, type: 'error' }));
+      .catch(() =>
+        showToast('Error opening document! Please try again later', {
+          duration: 2000,
+          type: 'error',
+        }),
+      );
   }
 
   function goBackToProjectDetails() {
@@ -199,13 +228,15 @@ export function Comments() {
         project_name: project.name,
         comment_period_id: commentPeriod?._id,
         page: modalPage,
-        reason
+        reason,
       });
     }
   }
 
   const commentPeriodDocs = docsQuery.data ?? [];
-  const commentPeriodHeader = commentPeriod ? COMMENT_PERIOD_HEADERS[commentPeriod.commentPeriodStatus] || '' : '';
+  const commentPeriodHeader = commentPeriod
+    ? COMMENT_PERIOD_HEADERS[commentPeriod.commentPeriodStatus] || ''
+    : '';
   const pageLoading = !commentPeriod || (type === 'PROJECT' && projectQuery.isPending);
 
   return (
@@ -228,14 +259,24 @@ export function Comments() {
                     {commentPeriod._id && (
                       <>
                         <h2>{commentPeriodHeader || '-'}</h2>
-                        <h2>{mediumDate(commentPeriod.dateStarted)} - {commentPeriod.longEndDate.toFormat('MMMM dd @ hh:mm a ZZZZ')}</h2>
+                        <h2>
+                          {mediumDate(commentPeriod.dateStarted)} -{' '}
+                          {commentPeriod.longEndDate.toFormat('MMMM dd @ hh:mm a ZZZZ')}
+                        </h2>
                         <hr className="comment-period-divider" />
 
                         <div className="header-section">
                           <div>
-                            <div id="instructions" dangerouslySetInnerHTML={safeHtml(String(commentPeriod.instructions ?? ''))}></div>
+                            <div
+                              id="instructions"
+                              dangerouslySetInnerHTML={safeHtml(
+                                String(commentPeriod.instructions ?? ''),
+                              )}
+                            ></div>
                             {commentPeriod.additionalText && <p>{commentPeriod.additionalText}</p>}
-                            {commentPeriod.informationLabel && <p>{commentPeriod.informationLabel}</p>}
+                            {commentPeriod.informationLabel && (
+                              <p>{commentPeriod.informationLabel}</p>
+                            )}
                           </div>
                         </div>
                       </>
@@ -265,15 +306,16 @@ export function Comments() {
                       <div className="mb-3">
                         <div className="card-header">Related Documents</div>
                         <ul className="doc-list mb-0">
-                          {commentPeriodDocs.map(doc => (
+                          {commentPeriodDocs.map((doc) => (
                             <li
                               key={doc._id}
                               className="clickable-row"
                               role="button"
                               tabIndex={0}
                               onClick={() => onDownloadDocument(doc)}
-                              onKeyDown={event => {
-                                if (event.key === 'Enter' || event.key === ' ') onDownloadDocument(doc);
+                              onKeyDown={(event) => {
+                                if (event.key === 'Enter' || event.key === ' ')
+                                  onDownloadDocument(doc);
                               }}
                             >
                               <span className="cell icon">
@@ -293,19 +335,34 @@ export function Comments() {
                         <div className="card border-0">
                           <div className="card-header">Open Houses</div>
                           <ul className="list-group mb-0">
-                            {commentPeriod.openHouses.map((openHouse: { eventDate: string; description: string }) => (
-                              <li className="list-group-item" key={`${openHouse.eventDate}-${openHouse.description}`}>
-                                <h6 className="mb-2"><b>Date:</b>&nbsp;{mediumDate(openHouse.eventDate)}</h6>
-                                <h6 className="mb-0"><b>Description:</b>&nbsp;{openHouse.description}</h6>
-                              </li>
-                            ))}
+                            {commentPeriod.openHouses.map(
+                              (openHouse: { eventDate: string; description: string }) => (
+                                <li
+                                  className="list-group-item"
+                                  key={`${openHouse.eventDate}-${openHouse.description}`}
+                                >
+                                  <h6 className="mb-2">
+                                    <b>Date:</b>&nbsp;{mediumDate(openHouse.eventDate)}
+                                  </h6>
+                                  <h6 className="mb-0">
+                                    <b>Description:</b>&nbsp;{openHouse.description}
+                                  </h6>
+                                </li>
+                              ),
+                            )}
                           </ul>
                         </div>
                       </div>
                     )}
 
-                    <button className="btn btn-sm inverted" onClick={goBackToProjectDetails} type="button">
-                      {type === 'PROJECT' ? 'Back to Project Details' : 'Back to Project Notifications'}
+                    <button
+                      className="btn btn-sm inverted"
+                      onClick={goBackToProjectDetails}
+                      type="button"
+                    >
+                      {type === 'PROJECT'
+                        ? 'Back to Project Details'
+                        : 'Back to Project Notifications'}
                     </button>
                   </>
                 )}
@@ -326,7 +383,13 @@ export function Comments() {
           <>
             {commentPeriod?.commentPeriodStatus === 'Open' && (
               <div className="mb-3 d-flex justify-content-end">
-                <button className="btn btn-warning" onClick={() => commentPeriod._id && setModalOpen(true)} type="button">Submit Comment</button>
+                <button
+                  className="btn btn-warning"
+                  onClick={() => commentPeriod._id && setModalOpen(true)}
+                  type="button"
+                >
+                  Submit Comment
+                </button>
               </div>
             )}
 
@@ -341,7 +404,11 @@ export function Comments() {
       </div>
 
       {modalOpen && commentPeriod && (
-        <AddComment currentPeriod={commentPeriod} project={project as Project} onDismiss={onModalDismiss} />
+        <AddComment
+          currentPeriod={commentPeriod}
+          project={project as Project}
+          onDismiss={onModalDismiss}
+        />
       )}
     </>
   );

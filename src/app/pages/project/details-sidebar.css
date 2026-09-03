@@ -130,7 +130,9 @@
   justify-content: center;
   align-items: center;
   cursor: pointer;
-  transition: left 0.5s ease, background-color 0.2s ease;
+  transition:
+    left 0.5s ease,
+    background-color 0.2s ease;
   z-index: 110;
   color: var(--bs-white);
   box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.3);

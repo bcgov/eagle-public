@@ -15,17 +15,17 @@ const PROJECT_TYPES = Constants.PROJECT_TYPE_COLLECTION as TypeOption[];
  * code to its name before comparing; the URL keeps the code.
  */
 function typeNameForCode(code: string): string {
-  return PROJECT_TYPES.find(option => option.code === code)?.name ?? code;
+  return PROJECT_TYPES.find((option) => option.code === code)?.name ?? code;
 }
 
 export function projectMatchesFilters(
   project: Project,
   filters: FilterCriteria,
-  regions: { _id?: string; name?: string }[]
+  regions: { _id?: string; name?: string }[],
 ): boolean {
   if (filters.regions.length > 0) {
-    const regionMatch = filters.regions.some(regionId => {
-      const region = regions.find(item => item._id === regionId);
+    const regionMatch = filters.regions.some((regionId) => {
+      const region = regions.find((item) => item._id === regionId);
       return !!region && (region.name === project.region || region._id === project.region);
     });
     if (!regionMatch) return false;
@@ -38,7 +38,7 @@ export function projectMatchesFilters(
 
   if (filters.types.length > 0) {
     const projectType = project.type?.toString().toLowerCase() || '';
-    const typeMatch = filters.types.some(code => {
+    const typeMatch = filters.types.some((code) => {
       const name = typeNameForCode(code).toLowerCase();
       return projectType === name || projectType.includes(name);
     });
@@ -79,7 +79,7 @@ export function projectMatchesFilters(
 export function filterProjects(
   projects: Project[],
   filters: FilterCriteria,
-  regions: { _id?: string; name?: string }[]
+  regions: { _id?: string; name?: string }[],
 ): Project[] {
-  return projects.filter(project => projectMatchesFilters(project, filters, regions));
+  return projects.filter((project) => projectMatchesFilters(project, filters, regions));
 }

@@ -33,7 +33,9 @@ export interface BulkDownloadJob {
 
 /** demi-api stops moving the job at these; polling stops with it, and so does the wait. */
 export function isTerminal(status?: string): boolean {
-  return status === 'ready' || status === 'failed' || status === 'expired' || status === 'cancelled';
+  return (
+    status === 'ready' || status === 'failed' || status === 'expired' || status === 'cancelled'
+  );
 }
 
 type TableSelection = Map<string, SelectedDocument>;
@@ -54,7 +56,7 @@ function write(tableId: string, docs: TableSelection): void {
 function merged(tables: Map<string, TableSelection>): TableSelection {
   if (tables.size === 1) return tables.values().next().value ?? EMPTY;
   const all: TableSelection = new Map();
-  tables.forEach(docs => docs.forEach((doc, id) => all.set(id, doc)));
+  tables.forEach((docs) => docs.forEach((doc, id) => all.set(id, doc)));
   return all;
 }
 
@@ -86,7 +88,7 @@ export function toggleSelected(tableId: string, doc: SelectedDocument): boolean 
  */
 export function setSelected(tableId: string, docs: SelectedDocument[]): boolean {
   const next = new Map(selection.get().get(tableId) ?? EMPTY);
-  docs.forEach(doc => next.set(doc.id, doc));
+  docs.forEach((doc) => next.set(doc.id, doc));
   if (selectedElsewhere(tableId) + next.size > SELECT_ALL_MAX) return false;
   write(tableId, next);
   return true;
@@ -117,7 +119,10 @@ export function useSelection(tableId?: string): TableSelection {
  * rejecting, so zero rows here means the request failed, not that the count dropped to zero; the
  * existing selection is left as it was rather than replaced with nothing.
  */
-export async function selectAllMatching(tableId: string, params: SearchParamObject): Promise<boolean> {
+export async function selectAllMatching(
+  tableId: string,
+  params: SearchParamObject,
+): Promise<boolean> {
   const results = await fetchData({ ...params, pageSize: SELECT_ALL_MAX, currentPage: 1 });
   const rows: any[] = Array.isArray(results.data) ? results.data : [];
   if (rows.length === 0) {
@@ -126,7 +131,7 @@ export async function selectAllMatching(tableId: string, params: SearchParamObje
   }
   const added = setSelected(
     tableId,
-    rows.map(row => ({ id: row._id, displayName: row.displayName }))
+    rows.map((row) => ({ id: row._id, displayName: row.displayName })),
   );
   if (!added) showToast(CAP_MESSAGE, { type: 'warning' });
   return added;
@@ -149,25 +154,26 @@ export function addJob(job: BulkDownloadJob): void {
   const list = [job, ...jobs.get()];
   if (list.length > MAX_JOBS) {
     // The oldest finished job falls off first; one still zipping only goes if there is no other.
-    const oldest = [...list].reverse().find(other => isTerminal(other.status)) ?? list[list.length - 1];
-    jobs.set(list.filter(other => other !== oldest));
+    const oldest =
+      [...list].reverse().find((other) => isTerminal(other.status)) ?? list[list.length - 1];
+    jobs.set(list.filter((other) => other !== oldest));
     return;
   }
   jobs.set(list);
 }
 
 function patchJob(id: string, change: Partial<BulkDownloadJob>): void {
-  jobs.set(jobs.get().map(job => (job.id === id ? { ...job, ...change } : job)));
+  jobs.set(jobs.get().map((job) => (job.id === id ? { ...job, ...change } : job)));
 }
 
 /** Removes one job; the others keep going. */
 export function dismissJob(id: string): void {
-  jobs.set(jobs.get().filter(job => job.id !== id));
+  jobs.set(jobs.get().filter((job) => job.id !== id));
 }
 
 /** Records what the panel last read, so the toolbar knows a finished job is not still running. */
 export function setJobStatus(id: string, status: BulkDownloadStatus['status']): void {
-  const current = jobs.get().find(job => job.id === id);
+  const current = jobs.get().find((job) => job.id === id);
   if (!current || current.status === status) return;
   patchJob(id, { status });
 }
@@ -177,7 +183,7 @@ export function setJobStatus(id: string, status: BulkDownloadStatus['status']): 
  * store rather than a render's copy, so StrictMode's second effect pass cannot fire a second zip.
  */
 export function claimDownload(id: string): boolean {
-  const current = jobs.get().find(job => job.id === id);
+  const current = jobs.get().find((job) => job.id === id);
   if (!current || current.downloadedAt) return false;
   patchJob(id, { downloadedAt: Date.now() });
   return true;
@@ -186,13 +192,13 @@ export function claimDownload(id: string): boolean {
 /** True once demi-api is preparing as many jobs as it will take: a fourth would be refused. */
 export function useDownloadInProgress(): boolean {
   const list = useStore(jobs);
-  return list.filter(job => !isTerminal(job.status)).length >= MAX_JOBS_IN_FLIGHT;
+  return list.filter((job) => !isTerminal(job.status)).length >= MAX_JOBS_IN_FLIGHT;
 }
 
 /** What each refused POST tells the reader. Anything else is a fault they cannot act on. */
 const START_ERRORS: Record<number, string> = {
   429: "You've reached the download limit. Try again later.",
-  503: 'Bulk download is not available right now.'
+  503: 'Bulk download is not available right now.',
 };
 const START_FAILED = 'That download could not be started. Please try again.';
 

@@ -49,7 +49,9 @@ export interface EnvConfig {
 
 // env.js sets window.__env before the app bundle loads (via script tag in index.html)
 declare global {
-  interface Window { __env: EnvConfig; }
+  interface Window {
+    __env: EnvConfig;
+  }
 }
 
 let config: EnvConfig = {};
@@ -147,7 +149,7 @@ async function fetchRemoteConfig(): Promise<void> {
     } catch (e) {
       console.error(`config: /api/config attempt ${attempt} of ${CONFIG_ATTEMPTS} failed:`, e);
       if (attempt >= CONFIG_ATTEMPTS) throw e;
-      await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+      await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
     }
   }
 }
@@ -163,6 +165,6 @@ export function listsQueryOptions() {
       }
       const data = await response.json();
       return data?.[0]?.searchResults ?? [];
-    }
+    },
   };
 }

@@ -5,11 +5,16 @@ import { RouterProvider, createMemoryRouter } from 'react-router';
 import { loadConfig } from 'app/config/config';
 import { ProjectActivites } from './project-activites';
 
-vi.mock('./project-context', async importOriginal => {
+vi.mock('./project-context', async (importOriginal) => {
   const original = await importOriginal<typeof import('./project-context')>();
   return {
     ...original,
-    useProjectContext: () => ({ project: null, projId: 'proj-1', lists: [], projectLoading: false })
+    useProjectContext: () => ({
+      project: null,
+      projId: 'proj-1',
+      lists: [],
+      projectLoading: false,
+    }),
   };
 });
 
@@ -22,18 +27,23 @@ async function renderTab(notifyApi: string): Promise<void> {
       async () =>
         new Response(JSON.stringify([{ searchResults: [], meta: [] }]), {
           status: 200,
-          headers: { 'content-type': 'application/json' }
-        })
-    )
+          headers: { 'content-type': 'application/json' },
+        }),
+    ),
   );
 
-  const router = createMemoryRouter([{ path: '/p/:projId/project-activites', Component: ProjectActivites }], {
-    initialEntries: ['/p/proj-1/project-activites']
-  });
+  const router = createMemoryRouter(
+    [{ path: '/p/:projId/project-activites', Component: ProjectActivites }],
+    {
+      initialEntries: ['/p/proj-1/project-activites'],
+    },
+  );
   render(
-    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })}>
+    <QueryClientProvider
+      client={new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })}
+    >
       <RouterProvider router={router} />
-    </QueryClientProvider>
+    </QueryClientProvider>,
   );
 }
 
@@ -58,7 +68,7 @@ describe('project activities subscribe control', () => {
     // The form is the popover's own spec; this page owns which subscription it offers.
     expect(trigger.closest('.subscribe-popover')).toHaveAttribute('data-service', 'project:proj-1');
     expect(
-      screen.getByText(/Get an email when this project publishes an Update\./)
+      screen.getByText(/Get an email when this project publishes an Update\./),
     ).toBeInTheDocument();
   });
 

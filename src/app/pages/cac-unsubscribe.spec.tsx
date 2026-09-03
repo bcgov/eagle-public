@@ -4,7 +4,10 @@ import userEvent from '@testing-library/user-event';
 import { RouterProvider, createMemoryRouter } from 'react-router';
 import { CacUnsubscribe } from './cac-unsubscribe';
 
-interface Sent { url: string; init?: RequestInit }
+interface Sent {
+  url: string;
+  init?: RequestInit;
+}
 
 function renderAt(path: string) {
   const sent: Sent[] = [];
@@ -13,15 +16,15 @@ function renderAt(path: string) {
     vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       sent.push({ url: String(input), init });
       return new Response('{}', { status: 200, headers: { 'content-type': 'application/json' } });
-    })
+    }),
   );
 
   const router = createMemoryRouter(
     [
       { path: '/', element: <h1>Home</h1> },
-      { path: '/*', Component: CacUnsubscribe }
+      { path: '/*', Component: CacUnsubscribe },
     ],
-    { initialEntries: [path] }
+    { initialEntries: [path] },
   );
   render(<RouterProvider router={router} />);
   return { sent, router };
@@ -45,14 +48,19 @@ describe('cac-unsubscribe', () => {
   });
 
   it('PUTs the email to cacRemoveMember and reports success', async () => {
-    const { sent } = renderAt('/cac-unsubscribe;project=Site%20C;projectId=abc123;email=me@example.com');
+    const { sent } = renderAt(
+      '/cac-unsubscribe;project=Site%20C;projectId=abc123;email=me@example.com',
+    );
 
     await userEvent.click(screen.getByRole('button', { name: 'Unsubscribe' }));
 
     expect(sent).toHaveLength(1);
     expect(sent[0].url).toBe('/api/project/abc123/cacRemoveMember');
     expect(sent[0].init?.method).toBe('PUT');
-    expect(JSON.parse(String(sent[0].init?.body))).toEqual({ email: 'me@example.com', projId: 'abc123' });
+    expect(JSON.parse(String(sent[0].init?.body))).toEqual({
+      email: 'me@example.com',
+      projId: 'abc123',
+    });
 
     expect(await screen.findByText(/You have been unsubscribed successfully/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Unsubscribe' })).not.toBeInTheDocument();

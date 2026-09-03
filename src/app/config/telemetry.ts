@@ -26,7 +26,7 @@ const REDACTED_FIELDS = ['uri', 'target', 'name', 'message'];
 export async function initTelemetry(
   connectionString: string | undefined,
   role: string,
-  correlationHosts: string[]
+  correlationHosts: string[],
 ): Promise<void> {
   if (!connectionString || appInsights) {
     return;
@@ -45,8 +45,8 @@ export async function initTelemetry(
         enableUnhandledPromiseRejectionTracking: true,
         enableAutoRouteTracking: false,
         // Skip the remote config-sync fetch on every load; nothing here needs it.
-        extensionConfig: { AppInsightsCfgSyncPlugin: { cfgUrl: '', blkCdnCfg: true } }
-      }
+        extensionConfig: { AppInsightsCfgSyncPlugin: { cfgUrl: '', blkCdnCfg: true } },
+      },
     });
     instance.loadAppInsights();
   } catch {

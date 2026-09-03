@@ -13,16 +13,16 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 
 const HERE = path.dirname(new URL(import.meta.url).pathname);
-const BASE_URL = process.env.BASE_URL || 'http://localhost:4200';
-const OUT = path.join(HERE, '..', 'screenshots', `${process.env.OUT || 'local'}.dom.txt`);
+const BASE_URL = process.env['BASE_URL'] || 'http://localhost:4200';
+const OUT = path.join(HERE, '..', 'screenshots', `${process.env['OUT'] || 'local'}.dom.txt`);
 const { BASIC_AUTH_USER, BASIC_AUTH_PASS } = process.env;
-const WIDTH = Number(process.env.WIDTH || 1280);
-const HEIGHT = Number(process.env.HEIGHT || 800);
+const WIDTH = Number(process.env['WIDTH'] || 1280);
+const HEIGHT = Number(process.env['HEIGHT'] || 800);
 
 async function api(q: string): Promise<any> {
   const headers: Record<string, string> = {};
   if (BASIC_AUTH_USER) {
-    headers.Authorization =
+    headers['Authorization'] =
       'Basic ' + Buffer.from(`${BASIC_AUTH_USER}:${BASIC_AUTH_PASS}`).toString('base64');
   }
   const r = await fetch(new URL(q, BASE_URL), { headers });
@@ -44,12 +44,12 @@ function outline(): string {
     const cls = (el.getAttribute('class') || '')
       .split(/\s+/)
       .filter(Boolean)
-      .filter(c => !/^ng-|^_ng|^cdk-/.test(c))
+      .filter((c) => !/^ng-|^_ng|^cdk-/.test(c))
       .sort()
       .join('.');
     const own = [...el.childNodes]
-      .filter(n => n.nodeType === 3)
-      .map(n => (n.textContent || '').replace(/\s+/g, ' ').trim())
+      .filter((n) => n.nodeType === 3)
+      .map((n) => (n.textContent || '').replace(/\s+/g, ' ').trim())
       .filter(Boolean)
       .join(' ');
     const structural = (tag.includes('-') || tag === 'div' || tag === 'span') && !cls && !own;
@@ -61,21 +61,21 @@ function outline(): string {
 }
 
 async function settle(page: Page, ms = 2500): Promise<void> {
-  await page.waitForLoadState('networkidle', { timeout: 45_000 }).catch(() => {});
+  await page.waitForLoadState('networkidle', { timeout: 45_000 }).catch(() => {
+    // networkidle never settles on a page that keeps polling; the timed wait below covers it
+  });
   await page.waitForTimeout(ms);
 }
 
 async function main(): Promise<void> {
-  const first = (
-    await api(
-      '/api/search?dataset=Project&pageNum=0&pageSize=1&keywords=Site%20C&projectLegislation=default&sortBy=-score&populate=true&fuzzy=false',
-    )
+  const first = await api(
+    '/api/search?dataset=Project&pageNum=0&pageSize=1&keywords=Site%20C&projectLegislation=default&sortBy=-score&populate=true&fuzzy=false',
   );
   const projId = (Array.isArray(first) ? first[0] : first).searchResults[0]._id;
   const cps: any[] = await api(
     '/api/commentperiod?sortBy=-dateStarted&fields=project|dateStarted|dateCompleted',
   );
-  const cp = cps.find(c => c.project && c.dateStarted && c.dateCompleted)!;
+  const cp = cps.find((c) => c.project && c.dateStarted && c.dateCompleted)!;
 
   const routes: [string, string][] = [
     ['home', '/'],
@@ -131,7 +131,7 @@ async function main(): Promise<void> {
   console.log(`written to ${OUT}`);
 }
 
-main().catch(e => {
+main().catch((e) => {
   console.error(e);
   process.exit(1);
 });

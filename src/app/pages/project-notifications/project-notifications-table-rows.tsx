@@ -27,16 +27,19 @@ function normalizePeriods(raw: CommentPeriod[]): CommentPeriod[] {
   const seenUrls = new Set<string>();
 
   return raw
-    .map(element => {
+    .map((element) => {
       const fullText = element.instructions
-        ? element.instructions.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+        ? element.instructions
+            .replace(/<[^>]*>/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim()
         : '';
       const match = fullText.match(/Comment Period on the (.*?) for /);
       element.additionalText = element.additionalText || fullText || element.informationLabel;
       element.instructions = match ? match[1] : '';
       return element;
     })
-    .filter(period => {
+    .filter((period) => {
       if (seenIds.has(period._id)) return false;
       seenIds.add(period._id);
       if (period.isMet && period.metURL) {
@@ -57,11 +60,16 @@ function fallbackPeriod(rowData: any): CommentPeriod {
     dateStarted: rowData.dateStarted,
     dateCompleted: rowData.dateCompleted,
     instructions: 'Public Comment Period',
-    additionalText: ''
+    additionalText: '',
   });
 
   period.commentPeriodStatus = cpStatus(rowData.pcp);
-  if (period.commentPeriodStatus === 'Open' && (!period.daysRemaining || period.daysRemaining === 'Completed' || period.daysRemaining === 'None')) {
+  if (
+    period.commentPeriodStatus === 'Open' &&
+    (!period.daysRemaining ||
+      period.daysRemaining === 'Completed' ||
+      period.daysRemaining === 'None')
+  ) {
     period.daysRemaining = 'Active';
   }
   return period;
@@ -86,7 +94,7 @@ export function ProjectNotificationsTableRow({ rowData }: TableRowProps) {
       const list: CommentPeriod[] = Array.isArray(res) ? res : (res?.data ?? []);
       const deduped = normalizePeriods(list);
       return deduped.length === 0 && hasPcp ? [fallbackPeriod(rowData)] : deduped;
-    }
+    },
   });
 
   const showCommentingTab = hasPcp || (periods?.length ?? 0) > 0;
@@ -182,22 +190,43 @@ export function ProjectNotificationsTableRow({ rowData }: TableRowProps) {
                     {commentPeriods === null ? (
                       <div className="cp-card cp-card--skeleton">
                         <div className="cp-card__header">
-                          <div className="skeleton-cell" style={{ width: '90px', height: '12px', borderRadius: '4px' }}></div>
                           <div
                             className="skeleton-cell"
-                            style={{ width: '70px', height: '20px', borderRadius: '999px', marginLeft: 'auto' }}
+                            style={{ width: '90px', height: '12px', borderRadius: '4px' }}
+                          ></div>
+                          <div
+                            className="skeleton-cell"
+                            style={{
+                              width: '70px',
+                              height: '20px',
+                              borderRadius: '999px',
+                              marginLeft: 'auto',
+                            }}
                           ></div>
                         </div>
                         <div className="cp-card__body">
                           <div
                             className="skeleton-cell"
-                            style={{ width: '55%', height: '14px', borderRadius: '4px', marginBottom: '0.5rem' }}
+                            style={{
+                              width: '55%',
+                              height: '14px',
+                              borderRadius: '4px',
+                              marginBottom: '0.5rem',
+                            }}
                           ></div>
                           <div
                             className="skeleton-cell"
-                            style={{ width: '38%', height: '11px', borderRadius: '4px', marginBottom: '0.5rem' }}
+                            style={{
+                              width: '38%',
+                              height: '11px',
+                              borderRadius: '4px',
+                              marginBottom: '0.5rem',
+                            }}
                           ></div>
-                          <div className="skeleton-cell" style={{ width: '88%', height: '11px', borderRadius: '4px' }}></div>
+                          <div
+                            className="skeleton-cell"
+                            style={{ width: '88%', height: '11px', borderRadius: '4px' }}
+                          ></div>
                         </div>
                       </div>
                     ) : commentPeriods.length < 1 ? (
@@ -205,7 +234,7 @@ export function ProjectNotificationsTableRow({ rowData }: TableRowProps) {
                         No comment periods are currently scheduled for this project notification.
                       </div>
                     ) : (
-                      commentPeriods.map(cp => (
+                      commentPeriods.map((cp) => (
                         <article className="card cp-card" key={cp._id}>
                           <div className="cp-card__header">
                             <span
@@ -215,7 +244,9 @@ export function ProjectNotificationsTableRow({ rowData }: TableRowProps) {
                             ></span>
                             <span className="cp-card__status-label">{cp.commentPeriodStatus}</span>
                             {isOpen(cp) ? (
-                              <span className="cp-card__pill cp-card__pill--open">{cp.daysRemaining}</span>
+                              <span className="cp-card__pill cp-card__pill--open">
+                                {cp.daysRemaining}
+                              </span>
                             ) : isClosed(cp) ? (
                               <span className="cp-card__pill cp-card__pill--closed">
                                 Closed {mediumDate(cp.dateCompleted)}
@@ -235,9 +266,13 @@ export function ProjectNotificationsTableRow({ rowData }: TableRowProps) {
                                 {mediumDate(cp.dateStarted)} – {mediumDate(cp.dateCompleted)}
                               </p>
                             )}
-                            {cp.additionalText && <p className="cp-card__description">{cp.additionalText}</p>}
+                            {cp.additionalText && (
+                              <p className="cp-card__description">{cp.additionalText}</p>
+                            )}
                             <button className="btn btn-epic-cta" onClick={() => goToCP(cp)}>
-                              {cp.commentPeriodStatus === 'Open' ? 'Share your thoughts' : 'View Engagement'}
+                              {cp.commentPeriodStatus === 'Open'
+                                ? 'Share your thoughts'
+                                : 'View Engagement'}
                             </button>
                           </div>
                         </article>

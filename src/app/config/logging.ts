@@ -6,7 +6,7 @@ export enum LogLevel {
   DEBUG = 1,
   INFO = 2,
   WARN = 3,
-  ERROR = 4
+  ERROR = 4,
 }
 
 export interface LogEntry {
@@ -42,7 +42,7 @@ function output(entry: LogEntry): void {
   if (entry.level === LogLevel.ERROR) {
     trackException(
       entry.data instanceof Error ? entry.data : entry.message,
-      entry.source ? { source: entry.source } : undefined
+      entry.source ? { source: entry.source } : undefined,
     );
   }
 
@@ -77,22 +77,31 @@ function log(level: LogLevel, message: string, source?: string, data?: any): voi
     message,
     source,
     data,
-    environment: environment()
+    environment: environment(),
   });
 }
 
 export const logger = {
-  error: (message: string, source?: string, data?: any) => log(LogLevel.ERROR, message, source, data),
+  error: (message: string, source?: string, data?: any) =>
+    log(LogLevel.ERROR, message, source, data),
   warn: (message: string, source?: string, data?: any) => log(LogLevel.WARN, message, source, data),
   info: (message: string, source?: string, data?: any) => log(LogLevel.INFO, message, source, data),
-  debug: (message: string, source?: string, data?: any) => log(LogLevel.DEBUG, message, source, data),
-  trace: (message: string, source?: string, data?: any) => log(LogLevel.DEBUG, message, source, data),
+  debug: (message: string, source?: string, data?: any) =>
+    log(LogLevel.DEBUG, message, source, data),
+  trace: (message: string, source?: string, data?: any) =>
+    log(LogLevel.DEBUG, message, source, data),
 
   logHttpRequest(method: string, url: string, source?: string): void {
     this.debug(`HTTP ${method} ${url}`, source || 'HttpClient');
   },
 
-  logHttpResponse(method: string, url: string, status: number, duration?: number, source?: string): void {
+  logHttpResponse(
+    method: string,
+    url: string,
+    status: number,
+    duration?: number,
+    source?: string,
+  ): void {
     let message = `HTTP ${method} ${url} ${status}`;
     if (duration && shouldLog(LogLevel.DEBUG)) {
       message += ` (${duration}ms)`;
@@ -109,5 +118,5 @@ export const logger = {
     const status = error.status || 'Unknown';
     const message = error.message || error.statusText || 'HTTP Error';
     this.error(`HTTP ${method} ${url} ${status}: ${message}`, source || 'HttpClient', error);
-  }
+  },
 };

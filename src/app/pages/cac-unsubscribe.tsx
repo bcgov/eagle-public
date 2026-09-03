@@ -11,7 +11,9 @@ import { useOperationLoading } from 'app/state/loading-state';
  */
 function readUnsubscribeParams(pathname: string, search: string): URLSearchParams {
   const segment = decodeURIComponent(pathname.split('/').pop() ?? '');
-  const matrix = segment.includes(';') ? segment.slice(segment.indexOf(';') + 1).replace(/;/g, '&') : '';
+  const matrix = segment.includes(';')
+    ? segment.slice(segment.indexOf(';') + 1).replace(/;/g, '&')
+    : '';
   return new URLSearchParams(`${matrix}&${search.replace(/^\?/, '')}`);
 }
 
@@ -33,11 +35,11 @@ export function CacUnsubscribe() {
   function unsubscribe() {
     projectApi
       .cacRemoveMember(projectId, { email: emailInput, projId: projectId })
-      .then(res => {
+      .then((res) => {
         logger.info('Successfully unsubscribed from CAC', 'CacUnsubscribe', res);
         setSuccess(true);
       })
-      .catch(error => {
+      .catch((error) => {
         logger.error('Error unsubscribing from CAC', 'CacUnsubscribe', error);
         alert('Uh-oh, error submitting information');
       });
@@ -50,7 +52,9 @@ export function CacUnsubscribe() {
           <div className="container-inner">
             <div className="hero-banner__content">
               <h1>Unsubcribe from Community Advisory Committee</h1>
-              <p>Please confirm the email you used to sign up to the Community Advisory Committee.</p>
+              <p>
+                Please confirm the email you used to sign up to the Community Advisory Committee.
+              </p>
             </div>
           </div>
         </div>
@@ -67,7 +71,7 @@ export function CacUnsubscribe() {
           {!success && (
             <div className="row">
               <main className="m-5">
-                <form onSubmit={event => event.preventDefault()}>
+                <form onSubmit={(event) => event.preventDefault()}>
                   <div className="form-group">
                     <span className="control-label">Project</span>
                     <div className="form-control-container">
@@ -75,7 +79,9 @@ export function CacUnsubscribe() {
                     </div>
                   </div>
                   <div className="form-group">
-                    <label htmlFor="emailInput" className="control-label">Email Address</label>
+                    <label htmlFor="emailInput" className="control-label">
+                      Email Address
+                    </label>
                     <input
                       readOnly
                       required
@@ -84,9 +90,13 @@ export function CacUnsubscribe() {
                       name="emailInput"
                       id="emailInput"
                       value={emailInput}
-                      onChange={event => setEmailInput(event.target.value)}
+                      onChange={(event) => setEmailInput(event.target.value)}
                     />
-                    <button className="btn content-btn-dark mt-2 me-2" type="button" onClick={unsubscribe}>
+                    <button
+                      className="btn content-btn-dark mt-2 me-2"
+                      type="button"
+                      onClick={unsubscribe}
+                    >
                       <span>Unsubscribe</span>
                     </button>
                     <button className="btn content-btn-dark mt-2 " type="button" onClick={cancel}>
@@ -94,7 +104,10 @@ export function CacUnsubscribe() {
                     </button>
                   </div>
                   <div className="form-group">
-                    <p>If you are experiencing any issues with unsubscribing please send an email to <a href="mailto:EAO.EPICsystem@gov.bc.ca">EAO.EPICsystem@gov.bc.ca</a></p>
+                    <p>
+                      If you are experiencing any issues with unsubscribing please send an email to{' '}
+                      <a href="mailto:EAO.EPICsystem@gov.bc.ca">EAO.EPICsystem@gov.bc.ca</a>
+                    </p>
                   </div>
                 </form>
               </main>
@@ -103,9 +116,13 @@ export function CacUnsubscribe() {
 
           {success && (
             <div className="row">
-              <p>You have been unsubscribed successfully.  Click <button className="btn content-btn-dark" type="button" onClick={cancel}>
-                <span>here</span>
-              </button> to go back to the homepage.</p>
+              <p>
+                You have been unsubscribed successfully. Click{' '}
+                <button className="btn content-btn-dark" type="button" onClick={cancel}>
+                  <span>here</span>
+                </button>{' '}
+                to go back to the homepage.
+              </p>
             </div>
           )}
         </div>

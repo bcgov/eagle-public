@@ -40,7 +40,7 @@ export function tableSearchParams(id: string, config: TableQueryConfig): SearchP
     config.secondarySort ?? '',
     config.filters ?? {},
     config.projectLegislation ?? '',
-    config.fuzzy ?? false
+    config.fuzzy ?? false,
   );
 }
 
@@ -55,13 +55,13 @@ export function useTable(id: string, config: TableQueryConfig): TableResult {
   const query = useQuery({
     queryKey: ['table', id, params],
     enabled,
-    queryFn: () => fetchData(tableSearchParams(id, params))
+    queryFn: () => fetchData(tableSearchParams(id, params)),
   });
 
   // SearchResults defaults `data` to 0, not [], when the response carried no results.
   return {
     data: Array.isArray(query.data?.data) ? query.data.data : [],
     totalListItems: query.data?.totalSearchCount ?? 0,
-    loading: query.isFetching
+    loading: query.isFetching,
   };
 }

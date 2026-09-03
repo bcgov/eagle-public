@@ -17,7 +17,6 @@
  */
 export function sanitizeWordHtml(html: string): string {
   if (!html) return '';
-  
 
   let clean = html;
 

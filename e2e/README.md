@@ -1,24 +1,45 @@
 # EPIC public site parity tests
 
-Playwright suite that pins the behaviour of the live public EPIC site so the React rewrite can be
-checked against it. The tests talk to a deployed environment over HTTPS. They do not build or serve
-this repo, and nothing here imports application code.
+Playwright suite that pins the behaviour of the public EPIC site. It runs against a local
+production build or against a deployed environment. Nothing here imports application code.
 
 ## Run
 
+Against the local build, which is what CI does:
+
 ```bash
+yarn build                                                    # from the repo root
 cd e2e
 yarn install                                                  # first time only
+BASE_URL=http://localhost:4173 yarn test
+```
+
+A `BASE_URL` on port 4173 makes Playwright start the server itself (`webServer` in
+`playwright.config.ts`): `vite preview`, serving `dist/eagle-public/browser` with the dev server's
+proxy rules, so `/api`, `/demi-search`, `/analytics`, `/eagle-search` and `/notify-api` reach the
+same backends as `yarn start`. Build first, or preview has nothing to serve. It reuses a server
+already listening on 4173 unless `CI` is set. Every other `BASE_URL`, a dev server on 4200
+included, is left alone.
+
+Against a deployed environment:
+
+```bash
+cd e2e
 yarn test                                                     # prod (default)
 BASE_URL=https://test.projects.eao.gov.bc.ca yarn test        # test environment
-BASE_URL=http://localhost:4200 yarn test                      # the port under development
-yarn test --grep-invert @data                                 # skip live-data-volume tests
-yarn test tests/search.spec.ts                                # one file
+BASE_URL=http://localhost:4200 yarn test                      # a dev server you started
+yarn playwright test --grep-invert @data                      # skip live-data-volume tests
+yarn playwright test tests/search.spec.ts                     # one file
 yarn report                                                   # open the HTML report
 ```
 
-`yarn test` runs only when `BASE_URL` is set, so the pre-push verifier never drives production by accident; `yarn playwright test` on its own defaults to `https://projects.eao.gov.bc.ca`. Browsers come from
+`yarn test` runs only when `BASE_URL` is set, so the pre-push verifier never drives production by
+accident; it also forwards no arguments, so pass extra flags to `yarn playwright test`.
+`yarn playwright test` on its own defaults to `https://projects.eao.gov.bc.ca`. Browsers come from
 `/root/.cache/ms-playwright`; no download step is needed.
+
+The `e2e` job in `.github/workflows/pr.yaml` runs the local-build path and uploads
+`playwright-report` when it fails.
 
 The **test environment serves every HTML route and `/demi-search` behind HTTP basic auth**
 (`WWW-Authenticate: Basic realm="Restricted Content"`); only `/api/*` is open. Supply the
@@ -84,7 +105,7 @@ contract: keep the hook, or update the test in the same change.
 
 | Hook | Where | Used for |
 |---|---|---|
-| `#table-template-page-count-display` | every table page | "Showing 10 of 348 results" |
+| `#table-template-page-count-display` | plain table pages | "Showing 10 of 348 results" |
 | `#tableTop` | home | recent activity table |
 | `#applist-panel` | map page | the panel beside the map |
 | `#applist-list` | map page | project list inside the panel |
@@ -97,6 +118,7 @@ contract: keep the hook, or update the test in the same change.
 
 | Hook | Where | Used for |
 |---|---|---|
+| `.table-header-bar__count` | selectable table pages | the same line, moved into the bulk-download bar |
 | `.sheet-handle`, `.app-list[data-state]` | map page, mobile | bottom sheet and its height |
 | `.maplibregl-canvas` | map | the WebGL canvas MapLibre draws into |
 | `.map-info` | map | the selected project's card, bottom-left of the map (desktop only) |
@@ -237,7 +259,8 @@ flag.
 ## Tags
 
 `@data` marks tests whose assertions depend on live data volume (result counts falling when a filter
-is applied, a keyword returning hits). Deselect with `yarn test --grep-invert @data`.
+is applied, a keyword returning hits). Deselect with `yarn playwright test --grep-invert @data`
+(the `test` script does not pass arguments through).
 
 ## Files
 
@@ -248,7 +271,7 @@ is applied, a keyword returning hits). Deselect with `yarn test --grep-invert @d
 | `tests/projects-list.spec.ts` | 5 | table, sort, pagination, keyword filter, deep link |
 | `tests/projects-map.spec.ts` | 6 | map and clusters, inline filters panel, filter, pin card, list-card card, basemap switch |
 | `tests/search.spec.ts` | 6 | table, keyword, milestone facet, pagination, deep link, row links |
-| `tests/project-detail.spec.ts` | 10 | tab strip and all 7 child routes, download link shape |
+| `tests/project-detail.spec.ts` | 11 | tab strip and all 7 child routes, download link shape |
 | `tests/comment-period.spec.ts` | 5 | `/p/../cp/../details`, `/pn/../cp/../details`, closed and open states |
 | `tests/routing.spec.ts` | 6 | 404 fallback, `/p/:id`, `/p/../cp/:id`, `/pn/../cp/:id`, `/search/content`, header nav |
 | `tests/gate.spec.ts` | 3 | the `ACCESS_GATE` curtain: wrong password, right password, focus and label |

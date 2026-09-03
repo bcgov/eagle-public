@@ -12,7 +12,14 @@ function toInputDate(date: Date | null | undefined): string | undefined {
   return date ? date.toISOString().split('T')[0] : undefined;
 }
 
-export function DatePicker({ id, value, minDate, maxDate, isDisabled = false, onChange }: DatePickerProps) {
+export function DatePicker({
+  id,
+  value,
+  minDate,
+  maxDate,
+  isDisabled = false,
+  onChange,
+}: DatePickerProps) {
   return (
     <div className="date-picker-container">
       <div className="date-input-wrapper">
@@ -24,7 +31,7 @@ export function DatePicker({ id, value, minDate, maxDate, isDisabled = false, on
           min={toInputDate(minDate)}
           max={toInputDate(maxDate)}
           disabled={isDisabled}
-          onChange={event => onChange(event.target.value)}
+          onChange={(event) => onChange(event.target.value)}
           aria-label="Date input field"
         />
 

@@ -40,18 +40,21 @@ describe('the curtain', () => {
 
   async function renderShell(env: Record<string, unknown>) {
     await loadWith(env);
-    const [{ routes }, { RouterProvider, createMemoryRouter }, { QueryClient, QueryClientProvider }] =
-      await Promise.all([
-        import('app/routes'),
-        import('react-router'),
-        import('@tanstack/react-query')
-      ]);
+    const [
+      { routes },
+      { RouterProvider, createMemoryRouter },
+      { QueryClient, QueryClientProvider },
+    ] = await Promise.all([
+      import('app/routes'),
+      import('react-router'),
+      import('@tanstack/react-query'),
+    ]);
     const router = createMemoryRouter(routes, { initialEntries: ['/'] });
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(
       <QueryClientProvider client={queryClient}>
         <RouterProvider router={router} />
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
   }
 
@@ -116,7 +119,7 @@ describe('the password form', () => {
     expect(fetchMock).toHaveBeenCalledWith(URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password: 'hunter2' })
+      body: JSON.stringify({ password: 'hunter2' }),
     });
     expect(error()).toBe(null);
     expect(localStorage.getItem('eagle-gate')).toBe('1');
@@ -145,7 +148,11 @@ describe('the password form', () => {
 
   it('disables the button while the check is in flight', async () => {
     let release: (response: Response) => void = () => undefined;
-    fetchMock.mockReturnValue(new Promise<Response>(resolve => { release = resolve; }));
+    fetchMock.mockReturnValue(
+      new Promise<Response>((resolve) => {
+        release = resolve;
+      }),
+    );
     await renderGate();
 
     await submit('hunter2');

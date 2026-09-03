@@ -6,12 +6,12 @@ import './subscribe-popover.css';
 const COPY = {
   project: {
     invite: 'Get an email when this project publishes an Update.',
-    heading: 'Email updates for this project'
+    heading: 'Email updates for this project',
   },
   all: {
     invite: 'Get an email when any project publishes an Update.',
-    heading: 'Email updates for every project'
-  }
+    heading: 'Email updates for every project',
+  },
 } as const;
 
 const FAILED = 'We could not reach the subscription service. Try again in a minute.';
@@ -90,14 +90,19 @@ export function SubscribePopover({ serviceName, variant }: SubscribePopoverProps
     setFieldError('');
     setStatus('sending');
     const form = event.currentTarget;
-    const announcements = (form.elements.namedItem('announcements') as HTMLInputElement | null)?.checked;
+    const announcements = (form.elements.namedItem('announcements') as HTMLInputElement | null)
+      ?.checked;
 
     try {
       const response = await fetch(`${getNotifyApi()}/api/subscriptions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ address: value, serviceName, ...(announcements ? { announcements: true } : {}) }),
-        signal: AbortSignal.timeout(10000)
+        body: JSON.stringify({
+          address: value,
+          serviceName,
+          ...(announcements ? { announcements: true } : {}),
+        }),
+        signal: AbortSignal.timeout(10000),
       });
 
       if (response.status === 202) {
@@ -153,9 +158,9 @@ export function SubscribePopover({ serviceName, variant }: SubscribePopoverProps
           {copy.heading}
         </h2>
         <p className="subscribe-popover__privacy">
-          Your personal information is collected by the Environmental Assessment Office under section 26(c) of
-          the Freedom of Information and Protection of Privacy Act to send you the updates you asked for. Every
-          email includes an unsubscribe link. Questions:{' '}
+          Your personal information is collected by the Environmental Assessment Office under
+          section 26(c) of the Freedom of Information and Protection of Privacy Act to send you the
+          updates you asked for. Every email includes an unsubscribe link. Questions:{' '}
           <a href="mailto:EAO.EPICsystem@gov.bc.ca">EAO.EPICsystem@gov.bc.ca</a>
         </p>
         <button
@@ -165,7 +170,9 @@ export function SubscribePopover({ serviceName, variant }: SubscribePopoverProps
           popoverTargetAction="hide"
           aria-label="Close"
         >
-          <i className="material-icons" aria-hidden="true">close</i>
+          <i className="material-icons" aria-hidden="true">
+            close
+          </i>
         </button>
 
         {status === 'sent' ? (
@@ -178,7 +185,8 @@ export function SubscribePopover({ serviceName, variant }: SubscribePopoverProps
               Check your email.
             </p>
             <p className="subscribe-popover__body">
-              We sent a confirmation link to <strong>{address}</strong>. Nothing is sent until you click it.
+              We sent a confirmation link to <strong>{address}</strong>. Nothing is sent until you
+              click it.
             </p>
           </div>
         ) : (

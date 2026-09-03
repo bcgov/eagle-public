@@ -15,12 +15,14 @@ export function createStore<T>(initial: T): Store<T> {
     set(next: T) {
       if (Object.is(next, value)) return;
       value = next;
-      listeners.forEach(listener => listener());
+      listeners.forEach((listener) => listener());
     },
     subscribe(listener: () => void) {
       listeners.add(listener);
-      return () => { listeners.delete(listener); };
-    }
+      return () => {
+        listeners.delete(listener);
+      };
+    },
   };
 }
 

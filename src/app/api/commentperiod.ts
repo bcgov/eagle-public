@@ -13,11 +13,13 @@ const commentPeriodStatuses: Record<string, string> = {
   [NOT_STARTED]: 'Commenting Not Started',
   [NOT_OPEN]: 'Not Open For Commenting',
   [CLOSED]: 'Commenting Closed',
-  [OPEN]: 'Commenting Open'
+  [OPEN]: 'Commenting Open',
 };
 
 // get all comment periods for the specified application id
-export async function getAllByProjectId(projId: string): Promise<{ totalCount: number; data: CommentPeriod[] } | CommentPeriod[] | object> {
+export async function getAllByProjectId(
+  projId: string,
+): Promise<{ totalCount: number; data: CommentPeriod[] } | CommentPeriod[] | object> {
   const loadingId = `commentperiods-${projId}`;
   startLoading(loadingId, 'Loading comment periods');
   try {
@@ -50,7 +52,7 @@ export async function getById(periodId: string): Promise<CommentPeriod> {
 
 // returns first period - multiple comment periods are currently not supported
 export function getCurrent(periods: CommentPeriod[]): CommentPeriod | null {
-  return (periods.length > 0) ? periods[0] : null;
+  return periods.length > 0 ? periods[0] : null;
 }
 
 /** Given a comment period, returns status abbreviation. */
@@ -59,10 +61,14 @@ export function getStatusCode(commentPeriod: CommentPeriod): string {
     return NOT_OPEN;
   }
   switch (commentPeriod.commentPeriodStatus) {
-    case 'Open':    return OPEN;
-    case 'Upcoming': return NOT_STARTED;
-    case 'Closed':  return CLOSED;
-    default:        return NOT_OPEN;
+    case 'Open':
+      return OPEN;
+    case 'Upcoming':
+      return NOT_STARTED;
+    case 'Closed':
+      return CLOSED;
+    default:
+      return NOT_OPEN;
   }
 }
 

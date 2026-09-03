@@ -20,7 +20,7 @@ export function DocSearchTableRow({ rowData, tableData }: TableRowProps) {
           href={documentDownloadUrl(rowData)}
           target="_blank"
           rel="noopener noreferrer"
-          onClick={event => {
+          onClick={(event) => {
             event.preventDefault();
             openDocumentDownload(rowData);
           }}
@@ -30,7 +30,10 @@ export function DocSearchTableRow({ rowData, tableData }: TableRowProps) {
       </td>
 
       <td data-label="ProjectName" className="col-2">
-        <Link aria-label={`Link to project ${rowData.project.name}`} to={`/p/${rowData.project._id}/project-details`}>
+        <Link
+          aria-label={`Link to project ${rowData.project.name}`}
+          to={`/p/${rowData.project._id}/project-details`}
+        >
           {rowData.project.name}
         </Link>
       </td>

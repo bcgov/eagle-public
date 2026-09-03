@@ -29,7 +29,10 @@ describe('bulk download requests', () => {
   }
 
   it('posts the document ids as JSON to the search base path', async () => {
-    respondWith({ id: 'job-1', status: 'queued', documentCount: 2, estimatedPartCount: 1, statusUrl: '/x' }, 202);
+    respondWith(
+      { id: 'job-1', status: 'queued', documentCount: 2, estimatedPartCount: 1, statusUrl: '/x' },
+      202,
+    );
 
     const accepted = await createBulkDownload(['doc-a', 'doc-b']);
 
@@ -68,13 +71,19 @@ describe('bulk download requests', () => {
   it('rejects when the cancel route is not there yet, so the caller can log it and move on', async () => {
     respondWith({ error: 'not found' }, 404);
 
-    await expect(cancelBulkDownload('job-1')).rejects.toMatchObject({ name: 'ApiError', status: 404 });
+    await expect(cancelBulkDownload('job-1')).rejects.toMatchObject({
+      name: 'ApiError',
+      status: 404,
+    });
   });
 
   it('rejects with the 429 status when the caller is over the in-flight cap', async () => {
     respondWith({ error: 'too many' }, 429);
 
-    await expect(createBulkDownload(['doc-a', 'doc-b'])).rejects.toMatchObject({ name: 'ApiError', status: 429 });
+    await expect(createBulkDownload(['doc-a', 'doc-b'])).rejects.toMatchObject({
+      name: 'ApiError',
+      status: 429,
+    });
   });
 
   it('rejects with the 503 status when demi-api is unavailable', async () => {

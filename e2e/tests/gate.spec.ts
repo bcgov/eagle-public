@@ -5,7 +5,7 @@ import { test, expect } from '@playwright/test';
  * the curtain is actually rendered. Needs GATE_PASSWORD; skipped when the environment under test
  * has ACCESS_GATE off.
  */
-const PASSWORD = process.env.GATE_PASSWORD;
+const PASSWORD = process.env['GATE_PASSWORD'];
 
 async function gateIsOn(request: import('@playwright/test').APIRequestContext): Promise<boolean> {
   const r = await request.get('/api/config');
@@ -53,9 +53,7 @@ test.describe('access gate', () => {
       'EPIC is not open to the public yet',
     );
     // The flag is remembered in localStorage, so a reload does not re-ask.
-    expect(
-      await page.evaluate(() => localStorage.getItem('eagle-gate')),
-    ).toBe('1');
+    expect(await page.evaluate(() => localStorage.getItem('eagle-gate'))).toBe('1');
     await page.reload();
     await expect(page.locator('#gate-password')).toHaveCount(0);
   });

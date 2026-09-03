@@ -1,4 +1,8 @@
-import { FilterObject, FilterType, MultiSelectDefinition } from 'app/components/filters/filter-object';
+import {
+  FilterObject,
+  FilterType,
+  MultiSelectDefinition,
+} from 'app/components/filters/filter-object';
 import type { TableListConfig } from 'app/components/table/table-list';
 import type { IColumnObject } from 'app/components/table/table-object';
 import { Constants } from 'app/utils/constants';
@@ -7,7 +11,7 @@ import { ProjectNotificationsTableRow } from './project-notifications-table-rows
 export const PROJECT_NOTIFICATIONS_TABLE_ID = 'notificationProject';
 
 export const PROJECT_NOTIFICATIONS_TABLE_COLUMNS: IColumnObject[] = [
-  { name: 'Project Notifications', value: '', width: 'col-12', nosort: true }
+  { name: 'Project Notifications', value: '', width: 'col-12', nosort: true },
 ];
 
 export const FILTER_LIST = ['type', 'region', 'pcp', 'decision'];
@@ -17,19 +21,23 @@ const FILTER_CONFIGS = [
   { id: 'type', label: 'Project Type', options: Constants.TEMPORARY_PROJECT_TYPE },
   { id: 'region', label: 'Region', options: Constants.REGIONS_COLLECTION },
   { id: 'pcp', label: 'Public Comment Period', options: Constants.PCP_COLLECTION },
-  { id: 'decision', label: 'Notification Decision', options: Constants.PROJECT_NOTIFICATION_DECISIONS }
+  {
+    id: 'decision',
+    label: 'Notification Decision',
+    options: Constants.PROJECT_NOTIFICATION_DECISIONS,
+  },
 ];
 
 /** Static filters — every option is a constant, so they never wait on a request. */
 export const PROJECT_NOTIFICATIONS_FILTERS: FilterObject[] = FILTER_CONFIGS.map(
-  config =>
+  (config) =>
     new FilterObject(
       config.id,
       FilterType.MultiSelect,
       config.label,
       new MultiSelectDefinition(config.options, [], null, null, true),
-      4
-    )
+      4,
+    ),
 );
 
 export const projectNotificationsConfig: TableListConfig = {
@@ -48,9 +56,9 @@ export const projectNotificationsConfig: TableListConfig = {
         href: 'https://www2.gov.bc.ca/gov/content/environment/natural-resource-stewardship/environmental-assessments/environmental-assessment-process/project-notifications',
         target: '_blank',
         rel: 'noopener',
-        title: 'Learn more about Project Notifications'
-      }
-    ]
+        title: 'Learn more about Project Notifications',
+      },
+    ],
   },
   tableColumns: PROJECT_NOTIFICATIONS_TABLE_COLUMNS,
   tableRowComponent: ProjectNotificationsTableRow,
@@ -59,6 +67,6 @@ export const projectNotificationsConfig: TableListConfig = {
   filters: PROJECT_NOTIFICATIONS_FILTERS,
   tableOptions: {
     disableRowHighlight: true,
-    showHeader: false
-  }
+    showHeader: false,
+  },
 };

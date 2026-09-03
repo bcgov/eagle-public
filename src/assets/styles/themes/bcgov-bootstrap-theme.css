@@ -23,173 +23,179 @@
   /* ========================================
      BC GOV COLOR SYSTEM
      ======================================== */
-  
+
   /* Primary BC Gov Colors */
-  --bc-blue: #003366;           /* BC Gov official blue - headers, branding */
+  --bc-blue: #003366; /* BC Gov official blue - headers, branding */
   --bc-blue-interactive: #38598a; /* Interactive elements - buttons, links */
-  --bc-blue-light: #5091cd;     /* Lighter blue for hover states */
-  --bc-blue-dark: #002663;      /* Darker blue for depth */
-  --bc-gold: #fcba19;           /* BC Gold - accent color */
-  
+  --bc-blue-light: #5091cd; /* Lighter blue for hover states */
+  --bc-blue-dark: #002663; /* Darker blue for depth */
+  --bc-gold: #fcba19; /* BC Gold - accent color */
+
   /* Neutrals */
-  --bc-gray: #494949;           /* Body text */
-  --bc-gray-medium: #666;       /* Secondary text */
-  --bc-gray-light: #f7f8fa;     /* Light backgrounds */
-  --bc-gray-border: #ced4da;    /* Borders - darker for better visibility */
-  --bc-gray-hover: #d8dce0;     /* Hover backgrounds - darker for visibility */
-  
+  --bc-gray: #494949; /* Body text */
+  --bc-gray-medium: #666; /* Secondary text */
+  --bc-gray-light: #f7f8fa; /* Light backgrounds */
+  --bc-gray-border: #ced4da; /* Borders - darker for better visibility */
+  --bc-gray-hover: #d8dce0; /* Hover backgrounds - darker for visibility */
+
   /* Status Colors */
-  --bc-success: #2e8540;        /* Success/active states */
-  --bc-danger: #d8292f;         /* Error/danger states */
-  --bc-info: #269abc;           /* Informational states */
-  
+  --bc-success: #2e8540; /* Success/active states */
+  --bc-danger: #d8292f; /* Error/danger states */
+  --bc-info: #269abc; /* Informational states */
+
   /* UI Colors */
   --bc-hover-highlight: #e2f1ff; /* Light blue highlight on hover */
-  --bc-white: #ffffff;          /* Pure white */
-  --bc-black: #000000;          /* Pure black */
-  
+  --bc-white: #ffffff; /* Pure white */
+  --bc-black: #000000; /* Pure black */
+
   /* ========================================
      BOOTSTRAP SEMANTIC COLOR MAPPING
      ======================================== */
-  
+
   /* Map BC Gov colors to Bootstrap semantic colors */
   --bs-primary: var(--bc-blue-interactive);
   --bs-primary-rgb: 56, 89, 138;
   --bs-primary-text-emphasis: #1c2c45;
   --bs-primary-bg-subtle: #d9e1ea;
   --bs-primary-border-subtle: #b3c3d5;
-  
+
   --bs-secondary: var(--bc-blue);
   --bs-secondary-rgb: 0, 51, 102;
   --bs-secondary-text-emphasis: #001a33;
   --bs-secondary-bg-subtle: #ccd6e0;
   --bs-secondary-border-subtle: #99adc2;
-  
+
   --bs-warning: var(--bc-gold);
   --bs-warning-rgb: 252, 186, 25;
   --bs-warning-text-emphasis: #7e5d0d;
   --bs-warning-bg-subtle: #fef3d9;
   --bs-warning-border-subtle: #fde7b3;
-  
+
   --bs-light: var(--bc-gray-light);
   --bs-light-rgb: 247, 248, 250;
   --bs-light-text-emphasis: var(--bc-gray);
   --bs-light-bg-subtle: #fcfcfd;
   --bs-light-border-subtle: #e3e4e6;
-  
+
   --bs-dark: var(--bc-blue);
   --bs-dark-rgb: 0, 51, 102;
   --bs-dark-text-emphasis: #1a1a1a;
   --bs-dark-bg-subtle: #ccd6e0;
   --bs-dark-border-subtle: #99adc2;
-  
+
   /* Status colors */
   --bs-success: var(--bc-success);
   --bs-success-rgb: 46, 133, 64;
   --bs-success-text-emphasis: #1a4d24;
   --bs-success-bg-subtle: #d4edda;
   --bs-success-border-subtle: #a9dbb5;
-  
+
   --bs-danger: var(--bc-danger);
   --bs-danger-rgb: 216, 41, 47;
   --bs-danger-text-emphasis: #5c1114;
   --bs-danger-bg-subtle: #f8d7da;
   --bs-danger-border-subtle: #f1aeb5;
-  
+
   --bs-info: var(--bc-info);
   --bs-info-rgb: 38, 154, 188;
   --bs-info-text-emphasis: #0f3d4b;
   --bs-info-bg-subtle: #cff4fc;
   --bs-info-border-subtle: #9eeaf9;
-  
+
   /* ========================================
      TYPOGRAPHY
      ======================================== */
-  
+
   /* Font Family */
-  --bs-font-sans-serif: BCSans, "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --bs-font-sans-serif:
+    BCSans, 'Noto Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue',
+    Arial, sans-serif;
   --bs-body-font-family: var(--bs-font-sans-serif);
   --bs-font-family-base: var(--bs-font-sans-serif);
-  
+
   /* 
    * Typography Scale - Aligned with Bootstrap 5.3 fs-* utilities
    * Use Bootstrap classes when possible: fs-1 through fs-6, fw-normal, fw-semibold, fw-bold
    * These variables are for CSS when utility classes aren't practical
    */
-  
+
   /* Font Sizes - matches Bootstrap fs-1 through fs-6 */
-  --bs-font-size-1: 2.5rem;    /* 40px - Display/h1, use class="fs-1" */
-  --bs-font-size-2: 2rem;      /* 32px - h2, use class="fs-2" */
-  --bs-font-size-3: 1.75rem;   /* 28px - h3, use class="fs-3" */
-  --bs-font-size-4: 1.5rem;    /* 24px - h4, use class="fs-4" */
-  --bs-font-size-5: 1.25rem;   /* 20px - h5, use class="fs-5" */
-  --bs-font-size-6: 1rem;      /* 16px - h6/body, use class="fs-6" */
-  
+  --bs-font-size-1: 2.5rem; /* 40px - Display/h1, use class="fs-1" */
+  --bs-font-size-2: 2rem; /* 32px - h2, use class="fs-2" */
+  --bs-font-size-3: 1.75rem; /* 28px - h3, use class="fs-3" */
+  --bs-font-size-4: 1.5rem; /* 24px - h4, use class="fs-4" */
+  --bs-font-size-5: 1.25rem; /* 20px - h5, use class="fs-5" */
+  --bs-font-size-6: 1rem; /* 16px - h6/body, use class="fs-6" */
+
   /* Extended sizes for smaller text (not in Bootstrap utilities) */
   --bs-font-size-sm: 0.875rem; /* 14px - tables, labels, small text */
-  --bs-font-size-xs: 0.75rem;  /* 12px - captions, badges, fine print */
-  
+  --bs-font-size-xs: 0.75rem; /* 12px - captions, badges, fine print */
+
   /* Font Weights - use Bootstrap classes: fw-normal, fw-medium, fw-semibold, fw-bold */
   --bs-font-weight-normal: 400;
   --bs-font-weight-medium: 500;
   --bs-font-weight-semibold: 600;
   --bs-font-weight-bold: 700;
-  
+
   /* ========================================
      BODY DEFAULTS
      ======================================== */
-  
+
   --bs-body-color: var(--bc-gray);
   --bs-body-color-rgb: 73, 73, 73;
   --bs-body-bg: var(--bc-gray-light);
   --bs-body-bg-rgb: 247, 248, 250;
-  
+
   --bs-secondary-color: var(--bc-gray-medium);
   --bs-secondary-color-rgb: 102, 102, 102;
   --bs-secondary-bg: #e9ecef;
   --bs-secondary-bg-rgb: 233, 236, 239;
-  
+
   --bs-tertiary-color: rgba(73, 73, 73, 0.5);
   --bs-tertiary-color-rgb: 73, 73, 73;
   --bs-tertiary-bg: #f8f9fa;
   --bs-tertiary-bg-rgb: 248, 249, 250;
-  
+
   /* ========================================
      LINKS
      ======================================== */
-  
+
   --bs-link-color: #1a5a96;
   --bs-link-hover-color: var(--bc-blue);
   --bs-link-decoration: none;
-  
+
   /* ========================================
      BORDERS & SHAPES
      ======================================== */
-  
+
   --bs-border-color: var(--bc-gray-border);
   --bs-border-color-translucent: rgba(221, 221, 221, 0.5);
   --bs-border-radius: 0.25rem;
   --bs-border-radius-sm: 0.2rem;
   --bs-border-radius-lg: 0.3rem;
-  
+
   /* ========================================
      TRANSITIONS
      ======================================== */
-  
-  --bs-transition: color 0.2s ease-in-out, background-color 0.2s ease-in-out, border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-  
+
+  --bs-transition:
+    color 0.2s ease-in-out, background-color 0.2s ease-in-out, border-color 0.2s ease-in-out,
+    box-shadow 0.2s ease-in-out;
+
   /* ========================================
      BUTTONS
      ======================================== */
-  
+
   --bs-btn-border-radius: 0.25rem;
   --bs-btn-font-weight: 600;
-  --bs-btn-transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  --bs-btn-transition:
+    color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out,
+    box-shadow 0.15s ease-in-out;
   --bs-btn-padding-x: 0.75rem;
   --bs-btn-padding-y: 0.375rem;
   --bs-btn-font-size: 0.9375rem;
   --bs-btn-line-height: 1.5;
-  
+
   /* Primary Button States */
   --bs-btn-primary-color: #fff;
   --bs-btn-primary-bg: var(--bc-blue-interactive);
@@ -204,7 +210,7 @@
   --bs-btn-primary-disabled-color: #fff;
   --bs-btn-primary-disabled-bg: #7a8ba8;
   --bs-btn-primary-disabled-border-color: #7a8ba8;
-  
+
   /* Outline Primary Button States */
   --bs-btn-outline-primary-color: var(--bc-blue);
   --bs-btn-outline-primary-border-color: var(--bc-blue);
@@ -216,39 +222,39 @@
   --bs-btn-outline-primary-active-border-color: var(--bc-blue);
   --bs-btn-outline-primary-disabled-color: #99adc2;
   --bs-btn-outline-primary-disabled-border-color: #99adc2;
-  
+
   /* ========================================
      FORMS
      ======================================== */
-  
+
   --bs-form-control-bg: #fff;
   --bs-form-control-border-color: var(--bc-gray-border);
   --bs-form-control-focus-border-color: var(--bc-blue-light);
-  
+
   /* ========================================
      CARDS
      ======================================== */
-  
+
   --bs-card-border-width: 0;
   --bs-card-border-color: transparent;
   --bs-card-cap-bg: var(--bc-blue);
   --bs-card-cap-color: #fff;
-  
+
   /* ========================================
      TABLES
      ======================================== */
-  
-  --bs-table-bg: #E9ECEF;
+
+  --bs-table-bg: #e9ecef;
   --bs-table-striped-bg: #f4f4f4;
   --bs-table-hover-bg: var(--bc-gray-hover);
-  --bs-table-border-color: #CED4DA;
+  --bs-table-border-color: #ced4da;
   --bs-table-head-bg: var(--bc-blue-interactive);
   --bs-table-head-color: #fff;
-  
+
   /* ========================================
      PAGINATION
      ======================================== */
-  
+
   --bc-pagination-bg: #eee;
   --bc-pagination-active-bg: var(--bc-blue-interactive);
   --bc-pagination-active-color: #fff;
@@ -263,7 +269,10 @@
 
 /* Base button transitions */
 .btn {
-  transition: color 0.2s ease-in-out, background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+  transition:
+    color 0.2s ease-in-out,
+    background-color 0.2s ease-in-out,
+    border-color 0.2s ease-in-out;
 }
 
 /* Primary Button - BC Gov Interactive Blue */
@@ -519,7 +528,9 @@ textarea.form-control {
   background-color: var(--bs-form-control-bg);
   border: 1px solid var(--bs-form-control-border-color);
   border-radius: var(--bs-border-radius);
-  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  transition:
+    border-color 0.15s ease-in-out,
+    box-shadow 0.15s ease-in-out;
 }
 
 input.form-control:focus,

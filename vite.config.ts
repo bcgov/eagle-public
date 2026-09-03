@@ -20,7 +20,7 @@ const proxyRule = { target, secure: false, changeOrigin: true };
 export default defineConfig({
   plugins: [react()],
   resolve: {
-    alias: { app: fileURLToPath(new URL('./src/app', import.meta.url)) }
+    alias: { app: fileURLToPath(new URL('./src/app', import.meta.url)) },
   },
   server: {
     allowedHosts: true,
@@ -40,7 +40,7 @@ export default defineConfig({
         target: 'https://notify-api-test.azurewebsites.net',
         secure: false,
         changeOrigin: true,
-        rewrite: (path: string) => path.replace(/^\/notify-api/, '')
+        rewrite: (path: string) => path.replace(/^\/notify-api/, ''),
       },
       // `/demi-search` is what test's /api/config returns today, and it does NOT follow
       // API_LOCATION: test's rproxy answers that location with `401 WWW-Authenticate: Basic`
@@ -57,9 +57,9 @@ export default defineConfig({
             changeOrigin: true,
             // The base path is `/demi-search` because nginx supplies the `/api`. Nothing supplies
             // it here.
-            rewrite: (path: string) => path.replace(/^\/demi-search/, '/api')
-          }
-    }
+            rewrite: (path: string) => path.replace(/^\/demi-search/, '/api'),
+          },
+    },
   },
   build: {
     // Both the output directory and the `main-[hash].js` entry name are grepped by
@@ -72,9 +72,9 @@ export default defineConfig({
         // `assets/` with `no-cache` (that directory holds the unhashed fonts, images and
         // stylesheets copied from `public/`) and caches only root-level hashed files.
         chunkFileNames: '[name]-[hash].js',
-        assetFileNames: '[name]-[hash][extname]'
-      }
-    }
+        assetFileNames: '[name]-[hash][extname]',
+      },
+    },
   },
   test: {
     globals: true,
@@ -84,7 +84,7 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
-      exclude: ['node_modules/', 'src/test-setup.ts', '**/*.d.ts', '**/*.config.*', 'src/main.tsx']
-    }
-  }
+      exclude: ['node_modules/', 'src/test-setup.ts', '**/*.d.ts', '**/*.config.*', 'src/main.tsx'],
+    },
+  },
 });

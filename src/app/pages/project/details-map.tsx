@@ -37,7 +37,7 @@ export function DetailsMap({ project }: DetailsMapProps) {
             mapRef.current?.flyTo({
               center: [centroid[0], centroid[1]],
               zoom: MARKER_ZOOM,
-              ...flyOptions()
+              ...flyOptions(),
             })
           }
           trackContext={{ project_id: project._id, project_name: project.name }}
@@ -50,7 +50,7 @@ export function DetailsMap({ project }: DetailsMapProps) {
             track('Map Marker Clicked', {
               project_id: project._id,
               project_name: project.name,
-              map_zoom_level: mapRef.current?.getZoom()
+              map_zoom_level: mapRef.current?.getZoom(),
             })
           }
         >

@@ -13,11 +13,26 @@ let cachedCount: number | null = null;
 let countRequest: Promise<number> | null = null;
 
 // get just the projects (for fast mapping)
-export async function getAll(pageNum = 0, pageSize = 1000000): Promise<{ totalCount: number; data: Project[] }> {
+export async function getAll(
+  pageNum = 0,
+  pageSize = 1000000,
+): Promise<{ totalCount: number; data: Project[] }> {
   const loadingId = `projects-page-${pageNum}`;
   startLoading(loadingId, 'Loading projects');
   try {
-    const res = await search.getSearchResults('', 'Project', [], pageNum, pageSize, '', {}, true, '', {}, '') as ISearchResults<Project>[] | null;
+    const res = (await search.getSearchResults(
+      '',
+      'Project',
+      [],
+      pageNum,
+      pageSize,
+      '',
+      {},
+      true,
+      '',
+      {},
+      '',
+    )) as ISearchResults<Project>[] | null;
     // WHY: search.getSearchResults collapses ANY failed request into a single `null`, not an
     // array, and demi-api - the incoming search backend - answers non-2xx when a search fails
     // rather than 200-with-an-empty-result-set. So on a failed search `res` is null here, and on
@@ -27,10 +42,15 @@ export async function getAll(pageNum = 0, pageSize = 1000000): Promise<{ totalCo
     // page. Degrade to an empty result set instead; the list then renders "No projects found".
     const results = extractFromSearchResults(res as ISearchResults<Project>[]);
     if (!results) {
-      logger.error('Project search returned no usable results, showing an empty list', 'project', { res });
+      logger.error('Project search returned no usable results, showing an empty list', 'project', {
+        res,
+      });
     }
-    const projectList = (results ?? []).map(project => new Project(project));
-    return { totalCount: (res?.[0]?.data?.meta?.[0]?.searchResultsTotal as number) ?? 0, data: projectList };
+    const projectList = (results ?? []).map((project) => new Project(project));
+    return {
+      totalCount: (res?.[0]?.data?.meta?.[0]?.searchResultsTotal as number) ?? 0,
+      data: projectList,
+    };
   } finally {
     stopLoading(loadingId);
   }
@@ -47,8 +67,9 @@ export async function getCount(): Promise<number> {
 
   const loadingId = 'projects-count';
   startLoading(loadingId, 'Counting projects');
-  countRequest = api.getCountProjects()
-    .then(count => {
+  countRequest = api
+    .getCountProjects()
+    .then((count) => {
       cachedCount = count;
       return count;
     })
@@ -69,7 +90,12 @@ export async function getAllFull(pageNum = 0, pageSize = 1000000): Promise<Proje
 }
 
 // get a specific project by its id
-export async function getById(projId: string, _forceReload = false, cpStart: string | null = null, cpEnd: string | null = null): Promise<Project> {
+export async function getById(
+  projId: string,
+  _forceReload = false,
+  cpStart: string | null = null,
+  cpEnd: string | null = null,
+): Promise<Project> {
   const loadingId = `project-${projId}`;
   startLoading(loadingId, 'Loading project');
   try {
@@ -79,19 +105,30 @@ export async function getById(projId: string, _forceReload = false, cpStart: str
     // than a past comment period
     if (projects && projects.length > 0 && projects[0]) {
       if (projects[0].commentPeriodForBanner && projects[0].commentPeriodForBanner.length === 1) {
-        projects[0].commentPeriodForBanner = new CommentPeriod(projects[0].commentPeriodForBanner[0]);
-      } else if (projects[0].commentPeriodForBanner && projects[0].commentPeriodForBanner.length > 1) {
-        const now = new Date
+        projects[0].commentPeriodForBanner = new CommentPeriod(
+          projects[0].commentPeriodForBanner[0],
+        );
+      } else if (
+        projects[0].commentPeriodForBanner &&
+        projects[0].commentPeriodForBanner.length > 1
+      ) {
+        const now = new Date();
         const currentDate = now.toISOString();
         // Default to the same comment period we're using currently in case one is not active
         let finalCommentPeriod = new CommentPeriod(projects[0].commentPeriodForBanner[0]);
         for (const commentPeriod in projects[0].commentPeriodForBanner) {
-          if (Date.parse(projects[0].commentPeriodForBanner[commentPeriod].dateCompleted) > Date.parse(currentDate)
-            && Date.parse(projects[0].commentPeriodForBanner[commentPeriod].dateStarted) < Date.parse(currentDate)) {
-            finalCommentPeriod = new CommentPeriod(projects[0].commentPeriodForBanner[commentPeriod]);
+          if (
+            Date.parse(projects[0].commentPeriodForBanner[commentPeriod].dateCompleted) >
+              Date.parse(currentDate) &&
+            Date.parse(projects[0].commentPeriodForBanner[commentPeriod].dateStarted) <
+              Date.parse(currentDate)
+          ) {
+            finalCommentPeriod = new CommentPeriod(
+              projects[0].commentPeriodForBanner[commentPeriod],
+            );
           }
         }
-        projects[0].commentPeriodForBanner = finalCommentPeriod
+        projects[0].commentPeriodForBanner = finalCommentPeriod;
       } else {
         projects[0].commentPeriodForBanner = null;
       }
@@ -109,11 +146,21 @@ export async function getById(projId: string, _forceReload = false, cpStart: str
   }
 }
 
-export async function getPins(proj: string, pageNum: number, pageSize: number, sortBy: any): Promise<DataQueryResponse<Org>[]> {
+export async function getPins(
+  proj: string,
+  pageNum: number,
+  pageSize: number,
+  sortBy: any,
+): Promise<DataQueryResponse<Org>[]> {
   const loadingId = `project-pins-${proj}-page-${pageNum}`;
   startLoading(loadingId, 'Loading pins');
   try {
-    return await api.getProjectPins(proj, pageNum, pageSize, sortBy) as unknown as DataQueryResponse<Org>[];
+    return (await api.getProjectPins(
+      proj,
+      pageNum,
+      pageSize,
+      sortBy,
+    )) as unknown as DataQueryResponse<Org>[];
   } finally {
     stopLoading(loadingId);
   }

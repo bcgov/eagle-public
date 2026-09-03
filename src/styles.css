@@ -3,29 +3,29 @@
 /* === ALL @import RULES MUST COME FIRST === */
 
 /* BCSans Font */
-@import url("./assets/fonts/BCSans.css");
+@import url('./assets/fonts/BCSans.css');
 
 /* BC Gov Bootstrap Theme - Reusable across projects */
-@import url("./assets/styles/themes/bcgov-bootstrap-theme.css");
+@import url('./assets/styles/themes/bcgov-bootstrap-theme.css');
 
 /* EAGLE Project-Specific Overrides */
-@import url("./assets/styles/themes/bootstrap-override.css");
+@import url('./assets/styles/themes/bootstrap-override.css');
 
 /* EAGLE Theme Variables */
-@import url("./assets/styles/themes/default.css");
+@import url('./assets/styles/themes/default.css');
 
 /* Base */
-@import url("./assets/styles/base/accessibility.css");
-@import url("./assets/styles/base/typography.css");
-@import url("./assets/styles/base/material-icons.css");
+@import url('./assets/styles/base/accessibility.css');
+@import url('./assets/styles/base/typography.css');
+@import url('./assets/styles/base/material-icons.css');
 
 /* Components */
-@import url("./assets/styles/components/buttons.css");
-@import url("./assets/styles/components/feature-block.css");
-@import url("./assets/styles/components/form-elements.css");
-@import url("./assets/styles/components/tab-nav.css");
-@import url("./assets/styles/components/table.css");
-@import url("./assets/styles/components/skeleton.css");
+@import url('./assets/styles/components/buttons.css');
+@import url('./assets/styles/components/feature-block.css');
+@import url('./assets/styles/components/form-elements.css');
+@import url('./assets/styles/components/tab-nav.css');
+@import url('./assets/styles/components/table.css');
+@import url('./assets/styles/components/skeleton.css');
 
 /* === CSS RULES START HERE === */
 
@@ -34,7 +34,7 @@
   box-sizing: border-box;
 }
 
-html, 
+html,
 body {
   margin: 0;
   padding: 0;

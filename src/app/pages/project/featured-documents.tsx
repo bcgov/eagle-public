@@ -10,7 +10,7 @@ const COLUMNS: IColumnObject[] = [
   { name: 'Date', value: 'datePosted', width: 'col-2', nosort: true },
   { name: 'Type', value: 'type', width: 'col-2', nosort: true },
   { name: 'Milestone', value: 'milestone', width: 'col-2', nosort: true },
-  { name: 'Phase', value: 'projectPhase', width: 'col-2', nosort: true }
+  { name: 'Phase', value: 'projectPhase', width: 'col-2', nosort: true },
 ];
 
 const PAGE_SIZE = 5;
@@ -26,7 +26,7 @@ export function FeaturedDocuments() {
     currentPage: 1,
     pageSize: PAGE_SIZE,
     sortBy: '-datePosted',
-    queryModifiers: { isFeatured: 'true' }
+    queryModifiers: { isFeatured: 'true' },
   });
 
   if (!result.loading && result.totalListItems === 0) {
@@ -41,11 +41,16 @@ export function FeaturedDocuments() {
       currentPage: 1,
       pageSize: PAGE_SIZE,
       sortBy: '-datePosted',
-      items: result.data.map(record => ({ rowData: record })),
+      items: result.data.map((record) => ({ rowData: record })),
       totalListItems: result.totalListItems,
-      data: { lists, showFeatured: true }
+      data: { lists, showFeatured: true },
     }),
-    options: { showHeader: true, showPageCountDisplay: false, showPagination: false, showPageSizePicker: false }
+    options: {
+      showHeader: true,
+      showPageCountDisplay: false,
+      showPagination: false,
+      showPageSizePicker: false,
+    },
   };
 
   return (

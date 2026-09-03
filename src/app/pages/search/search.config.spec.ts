@@ -1,6 +1,11 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { loadConfig } from 'app/config/config';
-import { buildSearchFilters, createSearchConfig, SEARCH_TABS, visibleSearchTabs } from './search.config';
+import {
+  buildSearchFilters,
+  createSearchConfig,
+  SEARCH_TABS,
+  visibleSearchTabs,
+} from './search.config';
 import { FilterType } from 'app/components/filters/filter-object';
 
 const LISTS = [
@@ -8,7 +13,7 @@ const LISTS = [
   { _id: 'a1', name: 'Proponent', type: 'author', legislation: 2018 },
   { _id: 't1', name: 'Letter', type: 'doctype', legislation: 2002 },
   { _id: 'p1', name: 'Pre-Application', type: 'projectPhase', legislation: 2018 },
-  { _id: 'x1', name: 'Skeena', type: 'region', legislation: 2002 }
+  { _id: 'x1', name: 'Skeena', type: 'region', legislation: 2002 },
 ];
 
 describe('visibleSearchTabs', () => {
@@ -39,7 +44,10 @@ describe('createSearchConfig', () => {
   });
 
   it('shows the Document Content tab when the flag is on', async () => {
-    expect((await configWith(true)).tabs?.map(tab => tab.label)).toEqual(['Documents', 'Document Content']);
+    expect((await configWith(true)).tabs?.map((tab) => tab.label)).toEqual([
+      'Documents',
+      'Document Content',
+    ]);
   });
 
   it('hands the lists to the rows so ids render as names', async () => {
@@ -51,12 +59,12 @@ describe('buildSearchFilters', () => {
   const filters = buildSearchFilters(LISTS);
 
   it('builds the date range first, then the four multi-selects', () => {
-    expect(filters.map(filter => filter.id)).toEqual([
+    expect(filters.map((filter) => filter.id)).toEqual([
       'issuedDate',
       'milestone',
       'documentAuthorType',
       'type',
-      'projectPhase'
+      'projectPhase',
     ]);
   });
 
@@ -67,7 +75,8 @@ describe('buildSearchFilters', () => {
   });
 
   it('sorts each List item into the filter its type belongs to', () => {
-    const options = (id: string) => filters.find(filter => filter.id === id)!.filterDefinition.options;
+    const options = (id: string) =>
+      filters.find((filter) => filter.id === id)!.filterDefinition.options;
     expect(options('milestone')).toEqual([LISTS[0]]);
     expect(options('documentAuthorType')).toEqual([LISTS[1]]);
     expect(options('type')).toEqual([LISTS[2]]);

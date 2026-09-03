@@ -26,7 +26,7 @@ export function initAnalytics(config: EnvConfig): void {
     return;
   }
 
-  const debug = config.ANALYTICS_DEBUG ?? (config.ENVIRONMENT !== 'prod');
+  const debug = config.ANALYTICS_DEBUG ?? config.ENVIRONMENT !== 'prod';
   const enhancedTracking = config.ANALYTICS_ENHANCED_TRACKING ?? false;
   const trafficTracking = config.ANALYTICS_TRAFFIC_TRACKING ?? false;
 
@@ -42,7 +42,7 @@ export function initAnalytics(config: EnvConfig): void {
     apiUrl,
     sourceApp: 'eagle-public',
     debug,
-    enhancedTracking
+    enhancedTracking,
   });
   plugins.push(plugin);
 

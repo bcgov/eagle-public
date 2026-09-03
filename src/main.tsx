@@ -21,7 +21,7 @@ try {
     <main className="container py-5">
       <h1>EPIC is temporarily unavailable</h1>
       <p>The site could not load its configuration. Reload the page to try again.</p>
-    </main>
+    </main>,
   );
   throw new Error('config: giving up');
 }
@@ -29,8 +29,8 @@ initAnalytics(getConfig());
 
 // Not awaited: the SDK is a separate chunk and the app must render without it.
 initTelemetry(getConfig().APPINSIGHTS_CONNECTION_STRING, 'eagle-public', [
-  window.location.host
-]).catch(e => logger.error(`telemetry init failed: ${e}`, 'main'));
+  window.location.host,
+]).catch((e) => logger.error(`telemetry init failed: ${e}`, 'main'));
 
 root.render(
   <StrictMode>
@@ -39,5 +39,5 @@ root.render(
         <RouterProvider router={createBrowserRouter(routes)} />
       </QueryClientProvider>
     </ErrorBoundary>
-  </StrictMode>
+  </StrictMode>,
 );

@@ -29,7 +29,9 @@ function leave(type: 'beforeunload' | 'pagehide'): Event {
 
 /** The src of every download iframe currently in the document. */
 function downloadUrls(): string[] {
-  return [...document.body.querySelectorAll('iframe')].map(frame => frame.getAttribute('src') ?? '');
+  return [...document.body.querySelectorAll('iframe')].map(
+    (frame) => frame.getAttribute('src') ?? '',
+  );
 }
 
 /**
@@ -49,9 +51,14 @@ describe('DownloadPanel', () => {
     fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
       if (init?.method === 'POST') return postResponse();
       if (init?.method === 'DELETE') return new Response(null, { status: 204 });
-      if (statusStatus !== 200) return new Response('{}', { status: statusStatus, statusText: 'Nope' });
-      const named = Object.keys(statusByJob).find(id => url.includes(id));
-      const body = named ? statusByJob[named] : statusResponses.length > 1 ? statusResponses.shift() : statusResponses[0];
+      if (statusStatus !== 200)
+        return new Response('{}', { status: statusStatus, statusText: 'Nope' });
+      const named = Object.keys(statusByJob).find((id) => url.includes(id));
+      const body = named
+        ? statusByJob[named]
+        : statusResponses.length > 1
+          ? statusResponses.shift()
+          : statusResponses[0];
       return new Response(JSON.stringify(body), { status: 200 });
     });
     vi.stubGlobal('fetch', fetchMock);
@@ -59,7 +66,7 @@ describe('DownloadPanel', () => {
 
   afterEach(() => {
     window.__env = originalEnv;
-    document.body.querySelectorAll('iframe').forEach(frame => frame.remove());
+    document.body.querySelectorAll('iframe').forEach((frame) => frame.remove());
     vi.useRealTimers();
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
@@ -75,7 +82,7 @@ describe('DownloadPanel', () => {
     const config = await import('app/config/config');
     await config.loadConfig();
     const store = await import('app/state/bulk-download');
-    [...initialJobs].reverse().forEach(job => store.addJob(job));
+    [...initialJobs].reverse().forEach((job) => store.addJob(job));
     const { DownloadPanel } = await import('./download-panel');
 
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -85,8 +92,8 @@ describe('DownloadPanel', () => {
         render(
           <QueryClientProvider client={client}>
             <DownloadPanel />
-          </QueryClientProvider>
-        )
+          </QueryClientProvider>,
+        ),
     };
   }
 
@@ -118,7 +125,9 @@ describe('DownloadPanel', () => {
 
   it('reports progress, then downloads every part of a finished job, one iframe each', async () => {
     postResponse = () =>
-      new Response(JSON.stringify({ id: 'job-1', status: 'queued', documentCount: 2 }), { status: 202 });
+      new Response(JSON.stringify({ id: 'job-1', status: 'queued', documentCount: 2 }), {
+        status: 202,
+      });
     statusResponses = [
       { id: 'job-1', status: 'running', partCount: 2, partsReady: 1 },
       {
@@ -130,9 +139,9 @@ describe('DownloadPanel', () => {
         errorCount: 0,
         parts: [
           { n: 1, fileName: 'documents-1.zip', url: 'https://nrs.example/part1.zip' },
-          { n: 2, fileName: 'documents-2.zip', url: 'https://nrs.example/part2.zip' }
-        ]
-      }
+          { n: 2, fileName: 'documents-2.zip', url: 'https://nrs.example/part2.zip' },
+        ],
+      },
     ];
     const panel = await mount();
     panel.store.setSelected('documents', [ALPHA, BETA]);
@@ -157,7 +166,10 @@ describe('DownloadPanel', () => {
     // The next follows a second later, so the browser asks once to allow multiple downloads.
     await tick(1000);
 
-    expect(downloadUrls()).toEqual(['https://nrs.example/part1.zip', 'https://nrs.example/part2.zip']);
+    expect(downloadUrls()).toEqual([
+      'https://nrs.example/part1.zip',
+      'https://nrs.example/part2.zip',
+    ]);
     expect(screen.getByText('documents-2.zip')).toBeInTheDocument();
   });
 
@@ -172,14 +184,14 @@ describe('DownloadPanel', () => {
         errorCount: 3,
         parts: [
           { n: 1, fileName: 'documents-1.zip', url: 'https://nrs.example/part1.zip' },
-          { n: 2, fileName: 'documents-2.zip', url: 'https://nrs.example/part2.zip' }
+          { n: 2, fileName: 'documents-2.zip', url: 'https://nrs.example/part2.zip' },
         ],
         errors: [
           { documentId: 'doc-a', name: 'Alpha report.pdf', reason: 'not found' },
           { documentId: 'doc-b', name: 'Beta appendix.pdf', reason: 'too large' },
-          { documentId: 'doc-c', name: '', reason: 'unreadable' }
-        ]
-      }
+          { documentId: 'doc-c', name: '', reason: 'unreadable' },
+        ],
+      },
     ];
     const panel = await mount({ id: 'job-9', count: 8, startedAt: Date.now() });
 
@@ -192,7 +204,10 @@ describe('DownloadPanel', () => {
     // demi-api sent no name, so the id is all the reader has to go on.
     expect(screen.getByText('doc-c')).toBeInTheDocument();
     expect(screen.getByText('documents-1.zip')).toBeInTheDocument();
-    expect(downloadUrls()).toEqual(['https://nrs.example/part1.zip', 'https://nrs.example/part2.zip']);
+    expect(downloadUrls()).toEqual([
+      'https://nrs.example/part1.zip',
+      'https://nrs.example/part2.zip',
+    ]);
   });
 
   it('shows no list when every selected document made it into the zip', async () => {
@@ -205,8 +220,8 @@ describe('DownloadPanel', () => {
         includedCount: 2,
         errorCount: 0,
         errors: [],
-        parts: [{ n: 1, fileName: 'documents.zip', url: 'https://nrs.example/part1.zip' }]
-      }
+        parts: [{ n: 1, fileName: 'documents.zip', url: 'https://nrs.example/part1.zip' }],
+      },
     ];
     const panel = await mount({ id: 'job-9', count: 2, startedAt: Date.now() });
 
@@ -234,16 +249,18 @@ describe('DownloadPanel', () => {
         parts: [{ n: 1, fileName: 'documents.zip', url: 'https://nrs.example/part1.zip' }],
         errors: [
           { documentId: 'doc-a', name: 'Alpha report.pdf', reason: 'not found' },
-          { documentId: 'doc-b', name: 'Beta appendix.pdf', reason: 'not found' }
-        ]
-      }
+          { documentId: 'doc-b', name: 'Beta appendix.pdf', reason: 'not found' },
+        ],
+      },
     ];
     const panel = await mount({ id: 'job-9', count: 2, startedAt: Date.now() });
 
     panel.render();
     await tick(2000);
 
-    expect(screen.getByText('None of the selected documents could be downloaded.')).toBeInTheDocument();
+    expect(
+      screen.getByText('None of the selected documents could be downloaded.'),
+    ).toBeInTheDocument();
     expect(screen.getByText('Alpha report.pdf')).toBeInTheDocument();
     expect(screen.getByText('Beta appendix.pdf')).toBeInTheDocument();
     expect(downloadUrls()).toEqual([]);
@@ -265,9 +282,9 @@ describe('DownloadPanel', () => {
         errors: [
           { documentId: 'doc-a', name: 'Alpha report.pdf', reason: 'not found' },
           { documentId: 'doc-b', name: 'Beta appendix.pdf', reason: 'too large' },
-          { documentId: 'doc-c', name: 'Gamma map.pdf', reason: 'unreadable' }
-        ]
-      }
+          { documentId: 'doc-c', name: 'Gamma map.pdf', reason: 'unreadable' },
+        ],
+      },
     ];
     const panel = await mount({ id: 'job-9', count: 9, startedAt: Date.now() });
 
@@ -288,8 +305,8 @@ describe('DownloadPanel', () => {
         partsReady: 1,
         includedCount: 4,
         errorCount: 2,
-        parts: [{ n: 1, fileName: 'documents.zip', url: 'https://nrs.example/part1.zip' }]
-      }
+        parts: [{ n: 1, fileName: 'documents.zip', url: 'https://nrs.example/part1.zip' }],
+      },
     ];
     const panel = await mount({ id: 'job-9', count: 6, startedAt: Date.now() });
 
@@ -310,7 +327,9 @@ describe('DownloadPanel', () => {
 
     await startDownload(panel.store);
 
-    expect(screen.getByText("You've reached the download limit. Try again later.")).toBeInTheDocument();
+    expect(
+      screen.getByText("You've reached the download limit. Try again later."),
+    ).toBeInTheDocument();
     expect(downloadUrls()).toEqual([]);
     expect(document.querySelectorAll('.download-panel__job')).toHaveLength(0);
   });
@@ -334,12 +353,16 @@ describe('DownloadPanel', () => {
 
     await startDownload(panel.store);
 
-    expect(screen.getByText('That download could not be started. Please try again.')).toBeInTheDocument();
+    expect(
+      screen.getByText('That download could not be started. Please try again.'),
+    ).toBeInTheDocument();
   });
 
   it('takes the presigned URL straight away for a single document, with no job or panel', async () => {
     postResponse = () =>
-      new Response(JSON.stringify({ url: 'https://nrs.example/one.pdf', single: true }), { status: 200 });
+      new Response(JSON.stringify({ url: 'https://nrs.example/one.pdf', single: true }), {
+        status: 200,
+      });
     const panel = await mount();
     panel.store.setSelected('documents', [ALPHA]);
     const { container } = panel.render();
@@ -368,7 +391,9 @@ describe('DownloadPanel', () => {
     panel.render();
     await tick(0);
 
-    expect(screen.getByText('That download could not be completed. Please try again.')).toBeInTheDocument();
+    expect(
+      screen.getByText('That download could not be completed. Please try again.'),
+    ).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Retry' })).not.toBeInTheDocument();
   });
 
@@ -423,7 +448,7 @@ describe('DownloadPanel', () => {
     const panel = await mount(
       { id: 'job-a', count: 4, startedAt: Date.now() },
       { id: 'job-b', count: 7, startedAt: Date.now() },
-      { id: 'job-c', count: 9, startedAt: Date.now() }
+      { id: 'job-c', count: 9, startedAt: Date.now() },
     );
 
     panel.render();
@@ -444,7 +469,7 @@ describe('DownloadPanel', () => {
     const panel = await mount(
       { id: 'job-a', count: 4, startedAt: Date.now() },
       { id: 'job-b', count: 7, startedAt: Date.now() },
-      { id: 'job-c', count: 9, startedAt: Date.now() }
+      { id: 'job-c', count: 9, startedAt: Date.now() },
     );
 
     panel.render();
@@ -509,8 +534,14 @@ describe('DownloadPanel', () => {
         partsReady: 1,
         includedCount: 2,
         errorCount: 0,
-        parts: [{ n: 1, fileName: 'EPIC documents - Site C Clean Energy.zip', url: 'https://nrs.example/part1.zip' }]
-      }
+        parts: [
+          {
+            n: 1,
+            fileName: 'EPIC documents - Site C Clean Energy.zip',
+            url: 'https://nrs.example/part1.zip',
+          },
+        ],
+      },
     ];
     const panel = await mount({ id: 'job-9', count: 2, startedAt: Date.now() });
     panel.render();
@@ -519,13 +550,20 @@ describe('DownloadPanel', () => {
     expect(screen.getByText('EPIC documents - Site C Clean Energy.zip')).toBeInTheDocument();
     expect(screen.getByText('Downloaded')).toBeInTheDocument();
     expect(downloadUrls()).toEqual(['https://nrs.example/part1.zip']);
-    expect(renderHook(() => panel.store.useJobs()).result.current[0].downloadedAt).toEqual(expect.any(Number));
-
-    fireEvent.click(
-      screen.getByRole('button', { name: 'Download again EPIC documents - Site C Clean Energy.zip' })
+    expect(renderHook(() => panel.store.useJobs()).result.current[0].downloadedAt).toEqual(
+      expect.any(Number),
     );
 
-    expect(downloadUrls()).toEqual(['https://nrs.example/part1.zip', 'https://nrs.example/part1.zip']);
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Download again EPIC documents - Site C Clean Energy.zip',
+      }),
+    );
+
+    expect(downloadUrls()).toEqual([
+      'https://nrs.example/part1.zip',
+      'https://nrs.example/part1.zip',
+    ]);
   });
 
   /** The toolbar's Download is disabled while a job runs; a finished job must release it. */
@@ -538,8 +576,8 @@ describe('DownloadPanel', () => {
         partsReady: 1,
         includedCount: 2,
         errorCount: 0,
-        parts: [{ n: 1, fileName: 'documents.zip', url: 'https://nrs.example/part1.zip' }]
-      }
+        parts: [{ n: 1, fileName: 'documents.zip', url: 'https://nrs.example/part1.zip' }],
+      },
     ];
     const panel = await mount({ id: 'job-9', count: 2, startedAt: Date.now() });
     panel.render();
@@ -556,14 +594,14 @@ describe('DownloadPanel', () => {
       id,
       status: 'running',
       partCount: 2,
-      partsReady
+      partsReady,
     });
 
     async function twoJobs() {
       statusByJob = { 'job-a': RUNNING('job-a', 0), 'job-b': RUNNING('job-b', 1) };
       const panel = await mount(
         { id: 'job-a', count: 4, startedAt: Date.now() },
-        { id: 'job-b', count: 7, startedAt: Date.now() }
+        { id: 'job-b', count: 7, startedAt: Date.now() },
       );
       panel.render();
       await tick(0);
@@ -576,8 +614,12 @@ describe('DownloadPanel', () => {
       expect(screen.getByText('Zipping 4 documents…')).toBeInTheDocument();
       expect(screen.getByText('Zipping 7 documents…')).toBeInTheDocument();
       expect(document.querySelectorAll('.download-panel__job')).toHaveLength(2);
-      expect(screen.getByRole('button', { name: 'Dismiss download of 4 documents' })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Dismiss download of 7 documents' })).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: 'Dismiss download of 4 documents' }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: 'Dismiss download of 7 documents' }),
+      ).toBeInTheDocument();
     });
 
     it('dismisses only the job asked for, and keeps polling the other', async () => {
@@ -604,7 +646,9 @@ describe('DownloadPanel', () => {
 
       fireEvent.click(dismiss);
 
-      expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Dismiss download of 7 documents' }));
+      expect(document.activeElement).toBe(
+        screen.getByRole('button', { name: 'Dismiss download of 7 documents' }),
+      );
     });
 
     it('falls back to the panel close button when the last job is dismissed', async () => {
@@ -614,7 +658,9 @@ describe('DownloadPanel', () => {
 
       fireEvent.click(dismiss);
 
-      expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Close download panel' }));
+      expect(document.activeElement).toBe(
+        screen.getByRole('button', { name: 'Close download panel' }),
+      );
     });
 
     it('closes every job at once on the panel close', async () => {
@@ -636,7 +682,9 @@ describe('DownloadPanel', () => {
     /** The toolbar's Download only stops once demi-api is holding as many jobs as it will take. */
     it('blocks the next download at the third job in flight, not the first', async () => {
       postResponse = () =>
-        new Response(JSON.stringify({ id: `job-${Date.now()}`, status: 'queued' }), { status: 202 });
+        new Response(JSON.stringify({ id: `job-${Date.now()}`, status: 'queued' }), {
+          status: 202,
+        });
       statusResponses = [{ status: 'queued', partCount: 0, partsReady: 0 }];
       const panel = await mount();
       panel.render();
@@ -670,14 +718,14 @@ describe('DownloadPanel', () => {
       partsReady: 1,
       includedCount: 2,
       errorCount: 0,
-      parts: [{ n: 1, fileName: `${id}.zip`, url: `https://nrs.example/${id}.zip` }]
+      parts: [{ n: 1, fileName: `${id}.zip`, url: `https://nrs.example/${id}.zip` }],
     });
 
     it('cancels the job the reader dismissed, and leaves the other running', async () => {
       statusByJob = { 'job-a': RUNNING('job-a'), 'job-b': RUNNING('job-b') };
       const panel = await mount(
         { id: 'job-a', count: 4, startedAt: Date.now() },
-        { id: 'job-b', count: 7, startedAt: Date.now() }
+        { id: 'job-b', count: 7, startedAt: Date.now() },
       );
       panel.render();
       await tick(0);
@@ -702,11 +750,15 @@ describe('DownloadPanel', () => {
     });
 
     it('cancels every job still in flight when the panel is closed', async () => {
-      statusByJob = { 'job-a': RUNNING('job-a'), 'job-b': READY('job-b'), 'job-c': RUNNING('job-c') };
+      statusByJob = {
+        'job-a': RUNNING('job-a'),
+        'job-b': READY('job-b'),
+        'job-c': RUNNING('job-c'),
+      };
       const panel = await mount(
         { id: 'job-a', count: 4, startedAt: Date.now() },
         { id: 'job-b', count: 2, startedAt: Date.now() },
-        { id: 'job-c', count: 9, startedAt: Date.now() }
+        { id: 'job-c', count: 9, startedAt: Date.now() },
       );
       const { container } = panel.render();
       await tick(2000);
@@ -740,7 +792,7 @@ describe('DownloadPanel', () => {
       statusByJob = { 'job-a': RUNNING('job-a'), 'job-b': READY('job-b') };
       const panel = await mount(
         { id: 'job-a', count: 4, startedAt: Date.now() },
-        { id: 'job-b', count: 2, startedAt: Date.now() }
+        { id: 'job-b', count: 2, startedAt: Date.now() },
       );
       panel.render();
       await tick(2000);
@@ -748,7 +800,9 @@ describe('DownloadPanel', () => {
       leave('pagehide');
 
       expect(cancelledIds()).toEqual(['job-a']);
-      const sent = fetchMock.mock.calls.filter(([, init]) => (init as RequestInit)?.method === 'DELETE');
+      const sent = fetchMock.mock.calls.filter(
+        ([, init]) => (init as RequestInit)?.method === 'DELETE',
+      );
       expect(sent.every(([, init]) => (init as RequestInit).keepalive)).toBe(true);
     });
 
@@ -756,12 +810,12 @@ describe('DownloadPanel', () => {
       statusByJob = {
         'job-a': { id: 'job-a', status: 'cancelled', partCount: 1, partsReady: 0 },
         'job-b': RUNNING('job-b'),
-        'job-c': RUNNING('job-c')
+        'job-c': RUNNING('job-c'),
       };
       const panel = await mount(
         { id: 'job-a', count: 4, startedAt: Date.now() },
         { id: 'job-b', count: 7, startedAt: Date.now() },
-        { id: 'job-c', count: 9, startedAt: Date.now() }
+        { id: 'job-c', count: 9, startedAt: Date.now() },
       );
       panel.render();
       await tick(0);

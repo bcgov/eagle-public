@@ -48,6 +48,7 @@ jobs:
           cache: "yarn"
       - run: yarn install --immutable
       - run: yarn lint
+      - run: yarn format:check
 
   test:
     name: Test
@@ -91,4 +92,46 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: "yarn"
       - run: yarn install --immutable
+      # tsc -p e2e resolves @playwright/test, which lives in the e2e project's own tree.
+      - run: yarn install --immutable
+        working-directory: e2e
+      - run: yarn typecheck:e2e
       - run: yarn build
+
+  e2e:
+    name: E2E
+    runs-on: ubuntu-latest
+    needs: build
+    strategy:
+      matrix:
+        node-version: [24.x]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Setup node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "yarn"
+      - run: yarn install --immutable
+      - run: yarn build
+
+      - run: yarn install --immutable
+        working-directory: e2e
+      - run: yarn playwright install --with-deps chromium
+        working-directory: e2e
+      # playwright starts `vite preview` on 4173 itself; see e2e/playwright.config.ts.
+      - run: yarn test
+        working-directory: e2e
+        env:
+          BASE_URL: http://localhost:4173
+
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: playwright-report
+          path: e2e/playwright-report

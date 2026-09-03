@@ -1,5 +1,12 @@
 import { test, expect } from '../support/fixtures';
-import { ready, recordApiCalls, checkBaseline, waitForSearch, total, pageCount } from '../support/helpers';
+import {
+  ready,
+  recordApiCalls,
+  checkBaseline,
+  waitForSearch,
+  total,
+  pageCount,
+} from '../support/helpers';
 
 test.describe('content pages', () => {
   const HEADINGS: [string, string][] = [
@@ -20,8 +27,12 @@ test.describe('content pages', () => {
   test('/contact links the EAO and compliance mailboxes', async ({ page }) => {
     await page.goto('/contact');
     await ready(page, 500);
-    await expect(page.getByRole('heading', { level: 3, name: 'B.C. Environmental Assessment Office' })).toBeVisible();
-    await expect(page.getByRole('heading', { level: 3, name: 'Report Natural Resource Violations' })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { level: 3, name: 'B.C. Environmental Assessment Office' }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('heading', { level: 3, name: 'Report Natural Resource Violations' }),
+    ).toBeVisible();
   });
 
   test('/search-help explains quotes and hyphens', async ({ page }) => {
@@ -38,8 +49,12 @@ test.describe('home', () => {
     await page.goto('/');
     await ready(page);
 
-    await expect(page.getByRole('heading', { level: 1, name: 'Environmental Assessments' })).toBeVisible();
-    await expect(page.getByRole('heading', { level: 2, name: 'Recent Activities & Updates' })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Environmental Assessments' }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('heading', { level: 2, name: 'Recent Activities & Updates' }),
+    ).toBeVisible();
     await expect(page.locator('#tableTop tbody tr')).not.toHaveCount(0);
     await expect(page.getByRole('link', { name: /View All Activities & Updates/ })).toBeVisible();
 
@@ -51,7 +66,9 @@ test.describe('home', () => {
   });
 
   test('@data recent activity cards come from /api/public/recentActivity', async ({ page }) => {
-    const res = page.waitForResponse(r => r.url().includes('/api/public/recentActivity') && r.status() === 200);
+    const res = page.waitForResponse(
+      (r) => r.url().includes('/api/public/recentActivity') && r.status() === 200,
+    );
     await page.goto('/');
     const body = await (await res).json();
     const active = body.filter((a: any) => a.active);
@@ -69,7 +86,9 @@ test.describe('news', () => {
     const env = await search;
     await ready(page);
 
-    await expect(page.getByRole('heading', { level: 1, name: 'Activities & Updates' })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Activities & Updates' }),
+    ).toBeVisible();
     await expect(page.getByRole('columnheader', { name: /Headline/ })).toBeVisible();
     await expect(page.getByRole('columnheader', { name: /Date/ })).toBeVisible();
 
@@ -89,7 +108,9 @@ test.describe('project notifications', () => {
     const env = await search;
     await ready(page);
 
-    await expect(page.getByRole('heading', { level: 1, name: 'Project Notifications in British Columbia' })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Project Notifications in British Columbia' }),
+    ).toBeVisible();
 
     const rows = page.locator('table[aria-label="table-template"] tbody tr');
     await expect(rows).toHaveCount(Math.min(10, total(env)));
@@ -109,7 +130,12 @@ test.describe('cac-unsubscribe', () => {
     await page.goto('/cac-unsubscribe');
     await ready(page, 500);
 
-    await expect(page.getByRole('heading', { level: 1, name: /Unsubs?cribe from Community Advisory Committee/ })).toBeVisible();
+    await expect(
+      page.getByRole('heading', {
+        level: 1,
+        name: /Unsubs?cribe from Community Advisory Committee/,
+      }),
+    ).toBeVisible();
     await expect(page.locator('#emailInput')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Unsubscribe' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Cancel' })).toBeVisible();

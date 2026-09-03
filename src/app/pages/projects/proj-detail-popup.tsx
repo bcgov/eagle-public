@@ -62,12 +62,12 @@ export function ProjDetailPopup({ project, onClose, variant = 'popup' }: ProjDet
     const projId = project._id;
 
     getAllByProjectId(projId)
-      .then(res => {
+      .then((res) => {
         if (controller.signal.aborted) return;
         const status = periodsOf(res)[0]?.commentPeriodStatus;
         if (status) setLoaded({ id: projId, status });
       })
-      .catch(error => {
+      .catch((error) => {
         if (!controller.signal.aborted) {
           logger.error('Error loading comment period', 'ProjDetailPopup', error);
         }
@@ -81,7 +81,7 @@ export function ProjDetailPopup({ project, onClose, variant = 'popup' }: ProjDet
     track('Project Viewed', {
       project_id: project._id,
       project_name: project.name,
-      source: 'map_popup'
+      source: 'map_popup',
     });
     navigate(`/p/${project._id}`);
   }
@@ -108,7 +108,9 @@ export function ProjDetailPopup({ project, onClose, variant = 'popup' }: ProjDet
               </h2>
             )}
             {phase && !inline && <span className="chip">{phase}</span>}
-            {commentPeriodStatus === 'Open' && <span className="chip chip--open">Open for comment</span>}
+            {commentPeriodStatus === 'Open' && (
+              <span className="chip chip--open">Open for comment</span>
+            )}
           </div>
           {!inline && onClose && (
             <button type="button" className="popup-close" aria-label="Close" onClick={onClose}>
@@ -152,7 +154,11 @@ export function ProjDetailPopup({ project, onClose, variant = 'popup' }: ProjDet
       </div>
 
       <div className="popup-foot">
-        <button type="button" className="btn btn-primary btn-sm popup-view" onClick={navigateToProject}>
+        <button
+          type="button"
+          className="btn btn-primary btn-sm popup-view"
+          onClick={navigateToProject}
+        >
           View project
         </button>
       </div>

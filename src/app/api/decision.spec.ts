@@ -30,7 +30,11 @@ describe('decision', () => {
     });
 
     it('returns only the first Decision when multiple are returned', async () => {
-      vi.mocked(api.getDecisionByAppId).mockResolvedValue([{ _id: '2' }, { _id: '3' }, { _id: '4' }] as any);
+      vi.mocked(api.getDecisionByAppId).mockResolvedValue([
+        { _id: '2' },
+        { _id: '3' },
+        { _id: '4' },
+      ] as any);
 
       expect((await decision.getByApplicationId('1', true))._id).toEqual('2');
     });

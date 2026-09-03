@@ -9,7 +9,7 @@ function fixedBytes(byte: number) {
     getRandomValues: (array: Uint8Array) => {
       array.fill(byte);
       return array;
-    }
+    },
   };
 }
 
@@ -22,7 +22,9 @@ describe('randomId', () => {
   });
 
   it('takes crypto.randomUUID where the browser has one', () => {
-    const native = vi.spyOn(realCrypto, 'randomUUID').mockReturnValue('11111111-2222-4333-8444-555555555555');
+    const native = vi
+      .spyOn(realCrypto, 'randomUUID')
+      .mockReturnValue('11111111-2222-4333-8444-555555555555');
 
     expect(randomId()).toBe('11111111-2222-4333-8444-555555555555');
     expect(native).toHaveBeenCalledTimes(1);

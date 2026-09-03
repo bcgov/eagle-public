@@ -69,7 +69,7 @@
   .feature-cards-container {
     grid-template-columns: 1fr;
   }
-  
+
   .feature-block {
     padding: 1.5rem;
   }

@@ -1,5 +1,11 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { bulkDownloadEnabled, contentSearchEnabled, getConfig, getNotifyApi, loadConfig } from './config';
+import {
+  bulkDownloadEnabled,
+  contentSearchEnabled,
+  getConfig,
+  getNotifyApi,
+  loadConfig,
+} from './config';
 
 /**
  * CONTENT_SEARCH decides whether the Document Content tab and route are offered at all, so a
@@ -107,7 +113,10 @@ describe('loadConfig with a config endpoint', () => {
   });
 
   it('merges /api/config over env.js', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => Response.json({ ACCESS_GATE: true })));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => Response.json({ ACCESS_GATE: true })),
+    );
     window.__env = { logLevel: 4, configEndpoint: true, ACCESS_GATE: false };
     await loadConfig();
     expect(getConfig().ACCESS_GATE).toBe(true);
@@ -115,13 +124,18 @@ describe('loadConfig with a config endpoint', () => {
 
   it('retries, then rejects instead of falling back to env.js', async () => {
     vi.useFakeTimers();
-    const fetchMock = vi.fn(async () => new Response(null, { status: 502, statusText: 'Bad Gateway' }));
+    const fetchMock = vi.fn(
+      async () => new Response(null, { status: 502, statusText: 'Bad Gateway' }),
+    );
     vi.stubGlobal('fetch', fetchMock);
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
     window.__env = { logLevel: 4, configEndpoint: true, ACCESS_GATE: false };
 
     const pending = loadConfig();
-    const outcome = pending.then(() => 'resolved', () => 'rejected');
+    const outcome = pending.then(
+      () => 'resolved',
+      () => 'rejected',
+    );
     await vi.runAllTimersAsync();
 
     expect(await outcome).toBe('rejected');

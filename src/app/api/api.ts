@@ -11,7 +11,10 @@ import { getApiPath, getSearchApiPath, getConfig } from 'app/config/config';
 import { track } from 'app/analytics/analytics';
 
 export class ApiError extends Error {
-  constructor(public status: number, public statusText: string) {
+  constructor(
+    public status: number,
+    public statusText: string,
+  ) {
     super(`${status} - ${statusText}`);
     this.name = 'ApiError';
   }
@@ -95,7 +98,7 @@ async function postJson<T>(url: string, body: unknown): Promise<T> {
   const response = await send(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
+    body: JSON.stringify(body),
   });
   return response.json() as Promise<T>;
 }
@@ -108,20 +111,20 @@ export async function downloadDocument(document: Document): Promise<void> {
   track('Document Downloaded', {
     document_id: document._id,
     document_name: document.displayName,
-    document_type: document.internalMime || 'unknown'
+    document_type: document.internalMime || 'unknown',
   });
 
   let blob;
   try {
-    blob = await downloadResource(document._id)
+    blob = await downloadResource(document._id);
   } catch (e) {
-    throw new Error(String(e))
+    throw new Error(String(e));
   }
   if (!blob) {
-    throw new Error()
+    throw new Error();
   }
   let filename = document.displayName;
-  filename = encodeString(filename, false)
+  filename = encodeString(filename, false);
   if (isMS) {
     (window.navigator as any).msSaveBlob(blob, filename);
   } else {
@@ -141,7 +144,7 @@ export async function openDocument(document: Document): Promise<void> {
   track('Document Opened', {
     document_id: document._id,
     document_name: document.displayName || document.documentFileName,
-    document_source: document.documentSource || 'unknown'
+    document_source: document.documentSource || 'unknown',
   });
 
   let filename;
@@ -210,7 +213,9 @@ export interface BulkDownloadStatus {
   parts?: BulkDownloadPart[];
 }
 
-export async function createBulkDownload(documentIds: string[]): Promise<BulkDownloadSingle | BulkDownloadAccepted> {
+export async function createBulkDownload(
+  documentIds: string[],
+): Promise<BulkDownloadSingle | BulkDownloadAccepted> {
   return postJson(`${searchPath()}/bulk-downloads`, { documentIds });
 }
 
@@ -235,24 +240,47 @@ async function downloadResource(id: string): Promise<Blob> {
 //
 // Searching
 //
-export async function searchKeywords(keys: string, dataset: string, fields: any[], pageNum: number, pageSize: number, projectLegislation = '', sortBy: string | null = null, queryModifier: Record<string, string> = {}, populate = false, secondarySort: string | null = null, filter: Record<string, string> = {}, fuzzy = false): Promise<SearchResults[]> {
+export async function searchKeywords(
+  keys: string,
+  dataset: string,
+  fields: any[],
+  pageNum: number,
+  pageSize: number,
+  projectLegislation = '',
+  sortBy: string | null = null,
+  queryModifier: Record<string, string> = {},
+  populate = false,
+  secondarySort: string | null = null,
+  filter: Record<string, string> = {},
+  fuzzy = false,
+): Promise<SearchResults[]> {
   logger.debug(`api.searchKeywords called with keys: ${keys}`, 'api', { filter });
 
-  projectLegislation = (projectLegislation === '') ? 'default' : projectLegislation;
+  projectLegislation = projectLegislation === '' ? 'default' : projectLegislation;
   let queryString = `search?dataset=${dataset}`;
   if (fields && fields.length > 0) {
-    fields.forEach(item => {
+    fields.forEach((item) => {
       queryString += `&${item.name}=${item.value}`;
     });
   }
   if (keys) {
     queryString += `&keywords=${keys}`;
   }
-  if (pageNum !== null) { queryString += `&pageNum=${pageNum - 1}`; }
-  if (pageSize !== null) { queryString += `&pageSize=${pageSize}`; }
-  if (projectLegislation !== '') { queryString += `&projectLegislation=${projectLegislation}`; }
-  if (sortBy !== null) { queryString += `&sortBy=${sortBy}`; }
-  if (secondarySort !== null) { queryString += `&sortBy=${secondarySort}`; }
+  if (pageNum !== null) {
+    queryString += `&pageNum=${pageNum - 1}`;
+  }
+  if (pageSize !== null) {
+    queryString += `&pageSize=${pageSize}`;
+  }
+  if (projectLegislation !== '') {
+    queryString += `&projectLegislation=${projectLegislation}`;
+  }
+  if (sortBy !== null) {
+    queryString += `&sortBy=${sortBy}`;
+  }
+  if (secondarySort !== null) {
+    queryString += `&sortBy=${secondarySort}`;
+  }
   queryString += `&populate=${populate}`;
   Object.keys(queryModifier).forEach((key: string) => {
     queryModifier[key].split(',').forEach((item: string) => {
@@ -293,11 +321,22 @@ export async function getCountProjects(): Promise<number> {
   return parseInt(response.headers.get('x-total-count') || '0', 10);
 }
 
-export async function getProjectPins(id: string, pageNum: number, pageSize: number, sortBy: any): Promise<Org> {
+export async function getProjectPins(
+  id: string,
+  pageNum: number,
+  pageSize: number,
+  sortBy: any,
+): Promise<Org> {
   let queryString = `project/${id}/pin`;
-  if (pageNum !== null) { queryString += `?pageNum=${pageNum - 1}`; }
-  if (pageSize !== null) { queryString += `&pageSize=${pageSize}`; }
-  if (sortBy !== '' && sortBy !== null) { queryString += `&sortBy=${sortBy}`; }
+  if (pageNum !== null) {
+    queryString += `?pageNum=${pageNum - 1}`;
+  }
+  if (pageSize !== null) {
+    queryString += `&pageSize=${pageSize}`;
+  }
+  if (sortBy !== '' && sortBy !== null) {
+    queryString += `&sortBy=${sortBy}`;
+  }
   return getJson<Org>(`${apiPath()}/${queryString}`);
 }
 
@@ -312,7 +351,7 @@ export async function cacRemoveMember(projectId: string, meta: any): Promise<any
   const response = await send(`${apiPath()}/project/${projectId}/cacRemoveMember`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(meta)
+    body: JSON.stringify(meta),
   });
   return response.json();
 }
@@ -320,15 +359,17 @@ export async function cacRemoveMember(projectId: string, meta: any): Promise<any
 // Organizations
 
 export async function getOrgsByCompanyType(type: string): Promise<Org[]> {
-  const fields = [
-    'name'
-  ];
+  const fields = ['name'];
 
   const queryString = `organization?companyType=${type}&sortBy=+name&fields=${buildValues(fields)}`;
   return getJson<Org[]>(`${apiPath()}/${queryString}`);
 }
 
-export async function getProject(id: string, cpStart: string | null, cpEnd: string | null): Promise<Project[]> {
+export async function getProject(
+  id: string,
+  cpStart: string | null,
+  cpEnd: string | null,
+): Promise<Project[]> {
   const fields = [
     'CEAAInvolvement',
     'CELead',
@@ -384,11 +425,15 @@ export async function getProject(id: string, cpStart: string | null, cpEnd: stri
     'featuredDocuments',
     'projectCAC',
     'projectCACPublished',
-    'cacEmail'
+    'cacEmail',
   ];
   let queryString = `project/${id}?populate=true`;
-  if (cpStart !== null) { queryString += `&cpStart[since]=${cpStart}`; }
-  if (cpEnd !== null) { queryString += `&cpEnd[until]=${cpEnd}`; }
+  if (cpStart !== null) {
+    queryString += `&cpStart[since]=${cpStart}`;
+  }
+  if (cpEnd !== null) {
+    queryString += `&cpEnd[until]=${cpEnd}`;
+  }
   queryString += `&fields=${buildValues(fields)}`;
   return getJson<Project[]>(`${apiPath()}/${queryString}`);
 }
@@ -397,23 +442,13 @@ export async function getProject(id: string, cpStart: string | null, cpEnd: stri
 // Decisions
 //
 export async function getDecisionByAppId(appId: string): Promise<Decision[]> {
-  const fields = [
-    '_addedBy',
-    '_application',
-    'name',
-    'description'
-  ];
+  const fields = ['_addedBy', '_application', 'name', 'description'];
   const queryString = 'decision?_application=' + appId + '&fields=' + buildValues(fields);
   return getJson<Decision[]>(`${apiPath()}/${queryString}`);
 }
 
 export async function getDecision(id: string): Promise<Decision[]> {
-  const fields = [
-    '_addedBy',
-    '_application',
-    'name',
-    'description'
-  ];
+  const fields = ['_addedBy', '_application', 'name', 'description'];
   const queryString = 'decision/' + id + '?fields=' + buildValues(fields);
   return getJson<Decision[]>(`${apiPath()}/${queryString}`);
 }
@@ -445,7 +480,7 @@ export async function getPeriod(id: string): Promise<CommentPeriod[]> {
     'openHouses',
     'project',
     'relatedDocuments',
-    'commentTip'
+    'commentTip',
   ];
   const queryString = 'commentperiod/' + id + '?fields=' + buildValues(fields);
   return getJson<CommentPeriod[]>(`${apiPath()}/${queryString}`);
@@ -461,7 +496,12 @@ export async function getCountCommentsById(commentPeriodId: string): Promise<num
   return parseInt(response.headers.get('x-total-count') || '0', 10);
 }
 
-export async function getCommentsByPeriodId(pageNum: number | null, pageSize: number | null, getCount: boolean, periodId: string): Promise<ResponseWithHeaders<any>> {
+export async function getCommentsByPeriodId(
+  pageNum: number | null,
+  pageSize: number | null,
+  getCount: boolean,
+  periodId: string,
+): Promise<ResponseWithHeaders<any>> {
   const fields = [
     'author',
     'comment',
@@ -474,16 +514,24 @@ export async function getCommentsByPeriodId(pageNum: number | null, pageSize: nu
     'period',
     'read',
     'write',
-    'delete'
+    'delete',
   ];
   // TODO: May want to pass this as a parameter in the future.
   const sort = '-commentId';
 
   let queryString = 'public/comment?period=' + periodId + '&fields=' + buildValues(fields) + '&';
-  if (sort !== null) { queryString += `sortBy=${sort}&`; }
-  if (pageNum !== null) { queryString += `pageNum=${pageNum}&`; }
-  if (pageSize !== null) { queryString += `pageSize=${pageSize}&`; }
-  if (getCount !== null) { queryString += `count=${getCount}&`; }
+  if (sort !== null) {
+    queryString += `sortBy=${sort}&`;
+  }
+  if (pageNum !== null) {
+    queryString += `pageNum=${pageNum}&`;
+  }
+  if (pageSize !== null) {
+    queryString += `pageSize=${pageSize}&`;
+  }
+  if (getCount !== null) {
+    queryString += `count=${getCount}&`;
+  }
   return getWithHeaders<any>(`${apiPath()}/${queryString}`);
 }
 
@@ -499,17 +547,14 @@ export async function getComment(id: string): Promise<ResponseWithHeaders<any>> 
     'period',
     'read',
     'write',
-    'delete'
+    'delete',
   ];
   const queryString = 'public/comment/' + id + '?fields=' + buildValues(fields);
   return getWithHeaders<any>(`${apiPath()}/${queryString}`);
 }
 
 export async function addComment(comment: Comment): Promise<Comment> {
-  const fields = [
-    'comment',
-    'author'
-  ];
+  const fields = ['comment', 'author'];
   const queryString = 'public/comment?fields=' + buildValues(fields);
   return postJson<Comment>(`${apiPath()}/${queryString}`, comment);
 }
@@ -524,7 +569,7 @@ export async function getDocumentsByAppId(appId: string): Promise<Document[]> {
     'displayName',
     'internalURL',
     'internalMime',
-    'isFeatured'
+    'isFeatured',
   ];
   const queryString = 'document?_application=' + appId + '&fields=' + buildValues(fields);
   return getJson<Document[]>(`${apiPath()}/${queryString}`);
@@ -537,7 +582,7 @@ export async function getDocumentsByCommentId(commentId: string): Promise<Docume
     'displayName',
     'internalURL',
     'internalMime',
-    'isFeatured'
+    'isFeatured',
   ];
   const queryString = 'document?_comment=' + commentId + '&fields=' + buildValues(fields);
   return getJson<Document[]>(`${apiPath()}/${queryString}`);
@@ -550,7 +595,7 @@ export async function getDocumentsByDecisionId(decisionId: string): Promise<Docu
     'displayName',
     'internalURL',
     'internalMime',
-    'isFeatured'
+    'isFeatured',
   ];
   const queryString = 'document?_decision=' + decisionId + '&fields=' + buildValues(fields);
   return getJson<Document[]>(`${apiPath()}/${queryString}`);
@@ -585,19 +630,14 @@ export async function getDocumentsByMultiId(ids: string[]): Promise<Document[]> 
     'milestone',
     'description',
     'isPublished',
-    'isFeatured'
+    'isFeatured',
   ];
   const queryString = `document?docIds=${buildValues(ids)}&fields=${buildValues(fields)}`;
   return getJson<Document[]>(`${apiPath()}/${queryString}`);
 }
 
 export async function uploadDocument(formData: FormData): Promise<Document> {
-  const fields = [
-    'documentFileName',
-    'displayName',
-    'internalURL',
-    'internalMime'
-  ];
+  const fields = ['documentFileName', 'displayName', 'internalURL', 'internalMime'];
   const queryString = 'document/?fields=' + buildValues(fields);
   const response = await send(`${apiPath()}/${queryString}`, { method: 'POST', body: formData });
   return response.json() as Promise<Document>;
@@ -608,7 +648,7 @@ export async function checkGatePassword(password: string): Promise<void> {
   await send(`${apiPath()}/public/gate`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ password })
+    body: JSON.stringify({ password }),
   });
 }
 

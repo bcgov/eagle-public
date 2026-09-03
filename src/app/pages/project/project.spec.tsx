@@ -25,7 +25,12 @@ const LISTS = [
   { _id: 'ms-decision-2002', name: 'Decision', legislation: 2002, type: 'label' },
   { _id: 'ms-certext-2002', name: 'Certificate Extension', legislation: 2002, type: 'label' },
   { _id: 'ms-certext-2018', name: 'Certificate Extension', legislation: 2018, type: 'label' },
-  { _id: 'ms-transfer-2018', name: 'Transfer of Certificate/Order', legislation: 2018, type: 'label' },
+  {
+    _id: 'ms-transfer-2018',
+    name: 'Transfer of Certificate/Order',
+    legislation: 2018,
+    type: 'label',
+  },
 
   { _id: 'type-amend-2002', name: 'Amendment Package', legislation: 2002, type: 'doctype' },
   { _id: 'type-amend-2018', name: 'Amendment Package', legislation: 2018, type: 'doctype' },
@@ -34,8 +39,18 @@ const LISTS = [
   { _id: 'type-tt-2018', name: 'Tracking Table', legislation: 2018, type: 'doctype' },
   { _id: 'ms-amend-2002', name: 'Amendment', legislation: 2002, type: 'label' },
   { _id: 'ms-amend-2018', name: 'Amendment', legislation: 2018, type: 'label' },
-  { _id: 'ph-amend-2002', name: 'Post Decision - Amendment', legislation: 2002, type: 'projectPhase' },
-  { _id: 'ph-amend-2018', name: 'Post Decision - Amendment', legislation: 2018, type: 'projectPhase' }
+  {
+    _id: 'ph-amend-2002',
+    name: 'Post Decision - Amendment',
+    legislation: 2002,
+    type: 'projectPhase',
+  },
+  {
+    _id: 'ph-amend-2018',
+    name: 'Post Decision - Amendment',
+    legislation: 2018,
+    type: 'projectPhase',
+  },
 ];
 
 const PROJECT = {
@@ -46,7 +61,7 @@ const PROJECT = {
   location: 'Near Cedar Creek',
   eacDecision: { name: 'In Progress' },
   centroid: [],
-  commentPeriodForBanner: []
+  commentPeriodForBanner: [],
 };
 
 /** A comment period whose window brackets today, so the banner is visible. */
@@ -60,8 +75,8 @@ function openCommentPeriod() {
       _id: 'cp-1',
       dateStarted: started.toISOString(),
       dateCompleted: completed.toISOString(),
-      informationLabel: 'Draft Application'
-    }
+      informationLabel: 'Draft Application',
+    },
   ];
 }
 
@@ -70,7 +85,10 @@ let tabSearchResponse: (url: string) => unknown;
 let project: Record<string, unknown>;
 
 function jsonResponse(body: unknown) {
-  return new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } });
+  return new Response(JSON.stringify(body), {
+    status: 200,
+    headers: { 'content-type': 'application/json' },
+  });
 }
 
 function renderShell(path = '/p/proj-1/decisions') {
@@ -84,13 +102,15 @@ function renderShell(path = '/p/proj-1/decisions') {
         return jsonResponse([project]);
       }
       if (url.includes('dataset=List')) {
-        return jsonResponse([{ searchResults: LISTS, meta: [{ searchResultsTotal: LISTS.length }] }]);
+        return jsonResponse([
+          { searchResults: LISTS, meta: [{ searchResultsTotal: LISTS.length }] },
+        ]);
       }
       if (url.includes('dataset=Document')) {
         return jsonResponse(tabSearchResponse(url));
       }
       return jsonResponse([{ searchResults: [], meta: [] }]);
-    })
+    }),
   );
 
   const router = createMemoryRouter(
@@ -98,17 +118,19 @@ function renderShell(path = '/p/proj-1/decisions') {
       {
         path: '/p/:projId',
         Component: ProjectPage,
-        children: [{ path: 'decisions', element: <div>tab body</div> }]
+        children: [{ path: 'decisions', element: <div>tab body</div> }],
       },
-      { path: '/projects', element: <div>projects page</div> }
+      { path: '/projects', element: <div>projects page</div> },
     ],
-    { initialEntries: [path] }
+    { initialEntries: [path] },
   );
 
   render(
-    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })}>
+    <QueryClientProvider
+      client={new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })}
+    >
       <RouterProvider router={router} />
-    </QueryClientProvider>
+    </QueryClientProvider>,
   );
   return router;
 }
@@ -128,9 +150,18 @@ describe('project shell', () => {
   it('renders the three top-level tabs, with the document types left to the Documents tab', async () => {
     renderShell();
 
-    expect(await screen.findByRole('tab', { name: 'Project Details' })).toHaveAttribute('id', 'project-details-tab');
-    expect(screen.getByRole('tab', { name: 'Commenting' })).toHaveAttribute('href', '/p/proj-1/commenting');
-    expect(screen.getByRole('tab', { name: 'Documents' })).toHaveAttribute('href', '/p/proj-1/documents');
+    expect(await screen.findByRole('tab', { name: 'Project Details' })).toHaveAttribute(
+      'id',
+      'project-details-tab',
+    );
+    expect(screen.getByRole('tab', { name: 'Commenting' })).toHaveAttribute(
+      'href',
+      '/p/proj-1/commenting',
+    );
+    expect(screen.getByRole('tab', { name: 'Documents' })).toHaveAttribute(
+      'href',
+      '/p/proj-1/documents',
+    );
     expect(screen.getAllByRole('tab')).toHaveLength(3);
     expect(screen.getByRole('tablist')).toHaveAccessibleName('Project sections');
   });
@@ -139,8 +170,8 @@ describe('project shell', () => {
     renderShell();
 
     await screen.findByRole('tab', { name: 'Documents' });
-    await waitFor(() => expect(requests.some(url => url.includes('dataset=List'))).toBe(true));
-    expect(requests.filter(url => url.includes('dataset=Document'))).toHaveLength(0);
+    await waitFor(() => expect(requests.some((url) => url.includes('dataset=List'))).toBe(true));
+    expect(requests.filter((url) => url.includes('dataset=Document'))).toHaveLength(0);
   });
 
   it('renders the comment period banner for an open period', async () => {
@@ -172,7 +203,10 @@ describe('project shell', () => {
     renderShell();
 
     expect(await screen.findByText('Project not found')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Back to all projects' })).toHaveAttribute('href', '/projects');
+    expect(screen.getByRole('link', { name: 'Back to all projects' })).toHaveAttribute(
+      'href',
+      '/projects',
+    );
   });
 });
 
@@ -185,12 +219,16 @@ function deferredFetch() {
     vi.fn((input: RequestInfo | URL) => {
       const url = String(input);
       urls.push(url);
-      return new Promise<Response>(resolve => {
+      return new Promise<Response>((resolve) => {
         pending.push({
           url,
           resolve: () => {
             if (url.includes('dataset=List')) {
-              return resolve(jsonResponse([{ searchResults: LISTS, meta: [{ searchResultsTotal: LISTS.length }] }]));
+              return resolve(
+                jsonResponse([
+                  { searchResults: LISTS, meta: [{ searchResultsTotal: LISTS.length }] },
+                ]),
+              );
             }
             if (url.startsWith('/api/project/') && !url.includes('/pin')) {
               return resolve(jsonResponse([PROJECT]));
@@ -199,15 +237,15 @@ function deferredFetch() {
               return resolve(jsonResponse([{ results: [], total_items: 0 }]));
             }
             resolve(jsonResponse([{ searchResults: [], meta: [{ searchResultsTotal: 0 }] }]));
-          }
+          },
         });
       });
-    })
+    }),
   );
   return {
     urls,
     /** Resolves every request recorded so far, including any queued since the last flush. */
-    flush: () => pending.splice(0).forEach(entry => entry.resolve())
+    flush: () => pending.splice(0).forEach((entry) => entry.resolve()),
   };
 }
 
@@ -217,16 +255,18 @@ function renderShellWithDetailsTab() {
       {
         path: '/p/:projId',
         Component: ProjectPage,
-        children: [{ path: 'project-details', Component: ProjectDetailsTab }]
+        children: [{ path: 'project-details', Component: ProjectDetailsTab }],
       },
-      { path: '/projects', element: <div>projects page</div> }
+      { path: '/projects', element: <div>projects page</div> },
     ],
-    { initialEntries: ['/p/proj-1/project-details'] }
+    { initialEntries: ['/p/proj-1/project-details'] },
   );
   return render(
-    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })}>
+    <QueryClientProvider
+      client={new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })}
+    >
       <RouterProvider router={router} />
-    </QueryClientProvider>
+    </QueryClientProvider>,
   );
 }
 
@@ -274,7 +314,9 @@ describe('project page first paint', () => {
 
     fetchStub.flush();
     // The tab probes and the featured-document search start after the first flush.
-    await waitFor(() => expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Cedar Quarry'));
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Cedar Quarry'),
+    );
     fetchStub.flush();
 
     await waitFor(() => expect(screen.queryByText('Loading project')).not.toBeInTheDocument());

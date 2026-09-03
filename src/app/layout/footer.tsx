@@ -20,20 +20,54 @@ export function Footer({ className = '' }: { className?: string }) {
   }, [pathname]);
 
   return (
-    <footer
-      ref={footerRef}
-      className={`app-footer${className ? ' ' + className : ''}`}
-      id="footer"
-    >
+    <footer ref={footerRef} className={`app-footer${className ? ' ' + className : ''}`} id="footer">
       <div className="container">
         <div className="footer-admin clearfix">
           <ul className="gov-links">
-            <li><a href="#">Home</a></li>
-            <li><a href="http://www2.gov.bc.ca/gov/content/home/copyright" target="_blank" rel="noopener">Copyright</a></li>
-            <li><a href="http://www2.gov.bc.ca/gov/content/home/disclaimer" target="_blank" rel="noopener">Disclaimer</a></li>
-            <li><a href="http://www2.gov.bc.ca/gov/content/home/privacy" target="_blank" rel="noopener">Privacy</a></li>
-            <li><a href="http://www2.gov.bc.ca/gov/content/home/accessibility" target="_blank" rel="noopener">Accessibility</a></li>
-            <li><a href={adminUrl()} className="gtm-admin-login" target="_blank" rel="noopener">Admin Login</a></li>
+            <li>
+              <a href="#">Home</a>
+            </li>
+            <li>
+              <a
+                href="http://www2.gov.bc.ca/gov/content/home/copyright"
+                target="_blank"
+                rel="noopener"
+              >
+                Copyright
+              </a>
+            </li>
+            <li>
+              <a
+                href="http://www2.gov.bc.ca/gov/content/home/disclaimer"
+                target="_blank"
+                rel="noopener"
+              >
+                Disclaimer
+              </a>
+            </li>
+            <li>
+              <a
+                href="http://www2.gov.bc.ca/gov/content/home/privacy"
+                target="_blank"
+                rel="noopener"
+              >
+                Privacy
+              </a>
+            </li>
+            <li>
+              <a
+                href="http://www2.gov.bc.ca/gov/content/home/accessibility"
+                target="_blank"
+                rel="noopener"
+              >
+                Accessibility
+              </a>
+            </li>
+            <li>
+              <a href={adminUrl()} className="gtm-admin-login" target="_blank" rel="noopener">
+                Admin Login
+              </a>
+            </li>
           </ul>
         </div>
       </div>

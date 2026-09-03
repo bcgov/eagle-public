@@ -13,10 +13,12 @@ import {
   mapBounds,
   regionsVisible,
   sheetState,
-  snapSheet
+  snapSheet,
 } from 'app/state/map-ui';
 
-vi.mock('@vis.gl/react-maplibre', async () => (await import('./maplibre-test-stub')).mapLibreStub());
+vi.mock('@vis.gl/react-maplibre', async () =>
+  (await import('./maplibre-test-stub')).mapLibreStub(),
+);
 
 const PROJECTS = [
   {
@@ -30,7 +32,7 @@ const PROJECTS = [
     description: `<p class="MsoNormal">A quarry near Cedar Creek. ${'Gravel and sand extraction. '.repeat(10)}</p>`,
     centroid: [-127.5, 54.2],
     currentPhaseName: { _id: 'ph1', name: 'Application Review' },
-    dateAdded: '2026-01-05T00:00:00.000Z'
+    dateAdded: '2026-01-05T00:00:00.000Z',
   },
   {
     _id: 'p2',
@@ -42,8 +44,8 @@ const PROJECTS = [
     description: 'A transmission line.',
     centroid: [-120.1, 56.4],
     currentPhaseName: { _id: 'ph2', name: 'Pre-Application' },
-    dateAdded: '2026-02-05T00:00:00.000Z'
-  }
+    dateAdded: '2026-02-05T00:00:00.000Z',
+  },
 ];
 
 const LISTS = [
@@ -51,7 +53,7 @@ const LISTS = [
   { _id: 'r2', type: 'region', name: 'Peace' },
   { _id: 'r3', type: 'region', name: 'Thompson-Nicola' },
   { _id: 'ph1', type: 'projectPhase', name: 'Application Review', legislation: '2018' },
-  { _id: 'ph2', type: 'projectPhase', name: 'Pre-Application', legislation: '2018' }
+  { _id: 'ph2', type: 'projectPhase', name: 'Pre-Application', legislation: '2018' },
 ];
 
 /** Two of the nine EAO region polygons, enough to assert on the layer filter. */
@@ -61,14 +63,36 @@ const REGION_SHAPES = {
     {
       type: 'Feature',
       properties: { regionName: 'Thompson', regionNumber: 3 },
-      geometry: { type: 'Polygon', coordinates: [[[-121, 50], [-119, 50], [-119, 52], [-121, 52], [-121, 50]]] }
+      geometry: {
+        type: 'Polygon',
+        coordinates: [
+          [
+            [-121, 50],
+            [-119, 50],
+            [-119, 52],
+            [-121, 52],
+            [-121, 50],
+          ],
+        ],
+      },
     },
     {
       type: 'Feature',
       properties: { regionName: 'Peace', regionNumber: 9 },
-      geometry: { type: 'Polygon', coordinates: [[[-122, 55], [-119, 55], [-119, 58], [-122, 58], [-122, 55]]] }
-    }
-  ]
+      geometry: {
+        type: 'Polygon',
+        coordinates: [
+          [
+            [-122, 55],
+            [-119, 55],
+            [-119, 58],
+            [-122, 58],
+            [-122, 55],
+          ],
+        ],
+      },
+    },
+  ],
 };
 
 let requests: string[];
@@ -76,7 +100,10 @@ let projectFixtures: typeof PROJECTS;
 let commentPeriodResponders: Map<string, () => Promise<Response>>;
 
 function jsonResponse(body: unknown) {
-  return new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } });
+  return new Response(JSON.stringify(body), {
+    status: 200,
+    headers: { 'content-type': 'application/json' },
+  });
 }
 
 function stubFetch() {
@@ -90,11 +117,16 @@ function stubFetch() {
       requests.push(url);
       if (url.includes('dataset=Project')) {
         return jsonResponse([
-          { searchResults: projectFixtures, meta: [{ searchResultsTotal: projectFixtures.length }] }
+          {
+            searchResults: projectFixtures,
+            meta: [{ searchResultsTotal: projectFixtures.length }],
+          },
         ]);
       }
       if (url.includes('dataset=List')) {
-        return jsonResponse([{ searchResults: LISTS, meta: [{ searchResultsTotal: LISTS.length }] }]);
+        return jsonResponse([
+          { searchResults: LISTS, meta: [{ searchResultsTotal: LISTS.length }] },
+        ]);
       }
       if (url.includes('eao-regions.geojson')) {
         return jsonResponse(REGION_SHAPES);
@@ -105,7 +137,7 @@ function stubFetch() {
         return responder ? responder() : jsonResponse([]);
       }
       return jsonResponse([]);
-    })
+    }),
   );
 }
 
@@ -119,7 +151,7 @@ function stubViewport(desktop: boolean) {
     removeEventListener: () => undefined,
     addListener: () => undefined,
     removeListener: () => undefined,
-    dispatchEvent: () => false
+    dispatchEvent: () => false,
   }));
 }
 
@@ -127,14 +159,16 @@ function renderAt(path = '/projects') {
   const router = createMemoryRouter(
     [
       { path: '/projects', Component: Projects },
-      { path: '/p/:projId', element: <div>project page</div> }
+      { path: '/p/:projId', element: <div>project page</div> },
     ],
-    { initialEntries: [path] }
+    { initialEntries: [path] },
   );
   render(
-    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })}>
+    <QueryClientProvider
+      client={new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })}
+    >
       <RouterProvider router={router} />
-    </QueryClientProvider>
+    </QueryClientProvider>,
   );
   return router;
 }
@@ -145,7 +179,7 @@ function cards(): HTMLElement[] {
 
 /** By card text, not `getByText`: the pin tooltip carries the same project name. */
 function cardFor(name: string): HTMLElement {
-  const card = cards().find(item => item.textContent?.includes(name));
+  const card = cards().find((item) => item.textContent?.includes(name));
   if (!card) throw new Error(`no card for ${name}`);
   return card;
 }
@@ -169,10 +203,15 @@ function moveOverRegion(regionName: string, id: number, x = 40, y = 60): void {
   act(() =>
     mapProps?.onMouseMove?.({
       features: [
-        { type: 'Feature', id, properties: { regionName }, geometry: { type: 'Point', coordinates: [0, 0] } }
+        {
+          type: 'Feature',
+          id,
+          properties: { regionName },
+          geometry: { type: 'Point', coordinates: [0, 0] },
+        },
       ],
-      point: { x, y }
-    })
+      point: { x, y },
+    }),
   );
 }
 
@@ -210,13 +249,13 @@ describe('filter state', () => {
       dispId: '456',
       purpose: 'quarry',
       publishFrom: new Date('2026-01-01T00:00:00.000Z'),
-      publishTo: new Date('2026-06-30T00:00:00.000Z')
+      publishTo: new Date('2026-06-30T00:00:00.000Z'),
     };
     const params = filtersToParams(filters);
 
     expect(params.toString()).toBe(
       'regions=r1%2Cr2&phases=ph1&types=mines&applicant=cedar&clFile=123&dispId=456&purpose=quarry' +
-        '&publishFrom=2026-01-01&publishTo=2026-06-30'
+        '&publishFrom=2026-01-01&publishTo=2026-06-30',
     );
     expect(parseFilters(params)).toEqual(filters);
   });
@@ -227,13 +266,15 @@ describe('filter state', () => {
 });
 
 describe('project filter', () => {
-  const regions = LISTS.filter(item => item.type === 'region');
+  const regions = LISTS.filter((item) => item.type === 'region');
   const empty = parseFilters(new URLSearchParams());
   const project = PROJECTS[0] as any;
 
   it('matches a type filter by the dropdown code, not the raw code string', () => {
     expect(projectMatchesFilters(project, { ...empty, types: ['mines'] }, regions)).toBe(true);
-    expect(projectMatchesFilters(project, { ...empty, types: ['transportation'] }, regions)).toBe(false);
+    expect(projectMatchesFilters(project, { ...empty, types: ['transportation'] }, regions)).toBe(
+      false,
+    );
   });
 
   it('matches a region filter by id through the list metadata', () => {
@@ -244,7 +285,9 @@ describe('project filter', () => {
   it('drops projects outside the publish date range', () => {
     const publishFrom = new Date('2026-02-01T00:00:00.000Z');
     expect(projectMatchesFilters(project, { ...empty, publishFrom }, regions)).toBe(false);
-    expect(projectMatchesFilters(PROJECTS[1] as any, { ...empty, publishFrom }, regions)).toBe(true);
+    expect(projectMatchesFilters(PROJECTS[1] as any, { ...empty, publishFrom }, regions)).toBe(
+      true,
+    );
   });
 });
 
@@ -258,9 +301,9 @@ describe('projects page', () => {
     expect(screen.getByText('Fir Power')).toBeInTheDocument();
     expect(screen.getByTestId('results-count')).toHaveTextContent('2 projects in view');
 
-    const projectRequests = requests.filter(url => url.includes('dataset=Project'));
+    const projectRequests = requests.filter((url) => url.includes('dataset=Project'));
     expect(projectRequests).toEqual([
-      '/api/search?dataset=Project&pageNum=0&pageSize=1000000&projectLegislation=default&sortBy=&sortBy=&populate=true&fuzzy=false'
+      '/api/search?dataset=Project&pageNum=0&pageSize=1000000&projectLegislation=default&sortBy=&sortBy=&populate=true&fuzzy=false',
     ]);
   });
 
@@ -349,7 +392,7 @@ describe('projects page', () => {
 
   it('shows skeleton cards until the projects arrive', async () => {
     let release: (() => void) | undefined;
-    const gate = new Promise<void>(resolve => {
+    const gate = new Promise<void>((resolve) => {
       release = resolve;
     });
     const responder = globalThis.fetch;
@@ -358,7 +401,7 @@ describe('projects page', () => {
       vi.fn(async (input: RequestInfo | URL) => {
         if (String(input).includes('dataset=Project')) await gate;
         return responder(input);
-      })
+      }),
     );
 
     renderAt();
@@ -445,8 +488,8 @@ describe('projects map', () => {
       {
         type: 'Feature',
         geometry: { type: 'Point', coordinates: [-125.5, 55.5] },
-        properties: { cluster: true, cluster_id: 7, point_count: 12 }
-      }
+        properties: { cluster: true, cluster_id: 7, point_count: 12 },
+      },
     ]);
     renderAt();
     await screen.findByText('Application Review');
@@ -458,7 +501,9 @@ describe('projects map', () => {
 
     await waitFor(() => expect(fakeMap.getClusterExpansionZoom).toHaveBeenCalledWith(7));
     await waitFor(() =>
-      expect(fakeMap.easeTo).toHaveBeenCalledWith(expect.objectContaining({ center: [-125.5, 55.5], zoom: 11 }))
+      expect(fakeMap.easeTo).toHaveBeenCalledWith(
+        expect.objectContaining({ center: [-125.5, 55.5], zoom: 11 }),
+      ),
     );
   });
 
@@ -481,7 +526,7 @@ describe('projects map', () => {
       ...PROJECTS[0],
       _id: `x${index}`,
       name: `Paged Project ${index}`,
-      centroid: [-127.5 + index * 0.01, 54.2]
+      centroid: [-127.5 + index * 0.01, 54.2],
     }));
     renderAt();
     await screen.findByText('Paged Project 0');
@@ -489,7 +534,12 @@ describe('projects map', () => {
 
     await userEvent.click(pinFor(`x${LIST_PAGE_SIZE + 1}`));
 
-    await waitFor(() => expect(cardFor(`Paged Project ${LIST_PAGE_SIZE + 1}`)).toHaveAttribute('aria-current', 'true'));
+    await waitFor(() =>
+      expect(cardFor(`Paged Project ${LIST_PAGE_SIZE + 1}`)).toHaveAttribute(
+        'aria-current',
+        'true',
+      ),
+    );
   });
 
   it('rebuilds the marker set when the map repaints, without waiting for a move to end', async () => {
@@ -503,9 +553,9 @@ describe('projects map', () => {
         {
           type: 'Feature',
           geometry: { type: 'Point', coordinates: [-125.5, 55.5] },
-          properties: { cluster: true, cluster_id: 3, point_count: 2 }
-        }
-      ])
+          properties: { cluster: true, cluster_id: 3, point_count: 2 },
+        },
+      ]),
     );
 
     await waitFor(() => expect(screen.getByTestId('map-cluster')).toHaveTextContent('2'));
@@ -522,9 +572,9 @@ describe('projects map', () => {
         {
           type: 'Feature',
           geometry: { type: 'Point', coordinates: [-125.5, 55.5] },
-          properties: { cluster: true, cluster_id: 3, point_count: 2 }
-        }
-      ])
+          properties: { cluster: true, cluster_id: 3, point_count: 2 },
+        },
+      ]),
     );
 
     expect(screen.queryByTestId('map-cluster')).toBeNull();
@@ -558,7 +608,11 @@ describe('eao region overlay', () => {
     await screen.findByText('Pre-Application');
 
     // r3 is "Thompson-Nicola" in the region list and "Thompson" in the shapefile.
-    const expected = JSON.stringify(['in', ['get', 'regionName'], ['literal', ['Peace', 'Thompson']]]);
+    const expected = JSON.stringify([
+      'in',
+      ['get', 'regionName'],
+      ['literal', ['Peace', 'Thompson']],
+    ]);
     expect(layerFor('eao-regions-fill')).toHaveAttribute('data-filter', expected);
     expect(layerFor('eao-regions-line')).toHaveAttribute('data-filter', expected);
   });
@@ -568,7 +622,9 @@ describe('eao region overlay', () => {
     await screen.findByText('Pre-Application');
 
     // Union of the two fixture polygons; the one matching project sits at [-120.1, 56.4].
-    await waitFor(() => expect(fakeMap.fitBounds).toHaveBeenLastCalledWith([-122, 50, -119, 58], expect.anything()));
+    await waitFor(() =>
+      expect(fakeMap.fitBounds).toHaveBeenLastCalledWith([-122, 50, -119, 58], expect.anything()),
+    );
     expect(fakeMap.fitBounds.mock.lastCall?.[1]).toMatchObject({ padding: 48, maxZoom: 10 });
   });
 
@@ -582,7 +638,10 @@ describe('eao region overlay', () => {
     expect(tip).toHaveTextContent('Peace');
     // Offset from the pointer, so the cursor never covers the label.
     expect(tip).toHaveStyle({ left: '52px', top: '72px' });
-    expect(fakeMap.setFeatureState).toHaveBeenCalledWith({ source: 'eao-regions', id: 9 }, { hover: true });
+    expect(fakeMap.setFeatureState).toHaveBeenCalledWith(
+      { source: 'eao-regions', id: 9 },
+      { hover: true },
+    );
   });
 
   it('drops the region name and the highlight when the pointer leaves', async () => {
@@ -593,7 +652,10 @@ describe('eao region overlay', () => {
     act(() => mapProps?.onMouseLeave?.());
 
     expect(screen.queryByTestId('map-region-tip')).toBeNull();
-    expect(fakeMap.setFeatureState).toHaveBeenLastCalledWith({ source: 'eao-regions', id: 9 }, { hover: false });
+    expect(fakeMap.setFeatureState).toHaveBeenLastCalledWith(
+      { source: 'eao-regions', id: 9 },
+      { hover: false },
+    );
   });
 
   it('leaves the region unnamed while a pin is hovered', async () => {
@@ -753,7 +815,7 @@ describe('projects map on a phone', () => {
 describe('project detail popup', () => {
   it('fetches the comment period for the selected pin', async () => {
     commentPeriodResponders.set('p1', async () =>
-      jsonResponse([{ _id: 'cp1', dateStarted: '2026-01-01', dateCompleted: '2099-01-01' }])
+      jsonResponse([{ _id: 'cp1', dateStarted: '2026-01-01', dateCompleted: '2099-01-01' }]),
     );
     renderAt();
     await screen.findByText('Application Review');
@@ -763,7 +825,7 @@ describe('project detail popup', () => {
     const popup = await screen.findByTestId('map-popup');
     expect(await within(popup).findByText('Open for comment')).toBeInTheDocument();
     expect(requests).toContain(
-      '/api/commentperiod?project=p1&sortBy=-dateStarted&fields=project|dateStarted|dateCompleted|instructions|isMet|metURL|informationLabel'
+      '/api/commentperiod?project=p1&sortBy=-dateStarted&fields=project|dateStarted|dateCompleted|instructions|isMet|metURL|informationLabel',
     );
   });
 
@@ -785,19 +847,22 @@ describe('project detail popup', () => {
     await userEvent.click(more);
 
     expect(description).not.toHaveClass('is-clamped');
-    expect(within(popup).getByRole('button', { name: 'Less' })).toHaveAttribute('aria-expanded', 'true');
+    expect(within(popup).getByRole('button', { name: 'Less' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
   });
 
   it('ignores the in-flight comment period once another pin is selected', async () => {
     let releaseFirst: (() => void) | undefined;
     commentPeriodResponders.set('p1', async () => {
-      await new Promise<void>(resolve => {
+      await new Promise<void>((resolve) => {
         releaseFirst = resolve;
       });
       return jsonResponse([{ _id: 'cp1', dateStarted: '2020-01-01', dateCompleted: '2020-06-01' }]);
     });
     commentPeriodResponders.set('p2', async () =>
-      jsonResponse([{ _id: 'cp2', dateStarted: '2026-01-01', dateCompleted: '2099-01-01' }])
+      jsonResponse([{ _id: 'cp2', dateStarted: '2026-01-01', dateCompleted: '2099-01-01' }]),
     );
 
     renderAt();
@@ -807,7 +872,9 @@ describe('project detail popup', () => {
     await userEvent.click(pinFor('p2'));
 
     const popup = await screen.findByTestId('map-popup');
-    expect(within(popup).getByRole('heading', { name: 'Fir Transmission Line' })).toBeInTheDocument();
+    expect(
+      within(popup).getByRole('heading', { name: 'Fir Transmission Line' }),
+    ).toBeInTheDocument();
     expect(await within(popup).findByText('Open for comment')).toBeInTheDocument();
 
     // The first project's closed period lands late; it must not overwrite the second project's chip.

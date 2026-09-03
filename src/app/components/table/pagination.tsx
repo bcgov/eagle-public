@@ -13,7 +13,7 @@ export function Pagination({
   pageSize = 10,
   totalItems = 0,
   ariaLabel = 'Pagination navigation',
-  onPageChange
+  onPageChange,
 }: PaginationProps) {
   const totalPages = Math.ceil(totalItems / pageSize);
 
@@ -44,7 +44,7 @@ export function Pagination({
             role="button"
             tabIndex={0}
             onClick={() => change(currentPage - 1)}
-            onKeyDown={event => keyActivate(event, currentPage - 1)}
+            onKeyDown={(event) => keyActivate(event, currentPage - 1)}
             aria-label="Previous page"
           >
             &laquo;
@@ -63,14 +63,14 @@ export function Pagination({
                 role="button"
                 tabIndex={0}
                 onClick={() => change(page)}
-                onKeyDown={event => keyActivate(event, page)}
+                onKeyDown={(event) => keyActivate(event, page)}
                 aria-label={`Go to page ${page}`}
                 aria-current={page === currentPage ? 'page' : undefined}
               >
                 {page}
               </a>
             </li>
-          )
+          ),
         )}
 
         <li className={`page-item${currentPage >= totalPages ? ' disabled' : ''}`}>
@@ -79,7 +79,7 @@ export function Pagination({
             role="button"
             tabIndex={0}
             onClick={() => change(currentPage + 1)}
-            onKeyDown={event => keyActivate(event, currentPage + 1)}
+            onKeyDown={(event) => keyActivate(event, currentPage + 1)}
             aria-label="Next page"
           >
             &raquo;
