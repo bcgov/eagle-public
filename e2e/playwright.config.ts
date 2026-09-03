@@ -16,6 +16,8 @@ export default defineConfig({
   // Public prod site: be a polite client.
   workers: 2,
   retries: process.env['CI'] ? 2 : 1,
+  // An unreachable test environment fails every test; stop early instead of timing out 78 times.
+  maxFailures: process.env['CI'] ? 10 : 0,
   timeout: 120_000,
   expect: { timeout: 20_000 },
   reporter: [['list'], ['html', { open: 'never' }]],
