@@ -20,6 +20,13 @@ function cancelledIds(): string[] {
     .map(([url]) => String(url).replace('/demi-search/bulk-downloads/', ''));
 }
 
+/** Dispatches a leave event, returning it so the caller can read what the panel did with it. */
+function leave(type: 'beforeunload' | 'pagehide'): Event {
+  const event = new Event(type, { cancelable: true });
+  window.dispatchEvent(event);
+  return event;
+}
+
 /** The src of every download iframe currently in the document. */
 function downloadUrls(): string[] {
   return [...document.body.querySelectorAll('iframe')].map(frame => frame.getAttribute('src') ?? '');
@@ -410,24 +417,46 @@ describe('DownloadPanel', () => {
     expect(screen.getByText('Zipping 40 documents…')).toBeInTheDocument();
   });
 
-  /**
-   * A poll that never answers leaves the job with no status, which the toolbar used to read as a
-   * download still running: Download stayed disabled behind "wait for the one in progress".
-   */
-  it.each([
-    [404, 'That download is no longer available.'],
-    [500, 'Could not check the download.']
-  ])('releases the next download when the status poll answers %i', async (status, message) => {
-    statusStatus = status;
-    const panel = await mount({ id: 'job-9', count: 40, startedAt: Date.now() });
+  /** Three jobs demi-api no longer knows are three jobs it is no longer preparing. */
+  it('releases the next download when the status poll answers 404', async () => {
+    statusStatus = 404;
+    const panel = await mount(
+      { id: 'job-a', count: 4, startedAt: Date.now() },
+      { id: 'job-b', count: 7, startedAt: Date.now() },
+      { id: 'job-c', count: 9, startedAt: Date.now() }
+    );
 
     panel.render();
     await tick(0);
 
-    const inProgress = renderHook(() => panel.store.useDownloadInProgress());
-    expect(inProgress.result.current).toBe(false);
-    // The panel keeps the failure and whatever it offers to do about it.
-    expect(screen.getByText(message)).toBeInTheDocument();
+    expect(renderHook(() => panel.store.useDownloadInProgress()).result.current).toBe(false);
+    expect(leave('beforeunload').defaultPrevented).toBe(false);
+    // The panel keeps the failure it read.
+    expect(screen.getAllByText('That download is no longer available.')).toHaveLength(3);
+  });
+
+  /**
+   * A 500 says nothing about the zip: demi-api is still building it, so the job stays in flight
+   * and everything that protects it stays on.
+   */
+  it('keeps the jobs in flight when the status poll fails for any other reason', async () => {
+    statusStatus = 500;
+    const panel = await mount(
+      { id: 'job-a', count: 4, startedAt: Date.now() },
+      { id: 'job-b', count: 7, startedAt: Date.now() },
+      { id: 'job-c', count: 9, startedAt: Date.now() }
+    );
+
+    panel.render();
+    await tick(0);
+
+    expect(renderHook(() => panel.store.useDownloadInProgress()).result.current).toBe(true);
+    expect(leave('beforeunload').defaultPrevented).toBe(true);
+    expect(screen.getAllByText('Could not check the download.')).toHaveLength(3);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Dismiss download of 4 documents' }));
+
+    expect(cancelledIds()).toEqual(['job-a']);
   });
 
   it('keeps polling while it is collapsed, and stops showing the rows', async () => {
@@ -567,6 +596,27 @@ describe('DownloadPanel', () => {
       expect(pollsFor('job-b')).toBeGreaterThan(kept);
     });
 
+    /** Dismissing leaves the panel open, so focus has to stay in it. */
+    it('moves focus to the next job when one is dismissed', async () => {
+      await twoJobs();
+      const dismiss = screen.getByRole('button', { name: 'Dismiss download of 4 documents' });
+      dismiss.focus();
+
+      fireEvent.click(dismiss);
+
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Dismiss download of 7 documents' }));
+    });
+
+    it('falls back to the panel close button when the last job is dismissed', async () => {
+      await twoJobs();
+      const dismiss = screen.getByRole('button', { name: 'Dismiss download of 7 documents' });
+      dismiss.focus();
+
+      fireEvent.click(dismiss);
+
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Close download panel' }));
+    });
+
     it('closes every job at once on the panel close', async () => {
       const panel = await twoJobs();
       const { container } = panel.render();
@@ -622,13 +672,6 @@ describe('DownloadPanel', () => {
       errorCount: 0,
       parts: [{ n: 1, fileName: `${id}.zip`, url: `https://nrs.example/${id}.zip` }]
     });
-
-    /** Returns the event so the caller can read what the panel did with it. */
-    function leave(type: 'beforeunload' | 'pagehide'): Event {
-      const event = new Event(type, { cancelable: true });
-      window.dispatchEvent(event);
-      return event;
-    }
 
     it('cancels the job the reader dismissed, and leaves the other running', async () => {
       statusByJob = { 'job-a': RUNNING('job-a'), 'job-b': RUNNING('job-b') };

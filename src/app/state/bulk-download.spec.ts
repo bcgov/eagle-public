@@ -243,14 +243,15 @@ describe('bulk download jobs', () => {
     expect(claimDownload('job-1')).toBe(true);
   });
 
+  // job-1 is older than the finished job, so a plain "drop the last" would take the zip still running.
   it('drops the oldest finished job once the list is full', () => {
     ['job-1', 'job-2', 'job-3', 'job-4', 'job-5'].forEach(id => addJob(job(id)));
-    setJobStatus('job-1', 'ready');
     setJobStatus('job-2', 'ready');
+    setJobStatus('job-4', 'ready');
 
     addJob(job('job-6'));
 
-    expect(jobsNow().map(one => one.id)).toEqual(['job-6', 'job-5', 'job-4', 'job-3', 'job-2']);
+    expect(jobsNow().map(one => one.id)).toEqual(['job-6', 'job-5', 'job-4', 'job-3', 'job-1']);
   });
 
   it('drops the oldest of all when none of them has finished', () => {

@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { track } from 'app/analytics/analytics';
 import { ApiError, cancelBulkDownload, getBulkDownload, type BulkDownloadStatus } from 'app/api/api';
@@ -158,7 +158,15 @@ function readyRows(state: BulkDownloadStatus, downloaded: boolean): ReactNode {
  * One job's rows, with its own poll: a job that reached its last status stops asking while the
  * others carry on.
  */
-function JobRows({ job, collapsed }: { job: BulkDownloadJob; collapsed: boolean }) {
+function JobRows({
+  job,
+  collapsed,
+  closeRef
+}: {
+  job: BulkDownloadJob;
+  collapsed: boolean;
+  closeRef: RefObject<HTMLButtonElement | null>;
+}) {
   const query = useQuery({
     queryKey: ['bulk-download', job.id],
     queryFn: () => getBulkDownload(job.id),
@@ -177,10 +185,10 @@ function JobRows({ job, collapsed }: { job: BulkDownloadJob; collapsed: boolean 
   useEffect(() => {
     if (!query.isError) return;
     logger.warn('Bulk download status could not be read', 'bulk-download', queryError);
-    // A poll that cannot answer leaves the status unread, which the toolbar takes for "still
-    // running"; a terminal one releases Download while the panel keeps the error and its Retry.
-    setJobStatus(job.id, 'failed');
-  }, [query.isError, queryError, job.id]);
+    // Only a job demi-api has forgotten is over. Any other failure says nothing about the zip, so
+    // the job stays in flight with its leave warning and its cancel; the panel keeps its Retry.
+    if (jobGone) setJobStatus(job.id, 'failed');
+  }, [query.isError, queryError, jobGone, job.id]);
 
   // `downloadedAt` on the stored job is the guard, not a ref: a re-render must not re-fire the zip.
   useEffect(() => {
@@ -261,10 +269,15 @@ function JobRows({ job, collapsed }: { job: BulkDownloadJob; collapsed: boolean 
         type="button"
         className="download-panel__dismiss"
         aria-label={`Dismiss download of ${plural(job.count, 'document')}`}
-        onClick={() => {
+        onClick={event => {
+          const next = event.currentTarget
+            .closest('.download-panel__job')
+            ?.nextElementSibling?.querySelector<HTMLButtonElement>('.download-panel__dismiss');
           // A zip still being built is stopped at the backend, not left running for nobody.
           if (!isTerminal(job.status)) cancelJob(job.id);
           dismissJob(job.id);
+          // The panel stays open, so focus moves along it rather than dropping to the document.
+          (next ?? closeRef.current)?.focus();
         }}
       >
         <i className="material-icons md-18" aria-hidden="true">
@@ -283,6 +296,7 @@ function JobRows({ job, collapsed }: { job: BulkDownloadJob; collapsed: boolean 
 export function DownloadPanel() {
   const jobs = useJobs();
   const startError = useStartError();
+  const closeRef = useRef<HTMLButtonElement>(null);
   const [collapsed, setCollapsed] = useState(false);
   const inFlight = jobs.filter(job => !isTerminal(job.status)).map(job => job.id);
   // A joined key, so the listeners are not torn down and rebuilt on every unrelated render.
@@ -323,6 +337,7 @@ export function DownloadPanel() {
         </button>
         <button
           type="button"
+          ref={closeRef}
           className="download-panel__control"
           aria-label="Close download panel"
           onClick={() => {
@@ -345,7 +360,7 @@ export function DownloadPanel() {
           </StatusRows>
         )}
         {jobs.map(job => (
-          <JobRows key={job.id} job={job} collapsed={collapsed} />
+          <JobRows key={job.id} job={job} collapsed={collapsed} closeRef={closeRef} />
         ))}
       </div>
     </div>
