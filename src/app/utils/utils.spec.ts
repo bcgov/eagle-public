@@ -112,6 +112,13 @@ describe('triggerDownload()', () => {
     expect(click).not.toHaveBeenCalled();
   });
 
+  it('loads nothing for a URL with an unsupported scheme', () => {
+    triggerDownload('javascript:alert(1)');
+
+    expect(downloadUrls()).toEqual([]);
+    expect(document.body.querySelector('iframe')).toBeNull();
+  });
+
   it('removes the iframe once the download has had time to start', () => {
     triggerDownload('https://nrs.example/one.pdf');
 

@@ -5,6 +5,7 @@ import { getAllByProjectId, isClosed, isNotStarted, isOpen } from 'app/api/comme
 import { CommentPeriod } from 'app/models/commentperiod';
 import type { TableRowProps } from 'app/components/table/table-object';
 import { useResponsive } from 'app/state/responsive';
+import { openExternal } from 'app/utils/safe-url';
 import { mediumDate } from 'app/utils/utils';
 import { ProjectNotificationDocumentsTable } from './project-notification-documents-table';
 import { ProjectNotificationDocumentsTableDetails } from './project-notification-documents-table-details';
@@ -109,7 +110,7 @@ export function ProjectNotificationsTableRow({ rowData }: TableRowProps) {
 
   function goToCP(commentPeriod: CommentPeriod): void {
     if (commentPeriod.isMet && commentPeriod.metURL) {
-      window.open(commentPeriod.metURL, '_blank');
+      openExternal(commentPeriod.metURL);
     } else if (rowData?.associatedProjectId) {
       navigate(`/p/${rowData.associatedProjectId}/cp/${commentPeriod._id}`);
     } else if (rowData?._id) {

@@ -120,7 +120,11 @@ describe('commenting tab', () => {
     const router = renderTab();
     await userEvent.click(await screen.findByRole('button', { name: 'Share your thoughts' }));
 
-    expect(open).toHaveBeenCalledWith('https://engage.example/cedar', '_blank');
+    expect(open).toHaveBeenCalledWith(
+      'https://engage.example/cedar',
+      '_blank',
+      'noopener,noreferrer',
+    );
     expect(router.state.location.pathname).toBe('/p/proj-1/commenting');
     open.mockRestore();
   });

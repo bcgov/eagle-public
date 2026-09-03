@@ -2,6 +2,7 @@ import { Link, useNavigate } from 'react-router';
 import { track } from 'app/analytics/analytics';
 import { sanitizeWordHtml } from 'app/utils/word-html-sanitizer';
 import { safeHtml } from 'app/utils/safe-html';
+import { openExternal } from 'app/utils/safe-url';
 import { longDate } from 'app/utils/utils';
 import './activity-card.css';
 
@@ -33,7 +34,7 @@ export function ActivityCard({
       is_met: activity.pcp?.isMet || false,
     });
     if (activity.pcp?.isMet && activity.pcp?.metURL) {
-      window.open(activity.pcp.metURL, '_blank');
+      openExternal(activity.pcp.metURL);
     } else {
       navigate(`/p/${activity.project._id}/cp/${activity.pcp._id}`);
     }
