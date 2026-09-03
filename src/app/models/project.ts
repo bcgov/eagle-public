@@ -1,3 +1,5 @@
+import type { Document } from './document';
+
 /** Fields are copied straight off the API payload, so a missing one is `undefined`. */
 export class Project {
   // the following are retrieved from the API

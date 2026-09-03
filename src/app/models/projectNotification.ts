@@ -1,4 +1,5 @@
 import { CommentPeriod } from './commentperiod';
+import type { Document } from './document';
 
 /** Fields are copied straight off the API payload, so a missing one is `undefined`. */
 export class ProjectNotification {
