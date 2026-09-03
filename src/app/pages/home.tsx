@@ -94,7 +94,7 @@ export function Home() {
         <div id="anchor-point">
           <section className="container">
             <div className="home-news-feed">
-              <h2 tabIndex={0}>Recent Activities &amp; Updates</h2>
+              <h2>Recent Activities &amp; Updates</h2>
               {isPending ? (
                 <div className="d-flex justify-content-center align-items-center py-5">
                   <div
@@ -130,8 +130,8 @@ export function Home() {
 
           <div className="bg-faded mt-5">
             <section className="container">
-              <h2 tabIndex={0}>About the B.C. Environmental Assessment Process</h2>
-              <p tabIndex={0}>
+              <h2>About the B.C. Environmental Assessment Process</h2>
+              <p>
                 Learn more about how the Environmental Assessment Office neutrally administers a
                 process that is predictable, transparent, timely, procedurally fair, and holds all
                 participants accountable.

@@ -14,7 +14,7 @@ test('every projects-list column header sorts through the URL and the API', asyn
   await page.goto('/projects-list');
   await ready(page);
 
-  const headers = page.locator('th[aria-label$="sortable"]');
+  const headers = page.locator('th.sortable button');
   const count = await headers.count();
   expect(count, 'no sortable column headers').toBeGreaterThan(0);
 
@@ -34,7 +34,7 @@ test('the page size picker drives pageSize in the URL and the rendered rows', as
   await page.goto('/projects-list');
   await ready(page);
 
-  const picker = page.locator('#table-template-page-size-picker');
+  const picker = page.locator('[id^="table-template-page-size-picker"]');
   await expect(picker).toBeVisible();
 
   const search = waitForSearch(page, 'Project', 'pageSize=25');

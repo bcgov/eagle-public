@@ -50,6 +50,7 @@ export function Gate() {
                 className="form-control"
                 type="password"
                 autoComplete="current-password"
+                // eslint-disable-next-line jsx-a11y/no-autofocus -- the gate is a blocking screen with this one field and nothing else to reach
                 autoFocus
                 aria-invalid={error ? 'true' : undefined}
                 aria-describedby={error ? 'gate-error' : undefined}

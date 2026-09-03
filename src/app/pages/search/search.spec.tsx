@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderAt } from '../../../test-utils';
 import { loadConfig } from 'app/config/config';
@@ -198,7 +198,7 @@ describe('document search', () => {
     await screen.findByText('Fish and Fish Habitat.pdf');
 
     await userEvent.click(
-      screen.getByRole('columnheader', { name: /Column header Document Name/ }),
+      within(screen.getByRole('columnheader', { name: 'Document Name' })).getByRole('button'),
     );
 
     await waitFor(() => {

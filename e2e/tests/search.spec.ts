@@ -20,9 +20,7 @@ test('search renders the document table and the API it came from', async ({ page
 
   await expect(page.getByRole('heading', { level: 1, name: 'Search All Documents' })).toBeVisible();
   for (const col of ['Document Name', 'Project', 'Date', 'Type', 'Milestone']) {
-    await expect(
-      page.getByRole('columnheader', { name: new RegExp(`Column header ${col}`) }),
-    ).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: col, exact: true })).toBeVisible();
   }
 
   const rows = page.locator(ROWS);

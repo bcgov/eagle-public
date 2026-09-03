@@ -79,9 +79,7 @@ test('documents tab renders a paged document table', async ({ page, request }) =
   await ready(page);
 
   for (const col of ['Name', 'Date', 'Type', 'Milestone', 'Phase']) {
-    await expect(
-      page.getByRole('columnheader', { name: new RegExp(`Column header ${col}`) }),
-    ).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: col, exact: true })).toBeVisible();
   }
   const rows = page.locator(ROWS);
   await expect(rows).toHaveCount(Math.min(10, total(env)));

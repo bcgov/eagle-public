@@ -15,6 +15,7 @@ import {
 import { clearToasts, useToasts } from 'app/state/toast';
 import { SelectCell, TableTemplate } from './table-template';
 import { tableObject, type ITableMessage, type TableObject } from './table-object';
+import { toggleSortDirection } from './table-params';
 
 const COLUMNS = [{ name: 'Name', value: 'name' }];
 
@@ -67,7 +68,7 @@ describe('TableTemplate page controls', () => {
     render(<Harness />);
 
     expect(document.querySelectorAll('.lib-page-size-display')).toHaveLength(1);
-    const picker = document.getElementById('table-template-page-size-picker')!;
+    const picker = document.getElementById('table-template-page-size-picker-test')!;
     expect(picker.compareDocumentPosition(screen.getByLabelText('table-template'))).toBe(
       Node.DOCUMENT_POSITION_PRECEDING,
     );
@@ -75,7 +76,7 @@ describe('TableTemplate page controls', () => {
 
   it('drives the page size from the picker', async () => {
     render(<Harness />);
-    const picker = document.getElementById('table-template-page-size-picker')!;
+    const picker = document.getElementById('table-template-page-size-picker-test')!;
 
     await userEvent.click(within(picker).getByTitle('Show 50 records per page'));
 
@@ -86,7 +87,7 @@ describe('TableTemplate page controls', () => {
   it('hides the picker while the whole result set fits on one page', () => {
     render(<Harness totalListItems={10} />);
 
-    expect(document.getElementById('table-template-page-size-picker')).not.toBeInTheDocument();
+    expect(document.getElementById('table-template-page-size-picker-test')).not.toBeInTheDocument();
   });
 
   it('scrolls back to the top of the grid on a page change', async () => {
@@ -95,6 +96,90 @@ describe('TableTemplate page controls', () => {
     await userEvent.click(screen.getAllByRole('button', { name: 'Go to page 2' })[0]);
 
     expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' });
+  });
+});
+
+/**
+ * A sortable column is a `<th aria-sort>` wrapping a real button: the state belongs to the header
+ * cell, the activation to the control inside it.
+ */
+describe('TableTemplate column headers', () => {
+  const SORT_COLUMNS = [
+    { name: 'Name', value: 'name' },
+    { name: 'Type', value: 'type' },
+    { name: 'Status', value: 'status', nosort: true },
+  ];
+
+  function sortedTable(sortBy: string): TableObject {
+    return {
+      ...tableObject({ tableId: 'sorted', component: NameRow as any, columns: SORT_COLUMNS }),
+      items: [{ rowData: { _id: 'a', name: 'Alpha' } }],
+      sortBy,
+    };
+  }
+
+  /** Owns `sortBy` through the same helper the real consumers use, so a click is observable. */
+  function SortHarness() {
+    const [sortBy, setSortBy] = useState('+name');
+
+    return (
+      <TableTemplate
+        data={sortedTable(sortBy)}
+        onMessage={(message) => {
+          if (message.label === 'columnSort')
+            setSortBy((current) => toggleSortDirection(current, message.data));
+        }}
+      />
+    );
+  }
+
+  it('marks the sorted column, and only it', () => {
+    render(<TableTemplate data={sortedTable('-name')} onMessage={() => undefined} />);
+
+    expect(screen.getByRole('columnheader', { name: 'Name' })).toHaveAttribute(
+      'aria-sort',
+      'descending',
+    );
+    expect(screen.getByRole('columnheader', { name: 'Type' })).not.toHaveAttribute('aria-sort');
+  });
+
+  it('flips the direction when the sorted column is clicked again', async () => {
+    render(<SortHarness />);
+    const name = () => screen.getByRole('columnheader', { name: 'Name' });
+    expect(name()).toHaveAttribute('aria-sort', 'ascending');
+
+    await userEvent.click(within(name()).getByRole('button'));
+
+    expect(name()).toHaveAttribute('aria-sort', 'descending');
+  });
+
+  it('offers no control on a column that cannot be sorted', () => {
+    render(<TableTemplate data={sortedTable('+name')} onMessage={() => undefined} />);
+
+    const status = screen.getByRole('columnheader', { name: 'Status' });
+    expect(within(status).queryByRole('button')).not.toBeInTheDocument();
+  });
+
+  // Documents and search render two tables on one page; a shared id makes the second one invalid.
+  it('gives two tables on one page distinct control ids', () => {
+    const plain = (tableId: string) => ({
+      ...tableObject({ tableId, component: NameRow as any, columns: SORT_COLUMNS }),
+      items: [{ rowData: { _id: 'a', name: 'Alpha' } }],
+      totalListItems: 60,
+      pageSize: 10,
+    });
+    const { container } = render(
+      <>
+        <TableTemplate data={plain('documents')} onMessage={() => undefined} />
+        <TableTemplate data={plain('search')} onMessage={() => undefined} />
+      </>,
+    );
+
+    const ids = [...container.querySelectorAll('[id]')].map((element) => element.id);
+
+    expect(ids).toContain('table-template-page-count-display-documents');
+    expect(ids).toContain('table-template-page-size-picker-search');
+    expect(ids).toHaveLength(new Set(ids).size);
   });
 });
 
@@ -303,9 +388,9 @@ describe('TableTemplate selection', () => {
 
     expect(container.querySelectorAll('.table-header-bar')).toHaveLength(0);
     expect(container.querySelectorAll('.table-controls-top')).toHaveLength(1);
-    expect(document.getElementById('table-template-page-count-display')).toHaveTextContent(
-      'Showing 10 of 60 results',
-    );
+    expect(
+      document.getElementById('table-template-page-count-display-documents'),
+    ).toHaveTextContent('Showing 10 of 60 results');
     expect(
       within(container.querySelector('.table-controls-top')!).getByLabelText('Table pagination'),
     ).toBeInTheDocument();
@@ -319,6 +404,23 @@ describe('TableTemplate selection', () => {
     const header = screen.getByLabelText(SELECT_ALL_PAGE) as HTMLInputElement;
     expect(header.indeterminate).toBe(true);
     expect(header.checked).toBe(false);
+  });
+
+  /** `indeterminate` is a DOM property with no markup; `aria-checked` is what a reader is told. */
+  it('reports a part-selected page as mixed', () => {
+    toggleSelected('documents', { id: 'doc-a', displayName: 'Alpha' });
+
+    render(<TableTemplate data={selectableTable()} onMessage={() => undefined} />);
+
+    expect(screen.getByLabelText(SELECT_ALL_PAGE)).toHaveAttribute('aria-checked', 'mixed');
+  });
+
+  it('drops mixed once the whole page is selected', async () => {
+    render(<TableTemplate data={selectableTable()} onMessage={() => undefined} />);
+
+    await userEvent.click(screen.getByLabelText(SELECT_ALL_PAGE));
+
+    expect(screen.getByLabelText(SELECT_ALL_PAGE)).not.toHaveAttribute('aria-checked');
   });
 });
 

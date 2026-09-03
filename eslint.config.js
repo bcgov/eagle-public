@@ -3,6 +3,7 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
+import jsxA11y from 'eslint-plugin-jsx-a11y';
 
 const base = [
   js.configs.recommended,
@@ -33,6 +34,11 @@ export default tseslint.config(
       globals: globals.browser,
     },
     rules,
+  },
+  {
+    files: ['**/*.tsx'],
+    ignores: ['e2e/**'],
+    extends: [jsxA11y.flatConfigs.recommended],
   },
   {
     // Playwright suite: node scripts, no React.

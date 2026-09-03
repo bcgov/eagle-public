@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderAt } from '../../test-utils';
 import { loadConfig } from 'app/config/config';
@@ -75,7 +75,8 @@ describe('news', () => {
     const router = renderNews('/news');
     await screen.findByText('Permit granted');
 
-    const dateHeader = () => screen.getByRole('columnheader', { name: /Column header Date/ });
+    const dateHeader = () =>
+      within(screen.getByRole('columnheader', { name: 'Date' })).getByRole('button');
 
     await userEvent.click(dateHeader());
     await waitFor(() =>
@@ -92,7 +93,9 @@ describe('news', () => {
     const router = renderNews('/news');
     await screen.findByText('Permit granted');
 
-    await userEvent.click(screen.getByRole('columnheader', { name: /Column header Headline/ }));
+    const headline = screen.getByRole('columnheader', { name: 'Headline' });
+    expect(headline.querySelector('button')).toBeNull();
+    await userEvent.click(headline);
 
     expect(router.state.location.search).toBe('');
   });

@@ -220,6 +220,7 @@ export function CustomMultiSelect({
               onKeyDown={onKeyDown}
               placeholder="Search..."
               aria-label="Search options"
+              // eslint-disable-next-line jsx-a11y/no-autofocus -- focus moves into a panel the reader just opened, not on page load
               autoFocus
             />
           </div>
