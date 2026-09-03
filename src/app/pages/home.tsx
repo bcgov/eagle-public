@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router';
 import { getTopNewsItems } from 'app/api/search';
-import { surveyUrl, showSurveyBanner } from 'app/api/api';
+import { surveyUrl, showSurveyBanner } from 'app/config/config';
 import type { News } from 'app/models/news';
 import { HeroBanner, type HeroBannerAction } from 'app/components/hero-banner';
 import { InfoCard, type InfoCardButton } from 'app/components/info-card';

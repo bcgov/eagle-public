@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import * as projectApi from 'app/api/project';
 import { logger } from 'app/config/logging';
-import { useOperationLoading } from 'app/state/loading-state';
 
 /**
  * The unsubscribe link mailed by eagle-api carries Angular matrix parameters
@@ -20,7 +19,7 @@ function readUnsubscribeParams(pathname: string, search: string): URLSearchParam
 export function CacUnsubscribe() {
   const { pathname, search } = useLocation();
   const navigate = useNavigate();
-  const loading = useOperationLoading('cac-unsubscribe');
+  const [loading, setLoading] = useState(false);
 
   const params = readUnsubscribeParams(pathname, search);
   const [emailInput, setEmailInput] = useState(params.get('email') || '');
@@ -33,6 +32,7 @@ export function CacUnsubscribe() {
   }
 
   function unsubscribe() {
+    setLoading(true);
     projectApi
       .cacRemoveMember(projectId, { email: emailInput, projId: projectId })
       .then((res) => {
@@ -42,7 +42,8 @@ export function CacUnsubscribe() {
       .catch((error) => {
         logger.error('Error unsubscribing from CAC', 'CacUnsubscribe', error);
         alert('Uh-oh, error submitting information');
-      });
+      })
+      .finally(() => setLoading(false));
   }
 
   return (
@@ -95,6 +96,7 @@ export function CacUnsubscribe() {
                     <button
                       className="btn content-btn-dark mt-2 me-2"
                       type="button"
+                      disabled={loading}
                       onClick={unsubscribe}
                     >
                       <span>Unsubscribe</span>

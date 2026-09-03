@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useLocation } from 'react-router';
-import { adminUrl } from 'app/api/api';
+import { adminUrl } from 'app/config/config';
 import './footer.css';
 
 export function Footer({ className = '' }: { className?: string }) {

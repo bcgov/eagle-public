@@ -1,10 +1,15 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import {
+  adminUrl,
+  bannerColour,
   bulkDownloadEnabled,
   contentSearchEnabled,
+  env,
   getConfig,
   getNotifyApi,
   loadConfig,
+  showSurveyBanner,
+  surveyUrl,
 } from './config';
 
 /**
@@ -164,5 +169,47 @@ describe('config dumps', () => {
     await loadConfig();
 
     expect(log).not.toHaveBeenCalled();
+  });
+});
+
+describe('config getters', () => {
+  const original = window.__env;
+
+  afterEach(() => {
+    window.__env = original;
+  });
+
+  async function configuredWith(env: Record<string, unknown>): Promise<void> {
+    window.__env = { logLevel: 4, ...env };
+    await loadConfig();
+  }
+
+  it('fall back to local defaults when the config is empty', async () => {
+    await configuredWith({});
+    expect(env()).toBe('local');
+    expect(adminUrl()).toBe('http://localhost:4200/admin/');
+    expect(bannerColour()).toBe('red');
+    expect(surveyUrl()).toBeNull();
+    expect(showSurveyBanner()).toBe(false);
+  });
+
+  it('read the configured values', async () => {
+    await configuredWith({
+      ENVIRONMENT: 'test',
+      ADMIN_PATH: '/admin/',
+      BANNER_COLOUR: 'green',
+      SURVEY_URL: 'https://survey.example',
+      SHOW_SURVEY_BANNER: true,
+    });
+    expect(env()).toBe('test');
+    expect(adminUrl()).toBe('/admin/');
+    expect(bannerColour()).toBe('green');
+    expect(surveyUrl()).toBe('https://survey.example');
+    expect(showSurveyBanner()).toBe(true);
+  });
+
+  it('treat an empty banner colour as no colour, not the default', async () => {
+    await configuredWith({ BANNER_COLOUR: '' });
+    expect(bannerColour()).toBe('');
   });
 });

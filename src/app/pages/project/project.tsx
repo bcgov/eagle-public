@@ -3,7 +3,7 @@ import { Link, NavLink, Outlet, useNavigate, useParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { track } from 'app/analytics/analytics';
 import { getById } from 'app/api/project';
-import { listsQueryOptions } from 'app/config/config';
+import { listsQueryOptions } from 'app/api/api';
 import { safeHtml } from 'app/utils/safe-html';
 import { isSafeUrl, openExternal } from 'app/utils/safe-url';
 import { DetailsSidebar } from './details-sidebar';

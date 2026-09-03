@@ -2,7 +2,7 @@ import { lazy, Suspense, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { Project } from 'app/models/project';
 import { getAllFull } from 'app/api/project';
-import { listsQueryOptions } from 'app/config/config';
+import { listsQueryOptions } from 'app/api/api';
 import { isProjectInBounds, mapBounds, sheetState } from 'app/state/map-ui';
 import { useResponsive } from 'app/state/responsive';
 import { useStore } from 'app/state/store';

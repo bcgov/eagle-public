@@ -1,7 +1,6 @@
 import * as api from './api';
 import * as documentApi from './document';
 import { Comment } from 'app/models/comment';
-import { startLoading, stopLoading } from 'app/state/loading-state';
 
 // get all comments for the specified comment period id (without documents)
 export async function getByPeriodId(
@@ -10,26 +9,19 @@ export async function getByPeriodId(
   pageSize: number | null = null,
   getCount = false,
 ): Promise<{ totalCount: string | null; currentComments: Comment[] } | null> {
-  const loadingId = pageNum && pageNum > 1 ? 'comments-list' : 'comments';
-  startLoading(loadingId, pageNum ? `Loading page ${pageNum}` : 'Loading comments');
-
-  try {
-    const res = await api.getCommentsByPeriodId(
-      pageNum ? pageNum - 1 : null,
-      pageSize,
-      getCount,
-      periodId,
-    );
-    if (!res) {
-      return null;
-    }
-    return {
-      totalCount: res.headers.get('x-total-count'),
-      currentComments: (res.body as any[]).map((comment: any) => new Comment(comment)),
-    };
-  } finally {
-    stopLoading(loadingId);
+  const res = await api.getCommentsByPeriodId(
+    pageNum ? pageNum - 1 : null,
+    pageSize,
+    getCount,
+    periodId,
+  );
+  if (!res) {
+    return null;
   }
+  return {
+    totalCount: res.headers.get('x-total-count'),
+    currentComments: (res.body as any[]).map((comment: any) => new Comment(comment)),
+  };
 }
 
 // get a specific comment by its id (including documents)
