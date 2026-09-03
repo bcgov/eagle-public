@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router';
-import { getConfig } from 'app/config/config';
+import { bannerColour, env } from 'app/config/config';
 import './header.css';
 
 function updateHeaderHeight(): void {
@@ -11,7 +11,6 @@ function updateHeaderHeight(): void {
 
 export function Header() {
   const { pathname } = useLocation();
-  const [config] = useState(getConfig);
   const [menuOpen, setMenuOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
@@ -20,9 +19,9 @@ export function Header() {
     setOpenDropdown(null);
   }
 
-  const envName = config.ENVIRONMENT || 'local';
-  const bannerColour = config.BANNER_COLOUR ?? 'red';
-  const hasValidColour = !!bannerColour && bannerColour !== 'no-banner-colour-set';
+  const envName = env();
+  const colour = bannerColour();
+  const hasValidColour = !!colour && colour !== 'no-banner-colour-set';
   const showBanner = envName === 'local' || (!!envName && hasValidColour);
 
   // What Bootstrap's dropdown JS did before it was dropped: a click outside shuts the open menu,
@@ -236,7 +235,7 @@ export function Header() {
         </div>
       </nav>
       {showBanner && (
-        <div className={`env-banner ${bannerColour}`} tabIndex={0}>
+        <div className={`env-banner ${colour}`} tabIndex={0}>
           This is the&nbsp;<strong>{envName}</strong>&nbsp;environment. The content you are viewing
           is not final and subject to change.
         </div>

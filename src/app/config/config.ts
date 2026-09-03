@@ -126,6 +126,27 @@ export function contentSearchEnabled(): boolean {
   return config.CONTENT_SEARCH === true;
 }
 
+export function adminUrl(): string {
+  return config.ADMIN_PATH || 'http://localhost:4200/admin/';
+}
+
+export function env(): string {
+  return config.ENVIRONMENT || 'local';
+}
+
+/** An empty string is a deliberate "no colour", which hides the environment banner. */
+export function bannerColour(): string {
+  return config.BANNER_COLOUR ?? 'red';
+}
+
+export function surveyUrl(): string | null {
+  return config.SURVEY_URL || null;
+}
+
+export function showSurveyBanner(): boolean {
+  return config.SHOW_SURVEY_BANNER ?? false;
+}
+
 /**
  * Fetch remote config from /api/config (deployed only) and merge it over env.js. A failure is
  * retried, then thrown: env.js ships ACCESS_GATE false and no search path, so falling back to it

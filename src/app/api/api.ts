@@ -6,7 +6,7 @@ import type { SearchResults } from 'app/models/search';
 import type { Org } from 'app/models/organization';
 import { encodeString } from 'app/utils/utils';
 import { logger } from 'app/config/logging';
-import { getApiPath, getSearchApiPath, getConfig } from 'app/config/config';
+import { getApiPath, getSearchApiPath } from 'app/config/config';
 import { track } from 'app/analytics/analytics';
 
 export class ApiError extends Error {
@@ -43,26 +43,6 @@ export function searchPath(): string {
 }
 
 const AZURE_DATASETS = new Set(['Project', 'Document', 'DocumentChunk']);
-
-export function adminUrl(): string {
-  return getConfig().ADMIN_PATH || 'http://localhost:4200/admin/';
-}
-
-export function env(): string {
-  return getConfig().ENVIRONMENT || 'local';
-}
-
-export function bannerColour(): string {
-  return getConfig().BANNER_COLOUR || 'red';
-}
-
-export function surveyUrl(): string | null {
-  return getConfig().SURVEY_URL || null;
-}
-
-export function showSurveyBanner(): boolean {
-  return getConfig().SHOW_SURVEY_BANNER ?? false;
-}
 
 async function send(url: string, init: RequestInit = {}): Promise<Response> {
   const method = init.method ?? 'GET';
