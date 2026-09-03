@@ -1,16 +1,15 @@
-import {
-  DateFilterDefinition,
-  FilterGroupObject,
-  FilterObject,
-  FilterType,
-  MultiSelectDefinition,
-} from 'app/components/filters/filter-object';
+import type { FilterObject } from 'app/components/filters/filter-object';
 import type { TableListConfig } from 'app/components/table/table-list';
 import type { IColumnObject } from 'app/components/table/table-object';
 import { bulkDownloadEnabled, contentSearchEnabled } from 'app/config/config';
+import {
+  buildDocumentFilters,
+  DATE_FILTER_LIST,
+  filterListFrom,
+} from 'app/pages/project/document-filters';
 import { DocSearchTableRow } from './search-documents-table-rows';
 
-export const SEARCH_TABLE_ID = 'search';
+const SEARCH_TABLE_ID = 'search';
 
 /**
  * Tabs shared by both search views. Defined here, the base config, so the dependency runs one way:
@@ -21,8 +20,6 @@ export const SEARCH_TABS = [
   { label: 'Document Content', link: '/search/content' },
 ];
 
-export const CONTENT_SEARCH_LINK = '/search/content';
-
 /** The tabs to render. The content tab is gated on the CONTENT_SEARCH runtime config flag. */
 export function visibleSearchTabs(
   isContentSearchEnabled: boolean,
@@ -31,7 +28,7 @@ export function visibleSearchTabs(
   return isContentSearchEnabled ? SEARCH_TABS : [];
 }
 
-export const SEARCH_TABLE_COLUMNS: IColumnObject[] = [
+const SEARCH_TABLE_COLUMNS: IColumnObject[] = [
   { name: 'Document Name', value: 'displayName', width: 'col-4' },
   { name: 'Project', value: 'project.name', width: 'col-2' },
   { name: 'Date', value: 'datePosted', width: 'col-2' },
@@ -39,47 +36,18 @@ export const SEARCH_TABLE_COLUMNS: IColumnObject[] = [
   { name: 'Milestone', value: 'milestone', width: 'col-2' },
 ];
 
-export const SEARCH_FILTER_LIST = ['milestone', 'documentAuthorType', 'type', 'projectPhase'];
-export const SEARCH_DATE_FILTER_LIST = ['datePostedStart', 'datePostedEnd'];
-
-const LEGISLATION_FILTER_GROUP = new FilterGroupObject('legislation', '', ' Act Terms');
-
-const MULTI_SELECT_FILTERS = [
-  { id: 'milestone', label: 'Milestone', listType: 'label' },
-  { id: 'documentAuthorType', label: 'Document Author', listType: 'author' },
-  { id: 'type', label: 'Document Type', listType: 'doctype' },
-  { id: 'projectPhase', label: 'Project Phase', listType: 'projectPhase' },
-];
+/** The filters search renders, in order, mapped to their column widths. */
+const SEARCH_PANEL_SIZES = {
+  issuedDate: 8,
+  milestone: 4,
+  documentAuthorType: 4,
+  type: 4,
+  projectPhase: 4,
+};
 
 /** Builds filters for document search from the `List` collection, grouped by legislation year. */
 export function buildSearchFilters(lists: any[]): FilterObject[] {
-  const docDateFilter = new FilterObject(
-    'issuedDate',
-    FilterType.DateRange,
-    '',
-    new DateFilterDefinition('datePostedStart', 'Start Date', 'datePostedEnd', 'End Date'),
-    8,
-  );
-
-  return [
-    docDateFilter,
-    ...MULTI_SELECT_FILTERS.map(
-      (filter) =>
-        new FilterObject(
-          filter.id,
-          FilterType.MultiSelect,
-          filter.label,
-          new MultiSelectDefinition(
-            lists.filter((item) => item.type === filter.listType),
-            [],
-            LEGISLATION_FILTER_GROUP,
-            null,
-            true,
-          ),
-          4,
-        ),
-    ),
-  ];
+  return buildDocumentFilters(lists, SEARCH_PANEL_SIZES, true);
 }
 
 /** Table-list configuration for document metadata search. */
@@ -105,8 +73,8 @@ export function createSearchConfig(filters: FilterObject[], lists: any[]): Table
     tableRowComponent: DocSearchTableRow,
     tableOptions: { disableRowHighlight: true, selectable: bulkDownloadEnabled() },
     tabs: visibleSearchTabs(contentSearchEnabled()),
-    filterList: SEARCH_FILTER_LIST,
-    dateFilterList: SEARCH_DATE_FILTER_LIST,
+    filterList: filterListFrom(SEARCH_PANEL_SIZES),
+    dateFilterList: DATE_FILTER_LIST,
     filters,
     rowData: { lists },
   };
