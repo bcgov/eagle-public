@@ -71,8 +71,10 @@ export default defineConfig({
         // Hashed output stays at the root: the deploy workflow uploads everything under
         // `assets/` with `no-cache` (that directory holds the unhashed fonts, images and
         // stylesheets copied from `public/`) and caches only root-level hashed files.
-        chunkFileNames: '[name]-[hash].js',
-        assetFileNames: '[name]-[hash][extname]',
+        // Prefixed so no chunk can land on a proxied path: a chunk named `analytics-*.js` was
+        // routed to penguin-analytics by rproxy and the dev proxy, and the app never booted.
+        chunkFileNames: 'chunk-[name]-[hash].js',
+        assetFileNames: 'asset-[name]-[hash][extname]',
       },
     },
   },
