@@ -103,7 +103,9 @@ function collect(props: string[]): [string, Record<string, string>][] {
 }
 
 async function settle(page: Page, ms: number): Promise<void> {
-  await page.waitForLoadState('networkidle', { timeout: 45_000 }).catch(() => {});
+  await page.waitForLoadState('networkidle', { timeout: 45_000 }).catch(() => {
+    // networkidle never settles on a page that keeps polling; the timed wait below covers it
+  });
   await page.waitForTimeout(ms);
 }
 

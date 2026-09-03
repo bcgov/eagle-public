@@ -109,7 +109,10 @@ function applyDeviations(line: string): string {
 }
 
 /** Envelope both /api/search and /demi-search/search answer with. */
-export type SearchEnvelope = { searchResults: any[]; meta: { searchResultsTotal: number }[] };
+export interface SearchEnvelope {
+  searchResults: any[];
+  meta: { searchResultsTotal: number }[];
+}
 
 export function unwrap(body: any): SearchEnvelope {
   const e = Array.isArray(body) ? body[0] : body;
@@ -143,7 +146,9 @@ export async function ready(page: Page, settleMs = 2500): Promise<void> {
   await page.locator('h1').first().waitFor({ state: 'attached', timeout: 90_000 });
   // The page fetches in waves after hydration - config, then the lists, then the table, then the
   // per-row lookups - so wait for the network to go quiet instead of guessing how long that takes.
-  await page.waitForLoadState('networkidle', { timeout: 60_000 }).catch(() => {});
+  await page.waitForLoadState('networkidle', { timeout: 60_000 }).catch(() => {
+    // networkidle never settles on a page that keeps polling; the timed wait below covers it
+  });
   await page.waitForTimeout(settleMs);
 }
 

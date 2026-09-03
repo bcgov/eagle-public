@@ -61,7 +61,9 @@ function outline(): string {
 }
 
 async function settle(page: Page, ms = 2500): Promise<void> {
-  await page.waitForLoadState('networkidle', { timeout: 45_000 }).catch(() => {});
+  await page.waitForLoadState('networkidle', { timeout: 45_000 }).catch(() => {
+    // networkidle never settles on a page that keeps polling; the timed wait below covers it
+  });
   await page.waitForTimeout(ms);
 }
 

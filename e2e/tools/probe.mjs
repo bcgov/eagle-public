@@ -10,10 +10,12 @@ const [url, sel, ...props] = process.argv.slice(2);
 const auth = url.includes('test.projects') ? { username: process.env.BASIC_AUTH_USER ?? '', password: process.env.BASIC_AUTH_PASS ?? '' } : undefined;
 const b = await chromium.launch();
 const c = await b.newContext({ viewport: { width: 1280, height: 800 }, httpCredentials: auth });
-await c.addInitScript(() => { try { localStorage.setItem('eagle-gate','1'); } catch {} });
+await c.addInitScript(() => { try { localStorage.setItem('eagle-gate','1'); } catch { /* private mode */ } });
 const p = await c.newPage();
 await p.goto(url, { waitUntil: 'commit' });
-await p.waitForLoadState('networkidle').catch(()=>{});
+await p.waitForLoadState('networkidle').catch(() => {
+  // networkidle never settles on a page that keeps polling
+});
 await p.waitForTimeout(3000);
 const out = await p.evaluate(([sel, props]) => {
   return [...document.querySelectorAll(sel)].slice(0, 4).map(el => {

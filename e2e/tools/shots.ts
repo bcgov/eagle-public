@@ -24,12 +24,12 @@ const VIEWPORTS = [
   { name: 'mobile', width: 390, height: 844 },
 ];
 
-type Shot = {
+interface Shot {
   name: string;
   go: (page: Page) => Promise<void>;
   mobileOnly?: boolean;
   desktopOnly?: boolean;
-};
+}
 
 async function api(pathAndQuery: string): Promise<any> {
   const headers: Record<string, string> = {};
@@ -49,8 +49,12 @@ function unwrap(body: any) {
 
 /** The app hydrates client-side and fetches in waves; wait for it to go quiet. */
 async function settle(page: Page, ms = 2500): Promise<void> {
-  await page.waitForLoadState('domcontentloaded').catch(() => {});
-  await page.waitForLoadState('networkidle', { timeout: 45_000 }).catch(() => {});
+  await page.waitForLoadState('domcontentloaded').catch(() => {
+    // a page that never fires the event still screenshots; the timed wait below covers it
+  });
+  await page.waitForLoadState('networkidle', { timeout: 45_000 }).catch(() => {
+    // networkidle never settles on a page that keeps polling
+  });
   await page.waitForTimeout(ms);
 }
 
@@ -266,7 +270,9 @@ async function main(): Promise<void> {
         console.log(`  ${vp.name} ${shot.name}`);
       } catch (e) {
         console.log(`  ${vp.name} ${shot.name}  FAILED: ${(e as Error).message.split('\n')[0]}`);
-        await page.screenshot({ path: file }).catch(() => {});
+        await page.screenshot({ path: file }).catch(() => {
+          // the failure above is the reported one; a second shot is best-effort
+        });
       }
     }
     await context.close();
