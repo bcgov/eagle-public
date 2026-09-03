@@ -121,13 +121,17 @@
 }
 
 /* Selection: the design-token blue tint plus a blue bar down the leading edge, so it never
-   reads as hover. A border, not a shadow, so the bar runs through the row dividers. */
+   reads as hover. The bar sits on the row, whose bottom border is the divider, so it runs
+   through the dividers; a cell border stopped 2px short of each one. Desktop only: phone
+   rows are cards with their own selected ring. */
 .table tbody tr.selected td {
   background-color: var(--bc-blue-10) !important;
 }
 
-.table tbody tr.selected td:first-child {
-  border-left: 3px solid var(--bs-primary);
+@media (min-width: 769px) {
+  .table tbody tr.selected {
+    border-left: 3px solid var(--bs-primary);
+  }
 }
 
 /* Hovering a selected row still answers: a deeper tint. */
