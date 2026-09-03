@@ -15,7 +15,7 @@ export default defineConfig({
   fullyParallel: true,
   // Public prod site: be a polite client.
   workers: 2,
-  retries: 1,
+  retries: process.env['CI'] ? 2 : 1,
   timeout: 120_000,
   expect: { timeout: 20_000 },
   reporter: [['list'], ['html', { open: 'never' }]],
