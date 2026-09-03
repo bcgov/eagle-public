@@ -86,6 +86,30 @@ describe('Project', () => {
       // Invalid coordinates should result in empty centroid
       expect(project.centroid).toEqual([]);
     });
+
+    it('should keep falsy API values instead of coercing them to null', () => {
+      const project = new Project({
+        _id: 'test-9',
+        overallProgress: 0,
+        substitution: false,
+        isTermsAgreed: false,
+        projectCAC: false,
+        description: '',
+      });
+
+      expect(project.overallProgress).toBe(0);
+      expect(project.substitution).toBe(false);
+      expect(project.isTermsAgreed).toBe(false);
+      expect(project.projectCAC).toBe(false);
+      expect(project.description).toBe('');
+    });
+
+    it('should leave an absent field undefined', () => {
+      const project = new Project({ _id: 'test-10' });
+
+      expect(project.status).toBeUndefined();
+      expect(project.overallProgress).toBeUndefined();
+    });
   });
 
   describe('parseCoordinate', () => {

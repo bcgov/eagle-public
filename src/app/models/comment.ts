@@ -1,3 +1,4 @@
+/** Fields are copied straight off the API payload, so a missing one is `undefined`. */
 export class Comment {
   _id!: string;
   author!: string;
@@ -10,7 +11,7 @@ export class Comment {
   period: any;
   submittedCAC!: boolean;
   documents: any;
-  documentsList: any;
+  documentsList: any = [];
 
   // Permissions
   read: string[] = [];
@@ -18,20 +19,7 @@ export class Comment {
   delete: string[] = [];
 
   constructor(obj?: any) {
-    this._id = (obj && obj._id) || null;
-    this.author = (obj && obj.author) || null;
-    this.commentId = (obj && obj.commentId) || null;
-    this.dateAdded = (obj && obj.dateAdded) || null;
-    this.dateUpdated = (obj && obj.dateUpdated) || null;
-    this.delete = (obj && obj.delete) || null;
-    this.isAnonymous = (obj && obj.isAnonymous) || null;
-    this.location = (obj && obj.location) || null;
-    this.documents = (obj && obj.documents) || null;
-    this.documentsList = (obj && obj.documentsList) || [];
-    this.period = (obj && obj.period) || null;
-    this.submittedCAC = (obj && obj.submittedCAC) || null;
-    this.read = (obj && obj.read) || null;
-    this.write = (obj && obj.write) || null;
+    Object.assign(this, obj);
 
     if (obj && obj.dateAdded) {
       this.dateAdded = new Date(obj.dateAdded);
