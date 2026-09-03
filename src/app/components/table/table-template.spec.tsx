@@ -2,7 +2,16 @@ import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
 import { useState } from 'react';
 import { render, renderHook, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { clearJob, clearSelection, SELECT_ALL_MAX, setJob, setSelected, toggleSelected } from 'app/state/bulk-download';
+import {
+  addJob,
+  clearSelection,
+  dismissAll,
+  SELECT_ALL_MAX,
+  setJobStatus,
+  setSelected,
+  toggleSelected,
+  useJobs
+} from 'app/state/bulk-download';
 import { clearToasts, useToasts } from 'app/state/toast';
 import { SelectCell, TableTemplate } from './table-template';
 import { tableObject, type ITableMessage, type TableObject } from './table-object';
@@ -329,7 +338,7 @@ describe('TableTemplate selection toolbar', () => {
 
   beforeEach(() => {
     clearSelection();
-    clearJob();
+    dismissAll();
     fetchMock = vi.fn(
       async () => new Response(JSON.stringify({ id: 'job-1', status: 'queued' }), { status: 202 })
     );
@@ -337,7 +346,7 @@ describe('TableTemplate selection toolbar', () => {
   });
 
   afterEach(() => {
-    clearJob();
+    dismissAll();
     vi.unstubAllGlobals();
   });
 
@@ -382,7 +391,7 @@ describe('TableTemplate selection toolbar', () => {
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toContain('/bulk-downloads');
     expect(JSON.parse(init.body)).toEqual({ documentIds: ['doc-a', 'doc-b'] });
-    await waitFor(() => expect(localStorage.getItem('epic-bulk-download-job')).toContain('job-1'));
+    await waitFor(() => expect(renderHook(() => useJobs()).result.current.map(job => job.id)).toEqual(['job-1']));
     // The job owns the download now, so the toolbar goes with the selection it posted.
     expect(screen.queryByRole('button', { name: 'Download' })).not.toBeInTheDocument();
   });
@@ -398,19 +407,36 @@ describe('TableTemplate selection toolbar', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  // One job slot: a second POST would replace the running one and lose the zip it was building.
-  it('refuses a second download while one is still running', () => {
-    setJob({ id: 'job-9', count: 3, startedAt: Date.now(), status: 'running' });
+  // demi-api runs three jobs at once per requester; a fourth POST comes back 429.
+  it('still offers Download with two jobs already running', () => {
+    addJob({ id: 'job-8', count: 3, startedAt: Date.now(), status: 'running' });
+    addJob({ id: 'job-9', count: 3, startedAt: Date.now(), status: 'running' });
     setSelected('documents', [{ id: 'doc-a', displayName: 'Alpha' }]);
 
     render(<TableTemplate data={selectableTable()} onMessage={() => undefined} />);
 
-    expect(screen.getByRole('button', { name: 'Download' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Download' })).toBeEnabled();
+  });
+
+  it('refuses a fourth download while three are still running', () => {
+    ['job-7', 'job-8', 'job-9'].forEach(id =>
+      addJob({ id, count: 3, startedAt: Date.now(), status: 'running' })
+    );
+    setSelected('documents', [{ id: 'doc-a', displayName: 'Alpha' }]);
+
+    render(<TableTemplate data={selectableTable()} onMessage={() => undefined} />);
+
+    const button = screen.getByRole('button', { name: 'Download' });
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute('title', '3 downloads are already in progress. Wait for one to finish.');
   });
 
   // A job that reached its last status is not still running; the panel only shows what it did.
   it.each(['ready', 'failed', 'expired'] as const)('offers Download again once a job is %s', status => {
-    setJob({ id: 'job-9', count: 3, startedAt: Date.now(), status });
+    ['job-7', 'job-8', 'job-9'].forEach(id =>
+      addJob({ id, count: 3, startedAt: Date.now(), status: 'running' })
+    );
+    setJobStatus('job-9', status);
     setSelected('documents', [{ id: 'doc-a', displayName: 'Alpha' }]);
 
     render(<TableTemplate data={selectableTable()} onMessage={() => undefined} />);

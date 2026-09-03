@@ -4,6 +4,7 @@ import { Constants } from 'app/utils/constants';
 import {
   CAP_MESSAGE,
   clearSelection,
+  MAX_JOBS_IN_FLIGHT,
   SELECT_ALL_MAX,
   setSelected,
   startDownload,
@@ -183,7 +184,11 @@ export function TableTemplate({ data, loading = false, rowComponent, onMessage }
                 type="button"
                 className="btn btn-primary btn-sm d-inline-flex align-items-center gap-1"
                 disabled={downloadInProgress}
-                title={downloadInProgress ? 'Wait for the download in progress to finish.' : undefined}
+                title={
+                  downloadInProgress
+                    ? `${MAX_JOBS_IN_FLIGHT} downloads are already in progress. Wait for one to finish.`
+                    : undefined
+                }
                 onClick={() => void startDownload()}
               >
                 {/* The bundled Material Icons build has no `download`; this is the app's glyph. */}

@@ -199,7 +199,7 @@ export interface BulkDownloadError {
 
 export interface BulkDownloadStatus {
   id: string;
-  status: 'queued' | 'running' | 'ready' | 'failed' | 'expired';
+  status: 'queued' | 'running' | 'ready' | 'failed' | 'expired' | 'cancelled';
   documentCount: number;
   partCount: number;
   partsReady: number;
@@ -216,6 +216,11 @@ export async function createBulkDownload(documentIds: string[]): Promise<BulkDow
 
 export async function getBulkDownload(id: string): Promise<BulkDownloadStatus> {
   return getJson(`${searchPath()}/bulk-downloads/${id}`);
+}
+
+/** `keepalive` lets the request outlive the page, so a cancel sent while unloading still arrives. */
+export async function cancelBulkDownload(id: string, keepalive = false): Promise<void> {
+  await send(`${searchPath()}/bulk-downloads/${id}`, { method: 'DELETE', keepalive });
 }
 
 async function downloadResource(id: string): Promise<Blob> {
