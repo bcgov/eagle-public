@@ -76,9 +76,13 @@
   // eagle-admin link
   window.__env.ADMIN_PATH = 'https://eagle-test.apps.silver.devops.gov.bc.ca/admin/';
 
-  // eagle-notify site base. Empty hides the subscribe links. The deploy workflow seds this per
-  // environment — eagle-api does not serve NOTIFY_URL, so /api/config never merges over it.
-  window.__env.NOTIFY_URL = '';
+  // eagle-notify API base. The subscribe form posts to `${base}/api/subscriptions`; empty hides the
+  // control. The deploy workflow seds this per environment — eagle-api does not serve NOTIFY_API,
+  // so /api/config never merges over it.
+  //
+  // For local work set it to `/notify-api`: vite.config.ts proxies that path to the test notify API,
+  // which keeps the POST same-origin so the dev server needs no CORS grant from eagle-notify.
+  window.__env.NOTIFY_API = '';
 
   // Analytics — proxied through /analytics (eagle-api forwards to penguin-analytics)
   window.__env.ANALYTICS_API_URL = '/analytics';

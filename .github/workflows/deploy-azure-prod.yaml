@@ -278,7 +278,7 @@ jobs:
             "window.__env.API_PATH = '/api';" \
             "window.__env.ANALYTICS_API_URL = '/analytics';" \
             "window.__env.SEARCH_API_PATH = '';" \
-            "window.__env.NOTIFY_URL = '';"; do
+            "window.__env.NOTIFY_API = '';"; do
             grep -qF "$relative" src/env.js \
               || { echo "::error::env.js no longer holds the same-origin default: $relative — the production bundle must stay relative and ungated"; exit 1; }
           done

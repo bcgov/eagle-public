@@ -34,6 +34,14 @@ export default defineConfig({
       // everything else works, which reads as "search is broken" rather than "the proxy is short
       // a line".
       '/eagle-search': proxyRule,
+      // eagle-notify's API is a different origin in every environment, so the subscribe form's POST
+      // would need a CORS grant from it. Proxying keeps the dev server's call same-origin.
+      '/notify-api': {
+        target: 'https://notify-api-test.azurewebsites.net',
+        secure: false,
+        changeOrigin: true,
+        rewrite: (path: string) => path.replace(/^\/notify-api/, '')
+      },
       // `/demi-search` is what test's /api/config returns today, and it does NOT follow
       // API_LOCATION: test's rproxy answers that location with `401 WWW-Authenticate: Basic`
       // (only `/` and `/demi-search` are gated there; `/api` is open), so routing it through the

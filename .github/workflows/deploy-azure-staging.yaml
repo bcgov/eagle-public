@@ -172,10 +172,11 @@ jobs:
           # the page uses. Both stay correct when /api/config merges the same values over them.
           sed -i "s|window.__env.ENVIRONMENT = .*|window.__env.ENVIRONMENT = 'test';|" src/env.js
           sed -i "s|window.__env.ADMIN_PATH = .*|window.__env.ADMIN_PATH = '/admin/';|" src/env.js
-          # eagle-notify's own static site, so this one IS absolute — it is a different origin and
-          # rproxy has no location for it. Both staging targets (test and next) point at the test
-          # notify site. /api/config cannot supply it: eagle-api does not serve NOTIFY_URL.
-          sed -i "s|window.__env.NOTIFY_URL = .*|window.__env.NOTIFY_URL = 'https://notifywebtestvymaysch2ag.z9.web.core.windows.net';|" src/env.js
+          # eagle-notify's API, so this one IS absolute — it is a different origin and rproxy has no
+          # location for it. The subscribe form posts to it from the browser, so eagle-notify must
+          # allow this origin in CORS. Both staging targets (test and next) point at the test notify
+          # API. /api/config cannot supply it: eagle-api does not serve NOTIFY_API.
+          sed -i "s|window.__env.NOTIFY_API = .*|window.__env.NOTIFY_API = 'https://notify-api-test.azurewebsites.net';|" src/env.js
           for expected in \
             "window.__env.configEndpoint = true;" \
             "window.__env.API_LOCATION = null;" \
@@ -183,7 +184,7 @@ jobs:
             "window.__env.ANALYTICS_DEBUG = false;" \
             "window.__env.ENVIRONMENT = 'test';" \
             "window.__env.ADMIN_PATH = '/admin/';" \
-            "window.__env.NOTIFY_URL = 'https://notifywebtestvymaysch2ag.z9.web.core.windows.net';"; do
+            "window.__env.NOTIFY_API = 'https://notify-api-test.azurewebsites.net';"; do
             grep -qF "$expected" src/env.js \
               || { echo "::error::env.js rewrite did not take: $expected"; exit 1; }
           done
