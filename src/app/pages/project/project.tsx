@@ -5,6 +5,7 @@ import { track } from 'app/analytics/analytics';
 import { getById } from 'app/api/project';
 import { listsQueryOptions } from 'app/config/config';
 import { safeHtml } from 'app/utils/safe-html';
+import { openExternal } from 'app/utils/safe-url';
 import { DetailsSidebar } from './details-sidebar';
 import { EngageBanner } from './engage-banner';
 import './project.css';
@@ -68,7 +69,7 @@ export function ProjectPage() {
       destination: external ? 'external_met' : 'comment_period_details',
     });
     if (external) {
-      window.open(banner.metURL, '_blank');
+      openExternal(banner.metURL);
     } else {
       navigate(`/p/${project._id}/cp/${banner._id}/details`);
     }

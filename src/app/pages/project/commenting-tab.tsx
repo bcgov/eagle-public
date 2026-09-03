@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router';
 import { getAllByProjectId, isClosed, isNotStarted, isOpen } from 'app/api/commentperiod';
 import type { CommentPeriod } from 'app/models/commentperiod';
+import { openExternal } from 'app/utils/safe-url';
 import { mediumDate } from 'app/utils/utils';
 import { useProjectContext } from './project-context';
 import './commenting-tab.css';
@@ -58,7 +59,7 @@ export function CommentingTab() {
 
   function goToCP(commentPeriod: CommentPeriod): void {
     if (commentPeriod.isMet && commentPeriod.metURL) {
-      window.open(commentPeriod.metURL, '_blank');
+      openExternal(commentPeriod.metURL);
     } else {
       navigate(`/p/${projId}/cp/${commentPeriod._id}`);
     }

@@ -4,6 +4,7 @@ import { track } from 'app/analytics/analytics';
 import { createBulkDownload } from 'app/api/api';
 import { bulkDownloadEnabled } from 'app/config/config';
 import { logger } from 'app/config/logging';
+import { isSafeUrl } from './safe-url';
 
 const encode = encodeURIComponent;
 (window as any)['encodeURIComponent'] = (component: string | number | boolean) => {
@@ -214,6 +215,10 @@ export function documentDownloadUrl(document: DownloadableDocument): string {
  * iframe instead of replacing the app.
  */
 export function triggerDownload(url: string): void {
+  if (!isSafeUrl(url)) {
+    logger.warn('Ignored a download link with an unsupported URL scheme', 'utils', url);
+    return;
+  }
   const frame = window.document.createElement('iframe');
   frame.hidden = true;
   frame.setAttribute('aria-hidden', 'true');
