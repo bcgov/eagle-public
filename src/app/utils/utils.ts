@@ -6,18 +6,10 @@ import { bulkDownloadEnabled } from 'app/config/config';
 import { logger } from 'app/config/logging';
 import { isSafeUrl } from './safe-url';
 
-const encode = encodeURIComponent;
-(window as any)['encodeURIComponent'] = (component: string | number | boolean) => {
-  return encode(String(component)).replace(/[!'()*]/g, (c) => {
-    // Also encode !, ', (, ), and *
-    return '%' + c.charCodeAt(0).toString(16);
-  });
-};
-
 export function encodeString(filename: string, isUrl: boolean): string {
   let safeName;
   if (isUrl) {
-    safeName = encode(filename)
+    safeName = encodeURIComponent(filename)
       .replace(/\(/g, '%28')
       .replace(/\)/g, '%29')
       .replace(/\\/g, '_')
