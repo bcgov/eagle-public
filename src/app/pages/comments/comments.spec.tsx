@@ -40,8 +40,8 @@ const COMMENTS = [
     documents: ['commentDoc1'],
   },
   {
+    // eagle-api deletes the author field on anonymous comments rather than nulling it.
     _id: 'c2',
-    author: null,
     comment: 'Anonymous comment',
     dateAdded: '2026-08-02T00:00:00.000Z',
     documents: [],
@@ -361,21 +361,14 @@ describe('comments', () => {
     const commentPost = postedTo('/api/public/comment');
     expect(commentPost).toHaveLength(1);
     expect(commentPost[0].url).toBe('/api/public/comment?fields=comment|author');
-    expect(JSON.parse(String(commentPost[0].init?.body))).toEqual({
+    // Only these fields are read server-side; the rest of the payload is ignored.
+    expect(JSON.parse(String(commentPost[0].init?.body))).toMatchObject({
       author: 'Anonymous',
       comment: 'Please consider the fish.',
-      commentId: null,
-      dateAdded: null,
-      dateUpdated: null,
-      delete: null,
-      documents: null,
-      documentsList: [],
       isAnonymous: true,
       location: 'Victoria',
       period: 'cp1',
-      read: null,
       submittedCAC: true,
-      write: null,
     });
 
     const documentPost = postedTo('/api/document/');

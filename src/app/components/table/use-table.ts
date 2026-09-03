@@ -58,9 +58,8 @@ export function useTable(id: string, config: TableQueryConfig): TableResult {
     queryFn: () => fetchData(tableSearchParams(id, params)),
   });
 
-  // SearchResults defaults `data` to 0, not [], when the response carried no results.
   return {
-    data: Array.isArray(query.data?.data) ? query.data.data : [],
+    data: query.data?.data ?? [],
     totalListItems: query.data?.totalSearchCount ?? 0,
     loading: query.isFetching,
   };
