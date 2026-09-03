@@ -35,15 +35,17 @@ function normalize(raw: CommentPeriod[]): CommentPeriod[] {
     });
 }
 
+/** eagle-api answers a bare array or a `{ totalCount, data }` envelope; both become a list. */
+export function periodsOf(res: unknown): CommentPeriod[] {
+  if (Array.isArray(res)) return res as CommentPeriod[];
+  return (res as { data?: CommentPeriod[] })?.data ?? [];
+}
+
 /** Comment periods of a project or project notification, normalized and deduplicated. */
 export function useCommentPeriods(projectId: string, enabled = true) {
   return useQuery({
     queryKey: ['commentPeriods', projectId],
     enabled: !!projectId && enabled,
-    queryFn: async () => {
-      const res: unknown = await getAllByProjectId(projectId);
-      const list = Array.isArray(res) ? res : ((res as { data?: CommentPeriod[] }).data ?? []);
-      return normalize(list as CommentPeriod[]);
-    },
+    queryFn: async () => normalize(periodsOf(await getAllByProjectId(projectId))),
   });
 }
