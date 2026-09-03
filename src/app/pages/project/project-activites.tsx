@@ -73,7 +73,7 @@ export function ProjectActivites() {
     <>
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h3 className="mb-0">Activities and Updates</h3>
-        <SubscribePopover serviceName={`project:${projId}`} variant="project" label="Subscribe" />
+        <SubscribePopover serviceName={`project:${projId}`} variant="project" />
       </div>
 
       <SearchFilterTemplate

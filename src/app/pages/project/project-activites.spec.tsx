@@ -53,6 +53,7 @@ describe('project activities subscribe control', () => {
     const trigger = await screen.findByRole('button', { name: 'Subscribe' });
     expect(trigger.closest('div')).toContainElement(screen.getByRole('heading', { name: 'Activities and Updates' }));
     // The form is the popover's own spec; this page owns which subscription it offers.
+    expect(trigger.closest('.subscribe-popover')).toHaveAttribute('data-service', 'project:proj-1');
     expect(
       screen.getByText(/Get an email each time this project publishes an Update\./)
     ).toBeInTheDocument();

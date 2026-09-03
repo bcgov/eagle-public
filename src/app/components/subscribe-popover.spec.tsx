@@ -135,6 +135,10 @@ describe('subscribe popover', () => {
     expect(screen.getByText('reader@example.com')).toBeInTheDocument();
     expect(screen.getByText(/Nothing is sent until you click it\./)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Sign up', hidden: true })).toBeNull();
+    // The submit button unmounts with the form, so the notice has to claim focus itself.
+    expect(document.querySelector('.subscribe-popover__sent')).toContainElement(
+      document.activeElement as HTMLElement
+    );
   });
 
   it('shows a field error when eagle-notify rejects the address', async () => {
@@ -159,19 +163,10 @@ describe('subscribe popover', () => {
 
     await signUpAs('reader@example.com');
 
-    expect(
-      await screen.findByText('We could not reach the subscription service. Try again in a minute.')
-    ).toBeInTheDocument();
+    const alert = await screen.findByText('We could not reach the subscription service. Try again in a minute.');
+    expect(alert).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Sign up', hidden: true })).toBeInTheDocument();
-  });
-
-  it('uses the label it is given', async () => {
-    await renderControl('/notify-api', {
-      serviceName: 'eao:updates',
-      variant: 'all',
-      label: 'Get updates'
-    });
-
-    expect(screen.getByRole('button', { name: 'Get updates' })).toBeInTheDocument();
+    // The submit button is disabled mid-flight, so focus would otherwise land on <body>.
+    expect(document.activeElement).toBe(alert);
   });
 });

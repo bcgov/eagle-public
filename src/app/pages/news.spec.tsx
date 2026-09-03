@@ -147,8 +147,9 @@ describe('news subscribe control', () => {
     await configure('https://notify-api.example');
     renderAt('/news');
 
-    expect(await screen.findByRole('button', { name: 'Subscribe' })).toBeInTheDocument();
+    const trigger = await screen.findByRole('button', { name: 'Subscribe' });
     // The form is the popover's own spec; this page owns which subscription it offers.
+    expect(trigger.closest('.subscribe-popover')).toHaveAttribute('data-service', 'eao:updates');
     expect(
       screen.getByText(/Get an email each time any project publishes an Update\./)
     ).toBeInTheDocument();

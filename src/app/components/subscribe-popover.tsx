@@ -21,13 +21,12 @@ type Status = 'idle' | 'sending' | 'sent' | 'failed';
 interface SubscribePopoverProps {
   /** eagle-notify service, e.g. `project:<id>` or `eao:updates`. */
   serviceName: string;
-  label?: string;
   variant: 'project' | 'all';
 }
 
 /** Subscribe button whose popover is the sign-up form itself, posting to eagle-notify. eagle-notify
  * owns everything after the confirmation email. Renders nothing when NOTIFY_API is unset. */
-export function SubscribePopover({ serviceName, label = 'Subscribe', variant }: SubscribePopoverProps) {
+export function SubscribePopover({ serviceName, variant }: SubscribePopoverProps) {
   const baseId = useId();
   const panelId = `${baseId}-panel`;
   const headingId = `${baseId}-heading`;
@@ -38,6 +37,8 @@ export function SubscribePopover({ serviceName, label = 'Subscribe', variant }: 
   const panel = useRef<HTMLDivElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
   const email = useRef<HTMLInputElement>(null);
+  // Sent and failed never render together, so one ref covers both outcomes.
+  const outcome = useRef<HTMLParagraphElement>(null);
 
   const [status, setStatus] = useState<Status>('idle');
   const [fieldError, setFieldError] = useState('');
@@ -59,6 +60,11 @@ export function SubscribePopover({ serviceName, label = 'Subscribe', variant }: 
     element.addEventListener('toggle', onToggle);
     return () => element.removeEventListener('toggle', onToggle);
   }, []);
+
+  // Submitting disables the focused button, and success unmounts the form, so focus would fall to <body>.
+  useEffect(() => {
+    if (status === 'sent' || status === 'failed') outcome.current?.focus();
+  }, [status]);
 
   if (!getNotifyApi()) return null;
 
@@ -110,7 +116,11 @@ export function SubscribePopover({ serviceName, label = 'Subscribe', variant }: 
   }
 
   return (
-    <span className="subscribe-popover" style={{ ['--subscribe-anchor' as string]: anchorName } as React.CSSProperties}>
+    <span
+      className="subscribe-popover"
+      data-service={serviceName}
+      style={{ ['--subscribe-anchor' as string]: anchorName } as React.CSSProperties}
+    >
       <button
         type="button"
         className="btn btn-sm btn-outline-primary subscribe-popover__trigger"
@@ -120,7 +130,7 @@ export function SubscribePopover({ serviceName, label = 'Subscribe', variant }: 
         <i className="material-icons" aria-hidden="true">
           email
         </i>
-        {label}
+        Subscribe
       </button>
       <div
         id={panelId}
@@ -145,7 +155,7 @@ export function SubscribePopover({ serviceName, label = 'Subscribe', variant }: 
 
         {status === 'sent' ? (
           <div className="subscribe-popover__sent" role="status">
-            <p className="subscribe-popover__sent-lead">
+            <p className="subscribe-popover__sent-lead" tabIndex={-1} ref={outcome}>
               {/* The bundled Material Icons subset predates the mail-specific glyphs. */}
               <i className="material-icons" aria-hidden="true">
                 check_circle
@@ -190,11 +200,10 @@ export function SubscribePopover({ serviceName, label = 'Subscribe', variant }: 
             )}
 
             {status === 'failed' && (
-              <p className="subscribe-popover__failed" role="alert">
+              <p className="subscribe-popover__failed" role="alert" tabIndex={-1} ref={outcome}>
                 {FAILED}
               </p>
             )}
-
 
             <div className="subscribe-popover__actions">
               <button type="submit" className="btn btn-primary" disabled={status === 'sending'}>
