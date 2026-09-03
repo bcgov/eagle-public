@@ -130,7 +130,8 @@ test('decisions tab route either resolves or bounces to /projects', async ({ pag
 
   // Both branches are accepted on purpose: prod's deployed build has no decisions route, so it
   // alerts and lands on /projects, while the port keeps the route resolvable and renders an empty
-  // tab (TODO.md Deviations: the Angular decisions template was entirely commented out).
+  // tab (`docs/deviations-from-angular.md`: the Angular decisions template was entirely
+  // commented out).
   if (new URL(page.url()).pathname === '/projects') {
     expect(dialogs).toContain("Uh-oh, couldn't load project");
   } else {

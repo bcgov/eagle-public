@@ -64,8 +64,9 @@ yarn start
 ```
 
 Open `http://localhost:4200/`. The page reloads when you change a source file. The dev server
-proxies `/api`, `/analytics`, `/eagle-search` and `/demi-search`; the target comes from
-`API_LOCATION` in `src/env.js`, so change it there and restart.
+proxies `/api`, `/analytics`, `/eagle-search`, `/notify-api` and `/demi-search`. All but
+`/notify-api` take their target from `API_LOCATION` in `src/env.js`, so change it there and
+restart; `/notify-api` points at eagle-notify's test host.
 
 ## Building
 
