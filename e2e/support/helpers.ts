@@ -164,9 +164,15 @@ export async function expectA11ySmoke(page: Page): Promise<{ skipLinks: number }
   };
 }
 
-/** "Showing 10 of 348 results" -> { shown: 10, total: 348 } */
+/**
+ * "Showing 10 of 348 results" -> { shown: 10, total: 348 }. A selectable table carries the line in
+ * its header bar instead of the top row, so both hooks are accepted.
+ */
 export async function pageCount(page: Page): Promise<{ shown: number; total: number }> {
-  const text = await page.locator('#table-template-page-count-display').first().innerText();
+  const text = await page
+    .locator('#table-template-page-count-display, .table-header-bar__count')
+    .first()
+    .innerText();
   const m = text.match(/Showing\s+([\d,]+)\s+of\s+([\d,]+)/i);
   expect(m, `unexpected page count text: "${text}"`).not.toBeNull();
   return { shown: Number(m![1].replace(/,/g, '')), total: Number(m![2].replace(/,/g, '')) };
