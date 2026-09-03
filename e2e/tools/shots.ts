@@ -239,10 +239,10 @@ async function main(): Promise<void> {
         ? { httpCredentials: { username: BASIC_AUTH_USER, password: BASIC_AUTH_PASS } }
         : {}),
     });
-    // The ACCESS_GATE curtain remembers a plain sessionStorage flag.
+    // The ACCESS_GATE curtain remembers a plain localStorage flag.
     await context.addInitScript(() => {
       try {
-        sessionStorage.setItem('eagle-gate', '1');
+        localStorage.setItem('eagle-gate', '1');
       } catch {
         /* ignored */
       }

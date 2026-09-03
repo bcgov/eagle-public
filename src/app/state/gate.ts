@@ -4,10 +4,11 @@ import { getConfig } from 'app/config/config';
 
 const KEY = 'eagle-gate';
 
-/** sessionStorage throws in private mode; a browser that will not remember just re-asks. */
+/** localStorage survives closing the tab, so one password entry lasts until site data is cleared.
+    It throws in private mode; a browser that will not remember just re-asks. */
 function remembered(): boolean {
   try {
-    return sessionStorage.getItem(KEY) === '1';
+    return localStorage.getItem(KEY) === '1';
   } catch {
     return false;
   }
@@ -15,7 +16,7 @@ function remembered(): boolean {
 
 function remember(): void {
   try {
-    sessionStorage.setItem(KEY, '1');
+    localStorage.setItem(KEY, '1');
   } catch {
     // ignored
   }
@@ -27,7 +28,7 @@ const unlocked = createStore(remembered());
  * Shared-password curtain for pre-launch environments.
  *
  * The password is only ever checked by eagle-api — the client holds nothing to compare against,
- * and sessionStorage carries a flag, not a secret. Only a literal `ACCESS_GATE: true` closes the
+ * and localStorage carries a flag, not a secret. Only a literal `ACCESS_GATE: true` closes the
  * curtain, so prod (false or unset) renders as it always has.
  */
 export function useGateOpen(): boolean {

@@ -1,19 +1,52 @@
-/* Anchor for the panel; the native popover is absolutely positioned against this. */
+/* A slim band inside the section, tinted rather than boxed: the row hover blue is the palette's
+   only pale tint, and its 1px edge is what separates the band from the page behind it. Also the
+   anchor for the panel, which the native popover positions against. */
 .subscribe-popover {
   position: relative;
-  display: inline-block;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin: 0.75rem 0 0;
+  padding: 0.5rem 1rem;
+  background-color: var(--bc-hover-highlight);
+  border: 1px solid var(--bc-blue-light);
+  border-radius: var(--bs-border-radius);
+  color: var(--bc-gray);
+}
+
+.subscribe-popover__icon {
+  flex: none;
+  font-size: 1.25rem;
+  color: var(--bc-blue);
+}
+
+/* Wide enough to keep the band one line on desktop, narrow enough that a phone drops the button to
+   its own row rather than the icon to one of its own. */
+.subscribe-popover__invite {
+  flex: 1 1 12rem;
+  margin: 0;
+  font-size: var(--bs-font-size-sm);
+  line-height: 1.4;
 }
 
 .subscribe-popover__trigger {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
+  flex: none;
+  margin-left: auto;
   white-space: nowrap;
   anchor-name: var(--subscribe-anchor);
 }
 
-.subscribe-popover__trigger .material-icons {
-  font-size: 1.125rem;
+/* Stacked: the sentence keeps the icon, the button spans the band. */
+@media (max-width: 36rem) {
+  .subscribe-popover {
+    align-items: flex-start;
+  }
+
+  .subscribe-popover__trigger {
+    width: 100%;
+    margin-left: 0;
+  }
 }
 
 /* An open popover sits in the top layer, where `position: absolute` resolves against the viewport
@@ -25,6 +58,7 @@
   margin: 0;
   margin-top: 0.5rem;
   position-anchor: var(--subscribe-anchor);
+  /* The button sits at the band's right edge, so the panel hangs left of it to stay in the column. */
   position-area: bottom span-left;
   position-try-fallbacks: flip-block;
   width: min(24rem, calc(100vw - 2rem));
@@ -141,12 +175,10 @@
   color: var(--bc-gray);
 }
 
-/* The collection notice is required text, not part of the task, so it sits below a rule in the
-   quietest type on the panel. */
+/* The collection notice is required text, not part of the task: quietest type on the panel,
+   under the title and ahead of the form. */
 .subscribe-popover__privacy {
-  margin: 1rem 0 0;
-  padding-top: 0.75rem;
-  border-top: 1px solid var(--bc-gray-border);
+  margin: 0 0 1rem;
   font-size: 0.75rem;
   line-height: 1.45;
   color: var(--bc-gray-medium);

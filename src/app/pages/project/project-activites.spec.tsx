@@ -47,15 +47,18 @@ describe('project activities subscribe control', () => {
     vi.unstubAllGlobals();
   });
 
-  it('sits in the heading row and subscribes to this project', async () => {
+  it('banners under the section heading and subscribes to this project', async () => {
     await renderTab('https://notify-api.example');
 
     const trigger = await screen.findByRole('button', { name: 'Subscribe' });
-    expect(trigger.closest('div')).toContainElement(screen.getByRole('heading', { name: 'Activities and Updates' }));
+    const heading = screen.getByRole('heading', { name: 'Activities and Updates' });
+    // The banner belongs to the heading's block, not to the table below it.
+    expect(heading.parentElement).toContainElement(trigger);
+    expect(heading.nextElementSibling).toBe(trigger.closest('.subscribe-popover'));
     // The form is the popover's own spec; this page owns which subscription it offers.
     expect(trigger.closest('.subscribe-popover')).toHaveAttribute('data-service', 'project:proj-1');
     expect(
-      screen.getByText(/Get an email each time this project publishes an Update\./)
+      screen.getByText(/Get an email when this project publishes an Update\./)
     ).toBeInTheDocument();
   });
 

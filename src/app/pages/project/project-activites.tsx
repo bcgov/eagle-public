@@ -71,7 +71,9 @@ export function ProjectActivites() {
 
   return (
     <>
-      <div className="d-flex justify-content-between align-items-center mb-4">
+      {/* The heading keeps the sibling sections' spacing on its own, so the section reads the same
+          when NOTIFY_API is unset and the invite renders nothing. */}
+      <div className="mb-4">
         <h3 className="mb-0">Activities and Updates</h3>
         <SubscribePopover serviceName={`project:${projId}`} variant="project" />
       </div>

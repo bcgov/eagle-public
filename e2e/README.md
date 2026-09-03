@@ -36,7 +36,7 @@ behaviour difference.
 
 `ACCESS_GATE: true` in `/api/config` puts a shared-password page in front of the whole app, and
 both test and a dev server proxying to test have it on. The flag it remembers is a plain
-`sessionStorage['eagle-gate'] = '1'`, so `support/fixtures.ts` seeds that in an init script and
+`localStorage['eagle-gate'] = '1'`, so `support/fixtures.ts` seeds that in an init script and
 every spec that imports `test` from there sees the app rather than the curtain. Import from
 `support/fixtures`, not from `@playwright/test`, in any new spec.
 

@@ -10,7 +10,7 @@ const URL = '/api/public/gate';
 
 let fetchMock: ReturnType<typeof vi.fn>;
 
-/** Fresh module graph per test — the unlocked flag is read from sessionStorage once, at load. */
+/** Fresh module graph per test — the unlocked flag is read from localStorage once, at load. */
 async function loadWith(env: Record<string, unknown>) {
   vi.resetModules();
   window.__env = { logLevel: 4, ...env };
@@ -24,7 +24,7 @@ function responding(status: number, statusText = ''): Response {
 }
 
 beforeEach(() => {
-  sessionStorage.clear();
+  localStorage.clear();
   fetchMock = vi.fn(async () => responding(204, 'No Content'));
   vi.stubGlobal('fetch', fetchMock);
 });
@@ -80,7 +80,7 @@ describe('the curtain', () => {
   });
 
   it('stays open for a session that already unlocked', async () => {
-    sessionStorage.setItem('eagle-gate', '1');
+    localStorage.setItem('eagle-gate', '1');
     await renderShell({ ACCESS_GATE: true });
     await expectOpen();
   });
@@ -119,7 +119,7 @@ describe('the password form', () => {
       body: JSON.stringify({ password: 'hunter2' })
     });
     expect(error()).toBe(null);
-    expect(sessionStorage.getItem('eagle-gate')).toBe('1');
+    expect(localStorage.getItem('eagle-gate')).toBe('1');
   });
 
   it('shows "Incorrect password" on 401 and stays locked', async () => {
@@ -131,7 +131,7 @@ describe('the password form', () => {
     expect(error()).toHaveAttribute('role', 'alert');
     expect(screen.getByLabelText('Password')).toHaveAttribute('aria-describedby', 'gate-error');
     expect(screen.getByLabelText('Password')).toHaveAttribute('aria-invalid', 'true');
-    expect(sessionStorage.getItem('eagle-gate')).toBe(null);
+    expect(localStorage.getItem('eagle-gate')).toBe(null);
   });
 
   it('shows a generic error when the check itself fails', async () => {
@@ -140,7 +140,7 @@ describe('the password form', () => {
     await submit('anything');
 
     expect(error()).toHaveTextContent('Could not check the password');
-    expect(sessionStorage.getItem('eagle-gate')).toBe(null);
+    expect(localStorage.getItem('eagle-gate')).toBe(null);
   });
 
   it('disables the button while the check is in flight', async () => {

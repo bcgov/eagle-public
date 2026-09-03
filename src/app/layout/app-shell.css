@@ -18,6 +18,14 @@
   padding-top: var(--header-total-height, 0px);
 }
 
+/* The outlet wrapper is a flex item; without growing it, a short page leaves the leftover height
+   below the route's own content and its last section (Contact Us) sits above the footer. */
+.app-content > #scrollTop {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
 .app-content.projects-route {
   padding-top: 0;
 }

@@ -53,7 +53,7 @@ Fixes on `develop` not yet re-implemented here are listed in `TODO.md` under "Po
 
 `ACCESS_GATE: true` in `/api/config` puts a password curtain over the site. It is a courtesy
 screen for a not-yet-launched environment, not an access control: the unlock is a flag in the
-browser's `sessionStorage`, and the API behind it stays open. Keep real restrictions at rproxy
+browser's `localStorage`, and the API behind it stays open. Keep real restrictions at rproxy
 (basic auth) or in eagle-api.
 
 ## Development server

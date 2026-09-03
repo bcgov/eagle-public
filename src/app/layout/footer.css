@@ -3,6 +3,7 @@
   color: var(--footer-color);
   position: relative;
   z-index: 150;
+  border-top: 2px solid var(--bc-gold);
 }
 
 /* The map page fills the viewport on a phone, so the footer gives way. Keyed on the page's own
