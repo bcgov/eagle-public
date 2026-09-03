@@ -1,24 +1,44 @@
 # EPIC public site parity tests
 
-Playwright suite that pins the behaviour of the live public EPIC site so the React rewrite can be
-checked against it. The tests talk to a deployed environment over HTTPS. They do not build or serve
-this repo, and nothing here imports application code.
+Playwright suite that pins the behaviour of the public EPIC site. It runs against a local
+production build or against a deployed environment. Nothing here imports application code.
 
 ## Run
 
+Against the local build, which is what CI does:
+
 ```bash
+yarn build                                                    # from the repo root
 cd e2e
 yarn install                                                  # first time only
+BASE_URL=http://localhost:4173 yarn test
+```
+
+A `BASE_URL` on `localhost` or `127.0.0.1` makes Playwright start the server itself
+(`webServer` in `playwright.config.ts`): `vite preview` on port 4173, serving
+`dist/eagle-public/browser` with the dev server's proxy rules, so `/api`, `/demi-search`,
+`/analytics`, `/eagle-search` and `/notify-api` reach the same backends as `yarn start`. It reuses
+a server already listening on 4173 unless `CI` is set. Build first - preview has nothing to serve
+otherwise, and that includes `BASE_URL=http://localhost:4200`, which also starts it.
+
+Against a deployed environment:
+
+```bash
+cd e2e
 yarn test                                                     # prod (default)
 BASE_URL=https://test.projects.eao.gov.bc.ca yarn test        # test environment
-BASE_URL=http://localhost:4200 yarn test                      # the port under development
-yarn test --grep-invert @data                                 # skip live-data-volume tests
-yarn test tests/search.spec.ts                                # one file
+yarn playwright test --grep-invert @data                      # skip live-data-volume tests
+yarn playwright test tests/search.spec.ts                     # one file
 yarn report                                                   # open the HTML report
 ```
 
-`yarn test` runs only when `BASE_URL` is set, so the pre-push verifier never drives production by accident; `yarn playwright test` on its own defaults to `https://projects.eao.gov.bc.ca`. Browsers come from
+`yarn test` runs only when `BASE_URL` is set, so the pre-push verifier never drives production by
+accident; it also forwards no arguments, so pass extra flags to `yarn playwright test`.
+`yarn playwright test` on its own defaults to `https://projects.eao.gov.bc.ca`. Browsers come from
 `/root/.cache/ms-playwright`; no download step is needed.
+
+The `e2e` job in `.github/workflows/pr.yaml` runs the local-build path and uploads
+`playwright-report` when it fails.
 
 The **test environment serves every HTML route and `/demi-search` behind HTTP basic auth**
 (`WWW-Authenticate: Basic realm="Restricted Content"`); only `/api/*` is open. Supply the
@@ -159,6 +179,19 @@ the test will fail and should be updated deliberately.
   of prod's storage, so `HEAD` on the download URL answers 404 for some rows. The URL shape is
   asserted; the status is only required to be below 500 and is recorded as an annotation.
 
+## Failing against the React build
+
+Three tests fail on a local build. Each is a change in the port rather than a flake, and each needs
+a decision before the test is rewritten.
+
+- `project-detail.spec.ts` "document download links resolve to /api/public/document/:id/download/:name":
+  the row href still has that shape, but clicking it asks demi-api for a presigned URL instead of
+  navigating to it.
+- `projects-map.spec.ts` "the Filters button expands the advanced filters inline": `#region` is
+  visible while `#applist-filters` reports `data-open="false"`.
+- `projects-map.spec.ts` "the Layers menu switches the base map tiles": World Topographic is the
+  port's default basemap, so choosing it loads no new tiles.
+
 ## Data parity
 
 List and search pages assert against the response that produced them, not against hard-coded
@@ -248,7 +281,7 @@ is applied, a keyword returning hits). Deselect with `yarn test --grep-invert @d
 | `tests/projects-list.spec.ts` | 5 | table, sort, pagination, keyword filter, deep link |
 | `tests/projects-map.spec.ts` | 6 | map and clusters, inline filters panel, filter, pin card, list-card card, basemap switch |
 | `tests/search.spec.ts` | 6 | table, keyword, milestone facet, pagination, deep link, row links |
-| `tests/project-detail.spec.ts` | 10 | tab strip and all 7 child routes, download link shape |
+| `tests/project-detail.spec.ts` | 11 | tab strip and all 7 child routes, download link shape |
 | `tests/comment-period.spec.ts` | 5 | `/p/../cp/../details`, `/pn/../cp/../details`, closed and open states |
 | `tests/routing.spec.ts` | 6 | 404 fallback, `/p/:id`, `/p/../cp/:id`, `/pn/../cp/:id`, `/search/content`, header nav |
 | `tests/gate.spec.ts` | 3 | the `ACCESS_GATE` curtain: wrong password, right password, focus and label |
