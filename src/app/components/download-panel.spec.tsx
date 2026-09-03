@@ -10,6 +10,8 @@ const BETA = { id: 'doc-b', displayName: 'Beta' };
 let postResponse: () => Response;
 let statusStatus: number;
 let statusResponses: unknown[];
+/** Status bodies for a named job, for the tests that run more than one at a time. */
+let statusByJob: Record<string, unknown>;
 let fetchMock: ReturnType<typeof vi.fn>;
 
 /** The src of every download iframe currently in the document. */
@@ -28,13 +30,15 @@ describe('DownloadPanel', () => {
     vi.useFakeTimers();
     localStorage.clear();
     statusResponses = [];
+    statusByJob = {};
     statusStatus = 200;
     postResponse = () => new Response('{}', { status: 500 });
 
-    fetchMock = vi.fn(async (_url: string, init?: RequestInit) => {
+    fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
       if (init?.method === 'POST') return postResponse();
       if (statusStatus !== 200) return new Response('{}', { status: statusStatus, statusText: 'Nope' });
-      const body = statusResponses.length > 1 ? statusResponses.shift() : statusResponses[0];
+      const named = Object.keys(statusByJob).find(id => url.includes(id));
+      const body = named ? statusByJob[named] : statusResponses.length > 1 ? statusResponses.shift() : statusResponses[0];
       return new Response(JSON.stringify(body), { status: 200 });
     });
     vi.stubGlobal('fetch', fetchMock);
@@ -52,8 +56,8 @@ describe('DownloadPanel', () => {
    * Fresh module state per test: the selection, the failed start and the persisted job are
    * module-level stores, and the job is rehydrated at import time.
    */
-  async function mount(storedJob?: BulkDownloadJob) {
-    if (storedJob) localStorage.setItem(JOB_KEY, JSON.stringify(storedJob));
+  async function mount(...storedJobs: BulkDownloadJob[]) {
+    if (storedJobs.length > 0) localStorage.setItem(JOB_KEY, JSON.stringify(storedJobs));
     vi.resetModules();
     window.__env = { logLevel: 4, API_PATH: '/api', SEARCH_API_PATH: '/demi-search' };
     const config = await import('app/config/config');
@@ -77,6 +81,11 @@ describe('DownloadPanel', () => {
     await act(async () => {
       await vi.advanceTimersByTimeAsync(ms);
     });
+  }
+
+  /** How many times the status of one job has been asked for. */
+  function pollsFor(jobId: string): number {
+    return fetchMock.mock.calls.filter(([url]) => String(url).includes(jobId)).length;
   }
 
   /** What the toolbar's Download button does, from the state module both share. */
@@ -487,7 +496,7 @@ describe('DownloadPanel', () => {
     expect(screen.getByText('EPIC documents - Site C Clean Energy.zip')).toBeInTheDocument();
     expect(screen.getByText('Downloaded')).toBeInTheDocument();
     expect(downloadUrls()).toEqual(['https://nrs.example/part1.zip']);
-    expect(JSON.parse(localStorage.getItem(JOB_KEY) ?? '{}').downloadedAt).toEqual(expect.any(Number));
+    expect(JSON.parse(localStorage.getItem(JOB_KEY)!)[0].downloadedAt).toEqual(expect.any(Number));
 
     fireEvent.click(
       screen.getByRole('button', { name: 'Download again EPIC documents - Site C Clean Energy.zip' })
@@ -541,6 +550,109 @@ describe('DownloadPanel', () => {
     panel.render();
     await tick(0);
 
-    expect(JSON.parse(localStorage.getItem(JOB_KEY) ?? '{}').status).toBe('ready');
+    expect(JSON.parse(localStorage.getItem(JOB_KEY)!)[0].status).toBe('ready');
+  });
+  /**
+   * demi-api takes three jobs at once, so the panel holds a group per job: each one polls, reports
+   * and is dismissed on its own.
+   */
+  describe('with several jobs', () => {
+    const RUNNING = (id: string, partsReady: number) => ({
+      id,
+      status: 'running',
+      partCount: 2,
+      partsReady
+    });
+
+    async function twoJobs() {
+      statusByJob = { 'job-a': RUNNING('job-a', 0), 'job-b': RUNNING('job-b', 1) };
+      const panel = await mount(
+        { id: 'job-a', count: 4, startedAt: Date.now() },
+        { id: 'job-b', count: 7, startedAt: Date.now() }
+      );
+      panel.render();
+      await tick(0);
+      return panel;
+    }
+
+    it('renders a group for each job', async () => {
+      await twoJobs();
+
+      expect(screen.getByText('Zipping 4 documents…')).toBeInTheDocument();
+      expect(screen.getByText('Zipping 7 documents…')).toBeInTheDocument();
+      expect(document.querySelectorAll('.download-panel__job')).toHaveLength(2);
+      expect(screen.getByRole('button', { name: 'Dismiss download of 4 documents' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Dismiss download of 7 documents' })).toBeInTheDocument();
+    });
+
+    it('dismisses only the job asked for, and keeps polling the other', async () => {
+      await twoJobs();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Dismiss download of 4 documents' }));
+
+      expect(screen.queryByText('Zipping 4 documents…')).not.toBeInTheDocument();
+      expect(screen.getByText('Zipping 7 documents…')).toBeInTheDocument();
+      expect(JSON.parse(localStorage.getItem(JOB_KEY)!).map((job: BulkDownloadJob) => job.id)).toEqual(['job-b']);
+
+      const dismissed = pollsFor('job-a');
+      const kept = pollsFor('job-b');
+      await tick(4000);
+
+      expect(pollsFor('job-a')).toBe(dismissed);
+      expect(pollsFor('job-b')).toBeGreaterThan(kept);
+    });
+
+    it('closes every job at once on the panel close', async () => {
+      const panel = await twoJobs();
+      const { container } = panel.render();
+
+      fireEvent.click(screen.getAllByRole('button', { name: 'Close download panel' })[0]);
+
+      expect(container).toBeEmptyDOMElement();
+      expect(screen.queryByText('Zipping 4 documents…')).not.toBeInTheDocument();
+      expect(screen.queryByText('Zipping 7 documents…')).not.toBeInTheDocument();
+      expect(localStorage.getItem(JOB_KEY)).toBeNull();
+
+      const pollsSoFar = fetchMock.mock.calls.length;
+      await tick(60_000);
+
+      expect(fetchMock.mock.calls.length).toBe(pollsSoFar);
+    });
+
+    /** An older visit stored one job as a bare object rather than a list. */
+    it('resumes a job stored by the version that held only one', async () => {
+      statusResponses = [{ id: 'job-9', status: 'running', partCount: 1, partsReady: 0 }];
+      localStorage.setItem(JOB_KEY, JSON.stringify({ id: 'job-9', count: 4, startedAt: Date.now() }));
+      const panel = await mount();
+
+      panel.render();
+      await tick(0);
+
+      expect(screen.getByText('Zipping 4 documents…')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Dismiss download of 4 documents' })).toBeInTheDocument();
+    });
+
+    /** The toolbar's Download only stops once demi-api is holding as many jobs as it will take. */
+    it('blocks the next download at the third job in flight, not the first', async () => {
+      postResponse = () =>
+        new Response(JSON.stringify({ id: `job-${Date.now()}`, status: 'queued' }), { status: 202 });
+      statusResponses = [{ status: 'queued', partCount: 0, partsReady: 0 }];
+      const panel = await mount();
+      panel.render();
+
+      const inProgress = renderHook(() => panel.store.useDownloadInProgress());
+      for (const count of [1, 2]) {
+        panel.store.setSelected('documents', [ALPHA, BETA]);
+        await startDownload(panel.store);
+        expect(document.querySelectorAll('.download-panel__job')).toHaveLength(count);
+        expect(inProgress.result.current).toBe(false);
+      }
+
+      panel.store.setSelected('documents', [ALPHA, BETA]);
+      await startDownload(panel.store);
+
+      expect(document.querySelectorAll('.download-panel__job')).toHaveLength(3);
+      expect(inProgress.result.current).toBe(true);
+    });
   });
 });

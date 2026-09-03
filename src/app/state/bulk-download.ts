@@ -135,70 +135,105 @@ export async function selectAllMatching(tableId: string, params: SearchParamObje
 const JOB_KEY = 'epic-bulk-download-job';
 /** A job older than this is demi-api's problem, not ours: the zip has been swept or expired. */
 const JOB_MAX_AGE_MS = 60 * 60 * 1000;
+/** How many jobs demi-api runs at once for one requester; a fourth POST is refused with 429. */
+export const MAX_JOBS_IN_FLIGHT = 3;
+/** How many jobs the panel keeps, finished ones included. */
+const MAX_JOBS = 5;
 
-function storedJob(): BulkDownloadJob | null {
+/** Jobs demi-api no longer knows: the panel still shows them, the store never writes them again. */
+const forgotten = new Set<string>();
+
+function persist(list: BulkDownloadJob[]): void {
+  const keep = list.filter(job => !forgotten.has(job.id));
+  if (keep.length === 0) {
+    localStorage.removeItem(JOB_KEY);
+    return;
+  }
+  localStorage.setItem(JOB_KEY, JSON.stringify(keep));
+}
+
+function storedJobs(): BulkDownloadJob[] {
   try {
     const raw = localStorage.getItem(JOB_KEY);
-    const job: BulkDownloadJob | null = raw ? JSON.parse(raw) : null;
+    const parsed = raw ? JSON.parse(raw) : null;
+    // The panel used to hold one job, so an older visit stored an object rather than a list.
+    const list: BulkDownloadJob[] = Array.isArray(parsed) ? parsed : parsed ? [parsed] : [];
     // A downloaded job has nothing left to resume; only a zip still being built survives a reload.
-    if (!job?.id || job.downloadedAt || Date.now() - job.startedAt > JOB_MAX_AGE_MS) {
-      localStorage.removeItem(JOB_KEY);
-      return null;
-    }
-    return job;
+    const kept = list.filter(
+      job => job?.id && !job.downloadedAt && Date.now() - job.startedAt <= JOB_MAX_AGE_MS
+    );
+    if (kept.length !== list.length) persist(kept);
+    return kept;
   } catch {
     localStorage.removeItem(JOB_KEY);
-    return null;
+    return [];
   }
 }
 
-// Read at module load so a reload mid-zip resumes polling instead of losing the job.
-const job = createStore<BulkDownloadJob | null>(storedJob());
+// Read at module load so a reload mid-zip resumes polling instead of losing the jobs.
+const jobs = createStore<BulkDownloadJob[]>(storedJobs());
 
-export function setJob(next: BulkDownloadJob): void {
-  localStorage.setItem(JOB_KEY, JSON.stringify(next));
-  job.set(next);
+function writeJobs(list: BulkDownloadJob[]): void {
+  persist(list);
+  jobs.set(list);
+}
+
+/** Newest first. */
+export function useJobs(): BulkDownloadJob[] {
+  return useStore(jobs);
+}
+
+export function addJob(job: BulkDownloadJob): void {
+  const list = [job, ...jobs.get()];
+  if (list.length > MAX_JOBS) {
+    // The oldest finished job falls off first; one still zipping only goes if there is no other.
+    const oldest = [...list].reverse().find(other => isTerminal(other.status)) ?? list[list.length - 1];
+    writeJobs(list.filter(other => other !== oldest));
+    return;
+  }
+  writeJobs(list);
+}
+
+function patchJob(id: string, change: Partial<BulkDownloadJob>): void {
+  writeJobs(jobs.get().map(job => (job.id === id ? { ...job, ...change } : job)));
 }
 
 /**
  * Drops the persisted copy but leaves the panel's, so a dead job id cannot come back on reload
  * while the reader still has the failure in front of them.
  */
-export function forgetStoredJob(): void {
-  localStorage.removeItem(JOB_KEY);
+export function forgetStoredJob(id: string): void {
+  forgotten.add(id);
+  persist(jobs.get());
 }
 
-export function clearJob(): void {
-  localStorage.removeItem(JOB_KEY);
-  job.set(null);
-}
-
-export function useJob(): BulkDownloadJob | null {
-  return useStore(job);
+/** Removes one job; the others keep going. */
+export function dismissJob(id: string): void {
+  writeJobs(jobs.get().filter(job => job.id !== id));
 }
 
 /** Records what the panel last read, so the toolbar knows a finished job is not still running. */
-export function setJobStatus(status: BulkDownloadStatus['status']): void {
-  const current = job.get();
+export function setJobStatus(id: string, status: BulkDownloadStatus['status']): void {
+  const current = jobs.get().find(job => job.id === id);
   if (!current || current.status === status) return;
-  setJob({ ...current, status });
+  patchJob(id, { status });
 }
 
 /**
- * Claims the job's one automatic download, returning false if it was already claimed. Read off the
+ * Claims a job's one automatic download, returning false if it was already claimed. Read off the
  * store rather than a render's copy, so StrictMode's second effect pass cannot fire a second zip.
  */
-export function claimDownload(): boolean {
-  const current = job.get();
+export function claimDownload(id: string): boolean {
+  const current = jobs.get().find(job => job.id === id);
   if (!current || current.downloadedAt) return false;
-  setJob({ ...current, downloadedAt: Date.now() });
+  patchJob(id, { downloadedAt: Date.now() });
   return true;
 }
 
-/** True only while a job is still being prepared: a ready, failed or expired one is not. */
+/** True once demi-api is preparing as many jobs as it will take: a fourth would be refused. */
 export function useDownloadInProgress(): boolean {
-  const current = useStore(job);
-  return !!current && !isTerminal(current.status);
+  const list = useStore(jobs);
+  return list.filter(job => !isTerminal(job.status)).length >= MAX_JOBS_IN_FLIGHT;
 }
 
 /** What each refused POST tells the reader. Anything else is a fault they cannot act on. */
@@ -214,10 +249,10 @@ export function useStartError(): string | null {
   return useStore(startError);
 }
 
-/** Forgets the job and any failed start: the panel is closed and nothing is left to show. */
-export function dismissDownload(): void {
+/** Forgets every job and any failed start: the panel is closed and nothing is left to show. */
+export function dismissAll(): void {
   startError.set(null);
-  clearJob();
+  writeJobs([]);
 }
 
 /**
@@ -238,7 +273,7 @@ export async function startDownload(): Promise<void> {
       triggerDownload(result.url);
       return;
     }
-    setJob({ id: result.id, count: ids.length, startedAt: Date.now() });
+    addJob({ id: result.id, count: ids.length, startedAt: Date.now() });
   } catch (failure) {
     logger.warn('Bulk download could not be started', 'bulk-download', failure);
     const status = failure instanceof ApiError ? failure.status : 0;

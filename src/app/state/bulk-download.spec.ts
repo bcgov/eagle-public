@@ -3,16 +3,21 @@ import { renderHook } from '@testing-library/react';
 import { fetchData, SearchParamObject } from 'app/api/search';
 import { clearToasts, useToasts } from './toast';
 import {
-  clearJob,
+  addJob,
+  claimDownload,
   clearSelection,
+  dismissAll,
+  dismissJob,
   selectAllMatching,
   SELECT_ALL_FAILED_MESSAGE,
   SELECT_ALL_MAX,
-  setJob,
+  setJobStatus,
   setSelected,
   toggleSelected,
-  useJob,
-  useSelection
+  useDownloadInProgress,
+  useJobs,
+  useSelection,
+  type BulkDownloadJob
 } from './bulk-download';
 
 vi.mock('app/api/search', async importOriginal => ({
@@ -178,66 +183,160 @@ describe('selectAllMatching', () => {
 });
 
 /**
- * The job id is the capability token for the zip, so it outlives a reload: the bar resumes polling
- * instead of losing a download that is still building.
+ * The job id is the capability token for the zip, so it outlives a reload: the panel resumes
+ * polling instead of losing a download that is still building. Several can be in flight at once.
  */
-describe('bulk download job', () => {
+describe('bulk download jobs', () => {
+  const job = (id: string, extra: Partial<BulkDownloadJob> = {}): BulkDownloadJob => ({
+    id,
+    count: 3,
+    startedAt: Date.now(),
+    ...extra
+  });
+
+  /** Every assertion on the store goes through the hook the panel reads. */
+  const jobsNow = () => renderHook(() => useJobs()).result.current;
+  const stored = () => JSON.parse(localStorage.getItem(JOB_KEY) ?? 'null');
+
   beforeEach(() => {
     localStorage.clear();
-    clearJob();
+    dismissAll();
   });
 
-  it('persists the job it is given', () => {
-    setJob({ id: 'job-1', count: 3, startedAt: Date.now() });
+  it('keeps every job, newest first, and persists the list', () => {
+    addJob(job('job-1'));
+    addJob(job('job-2'));
 
-    expect(JSON.parse(localStorage.getItem(JOB_KEY)!)).toMatchObject({ id: 'job-1', count: 3 });
-    expect(renderHook(() => useJob()).result.current).toMatchObject({ id: 'job-1' });
+    expect(jobsNow().map(one => one.id)).toEqual(['job-2', 'job-1']);
+    expect(stored().map((one: BulkDownloadJob) => one.id)).toEqual(['job-2', 'job-1']);
   });
 
-  it('forgets the job on clear', () => {
-    setJob({ id: 'job-1', count: 3, startedAt: Date.now() });
+  it('dismisses the job asked for and leaves the others alone', () => {
+    addJob(job('job-1'));
+    addJob(job('job-2'));
+    addJob(job('job-3'));
 
-    clearJob();
+    dismissJob('job-2');
 
+    expect(jobsNow().map(one => one.id)).toEqual(['job-3', 'job-1']);
+    expect(stored().map((one: BulkDownloadJob) => one.id)).toEqual(['job-3', 'job-1']);
+  });
+
+  it('forgets them all on dismissAll', () => {
+    addJob(job('job-1'));
+    addJob(job('job-2'));
+
+    dismissAll();
+
+    expect(jobsNow()).toEqual([]);
     expect(localStorage.getItem(JOB_KEY)).toBeNull();
-    expect(renderHook(() => useJob()).result.current).toBeNull();
   });
 
-  it('rehydrates a job stored less than an hour ago', async () => {
+  it('records a status against one job only', () => {
+    addJob(job('job-1'));
+    addJob(job('job-2'));
+
+    setJobStatus('job-2', 'ready');
+
+    expect(jobsNow().map(one => one.status)).toEqual(['ready', undefined]);
+  });
+
+  it('claims the download of the job asked for, once only', () => {
+    addJob(job('job-1'));
+    addJob(job('job-2'));
+
+    expect(claimDownload('job-2')).toBe(true);
+    // The zip only ever goes once, however often the panel re-renders.
+    expect(claimDownload('job-2')).toBe(false);
+    expect(jobsNow().find(one => one.id === 'job-1')?.downloadedAt).toBeUndefined();
+    expect(claimDownload('job-1')).toBe(true);
+  });
+
+  it('drops the oldest finished job once the list is full', () => {
+    ['job-1', 'job-2', 'job-3', 'job-4', 'job-5'].forEach(id => addJob(job(id)));
+    setJobStatus('job-1', 'ready');
+    setJobStatus('job-2', 'ready');
+
+    addJob(job('job-6'));
+
+    expect(jobsNow().map(one => one.id)).toEqual(['job-6', 'job-5', 'job-4', 'job-3', 'job-2']);
+  });
+
+  it('drops the oldest of all when none of them has finished', () => {
+    ['job-1', 'job-2', 'job-3', 'job-4', 'job-5'].forEach(id => addJob(job(id)));
+
+    addJob(job('job-6'));
+
+    expect(jobsNow().map(one => one.id)).toEqual(['job-6', 'job-5', 'job-4', 'job-3', 'job-2']);
+  });
+
+  /** demi-api runs three jobs at once per requester and answers 429 above that. */
+  it('holds the next download back only once three jobs are in flight', () => {
+    const inFlight = renderHook(() => useDownloadInProgress());
+
+    addJob(job('job-1'));
+    addJob(job('job-2'));
+    inFlight.rerender();
+    expect(inFlight.result.current).toBe(false);
+
+    addJob(job('job-3'));
+    inFlight.rerender();
+    expect(inFlight.result.current).toBe(true);
+
+    // A job that reached its last status is not still being prepared.
+    setJobStatus('job-1', 'ready');
+    inFlight.rerender();
+    expect(inFlight.result.current).toBe(false);
+  });
+
+  it('rehydrates the jobs stored less than an hour ago', async () => {
     localStorage.setItem(
       JOB_KEY,
-      JSON.stringify({ id: 'job-1', count: 3, startedAt: Date.now() - 60_000 })
+      JSON.stringify([
+        { id: 'job-1', count: 3, startedAt: Date.now() - 60_000 },
+        { id: 'job-2', count: 5, startedAt: Date.now() - 30_000 }
+      ])
     );
     vi.resetModules();
 
     const store = await import('./bulk-download');
 
-    expect(renderHook(() => store.useJob()).result.current).toMatchObject({ id: 'job-1' });
+    expect(renderHook(() => store.useJobs()).result.current.map(one => one.id)).toEqual(['job-1', 'job-2']);
   });
 
-  it('drops a downloaded job on reload; only a zip still being built resumes', async () => {
+  /** An older visit stored one job as a bare object; it becomes the only job in the list. */
+  it('migrates a single stored job into the list', async () => {
+    localStorage.setItem(JOB_KEY, JSON.stringify({ id: 'job-1', count: 3, startedAt: Date.now() - 60_000 }));
+    vi.resetModules();
+
+    const store = await import('./bulk-download');
+
+    expect(renderHook(() => store.useJobs()).result.current).toMatchObject([{ id: 'job-1', count: 3 }]);
+  });
+
+  it('drops a downloaded job on reload and keeps the zip still being built', async () => {
     localStorage.setItem(
       JOB_KEY,
-      JSON.stringify({ id: 'job-1', count: 3, startedAt: Date.now() - 60_000, downloadedAt: Date.now() - 1_000 })
+      JSON.stringify([
+        { id: 'job-1', count: 3, startedAt: Date.now() - 60_000, downloadedAt: Date.now() - 1_000 },
+        { id: 'job-2', count: 5, startedAt: Date.now() - 30_000 }
+      ])
     );
     vi.resetModules();
 
     const store = await import('./bulk-download');
 
-    expect(renderHook(() => store.useJob()).result.current).toBeNull();
-    expect(localStorage.getItem(JOB_KEY)).toBeNull();
+    expect(renderHook(() => store.useJobs()).result.current.map(one => one.id)).toEqual(['job-2']);
+    expect(stored().map((one: BulkDownloadJob) => one.id)).toEqual(['job-2']);
   });
 
   it('drops a job older than an hour, zip and all', async () => {
-    localStorage.setItem(
-      JOB_KEY,
-      JSON.stringify({ id: 'job-1', count: 3, startedAt: Date.now() - 3_700_000 })
-    );
+    localStorage.setItem(JOB_KEY, JSON.stringify([{ id: 'job-1', count: 3, startedAt: Date.now() - 3_700_000 }]));
     vi.resetModules();
 
     const store = await import('./bulk-download');
 
-    expect(renderHook(() => store.useJob()).result.current).toBeNull();
+    expect(renderHook(() => store.useJobs()).result.current).toEqual([]);
     expect(localStorage.getItem(JOB_KEY)).toBeNull();
   });
 });

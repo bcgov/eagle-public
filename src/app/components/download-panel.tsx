@@ -5,12 +5,14 @@ import { ApiError, getBulkDownload, type BulkDownloadStatus } from 'app/api/api'
 import { logger } from 'app/config/logging';
 import {
   claimDownload,
-  dismissDownload,
+  dismissAll,
+  dismissJob,
   forgetStoredJob,
   isTerminal,
   setJobStatus,
-  useJob,
-  useStartError
+  useJobs,
+  useStartError,
+  type BulkDownloadJob
 } from 'app/state/bulk-download';
 import { triggerDownload } from 'app/utils/utils';
 import './download-panel.css';
@@ -38,6 +40,15 @@ function Row({
       <span className="download-panel__text">{children}</span>
       {action}
     </li>
+  );
+}
+
+/** Only the status text is live; the buttons sit outside so they are not re-announced. */
+function StatusRows({ children }: { children: ReactNode }) {
+  return (
+    <div role="status" aria-live="polite">
+      <ul className="download-panel__rows">{children}</ul>
+    </div>
   );
 }
 
@@ -135,19 +146,13 @@ function readyRows(state: BulkDownloadStatus, downloaded: boolean): ReactNode {
 }
 
 /**
- * The transfer panel, mounted once for the whole app: it stays put as the reader moves around the
- * site, and a job id in localStorage means a reload mid-zip resumes polling rather than losing the
- * download. Closing it forgets the job; collapsing it keeps the poll running.
+ * One job's rows, with its own poll: a job that reached its last status stops asking while the
+ * others carry on.
  */
-export function DownloadPanel() {
-  const job = useJob();
-  const startError = useStartError();
-  const [collapsed, setCollapsed] = useState(false);
-
+function JobRows({ job, collapsed }: { job: BulkDownloadJob; collapsed: boolean }) {
   const query = useQuery({
-    queryKey: ['bulk-download', job?.id],
-    queryFn: () => getBulkDownload(job!.id),
-    enabled: !!job,
+    queryKey: ['bulk-download', job.id],
+    queryFn: () => getBulkDownload(job.id),
     retry: false,
     // A poll that failed keeps failing; stop the 4s beat and let the reader retry or close.
     refetchInterval: q => (q.state.status === 'error' || isTerminal(q.state.data?.status) ? false : 4000)
@@ -165,13 +170,13 @@ export function DownloadPanel() {
     logger.warn('Bulk download status could not be read', 'bulk-download', queryError);
     // A poll that cannot answer leaves the status unread, which the toolbar takes for "still
     // running"; a terminal one releases Download while the panel keeps the error and its Retry.
-    setJobStatus('failed');
-    if (jobGone) forgetStoredJob();
-  }, [query.isError, jobGone, queryError]);
+    setJobStatus(job.id, 'failed');
+    if (jobGone) forgetStoredJob(job.id);
+  }, [query.isError, jobGone, queryError, job.id]);
 
   // `downloadedAt` on the stored job is the guard, not a ref: a reload must not re-fire the zip.
   useEffect(() => {
-    if (!job || job.downloadedAt || state?.status !== 'ready' || !claimDownload()) return;
+    if (job.downloadedAt || state?.status !== 'ready' || !claimDownload(job.id)) return;
     // An empty zip has parts, and each one answers with an error page; downloading them is noise.
     if (state.includedCount === 0) {
       track('Bulk Download Failed', { status: 'empty' });
@@ -191,20 +196,10 @@ export function DownloadPanel() {
   }, [status]);
 
   useEffect(() => {
-    if (status) setJobStatus(status);
-  }, [status]);
-
-  if (!job && !startError) return null;
-
-  const canRetry = query.isError && !jobGone;
+    if (status) setJobStatus(job.id, status);
+  }, [status, job.id]);
 
   function rows(): ReactNode {
-    if (startError)
-      return (
-        <Row icon={WARNING} tone="error">
-          {startError}
-        </Row>
-      );
     if (jobGone)
       return (
         <Row icon={WARNING} tone="error">
@@ -229,9 +224,50 @@ export function DownloadPanel() {
           That download has expired. Please start it again.
         </Row>
       );
-    if (state?.status === 'ready') return readyRows(state, !!job?.downloadedAt);
-    return progressRows(job!, state);
+    if (state?.status === 'ready') return readyRows(state, !!job.downloadedAt);
+    return progressRows(job, state);
   }
+
+  // Collapsing hides the rows but keeps the poll: the zip carries on being built either way.
+  if (collapsed) return null;
+
+  return (
+    <div className="download-panel__job">
+      <div className="download-panel__job-body">
+        <StatusRows>{rows()}</StatusRows>
+        {query.isError && !jobGone && (
+          <div className="download-panel__actions">
+            <button type="button" className="btn btn-primary btn-sm" onClick={() => void query.refetch()}>
+              Retry
+            </button>
+          </div>
+        )}
+      </div>
+      <button
+        type="button"
+        className="download-panel__dismiss"
+        aria-label={`Dismiss download of ${plural(job.count, 'document')}`}
+        onClick={() => dismissJob(job.id)}
+      >
+        <i className="material-icons md-18" aria-hidden="true">
+          close
+        </i>
+      </button>
+    </div>
+  );
+}
+
+/**
+ * The transfer panel, mounted once for the whole app: it stays put as the reader moves around the
+ * site, and job ids in localStorage mean a reload mid-zip resumes polling rather than losing the
+ * downloads. Closing it forgets them; collapsing it keeps the polls running.
+ */
+export function DownloadPanel() {
+  const jobs = useJobs();
+  const startError = useStartError();
+  const [collapsed, setCollapsed] = useState(false);
+
+  if (jobs.length === 0 && !startError) return null;
 
   return (
     <div className="download-panel">
@@ -252,7 +288,7 @@ export function DownloadPanel() {
           type="button"
           className="download-panel__control"
           aria-label="Close download panel"
-          onClick={dismissDownload}
+          onClick={dismissAll}
         >
           <i className="material-icons md-18" aria-hidden="true">
             close
@@ -260,21 +296,18 @@ export function DownloadPanel() {
         </button>
       </div>
 
-      {!collapsed && (
-        <div className="download-panel__body">
-          {/* Only the status text is live; the buttons sit outside so they are not re-announced. */}
-          <div role="status" aria-live="polite">
-            <ul className="download-panel__rows">{rows()}</ul>
-          </div>
-          {canRetry && (
-            <div className="download-panel__actions">
-              <button type="button" className="btn btn-primary btn-sm" onClick={() => void query.refetch()}>
-                Retry
-              </button>
-            </div>
-          )}
-        </div>
-      )}
+      <div className="download-panel__body">
+        {!collapsed && startError && (
+          <StatusRows>
+            <Row icon={WARNING} tone="error">
+              {startError}
+            </Row>
+          </StatusRows>
+        )}
+        {jobs.map(job => (
+          <JobRows key={job.id} job={job} collapsed={collapsed} />
+        ))}
+      </div>
     </div>
   );
 }
