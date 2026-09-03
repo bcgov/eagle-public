@@ -139,40 +139,50 @@ describe('DownloadPanel', () => {
     expect(screen.getByText('documents-2.zip')).toBeInTheDocument();
   });
 
-  it('names the files the zip could not include', async () => {
+  it('names every document the zip could not include, and still downloads the parts', async () => {
     statusResponses = [
       {
         id: 'job-9',
         status: 'ready',
-        partCount: 1,
-        partsReady: 1,
+        partCount: 2,
+        partsReady: 2,
         includedCount: 5,
         errorCount: 3,
-        parts: [{ n: 1, fileName: 'documents.zip', url: 'https://nrs.example/part1.zip' }]
+        parts: [
+          { n: 1, fileName: 'documents-1.zip', url: 'https://nrs.example/part1.zip' },
+          { n: 2, fileName: 'documents-2.zip', url: 'https://nrs.example/part2.zip' }
+        ],
+        errors: [
+          { documentId: 'doc-a', name: 'Alpha report.pdf', reason: 'not found' },
+          { documentId: 'doc-b', name: 'Beta appendix.pdf', reason: 'too large' },
+          { documentId: 'doc-c', name: '', reason: 'unreadable' }
+        ]
       }
     ];
     const panel = await mount({ id: 'job-9', count: 8, startedAt: Date.now() });
 
     panel.render();
-    await tick(0);
+    await tick(2000);
 
-    expect(screen.getByText('documents.zip')).toBeInTheDocument();
-    expect(screen.getByText('3 files could not be included (see errors.txt)')).toBeInTheDocument();
+    expect(screen.getByText('3 documents could not be included:')).toBeInTheDocument();
+    expect(screen.getByText('Alpha report.pdf')).toBeInTheDocument();
+    expect(screen.getByText('Beta appendix.pdf')).toBeInTheDocument();
+    // demi-api sent no name, so the id is all the reader has to go on.
+    expect(screen.getByText('doc-c')).toBeInTheDocument();
+    expect(screen.getByText('documents-1.zip')).toBeInTheDocument();
+    expect(downloadUrls()).toEqual(['https://nrs.example/part1.zip', 'https://nrs.example/part2.zip']);
   });
 
-  /**
-   * Every document in the selection failed: the zip holds nothing but errors.txt, and each part
-   * answers with an error page, so fetching them buys the reader nothing.
-   */
-  it('downloads nothing when the finished zip included no documents', async () => {
+  it('shows no list when every selected document made it into the zip', async () => {
     statusResponses = [
       {
         id: 'job-9',
         status: 'ready',
         partCount: 1,
         partsReady: 1,
-        includedCount: 0,
-        errorCount: 2,
+        includedCount: 2,
+        errorCount: 0,
+        errors: [],
         parts: [{ n: 1, fileName: 'documents.zip', url: 'https://nrs.example/part1.zip' }]
       }
     ];
@@ -181,7 +191,39 @@ describe('DownloadPanel', () => {
     panel.render();
     await tick(2000);
 
+    expect(screen.getByText('documents.zip')).toBeInTheDocument();
+    expect(screen.queryByText(/could not be included/)).not.toBeInTheDocument();
+    expect(document.querySelector('.download-panel__names')).toBeNull();
+  });
+
+  /**
+   * Every document in the selection failed: the zip holds nothing but errors.txt, and each part
+   * answers with an error page, so fetching them buys the reader nothing.
+   */
+  it('downloads nothing when the finished zip included no documents, and names them all', async () => {
+    statusResponses = [
+      {
+        id: 'job-9',
+        status: 'ready',
+        partCount: 1,
+        partsReady: 1,
+        includedCount: 0,
+        errorCount: 2,
+        parts: [{ n: 1, fileName: 'documents.zip', url: 'https://nrs.example/part1.zip' }],
+        errors: [
+          { documentId: 'doc-a', name: 'Alpha report.pdf', reason: 'not found' },
+          { documentId: 'doc-b', name: 'Beta appendix.pdf', reason: 'not found' }
+        ]
+      }
+    ];
+    const panel = await mount({ id: 'job-9', count: 2, startedAt: Date.now() });
+
+    panel.render();
+    await tick(2000);
+
     expect(screen.getByText('None of the selected documents could be downloaded.')).toBeInTheDocument();
+    expect(screen.getByText('Alpha report.pdf')).toBeInTheDocument();
+    expect(screen.getByText('Beta appendix.pdf')).toBeInTheDocument();
     expect(downloadUrls()).toEqual([]);
   });
 

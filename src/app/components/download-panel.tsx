@@ -66,9 +66,34 @@ function progressRows(job: { count: number }, state?: BulkDownloadStatus): React
   );
 }
 
+function errorRows(state: BulkDownloadStatus): ReactNode {
+  // errorCount is the true total; errors[] is capped at 100 by demi-api, so it can be shorter.
+  const errors = state.errors ?? [];
+
+  return (
+    <>
+      <Row icon={WARNING} tone="error">
+        {state.includedCount === 0
+          ? 'None of the selected documents could be downloaded.'
+          : `${plural(state.errorCount, 'document')} could not be included:`}
+      </Row>
+      {errors.length > 0 && (
+        <li className="download-panel__errors">
+          <ul className="download-panel__names">
+            {errors.map(error => (
+              <li key={error.documentId}>{error.name || error.documentId}</li>
+            ))}
+          </ul>
+          <span className="download-panel__detail">See errors.txt in the zip for the reasons.</span>
+        </li>
+      )}
+    </>
+  );
+}
+
 function readyRows(state: BulkDownloadStatus, downloaded: boolean): ReactNode {
   if (state.includedCount === 0) {
-    return <Row icon={WARNING} tone="error">None of the selected documents could be downloaded.</Row>;
+    return errorRows(state);
   }
 
   return (
@@ -100,11 +125,7 @@ function readyRows(state: BulkDownloadStatus, downloaded: boolean): ReactNode {
           </Row>
         );
       })}
-      {state.errorCount > 0 && (
-        <Row icon={WARNING} tone="muted">
-          {plural(state.errorCount, 'file')} could not be included (see errors.txt)
-        </Row>
-      )}
+      {state.errorCount > 0 && errorRows(state)}
     </>
   );
 }
