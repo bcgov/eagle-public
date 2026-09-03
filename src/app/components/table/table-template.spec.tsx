@@ -163,7 +163,7 @@ describe('TableTemplate selection', () => {
   /**
    * The bar is one element in two states, never a toolbar inserted above the grid: a bar that is
    * added, removed or rebuilt on select pushes every row down under the reader's pointer. The
-   * pixel height is measured in `e2e/tools/verify-table-header.js`; jsdom has no layout, so this
+   * pixel height is measured in `e2e/tools/verify-bulk-download.js`; jsdom has no layout, so this
    * pins what makes the height fixed — the same node, in the same place, holding the same two
    * halves, in every state.
    */
@@ -198,6 +198,19 @@ describe('TableTemplate selection', () => {
     render(<TableTemplate data={selectableTable({ totalListItems: 2158 })} onMessage={() => undefined} />);
 
     expect(screen.getByText('Showing 10 of 2,158 documents')).toBeInTheDocument();
+  });
+
+  /** The count sits in a live region, so a count the request has not answered yet must say nothing. */
+  it('counts nothing while the results are still loading', () => {
+    const data = selectableTable({ items: [], totalListItems: 0 });
+    const { container, rerender } = render(<TableTemplate data={data} loading onMessage={() => undefined} />);
+
+    expect(container.querySelector('.table-header-bar__count')).toHaveTextContent('');
+    expect(screen.queryByText('No documents')).not.toBeInTheDocument();
+
+    rerender(<TableTemplate data={selectableTable({ totalListItems: 2 })} onMessage={() => undefined} />);
+
+    expect(screen.getByText('2 documents')).toBeInTheDocument();
   });
 
   it('drops the "showing" half once the whole result set is on the page', () => {

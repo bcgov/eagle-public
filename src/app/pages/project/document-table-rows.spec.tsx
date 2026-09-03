@@ -68,19 +68,8 @@ describe('DocumentTableRow name cell', () => {
   });
 
   it('starts the download once when Enter is pressed on the link', async () => {
-    // The row also handles Enter. Without the target guard the anchor's own Enter would download
-    // twice, which the browser answers with a second tab.
     const link = renderRow();
     link.focus();
-
-    await userEvent.keyboard('{Enter}');
-
-    expect(openSpy).toHaveBeenCalledTimes(1);
-  });
-
-  it('still starts the download when Enter is pressed on the row itself', async () => {
-    renderRow();
-    screen.getByRole('row').focus();
 
     await userEvent.keyboard('{Enter}');
 
@@ -186,19 +175,30 @@ describe('DocumentTableRow row interaction', () => {
     expect(screen.queryByRole('button', { name: /^Download/ })).not.toBeInTheDocument();
   });
 
-  it('selects on Space and downloads on Enter, never the other way round', async () => {
+  // The row is a pointer target only: the checkbox selects and the Name link opens, both of which
+  // the keyboard already reaches, so a tab stop on the row itself would announce nothing useful.
+  it('is no tab stop of its own, and answers no keys', async () => {
     renderRow();
-    screen.getByRole('row').focus();
+    const row = screen.getByRole('row');
+
+    expect(row).not.toHaveAttribute('tabindex');
+
+    row.focus();
+    await userEvent.keyboard(' ');
+    await userEvent.keyboard('{Enter}');
+
+    expect(checkbox()).not.toBeChecked();
+    expect(openSpy).not.toHaveBeenCalled();
+  });
+
+  it('selects from the checkbox with the keyboard', async () => {
+    renderRow();
+    checkbox().focus();
 
     await userEvent.keyboard(' ');
 
     expect(checkbox()).toBeChecked();
     expect(openSpy).not.toHaveBeenCalled();
-
-    await userEvent.keyboard('{Enter}');
-
-    expect(openSpy).toHaveBeenCalledTimes(1);
-    expect(checkbox()).toBeChecked();
   });
 
   it('ignores a row click while the table is not selectable, and still downloads from the name link', async () => {

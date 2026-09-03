@@ -212,14 +212,13 @@ as one line of computed-style difference rather than a screenshot to squint at.
 
 ## Checking a dev server
 
-Two tools assert behaviour on a running dev server rather than comparing environments. Both take
-`BASE_URL` (default `http://localhost:4200`) and `PROJECT_ID`, print one line per assertion and
-exit non-zero on the first failure.
+One tool asserts behaviour on a running dev server rather than comparing environments. It takes
+`BASE_URL` (default `http://localhost:4200`) and `PROJECT_ID`, prints one line per assertion and
+exits non-zero if any of them failed. `--help` prints the full list.
 
 | Tool | Checks |
 |---|---|
-| `node tools/verify-download-ux.js` | no per-row download control, no clipped last column, the transfer panel neither pads the page nor covers the scroll-to-top button |
-| `node tools/verify-table-header.js` | the document table header bar: full table width, no gap to the grid, the same height and grid offset in every selection state at 1920, 1400 and 390, and Download and Clear still working. Writes `/tmp/hdr-<width>-<state>.png` |
+| `node tools/verify-bulk-download.js` | the document table header bar (full table width, no gap to the grid, the same height and grid offset in every selection state at 1920, 1400 and 390, on both the documents tab and search, with Download and Clear working), no per-row download control, no clipped last column, and a transfer panel that neither pads the page nor covers the scroll-to-top button. demi-api's job endpoint is mocked. Writes `/tmp/hdr-<width>-<state>.png` |
 
 ## Environment differences observed 2026-08-27
 

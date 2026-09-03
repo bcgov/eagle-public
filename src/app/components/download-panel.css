@@ -119,6 +119,20 @@
   color: var(--bs-danger);
 }
 
+.download-panel__errors {
+  /* Lines up under the row text: row padding + icon column + gap. */
+  padding: 0 0.75rem 0.5rem 2.375rem;
+  font-size: var(--bs-font-size-sm);
+  color: var(--bs-body-color);
+}
+
+.download-panel__names {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-wrap: anywhere;
+}
+
 .download-panel__detail {
   display: block;
   color: var(--bs-secondary-color);

@@ -66,9 +66,38 @@ function progressRows(job: { count: number }, state?: BulkDownloadStatus): React
   );
 }
 
+function errorRows(state: BulkDownloadStatus): ReactNode {
+  // errorCount is the true total; errors[] is capped at 100 by demi-api, so it can be shorter.
+  const errors = state.errors ?? [];
+  const unnamed = state.errorCount - errors.length;
+  const allFailed = state.includedCount === 0;
+
+  return (
+    <>
+      <Row icon={WARNING} tone="error">
+        {allFailed
+          ? 'None of the selected documents could be downloaded.'
+          : `${plural(state.errorCount, 'document')} could not be included${errors.length > 0 ? ':' : '.'}`}
+      </Row>
+      {errors.length > 0 && (
+        <li className="download-panel__errors">
+          <ul className="download-panel__names">
+            {errors.map(error => (
+              <li key={error.documentId}>{error.name || error.documentId}</li>
+            ))}
+          </ul>
+          {unnamed > 0 && <span className="download-panel__detail">and {unnamed} more</span>}
+          {/* An all-failed job downloads no zip, so there is no errors.txt to read. */}
+          {!allFailed && <span className="download-panel__detail">See errors.txt in the zip for the reasons.</span>}
+        </li>
+      )}
+    </>
+  );
+}
+
 function readyRows(state: BulkDownloadStatus, downloaded: boolean): ReactNode {
   if (state.includedCount === 0) {
-    return <Row icon={WARNING} tone="error">None of the selected documents could be downloaded.</Row>;
+    return errorRows(state);
   }
 
   return (
@@ -100,11 +129,7 @@ function readyRows(state: BulkDownloadStatus, downloaded: boolean): ReactNode {
           </Row>
         );
       })}
-      {state.errorCount > 0 && (
-        <Row icon={WARNING} tone="muted">
-          {plural(state.errorCount, 'file')} could not be included (see errors.txt)
-        </Row>
-      )}
+      {state.errorCount > 0 && errorRows(state)}
     </>
   );
 }
@@ -138,6 +163,9 @@ export function DownloadPanel() {
   useEffect(() => {
     if (!query.isError) return;
     logger.warn('Bulk download status could not be read', 'bulk-download', queryError);
+    // A poll that cannot answer leaves the status unread, which the toolbar takes for "still
+    // running"; a terminal one releases Download while the panel keeps the error and its Retry.
+    setJobStatus('failed');
     if (jobGone) forgetStoredJob();
   }, [query.isError, jobGone, queryError]);
 
