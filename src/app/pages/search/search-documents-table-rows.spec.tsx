@@ -59,7 +59,7 @@ describe('DocSearchTableRow name cell', () => {
   });
 });
 
-/** Search rows behave exactly as the project's document rows do: same clicks, same keys. */
+/** Search rows behave exactly as the project's document rows do: same clicks, same controls. */
 describe('DocSearchTableRow row interaction', () => {
   const originalEnv = window.__env;
   let openSpy: ReturnType<typeof vi.fn>;
@@ -129,18 +129,19 @@ describe('DocSearchTableRow row interaction', () => {
     expect(openSpy).not.toHaveBeenCalled();
   });
 
-  it('selects on Space and downloads on Enter, never the other way round', async () => {
+  // The keyboard path is the checkbox and the Name link; the row itself is a pointer target only.
+  it('is no tab stop of its own, and answers no keys', async () => {
     renderRow();
-    screen.getByRole('row').focus();
+    const row = screen.getByRole('row');
 
+    expect(row).not.toHaveAttribute('tabindex');
+
+    row.focus();
     await userEvent.keyboard(' ');
-
-    expect(checkbox()).toBeChecked();
-    expect(openSpy).not.toHaveBeenCalled();
-
     await userEvent.keyboard('{Enter}');
 
-    expect(openSpy).toHaveBeenCalledTimes(1);
+    expect(checkbox()).not.toBeChecked();
+    expect(openSpy).not.toHaveBeenCalled();
   });
 
   it('ignores a row click while the table is not selectable, and still downloads from the name link', async () => {

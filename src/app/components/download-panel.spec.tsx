@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, renderHook, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { BulkDownloadJob } from 'app/state/bulk-download';
 
@@ -351,6 +351,26 @@ describe('DownloadPanel', () => {
     await tick(0);
 
     expect(screen.getByText('Zipping 40 documents…')).toBeInTheDocument();
+  });
+
+  /**
+   * A poll that never answers leaves the job with no status, which the toolbar used to read as a
+   * download still running: Download stayed disabled behind "wait for the one in progress".
+   */
+  it.each([
+    [404, 'That download is no longer available.'],
+    [500, 'Could not check the download.']
+  ])('releases the next download when the status poll answers %i', async (status, message) => {
+    statusStatus = status;
+    const panel = await mount({ id: 'job-9', count: 40, startedAt: Date.now() });
+
+    panel.render();
+    await tick(0);
+
+    const inProgress = renderHook(() => panel.store.useDownloadInProgress());
+    expect(inProgress.result.current).toBe(false);
+    // The panel keeps the failure and whatever it offers to do about it.
+    expect(screen.getByText(message)).toBeInTheDocument();
   });
 
   it('keeps polling while it is collapsed, and stops showing the rows', async () => {

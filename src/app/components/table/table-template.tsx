@@ -120,6 +120,12 @@ export function TableTemplate({ data, loading = false, rowComponent, onMessage }
   const showTopRow = !selectable && !!data.options.showTopControls && (showPageCount || showPagination);
   const noResults = !loading && data.items.length === 0 && data.totalListItems === 0;
   const selectionActive = selectedCount > 0;
+  // No count is known while the request is in flight, and the live region must not read out
+  // "No documents" over a page that is still loading.
+  const countMessage =
+    loading || data.totalListItems == null
+      ? ''
+      : documentCountMessage(data.totalListItems, data.currentPage, data.pageSize);
 
   return (
     <div className="table-template" ref={containerRef}>
@@ -147,9 +153,7 @@ export function TableTemplate({ data, loading = false, rowComponent, onMessage }
           <div className="table-header-bar__main">
             {/* The one live region: it is the only thing selecting changes for a screen reader. */}
             <span className="table-header-bar__count" role="status">
-              {selectionActive
-                ? `${selectedCount.toLocaleString()} selected`
-                : documentCountMessage(data.totalListItems, data.currentPage, data.pageSize)}
+              {selectionActive ? `${selectedCount.toLocaleString()} selected` : countMessage}
             </span>
             {selectionActive && (
               <>

@@ -159,6 +159,9 @@ export function DownloadPanel() {
   useEffect(() => {
     if (!query.isError) return;
     logger.warn('Bulk download status could not be read', 'bulk-download', queryError);
+    // A poll that cannot answer leaves the status unread, which the toolbar takes for "still
+    // running"; a terminal one releases Download while the panel keeps the error and its Retry.
+    setJobStatus('failed');
     if (jobGone) forgetStoredJob();
   }, [query.isError, jobGone, queryError]);
 
