@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderAt } from '../../../test-utils';
-import { clearValue } from 'app/api/org';
 import { ProjectList } from './project-list';
 
 const PROJECTS = [
@@ -59,7 +58,6 @@ function lastProjectRequest(): string {
 describe('projects list', () => {
   beforeEach(() => {
     requests = [];
-    clearValue();
     vi.stubGlobal('fetch', mockFetch());
   });
 

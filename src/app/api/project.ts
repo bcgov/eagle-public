@@ -8,9 +8,6 @@ import { extractFromSearchResults, natureBuildMapper } from 'app/utils/utils';
 import type { DataQueryResponse } from 'app/models/api-response';
 import { logger } from 'app/config/logging';
 
-let cachedCount: number | null = null;
-let countRequest: Promise<number> | null = null;
-
 // get just the projects (for fast mapping)
 export async function getAll(
   pageNum = 0,
@@ -50,20 +47,8 @@ export async function getAll(
 }
 
 // get count of projects
-export async function getCount(): Promise<number> {
-  if (cachedCount !== null) {
-    return cachedCount;
-  }
-  if (countRequest) {
-    return countRequest;
-  }
-
-  countRequest = api.getCountProjects().then((count) => {
-    cachedCount = count;
-    return count;
-  });
-
-  return countRequest;
+export function getCount(): Promise<number> {
+  return api.getCountProjects();
 }
 
 // get all projects and related data
