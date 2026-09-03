@@ -309,7 +309,7 @@ describe('DocumentTableRow date cell', () => {
           <tbody>
             <DocumentTableRow
               rowData={{ ...DOCUMENT, datePosted }}
-              tableData={tableObject()}
+              tableData={tableObject({ tableId: 'documents' })}
               columns={[]}
               onMessage={() => undefined}
             />
