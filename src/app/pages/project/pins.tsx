@@ -59,30 +59,34 @@ export function Pins() {
   });
 
   const totalListItems = result?.totalListItems ?? 0;
+
+  const data = useMemo(
+    () => ({
+      ...tableObject({
+        tableId: 'pins-table',
+        component: PinsTableRow,
+        columns: COLUMNS,
+        currentPage,
+        pageSize,
+        sortBy,
+        items: (result?.data ?? []).map((record) => ({ rowData: record })),
+        totalListItems,
+      }),
+      options: {
+        showHeader: true,
+        showPagination: true,
+        showPageCountDisplay: false,
+        showPageSizePicker: false,
+        showTopControls: true,
+        disableRowHighlight: true,
+      },
+    }),
+    [currentPage, pageSize, sortBy, result?.data, totalListItems],
+  );
+
   if (!isPending && totalListItems === 0) {
     return null;
   }
-
-  const data = {
-    ...tableObject({
-      tableId: 'pins-table',
-      component: PinsTableRow,
-      columns: COLUMNS,
-      currentPage,
-      pageSize,
-      sortBy,
-      items: (result?.data ?? []).map((record) => ({ rowData: record })),
-      totalListItems,
-    }),
-    options: {
-      showHeader: true,
-      showPagination: true,
-      showPageCountDisplay: false,
-      showPageSizePicker: false,
-      showTopControls: true,
-      disableRowHighlight: true,
-    },
-  };
 
   function onMessage(msg: ITableMessage): void {
     switch (msg.label) {

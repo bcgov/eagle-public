@@ -113,38 +113,45 @@ export function ProjectDocumentTab({
     [tabKey, lists, projId],
   );
 
-  const query: TableQueryConfig = {
-    dataset: 'Document',
-    // The optional tabs identify their documents through query modifiers built from the lists, so
-    // they cannot run until those have loaded.
-    enabled: !!projId && (!tabKey || lists.length > 0),
-    keywords: panelSizes ? params['keywords'] || '' : '',
-    fields: tabKey ? [{ name: 'project', value: projId }] : [],
-    currentPage: base.currentPage,
-    pageSize: base.pageSize,
-    sortBy: base.sortBy,
-    queryModifiers,
-    populate: !tabKey,
-    secondarySort: base.sortBy.includes('displayName') ? '' : '+displayName',
-    filters: activeFilters,
-  };
+  const query: TableQueryConfig = useMemo(
+    () => ({
+      dataset: 'Document',
+      // The optional tabs identify their documents through query modifiers built from the lists, so
+      // they cannot run until those have loaded.
+      enabled: !!projId && (!tabKey || lists.length > 0),
+      keywords: panelSizes ? params['keywords'] || '' : '',
+      fields: tabKey ? [{ name: 'project', value: projId }] : [],
+      currentPage: base.currentPage,
+      pageSize: base.pageSize,
+      sortBy: base.sortBy,
+      queryModifiers,
+      populate: !tabKey,
+      secondarySort: base.sortBy.includes('displayName') ? '' : '+displayName',
+      filters: activeFilters,
+    }),
+    [projId, tabKey, lists, panelSizes, params, base, queryModifiers, activeFilters],
+  );
 
   const result = useTable(tableId, query);
 
-  const data = {
-    ...base,
-    columns: showFeatured
-      ? [
-          FEATURED_COLUMN,
-          { name: 'Name', value: 'displayName', width: 'col-3' },
-          ...DOCUMENT_COLUMNS,
-        ]
-      : [{ name: 'Name', value: 'displayName', width: 'col-4' }, ...DOCUMENT_COLUMNS],
-    items: result.data.map((record) => ({ rowData: record })),
-    totalListItems: result.totalListItems,
-    options: { ...base.options, showAllPicker: true, selectable: bulkDownloadEnabled() },
-    data: { lists, showFeatured },
-  };
+  // Rebuilt objects re-render every row, and the rows subscribe to the selection store.
+  const data = useMemo(
+    () => ({
+      ...base,
+      columns: showFeatured
+        ? [
+            FEATURED_COLUMN,
+            { name: 'Name', value: 'displayName', width: 'col-3' },
+            ...DOCUMENT_COLUMNS,
+          ]
+        : [{ name: 'Name', value: 'displayName', width: 'col-4' }, ...DOCUMENT_COLUMNS],
+      items: result.data.map((record) => ({ rowData: record })),
+      totalListItems: result.totalListItems,
+      options: { ...base.options, showAllPicker: true, selectable: bulkDownloadEnabled() },
+      data: { lists, showFeatured },
+    }),
+    [base, showFeatured, result.data, result.totalListItems, lists],
+  );
 
   function submit(next: Params): void {
     setSearchParams(toSearchParams(next), { replace: true });

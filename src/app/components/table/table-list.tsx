@@ -76,15 +76,18 @@ export function TableList({ config, children }: { config: TableListConfig; child
   );
   const sortBy = params['sortBy'] ? normalizeSortBy(params['sortBy']) : config.defaultSort;
 
-  const query: TableQueryConfig = {
-    dataset: config.datasetType,
-    keywords: params['keywords'] || '',
-    currentPage: +(params['currentPage'] || 1),
-    pageSize: +(params['pageSize'] || 10),
-    sortBy,
-    populate: true,
-    filters,
-  };
+  const query: TableQueryConfig = useMemo(
+    () => ({
+      dataset: config.datasetType,
+      keywords: params['keywords'] || '',
+      currentPage: +(params['currentPage'] || 1),
+      pageSize: +(params['pageSize'] || 10),
+      sortBy,
+      populate: true,
+      filters,
+    }),
+    [config.datasetType, params, sortBy, filters],
+  );
 
   const table = useTable(config.tableId, query);
 
