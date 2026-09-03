@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, renderHook, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { BulkDownloadJob } from 'app/state/bulk-download';
 
@@ -139,40 +139,50 @@ describe('DownloadPanel', () => {
     expect(screen.getByText('documents-2.zip')).toBeInTheDocument();
   });
 
-  it('names the files the zip could not include', async () => {
+  it('names every document the zip could not include, and still downloads the parts', async () => {
     statusResponses = [
       {
         id: 'job-9',
         status: 'ready',
-        partCount: 1,
-        partsReady: 1,
+        partCount: 2,
+        partsReady: 2,
         includedCount: 5,
         errorCount: 3,
-        parts: [{ n: 1, fileName: 'documents.zip', url: 'https://nrs.example/part1.zip' }]
+        parts: [
+          { n: 1, fileName: 'documents-1.zip', url: 'https://nrs.example/part1.zip' },
+          { n: 2, fileName: 'documents-2.zip', url: 'https://nrs.example/part2.zip' }
+        ],
+        errors: [
+          { documentId: 'doc-a', name: 'Alpha report.pdf', reason: 'not found' },
+          { documentId: 'doc-b', name: 'Beta appendix.pdf', reason: 'too large' },
+          { documentId: 'doc-c', name: '', reason: 'unreadable' }
+        ]
       }
     ];
     const panel = await mount({ id: 'job-9', count: 8, startedAt: Date.now() });
 
     panel.render();
-    await tick(0);
+    await tick(2000);
 
-    expect(screen.getByText('documents.zip')).toBeInTheDocument();
-    expect(screen.getByText('3 files could not be included (see errors.txt)')).toBeInTheDocument();
+    expect(screen.getByText('3 documents could not be included:')).toBeInTheDocument();
+    expect(screen.getByText('Alpha report.pdf')).toBeInTheDocument();
+    expect(screen.getByText('Beta appendix.pdf')).toBeInTheDocument();
+    // demi-api sent no name, so the id is all the reader has to go on.
+    expect(screen.getByText('doc-c')).toBeInTheDocument();
+    expect(screen.getByText('documents-1.zip')).toBeInTheDocument();
+    expect(downloadUrls()).toEqual(['https://nrs.example/part1.zip', 'https://nrs.example/part2.zip']);
   });
 
-  /**
-   * Every document in the selection failed: the zip holds nothing but errors.txt, and each part
-   * answers with an error page, so fetching them buys the reader nothing.
-   */
-  it('downloads nothing when the finished zip included no documents', async () => {
+  it('shows no list when every selected document made it into the zip', async () => {
     statusResponses = [
       {
         id: 'job-9',
         status: 'ready',
         partCount: 1,
         partsReady: 1,
-        includedCount: 0,
-        errorCount: 2,
+        includedCount: 2,
+        errorCount: 0,
+        errors: [],
         parts: [{ n: 1, fileName: 'documents.zip', url: 'https://nrs.example/part1.zip' }]
       }
     ];
@@ -181,8 +191,93 @@ describe('DownloadPanel', () => {
     panel.render();
     await tick(2000);
 
+    expect(screen.getByText('documents.zip')).toBeInTheDocument();
+    expect(screen.queryByText(/could not be included/)).not.toBeInTheDocument();
+    expect(document.querySelector('.download-panel__names')).toBeNull();
+  });
+
+  /**
+   * Every document in the selection failed: the zip holds nothing but errors.txt, and each part
+   * answers with an error page, so fetching them buys the reader nothing.
+   */
+  it('downloads nothing when the finished zip included no documents, and names them all', async () => {
+    statusResponses = [
+      {
+        id: 'job-9',
+        status: 'ready',
+        partCount: 1,
+        partsReady: 1,
+        includedCount: 0,
+        errorCount: 2,
+        parts: [{ n: 1, fileName: 'documents.zip', url: 'https://nrs.example/part1.zip' }],
+        errors: [
+          { documentId: 'doc-a', name: 'Alpha report.pdf', reason: 'not found' },
+          { documentId: 'doc-b', name: 'Beta appendix.pdf', reason: 'not found' }
+        ]
+      }
+    ];
+    const panel = await mount({ id: 'job-9', count: 2, startedAt: Date.now() });
+
+    panel.render();
+    await tick(2000);
+
     expect(screen.getByText('None of the selected documents could be downloaded.')).toBeInTheDocument();
+    expect(screen.getByText('Alpha report.pdf')).toBeInTheDocument();
+    expect(screen.getByText('Beta appendix.pdf')).toBeInTheDocument();
     expect(downloadUrls()).toEqual([]);
+    // No zip is fetched, so there is no errors.txt for the reader to open.
+    expect(screen.queryByText(/errors\.txt/)).not.toBeInTheDocument();
+  });
+
+  /** demi-api caps errors[] at 100, so the names can be a short version of the true count. */
+  it('says how many failures it could not name', async () => {
+    statusResponses = [
+      {
+        id: 'job-9',
+        status: 'ready',
+        partCount: 1,
+        partsReady: 1,
+        includedCount: 4,
+        errorCount: 5,
+        parts: [{ n: 1, fileName: 'documents.zip', url: 'https://nrs.example/part1.zip' }],
+        errors: [
+          { documentId: 'doc-a', name: 'Alpha report.pdf', reason: 'not found' },
+          { documentId: 'doc-b', name: 'Beta appendix.pdf', reason: 'too large' },
+          { documentId: 'doc-c', name: 'Gamma map.pdf', reason: 'unreadable' }
+        ]
+      }
+    ];
+    const panel = await mount({ id: 'job-9', count: 9, startedAt: Date.now() });
+
+    panel.render();
+    await tick(2000);
+
+    expect(screen.getByText('5 documents could not be included:')).toBeInTheDocument();
+    expect(screen.getByText('and 2 more')).toBeInTheDocument();
+    expect(document.querySelectorAll('.download-panel__names li')).toHaveLength(3);
+  });
+
+  it('counts the failures with no list when demi-api names none of them', async () => {
+    statusResponses = [
+      {
+        id: 'job-9',
+        status: 'ready',
+        partCount: 1,
+        partsReady: 1,
+        includedCount: 4,
+        errorCount: 2,
+        parts: [{ n: 1, fileName: 'documents.zip', url: 'https://nrs.example/part1.zip' }]
+      }
+    ];
+    const panel = await mount({ id: 'job-9', count: 6, startedAt: Date.now() });
+
+    panel.render();
+    await tick(2000);
+
+    // A colon with nothing after it reads as a page that failed to finish rendering.
+    expect(screen.getByText('2 documents could not be included.')).toBeInTheDocument();
+    expect(document.querySelector('.download-panel__names')).toBeNull();
+    expect(screen.queryByText(/and \d+ more/)).not.toBeInTheDocument();
   });
 
   it('explains a 429 in the panel rather than looking like a failure', async () => {
@@ -309,6 +404,26 @@ describe('DownloadPanel', () => {
     await tick(0);
 
     expect(screen.getByText('Zipping 40 documents…')).toBeInTheDocument();
+  });
+
+  /**
+   * A poll that never answers leaves the job with no status, which the toolbar used to read as a
+   * download still running: Download stayed disabled behind "wait for the one in progress".
+   */
+  it.each([
+    [404, 'That download is no longer available.'],
+    [500, 'Could not check the download.']
+  ])('releases the next download when the status poll answers %i', async (status, message) => {
+    statusStatus = status;
+    const panel = await mount({ id: 'job-9', count: 40, startedAt: Date.now() });
+
+    panel.render();
+    await tick(0);
+
+    const inProgress = renderHook(() => panel.store.useDownloadInProgress());
+    expect(inProgress.result.current).toBe(false);
+    // The panel keeps the failure and whatever it offers to do about it.
+    expect(screen.getByText(message)).toBeInTheDocument();
   });
 
   it('keeps polling while it is collapsed, and stops showing the rows', async () => {
