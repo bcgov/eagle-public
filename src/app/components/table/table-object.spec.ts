@@ -94,6 +94,6 @@ describe('table options', () => {
   it('leaves selection off unless a table asks for it', () => {
     // Every table shares these defaults; on by default would grow a checkbox column everywhere.
     expect(DEFAULT_TABLE_OPTIONS.selectable).toBeUndefined();
-    expect(tableObject().options.selectable).toBeUndefined();
+    expect(tableObject({ tableId: 'test' }).options.selectable).toBeUndefined();
   });
 });

@@ -174,6 +174,7 @@ export function Comments() {
   const tableData = useMemo(
     () =>
       tableObject({
+        tableId: 'comments',
         component: CommentsTableRow,
         options: {
           showPageCountDisplay: true,

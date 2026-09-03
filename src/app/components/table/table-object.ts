@@ -1,5 +1,4 @@
 import type { ComponentType } from 'react';
-import { randomId } from 'app/utils/random-id';
 import { Constants } from 'app/utils/constants';
 
 /** A single page size option. */
@@ -47,7 +46,7 @@ export interface IRowObject {
 
 /** Generic parent/child event, kept from the Angular engine so consumers port unchanged. */
 export interface ITableMessage {
-  label: string;
+  label: 'pageNum' | 'pageSize' | 'columnSort' | 'selectAllMatching';
   data?: any;
 }
 
@@ -76,7 +75,11 @@ export interface TableObject {
   data?: any;
 }
 
-export function tableObject(params: Partial<TableObject> = {}): TableObject {
+// The selection store is keyed by tableId, so a table without a stable one loses its selection
+// on every render.
+export function tableObject(
+  params: Partial<TableObject> & Pick<TableObject, 'tableId'>,
+): TableObject {
   return {
     options: params.options ?? { ...DEFAULT_TABLE_OPTIONS },
     component: params.component ?? null,
@@ -90,7 +93,7 @@ export function tableObject(params: Partial<TableObject> = {}): TableObject {
     pageSize: params.pageSize ?? Constants.tableDefaults.DEFAULT_PAGE_SIZE,
     sortBy: params.sortBy ?? Constants.tableDefaults.DEFAULT_SORT_BY,
     totalListItems: params.totalListItems ?? 0,
-    tableId: params.tableId ?? randomId(),
+    tableId: params.tableId,
     data: params.data ?? null,
   };
 }

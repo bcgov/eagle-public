@@ -33,7 +33,7 @@ describe('DocSearchTableRow name cell', () => {
           <tbody>
             <DocSearchTableRow
               rowData={DOCUMENT}
-              tableData={tableObject()}
+              tableData={tableObject({ tableId: 'test' })}
               columns={[]}
               onMessage={() => undefined}
             />

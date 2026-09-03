@@ -45,7 +45,7 @@ describe('DocumentTableRow name cell', () => {
           <tbody>
             <DocumentTableRow
               rowData={DOCUMENT}
-              tableData={tableObject()}
+              tableData={tableObject({ tableId: 'test' })}
               columns={[]}
               onMessage={() => undefined}
             />

@@ -36,7 +36,10 @@ export function News() {
   const params = useMemo(() => paramsToObject(searchParams), [searchParams]);
 
   const base = useMemo(() => {
-    const table = updateTableObjectWithUrlParams(params, tableObject({ component: NewsRow }));
+    const table = updateTableObjectWithUrlParams(
+      params,
+      tableObject({ tableId: TABLE_ID, component: NewsRow }),
+    );
     // The shared default is the document field; activities are dated with dateAdded.
     return table.sortBy === '-datePosted' ? { ...table, sortBy: '-dateAdded' } : table;
   }, [params]);

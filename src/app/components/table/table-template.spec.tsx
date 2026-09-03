@@ -35,7 +35,7 @@ function Harness({ totalListItems = 42 }: { totalListItems?: number }) {
   const [currentPage, setCurrentPage] = useState(1);
 
   const data = {
-    ...tableObject({ component: NameRow as any, columns: COLUMNS }),
+    ...tableObject({ tableId: 'test', component: NameRow as any, columns: COLUMNS }),
     items: [{ rowData: { _id: 'a', name: 'Alpha' } }],
     totalListItems,
     pageSize,
