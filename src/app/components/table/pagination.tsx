@@ -28,27 +28,19 @@ export function Pagination({
     onPageChange(pageNum);
   }
 
-  function keyActivate(event: React.KeyboardEvent, pageNum: number): void {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      change(pageNum);
-    }
-  }
-
   return (
     <nav aria-label={ariaLabel}>
       <ul className="pagination justify-content-center justify-content-md-end mb-0">
         <li className={`page-item${currentPage === 1 ? ' disabled' : ''}`}>
-          <a
+          <button
+            type="button"
             className="page-link"
-            role="button"
-            tabIndex={0}
+            disabled={currentPage === 1}
             onClick={() => change(currentPage - 1)}
-            onKeyDown={(event) => keyActivate(event, currentPage - 1)}
             aria-label="Previous page"
           >
             &laquo;
-          </a>
+          </button>
         </li>
 
         {pageNumbers(totalPages, currentPage).map((page, index) =>
@@ -58,32 +50,29 @@ export function Pagination({
             </li>
           ) : (
             <li className={`page-item${page === currentPage ? ' active' : ''}`} key={page}>
-              <a
+              <button
+                type="button"
                 className="page-link"
-                role="button"
-                tabIndex={0}
                 onClick={() => change(page)}
-                onKeyDown={(event) => keyActivate(event, page)}
                 aria-label={`Go to page ${page}`}
                 aria-current={page === currentPage ? 'page' : undefined}
               >
                 {page}
-              </a>
+              </button>
             </li>
           ),
         )}
 
         <li className={`page-item${currentPage >= totalPages ? ' disabled' : ''}`}>
-          <a
+          <button
+            type="button"
             className="page-link"
-            role="button"
-            tabIndex={0}
+            disabled={currentPage >= totalPages}
             onClick={() => change(currentPage + 1)}
-            onKeyDown={(event) => keyActivate(event, currentPage + 1)}
             aria-label="Next page"
           >
             &raquo;
-          </a>
+          </button>
         </li>
       </ul>
     </nav>
