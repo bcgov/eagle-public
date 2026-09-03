@@ -239,7 +239,8 @@ export function hasValidCentroid(project: Project): boolean {
     logger.warn(`NaN centroid for project ${project._id}`, 'ProjlistMap');
     return false;
   }
-  if (lat < 48 || lat > 60 || lon < -139 || lon > -114) {
+  const [[west, south], [east, north]] = BC_BOUNDS;
+  if (lon < west || lon > east || lat < south || lat > north) {
     logger.warn(
       `Out-of-range centroid for project ${project._id}: [${lon}, ${lat}]`,
       'ProjlistMap',
