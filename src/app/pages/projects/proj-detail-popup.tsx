@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import type { Project } from 'app/models/project';
-import type { CommentPeriod } from 'app/models/commentperiod';
 import { getAllByProjectId } from 'app/api/commentperiod';
 import { periodsOf } from 'app/components/use-comment-periods';
 import { track } from 'app/analytics/analytics';
