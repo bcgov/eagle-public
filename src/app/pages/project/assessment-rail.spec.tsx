@@ -126,6 +126,14 @@ describe('detailed rail', () => {
     expect(container.querySelector('.assessment-rail__amendment')).toBeNull();
   });
 
+  it('keeps the amendment column off the rail for other post-decision phases', async () => {
+    const { container } = renderRail('Post Decision - Construction');
+
+    await showDetailed();
+
+    expect(container.querySelector('.assessment-rail__amendment')).toBeNull();
+  });
+
   it('adds the off-scale amendment column after the decision', async () => {
     renderRail('Post Decision - Amendment');
 

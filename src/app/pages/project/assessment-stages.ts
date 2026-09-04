@@ -26,7 +26,12 @@ export interface LaidStage extends RailStage {
   start: number;
   width: number;
   days: number;
+  /** Pin row: 0 on the track, 1 below it when the previous pin's centre is within PIN_GAP. */
+  row: number;
 }
+
+/** Percent of the track two pin centres need between them before the later pin drops a row. */
+const PIN_GAP = 2.5;
 
 /** `List` rows of type `projectPhase`, as the project shell fetches them. */
 export interface PhaseListItem {
@@ -264,14 +269,20 @@ export function layout(stages: RailStage[]): LaidStage[] {
   const days = stages.map(daysFor);
   const total = days.reduce((sum, d) => sum + d, 0) || 1;
   let start = 0;
+  let prev: LaidStage | undefined;
   return stages.map((stage, index) => {
-    const laid = {
+    const width = (days[index] / total) * 100;
+    const laid: LaidStage = {
       ...stage,
       days: days[index],
       start: (start / total) * 100,
-      width: (days[index] / total) * 100,
+      width,
+      row: 0,
     };
+    if (prev && laid.start + width / 2 - (prev.start + prev.width / 2) < PIN_GAP)
+      laid.row = prev.row + 1;
     start += days[index];
+    prev = laid;
     return laid;
   });
 }

@@ -91,6 +91,12 @@ describe('layout', () => {
     expect(laid[1].start).toBeCloseTo((200 / 2565) * 100, 6);
   });
 
+  it('drops a pin a row when its centre crowds the previous one', () => {
+    const laid = layout(DETAILED_STAGES);
+
+    expect(laid.map((s) => s.row)).toEqual([0, 0, 0, 0, 0, 0, 0, 0, 0, 1]);
+  });
+
   it('ignores elapsed days on a stage that is not finished', () => {
     const laid = layout([{ ...DETAILED_STAGES[0], state: 'current', elapsedDays: 200 }]);
 
