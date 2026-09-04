@@ -44,8 +44,8 @@ export function ProjectPage() {
   const notFound = isError || (isSuccess && !project);
 
   const banner = project?.commentPeriodForBanner;
-  // The ENGAGE banner is the only comment-period banner the shell still owns; the in-EPIC
-  // engagement callout moves into the Overview tab.
+  // The ENGAGE banner is the only comment-period banner the shell owns. The in-EPIC comment
+  // period callout is rebuilt on the Overview tab in the next change (see TODO.md).
   const showEngage = !!banner?.isBannerVisible && !!banner.isMet && isSafeUrl(banner.metURL);
 
   if (notFound) {
