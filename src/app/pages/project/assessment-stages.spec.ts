@@ -94,7 +94,7 @@ describe('layout', () => {
   it('drops a pin a row when its centre crowds the previous one', () => {
     const laid = layout(DETAILED_STAGES);
 
-    expect(laid.map((s) => s.row)).toEqual([0, 0, 0, 0, 0, 0, 0, 0, 1, 0]);
+    expect(laid.map((s) => s.row)).toEqual([0, 0, 0, 1, 0, 0, 0, 0, 1, 2]);
   });
 
   it('ignores elapsed days on a stage that is not finished', () => {

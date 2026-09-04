@@ -31,7 +31,7 @@ export interface LaidStage extends RailStage {
 }
 
 /** Percent of the track two pin centres need between them before the later pin drops a row. */
-const PIN_GAP = 3.5;
+const PIN_GAP = 4.5;
 
 /** `List` rows of type `projectPhase`, as the project shell fetches them. */
 export interface PhaseListItem {
