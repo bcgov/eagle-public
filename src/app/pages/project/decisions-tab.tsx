@@ -3,13 +3,16 @@ import { Pagination } from 'app/components/table/pagination';
 import { DocumentLink } from 'app/components/table/document-link';
 import { useTable } from 'app/components/table/use-table';
 import { Constants } from 'app/utils/constants';
+import { isSafeUrl } from 'app/utils/safe-url';
 import { createProjectTabModifiers, idToListName, longDate, mediumDate } from 'app/utils/utils';
 import { useProjectContext } from './project-context';
 import './decisions-tab.css';
 
-const BC_ENERGY_REGULATOR_LINK = 'https://www.bc-er.ca/data-reports/data-centre/';
-
 const PAGE_SIZE = 10;
+
+function regulatorLink(item: unknown): string {
+  return typeof item === 'string' && isSafeUrl(item) ? item : Constants.BC_ENERGY_REGULATOR_LINK;
+}
 
 /** The type and milestone of a document, as a single line. */
 function documentDetail(record: { type?: string; milestone?: string }, lists: any[]): string {
@@ -52,7 +55,7 @@ export function DecisionsTab() {
           {transferred ? (
             <p className="decisions-tab__decision-value">
               <a
-                href={project.applicableRegulation?.item || BC_ENERGY_REGULATOR_LINK}
+                href={regulatorLink(project.applicableRegulation?.item)}
                 target="_blank"
                 rel="noopener noreferrer"
               >

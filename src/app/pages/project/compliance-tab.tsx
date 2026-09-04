@@ -58,7 +58,6 @@ export function ComplianceTab() {
   const orders = useComplianceCount('complianceOrders', projId, lists, 'Order');
 
   const loading = inspections.loading || orders.loading;
-  const empty = !loading && inspections.count === 0 && orders.count === 0;
 
   return (
     <section className="compliance-tab">
@@ -68,26 +67,19 @@ export function ComplianceTab() {
         assessment itself.
       </p>
 
-      {empty ? (
-        <p>No inspection records or orders have been published for this project.</p>
-      ) : (
-        <ul className="compliance-tab__stats" aria-busy={loading || undefined}>
-          <Stat
-            value={loading ? '—' : inspections.count.toLocaleString('en-CA')}
-            label="Inspection records published"
-          />
-          <Stat
-            value={loading ? '—' : orders.count.toLocaleString('en-CA')}
-            label="Orders issued"
-          />
-        </ul>
-      )}
+      <ul className="compliance-tab__stats" aria-busy={loading || undefined}>
+        <Stat
+          value={loading ? '—' : inspections.count.toLocaleString('en-CA')}
+          label="Inspection records published"
+        />
+        <Stat value={loading ? '—' : orders.count.toLocaleString('en-CA')} label="Orders issued" />
+      </ul>
 
       <Link className="compliance-tab__link" to={`/p/${projId}/documents/compliance`}>
         <i className="material-icons" aria-hidden="true">
           folder_open
         </i>
-        View inspection records and orders
+        View compliance and enforcement documents
       </Link>
     </section>
   );

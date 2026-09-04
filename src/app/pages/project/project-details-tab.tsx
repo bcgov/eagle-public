@@ -1,13 +1,12 @@
 import { newlines } from 'app/utils/newlines';
 import { safeHtml } from 'app/utils/safe-html';
+import { Constants } from 'app/utils/constants';
 import { longDate } from 'app/utils/utils';
 import { FeaturedDocuments } from './featured-documents';
 import { Pins } from './pins';
 import { ProjectActivites } from './project-activites';
 import { useProjectContext } from './project-context';
 import './project-details-tab.css';
-
-const BC_ENERGY_REGULATOR_LINK = 'https://www.bc-er.ca/data-reports/data-centre/';
 
 /** One entry per detail the loaded tab shows; the value width varies so the block does not read as a grid of identical bars. */
 const SKELETON_FIELDS = ['col-9', 'col-7', 'col-8', 'col-10', 'col-6', 'col-11'];
@@ -106,7 +105,10 @@ export function ProjectDetailsTab() {
                       {project.eacDecision?.name === 'Regulatory Transfer' ? (
                         <dd className="mb-1">
                           <a
-                            href={project.applicableRegulation?.item || BC_ENERGY_REGULATOR_LINK}
+                            href={
+                              project.applicableRegulation?.item ||
+                              Constants.BC_ENERGY_REGULATOR_LINK
+                            }
                             target="_blank"
                             rel="noopener noreferrer"
                           >

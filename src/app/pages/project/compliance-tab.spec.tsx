@@ -80,19 +80,17 @@ describe('ComplianceTab', () => {
     renderTab();
 
     expect(
-      screen.getByRole('link', { name: /View inspection records and orders/ }),
+      screen.getByRole('link', { name: /View compliance and enforcement documents/ }),
     ).toHaveAttribute('href', '/p/proj-1/documents/compliance');
   });
 
-  it('says so when the project has no inspection records or orders', async () => {
+  it('shows zero counts and keeps the documents link when nothing is published', async () => {
     totals = {};
     renderTab();
 
+    expect(await screen.findAllByText('0')).toHaveLength(2);
     expect(
-      await screen.findByText(
-        'No inspection records or orders have been published for this project.',
-      ),
+      screen.getByRole('link', { name: /View compliance and enforcement documents/ }),
     ).toBeInTheDocument();
-    expect(screen.queryByText('Orders issued')).not.toBeInTheDocument();
   });
 });

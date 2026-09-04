@@ -33,6 +33,15 @@ const DOCUMENTS = [
     milestone: 'ms-certdec-2018',
     project: 'proj-1',
   },
+  {
+    _id: 'doc-2',
+    displayName: 'Schedule B',
+    documentFileName: 'schedule-b.pdf',
+    datePosted: '2023-03-01T12:00:00.000Z',
+    type: 'type-cert-2018',
+    milestone: 'ms-unknown',
+    project: 'proj-1',
+  },
 ];
 
 const DECIDED = {
@@ -117,6 +126,8 @@ describe('DecisionsTab', () => {
     ).toBeInTheDocument();
     expect(screen.getByText('Mar 14, 2023')).toBeInTheDocument();
     expect(screen.getByText('Certificate Package · Certificate Decision')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 3, name: 'Schedule B' })).toBeInTheDocument();
+    expect(screen.getByText('Certificate Package')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'certificate-e23-01.pdf' })).toHaveAttribute(
       'href',
       '/api/public/document/doc-1/download/certificate-e23-01.pdf',
