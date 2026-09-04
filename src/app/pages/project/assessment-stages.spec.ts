@@ -114,7 +114,9 @@ describe('detailedStages', () => {
 
   it('marks every stage done once the project is past decision', () => {
     for (const phase of ['Post Decision - Amendment', 'Complete']) {
-      expect(detailedStages(makeProject(phase)).map((s) => s.state)).toEqual(Array(10).fill('done'));
+      expect(detailedStages(makeProject(phase)).map((s) => s.state)).toEqual(
+        Array(10).fill('done'),
+      );
     }
   });
 });

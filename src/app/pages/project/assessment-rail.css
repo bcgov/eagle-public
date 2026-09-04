@@ -132,8 +132,7 @@
   box-sizing: border-box;
   height: 22px;
   padding-left: var(--layout-padding-xsmall);
-  border-left: var(--layout-border-width-medium, 2px) solid
-    var(--typography-color-primary, #2d2d2d);
+  border-left: var(--layout-border-width-medium, 2px) solid var(--typography-color-primary, #2d2d2d);
   font: var(--typography-bold-label);
   line-height: 1;
   color: var(--typography-color-primary, #2d2d2d);
@@ -303,7 +302,11 @@
   height: 6px;
   border-radius: var(--layout-border-radius-small);
   background:
-    repeating-linear-gradient(115deg, var(--eao-proponent-dark, #6d7274) 0 6px, transparent 6px 11px),
+    repeating-linear-gradient(
+      115deg,
+      var(--eao-proponent-dark, #6d7274) 0 6px,
+      transparent 6px 11px
+    ),
     var(--theme-gray-20, #f3f2f1);
 }
 

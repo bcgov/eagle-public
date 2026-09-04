@@ -45,7 +45,13 @@ function rows(names: string[], legislation: string): PhaseListItem[] {
 export const LISTS: PhaseListItem[] = [
   ...rows(PHASES_2018, '2018'),
   ...rows(PHASES_2002, '2002'),
-  { _id: 'doctype-1', type: 'doctype', name: 'Early Engagement', listOrder: 1, legislation: '2018' },
+  {
+    _id: 'doctype-1',
+    type: 'doctype',
+    name: 'Early Engagement',
+    listOrder: 1,
+    legislation: '2018',
+  },
 ];
 
 export function phaseRow(name: string, act = '2018'): PhaseListItem {
