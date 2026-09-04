@@ -1,0 +1,91 @@
+/* White card that persists under the masthead on every tab: assessment rail beside the facts.
+   Tokens come from @bcgov/design-tokens and eao-tokens.css. */
+
+.project-panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--layout-padding-large) var(--layout-padding-xlarge);
+  padding: var(--layout-padding-large);
+  background: var(--theme-gray-white);
+  border: var(--layout-border-width-small) solid var(--theme-gray-40);
+  border-radius: var(--layout-border-radius-medium);
+}
+
+.project-panel__progress {
+  flex: 1 1 26rem;
+  min-width: 0;
+}
+
+/* The rail's own bottom margin is for a stacked page; inside the card the gap does that job. */
+.project-panel__progress .assessment-rail {
+  margin-bottom: 0;
+}
+
+.project-panel__facts {
+  flex: 1 1 22rem;
+  min-width: 0;
+}
+
+.project-panel__facts dl {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: var(--layout-padding-medium) var(--layout-padding-large);
+  margin: 0 0 var(--layout-margin-large);
+}
+
+.project-panel__fact dt {
+  margin-bottom: var(--layout-margin-hair);
+  font: var(--typography-bold-label);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--typography-color-secondary);
+}
+
+.project-panel__fact dd {
+  margin: 0;
+  font: var(--typography-regular-body);
+  color: var(--typography-color-primary);
+}
+
+.project-panel__fact-detail {
+  display: block;
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-secondary);
+}
+
+.project-panel .map-container {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  height: 17rem;
+  min-height: 17rem;
+  border: var(--layout-border-width-small) solid var(--theme-gray-40);
+  border-radius: var(--layout-border-radius-medium);
+}
+
+.project-panel .map {
+  position: relative;
+  width: 100%;
+  height: 17rem;
+  min-height: 17rem;
+  outline: none;
+  background-color: var(--theme-gray-30);
+}
+
+.project-panel .map-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 17rem;
+  background: var(--theme-gray-30);
+  border-radius: var(--layout-border-radius-medium);
+  color: var(--typography-color-secondary);
+  font: var(--typography-regular-small-body);
+}
+
+/* Stack the rail above the facts before the two columns get too narrow to read. */
+@media (max-width: 859.98px) {
+  .project-panel {
+    flex-direction: column;
+  }
+}

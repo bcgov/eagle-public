@@ -36,7 +36,6 @@ test('project detail defaults to the overview tab', async ({ page, request }) =>
   await expect(
     page.getByRole('heading', { level: 3, name: 'Activities and Updates' }),
   ).toBeVisible();
-  await expect(page.getByRole('heading', { level: 2, name: 'Contact Us' })).toBeVisible();
 
   checkBaseline('overview-tab', calls);
 });

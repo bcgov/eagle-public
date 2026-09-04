@@ -64,6 +64,7 @@ const PROJECT = {
   region: 'Skeena',
   location: 'Near Cedar Creek',
   eacDecision: { name: 'In Progress' },
+  proponent: { name: 'Cedar Quarry Partners LP' },
   centroid: [],
   commentPeriodForBanner: [],
 };
@@ -226,6 +227,32 @@ describe('project shell', () => {
     );
   });
 
+  it('still carries the ENGAGE banner, image and outbound link, for a hosted engagement', async () => {
+    const [period] = openCommentPeriod();
+    project = {
+      ...PROJECT,
+      commentPeriodForBanner: [
+        {
+          ...period,
+          isMet: true,
+          metURL: 'https://engage.example/cedar',
+          metBannerImageUrl: 'https://engage.example/banner.jpg',
+        },
+      ],
+    };
+
+    renderShell();
+
+    expect(await screen.findByRole('link', { name: /Share your thoughts/ })).toHaveAttribute(
+      'href',
+      'https://engage.example/cedar',
+    );
+    expect(screen.getByAltText('Engagement banner')).toHaveAttribute(
+      'src',
+      'https://engage.example/banner.jpg',
+    );
+  });
+
   it('marks the open tab with aria-current', async () => {
     renderShell('/p/proj-1/documents');
 
@@ -300,21 +327,40 @@ describe('project shell', () => {
     expect(counts.every((url) => url.includes('pageSize=1'))).toBe(true);
   });
 
-  it('renders the comment period banner for an open period', async () => {
-    project = { ...PROJECT, commentPeriodForBanner: openCommentPeriod() };
-
+  it('heads the page with the project name and the trail that leads to it', async () => {
     renderShell();
 
-    expect(await screen.findByText('Public Comment Period is Open')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'View Comment Period' })).toBeInTheDocument();
-    expect(screen.getByText('Draft Application')).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Cedar Quarry' }),
+    ).toBeInTheDocument();
+    const crumbs = screen.getByRole('navigation', { name: 'Breadcrumb' });
+    expect(within(crumbs).getByRole('link', { name: 'Projects' })).toHaveAttribute(
+      'href',
+      '/projects',
+    );
+    expect(within(crumbs).getByText('Cedar Quarry')).toHaveAttribute('aria-current', 'page');
   });
 
-  it('renders no banner when the project has no comment period', async () => {
+  it('keeps the project facts and the assessment rail in the panel, not in a sidebar', async () => {
+    project = { ...PROJECT, currentPhaseName: { name: 'Effects Assessment' } };
+
     renderShell();
 
-    await screen.findByRole('link', { name: 'Overview' });
-    expect(screen.queryByText(/Public Comment Period is/)).not.toBeInTheDocument();
+    await screen.findByRole('heading', { level: 1, name: 'Cedar Quarry' });
+    const panel = screen.getByRole('region', { name: 'Project summary' });
+    expect(within(panel).getByRole('heading', { name: 'Assessment progress' })).toBeInTheDocument();
+    for (const [label, value] of [
+      ['Status', 'Effects Assessment'],
+      ['EA decision', 'In Progress'],
+      ['Location', 'Near Cedar Creek'],
+      ['Proponent', 'Cedar Quarry Partners LP'],
+    ]) {
+      const term = within(panel).getByText(label, { selector: 'dt' });
+      expect(term.nextElementSibling).toHaveTextContent(value);
+    }
+    // The fixed sidebar and the Contact Us band both moved out of the shell.
+    expect(document.querySelector('.side-banner')).toBeNull();
+    expect(document.querySelector('.people')).toBeNull();
   });
 
   it('renders the map placeholder when the project has no centroid', async () => {
@@ -464,7 +510,7 @@ describe('project page first paint', () => {
     // Placeholder bars stand in for the hero name and every detail row, and the regions holding
     // them are marked busy.
     expect(container.querySelector('h1 .placeholder')).toBeInTheDocument();
-    expect(container.querySelector('.sidebar-content[aria-busy="true"]')).toBeInTheDocument();
+    expect(container.querySelector('.project-masthead[aria-busy="true"]')).toBeInTheDocument();
     expect(container.querySelector('.location-info[aria-busy="true"]')).toBeInTheDocument();
     expect(container.querySelectorAll('.location-info .placeholder').length).toBeGreaterThan(1);
     // Every placeholder sits under an aria-hidden node, so the only thing announced is the
@@ -486,6 +532,7 @@ describe('project page first paint', () => {
     expect(container.querySelector('h1 .placeholder')).toBeNull();
     expect(container.querySelector('.location-info .placeholder')).toBeNull();
     expect(container.querySelector('[aria-busy="true"]')).toBeNull();
-    expect(screen.getByText('Proponent')).toBeInTheDocument();
+    // Once in the panel, once in the tab body below it.
+    expect(screen.getAllByText('Proponent')).toHaveLength(2);
   });
 });

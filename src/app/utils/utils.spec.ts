@@ -6,6 +6,7 @@ import {
   createProjectTabModifiers,
   documentDownloadUrl,
   extractFromSearchResults,
+  legislationLink,
   openDocumentDownload,
   triggerDownload,
 } from './utils';
@@ -244,5 +245,21 @@ describe('openDocumentDownload()', () => {
       ),
     );
     expect(downloadUrls()).toEqual([]);
+  });
+});
+
+describe('legislationLink()', () => {
+  it('picks the Act named in the project legislation, defaulting to 2018', () => {
+    const links = Constants.legislationLinks;
+    expect(legislationLink('2002 Environmental Assessment Act')).toBe(
+      links.ENVIRONMENTAL_ASSESSMENT_ACT_2002_LINK,
+    );
+    expect(legislationLink('1996 Environmental Assessment Act')).toBe(
+      links.ENVIRONMENTAL_ASSESSMENT_ACT_1996_LINK,
+    );
+    expect(legislationLink('2018 Environmental Assessment Act')).toBe(
+      links.ENVIRONMENTAL_ASSESSMENT_ACT_2018_LINK,
+    );
+    expect(legislationLink(undefined)).toBe(links.ENVIRONMENTAL_ASSESSMENT_ACT_2018_LINK);
   });
 });

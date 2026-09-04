@@ -1,0 +1,79 @@
+/* Blue band under the site header, gold rule at its foot. Tokens come from @bcgov/design-tokens
+   and eao-tokens.css. */
+
+.project-masthead {
+  background: var(--theme-primary-blue);
+  border-bottom: var(--layout-border-width-medium) solid var(--theme-primary-gold);
+  color: var(--typography-color-primary-invert);
+}
+
+.project-masthead__inner {
+  max-width: 1180px;
+  margin-inline: auto;
+  padding: var(--layout-padding-medium) var(--layout-padding-large) var(--layout-padding-large);
+}
+
+.project-masthead__breadcrumb ol {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--layout-padding-xsmall);
+  margin: 0 0 var(--layout-margin-medium);
+  padding: 0;
+  list-style: none;
+  font: var(--typography-regular-small-body);
+}
+
+.project-masthead__breadcrumb li {
+  color: var(--theme-gray-30);
+}
+
+.project-masthead__breadcrumb a {
+  color: var(--theme-gray-30);
+  text-decoration: underline;
+}
+
+.project-masthead__breadcrumb a:hover,
+.project-masthead__breadcrumb a:focus {
+  color: var(--theme-primary-gold);
+}
+
+.project-masthead__breadcrumb li[aria-current='page'] {
+  color: var(--typography-color-primary-invert);
+}
+
+.project-masthead__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--layout-padding-large);
+}
+
+.project-masthead__titles {
+  min-width: 0;
+  flex: 1 1 20rem;
+}
+
+.project-masthead__name {
+  margin: 0 0 var(--layout-margin-xsmall);
+  font: var(--typography-bold-h2);
+  line-height: 1.15;
+  color: var(--typography-color-primary-invert);
+}
+
+.project-masthead__meta {
+  margin: 0;
+  font: var(--typography-regular-large-body);
+  color: var(--theme-gray-30);
+}
+
+/* The subscribe band brings its own light surface and dark text, so it only needs sizing here. */
+.project-masthead .subscribe-popover {
+  flex: 0 1 26rem;
+  margin: 0;
+}
+
+.project-masthead .subscribe-popover__trigger {
+  min-height: 44px;
+}
