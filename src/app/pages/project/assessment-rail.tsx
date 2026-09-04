@@ -10,8 +10,9 @@ import {
   YEAR_TICKS,
   detailedStages,
   durationLabel,
-  inkFor,
   layout,
+  offRailPhase,
+  phaseSetYear,
   simplifiedStages,
   type LaidStage,
   type PhaseListItem,
@@ -60,7 +61,6 @@ function SimpleRail({ stages }: { stages: RailStage[] }) {
         >
           <span className="assessment-rail__phase-bar" aria-hidden="true" />
           <span className="assessment-rail__phase-name">{stage.name}</span>
-          {stage.dates && <span className="assessment-rail__phase-dates">{stage.dates}</span>}
         </li>
       ))}
     </ol>
@@ -68,8 +68,8 @@ function SimpleRail({ stages }: { stages: RailStage[] }) {
 }
 
 /**
- * The project's place in the environmental assessment process, as the familiar seven-stage
- * rail or - on 2018 Act projects - a to-scale timeline of the ten statutory stages.
+ * The project's place in the environmental assessment process, as the familiar phase rail or -
+ * on projects in the 2018 phase set - a to-scale timeline of the ten statutory stages.
  */
 export function AssessmentRail({ project, lists }: AssessmentRailProps) {
   const [view, setView] = useState(RAIL_DEFAULT_VIEW);
@@ -78,8 +78,9 @@ export function AssessmentRail({ project, lists }: AssessmentRailProps) {
   const simple = useMemo(() => simplifiedStages(lists, project), [lists, project]);
   const laid = useMemo(() => layout(detailedStages(project)), [project]);
 
-  const canDetail = String(project?.legislation ?? '').includes('2018');
+  const canDetail = phaseSetYear(project) === 2018;
   const detailed = canDetail && view === 'detailed';
+  const offRail = offRailPhase(project);
   const showAmendment = String(project?.currentPhaseName?.name ?? '').startsWith('Post Decision');
 
   const proponentDays = (TOTAL_DAYS - EAO_DAYS).toLocaleString('en-CA');
@@ -132,9 +133,10 @@ export function AssessmentRail({ project, lists }: AssessmentRailProps) {
                 ))}
               </div>
 
-              <ol className="assessment-rail__bar">
+              {/* The key below is the accessible list; bar and pins repeat it in colour. */}
+              <div className="assessment-rail__bar" aria-hidden="true">
                 {laid.map((stage) => (
-                  <li
+                  <span
                     key={stage.id}
                     className={`assessment-rail__seg${
                       SHOW_RATIFICATION_STRIPES && stage.provisional
@@ -153,11 +155,11 @@ export function AssessmentRail({ project, lists }: AssessmentRailProps) {
                     onMouseLeave={() => setHoverStage(null)}
                   />
                 ))}
-              </ol>
+              </div>
 
-              <ul className="assessment-rail__pins" aria-hidden="true">
+              <div className="assessment-rail__pins" aria-hidden="true">
                 {laid.map((stage) => (
-                  <li
+                  <span
                     key={stage.id}
                     className="assessment-rail__num assessment-rail__pin"
                     data-stage={stage.n}
@@ -165,15 +167,14 @@ export function AssessmentRail({ project, lists }: AssessmentRailProps) {
                     style={vars({
                       '--l': `${(stage.start + stage.width / 2).toFixed(2)}%`,
                       '--stage': fill(stage),
-                      '--ink': inkFor(stage.hex),
                     })}
                     onMouseEnter={() => setHoverStage(stage.n)}
                     onMouseLeave={() => setHoverStage(null)}
                   >
                     {stage.n}
-                  </li>
+                  </span>
                 ))}
-              </ul>
+              </div>
             </div>
 
             {showAmendment && (
@@ -193,8 +194,6 @@ export function AssessmentRail({ project, lists }: AssessmentRailProps) {
             )}
           </div>
 
-          {/* ponytail: white numerals sit at 4.11:1 on #54858d and dark ink at 4.17:1 on #da6d65,
-              so the key text, not the numeral, has to carry the meaning. */}
           <ol className="assessment-rail__key">
             {laid.map((stage) => (
               <li
@@ -207,7 +206,7 @@ export function AssessmentRail({ project, lists }: AssessmentRailProps) {
               >
                 <span
                   className="assessment-rail__num assessment-rail__chip"
-                  style={vars({ '--stage': fill(stage), '--ink': inkFor(stage.hex) })}
+                  style={vars({ '--stage': fill(stage) })}
                 >
                   {stage.n}
                 </span>
@@ -215,10 +214,7 @@ export function AssessmentRail({ project, lists }: AssessmentRailProps) {
                   <span className="assessment-rail__key-name" title={stageTitle(stage)}>
                     {stage.name}
                   </span>
-                  <span className="assessment-rail__key-clock">
-                    {clockLabel(stage)}
-                    {stage.dates ? ` · ${stage.dates}` : ''}
-                  </span>
+                  <span className="assessment-rail__key-clock">{clockLabel(stage)}</span>
                 </span>
               </li>
             ))}
@@ -237,6 +233,12 @@ export function AssessmentRail({ project, lists }: AssessmentRailProps) {
             </p>
           )}
         </div>
+      )}
+
+      {offRail && (
+        <p className="assessment-rail__caption">
+          This project&rsquo;s current phase is {offRail}, which sits outside the stages shown here.
+        </p>
       )}
     </section>
   );

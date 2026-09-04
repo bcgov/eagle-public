@@ -1,66 +1,53 @@
-import { describe, it, expect, afterEach, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AssessmentRail } from './assessment-rail';
 import { LISTS, makeProject } from './assessment-stages.fixture';
 
-const flags = vi.hoisted(() => ({ stripes: true }));
-
-// A getter keeps the flag readable per render, so one spec can turn the stripes off.
-vi.mock('./assessment-stages', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('./assessment-stages')>()),
-  get SHOW_RATIFICATION_STRIPES() {
-    return flags.stripes;
-  },
-}));
-
-function renderRail(phase: string | null, act = '2018') {
-  return render(<AssessmentRail project={makeProject(phase, act)} lists={LISTS} />);
+function renderRail(phase: string | null, phaseYear = 2018, act = phaseYear) {
+  return render(<AssessmentRail project={makeProject(phase, phaseYear, act)} lists={LISTS} />);
 }
 
 async function showDetailed() {
   await userEvent.click(screen.getByRole('button', { name: 'Detailed' }));
 }
 
-function keyRows(container: HTMLElement) {
-  return within(container.querySelector('.assessment-rail__key') as HTMLElement).getAllByRole(
-    'listitem',
-  );
-}
-
-afterEach(() => {
-  flags.stripes = true;
-});
-
 describe('simplified rail', () => {
-  it('lists the seven phases and marks the current one', () => {
+  it('lists the eight 2018 phases and marks the current one', () => {
     renderRail('Process Planning');
 
     expect(screen.getByRole('heading', { name: 'Assessment progress' })).toBeInTheDocument();
     const items = screen.getAllByRole('listitem');
-    expect(items).toHaveLength(7);
-    expect(items[6]).toHaveTextContent('Post decision');
-    expect(items[2]).toHaveAttribute('aria-current', 'step');
+    expect(items).toHaveLength(8);
+    expect(items[0]).toHaveTextContent('Project Designation');
+    expect(items[7]).toHaveTextContent('Post decision');
+    expect(items[3]).toHaveAttribute('aria-current', 'step');
     expect(items.filter((item) => item.hasAttribute('aria-current'))).toHaveLength(1);
   });
 
-  it('leaves out the date line while no phase dates exist', () => {
-    const { container } = renderRail('Process Planning');
-
-    expect(container.querySelectorAll('.assessment-rail__phase-dates')).toHaveLength(0);
-  });
-
-  it('offers no detailed view on a 2002 project', () => {
-    renderRail('Application Review', '2002');
+  it('offers no detailed view on a project in the 2002 phase set', () => {
+    renderRail('Application Review', 2002);
 
     expect(screen.queryByRole('group', { name: 'Progress detail' })).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Detailed' })).toBeNull();
-    expect(screen.getAllByRole('listitem')).toHaveLength(4);
+    expect(screen.getAllByRole('listitem')).toHaveLength(7);
+  });
+
+  it('offers the detailed view to a 2002 Act project sitting in a 2018 phase', () => {
+    renderRail('Complete', 2018, 2002);
+
+    expect(screen.getByRole('button', { name: 'Detailed' })).toBeInTheDocument();
+  });
+
+  it('names an off-rail phase instead of marking a current stage', () => {
+    renderRail('Withdrawal', 2002);
+
+    expect(screen.getByText(/current phase is Withdrawal/)).toBeInTheDocument();
+    expect(screen.queryByRole('listitem', { current: 'step' })).toBeNull();
   });
 });
 
 describe('detailed rail', () => {
-  it('draws ten segments and a numbered key', async () => {
+  it('exposes only the numbered key as a list', async () => {
     const { container } = renderRail('Process Planning');
 
     await showDetailed();
@@ -76,7 +63,8 @@ describe('detailed rail', () => {
     expect(container.querySelectorAll('.assessment-rail__seg')).toHaveLength(10);
     expect(container.querySelectorAll('.assessment-rail__seg--striped')).toHaveLength(3);
 
-    const rows = keyRows(container);
+    // bar and pins are aria-hidden, so every listitem here belongs to the key
+    const rows = screen.getAllByRole('listitem');
     expect(rows).toHaveLength(10);
     expect(rows.map((row) => row.querySelector('.assessment-rail__chip')?.textContent)).toEqual([
       '1',
@@ -111,7 +99,7 @@ describe('detailed rail', () => {
     const { container } = renderRail('Process Planning');
 
     await showDetailed();
-    await userEvent.hover(keyRows(container)[4]);
+    await userEvent.hover(screen.getAllByRole('listitem')[4]);
 
     expect(container.querySelector('.assessment-rail__seg[data-stage="5"]')).toHaveAttribute(
       'data-hover',
@@ -123,7 +111,7 @@ describe('detailed rail', () => {
       'data-hover',
     );
 
-    await userEvent.unhover(keyRows(container)[4]);
+    await userEvent.unhover(screen.getAllByRole('listitem')[4]);
 
     expect(container.querySelector('.assessment-rail__seg[data-stage="5"]')).not.toHaveAttribute(
       'data-hover',
@@ -144,16 +132,5 @@ describe('detailed rail', () => {
     await showDetailed();
 
     expect(screen.getByText('In progress · no legislated duration')).toBeInTheDocument();
-  });
-
-  it('renders no striped segment when ratification stripes are off', async () => {
-    flags.stripes = false;
-    const { container } = renderRail('Process Planning');
-
-    await showDetailed();
-
-    expect(container.querySelectorAll('.assessment-rail__seg')).toHaveLength(10);
-    expect(container.querySelectorAll('.assessment-rail__seg--striped')).toHaveLength(0);
-    expect(screen.queryByText(/pending Comms ratification/)).toBeNull();
   });
 });

@@ -1,45 +1,38 @@
 import { describe, it, expect } from 'vitest';
 import {
-  AMENDMENT_STAGE,
   DETAILED_STAGES,
   EAO_DAYS,
   TOTAL_DAYS,
   YEAR_TICKS,
   detailedStages,
   durationLabel,
-  inkFor,
   layout,
+  offRailPhase,
+  phaseSetYear,
   simplifiedStages,
 } from './assessment-stages';
 import { LISTS, makeProject } from './assessment-stages.fixture';
 
 const SIMPLE_2018 = [
+  'Project Designation',
   'Early Engagement',
-  'EA Readiness Decision',
+  'Readiness Decision',
   'Process Planning',
-  'Application Development & Review',
+  'Application Development and Review',
   'Effects Assessment',
   'Referral',
   'Post decision',
 ];
 
-function relativeLuminance(hex: string): number {
-  const channels = [1, 3, 5].map((i) => {
-    const c = parseInt(hex.slice(i, i + 2), 16) / 255;
-    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
-  });
-  return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
-}
-
-function contrast(a: string, b: string): number {
-  const [light, dark] = [relativeLuminance(a), relativeLuminance(b)].sort((x, y) => y - x);
-  return (light + 0.05) / (dark + 0.05);
-}
-
-/** `inkFor` returns a CSS var with a hex fallback; the fallback is what a contrast check needs. */
-function inkHex(hex: string): string {
-  return inkFor(hex).match(/#[0-9a-f]{6}/i)![0];
-}
+const SIMPLE_2002 = [
+  'Pre-EA',
+  'Pre-Application',
+  'Evaluation',
+  'Application Review',
+  'Further Assessment',
+  'Referral',
+  'Post decision',
+];
 
 describe('detailed stage table', () => {
   it('holds the ten Track 2018 stages and their day totals', () => {
@@ -61,6 +54,19 @@ describe('detailed stage table', () => {
     expect(YEAR_TICKS[0].left).toBe(0);
     expect(YEAR_TICKS[1].left).toBeCloseTo(14.87, 2);
     expect(YEAR_TICKS[6].left).toBeCloseTo(89.21, 2);
+  });
+});
+
+describe('phaseSetYear', () => {
+  it('takes the phase row legislation, so a 2002 Act project in a 2018 phase reads 2018', () => {
+    expect(phaseSetYear(makeProject('Complete', 2018, 2002))).toBe(2018);
+    expect(phaseSetYear(makeProject('Application Review', 2002))).toBe(2002);
+  });
+
+  it('falls back to the Act, mapping 1996 onto the 2002 phases', () => {
+    expect(phaseSetYear(makeProject(null, 2018, 1996))).toBe(2002);
+    expect(phaseSetYear(makeProject(null, 2018, 2002))).toBe(2002);
+    expect(phaseSetYear(null)).toBe(2018);
   });
 });
 
@@ -94,7 +100,7 @@ describe('layout', () => {
 
 describe('detailedStages', () => {
   it('splits done, current and upcoming around the project phase', () => {
-    const states = detailedStages(makeProject('Application Development & Review')).map(
+    const states = detailedStages(makeProject('Application Development and Review')).map(
       (s) => s.state,
     );
 
@@ -119,6 +125,12 @@ describe('detailedStages', () => {
       );
     }
   });
+
+  it('starts nothing while the project is still in Project Designation', () => {
+    expect(detailedStages(makeProject('Project Designation')).map((s) => s.state)).toEqual(
+      Array(10).fill('upcoming'),
+    );
+  });
 });
 
 describe('simplifiedStages', () => {
@@ -127,6 +139,7 @@ describe('simplifiedStages', () => {
 
     expect(stages.map((s) => s.name)).toEqual(SIMPLE_2018);
     expect(stages.map((s) => s.state)).toEqual([
+      'done',
       'done',
       'done',
       'current',
@@ -140,68 +153,64 @@ describe('simplifiedStages', () => {
   it('marks the collapsed post-decision stage current for any of its phases', () => {
     const stages = simplifiedStages(LISTS, makeProject('Post Decision - Suspension'));
 
+    expect(stages.map((s) => s.state)).toEqual([...Array(7).fill('done'), 'current']);
+    // every Post Decision row plus Complete and the certificate transfer
+    expect(stages[7].id.split(' ')).toHaveLength(11);
+  });
+
+  it('reads the 2002 rows and leaves Termination and Withdrawal off the rail', () => {
+    const stages = simplifiedStages(LISTS, makeProject('Application Review', 2002));
+
+    expect(stages.map((s) => s.name)).toEqual(SIMPLE_2002);
     expect(stages.map((s) => s.state)).toEqual([
       'done',
       'done',
       'done',
-      'done',
-      'done',
-      'done',
       'current',
+      'upcoming',
+      'upcoming',
+      'upcoming',
     ]);
-    expect(stages[6].id.split(' ')).toHaveLength(10);
+    // no 2002 colour map, so the palette fills in list order
+    expect(stages[0].hex).toBe('#54858d');
+    expect(stages[3].hex).toBe('#4d95d0');
   });
 
-  it('reads the 2002 rows for a 2002 project', () => {
-    const stages = simplifiedStages(LISTS, makeProject('Application Review', '2002'));
+  it('uses the 2002 rail for a 1996 Act project', () => {
+    expect(simplifiedStages(LISTS, makeProject(null, 2018, 1996)).map((s) => s.name)).toEqual(
+      SIMPLE_2002,
+    );
+  });
 
-    expect(stages.map((s) => s.name)).toEqual([
-      'Pre-Application',
-      'Application Review',
-      'Referral',
-      'Post decision',
-    ]);
-    expect(stages.map((s) => s.state)).toEqual(['done', 'current', 'upcoming', 'upcoming']);
-    // no 2002 colour map, so the palette fills in order
-    expect(stages[0].hex).toBe('#54858d');
-    expect(stages[1].hex).toBe('#da6d65');
+  it('uses the 2018 rail for a 2002 Act project sitting in the 2018 Complete phase', () => {
+    const stages = simplifiedStages(LISTS, makeProject('Complete', 2018, 2002));
+
+    expect(stages.map((s) => s.name)).toEqual(SIMPLE_2018);
+    expect(stages[7].state).toBe('current');
+  });
+
+  it('leaves every stage upcoming for a withdrawn project', () => {
+    const stages = simplifiedStages(LISTS, makeProject('Withdrawal', 2002));
+
+    expect(stages.map((s) => s.name)).toEqual(SIMPLE_2002);
+    expect(stages.map((s) => s.state)).toEqual(Array(7).fill('upcoming'));
   });
 
   it('leaves every stage upcoming when the project has no current phase', () => {
-    const stages = simplifiedStages(LISTS, makeProject(null));
-
-    expect(stages.map((s) => s.state)).toEqual(Array(7).fill('upcoming'));
+    expect(simplifiedStages(LISTS, makeProject(null)).map((s) => s.state)).toEqual(
+      Array(8).fill('upcoming'),
+    );
   });
 });
 
-describe('inkFor', () => {
-  it.each([
-    ['#54858d', '#ffffff'],
-    ['#043673', '#ffffff'],
-    ['#3c6e47', '#ffffff'],
-    ['#6D7274', '#ffffff'],
-    ['#da6d65', '#2d2d2d'],
-    ['#3EB1D7', '#2d2d2d'],
-    ['#e7a913', '#2d2d2d'],
-    ['#EDB6B2', '#2d2d2d'],
-  ])('picks ink for %s', (fill, ink) => {
-    expect(inkHex(fill)).toBe(ink);
+describe('offRailPhase', () => {
+  it.each(['Other', 'Termination', 'Withdrawal'])('names %s', (phase) => {
+    expect(offRailPhase(makeProject(phase, 2002))).toBe(phase);
   });
 
-  it('keeps every shipped fill at 3:1 or better against its ink', () => {
-    const fills = new Set(
-      [
-        ...DETAILED_STAGES,
-        AMENDMENT_STAGE,
-        ...simplifiedStages(LISTS, makeProject('Process Planning')),
-        ...simplifiedStages(LISTS, makeProject('Application Review', '2002')),
-      ].map((stage) => stage.hex),
-    );
-
-    expect(fills.size).toBeGreaterThan(9);
-    for (const fill of fills) {
-      expect(contrast(fill, inkHex(fill))).toBeGreaterThanOrEqual(3);
-    }
+  it('is null for a phase on the rail', () => {
+    expect(offRailPhase(makeProject('Process Planning'))).toBeNull();
+    expect(offRailPhase(makeProject('Post Decision - Construction'))).toBeNull();
   });
 });
 
