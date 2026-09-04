@@ -7,7 +7,7 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  font-family: 'BCSans', 'Noto Sans', Arial, sans-serif;
+  font-family: 'BC Sans', 'Noto Sans', Arial, sans-serif;
 }
 
 .map-controls__layers {
@@ -68,7 +68,7 @@
 
 .maplibregl-ctrl-attrib,
 .maplibregl-ctrl-scale {
-  font-family: 'BCSans', 'Noto Sans', Arial, sans-serif;
+  font-family: 'BC Sans', 'Noto Sans', Arial, sans-serif;
 }
 
 /* The attribution sets no colour of its own, so it inherits white inside a dark panel. Both
@@ -235,7 +235,7 @@
   background: var(--map-cluster-inner-bg);
   background-clip: padding-box;
   color: var(--bs-white, #fff);
-  font-family: 'BCSans', 'Noto Sans', Arial, sans-serif;
+  font-family: 'BC Sans', 'Noto Sans', Arial, sans-serif;
   font-size: 0.75rem;
   font-weight: 700;
   cursor: pointer;
