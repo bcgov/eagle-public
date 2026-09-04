@@ -147,6 +147,17 @@
     var(--theme-gray-20);
 }
 
+.assessment-rail__seg--upcoming {
+  opacity: 0.45;
+}
+
+/* Same ring the Simplified view puts on the current phase. */
+.assessment-rail__seg--current {
+  box-shadow:
+    0 0 0 2px var(--theme-gray-white),
+    0 0 0 4px var(--stage);
+}
+
 .assessment-rail__seg[data-hover] {
   outline: var(--layout-border-width-medium) solid var(--typography-color-primary);
   outline-offset: 2px;
@@ -245,6 +256,14 @@
   margin: -4px -6px;
   border-radius: var(--layout-border-radius-small);
   transition: background 120ms ease;
+}
+
+.assessment-rail__key-row--current .assessment-rail__key-name {
+  font-weight: var(--typography-font-weights-bold);
+}
+
+.assessment-rail__key-row--upcoming .assessment-rail__key-name {
+  color: var(--typography-color-secondary);
 }
 
 .assessment-rail__key-row[data-hover] {

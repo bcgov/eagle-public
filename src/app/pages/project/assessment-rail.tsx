@@ -138,7 +138,7 @@ export function AssessmentRail({ project, lists }: AssessmentRailProps) {
                 {laid.map((stage) => (
                   <span
                     key={stage.id}
-                    className={`assessment-rail__seg${
+                    className={`assessment-rail__seg assessment-rail__seg--${stage.state}${
                       SHOW_RATIFICATION_STRIPES && stage.provisional
                         ? ' assessment-rail__seg--striped'
                         : ''
@@ -203,8 +203,9 @@ export function AssessmentRail({ project, lists }: AssessmentRailProps) {
             {laid.map((stage) => (
               <li
                 key={stage.id}
-                className={`assessment-rail__key-row assessment-rail__key-row--${stage.owner}`}
+                className={`assessment-rail__key-row assessment-rail__key-row--${stage.owner} assessment-rail__key-row--${stage.state}`}
                 data-stage={stage.n}
+                aria-current={stage.state === 'current' ? 'step' : undefined}
                 data-hover={hoverStage === stage.n || undefined}
                 onMouseEnter={() => setHoverStage(stage.n)}
                 onMouseLeave={() => setHoverStage(null)}

@@ -118,6 +118,19 @@ describe('detailed rail', () => {
     );
   });
 
+  it('marks finished, current and upcoming stages', async () => {
+    const { container } = renderRail('Process Planning');
+
+    await showDetailed();
+
+    const rows = container.querySelectorAll('.assessment-rail__key-row');
+    expect(rows[2]).toHaveClass('assessment-rail__key-row--done');
+    expect(rows[3]).toHaveAttribute('aria-current', 'step');
+    expect(rows[4]).toHaveClass('assessment-rail__key-row--upcoming');
+    expect(container.querySelectorAll('.assessment-rail__seg--done')).toHaveLength(3);
+    expect(container.querySelectorAll('.assessment-rail__seg--current')).toHaveLength(1);
+  });
+
   it('keeps the amendment column off the rail before the decision', async () => {
     const { container } = renderRail('Process Planning');
 
