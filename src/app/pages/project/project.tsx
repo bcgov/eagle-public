@@ -8,15 +8,8 @@ import { safeHtml } from 'app/utils/safe-html';
 import { isSafeUrl, openExternal } from 'app/utils/safe-url';
 import { DetailsSidebar } from './details-sidebar';
 import { EngageBanner } from './engage-banner';
+import { useProjectTabMeta, type ProjectTab } from './use-project-tab-meta';
 import './project.css';
-
-/** Top-level tabs, in the order the Angular template rendered them. The document-type tabs live
- * under Documents now; DocumentsPage owns that strip. */
-const TABS = [
-  { label: 'Project Details', link: 'project-details' },
-  { label: 'Commenting', link: 'commenting' },
-  { label: 'Documents', link: 'documents' },
-];
 
 /** Comment periods near today, the window the banner draws from. */
 function bannerWindow(): { start: string; end: string } {
@@ -52,6 +45,8 @@ export function ProjectPage() {
       return getById(projId, false, start, end);
     },
   });
+
+  const tabs = useProjectTabMeta(projId, lists, project ?? null);
 
   const notFound = isError || (isSuccess && !project);
 
@@ -145,7 +140,7 @@ export function ProjectPage() {
               <section className="project-tabs">
                 <TabBar
                   projId={projId}
-                  tabs={TABS}
+                  tabs={tabs.filter((tab) => tab.show)}
                   projectName={project?.name}
                   ariaLabel="Project sections"
                 />
@@ -200,7 +195,7 @@ export function ProjectPage() {
 
 interface TabBarProps {
   projId: string;
-  tabs: { label: string; link: string }[];
+  tabs: ProjectTab[];
   projectName?: string;
   /** Names the strip for screen readers. */
   ariaLabel: string;
@@ -241,30 +236,32 @@ function TabBar({ projId, tabs, projectName, ariaLabel }: TabBarProps) {
 
   return (
     <div className="tabs-container">
-      <ul className="nav-tabs" role="tablist" aria-label={ariaLabel} ref={navTabs}>
-        {tabs.map((tab) => (
-          <li className="nav-item" role="presentation" key={tab.link}>
-            <NavLink
-              className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
-              role="tab"
-              to={tab.link}
-              replace
-              id={tab.link === 'project-details' ? 'project-details-tab' : undefined}
-              aria-controls={tab.link === 'project-details' ? 'project-details-panel' : undefined}
-              onClick={() =>
-                track('Project Tab Clicked', {
-                  project_id: projId,
-                  project_name: projectName ?? null,
-                  tab_name: tab.label,
-                  tab_path: tab.link,
-                })
-              }
-            >
-              {tab.label}
-            </NavLink>
-          </li>
-        ))}
-      </ul>
+      {/* Links, not tabs: each one routes, so the ARIA tab pattern would promise keyboard
+          behaviour this strip does not have (PUBLIC-156). */}
+      <nav aria-label={ariaLabel}>
+        <ul className="nav-tabs" ref={navTabs}>
+          {tabs.map((tab) => (
+            <li className="nav-item" key={tab.key}>
+              <NavLink
+                className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
+                to={tab.key}
+                replace
+                onClick={() =>
+                  track('Project Tab Clicked', {
+                    project_id: projId,
+                    project_name: projectName ?? null,
+                    tab_name: tab.label,
+                    tab_path: tab.key,
+                  })
+                }
+              >
+                {tab.label}
+                {tab.count && <span className="tab-count">{tab.count}</span>}
+              </NavLink>
+            </li>
+          ))}
+        </ul>
+      </nav>
       {arrows.left && (
         <button
           type="button"

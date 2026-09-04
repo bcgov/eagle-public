@@ -222,3 +222,27 @@
     padding-left: 2rem;
   }
 }
+
+/* Tab strip: 3px gold underline under the open tab, blue bold label, count after it. The design
+   tokens land with @bcgov/design-tokens; the fallbacks are today's theme values. */
+.project[data-sidebar-state] .project-tabs .nav-tabs .nav-link {
+  gap: 0.5rem;
+  color: var(--typography-color-secondary, var(--bs-secondary-color));
+  font-weight: var(--bs-font-weight-normal);
+}
+
+.project[data-sidebar-state] .project-tabs .nav-tabs .nav-link.active {
+  border-bottom: 3px solid var(--theme-primary-gold, var(--gold));
+  /* Beats the `!important` on the shared .nav-tabs .nav-link.active colour. */
+  color: var(--theme-primary-blue, var(--bc-blue)) !important;
+  font-weight: var(--bs-font-weight-bold);
+}
+
+.project[data-sidebar-state] .project-tabs .nav-tabs .tab-count {
+  background-color: var(--theme-gray-20, var(--table-row-bg));
+  border-radius: 1rem;
+  color: var(--typography-color-secondary, var(--bs-secondary-color));
+  font-size: var(--bs-font-size-sm);
+  font-weight: var(--bs-font-weight-normal);
+  padding: 0.0625rem 0.5rem;
+}

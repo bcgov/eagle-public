@@ -59,14 +59,24 @@ describe('routes', () => {
     const project = findRoute('p/:projId');
     expect(project?.children?.map((child) => child.path)).toEqual([
       undefined,
-      'project-details',
-      'commenting',
+      'overview',
+      'updates',
+      'engagement',
       'documents',
       'application',
       'certificates',
       'amendments',
+      'project-details',
+      'commenting',
       'decisions',
+      'compliance',
     ]);
+  });
+
+  it('sends a bare project URL to Overview', async () => {
+    const index = findRoute('p/:projId')?.children?.find((child) => child.path === undefined);
+    const response = await (index!.loader as any)({ params: { projId: 'abc' } });
+    expect(response.headers.get('Location')).toBe('/p/abc/overview');
   });
 
   it('nests the document-type tabs under documents', () => {
@@ -95,4 +105,16 @@ describe('routes', () => {
       );
     },
   );
+
+  it.each([
+    ['project-details', 'overview'],
+    ['commenting', 'engagement'],
+  ])('redirects the renamed /%s path to /%s, search intact', async (from, to) => {
+    const route = findRoute('p/:projId')?.children?.find((child) => child.path === from);
+    const response = await (route!.loader as any)({
+      params: { projId: 'abc' },
+      request: new Request(`http://localhost/p/abc/${from}?search=fish`),
+    });
+    expect(response.headers.get('Location')).toBe(`/p/abc/${to}?search=fish`);
+  });
 });

@@ -76,7 +76,7 @@ test('the project detail sidebar map is not laid out like the full-page map', as
 }) => {
   const project = await projectByKeyword(request, 'Site C');
 
-  await page.goto(`/p/${project._id}/project-details`);
+  await page.goto(`/p/${project._id}/overview`);
   await ready(page);
   expect(await styleOf(page, '.map-container', 'position')).toBe('relative');
   expect(await styleOf(page, '.map-container', 'height')).toBe('272px');
@@ -88,7 +88,7 @@ test('project detail child headings are not the details tab heading colour', asy
 }) => {
   const project = await projectByKeyword(request, 'Site C');
 
-  await page.goto(`/p/${project._id}/project-details`);
+  await page.goto(`/p/${project._id}/overview`);
   await ready(page);
   expect(await styleOf(page, '.tab-content h3', 'color')).toBe('rgb(73, 73, 73)');
 });

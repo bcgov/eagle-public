@@ -14,7 +14,23 @@
   ],
   "news": [
     "GET /api/config",
-    "GET /api/search?dataset=RecentActivity&fields=&fuzzy=false&pageNum=0&pageSize=10&populate=true&projectLegislation=default&sortBy=&sortBy=-dateAdded",
+    "GET /api/search?dataset=RecentActivity&fuzzy=false&pageNum=0&pageSize=10&populate=true&projectLegislation=default&sortBy=&sortBy=-dateAdded",
+    "POST /analytics"
+  ],
+  "overview-tab": [
+    "GET /api/commentperiod?fields=project|dateStarted|dateCompleted|instructions|isMet|metURL|informationLabel&project=:id&sortBy=-dateStarted",
+    "GET /api/config",
+    "GET /api/project/:id/pin?pageNum=0&pageSize=10&sortBy= name",
+    "GET /api/project/:id?fields=CEAAInvolvement|CELead|CELeadEmail|CELeadPhone|centroid|description|eacDecision|location|name|projectLeadId|projectLead|projectLeadEmail|projectLeadPhone|proponent|region|responsibleEPDId|responsibleEPD|responsibleEPDEmail|responsibleEPDPhone|type|legislation|addedBy|build|CEAALink|code|commodity|currentPhaseName|dateAdded|dateCommentsClosed|commentPeriodStatus|dateUpdated|decisionDate|duration|eaoMember|epicProjectID|fedElecDist|isTermsAgreed|overallProgress|primaryContact|proMember|provElecDist|sector|shortName|status|legislation|substitution|featuredDocuments|updatedBy|read|write|delete|featuredDocuments|projectCAC|projectCACPublished|cacEmail&populate=true",
+    "GET /api/search?and[project]=:id&dataset=RecentActivity&fuzzy=false&pageNum=0&pageSize=1&populate=false&projectLegislation=default&sortBy=&sortBy=",
+    "GET /api/search?and[project]=:id&dataset=RecentActivity&fuzzy=false&pageNum=0&pageSize=10&populate=true&projectLegislation=default&sortBy=&sortBy=-dateAdded",
+    "GET /api/search?dataset=List&pageSize=250",
+    "GET /demi-search/search?and[documentSource]=PROJECT&and[milestone]=:id&and[milestone]=:id&and[milestone]=:id&and[milestone]=:id&and[milestone]=:id&and[milestone]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&dataset=Document&fuzzy=false&pageNum=0&pageSize=1&populate=true&project=:id&projectLegislation=default&sortBy=&sortBy=",
+    "GET /demi-search/search?and[documentSource]=PROJECT&and[milestone]=:id&and[milestone]=:id&and[milestone]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&dataset=Document&fuzzy=false&pageNum=0&pageSize=1&populate=true&project=:id&projectLegislation=default&sortBy=&sortBy=",
+    "GET /demi-search/search?and[documentSource]=PROJECT&and[milestone]=:id&and[milestone]=:id&and[projectPhase]=:id&and[projectPhase]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&dataset=Document&fuzzy=false&pageNum=0&pageSize=1&populate=true&project=:id&projectLegislation=default&sortBy=&sortBy=",
+    "GET /demi-search/search?and[documentSource]=PROJECT&and[milestone]=:id&and[milestone]=:id&dataset=Document&fuzzy=false&pageNum=0&pageSize=1&populate=true&project=:id&projectLegislation=default&sortBy=&sortBy=",
+    "GET /demi-search/search?and[isFeatured]=true&dataset=Document&fuzzy=false&pageNum=0&pageSize=5&populate=false&project=:id&projectLegislation=default&sortBy=&sortBy=-datePosted",
+    "GET /demi-search/search?and[project]=:id&dataset=Document&fuzzy=false&pageNum=0&pageSize=1&populate=false&projectLegislation=default&sortBy=&sortBy=",
     "POST /analytics"
   ],
   "project-details-tab": [
@@ -30,32 +46,36 @@
     "POST /analytics"
   ],
   "project-documents-tab": [
+    "GET /api/commentperiod?fields=project|dateStarted|dateCompleted|instructions|isMet|metURL|informationLabel&project=:id&sortBy=-dateStarted",
     "GET /api/config",
     "GET /api/project/:id?fields=CEAAInvolvement|CELead|CELeadEmail|CELeadPhone|centroid|description|eacDecision|location|name|projectLeadId|projectLead|projectLeadEmail|projectLeadPhone|proponent|region|responsibleEPDId|responsibleEPD|responsibleEPDEmail|responsibleEPDPhone|type|legislation|addedBy|build|CEAALink|code|commodity|currentPhaseName|dateAdded|dateCommentsClosed|commentPeriodStatus|dateUpdated|decisionDate|duration|eaoMember|epicProjectID|fedElecDist|isTermsAgreed|overallProgress|primaryContact|proMember|provElecDist|sector|shortName|status|legislation|substitution|featuredDocuments|updatedBy|read|write|delete|featuredDocuments|projectCAC|projectCACPublished|cacEmail&populate=true",
+    "GET /api/search?and[project]=:id&dataset=RecentActivity&fuzzy=false&pageNum=0&pageSize=1&populate=false&projectLegislation=default&sortBy=&sortBy=",
     "GET /api/search?dataset=List&pageSize=250",
-    "GET /demi-search/search?and[documentSource]=PROJECT&and[milestone]=:id&and[milestone]=:id&and[milestone]=:id&and[milestone]=:id&and[milestone]=:id&and[milestone]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&dataset=Document&fields=[object Object]&fuzzy=false&pageNum=0&pageSize=1&populate=true&project=:id&projectLegislation=default&sortBy=&sortBy=",
-    "GET /demi-search/search?and[documentSource]=PROJECT&and[milestone]=:id&and[milestone]=:id&and[milestone]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&dataset=Document&fields=[object Object]&fuzzy=false&pageNum=0&pageSize=1&populate=true&project=:id&projectLegislation=default&sortBy=&sortBy=",
-    "GET /demi-search/search?and[documentSource]=PROJECT&and[milestone]=:id&and[milestone]=:id&and[projectPhase]=:id&and[projectPhase]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&dataset=Document&fields=[object Object]&fuzzy=false&pageNum=0&pageSize=1&populate=true&project=:id&projectLegislation=default&sortBy=&sortBy=",
-    "GET /demi-search/search?and[project]=:id&dataset=Document&fields=&fuzzy=false&pageNum=0&pageSize=10&populate=true&projectLegislation=default&sortBy= displayName&sortBy=-datePosted",
+    "GET /demi-search/search?and[documentSource]=PROJECT&and[milestone]=:id&and[milestone]=:id&and[milestone]=:id&and[milestone]=:id&and[milestone]=:id&and[milestone]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&dataset=Document&fuzzy=false&pageNum=0&pageSize=1&populate=true&project=:id&projectLegislation=default&sortBy=&sortBy=",
+    "GET /demi-search/search?and[documentSource]=PROJECT&and[milestone]=:id&and[milestone]=:id&and[milestone]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&dataset=Document&fuzzy=false&pageNum=0&pageSize=1&populate=true&project=:id&projectLegislation=default&sortBy=&sortBy=",
+    "GET /demi-search/search?and[documentSource]=PROJECT&and[milestone]=:id&and[milestone]=:id&and[projectPhase]=:id&and[projectPhase]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&dataset=Document&fuzzy=false&pageNum=0&pageSize=1&populate=true&project=:id&projectLegislation=default&sortBy=&sortBy=",
+    "GET /demi-search/search?and[documentSource]=PROJECT&and[milestone]=:id&and[milestone]=:id&dataset=Document&fuzzy=false&pageNum=0&pageSize=1&populate=true&project=:id&projectLegislation=default&sortBy=&sortBy=",
+    "GET /demi-search/search?and[project]=:id&dataset=Document&fuzzy=false&pageNum=0&pageSize=1&populate=false&projectLegislation=default&sortBy=&sortBy=",
+    "GET /demi-search/search?and[project]=:id&dataset=Document&fuzzy=false&pageNum=0&pageSize=10&populate=true&projectLegislation=default&sortBy= displayName&sortBy=-datePosted",
     "POST /analytics"
   ],
   "projects-list": [
     "GET /api/config",
     "GET /api/organization?companyType=Proponent/Certificate Holder&fields=name&sortBy= name",
     "GET /api/search?dataset=List&pageSize=250",
-    "GET /demi-search/search?dataset=Project&fields=&fuzzy=false&pageNum=0&pageSize=10&populate=true&projectLegislation=default&sortBy=&sortBy= name",
+    "GET /demi-search/search?dataset=Project&fuzzy=false&pageNum=0&pageSize=10&populate=true&projectLegislation=default&sortBy=&sortBy= name",
     "POST /analytics"
   ],
   "projects-map": [
     "GET /api/config",
     "GET /api/search?dataset=List&pageSize=250",
-    "GET /demi-search/search?dataset=Project&fields=&fuzzy=false&pageNum=0&pageSize=1000000&populate=true&projectLegislation=default&sortBy=&sortBy=",
+    "GET /demi-search/search?dataset=Project&fuzzy=false&pageNum=0&pageSize=1000000&populate=true&projectLegislation=default&sortBy=&sortBy=",
     "POST /analytics"
   ],
   "search": [
     "GET /api/config",
     "GET /api/search?dataset=List&pageSize=250",
-    "GET /demi-search/search?dataset=Document&fields=&fuzzy=false&pageNum=0&pageSize=10&populate=true&projectLegislation=default&sortBy=&sortBy=-datePosted",
+    "GET /demi-search/search?dataset=Document&fuzzy=false&pageNum=0&pageSize=10&populate=true&projectLegislation=default&sortBy=&sortBy=-datePosted",
     "POST /analytics"
   ]
 }

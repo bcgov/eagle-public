@@ -1,10 +1,7 @@
-import { useQueries } from '@tanstack/react-query';
 import { NavLink, Outlet } from 'react-router';
 import { track } from 'app/analytics/analytics';
-import { getSearchResults } from 'app/api/search';
-import { logger } from 'app/config/logging';
 import { Constants } from 'app/utils/constants';
-import { createProjectTabModifiers, extractFromSearchResults } from 'app/utils/utils';
+import { useDocTabProbes } from './use-doc-tab-probes';
 import { useProjectContext } from './project-context';
 import './documents-page.css';
 
@@ -24,52 +21,16 @@ export function DocumentsPage() {
   const context = useProjectContext();
   const { projId, lists, project } = context;
 
-  // Each optional segment costs one 1-result search; TanStack keys them so revisiting a sub-tab or
-  // the project does not re-ask.
-  const optionalTabResults = useQueries({
-    queries: OPTIONAL_TABS.map((tab) => ({
-      queryKey: ['project-tab-has-documents', projId, tab.key],
-      enabled: !!projId && lists.length > 0,
-      queryFn: async () => {
-        const response = await getSearchResults(
-          '',
-          'Document',
-          [{ name: 'project', value: projId }],
-          1,
-          1,
-          '',
-          createProjectTabModifiers(tab.key, lists),
-          true,
-          '',
-        );
-        const results = extractFromSearchResults(response ?? []);
-        if (!results) {
-          // getSearchResults turns any non-2xx into `null`, so a 502 and a project with no
-          // documents of this kind look the same. Throwing lets TanStack retry; returning `false`
-          // would cache one bad gateway as "no documents" for the rest of the visit.
-          logger.error(
-            `Could not determine whether the ${tab.key} segment has documents`,
-            'DocumentsPage',
-          );
-          throw new Error(`${tab.key} probe failed`);
-        }
-        return results.length > 0;
-      },
-    })),
-  });
+  // Shared with the project tab strip, which needs the same answers.
+  const probes = useDocTabProbes(projId, lists);
 
   // Absolute links: a relative `.` resolves against the open view, which would leave All
   // Documents marked active everywhere. `end` keeps it inactive while a filtered view is open.
   const documentsPath = `/p/${projId}/documents`;
-  // Placeholders only until each probe's first attempt settles: a disabled query (no lists) and a
-  // retrying one both report `isPending`, and neither should hold All Documents back.
-  const probing =
-    lists.length > 0 &&
-    optionalTabResults.some((result) => result.isPending && result.failureCount === 0);
 
   const tabs = [
     { label: 'All Documents', link: documentsPath, end: true },
-    ...OPTIONAL_TABS.filter((_, index) => optionalTabResults[index]?.data === true).map((tab) => ({
+    ...OPTIONAL_TABS.filter((tab) => probes.has[tab.key] === true).map((tab) => ({
       ...tab,
       link: `${documentsPath}/${tab.link}`,
       end: false,
@@ -82,9 +43,9 @@ export function DocumentsPage() {
         <span className="document-type-filter__label" id="document-type-filter-label">
           Document type
         </span>
-        <ul className="document-type-filter__group" aria-busy={probing || undefined}>
-          {probing && <span className="visually-hidden">Loading document types</span>}
-          {probing &&
+        <ul className="document-type-filter__group" aria-busy={probes.probing || undefined}>
+          {probes.probing && <span className="visually-hidden">Loading document types</span>}
+          {probes.probing &&
             PLACEHOLDER_WIDTHS.map((width) => (
               <li key={width} aria-hidden="true">
                 <span
@@ -95,7 +56,7 @@ export function DocumentsPage() {
                 </span>
               </li>
             ))}
-          {!probing &&
+          {!probes.probing &&
             tabs.map((tab) => (
               <li key={tab.link}>
                 <NavLink

@@ -11,12 +11,12 @@ test('an unknown route falls back to the home page', async ({ page }) => {
   ).toBeVisible();
 });
 
-test('/p/:projId redirects to the project-details tab', async ({ page, request }) => {
+test('/p/:projId redirects to the overview tab', async ({ page, request }) => {
   const [project] = await firstProjects(request, 1);
 
   await page.goto(`/p/${project._id}`);
-  await page.waitForURL(`**/p/${project._id}/project-details`);
-  expect(new URL(page.url()).pathname).toBe(`/p/${project._id}/project-details`);
+  await page.waitForURL(`**/p/${project._id}/overview`);
+  expect(new URL(page.url()).pathname).toBe(`/p/${project._id}/overview`);
 });
 
 test('/p/:projId/cp/:cpId redirects to /details', async ({ page, request }) => {
