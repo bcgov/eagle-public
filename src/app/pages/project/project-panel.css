@@ -88,4 +88,10 @@
   .project-panel {
     flex-direction: column;
   }
+
+  /* In a column the row basis would become a 26rem/22rem height. */
+  .project-panel__progress,
+  .project-panel__facts {
+    flex-basis: auto;
+  }
 }
