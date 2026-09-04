@@ -85,8 +85,9 @@ export function AssessmentRail({ project, lists, loading = false }: AssessmentRa
   const simple = useMemo(() => simplifiedStages(lists, project), [lists, project]);
   const laid = useMemo(() => layout(detailedStages(project)), [project]);
 
+  const act = actYear(project);
   // A 2002 Act project parked in a 2018 phase row never went through the 2018 stages.
-  const canDetail = phaseSetYear(project) === 2018 && actYear(project) === 2018;
+  const canDetail = phaseSetYear(project) === 2018 && act === 2018;
   const detailed = canDetail && view === 'detailed';
   const offRail = offRailPhase(project);
   // One phase can span several stages; aria-current marks only the first so there is one step.
@@ -103,24 +104,29 @@ export function AssessmentRail({ project, lists, loading = false }: AssessmentRa
         <h2 id="assessment-rail-heading" className="assessment-rail__title">
           Assessment progress
         </h2>
-        {canDetail && (
-          <div className="assessment-rail__views" role="group" aria-label="Progress detail">
-            <button
-              type="button"
-              className="assessment-rail__view"
-              aria-pressed={!detailed}
-              onClick={() => setView('simple')}
-            >
-              Simplified
-            </button>
-            <button
-              type="button"
-              className="assessment-rail__view"
-              aria-pressed={detailed}
-              onClick={() => setView('detailed')}
-            >
-              Detailed
-            </button>
+        {(act > 0 || canDetail) && (
+          <div className="assessment-rail__head-right">
+            {act > 0 && <p className="assessment-rail__act">{project?.legislation}</p>}
+            {canDetail && (
+              <div className="assessment-rail__views" role="group" aria-label="Progress detail">
+                <button
+                  type="button"
+                  className="assessment-rail__view"
+                  aria-pressed={!detailed}
+                  onClick={() => setView('simple')}
+                >
+                  Simplified
+                </button>
+                <button
+                  type="button"
+                  className="assessment-rail__view"
+                  aria-pressed={detailed}
+                  onClick={() => setView('detailed')}
+                >
+                  Detailed
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -75,19 +75,10 @@
   color: var(--typography-color-primary);
 }
 
-/* The popover carries its own band styling for the page it was built for; in this card it is just
-   the invite and a full-width button. */
-.updates-tab__subscribe .subscribe-popover {
-  margin: 0;
-  padding: 0;
-  background: none;
-  border: none;
-}
-
-.updates-tab__subscribe .subscribe-popover__trigger {
-  width: 100%;
-  min-height: 44px;
-  margin-left: 0;
+.updates-tab__subscribe-text {
+  margin: 0 0 var(--layout-margin-medium);
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-secondary);
 }
 
 .updates-tab__subscribe-all {

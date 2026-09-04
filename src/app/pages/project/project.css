@@ -1,6 +1,7 @@
-/* Project page shell: masthead band, then a fixed-width column holding the persistent panel, the
-   tab strip and the open tab. `.project` belongs to the Comments page (`pages/comments/comments.tsx`),
-   never style it here. Tokens come from @bcgov/design-tokens and eao-tokens.css. */
+/* Project page shell: masthead band, full-width white band holding the persistent panel, full-width
+   white tab strip, then the open tab. Every band's content sits on one 1440px container. `.project`
+   belongs to the Comments page (`pages/comments/comments.tsx`), never style it here. Tokens come from
+   @bcgov/design-tokens and eao-tokens.css. */
 
 .project-page {
   display: flex;
@@ -10,32 +11,46 @@
 }
 
 .project-page__container {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  gap: var(--layout-padding-large);
   width: 100%;
   max-width: 1440px;
   margin-inline: auto;
-  padding: var(--layout-padding-large);
+  padding-inline: var(--layout-padding-large);
+}
+
+.project-page__panel,
+.project-page__tabs {
+  background: var(--theme-gray-white);
+  border-bottom: var(--layout-border-width-small) solid var(--theme-gray-40);
+}
+
+.project-page__panel .project-page__container {
+  padding-block: var(--layout-padding-large);
 }
 
 .project-page .tab-content {
-  padding-top: var(--layout-padding-large);
+  flex: 1;
+  margin-top: 0;
+  padding-block: var(--layout-padding-xlarge) var(--layout-margin-huge);
 }
 
-/* Tab strip: 3px gold underline under the open tab (from the shared strip), blue bold label, count
-   after it. */
+/* Tab strip: the band's own 1px rule is the baseline, so the shared strip's border goes; the open
+   tab's 3px gold underline overlaps that rule. Blue bold label, count after it. */
+.project-page .project-tabs .nav-tabs {
+  border-bottom: none;
+}
+
 .project-page .project-tabs .nav-tabs .nav-link {
   gap: var(--layout-padding-small);
+  margin-bottom: -1px;
+  padding: var(--layout-padding-medium);
   color: var(--typography-color-secondary);
-  font-weight: var(--bs-font-weight-normal);
+  font: var(--typography-regular-body);
 }
 
 .project-page .project-tabs .nav-tabs .nav-link.active {
   /* Beats the `!important` on the shared .nav-tabs .nav-link.active colour. */
   color: var(--theme-primary-blue) !important;
-  font-weight: var(--bs-font-weight-bold);
+  font: var(--typography-bold-body);
 }
 
 /* Holds the pill's place until the count answers, so the strip does not jump. */
@@ -56,6 +71,14 @@
 
 @media (max-width: 859.98px) {
   .project-page__container {
-    padding: var(--layout-padding-medium);
+    padding-inline: var(--layout-padding-medium);
+  }
+
+  .project-page__panel .project-page__container {
+    padding-block: var(--layout-padding-medium);
+  }
+
+  .project-page .tab-content {
+    padding-block: var(--layout-padding-large);
   }
 }

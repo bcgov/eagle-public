@@ -42,7 +42,11 @@ export function FeaturedDocuments() {
     <section aria-labelledby="featured-documents-title">
       <div className="overview-tab__card-header">
         <h2 id="featured-documents-title">Featured documents</h2>
-        <Link to={`/p/${projId}/documents`}>All documents</Link>
+        <Link to={`/p/${projId}/documents`}>
+          {result.totalListItems > 0
+            ? `All ${result.totalListItems.toLocaleString()} documents`
+            : 'All documents'}
+        </Link>
       </div>
       {result.loading && result.data.length === 0 ? (
         <ul className="overview-tab__list featured-documents" aria-busy="true">
@@ -58,27 +62,38 @@ export function FeaturedDocuments() {
         </ul>
       ) : (
         <ul className="overview-tab__list featured-documents">
-          {result.data.map((document: any) => (
-            <li key={document._id}>
-              <i className="material-icons featured-documents__icon" aria-hidden="true">
-                insert_drive_file
-              </i>
-              <span className="featured-documents__detail">
-                <DocumentLink document={document}>
-                  {document.displayName || document.documentFileName}
-                </DocumentLink>
-                <span className="featured-documents__meta">
-                  {[
-                    idToListName(document.type, lists),
-                    longDate(document.datePosted),
-                    fileSize(document.internalSize),
-                  ]
-                    .filter((part) => part && part !== '-')
-                    .join(' · ')}
+          {result.data.map((document: any) => {
+            const name = document.displayName || document.documentFileName;
+            return (
+              <li key={document._id}>
+                <i className="material-icons featured-documents__icon" aria-hidden="true">
+                  insert_drive_file
+                </i>
+                <span className="featured-documents__detail">
+                  <DocumentLink document={document}>{name}</DocumentLink>
+                  <span className="featured-documents__meta">
+                    {[
+                      idToListName(document.type, lists),
+                      longDate(document.datePosted),
+                      fileSize(document.internalSize),
+                    ]
+                      .filter((part) => part && part !== '-')
+                      .join(' · ')}
+                  </span>
                 </span>
-              </span>
-            </li>
-          ))}
+                {/* Second DocumentLink instance: same download behaviour, icon-only target. */}
+                <DocumentLink document={document}>
+                  <i
+                    className="material-icons featured-documents__download-icon"
+                    aria-hidden="true"
+                  >
+                    file_download
+                  </i>
+                  <span className="visually-hidden">Download {name}</span>
+                </DocumentLink>
+              </li>
+            );
+          })}
         </ul>
       )}
     </section>

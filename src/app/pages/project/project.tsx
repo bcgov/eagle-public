@@ -56,20 +56,25 @@ export function ProjectPage() {
     <div className="project-page">
       <ProjectMasthead project={project ?? null} projId={projId} loading={projectLoading} />
 
-      <main className="project-page__container">
-        <ProjectPanel project={project ?? null} lists={lists} loading={projectLoading} />
+      <div className="project-page__panel">
+        <div className="project-page__container">
+          <ProjectPanel project={project ?? null} lists={lists} loading={projectLoading} />
+        </div>
+      </div>
 
-        <section className="project-tabs">
+      <div className="project-page__tabs project-tabs">
+        <div className="project-page__container">
           <TabBar
             projId={projId}
             tabs={tabs.filter((tab) => tab.show)}
             projectName={project?.name}
             ariaLabel="Project sections"
           />
-          <div className="tab-content">
-            <Outlet context={{ project: project ?? null, projId, lists, projectLoading }} />
-          </div>
-        </section>
+        </div>
+      </div>
+
+      <main className="project-page__container tab-content">
+        <Outlet context={{ project: project ?? null, projId, lists, projectLoading }} />
       </main>
     </div>
   );

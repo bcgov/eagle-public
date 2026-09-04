@@ -352,9 +352,10 @@
 /* Project pages: the bar's content shares the project page container (project.css) so the mark,
    nav, masthead and panel sit on one gutter. */
 .app-header--solid .navbar {
-  max-width: 1440px;
-  margin-inline: auto;
-  padding-inline: var(--layout-padding-large);
+  padding-inline: max(
+    var(--layout-padding-large),
+    calc((100% - 1440px) / 2 + var(--layout-padding-large))
+  );
 }
 
 .app-header--solid .navbar-brand {
@@ -363,6 +364,16 @@
 
 .app-header--solid .navbar-brand__title {
   margin-left: 67px;
+}
+
+.app-header--solid .nav-link {
+  color: var(--theme-gray-white) !important;
+  font: var(--typography-regular-body);
+}
+
+.app-header--solid .nav-link:hover,
+.app-header--solid .nav-link:focus {
+  color: var(--theme-primary-gold) !important;
 }
 
 @media (min-width: 768px) {

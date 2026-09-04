@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
+import { showToast } from 'app/state/toast';
 import { Skeleton } from 'app/components/skeleton/skeleton';
 import { SubscribePopover } from 'app/components/subscribe-popover';
 import type { Project } from 'app/models/project';
@@ -12,20 +12,9 @@ interface ProjectMastheadProps {
   loading?: boolean;
 }
 
-/** How long the Short link button reads "Link copied" before going back. */
-const COPIED_MS = 2000;
-
 /** Blue band at the top of every project tab: where you are, what the project is, how to follow it. */
 export function ProjectMasthead({ project, projId, loading = false }: ProjectMastheadProps) {
   const subtitle = [project?.proponent?.name, project?.location].filter(Boolean).join(' · ');
-  const [copied, setCopied] = useState(false);
-  const [fallback, setFallback] = useState('');
-
-  useEffect(() => {
-    if (!copied) return;
-    const timer = setTimeout(() => setCopied(false), COPIED_MS);
-    return () => clearTimeout(timer);
-  }, [copied]);
 
   // TODO: use the project's real short link once demi-api exposes a public /s/<code> lookup
   // (PUBLIC-145); staff create the codes in DEMI Admin.
@@ -33,12 +22,10 @@ export function ProjectMasthead({ project, projId, loading = false }: ProjectMas
     const url = `${window.location.origin}/p/${projId}`;
     try {
       await navigator.clipboard.writeText(url);
-      setFallback('');
-      setCopied(true);
+      showToast('Link copied to clipboard', { type: 'success' });
     } catch {
       // No clipboard (insecure origin, or the reader refused it): show the link to copy by hand.
-      setCopied(false);
-      setFallback(url);
+      showToast(`Copy this link: ${url}`, { type: 'info', duration: 8000 });
     }
   }
 
@@ -84,16 +71,8 @@ export function ProjectMasthead({ project, projId, loading = false }: ProjectMas
               <i className="material-icons" aria-hidden="true">
                 link
               </i>
-              {copied ? 'Link copied' : 'Short link'}
+              Short link
             </button>
-            {/* The button label carries the success, so only the copy-by-hand fallback is shown. */}
-            <p
-              className={`project-masthead__copy-status${fallback ? '' : ' visually-hidden'}`}
-              role="status"
-              aria-live="polite"
-            >
-              {copied ? 'Link copied to clipboard' : fallback && `Copy this link: ${fallback}`}
-            </p>
           </div>
         </div>
       </div>

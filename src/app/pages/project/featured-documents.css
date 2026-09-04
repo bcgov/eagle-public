@@ -24,3 +24,14 @@
   font: var(--typography-regular-small-body);
   color: var(--typography-color-secondary);
 }
+
+/* The row's second DocumentLink: icon-only, pinned right, never squeezed by the title column. */
+.featured-documents li > a:last-child {
+  flex: 0 0 auto;
+  line-height: 0;
+}
+
+.featured-documents__download-icon {
+  font-size: var(--icons-size-medium);
+  color: var(--icons-color-secondary);
+}

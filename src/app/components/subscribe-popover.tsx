@@ -23,8 +23,11 @@ interface SubscribePopoverProps {
   /** eagle-notify service, e.g. `project:<id>` or `eao:updates`. */
   serviceName: string;
   variant: 'project' | 'all';
-  /** `masthead` drops the band and styles the trigger as the blue banner's action. */
-  surface?: 'band' | 'masthead';
+  /** `masthead` drops the band for the blue banner's action; `card` drops it for a full-width
+   * primary button inside a tinted card. */
+  surface?: 'band' | 'masthead' | 'card';
+  /** Trigger text; the surface's default when unset. */
+  label?: string;
 }
 
 /** A section's email-updates line: what the subscription sends, then a Subscribe link whose popover
@@ -34,6 +37,7 @@ export function SubscribePopover({
   serviceName,
   variant,
   surface = 'band',
+  label,
 }: SubscribePopoverProps) {
   const baseId = useId();
   const panelId = `${baseId}-panel`;
@@ -134,14 +138,15 @@ export function SubscribePopover({
   }
 
   const masthead = surface === 'masthead';
+  const band = surface === 'band';
 
   return (
     <div
-      className={`subscribe-popover${masthead ? ' subscribe-popover--masthead' : ''}`}
+      className={`subscribe-popover${band ? '' : ` subscribe-popover--${surface}`}`}
       data-service={serviceName}
       style={{ ['--subscribe-anchor' as string]: anchorName } as React.CSSProperties}
     >
-      {!masthead && (
+      {band && (
         <>
           <i className="material-icons subscribe-popover__icon" aria-hidden="true">
             email
@@ -152,9 +157,9 @@ export function SubscribePopover({
       <button
         type="button"
         className={
-          masthead
-            ? 'subscribe-popover__trigger'
-            : 'btn btn-primary btn-sm subscribe-popover__trigger'
+          band
+            ? 'btn btn-primary btn-sm subscribe-popover__trigger'
+            : `subscribe-popover__trigger subscribe-popover__trigger--${surface}`
         }
         popoverTarget={panelId}
         aria-haspopup="dialog"
@@ -165,7 +170,7 @@ export function SubscribePopover({
             notifications_none
           </i>
         )}
-        {masthead ? 'Subscribe to updates' : 'Subscribe'}
+        {label ?? (band ? 'Subscribe' : 'Subscribe to updates')}
       </button>
       <div
         id={panelId}

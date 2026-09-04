@@ -112,7 +112,16 @@ export function UpdatesTab() {
         <aside className="updates-tab__aside">
           <section className="updates-tab__subscribe">
             <h2 className="updates-tab__subscribe-title">Never miss an update</h2>
-            <SubscribePopover serviceName={`project:${projId}`} variant="project" />
+            <p className="updates-tab__subscribe-text">
+              Get an email each time the Environmental Assessment Office publishes an update on this
+              project.
+            </p>
+            <SubscribePopover
+              serviceName={`project:${projId}`}
+              variant="project"
+              surface="card"
+              label="Subscribe to this project"
+            />
             <p className="updates-tab__subscribe-all">
               You can also <Link to="/news">subscribe to all projects</Link>.
             </p>

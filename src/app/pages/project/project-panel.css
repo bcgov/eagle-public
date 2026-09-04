@@ -1,14 +1,10 @@
-/* White card that persists under the masthead on every tab: assessment rail above the facts.
-   Tokens come from @bcgov/design-tokens and eao-tokens.css. */
+/* Persists under the masthead on every tab, on the page shell's white band: assessment rail above
+   the facts. Tokens come from @bcgov/design-tokens and eao-tokens.css. */
 
 .project-panel {
   display: flex;
   flex-direction: column;
   gap: var(--layout-padding-large);
-  padding: var(--layout-padding-large);
-  background: var(--theme-gray-white);
-  border: var(--layout-border-width-small) solid var(--theme-gray-40);
-  border-radius: var(--layout-border-radius-medium);
 }
 
 .project-panel__progress {

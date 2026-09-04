@@ -1,8 +1,9 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { screen, within } from '@testing-library/react';
+import { renderHook, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { loadConfig } from 'app/config/config';
 import type { Project } from 'app/models/project';
+import { clearToasts, useToasts } from 'app/state/toast';
 import { renderAt } from '../../../test-utils';
 import { ProjectMasthead } from './project-masthead';
 
@@ -28,8 +29,11 @@ async function renderMasthead(project: Project | null = PROJECT, loading = false
 }
 
 describe('project masthead', () => {
+  const toasts = () => renderHook(() => useToasts()).result.current;
+
   afterEach(() => {
     vi.unstubAllGlobals();
+    clearToasts();
   });
 
   it('names the project and the trail that leads to it', async () => {
@@ -76,7 +80,7 @@ describe('project masthead', () => {
     expect(container.querySelector('.project-masthead__meta .placeholder')).toBeInTheDocument();
   });
 
-  it('copies the project link and says so, then goes back to the resting label', async () => {
+  it('copies the project link and toasts the success', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText } });
     await renderMasthead();
@@ -84,11 +88,14 @@ describe('project masthead', () => {
     await user.click(screen.getByRole('button', { name: 'Short link' }));
 
     expect(writeText).toHaveBeenCalledWith(`${window.location.origin}/p/proj-1`);
-    expect(await screen.findByRole('button', { name: 'Link copied' })).toBeInTheDocument();
-    expect(screen.getByRole('status')).toHaveTextContent('Link copied to clipboard');
+    await waitFor(() =>
+      expect(toasts().map((toast) => [toast.type, toast.message])).toEqual([
+        ['success', 'Link copied to clipboard'],
+      ]),
+    );
   });
 
-  it('shows the link to copy by hand when the clipboard refuses', async () => {
+  it('toasts the link to copy by hand when the clipboard refuses', async () => {
     vi.stubGlobal('navigator', {
       ...navigator,
       clipboard: { writeText: vi.fn().mockRejectedValue(new Error('denied')) },
@@ -97,9 +104,10 @@ describe('project masthead', () => {
 
     await user.click(screen.getByRole('button', { name: 'Short link' }));
 
-    expect(await screen.findByRole('status')).toHaveTextContent(
-      `Copy this link: ${window.location.origin}/p/proj-1`,
+    await waitFor(() =>
+      expect(toasts().map((toast) => toast.message)).toEqual([
+        `Copy this link: ${window.location.origin}/p/proj-1`,
+      ]),
     );
-    expect(screen.getByRole('button', { name: 'Short link' })).toBeInTheDocument();
   });
 });

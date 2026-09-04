@@ -269,19 +269,16 @@
   background: var(--support-surface-color-info);
 }
 
-/* The popover carries its own band styling for the page it was built for; in this panel it is just
-   the invite and a full-width button. */
-.overview-tab__subscribe .subscribe-popover {
-  margin: 0;
-  padding: 0;
-  background: none;
-  border: none;
+.overview-tab__subscribe-title {
+  margin: 0 0 var(--layout-margin-xsmall);
+  font: var(--typography-bold-small-body);
+  color: var(--typography-color-primary);
 }
 
-.overview-tab__subscribe .subscribe-popover__trigger {
-  width: 100%;
-  min-height: 44px;
-  margin-left: 0;
+.overview-tab__subscribe-text {
+  margin: 0 0 var(--layout-margin-small);
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-secondary);
 }
 
 .overview-tab__empty {

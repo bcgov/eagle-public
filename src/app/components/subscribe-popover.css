@@ -15,10 +15,27 @@
   color: var(--bc-gray);
 }
 
-/* In the project banner the trigger is the whole control, so the band's box goes away and the
-   button becomes the banner's own flex item. */
-.subscribe-popover--masthead {
+/* In the project banner and in a tinted card the trigger is the whole control, so the band's box
+   goes away and the button lays out as its parent's own child. */
+.subscribe-popover--masthead,
+.subscribe-popover--card {
   display: contents;
+}
+
+.subscribe-popover__trigger--card {
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+  padding: 0 var(--layout-padding-medium);
+  border: none;
+  border-radius: var(--layout-border-radius-medium);
+  background: var(--surface-color-primary-button-default);
+  color: var(--typography-color-primary-invert);
+  font: var(--typography-bold-body);
+}
+
+.subscribe-popover__trigger--card:hover {
+  background: var(--surface-color-primary-button-hover);
 }
 
 .subscribe-popover__icon {

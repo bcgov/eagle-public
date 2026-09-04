@@ -170,8 +170,11 @@ function UpdatesCard({ projId }: { projId: string }) {
       {/* eagle-notify is optional per environment; without it the panel would offer nothing. */}
       {!!getNotifyApi() && (
         <div className="overview-tab__subscribe">
-          <p className="overview-tab__list-title">Get these by email</p>
-          <SubscribePopover serviceName={`project:${projId}`} variant="project" />
+          <p className="overview-tab__subscribe-title">Get these by email</p>
+          <p className="overview-tab__subscribe-text">
+            One email each time this project publishes an update. Unsubscribe any time.
+          </p>
+          <SubscribePopover serviceName={`project:${projId}`} variant="project" surface="card" />
         </div>
       )}
     </section>

@@ -110,7 +110,7 @@ describe('updates tab', () => {
 
     const card = (await screen.findByRole('heading', { name: 'Never miss an update' }))
       .parentElement!;
-    const trigger = screen.getByRole('button', { name: 'Subscribe' });
+    const trigger = screen.getByRole('button', { name: 'Subscribe to this project' });
     expect(card).toContainElement(trigger);
     expect(trigger.closest('.subscribe-popover')).toHaveAttribute('data-service', 'project:proj-1');
 

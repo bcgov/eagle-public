@@ -32,6 +32,20 @@ describe('simplified rail', () => {
     expect(screen.getAllByRole('listitem')).toHaveLength(7);
   });
 
+  it('shows the Act name with no Detailed button for a 2002 Act project', () => {
+    renderRail('Application Review', 2002);
+
+    expect(screen.getByText('2002 Environmental Assessment Act')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Detailed' })).toBeNull();
+  });
+
+  it('shows the Act name and the Detailed button for a 2018 Act project', () => {
+    renderRail('Process Planning');
+
+    expect(screen.getByText('2018 Environmental Assessment Act')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Detailed' })).toBeInTheDocument();
+  });
+
   it('keeps the detailed view from a 2002 Act project sitting in a 2018 phase', () => {
     renderRail('Complete', 2018, 2002);
 

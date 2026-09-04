@@ -189,7 +189,7 @@ describe('overview tab', () => {
     renderTab();
 
     expect(await screen.findByText('Get these by email')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Subscribe' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Subscribe to updates' })).toBeInTheDocument();
 
     window.__env = { logLevel: 4, NOTIFY_API: '' };
     await loadConfig();
@@ -296,6 +296,20 @@ describe('overview tab', () => {
       '/api/public/document/doc-1/download/Featured%20Report',
     );
     expect(screen.getByText('Certificate Package · May 1, 2026 · 2.0 MB')).toBeInTheDocument();
+  });
+
+  it('gives each featured document its own download link and a documents-tab count', async () => {
+    renderTab();
+
+    await screen.findByRole('link', { name: 'Featured Report' });
+    expect(screen.getByRole('link', { name: 'Download Featured Report' })).toHaveAttribute(
+      'href',
+      '/api/public/document/doc-1/download/Featured%20Report',
+    );
+    expect(screen.getByRole('link', { name: 'All 1 documents' })).toHaveAttribute(
+      'href',
+      '/p/proj-1/documents',
+    );
   });
 
   it('asks for the five most recent featured documents', async () => {

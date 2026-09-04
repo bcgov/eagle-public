@@ -125,14 +125,6 @@
   outline-offset: 2px;
 }
 
-.project-masthead__copy-status {
-  flex: 1 0 100%;
-  margin: 0;
-  font: var(--typography-regular-small-body);
-  color: var(--eao-on-dark-muted);
-  word-break: break-all;
-}
-
 /* Under the title on a phone, where the pair has no room beside it. */
 @media (max-width: 859.98px) {
   .project-masthead__inner {

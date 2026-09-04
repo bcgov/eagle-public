@@ -22,6 +22,18 @@
   color: var(--typography-color-secondary);
 }
 
+.assessment-rail__head-right {
+  display: flex;
+  align-items: center;
+  gap: var(--layout-padding-medium);
+}
+
+.assessment-rail__act {
+  margin: 0;
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-secondary);
+}
+
 .assessment-rail__views {
   display: flex;
   gap: var(--layout-padding-hair);
