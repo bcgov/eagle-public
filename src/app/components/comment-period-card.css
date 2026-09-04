@@ -1,4 +1,4 @@
-/* Ported from Angular commenting-tab.component.css. */
+/* Comment period cards, shown on the project commenting tab and the notification engagement tab. */
 
 .cp-card {
   border: 1px solid var(--bc-gray-border, #ced4da);
@@ -27,6 +27,39 @@
   background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%);
   background-size: 800px 100%;
   animation: shimmer 1.4s infinite linear;
+}
+
+.cp-card__skeleton-status {
+  width: 90px;
+  height: 12px;
+  border-radius: 4px;
+}
+
+.cp-card__skeleton-pill {
+  width: 70px;
+  height: 20px;
+  border-radius: 999px;
+  margin-left: auto;
+}
+
+.cp-card__skeleton-title {
+  width: 55%;
+  height: 14px;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+}
+
+.cp-card__skeleton-dates {
+  width: 38%;
+  height: 11px;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+}
+
+.cp-card__skeleton-text {
+  width: 88%;
+  height: 11px;
+  border-radius: 4px;
 }
 
 /* Header: status dot + label + pill badge */

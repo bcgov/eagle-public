@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import type { Project } from 'app/models/project';
-import type { CommentPeriod } from 'app/models/commentperiod';
 import { getAllByProjectId } from 'app/api/commentperiod';
+import { periodsOf } from 'app/components/use-comment-periods';
 import { track } from 'app/analytics/analytics';
 import { logger } from 'app/config/logging';
 import { safeHtml } from 'app/utils/safe-html';
@@ -14,11 +14,6 @@ interface ProjDetailPopupProps {
   onClose?: () => void;
   /** `inline` drops the title, meta line and close button: the list card above the body is both. */
   variant?: 'popup' | 'inline';
-}
-
-function periodsOf(res: unknown): CommentPeriod[] {
-  if (Array.isArray(res)) return res as CommentPeriod[];
-  return (res as { data?: CommentPeriod[] })?.data ?? [];
 }
 
 export function ProjDetailPopup({ project, onClose, variant = 'popup' }: ProjDetailPopupProps) {
