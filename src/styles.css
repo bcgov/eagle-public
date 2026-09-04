@@ -14,6 +14,10 @@
 /* EAGLE Theme Variables */
 @import url('./assets/styles/themes/default.css');
 
+/* B.C. Design System tokens (--theme-*, --typography-*, --layout-*, --surface-*, --support-*) + EPIC --eao-* layer */
+@import url('@bcgov/design-tokens/css/variables.css');
+@import url('./assets/styles/themes/eao-tokens.css');
+
 /* Base */
 @import url('./assets/styles/base/accessibility.css');
 @import url('./assets/styles/base/typography.css');

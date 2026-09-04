@@ -1,0 +1,42 @@
+/* EPIC design layer: --eao-* stage colours. Copied from eagle-design-kit/eagle.css; keep in sync by hand. */
+
+:root {
+  /* Early Engagement */
+  --eao-early-engagement-dark: #54858d;
+  --eao-early-engagement-main: #A9C2C6;
+  --eao-early-engagement-light: #D4E0E2;
+  /* Readiness Decision */
+  --eao-readiness-decision-dark: #da6d65;
+  --eao-readiness-decision-main: #EDB6B2;
+  --eao-readiness-decision-light: #F6DBD9;
+  /* Process Planning */
+  --eao-process-planning-dark: #043673;
+  --eao-process-planning-main: #819BB9;
+  --eao-process-planning-light: #C0CDDC;
+  /* Application Development */
+  --eao-application-development-dark: #4d95d0;
+  --eao-application-development-main: #A6CAE8;
+  --eao-application-development-light: #D3E4F3;
+  /* Effects Assessment */
+  --eao-effects-assessment-dark: #e7a913;
+  --eao-effects-assessment-main: #F3D489;
+  --eao-effects-assessment-light: #F9E9C4;
+  /* Decision */
+  --eao-decision-dark: #6a54a3;
+  --eao-decision-main: #B5A9D1;
+  --eao-decision-light: #DAD4E8;
+  /* Amendment */
+  --eao-amendment-dark: #a6bb2e;
+  --eao-amendment-main: #D2DD97;
+  --eao-amendment-light: #E9EECB;
+  /* pre EAC */
+  --eao-pre-eac-dark: #3EB1D7;
+  --eao-pre-eac-main: #99D3E6;
+  --eao-pre-eac-light: #C7E3EE;
+  /* Proponent */
+  --eao-proponent-dark: #6D7274;
+  --eao-proponent-main: #B6B9BA;
+  --eao-proponent-light: #DBDCDC;
+  /* Provisional: proponent application-development time, not in the design system yet. */
+  --eao-application-development-time: #3c6e47;
+}
