@@ -1,0 +1,132 @@
+/* Updates tab: a single column of update cards beside the subscribe aside. Tokens come from
+   @bcgov/design-tokens and eao-tokens.css. */
+
+.updates-tab {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--layout-padding-xlarge);
+}
+
+.updates-tab__main {
+  flex: 1 1 27.5rem;
+  min-width: 0;
+}
+
+.updates-tab__aside {
+  flex: 1 1 18.75rem;
+  min-width: 0;
+  max-width: 22.5rem;
+}
+
+.updates-tab__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--layout-padding-medium);
+  margin-bottom: var(--layout-margin-large);
+}
+
+.updates-tab__title {
+  margin: 0;
+  font: var(--typography-bold-h4);
+  color: var(--typography-color-primary);
+}
+
+.updates-tab__count {
+  margin: 0;
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-secondary);
+}
+
+.updates-tab__subscribe {
+  padding: var(--layout-padding-large);
+  background: var(--support-surface-color-info);
+  border: var(--layout-border-width-small) solid var(--theme-gray-40);
+  border-radius: var(--layout-border-radius-medium);
+}
+
+.updates-tab__subscribe-title {
+  margin: 0 0 var(--layout-margin-xsmall);
+  font: var(--typography-bold-h5);
+  color: var(--typography-color-primary);
+}
+
+/* The popover carries its own band styling for the page it was built for; in this card it is just
+   the invite and a full-width button. */
+.updates-tab__subscribe .subscribe-popover {
+  margin: 0;
+  padding: 0;
+  background: none;
+  border: none;
+}
+
+.updates-tab__subscribe .subscribe-popover__trigger {
+  width: 100%;
+  min-height: 44px;
+  margin-left: 0;
+}
+
+/* The list keeps the shared table so paging and the row component stay as they are; here the rows
+   read as cards rather than table rows. The shared table stylesheet sets the cells to table-cell
+   and flex at three class levels, so every rule below has to reach as deep. */
+.updates-tab .table-template .table,
+.updates-tab .table-template .table tbody,
+.updates-tab .table-template .table tbody tr,
+.updates-tab .table-template .table tbody tr td {
+  display: block;
+}
+
+.updates-tab .table-template .table {
+  margin: 0;
+}
+
+.updates-tab .table-template .table tbody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-padding-large);
+  background: none;
+}
+
+.updates-tab .table-template .table tbody tr {
+  position: relative;
+  overflow: hidden;
+  min-height: 0;
+  padding: var(--layout-padding-large);
+  background: var(--theme-gray-white);
+  border: var(--layout-border-width-small) solid var(--theme-gray-40);
+  border-radius: var(--layout-border-radius-medium);
+}
+
+/* The card's top accent. */
+.updates-tab .table-template .table tbody tr::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: var(--layout-border-width-large);
+  background: var(--theme-primary-gold);
+}
+
+/* The row component sizes its cells with Bootstrap column classes for the table layout; stacked in
+   a card they each take the card's width. */
+.updates-tab .table-template .table tbody tr td,
+.updates-tab .table-template .table tbody tr td[class*='col-'] {
+  width: auto;
+  max-width: none;
+  padding: 0;
+  background: none;
+  border: none;
+}
+
+.updates-tab .table-template .table tbody tr td.activity-card__date {
+  margin-top: var(--layout-margin-medium);
+  font: var(--typography-regular-label);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--typography-color-secondary);
+}
+
+.updates-tab .table-template .table tbody tr.placeholder-wave td {
+  padding: 0 0 var(--layout-padding-small);
+}
