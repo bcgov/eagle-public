@@ -70,7 +70,7 @@ function EngagementCallout({ project, banner }: { project: Project; banner: any 
 
   return (
     <section className="overview-tab__callout" aria-labelledby="callout-title">
-      {external && banner.metBannerImageUrl && (
+      {external && isSafeUrl(banner.metBannerImageUrl) && (
         <img
           className="overview-tab__callout-image"
           src={banner.metBannerImageUrl}
@@ -212,6 +212,7 @@ export function OverviewTab() {
                 )}
               </Fact>
               <Fact label="Nature">{project?.nature}</Fact>
+              <Fact label="Sub-type">{project?.sector}</Fact>
               {project?.eacDecision?.name === 'Regulatory Transfer' && (
                 <Fact label="Regulated by">
                   <ExternalLink

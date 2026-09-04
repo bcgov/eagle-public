@@ -17,6 +17,7 @@ const PROJECT = new Project({
   description: 'First line.\nSecond line.',
   legislation: '2002 Environmental Assessment Act',
   nature: 'New Construction',
+  sector: 'Sand and Gravel',
   CEAAInvolvement: { name: 'Substituted' },
   CEAALink: 'https://iaac-aeic.gc.ca/050/evaluations',
   projectLead: 'Alex Lead',
@@ -42,6 +43,11 @@ const FEATURED = [
     internalSize: '2097152',
   },
 ];
+
+const PINS = [{ _id: 'org-1', name: 'Cedar Nation', province: 'British Columbia' }];
+
+let pinsTotal = 1;
+let featuredTotal = 1;
 
 /** A period whose window brackets today, so it counts as open and its banner is visible. */
 function openPeriod(extra: Record<string, unknown> = {}) {
@@ -89,7 +95,7 @@ function renderTab() {
       const url = String(input);
       requests.push(url);
       if (url.includes('/pin')) {
-        return jsonResponse([{ results: [], total_items: 0 }]);
+        return jsonResponse([{ results: pinsTotal > 0 ? PINS : [], total_items: pinsTotal }]);
       }
       if (url.includes('dataset=RecentActivity')) {
         return jsonResponse([
@@ -98,7 +104,10 @@ function renderTab() {
       }
       if (url.includes('dataset=Document')) {
         return jsonResponse([
-          { searchResults: FEATURED, meta: [{ searchResultsTotal: FEATURED.length }] },
+          {
+            searchResults: featuredTotal > 0 ? FEATURED : [],
+            meta: [{ searchResultsTotal: featuredTotal }],
+          },
         ]);
       }
       return jsonResponse([{ searchResults: [], meta: [] }]);
@@ -115,6 +124,8 @@ function renderTab() {
 describe('overview tab', () => {
   beforeEach(() => {
     project = PROJECT;
+    pinsTotal = 1;
+    featuredTotal = 1;
     track.mockClear();
   });
 
@@ -146,6 +157,7 @@ describe('overview tab', () => {
     expect(screen.getByText('4321')).toBeInTheDocument();
     expect(screen.getByText('January 5, 2026')).toBeInTheDocument();
     expect(screen.getByText('June 2, 2026')).toBeInTheDocument();
+    expect(screen.getByText('Sand and Gravel')).toBeInTheDocument();
     // The panel above the tab owns these, so the tab must not repeat them.
     expect(screen.queryByText('Proponent')).not.toBeInTheDocument();
     expect(screen.queryByText('EA decision')).not.toBeInTheDocument();
@@ -205,6 +217,21 @@ describe('overview tab', () => {
     expect(router.state.location.pathname).toBe('/p/proj-1/overview');
   });
 
+  it('renders no callout image when metBannerImageUrl is an unsafe URL', async () => {
+    project = new Project({
+      ...PROJECT,
+      commentPeriodForBanner: openPeriod({
+        isMet: true,
+        metURL: 'https://engage.gov.bc.ca/cedar',
+        metBannerImageUrl: 'javascript:alert(1)',
+      }),
+    });
+    renderTab();
+
+    await screen.findByRole('heading', { name: 'Public comment period is Open' });
+    expect(document.querySelector('.overview-tab__callout-image')).not.toBeInTheDocument();
+  });
+
   it('shows no callout when the project has no comment period', async () => {
     renderTab();
 
@@ -237,5 +264,46 @@ describe('overview tab', () => {
       '/api/public/document/doc-1/download/Featured%20Report',
     );
     expect(screen.getByText('Certificate Package · May 1, 2026 · 2.0 MB')).toBeInTheDocument();
+  });
+
+  it('asks for the five most recent featured documents', async () => {
+    renderTab();
+
+    await screen.findByText('Featured Report');
+    expect(requests.find((url) => url.includes('isFeatured'))).toBe(
+      '/api/search?dataset=Document&project=proj-1&pageNum=0&pageSize=5&projectLegislation=default' +
+        '&sortBy=-datePosted&sortBy=&populate=false&and[isFeatured]=true&fuzzy=false',
+    );
+  });
+
+  it('hides the featured documents card when the project has none', async () => {
+    featuredTotal = 0;
+    renderTab();
+
+    await waitFor(() => expect(requests.some((url) => url.includes('isFeatured'))).toBe(true));
+    await waitFor(() => expect(screen.queryByText('Featured documents')).not.toBeInTheDocument());
+  });
+
+  it('lists the participating nations under their card heading', async () => {
+    renderTab();
+
+    expect(
+      screen.getByRole('heading', { name: 'Participating Indigenous Nations' }),
+    ).toBeInTheDocument();
+    expect(await screen.findByText('Cedar Nation')).toBeInTheDocument();
+    expect(screen.getByText('British Columbia')).toBeInTheDocument();
+    expect(requests.find((url) => url.includes('/pin'))).toBe(
+      '/api/project/proj-1/pin?pageNum=0&pageSize=10&sortBy=+name',
+    );
+  });
+
+  it('hides the participating nations card when the project has none', async () => {
+    pinsTotal = 0;
+    renderTab();
+
+    await waitFor(() => expect(requests.some((url) => url.includes('/pin'))).toBe(true));
+    await waitFor(() =>
+      expect(screen.queryByText('Participating Indigenous Nations')).not.toBeInTheDocument(),
+    );
   });
 });
