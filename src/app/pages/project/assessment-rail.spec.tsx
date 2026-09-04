@@ -32,10 +32,10 @@ describe('simplified rail', () => {
     expect(screen.getAllByRole('listitem')).toHaveLength(7);
   });
 
-  it('offers the detailed view to a 2002 Act project sitting in a 2018 phase', () => {
+  it('keeps the detailed view from a 2002 Act project sitting in a 2018 phase', () => {
     renderRail('Complete', 2018, 2002);
 
-    expect(screen.getByRole('button', { name: 'Detailed' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Detailed' })).toBeNull();
   });
 
   it('names an off-rail phase instead of marking a current stage', () => {
@@ -129,6 +129,15 @@ describe('detailed rail', () => {
     expect(rows[4]).toHaveClass('assessment-rail__key-row--upcoming');
     expect(container.querySelectorAll('.assessment-rail__seg--done')).toHaveLength(3);
     expect(container.querySelectorAll('.assessment-rail__seg--current')).toHaveLength(1);
+  });
+
+  it('marks one current step when a phase spans several stages', async () => {
+    const { container } = renderRail('Application Development and Review');
+
+    await showDetailed();
+
+    expect(container.querySelectorAll('.assessment-rail__key-row--current')).toHaveLength(3);
+    expect(container.querySelectorAll('[aria-current="step"]')).toHaveLength(1);
   });
 
   it('keeps the amendment column off the rail before the decision', async () => {

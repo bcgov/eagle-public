@@ -26,12 +26,12 @@ export interface LaidStage extends RailStage {
   start: number;
   width: number;
   days: number;
-  /** Pin row: 0 on the track, 1 below it when the previous pin's centre is within PIN_GAP. */
+  /** Pin row: 0 on the track, or the first row whose last pin centre is PIN_GAP or more away. */
   row: number;
 }
 
 /** Percent of the track two pin centres need between them before the later pin drops a row. */
-const PIN_GAP = 2.5;
+const PIN_GAP = 4.5;
 
 /** `List` rows of type `projectPhase`, as the project shell fetches them. */
 export interface PhaseListItem {
@@ -184,10 +184,13 @@ function isPostDecision(name: string): boolean {
  * have no rows of their own and use the 2002 set.
  */
 export function phaseSetYear(project: Project | null): number {
-  const fromPhase = Number(project?.currentPhaseName?.legislation);
-  const fromAct = Number(String(project?.legislation ?? '').match(/\d{4}/)?.[0]);
-  const year = fromPhase || fromAct || 2018;
+  const year = Number(project?.currentPhaseName?.legislation) || actYear(project) || 2018;
   return year === 1996 ? 2002 : year;
+}
+
+/** The Act the project was assessed under, from its `legislation` string. */
+export function actYear(project: Project | null): number {
+  return Number(String(project?.legislation ?? '').match(/\d{4}/)?.[0]);
 }
 
 /** The current phase when it sits off the rail, so the rail can say so. */
@@ -269,7 +272,7 @@ export function layout(stages: RailStage[]): LaidStage[] {
   const days = stages.map(daysFor);
   const total = days.reduce((sum, d) => sum + d, 0) || 1;
   let start = 0;
-  let prev: LaidStage | undefined;
+  const lastCentre: number[] = [];
   return stages.map((stage, index) => {
     const width = (days[index] / total) * 100;
     const laid: LaidStage = {
@@ -279,10 +282,11 @@ export function layout(stages: RailStage[]): LaidStage[] {
       width,
       row: 0,
     };
-    if (prev && laid.start + width / 2 - (prev.start + prev.width / 2) < PIN_GAP)
-      laid.row = prev.row + 1;
+    const centre = laid.start + width / 2;
+    while (lastCentre[laid.row] !== undefined && centre - lastCentre[laid.row] < PIN_GAP)
+      laid.row++;
+    lastCentre[laid.row] = centre;
     start += days[index];
-    prev = laid;
     return laid;
   });
 }

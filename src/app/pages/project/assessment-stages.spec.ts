@@ -94,7 +94,7 @@ describe('layout', () => {
   it('drops a pin a row when its centre crowds the previous one', () => {
     const laid = layout(DETAILED_STAGES);
 
-    expect(laid.map((s) => s.row)).toEqual([0, 0, 0, 0, 0, 0, 0, 0, 0, 1]);
+    expect(laid.map((s) => s.row)).toEqual([0, 0, 0, 1, 0, 0, 0, 0, 1, 2]);
   });
 
   it('ignores elapsed days on a stage that is not finished', () => {
@@ -105,6 +105,21 @@ describe('layout', () => {
 });
 
 describe('detailedStages', () => {
+  it.each([
+    ['Early Engagement', 0, 1],
+    ['Readiness Decision', 2, 2],
+    ['Process Planning', 3, 3],
+    ['Effects Assessment', 7, 8],
+    ['Referral', 9, 9],
+  ])('maps %s to stages %i-%i', (phase, first, last) => {
+    const states = detailedStages(makeProject(phase)).map((s) => s.state);
+
+    expect(states.indexOf('current')).toBe(first);
+    expect(states.lastIndexOf('current')).toBe(last);
+    expect(states.slice(0, first).every((s) => s === 'done')).toBe(true);
+    expect(states.slice(last + 1).every((s) => s === 'upcoming')).toBe(true);
+  });
+
   it('splits done, current and upcoming around the project phase', () => {
     const states = detailedStages(makeProject('Application Development and Review')).map(
       (s) => s.state,
