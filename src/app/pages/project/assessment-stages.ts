@@ -26,7 +26,7 @@ export interface LaidStage extends RailStage {
   start: number;
   width: number;
   days: number;
-  /** Pin row: 0 on the track, 1 below it when the previous pin's centre is within PIN_GAP. */
+  /** Pin row: 0 on the track, 1 below it when the previous pin's centre is within PIN_GAP. Only two stages ever crowd, so no third row. */
   row: number;
 }
 
@@ -279,8 +279,7 @@ export function layout(stages: RailStage[]): LaidStage[] {
       width,
       row: 0,
     };
-    if (prev && laid.start + width / 2 - (prev.start + prev.width / 2) < PIN_GAP)
-      laid.row = prev.row + 1;
+    if (prev && laid.start + width / 2 - (prev.start + prev.width / 2) < PIN_GAP) laid.row = 1;
     start += days[index];
     prev = laid;
     return laid;
