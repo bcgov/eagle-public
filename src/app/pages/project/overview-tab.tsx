@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { track } from 'app/analytics/analytics';
+import { Skeleton } from 'app/components/skeleton/skeleton';
 import { SubscribePopover } from 'app/components/subscribe-popover';
 import { useTable } from 'app/components/table/use-table';
 import { getNotifyApi } from 'app/config/config';
@@ -119,6 +120,9 @@ function EngagementCallout({ project, banner }: { project: Project; banner: any 
 
 const UPDATES_SHOWN = 3;
 
+/** Rows a list holds open while its first page is in flight. */
+const SKELETON_ROWS = [1, 2, 3];
+
 /** The three most recent updates. Same query as the Updates tab, so both read one cached page. */
 function UpdatesCard({ projId }: { projId: string }) {
   const result = useTable('projectActivities', {
@@ -138,10 +142,18 @@ function UpdatesCard({ projId }: { projId: string }) {
         <h2 id="updates-title">Updates</h2>
         <Link to={`/p/${projId}/updates`}>All updates</Link>
       </div>
-      {result.data.length === 0 ? (
-        <p className="overview-tab__empty overview-tab__panel-empty">
-          {result.loading ? 'Loading' : 'No recent updates.'}
-        </p>
+      {result.loading && result.data.length === 0 ? (
+        <ul className="overview-tab__panel-list" aria-busy="true">
+          <li className="visually-hidden">Loading updates</li>
+          {SKELETON_ROWS.map((row) => (
+            <li key={row}>
+              <Skeleton width="45%" />
+              <Skeleton width="85%" />
+            </li>
+          ))}
+        </ul>
+      ) : result.data.length === 0 ? (
+        <p className="overview-tab__empty overview-tab__panel-empty">No recent updates.</p>
       ) : (
         <ul className="overview-tab__panel-list">
           {result.data.slice(0, UPDATES_SHOWN).map((update: any) => (
@@ -204,19 +216,23 @@ export function OverviewTab() {
   return (
     <div className="overview-tab">
       <div className="overview-tab__main">
-        {project && banner?.isBannerVisible && (
-          <EngagementCallout project={project} banner={banner} />
+        {projectLoading ? (
+          <div className="overview-tab__callout-loading" aria-busy="true">
+            <span className="visually-hidden">Loading comment period</span>
+            <Skeleton width="30%" />
+            <Skeleton width="55%" />
+            <Skeleton lines={2} />
+          </div>
+        ) : (
+          project &&
+          banner?.isBannerVisible && <EngagementCallout project={project} banner={banner} />
         )}
 
         {projectLoading ? (
           <section className="overview-tab__skeleton" aria-busy="true">
             <span className="visually-hidden">Loading project details</span>
-            <div className="placeholder-wave" aria-hidden="true">
-              <span className="placeholder col-4"></span>
-              <span className="placeholder w-100"></span>
-              <span className="placeholder w-100"></span>
-              <span className="placeholder col-7"></span>
-            </div>
+            <Skeleton width="35%" />
+            <Skeleton lines={3} />
           </section>
         ) : (
           <section aria-labelledby="about-title">

@@ -93,4 +93,19 @@ describe('ComplianceTab', () => {
       screen.getByRole('link', { name: /View compliance and enforcement documents/ }),
     ).toBeInTheDocument();
   });
+
+  it('marks the stats busy while the counts are in flight rather than showing a zero', () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => new Promise<Response>(() => undefined)),
+    );
+    const { container } = renderAt('/p/proj-1/compliance', [
+      { path: '/p/:projId/compliance', element: <ComplianceTab /> },
+    ]);
+
+    expect(container.querySelector('.compliance-tab__stats[aria-busy="true"]')).not.toBeNull();
+    expect(screen.getByText('Loading compliance record')).toBeInTheDocument();
+    expect(container.querySelectorAll('.compliance-tab__stat-value .placeholder')).toHaveLength(2);
+    expect(screen.queryByText('0')).not.toBeInTheDocument();
+  });
 });

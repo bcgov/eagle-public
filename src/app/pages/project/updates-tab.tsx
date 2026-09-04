@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { SearchFilterTemplate } from 'app/components/filters/search-filter-template';
+import { Skeleton } from 'app/components/skeleton/skeleton';
 import { SubscribePopover } from 'app/components/subscribe-popover';
 import { Pagination } from 'app/components/table/pagination';
 import { paramsToObject, toSearchParams } from 'app/components/table/table-params';
@@ -13,7 +14,9 @@ import './updates-tab.css';
 
 const DEFAULT_SORT = '-dateAdded';
 const PAGE_SIZE = Constants.tableDefaults.DEFAULT_PAGE_SIZE;
-const SKELETON_CARDS = [1, 2, 3];
+
+/** Rows a list holds open while its first page is in flight. */
+const SKELETON_ROWS = [1, 2, 3];
 
 /** Updates published for this project, newest first. Its own `*Activities` query params. */
 export function UpdatesTab() {
@@ -46,6 +49,11 @@ export function UpdatesTab() {
       <div className="updates-tab__main">
         <div className="updates-tab__header">
           <h2 className="updates-tab__title">Updates</h2>
+          {result.loading && !total && (
+            <p className="updates-tab__count">
+              <Skeleton width="9rem" />
+            </p>
+          )}
           {total > 0 && (
             <p className="updates-tab__count">
               {total.toLocaleString('en-CA')} {total === 1 ? 'update' : 'updates'},{' '}
@@ -72,11 +80,11 @@ export function UpdatesTab() {
         {result.loading && result.data.length === 0 ? (
           <ol className="updates-tab__list" aria-busy="true">
             <li className="visually-hidden">Loading</li>
-            {SKELETON_CARDS.map((index) => (
-              <li className="updates-tab__skeleton placeholder-wave" key={index} aria-hidden="true">
-                <span className="placeholder col-3"></span>
-                <span className="placeholder col-8"></span>
-                <span className="placeholder w-100"></span>
+            {SKELETON_ROWS.map((index) => (
+              <li className="updates-tab__skeleton" key={index}>
+                <Skeleton width="25%" />
+                <Skeleton width="65%" />
+                <Skeleton lines={2} />
               </li>
             ))}
           </ol>

@@ -92,6 +92,12 @@
   background-color: var(--theme-gray-30);
 }
 
+/* The skeleton stands in for the whole map box, not a line of text in it. */
+.project-panel .map-container > .skeleton,
+.project-panel .map-container > .skeleton .placeholder {
+  height: 100%;
+}
+
 .project-panel .map-placeholder {
   display: flex;
   align-items: center;

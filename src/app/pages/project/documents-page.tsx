@@ -1,5 +1,6 @@
 import { Link, NavLink, Outlet } from 'react-router';
 import { track } from 'app/analytics/analytics';
+import { Skeleton } from 'app/components/skeleton/skeleton';
 import { Constants } from 'app/utils/constants';
 import { useDocTabProbes } from './use-doc-tab-probes';
 import { useProjectContext } from './project-context';
@@ -62,7 +63,7 @@ export function DocumentsPage() {
                   className="document-type-filter__segment document-type-filter__segment--loading"
                   style={{ width }}
                 >
-                  <span className="placeholder placeholder-wave"></span>
+                  <Skeleton height="0.75rem" />
                 </span>
               </li>
             ))}

@@ -1,4 +1,5 @@
 import { Link } from 'react-router';
+import { Skeleton } from 'app/components/skeleton/skeleton';
 import { DocumentLink } from 'app/components/table/document-link';
 import { useTable } from 'app/components/table/use-table';
 import { idToListName, longDate } from 'app/utils/utils';
@@ -6,6 +7,9 @@ import { useProjectContext } from './project-context';
 import './featured-documents.css';
 
 const PAGE_SIZE = 5;
+
+/** Rows a list holds open while its first page is in flight. */
+const SKELETON_ROWS = [1, 2, 3];
 
 /** `internalSize` arrives as a byte count in a string. */
 function fileSize(bytes: string | number | undefined): string {
@@ -40,29 +44,43 @@ export function FeaturedDocuments() {
         <h2 id="featured-documents-title">Featured documents</h2>
         <Link to={`/p/${projId}/documents`}>All documents</Link>
       </div>
-      <ul className="overview-tab__list featured-documents">
-        {result.data.map((document: any) => (
-          <li key={document._id}>
-            <i className="material-icons featured-documents__icon" aria-hidden="true">
-              insert_drive_file
-            </i>
-            <span className="featured-documents__detail">
-              <DocumentLink document={document}>
-                {document.displayName || document.documentFileName}
-              </DocumentLink>
-              <span className="featured-documents__meta">
-                {[
-                  idToListName(document.type, lists),
-                  longDate(document.datePosted),
-                  fileSize(document.internalSize),
-                ]
-                  .filter((part) => part && part !== '-')
-                  .join(' · ')}
+      {result.loading && result.data.length === 0 ? (
+        <ul className="overview-tab__list featured-documents" aria-busy="true">
+          <li className="visually-hidden">Loading featured documents</li>
+          {SKELETON_ROWS.map((row) => (
+            <li key={row}>
+              <span className="featured-documents__detail">
+                <Skeleton width="70%" />
+                <Skeleton width="40%" />
               </span>
-            </span>
-          </li>
-        ))}
-      </ul>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <ul className="overview-tab__list featured-documents">
+          {result.data.map((document: any) => (
+            <li key={document._id}>
+              <i className="material-icons featured-documents__icon" aria-hidden="true">
+                insert_drive_file
+              </i>
+              <span className="featured-documents__detail">
+                <DocumentLink document={document}>
+                  {document.displayName || document.documentFileName}
+                </DocumentLink>
+                <span className="featured-documents__meta">
+                  {[
+                    idToListName(document.type, lists),
+                    longDate(document.datePosted),
+                    fileSize(document.internalSize),
+                  ]
+                    .filter((part) => part && part !== '-')
+                    .join(' · ')}
+                </span>
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   );
 }

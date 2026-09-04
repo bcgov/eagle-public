@@ -1,4 +1,5 @@
 import { useMemo, useState, type CSSProperties } from 'react';
+import { Skeleton } from 'app/components/skeleton/skeleton';
 import type { Project } from 'app/models/project';
 import {
   AMENDMENT_STAGE,
@@ -24,7 +25,12 @@ import './assessment-rail.css';
 interface AssessmentRailProps {
   project: Project | null;
   lists: PhaseListItem[];
+  /** The project fetch is still in flight, so no stage is known yet. */
+  loading?: boolean;
 }
+
+/** The simplified rail always draws seven stages, so the stand-in draws seven too. */
+const SKELETON_PHASES = [1, 2, 3, 4, 5, 6, 7];
 
 /** CSS custom properties are not in React's `CSSProperties`, so they need the cast. */
 function vars(properties: Record<string, string | number>): CSSProperties {
@@ -72,7 +78,7 @@ function SimpleRail({ stages }: { stages: RailStage[] }) {
  * The project's place in the environmental assessment process, as the familiar phase rail or -
  * on projects in the 2018 phase set - a to-scale timeline of the ten statutory stages.
  */
-export function AssessmentRail({ project, lists }: AssessmentRailProps) {
+export function AssessmentRail({ project, lists, loading = false }: AssessmentRailProps) {
   const [view, setView] = useState(RAIL_DEFAULT_VIEW);
   const [hoverStage, setHoverStage] = useState<number | null>(null);
 
@@ -119,9 +125,23 @@ export function AssessmentRail({ project, lists }: AssessmentRailProps) {
         )}
       </div>
 
-      {!detailed && <SimpleRail stages={simple} />}
+      {loading && (
+        <>
+          <span className="visually-hidden">Loading assessment progress</span>
+          <ol className="assessment-rail__simple">
+            {SKELETON_PHASES.map((phase) => (
+              <li className="assessment-rail__phase" key={phase}>
+                <Skeleton height="6px" />
+                <Skeleton width="80%" />
+              </li>
+            ))}
+          </ol>
+        </>
+      )}
 
-      {detailed && (
+      {!loading && !detailed && <SimpleRail stages={simple} />}
+
+      {!loading && detailed && (
         <div className="assessment-rail__detail">
           <div className="assessment-rail__scale">
             <div className="assessment-rail__track">

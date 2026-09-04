@@ -79,21 +79,13 @@ export function UpdateCard({ update }: { update: UpdateRecord }) {
               {externalPeriod ? (
                 <li>
                   <a href={update.pcp!.metURL} target="_blank" rel="noopener noreferrer">
-                    <i className="material-icons" aria-hidden="true">
-                      forum
-                    </i>
                     View engagement
                   </a>
                 </li>
               ) : (
                 commentPeriod && (
                   <li>
-                    <Link to={commentPeriod}>
-                      <i className="material-icons" aria-hidden="true">
-                        forum
-                      </i>
-                      View engagement
-                    </Link>
+                    <Link to={commentPeriod}>View engagement</Link>
                   </li>
                 )
               )}

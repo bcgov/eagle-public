@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Skeleton } from 'app/components/skeleton/skeleton';
 import { Pagination } from 'app/components/table/pagination';
 import { DocumentLink } from 'app/components/table/document-link';
 import { useTable } from 'app/components/table/use-table';
@@ -9,6 +10,9 @@ import { useProjectContext } from './project-context';
 import './decisions-tab.css';
 
 const PAGE_SIZE = 10;
+
+/** Rows a list holds open while its first page is in flight. */
+const SKELETON_ROWS = [1, 2, 3];
 
 function regulatorLink(item: unknown): string {
   return typeof item === 'string' && isSafeUrl(item) ? item : Constants.BC_ENERGY_REGULATOR_LINK;
@@ -24,7 +28,7 @@ function documentDetail(record: { type?: string; milestone?: string }, lists: an
 
 /** The EA decision, then the certificate-set documents that record the decisions, newest first. */
 export function DecisionsTab() {
-  const { projId, project, lists } = useProjectContext();
+  const { projId, project, lists, projectLoading } = useProjectContext();
   const [page, setPage] = useState(1);
 
   const decision = project?.eacDecision?.name;
@@ -42,6 +46,10 @@ export function DecisionsTab() {
     queryModifiers: createProjectTabModifiers(Constants.optionalProjectDocTabs.CERTIFICATE, lists),
   });
 
+  // The certificate modifiers are built from the lists, so a query waiting on them is still
+  // pending rather than empty.
+  const pending = result.loading || lists.length === 0;
+
   return (
     <section className="decisions-tab">
       <h2 className="decisions-tab__title">Decisions</h2>
@@ -49,7 +57,15 @@ export function DecisionsTab() {
         Every decision the Environmental Assessment Office has made on this project, newest first.
       </p>
 
-      {project?.eacDecision && (
+      {projectLoading && (
+        <div className="decisions-tab__decision" aria-busy="true">
+          <span className="visually-hidden">Loading the EA decision</span>
+          <Skeleton width="6rem" />
+          <Skeleton width="45%" />
+        </div>
+      )}
+
+      {!projectLoading && project?.eacDecision && (
         <div className="decisions-tab__decision">
           <h3 className="decisions-tab__decision-label">EA decision</h3>
           {transferred ? (
@@ -73,6 +89,23 @@ export function DecisionsTab() {
         </div>
       )}
 
+      {pending && result.data.length === 0 && (
+        <ol className="decisions-tab__list" aria-busy="true">
+          <li className="visually-hidden">Loading decision documents</li>
+          {SKELETON_ROWS.map((row) => (
+            <li className="decisions-tab__item" key={row}>
+              <p className="decisions-tab__item-date">
+                <Skeleton width="5rem" />
+              </p>
+              <div>
+                <Skeleton width="60%" />
+                <Skeleton width="35%" />
+              </div>
+            </li>
+          ))}
+        </ol>
+      )}
+
       {result.data.length > 0 && (
         <ol className="decisions-tab__list">
           {result.data.map((record) => (
@@ -90,7 +123,7 @@ export function DecisionsTab() {
         </ol>
       )}
 
-      {!result.loading && result.data.length === 0 && (
+      {!pending && result.data.length === 0 && (
         <p>No decision documents have been posted for this project.</p>
       )}
 

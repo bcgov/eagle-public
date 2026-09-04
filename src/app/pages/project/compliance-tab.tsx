@@ -1,4 +1,5 @@
 import { Link } from 'react-router';
+import { Skeleton } from 'app/components/skeleton/skeleton';
 import { useTable } from 'app/components/table/use-table';
 import { Constants } from 'app/utils/constants';
 import { createProjectTabModifiers } from 'app/utils/utils';
@@ -36,10 +37,10 @@ function useComplianceCount(
   return { count: result.totalListItems, loading: result.loading };
 }
 
-function Stat({ value, label }: { value: string; label: string }) {
+function Stat({ value, label, loading }: { value: string; label: string; loading: boolean }) {
   return (
     <li className="compliance-tab__stat">
-      <p className="compliance-tab__stat-value">{value}</p>
+      <p className="compliance-tab__stat-value">{loading ? <Skeleton width="3rem" /> : value}</p>
       <p className="compliance-tab__stat-label">{label}</p>
     </li>
   );
@@ -57,7 +58,9 @@ export function ComplianceTab() {
   );
   const orders = useComplianceCount('complianceOrders', projId, lists, 'Order');
 
-  const loading = inspections.loading || orders.loading;
+  // Both counts key off document type ids from the lists, so an unstarted query still counts as
+  // loading rather than a zero.
+  const loading = inspections.loading || orders.loading || lists.length === 0;
 
   return (
     <section className="compliance-tab">
@@ -68,11 +71,17 @@ export function ComplianceTab() {
       </p>
 
       <ul className="compliance-tab__stats" aria-busy={loading || undefined}>
+        {loading && <li className="visually-hidden">Loading compliance record</li>}
         <Stat
-          value={loading ? '—' : inspections.count.toLocaleString('en-CA')}
+          value={inspections.count.toLocaleString('en-CA')}
           label="Inspection records published"
+          loading={loading}
         />
-        <Stat value={loading ? '—' : orders.count.toLocaleString('en-CA')} label="Orders issued" />
+        <Stat
+          value={orders.count.toLocaleString('en-CA')}
+          label="Orders issued"
+          loading={loading}
+        />
       </ul>
 
       <Link className="compliance-tab__link" to={`/p/${projId}/documents/compliance`}>

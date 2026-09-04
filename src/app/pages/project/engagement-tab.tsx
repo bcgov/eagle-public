@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router';
 import { isClosed, isNotStarted, isOpen } from 'app/api/commentperiod';
+import { Skeleton } from 'app/components/skeleton/skeleton';
 import { useCommentPeriods } from 'app/components/use-comment-periods';
 import type { CommentPeriod } from 'app/models/commentperiod';
 import { openExternal } from 'app/utils/safe-url';
@@ -40,10 +41,10 @@ export function EngagementTab() {
         <ul className="engagement-tab__list" aria-busy="true">
           <li className="visually-hidden">Loading</li>
           {SKELETON_CARDS.map((index) => (
-            <li className="engagement-tab__card placeholder-wave" key={index} aria-hidden="true">
-              <span className="placeholder col-4"></span>
-              <span className="placeholder col-8"></span>
-              <span className="placeholder col-6"></span>
+            <li className="engagement-tab__card" key={index}>
+              <Skeleton width="35%" />
+              <Skeleton width="70%" />
+              <Skeleton lines={2} />
             </li>
           ))}
         </ul>

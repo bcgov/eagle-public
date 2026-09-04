@@ -23,12 +23,18 @@ interface SubscribePopoverProps {
   /** eagle-notify service, e.g. `project:<id>` or `eao:updates`. */
   serviceName: string;
   variant: 'project' | 'all';
+  /** `masthead` drops the band and styles the trigger as the blue banner's action. */
+  surface?: 'band' | 'masthead';
 }
 
 /** A section's email-updates line: what the subscription sends, then a Subscribe link whose popover
  * is the sign-up form itself, posting to eagle-notify. eagle-notify owns everything after the
  * confirmation email. Renders nothing when NOTIFY_API is unset. */
-export function SubscribePopover({ serviceName, variant }: SubscribePopoverProps) {
+export function SubscribePopover({
+  serviceName,
+  variant,
+  surface = 'band',
+}: SubscribePopoverProps) {
   const baseId = useId();
   const panelId = `${baseId}-panel`;
   const headingId = `${baseId}-heading`;
@@ -127,24 +133,39 @@ export function SubscribePopover({ serviceName, variant }: SubscribePopoverProps
     }
   }
 
+  const masthead = surface === 'masthead';
+
   return (
     <div
-      className="subscribe-popover"
+      className={`subscribe-popover${masthead ? ' subscribe-popover--masthead' : ''}`}
       data-service={serviceName}
       style={{ ['--subscribe-anchor' as string]: anchorName } as React.CSSProperties}
     >
-      <i className="material-icons subscribe-popover__icon" aria-hidden="true">
-        email
-      </i>
-      <p className="subscribe-popover__invite">{copy.invite}</p>
+      {!masthead && (
+        <>
+          <i className="material-icons subscribe-popover__icon" aria-hidden="true">
+            email
+          </i>
+          <p className="subscribe-popover__invite">{copy.invite}</p>
+        </>
+      )}
       <button
         type="button"
-        className="btn btn-primary btn-sm subscribe-popover__trigger"
+        className={
+          masthead
+            ? 'subscribe-popover__trigger'
+            : 'btn btn-primary btn-sm subscribe-popover__trigger'
+        }
         popoverTarget={panelId}
         aria-haspopup="dialog"
         aria-expanded={open}
       >
-        Subscribe
+        {masthead && (
+          <i className="material-icons" aria-hidden="true">
+            notifications_none
+          </i>
+        )}
+        {masthead ? 'Subscribe to updates' : 'Subscribe'}
       </button>
       <div
         id={panelId}

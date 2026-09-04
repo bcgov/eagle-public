@@ -127,4 +127,20 @@ describe('updates tab', () => {
     expect(screen.queryByText('Never miss an update')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Subscribe' })).toBeNull();
   });
+
+  it('marks the list busy while the first page is in flight, and says nothing about emptiness', () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => new Promise<Response>(() => undefined)),
+    );
+    const { container } = renderAt('/p/proj-1/updates', [
+      { path: '/p/:projId/updates', element: <UpdatesTab /> },
+    ]);
+
+    expect(container.querySelector('.updates-tab__list[aria-busy="true"]')).not.toBeNull();
+    expect(screen.getByText('Loading')).toBeInTheDocument();
+    expect(
+      screen.queryByText('No updates have been published for this project.'),
+    ).not.toBeInTheDocument();
+  });
 });

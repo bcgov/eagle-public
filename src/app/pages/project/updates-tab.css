@@ -62,12 +62,6 @@
   border-radius: var(--layout-border-radius-medium);
 }
 
-.updates-tab__skeleton .placeholder {
-  display: block;
-  height: 0.75rem;
-  margin-bottom: var(--layout-margin-small);
-}
-
 .updates-tab__subscribe {
   padding: var(--layout-padding-large);
   background: var(--support-surface-color-info);

@@ -132,6 +132,8 @@ export function ProjectDocumentTab({
   );
 
   const result = useTable(tableId, query);
+  // An optional tab's query waits on the lists; until then it is pending, not empty.
+  const pending = result.loading || (!!tabKey && lists.length === 0);
 
   // Rebuilt objects re-render every row, and the rows subscribe to the selection store.
   const data = useMemo(
@@ -216,13 +218,13 @@ export function ProjectDocumentTab({
         </section>
       )}
 
-      {!result.loading && data.totalListItems === 0 ? (
+      {!pending && data.totalListItems === 0 ? (
         <div>{emptyMessage}</div>
       ) : (
         <DataTable
           caption="Project documents"
           data={data}
-          loading={result.loading}
+          loading={pending}
           onMessage={onMessage}
         />
       )}

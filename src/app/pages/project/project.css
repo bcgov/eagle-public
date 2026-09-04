@@ -38,6 +38,12 @@
   font-weight: var(--bs-font-weight-bold);
 }
 
+/* Holds the pill's place until the count answers, so the strip does not jump. */
+.project-page .project-tabs .nav-tabs .tab-count--loading {
+  display: inline-block;
+  min-width: 1.5rem;
+}
+
 .project-page .project-tabs .nav-tabs .tab-count {
   background-color: var(--theme-gray-20);
   border-radius: var(--layout-border-radius-circular);

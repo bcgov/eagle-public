@@ -144,8 +144,5 @@
 }
 
 .document-type-filter__segment--loading .placeholder {
-  display: block;
-  width: 100%;
-  height: 0.75rem;
   background-color: var(--typography-color-secondary);
 }

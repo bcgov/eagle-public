@@ -50,7 +50,7 @@ describe('project masthead', () => {
   it('offers a Subscribe button that opens this project subscription form', async () => {
     const { container } = await renderMasthead();
 
-    const trigger = screen.getByRole('button', { name: 'Subscribe' });
+    const trigger = screen.getByRole('button', { name: 'Subscribe to updates' });
     expect(container.querySelector('.subscribe-popover')).toHaveAttribute(
       'data-service',
       'project:proj-1',
@@ -68,10 +68,38 @@ describe('project masthead', () => {
     ).toBeInTheDocument();
   });
 
-  it('shows a loading placeholder instead of the name while the project is in flight', async () => {
+  it('shows a loading placeholder instead of the name and the sub-line while the project is in flight', async () => {
     const { container } = await renderMasthead(null, true);
 
     expect(screen.getByText('Loading project')).toBeInTheDocument();
     expect(container.querySelector('h1 .placeholder')).toBeInTheDocument();
+    expect(container.querySelector('.project-masthead__meta .placeholder')).toBeInTheDocument();
+  });
+
+  it('copies the project link and says so, then goes back to the resting label', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText } });
+    await renderMasthead();
+
+    await user.click(screen.getByRole('button', { name: 'Short link' }));
+
+    expect(writeText).toHaveBeenCalledWith(`${window.location.origin}/p/proj-1`);
+    expect(await screen.findByRole('button', { name: 'Link copied' })).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('Link copied to clipboard');
+  });
+
+  it('shows the link to copy by hand when the clipboard refuses', async () => {
+    vi.stubGlobal('navigator', {
+      ...navigator,
+      clipboard: { writeText: vi.fn().mockRejectedValue(new Error('denied')) },
+    });
+    await renderMasthead();
+
+    await user.click(screen.getByRole('button', { name: 'Short link' }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      `Copy this link: ${window.location.origin}/p/proj-1`,
+    );
+    expect(screen.getByRole('button', { name: 'Short link' })).toBeInTheDocument();
   });
 });

@@ -40,9 +40,11 @@
   color: var(--typography-color-primary);
 }
 
-.overview-tab__skeleton .placeholder {
-  display: block;
-  margin-bottom: var(--layout-margin-small);
+/* Stands in for the comment period callout, without claiming there is one. */
+.overview-tab__callout-loading {
+  padding: var(--layout-padding-large);
+  border-left: var(--layout-border-width-large) solid var(--theme-gray-40);
+  background: var(--theme-gray-10);
 }
 
 .overview-tab__eyebrow {

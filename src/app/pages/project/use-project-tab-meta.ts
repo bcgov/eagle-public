@@ -11,6 +11,8 @@ export interface ProjectTab {
   label: string;
   /** Rendered after the label; absent when there is nothing worth counting. */
   count?: string;
+  /** The count's query has not answered yet, so the strip holds its place. */
+  countPending?: boolean;
   show: boolean;
 }
 
@@ -42,7 +44,7 @@ export function useProjectTabMeta(
     queryModifiers: { project: projId },
   });
 
-  const { data: commentPeriods } = useCommentPeriods(projId);
+  const { data: commentPeriods, isPending: periodsPending } = useCommentPeriods(projId);
   const open = commentPeriods?.filter(isOpen).length ?? 0;
 
   const decision = project?.eacDecision?.name;
@@ -53,12 +55,14 @@ export function useProjectTabMeta(
       key: 'updates',
       label: 'Updates',
       count: updates.totalListItems ? String(updates.totalListItems) : undefined,
+      countPending: !updates.totalListItems && updates.loading,
       show: true,
     },
     {
       key: 'engagement',
       label: 'Engagement',
       count: open ? `${open} open` : undefined,
+      countPending: periodsPending,
       show: true,
     },
     {
@@ -67,6 +71,7 @@ export function useProjectTabMeta(
       count: documents.totalListItems
         ? documents.totalListItems.toLocaleString('en-CA')
         : undefined,
+      countPending: !documents.totalListItems && documents.loading,
       show: true,
     },
     {

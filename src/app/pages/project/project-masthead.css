@@ -1,9 +1,7 @@
-/* Blue band under the site header, gold rule at its foot. Tokens come from @bcgov/design-tokens
-   and eao-tokens.css. */
+/* Blue band under the site header. Tokens come from @bcgov/design-tokens and eao-tokens.css. */
 
 .project-masthead {
   background: var(--theme-primary-blue);
-  border-bottom: var(--layout-border-width-medium) solid var(--theme-primary-gold);
   color: var(--typography-color-primary-invert);
 }
 
@@ -68,12 +66,86 @@
   color: var(--theme-gray-30);
 }
 
-/* The subscribe band brings its own light surface and dark text, so it only needs sizing here. */
-.project-masthead .subscribe-popover {
-  flex: 0 1 26rem;
-  margin: 0;
+/* The two banner actions, right-aligned as a pair. The status line is the only thing that stacks
+   under them, and it is hidden unless the clipboard refused the copy. */
+.project-masthead__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--layout-padding-small);
 }
 
+/* Shared shape: 44px of touch target either way, so the pair reads as one control group. */
+.project-masthead__action,
 .project-masthead .subscribe-popover__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--layout-padding-xsmall);
   min-height: 44px;
+  padding: 0 var(--layout-padding-medium);
+  border-radius: var(--layout-border-radius-medium);
+  background: transparent;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.project-masthead__action .material-icons,
+.project-masthead .subscribe-popover__trigger .material-icons {
+  font-size: var(--icons-size-medium);
+}
+
+/* Gold on blue is 7:1; the hover swap keeps the same pair, inverted. */
+.project-masthead .subscribe-popover__trigger {
+  border: var(--layout-border-width-medium) solid var(--theme-primary-gold);
+  color: var(--theme-primary-gold);
+  font: var(--typography-bold-body);
+}
+
+.project-masthead .subscribe-popover__trigger:hover,
+.project-masthead .subscribe-popover__trigger[aria-expanded='true'] {
+  background: var(--theme-primary-gold);
+  color: var(--theme-primary-blue);
+}
+
+.project-masthead__action--link {
+  border: var(--layout-border-width-small) solid var(--eao-on-dark-divider);
+  color: var(--theme-gray-white);
+  font: var(--typography-regular-body);
+}
+
+.project-masthead__action--link:hover {
+  background: rgb(255 255 255 / 8%);
+  border-color: var(--theme-gray-white);
+}
+
+/* The hairline border is decorative; focus needs a boundary that carries on any background. */
+.project-masthead__action:focus-visible,
+.project-masthead .subscribe-popover__trigger:focus-visible {
+  outline: var(--layout-border-width-medium) solid var(--theme-primary-gold);
+  outline-offset: 2px;
+}
+
+.project-masthead__copy-status {
+  flex: 1 0 100%;
+  margin: 0;
+  font: var(--typography-regular-small-body);
+  color: var(--eao-on-dark-muted);
+  word-break: break-all;
+}
+
+/* Under the title on a phone, where the pair has no room beside it. */
+@media (max-width: 859.98px) {
+  .project-masthead__inner {
+    padding-inline: var(--layout-padding-medium);
+  }
+
+  .project-masthead__actions {
+    width: 100%;
+  }
+
+  .project-masthead__action,
+  .project-masthead .subscribe-popover__trigger {
+    flex: 1 1 12rem;
+    justify-content: center;
+  }
 }

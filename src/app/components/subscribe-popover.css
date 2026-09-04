@@ -15,6 +15,12 @@
   color: var(--bc-gray);
 }
 
+/* In the project banner the trigger is the whole control, so the band's box goes away and the
+   button becomes the banner's own flex item. */
+.subscribe-popover--masthead {
+  display: contents;
+}
+
 .subscribe-popover__icon {
   flex: none;
   font-size: 1.25rem;

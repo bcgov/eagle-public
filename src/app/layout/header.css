@@ -348,3 +348,35 @@
     line-height: 1.2rem;
   }
 }
+
+/* Project pages: the bar's content shares the project page container (project.css) so the mark,
+   nav, masthead and panel sit on one gutter. */
+.app-header--solid .navbar {
+  max-width: 1440px;
+  margin-inline: auto;
+  padding-inline: var(--layout-padding-large);
+}
+
+.app-header--solid .navbar-brand {
+  background-position: 0 center;
+}
+
+.app-header--solid .navbar-brand__title {
+  margin-left: 67px;
+}
+
+@media (min-width: 768px) {
+  .app-header--solid .navbar-nav {
+    padding-right: 0;
+  }
+
+  .app-header--solid .nav-item:last-child .nav-link {
+    padding-right: 0;
+  }
+}
+
+@media (max-width: 859.98px) {
+  .app-header--solid .navbar {
+    padding-inline: var(--layout-padding-medium);
+  }
+}

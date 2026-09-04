@@ -142,4 +142,20 @@ describe('engagement tab', () => {
       await screen.findByText('No comment periods are currently scheduled for this project.'),
     ).toBeInTheDocument();
   });
+
+  it('marks the list busy while the comment periods are in flight, and claims none are scheduled', () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => new Promise<Response>(() => undefined)),
+    );
+    const { container } = renderAt('/p/proj-1/engagement', [
+      { path: '/p/:projId/engagement', element: <EngagementTab /> },
+    ]);
+
+    expect(container.querySelector('.engagement-tab__list[aria-busy="true"]')).not.toBeNull();
+    expect(screen.getByText('Loading')).toBeInTheDocument();
+    expect(
+      screen.queryByText('No comment periods are currently scheduled for this project.'),
+    ).not.toBeInTheDocument();
+  });
 });

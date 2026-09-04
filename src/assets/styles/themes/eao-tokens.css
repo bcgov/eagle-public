@@ -39,4 +39,8 @@
   --eao-proponent-light: #dbdcdc;
   /* Provisional: proponent application-development time, not in the design system yet. */
   --eao-application-development-time: #3c6e47;
+
+  /* On a dark surface (the project masthead band). */
+  --eao-on-dark-muted: rgba(255, 255, 255, 0.65);
+  --eao-on-dark-divider: rgba(255, 255, 255, 0.12);
 }

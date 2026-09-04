@@ -145,9 +145,3 @@
 .engagement-tab__cta--secondary:focus-visible {
   background: var(--surface-color-secondary-button-hover);
 }
-
-.engagement-tab .placeholder-wave .placeholder {
-  display: block;
-  height: 0.75rem;
-  margin-bottom: var(--layout-margin-small);
-}

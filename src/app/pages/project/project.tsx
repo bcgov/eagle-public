@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { track } from 'app/analytics/analytics';
 import { getById } from 'app/api/project';
 import { listsQueryOptions } from 'app/api/api';
+import { Skeleton } from 'app/components/skeleton/skeleton';
 import { ProjectMasthead } from './project-masthead';
 import { ProjectPanel } from './project-panel';
 import { useProjectTabMeta, type ProjectTab } from './use-project-tab-meta';
@@ -138,6 +139,10 @@ function TabBar({ projId, tabs, projectName, ariaLabel }: TabBarProps) {
               >
                 {tab.label}
                 {tab.count && <span className="tab-count">{tab.count}</span>}
+                {/* Held open so the strip does not jump when the count lands. */}
+                {!tab.count && tab.countPending && (
+                  <Skeleton className="tab-count tab-count--loading" width="1.5rem" />
+                )}
               </NavLink>
             </li>
           ))}

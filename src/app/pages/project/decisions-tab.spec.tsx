@@ -154,4 +154,20 @@ describe('DecisionsTab', () => {
     ).toBeInTheDocument();
     expect(screen.queryByRole('list')).not.toBeInTheDocument();
   });
+
+  it('marks the list busy while the decision documents are in flight, and says nothing about emptiness', () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => new Promise<Response>(() => undefined)),
+    );
+    const { container } = renderAt('/p/proj-1/decisions', [
+      { path: '/p/:projId/decisions', element: <DecisionsTab /> },
+    ]);
+
+    expect(container.querySelector('.decisions-tab__list[aria-busy="true"]')).not.toBeNull();
+    expect(screen.getByText('Loading decision documents')).toBeInTheDocument();
+    expect(
+      screen.queryByText('No decision documents have been posted for this project.'),
+    ).not.toBeInTheDocument();
+  });
 });

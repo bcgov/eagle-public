@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { Link } from 'react-router';
+import { Skeleton } from 'app/components/skeleton/skeleton';
 import type { Project } from 'app/models/project';
 import { longDate } from 'app/utils/utils';
 import { AssessmentRail } from './assessment-rail';
@@ -31,7 +32,7 @@ function Fact({ label, value, detail, loading }: FactProps) {
       <dt>{label}</dt>
       <dd>
         {loading ? (
-          <span className="placeholder col-8" aria-hidden="true"></span>
+          <Skeleton width="70%" />
         ) : (
           <>
             {value || '-'}
@@ -48,13 +49,18 @@ export function ProjectPanel({ project, lists, loading = false }: ProjectPanelPr
   const centroid = project?.centroid?.length === 2 ? project.centroid : null;
 
   return (
-    <section className="project-panel" aria-label="Project summary">
+    <section
+      className="project-panel"
+      aria-label="Project summary"
+      aria-busy={loading || undefined}
+    >
       <div className="project-panel__progress">
-        <AssessmentRail project={project} lists={lists} />
+        <AssessmentRail project={project} lists={lists} loading={loading} />
       </div>
 
       <div className="project-panel__facts">
-        <dl className={loading ? 'placeholder-wave' : undefined} aria-busy={loading || undefined}>
+        {loading && <span className="visually-hidden">Loading project summary</span>}
+        <dl>
           <Fact label="Status" value={project?.currentPhaseName?.name} loading={loading} />
           <Fact
             label="EA decision"
@@ -75,14 +81,12 @@ export function ProjectPanel({ project, lists, loading = false }: ProjectPanelPr
         <div className="project-panel__map">
           {loading ? (
             <div className="map-container">
-              <span className="placeholder w-100 h-100" aria-hidden="true" />
+              <Skeleton height="100%" />
             </div>
           ) : centroid && project ? (
             <>
               <div className="map-container">
-                <Suspense
-                  fallback={<span className="placeholder w-100 h-100" aria-hidden="true" />}
-                >
+                <Suspense fallback={<Skeleton height="100%" />}>
                   <DetailsMap project={project} />
                 </Suspense>
               </div>
