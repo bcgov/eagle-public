@@ -34,13 +34,21 @@ const UPDATES = [
   },
 ];
 
-async function renderTab(notifyApi: string, searchResults = UPDATES): Promise<void> {
+let requests: string[] = [];
+
+async function renderTab(
+  notifyApi: string,
+  searchResults = UPDATES,
+  path = '/p/proj-1/updates',
+): Promise<void> {
   window.__env = { logLevel: 4, NOTIFY_API: notifyApi };
   await loadConfig();
+  requests = [];
   vi.stubGlobal(
     'fetch',
     vi.fn(
-      async () =>
+      async (input: RequestInfo | URL) =>
+        requests.push(String(input)) &&
         new Response(
           JSON.stringify([{ searchResults, meta: [{ searchResultsTotal: searchResults.length }] }]),
           { status: 200, headers: { 'content-type': 'application/json' } },
@@ -48,7 +56,7 @@ async function renderTab(notifyApi: string, searchResults = UPDATES): Promise<vo
     ),
   );
 
-  renderAt('/p/proj-1/updates', [{ path: '/p/:projId/updates', Component: UpdatesTab }]);
+  renderAt(path, [{ path: '/p/:projId/updates', Component: UpdatesTab }]);
 }
 
 describe('updates tab', () => {
@@ -65,6 +73,19 @@ describe('updates tab', () => {
 
     expect(await screen.findByRole('heading', { level: 2, name: 'Updates' })).toBeInTheDocument();
     expect(await screen.findByText('2 updates, newest first')).toBeInTheDocument();
+    expect(requests[0]).toContain('dataset=RecentActivity');
+    expect(requests[0]).toContain('sortBy=-dateAdded');
+  });
+
+  it('says the list is by relevance when a keyword search reorders it', async () => {
+    await renderTab(
+      'https://notify-api.example',
+      UPDATES,
+      '/p/proj-1/updates?keywordsActivities=report&sortByActivities=-score',
+    );
+
+    expect(await screen.findByText('2 updates, by relevance')).toBeInTheDocument();
+    expect(requests[0]).toContain('sortBy=-score');
   });
 
   it('renders a card per update returned by the query', async () => {

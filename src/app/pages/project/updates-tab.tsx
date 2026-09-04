@@ -95,7 +95,8 @@ export function UpdatesTab() {
           <h2 className="updates-tab__title">Updates</h2>
           {total > 0 && (
             <p className="updates-tab__count">
-              {total.toLocaleString('en-CA')} {total === 1 ? 'update' : 'updates'}, newest first
+              {total.toLocaleString('en-CA')} {total === 1 ? 'update' : 'updates'},{' '}
+              {base.sortBy === DEFAULT_SORT ? 'newest first' : 'by relevance'}
             </p>
           )}
         </div>
