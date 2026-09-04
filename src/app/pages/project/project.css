@@ -243,6 +243,8 @@
   border-radius: 1rem;
   color: var(--typography-color-secondary, var(--bs-secondary-color));
   font-size: var(--bs-font-size-sm);
+  flex-shrink: 0;
+  white-space: nowrap;
   font-weight: var(--bs-font-weight-normal);
   padding: 0.0625rem 0.5rem;
 }
