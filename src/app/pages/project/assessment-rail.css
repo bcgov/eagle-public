@@ -113,7 +113,8 @@
 .assessment-rail__bar,
 .assessment-rail__pins {
   position: relative;
-  height: 22px;
+  /* One 24px row per --rows; crowded pins drop a row (see PIN_GAP). */
+  height: calc(var(--rows, 1) * 24px - 2px);
 }
 
 .assessment-rail__tick {
@@ -181,19 +182,11 @@
   color: var(--typography-color-primary);
 }
 
-.assessment-rail__pins[data-stacked] {
-  height: 46px;
-}
-
 .assessment-rail__pin {
   position: absolute;
-  top: 1px;
+  top: calc(1px + var(--row, 0) * 24px);
   left: clamp(10px, var(--l), calc(100% - 10px));
   transform: translateX(-50%);
-}
-
-.assessment-rail__pin[data-row='1'] {
-  top: 25px;
 }
 
 .assessment-rail__pin[data-hover] {

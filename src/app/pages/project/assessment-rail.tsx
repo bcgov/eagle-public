@@ -163,7 +163,7 @@ export function AssessmentRail({ project, lists }: AssessmentRailProps) {
 
               <div
                 className="assessment-rail__pins"
-                data-stacked={laid.some((s) => s.row > 0) || undefined}
+                style={vars({ '--rows': String(Math.max(...laid.map((s) => s.row)) + 1) })}
                 aria-hidden="true"
               >
                 {laid.map((stage) => (
@@ -171,10 +171,10 @@ export function AssessmentRail({ project, lists }: AssessmentRailProps) {
                     key={stage.id}
                     className="assessment-rail__num assessment-rail__pin"
                     data-stage={stage.n}
-                    data-row={stage.row || undefined}
                     data-hover={hoverStage === stage.n || undefined}
                     style={vars({
                       '--l': `${(stage.start + stage.width / 2).toFixed(2)}%`,
+                      '--row': String(stage.row),
                       '--stage': fill(stage),
                     })}
                     onMouseEnter={() => setHoverStage(stage.n)}
