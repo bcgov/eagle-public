@@ -12,6 +12,7 @@ import {
   durationLabel,
   layout,
   offRailPhase,
+  actYear,
   phaseSetYear,
   simplifiedStages,
   type LaidStage,
@@ -78,9 +79,12 @@ export function AssessmentRail({ project, lists }: AssessmentRailProps) {
   const simple = useMemo(() => simplifiedStages(lists, project), [lists, project]);
   const laid = useMemo(() => layout(detailedStages(project)), [project]);
 
-  const canDetail = phaseSetYear(project) === 2018;
+  // A 2002 Act project parked in a 2018 phase row never went through the 2018 stages.
+  const canDetail = phaseSetYear(project) === 2018 && actYear(project) === 2018;
   const detailed = canDetail && view === 'detailed';
   const offRail = offRailPhase(project);
+  // One phase can span several stages; aria-current marks only the first so there is one step.
+  const currentStep = laid.find((stage) => stage.state === 'current')?.n;
   const showAmendment = project?.currentPhaseName?.name === 'Post Decision - Amendment';
 
   const proponentDays = (TOTAL_DAYS - EAO_DAYS).toLocaleString('en-CA');
@@ -205,7 +209,7 @@ export function AssessmentRail({ project, lists }: AssessmentRailProps) {
                 key={stage.id}
                 className={`assessment-rail__key-row assessment-rail__key-row--${stage.owner} assessment-rail__key-row--${stage.state}`}
                 data-stage={stage.n}
-                aria-current={stage.state === 'current' ? 'step' : undefined}
+                aria-current={stage.n === currentStep ? 'step' : undefined}
                 data-hover={hoverStage === stage.n || undefined}
                 onMouseEnter={() => setHoverStage(stage.n)}
                 onMouseLeave={() => setHoverStage(null)}
