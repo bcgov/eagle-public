@@ -108,7 +108,7 @@
 
   /* Font Family */
   --bs-font-sans-serif:
-    BCSans, 'Noto Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue',
+    'BC Sans', 'Noto Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue',
     Arial, sans-serif;
   --bs-body-font-family: var(--bs-font-sans-serif);
   --bs-font-family-base: var(--bs-font-sans-serif);
