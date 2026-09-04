@@ -1,0 +1,285 @@
+import type { Project } from 'app/models/project';
+
+/**
+ * Stage data for the assessment progress rail. Hex values mirror
+ * `src/assets/styles/themes/eao-tokens.css` so components can render
+ * `var(--token, #hex)` and still look right before the token sheet loads.
+ */
+export interface RailStage {
+  /** One stage may cover several `List` rows; then this holds every id, space separated. */
+  id: string;
+  n: number;
+  name: string;
+  hex: string;
+  token: string;
+  state: 'done' | 'current' | 'upcoming';
+  // TODO: `elapsedDays` and per-stage dates come from Track `work_phases` through a future
+  // demi-api endpoint (`GET /api/projects/:id/phases`); eagle-api holds no phase dates.
+  statutoryDays?: number;
+  elapsedDays?: number;
+  owner?: 'eao' | 'proponent';
+  provisional?: boolean;
+}
+
+/** A stage placed on the to-scale bar: percentages of the whole timeline. */
+export interface LaidStage extends RailStage {
+  start: number;
+  width: number;
+  days: number;
+}
+
+/** `List` rows of type `projectPhase`, as the project shell fetches them. */
+export interface PhaseListItem {
+  _id: string;
+  type?: string;
+  name: string;
+  listOrder?: number;
+  legislation?: number;
+}
+
+export interface YearTick {
+  label: string;
+  left: number;
+}
+
+/** Internal annotation: stage definitions 2, 5 and 7 are pending Comms ratification. */
+export const SHOW_RATIFICATION_STRIPES = true as boolean;
+
+export const RAIL_DEFAULT_VIEW: 'simple' | 'detailed' = 'simple';
+
+const FILLS = {
+  earlyEngagement: { token: '--eao-early-engagement-dark', hex: '#54858d' },
+  readinessDecision: { token: '--eao-readiness-decision-dark', hex: '#da6d65' },
+  readinessDecisionMain: { token: '--eao-readiness-decision-main', hex: '#edb6b2' },
+  processPlanning: { token: '--eao-process-planning-dark', hex: '#043673' },
+  applicationDevelopment: { token: '--eao-application-development-dark', hex: '#4d95d0' },
+  applicationDevelopmentTime: { token: '--eao-application-development-time', hex: '#3c6e47' },
+  effectsAssessment: { token: '--eao-effects-assessment-dark', hex: '#e7a913' },
+  effectsAssessmentMain: { token: '--eao-effects-assessment-main', hex: '#f3d489' },
+  decision: { token: '--eao-decision-dark', hex: '#6a54a3' },
+  amendment: { token: '--eao-amendment-dark', hex: '#a6bb2e' },
+  preEac: { token: '--eao-pre-eac-dark', hex: '#3eb1d7' },
+  proponent: { token: '--eao-proponent-dark', hex: '#6d7274' },
+};
+
+/** The 2018 Act stages as Track seeds them, so a Track-fed timeline maps one to one. */
+const TRACK_STAGES: Omit<RailStage, 'id' | 'n' | 'state'>[] = [
+  { name: 'Early Engagement', statutoryDays: 90, owner: 'eao', ...FILLS.earlyEngagement },
+  {
+    name: 'Proponent time: project description',
+    statutoryDays: 365,
+    owner: 'proponent',
+    provisional: true,
+    ...FILLS.proponent,
+  },
+  { name: 'Readiness Decision', statutoryDays: 60, owner: 'eao', ...FILLS.readinessDecision },
+  { name: 'Process Planning', statutoryDays: 120, owner: 'eao', ...FILLS.processPlanning },
+  {
+    name: 'Proponent time: application development',
+    statutoryDays: 1095,
+    owner: 'proponent',
+    provisional: true,
+    ...FILLS.applicationDevelopmentTime,
+  },
+  {
+    name: 'Application Development and Review',
+    statutoryDays: 180,
+    owner: 'eao',
+    ...FILLS.preEac,
+  },
+  {
+    name: 'Proponent time: revised application',
+    statutoryDays: 365,
+    owner: 'proponent',
+    provisional: true,
+    ...FILLS.readinessDecisionMain,
+  },
+  { name: 'Effects Assessment', statutoryDays: 110, owner: 'eao', ...FILLS.effectsAssessment },
+  { name: 'Recommendation', statutoryDays: 40, owner: 'eao', ...FILLS.effectsAssessmentMain },
+  { name: 'Referral / Decision', statutoryDays: 30, owner: 'eao', ...FILLS.decision },
+];
+
+export const DETAILED_STAGES: RailStage[] = TRACK_STAGES.map((stage, index) => ({
+  ...stage,
+  id: `detailed-${index + 1}`,
+  n: index + 1,
+  state: 'upcoming',
+}));
+
+/** Off-scale: an amendment has no legislated duration, so it never enters the bar or the totals. */
+export const AMENDMENT_STAGE: RailStage = {
+  id: 'amendment',
+  n: DETAILED_STAGES.length + 1,
+  name: 'Amendment',
+  state: 'current',
+  ...FILLS.amendment,
+};
+
+export const TOTAL_DAYS = DETAILED_STAGES.reduce((sum, s) => sum + (s.statutoryDays ?? 0), 0);
+
+export const EAO_DAYS = DETAILED_STAGES.filter((s) => s.owner === 'eao').reduce(
+  (sum, s) => sum + (s.statutoryDays ?? 0),
+  0,
+);
+
+export const YEAR_TICKS: YearTick[] = [0, 1, 2, 3, 4, 5, 6].map((year) => ({
+  label: year === 0 ? 'Start' : `${year}y`,
+  left: ((year * 365) / TOTAL_DAYS) * 100,
+}));
+
+/** The collapsed tail of the Simplified rail. */
+const POST_DECISION = 'Post decision';
+
+/** Phases that sit outside the process: kept off the rail, named in a caption instead. */
+const OFF_RAIL_PHASES = ['Other', 'Termination', 'Withdrawal'];
+
+const SIMPLE_FILLS: Record<string, { token: string; hex: string }> = {
+  'Project Designation': FILLS.proponent,
+  'Early Engagement': FILLS.earlyEngagement,
+  'Readiness Decision': FILLS.readinessDecision,
+  'Process Planning': FILLS.processPlanning,
+  'Application Development and Review': FILLS.applicationDevelopment,
+  'Effects Assessment': FILLS.effectsAssessment,
+  Referral: FILLS.decision,
+  [POST_DECISION]: FILLS.amendment,
+};
+
+/** Fallback fills for the 2002 phase names, which have no colour of their own. */
+const PALETTE = [
+  FILLS.earlyEngagement,
+  FILLS.readinessDecision,
+  FILLS.processPlanning,
+  FILLS.applicationDevelopment,
+  FILLS.effectsAssessment,
+  FILLS.decision,
+  FILLS.preEac,
+  FILLS.proponent,
+];
+
+/** The 2018 phases the ten Track stages roll up into, in list order. */
+const DETAILED_PHASES = [
+  'Early Engagement',
+  'Readiness Decision',
+  'Process Planning',
+  'Application Development and Review',
+  'Effects Assessment',
+  'Referral',
+];
+
+/** Index into `DETAILED_PHASES` for each of the ten stages. */
+const STAGE_PHASE = [0, 0, 1, 2, 3, 3, 3, 4, 4, 5];
+
+function isPostDecision(name: string): boolean {
+  return name.startsWith('Post Decision') || name === 'Complete';
+}
+
+/**
+ * Which set of `projectPhase` rows the project sits in. The phase row's own `legislation`
+ * wins because 2002 Act projects can end up in the 2018 "Complete" phase; 1996 Act projects
+ * have no rows of their own and use the 2002 set.
+ */
+export function phaseSetYear(project: Project | null): number {
+  const fromPhase = Number(project?.currentPhaseName?.legislation);
+  const fromAct = Number(String(project?.legislation ?? '').match(/\d{4}/)?.[0]);
+  const year = fromPhase || fromAct || 2018;
+  return year === 1996 ? 2002 : year;
+}
+
+/** The current phase when it sits off the rail, so the rail can say so. */
+export function offRailPhase(project: Project | null): string | null {
+  const name = String(project?.currentPhaseName?.name ?? '');
+  return OFF_RAIL_PHASES.includes(name) ? name : null;
+}
+
+function stateFor(index: number, currentIndex: number): RailStage['state'] {
+  if (currentIndex < 0 || index > currentIndex) return 'upcoming';
+  return index === currentIndex ? 'current' : 'done';
+}
+
+/** The familiar rail: one stage per `projectPhase` list row, post-decision phases collapsed. */
+export function simplifiedStages(
+  lists: PhaseListItem[] | null | undefined,
+  project: Project | null,
+): RailStage[] {
+  const year = phaseSetYear(project);
+  const rows = (lists ?? [])
+    .filter(
+      (row) =>
+        row.type === 'projectPhase' &&
+        Number(row.legislation) === year &&
+        !OFF_RAIL_PHASES.includes(row.name),
+    )
+    .sort((a, b) => (a.listOrder ?? 0) - (b.listOrder ?? 0));
+
+  const groups: { ids: string[]; name: string }[] = [];
+  for (const row of rows) {
+    const group = isPostDecision(row.name)
+      ? groups.find((g) => g.name === POST_DECISION)
+      : undefined;
+    if (group) {
+      group.ids.push(row._id);
+    } else {
+      groups.push({ ids: [row._id], name: isPostDecision(row.name) ? POST_DECISION : row.name });
+    }
+  }
+
+  const currentId = project?.currentPhaseName?._id;
+  const currentIndex = groups.findIndex((g) => !!currentId && g.ids.includes(currentId));
+
+  return groups.map((group, index) => ({
+    id: group.ids.join(' '),
+    n: index + 1,
+    name: group.name,
+    state: stateFor(index, currentIndex),
+    ...(SIMPLE_FILLS[group.name] ?? PALETTE[index % PALETTE.length]),
+  }));
+}
+
+/** The ten Track 2018 stages, with each one's state read off the project's current phase. */
+export function detailedStages(project: Project | null): RailStage[] {
+  const phase = String(project?.currentPhaseName?.name ?? '');
+
+  if (isPostDecision(phase)) {
+    return DETAILED_STAGES.map((stage) => ({ ...stage, state: 'done' as const }));
+  }
+  // Project Designation comes before stage 1, and the off-rail phases leave the process.
+  if (!DETAILED_PHASES.includes(phase)) {
+    return DETAILED_STAGES.map((stage) => ({ ...stage, state: 'upcoming' as const }));
+  }
+
+  const currentIndex = DETAILED_PHASES.indexOf(phase);
+  return DETAILED_STAGES.map((stage, index) => ({
+    ...stage,
+    state: stateFor(STAGE_PHASE[index], currentIndex),
+  }));
+}
+
+/** Historic stages scale to how long they took; current and future show the statutory maximum. */
+function daysFor(stage: RailStage): number {
+  if (stage.state === 'done' && stage.elapsedDays != null) return stage.elapsedDays;
+  return stage.statutoryDays ?? 0;
+}
+
+export function layout(stages: RailStage[]): LaidStage[] {
+  const days = stages.map(daysFor);
+  const total = days.reduce((sum, d) => sum + d, 0) || 1;
+  let start = 0;
+  return stages.map((stage, index) => {
+    const laid = {
+      ...stage,
+      days: days[index],
+      start: (start / total) * 100,
+      width: (days[index] / total) * 100,
+    };
+    start += days[index];
+    return laid;
+  });
+}
+
+export function durationLabel(days: number): string {
+  if (days > 0 && days % 365 === 0) {
+    const years = days / 365;
+    return years === 1 ? '1 year' : `${years} years`;
+  }
+  return `${days} days`;
+}
