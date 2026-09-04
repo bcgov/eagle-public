@@ -4,7 +4,7 @@ import type { RouteObject } from 'react-router';
 import { renderAt } from '../../../test-utils';
 import { routes } from 'app/routes';
 import { ProjectPage } from './project';
-import { ProjectDetailsTab } from './project-details-tab';
+import { OverviewTab } from './overview-tab';
 
 const LISTS = [
   { _id: 'type-app-2002', name: 'Application Materials', legislation: 2002, type: 'doctype' },
@@ -227,32 +227,6 @@ describe('project shell', () => {
     );
   });
 
-  it('still carries the ENGAGE banner, image and outbound link, for a hosted engagement', async () => {
-    const [period] = openCommentPeriod();
-    project = {
-      ...PROJECT,
-      commentPeriodForBanner: [
-        {
-          ...period,
-          isMet: true,
-          metURL: 'https://engage.example/cedar',
-          metBannerImageUrl: 'https://engage.example/banner.jpg',
-        },
-      ],
-    };
-
-    renderShell();
-
-    expect(await screen.findByRole('link', { name: /Share your thoughts/ })).toHaveAttribute(
-      'href',
-      'https://engage.example/cedar',
-    );
-    expect(screen.getByAltText('Engagement banner')).toHaveAttribute(
-      'src',
-      'https://engage.example/banner.jpg',
-    );
-  });
-
   it('marks the open tab with aria-current', async () => {
     renderShell('/p/proj-1/documents');
 
@@ -469,7 +443,7 @@ function renderShellWithOverviewTab() {
     {
       path: '/p/:projId',
       Component: ProjectPage,
-      children: [{ path: 'overview', Component: ProjectDetailsTab }],
+      children: [{ path: 'overview', Component: OverviewTab }],
     },
     { path: '/projects', element: <div>projects page</div> },
   ]);
@@ -511,8 +485,12 @@ describe('project page first paint', () => {
     // them are marked busy.
     expect(container.querySelector('h1 .placeholder')).toBeInTheDocument();
     expect(container.querySelector('.project-masthead[aria-busy="true"]')).toBeInTheDocument();
-    expect(container.querySelector('.location-info[aria-busy="true"]')).toBeInTheDocument();
-    expect(container.querySelectorAll('.location-info .placeholder').length).toBeGreaterThan(1);
+    expect(
+      container.querySelector('.overview-tab__skeleton[aria-busy="true"]'),
+    ).toBeInTheDocument();
+    expect(
+      container.querySelectorAll('.overview-tab__skeleton .placeholder').length,
+    ).toBeGreaterThan(1);
     // Every placeholder sits under an aria-hidden node, so the only thing announced is the
     // visually-hidden loading text.
     for (const bar of container.querySelectorAll('.placeholder')) {
@@ -530,9 +508,10 @@ describe('project page first paint', () => {
     await waitFor(() => expect(screen.queryByText('Loading project')).not.toBeInTheDocument());
     expect(screen.queryByText('Loading project details')).not.toBeInTheDocument();
     expect(container.querySelector('h1 .placeholder')).toBeNull();
-    expect(container.querySelector('.location-info .placeholder')).toBeNull();
+    expect(container.querySelector('.overview-tab__skeleton')).toBeNull();
     expect(container.querySelector('[aria-busy="true"]')).toBeNull();
-    // Once in the panel, once in the tab body below it.
-    expect(screen.getAllByText('Proponent')).toHaveLength(2);
+    // The panel owns Proponent; the tab body lists what the panel leaves out.
+    expect(screen.getAllByText('Proponent')).toHaveLength(1);
+    expect(screen.getByRole('heading', { name: 'About this project' })).toBeInTheDocument();
   });
 });

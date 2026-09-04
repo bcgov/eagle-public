@@ -1,0 +1,215 @@
+/* Overview tab: a column of cards beside a narrower aside. Every card is a `section` inside one of
+   the two columns, so the components this tab mounts get the card chrome without knowing about it.
+   Tokens come from @bcgov/design-tokens and eao-tokens.css. */
+
+.overview-tab {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--layout-padding-xlarge);
+}
+
+.overview-tab__main {
+  display: flex;
+  flex: 1 1 27.5rem;
+  flex-direction: column;
+  gap: var(--layout-padding-large);
+  min-width: 0;
+}
+
+.overview-tab__aside {
+  display: flex;
+  flex: 1 1 18.75rem;
+  flex-direction: column;
+  gap: var(--layout-padding-large);
+  min-width: 0;
+  max-width: 22.5rem;
+}
+
+.overview-tab__main > section,
+.overview-tab__aside > section {
+  padding: var(--layout-padding-large);
+  background: var(--theme-gray-white);
+  border: var(--layout-border-width-small) solid var(--theme-gray-40);
+  border-radius: var(--layout-border-radius-medium);
+}
+
+.overview-tab h2 {
+  margin: 0 0 var(--layout-margin-small);
+  font: var(--typography-bold-h5);
+  color: var(--typography-color-primary);
+}
+
+.overview-tab__skeleton .placeholder {
+  display: block;
+  margin-bottom: var(--layout-margin-small);
+}
+
+.overview-tab__eyebrow {
+  margin: 0 0 var(--layout-margin-hair);
+  font: var(--typography-bold-label);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--typography-color-secondary);
+}
+
+.overview-tab__external-icon {
+  font-size: var(--icons-size-small);
+  vertical-align: middle;
+}
+
+/* About this project */
+
+.overview-tab__description {
+  max-width: 62ch;
+  margin: 0 0 var(--layout-margin-medium);
+  font: var(--typography-regular-body);
+  color: var(--typography-color-secondary);
+}
+
+.overview-tab__facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: var(--layout-padding-medium);
+  margin: 0;
+  padding-top: var(--layout-padding-medium);
+  border-top: var(--layout-border-width-small) solid var(--theme-gray-30);
+}
+
+.overview-tab__fact dt {
+  margin-bottom: var(--layout-margin-hair);
+  font: var(--typography-bold-label);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--typography-color-secondary);
+}
+
+.overview-tab__fact dd {
+  margin: 0;
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-primary);
+}
+
+/* Comment period callout */
+
+.overview-tab__main > section.overview-tab__callout {
+  overflow: hidden;
+  padding: 0;
+  background: var(--support-surface-color-warning);
+}
+
+.overview-tab__callout-image {
+  display: block;
+  width: 100%;
+  aspect-ratio: 304.08 / 140;
+  object-fit: cover;
+  object-position: center;
+}
+
+.overview-tab__callout-body {
+  padding: var(--layout-padding-large);
+  border-left: var(--layout-border-width-large) solid var(--support-border-color-warning);
+}
+
+.overview-tab__callout-dates {
+  margin: 0 0 var(--layout-margin-xsmall);
+  font: var(--typography-bold-small-body);
+  color: var(--typography-color-primary);
+}
+
+.overview-tab__callout-text {
+  max-width: 62ch;
+  margin: 0 0 var(--layout-margin-medium);
+  font: var(--typography-regular-body);
+  color: var(--typography-color-secondary);
+}
+
+.overview-tab__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--layout-padding-xsmall);
+  min-height: 44px;
+  padding: 0 var(--layout-padding-large);
+  border: none;
+  border-radius: var(--layout-border-radius-medium);
+  background: var(--surface-color-primary-button-default);
+  color: var(--typography-color-primary-invert);
+  font: var(--typography-bold-body);
+}
+
+.overview-tab__cta:hover,
+.overview-tab__cta:focus {
+  background: var(--surface-color-primary-button-hover);
+}
+
+/* Card lists: updates in the aside, and any row list a mounted component brings */
+
+.overview-tab__card-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--layout-padding-medium);
+  margin-bottom: var(--layout-margin-medium);
+}
+
+.overview-tab__card-header h2 {
+  margin: 0;
+}
+
+.overview-tab__card-header a {
+  font: var(--typography-regular-small-body);
+  white-space: nowrap;
+}
+
+.overview-tab__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.overview-tab__list li + li {
+  margin-top: var(--layout-margin-medium);
+  padding-top: var(--layout-padding-medium);
+  border-top: var(--layout-border-width-small) solid var(--theme-gray-30);
+}
+
+.overview-tab__list-title {
+  margin: 0;
+  font: var(--typography-bold-small-body);
+  color: var(--typography-color-primary);
+}
+
+.overview-tab__empty {
+  margin: 0;
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-secondary);
+}
+
+/* Contact */
+
+.overview-tab__contact + .overview-tab__contact {
+  margin-top: var(--layout-margin-medium);
+  padding-top: var(--layout-padding-medium);
+  border-top: var(--layout-border-width-small) solid var(--theme-gray-30);
+}
+
+.overview-tab__contact a {
+  font: var(--typography-regular-small-body);
+}
+
+.overview-tab__contact-phone {
+  margin: 0;
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-secondary);
+}
+
+/* The aside sits under the main column once the two would be too narrow to read side by side. */
+@media (max-width: 859.98px) {
+  .overview-tab {
+    flex-direction: column;
+  }
+
+  .overview-tab__aside {
+    max-width: none;
+  }
+}

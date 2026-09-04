@@ -79,17 +79,6 @@ test('the project panel map is not laid out like the full-page map', async ({ pa
   expect(await styleOf(page, '.map-container', 'height')).toBe('272px');
 });
 
-test('project detail child headings are not the details tab heading colour', async ({
-  page,
-  request,
-}) => {
-  const project = await projectByKeyword(request, 'Site C');
-
-  await page.goto(`/p/${project._id}/overview`);
-  await ready(page);
-  expect(await styleOf(page, '.tab-content h3', 'color')).toBe('rgb(73, 73, 73)');
-});
-
 test('the notification Engagement panel is not padded like a detail field block', async ({
   page,
 }) => {

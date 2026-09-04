@@ -109,9 +109,9 @@ export function Pins() {
   }
 
   return (
-    <div className="mb-4">
-      <h3 className="mb-4">Participating Indigenous Nations</h3>
+    <section aria-labelledby="pins-title">
+      <h2 id="pins-title">Participating Indigenous Nations</h2>
       <TableTemplate data={data} loading={isPending} onMessage={onMessage} />
-    </div>
+    </section>
   );
 }
