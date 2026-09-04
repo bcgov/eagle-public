@@ -192,6 +192,16 @@ describe('documents page', () => {
     expect(group.querySelector('[aria-busy="true"]')).toBeNull();
   });
 
+  it('heads the tab and links out to the search help page', async () => {
+    renderDocuments();
+
+    expect(await screen.findByRole('heading', { name: 'Documents', level: 2 })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /How to search documents/ })).toHaveAttribute(
+      'href',
+      '/search-help',
+    );
+  });
+
   it('always offers All Documents and hides the segments with no documents', async () => {
     renderDocuments();
 

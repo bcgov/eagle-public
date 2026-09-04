@@ -31,5 +31,5 @@ export function useDocumentRow(rowData: any, tableData: TableObject) {
     },
   };
 
-  return { selectable, rowProps };
+  return { selectable, selected, rowProps };
 }
