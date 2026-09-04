@@ -1,0 +1,97 @@
+/* Date-led list of the decisions on a project. Tokens come from @bcgov/design-tokens and
+   eao-tokens.css. */
+
+.decisions-tab {
+  max-width: 780px;
+}
+
+.decisions-tab__title {
+  margin-bottom: var(--layout-margin-small);
+  font: var(--typography-bold-h4);
+  color: var(--typography-color-primary);
+}
+
+.decisions-tab__intro {
+  max-width: 62ch;
+  margin-bottom: var(--layout-margin-large);
+  font: var(--typography-regular-body);
+  color: var(--typography-color-secondary);
+}
+
+.decisions-tab__decision {
+  margin-bottom: var(--layout-margin-large);
+  padding: var(--layout-padding-large);
+  background: var(--theme-gray-white);
+  border: var(--layout-border-width-small) solid var(--theme-gray-40);
+  border-left: var(--layout-border-width-large) solid var(--eao-decision-dark);
+  border-radius: var(--layout-border-radius-medium);
+}
+
+.decisions-tab__decision-label {
+  margin-bottom: var(--layout-margin-hair);
+  font: var(--typography-bold-label);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--typography-color-secondary);
+}
+
+.decisions-tab__decision-value {
+  margin-bottom: 0;
+  font: var(--typography-bold-h5);
+  color: var(--typography-color-primary);
+}
+
+.decisions-tab__decision-date {
+  margin-bottom: 0;
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-secondary);
+}
+
+.decisions-tab__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-padding-medium);
+  margin: 0 0 var(--layout-margin-large);
+  padding: 0;
+  list-style: none;
+}
+
+.decisions-tab__item {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr);
+  gap: var(--layout-padding-large);
+  padding: var(--layout-padding-large);
+  background: var(--theme-gray-white);
+  border: var(--layout-border-width-small) solid var(--theme-gray-40);
+  border-radius: var(--layout-border-radius-medium);
+}
+
+.decisions-tab__item-date {
+  margin-bottom: 0;
+  font: var(--typography-bold-small-body);
+  color: var(--typography-color-secondary);
+}
+
+.decisions-tab__item-title {
+  margin-bottom: var(--layout-margin-hair);
+  font: var(--typography-bold-body);
+  color: var(--typography-color-primary);
+}
+
+.decisions-tab__item-detail {
+  margin-bottom: var(--layout-margin-small);
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-secondary);
+}
+
+.decisions-tab__item a {
+  font: var(--typography-regular-small-body);
+}
+
+/* The date column has nowhere to go once the card is about as wide as a phone. */
+@media (max-width: 575.98px) {
+  .decisions-tab__item {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--layout-padding-small);
+  }
+}
