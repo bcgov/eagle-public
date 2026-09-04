@@ -81,7 +81,7 @@ export function AssessmentRail({ project, lists }: AssessmentRailProps) {
   const canDetail = phaseSetYear(project) === 2018;
   const detailed = canDetail && view === 'detailed';
   const offRail = offRailPhase(project);
-  const showAmendment = String(project?.currentPhaseName?.name ?? '').startsWith('Post Decision');
+  const showAmendment = project?.currentPhaseName?.name === 'Post Decision - Amendment';
 
   const proponentDays = (TOTAL_DAYS - EAO_DAYS).toLocaleString('en-CA');
   const totalYears = (TOTAL_DAYS / 365).toFixed(1);
@@ -157,12 +157,17 @@ export function AssessmentRail({ project, lists }: AssessmentRailProps) {
                 ))}
               </div>
 
-              <div className="assessment-rail__pins" aria-hidden="true">
+              <div
+                className="assessment-rail__pins"
+                data-stacked={laid.some((s) => s.row > 0) || undefined}
+                aria-hidden="true"
+              >
                 {laid.map((stage) => (
                   <span
                     key={stage.id}
                     className="assessment-rail__num assessment-rail__pin"
                     data-stage={stage.n}
+                    data-row={stage.row || undefined}
                     data-hover={hoverStage === stage.n || undefined}
                     style={vars({
                       '--l': `${(stage.start + stage.width / 2).toFixed(2)}%`,

@@ -170,11 +170,19 @@
   color: var(--typography-color-primary);
 }
 
+.assessment-rail__pins[data-stacked] {
+  height: 46px;
+}
+
 .assessment-rail__pin {
   position: absolute;
   top: 1px;
-  left: var(--l);
+  left: clamp(10px, var(--l), calc(100% - 10px));
   transform: translateX(-50%);
+}
+
+.assessment-rail__pin[data-row='1'] {
+  top: 25px;
 }
 
 .assessment-rail__pin[data-hover] {
