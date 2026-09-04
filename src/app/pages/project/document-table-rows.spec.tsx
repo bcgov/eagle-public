@@ -6,6 +6,7 @@ import { loadConfig } from 'app/config/config';
 import { tableObject } from 'app/components/table/table-object';
 import { clearSelection, SELECT_ALL_MAX, setSelected } from 'app/state/bulk-download';
 import { clearToasts, useToasts } from 'app/state/toast';
+import { Constants } from 'app/utils/constants';
 import { DocumentTableRow } from './document-table-rows';
 
 const DOCUMENT = {
@@ -296,5 +297,35 @@ describe('DocumentTableRow selection', () => {
     await userEvent.click(screen.getByRole('checkbox', { name: 'Select Fish Habitat Report' }));
 
     expect(openSpy).not.toHaveBeenCalled();
+  });
+});
+
+/** eagle-api stores an undated document as 1900-01-01; the cell shows nothing rather than that. */
+describe('DocumentTableRow date cell', () => {
+  function renderRow(datePosted: string) {
+    render(
+      <MemoryRouter>
+        <table>
+          <tbody>
+            <DocumentTableRow
+              rowData={{ ...DOCUMENT, datePosted }}
+              tableData={tableObject({ tableId: 'documents' })}
+              columns={[]}
+              onMessage={() => undefined}
+            />
+          </tbody>
+        </table>
+      </MemoryRouter>,
+    );
+  }
+
+  it('shows the posted date', () => {
+    renderRow('2026-05-04T00:00:00.000Z');
+    expect(screen.getByText(/2026/)).toBeInTheDocument();
+  });
+
+  it('shows nothing for the 1900 placeholder', () => {
+    renderRow(Constants.NO_DATE);
+    expect(screen.queryByText(/1900/)).toBeNull();
   });
 });

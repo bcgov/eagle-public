@@ -4,6 +4,9 @@ interface BuildNature {
 }
 
 export class Constants {
+  /** The API's stand-in for "no date": a document with no posting date. Never rendered. */
+  public static readonly NO_DATE = '1900-01-01T08:00:00.000Z';
+
   public static readonly searchDisclaimer =
     'Note: Some documents within this project have not yet been categorized by author, document type, and/or milestone and may not be displayed when using some of the search filters. We are actively processing these documents so they can be searched and filtered, making it easier to find what you’re looking for. Clearing the filters and searching based on a keyword will show all results.';
   public static readonly docSearchDisclaimer =

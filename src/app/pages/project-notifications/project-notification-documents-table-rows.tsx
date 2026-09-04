@@ -1,6 +1,7 @@
 import type { TableRowProps } from 'app/components/table/table-object';
 import { useDocumentRow } from 'app/components/table/document-row';
-import { documentDownloadUrl, idToListName, longDate, openDocumentDownload } from 'app/utils/utils';
+import { DocumentLink } from 'app/components/table/document-link';
+import { idToListName, longDate } from 'app/utils/utils';
 
 export function ProjectNotificationDocumentsTableRow({ rowData, tableData }: TableRowProps) {
   const background = tableData.data?.rowBackgroundColor || '#F7F8FA';
@@ -9,17 +10,7 @@ export function ProjectNotificationDocumentsTableRow({ rowData, tableData }: Tab
   return (
     <tr {...rowProps}>
       <td data-label="Document Name" style={{ backgroundColor: background }}>
-        <a
-          href={documentDownloadUrl(rowData)}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={(event) => {
-            event.preventDefault();
-            openDocumentDownload(rowData);
-          }}
-        >
-          {rowData.displayName}
-        </a>
+        <DocumentLink document={rowData}>{rowData.displayName}</DocumentLink>
       </td>
       <td data-label="Date" style={{ backgroundColor: background }}>
         {longDate(rowData.datePosted)}

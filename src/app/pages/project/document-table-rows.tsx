@@ -1,12 +1,11 @@
 import { useLocation } from 'react-router';
 import type { TableRowProps } from 'app/components/table/table-object';
 import { useDocumentRow } from 'app/components/table/document-row';
+import { DocumentLink } from 'app/components/table/document-link';
 import { SelectCell } from 'app/components/table/table-template';
-import { documentDownloadUrl, idToListName, longDate, openDocumentDownload } from 'app/utils/utils';
+import { Constants } from 'app/utils/constants';
+import { idToListName, longDate } from 'app/utils/utils';
 import './document-table-rows.css';
-
-/** The API's stand-in for "no date", which must not render as 1900. */
-const NO_DATE = '1900-01-01T08:00:00.000Z';
 
 export function DocumentTableRow({ rowData, tableData }: TableRowProps) {
   const { pathname } = useLocation();
@@ -30,21 +29,11 @@ export function DocumentTableRow({ rowData, tableData }: TableRowProps) {
       )}
 
       <td data-label="Name" className={showFeatured ? 'col-3' : 'col-4'}>
-        <a
-          href={documentDownloadUrl(rowData)}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={(event) => {
-            event.preventDefault();
-            openDocumentDownload(rowData);
-          }}
-        >
-          {rowData.displayName}
-        </a>
+        <DocumentLink document={rowData}>{rowData.displayName}</DocumentLink>
       </td>
 
       <td data-label="Date" className="col-2">
-        {rowData.datePosted !== NO_DATE && <div>{longDate(rowData.datePosted)}</div>}
+        {rowData.datePosted !== Constants.NO_DATE && <div>{longDate(rowData.datePosted)}</div>}
       </td>
 
       <td data-label="Type" className="col-2">
