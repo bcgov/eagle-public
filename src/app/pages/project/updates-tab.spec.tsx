@@ -93,7 +93,7 @@ describe('updates tab', () => {
 
     expect(await screen.findByText('Application accepted for review')).toBeInTheDocument();
     expect(screen.getByText('Draft report published')).toBeInTheDocument();
-    expect(screen.getByText('March 4, 2026')).toBeInTheDocument();
+    expect(screen.getByText('March 4, 2026 · News')).toBeInTheDocument();
   });
 
   it('says so when the project has published nothing, and counts nothing', async () => {

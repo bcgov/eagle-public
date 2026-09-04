@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Project } from 'app/models/project';
 import { fakeMap } from 'app/pages/projects/maplibre-test-stub';
+import { renderAt } from '../../../test-utils';
 import { ProjectPanel } from './project-panel';
 
 vi.mock('@vis.gl/react-maplibre', async () =>
@@ -19,7 +20,12 @@ const PROJECT = {
 } as unknown as Project;
 
 function renderPanel(project: Project | null) {
-  return render(<ProjectPanel project={project} lists={[]} loading={false} />);
+  return renderAt('/p/proj-1/overview', [
+    {
+      path: '/p/:projId/overview',
+      element: <ProjectPanel project={project} lists={[]} loading={false} />,
+    },
+  ]);
 }
 
 beforeEach(() => fakeMap.reset());
@@ -45,10 +51,20 @@ describe('project panel map', () => {
     );
   });
 
+  it('links from the thumbnail to the map explorer', async () => {
+    renderPanel(PROJECT);
+
+    expect(await screen.findByRole('link', { name: /Open in map explorer/ })).toHaveAttribute(
+      'href',
+      '/projects',
+    );
+  });
+
   it('says so when the project has no centroid', () => {
     renderPanel({ ...PROJECT, centroid: [] } as unknown as Project);
 
     expect(screen.getByText('No map available')).toBeInTheDocument();
     expect(screen.queryByTestId('map')).toBeNull();
+    expect(screen.queryByRole('link', { name: /Open in map explorer/ })).toBeNull();
   });
 });

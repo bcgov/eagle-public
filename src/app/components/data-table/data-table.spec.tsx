@@ -289,12 +289,15 @@ describe('DataTable footer', () => {
     );
   });
 
-  it('changes the page size from the per-page picker', async () => {
+  it('changes the page size from either per-page picker', async () => {
     render(<Harness />);
 
     expect(screen.getByRole('status')).toHaveTextContent('Showing 10 of 42 documents');
 
-    await userEvent.click(screen.getByTitle('Show 50 records per page'));
+    const [top, bottom] = screen.getAllByTitle('Show 50 records per page');
+    expect(bottom).toBeInTheDocument();
+
+    await userEvent.click(top);
 
     expect(screen.getByRole('status')).toHaveTextContent('42 documents');
   });

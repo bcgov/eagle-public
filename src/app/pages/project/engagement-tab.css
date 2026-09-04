@@ -35,6 +35,20 @@
   margin: 0 0 var(--layout-margin-small);
 }
 
+.engagement-tab__dot {
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: var(--layout-border-radius-circular);
+}
+
+.engagement-tab__dot--open {
+  background: var(--support-border-color-success);
+}
+
+.engagement-tab__dot--closed {
+  background: var(--theme-gray-60);
+}
+
 .engagement-tab__status-label {
   font: var(--typography-bold-label);
   text-transform: uppercase;
@@ -47,6 +61,8 @@
   border: var(--layout-border-width-small) solid transparent;
   border-radius: var(--layout-border-radius-circular);
   font: var(--typography-bold-label);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
   white-space: nowrap;
   color: var(--typography-color-primary);
 }
@@ -54,11 +70,13 @@
 .engagement-tab__pill--open {
   background: var(--support-surface-color-success);
   border-color: var(--support-border-color-success);
+  color: var(--support-border-color-success);
 }
 
 .engagement-tab__pill--closed {
   background: var(--theme-gray-20);
-  border-color: var(--theme-gray-50);
+  border-color: var(--theme-gray-40);
+  color: var(--typography-color-secondary);
 }
 
 .engagement-tab__pill--pending {
@@ -97,18 +115,35 @@
   align-items: center;
   min-height: 44px;
   padding: 0 var(--layout-padding-large);
-  background: var(--surface-color-primary-button-default);
-  border: var(--layout-border-width-small) solid var(--surface-color-primary-button-default);
+  border: var(--layout-border-width-small) solid transparent;
   border-radius: var(--layout-border-radius-medium);
-  font: var(--typography-bold-body);
-  color: var(--typography-color-primary-invert);
   cursor: pointer;
 }
 
-.engagement-tab__cta:hover,
-.engagement-tab__cta:focus-visible {
+.engagement-tab__cta--primary {
+  background: var(--surface-color-primary-button-default);
+  border-color: var(--surface-color-primary-button-default);
+  font: var(--typography-bold-body);
+  color: var(--typography-color-primary-invert);
+}
+
+.engagement-tab__cta--primary:hover,
+.engagement-tab__cta--primary:focus-visible {
   background: var(--surface-color-primary-button-hover);
   border-color: var(--surface-color-primary-button-hover);
+}
+
+/* A closed period is a record to read, not an invitation to act. */
+.engagement-tab__cta--secondary {
+  background: var(--surface-color-secondary-button-default);
+  border-color: var(--theme-gray-50);
+  font: var(--typography-regular-body);
+  color: var(--typography-color-primary);
+}
+
+.engagement-tab__cta--secondary:hover,
+.engagement-tab__cta--secondary:focus-visible {
+  background: var(--surface-color-secondary-button-hover);
 }
 
 .engagement-tab .placeholder-wave .placeholder {

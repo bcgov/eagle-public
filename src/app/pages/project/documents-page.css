@@ -76,6 +76,67 @@
   outline-offset: var(--layout-margin-hair);
 }
 
+/* === SEARCH ROW ===
+   The shared search template stacks its keyword box and its filter toggle. On this tab they are one
+   control, so they sit on one row and the filter panel drops below them. */
+
+.documents-page__body .search-filter-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--layout-padding-small);
+  margin-bottom: var(--layout-margin-large);
+}
+
+.documents-page__body .search-bar-section {
+  flex: 1 1 20rem;
+  margin-bottom: 0;
+}
+
+.documents-page__body .action-buttons-section {
+  flex: 0 0 auto;
+}
+
+.documents-page__body .advanced-filters-section {
+  flex: 1 0 100%;
+}
+
+/* The template lays the toggle out in a half-width grid column it does not need here. */
+.documents-page__body .action-buttons-section .row {
+  flex-wrap: nowrap;
+  margin: 0;
+}
+
+.documents-page__body .action-buttons-section [class*='col-'] {
+  width: auto;
+  margin: 0;
+  padding: 0;
+}
+
+.documents-page__body .action-buttons-section .btn-primary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0 var(--layout-padding-medium);
+  background: var(--surface-color-secondary-button-default);
+  border: var(--layout-border-width-small) solid var(--theme-gray-50);
+  border-radius: var(--layout-border-radius-medium);
+  font: var(--typography-regular-body);
+  color: var(--typography-color-primary);
+  white-space: nowrap;
+}
+
+.documents-page__body .action-buttons-section .btn-primary:hover,
+.documents-page__body .action-buttons-section .btn-primary:focus {
+  background: var(--surface-color-secondary-button-hover);
+  color: var(--typography-color-primary);
+}
+
+.documents-page__body .search-bar-section .form-control,
+.documents-page__body .search-bar-section .btn {
+  min-height: 2.75rem;
+}
+
 /* Placeholder segments hold the group's shape while the probes decide which ones exist. */
 .document-type-filter__segment--loading {
   border-color: var(--theme-gray-40);

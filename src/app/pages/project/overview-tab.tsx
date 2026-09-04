@@ -1,7 +1,9 @@
 import type { ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { track } from 'app/analytics/analytics';
+import { SubscribePopover } from 'app/components/subscribe-popover';
 import { useTable } from 'app/components/table/use-table';
+import { getNotifyApi } from 'app/config/config';
 import type { Project } from 'app/models/project';
 import { newlines } from 'app/utils/newlines';
 import { safeHtml } from 'app/utils/safe-html';
@@ -97,14 +99,19 @@ function EngagementCallout({ project, banner }: { project: Project; banner: any 
             ></div>
           )
         )}
-        <button type="button" className="overview-tab__cta" onClick={go}>
-          {cta}
-          {external && (
-            <i className="material-icons overview-tab__external-icon" aria-hidden="true">
-              open_in_new
-            </i>
-          )}
-        </button>
+        <div className="overview-tab__callout-actions">
+          <button type="button" className="overview-tab__cta" onClick={go}>
+            {cta}
+            {external && (
+              <i className="material-icons overview-tab__external-icon" aria-hidden="true">
+                open_in_new
+              </i>
+            )}
+          </button>
+          <Link className="overview-tab__cta-secondary" to={`/p/${project._id}/documents`}>
+            Read the documents
+          </Link>
+        </div>
       </div>
     </section>
   );
@@ -126,22 +133,34 @@ function UpdatesCard({ projId }: { projId: string }) {
   });
 
   return (
-    <section aria-labelledby="updates-title">
-      <div className="overview-tab__card-header">
+    <section className="overview-tab__panel" aria-labelledby="updates-title">
+      <div className="overview-tab__panel-header">
         <h2 id="updates-title">Updates</h2>
         <Link to={`/p/${projId}/updates`}>All updates</Link>
       </div>
       {result.data.length === 0 ? (
-        <p className="overview-tab__empty">{result.loading ? 'Loading' : 'No recent updates.'}</p>
+        <p className="overview-tab__empty overview-tab__panel-empty">
+          {result.loading ? 'Loading' : 'No recent updates.'}
+        </p>
       ) : (
-        <ul className="overview-tab__list">
+        <ul className="overview-tab__panel-list">
           {result.data.slice(0, UPDATES_SHOWN).map((update: any) => (
             <li key={update._id}>
-              <p className="overview-tab__eyebrow">{longDate(update.dateAdded)}</p>
+              <p className="overview-tab__eyebrow">
+                {longDate(update.dateAdded)}
+                {update.type && ` · ${update.type}`}
+              </p>
               <p className="overview-tab__list-title">{update.headline}</p>
             </li>
           ))}
         </ul>
+      )}
+      {/* eagle-notify is optional per environment; without it the panel would offer nothing. */}
+      {!!getNotifyApi() && (
+        <div className="overview-tab__subscribe">
+          <p className="overview-tab__list-title">Get these by email</p>
+          <SubscribePopover serviceName={`project:${projId}`} variant="project" />
+        </div>
       )}
     </section>
   );
@@ -171,6 +190,16 @@ function ContactCard({ project }: { project: Project | null }) {
 export function OverviewTab() {
   const { project, projId, projectLoading } = useProjectContext();
   const banner = project?.commentPeriodForBanner;
+
+  // The same one-row count the tab strip runs, so both read one cached answer.
+  const documents = useTable('projectTabDocuments', {
+    dataset: 'Document',
+    enabled: !!projId,
+    currentPage: 1,
+    pageSize: 1,
+    sortBy: '',
+    queryModifiers: { project: projId },
+  });
 
   return (
     <div className="overview-tab">
@@ -213,6 +242,13 @@ export function OverviewTab() {
               </Fact>
               <Fact label="Nature">{project?.nature}</Fact>
               <Fact label="Sub-type">{project?.sector}</Fact>
+              <Fact label="Documents">
+                {documents.totalListItems > 0 && (
+                  <Link to={`/p/${projId}/documents`}>
+                    {documents.totalListItems.toLocaleString('en-CA')} documents
+                  </Link>
+                )}
+              </Fact>
               {project?.eacDecision?.name === 'Regulatory Transfer' && (
                 <Fact label="Regulated by">
                   <ExternalLink

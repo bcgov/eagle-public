@@ -32,7 +32,9 @@ export function DocumentGridRow({ rowData, tableData }: TableRowProps) {
   const lists: any[] = tableData.data?.lists ?? [];
   const showFeatured = !!tableData.data?.showFeatured;
   const { selectable, selected, rowProps } = useDocumentRow(rowData, tableData);
-  const phase = idToListName(rowData.projectPhase, lists);
+  // idToListName answers '-' for a phase the lists do not name; that is no phase, not a chip.
+  const named = idToListName(rowData.projectPhase, lists);
+  const phase = named && named !== '-' ? named : '';
   const tint = phase ? phaseTint(phase) : null;
 
   return (

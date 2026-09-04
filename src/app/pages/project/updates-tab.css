@@ -40,6 +40,34 @@
   color: var(--typography-color-secondary);
 }
 
+.updates-tab__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-padding-large);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.updates-tab__empty {
+  margin: 0;
+  font: var(--typography-regular-body);
+  color: var(--typography-color-secondary);
+}
+
+.updates-tab__skeleton {
+  padding: var(--layout-padding-large);
+  background: var(--theme-gray-white);
+  border: var(--layout-border-width-small) solid var(--theme-gray-40);
+  border-radius: var(--layout-border-radius-medium);
+}
+
+.updates-tab__skeleton .placeholder {
+  display: block;
+  height: 0.75rem;
+  margin-bottom: var(--layout-margin-small);
+}
+
 .updates-tab__subscribe {
   padding: var(--layout-padding-large);
   background: var(--support-surface-color-info);
@@ -68,65 +96,8 @@
   margin-left: 0;
 }
 
-/* The list keeps the shared table so paging and the row component stay as they are; here the rows
-   read as cards rather than table rows. The shared table stylesheet sets the cells to table-cell
-   and flex at three class levels, so every rule below has to reach as deep. */
-.updates-tab .table-template .table,
-.updates-tab .table-template .table tbody,
-.updates-tab .table-template .table tbody tr,
-.updates-tab .table-template .table tbody tr td {
-  display: block;
-}
-
-.updates-tab .table-template .table {
-  margin: 0;
-}
-
-.updates-tab .table-template .table tbody {
-  display: flex;
-  flex-direction: column;
-  gap: var(--layout-padding-large);
-  background: none;
-}
-
-.updates-tab .table-template .table tbody tr {
-  position: relative;
-  overflow: hidden;
-  min-height: 0;
-  padding: var(--layout-padding-large);
-  background: var(--theme-gray-white);
-  border: var(--layout-border-width-small) solid var(--theme-gray-40);
-  border-radius: var(--layout-border-radius-medium);
-}
-
-/* The card's top accent. */
-.updates-tab .table-template .table tbody tr::before {
-  content: '';
-  position: absolute;
-  inset: 0 0 auto;
-  height: var(--layout-border-width-large);
-  background: var(--theme-primary-gold);
-}
-
-/* The row component sizes its cells with Bootstrap column classes for the table layout; stacked in
-   a card they each take the card's width. */
-.updates-tab .table-template .table tbody tr td,
-.updates-tab .table-template .table tbody tr td[class*='col-'] {
-  width: auto;
-  max-width: none;
-  padding: 0;
-  background: none;
-  border: none;
-}
-
-.updates-tab .table-template .table tbody tr td.activity-card__date {
-  margin-top: var(--layout-margin-medium);
+.updates-tab__subscribe-all {
+  margin: var(--layout-margin-small) 0 0;
   font: var(--typography-regular-label);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
   color: var(--typography-color-secondary);
-}
-
-.updates-tab .table-template .table tbody tr.placeholder-wave td {
-  padding: 0 0 var(--layout-padding-small);
 }

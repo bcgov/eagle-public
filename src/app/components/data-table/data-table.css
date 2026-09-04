@@ -150,6 +150,15 @@
   cursor: pointer;
 }
 
+/* The shared indicator is white for a blue header; this grid's header is light. */
+.data-table__sort .sort-asc {
+  border-bottom-color: var(--typography-color-primary);
+}
+
+.data-table__sort .sort-desc {
+  border-top-color: var(--typography-color-primary);
+}
+
 .data-table__row {
   border-bottom: var(--layout-border-width-small) solid var(--theme-gray-30);
   background: var(--theme-gray-white);

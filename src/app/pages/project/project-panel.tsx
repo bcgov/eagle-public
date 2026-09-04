@@ -1,4 +1,5 @@
 import { lazy, Suspense } from 'react';
+import { Link } from 'react-router';
 import type { Project } from 'app/models/project';
 import { longDate } from 'app/utils/utils';
 import { AssessmentRail } from './assessment-rail';
@@ -71,21 +72,33 @@ export function ProjectPanel({ project, lists, loading = false }: ProjectPanelPr
           <Fact label="Proponent" value={project?.proponent?.name} loading={loading} />
         </dl>
 
-        {loading ? (
-          <div className="map-container">
-            <span className="placeholder w-100 h-100" aria-hidden="true" />
-          </div>
-        ) : centroid && project ? (
-          <div className="map-container">
-            <Suspense fallback={<span className="placeholder w-100 h-100" aria-hidden="true" />}>
-              <DetailsMap project={project} />
-            </Suspense>
-          </div>
-        ) : (
-          <div className="map-placeholder">
-            <span>No map available</span>
-          </div>
-        )}
+        <div className="project-panel__map">
+          {loading ? (
+            <div className="map-container">
+              <span className="placeholder w-100 h-100" aria-hidden="true" />
+            </div>
+          ) : centroid && project ? (
+            <>
+              <div className="map-container">
+                <Suspense
+                  fallback={<span className="placeholder w-100 h-100" aria-hidden="true" />}
+                >
+                  <DetailsMap project={project} />
+                </Suspense>
+              </div>
+              <Link className="project-panel__map-link" to="/projects">
+                Open in map explorer
+                <span className="material-icons" aria-hidden="true">
+                  arrow_forward
+                </span>
+              </Link>
+            </>
+          ) : (
+            <div className="map-placeholder">
+              <span>No map available</span>
+            </div>
+          )}
+        </div>
       </div>
     </section>
   );

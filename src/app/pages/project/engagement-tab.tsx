@@ -55,9 +55,14 @@ export function EngagementTab() {
         <ul className="engagement-tab__list">
           {commentPeriods.map((cp) => {
             const badge = pill(cp);
+            const open = isOpen(cp);
             return (
               <li className="engagement-tab__card" key={cp._id}>
                 <p className="engagement-tab__status">
+                  <span
+                    className={`engagement-tab__dot engagement-tab__dot--${open ? 'open' : 'closed'}`}
+                    aria-hidden="true"
+                  ></span>
                   <span className="engagement-tab__status-label">{cp.commentPeriodStatus}</span>
                   {badge && (
                     <span
@@ -78,8 +83,12 @@ export function EngagementTab() {
                 {cp.additionalText && (
                   <p className="engagement-tab__description">{cp.additionalText}</p>
                 )}
-                <button type="button" className="engagement-tab__cta" onClick={() => goToCP(cp)}>
-                  {isOpen(cp) ? 'Share your thoughts' : 'View Engagement'}
+                <button
+                  type="button"
+                  className={`engagement-tab__cta engagement-tab__cta--${open ? 'primary' : 'secondary'}`}
+                  onClick={() => goToCP(cp)}
+                >
+                  {open ? 'Share your thoughts' : 'View Engagement'}
                 </button>
               </li>
             );

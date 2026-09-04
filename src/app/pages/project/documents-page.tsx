@@ -92,7 +92,9 @@ export function DocumentsPage() {
         </ul>
       </nav>
       {/* react-router does not inherit outlet context, so the sub-views get it passed on again. */}
-      <Outlet context={context} />
+      <div className="documents-page__body">
+        <Outlet context={context} />
+      </div>
     </>
   );
 }

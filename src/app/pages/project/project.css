@@ -15,7 +15,7 @@
   flex: 1;
   gap: var(--layout-padding-large);
   width: 100%;
-  max-width: 1180px;
+  max-width: 1440px;
   margin-inline: auto;
   padding: var(--layout-padding-large);
 }

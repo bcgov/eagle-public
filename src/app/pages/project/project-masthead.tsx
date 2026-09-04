@@ -20,10 +20,6 @@ export function ProjectMasthead({ project, projId, loading = false }: ProjectMas
         <nav aria-label="Breadcrumb" className="project-masthead__breadcrumb">
           <ol>
             <li>
-              <Link to="/">Home</Link>
-            </li>
-            <li aria-hidden="true">/</li>
-            <li>
               <Link to="/projects">Projects</Link>
             </li>
             <li aria-hidden="true">/</li>

@@ -69,6 +69,12 @@ describe('DocumentGridRow', () => {
     expect(pill.getAttribute('style')).toBeNull();
   });
 
+  it('shows no pill at all for a document the lists give no phase', () => {
+    renderRow({ ...DOCUMENT, projectPhase: 'ph-missing' });
+
+    expect(document.querySelector('.document-grid__phase')).toBeNull();
+  });
+
   it('marks a featured document', () => {
     renderRow();
 

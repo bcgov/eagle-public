@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { loadConfig } from 'app/config/config';
 import { renderAt } from '../../../test-utils';
 import { CommentPeriod } from 'app/models/commentperiod';
 import { Project } from 'app/models/project';
@@ -163,6 +164,37 @@ describe('overview tab', () => {
     expect(screen.queryByText('EA decision')).not.toBeInTheDocument();
   });
 
+  it('counts the project documents in the About grid, linked to the Documents tab', async () => {
+    renderTab();
+
+    expect(await screen.findByRole('link', { name: '1 documents' })).toHaveAttribute(
+      'href',
+      '/p/proj-1/documents',
+    );
+  });
+
+  it('offers the documents beside the comment period call to action', async () => {
+    project = new Project({ ...PROJECT, commentPeriodForBanner: openPeriod() });
+    renderTab();
+
+    expect(await screen.findByRole('link', { name: 'Read the documents' })).toHaveAttribute(
+      'href',
+      '/p/proj-1/documents',
+    );
+  });
+
+  it('invites email updates from the aside when eagle-notify is configured', async () => {
+    window.__env = { logLevel: 4, NOTIFY_API: 'https://notify-api.example' };
+    await loadConfig();
+    renderTab();
+
+    expect(await screen.findByText('Get these by email')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Subscribe' })).toBeInTheDocument();
+
+    window.__env = { logLevel: 4, NOTIFY_API: '' };
+    await loadConfig();
+  });
+
   it('sends an in-EPIC comment period to its details page, and records the click', async () => {
     project = new Project({ ...PROJECT, commentPeriodForBanner: openPeriod() });
     const router = renderTab();
@@ -293,7 +325,7 @@ describe('overview tab', () => {
     expect(await screen.findByText('Cedar Nation')).toBeInTheDocument();
     expect(screen.getByText('British Columbia')).toBeInTheDocument();
     expect(requests.find((url) => url.includes('/pin'))).toBe(
-      '/api/project/proj-1/pin?pageNum=0&pageSize=10&sortBy=+name',
+      '/api/project/proj-1/pin?pageNum=0&pageSize=100&sortBy=+name',
     );
   });
 

@@ -67,6 +67,11 @@
   color: var(--typography-color-secondary);
 }
 
+.overview-tab__description--tight {
+  margin-bottom: var(--layout-margin-medium);
+  font: var(--typography-regular-small-body);
+}
+
 .overview-tab__facts {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
@@ -124,15 +129,27 @@
   color: var(--typography-color-secondary);
 }
 
-.overview-tab__cta {
+.overview-tab__callout-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--layout-padding-small);
+}
+
+.overview-tab__cta,
+.overview-tab__cta-secondary {
   display: inline-flex;
   align-items: center;
   gap: var(--layout-padding-xsmall);
   min-height: 44px;
   padding: 0 var(--layout-padding-large);
-  border: none;
+  border: var(--layout-border-width-small) solid transparent;
   border-radius: var(--layout-border-radius-medium);
+  text-decoration: none;
+}
+
+.overview-tab__cta {
   background: var(--surface-color-primary-button-default);
+  border-color: var(--surface-color-primary-button-default);
   color: var(--typography-color-primary-invert);
   font: var(--typography-bold-body);
 }
@@ -140,6 +157,21 @@
 .overview-tab__cta:hover,
 .overview-tab__cta:focus {
   background: var(--surface-color-primary-button-hover);
+  border-color: var(--surface-color-primary-button-hover);
+}
+
+.overview-tab__cta-secondary {
+  background: var(--surface-color-secondary-button-default);
+  border-color: var(--theme-gray-50);
+  color: var(--typography-color-primary);
+  font: var(--typography-regular-body);
+}
+
+.overview-tab__cta-secondary:hover,
+.overview-tab__cta-secondary:focus {
+  background: var(--surface-color-secondary-button-hover);
+  color: var(--typography-color-primary);
+  text-decoration: underline;
 }
 
 /* Card lists: updates in the aside, and any row list a mounted component brings */
@@ -177,6 +209,77 @@
   margin: 0;
   font: var(--typography-bold-small-body);
   color: var(--typography-color-primary);
+}
+
+/* A name on the left, its one piece of detail on the right. */
+.overview-tab__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--layout-padding-small);
+}
+
+.overview-tab__row-meta {
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-secondary);
+}
+
+/* === ASIDE PANEL: header, rows and a tinted invitation, each padded on its own === */
+
+.overview-tab__aside > section.overview-tab__panel {
+  overflow: hidden;
+  padding: 0;
+}
+
+.overview-tab__panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--layout-padding-small);
+  padding: var(--layout-padding-medium) var(--layout-padding-large);
+  border-bottom: var(--layout-border-width-small) solid var(--theme-gray-30);
+}
+
+.overview-tab__panel-header h2 {
+  margin: 0;
+}
+
+.overview-tab__panel-header a {
+  font: var(--typography-regular-small-body);
+  white-space: nowrap;
+}
+
+.overview-tab__panel-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.overview-tab__panel-list li,
+.overview-tab__panel-empty {
+  padding: var(--layout-padding-medium) var(--layout-padding-large);
+  border-bottom: var(--layout-border-width-small) solid var(--theme-gray-30);
+}
+
+.overview-tab__subscribe {
+  padding: var(--layout-padding-large);
+  background: var(--support-surface-color-info);
+}
+
+/* The popover carries its own band styling for the page it was built for; in this panel it is just
+   the invite and a full-width button. */
+.overview-tab__subscribe .subscribe-popover {
+  margin: 0;
+  padding: 0;
+  background: none;
+  border: none;
+}
+
+.overview-tab__subscribe .subscribe-popover__trigger {
+  width: 100%;
+  min-height: 44px;
+  margin-left: 0;
 }
 
 .overview-tab__empty {

@@ -63,6 +63,7 @@
   padding: var(--layout-padding-large);
   background: var(--theme-gray-white);
   border: var(--layout-border-width-small) solid var(--theme-gray-40);
+  border-left: var(--layout-border-width-large) solid var(--eao-decision-dark);
   border-radius: var(--layout-border-radius-medium);
 }
 

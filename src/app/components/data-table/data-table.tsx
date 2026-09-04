@@ -66,6 +66,9 @@ export function DataTable({
   const pageSizeOptions = data.options.showAllPicker
     ? withAllPicker(data.pageSizeOptions, data.totalListItems)
     : data.pageSizeOptions;
+  const showPageSize =
+    !!data.options.showPageSizePicker &&
+    data.totalListItems > Constants.tableDefaults.DEFAULT_PAGE_SIZE;
 
   const { selectable, selectedCount, pageAllSelected, pageMixed, showSelectAll, toggleAllOnPage } =
     usePageSelection(data);
@@ -128,6 +131,18 @@ export function DataTable({
             </>
           )}
         </div>
+        {/* Paging sits at both ends of the grid, so a long page never has to be scrolled to reset. */}
+        {!selectionActive && showPageSize && (
+          <div className="data-table__bar-group" role="group" aria-label="Rows per page">
+            <span className="data-table__footer-label">Per page</span>
+            <PageSizePicker
+              currentPageSize={data.pageSize}
+              sizeOptions={pageSizeOptions}
+              onPageSizeChosen={onUpdatePageSize}
+              id={`data-table-page-size-picker-top-${data.tableId}`}
+            />
+          </div>
+        )}
         {selectionActive && (
           <div className="data-table__bar-group">
             <button
@@ -241,18 +256,17 @@ export function DataTable({
 
         <div className="data-table__footer">
           <div className="data-table__footer-group">
-            {data.options.showPageSizePicker &&
-              data.totalListItems > Constants.tableDefaults.DEFAULT_PAGE_SIZE && (
-                <>
-                  <span className="data-table__footer-label">Per page</span>
-                  <PageSizePicker
-                    currentPageSize={data.pageSize}
-                    sizeOptions={pageSizeOptions}
-                    onPageSizeChosen={onUpdatePageSize}
-                    id={`data-table-page-size-picker-${data.tableId}`}
-                  />
-                </>
-              )}
+            {showPageSize && (
+              <>
+                <span className="data-table__footer-label">Per page</span>
+                <PageSizePicker
+                  currentPageSize={data.pageSize}
+                  sizeOptions={pageSizeOptions}
+                  onPageSizeChosen={onUpdatePageSize}
+                  id={`data-table-page-size-picker-${data.tableId}`}
+                />
+              </>
+            )}
           </div>
           {showPagination && (
             <Pagination

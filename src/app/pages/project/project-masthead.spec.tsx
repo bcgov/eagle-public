@@ -39,7 +39,7 @@ describe('project masthead', () => {
     expect(screen.getByText('Cedar Quarry Partners LP · Near Cedar Creek')).toBeInTheDocument();
 
     const crumbs = screen.getByRole('navigation', { name: 'Breadcrumb' });
-    expect(within(crumbs).getByRole('link', { name: 'Home' })).toHaveAttribute('href', '/');
+    expect(within(crumbs).getAllByRole('link')).toHaveLength(1);
     expect(within(crumbs).getByRole('link', { name: 'Projects' })).toHaveAttribute(
       'href',
       '/projects',
