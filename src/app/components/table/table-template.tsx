@@ -1,5 +1,4 @@
 import { useRef } from 'react';
-import { track } from 'app/analytics/analytics';
 import { Constants } from 'app/utils/constants';
 import {
   clearSelection,
@@ -13,10 +12,10 @@ import { PageCountDisplay } from './page-count-display';
 import { PageSizePicker } from './page-size-picker';
 import { Pagination } from './pagination';
 import { usePageSelection } from './use-page-selection';
+import { useTableHandlers } from './use-table-handlers';
 import {
   documentCountMessage,
   withAllPicker,
-  type IPageSizePickerOption,
   type ITableMessage,
   type TableObject,
 } from './table-object';
@@ -70,36 +69,13 @@ export function TableTemplate({
     usePageSelection(data);
   const downloadInProgress = useDownloadInProgress();
 
-  function onSort(property: string): void {
-    track('Table Column Sorted', {
-      table_type: tableType,
-      column: property,
-      direction: data.sortBy === `+${property}` ? 'desc' : 'asc',
-    });
-    onMessage({ label: 'columnSort', data: property });
-  }
-
-  function onUpdatePageNumber(pageNum: number): void {
-    track('Pagination Changed', {
-      table_type: tableType,
-      from_page: data.currentPage,
-      to_page: pageNum,
-      total_pages: totalPages,
-    });
-    // Paging from the bottom control otherwise leaves the reader at the foot of the new page.
-    // Optional call: jsdom has no scrollIntoView.
-    containerRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
-    onMessage({ label: 'pageNum', data: pageNum });
-  }
-
-  function onUpdatePageSize(pageSize: IPageSizePickerOption): void {
-    track('Page Size Changed', {
-      table_type: tableType,
-      from_size: data.pageSize,
-      to_size: pageSize.value,
-    });
-    onMessage({ label: 'pageSize', data: pageSize });
-  }
+  const { onSort, onUpdatePageNumber, onUpdatePageSize } = useTableHandlers({
+    data,
+    tableType,
+    totalPages,
+    containerRef,
+    onMessage,
+  });
 
   const paginationControl = showPagination ? (
     <Pagination

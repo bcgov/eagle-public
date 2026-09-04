@@ -220,6 +220,57 @@ describe('DataTable action bar', () => {
   });
 });
 
+describe('DataTable loading', () => {
+  beforeEach(() => {
+    clearSelection();
+    clearToasts();
+  });
+
+  /** The count sits in a live region, so a count the request has not answered yet must say nothing. */
+  it('counts nothing while the results are still loading', () => {
+    const { rerender } = render(
+      <DataTable
+        caption="Documents"
+        data={table({ items: [], totalListItems: 0 })}
+        loading
+        onMessage={() => undefined}
+      />,
+    );
+
+    expect(screen.getByRole('status')).toHaveTextContent('');
+    expect(screen.queryByText('No documents')).not.toBeInTheDocument();
+
+    rerender(<DataTable caption="Documents" data={table()} onMessage={() => undefined} />);
+
+    expect(screen.getByRole('status')).toHaveTextContent('2 documents');
+  });
+
+  it('stands skeleton rows in while the first page is on its way', () => {
+    const { container } = render(
+      <DataTable
+        caption="Documents"
+        data={table({ items: [], totalListItems: 0 })}
+        loading
+        onMessage={() => undefined}
+      />,
+    );
+
+    expect(container.querySelector('[aria-busy="true"]')).not.toBeNull();
+    expect(screen.getByText('Loading')).toBeInTheDocument();
+    expect(container.querySelectorAll('tbody tr.placeholder-wave')).toHaveLength(5);
+  });
+
+  it('dims the rows already on the page instead of replacing them', () => {
+    const { container } = render(
+      <DataTable caption="Documents" data={table()} loading onMessage={() => undefined} />,
+    );
+
+    expect(container.querySelector('.data-table__body--loading')).not.toBeNull();
+    expect(container.querySelectorAll('tbody tr.placeholder-wave')).toHaveLength(0);
+    expect(screen.getByText('Alpha')).toBeInTheDocument();
+  });
+});
+
 describe('DataTable footer', () => {
   beforeEach(() => {
     clearSelection();
@@ -241,11 +292,19 @@ describe('DataTable footer', () => {
   it('changes the page size from the per-page picker', async () => {
     render(<Harness />);
 
-    expect(screen.getByText('Showing 10 of 42 results')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('Showing 10 of 42 documents');
 
     await userEvent.click(screen.getByTitle('Show 50 records per page'));
 
-    expect(screen.getByText('Showing 42 of 42 results')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('42 documents');
+  });
+
+  // The action bar already carries the count; a second one in the footer said it twice.
+  it('counts the results once, in the action bar', () => {
+    const { container } = render(<Harness />);
+
+    expect(container.querySelectorAll('.data-table__bar-count')).toHaveLength(1);
+    expect(container.querySelector('[id^="data-table-page-count-display"]')).toBeNull();
   });
 
   it('sorts from a column header', async () => {

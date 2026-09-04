@@ -155,6 +155,11 @@
   background: var(--theme-gray-white);
 }
 
+/* The row body is a second target for the checkbox, so it has to look clickable. */
+.data-table__row.selectable-row {
+  cursor: pointer;
+}
+
 .data-table__row:hover {
   background: var(--theme-gray-10);
 }

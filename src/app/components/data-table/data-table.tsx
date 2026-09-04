@@ -1,5 +1,4 @@
 import { useRef } from 'react';
-import { track } from 'app/analytics/analytics';
 import { Constants } from 'app/utils/constants';
 import {
   clearSelection,
@@ -9,14 +8,13 @@ import {
   useSelection,
 } from 'app/state/bulk-download';
 import { toggleRow } from 'app/components/table/document-row';
-import { PageCountDisplay } from 'app/components/table/page-count-display';
 import { PageSizePicker } from 'app/components/table/page-size-picker';
 import { Pagination } from 'app/components/table/pagination';
 import { usePageSelection } from 'app/components/table/use-page-selection';
+import { useTableHandlers } from 'app/components/table/use-table-handlers';
 import {
   documentCountMessage,
   withAllPicker,
-  type IPageSizePickerOption,
   type ITableMessage,
   type TableObject,
 } from 'app/components/table/table-object';
@@ -80,36 +78,13 @@ export function DataTable({
     ? ''
     : documentCountMessage(data.totalListItems, data.currentPage, data.pageSize);
 
-  function onSort(property: string): void {
-    track('Table Column Sorted', {
-      table_type: tableType,
-      column: property,
-      direction: data.sortBy === `+${property}` ? 'desc' : 'asc',
-    });
-    onMessage({ label: 'columnSort', data: property });
-  }
-
-  function onUpdatePageNumber(pageNum: number): void {
-    track('Pagination Changed', {
-      table_type: tableType,
-      from_page: data.currentPage,
-      to_page: pageNum,
-      total_pages: totalPages,
-    });
-    // Paging from the bottom control otherwise leaves the reader at the foot of the new page.
-    // Optional call: jsdom has no scrollIntoView.
-    containerRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
-    onMessage({ label: 'pageNum', data: pageNum });
-  }
-
-  function onUpdatePageSize(pageSize: IPageSizePickerOption): void {
-    track('Page Size Changed', {
-      table_type: tableType,
-      from_size: data.pageSize,
-      to_size: pageSize.value,
-    });
-    onMessage({ label: 'pageSize', data: pageSize });
-  }
+  const { onSort, onUpdatePageNumber, onUpdatePageSize } = useTableHandlers({
+    data,
+    tableType,
+    totalPages,
+    containerRef,
+    onMessage,
+  });
 
   if (noResults) {
     return (
@@ -278,14 +253,6 @@ export function DataTable({
                   />
                 </>
               )}
-            {data.options.showPageCountDisplay && (
-              <PageCountDisplay
-                currentPageNum={data.currentPage}
-                currentPageSize={data.pageSize}
-                totalItems={data.totalListItems}
-                id={`data-table-page-count-display-${data.tableId}`}
-              />
-            )}
           </div>
           {showPagination && (
             <Pagination

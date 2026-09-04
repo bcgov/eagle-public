@@ -36,7 +36,10 @@ export function DocumentGridRow({ rowData, tableData }: TableRowProps) {
   const tint = phase ? phaseTint(phase) : null;
 
   return (
-    <tr {...rowProps} className={`data-table__row${selected ? ' data-table__row--selected' : ''}`}>
+    <tr
+      {...rowProps}
+      className={`data-table__row${selected ? ' data-table__row--selected' : ''} ${rowProps.className ?? ''}`.trim()}
+    >
       {selectable && <SelectCell rowData={rowData} tableId={tableData.tableId} />}
 
       <td data-label="Name" className="data-table__cell document-grid__name">
