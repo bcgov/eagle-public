@@ -32,10 +32,8 @@ test('project detail defaults to the overview tab', async ({ page, request }) =>
 
   expect(new URL(page.url()).pathname).toBe(`/p/${project._id}/overview`);
   await expect(page.getByRole('heading', { level: 1, name: project.name })).toBeVisible();
-  await expect(page.getByRole('heading', { level: 2, name: 'Project Details' })).toBeVisible();
-  await expect(
-    page.getByRole('heading', { level: 3, name: 'Activities and Updates' }),
-  ).toBeVisible();
+  await expect(page.getByRole('heading', { level: 2, name: 'About this project' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 2, name: 'Contact' })).toBeVisible();
 
   checkBaseline('overview-tab', calls);
 });

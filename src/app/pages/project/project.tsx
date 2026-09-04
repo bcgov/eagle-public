@@ -4,8 +4,6 @@ import { useQuery } from '@tanstack/react-query';
 import { track } from 'app/analytics/analytics';
 import { getById } from 'app/api/project';
 import { listsQueryOptions } from 'app/api/api';
-import { isSafeUrl } from 'app/utils/safe-url';
-import { EngageBanner } from './engage-banner';
 import { ProjectMasthead } from './project-masthead';
 import { ProjectPanel } from './project-panel';
 import { useProjectTabMeta, type ProjectTab } from './use-project-tab-meta';
@@ -43,11 +41,6 @@ export function ProjectPage() {
 
   const notFound = isError || (isSuccess && !project);
 
-  const banner = project?.commentPeriodForBanner;
-  // The ENGAGE banner is the only comment-period banner the shell owns. The in-EPIC comment
-  // period callout is rebuilt on the Overview tab in the next change (see TODO.md).
-  const showEngage = !!banner?.isBannerVisible && !!banner.isMet && isSafeUrl(banner.metURL);
-
   if (notFound) {
     return (
       <div className="container py-5">
@@ -63,8 +56,6 @@ export function ProjectPage() {
       <ProjectMasthead project={project ?? null} projId={projId} loading={projectLoading} />
 
       <main className="project-page__container">
-        {showEngage && <EngageBanner data={banner} />}
-
         <ProjectPanel project={project ?? null} lists={lists} loading={projectLoading} />
 
         <section className="project-tabs">

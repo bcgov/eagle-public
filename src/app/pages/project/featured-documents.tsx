@@ -1,20 +1,20 @@
-import { useMemo } from 'react';
-import { TableTemplate } from 'app/components/table/table-template';
-import { tableObject, type IColumnObject } from 'app/components/table/table-object';
+import { Link } from 'react-router';
+import { DocumentLink } from 'app/components/table/document-link';
 import { useTable } from 'app/components/table/use-table';
-import { DocumentTableRow } from './document-table-rows';
+import { idToListName, longDate } from 'app/utils/utils';
 import { useProjectContext } from './project-context';
-
-const COLUMNS: IColumnObject[] = [
-  { name: '★', value: 'isFeatured', width: 'col-1', nosort: true },
-  { name: 'Name', value: 'displayName', width: 'col-3', nosort: true },
-  { name: 'Date', value: 'datePosted', width: 'col-2', nosort: true },
-  { name: 'Type', value: 'type', width: 'col-2', nosort: true },
-  { name: 'Milestone', value: 'milestone', width: 'col-2', nosort: true },
-  { name: 'Phase', value: 'projectPhase', width: 'col-2', nosort: true },
-];
+import './featured-documents.css';
 
 const PAGE_SIZE = 5;
+
+/** `internalSize` arrives as a byte count in a string. */
+function fileSize(bytes: string | number | undefined): string {
+  const value = Number(bytes);
+  if (!value) return '';
+  const units = ['B', 'KB', 'MB', 'GB'];
+  const step = Math.min(Math.floor(Math.log(value) / Math.log(1024)), units.length - 1);
+  return `${(value / 1024 ** step).toFixed(step ? 1 : 0)} ${units[step]}`;
+}
 
 /** The project's starred documents: a fixed top five, no paging or sorting. */
 export function FeaturedDocuments() {
@@ -30,37 +30,39 @@ export function FeaturedDocuments() {
     queryModifiers: { isFeatured: 'true' },
   });
 
-  const data = useMemo(
-    () => ({
-      ...tableObject({
-        tableId: 'documents-table',
-        component: DocumentTableRow,
-        columns: COLUMNS,
-        currentPage: 1,
-        pageSize: PAGE_SIZE,
-        sortBy: '-datePosted',
-        items: result.data.map((record) => ({ rowData: record })),
-        totalListItems: result.totalListItems,
-        data: { lists, showFeatured: true },
-      }),
-      options: {
-        showHeader: true,
-        showPageCountDisplay: false,
-        showPagination: false,
-        showPageSizePicker: false,
-      },
-    }),
-    [result.data, result.totalListItems, lists],
-  );
-
   if (!result.loading && result.totalListItems === 0) {
     return null;
   }
 
   return (
-    <div className="mb-4">
-      <h3 className="mb-4">Featured Documents</h3>
-      <TableTemplate data={data} loading={result.loading} onMessage={() => undefined} />
-    </div>
+    <section aria-labelledby="featured-documents-title">
+      <div className="overview-tab__card-header">
+        <h2 id="featured-documents-title">Featured documents</h2>
+        <Link to={`/p/${projId}/documents`}>All documents</Link>
+      </div>
+      <ul className="overview-tab__list featured-documents">
+        {result.data.map((document: any) => (
+          <li key={document._id}>
+            <i className="material-icons featured-documents__icon" aria-hidden="true">
+              insert_drive_file
+            </i>
+            <span className="featured-documents__detail">
+              <DocumentLink document={document}>
+                {document.displayName || document.documentFileName}
+              </DocumentLink>
+              <span className="featured-documents__meta">
+                {[
+                  idToListName(document.type, lists),
+                  longDate(document.datePosted),
+                  fileSize(document.internalSize),
+                ]
+                  .filter((part) => part && part !== '-')
+                  .join(' · ')}
+              </span>
+            </span>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
