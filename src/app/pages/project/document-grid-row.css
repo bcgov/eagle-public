@@ -1,0 +1,26 @@
+/* Document row in the redesigned grid: featured star, name link, phase pill. */
+
+.document-grid__name {
+  color: var(--typography-color-primary);
+}
+
+.document-grid__star {
+  float: left;
+  margin-right: var(--layout-margin-xsmall);
+  font-size: var(--icons-size-small);
+  color: var(--theme-primary-gold);
+}
+
+.document-grid__phase {
+  display: inline-block;
+  padding: var(--layout-padding-hair) var(--layout-padding-small);
+  border-radius: var(--layout-border-radius-circular);
+  font: var(--typography-regular-label);
+  color: var(--typography-color-primary);
+  line-height: 1.4;
+}
+
+/* A phase the stage palette has no colour for still reads as a pill. */
+.document-grid__phase--plain {
+  background: var(--theme-gray-20);
+}

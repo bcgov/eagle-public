@@ -11,7 +11,7 @@ import {
   unwrap,
 } from '../support/helpers';
 
-const ROWS = 'table[aria-label="table-template"] tbody tr';
+const ROWS = '.data-table__table tbody tr';
 const NAME = 'td[data-label="Name"]';
 const TABS = '.project-tabs nav a';
 const DOC_TYPE_SEGMENTS = '.document-type-filter__segment';
@@ -99,7 +99,10 @@ test('documents tab renders a paged document table', async ({ page, request }) =
   }
   const rows = page.locator(ROWS);
   await expect(rows).toHaveCount(Math.min(10, total(env)));
-  await expect(rows.first().locator(NAME)).toHaveText(env.searchResults[0].displayName.trim());
+  // The name cell can also carry the featured star, so assert on the document link itself.
+  await expect(rows.first().locator(NAME).locator('a')).toHaveText(
+    env.searchResults[0].displayName.trim(),
+  );
   expect((await pageCount(page)).total).toBe(total(env));
 
   checkBaseline('project-documents-tab', calls);

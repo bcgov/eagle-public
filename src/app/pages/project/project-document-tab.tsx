@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router';
 import { track } from 'app/analytics/analytics';
 import { SearchFilterTemplate } from 'app/components/filters/search-filter-template';
 import type { SearchPackage } from 'app/components/filters/filter-object';
-import { TableTemplate } from 'app/components/table/table-template';
+import { DataTable } from 'app/components/data-table/data-table';
 import {
   tableObject,
   type IColumnObject,
@@ -22,17 +22,16 @@ import { tableSearchParams, useTable, type TableQueryConfig } from 'app/componen
 import { bulkDownloadEnabled } from 'app/config/config';
 import { selectAllMatching } from 'app/state/bulk-download';
 import { createProjectTabModifiers } from 'app/utils/utils';
-import { DocumentTableRow } from './document-table-rows';
+import { DocumentGridRow } from './document-grid-row';
 import { buildDocumentFilters, DATE_FILTER_LIST, filterListFrom } from './document-filters';
 import { useProjectContext } from './project-context';
 
-const FEATURED_COLUMN: IColumnObject = { name: '★', value: 'isFeatured', width: 'col-1' };
-
 const DOCUMENT_COLUMNS: IColumnObject[] = [
-  { name: 'Date', value: 'datePosted', width: 'col-2' },
-  { name: 'Type', value: 'type', width: 'col-2' },
-  { name: 'Milestone', value: 'milestone', width: 'col-2' },
-  { name: 'Phase', value: 'projectPhase', width: 'col-2' },
+  { name: 'Name', value: 'displayName' },
+  { name: 'Date', value: 'datePosted' },
+  { name: 'Type', value: 'type' },
+  { name: 'Milestone', value: 'milestone' },
+  { name: 'Phase', value: 'projectPhase' },
 ];
 
 interface ProjectDocumentTabProps {
@@ -99,7 +98,7 @@ export function ProjectDocumentTab({
 
   const base = useMemo(
     () =>
-      updateTableObjectWithUrlParams(params, tableObject({ tableId, component: DocumentTableRow })),
+      updateTableObjectWithUrlParams(params, tableObject({ tableId, component: DocumentGridRow })),
     [params, tableId],
   );
 
@@ -138,13 +137,7 @@ export function ProjectDocumentTab({
   const data = useMemo(
     () => ({
       ...base,
-      columns: showFeatured
-        ? [
-            FEATURED_COLUMN,
-            { name: 'Name', value: 'displayName', width: 'col-3' },
-            ...DOCUMENT_COLUMNS,
-          ]
-        : [{ name: 'Name', value: 'displayName', width: 'col-4' }, ...DOCUMENT_COLUMNS],
+      columns: DOCUMENT_COLUMNS,
       items: result.data.map((record) => ({ rowData: record })),
       totalListItems: result.totalListItems,
       options: { ...base.options, showAllPicker: true, selectable: bulkDownloadEnabled() },
@@ -209,7 +202,6 @@ export function ProjectDocumentTab({
             showAdvancedFilters={[...filterList, ...DATE_FILTER_LIST].some((key) => params[key])}
             searchOnFilterChange
             filters={filters}
-            searchHelpLink="/search-help"
             searching={result.loading}
             onToggleFiltersPanel={
               trackFilters
@@ -227,7 +219,12 @@ export function ProjectDocumentTab({
       {!result.loading && data.totalListItems === 0 ? (
         <div>{emptyMessage}</div>
       ) : (
-        <TableTemplate data={data} loading={result.loading} onMessage={onMessage} />
+        <DataTable
+          caption="Project documents"
+          data={data}
+          loading={result.loading}
+          onMessage={onMessage}
+        />
       )}
     </>
   );

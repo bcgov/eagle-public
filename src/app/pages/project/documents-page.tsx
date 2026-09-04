@@ -1,4 +1,4 @@
-import { NavLink, Outlet } from 'react-router';
+import { Link, NavLink, Outlet } from 'react-router';
 import { track } from 'app/analytics/analytics';
 import { Constants } from 'app/utils/constants';
 import { useDocTabProbes } from './use-doc-tab-probes';
@@ -39,8 +39,18 @@ export function DocumentsPage() {
 
   return (
     <>
+      <div className="documents-page__header">
+        <h2 className="documents-page__title">Documents</h2>
+        <Link className="documents-page__help" to="/search-help">
+          <i className="material-icons" aria-hidden="true">
+            help_outline
+          </i>
+          How to search documents
+        </Link>
+      </div>
+
       <nav className="document-type-filter" aria-labelledby="document-type-filter-label">
-        <span className="document-type-filter__label" id="document-type-filter-label">
+        <span className="visually-hidden" id="document-type-filter-label">
           Document type
         </span>
         <ul className="document-type-filter__group" aria-busy={probes.probing || undefined}>

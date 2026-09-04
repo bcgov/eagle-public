@@ -1,22 +1,18 @@
-import { useMemo, useRef } from 'react';
+import { useRef } from 'react';
 import { track } from 'app/analytics/analytics';
 import { Constants } from 'app/utils/constants';
 import {
-  CAP_MESSAGE,
   clearSelection,
   MAX_JOBS_IN_FLIGHT,
-  SELECT_ALL_MAX,
-  setSelected,
   startDownload,
   useDownloadInProgress,
   useSelection,
-  type SelectedDocument,
 } from 'app/state/bulk-download';
-import { showToast } from 'app/state/toast';
 import { toggleRow } from './document-row';
 import { PageCountDisplay } from './page-count-display';
 import { PageSizePicker } from './page-size-picker';
 import { Pagination } from './pagination';
+import { usePageSelection } from './use-page-selection';
 import {
   documentCountMessage,
   withAllPicker,
@@ -70,33 +66,9 @@ export function TableTemplate({
     ? withAllPicker(data.pageSizeOptions, data.totalListItems)
     : data.pageSizeOptions;
 
-  const selectable = !!data.options.selectable;
-  const selection = useSelection(data.tableId);
-  // Download posts every table's selection as one job, so the toolbar counts them all.
-  const selectedCount = useSelection().size;
+  const { selectable, selectedCount, pageAllSelected, pageMixed, showSelectAll, toggleAllOnPage } =
+    usePageSelection(data);
   const downloadInProgress = useDownloadInProgress();
-  // Every row subscribes to the selection store, so a new array here re-renders the whole page.
-  const pageDocs: SelectedDocument[] = useMemo(
-    () =>
-      data.items
-        .filter((item) => item.rowData?._id)
-        .map((item) => ({ id: item.rowData._id, displayName: item.rowData.displayName })),
-    [data.items],
-  );
-  const selectedOnPage = useMemo(
-    () => pageDocs.filter((doc) => selection.has(doc.id)).length,
-    [pageDocs, selection],
-  );
-  const pageAllSelected = pageDocs.length > 0 && selectedOnPage === pageDocs.length;
-  const pageMixed = selectedOnPage > 0 && !pageAllSelected;
-  // Offered once the page is fully selected, there is more behind it than one page, and the whole
-  // result set fits the anonymous cap. Over the cap there is nothing to offer, so the bar says
-  // nothing: the cap is explained by the toast on the attempt that actually hits it.
-  const showSelectAll =
-    selectable &&
-    pageAllSelected &&
-    data.totalListItems > data.pageSize &&
-    data.totalListItems <= SELECT_ALL_MAX;
 
   function onSort(property: string): void {
     track('Table Column Sorted', {
@@ -256,13 +228,7 @@ export function TableTemplate({
                           ref={(input) => {
                             if (input) input.indeterminate = pageMixed;
                           }}
-                          // ponytail: unchecking drops the whole table's selection, other pages
-                          // included; deselect page-by-page if anyone paging around complains.
-                          onChange={() => {
-                            if (pageAllSelected) clearSelection(data.tableId);
-                            else if (!setSelected(data.tableId, pageDocs))
-                              showToast(CAP_MESSAGE, { type: 'warning' });
-                          }}
+                          onChange={toggleAllOnPage}
                         />
                       </th>
                     )}
