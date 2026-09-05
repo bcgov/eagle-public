@@ -150,6 +150,22 @@ describe('selectAllMatching', () => {
     ]);
   });
 
+  it('trims the fetched page to the cap instead of refusing it, keeping a row from outside it', async () => {
+    setSelected('documents', [{ id: 'row-150', displayName: 'Row 150' }]);
+    vi.mocked(fetchData).mockResolvedValue({
+      data: Array.from({ length: SELECT_ALL_MAX }, (_, i) => ({
+        _id: `row-${i}`,
+        displayName: `Row ${i}`,
+      })),
+    } as any);
+
+    const ok = await selectAllMatching('documents', new SearchParamObject('documents'));
+
+    expect(ok).toBe(true);
+    expect(selectionOf('documents').size).toBe(SELECT_ALL_MAX);
+    expect(selectionOf('documents').has('row-150')).toBe(true);
+  });
+
   it('says so when the whole matching set would pass the cap', async () => {
     setSelected(
       'search',

@@ -144,14 +144,16 @@ export async function selectAllMatching(
     showToast(SELECT_ALL_FAILED_MESSAGE, { type: 'warning' });
     return false;
   }
-  const added = setSelected(
-    tableId,
-    rows.map((row) => ({
-      id: row._id,
-      displayName: row.displayName,
-      size: toSize(row.internalSize),
-    })),
-  );
+  const existing = [...(selection.get().get(tableId) ?? EMPTY).values()];
+  const fetched = rows.map((row) => ({
+    id: row._id,
+    displayName: row.displayName,
+    size: toSize(row.internalSize),
+  }));
+  // A row selected from outside the fetched page must not knock the whole page out: trim to the
+  // cap here, keeping it, rather than let setSelected refuse the batch wholesale for one extra row.
+  const combined = [...existing, ...fetched].slice(0, SELECT_ALL_MAX);
+  const added = setSelected(tableId, combined);
   if (!added) showToast(CAP_MESSAGE, { type: 'warning' });
   return added;
 }
