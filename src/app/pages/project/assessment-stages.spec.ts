@@ -231,7 +231,7 @@ describe('offRailPhase', () => {
 });
 
 describe('withPhaseDates', () => {
-  const project = makeProject('Effects Assessment');
+  const project = makeProject('Process Planning');
   const detailed = () => withPhaseDates(detailedStages(project), PHASES);
   const simple = () => withPhaseDates(simplifiedStages(LISTS, project), PHASES);
 
@@ -239,22 +239,49 @@ describe('withPhaseDates', () => {
     return Object.fromEntries(stages.map((stage) => [stage.name, stage]));
   }
 
-  it('matches Track names through case, punctuation and & against and', () => {
+  it('dates each detailed stage from the Track phase that feeds it', () => {
     const stages = byName(detailed());
 
-    expect(stages['Early Engagement'].dates).toBe('Aug 2020 – Jan 2021');
-    expect(stages['Proponent time: project description'].dates).toBe('Jan – Mar 2021');
-    expect(stages['Application Development and Review'].dates).toBe('Aug – Sep 2022');
+    expect(stages['Early Engagement'].dates).toBe('Jul – Oct 2025');
+    expect(stages['Proponent time: project description'].dates).toBe('Oct 2025 – Jun 2026');
+    expect(stages['Readiness Decision'].dates).toBe('Jun – Jul 2026');
+    expect(stages['Process Planning'].dates).toBe('Jul – Nov 2026');
+    expect(stages['Proponent time: application development'].dates).toBe('Nov 2026 – Mar 2027');
+    expect(stages['Application Development and Review'].dates).toBe('Mar – Sep 2027');
+    expect(stages['Proponent time: revised application'].dates).toBe('Sep – Oct 2027');
+    expect(stages['Referral / Decision'].dates).toBe('Jun – Jul 2028');
   });
 
-  it.each(['Referral/Decision', 'EA Certificate Decision'])(
-    'matches the last stage against Track name %s',
-    (name) => {
-      const stages = withPhaseDates(detailedStages(makeProject('Referral')), [
-        { name, startDate: '2023-03-01T00:00:00.000Z', endDate: '2023-03-20T00:00:00.000Z' },
-      ]);
+  it('measures a finished stage at its real length, not the statutory one', () => {
+    const stages = byName(detailed());
 
-      expect(byName(stages)['Referral / Decision'].dates).toBe('Mar 2023');
+    expect(stages['Early Engagement'].elapsedDays).toBe(86);
+    // DPD Development really ran 255 days; its statutory allowance is 365.
+    expect(stages['Proponent time: project description'].elapsedDays).toBe(255);
+    expect(stages['Readiness Decision'].elapsedDays).toBe(26);
+    expect(stages['Process Planning'].state).toBe('current');
+    expect(stages['Process Planning'].elapsedDays).toBeUndefined();
+  });
+
+  it('gives Effects Assessment and Recommendation the one phase that covers both', () => {
+    const stages = byName(withPhaseDates(detailedStages(makeProject('Complete')), PHASES));
+
+    expect(stages['Effects Assessment'].dates).toBe('Jan – Jun 2028');
+    expect(stages['Recommendation'].dates).toBe('Jan – Jun 2028');
+    // The 150-day phase splits 110:40, so the to-scale bar still sums to its real length.
+    expect(stages['Effects Assessment'].elapsedDays).toBe(110);
+    expect(stages['Recommendation'].elapsedDays).toBe(40);
+  });
+
+  it.each(['Pre-EA (EAC Assessment)', 'Post-EAC Document Review'])(
+    'ignores the phase named %s',
+    (name) => {
+      const kept = PHASES.filter((phase) => phase.name !== 'Pre-EA (EAC Assessment)');
+      const extra = { name, startDate: '2024-01-01', endDate: '2024-02-01' };
+
+      expect(withPhaseDates(detailedStages(project), [extra, ...kept])).toEqual(
+        withPhaseDates(detailedStages(project), kept),
+      );
     },
   );
 
@@ -262,28 +289,27 @@ describe('withPhaseDates', () => {
     const stages = byName(simple());
 
     // Early Engagement plus the proponent time after it: earliest start, latest end.
-    expect(stages['Early Engagement'].dates).toBe('Aug 2020 – Mar 2021');
-    expect(stages['Early Engagement'].elapsedDays).toBe(242);
-    expect(stages['Application Development and Review'].dates).toBe('Dec 2021 – Dec 2022');
-  });
-
-  it('measures a finished stage but not a current or unfinished one', () => {
-    const stages = byName(detailed());
-
-    expect(stages['Early Engagement'].elapsedDays).toBe(167);
-    expect(stages['Readiness Decision'].elapsedDays).toBe(27);
-    expect(stages['Effects Assessment'].state).toBe('current');
-    expect(stages['Effects Assessment'].elapsedDays).toBeUndefined();
+    expect(stages['Early Engagement'].dates).toBe('Jul 2025 – Jun 2026');
+    expect(stages['Early Engagement'].elapsedDays).toBe(342);
+    expect(stages['Application Development and Review'].dates).toBe('Nov 2026 – Oct 2027');
+    expect(stages['Effects Assessment'].dates).toBe('Jan – Jun 2028');
+    expect(stages['Referral'].dates).toBe('Jun – Jul 2028');
+    // Project Designation is before the first Track phase, so it stays blank.
+    expect(stages['Project Designation'].dates).toBeUndefined();
   });
 
   it('labels an open stage from its start date alone', () => {
-    expect(byName(detailed())['Effects Assessment'].dates).toBe('Since Feb 2023');
+    const stages = withPhaseDates(detailedStages(project), [
+      { name: 'Process Planning', startDate: '2026-07-12T09:00:00.000Z', endDate: null },
+    ]);
+
+    expect(byName(stages)['Process Planning'].dates).toBe('Since Jul 2026');
   });
 
   it('draws a finished stage at its real length and the rest at the statutory maximum', () => {
     const laid = byName(layout(detailed()));
 
-    expect(laid['Early Engagement'].days).toBe(167);
+    expect(laid['Early Engagement'].days).toBe(86);
     expect(laid['Recommendation'].days).toBe(40);
   });
 
@@ -293,25 +319,6 @@ describe('withPhaseDates', () => {
     ]);
 
     expect(byName(stages)['Process Planning'].dates).toBeUndefined();
-  });
-
-  it('ignores phases and stages that do not pair up', () => {
-    const stages = byName(
-      withPhaseDates(detailedStages(project), [
-        { name: 'Post-EAC Document Review', startDate: '2024-01-01', endDate: '2024-02-01' },
-        ...PHASES,
-      ]),
-    );
-
-    expect(stages['Recommendation'].dates).toBeUndefined();
-    expect(stages['Early Engagement'].dates).toBe('Aug 2020 – Jan 2021');
-  });
-
-  it.each([
-    ['Readiness Decision', 'Apr 2021'],
-    ['Process Planning', 'Sep – Nov 2021'],
-  ])('shortens the label for %s within one month or year', (name, label) => {
-    expect(byName(detailed())[name].dates).toBe(label);
   });
 
   it('changes nothing without phases', () => {

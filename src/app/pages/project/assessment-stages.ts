@@ -260,31 +260,54 @@ export function detailedStages(project: Project | null): RailStage[] {
   }));
 }
 
-/** Track's phase names differ from the rail's in case, punctuation and `&` against `and`. */
+/** Folds case, punctuation and `&` against `and`, so the table below reads as Track writes it. */
 function normalizeName(name: string): string {
-  const key = name
+  return name
     .toLowerCase()
     .replace(/&/g, ' and ')
     .replace(/[^a-z0-9]+/g, ' ')
     .trim();
-  // Track renamed the last phase in 2023 (migration 20a4532cabb9); the rail keeps the Act's name.
-  return key === 'ea certificate decision' ? 'referral decision' : key;
 }
 
-/** The Track phases each simplified stage rolls up, off the stage-to-phase table above. */
-const ROLLUP = new Map<string, string[]>(
-  DETAILED_PHASES.map((phase, index) => [
-    normalizeName(phase),
-    TRACK_STAGES.filter((_, stage) => STAGE_PHASE[stage] === index).map((s) =>
-      normalizeName(s.name),
-    ),
-  ]),
+/**
+ * The Track phase names DEMI sends, and the detailed stage numbers each one dates. Two phases can
+ * date one stage, one phase can date two, and a name missing here is ignored.
+ */
+const PHASE_STAGES = new Map<string, number[]>(
+  Object.entries({
+    'Early Engagement': [1],
+    'DPD Development (Proponent Time)': [2],
+    'Revised DPD Development (Proponent Time)': [2],
+    'Readiness Decision': [3],
+    'Process Planning': [4],
+    'EAC Application Development (Proponent Time)': [5],
+    'EAC Application Review': [6],
+    'Revised EAC Application Development (Proponent Time)': [7],
+    'Effects Assessment & Recommendation': [8, 9],
+    'EAC Decision': [10],
+  }).map(([name, stages]) => [normalizeName(name), stages]),
 );
 
-/** A detailed stage is one Track phase; a simplified one covers every phase that rolls into it. */
-function phaseNamesFor(stage: RailStage): string[] {
-  const key = normalizeName(stage.name);
-  return stage.id.startsWith(DETAILED_ID) ? [key] : (ROLLUP.get(key) ?? [key]);
+function stagesOf(phase: Phase): number[] {
+  return PHASE_STAGES.get(normalizeName(phase.name)) ?? [];
+}
+
+/** A detailed stage is one number; a simplified one covers every stage that rolls into it. */
+function stageNumbersFor(stage: RailStage): number[] {
+  if (stage.id.startsWith(DETAILED_ID)) return [stage.n];
+  const phase = DETAILED_PHASES.indexOf(stage.name);
+  return STAGE_PHASE.flatMap((index, order) => (index === phase ? [order + 1] : []));
+}
+
+function statutoryDays(numbers: number[]): number {
+  return numbers.reduce((sum, n) => sum + (DETAILED_STAGES[n - 1]?.statutoryDays ?? 0), 0);
+}
+
+/** A phase feeding two stages splits its length between them in proportion to statutory days. */
+function elapsedShare(matched: Phase[], numbers: number[]): number {
+  const spanned = [...new Set(matched.flatMap(stagesOf))];
+  const total = statutoryDays(spanned);
+  return total ? statutoryDays(spanned.filter((n) => numbers.includes(n))) / total : 1;
 }
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -319,8 +342,8 @@ export function withPhaseDates(stages: RailStage[], phases: Phase[] | null): Rai
   if (!phases?.length) return stages;
 
   return stages.map((stage) => {
-    const names = phaseNamesFor(stage);
-    const matched = phases.filter((phase) => names.includes(normalizeName(phase.name)));
+    const numbers = stageNumbersFor(stage);
+    const matched = phases.filter((phase) => stagesOf(phase).some((n) => numbers.includes(n)));
     if (!matched.length) return stage;
 
     const starts = matched.map((p) => time(p.startDate)).filter((at): at is number => at != null);
@@ -332,7 +355,10 @@ export function withPhaseDates(stages: RailStage[], phases: Phase[] | null): Rai
     const dates = dateLabel(start, end);
     if (!dates) return stage;
 
-    const elapsedDays = start != null && end != null ? Math.round((end - start) / DAY) : 0;
+    const elapsedDays =
+      start != null && end != null
+        ? Math.round(((end - start) / DAY) * elapsedShare(matched, numbers))
+        : 0;
     return {
       ...stage,
       dates,

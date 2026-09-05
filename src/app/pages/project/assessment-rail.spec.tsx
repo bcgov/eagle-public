@@ -70,28 +70,32 @@ describe('simplified rail', () => {
 
 describe('phase dates', () => {
   it('puts a date line under each simplified stage DEMI has phases for', () => {
-    renderRail('Effects Assessment', 2018, 2018, PHASES);
+    renderRail('Process Planning', 2018, 2018, PHASES);
 
     const items = screen.getAllByRole('listitem');
-    expect(items[1]).toHaveTextContent('Early EngagementAug 2020 – Mar 2021');
-    expect(items[5]).toHaveTextContent('Effects AssessmentSince Feb 2023');
+    expect(items[1]).toHaveTextContent('Early EngagementJul 2025 – Jun 2026');
+    expect(items[4]).toHaveTextContent('Application Development and ReviewNov 2026 – Oct 2027');
+    expect(items[5]).toHaveTextContent('Effects AssessmentJan – Jun 2028');
+    expect(items[6]).toHaveTextContent('ReferralJun – Jul 2028');
     // Project Designation is not a Track phase, so it has a name and nothing else.
     expect(items[0]).toHaveTextContent(/^Project Designation$/);
   });
 
   it('adds the dates after the clock in each detailed key row', async () => {
-    renderRail('Effects Assessment', 2018, 2018, PHASES);
+    renderRail('Process Planning', 2018, 2018, PHASES);
 
     await showDetailed();
 
     const rows = screen.getAllByRole('listitem');
-    expect(rows[0]).toHaveTextContent('90 days EAO limit · Aug 2020 – Jan 2021');
-    expect(rows[7]).toHaveTextContent('110 days EAO limit · Since Feb 2023');
-    expect(rows[8]).toHaveTextContent(/40 days EAO limit$/);
+    expect(rows[0]).toHaveTextContent('90 days EAO limit · Jul – Oct 2025');
+    expect(rows[1]).toHaveTextContent('1 year proponent time · Oct 2025 – Jun 2026');
+    // One Track phase dates both the assessment and the recommendation stage.
+    expect(rows[7]).toHaveTextContent('110 days EAO limit · Jan – Jun 2028');
+    expect(rows[8]).toHaveTextContent('40 days EAO limit · Jan – Jun 2028');
   });
 
   it('renders the rail unchanged while the phases are still loading', () => {
-    renderRail('Effects Assessment');
+    renderRail('Process Planning');
 
     expect(screen.getAllByRole('listitem')[1]).toHaveTextContent(/^Early Engagement$/);
   });
