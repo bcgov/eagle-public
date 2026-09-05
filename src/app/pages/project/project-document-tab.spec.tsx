@@ -143,19 +143,27 @@ describe('project document tabs', () => {
     renderTab(Certificates, '/p/proj-1/certificates');
 
     await screen.findByText('Cedar Quarry Certificate');
-    expect(screen.queryByRole('button', { name: /Advanced Filters/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Filters/ })).not.toBeInTheDocument();
   });
 
-  it('certificates renders the document row without a featured star column', async () => {
+  it('certificates renders the document row without a featured star', async () => {
     renderTab(Certificates, '/p/proj-1/certificates');
 
     await screen.findByText('Cedar Quarry Certificate');
-    expect(screen.getByRole('cell', { name: 'Cedar Quarry Certificate' })).toHaveClass('col-4');
-    expect(screen.queryByText('star')).not.toBeInTheDocument();
+    expect(screen.queryByRole('img', { name: 'Featured' })).not.toBeInTheDocument();
     // Ids are resolved to list names for display.
     expect(screen.getByRole('cell', { name: 'Certificate Package' })).toBeInTheDocument();
     expect(screen.getByRole('cell', { name: 'Certificate' })).toBeInTheDocument();
     expect(screen.getByRole('cell', { name: 'Post Decision - Amendment' })).toBeInTheDocument();
+  });
+
+  it('tints the phase pill with the stage colour for that phase', async () => {
+    renderTab(Certificates, '/p/proj-1/certificates');
+
+    await screen.findByText('Cedar Quarry Certificate');
+    expect(screen.getByText('Post Decision - Amendment')).toHaveStyle({
+      background: 'var(--eao-amendment-light)',
+    });
   });
 
   it('certificates shows its own empty message', async () => {
@@ -181,7 +189,20 @@ describe('project document tabs', () => {
         '&and[projectPhase]=ph-amend-2002&and[projectPhase]=ph-amend-2018' +
         '&fuzzy=false',
     );
-    expect(screen.getByRole('button', { name: /Open Advanced Filters/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Filters' })).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+  });
+
+  it('amendments flips the filters toggle open on click', async () => {
+    renderTab(Amendments, '/p/proj-1/amendments');
+
+    await screen.findByText('Cedar Quarry Certificate');
+    const toggle = screen.getByRole('button', { name: 'Filters' });
+    await userEvent.click(toggle);
+
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
   });
 
   it('application carries the URL keywords and filters into the request', async () => {
@@ -203,10 +224,13 @@ describe('project document tabs', () => {
     renderTab(Application, '/p/proj-1/application?projectPhase=ph-amend-2018');
 
     await screen.findByText('Cedar Quarry Certificate');
-    expect(screen.getByRole('button', { name: /Close Advanced Filters/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Filters' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
   });
 
-  it('documents asks for every project document, populated, with a featured star column', async () => {
+  it('documents asks for every project document, populated, with a featured star', async () => {
     renderTab(DocumentsTab, '/p/proj-1/documents');
 
     expect(await screen.findByText('Cedar Quarry Certificate')).toBeInTheDocument();
@@ -215,8 +239,7 @@ describe('project document tabs', () => {
         '&sortBy=-datePosted&sortBy=+displayName&populate=true' +
         '&and[project]=proj-1&fuzzy=false',
     );
-    expect(screen.getByRole('cell', { name: 'Cedar Quarry Certificate' })).toHaveClass('col-3');
-    expect(screen.getByText('star')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Featured' })).toBeInTheDocument();
   });
 
   it('documents restarts at page one when a column is sorted', async () => {

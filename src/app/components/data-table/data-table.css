@@ -1,0 +1,241 @@
+/* Redesigned grid frame: action bar, table, paging footer in one card.
+   Tokens come from @bcgov/design-tokens. */
+
+.data-table {
+  overflow: hidden;
+  background: var(--theme-gray-white);
+  border: var(--layout-border-width-small) solid var(--theme-gray-40);
+  border-radius: var(--layout-border-radius-medium);
+}
+
+.data-table__empty {
+  margin: 0;
+  padding: var(--layout-padding-xlarge);
+  font: var(--typography-regular-body);
+  color: var(--typography-color-secondary);
+  text-align: center;
+}
+
+/* === ACTION BAR === */
+
+.data-table__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--layout-padding-medium);
+  min-height: 3.5rem;
+  padding: var(--layout-padding-small) var(--layout-padding-large);
+  background: var(--theme-gray-10);
+  border-bottom: var(--layout-border-width-small) solid var(--theme-gray-30);
+}
+
+.data-table__bar--selected {
+  background: var(--theme-primary-blue);
+}
+
+.data-table__bar-group {
+  display: flex;
+  align-items: center;
+  gap: var(--layout-padding-medium);
+  min-width: 0;
+}
+
+.data-table__bar-count {
+  margin: 0;
+  font: var(--typography-bold-small-body);
+  color: var(--typography-color-primary);
+}
+
+.data-table__bar--selected .data-table__bar-count {
+  color: var(--typography-color-primary-invert);
+}
+
+.data-table__bar-clear,
+.data-table__bar-link,
+.data-table__download {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--layout-padding-xsmall);
+  min-height: 2rem;
+  border: none;
+  cursor: pointer;
+}
+
+.data-table__bar-clear {
+  padding: 0 var(--layout-padding-small);
+  border-radius: var(--layout-border-radius-medium);
+  background: var(--theme-blue-90);
+  color: var(--typography-color-primary-invert);
+  font: var(--typography-regular-small-body);
+}
+
+.data-table__bar-clear:hover {
+  background: var(--theme-blue-80);
+}
+
+.data-table__bar-link {
+  padding: 0;
+  background: none;
+  color: var(--theme-primary-gold);
+  font: var(--typography-regular-small-body);
+  text-decoration: underline;
+  white-space: nowrap;
+}
+
+.data-table__download {
+  min-height: 2.25rem;
+  padding: 0 var(--layout-padding-medium);
+  border-radius: var(--layout-border-radius-medium);
+  background: var(--theme-primary-gold);
+  color: var(--theme-primary-blue);
+  font: var(--typography-bold-small-body);
+  white-space: nowrap;
+}
+
+.data-table__download:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.data-table__bar .material-icons {
+  font-size: var(--icons-size-small);
+}
+
+.data-table__bar-clear:focus-visible,
+.data-table__bar-link:focus-visible,
+.data-table__download:focus-visible {
+  outline: var(--layout-border-width-medium) solid var(--theme-primary-gold);
+  outline-offset: var(--layout-margin-hair);
+}
+
+.data-table__bar--selected .data-table__download:focus-visible {
+  outline-color: var(--theme-gray-white);
+}
+
+/* === TABLE === */
+
+/* The grid keeps its column widths on a phone and scrolls sideways inside the card. */
+.data-table__scroll {
+  overflow-x: auto;
+}
+
+.data-table__table {
+  width: 100%;
+  min-width: 45rem;
+  border-collapse: collapse;
+}
+
+.data-table__table thead tr {
+  background: var(--theme-gray-10);
+  border-bottom: var(--layout-border-width-medium) solid var(--theme-gray-40);
+}
+
+.data-table__head-cell {
+  padding: var(--layout-padding-small) var(--layout-padding-medium);
+  font: var(--typography-bold-small-body);
+  color: var(--typography-color-primary);
+  text-align: left;
+}
+
+.data-table__sort {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--layout-padding-hair);
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+/* The shared indicator is white for a blue header; this grid's header is light. */
+.data-table__sort .sort-asc {
+  border-bottom-color: var(--typography-color-primary);
+}
+
+.data-table__sort .sort-desc {
+  border-top-color: var(--typography-color-primary);
+}
+
+.data-table__row {
+  border-bottom: var(--layout-border-width-small) solid var(--theme-gray-30);
+  background: var(--theme-gray-white);
+}
+
+/* The row body is a second target for the checkbox, so it has to look clickable. */
+.data-table__row.selectable-row {
+  cursor: pointer;
+}
+
+.data-table__row:hover {
+  background: var(--theme-gray-10);
+}
+
+.data-table__row--selected,
+.data-table__row--selected:hover {
+  background: var(--theme-blue-10);
+}
+
+.data-table__cell {
+  padding: var(--layout-padding-medium);
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-secondary);
+  vertical-align: top;
+}
+
+.data-table__cell--select {
+  width: 2.75rem;
+  padding-right: 0;
+}
+
+.data-table__cell--date {
+  white-space: nowrap;
+}
+
+.data-table__checkbox {
+  width: 1.125rem;
+  height: 1.125rem;
+  accent-color: var(--theme-blue-100);
+  cursor: pointer;
+}
+
+/* === FOOTER === */
+
+.data-table__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--layout-padding-medium);
+  padding: var(--layout-padding-medium) var(--layout-padding-large);
+  border-top: var(--layout-border-width-small) solid var(--theme-gray-30);
+  background: var(--theme-gray-10);
+}
+
+.data-table__footer-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--layout-padding-xsmall) var(--layout-padding-medium);
+}
+
+.data-table__footer-label {
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-secondary);
+}
+
+/* Frost the grid while a request is in flight, leaving the paging controls usable. */
+.data-table__body--loading .data-table__scroll {
+  opacity: 0.6;
+  pointer-events: none;
+  transition: opacity 0.2s ease-in-out;
+}
+
+@media (max-width: 768px) {
+  .data-table__bar,
+  .data-table__footer {
+    justify-content: center;
+  }
+}

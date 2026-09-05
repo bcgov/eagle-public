@@ -1,35 +1,56 @@
-/* Document-type filter: one segmented control, not a second tab strip. The sub-views are filters
-   over one document list, so they read as a filter beside the search box. */
-.document-type-filter {
-  margin-bottom: 1.5rem;
+/* Documents tab header and its document-type pills. The sub-views are filters over one document
+   list, so they read as pill segments rather than a second tab strip. */
+
+.documents-page__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--layout-padding-medium);
+  margin-bottom: var(--layout-margin-medium);
 }
 
-.document-type-filter__label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-size: var(--bs-font-size-sm);
-  font-weight: var(--bs-font-weight-semibold);
-  color: var(--font-color);
+.documents-page__title {
+  margin: 0;
+  font: var(--typography-bold-h4);
+  color: var(--typography-color-primary);
+}
+
+.documents-page__help {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--layout-padding-hair);
+  min-height: 2.75rem;
+  color: var(--typography-color-link);
+  font: var(--typography-regular-small-body);
+}
+
+.documents-page__help .material-icons {
+  font-size: var(--icons-size-medium);
+}
+
+.document-type-filter {
+  margin-bottom: var(--layout-margin-large);
 }
 
 .document-type-filter__group {
   display: flex;
   flex-wrap: wrap;
-  gap: 0;
+  gap: var(--layout-padding-xsmall);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
 .document-type-filter__segment {
-  display: block;
-  padding: 0.5rem 1.25rem;
-  border: 1px solid var(--bs-primary);
-  border-right-width: 0;
-  background-color: var(--white);
-  color: var(--bs-primary);
-  font-size: var(--bs-font-size-sm);
-  font-weight: var(--bs-font-weight-medium);
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.5rem;
+  padding: 0 var(--layout-padding-medium);
+  border: var(--layout-border-width-small) solid var(--theme-gray-50);
+  border-radius: var(--layout-border-radius-circular);
+  background: var(--theme-gray-white);
+  color: var(--typography-color-primary);
+  font: var(--typography-regular-small-body);
   text-decoration: none;
   white-space: nowrap;
   transition:
@@ -37,62 +58,167 @@
     color 0.15s ease-in-out;
 }
 
-.document-type-filter__group li:last-child .document-type-filter__segment {
-  border-right-width: 1px;
-  border-start-end-radius: var(--bs-border-radius);
-  border-end-end-radius: var(--bs-border-radius);
-}
-
-.document-type-filter__group li:first-child .document-type-filter__segment {
-  border-start-start-radius: var(--bs-border-radius);
-  border-end-start-radius: var(--bs-border-radius);
-}
-
 .document-type-filter__segment:hover {
-  background-color: var(--lightgray);
-  color: var(--bs-primary);
+  background: var(--theme-gray-10);
+  color: var(--typography-color-primary);
   text-decoration: none;
 }
 
 .document-type-filter__segment.active {
-  background-color: var(--bs-primary);
-  color: var(--white);
+  border-color: var(--theme-primary-blue);
+  background: var(--theme-primary-blue);
+  color: var(--typography-color-primary-invert);
+  font: var(--typography-bold-small-body);
 }
 
 .document-type-filter__segment:focus-visible {
-  outline: 2px solid var(--bc-blue);
-  outline-offset: 2px;
-  /* The ring is drawn outside the shared 1px borders, so lift the focused segment above its
-     neighbours or they clip it. */
-  position: relative;
-  z-index: 1;
+  outline: var(--layout-border-width-medium) solid var(--theme-primary-blue);
+  outline-offset: var(--layout-margin-hair);
+}
+
+/* === SEARCH ROW ===
+   The shared search template stacks its keyword box and its filter toggle. On this tab they are one
+   control, so they sit on one row and the filter panel drops below them. */
+
+.documents-page__body .search-filter-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--layout-padding-small);
+  margin-bottom: var(--layout-margin-large);
+}
+
+.documents-page__body .search-bar-section {
+  flex: 1 1 20rem;
+  /* Beats the shared template's `!important` bootstrap `.mb-4`. */
+  margin-bottom: 0 !important;
+}
+
+.documents-page__body .action-buttons-section {
+  flex: 0 0 auto;
+  margin-bottom: 0;
+}
+
+.documents-page__body .advanced-filters-section {
+  flex: 1 0 100%;
+  margin-bottom: 0;
+}
+
+/* The open panel is the design's white card; the template's Bootstrap utilities
+   (border-bottom, pb-3) are !important, so the overrides are too. Margin stays 0: the
+   wrapper's own margin-bottom already supplies the space to the table below, and a
+   second margin here would double it. */
+.documents-page__body #advancedFilterPanel {
+  margin: 0;
+  padding: var(--layout-padding-large) !important;
+  background: var(--theme-gray-white);
+  border: var(--layout-border-width-small) solid var(--theme-gray-40) !important;
+  border-radius: var(--layout-border-radius-medium);
+}
+
+/* The design gives the filter groups one even 16px rhythm in both directions. The template's
+   default Bootstrap gutter is 24px horizontal and 0 vertical (only `.filter-panel`'s own 4px
+   padding-bottom separates wrapped rows), so both axes need overriding here — on every nested
+   row, including the start/end date pair, so it keeps the same rhythm when it stacks. */
+.documents-page__body #advancedFilterPanel .row {
+  --bs-gutter-x: var(--layout-padding-medium);
+  --bs-gutter-y: var(--layout-padding-medium);
+}
+
+/* Bootstrap's `.pb-1` utility on the same element ships `!important`, so this must match. */
+.documents-page__body #advancedFilterPanel .filter-panel {
+  padding-bottom: 0 !important;
+}
+
+/* `.control-label` is a plain inline `<label>`/`<span>` with no house style, so its vertical
+   margin has no effect until it is a block. Design puts 4px between a filter's label and its
+   control. */
+.documents-page__body #advancedFilterPanel .control-label {
+  display: block;
+  margin-bottom: var(--layout-margin-xsmall);
+  font: var(--typography-bold-small-body);
+  color: var(--typography-color-primary);
+}
+
+/* The collapsed panel is still a wrapped flex row, so it reserves the row gap even at zero
+   height; drop it so the search row's margin-bottom is the only space before the table. */
+.documents-page__body .search-filter-wrapper:has(#advancedFilterPanel[hidden]) {
+  row-gap: 0;
+}
+
+/* Open panel: design puts a full margin between the search row and the card, wider than the
+   column-gap between the keyword box and the Filters button. */
+.documents-page__body .search-filter-wrapper:has(#advancedFilterPanel:not([hidden])) {
+  row-gap: var(--layout-margin-large);
+}
+
+/* The template lays the toggle out in a half-width grid column it does not need here. */
+.documents-page__body .action-buttons-section .row {
+  flex-wrap: nowrap;
+  margin: 0;
+}
+
+.documents-page__body .action-buttons-section [class*='col-'] {
+  width: auto;
+  margin: 0;
+  padding: 0;
+}
+
+.documents-page__body .action-buttons-section .btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--layout-padding-xsmall);
+  min-height: 2.75rem;
+  padding: 0 var(--layout-padding-medium);
+  background: var(--surface-color-secondary-button-default);
+  border: var(--layout-border-width-small) solid var(--theme-gray-50);
+  border-radius: var(--layout-border-radius-medium);
+  font: var(--typography-regular-body);
+  color: var(--typography-color-primary);
+  white-space: nowrap;
+}
+
+.documents-page__body .action-buttons-section .btn-primary .material-icons {
+  font-size: var(--icons-size-medium);
+}
+
+.documents-page__body .action-buttons-section .btn-primary:hover,
+.documents-page__body .action-buttons-section .btn-primary:focus {
+  background: var(--surface-color-secondary-button-hover);
+  color: var(--typography-color-primary);
+}
+
+.documents-page__body .search-bar-section .form-control,
+.documents-page__body .search-bar-section .btn {
+  min-height: 2.75rem;
+}
+
+/* On a phone the keyword box and the Filters toggle no longer fit on one row, and the toggle wraps
+   to a row of its own where its 104px leaves the rest of the row empty. Stacked, both are
+   full-width controls, the same shape the masthead actions take at this width. */
+@media (max-width: 575.98px) {
+  .documents-page__body .action-buttons-section {
+    flex: 1 0 100%;
+  }
+
+  /* Only the second of the template's two columns holds the toggle; the first is empty, so it is
+     the one that takes the row. */
+  .documents-page__body .action-buttons-section [class*='col-']:last-child,
+  .documents-page__body .action-buttons-section .btn-primary {
+    width: 100%;
+  }
+
+  .documents-page__body .action-buttons-section .btn-primary {
+    justify-content: center;
+  }
 }
 
 /* Placeholder segments hold the group's shape while the probes decide which ones exist. */
 .document-type-filter__segment--loading {
-  display: flex;
-  align-items: center;
-  border-color: var(--table-border-color);
+  border-color: var(--theme-gray-40);
   cursor: default;
 }
 
 .document-type-filter__segment--loading .placeholder {
-  display: block;
-  width: 100%;
-  height: 0.75rem;
-  background-color: var(--font-color);
-}
-
-/* Wrapped rows need their own rounded ends, so drop the group radii and round every segment. */
-@media (max-width: 600px) {
-  .document-type-filter__group {
-    gap: 0.5rem;
-  }
-
-  .document-type-filter__segment,
-  .document-type-filter__group li:first-child .document-type-filter__segment,
-  .document-type-filter__group li:last-child .document-type-filter__segment {
-    border-right-width: 1px;
-    border-radius: var(--bs-border-radius);
-  }
+  background-color: var(--typography-color-secondary);
 }

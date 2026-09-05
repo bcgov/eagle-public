@@ -271,6 +271,29 @@ describe('TableTemplate selection', () => {
    * pins what makes the height fixed — the same node, in the same place, holding the same two
    * halves, in every state.
    */
+  // The estimate is the sum of the originals, not the zip, so it can only ever be "about".
+  it('adds an estimated size once the selected rows carry one', () => {
+    setSelected('documents', [
+      { id: 'doc-a', displayName: 'Alpha', size: 2 * 1024 * 1024 },
+      { id: 'doc-b', displayName: 'Beta', size: 3 * 1024 * 1024 },
+    ]);
+
+    render(<TableTemplate data={selectableTable()} onMessage={() => undefined} />);
+
+    expect(screen.getByText('2 selected · about 5.0 MB')).toBeInTheDocument();
+  });
+
+  it('omits the size when none of the selected rows have a known one', () => {
+    setSelected('documents', [
+      { id: 'doc-a', displayName: 'Alpha' },
+      { id: 'doc-b', displayName: 'Beta' },
+    ]);
+
+    render(<TableTemplate data={selectableTable()} onMessage={() => undefined} />);
+
+    expect(screen.getByText('2 selected')).toBeInTheDocument();
+  });
+
   it('keeps the same header bar, in the same place, through every selection state', async () => {
     const { container } = render(
       <TableTemplate data={selectableTable()} onMessage={() => undefined} />,
@@ -433,38 +456,29 @@ describe('TableTemplate select-all offer', () => {
     ]);
   });
 
-  it('stays hidden while the whole result set fits on the page', () => {
+  it('shows the link once a selection is active and more documents match', () => {
+    clearSelection();
+    setSelected('documents', [{ id: 'doc-a', displayName: 'Alpha' }]);
+    render(
+      <TableTemplate data={selectableTable({ totalListItems: 60 })} onMessage={() => undefined} />,
+    );
+
+    expect(screen.getByRole('button', { name: 'Select all 60 documents' })).toBeInTheDocument();
+  });
+
+  it('hides the link while no selection is active', () => {
+    clearSelection();
+    render(<TableTemplate data={selectableTable()} onMessage={() => undefined} />);
+
+    expect(screen.queryByRole('button', { name: /Select all/ })).not.toBeInTheDocument();
+  });
+
+  it('hides the link once every matching document is already selected', () => {
     render(
       <TableTemplate data={selectableTable({ totalListItems: 2 })} onMessage={() => undefined} />,
     );
 
     expect(screen.queryByRole('button', { name: /Select all/ })).not.toBeInTheDocument();
-  });
-
-  // Boundary at the page size itself, e.g. page size "All" showing 19 of 19: nothing is left off
-  // the page, so the banner must not appear. Catches `>` in the guard regressing to `>=`.
-  it('stays hidden when the result count exactly equals the page size', () => {
-    render(
-      <TableTemplate
-        data={selectableTable({ totalListItems: 10, pageSize: 10 })}
-        onMessage={() => undefined}
-      />,
-    );
-
-    expect(screen.queryByRole('button', { name: /Select all/ })).not.toBeInTheDocument();
-  });
-
-  it('offers select-all once the result count passes the page size by one', () => {
-    render(
-      <TableTemplate
-        data={selectableTable({ totalListItems: 11, pageSize: 10 })}
-        onMessage={() => undefined}
-      />,
-    );
-
-    expect(screen.getByRole('button', { name: 'Select all 11 documents' })).toHaveTextContent(
-      'Select all 11',
-    );
   });
 
   it('offers the rest of the result set once the page is fully selected', async () => {
@@ -476,20 +490,23 @@ describe('TableTemplate select-all offer', () => {
     expect(onMessage).toHaveBeenCalledWith({ label: 'selectAllMatching' });
   });
 
-  /**
-   * The cap is a limit the reader meets, not a warning they are shown up front: past it the bar
-   * offers nothing and says nothing. `CAP_MESSAGE` is a toast on the attempt that hits the cap,
-   * proved by the header-checkbox case above.
-   */
-  it('offers nothing, and warns about nothing, past the 100-document cap', () => {
-    const { container } = render(
+  it('offers the download limit instead of the real total past the 100-document cap', () => {
+    render(
       <TableTemplate data={selectableTable({ totalListItems: 250 })} onMessage={() => undefined} />,
     );
 
-    expect(screen.queryByRole('button', { name: /Select all/ })).not.toBeInTheDocument();
-    expect(container.querySelector('.table-header-bar')).not.toHaveTextContent(
-      /Narrow|filters|100/,
-    );
+    const link = screen.getByRole('button', { name: 'Select 100 (download limit)' });
+    expect(link).toHaveTextContent('Select 100 (download limit)');
+    expect(link).toHaveAttribute('title', 'Downloads are limited to 100 documents at a time');
+  });
+
+  it('still asks to select the rest of the matches when the link reads the download limit', async () => {
+    const onMessage = vi.fn();
+    render(<TableTemplate data={selectableTable({ totalListItems: 250 })} onMessage={onMessage} />);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Select 100 (download limit)' }));
+
+    expect(onMessage).toHaveBeenCalledWith({ label: 'selectAllMatching' });
   });
 });
 
@@ -525,7 +542,7 @@ describe('TableTemplate selection toolbar', () => {
     render(<TableTemplate data={selectableTable()} onMessage={() => undefined} />);
 
     expect(screen.getByText('1 selected')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Download' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Download 1' })).toBeEnabled();
 
     await userEvent.click(screen.getByLabelText('Select all on this page'));
 
@@ -549,7 +566,7 @@ describe('TableTemplate selection toolbar', () => {
     ]);
     render(<TableTemplate data={selectableTable()} onMessage={() => undefined} />);
 
-    await userEvent.click(screen.getByRole('button', { name: 'Download' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Download 2' }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     const [url, init] = fetchMock.mock.calls[0];
@@ -581,7 +598,7 @@ describe('TableTemplate selection toolbar', () => {
 
     render(<TableTemplate data={selectableTable()} onMessage={() => undefined} />);
 
-    expect(screen.getByRole('button', { name: 'Download' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Download 1' })).toBeEnabled();
   });
 
   it('refuses a fourth download while three are still running', () => {
@@ -592,7 +609,7 @@ describe('TableTemplate selection toolbar', () => {
 
     render(<TableTemplate data={selectableTable()} onMessage={() => undefined} />);
 
-    const button = screen.getByRole('button', { name: 'Download' });
+    const button = screen.getByRole('button', { name: 'Download 1' });
     expect(button).toBeDisabled();
     expect(button).toHaveAttribute(
       'title',
@@ -612,7 +629,7 @@ describe('TableTemplate selection toolbar', () => {
 
       render(<TableTemplate data={selectableTable()} onMessage={() => undefined} />);
 
-      expect(screen.getByRole('button', { name: 'Download' })).toBeEnabled();
+      expect(screen.getByRole('button', { name: 'Download 1' })).toBeEnabled();
     },
   );
 });

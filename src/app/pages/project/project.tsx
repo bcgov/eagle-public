@@ -1,22 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, NavLink, Outlet, useNavigate, useParams } from 'react-router';
+import { Link, NavLink, Outlet, useParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { track } from 'app/analytics/analytics';
 import { getById } from 'app/api/project';
 import { listsQueryOptions } from 'app/api/api';
-import { safeHtml } from 'app/utils/safe-html';
-import { isSafeUrl, openExternal } from 'app/utils/safe-url';
-import { DetailsSidebar } from './details-sidebar';
-import { EngageBanner } from './engage-banner';
+import { Skeleton } from 'app/components/skeleton/skeleton';
+import { ProjectMasthead } from './project-masthead';
+import { ProjectPanel } from './project-panel';
+import { useProjectTabMeta, type ProjectTab } from './use-project-tab-meta';
 import './project.css';
-
-/** Top-level tabs, in the order the Angular template rendered them. The document-type tabs live
- * under Documents now; DocumentsPage owns that strip. */
-const TABS = [
-  { label: 'Project Details', link: 'project-details' },
-  { label: 'Commenting', link: 'commenting' },
-  { label: 'Documents', link: 'documents' },
-];
 
 /** Comment periods near today, the window the banner draws from. */
 function bannerWindow(): { start: string; end: string } {
@@ -27,15 +19,8 @@ function bannerWindow(): { start: string; end: string } {
   return { start: start.toISOString(), end: end.toISOString() };
 }
 
-/** Angular's `date:'MMMM d'`, e.g. "August 27". */
-function monthAndDay(value: Date | string): string {
-  return new Date(value).toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
-}
-
 export function ProjectPage() {
   const { projId = '' } = useParams();
-  const navigate = useNavigate();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const { data: lists = [] } = useQuery(listsQueryOptions());
 
@@ -53,27 +38,9 @@ export function ProjectPage() {
     },
   });
 
+  const tabs = useProjectTabMeta(projId, lists, project ?? null);
+
   const notFound = isError || (isSuccess && !project);
-
-  const banner = project?.commentPeriodForBanner;
-  const showBanner = !!banner?.isBannerVisible;
-
-  function goToViewComments(): void {
-    if (!banner || !project) return;
-    const external = !!(banner.isMet && isSafeUrl(banner.metURL));
-    track('Comment Period Banner Clicked', {
-      project_id: project._id,
-      project_name: project.name,
-      status: banner.commentPeriodStatus,
-      is_met: external,
-      destination: external ? 'external_met' : 'comment_period_details',
-    });
-    if (external) {
-      openExternal(banner.metURL);
-    } else {
-      navigate(`/p/${project._id}/cp/${banner._id}/details`);
-    }
-  }
 
   if (notFound) {
     return (
@@ -86,113 +53,28 @@ export function ProjectPage() {
   }
 
   return (
-    <div className="project" data-sidebar-state={sidebarOpen ? 'open' : 'closed'}>
-      <main>
-        <div className="project-info">
-          <DetailsSidebar
-            project={project ?? null}
-            loading={projectLoading}
-            open={sidebarOpen}
-            onToggle={() => setSidebarOpen((open) => !open)}
-          />
-          <div className="content">
-            {showBanner &&
-              (banner.isMet && isSafeUrl(banner.metURL) ? (
-                <EngageBanner data={banner} />
-              ) : (
-                <div className="pcp-banner col-sm-12">
-                  <div className="pcp-banner-content">
-                    <div className="pcp-banner-header">
-                      <div className="pcp-banner-info">
-                        <h2>Public Comment Period is {banner.commentPeriodStatus}</h2>
-                        <h5>
-                          {monthAndDay(banner.dateStarted)} - {banner.endDateDisplay}
-                        </h5>
-                      </div>
-                      {banner.commentPeriodStatus === 'Open' && (
-                        <div className="pcp-banner-actions">
-                          <button
-                            type="button"
-                            className="btn btn-outline-warning"
-                            onClick={goToViewComments}
-                          >
-                            <span>View Comment Period</span>
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                    {(banner.informationLabel || banner.instructions) && (
-                      <div className="pcp-banner-description">
-                        {banner.informationLabel && (
-                          <p>
-                            This Public Comment Period is regarding the{' '}
-                            <b>{banner.informationLabel}</b>
-                          </p>
-                        )}
-                        {!banner.informationLabel && banner.instructions && (
-                          <div
-                            id="instructions"
-                            dangerouslySetInnerHTML={safeHtml(banner.instructions)}
-                          ></div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
+    <div className="project-page">
+      <ProjectMasthead project={project ?? null} projId={projId} loading={projectLoading} />
 
-            <div className="main-content">
-              <section className="project-tabs">
-                <TabBar
-                  projId={projId}
-                  tabs={TABS}
-                  projectName={project?.name}
-                  ariaLabel="Project sections"
-                />
-                <div className="tab-content">
-                  <Outlet context={{ project: project ?? null, projId, lists, projectLoading }} />
-                </div>
-              </section>
-            </div>
-          </div>
+      <div className="project-page__panel">
+        <div className="project-page__container">
+          <ProjectPanel project={project ?? null} lists={lists} loading={projectLoading} />
         </div>
-        <section className="people">
-          <div className="container">
-            <h2 className="mb-4">Contact Us</h2>
-            <div className="d-flex flex-column flex-md-row gap-3 gap-md-5">
-              <div className="flex-md-1">
-                <p className="fw-bold mb-2">Project Assessment Team</p>
-                <p className="d-flex align-items-center mb-2">
-                  <i className="material-icons me-2" aria-hidden="true">
-                    email
-                  </i>
-                  <a href="mailto:eao.operations@gov.bc.ca">EAO.operations@gov.bc.ca</a>
-                </p>
-                <p className="d-flex align-items-center mb-2 text-muted">
-                  <i className="material-icons me-2" aria-hidden="true">
-                    phone
-                  </i>
-                  -
-                </p>
-              </div>
-              <div className="flex-md-1 contact-divider">
-                <p className="fw-bold mb-2">Compliance &amp; Enforcement</p>
-                <p className="d-flex align-items-center mb-2">
-                  <i className="material-icons me-2" aria-hidden="true">
-                    email
-                  </i>
-                  <a href="mailto:eao.compliance@gov.bc.ca">EAO.compliance@gov.bc.ca</a>
-                </p>
-                <p className="d-flex align-items-center mb-2">
-                  <i className="material-icons me-2" aria-hidden="true">
-                    phone
-                  </i>
-                  250-387-0131
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
+      </div>
+
+      <div className="project-page__tabs project-tabs">
+        <div className="project-page__container">
+          <TabBar
+            projId={projId}
+            tabs={tabs.filter((tab) => tab.show)}
+            projectName={project?.name}
+            ariaLabel="Project sections"
+          />
+        </div>
+      </div>
+
+      <main className="project-page__container tab-content">
+        <Outlet context={{ project: project ?? null, projId, lists, projectLoading }} />
       </main>
     </div>
   );
@@ -200,7 +82,7 @@ export function ProjectPage() {
 
 interface TabBarProps {
   projId: string;
-  tabs: { label: string; link: string }[];
+  tabs: ProjectTab[];
   projectName?: string;
   /** Names the strip for screen readers. */
   ariaLabel: string;
@@ -241,30 +123,36 @@ function TabBar({ projId, tabs, projectName, ariaLabel }: TabBarProps) {
 
   return (
     <div className="tabs-container">
-      <ul className="nav-tabs" role="tablist" aria-label={ariaLabel} ref={navTabs}>
-        {tabs.map((tab) => (
-          <li className="nav-item" role="presentation" key={tab.link}>
-            <NavLink
-              className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
-              role="tab"
-              to={tab.link}
-              replace
-              id={tab.link === 'project-details' ? 'project-details-tab' : undefined}
-              aria-controls={tab.link === 'project-details' ? 'project-details-panel' : undefined}
-              onClick={() =>
-                track('Project Tab Clicked', {
-                  project_id: projId,
-                  project_name: projectName ?? null,
-                  tab_name: tab.label,
-                  tab_path: tab.link,
-                })
-              }
-            >
-              {tab.label}
-            </NavLink>
-          </li>
-        ))}
-      </ul>
+      {/* Links, not tabs: each one routes, so the ARIA tab pattern would promise keyboard
+          behaviour this strip does not have (PUBLIC-156). */}
+      <nav aria-label={ariaLabel}>
+        <ul className="nav-tabs" ref={navTabs}>
+          {tabs.map((tab) => (
+            <li className="nav-item" key={tab.key}>
+              <NavLink
+                className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
+                to={tab.key}
+                replace
+                onClick={() =>
+                  track('Project Tab Clicked', {
+                    project_id: projId,
+                    project_name: projectName ?? null,
+                    tab_name: tab.label,
+                    tab_path: tab.key,
+                  })
+                }
+              >
+                {tab.label}
+                {tab.count && <span className="tab-count">{tab.count}</span>}
+                {/* Held open so the strip does not jump when the count lands. */}
+                {!tab.count && tab.countPending && (
+                  <Skeleton className="tab-count tab-count--loading" width="1.5rem" />
+                )}
+              </NavLink>
+            </li>
+          ))}
+        </ul>
+      </nav>
       {arrows.left && (
         <button
           type="button"

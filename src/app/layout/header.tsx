@@ -65,7 +65,7 @@ export function Header() {
 
   return (
     <header
-      className={`app-header${pathname.startsWith('/projects') ? ' app-header--flex' : ''}${pathname.startsWith('/p/') ? ' app-header--solid' : ''}`}
+      className={`app-header${pathname.startsWith('/projects') ? ' app-header--flex' : ''}`}
       id="header"
     >
       <nav className="navbar navbar-expand-md justify-content-between">

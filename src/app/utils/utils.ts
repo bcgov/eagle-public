@@ -273,3 +273,19 @@ export function mediumDate(value: string | Date | undefined | null): string {
     day: 'numeric',
   });
 }
+
+/** A Regulatory Transfer project's regulation link, falling back to the BC Energy Regulator. */
+export function regulatorLink(item: unknown): string {
+  return isSafeUrl(item) ? item : Constants.BC_ENERGY_REGULATOR_LINK;
+}
+
+/** bclaws link for the Act a project was assessed under; unknown legislation reads as 2018. */
+export function legislationLink(legislation: string | undefined): string {
+  if (legislation?.includes('2002')) {
+    return Constants.legislationLinks.ENVIRONMENTAL_ASSESSMENT_ACT_2002_LINK;
+  }
+  if (legislation?.includes('1996')) {
+    return Constants.legislationLinks.ENVIRONMENTAL_ASSESSMENT_ACT_1996_LINK;
+  }
+  return Constants.legislationLinks.ENVIRONMENTAL_ASSESSMENT_ACT_2018_LINK;
+}

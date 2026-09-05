@@ -1,0 +1,344 @@
+/* Overview tab: a column of cards beside a narrower aside. Every card is a `section` inside one of
+   the two columns, so the components this tab mounts get the card chrome without knowing about it.
+   Tokens come from @bcgov/design-tokens and eao-tokens.css. */
+
+.overview-tab {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--layout-padding-xlarge);
+}
+
+.overview-tab__main {
+  display: flex;
+  flex: 1 1 27.5rem;
+  flex-direction: column;
+  gap: var(--layout-padding-large);
+  min-width: 0;
+}
+
+.overview-tab__aside {
+  display: flex;
+  flex: 1 1 18.75rem;
+  flex-direction: column;
+  gap: var(--layout-padding-large);
+  min-width: 0;
+  max-width: 22.5rem;
+}
+
+.overview-tab__main > section,
+.overview-tab__aside > section {
+  padding: var(--layout-padding-large);
+  background: var(--theme-gray-white);
+  border: var(--layout-border-width-small) solid var(--theme-gray-40);
+  border-radius: var(--layout-border-radius-medium);
+}
+
+.overview-tab h2 {
+  margin: 0 0 var(--layout-margin-small);
+  font: var(--typography-bold-h5);
+  color: var(--typography-color-primary);
+}
+
+/* Stands in for the comment period callout, without claiming there is one. */
+.overview-tab__callout-loading {
+  padding: var(--layout-padding-large);
+  border-left: var(--layout-border-width-large) solid var(--theme-gray-40);
+  background: var(--theme-gray-10);
+}
+
+.overview-tab__eyebrow {
+  margin: 0 0 var(--layout-margin-hair);
+  font: var(--typography-bold-label);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--typography-color-secondary);
+}
+
+.overview-tab__external-icon {
+  font-size: var(--icons-size-small);
+  vertical-align: middle;
+}
+
+/* About this project */
+
+.overview-tab__description {
+  margin: 0 0 var(--layout-margin-medium);
+  font: var(--typography-regular-body);
+  color: var(--typography-color-secondary);
+}
+
+.overview-tab__description--tight {
+  margin-bottom: var(--layout-margin-medium);
+  font: var(--typography-regular-small-body);
+}
+
+.overview-tab__facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: var(--layout-padding-medium);
+  margin: 0;
+  padding-top: var(--layout-padding-medium);
+  border-top: var(--layout-border-width-small) solid var(--theme-gray-30);
+}
+
+.overview-tab__fact dt {
+  margin-bottom: var(--layout-margin-hair);
+  font: var(--typography-bold-label);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--typography-color-secondary);
+}
+
+.overview-tab__fact dd {
+  margin: 0;
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-primary);
+}
+
+/* Comment period callout */
+
+.overview-tab__main > section.overview-tab__callout {
+  overflow: hidden;
+  padding: 0;
+  background: var(--support-surface-color-warning);
+}
+
+.overview-tab__callout-image {
+  display: block;
+  width: 100%;
+  aspect-ratio: 304.08 / 140;
+  object-fit: cover;
+  object-position: center;
+}
+
+.overview-tab__callout-body {
+  padding: var(--layout-padding-large);
+  border-left: var(--layout-border-width-large) solid var(--support-border-color-warning);
+}
+
+.overview-tab__callout-dates {
+  margin: 0 0 var(--layout-margin-xsmall);
+  font: var(--typography-bold-small-body);
+  color: var(--typography-color-primary);
+}
+
+.overview-tab__callout-text {
+  max-width: 62ch;
+  margin: 0 0 var(--layout-margin-medium);
+  font: var(--typography-regular-body);
+  color: var(--typography-color-secondary);
+}
+
+.overview-tab__callout-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--layout-padding-small);
+}
+
+.overview-tab__cta,
+.overview-tab__cta-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--layout-padding-xsmall);
+  min-height: 44px;
+  padding: 0 var(--layout-padding-large);
+  border: var(--layout-border-width-small) solid transparent;
+  border-radius: var(--layout-border-radius-medium);
+  text-decoration: none;
+}
+
+.overview-tab__cta {
+  background: var(--surface-color-primary-button-default);
+  border-color: var(--surface-color-primary-button-default);
+  color: var(--typography-color-primary-invert);
+  font: var(--typography-bold-body);
+}
+
+.overview-tab__cta:hover,
+.overview-tab__cta:focus {
+  background: var(--surface-color-primary-button-hover);
+  border-color: var(--surface-color-primary-button-hover);
+}
+
+.overview-tab__cta-secondary {
+  background: var(--surface-color-secondary-button-default);
+  border-color: var(--theme-gray-50);
+  color: var(--typography-color-primary);
+  font: var(--typography-regular-body);
+}
+
+.overview-tab__cta-secondary:hover,
+.overview-tab__cta-secondary:focus {
+  background: var(--surface-color-secondary-button-hover);
+  color: var(--typography-color-primary);
+  text-decoration: underline;
+}
+
+/* Card lists: updates in the aside, and any row list a mounted component brings */
+
+.overview-tab__card-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--layout-padding-medium);
+  margin-bottom: var(--layout-margin-medium);
+}
+
+.overview-tab__card-header h2 {
+  margin: 0;
+}
+
+.overview-tab__card-header a {
+  font: var(--typography-regular-small-body);
+  white-space: nowrap;
+}
+
+.overview-tab__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.overview-tab__list li + li {
+  margin-top: var(--layout-margin-medium);
+  padding-top: var(--layout-padding-medium);
+  border-top: var(--layout-border-width-small) solid var(--theme-gray-30);
+}
+
+.overview-tab__list-title {
+  margin: 0;
+  font: var(--typography-bold-small-body);
+  color: var(--typography-color-primary);
+}
+
+/* A name on the left, its one piece of detail on the right. */
+.overview-tab__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--layout-padding-small);
+}
+
+.overview-tab__row-meta {
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-secondary);
+}
+
+/* === ASIDE PANEL: header, rows and a tinted invitation, each padded on its own === */
+
+.overview-tab__aside > section.overview-tab__panel {
+  overflow: hidden;
+  padding: 0;
+}
+
+.overview-tab__panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--layout-padding-small);
+  padding: var(--layout-padding-medium) var(--layout-padding-large);
+  border-bottom: var(--layout-border-width-small) solid var(--theme-gray-30);
+}
+
+.overview-tab__panel-header h2 {
+  margin: 0;
+}
+
+.overview-tab__panel-header a {
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-link);
+  white-space: nowrap;
+}
+
+.overview-tab__panel-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.overview-tab__panel-list li,
+.overview-tab__panel-empty {
+  padding: var(--layout-padding-medium) var(--layout-padding-large);
+  border-bottom: var(--layout-border-width-small) solid var(--theme-gray-30);
+}
+
+.overview-tab__panel-meta {
+  margin: 0 0 var(--layout-margin-hair);
+  font: var(--typography-regular-label);
+  color: var(--typography-color-secondary);
+}
+
+.overview-tab__panel-headline {
+  display: block;
+  margin: 0 0 var(--layout-margin-hair);
+  font: var(--typography-bold-small-body);
+  color: var(--typography-color-link);
+}
+
+.overview-tab__panel-summary {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-secondary);
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.overview-tab__subscribe {
+  padding: var(--layout-padding-large);
+  background: var(--support-surface-color-info);
+}
+
+.overview-tab__subscribe-title {
+  margin: 0 0 var(--layout-margin-xsmall);
+  font: var(--typography-bold-small-body);
+  color: var(--typography-color-primary);
+}
+
+.overview-tab__subscribe-text {
+  margin: 0 0 var(--layout-margin-small);
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-secondary);
+}
+
+.overview-tab__empty {
+  margin: 0;
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-secondary);
+}
+
+/* Contact */
+
+.overview-tab__contact + .overview-tab__contact {
+  margin-top: var(--layout-margin-medium);
+  padding-top: var(--layout-padding-medium);
+  border-top: var(--layout-border-width-small) solid var(--theme-gray-30);
+}
+
+.overview-tab__contact a {
+  font: var(--typography-regular-small-body);
+}
+
+.overview-tab__contact-phone {
+  margin: 0;
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-secondary);
+}
+
+/* The aside sits under the main column once the two would be too narrow to read side by side. Each
+   takes a whole flex line rather than the row turning into a column: in a column the two bases
+   above would be read as heights, padding a short card out to 440px, and the width would come from
+   `align-items`, which has to stay flex-start for the side-by-side case. */
+@media (max-width: 859.98px) {
+  .overview-tab__main,
+  .overview-tab__aside {
+    flex-basis: 100%;
+  }
+
+  .overview-tab__aside {
+    max-width: none;
+  }
+}

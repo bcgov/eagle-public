@@ -1,0 +1,101 @@
+/* Updates tab: a single column of update cards beside the subscribe aside. Tokens come from
+   @bcgov/design-tokens and eao-tokens.css. */
+
+.updates-tab {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--layout-padding-xlarge);
+}
+
+.updates-tab__main {
+  flex: 1 1 27.5rem;
+  min-width: 0;
+}
+
+.updates-tab__aside {
+  flex: 1 1 18.75rem;
+  min-width: 0;
+  max-width: 22.5rem;
+}
+
+.updates-tab__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--layout-padding-medium);
+  margin-bottom: var(--layout-margin-large);
+}
+
+.updates-tab__title {
+  margin: 0;
+  font: var(--typography-bold-h4);
+  color: var(--typography-color-primary);
+}
+
+.updates-tab__count {
+  margin: 0;
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-secondary);
+}
+
+.updates-tab__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-padding-large);
+  margin: 0 0 var(--layout-margin-large);
+  padding: 0;
+  list-style: none;
+}
+
+.updates-tab__empty {
+  margin: 0;
+  font: var(--typography-regular-body);
+  color: var(--typography-color-secondary);
+}
+
+.updates-tab__skeleton {
+  padding: var(--layout-padding-large);
+  background: var(--theme-gray-white);
+  border: var(--layout-border-width-small) solid var(--theme-gray-40);
+  border-radius: var(--layout-border-radius-medium);
+}
+
+.updates-tab__subscribe {
+  padding: var(--layout-padding-large);
+  background: var(--support-surface-color-info);
+  border: var(--layout-border-width-small) solid var(--theme-gray-40);
+  border-radius: var(--layout-border-radius-medium);
+}
+
+.updates-tab__subscribe-title {
+  margin: 0 0 var(--layout-margin-xsmall);
+  font: var(--typography-bold-h5);
+  color: var(--typography-color-primary);
+}
+
+.updates-tab__subscribe-text {
+  margin: 0 0 var(--layout-margin-medium);
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-secondary);
+}
+
+.updates-tab__subscribe-all {
+  margin: var(--layout-margin-small) 0 0;
+  font: var(--typography-regular-label);
+  color: var(--typography-color-secondary);
+}
+
+/* Same stack as the Overview tab: each column takes a whole flex line, and the aside's width cap
+   goes with it, or the subscribe card keeps its 360px column on a full-width row. */
+@media (max-width: 859.98px) {
+  .updates-tab__main,
+  .updates-tab__aside {
+    flex-basis: 100%;
+  }
+
+  .updates-tab__aside {
+    max-width: none;
+  }
+}

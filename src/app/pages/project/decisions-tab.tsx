@@ -1,7 +1,188 @@
-/**
- * The Angular decisions tab's template was entirely commented out, so the route renders nothing.
- * Kept as a route target so `/p/:projId/decisions` still resolves rather than 404ing to home.
- */
+import { useState } from 'react';
+import { Skeleton } from 'app/components/skeleton/skeleton';
+import { Pagination } from 'app/components/table/pagination';
+import { DocumentLink } from 'app/components/table/document-link';
+import { useTable } from 'app/components/table/use-table';
+import { useProjectEaCertificate } from 'app/api/project-phases';
+import { Constants } from 'app/utils/constants';
+import {
+  createProjectTabModifiers,
+  idToListName,
+  longDate,
+  mediumDate,
+  regulatorLink,
+} from 'app/utils/utils';
+import { useProjectContext } from './project-context';
+import './decisions-tab.css';
+
+const PAGE_SIZE = 10;
+
+/** Rows a list holds open while its first page is in flight. */
+const SKELETON_ROWS = [1, 2, 3];
+
+/** "14 March 2023 · E23-01", either half omitted when absent. The certificate document link
+ * sits right below this line, so the number itself is plain text, not a second link to it. */
+function decisionDateLine(decisionDate: string | undefined, eaCertificate: string | undefined) {
+  const date = decisionDate ? longDate(decisionDate) : undefined;
+  if (date && eaCertificate) return `${date} · ${eaCertificate}`;
+  return date ?? eaCertificate;
+}
+
+/** The type and milestone of a document, as a single line. */
+function documentDetail(record: { type?: string; milestone?: string }, lists: any[]): string {
+  return [record.type, record.milestone]
+    .map((id) => idToListName(id ?? '', lists))
+    .filter((name) => name !== '-')
+    .join(' · ');
+}
+
+/** The EA decision, then the certificate-set documents that record the decisions, newest first. */
 export function DecisionsTab() {
-  return null;
+  const { projId, project, lists, projectLoading } = useProjectContext();
+  const [page, setPage] = useState(1);
+
+  const decision = project?.eacDecision?.name;
+  const transferred = decision === 'Regulatory Transfer';
+  const eaCertificate = useProjectEaCertificate(projId);
+  const dateLine = decisionDateLine(project?.decisionDate, eaCertificate);
+
+  // Certificate Package doctype ids across both legislations, same join compliance-tab uses.
+  const certTypeIds = lists
+    .filter((item) => item.type === 'doctype' && item.name === 'Certificate Package')
+    .map((item) => item._id)
+    .join(',');
+
+  const certResult = useTable('decisionCertificate', {
+    dataset: 'Document',
+    enabled: !!projId && !!certTypeIds,
+    fields: [{ name: 'project', value: projId }],
+    currentPage: 1,
+    pageSize: 1,
+    sortBy: '-datePosted',
+    queryModifiers: { type: certTypeIds },
+  });
+  const certDocument = certResult.data[0];
+
+  const result = useTable('decisionDocuments', {
+    dataset: 'Document',
+    // The certificate modifiers are built from the lists, so the search waits for them.
+    enabled: !!projId && lists.length > 0,
+    fields: [{ name: 'project', value: projId }],
+    currentPage: page,
+    pageSize: PAGE_SIZE,
+    sortBy: '-datePosted',
+    secondarySort: '+displayName',
+    queryModifiers: createProjectTabModifiers(Constants.optionalProjectDocTabs.CERTIFICATE, lists),
+  });
+
+  // The certificate modifiers are built from the lists, so a query waiting on them is still
+  // pending rather than empty.
+  const pending = result.loading || lists.length === 0;
+
+  const decisionDocument = certResult.loading ? (
+    <p className="decisions-tab__decision-document">
+      <Skeleton width="12rem" />
+    </p>
+  ) : (
+    certDocument && (
+      <p className="decisions-tab__decision-document">
+        <DocumentLink document={certDocument}>
+          {certDocument.documentFileName || certDocument.displayName || 'Open document'}
+        </DocumentLink>
+      </p>
+    )
+  );
+
+  return (
+    <section className="decisions-tab">
+      <h2 className="decisions-tab__title">Decisions</h2>
+      <p className="decisions-tab__intro">
+        Every decision the Environmental Assessment Office has made on this project, newest first.
+      </p>
+
+      {projectLoading && (
+        <div className="decisions-tab__decision" aria-busy="true">
+          <span className="visually-hidden">Loading the EA decision</span>
+          <Skeleton width="6rem" />
+          <Skeleton width="45%" />
+        </div>
+      )}
+
+      {!projectLoading && project?.eacDecision && (
+        <div className="decisions-tab__decision">
+          <h3 className="decisions-tab__decision-label">EA decision</h3>
+          {transferred ? (
+            <>
+              <p className="decisions-tab__decision-value">
+                <a
+                  href={regulatorLink(project.applicableRegulation?.item)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {project.applicableRegulation?.name || 'BC Energy Regulator'}
+                </a>
+              </p>
+              {decisionDocument}
+            </>
+          ) : (
+            <>
+              <p className="decisions-tab__decision-value">{decision}</p>
+              {dateLine && <p className="decisions-tab__decision-date">{dateLine}</p>}
+              {decisionDocument}
+            </>
+          )}
+        </div>
+      )}
+
+      {(project?.eacDecision || pending || result.data.length > 0) && (
+        <h3 className="decisions-tab__list-title">Decision documents</h3>
+      )}
+
+      {pending && result.data.length === 0 && (
+        <ol className="decisions-tab__list" aria-busy="true">
+          <li className="visually-hidden">Loading decision documents</li>
+          {SKELETON_ROWS.map((row) => (
+            <li className="decisions-tab__item" key={row}>
+              <p className="decisions-tab__item-date">
+                <Skeleton width="5rem" />
+              </p>
+              <div>
+                <Skeleton width="60%" />
+                <Skeleton width="35%" />
+              </div>
+            </li>
+          ))}
+        </ol>
+      )}
+
+      {result.data.length > 0 && (
+        <ol className="decisions-tab__list">
+          {result.data.map((record) => (
+            <li className="decisions-tab__item" key={record._id}>
+              <p className="decisions-tab__item-date">{mediumDate(record.datePosted)}</p>
+              <div>
+                <h3 className="decisions-tab__item-title">{record.displayName}</h3>
+                <p className="decisions-tab__item-detail">{documentDetail(record, lists)}</p>
+                <DocumentLink document={record}>
+                  {record.documentFileName || 'Open document'}
+                </DocumentLink>
+              </div>
+            </li>
+          ))}
+        </ol>
+      )}
+
+      {!pending && result.data.length === 0 && (
+        <p>No decision documents have been posted for this project.</p>
+      )}
+
+      <Pagination
+        currentPage={page}
+        pageSize={PAGE_SIZE}
+        totalItems={result.totalListItems}
+        ariaLabel="Decision documents pagination"
+        onPageChange={setPage}
+      />
+    </section>
+  );
 }

@@ -1,0 +1,143 @@
+/* Engagement tab: one card per comment period. Tokens come from @bcgov/design-tokens and
+   eao-tokens.css. */
+
+.engagement-tab__title {
+  margin: 0 0 var(--layout-margin-large);
+  font: var(--typography-bold-h4);
+  color: var(--typography-color-primary);
+}
+
+.engagement-tab__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-padding-large);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.engagement-tab__card {
+  padding: var(--layout-padding-large);
+  background: var(--theme-gray-white);
+  border: var(--layout-border-width-small) solid var(--theme-gray-40);
+  border-radius: var(--layout-border-radius-medium);
+}
+
+.engagement-tab__status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--layout-padding-small);
+  margin: 0 0 var(--layout-margin-small);
+}
+
+.engagement-tab__dot {
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: var(--layout-border-radius-circular);
+}
+
+.engagement-tab__dot--open {
+  background: var(--support-border-color-success);
+}
+
+.engagement-tab__dot--closed {
+  background: var(--theme-gray-60);
+}
+
+.engagement-tab__status-label {
+  font: var(--typography-bold-label);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--typography-color-secondary);
+}
+
+.engagement-tab__pill {
+  padding: var(--layout-padding-hair) var(--layout-padding-small);
+  border: var(--layout-border-width-small) solid transparent;
+  border-radius: var(--layout-border-radius-circular);
+  font: var(--typography-bold-label);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  color: var(--typography-color-primary);
+}
+
+.engagement-tab__pill--open {
+  background: var(--support-surface-color-success);
+  border-color: var(--support-border-color-success);
+  color: var(--support-border-color-success);
+}
+
+.engagement-tab__pill--closed {
+  background: var(--theme-gray-20);
+  border-color: var(--theme-gray-40);
+  color: var(--typography-color-secondary);
+}
+
+.engagement-tab__pill--pending {
+  background: var(--support-surface-color-warning);
+  border-color: var(--support-border-color-warning);
+}
+
+.engagement-tab__card-title {
+  margin: 0 0 var(--layout-margin-hair);
+  font: var(--typography-bold-h5);
+  color: var(--typography-color-primary);
+}
+
+.engagement-tab__dates {
+  margin: 0 0 var(--layout-margin-small);
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-secondary);
+}
+
+.engagement-tab__description {
+  max-width: 62ch;
+  margin: 0 0 var(--layout-margin-medium);
+  font: var(--typography-regular-body);
+  color: var(--typography-color-secondary);
+  text-wrap: pretty;
+}
+
+.engagement-tab__empty {
+  margin: 0;
+  font: var(--typography-regular-body);
+  color: var(--typography-color-secondary);
+}
+
+.engagement-tab__cta {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 var(--layout-padding-large);
+  border: var(--layout-border-width-small) solid transparent;
+  border-radius: var(--layout-border-radius-medium);
+  cursor: pointer;
+}
+
+.engagement-tab__cta--primary {
+  background: var(--surface-color-primary-button-default);
+  border-color: var(--surface-color-primary-button-default);
+  font: var(--typography-bold-body);
+  color: var(--typography-color-primary-invert);
+}
+
+.engagement-tab__cta--primary:hover,
+.engagement-tab__cta--primary:focus-visible {
+  background: var(--surface-color-primary-button-hover);
+  border-color: var(--surface-color-primary-button-hover);
+}
+
+/* A closed period is a record to read, not an invitation to act. */
+.engagement-tab__cta--secondary {
+  background: var(--surface-color-secondary-button-default);
+  border-color: var(--theme-gray-50);
+  font: var(--typography-regular-body);
+  color: var(--typography-color-primary);
+}
+
+.engagement-tab__cta--secondary:hover,
+.engagement-tab__cta--secondary:focus-visible {
+  background: var(--surface-color-secondary-button-hover);
+}

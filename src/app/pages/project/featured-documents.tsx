@@ -1,20 +1,16 @@
-import { useMemo } from 'react';
-import { TableTemplate } from 'app/components/table/table-template';
-import { tableObject, type IColumnObject } from 'app/components/table/table-object';
+import { Link } from 'react-router';
+import { Skeleton } from 'app/components/skeleton/skeleton';
+import { DocumentLink } from 'app/components/table/document-link';
 import { useTable } from 'app/components/table/use-table';
-import { DocumentTableRow } from './document-table-rows';
+import { fileSize } from 'app/utils/file-size';
+import { idToListName, longDate } from 'app/utils/utils';
 import { useProjectContext } from './project-context';
-
-const COLUMNS: IColumnObject[] = [
-  { name: '★', value: 'isFeatured', width: 'col-1', nosort: true },
-  { name: 'Name', value: 'displayName', width: 'col-3', nosort: true },
-  { name: 'Date', value: 'datePosted', width: 'col-2', nosort: true },
-  { name: 'Type', value: 'type', width: 'col-2', nosort: true },
-  { name: 'Milestone', value: 'milestone', width: 'col-2', nosort: true },
-  { name: 'Phase', value: 'projectPhase', width: 'col-2', nosort: true },
-];
+import './featured-documents.css';
 
 const PAGE_SIZE = 5;
+
+/** Rows a list holds open while its first page is in flight. */
+const SKELETON_ROWS = [1, 2, 3];
 
 /** The project's starred documents: a fixed top five, no paging or sorting. */
 export function FeaturedDocuments() {
@@ -30,37 +26,68 @@ export function FeaturedDocuments() {
     queryModifiers: { isFeatured: 'true' },
   });
 
-  const data = useMemo(
-    () => ({
-      ...tableObject({
-        tableId: 'documents-table',
-        component: DocumentTableRow,
-        columns: COLUMNS,
-        currentPage: 1,
-        pageSize: PAGE_SIZE,
-        sortBy: '-datePosted',
-        items: result.data.map((record) => ({ rowData: record })),
-        totalListItems: result.totalListItems,
-        data: { lists, showFeatured: true },
-      }),
-      options: {
-        showHeader: true,
-        showPageCountDisplay: false,
-        showPagination: false,
-        showPageSizePicker: false,
-      },
-    }),
-    [result.data, result.totalListItems, lists],
-  );
-
   if (!result.loading && result.totalListItems === 0) {
     return null;
   }
 
   return (
-    <div className="mb-4">
-      <h3 className="mb-4">Featured Documents</h3>
-      <TableTemplate data={data} loading={result.loading} onMessage={() => undefined} />
-    </div>
+    <section aria-labelledby="featured-documents-title">
+      <div className="overview-tab__card-header">
+        <h2 id="featured-documents-title">Featured documents</h2>
+        <Link to={`/p/${projId}/documents`}>
+          {result.totalListItems > 0
+            ? `All ${result.totalListItems.toLocaleString()} documents`
+            : 'All documents'}
+        </Link>
+      </div>
+      {result.loading && result.data.length === 0 ? (
+        <ul className="overview-tab__list featured-documents" aria-busy="true">
+          <li className="visually-hidden">Loading featured documents</li>
+          {SKELETON_ROWS.map((row) => (
+            <li key={row}>
+              <span className="featured-documents__detail">
+                <Skeleton width="70%" />
+                <Skeleton width="40%" />
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <ul className="overview-tab__list featured-documents">
+          {result.data.map((document: any) => {
+            const name = document.displayName || document.documentFileName;
+            return (
+              <li key={document._id}>
+                <i className="material-icons featured-documents__icon" aria-hidden="true">
+                  insert_drive_file
+                </i>
+                <span className="featured-documents__detail">
+                  <DocumentLink document={document}>{name}</DocumentLink>
+                  <span className="featured-documents__meta">
+                    {[
+                      idToListName(document.type, lists),
+                      longDate(document.datePosted),
+                      fileSize(document.internalSize),
+                    ]
+                      .filter((part) => part && part !== '-')
+                      .join(' · ')}
+                  </span>
+                </span>
+                {/* Second DocumentLink instance: same download behaviour, icon-only target. */}
+                <DocumentLink document={document}>
+                  <i
+                    className="material-icons featured-documents__download-icon"
+                    aria-hidden="true"
+                  >
+                    file_download
+                  </i>
+                  <span className="visually-hidden">Download {name}</span>
+                </DocumentLink>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
   );
 }

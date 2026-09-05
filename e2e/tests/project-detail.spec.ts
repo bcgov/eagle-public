@@ -11,9 +11,9 @@ import {
   unwrap,
 } from '../support/helpers';
 
-const ROWS = 'table[aria-label="table-template"] tbody tr';
+const ROWS = '.data-table__table tbody tr';
 const NAME = 'td[data-label="Name"]';
-const TABS = '.project-tabs .nav-tabs .nav-link';
+const TABS = '.project-tabs nav a';
 const DOC_TYPE_SEGMENTS = '.document-type-filter__segment';
 
 /** Two real projects, resolved per environment instead of hard-coded. */
@@ -23,33 +23,47 @@ async function twoProjects(request: any) {
   return [named, first];
 }
 
-test('project detail defaults to the project-details tab', async ({ page, request }) => {
+test('project detail defaults to the overview tab', async ({ page, request }) => {
   const [project] = await twoProjects(request);
   const calls = recordApiCalls(page);
 
   await page.goto(`/p/${project._id}`);
   await ready(page);
 
-  expect(new URL(page.url()).pathname).toBe(`/p/${project._id}/project-details`);
+  expect(new URL(page.url()).pathname).toBe(`/p/${project._id}/overview`);
   await expect(page.getByRole('heading', { level: 1, name: project.name })).toBeVisible();
-  await expect(page.getByRole('heading', { level: 2, name: 'Project Details' })).toBeVisible();
-  await expect(
-    page.getByRole('heading', { level: 3, name: 'Activities and Updates' }),
-  ).toBeVisible();
-  await expect(page.getByRole('heading', { level: 2, name: 'Contact Us' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 2, name: 'About this project' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 2, name: 'Contact' })).toBeVisible();
 
-  checkBaseline('project-details-tab', calls);
+  checkBaseline('overview-tab', calls);
 });
 
-test('the tab strip offers Project Details, Commenting and Documents, and nothing else', async ({
+test('the tab strip always offers the four core tabs, and only ever adds Decisions or Compliance', async ({
   page,
   request,
 }) => {
   for (const project of await twoProjects(request)) {
-    await page.goto(`/p/${project._id}/project-details`);
+    await page.goto(`/p/${project._id}/overview`);
     await ready(page);
+    // A label carries its count, so match the prefix: "Documents 1,284".
     const labels = (await page.locator(TABS).allInnerTexts()).map((t) => t.trim());
-    expect(labels).toEqual(['Project Details', 'Commenting', 'Documents']);
+    const names = labels.map((label) => label.split(/\s/)[0]);
+    expect(names.slice(0, 4)).toEqual(['Overview', 'Updates', 'Engagement', 'Documents']);
+    expect(names.slice(4).every((name) => ['Decisions', 'Compliance'].includes(name))).toBeTruthy();
+    await expect(page.locator(`${TABS}[aria-current="page"]`)).toHaveText(/^Overview/);
+  }
+});
+
+test('the renamed tab paths still resolve', async ({ page, request }) => {
+  const [project] = await twoProjects(request);
+
+  for (const [from, to] of [
+    ['project-details', 'overview'],
+    ['commenting', 'engagement'],
+  ]) {
+    await page.goto(`/p/${project._id}/${from}`);
+    await page.waitForURL(`**/p/${project._id}/${to}`);
+    expect(new URL(page.url()).pathname).toBe(`/p/${project._id}/${to}`);
   }
 });
 
@@ -60,11 +74,11 @@ test('the Documents tab carries a document-type filter', async ({ page, request 
 
   const labels = (await page.locator(DOC_TYPE_SEGMENTS).allInnerTexts()).map((t) => t.trim());
   expect(labels[0]).toBe('All Documents');
-  // Application / Certificate / Amendment(s) / C&E Documents appear only when that project has
+  // Application / Certificate / Amendment(s) / Compliance appear only when that project has
   // the documents.
   expect(
     labels.every((l) =>
-      ['All Documents', 'Application', 'Certificate', 'Amendment(s)', 'C&E Documents'].includes(l),
+      ['All Documents', 'Application', 'Certificate', 'Amendment(s)', 'Compliance'].includes(l),
     ),
   ).toBeTruthy();
 });
@@ -83,7 +97,10 @@ test('documents tab renders a paged document table', async ({ page, request }) =
   }
   const rows = page.locator(ROWS);
   await expect(rows).toHaveCount(Math.min(10, total(env)));
-  await expect(rows.first().locator(NAME)).toHaveText(env.searchResults[0].displayName.trim());
+  // The name cell can also carry the featured star, so assert on the document link itself.
+  await expect(rows.first().locator(NAME).locator('a')).toHaveText(
+    env.searchResults[0].displayName.trim(),
+  );
   expect((await pageCount(page)).total).toBe(total(env));
 
   checkBaseline('project-documents-tab', calls);
@@ -131,9 +148,9 @@ test('application tab renders, with an empty-state when the project has no appli
   }
 });
 
-test('commenting tab lists the project comment periods', async ({ page, request }) => {
+test('engagement tab lists the project comment periods', async ({ page, request }) => {
   const [project] = await twoProjects(request);
-  await page.goto(`/p/${project._id}/commenting`);
+  await page.goto(`/p/${project._id}/engagement`);
   await ready(page);
 
   await expect(page.getByRole('heading', { level: 1, name: project.name })).toBeVisible();

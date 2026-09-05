@@ -42,6 +42,14 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path: string) => path.replace(/^\/notify-api/, ''),
       },
+      // Phase dates for the assessment rail, from the same APIM gateway `/demi-search` uses: it
+      // answers `/api/projects/<id>` anonymously, and nothing here supplies that prefix.
+      '/demi-projects': {
+        target: 'https://demi-apim-test.azure-api.net',
+        secure: false,
+        changeOrigin: true,
+        rewrite: (path: string) => path.replace(/^\/demi-projects/, '/api/projects'),
+      },
       // `/demi-search` is what test's /api/config returns today, and it does NOT follow
       // API_LOCATION: test's rproxy answers that location with `401 WWW-Authenticate: Basic`
       // (only `/` and `/demi-search` are gated there; `/api` is open), so routing it through the

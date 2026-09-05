@@ -1,0 +1,72 @@
+/* Compliance counts and the way into the C&E documents. Tokens come from @bcgov/design-tokens. */
+
+.compliance-tab {
+  max-width: 900px;
+}
+
+.compliance-tab__title {
+  margin-bottom: var(--layout-margin-small);
+  font: var(--typography-bold-h4);
+  color: var(--typography-color-primary);
+}
+
+.compliance-tab__intro {
+  max-width: 62ch;
+  margin-bottom: var(--layout-margin-large);
+  font: var(--typography-regular-body);
+  color: var(--typography-color-secondary);
+}
+
+.compliance-tab__stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--layout-padding-medium);
+  margin: 0 0 var(--layout-margin-large);
+  padding: 0;
+  list-style: none;
+}
+
+.compliance-tab__stat {
+  padding: var(--layout-padding-large);
+  background: var(--theme-gray-white);
+  border: var(--layout-border-width-small) solid var(--theme-gray-40);
+  border-radius: var(--layout-border-radius-medium);
+}
+
+.compliance-tab__stat-value {
+  margin-bottom: var(--layout-margin-hair);
+  font: var(--typography-bold-h3);
+  line-height: 1.1;
+  color: var(--typography-color-primary);
+}
+
+.compliance-tab__stat-label {
+  margin-bottom: 0;
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-secondary);
+}
+
+.compliance-tab__link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--layout-padding-xsmall);
+  min-height: 44px;
+  padding: 0 var(--layout-padding-large);
+  background: var(--theme-gray-white);
+  border: var(--layout-border-width-small) solid var(--theme-gray-50);
+  border-radius: var(--layout-border-radius-medium);
+  font: var(--typography-regular-body);
+  color: var(--typography-color-primary);
+  text-decoration: none;
+}
+
+.compliance-tab__link:hover,
+.compliance-tab__link:focus {
+  background: var(--surface-color-secondary-button-hover);
+  color: var(--typography-color-primary);
+  text-decoration: underline;
+}
+
+.compliance-tab__link .material-icons {
+  font-size: var(--icons-size-medium);
+}

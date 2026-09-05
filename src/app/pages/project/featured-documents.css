@@ -1,0 +1,37 @@
+/* Starred documents as a row list: icon, name, then type · date · size. The card chrome comes from
+   the Overview tab's column. Tokens come from @bcgov/design-tokens and eao-tokens.css. */
+
+.featured-documents li {
+  display: flex;
+  align-items: center;
+  gap: var(--layout-padding-medium);
+}
+
+.featured-documents__icon {
+  flex: 0 0 auto;
+  font-size: var(--icons-size-large);
+  color: var(--icons-color-secondary);
+}
+
+.featured-documents__detail {
+  min-width: 0;
+  flex: 1;
+  font: var(--typography-regular-body);
+}
+
+.featured-documents__meta {
+  display: block;
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-secondary);
+}
+
+/* The row's second DocumentLink: icon-only, pinned right, never squeezed by the title column. */
+.featured-documents li > a:last-child {
+  flex: 0 0 auto;
+  line-height: 0;
+}
+
+.featured-documents__download-icon {
+  font-size: var(--icons-size-medium);
+  color: var(--icons-color-secondary);
+}

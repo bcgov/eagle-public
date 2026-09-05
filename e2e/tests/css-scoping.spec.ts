@@ -53,8 +53,8 @@ test('the comment period hero spans the page', async ({ page, request }) => {
   await page.goto(`/p/${cp.project}/cp/${cp._id}/details`);
   await ready(page);
 
-  // The page renders its own `.project > main.project-info`; the project shell's grid must not
-  // squeeze it into the sidebar column.
+  // The page renders its own `.project > main.project-info`; the project shell styles `.project-page`
+  // only, so nothing here may reach these.
   expect(await styleOf(page, 'main.project-info', 'display')).toBe('block');
   const width = await page
     .locator('main.project-info')
@@ -70,27 +70,13 @@ test('the search keyword clear button stays inside the input', async ({ page }) 
   expect(await styleOf(page, '.search-clear-btn', 'position')).toBe('absolute');
 });
 
-test('the project detail sidebar map is not laid out like the full-page map', async ({
-  page,
-  request,
-}) => {
+test('the project panel map is not laid out like the full-page map', async ({ page, request }) => {
   const project = await projectByKeyword(request, 'Site C');
 
-  await page.goto(`/p/${project._id}/project-details`);
+  await page.goto(`/p/${project._id}/overview`);
   await ready(page);
   expect(await styleOf(page, '.map-container', 'position')).toBe('relative');
-  expect(await styleOf(page, '.map-container', 'height')).toBe('272px');
-});
-
-test('project detail child headings are not the details tab heading colour', async ({
-  page,
-  request,
-}) => {
-  const project = await projectByKeyword(request, 'Site C');
-
-  await page.goto(`/p/${project._id}/project-details`);
-  await ready(page);
-  expect(await styleOf(page, '.tab-content h3', 'color')).toBe('rgb(73, 73, 73)');
+  expect(await styleOf(page, '.map-container', 'height')).toBe('192px');
 });
 
 test('the notification Engagement panel is not padded like a detail field block', async ({

@@ -27,6 +27,10 @@ interface SearchFilterTemplateProps {
   keywordOverride?: string;
   searchHelpLink?: string | null;
   searching?: boolean;
+  /** 'filters' renders the redesigned tune-icon toggle; 'advanced' keeps the legacy label. */
+  filterToggle?: 'advanced' | 'filters';
+  /** Debounces the keyword box 300ms after the last keystroke and hides the Search button, since there is nothing left to click. */
+  searchAsYouType?: boolean;
   onSearch: (searchPackage: SearchPackage) => void;
   onToggleFiltersPanel?: (event: { showPanel: boolean }) => void;
   onFilterChange?: (values: FilterValues) => void;
@@ -47,6 +51,8 @@ export function SearchFilterTemplate({
   keywordOverride = '',
   searchHelpLink = null,
   searching = false,
+  filterToggle = 'advanced',
+  searchAsYouType = false,
   onSearch,
   onToggleFiltersPanel,
   onFilterChange,
@@ -61,6 +67,20 @@ export function SearchFilterTemplate({
   const [lastShowAdvanced, setLastShowAdvanced] = useState(showAdvancedFilters);
   const previousKeywords = useRef(keywords);
   const seededFrom = useRef<FilterObject[] | null>(null);
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    };
+  }, []);
+
+  function cancelPendingSearch(): void {
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
+      debounceTimer.current = null;
+    }
+  }
 
   // The host opens the panel when the URL already carries a filter; follow it without an effect.
   if (lastShowAdvanced !== showAdvancedFilters) {
@@ -122,6 +142,7 @@ export function SearchFilterTemplate({
   }
 
   function clearFilters(): void {
+    cancelPendingSearch();
     window.hj?.('event', 'FILTERS_CLEARED');
     track('Filters Cleared', {
       had_keywords: !!keywords,
@@ -163,9 +184,21 @@ export function SearchFilterTemplate({
                   type="text"
                   className="form-control data-hj-allow"
                   value={keywords}
-                  onChange={(event) => setKeywords(event.target.value)}
+                  onChange={(event) => {
+                    const nextKeywords = event.target.value;
+                    setKeywords(nextKeywords);
+                    if (searchAsYouType) {
+                      cancelPendingSearch();
+                      debounceTimer.current = setTimeout(() => {
+                        emitSearch(values, nextKeywords);
+                      }, 300);
+                    }
+                  }}
                   onKeyUp={(event) => {
-                    if (event.key === 'Enter') emitSearch(values, keywords);
+                    if (event.key === 'Enter') {
+                      cancelPendingSearch();
+                      emitSearch(values, keywords);
+                    }
                   }}
                   placeholder={keywordWatermark || 'Type keyword to search'}
                   aria-label={keywordWatermark || 'Type keyword to search'}
@@ -177,6 +210,7 @@ export function SearchFilterTemplate({
                     type="button"
                     title="Clear search"
                     onClick={() => {
+                      cancelPendingSearch();
                       setKeywords('');
                       emitSearch(values, '');
                     }}
@@ -185,23 +219,25 @@ export function SearchFilterTemplate({
                   </button>
                 )}
               </div>
-              <button
-                className="btn btn-warning"
-                type="button"
-                onClick={() => emitSearch(values, keywords)}
-                disabled={searching}
-              >
-                {searching ? (
-                  <span
-                    className="spinner-border spinner-border-sm"
-                    role="status"
-                    aria-hidden="true"
-                  ></span>
-                ) : (
-                  <span className="material-icons">search</span>
-                )}
-                <span className="ms-2">{searching ? 'Searching...' : 'Search'}</span>
-              </button>
+              {!searchAsYouType && (
+                <button
+                  className="btn btn-warning"
+                  type="button"
+                  onClick={() => emitSearch(values, keywords)}
+                  disabled={searching}
+                >
+                  {searching ? (
+                    <span
+                      className="spinner-border spinner-border-sm"
+                      role="status"
+                      aria-hidden="true"
+                    ></span>
+                  ) : (
+                    <span className="material-icons">search</span>
+                  )}
+                  <span className="ms-2">{searching ? 'Searching...' : 'Search'}</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -224,7 +260,21 @@ export function SearchFilterTemplate({
               )}
             </div>
             <div className="col-sm-12 col-md-6 text-md-end text-center">
-              {advancedFilters && (
+              {advancedFilters && filterToggle === 'filters' && (
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={toggleAdvancedFilters}
+                  aria-expanded={showFiltersPanel}
+                  aria-controls="advancedFilterPanel"
+                >
+                  <span className="material-icons" aria-hidden="true">
+                    tune
+                  </span>
+                  Filters
+                </button>
+              )}
+              {advancedFilters && filterToggle === 'advanced' && (
                 <button className="btn btn-primary" onClick={toggleAdvancedFilters}>
                   {showFiltersPanel ? 'Close' : 'Open'} Advanced Filters
                   <span className="material-icons align-middle">

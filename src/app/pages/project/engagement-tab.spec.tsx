@@ -2,7 +2,7 @@ import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderAt } from '../../../test-utils';
-import { CommentingTab } from './commenting-tab';
+import { EngagementTab } from './engagement-tab';
 
 vi.mock('./project-context', async (importOriginal) => {
   const original = await importOriginal<typeof import('./project-context')>();
@@ -50,13 +50,13 @@ function renderTab() {
     }),
   );
 
-  return renderAt('/p/proj-1/commenting', [
-    { path: '/p/:projId/commenting', Component: CommentingTab },
+  return renderAt('/p/proj-1/engagement', [
+    { path: '/p/:projId/engagement', Component: EngagementTab },
     { path: '/p/:projId/cp/:cpId', element: <div>comment period page</div> },
   ]).router;
 }
 
-describe('commenting tab', () => {
+describe('engagement tab', () => {
   beforeEach(() => {
     requests = [];
     periods = [OPEN_PERIOD, CLOSED_PERIOD];
@@ -72,6 +72,15 @@ describe('commenting tab', () => {
       '/api/commentperiod?project=proj-1&sortBy=-dateStarted' +
         '&fields=project|dateStarted|dateCompleted|instructions|isMet|metURL|informationLabel',
     );
+  });
+
+  it('heads the tab and labels each card with its period status', async () => {
+    renderTab();
+
+    await screen.findByText('Draft Application');
+    expect(screen.getByRole('heading', { level: 2, name: 'Engagement' })).toBeInTheDocument();
+    expect(screen.getByText('Open', { exact: true })).toBeInTheDocument();
+    expect(screen.getByText('Closed', { exact: true })).toBeInTheDocument();
   });
 
   it('titles an open period from the subject in its instructions', async () => {
@@ -113,7 +122,7 @@ describe('commenting tab', () => {
       '_blank',
       'noopener,noreferrer',
     );
-    expect(router.state.location.pathname).toBe('/p/proj-1/commenting');
+    expect(router.state.location.pathname).toBe('/p/proj-1/engagement');
     open.mockRestore();
   });
 
@@ -132,5 +141,21 @@ describe('commenting tab', () => {
     expect(
       await screen.findByText('No comment periods are currently scheduled for this project.'),
     ).toBeInTheDocument();
+  });
+
+  it('marks the list busy while the comment periods are in flight, and claims none are scheduled', () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => new Promise<Response>(() => undefined)),
+    );
+    const { container } = renderAt('/p/proj-1/engagement', [
+      { path: '/p/:projId/engagement', element: <EngagementTab /> },
+    ]);
+
+    expect(container.querySelector('.engagement-tab__list[aria-busy="true"]')).not.toBeNull();
+    expect(screen.getByText('Loading')).toBeInTheDocument();
+    expect(
+      screen.queryByText('No comment periods are currently scheduled for this project.'),
+    ).not.toBeInTheDocument();
   });
 });

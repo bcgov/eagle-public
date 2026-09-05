@@ -20,6 +20,12 @@ export interface EnvConfig {
    */
   SEARCH_API_PATH?: string;
   /**
+   * Base path for DEMI project documents: `GET <path>/<eagleProjectId>` answers the project, whose
+   * `phases` array carries the assessment rail's per-phase dates. Empty or unset asks for nothing
+   * and the rail renders without dates. Served from /api/config like SEARCH_API_PATH.
+   */
+  DEMI_PROJECTS_PATH?: string;
+  /**
    * Shows the Document Content search tab and route. The API serves content search everywhere, so
    * this only decides whether the UI offers it — false or unset hides it, with no redeploy needed
    * to change either way.
@@ -103,6 +109,14 @@ export function getApiPath(): string {
  */
 export function getSearchApiPath(): string {
   return config.SEARCH_API_PATH || getApiPath();
+}
+
+/**
+ * DEMI project base path, without a trailing slash. Empty when unset, which is the off switch for
+ * the assessment rail's phase dates.
+ */
+export function getDemiProjectsPath(): string {
+  return (config.DEMI_PROJECTS_PATH || '').trim().replace(/\/+$/, '');
 }
 
 /**

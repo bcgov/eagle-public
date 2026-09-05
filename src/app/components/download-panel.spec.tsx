@@ -44,6 +44,9 @@ describe('DownloadPanel', () => {
 
   beforeEach(() => {
     vi.useFakeTimers();
+    // Accepted by default: most close-panel tests here have a job in flight and expect the
+    // existing cancel-and-close path, not a dialog to also drive.
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
     statusResponses = [];
     statusByJob = {};
     statusStatus = 200;
@@ -733,13 +736,27 @@ describe('DownloadPanel', () => {
 
       fireEvent.click(screen.getByRole('button', { name: 'Dismiss download of 4 documents' }));
 
+      expect(window.confirm).toHaveBeenCalledWith('Cancel this download?');
       expect(cancelledIds()).toEqual(['job-a']);
       expect(screen.queryByText('Zipping 4 documents…')).not.toBeInTheDocument();
       expect(screen.getByText('Zipping 7 documents…')).toBeInTheDocument();
     });
 
+    it('cancels nothing and keeps the job when dismissing it is declined', async () => {
+      vi.spyOn(window, 'confirm').mockReturnValue(false);
+      statusByJob = { 'job-a': RUNNING('job-a') };
+      const panel = await mount({ id: 'job-a', count: 4, startedAt: Date.now() });
+      panel.render();
+      await tick(0);
+
+      fireEvent.click(screen.getByRole('button', { name: 'Dismiss download of 4 documents' }));
+
+      expect(cancelledIds()).toEqual([]);
+      expect(screen.getByText('Zipping 4 documents…')).toBeInTheDocument();
+    });
+
     /** A zip already downloaded has nothing left to stop, and demi-api would answer 404 anyway. */
-    it('sends no cancel for a job that already finished', async () => {
+    it('sends no cancel for a job that already finished, and does not ask', async () => {
       statusByJob = { 'job-a': READY('job-a') };
       const panel = await mount({ id: 'job-a', count: 2, startedAt: Date.now() });
       panel.render();
@@ -747,6 +764,7 @@ describe('DownloadPanel', () => {
 
       fireEvent.click(screen.getByRole('button', { name: 'Dismiss download of 2 documents' }));
 
+      expect(window.confirm).not.toHaveBeenCalled();
       expect(cancelledIds()).toEqual([]);
     });
 
@@ -766,7 +784,37 @@ describe('DownloadPanel', () => {
 
       fireEvent.click(screen.getByRole('button', { name: 'Close download panel' }));
 
+      expect(window.confirm).toHaveBeenCalledWith(
+        'Closing this panel cancels the downloads still in progress. Cancel them?',
+      );
       expect(cancelledIds().sort()).toEqual(['job-a', 'job-c']);
+      expect(container).toBeEmptyDOMElement();
+    });
+
+    it('cancels nothing and keeps the panel open when closing is declined', async () => {
+      vi.spyOn(window, 'confirm').mockReturnValue(false);
+      statusByJob = { 'job-a': RUNNING('job-a') };
+      const panel = await mount({ id: 'job-a', count: 4, startedAt: Date.now() });
+      const { container } = panel.render();
+      await tick(0);
+
+      fireEvent.click(screen.getByRole('button', { name: 'Close download panel' }));
+
+      expect(cancelledIds()).toEqual([]);
+      expect(container).not.toBeEmptyDOMElement();
+      expect(screen.getByText('Zipping 4 documents…')).toBeInTheDocument();
+    });
+
+    it('closes without asking once every job is terminal', async () => {
+      statusByJob = { 'job-a': READY('job-a') };
+      const panel = await mount({ id: 'job-a', count: 2, startedAt: Date.now() });
+      const { container } = panel.render();
+      await tick(2000);
+
+      fireEvent.click(screen.getByRole('button', { name: 'Close download panel' }));
+
+      expect(window.confirm).not.toHaveBeenCalled();
+      expect(cancelledIds()).toEqual([]);
       expect(container).toBeEmptyDOMElement();
     });
 

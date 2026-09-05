@@ -13,11 +13,13 @@ import { ProjectNotifications } from './pages/project-notifications/project-noti
 import { Search } from './pages/search/search';
 import { ContentSearch } from './pages/search/content-search';
 import { ProjectPage } from './pages/project/project';
-import { ProjectDetailsTab } from './pages/project/project-details-tab';
+import { OverviewTab } from './pages/project/overview-tab';
+import { UpdatesTab } from './pages/project/updates-tab';
+import { EngagementTab } from './pages/project/engagement-tab';
+import { ComplianceTab } from './pages/project/compliance-tab';
 import { Certificates } from './pages/project/certificates';
 import { Amendments } from './pages/project/amendments';
 import { Application } from './pages/project/application';
-import { CommentingTab } from './pages/project/commenting-tab';
 import { DocumentsPage } from './pages/project/documents-page';
 import { DocumentsTab } from './pages/project/documents-tab';
 import { ComplianceDocumentsTab } from './pages/project/compliance-documents-tab';
@@ -104,10 +106,11 @@ export const routes: RouteObject[] = [
         children: [
           {
             index: true,
-            loader: ({ params }) => redirect(`/p/${params['projId']}/project-details`),
+            loader: ({ params }) => redirect(`/p/${params['projId']}/overview`),
           },
-          { path: 'project-details', Component: ProjectDetailsTab },
-          { path: 'commenting', Component: CommentingTab },
+          { path: 'overview', Component: OverviewTab },
+          { path: 'updates', Component: UpdatesTab },
+          { path: 'engagement', Component: EngagementTab },
           {
             path: 'documents',
             Component: DocumentsPage,
@@ -126,7 +129,17 @@ export const routes: RouteObject[] = [
             loader: ({ params, request }: LoaderFunctionArgs) =>
               redirect(`/p/${params['projId']}/documents/${tab}${new URL(request.url).search}`),
           })),
+          // Same for the two tabs the redesign renamed.
+          ...[
+            { from: 'project-details', to: 'overview' },
+            { from: 'commenting', to: 'engagement' },
+          ].map(({ from, to }) => ({
+            path: from,
+            loader: ({ params, request }: LoaderFunctionArgs) =>
+              redirect(`/p/${params['projId']}/${to}${new URL(request.url).search}`),
+          })),
           { path: 'decisions', Component: DecisionsTab },
+          { path: 'compliance', Component: ComplianceTab },
         ],
       },
 

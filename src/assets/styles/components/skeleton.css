@@ -9,3 +9,26 @@
   mask-size: 200% 100%;
   animation: placeholder-wave 2.4s linear infinite;
 }
+
+/* The <Skeleton> primitive: stacked bars that hold the space their content will take. */
+.skeleton {
+  display: block;
+}
+
+.skeleton .placeholder {
+  display: block;
+  min-height: 1em;
+}
+
+.skeleton .placeholder + .placeholder,
+.skeleton + .skeleton {
+  margin-top: var(--layout-margin-xsmall);
+}
+
+/* Motion is the only thing the shimmer adds; the bars still read as pending without it. */
+@media (prefers-reduced-motion: reduce) {
+  .placeholder-wave {
+    mask-image: none;
+    animation: none;
+  }
+}

@@ -154,7 +154,7 @@ describe('documents page', () => {
 
     expect(await findSegment('All Documents')).toBeInTheDocument();
     expect(document.querySelector('.document-type-filter [aria-busy="true"]')).toBeNull();
-    expect(querySegment('C&E Documents')).not.toBeInTheDocument();
+    expect(querySegment('Compliance')).not.toBeInTheDocument();
     expect(requests).toHaveLength(0);
   });
 
@@ -187,9 +187,19 @@ describe('documents page', () => {
 
     release();
 
-    expect(await findSegment('C&E Documents')).toBeInTheDocument();
+    expect(await findSegment('Compliance')).toBeInTheDocument();
     expect(within(group).getAllByRole('link')).toHaveLength(5);
     expect(group.querySelector('[aria-busy="true"]')).toBeNull();
+  });
+
+  it('heads the tab and links out to the search help page', async () => {
+    renderDocuments();
+
+    expect(await screen.findByRole('heading', { name: 'Documents', level: 2 })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Search help/ })).toHaveAttribute(
+      'href',
+      '/search-help',
+    );
   });
 
   it('always offers All Documents and hides the segments with no documents', async () => {
@@ -202,7 +212,7 @@ describe('documents page', () => {
     expect(querySegment('Application')).not.toBeInTheDocument();
     expect(querySegment('Certificate')).not.toBeInTheDocument();
     expect(querySegment('Amendment(s)')).not.toBeInTheDocument();
-    expect(querySegment('C&E Documents')).not.toBeInTheDocument();
+    expect(querySegment('Compliance')).not.toBeInTheDocument();
   });
 
   it('asks for one document per segment, filtered by that view type and milestone ids', async () => {
@@ -234,7 +244,7 @@ describe('documents page', () => {
     expect(probe).not.toContain('and[type]=');
   });
 
-  it('shows the C&E segment once its search finds a document', async () => {
+  it('shows the Compliance segment once its search finds a document', async () => {
     tabSearchResponse = (url) =>
       url.includes('and[milestone]=ms-ce-2002')
         ? [{ searchResults: [{ _id: 'doc-1' }], meta: [{ searchResultsTotal: 1 }] }]
@@ -242,7 +252,7 @@ describe('documents page', () => {
 
     renderDocuments();
 
-    expect(await findSegment('C&E Documents')).toHaveAttribute(
+    expect(await findSegment('Compliance')).toHaveAttribute(
       'href',
       '/p/proj-1/documents/compliance',
     );
@@ -332,9 +342,9 @@ describe('documents page', () => {
 
     renderDocuments();
 
-    await userEvent.click(await findSegment('C&E Documents'));
+    await userEvent.click(await findSegment('Compliance'));
 
-    const compliance = await findSegment('C&E Documents');
+    const compliance = await findSegment('Compliance');
     expect(compliance).toHaveAttribute('href', '/p/proj-1/documents/compliance');
     expect(compliance).toHaveClass('active');
     expect(segment('All Documents')).not.toHaveClass('active');

@@ -1,0 +1,80 @@
+/* One update: a card with a category-coloured top accent. Tokens come from @bcgov/design-tokens
+   and eao-tokens.css. */
+
+.update-card {
+  overflow: hidden;
+  background: var(--theme-gray-white);
+  border: var(--layout-border-width-small) solid var(--theme-gray-40);
+  border-radius: var(--layout-border-radius-medium);
+}
+
+.update-card__accent {
+  height: var(--layout-border-width-large);
+}
+
+.update-card__body {
+  padding: var(--layout-padding-large);
+}
+
+.update-card__eyebrow {
+  margin: 0 0 var(--layout-margin-xsmall);
+  font: var(--typography-regular-label);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--typography-color-secondary);
+}
+
+.update-card__headline {
+  margin: 0 0 var(--layout-margin-small);
+  font: var(--typography-bold-h5);
+  color: var(--typography-color-primary);
+}
+
+.update-card__content {
+  max-width: 62ch;
+  font: var(--typography-regular-body);
+  color: var(--typography-color-secondary);
+  text-wrap: pretty;
+}
+
+.update-card__content > :last-child {
+  margin-bottom: 0;
+}
+
+.update-card__files {
+  margin-top: var(--layout-margin-medium);
+  padding-top: var(--layout-padding-medium);
+  border-top: var(--layout-border-width-small) solid var(--theme-gray-30);
+}
+
+.update-card__files-label {
+  margin: 0 0 var(--layout-margin-small);
+  font: var(--typography-bold-label);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--typography-color-secondary);
+}
+
+.update-card__file-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-padding-xsmall);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.update-card__file-list a {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--layout-padding-xsmall);
+  min-height: 2.75rem;
+  font: var(--typography-regular-small-body);
+  overflow-wrap: anywhere;
+}
+
+.update-card__file-list .material-icons {
+  flex: 0 0 auto;
+  font-size: var(--icons-size-small);
+  color: var(--icons-color-secondary);
+}
