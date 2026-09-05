@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { useDemiProject } from 'app/api/project-phases';
+import { useProjectEaCertificate } from 'app/api/project-phases';
 import { track } from 'app/analytics/analytics';
 import { Skeleton } from 'app/components/skeleton/skeleton';
 import { SubscribePopover } from 'app/components/subscribe-popover';
@@ -217,7 +217,7 @@ function ContactCard({ project }: { project: Project | null }) {
 export function OverviewTab() {
   const { project, projId, projectLoading } = useProjectContext();
   const banner = project?.commentPeriodForBanner;
-  const eaCertificate = useDemiProject(projId).data?.eaCertificate?.trim();
+  const eaCertificate = useProjectEaCertificate(projId);
 
   // The same one-row count the tab strip runs, so both read one cached answer.
   const documents = useTable('projectTabDocuments', {

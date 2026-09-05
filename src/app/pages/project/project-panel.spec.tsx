@@ -89,4 +89,33 @@ describe('project panel map', () => {
     window.__env = { logLevel: 4, DEMI_PROJECTS_PATH: '' };
     await loadConfig();
   });
+
+  it('falls back to the project search hit when DEMI has no record', async () => {
+    window.__env = { logLevel: 4, DEMI_PROJECTS_PATH: '/demi-projects', SEARCH_API_PATH: '/demi' };
+    await loadConfig();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        if (String(input).includes('/demi-projects/')) return new Response('', { status: 404 });
+        const body = String(input).includes('/demi/search?dataset=Project')
+          ? [{ searchResults: [{ _id: 'proj-1', eaCertificate: 'E23-01' }], meta: [] }]
+          : {};
+        return new Response(JSON.stringify(body), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        });
+      }),
+    );
+
+    renderPanel(PROJECT);
+
+    expect(await screen.findByRole('link', { name: 'E23-01' })).toHaveAttribute(
+      'href',
+      '/p/proj-1/decisions',
+    );
+
+    vi.unstubAllGlobals();
+    window.__env = { logLevel: 4, DEMI_PROJECTS_PATH: '' };
+    await loadConfig();
+  });
 });

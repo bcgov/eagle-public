@@ -3,7 +3,7 @@ import { Link } from 'react-router';
 import { Skeleton } from 'app/components/skeleton/skeleton';
 import type { Project } from 'app/models/project';
 import { longDate } from 'app/utils/utils';
-import { useDemiProject, useProjectPhases } from 'app/api/project-phases';
+import { useProjectEaCertificate, useProjectPhases } from 'app/api/project-phases';
 import { AssessmentRail } from './assessment-rail';
 import type { PhaseListItem } from './assessment-stages';
 import './project-panel.css';
@@ -67,7 +67,7 @@ export function ProjectPanel({ project, lists, loading = false }: ProjectPanelPr
   const centroid = project?.centroid?.length === 2 ? project.centroid : null;
   const projId = project?._id ?? '';
   const phases = useProjectPhases(projId);
-  const eaCertificate = useDemiProject(projId).data?.eaCertificate?.trim();
+  const eaCertificate = useProjectEaCertificate(projId);
 
   return (
     <section

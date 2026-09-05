@@ -1,7 +1,7 @@
 import { Link } from 'react-router';
 import { Skeleton } from 'app/components/skeleton/skeleton';
 import { useTable } from 'app/components/table/use-table';
-import { useDemiProject } from 'app/api/project-phases';
+import { useProjectEaCertificate } from 'app/api/project-phases';
 import { Constants } from 'app/utils/constants';
 import { createProjectTabModifiers } from 'app/utils/utils';
 import { useProjectContext } from './project-context';
@@ -50,7 +50,7 @@ function Stat({ value, label, loading }: { value: string; label: string; loading
 /** What the project's compliance record holds, and the way into the documents themselves. */
 export function ComplianceTab() {
   const { projId, lists } = useProjectContext();
-  const eaCertificate = useDemiProject(projId).data?.eaCertificate?.trim();
+  const eaCertificate = useProjectEaCertificate(projId);
 
   const inspections = useComplianceCount(
     'complianceInspections',
