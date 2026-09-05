@@ -166,18 +166,31 @@ export async function expectA11ySmoke(page: Page): Promise<{ skipLinks: number }
 
 /**
  * "Showing 10 of 348 results" -> { shown: 10, total: 348 }. A selectable table carries the line in
- * its header bar instead of the top row, so both hooks are accepted.
+ * its header bar instead of the top row, so both hooks are accepted. The documents table drops the
+ * "Showing" prefix once every item fits on one page ("1,284 documents"), or reads "No documents"
+ * when the total is zero: both are folded into the same shown/total shape here.
  */
 export async function pageCount(page: Page): Promise<{ shown: number; total: number }> {
   const text = await page
     .locator(
-      '[id^="table-template-page-count-display"], [id^="data-table-page-count-display"], .table-header-bar__count',
+      '[id^="table-template-page-count-display"], [id^="data-table-page-count-display"], .table-header-bar__count, .data-table__bar-count',
     )
     .first()
     .innerText();
-  const m = text.match(/Showing\s+([\d,]+)\s+of\s+([\d,]+)/i);
-  expect(m, `unexpected page count text: "${text}"`).not.toBeNull();
-  return { shown: Number(m![1].replace(/,/g, '')), total: Number(m![2].replace(/,/g, '')) };
+  if (/^no\s+\S+/i.test(text.trim())) {
+    return { shown: 0, total: 0 };
+  }
+  const showing = text.match(/Showing\s+([\d,]+)\s+of\s+([\d,]+)/i);
+  if (showing) {
+    return {
+      shown: Number(showing[1].replace(/,/g, '')),
+      total: Number(showing[2].replace(/,/g, '')),
+    };
+  }
+  const single = text.match(/^([\d,]+)\s+\S+/);
+  expect(single, `unexpected page count text: "${text}"`).not.toBeNull();
+  const n = Number(single![1].replace(/,/g, ''));
+  return { shown: n, total: n };
 }
 
 /**

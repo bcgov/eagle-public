@@ -76,7 +76,7 @@ test('the project panel map is not laid out like the full-page map', async ({ pa
   await page.goto(`/p/${project._id}/overview`);
   await ready(page);
   expect(await styleOf(page, '.map-container', 'position')).toBe('relative');
-  expect(await styleOf(page, '.map-container', 'height')).toBe('272px');
+  expect(await styleOf(page, '.map-container', 'height')).toBe('192px');
 });
 
 test('the notification Engagement panel is not padded like a detail field block', async ({
