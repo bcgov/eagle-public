@@ -31,7 +31,6 @@
     "GET /demi-search/search?and[documentSource]=PROJECT&and[milestone]=:id&and[milestone]=:id&dataset=Document&fuzzy=false&pageNum=0&pageSize=1&populate=true&project=:id&projectLegislation=default&sortBy=&sortBy=",
     "GET /demi-search/search?and[isFeatured]=true&dataset=Document&fuzzy=false&pageNum=0&pageSize=5&populate=false&project=:id&projectLegislation=default&sortBy=&sortBy=-datePosted",
     "GET /demi-search/search?and[project]=:id&dataset=Document&fuzzy=false&pageNum=0&pageSize=1&populate=false&projectLegislation=default&sortBy=&sortBy=",
-    "GET /demi-search/search?dataset=Project&fuzzy=false&pageNum=0&pageSize=1000000&populate=true&projectLegislation=default&sortBy=&sortBy=",
     "POST /analytics"
   ],
   "project-documents-tab": [
@@ -46,7 +45,6 @@
     "GET /demi-search/search?and[documentSource]=PROJECT&and[milestone]=:id&and[milestone]=:id&dataset=Document&fuzzy=false&pageNum=0&pageSize=1&populate=true&project=:id&projectLegislation=default&sortBy=&sortBy=",
     "GET /demi-search/search?and[project]=:id&dataset=Document&fuzzy=false&pageNum=0&pageSize=1&populate=false&projectLegislation=default&sortBy=&sortBy=",
     "GET /demi-search/search?and[project]=:id&dataset=Document&fuzzy=false&pageNum=0&pageSize=10&populate=true&projectLegislation=default&sortBy= displayName&sortBy=-datePosted",
-    "GET /demi-search/search?dataset=Project&fuzzy=false&pageNum=0&pageSize=1000000&populate=true&projectLegislation=default&sortBy=&sortBy=",
     "POST /analytics"
   ],
   "projects-list": [
