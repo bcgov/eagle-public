@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { getJson } from './api';
+import { ApiError, getJson } from './api';
 import { getDemiProjectsPath } from 'app/config/config';
 
 /**
@@ -52,7 +52,16 @@ function demiProjectQuery(projId: string) {
   return {
     queryKey: ['demi-project', projId],
     enabled: !!base && !!projId,
-    queryFn: () => getJson<DemiProject>(`${base}/${encodeURIComponent(projId)}`),
+    retry: false,
+    queryFn: async (): Promise<DemiProject | null> => {
+      try {
+        return await getJson<DemiProject>(`${base}/${encodeURIComponent(projId)}`);
+      } catch (err) {
+        // 404 means DEMI has no record for this project — an answer, not a failure.
+        if (err instanceof ApiError && err.status === 404) return null;
+        throw err;
+      }
+    },
   };
 }
 
@@ -61,7 +70,7 @@ export function useDemiProject(projId: string) {
   return useQuery(demiProjectQuery(projId));
 }
 
-/** A project's Track work phases from DEMI, `null` while loading or when DEMI is off. */
+/** A project's Track work phases from DEMI, `null` while loading, when DEMI is off, or absent. */
 export function useProjectPhases(projId: string): Phase[] | null {
   const { data } = useQuery({ ...demiProjectQuery(projId), select: phasesOf });
   return data ?? null;

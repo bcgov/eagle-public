@@ -87,6 +87,30 @@ describe('useDemiProject', () => {
   });
 });
 
+describe('when DEMI has no record for the project', () => {
+  beforeEach(() => {
+    fetchMock = vi.fn(async () => new Response('Not Found', { status: 404 }));
+    vi.stubGlobal('fetch', fetchMock);
+  });
+
+  it('settles useDemiProject with null and does not retry', async () => {
+    await setup(DEMI);
+    const { result } = renderHook(() => useDemiProject('proj-1'), { wrapper });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toBeNull();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('gives useProjectPhases its empty value', async () => {
+    await setup(DEMI);
+    const { result } = renderHook(() => useProjectPhases('proj-1'), { wrapper });
+
+    await waitFor(() => expect(result.current).toEqual([]));
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe('phasesOf', () => {
   it('keeps only well-formed rows', () => {
     expect(
