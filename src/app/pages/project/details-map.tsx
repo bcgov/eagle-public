@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { Map, Marker } from '@vis.gl/react-maplibre';
 import type { MapRef } from '@vis.gl/react-maplibre';
 import { track } from 'app/analytics/analytics';
@@ -14,10 +14,16 @@ interface DetailsMapProps {
 
 export function DetailsMap({ project }: DetailsMapProps) {
   const mapRef = useRef<MapRef>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const resizeObserverRef = useRef<ResizeObserver | null>(null);
   const centroid = project.centroid as [number, number];
 
+  useEffect(() => {
+    return () => resizeObserverRef.current?.disconnect();
+  }, [project._id]);
+
   return (
-    <div className="map">
+    <div className="map" ref={containerRef}>
       <Map
         key={project._id}
         ref={mapRef}
@@ -30,6 +36,12 @@ export function DetailsMap({ project }: DetailsMapProps) {
         dragPan={false}
         attributionControl={false}
         style={{ width: '100%', height: '100%' }}
+        onLoad={() => {
+          if (typeof ResizeObserver === 'undefined' || !containerRef.current) return;
+          const observer = new ResizeObserver(() => mapRef.current?.resize());
+          observer.observe(containerRef.current);
+          resizeObserverRef.current = observer;
+        }}
       >
         <Basemaps />
         <Marker
