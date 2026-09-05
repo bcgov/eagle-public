@@ -294,6 +294,7 @@ function JobRows({
         className="download-panel__dismiss"
         aria-label={`Dismiss download of ${plural(job.count, 'document')}`}
         onClick={(event) => {
+          if (!isTerminal(job.status) && !window.confirm('Cancel this download?')) return;
           const next = event.currentTarget
             .closest('.download-panel__job')
             ?.nextElementSibling?.querySelector<HTMLButtonElement>('.download-panel__dismiss');

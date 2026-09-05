@@ -70,9 +70,10 @@ export function TableTemplate({
 
   const { selectable, selectedCount, pageAllSelected, pageMixed, toggleAllOnPage } =
     usePageSelection(data);
-  // This table's own select-all offer, unlike the shared hook's capped `showSelectAll`: past the
-  // anonymous limit the link still shows, worded as the download limit rather than the real total.
-  const showSelectAll = selectable && pageAllSelected && data.totalListItems > data.pageSize;
+  // This table's own select-all offer, unlike the shared hook's capped `showSelectAll`: visible
+  // whenever a selection is active and more documents match than are already selected, worded as
+  // the download limit past the cap rather than the real total.
+  const showSelectAll = selectable && selectedCount > 0 && data.totalListItems > selectedCount;
   const downloadInProgress = useDownloadInProgress();
 
   const { onSort, onUpdatePageNumber, onUpdatePageSize } = useTableHandlers({

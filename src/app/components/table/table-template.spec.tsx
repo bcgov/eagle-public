@@ -433,38 +433,29 @@ describe('TableTemplate select-all offer', () => {
     ]);
   });
 
-  it('stays hidden while the whole result set fits on the page', () => {
+  it('shows the link once a selection is active and more documents match', () => {
+    clearSelection();
+    setSelected('documents', [{ id: 'doc-a', displayName: 'Alpha' }]);
+    render(
+      <TableTemplate data={selectableTable({ totalListItems: 60 })} onMessage={() => undefined} />,
+    );
+
+    expect(screen.getByRole('button', { name: 'Select all 60 documents' })).toBeInTheDocument();
+  });
+
+  it('hides the link while no selection is active', () => {
+    clearSelection();
+    render(<TableTemplate data={selectableTable()} onMessage={() => undefined} />);
+
+    expect(screen.queryByRole('button', { name: /Select all/ })).not.toBeInTheDocument();
+  });
+
+  it('hides the link once every matching document is already selected', () => {
     render(
       <TableTemplate data={selectableTable({ totalListItems: 2 })} onMessage={() => undefined} />,
     );
 
     expect(screen.queryByRole('button', { name: /Select all/ })).not.toBeInTheDocument();
-  });
-
-  // Boundary at the page size itself, e.g. page size "All" showing 19 of 19: nothing is left off
-  // the page, so the banner must not appear. Catches `>` in the guard regressing to `>=`.
-  it('stays hidden when the result count exactly equals the page size', () => {
-    render(
-      <TableTemplate
-        data={selectableTable({ totalListItems: 10, pageSize: 10 })}
-        onMessage={() => undefined}
-      />,
-    );
-
-    expect(screen.queryByRole('button', { name: /Select all/ })).not.toBeInTheDocument();
-  });
-
-  it('offers select-all once the result count passes the page size by one', () => {
-    render(
-      <TableTemplate
-        data={selectableTable({ totalListItems: 11, pageSize: 10 })}
-        onMessage={() => undefined}
-      />,
-    );
-
-    expect(screen.getByRole('button', { name: 'Select all 11 documents' })).toHaveTextContent(
-      'Select all 11',
-    );
   });
 
   it('offers the rest of the result set once the page is fully selected', async () => {
