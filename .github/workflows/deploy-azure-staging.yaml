@@ -1,35 +1,5 @@
-# =============================================================================
-# Deploy the eagle-public Azure preview to staging
-# =============================================================================
-# Builds this branch and ships the bundle to the `$web` container of an Azure Storage
-# account, which is published through a shared Azure Front Door Standard profile.
-#
-# eagle-public is hosted on Azure. Prod has served its bundle from Front Door since
-# eao-nginx v2.7.14. This workflow is the only way a build reaches test.
-#
-# Rollback is a re-run of this workflow for the previous good tag. The OpenShift pipelines and
-# their pods are retired, so there is no in-cluster Service to point rproxy back at.
-#
-# WHY STORAGE + FRONT DOOR AND NOT APP SERVICE: this is a static bundle, so the App
-# Service plan was paying for a Node process whose only job was to read files off disk
-# and set six response headers. Storage `$web` serves the files; Front Door supplies
-# what `$web` cannot — the security headers, the SPA fallback rewrite, and TLS on a
-# stable hostname. Azure Static Web Apps was rejected: the Resource-Locations policy on
-# `bcgov-managed-lz-live` has no region in common with the `staticSites` region list.
-#
-# Staging is spelled `-test` in Azure: the storage account, the Front Door profile and
-# the search API all live in the `c4b0a8-test` subscription. The GitHub environment
-# here is `azure-test` rather than `test`.
-#
-# Application only — never infrastructure. `eagle-public-cicd-test` is scoped to this one
-# storage account and holds nothing at resource-group scope: Storage Blob Data Contributor
-# to write blobs, plus Storage Account Contributor for the one data-plane call that turns
-# `$web` on (see the "Enable static website hosting" step — that write is not a blob write
-# and the data role does not cover it). The Bicep that describes the account, the Front
-# Door endpoint and its rule set lives in `digitalspace/eagle-edge` — the TEST estate only.
-# The prod equivalent lives in `digitalspace/eagle-edge` (`azure/main.prod.bicepparam`).
-# =============================================================================
-
+# Build a release tag and publish it to the staging `$web` storage container, served
+# through the shared Front Door profile. Staging is spelled `-test` in Azure.
 name: Deploy eagle-public to Azure staging
 
 # TAG-DRIVEN. The deploy source is a release tag, never a branch, so test always serves a
@@ -61,58 +31,51 @@ jobs:
     name: Build & deploy Azure preview
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    # Declaring an environment CHANGES THE OIDC SUBJECT CLAIM — it becomes
-    # `repo:bcgov/eagle-public:environment:azure-test`, which is the subject on the
-    # federated credential of `eagle-public-cicd-test`. Rename this environment, or
-    # drop the line, and Azure Login fails with AADSTS700213. `azure-next` is a second
-    # subject on the same identity; its vars name the eagle-public-next storage account
-    # and endpoint from the eagle-edge test deployment.
+    # The environment name is the OIDC subject claim on the federated credential;
+    # rename it and Azure Login fails with AADSTS700213.
     environment: ${{ inputs.target == 'next' && 'azure-next' || 'azure-test' }}
     env:
-      # `<name>-<hash>.z01.azurefd.net` — THE HASH IS ASSIGNED AT DEPLOY TIME, so this
-      # hostname cannot be derived from the endpoint name and must not be guessed. Set
-      # the repository variable from the output of the Front Door bicep deployment.
+      # `<name>-<hash>.z01.azurefd.net`: the hash is assigned at deploy time, so set this
+      # repository variable from the Front Door bicep output rather than guessing it.
       AFD_ENDPOINT: ${{ vars.AZURE_FRONTDOOR_ENDPOINT }}
       STORAGE_ACCOUNT: ${{ vars.AZURE_STORAGE_ACCOUNT }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
-          # The TAG, not the default branch. Without this the workflow builds whatever `develop`
-          # holds at run time, which is the defect the tag input exists to close.
+          # The tag, not the default branch.
           ref: ${{ inputs.version }}
 
-      # Both are supplied from outside this repository, and both fail late and
-      # confusingly if empty — an unset storage account uploads nothing anywhere, an
-      # unset endpoint smoke-tests `https:///`. Fail here instead, before the build.
+      # An empty storage account uploads nowhere and an empty endpoint smoke-tests
+      # `https:///`, so both fail here rather than late in the run.
       - name: Verify the deployment targets are configured
+        env:
+          VERSION: ${{ inputs.version }}
         run: |
           set -euo pipefail
-          # THE VERSION MUST BE A TAG, and this is what enforces it. `ref: ${{ inputs.version }}` on
-          # the checkout accepts any ref — including a branch name — so without this
-          # `version=develop` publishes a moving branch tip to test. The ancestry check
-          # below cannot catch it either: a commit is its own ancestor, so `develop` passes.
-          # Same pair of checks `release.yaml` runs, for the same reason.
-          [[ "${{ inputs.version }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-beta\.[0-9]+)?$ ]] \
-            || { echo "::error::version '${{ inputs.version }}' is not a release tag of the form v1.2.3 or v1.2.3-beta.4 — the deploy source is a TAG, never a branch"; exit 1; }
+          # `checkout` accepts any ref, so this is what keeps a branch tip off test.
+          [[ "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-beta\.[0-9]+)?$ ]] \
+            || { echo "::error::version '$VERSION' is not a release tag of the form v1.2.3 or v1.2.3-beta.4 — the deploy source is a TAG, never a branch"; exit 1; }
           git fetch --tags --quiet origin
-          git rev-parse -q --verify "refs/tags/${{ inputs.version }}^{commit}" >/dev/null \
-            || { echo "::error::tag ${{ inputs.version }} does not exist in this repository — deploy to test first to create it"; exit 1; }
+          git rev-parse -q --verify "refs/tags/$VERSION^{commit}" >/dev/null \
+            || { echo "::error::tag $VERSION does not exist in this repository — cut it with the release workflow first"; exit 1; }
 
           [ -n "$STORAGE_ACCOUNT" ] \
             || { echo "::error::repository variable AZURE_STORAGE_ACCOUNT is empty"; exit 1; }
           [ -n "$AFD_ENDPOINT" ] \
             || { echo "::error::repository variable AZURE_FRONTDOOR_ENDPOINT is empty — set it from the Front Door deployment output, the hostname hash is not predictable"; exit 1; }
 
+      - name: Enable Corepack
+        run: corepack enable
+
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
           node-version: '24.x'
+          cache: 'yarn'
 
       - name: Install dependencies
-        run: |
-          corepack enable
-          yarn install --immutable
+        run: yarn install --immutable
 
       - name: Lint
         run: yarn lint
@@ -120,62 +83,22 @@ jobs:
       - name: Test
         run: yarn test
 
-      # ---------------------------------------------------------------------------
-      # Point env.js at the test runtime.
-      #
-      # The committed `src/env.js` is the RELATIVE one — `API_PATH = '/api'`,
-      # `SEARCH_API_PATH = ''`, `ANALYTICS_API_URL = '/analytics'` — and it must stay that way
-      # (`076bc94d chore: make env.js safe to merge`): an absolute env.js would point every
-      # environment at test.
-      #
-      # So the per-environment values are applied here, at build time.
-      #
-      # RELATIVE, NOT ABSOLUTE, and that is the change that came with mainlining. While this was a
-      # standalone preview the browser reached blob storage directly, so there was no `/api` and no
-      # `/api/config` to fetch and every value had to name a host. Now rproxy serves this bundle at
-      # test.projects.eao.gov.bc.ca, where `/api`, `/analytics`, `/admin/` and `/eagle-search/` are
-      # its own locations — so same-origin is both correct and the thing that removes the CORS
-      # surface. See the step below.
-      #
-      # THE AZURE HOSTNAME IS NOT PROTECTED, and saying so is the point. A `PREVIEW_GATE`
-      # component once existed here and this job wrote a passphrase into a world-readable
-      # `/env.js` long after nothing consumed it — publishing a repository secret in cleartext
-      # AND claiming a protection one page load disproved. Both are gone. All that keeps the raw
-      # `*.azurefd.net` host from being useful is that it is unadvertised: the `next` endpoint
-      # reaches the test `/api` through its own Front Door backend route, so it is a working site,
-      # not a bundle with nothing behind it. Real gating needs something in front of blob storage
-      # that can authenticate — Front Door's WAF, or the rproxy that now fronts it.
-      #
-      # `sed` exits 0 when it matches nothing, so each rewrite is verified. Without the
-      # check a renamed key ships a bundle that silently 404s on every API call, and the
-      # build stays green.
-      # ---------------------------------------------------------------------------
+      # The committed `src/env.js` stays relative; the per-environment values are applied
+      # here at build time. `sed` exits 0 on no match, so each rewrite is verified below.
       - name: Point env.js at the same-origin test runtime
         run: |
           set -euo pipefail
-          # SAME-ORIGIN, EXACTLY AS PROD. This changed when the staging estate stopped being a
-          # standalone preview: rproxy's `location /` fetches this bundle from Front Door and
-          # serves it on test.projects.eao.gov.bc.ca, where `/api`, `/analytics`, `/admin/` and
-          # `/eagle-search/` are its own locations. So every path here stays RELATIVE and
-          # `configEndpoint` stays true — the SPA fetches /api/config at boot and the rproxy
-          # ConfigMap supplies the rest, which is what makes one bundle correct in both
-          # environments.
-          #
-          # The absolute hostnames this used to bake were right for the preview and are wrong
-          # now: they would send every call cross-origin from a host that has a same-origin
-          # route for it, and reintroduce the CORS surface the flip removes.
+          # Same-origin, as prod: rproxy serves this bundle on test.projects.eao.gov.bc.ca, so
+          # paths stay relative and `configEndpoint` true — /api/config supplies the rest.
           sed -i "s|window.__env.configEndpoint = .*|window.__env.configEndpoint = true;|" src/env.js
           sed -i "s|window.__env.API_LOCATION = .*|window.__env.API_LOCATION = null;|" src/env.js
           sed -i "s|window.__env.logLevel = .*|window.__env.logLevel = 4;|" src/env.js
           sed -i "s|window.__env.ANALYTICS_DEBUG = .*|window.__env.ANALYTICS_DEBUG = false;|" src/env.js
-          # These two are belt and braces: if /api/config cannot answer, whatever ships is what
-          # the page uses. Both stay correct when /api/config merges the same values over them.
+          # Belt and braces: if /api/config cannot answer, whatever ships is what the page uses.
           sed -i "s|window.__env.ENVIRONMENT = .*|window.__env.ENVIRONMENT = 'test';|" src/env.js
           sed -i "s|window.__env.ADMIN_PATH = .*|window.__env.ADMIN_PATH = '/admin/';|" src/env.js
-          # eagle-notify's API, so this one IS absolute — it is a different origin and rproxy has no
-          # location for it. The subscribe form posts to it from the browser, so eagle-notify must
-          # allow this origin in CORS. Both staging targets (test and next) point at the test notify
-          # API. /api/config cannot supply it: eagle-api does not serve NOTIFY_API.
+          # Absolute because eagle-notify is a different origin with no rproxy location, and
+          # /api/config does not serve NOTIFY_API. Both staging targets use the test notify API.
           sed -i "s|window.__env.NOTIFY_API = .*|window.__env.NOTIFY_API = 'https://notify-api-test.azurewebsites.net';|" src/env.js
           for expected in \
             "window.__env.configEndpoint = true;" \
@@ -188,9 +111,7 @@ jobs:
             grep -qF "$expected" src/env.js \
               || { echo "::error::env.js rewrite did not take: $expected"; exit 1; }
           done
-          # The other half of the contract: the paths that must NOT have been touched. An edit
-          # that starts baking a hostname here would otherwise surface only as CORS failures in
-          # a browser nobody has open.
+          # The other half of the contract: the paths that must NOT have been touched.
           for relative in \
             "window.__env.API_PATH = '/api';" \
             "window.__env.ANALYTICS_API_URL = '/analytics';" \
@@ -210,28 +131,8 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
-      # ---------------------------------------------------------------------------
-      # Turn static website hosting on. Idempotent — a no-op on every run after the first.
-      #
-      # WHY THIS IS IN CI AND NOT IN THE BICEP: `staticWebsite` is a DATA-PLANE property of
-      # the blob service, not an ARM property, so no amount of redeploying
-      # eagle-edge's `azure/modules/static-site.bicep` can set it and no ARM template can
-      # create `$web`. Until this command has run once the container does not exist, and the
-      # failure is misleading: the upload below errors on a missing container, or Front Door
-      # answers 404 for `/` and the smoke test points at the rule set — for a data-plane step
-      # that was simply never taken. Doing it here means a fresh storage account is deployable
-      # end to end with no manual `az` from someone's laptop.
-      #
-      # ROLE REQUIRED — this is a SERVICE-PROPERTIES WRITE, NOT A BLOB WRITE. Storage Blob
-      # Data Contributor does NOT grant it and the call fails with AuthorizationFailed. The CI
-      # identity also needs `Microsoft.Storage/storageAccounts/blobServices/write`, i.e.
-      # **Storage Account Contributor** on this one storage account (Contributor or Owner also
-      # work and are broader than needed). Grant both roles, scoped to the account.
-      #
-      # `--404-document index.html` is a backstop, not the SPA rewrite: it returns the app
-      # shell with a 404 status. Front Door's rewrite rule is what makes a deep link a 200,
-      # and the smoke test below asserts that.
-      # ---------------------------------------------------------------------------
+      # `staticWebsite` is a data-plane property, so no Bicep can set it or create `$web`.
+      # Needs Storage Account Contributor, not just Storage Blob Data Contributor.
       - name: Enable static website hosting on $web
         run: |
           set -euo pipefail
@@ -240,25 +141,8 @@ jobs:
             --404-document index.html --output none
           echo "static website hosting enabled on $STORAGE_ACCOUNT"
 
-      # ---------------------------------------------------------------------------
-      # Publish to $web.
-      #
-      # `$web` serves blobs and nothing else: it has no way to add a response header, so
-      # Cache-Control has to be written onto each blob AT UPLOAD TIME. That is the policy
-      # that used to live in `azure/server.js`'s `cacheFor()`, with one correction:
-      # `cacheFor()` keyed `immutable` off the EXTENSION, which handed a year-long cache to
-      # every unhashed file under `assets/`. Only content-hashed filenames are safe to cache
-      # for a year, and those are the bundles the build emits at the root — nothing else.
-      #
-      # `--content-cache-control` applies to a whole batch, so this is one batch per
-      # rule. The patterns must therefore be EXHAUSTIVE — a file matched by no pattern
-      # uploads with no Cache-Control at all — and non-overlapping, or the last batch
-      # silently decides. `--pattern` is fnmatch against the path relative to `-s`, where
-      # `*` also matches `/`, so `*.js` reaches nested files and does not reach `.json`.
-      #
-      # `--overwrite` is not optional: the container persists between deploys, and
-      # without it the second deploy uploads nothing at all.
-      # ---------------------------------------------------------------------------
+      # `$web` sets no headers, so Cache-Control is written per blob at upload time. One
+      # batch per rule, so the patterns must be exhaustive and non-overlapping.
       - name: Publish the bundle to $web
         run: |
           set -euo pipefail
@@ -266,30 +150,21 @@ jobs:
           nostore='no-cache, no-store, must-revalidate'
           immutable='public, max-age=31536000, immutable'
 
-          # env.js leaves the tree before any batch runs. It is not content-hashed and must
-          # never be cached, but it would be caught by the `*.js` batch — moving it out is
-          # simpler than trying to carve it back out of a pattern.
+          # env.js leaves the tree first: not content-hashed, must never be cached, and the
+          # `*.js` batch would otherwise catch it.
           mv "$src/env.js" ./env.js.deploy
 
-          # `assets/**` is the same problem and the bigger half of it. Only the emitted bundles
-          # are content-hashed — every file under `assets/` is copied from `public/` and keeps a
-          # stable name across builds, so an extension rule like `*.css` or `*.png` hands
-          # `immutable` to 30 files that are not hashed at all. That pins a year-old stylesheet, logo or font in the browser of exactly
-          # the reviewers this preview exists for: change the theme, redeploy, and they never see
-          # it. Uploaded on its own with `no-cache` and then removed from the tree — the same trick
-          # as env.js above — which leaves a directory where every remaining `.js`/`.css` really is
-          # content-hashed. `*` matches `/`, so one pattern covers the whole subtree.
+          # Nothing under `assets/` is content-hashed, so it uploads `no-cache` on its own and
+          # then leaves the tree, which makes every remaining `.js`/`.css` genuinely hashed.
           az storage blob upload-batch --account-name "$STORAGE_ACCOUNT" --auth-mode login \
             -d '$web' -s "$src" --pattern 'assets/*' --overwrite \
             --content-cache-control 'no-cache' --output none
           rm -rf "$src/assets"
 
-          # What is left at the root is the content-hashed bundles and `favicon.ico`, and only the
-          # first group may be cached hard. favicon is not hashed, so it is deliberately absent
-          # here and falls through to the `no-cache` catch-all below.
+          # Left at the root: the hashed bundles, plus unhashed files like favicon.ico that
+          # fall through to the `no-cache` catch-all below.
           hashed='js css'
-          # Every pattern below ends in `.<ext>`, so an extensionless file cannot be matched by any
-          # of them and would upload with no Cache-Control. There are none today.
+          # Every pattern ends in `.<ext>`, so an extensionless file would upload uncached.
           noext=$(cd "$src" && find . -type f ! -name '*.*')
           [ -z "$noext" ] \
             || { echo "::error::no --pattern can match these extensionless files, they would ship uncached: $noext"; exit 1; }
@@ -306,10 +181,8 @@ jobs:
               --content-cache-control "$nostore" --output none
           done
 
-          # Everything left at the root that neither rule names — `favicon.ico` today — gets
-          # `no-cache`, which is what `cacheFor()` returned for anything it did not recognise. The
-          # extension list is derived from the build output rather than hardcoded, so adding a file
-          # type cannot silently ship it with no Cache-Control at all.
+          # Whatever neither rule names gets `no-cache`. The extension list comes from the build
+          # output, so a new file type cannot ship with no Cache-Control at all.
           rest=$(cd "$src" && find . -type f -name '*.*' | sed 's|.*\.||' | sort -u \
             | grep -vxE "$(echo $hashed html json | tr ' ' '|')" || true)
           for ext in $rest; do
@@ -318,9 +191,8 @@ jobs:
               --content-cache-control 'no-cache' --output none
           done
 
-          # Last, and on its own: env.js is the runtime config, so a stale cached copy points
-          # the whole app at the wrong API. Content-type is explicit because it is uploaded by
-          # a name that no longer matches the file on disk.
+          # Last and alone: a stale env.js points the whole app at the wrong API. Content-type
+          # is explicit because the file on disk has a different name.
           az storage blob upload --account-name "$STORAGE_ACCOUNT" --auth-mode login \
             -c '$web' -n env.js -f ./env.js.deploy --overwrite \
             --content-cache-control "$nostore" --content-type 'text/javascript; charset=utf-8' \
@@ -328,27 +200,17 @@ jobs:
 
           echo "published to $STORAGE_ACCOUNT/\$web"
 
-      # These assertions used to live in `azure/server.check.js`, which tested the Node
-      # server that no longer exists. They belong against the real deployment now,
-      # because the behaviour they cover is Front Door's rather than this repository's:
-      #
-      #   the six security headers — `$web` sets none of them, so a missing one means the
-      #   Front Door rule set is not attached to this route;
-      #
-      #   the deep link — proof of the SPA rewrite rule. `/projects/deadbeef` is not a
-      #   blob, so without the rewrite it is a 404 and every shared URL is broken, while
-      #   the home page keeps working and hides it;
-      #
-      #   the Cache-Control pair — proof the per-blob metadata above actually landed.
-      #
-      # Front Door propagates a fresh route for a few minutes, hence the retry.
+      # Asserts what Front Door supplies and `$web` cannot: the six security headers, the SPA
+      # rewrite on a deep link, and the per-blob Cache-Control. Retries while the route spreads.
       - name: Smoke test
+        env:
+          TARGET: ${{ inputs.target }}
         run: |
           set -uo pipefail
           host="https://$AFD_ENDPOINT"
-          for i in $(seq 1 20); do
+          for i in $(seq 1 30); do
             [ "$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 "$host/")" = "200" ] && break
-            echo "attempt $i: $host/ not ready yet"; sleep 15
+            echo "attempt $i: $host/ not ready yet"; sleep 10
           done
 
           root=$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 "$host/")
@@ -361,44 +223,29 @@ jobs:
               || { echo "::error::$host/ is missing the $header header — check the Front Door rule set"; exit 1; }
           done
 
-          # PRESENCE IS NOT ENOUGH, and these three checks are the reason `server.check.js` was
-          # worth having. A CSP header that exists but omits an origin `index.html` loads
-          # white-screens the page with nothing but a console violation — commit 6dada3c is
-          # exactly that bug, shipped once already. The origin list is derived from the deployed
-          # page rather than hardcoded, so adding a <script src="https://..."> cannot outrun it.
+          # Presence is not enough: a CSP that omits an origin index.html loads white-screens
+          # the page. The origin list comes from the deployed page, not a hardcoded list.
           csp=$(echo "$headers" | grep -i '^content-security-policy:')
           for origin in $(curl -s --max-time 15 "$host/" \
             | grep -oE '(src|href)="https://[^/"]+' | grep -oE 'https://[^/"]+' | sort -u); do
             echo "$csp" | grep -qF "$origin" \
               || { echo "::error::the CSP does not name $origin, which index.html loads — the page will white-screen"; exit 1; }
           done
-          # ~~the CSP must name eagle-search-api-test.azurewebsites.net~~ — REMOVED with the
-          # same-origin change. That assertion belonged to the standalone preview, where the browser
-          # called the search API cross-origin. rproxy serves this bundle now and `/eagle-search/`
-          # and `/demi-search/search` are its own locations, so search is same-origin and covered by
-          # `connect-src 'self'`. Keeping it would have deadlocked against tightening the test CSP
-          # to match prod's — the check would fail the day the App Service host was removed from it.
-          #
-          # The wildcard guard stays: it is about what the policy must NOT permit, which is true
-          # under either topology.
+          # Search is same-origin through rproxy now, so no host is named; the guard below is
+          # about what the policy must NOT permit.
           echo "$csp" | grep -qF '*.azurewebsites.net' \
             && { echo "::error::the CSP wildcards *.azurewebsites.net — name a host exactly or, better, do not name one at all now that search is same-origin"; exit 1; }
 
           deep=$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 "$host/projects/deadbeef")
           [ "$deep" = "200" ] || { echo "::error::/projects/deadbeef returned $deep, expected 200 — the SPA rewrite rule is not working, every deep link is broken"; exit 1; }
 
-          # Taken from the deployed index.html rather than from dist/, so it also proves the
-          # hashed bundle that this page actually asks for is the one that got uploaded.
+          # From the deployed index.html, so it also proves the bundle this page asks for is
+          # the one that was uploaded.
           asset=$(curl -s --max-time 15 "$host/" | grep -o 'main-[A-Za-z0-9_-]*\.js' | head -1)
           [ -n "$asset" ] || { echo "::error::no hashed main bundle referenced by the deployed index.html"; exit 1; }
 
-          # AND THAT IT IS THIS BUILD'S BUNDLE. Without this the smoke test passes on whatever was
-          # already there: every assertion above is satisfied by the PREVIOUS deploy, and there is
-          # no Front Door purge step to rule that out. The bundle name is content-hashed, so
-          # comparing it against dist/ is the whole check.
-          # The path is spelled out, NOT inherited: each `run:` is its own shell, so the `src=`
-          # set in the publish step is empty here. An unset path would make `ls` match nothing and
-          # this check fail open on the very thing it exists to catch.
+          # And that it is THIS build's bundle: without it every assertion above is satisfied by
+          # the previous deploy. The path is spelled out because each `run:` is its own shell.
           built=$(ls dist/eagle-public/browser/main-*.js 2>/dev/null | head -1); built=${built##*/}
           [ -n "$built" ] || { echo "::error::no hashed main bundle in the build output — cannot prove the deploy is this build"; exit 1; }
           [ "$asset" = "$built" ] \
@@ -409,15 +256,8 @@ jobs:
           curl -s -I --max-time 15 "$host/env.js" | grep -qi '^cache-control:.*no-store' \
             || { echo "::error::env.js is cacheable — a stale copy points the app at the wrong API"; exit 1; }
 
-          # The deployed env.js is the test one AND is still same-origin. The first grep catches a
-          # build whose rewrite step was skipped; the rest catch the day someone copies an
-          # absolute hostname back in, which breaks the bundle the moment rproxy fronts it.
-          #
-          # ~~A CORS preflight against eagle-search-api-test~~ used to live here, asserting that
-          # the search API echoed this origin. It was right for the standalone preview and is
-          # wrong now: rproxy serves this bundle and `/eagle-search/` is one of its own locations,
-          # so search is SAME-ORIGIN and issues no preflight at all. Asserting it would fail a
-          # good deploy for a CORS path the app no longer takes.
+          # The deployed env.js is the test one and still same-origin: catches a skipped rewrite
+          # step, and the day someone copies an absolute hostname back in.
           deployed_env=$(curl -s --max-time 15 "$host/env.js")
           echo "$deployed_env" | grep -qF 'window.__env.configEndpoint = true;' \
             || { echo "::error::the deployed env.js still has configEndpoint = false — it will never fetch /api/config and will serve the committed dev defaults"; exit 1; }
@@ -429,7 +269,7 @@ jobs:
             || { echo "::error::the deployed env.js does not announce the test environment — the banner would be wrong"; exit 1; }
 
           echo "deployed and correctly cached."
-          if [ "${{ inputs.target }}" = "next" ]; then
+          if [ "$TARGET" = "next" ]; then
             echo "NOTE: this endpoint has the test /api behind it (eagle-edge gives the next site a backend route),"
             echo "so it is the site to share for review. It shows test data."
           else
