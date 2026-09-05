@@ -105,9 +105,11 @@
 }
 
 /* The open panel is the design's white card; the template's Bootstrap utilities
-   (border-bottom, pb-3) are !important, so the overrides are too. */
+   (border-bottom, pb-3) are !important, so the overrides are too. Margin stays 0: the
+   wrapper's own margin-bottom already supplies the space to the table below, and a
+   second margin here would double it. */
 .documents-page__body #advancedFilterPanel {
-  margin: 0 0 var(--layout-margin-large);
+  margin: 0;
   padding: var(--layout-padding-large) !important;
   background: var(--theme-gray-white);
   border: var(--layout-border-width-small) solid var(--theme-gray-40) !important;
@@ -142,6 +144,12 @@
    height; drop it so the search row's margin-bottom is the only space before the table. */
 .documents-page__body .search-filter-wrapper:has(#advancedFilterPanel[hidden]) {
   row-gap: 0;
+}
+
+/* Open panel: design puts a full margin between the search row and the card, wider than the
+   column-gap between the keyword box and the Filters button. */
+.documents-page__body .search-filter-wrapper:has(#advancedFilterPanel:not([hidden])) {
+  row-gap: var(--layout-margin-large);
 }
 
 /* The template lays the toggle out in a half-width grid column it does not need here. */

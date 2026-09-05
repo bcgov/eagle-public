@@ -1,5 +1,6 @@
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
 import { screen } from '@testing-library/react';
+import { loadConfig } from 'app/config/config';
 import { renderAt } from '../../../test-utils';
 import { ComplianceTab } from './compliance-tab';
 
@@ -24,13 +25,16 @@ vi.mock('./project-context', async (importOriginal) => {
   };
 });
 
-function renderTab() {
+function renderTab(demiProject?: { eaCertificate?: string }) {
   requests = [];
   vi.stubGlobal(
     'fetch',
     vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       requests.push(url);
+      if (demiProject && url.includes('/demi-projects/')) {
+        return new Response(JSON.stringify(demiProject), { status: 200 });
+      }
       const total = Object.entries(totals).find(([id]) => url.includes(id))?.[1] ?? 0;
       return new Response(
         JSON.stringify([{ searchResults: [], meta: [{ searchResultsTotal: total }] }]),
@@ -107,5 +111,31 @@ describe('ComplianceTab', () => {
     expect(screen.getByText('Loading compliance record')).toBeInTheDocument();
     expect(container.querySelectorAll('.compliance-tab__stat-value .placeholder')).toHaveLength(2);
     expect(screen.queryByText('0')).not.toBeInTheDocument();
+  });
+
+  // DEMI_PROJECTS_PATH is unset in every test above, so this is the off-switch case too: no
+  // certificate number anywhere means the intro never invents one.
+  it('falls back to the certificate placeholder when DEMI is off', async () => {
+    renderTab();
+
+    expect(
+      await screen.findByText(
+        'The certificate carries legally binding conditions. Compliance and enforcement of these' +
+          ' conditions is administered separately from the assessment itself.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('names the real certificate number once DEMI has one', async () => {
+    window.__env = { logLevel: 4, DEMI_PROJECTS_PATH: '/demi-projects' };
+    await loadConfig();
+    renderTab({ eaCertificate: 'E23-01' });
+
+    expect(
+      await screen.findByText(
+        'Certificate E23-01 carries legally binding conditions. Compliance and enforcement of' +
+          ' these conditions is administered separately from the assessment itself.',
+      ),
+    ).toBeInTheDocument();
   });
 });

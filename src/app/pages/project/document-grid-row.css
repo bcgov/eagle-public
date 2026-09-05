@@ -5,11 +5,12 @@
 }
 
 .document-grid__star {
-  float: left;
+  display: inline-flex;
+  align-items: center;
   margin-right: var(--layout-margin-xsmall);
   font-size: var(--icons-size-small);
-  /* The star carries meaning now, and no gold in the token set clears 3:1 on a white row. */
-  color: var(--typography-color-primary);
+  color: var(--theme-primary-gold);
+  vertical-align: middle;
 }
 
 .document-grid__phase {

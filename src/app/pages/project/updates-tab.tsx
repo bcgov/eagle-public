@@ -65,6 +65,7 @@ export function UpdatesTab() {
         <SearchFilterTemplate
           keywordOverride={params['keywordsActivities']}
           searching={result.loading}
+          searchAsYouType
           onSearch={(searchPackage) => {
             const hasKeywords = searchPackage.keywords?.trim();
             submit({

@@ -39,6 +39,8 @@ export function phasesOf(payload: unknown): Phase[] {
 export interface DemiProject {
   phases?: unknown[];
   shortUrl?: string;
+  /** EA certificate number, e.g. `E23-01`. No source has the conditions count it carries. */
+  eaCertificate?: string;
 }
 
 /**

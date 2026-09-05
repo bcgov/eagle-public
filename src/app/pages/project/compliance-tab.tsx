@@ -1,6 +1,7 @@
 import { Link } from 'react-router';
 import { Skeleton } from 'app/components/skeleton/skeleton';
 import { useTable } from 'app/components/table/use-table';
+import { useDemiProject } from 'app/api/project-phases';
 import { Constants } from 'app/utils/constants';
 import { createProjectTabModifiers } from 'app/utils/utils';
 import { useProjectContext } from './project-context';
@@ -49,6 +50,7 @@ function Stat({ value, label, loading }: { value: string; label: string; loading
 /** What the project's compliance record holds, and the way into the documents themselves. */
 export function ComplianceTab() {
   const { projId, lists } = useProjectContext();
+  const eaCertificate = useDemiProject(projId).data?.eaCertificate?.trim();
 
   const inspections = useComplianceCount(
     'complianceInspections',
@@ -66,8 +68,9 @@ export function ComplianceTab() {
     <section className="compliance-tab">
       <h2 className="compliance-tab__title">Conditions &amp; compliance</h2>
       <p className="compliance-tab__intro">
-        Compliance and enforcement of the certificate conditions is administered separately from the
-        assessment itself.
+        {`${eaCertificate ? `Certificate ${eaCertificate} carries` : 'The certificate carries'} ` +
+          'legally binding conditions. Compliance and enforcement of these conditions is ' +
+          'administered separately from the assessment itself.'}
       </p>
 
       <ul className="compliance-tab__stats" aria-busy={loading || undefined}>
