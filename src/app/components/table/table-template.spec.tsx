@@ -476,20 +476,23 @@ describe('TableTemplate select-all offer', () => {
     expect(onMessage).toHaveBeenCalledWith({ label: 'selectAllMatching' });
   });
 
-  /**
-   * The cap is a limit the reader meets, not a warning they are shown up front: past it the bar
-   * offers nothing and says nothing. `CAP_MESSAGE` is a toast on the attempt that hits the cap,
-   * proved by the header-checkbox case above.
-   */
-  it('offers nothing, and warns about nothing, past the 100-document cap', () => {
-    const { container } = render(
+  it('offers the download limit instead of the real total past the 100-document cap', () => {
+    render(
       <TableTemplate data={selectableTable({ totalListItems: 250 })} onMessage={() => undefined} />,
     );
 
-    expect(screen.queryByRole('button', { name: /Select all/ })).not.toBeInTheDocument();
-    expect(container.querySelector('.table-header-bar')).not.toHaveTextContent(
-      /Narrow|filters|100/,
-    );
+    const link = screen.getByRole('button', { name: 'Select 100 (download limit)' });
+    expect(link).toHaveTextContent('Select 100 (download limit)');
+    expect(link).toHaveAttribute('title', 'Downloads are limited to 100 documents at a time');
+  });
+
+  it('still asks to select the rest of the matches when the link reads the download limit', async () => {
+    const onMessage = vi.fn();
+    render(<TableTemplate data={selectableTable({ totalListItems: 250 })} onMessage={onMessage} />);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Select 100 (download limit)' }));
+
+    expect(onMessage).toHaveBeenCalledWith({ label: 'selectAllMatching' });
   });
 });
 
@@ -525,7 +528,7 @@ describe('TableTemplate selection toolbar', () => {
     render(<TableTemplate data={selectableTable()} onMessage={() => undefined} />);
 
     expect(screen.getByText('1 selected')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Download' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Download 1' })).toBeEnabled();
 
     await userEvent.click(screen.getByLabelText('Select all on this page'));
 
@@ -549,7 +552,7 @@ describe('TableTemplate selection toolbar', () => {
     ]);
     render(<TableTemplate data={selectableTable()} onMessage={() => undefined} />);
 
-    await userEvent.click(screen.getByRole('button', { name: 'Download' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Download 2' }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     const [url, init] = fetchMock.mock.calls[0];
@@ -581,7 +584,7 @@ describe('TableTemplate selection toolbar', () => {
 
     render(<TableTemplate data={selectableTable()} onMessage={() => undefined} />);
 
-    expect(screen.getByRole('button', { name: 'Download' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Download 1' })).toBeEnabled();
   });
 
   it('refuses a fourth download while three are still running', () => {
@@ -592,7 +595,7 @@ describe('TableTemplate selection toolbar', () => {
 
     render(<TableTemplate data={selectableTable()} onMessage={() => undefined} />);
 
-    const button = screen.getByRole('button', { name: 'Download' });
+    const button = screen.getByRole('button', { name: 'Download 1' });
     expect(button).toBeDisabled();
     expect(button).toHaveAttribute(
       'title',
@@ -612,7 +615,7 @@ describe('TableTemplate selection toolbar', () => {
 
       render(<TableTemplate data={selectableTable()} onMessage={() => undefined} />);
 
-      expect(screen.getByRole('button', { name: 'Download' })).toBeEnabled();
+      expect(screen.getByRole('button', { name: 'Download 1' })).toBeEnabled();
     },
   );
 });

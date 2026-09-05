@@ -365,6 +365,13 @@ export function DownloadPanel() {
           className="download-panel__control"
           aria-label="Close download panel"
           onClick={() => {
+            if (
+              inFlight.length > 0 &&
+              !window.confirm(
+                'Closing this panel cancels the downloads still in progress. Cancel them?',
+              )
+            )
+              return;
             inFlight.forEach((id) => cancelJob(id));
             dismissAll();
           }}

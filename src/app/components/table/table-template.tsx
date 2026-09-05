@@ -3,6 +3,7 @@ import { Constants } from 'app/utils/constants';
 import {
   clearSelection,
   MAX_JOBS_IN_FLIGHT,
+  SELECT_ALL_MAX,
   startDownload,
   useDownloadInProgress,
   useSelection,
@@ -20,6 +21,8 @@ import {
   type TableObject,
 } from './table-object';
 import './table.css';
+
+const SELECT_ALL_CAP_TITLE = `Downloads are limited to ${SELECT_ALL_MAX} documents at a time`;
 
 /** The checkbox column's cell. Rendered by the row components, which own their own `<tr>`. */
 export function SelectCell({ rowData, tableId }: { rowData: any; tableId: string }) {
@@ -65,8 +68,11 @@ export function TableTemplate({
     ? withAllPicker(data.pageSizeOptions, data.totalListItems)
     : data.pageSizeOptions;
 
-  const { selectable, selectedCount, pageAllSelected, pageMixed, showSelectAll, toggleAllOnPage } =
+  const { selectable, selectedCount, pageAllSelected, pageMixed, toggleAllOnPage } =
     usePageSelection(data);
+  // This table's own select-all offer, unlike the shared hook's capped `showSelectAll`: past the
+  // anonymous limit the link still shows, worded as the download limit rather than the real total.
+  const showSelectAll = selectable && pageAllSelected && data.totalListItems > data.pageSize;
   const downloadInProgress = useDownloadInProgress();
 
   const { onSort, onUpdatePageNumber, onUpdatePageSize } = useTableHandlers({
@@ -98,6 +104,13 @@ export function TableTemplate({
   const countMessage = loading
     ? ''
     : documentCountMessage(data.totalListItems, data.currentPage, data.pageSize);
+  // Past the cap there is nothing more to select than the cap itself; the link says so instead
+  // of a count the click could never actually select.
+  const selectAllOverCap = data.totalListItems > SELECT_ALL_MAX;
+  const selectAllText = selectAllOverCap
+    ? `Select ${SELECT_ALL_MAX} (download limit)`
+    : `Select all ${data.totalListItems.toLocaleString()}`;
+  const selectAllLabel = selectAllOverCap ? selectAllText : `${selectAllText} documents`;
 
   return (
     <div className="table-template" ref={containerRef}>
@@ -143,10 +156,11 @@ export function TableTemplate({
                   <button
                     type="button"
                     className="btn btn-link btn-sm table-header-bar__link"
-                    aria-label={`Select all ${data.totalListItems.toLocaleString()} documents`}
+                    aria-label={selectAllLabel}
+                    title={selectAllOverCap ? SELECT_ALL_CAP_TITLE : undefined}
                     onClick={() => onMessage({ label: 'selectAllMatching' })}
                   >
-                    Select all {data.totalListItems.toLocaleString()}
+                    {selectAllText}
                   </button>
                 )}
               </>
@@ -169,7 +183,7 @@ export function TableTemplate({
                 <i className="material-icons md-18" aria-hidden="true">
                   cloud_download
                 </i>
-                Download
+                Download {selectedCount}
               </button>
             ) : (
               paginationControl
