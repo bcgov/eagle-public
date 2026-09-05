@@ -1,7 +1,7 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { renderHook, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { loadConfig } from 'app/config/config';
+import { loadConfig, type EnvConfig } from 'app/config/config';
 import type { Project } from 'app/models/project';
 import { clearToasts, useToasts } from 'app/state/toast';
 import { renderAt } from '../../../test-utils';
@@ -17,8 +17,12 @@ const PROJECT = {
   location: 'Near Cedar Creek',
 } as unknown as Project;
 
-async function renderMasthead(project: Project | null = PROJECT, loading = false) {
-  window.__env = { logLevel: 4, NOTIFY_API: 'https://notify.example' };
+async function renderMasthead(
+  project: Project | null = PROJECT,
+  loading = false,
+  envOverrides: Partial<EnvConfig> = {},
+) {
+  window.__env = { logLevel: 4, NOTIFY_API: 'https://notify.example', ...envOverrides };
   await loadConfig();
   return renderAt('/p/proj-1/overview', [
     {
@@ -100,6 +104,43 @@ describe('project masthead', () => {
       },
     );
     expect(screen.getByRole('status')).toHaveTextContent('');
+  });
+
+  it('copies the DEMI short link once demi-api provides one, instead of the /p/ fallback', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText } });
+    const shortUrl = 'https://projects.eao.gov.bc.ca/s/abcd2345';
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(JSON.stringify({ shortUrl }), { status: 200 })),
+    );
+
+    const { queryClient } = await renderMasthead(PROJECT, false, {
+      DEMI_PROJECTS_PATH: '/demi-projects',
+    });
+    await waitFor(() =>
+      expect(queryClient.getQueryData(['demi-project', 'proj-1'])).toEqual({ shortUrl }),
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Short link' }));
+
+    expect(writeText).toHaveBeenCalledWith(shortUrl);
+  });
+
+  it('falls back to execCommand when the clipboard API is unavailable, with no toast', async () => {
+    vi.stubGlobal('navigator', { ...navigator, clipboard: undefined });
+    const execCommand = vi.fn().mockReturnValue(true);
+    // jsdom has no execCommand at all; add it directly rather than stubbing the whole document.
+    document.execCommand = execCommand;
+    await renderMasthead();
+
+    await user.click(screen.getByRole('button', { name: 'Short link' }));
+
+    expect(execCommand).toHaveBeenCalledWith('copy');
+    expect(await screen.findByRole('button', { name: 'Copied' })).toBeInTheDocument();
+    expect(toasts()).toEqual([]);
+
+    delete (document as Partial<Document>).execCommand;
   });
 
   it('toasts the link to copy by hand when the clipboard refuses', async () => {

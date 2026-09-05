@@ -109,6 +109,7 @@
 
 .project-masthead__action--link {
   /* Fits "Short link" and "Copied" both, so the actions row does not reflow on click. */
+  position: relative;
   min-width: 9.5rem;
   justify-content: center;
   border: var(--layout-border-width-small) solid var(--eao-on-dark-divider);
@@ -138,17 +139,57 @@
       color 150ms ease;
   }
 
-  .project-masthead__action--copied {
-    animation: project-masthead-copied-in 200ms ease;
+  .project-masthead__action--copied .material-icons {
+    animation: project-masthead-icon-pop 250ms ease;
   }
 
-  @keyframes project-masthead-copied-in {
+  .project-masthead__action--copied .project-masthead__action-label {
+    animation: project-masthead-label-in 250ms ease;
+  }
+
+  /* Drain bar: shrinks over the same 2s the copied state holds, so the reader sees the revert coming. */
+  .project-masthead__action--copied::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 2px;
+    width: 100%;
+    background: var(--theme-primary-gold);
+    animation: project-masthead-drain 2000ms linear forwards;
+  }
+
+  @keyframes project-masthead-icon-pop {
+    0% {
+      transform: scale(1);
+    }
+
+    40% {
+      transform: scale(1.25);
+    }
+
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  @keyframes project-masthead-label-in {
     from {
-      transform: scale(0.96);
+      opacity: 0;
     }
 
     to {
-      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  @keyframes project-masthead-drain {
+    from {
+      width: 100%;
+    }
+
+    to {
+      width: 0;
     }
   }
 }

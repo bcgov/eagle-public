@@ -114,6 +114,30 @@
   border-radius: var(--layout-border-radius-medium);
 }
 
+/* The design gives the filter groups one even 16px rhythm in both directions. The template's
+   default Bootstrap gutter is 24px horizontal and 0 vertical (only `.filter-panel`'s own 4px
+   padding-bottom separates wrapped rows), so both axes need overriding here — on every nested
+   row, including the start/end date pair, so it keeps the same rhythm when it stacks. */
+.documents-page__body #advancedFilterPanel .row {
+  --bs-gutter-x: var(--layout-padding-medium);
+  --bs-gutter-y: var(--layout-padding-medium);
+}
+
+/* Bootstrap's `.pb-1` utility on the same element ships `!important`, so this must match. */
+.documents-page__body #advancedFilterPanel .filter-panel {
+  padding-bottom: 0 !important;
+}
+
+/* `.control-label` is a plain inline `<label>`/`<span>` with no house style, so its vertical
+   margin has no effect until it is a block. Design puts 4px between a filter's label and its
+   control. */
+.documents-page__body #advancedFilterPanel .control-label {
+  display: block;
+  margin-bottom: var(--layout-margin-xsmall);
+  font: var(--typography-bold-small-body);
+  color: var(--typography-color-primary);
+}
+
 /* The collapsed panel is still a wrapped flex row, so it reserves the row gap even at zero
    height; drop it so the search row's margin-bottom is the only space before the table. */
 .documents-page__body .search-filter-wrapper:has(#advancedFilterPanel[hidden]) {
