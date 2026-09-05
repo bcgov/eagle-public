@@ -1,3 +1,4 @@
+import type { Phase } from 'app/api/project-phases';
 import type { Project } from 'app/models/project';
 
 /**
@@ -13,10 +14,10 @@ export interface RailStage {
   hex: string;
   token: string;
   state: 'done' | 'current' | 'upcoming';
-  // TODO: `elapsedDays` and per-stage dates come from Track `work_phases` through a future
-  // demi-api endpoint (`GET /api/projects/:id/phases`); eagle-api holds no phase dates.
   statutoryDays?: number;
+  /** How long the stage ran, and the range under its name: both from the DEMI project's `phases`. */
   elapsedDays?: number;
+  dates?: string;
   owner?: 'eao' | 'proponent';
   provisional?: boolean;
 }
@@ -26,12 +27,7 @@ export interface LaidStage extends RailStage {
   start: number;
   width: number;
   days: number;
-  /** Pin row: 0 on the track, or the first row whose last pin centre is PIN_GAP or more away. */
-  row: number;
 }
-
-/** Percent of the track two pin centres need between them before the later pin drops a row. */
-const PIN_GAP = 4.5;
 
 /** `List` rows of type `projectPhase`, as the project shell fetches them. */
 export interface PhaseListItem {
@@ -104,9 +100,11 @@ const TRACK_STAGES: Omit<RailStage, 'id' | 'n' | 'state'>[] = [
   { name: 'Referral / Decision', statutoryDays: 30, owner: 'eao', ...FILLS.decision },
 ];
 
+const DETAILED_ID = 'detailed-';
+
 export const DETAILED_STAGES: RailStage[] = TRACK_STAGES.map((stage, index) => ({
   ...stage,
-  id: `detailed-${index + 1}`,
+  id: `${DETAILED_ID}${index + 1}`,
   n: index + 1,
   state: 'upcoming',
 }));
@@ -262,6 +260,87 @@ export function detailedStages(project: Project | null): RailStage[] {
   }));
 }
 
+/** Track's phase names differ from the rail's in case, punctuation and `&` against `and`. */
+function normalizeName(name: string): string {
+  const key = name
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+  // Track renamed the last phase in 2023 (migration 20a4532cabb9); the rail keeps the Act's name.
+  return key === 'ea certificate decision' ? 'referral decision' : key;
+}
+
+/** The Track phases each simplified stage rolls up, off the stage-to-phase table above. */
+const ROLLUP = new Map<string, string[]>(
+  DETAILED_PHASES.map((phase, index) => [
+    normalizeName(phase),
+    TRACK_STAGES.filter((_, stage) => STAGE_PHASE[stage] === index).map((s) =>
+      normalizeName(s.name),
+    ),
+  ]),
+);
+
+/** A detailed stage is one Track phase; a simplified one covers every phase that rolls into it. */
+function phaseNamesFor(stage: RailStage): string[] {
+  const key = normalizeName(stage.name);
+  return stage.id.startsWith(DETAILED_ID) ? [key] : (ROLLUP.get(key) ?? [key]);
+}
+
+const DAY = 24 * 60 * 60 * 1000;
+
+/** UTC throughout: Track sends midnight dates, and a local zone slides them into another month. */
+const UTC = { timeZone: 'UTC' } as const;
+const MONTH_YEAR = new Intl.DateTimeFormat('en-CA', { month: 'short', year: 'numeric', ...UTC });
+const MONTH = new Intl.DateTimeFormat('en-CA', { month: 'short', ...UTC });
+
+function time(iso: string | null): number | null {
+  const at = iso ? new Date(iso).getTime() : NaN;
+  return isNaN(at) ? null : at;
+}
+
+function dateLabel(start: number | null, end: number | null): string {
+  if (start == null) return end == null ? '' : MONTH_YEAR.format(end);
+  if (end == null) return `Since ${MONTH_YEAR.format(start)}`;
+
+  const from = MONTH_YEAR.format(start);
+  const to = MONTH_YEAR.format(end);
+  if (from === to) return from;
+  // Within one year the design drops the repeated year: "Feb – Dec 2020".
+  const sameYear = new Date(start).getUTCFullYear() === new Date(end).getUTCFullYear();
+  return `${sameYear ? MONTH.format(start) : from} – ${to}`;
+}
+
+/**
+ * Fills each stage's date range, and for a finished stage how long it really took, from the DEMI
+ * project's `phases`. A stage no phase matches keeps the statutory width `layout()` gives it.
+ */
+export function withPhaseDates(stages: RailStage[], phases: Phase[] | null): RailStage[] {
+  if (!phases?.length) return stages;
+
+  return stages.map((stage) => {
+    const names = phaseNamesFor(stage);
+    const matched = phases.filter((phase) => names.includes(normalizeName(phase.name)));
+    if (!matched.length) return stage;
+
+    const starts = matched.map((p) => time(p.startDate)).filter((at): at is number => at != null);
+    const ends = matched.map((p) => time(p.endDate)).filter((at): at is number => at != null);
+    const start = starts.length ? Math.min(...starts) : null;
+    // A stage is over only when every phase in it is: one open phase leaves the stage open.
+    const end = ends.length === matched.length ? Math.max(...ends) : null;
+
+    const dates = dateLabel(start, end);
+    if (!dates) return stage;
+
+    const elapsedDays = start != null && end != null ? Math.round((end - start) / DAY) : 0;
+    return {
+      ...stage,
+      dates,
+      ...(stage.state === 'done' && elapsedDays > 0 ? { elapsedDays } : {}),
+    };
+  });
+}
+
 /** Historic stages scale to how long they took; current and future show the statutory maximum. */
 function daysFor(stage: RailStage): number {
   if (stage.state === 'done' && stage.elapsedDays != null) return stage.elapsedDays;
@@ -272,20 +351,13 @@ export function layout(stages: RailStage[]): LaidStage[] {
   const days = stages.map(daysFor);
   const total = days.reduce((sum, d) => sum + d, 0) || 1;
   let start = 0;
-  const lastCentre: number[] = [];
   return stages.map((stage, index) => {
-    const width = (days[index] / total) * 100;
     const laid: LaidStage = {
       ...stage,
       days: days[index],
       start: (start / total) * 100,
-      width,
-      row: 0,
+      width: (days[index] / total) * 100,
     };
-    const centre = laid.start + width / 2;
-    while (lastCentre[laid.row] !== undefined && centre - lastCentre[laid.row] < PIN_GAP)
-      laid.row++;
-    lastCentre[laid.row] = centre;
     start += days[index];
     return laid;
   });

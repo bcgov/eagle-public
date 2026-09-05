@@ -16,15 +16,19 @@ import {
   actYear,
   phaseSetYear,
   simplifiedStages,
+  withPhaseDates,
   type LaidStage,
   type PhaseListItem,
   type RailStage,
 } from './assessment-stages';
+import type { Phase } from 'app/api/project-phases';
 import './assessment-rail.css';
 
 interface AssessmentRailProps {
   project: Project | null;
   lists: PhaseListItem[];
+  /** Track work phases from DEMI; null until they arrive, and whenever the feed is off. */
+  phases?: Phase[] | null;
   /** The project fetch is still in flight, so no stage is known yet. */
   loading?: boolean;
 }
@@ -41,17 +45,22 @@ function fill(stage: RailStage): string {
   return `var(${stage.token}, ${stage.hex})`;
 }
 
+/** The clock is what the Act allows, never what the stage took: `days` is the drawn width. */
+function limit(stage: LaidStage): number {
+  return stage.statutoryDays ?? stage.days;
+}
+
 function clockLabel(stage: LaidStage): string {
   return stage.owner === 'proponent'
-    ? `${durationLabel(stage.days)} proponent time`
-    : `${durationLabel(stage.days)} EAO limit`;
+    ? `${durationLabel(limit(stage))} proponent time`
+    : `${durationLabel(limit(stage))} EAO limit`;
 }
 
 function stageTitle(stage: LaidStage): string {
   const clock =
     stage.owner === 'proponent'
-      ? `${durationLabel(stage.days)}, proponent time (no EAO time limit)`
-      : `${durationLabel(stage.days)}, legislated EAO time`;
+      ? `${durationLabel(limit(stage))}, proponent time (no EAO time limit)`
+      : `${durationLabel(limit(stage))}, legislated EAO time`;
   return `${stage.name} — ${clock}${stage.provisional ? ' · pending Comms ratification' : ''}`;
 }
 
@@ -68,6 +77,7 @@ function SimpleRail({ stages }: { stages: RailStage[] }) {
         >
           <span className="assessment-rail__phase-bar" aria-hidden="true" />
           <span className="assessment-rail__phase-name">{stage.name}</span>
+          {stage.dates && <span className="assessment-rail__phase-dates">{stage.dates}</span>}
         </li>
       ))}
     </ol>
@@ -78,12 +88,23 @@ function SimpleRail({ stages }: { stages: RailStage[] }) {
  * The project's place in the environmental assessment process, as the familiar phase rail or -
  * on projects in the 2018 phase set - a to-scale timeline of the ten statutory stages.
  */
-export function AssessmentRail({ project, lists, loading = false }: AssessmentRailProps) {
+export function AssessmentRail({
+  project,
+  lists,
+  phases = null,
+  loading = false,
+}: AssessmentRailProps) {
   const [view, setView] = useState(RAIL_DEFAULT_VIEW);
   const [hoverStage, setHoverStage] = useState<number | null>(null);
 
-  const simple = useMemo(() => simplifiedStages(lists, project), [lists, project]);
-  const laid = useMemo(() => layout(detailedStages(project)), [project]);
+  const simple = useMemo(
+    () => withPhaseDates(simplifiedStages(lists, project), phases),
+    [lists, project, phases],
+  );
+  const laid = useMemo(
+    () => layout(withPhaseDates(detailedStages(project), phases)),
+    [project, phases],
+  );
 
   const act = actYear(project);
   // A 2002 Act project parked in a 2018 phase row never went through the 2018 stages.
@@ -187,11 +208,7 @@ export function AssessmentRail({ project, lists, loading = false }: AssessmentRa
                 ))}
               </div>
 
-              <div
-                className="assessment-rail__pins"
-                style={vars({ '--rows': String(Math.max(...laid.map((s) => s.row)) + 1) })}
-                aria-hidden="true"
-              >
+              <div className="assessment-rail__pins" aria-hidden="true">
                 {laid.map((stage) => (
                   <span
                     key={stage.id}
@@ -200,7 +217,6 @@ export function AssessmentRail({ project, lists, loading = false }: AssessmentRa
                     data-hover={hoverStage === stage.n || undefined}
                     style={vars({
                       '--l': `${(stage.start + stage.width / 2).toFixed(2)}%`,
-                      '--row': String(stage.row),
                       '--stage': fill(stage),
                     })}
                     onMouseEnter={() => setHoverStage(stage.n)}
@@ -250,7 +266,10 @@ export function AssessmentRail({ project, lists, loading = false }: AssessmentRa
                   <span className="assessment-rail__key-name" title={stageTitle(stage)}>
                     {stage.name}
                   </span>
-                  <span className="assessment-rail__key-clock">{clockLabel(stage)}</span>
+                  <span className="assessment-rail__key-clock">
+                    {clockLabel(stage)}
+                    {stage.dates ? ` · ${stage.dates}` : ''}
+                  </span>
                 </span>
               </li>
             ))}

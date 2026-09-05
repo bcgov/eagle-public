@@ -3,6 +3,7 @@ import { Link } from 'react-router';
 import { Skeleton } from 'app/components/skeleton/skeleton';
 import type { Project } from 'app/models/project';
 import { longDate } from 'app/utils/utils';
+import { useProjectPhases } from 'app/api/project-phases';
 import { AssessmentRail } from './assessment-rail';
 import type { PhaseListItem } from './assessment-stages';
 import './project-panel.css';
@@ -47,6 +48,7 @@ function Fact({ label, value, detail, loading }: FactProps) {
 /** The card under the masthead: assessment progress beside the core project facts, on every tab. */
 export function ProjectPanel({ project, lists, loading = false }: ProjectPanelProps) {
   const centroid = project?.centroid?.length === 2 ? project.centroid : null;
+  const phases = useProjectPhases(project?._id ?? '');
 
   return (
     <section
@@ -55,7 +57,7 @@ export function ProjectPanel({ project, lists, loading = false }: ProjectPanelPr
       aria-busy={loading || undefined}
     >
       <div className="project-panel__progress">
-        <AssessmentRail project={project} lists={lists} loading={loading} />
+        <AssessmentRail project={project} lists={lists} phases={phases} loading={loading} />
       </div>
 
       <div className="project-panel__facts">

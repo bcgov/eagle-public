@@ -63,7 +63,7 @@ async function send(url: string, init: RequestInit = {}): Promise<Response> {
   return response;
 }
 
-async function getJson<T>(url: string): Promise<T> {
+export async function getJson<T>(url: string): Promise<T> {
   return (await send(url)).json() as Promise<T>;
 }
 

@@ -108,6 +108,13 @@
   color: var(--typography-color-secondary);
 }
 
+.assessment-rail__phase-dates {
+  display: block;
+  margin-top: var(--layout-margin-hair);
+  font: var(--typography-regular-label);
+  color: var(--typography-color-secondary);
+}
+
 /* Detailed rail: to-scale bar */
 
 .assessment-rail__scale {
@@ -121,12 +128,12 @@
   min-width: 0;
 }
 
+/* Three stacked 22px rows, no gaps: axis, bar, then the pins tucked under their segments. */
 .assessment-rail__axis,
 .assessment-rail__bar,
 .assessment-rail__pins {
   position: relative;
-  /* One 24px row per --rows; crowded pins drop a row (see PIN_GAP). */
-  height: calc(var(--rows, 1) * 24px - 2px);
+  height: 22px;
 }
 
 .assessment-rail__tick {
@@ -176,33 +183,45 @@
   outline-offset: 2px;
 }
 
-/* White chip with a coloured ring: the numeral keeps full contrast on every stage fill. */
+/* Solid stage fill with a white numeral, so a pin reads as the same colour as its segment.
+   ponytail: white numerals fall under 3:1 on --eao-pre-eac-dark, --eao-readiness-decision-main,
+   --eao-effects-assessment-dark and --eao-effects-assessment-main; the pins are aria-hidden and
+   the key row states each stage by name. Fix by darkening those four in eao-tokens.css. */
 .assessment-rail__num {
   box-sizing: border-box;
   display: inline-flex;
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
-  border: var(--layout-border-width-medium) solid var(--stage);
+  width: 18px;
+  height: 18px;
+  padding-top: 1px;
   border-radius: var(--layout-border-radius-circular);
-  background: var(--theme-gray-white);
+  background: var(--stage);
   font-weight: 700;
   font-size: 11px;
   line-height: 1;
-  color: var(--typography-color-primary);
+  color: var(--typography-color-primary-invert);
 }
 
+/* Centred under its segment, 2px below the bar, ringed in page white so neighbours stay apart. */
 .assessment-rail__pin {
   position: absolute;
-  top: calc(1px + var(--row, 0) * 24px);
-  left: clamp(10px, var(--l), calc(100% - 10px));
+  top: 2px;
+  left: var(--l);
   transform: translateX(-50%);
+  box-shadow: 0 0 0 2px var(--theme-gray-white);
 }
 
 .assessment-rail__pin[data-hover] {
-  box-shadow: 0 0 0 2px var(--typography-color-primary);
+  box-shadow:
+    0 0 0 2px var(--theme-gray-white),
+    0 0 0 4px var(--typography-color-primary);
+}
+
+/* Optical alignment with the first line of the key row's stage name. */
+.assessment-rail__chip {
+  margin-top: 2px;
 }
 
 /* Off-scale amendment column */

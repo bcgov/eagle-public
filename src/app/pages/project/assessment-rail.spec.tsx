@@ -1,11 +1,19 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { Phase } from 'app/api/project-phases';
 import { AssessmentRail } from './assessment-rail';
-import { LISTS, makeProject } from './assessment-stages.fixture';
+import { LISTS, PHASES, makeProject } from './assessment-stages.fixture';
 
-function renderRail(phase: string | null, phaseYear = 2018, act = phaseYear) {
-  return render(<AssessmentRail project={makeProject(phase, phaseYear, act)} lists={LISTS} />);
+function renderRail(
+  phase: string | null,
+  phaseYear = 2018,
+  act = phaseYear,
+  phases: Phase[] | null = null,
+) {
+  return render(
+    <AssessmentRail project={makeProject(phase, phaseYear, act)} lists={LISTS} phases={phases} />,
+  );
 }
 
 async function showDetailed() {
@@ -60,6 +68,35 @@ describe('simplified rail', () => {
   });
 });
 
+describe('phase dates', () => {
+  it('puts a date line under each simplified stage DEMI has phases for', () => {
+    renderRail('Effects Assessment', 2018, 2018, PHASES);
+
+    const items = screen.getAllByRole('listitem');
+    expect(items[1]).toHaveTextContent('Early EngagementAug 2020 – Mar 2021');
+    expect(items[5]).toHaveTextContent('Effects AssessmentSince Feb 2023');
+    // Project Designation is not a Track phase, so it has a name and nothing else.
+    expect(items[0]).toHaveTextContent(/^Project Designation$/);
+  });
+
+  it('adds the dates after the clock in each detailed key row', async () => {
+    renderRail('Effects Assessment', 2018, 2018, PHASES);
+
+    await showDetailed();
+
+    const rows = screen.getAllByRole('listitem');
+    expect(rows[0]).toHaveTextContent('90 days EAO limit · Aug 2020 – Jan 2021');
+    expect(rows[7]).toHaveTextContent('110 days EAO limit · Since Feb 2023');
+    expect(rows[8]).toHaveTextContent(/40 days EAO limit$/);
+  });
+
+  it('renders the rail unchanged while the phases are still loading', () => {
+    renderRail('Effects Assessment');
+
+    expect(screen.getAllByRole('listitem')[1]).toHaveTextContent(/^Early Engagement$/);
+  });
+});
+
 describe('detailed rail', () => {
   it('exposes only the numbered key as a list', async () => {
     const { container } = renderRail('Process Planning');
@@ -107,6 +144,32 @@ describe('detailed rail', () => {
         /maximum timeline of 6\.7 years\. Of that, 630 days \(26%\).+remaining 1,825 days are proponent time/,
       ),
     ).toBeInTheDocument();
+  });
+
+  it('centres every pin under its segment on one row', async () => {
+    const { container } = renderRail('Process Planning');
+
+    await showDetailed();
+
+    const segments = container.querySelectorAll<HTMLElement>('.assessment-rail__seg');
+    const pins = container.querySelectorAll<HTMLElement>('.assessment-rail__pin');
+    expect(pins).toHaveLength(10);
+    pins.forEach((pin, index) => {
+      const segment = segments[index];
+      const start = Number.parseFloat(segment.style.getPropertyValue('--l'));
+      const width = Number.parseFloat(segment.style.getPropertyValue('--w'));
+      expect(Number.parseFloat(pin.style.getPropertyValue('--l'))).toBeCloseTo(
+        start + width / 2,
+        1,
+      );
+      // No row var and no rows count: pins never stack off the track.
+      expect(pin.style.getPropertyValue('--row')).toBe('');
+    });
+    expect(
+      container
+        .querySelector<HTMLElement>('.assessment-rail__pins')
+        ?.style.getPropertyValue('--rows'),
+    ).toBe('');
   });
 
   it('links a key row to its segment and pin on hover', async () => {

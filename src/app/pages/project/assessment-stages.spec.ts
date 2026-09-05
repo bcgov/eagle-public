@@ -10,8 +10,9 @@ import {
   offRailPhase,
   phaseSetYear,
   simplifiedStages,
+  withPhaseDates,
 } from './assessment-stages';
-import { LISTS, makeProject } from './assessment-stages.fixture';
+import { LISTS, PHASES, makeProject } from './assessment-stages.fixture';
 
 const SIMPLE_2018 = [
   'Project Designation',
@@ -89,12 +90,6 @@ describe('layout', () => {
     expect(laid[0].days).toBe(200);
     expect(laid[1].days).toBe(365);
     expect(laid[1].start).toBeCloseTo((200 / 2565) * 100, 6);
-  });
-
-  it('drops a pin a row when its centre crowds the previous one', () => {
-    const laid = layout(DETAILED_STAGES);
-
-    expect(laid.map((s) => s.row)).toEqual([0, 0, 0, 1, 0, 0, 0, 0, 1, 2]);
   });
 
   it('ignores elapsed days on a stage that is not finished', () => {
@@ -232,6 +227,98 @@ describe('offRailPhase', () => {
   it('is null for a phase on the rail', () => {
     expect(offRailPhase(makeProject('Process Planning'))).toBeNull();
     expect(offRailPhase(makeProject('Post Decision - Construction'))).toBeNull();
+  });
+});
+
+describe('withPhaseDates', () => {
+  const project = makeProject('Effects Assessment');
+  const detailed = () => withPhaseDates(detailedStages(project), PHASES);
+  const simple = () => withPhaseDates(simplifiedStages(LISTS, project), PHASES);
+
+  function byName<T extends { name: string }>(stages: T[]): Record<string, T> {
+    return Object.fromEntries(stages.map((stage) => [stage.name, stage]));
+  }
+
+  it('matches Track names through case, punctuation and & against and', () => {
+    const stages = byName(detailed());
+
+    expect(stages['Early Engagement'].dates).toBe('Aug 2020 – Jan 2021');
+    expect(stages['Proponent time: project description'].dates).toBe('Jan – Mar 2021');
+    expect(stages['Application Development and Review'].dates).toBe('Aug – Sep 2022');
+  });
+
+  it.each(['Referral/Decision', 'EA Certificate Decision'])(
+    'matches the last stage against Track name %s',
+    (name) => {
+      const stages = withPhaseDates(detailedStages(makeProject('Referral')), [
+        { name, startDate: '2023-03-01T00:00:00.000Z', endDate: '2023-03-20T00:00:00.000Z' },
+      ]);
+
+      expect(byName(stages)['Referral / Decision'].dates).toBe('Mar 2023');
+    },
+  );
+
+  it('collapses the Track phases a simplified stage rolls up', () => {
+    const stages = byName(simple());
+
+    // Early Engagement plus the proponent time after it: earliest start, latest end.
+    expect(stages['Early Engagement'].dates).toBe('Aug 2020 – Mar 2021');
+    expect(stages['Early Engagement'].elapsedDays).toBe(242);
+    expect(stages['Application Development and Review'].dates).toBe('Dec 2021 – Dec 2022');
+  });
+
+  it('measures a finished stage but not a current or unfinished one', () => {
+    const stages = byName(detailed());
+
+    expect(stages['Early Engagement'].elapsedDays).toBe(167);
+    expect(stages['Readiness Decision'].elapsedDays).toBe(27);
+    expect(stages['Effects Assessment'].state).toBe('current');
+    expect(stages['Effects Assessment'].elapsedDays).toBeUndefined();
+  });
+
+  it('labels an open stage from its start date alone', () => {
+    expect(byName(detailed())['Effects Assessment'].dates).toBe('Since Feb 2023');
+  });
+
+  it('draws a finished stage at its real length and the rest at the statutory maximum', () => {
+    const laid = byName(layout(detailed()));
+
+    expect(laid['Early Engagement'].days).toBe(167);
+    expect(laid['Recommendation'].days).toBe(40);
+  });
+
+  it('leaves a stage alone when its phase carries no dates', () => {
+    const stages = withPhaseDates(detailedStages(project), [
+      { name: 'Process Planning', startDate: null, endDate: null },
+    ]);
+
+    expect(byName(stages)['Process Planning'].dates).toBeUndefined();
+  });
+
+  it('ignores phases and stages that do not pair up', () => {
+    const stages = byName(
+      withPhaseDates(detailedStages(project), [
+        { name: 'Post-EAC Document Review', startDate: '2024-01-01', endDate: '2024-02-01' },
+        ...PHASES,
+      ]),
+    );
+
+    expect(stages['Recommendation'].dates).toBeUndefined();
+    expect(stages['Early Engagement'].dates).toBe('Aug 2020 – Jan 2021');
+  });
+
+  it.each([
+    ['Readiness Decision', 'Apr 2021'],
+    ['Process Planning', 'Sep – Nov 2021'],
+  ])('shortens the label for %s within one month or year', (name, label) => {
+    expect(byName(detailed())[name].dates).toBe(label);
+  });
+
+  it('changes nothing without phases', () => {
+    const stages = detailedStages(project);
+
+    expect(withPhaseDates(stages, null)).toBe(stages);
+    expect(withPhaseDates(stages, [])).toBe(stages);
   });
 });
 
