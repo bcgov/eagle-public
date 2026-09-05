@@ -3,7 +3,7 @@ import { Link } from 'react-router';
 import { Skeleton } from 'app/components/skeleton/skeleton';
 import type { Project } from 'app/models/project';
 import { longDate } from 'app/utils/utils';
-import { useProjectPhases } from 'app/api/project-phases';
+import { useDemiProject, useProjectPhases } from 'app/api/project-phases';
 import { AssessmentRail } from './assessment-rail';
 import type { PhaseListItem } from './assessment-stages';
 import './project-panel.css';
@@ -48,7 +48,9 @@ function Fact({ label, value, detail, loading }: FactProps) {
 /** The card under the masthead: assessment progress beside the core project facts, on every tab. */
 export function ProjectPanel({ project, lists, loading = false }: ProjectPanelProps) {
   const centroid = project?.centroid?.length === 2 ? project.centroid : null;
-  const phases = useProjectPhases(project?._id ?? '');
+  const projId = project?._id ?? '';
+  const phases = useProjectPhases(projId);
+  const eaCertificate = useDemiProject(projId).data?.eaCertificate?.trim();
 
   return (
     <section
@@ -70,6 +72,7 @@ export function ProjectPanel({ project, lists, loading = false }: ProjectPanelPr
             detail={project?.decisionDate ? longDate(project.decisionDate) : undefined}
             loading={loading}
           />
+          {eaCertificate && <Fact label="EA Certificate" value={eaCertificate} loading={loading} />}
           <Fact label="Type" value={project?.type} loading={loading} />
           <Fact
             label="Location"

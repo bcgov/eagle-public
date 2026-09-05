@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import type { Project } from 'app/models/project';
+import { loadConfig } from 'app/config/config';
 import { fakeMap } from 'app/pages/projects/maplibre-test-stub';
 import { renderAt } from '../../../test-utils';
 import { ProjectPanel } from './project-panel';
@@ -55,5 +56,32 @@ describe('project panel map', () => {
     expect(screen.getByText('No map available')).toBeInTheDocument();
     expect(screen.queryByTestId('map')).toBeNull();
     expect(screen.queryByRole('link', { name: /Open in map explorer/ })).toBeNull();
+    // DEMI is off in this render, so the fact never appears.
+    expect(screen.queryByText('EA Certificate')).toBeNull();
+  });
+
+  it('names the EA Certificate once DEMI has one', async () => {
+    window.__env = { logLevel: 4, DEMI_PROJECTS_PATH: '/demi-projects' };
+    await loadConfig();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) =>
+        String(input).includes('/demi-projects/')
+          ? new Response(JSON.stringify({ eaCertificate: 'E23-01' }), {
+              status: 200,
+              headers: { 'content-type': 'application/json' },
+            })
+          : new Response('{}', { status: 200, headers: { 'content-type': 'application/json' } }),
+      ),
+    );
+
+    renderPanel(PROJECT);
+
+    expect(await screen.findByText('EA Certificate')).toBeInTheDocument();
+    expect(screen.getByText('E23-01')).toBeInTheDocument();
+
+    vi.unstubAllGlobals();
+    window.__env = { logLevel: 4, DEMI_PROJECTS_PATH: '' };
+    await loadConfig();
   });
 });
