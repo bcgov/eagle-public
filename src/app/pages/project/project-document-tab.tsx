@@ -202,6 +202,7 @@ export function ProjectDocumentTab({
             onSearch={executeSearch}
             advancedFilters
             filterToggle="filters"
+            searchAsYouType
             showAdvancedFilters={[...filterList, ...DATE_FILTER_LIST].some((key) => params[key])}
             searchOnFilterChange
             filters={filters}
