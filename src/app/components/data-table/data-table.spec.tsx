@@ -188,8 +188,7 @@ describe('DataTable action bar', () => {
     expect(container.querySelector('.data-table__bar--selected')).toBeNull();
   });
 
-  // The offer only makes sense while the whole result set still fits the anonymous cap.
-  it('offers select-all across pages once the page is full and asks for it on click', async () => {
+  it('offers select-all across pages once rows are selected and asks for it on click', async () => {
     const onMessage = vi.fn();
     render(
       <DataTable
@@ -205,7 +204,7 @@ describe('DataTable action bar', () => {
     expect(onMessage).toHaveBeenCalledWith({ label: 'selectAllMatching' });
   });
 
-  it('makes no select-all offer past the download cap', async () => {
+  it('offers the download limit instead of the real total past the cap', async () => {
     render(
       <DataTable
         caption="Documents"
@@ -217,6 +216,7 @@ describe('DataTable action bar', () => {
     await userEvent.click(screen.getByLabelText(SELECT_ALL_PAGE));
 
     expect(screen.queryByRole('button', { name: /Select all/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Select 100 (download limit)' })).toBeInTheDocument();
   });
 });
 

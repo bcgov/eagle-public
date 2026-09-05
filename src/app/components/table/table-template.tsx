@@ -4,7 +4,6 @@ import { fileSize } from 'app/utils/file-size';
 import {
   clearSelection,
   MAX_JOBS_IN_FLIGHT,
-  SELECT_ALL_MAX,
   startDownload,
   useDownloadInProgress,
   useSelection,
@@ -22,8 +21,6 @@ import {
   type TableObject,
 } from './table-object';
 import './table.css';
-
-const SELECT_ALL_CAP_TITLE = `Downloads are limited to ${SELECT_ALL_MAX} documents at a time`;
 
 /** The checkbox column's cell. Rendered by the row components, which own their own `<tr>`. */
 export function SelectCell({ rowData, tableId }: { rowData: any; tableId: string }) {
@@ -69,14 +66,20 @@ export function TableTemplate({
     ? withAllPicker(data.pageSizeOptions, data.totalListItems)
     : data.pageSizeOptions;
 
-  const { selectable, selectedCount, selectedSize, pageAllSelected, pageMixed, toggleAllOnPage } =
-    usePageSelection(data);
+  const {
+    selectable,
+    selectedCount,
+    selectedSize,
+    pageAllSelected,
+    pageMixed,
+    showSelectAll,
+    selectAllText,
+    selectAllLabel,
+    selectAllTitle,
+    toggleAllOnPage,
+  } = usePageSelection(data);
   // Sum of the originals, not the zip demi-api builds from them, so it is only ever an estimate.
   const selectedSizeLabel = selectedSize > 0 ? ` · about ${fileSize(selectedSize)}` : '';
-  // This table's own select-all offer, unlike the shared hook's capped `showSelectAll`: visible
-  // whenever a selection is active and more documents match than are already selected, worded as
-  // the download limit past the cap rather than the real total.
-  const showSelectAll = selectable && selectedCount > 0 && data.totalListItems > selectedCount;
   const downloadInProgress = useDownloadInProgress();
 
   const { onSort, onUpdatePageNumber, onUpdatePageSize } = useTableHandlers({
@@ -108,13 +111,6 @@ export function TableTemplate({
   const countMessage = loading
     ? ''
     : documentCountMessage(data.totalListItems, data.currentPage, data.pageSize);
-  // Past the cap there is nothing more to select than the cap itself; the link says so instead
-  // of a count the click could never actually select.
-  const selectAllOverCap = data.totalListItems > SELECT_ALL_MAX;
-  const selectAllText = selectAllOverCap
-    ? `Select ${SELECT_ALL_MAX} (download limit)`
-    : `Select all ${data.totalListItems.toLocaleString()}`;
-  const selectAllLabel = selectAllOverCap ? selectAllText : `${selectAllText} documents`;
 
   return (
     <div className="table-template" ref={containerRef}>
@@ -163,7 +159,7 @@ export function TableTemplate({
                     type="button"
                     className="btn btn-link btn-sm table-header-bar__link"
                     aria-label={selectAllLabel}
-                    title={selectAllOverCap ? SELECT_ALL_CAP_TITLE : undefined}
+                    title={selectAllTitle}
                     onClick={() => onMessage({ label: 'selectAllMatching' })}
                   >
                     {selectAllText}

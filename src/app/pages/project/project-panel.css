@@ -71,6 +71,7 @@
 
 .project-panel__fact-detail a {
   color: var(--typography-color-link);
+  text-decoration: underline;
 }
 
 .project-panel .map-container {

@@ -49,6 +49,7 @@ export const fakeMap = {
   })),
   getZoom: vi.fn(() => zoom),
   fitBounds: vi.fn(),
+  resize: vi.fn(),
   flyTo: vi.fn(),
   easeTo: vi.fn(),
   getClusterExpansionZoom: vi.fn(async (_clusterId: number) => 11),

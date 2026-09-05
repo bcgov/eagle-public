@@ -12,6 +12,8 @@ import {
 import { showToast } from 'app/state/toast';
 import type { TableObject } from './table-object';
 
+const SELECT_ALL_CAP_TITLE = `Downloads are limited to ${SELECT_ALL_MAX} documents at a time`;
+
 /** Page-level selection state shared by the table frames: the header checkbox and select-all. */
 export function usePageSelection(data: TableObject) {
   const selectable = !!data.options.selectable;
@@ -39,14 +41,16 @@ export function usePageSelection(data: TableObject) {
   );
   const pageAllSelected = pageDocs.length > 0 && selectedOnPage === pageDocs.length;
   const pageMixed = selectedOnPage > 0 && !pageAllSelected;
-  // Offered once the page is fully selected, there is more behind it than one page, and the whole
-  // result set fits the anonymous cap. Over the cap there is nothing to offer, so the bar says
-  // nothing: the cap is explained by the toast on the attempt that actually hits it.
-  const showSelectAll =
-    selectable &&
-    pageAllSelected &&
-    data.totalListItems > data.pageSize &&
-    data.totalListItems <= SELECT_ALL_MAX;
+  // Offered whenever a selection is active and more documents match than are already selected.
+  const showSelectAll = selectable && selectedCount > 0 && data.totalListItems > selectedCount;
+  // Past the cap there is nothing more to select than the cap itself; the link says so instead
+  // of a count the click could never actually select.
+  const selectAllOverCap = data.totalListItems > SELECT_ALL_MAX;
+  const selectAllText = selectAllOverCap
+    ? `Select ${SELECT_ALL_MAX} (download limit)`
+    : `Select all ${data.totalListItems.toLocaleString()}`;
+  const selectAllLabel = selectAllOverCap ? selectAllText : `${selectAllText} documents`;
+  const selectAllTitle = selectAllOverCap ? SELECT_ALL_CAP_TITLE : undefined;
 
   // ponytail: unchecking drops the whole table's selection, other pages included; deselect
   // page-by-page if anyone paging around complains.
@@ -62,6 +66,9 @@ export function usePageSelection(data: TableObject) {
     pageAllSelected,
     pageMixed,
     showSelectAll,
+    selectAllText,
+    selectAllLabel,
+    selectAllTitle,
     toggleAllOnPage,
   };
 }

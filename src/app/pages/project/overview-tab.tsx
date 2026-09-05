@@ -10,13 +10,12 @@ import type { Project } from 'app/models/project';
 import { newlines } from 'app/utils/newlines';
 import { htmlToText, safeHtml } from 'app/utils/safe-html';
 import { isSafeUrl, openExternal } from 'app/utils/safe-url';
-import { legislationLink, longDate } from 'app/utils/utils';
+import { legislationLink, longDate, regulatorLink } from 'app/utils/utils';
 import { FeaturedDocuments } from './featured-documents';
 import { Pins } from './pins';
 import { useProjectContext } from './project-context';
 import './overview-tab.css';
 
-const BC_ENERGY_REGULATOR_LINK = 'https://www.bc-er.ca/data-reports/data-centre/';
 const OPERATIONS_EMAIL = 'EAO.operations@gov.bc.ca';
 const COMPLIANCE_EMAIL = 'EAO.compliance@gov.bc.ca';
 const COMPLIANCE_PHONE = '250-387-0131';
@@ -284,13 +283,7 @@ export function OverviewTab() {
               </Fact>
               {project?.eacDecision?.name === 'Regulatory Transfer' && (
                 <Fact label="Regulated by">
-                  <ExternalLink
-                    href={
-                      isSafeUrl(project.applicableRegulation?.item)
-                        ? project.applicableRegulation.item
-                        : BC_ENERGY_REGULATOR_LINK
-                    }
-                  >
+                  <ExternalLink href={regulatorLink(project.applicableRegulation?.item)}>
                     {project.applicableRegulation?.name || 'BC Energy Regulator'}
                   </ExternalLink>
                 </Fact>

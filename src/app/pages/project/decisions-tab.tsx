@@ -5,8 +5,13 @@ import { DocumentLink } from 'app/components/table/document-link';
 import { useTable } from 'app/components/table/use-table';
 import { useProjectEaCertificate } from 'app/api/project-phases';
 import { Constants } from 'app/utils/constants';
-import { isSafeUrl } from 'app/utils/safe-url';
-import { createProjectTabModifiers, idToListName, longDate, mediumDate } from 'app/utils/utils';
+import {
+  createProjectTabModifiers,
+  idToListName,
+  longDate,
+  mediumDate,
+  regulatorLink,
+} from 'app/utils/utils';
 import { useProjectContext } from './project-context';
 import './decisions-tab.css';
 
@@ -14,10 +19,6 @@ const PAGE_SIZE = 10;
 
 /** Rows a list holds open while its first page is in flight. */
 const SKELETON_ROWS = [1, 2, 3];
-
-function regulatorLink(item: unknown): string {
-  return typeof item === 'string' && isSafeUrl(item) ? item : Constants.BC_ENERGY_REGULATOR_LINK;
-}
 
 /** "14 March 2023 · E23-01", either half omitted when absent. The certificate document link
  * sits right below this line, so the number itself is plain text, not a second link to it. */

@@ -70,8 +70,17 @@ export function DataTable({
     !!data.options.showPageSizePicker &&
     data.totalListItems > Constants.tableDefaults.DEFAULT_PAGE_SIZE;
 
-  const { selectable, selectedCount, pageAllSelected, pageMixed, showSelectAll, toggleAllOnPage } =
-    usePageSelection(data);
+  const {
+    selectable,
+    selectedCount,
+    pageAllSelected,
+    pageMixed,
+    showSelectAll,
+    selectAllText,
+    selectAllLabel,
+    selectAllTitle,
+    toggleAllOnPage,
+  } = usePageSelection(data);
   const downloadInProgress = useDownloadInProgress();
   const selectionActive = selectedCount > 0;
   const noResults = !loading && data.items.length === 0 && data.totalListItems === 0;
@@ -122,10 +131,11 @@ export function DataTable({
                 <button
                   type="button"
                   className="data-table__bar-link"
-                  aria-label={`Select all ${data.totalListItems.toLocaleString()} documents`}
+                  aria-label={selectAllLabel}
+                  title={selectAllTitle}
                   onClick={() => onMessage({ label: 'selectAllMatching' })}
                 >
-                  Select all {data.totalListItems.toLocaleString()}
+                  {selectAllText}
                 </button>
               )}
             </>
