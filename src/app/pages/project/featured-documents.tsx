@@ -2,6 +2,7 @@ import { Link } from 'react-router';
 import { Skeleton } from 'app/components/skeleton/skeleton';
 import { DocumentLink } from 'app/components/table/document-link';
 import { useTable } from 'app/components/table/use-table';
+import { fileSize } from 'app/utils/file-size';
 import { idToListName, longDate } from 'app/utils/utils';
 import { useProjectContext } from './project-context';
 import './featured-documents.css';
@@ -10,15 +11,6 @@ const PAGE_SIZE = 5;
 
 /** Rows a list holds open while its first page is in flight. */
 const SKELETON_ROWS = [1, 2, 3];
-
-/** `internalSize` arrives as a byte count in a string. */
-function fileSize(bytes: string | number | undefined): string {
-  const value = Number(bytes);
-  if (!value) return '';
-  const units = ['B', 'KB', 'MB', 'GB'];
-  const step = Math.min(Math.floor(Math.log(value) / Math.log(1024)), units.length - 1);
-  return `${(value / 1024 ** step).toFixed(step ? 1 : 0)} ${units[step]}`;
-}
 
 /** The project's starred documents: a fixed top five, no paging or sorting. */
 export function FeaturedDocuments() {

@@ -3,7 +3,9 @@ import {
   CAP_MESSAGE,
   clearSelection,
   SELECT_ALL_MAX,
+  selectionSize,
   setSelected,
+  toSize,
   useSelection,
   type SelectedDocument,
 } from 'app/state/bulk-download';
@@ -15,13 +17,20 @@ export function usePageSelection(data: TableObject) {
   const selectable = !!data.options.selectable;
   const selection = useSelection(data.tableId);
   // Download posts every table's selection as one job, so the toolbar counts them all.
-  const selectedCount = useSelection().size;
+  const mergedSelection = useSelection();
+  const selectedCount = mergedSelection.size;
+  // Sum of the sizes known across every table's selection; used for the download bar's estimate.
+  const selectedSize = selectionSize(mergedSelection);
   // Every row subscribes to the selection store, so a new array here re-renders the whole page.
   const pageDocs: SelectedDocument[] = useMemo(
     () =>
       data.items
         .filter((item) => item.rowData?._id)
-        .map((item) => ({ id: item.rowData._id, displayName: item.rowData.displayName })),
+        .map((item) => ({
+          id: item.rowData._id,
+          displayName: item.rowData.displayName,
+          size: toSize(item.rowData.internalSize),
+        })),
     [data.items],
   );
   const selectedOnPage = useMemo(
@@ -46,5 +55,13 @@ export function usePageSelection(data: TableObject) {
     else if (!setSelected(data.tableId, pageDocs)) showToast(CAP_MESSAGE, { type: 'warning' });
   }
 
-  return { selectable, selectedCount, pageAllSelected, pageMixed, showSelectAll, toggleAllOnPage };
+  return {
+    selectable,
+    selectedCount,
+    selectedSize,
+    pageAllSelected,
+    pageMixed,
+    showSelectAll,
+    toggleAllOnPage,
+  };
 }

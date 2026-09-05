@@ -15,10 +15,18 @@ export const CAP_MESSAGE = `You can select up to ${SELECT_ALL_MAX} documents at 
 /** The banner only ever renders once the table already found matches; an empty answer is a failed request, not a real zero. */
 export const SELECT_ALL_FAILED_MESSAGE = 'Could not select all matching documents. Try again.';
 
-/** Only what bulk download needs: the id to post and a name to show. */
+/** Only what bulk download needs: the id to post, a name to show, and a size for the estimate. */
 export interface SelectedDocument {
   id: string;
   displayName: string;
+  /** Bytes, when the row carried a parseable `internalSize`; omitted otherwise. */
+  size?: number;
+}
+
+/** Coerces `internalSize` (a byte count as a string) to a usable number, or drops it. */
+export function toSize(value: unknown): number | undefined {
+  const size = Number(value);
+  return Number.isFinite(size) && size > 0 ? size : undefined;
 }
 
 export interface BulkDownloadJob {
@@ -38,7 +46,14 @@ export function isTerminal(status?: string): boolean {
   );
 }
 
-type TableSelection = Map<string, SelectedDocument>;
+export type TableSelection = Map<string, SelectedDocument>;
+
+/** Sum of the known sizes in a selection; documents with no known size add nothing. */
+export function selectionSize(docs: TableSelection): number {
+  let total = 0;
+  docs.forEach((doc) => (total += doc.size ?? 0));
+  return total;
+}
 
 const EMPTY: TableSelection = new Map();
 const selection = createStore<Map<string, TableSelection>>(new Map());
@@ -131,7 +146,11 @@ export async function selectAllMatching(
   }
   const added = setSelected(
     tableId,
-    rows.map((row) => ({ id: row._id, displayName: row.displayName })),
+    rows.map((row) => ({
+      id: row._id,
+      displayName: row.displayName,
+      size: toSize(row.internalSize),
+    })),
   );
   if (!added) showToast(CAP_MESSAGE, { type: 'warning' });
   return added;

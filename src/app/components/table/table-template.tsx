@@ -1,5 +1,6 @@
 import { useRef } from 'react';
 import { Constants } from 'app/utils/constants';
+import { fileSize } from 'app/utils/file-size';
 import {
   clearSelection,
   MAX_JOBS_IN_FLIGHT,
@@ -68,8 +69,10 @@ export function TableTemplate({
     ? withAllPicker(data.pageSizeOptions, data.totalListItems)
     : data.pageSizeOptions;
 
-  const { selectable, selectedCount, pageAllSelected, pageMixed, toggleAllOnPage } =
+  const { selectable, selectedCount, selectedSize, pageAllSelected, pageMixed, toggleAllOnPage } =
     usePageSelection(data);
+  // Sum of the originals, not the zip demi-api builds from them, so it is only ever an estimate.
+  const selectedSizeLabel = selectedSize > 0 ? ` · about ${fileSize(selectedSize)}` : '';
   // This table's own select-all offer, unlike the shared hook's capped `showSelectAll`: visible
   // whenever a selection is active and more documents match than are already selected, worded as
   // the download limit past the cap rather than the real total.
@@ -139,7 +142,9 @@ export function TableTemplate({
           <div className="table-header-bar__main">
             {/* The one live region: it is the only thing selecting changes for a screen reader. */}
             <span className="table-header-bar__count" role="status">
-              {selectionActive ? `${selectedCount.toLocaleString()} selected` : countMessage}
+              {selectionActive
+                ? `${selectedCount.toLocaleString()} selected${selectedSizeLabel}`
+                : countMessage}
             </span>
             {selectionActive && (
               <>

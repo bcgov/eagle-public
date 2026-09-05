@@ -271,6 +271,29 @@ describe('TableTemplate selection', () => {
    * pins what makes the height fixed — the same node, in the same place, holding the same two
    * halves, in every state.
    */
+  // The estimate is the sum of the originals, not the zip, so it can only ever be "about".
+  it('adds an estimated size once the selected rows carry one', () => {
+    setSelected('documents', [
+      { id: 'doc-a', displayName: 'Alpha', size: 2 * 1024 * 1024 },
+      { id: 'doc-b', displayName: 'Beta', size: 3 * 1024 * 1024 },
+    ]);
+
+    render(<TableTemplate data={selectableTable()} onMessage={() => undefined} />);
+
+    expect(screen.getByText('2 selected · about 5.0 MB')).toBeInTheDocument();
+  });
+
+  it('omits the size when none of the selected rows have a known one', () => {
+    setSelected('documents', [
+      { id: 'doc-a', displayName: 'Alpha' },
+      { id: 'doc-b', displayName: 'Beta' },
+    ]);
+
+    render(<TableTemplate data={selectableTable()} onMessage={() => undefined} />);
+
+    expect(screen.getByText('2 selected')).toBeInTheDocument();
+  });
+
   it('keeps the same header bar, in the same place, through every selection state', async () => {
     const { container } = render(
       <TableTemplate data={selectableTable()} onMessage={() => undefined} />,
