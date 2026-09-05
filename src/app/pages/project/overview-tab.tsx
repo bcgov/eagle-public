@@ -7,7 +7,7 @@ import { useTable } from 'app/components/table/use-table';
 import { getNotifyApi } from 'app/config/config';
 import type { Project } from 'app/models/project';
 import { newlines } from 'app/utils/newlines';
-import { safeHtml } from 'app/utils/safe-html';
+import { htmlToText, safeHtml } from 'app/utils/safe-html';
 import { isSafeUrl, openExternal } from 'app/utils/safe-url';
 import { legislationLink, longDate } from 'app/utils/utils';
 import { FeaturedDocuments } from './featured-documents';
@@ -136,11 +136,17 @@ function UpdatesCard({ projId }: { projId: string }) {
     populate: true,
   });
 
+  const updatesHref = `/p/${projId}/updates`;
+
   return (
     <section className="overview-tab__panel" aria-labelledby="updates-title">
       <div className="overview-tab__panel-header">
         <h2 id="updates-title">Updates</h2>
-        <Link to={`/p/${projId}/updates`}>All updates</Link>
+        <Link to={updatesHref}>
+          {result.totalListItems > 0
+            ? `See all ${result.totalListItems.toLocaleString('en-CA')}`
+            : 'See all'}
+        </Link>
       </div>
       {result.loading && result.data.length === 0 ? (
         <ul className="overview-tab__panel-list" aria-busy="true">
@@ -158,11 +164,16 @@ function UpdatesCard({ projId }: { projId: string }) {
         <ul className="overview-tab__panel-list">
           {result.data.slice(0, UPDATES_SHOWN).map((update: any) => (
             <li key={update._id}>
-              <p className="overview-tab__eyebrow">
+              <p className="overview-tab__panel-meta">
                 {longDate(update.dateAdded)}
                 {update.type && ` · ${update.type}`}
               </p>
-              <p className="overview-tab__list-title">{update.headline}</p>
+              <Link to={updatesHref} className="overview-tab__panel-headline">
+                {update.headline}
+              </Link>
+              {update.content && (
+                <p className="overview-tab__panel-summary">{htmlToText(update.content)}</p>
+              )}
             </li>
           ))}
         </ul>

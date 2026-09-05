@@ -108,6 +108,9 @@
 }
 
 .project-masthead__action--link {
+  /* Fits "Short link" and "Copied" both, so the actions row does not reflow on click. */
+  min-width: 9.5rem;
+  justify-content: center;
   border: var(--layout-border-width-small) solid var(--eao-on-dark-divider);
   color: var(--theme-gray-white);
   font: var(--typography-regular-body);
@@ -116,6 +119,38 @@
 .project-masthead__action--link:hover {
   background: rgb(255 255 255 / 8%);
   border-color: var(--theme-gray-white);
+}
+
+/* Copied state: gold reads at 7:1+ on this blue, same accent the Subscribe button already uses.
+   support-border-color-success/support-surface-color-success are tuned for light surfaces and
+   fall under 3:1 here, so they are not usable on this dark band.
+   Selector repeats --link so it outweighs :hover's specificity: the pointer is still over the
+   button right after the click that triggers this state, and :hover must not mask it. */
+.project-masthead__action--link.project-masthead__action--copied {
+  border-color: var(--theme-primary-gold);
+  color: var(--theme-primary-gold);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .project-masthead__action--link {
+    transition:
+      border-color 150ms ease,
+      color 150ms ease;
+  }
+
+  .project-masthead__action--copied {
+    animation: project-masthead-copied-in 200ms ease;
+  }
+
+  @keyframes project-masthead-copied-in {
+    from {
+      transform: scale(0.96);
+    }
+
+    to {
+      transform: scale(1);
+    }
+  }
 }
 
 /* The hairline border is decorative; focus needs a boundary that carries on any background. */

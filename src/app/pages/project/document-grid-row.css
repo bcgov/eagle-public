@@ -19,6 +19,7 @@
   font: var(--typography-regular-label);
   color: var(--typography-color-primary);
   line-height: 1.4;
+  white-space: nowrap;
 }
 
 /* A phase the stage palette has no colour for still reads as a pill. */

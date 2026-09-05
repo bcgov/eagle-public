@@ -1,10 +1,6 @@
 /* Engagement tab: one card per comment period. Tokens come from @bcgov/design-tokens and
    eao-tokens.css. */
 
-.engagement-tab {
-  max-width: 48.75rem;
-}
-
 .engagement-tab__title {
   margin: 0 0 var(--layout-margin-large);
   font: var(--typography-bold-h4);

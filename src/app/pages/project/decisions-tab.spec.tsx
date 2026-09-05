@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import { renderAt } from '../../../test-utils';
 import { DecisionsTab } from './decisions-tab';
 
@@ -56,6 +56,8 @@ const TRANSFERRED = {
 
 let project: any = DECIDED;
 let documents = DOCUMENTS;
+/** The EA-decision certificate document, or null for the "nothing found" default. */
+let certDocument: any = null;
 let requests: string[] = [];
 
 vi.mock('./project-context', async (importOriginal) => {
@@ -71,7 +73,20 @@ function renderTab() {
   vi.stubGlobal(
     'fetch',
     vi.fn(async (input: RequestInfo | URL) => {
-      requests.push(String(input));
+      const url = String(input);
+      requests.push(url);
+      // Only the EA-decision certificate query asks for a single row.
+      if (url.includes('pageSize=1&')) {
+        return new Response(
+          JSON.stringify([
+            {
+              searchResults: certDocument ? [certDocument] : [],
+              meta: [{ searchResultsTotal: certDocument ? 1 : 0 }],
+            },
+          ]),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        );
+      }
       return new Response(
         JSON.stringify([
           { searchResults: documents, meta: [{ searchResultsTotal: documents.length }] },
@@ -90,6 +105,7 @@ describe('DecisionsTab', () => {
   beforeEach(() => {
     project = DECIDED;
     documents = DOCUMENTS;
+    certDocument = null;
   });
 
   afterEach(() => vi.unstubAllGlobals());
@@ -101,6 +117,23 @@ describe('DecisionsTab', () => {
     expect(screen.getByText('Certificate Issued')).toBeInTheDocument();
     expect(screen.getByText('March 14, 2023')).toBeInTheDocument();
     await screen.findByText('Environmental Assessment Certificate E23-01');
+  });
+
+  it('links the EA decision to its newest certificate package document', async () => {
+    certDocument = {
+      _id: 'doc-cert',
+      displayName: 'Certificate E23-01',
+      documentFileName: 'Certificate E23-01.pdf',
+      datePosted: '2023-03-14T00:00:00.000Z',
+    };
+    renderTab();
+
+    const decisionCard = screen.getByText('Certificate Issued').closest('.decisions-tab__decision');
+    expect(
+      await within(decisionCard as HTMLElement).findByRole('link', {
+        name: 'Certificate E23-01.pdf',
+      }),
+    ).toBeInTheDocument();
   });
 
   it('links a transferred project to its regulator instead of naming a decision date', async () => {

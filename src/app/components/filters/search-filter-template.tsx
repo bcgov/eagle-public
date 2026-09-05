@@ -27,6 +27,8 @@ interface SearchFilterTemplateProps {
   keywordOverride?: string;
   searchHelpLink?: string | null;
   searching?: boolean;
+  /** 'filters' renders the redesigned tune-icon toggle; 'advanced' keeps the legacy label. */
+  filterToggle?: 'advanced' | 'filters';
   onSearch: (searchPackage: SearchPackage) => void;
   onToggleFiltersPanel?: (event: { showPanel: boolean }) => void;
   onFilterChange?: (values: FilterValues) => void;
@@ -47,6 +49,7 @@ export function SearchFilterTemplate({
   keywordOverride = '',
   searchHelpLink = null,
   searching = false,
+  filterToggle = 'advanced',
   onSearch,
   onToggleFiltersPanel,
   onFilterChange,
@@ -224,7 +227,21 @@ export function SearchFilterTemplate({
               )}
             </div>
             <div className="col-sm-12 col-md-6 text-md-end text-center">
-              {advancedFilters && (
+              {advancedFilters && filterToggle === 'filters' && (
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={toggleAdvancedFilters}
+                  aria-expanded={showFiltersPanel}
+                  aria-controls="advancedFilterPanel"
+                >
+                  <span className="material-icons" aria-hidden="true">
+                    tune
+                  </span>
+                  Filters
+                </button>
+              )}
+              {advancedFilters && filterToggle === 'advanced' && (
                 <button className="btn btn-primary" onClick={toggleAdvancedFilters}>
                   {showFiltersPanel ? 'Close' : 'Open'} Advanced Filters
                   <span className="material-icons align-middle">

@@ -201,6 +201,7 @@ export function ProjectDocumentTab({
           <SearchFilterTemplate
             onSearch={executeSearch}
             advancedFilters
+            filterToggle="filters"
             showAdvancedFilters={[...filterList, ...DATE_FILTER_LIST].some((key) => params[key])}
             searchOnFilterChange
             filters={filters}

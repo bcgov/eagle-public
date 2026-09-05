@@ -2,7 +2,7 @@ import { useRef } from 'react';
 import { Map, Marker } from '@vis.gl/react-maplibre';
 import type { MapRef } from '@vis.gl/react-maplibre';
 import { track } from 'app/analytics/analytics';
-import { Basemaps, EMPTY_STYLE, MapControls, WORKER_URL, flyOptions } from 'app/map/basemaps';
+import { Basemaps, EMPTY_STYLE, WORKER_URL } from 'app/map/basemaps';
 import type { Project } from 'app/models/project';
 
 const MARKER_ZOOM = 8;
@@ -32,16 +32,6 @@ export function DetailsMap({ project }: DetailsMapProps) {
         style={{ width: '100%', height: '100%' }}
       >
         <Basemaps />
-        <MapControls
-          onReset={() =>
-            mapRef.current?.flyTo({
-              center: [centroid[0], centroid[1]],
-              zoom: MARKER_ZOOM,
-              ...flyOptions(),
-            })
-          }
-          trackContext={{ project_id: project._id, project_name: project.name }}
-        />
         <Marker
           longitude={centroid[0]}
           latitude={centroid[1]}

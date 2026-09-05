@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import type { Project } from 'app/models/project';
 import { fakeMap } from 'app/pages/projects/maplibre-test-stub';
 import { renderAt } from '../../../test-utils';
@@ -39,16 +38,6 @@ describe('project panel map', () => {
     expect(markers).toHaveLength(1);
     expect(markers[0]).toHaveAttribute('data-lng', '-127.5');
     expect(markers[0]).toHaveAttribute('data-lat', '54.2');
-  });
-
-  it('recentres on the project when the view is reset', async () => {
-    renderPanel(PROJECT);
-
-    await userEvent.click(await screen.findByRole('button', { name: 'Reset view' }));
-
-    expect(fakeMap.flyTo).toHaveBeenCalledWith(
-      expect.objectContaining({ center: [-127.5, 54.2], zoom: 8 }),
-    );
   });
 
   it('links from the thumbnail to the map explorer', async () => {

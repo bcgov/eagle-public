@@ -1,10 +1,6 @@
 /* Date-led list of the decisions on a project. Tokens come from @bcgov/design-tokens and
    eao-tokens.css. */
 
-.decisions-tab {
-  max-width: 780px;
-}
-
 .decisions-tab__title {
   margin-bottom: var(--layout-margin-small);
   font: var(--typography-bold-h4);
@@ -45,6 +41,19 @@
   margin-bottom: 0;
   font: var(--typography-regular-small-body);
   color: var(--typography-color-secondary);
+}
+
+.decisions-tab__decision-document {
+  margin: var(--layout-margin-small) 0 0;
+  font: var(--typography-regular-small-body);
+}
+
+.decisions-tab__list-title {
+  margin: var(--layout-margin-xlarge) 0 var(--layout-margin-medium);
+  padding-top: var(--layout-padding-large);
+  border-top: var(--layout-border-width-small) solid var(--theme-gray-40);
+  font: var(--typography-bold-h5);
+  color: var(--typography-color-primary);
 }
 
 .decisions-tab__list {

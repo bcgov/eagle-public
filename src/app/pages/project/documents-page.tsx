@@ -14,7 +14,7 @@ const OPTIONAL_TABS = [
   { key: Constants.optionalProjectDocTabs.APPLICATION, label: 'Application', link: 'application' },
   { key: Constants.optionalProjectDocTabs.CERTIFICATE, label: 'Certificate', link: 'certificates' },
   { key: Constants.optionalProjectDocTabs.AMENDMENT, label: 'Amendment(s)', link: 'amendments' },
-  { key: Constants.optionalProjectDocTabs.COMPLIANCE, label: 'C&E Documents', link: 'compliance' },
+  { key: Constants.optionalProjectDocTabs.COMPLIANCE, label: 'Compliance', link: 'compliance' },
 ];
 
 /** Documents tab shell: the document-type filter, and whichever document view it selects. */
@@ -46,7 +46,7 @@ export function DocumentsPage() {
           <i className="material-icons" aria-hidden="true">
             help_outline
           </i>
-          How to search documents
+          Search help
         </Link>
       </div>
 

@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { showToast } from 'app/state/toast';
 import { Skeleton } from 'app/components/skeleton/skeleton';
@@ -16,13 +17,20 @@ interface ProjectMastheadProps {
 export function ProjectMasthead({ project, projId, loading = false }: ProjectMastheadProps) {
   const subtitle = [project?.proponent?.name, project?.location].filter(Boolean).join(' · ');
 
+  const [copyState, setCopyState] = useState<'idle' | 'copied'>('idle');
+  const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  useEffect(() => () => clearTimeout(copyTimeoutRef.current), []);
+
   // TODO: use the project's real short link once demi-api exposes a public /s/<code> lookup
   // (PUBLIC-145); staff create the codes in DEMI Admin.
   async function copyLink(): Promise<void> {
     const url = `${window.location.origin}/p/${projId}`;
     try {
       await navigator.clipboard.writeText(url);
-      showToast('Link copied to clipboard', { type: 'success' });
+      clearTimeout(copyTimeoutRef.current);
+      setCopyState('copied');
+      copyTimeoutRef.current = setTimeout(() => setCopyState('idle'), 2000);
     } catch {
       // No clipboard (insecure origin, or the reader refused it): show the link to copy by hand.
       showToast(`Copy this link: ${url}`, { type: 'info', duration: 8000 });
@@ -65,14 +73,23 @@ export function ProjectMasthead({ project, projId, loading = false }: ProjectMas
             />
             <button
               type="button"
-              className="project-masthead__action project-masthead__action--link"
+              className={
+                copyState === 'copied'
+                  ? 'project-masthead__action project-masthead__action--link project-masthead__action--copied'
+                  : 'project-masthead__action project-masthead__action--link'
+              }
               onClick={copyLink}
             >
               <i className="material-icons" aria-hidden="true">
-                link
+                {copyState === 'copied' ? 'check' : 'link'}
               </i>
-              Short link
+              {copyState === 'copied' ? 'Copied' : 'Short link'}
             </button>
+            {/* Sibling, not nested in the button: a live region inside it would fold into the
+                button's accessible name instead of announcing as its own update. */}
+            <span role="status" className="visually-hidden">
+              {copyState === 'copied' ? 'Link copied to clipboard' : ''}
+            </span>
           </div>
         </div>
       </div>

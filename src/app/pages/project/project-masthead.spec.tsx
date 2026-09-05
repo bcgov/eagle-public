@@ -80,7 +80,7 @@ describe('project masthead', () => {
     expect(container.querySelector('.project-masthead__meta .placeholder')).toBeInTheDocument();
   });
 
-  it('copies the project link and toasts the success', async () => {
+  it('copies the project link and shows an in-button copied state instead of a toast', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText } });
     await renderMasthead();
@@ -88,11 +88,18 @@ describe('project masthead', () => {
     await user.click(screen.getByRole('button', { name: 'Short link' }));
 
     expect(writeText).toHaveBeenCalledWith(`${window.location.origin}/p/proj-1`);
-    await waitFor(() =>
-      expect(toasts().map((toast) => [toast.type, toast.message])).toEqual([
-        ['success', 'Link copied to clipboard'],
-      ]),
+    expect(await screen.findByRole('button', { name: 'Copied' })).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('Link copied to clipboard');
+    expect(toasts()).toEqual([]);
+
+    // The copied state holds for 2s before it reverts; real timers, so give waitFor the room.
+    await waitFor(
+      () => expect(screen.getByRole('button', { name: 'Short link' })).toBeInTheDocument(),
+      {
+        timeout: 3000,
+      },
     );
+    expect(screen.getByRole('status')).toHaveTextContent('');
   });
 
   it('toasts the link to copy by hand when the clipboard refuses', async () => {

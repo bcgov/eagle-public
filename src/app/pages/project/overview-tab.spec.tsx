@@ -29,7 +29,12 @@ const PROJECT = new Project({
 });
 
 const ACTIVITIES = [
-  { _id: 'act-1', headline: 'Application accepted', dateAdded: '2026-06-01T00:00:00.000Z' },
+  {
+    _id: 'act-1',
+    headline: 'Application accepted',
+    dateAdded: '2026-06-01T00:00:00.000Z',
+    content: '<p>The <strong>proponent</strong> submitted their application.</p>',
+  },
   { _id: 'act-2', headline: 'Public comment period open', dateAdded: '2026-05-01T00:00:00.000Z' },
   { _id: 'act-3', headline: 'Process order issued', dateAdded: '2026-04-01T00:00:00.000Z' },
   { _id: 'act-4', headline: 'Readiness decision', dateAdded: '2026-03-01T00:00:00.000Z' },
@@ -274,13 +279,19 @@ describe('overview tab', () => {
   it('shows the three most recent updates beside the project, and links to the rest', async () => {
     renderTab();
 
-    expect(await screen.findByText('Application accepted')).toBeInTheDocument();
-    expect(screen.getByText('Process order issued')).toBeInTheDocument();
-    expect(screen.queryByText('Readiness decision')).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'All updates' })).toHaveAttribute(
+    expect(await screen.findByRole('link', { name: 'Application accepted' })).toHaveAttribute(
       'href',
       '/p/proj-1/updates',
     );
+    expect(screen.getByText('Process order issued')).toBeInTheDocument();
+    expect(screen.queryByText('Readiness decision')).not.toBeInTheDocument();
+    // Total comes from the same RecentActivity page, so the count never needs its own request.
+    expect(screen.getByRole('link', { name: 'See all 4' })).toHaveAttribute(
+      'href',
+      '/p/proj-1/updates',
+    );
+    // Summary strips markup to plain text; no dangerouslySetInnerHTML for this slot.
+    expect(screen.getByText('The proponent submitted their application.')).toBeInTheDocument();
     // The Updates tab's own request, so the two tabs share one cached page.
     expect(requests.find((url) => url.includes('dataset=RecentActivity'))).toBe(
       '/api/search?dataset=RecentActivity&pageNum=0&pageSize=10&projectLegislation=default' +

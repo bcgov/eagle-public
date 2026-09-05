@@ -80,7 +80,7 @@ describe('ComplianceTab', () => {
     renderTab();
 
     expect(
-      screen.getByRole('link', { name: /View compliance and enforcement documents/ }),
+      screen.getByRole('link', { name: /View inspection records and orders/ }),
     ).toHaveAttribute('href', '/p/proj-1/documents/compliance');
   });
 
@@ -90,7 +90,7 @@ describe('ComplianceTab', () => {
 
     expect(await screen.findAllByText('0')).toHaveLength(2);
     expect(
-      screen.getByRole('link', { name: /View compliance and enforcement documents/ }),
+      screen.getByRole('link', { name: /View inspection records and orders/ }),
     ).toBeInTheDocument();
   });
 

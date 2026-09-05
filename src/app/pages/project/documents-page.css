@@ -90,15 +90,34 @@
 
 .documents-page__body .search-bar-section {
   flex: 1 1 20rem;
-  margin-bottom: 0;
+  /* Beats the shared template's `!important` bootstrap `.mb-4`. */
+  margin-bottom: 0 !important;
 }
 
 .documents-page__body .action-buttons-section {
   flex: 0 0 auto;
+  margin-bottom: 0;
 }
 
 .documents-page__body .advanced-filters-section {
   flex: 1 0 100%;
+  margin-bottom: 0;
+}
+
+/* The open panel is the design's white card; the template's Bootstrap utilities
+   (border-bottom, pb-3) are !important, so the overrides are too. */
+.documents-page__body #advancedFilterPanel {
+  margin: 0 0 var(--layout-margin-large);
+  padding: var(--layout-padding-large) !important;
+  background: var(--theme-gray-white);
+  border: var(--layout-border-width-small) solid var(--theme-gray-40) !important;
+  border-radius: var(--layout-border-radius-medium);
+}
+
+/* The collapsed panel is still a wrapped flex row, so it reserves the row gap even at zero
+   height; drop it so the search row's margin-bottom is the only space before the table. */
+.documents-page__body .search-filter-wrapper:has(#advancedFilterPanel[hidden]) {
+  row-gap: 0;
 }
 
 /* The template lays the toggle out in a half-width grid column it does not need here. */
@@ -116,6 +135,7 @@
 .documents-page__body .action-buttons-section .btn-primary {
   display: inline-flex;
   align-items: center;
+  gap: var(--layout-padding-xsmall);
   min-height: 2.75rem;
   padding: 0 var(--layout-padding-medium);
   background: var(--surface-color-secondary-button-default);
@@ -124,6 +144,10 @@
   font: var(--typography-regular-body);
   color: var(--typography-color-primary);
   white-space: nowrap;
+}
+
+.documents-page__body .action-buttons-section .btn-primary .material-icons {
+  font-size: var(--icons-size-medium);
 }
 
 .documents-page__body .action-buttons-section .btn-primary:hover,

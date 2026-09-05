@@ -34,6 +34,23 @@ export function DecisionsTab() {
   const decision = project?.eacDecision?.name;
   const transferred = decision === 'Regulatory Transfer';
 
+  // Certificate Package doctype ids across both legislations, same join compliance-tab uses.
+  const certTypeIds = lists
+    .filter((item) => item.type === 'doctype' && item.name === 'Certificate Package')
+    .map((item) => item._id)
+    .join(',');
+
+  const certResult = useTable('decisionCertificate', {
+    dataset: 'Document',
+    enabled: !!projId && !!certTypeIds,
+    fields: [{ name: 'project', value: projId }],
+    currentPage: 1,
+    pageSize: 1,
+    sortBy: '-datePosted',
+    queryModifiers: { type: certTypeIds },
+  });
+  const certDocument = certResult.data[0];
+
   const result = useTable('decisionDocuments', {
     dataset: 'Document',
     // The certificate modifiers are built from the lists, so the search waits for them.
@@ -49,6 +66,20 @@ export function DecisionsTab() {
   // The certificate modifiers are built from the lists, so a query waiting on them is still
   // pending rather than empty.
   const pending = result.loading || lists.length === 0;
+
+  const decisionDocument = certResult.loading ? (
+    <p className="decisions-tab__decision-document">
+      <Skeleton width="12rem" />
+    </p>
+  ) : (
+    certDocument && (
+      <p className="decisions-tab__decision-document">
+        <DocumentLink document={certDocument}>
+          {certDocument.documentFileName || certDocument.displayName || 'Open document'}
+        </DocumentLink>
+      </p>
+    )
+  );
 
   return (
     <section className="decisions-tab">
@@ -69,24 +100,32 @@ export function DecisionsTab() {
         <div className="decisions-tab__decision">
           <h3 className="decisions-tab__decision-label">EA decision</h3>
           {transferred ? (
-            <p className="decisions-tab__decision-value">
-              <a
-                href={regulatorLink(project.applicableRegulation?.item)}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {project.applicableRegulation?.name || 'BC Energy Regulator'}
-              </a>
-            </p>
+            <>
+              <p className="decisions-tab__decision-value">
+                <a
+                  href={regulatorLink(project.applicableRegulation?.item)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {project.applicableRegulation?.name || 'BC Energy Regulator'}
+                </a>
+              </p>
+              {decisionDocument}
+            </>
           ) : (
             <>
               <p className="decisions-tab__decision-value">{decision}</p>
               {project.decisionDate && (
                 <p className="decisions-tab__decision-date">{longDate(project.decisionDate)}</p>
               )}
+              {decisionDocument}
             </>
           )}
         </div>
+      )}
+
+      {(project?.eacDecision || pending || result.data.length > 0) && (
+        <h3 className="decisions-tab__list-title">Decision documents</h3>
       )}
 
       {pending && result.data.length === 0 && (

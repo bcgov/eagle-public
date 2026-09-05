@@ -64,7 +64,7 @@ export function ComplianceTab() {
 
   return (
     <section className="compliance-tab">
-      <h2 className="compliance-tab__title">Compliance</h2>
+      <h2 className="compliance-tab__title">Conditions &amp; compliance</h2>
       <p className="compliance-tab__intro">
         Compliance and enforcement of the certificate conditions is administered separately from the
         assessment itself.
@@ -88,7 +88,7 @@ export function ComplianceTab() {
         <i className="material-icons" aria-hidden="true">
           folder_open
         </i>
-        View compliance and enforcement documents
+        View inspection records and orders
       </Link>
     </section>
   );

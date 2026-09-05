@@ -7,3 +7,8 @@ import DOMPurify from 'dompurify';
 export function safeHtml(value: string): { __html: string } {
   return { __html: DOMPurify.sanitize(value ?? '', { ADD_ATTR: ['target'] }) };
 }
+
+/** Plain text for a plain-text slot: same sanitizer, but drops every tag instead of keeping safe ones. */
+export function htmlToText(value: string): string {
+  return DOMPurify.sanitize(value ?? '', { ALLOWED_TAGS: [] }).trim();
+}
