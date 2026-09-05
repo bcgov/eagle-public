@@ -1,5 +1,6 @@
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
 import { screen, within } from '@testing-library/react';
+import { loadConfig } from 'app/config/config';
 import { renderAt } from '../../../test-utils';
 import { DecisionsTab } from './decisions-tab';
 
@@ -68,13 +69,16 @@ vi.mock('./project-context', async (importOriginal) => {
   };
 });
 
-function renderTab() {
+function renderTab(demiProject?: { eaCertificate?: string }) {
   requests = [];
   vi.stubGlobal(
     'fetch',
     vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       requests.push(url);
+      if (url.includes('/demi-projects/')) {
+        return new Response(JSON.stringify(demiProject ?? {}), { status: 200 });
+      }
       // Only the EA-decision certificate query asks for a single row.
       if (url.includes('pageSize=1&')) {
         return new Response(
@@ -117,6 +121,24 @@ describe('DecisionsTab', () => {
     expect(screen.getByText('Certificate Issued')).toBeInTheDocument();
     expect(screen.getByText('March 14, 2023')).toBeInTheDocument();
     await screen.findByText('Environmental Assessment Certificate E23-01');
+  });
+
+  it('shows the certificate number beside the decision date once DEMI has one', async () => {
+    window.__env = { logLevel: 4, DEMI_PROJECTS_PATH: '/demi-projects' };
+    await loadConfig();
+    renderTab({ eaCertificate: 'E23-01' });
+
+    expect(await screen.findByText('March 14, 2023 · E23-01')).toBeInTheDocument();
+
+    window.__env = { logLevel: 4, DEMI_PROJECTS_PATH: '' };
+    await loadConfig();
+  });
+
+  it('shows only the decision date when DEMI has no certificate number', async () => {
+    renderTab();
+
+    const dateLine = await screen.findByText('March 14, 2023');
+    expect(dateLine).toHaveClass('decisions-tab__decision-date');
   });
 
   it('links the EA decision to its newest certificate package document', async () => {

@@ -3,6 +3,7 @@ import { Skeleton } from 'app/components/skeleton/skeleton';
 import { Pagination } from 'app/components/table/pagination';
 import { DocumentLink } from 'app/components/table/document-link';
 import { useTable } from 'app/components/table/use-table';
+import { useProjectEaCertificate } from 'app/api/project-phases';
 import { Constants } from 'app/utils/constants';
 import { isSafeUrl } from 'app/utils/safe-url';
 import { createProjectTabModifiers, idToListName, longDate, mediumDate } from 'app/utils/utils';
@@ -16,6 +17,14 @@ const SKELETON_ROWS = [1, 2, 3];
 
 function regulatorLink(item: unknown): string {
   return typeof item === 'string' && isSafeUrl(item) ? item : Constants.BC_ENERGY_REGULATOR_LINK;
+}
+
+/** "14 March 2023 · E23-01", either half omitted when absent. The certificate document link
+ * sits right below this line, so the number itself is plain text, not a second link to it. */
+function decisionDateLine(decisionDate: string | undefined, eaCertificate: string | undefined) {
+  const date = decisionDate ? longDate(decisionDate) : undefined;
+  if (date && eaCertificate) return `${date} · ${eaCertificate}`;
+  return date ?? eaCertificate;
 }
 
 /** The type and milestone of a document, as a single line. */
@@ -33,6 +42,8 @@ export function DecisionsTab() {
 
   const decision = project?.eacDecision?.name;
   const transferred = decision === 'Regulatory Transfer';
+  const eaCertificate = useProjectEaCertificate(projId);
+  const dateLine = decisionDateLine(project?.decisionDate, eaCertificate);
 
   // Certificate Package doctype ids across both legislations, same join compliance-tab uses.
   const certTypeIds = lists
@@ -115,9 +126,7 @@ export function DecisionsTab() {
           ) : (
             <>
               <p className="decisions-tab__decision-value">{decision}</p>
-              {project.decisionDate && (
-                <p className="decisions-tab__decision-date">{longDate(project.decisionDate)}</p>
-              )}
+              {dateLine && <p className="decisions-tab__decision-date">{dateLine}</p>}
               {decisionDocument}
             </>
           )}
