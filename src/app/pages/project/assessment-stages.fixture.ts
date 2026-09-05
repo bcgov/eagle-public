@@ -3,47 +3,60 @@ import type { Project } from 'app/models/project';
 import type { PhaseListItem } from './assessment-stages';
 
 /**
- * Track work phases as DEMI mirrors them onto a project, under Track's own names — `&`, `/` and
- * `Proponent Time:` all differ from the rail's wording. This project is mid Effects Assessment,
- * so that phase is still open.
+ * Track work phases as DEMI mirrors them onto a project, verbatim from the test feed for
+ * Yellowhead Copper (2018 Act, currently in Process Planning).
  */
 export const PHASES: Phase[] = [
   {
-    name: 'Early Engagement',
-    startDate: '2020-08-01T00:00:00.000Z',
-    endDate: '2021-01-15T00:00:00.000Z',
+    name: 'Pre-EA (EAC Assessment)',
+    startDate: '2025-01-13T10:00:00.000Z',
+    endDate: '2025-07-07T09:00:00.000Z',
   },
   {
-    name: 'Proponent Time: Project Description',
-    startDate: '2021-01-16T00:00:00.000Z',
-    endDate: '2021-03-31T00:00:00.000Z',
+    name: 'Early Engagement',
+    startDate: '2025-07-08T09:00:00.000Z',
+    endDate: '2025-10-02T09:00:00.000Z',
+  },
+  {
+    name: 'DPD Development (Proponent Time)',
+    startDate: '2025-10-03T09:00:00.000Z',
+    endDate: '2026-06-15T10:00:00.000Z',
   },
   {
     name: 'Readiness Decision',
-    startDate: '2021-04-01T00:00:00.000Z',
-    endDate: '2021-04-28T00:00:00.000Z',
+    startDate: '2026-06-08T09:00:00.000Z',
+    endDate: '2026-07-04T10:00:00.000Z',
   },
   {
     name: 'Process Planning',
-    startDate: '2021-09-01T00:00:00.000Z',
-    endDate: '2021-11-30T00:00:00.000Z',
+    startDate: '2026-07-12T09:00:00.000Z',
+    endDate: '2026-11-09T10:00:00.000Z',
   },
   {
-    name: 'Proponent Time: Application Development',
-    startDate: '2021-12-01T00:00:00.000Z',
-    endDate: '2022-06-30T00:00:00.000Z',
+    name: 'EAC Application Development (Proponent Time)',
+    startDate: '2026-11-10T10:00:00.000Z',
+    endDate: '2027-03-15T10:00:00.000Z',
   },
   {
-    name: 'Application Development & Review',
-    startDate: '2022-08-01T00:00:00.000Z',
-    endDate: '2022-09-30T00:00:00.000Z',
+    name: 'EAC Application Review',
+    startDate: '2027-03-16T10:00:00.000Z',
+    endDate: '2027-09-12T10:00:00.000Z',
   },
   {
-    name: 'Proponent Time: Revised Application',
-    startDate: '2022-10-01T00:00:00.000Z',
-    endDate: '2022-12-31T00:00:00.000Z',
+    name: 'Revised EAC Application Development (Proponent Time)',
+    startDate: '2027-09-13T10:00:00.000Z',
+    endDate: '2027-10-27T10:00:00.000Z',
   },
-  { name: 'Effects Assessment', startDate: '2023-02-01T00:00:00.000Z', endDate: null },
+  {
+    name: 'Effects Assessment & Recommendation',
+    startDate: '2028-01-10T10:00:00.000Z',
+    endDate: '2028-06-08T10:00:00.000Z',
+  },
+  {
+    name: 'EAC Decision',
+    startDate: '2028-06-09T10:00:00.000Z',
+    endDate: '2028-07-09T10:00:00.000Z',
+  },
 ];
 
 /** The live eagle-api `projectPhase` rows, shared by the rail's two specs. */
