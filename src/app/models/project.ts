@@ -11,6 +11,8 @@ export class Project {
   centroid: number[] = [];
   description!: string;
   eacDecision: any;
+  /** From DEMI's Cosmos-backed project list on test; absent on dev (eagle-api). */
+  eaCertificate?: string | null;
   applicableRegulation?: any;
   location!: string;
   name!: string;

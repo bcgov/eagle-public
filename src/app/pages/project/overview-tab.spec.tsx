@@ -93,13 +93,16 @@ function jsonResponse(body: unknown) {
   });
 }
 
-function renderTab() {
+function renderTab(demiProject?: { eaCertificate?: string }) {
   requests = [];
   vi.stubGlobal(
     'fetch',
     vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       requests.push(url);
+      if (url.includes('/demi-projects/')) {
+        return jsonResponse(demiProject ?? {});
+      }
       if (url.includes('/pin')) {
         return jsonResponse([{ results: pinsTotal > 0 ? PINS : [], total_items: pinsTotal }]);
       }
@@ -362,5 +365,24 @@ describe('overview tab', () => {
     await waitFor(() =>
       expect(screen.queryByText('Participating Indigenous Nations')).not.toBeInTheDocument(),
     );
+  });
+
+  it('names the EA Certificate once DEMI has one', async () => {
+    window.__env = { logLevel: 4, DEMI_PROJECTS_PATH: '/demi-projects' };
+    await loadConfig();
+    renderTab({ eaCertificate: 'E23-01' });
+
+    expect(await screen.findByText('EA Certificate')).toBeInTheDocument();
+    expect(screen.getByText('E23-01')).toBeInTheDocument();
+
+    window.__env = { logLevel: 4, DEMI_PROJECTS_PATH: '' };
+    await loadConfig();
+  });
+
+  it('hides the EA Certificate fact when DEMI is off', async () => {
+    renderTab();
+
+    await screen.findByRole('heading', { level: 2, name: 'About this project' });
+    expect(screen.queryByText('EA Certificate')).not.toBeInTheDocument();
   });
 });

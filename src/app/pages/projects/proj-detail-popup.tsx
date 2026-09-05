@@ -91,6 +91,7 @@ export function ProjDetailPopup({ project, onClose, variant = 'popup' }: ProjDet
   const meta = [project.proponent?.name, [project.type, project.sector].filter(Boolean).join(' / ')]
     .filter(Boolean)
     .join(' · ');
+  const eaCertificate = typeof project.eaCertificate === 'string' ? project.eaCertificate : '';
 
   return (
     <div className={`popup-card${inline ? ' popup-card--inline' : ''}`}>
@@ -143,6 +144,12 @@ export function ProjDetailPopup({ project, onClose, variant = 'popup' }: ProjDet
           <dd>{project.region || '-'}</dd>
           <dt>EA decision</dt>
           <dd>{project.eacDecision?.name || '-'}</dd>
+          {eaCertificate && (
+            <>
+              <dt>EA Certificate</dt>
+              <dd>{eaCertificate}</dd>
+            </>
+          )}
           <dt>Location</dt>
           <dd>{project.location || '-'}</dd>
         </dl>
