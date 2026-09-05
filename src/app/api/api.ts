@@ -44,7 +44,11 @@ export function searchPath(): string {
 
 const AZURE_DATASETS = new Set(['Project', 'Document', 'DocumentChunk']);
 
-async function send(url: string, init: RequestInit = {}): Promise<Response> {
+async function send(
+  url: string,
+  init: RequestInit = {},
+  quietStatuses: number[] = [],
+): Promise<Response> {
   const method = init.method ?? 'GET';
   logger.logHttpRequest(method, url, 'api');
 
@@ -56,15 +60,18 @@ async function send(url: string, init: RequestInit = {}): Promise<Response> {
     throw error;
   }
 
-  logger.logHttpResponse(method, url, response.status, undefined, 'api');
+  if (!quietStatuses.includes(response.status)) {
+    logger.logHttpResponse(method, url, response.status, undefined, 'api');
+  }
   if (!response.ok) {
     throw new ApiError(response.status, response.statusText);
   }
   return response;
 }
 
-export async function getJson<T>(url: string): Promise<T> {
-  return (await send(url)).json() as Promise<T>;
+/** `quiet404`: skip the error log (and telemetry) for a 404 an expected/off-switch caller already handles. */
+export async function getJson<T>(url: string, options?: { quiet404?: boolean }): Promise<T> {
+  return (await send(url, {}, options?.quiet404 ? [404] : [])).json() as Promise<T>;
 }
 
 async function getWithHeaders<T>(url: string): Promise<ResponseWithHeaders<T>> {

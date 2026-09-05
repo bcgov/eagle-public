@@ -2,6 +2,7 @@ import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { loadConfig } from 'app/config/config';
+import { logger } from 'app/config/logging';
 import { makeQueryClient } from '../../test-utils';
 import { phasesOf, useDemiProject, useProjectPhases } from './project-phases';
 
@@ -93,13 +94,16 @@ describe('when DEMI has no record for the project', () => {
     vi.stubGlobal('fetch', fetchMock);
   });
 
-  it('settles useDemiProject with null and does not retry', async () => {
+  it('settles useDemiProject with null and does not retry, quietly', async () => {
+    const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => undefined);
     await setup(DEMI);
     const { result } = renderHook(() => useDemiProject('proj-1'), { wrapper });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toBeNull();
     expect(fetchMock).toHaveBeenCalledTimes(1);
+    // The route 404s on test until DEMI deploys it; that's an expected answer, not a bug report.
+    expect(errorSpy).not.toHaveBeenCalled();
   });
 
   it('gives useProjectPhases its empty value', async () => {

@@ -58,7 +58,9 @@ function demiProjectQuery(projId: string) {
     retry: false,
     queryFn: async (): Promise<DemiProject | null> => {
       try {
-        return await getJson<DemiProject>(`${base}/${encodeURIComponent(projId)}`);
+        return await getJson<DemiProject>(`${base}/${encodeURIComponent(projId)}`, {
+          quiet404: true,
+        });
       } catch (err) {
         // 404 means DEMI has no record for this project — an answer, not a failure.
         if (err instanceof ApiError && err.status === 404) return null;
