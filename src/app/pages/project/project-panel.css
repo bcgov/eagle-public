@@ -69,6 +69,10 @@
   color: var(--typography-color-secondary);
 }
 
+.project-panel__fact-detail a {
+  color: var(--typography-color-link);
+}
+
 .project-panel .map-container {
   position: relative;
   display: block;

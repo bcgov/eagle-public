@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { Skeleton } from 'app/components/skeleton/skeleton';
 import type { Project } from 'app/models/project';
@@ -23,7 +23,7 @@ interface FactProps {
   label: string;
   value?: string;
   /** Second line under the value, e.g. the decision date or the region. */
-  detail?: string;
+  detail?: ReactNode;
   loading: boolean;
 }
 
@@ -43,6 +43,23 @@ function Fact({ label, value, detail, loading }: FactProps) {
       </dd>
     </div>
   );
+}
+
+/** "14 March 2023 · E23-01" under the EA decision fact, either half omitted when absent. */
+function eaDecisionMeta(
+  decisionDate: string | undefined,
+  eaCertificate: string | undefined,
+  projId: string,
+) {
+  const date = decisionDate ? longDate(decisionDate) : undefined;
+  const certificate = eaCertificate && <Link to={`/p/${projId}/decisions`}>{eaCertificate}</Link>;
+  if (date && certificate)
+    return (
+      <>
+        {date} · {certificate}
+      </>
+    );
+  return date ?? certificate ?? undefined;
 }
 
 /** The card under the masthead: assessment progress beside the core project facts, on every tab. */
@@ -69,10 +86,9 @@ export function ProjectPanel({ project, lists, loading = false }: ProjectPanelPr
           <Fact
             label="EA decision"
             value={project?.eacDecision?.name}
-            detail={project?.decisionDate ? longDate(project.decisionDate) : undefined}
+            detail={eaDecisionMeta(project?.decisionDate, eaCertificate, projId)}
             loading={loading}
           />
-          {eaCertificate && <Fact label="EA Certificate" value={eaCertificate} loading={loading} />}
           <Fact label="Type" value={project?.type} loading={loading} />
           <Fact
             label="Location"

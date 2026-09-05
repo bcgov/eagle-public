@@ -17,6 +17,8 @@ const PROJECT = {
   region: 'Skeena',
   location: 'Near Cedar Creek',
   centroid: [-127.5, 54.2],
+  eacDecision: { name: 'Certificate issued' },
+  decisionDate: '2023-03-14T00:00:00.000Z',
 } as unknown as Project;
 
 function renderPanel(project: Project | null) {
@@ -56,11 +58,13 @@ describe('project panel map', () => {
     expect(screen.getByText('No map available')).toBeInTheDocument();
     expect(screen.queryByTestId('map')).toBeNull();
     expect(screen.queryByRole('link', { name: /Open in map explorer/ })).toBeNull();
-    // DEMI is off in this render, so the fact never appears.
-    expect(screen.queryByText('EA Certificate')).toBeNull();
+    // DEMI is off in this render: the decision date shows with no certificate link or separator.
+    expect(screen.getByText('March 14, 2023')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'E23-01' })).toBeNull();
+    expect(screen.queryByText('·', { exact: false })).toBeNull();
   });
 
-  it('names the EA Certificate once DEMI has one', async () => {
+  it('links the certificate number to the decisions tab once DEMI has one', async () => {
     window.__env = { logLevel: 4, DEMI_PROJECTS_PATH: '/demi-projects' };
     await loadConfig();
     vi.stubGlobal(
@@ -77,8 +81,9 @@ describe('project panel map', () => {
 
     renderPanel(PROJECT);
 
-    expect(await screen.findByText('EA Certificate')).toBeInTheDocument();
-    expect(screen.getByText('E23-01')).toBeInTheDocument();
+    const link = await screen.findByRole('link', { name: 'E23-01' });
+    expect(link).toHaveAttribute('href', '/p/proj-1/decisions');
+    expect(screen.getByText(/March 14, 2023/)).toBeInTheDocument();
 
     vi.unstubAllGlobals();
     window.__env = { logLevel: 4, DEMI_PROJECTS_PATH: '' };
