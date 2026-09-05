@@ -193,6 +193,26 @@
   min-height: 2.75rem;
 }
 
+/* On a phone the keyword box and the Filters toggle no longer fit on one row, and the toggle wraps
+   to a row of its own where its 104px leaves the rest of the row empty. Stacked, both are
+   full-width controls, the same shape the masthead actions take at this width. */
+@media (max-width: 575.98px) {
+  .documents-page__body .action-buttons-section {
+    flex: 1 0 100%;
+  }
+
+  /* Only the second of the template's two columns holds the toggle; the first is empty, so it is
+     the one that takes the row. */
+  .documents-page__body .action-buttons-section [class*='col-']:last-child,
+  .documents-page__body .action-buttons-section .btn-primary {
+    width: 100%;
+  }
+
+  .documents-page__body .action-buttons-section .btn-primary {
+    justify-content: center;
+  }
+}
+
 /* Placeholder segments hold the group's shape while the probes decide which ones exist. */
 .document-type-filter__segment--loading {
   border-color: var(--theme-gray-40);

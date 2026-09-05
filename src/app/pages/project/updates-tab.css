@@ -86,3 +86,16 @@
   font: var(--typography-regular-label);
   color: var(--typography-color-secondary);
 }
+
+/* Same stack as the Overview tab: each column takes a whole flex line, and the aside's width cap
+   goes with it, or the subscribe card keeps its 360px column on a full-width row. */
+@media (max-width: 859.98px) {
+  .updates-tab__main,
+  .updates-tab__aside {
+    flex-basis: 100%;
+  }
+
+  .updates-tab__aside {
+    max-width: none;
+  }
+}

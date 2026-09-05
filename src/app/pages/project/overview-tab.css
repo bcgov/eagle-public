@@ -328,10 +328,14 @@
   color: var(--typography-color-secondary);
 }
 
-/* The aside sits under the main column once the two would be too narrow to read side by side. */
+/* The aside sits under the main column once the two would be too narrow to read side by side. Each
+   takes a whole flex line rather than the row turning into a column: in a column the two bases
+   above would be read as heights, padding a short card out to 440px, and the width would come from
+   `align-items`, which has to stay flex-start for the side-by-side case. */
 @media (max-width: 859.98px) {
-  .overview-tab {
-    flex-direction: column;
+  .overview-tab__main,
+  .overview-tab__aside {
+    flex-basis: 100%;
   }
 
   .overview-tab__aside {
