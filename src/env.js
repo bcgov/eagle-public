@@ -92,8 +92,9 @@
   window.__env.ANALYTICS_ENHANCED_TRACKING = true;
   window.__env.ANALYTICS_TRAFFIC_TRACKING = true;
 
-  // eagle-analytics ingest base — relative on deployed envs, e.g. /analytics; empty keeps the
-  // client off.
+  // eagle-analytics ingest base; the client appends /events. Deployed proxies (rproxy, Front Door)
+  // send /analytics/* to eagle-analytics and bare /analytics to penguin, so '/analytics' fits both
+  // keys during dual-write; empty keeps the client off.
   window.__env.EAGLE_ANALYTICS_URL = '';
 
   // Build hash — replaced during CI build
