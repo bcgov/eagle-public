@@ -48,9 +48,6 @@ jobs:
     - name: Install dependencies
       if: matrix.language == 'javascript-typescript'
       run: yarn install --immutable
-      env:
-        # @digitalspace/eagle-analytics-client is on GitHub Packages, which 403s without a token.
-        GH_PACKAGES_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
 
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v4

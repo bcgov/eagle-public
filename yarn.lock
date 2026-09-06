@@ -380,10 +380,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@digitalspace/eagle-analytics-client@npm:0.1.0":
+"@digitalspace/eagle-analytics-client@file:./vendor/eagle-analytics-client::locator=eagle-public%40workspace%3A.":
   version: 0.1.0
-  resolution: "@digitalspace/eagle-analytics-client@npm:0.1.0::__archiveUrl=https%3A%2F%2Fnpm.pkg.github.com%2Fdownload%2F%40digitalspace%2Feagle-analytics-client%2F0.1.0%2Ff86c86ef429ffb880796fe78e6ba3c1d694b580f"
-  checksum: 10c0/b490452b9a689903f334ecfa159e800164bdc30f484fbb60d2322763b4cecb15d296d0a9b65ab85bf0d2bd246decc69b6a465971747a583c1da0cbae2af0798f
+  resolution: "@digitalspace/eagle-analytics-client@file:./vendor/eagle-analytics-client#./vendor/eagle-analytics-client::hash=2fdd8c&locator=eagle-public%40workspace%3A."
+  checksum: 10c0/9128ec5ed56f54856a7bf865a393f0c19e8bcb46f8ca63df4b242b5355dc30bced43cb74607e063fbbe43be6c27509db592565a04fabe31fa9191f18963b7d9a
   languageName: node
   linkType: hard
 
@@ -2050,7 +2050,7 @@ __metadata:
   dependencies:
     "@analytics/original-source-plugin": "npm:^1"
     "@bcgov/design-tokens": "npm:5.0.0"
-    "@digitalspace/eagle-analytics-client": "npm:0.1.0"
+    "@digitalspace/eagle-analytics-client": "file:./vendor/eagle-analytics-client"
     "@eslint/js": "npm:^9"
     "@microsoft/applicationinsights-web": "npm:^3.4.3"
     "@tanstack/react-query": "npm:^5"

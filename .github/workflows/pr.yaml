@@ -25,11 +25,7 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: "yarn"
-      # @digitalspace/eagle-analytics-client is on GitHub Packages, which 403s without a token.
-      # A pull_request run from a fork gets an empty secret and cannot install.
       - run: yarn install --immutable
-        env:
-          GH_PACKAGES_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
 
   lint:
     name: Lint
@@ -52,8 +48,6 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: "yarn"
       - run: yarn install --immutable
-        env:
-          GH_PACKAGES_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
       - run: yarn lint
       - run: yarn format:check
 
@@ -78,8 +72,6 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: "yarn"
       - run: yarn install --immutable
-        env:
-          GH_PACKAGES_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
       - run: yarn test
 
   build:
@@ -103,8 +95,6 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: "yarn"
       - run: yarn install --immutable
-        env:
-          GH_PACKAGES_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
       # tsc -p e2e resolves @playwright/test, which lives in the e2e project's own tree.
       - run: yarn install --immutable
         working-directory: e2e
@@ -132,8 +122,6 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: "yarn"
       - run: yarn install --immutable
-        env:
-          GH_PACKAGES_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
       - run: yarn build
 
       - run: yarn install --immutable
