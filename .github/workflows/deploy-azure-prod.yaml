@@ -82,6 +82,9 @@ jobs:
 
       - name: Install dependencies
         run: yarn install --immutable
+        env:
+          # @digitalspace/eagle-analytics-client is on GitHub Packages, which 403s without a token.
+          GH_PACKAGES_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
 
       - name: Lint
         run: yarn lint

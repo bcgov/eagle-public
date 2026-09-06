@@ -92,6 +92,10 @@
   window.__env.ANALYTICS_ENHANCED_TRACKING = true;
   window.__env.ANALYTICS_TRAFFIC_TRACKING = true;
 
+  // eagle-analytics ingest base — relative on deployed envs, e.g. /analytics; empty keeps the
+  // client off.
+  window.__env.EAGLE_ANALYTICS_URL = '';
+
   // Build hash — replaced during CI build
   window.__env.GH_HASH = 'local-build';
 
