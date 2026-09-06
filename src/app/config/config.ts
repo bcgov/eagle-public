@@ -46,6 +46,12 @@ export interface EnvConfig {
   ANALYTICS_ENHANCED_TRACKING?: boolean;
   ANALYTICS_TRAFFIC_TRACKING?: boolean;
   /**
+   * eagle-analytics ingest base for @digitalspace/eagle-analytics-client, which runs beside the
+   * penguin plugin. Empty or unset gives that client a no-op instance. Served from /api/config like
+   * SEARCH_API_PATH, so it turns on with no redeploy.
+   */
+  EAGLE_ANALYTICS_URL?: string;
+  /**
    * Azure Application Insights connection string for browser error reporting. Empty or unset
    * sends nothing and loads no SDK. Served from /api/config like SEARCH_API_PATH.
    */
