@@ -19,8 +19,8 @@ All documentation has been consolidated in the [Eagle Documentation Wiki](https:
 ## Deployment
 
 Test and prod serve this app as a static bundle from an Azure Storage `$web` container behind
-Azure Front Door. eao-nginx (rproxy) sits in front of Front Door, so `/api`, `/analytics` and
-`/admin/` stay same-origin. There are no containers and no Helm charts.
+Azure Front Door. eao-nginx (rproxy) sits in front of Front Door, so `/api` and `/admin/` stay
+same-origin. There are no containers and no Helm charts.
 
 Deploys run from a release tag, never a branch. Cut the tag first, then deploy:
 
@@ -64,9 +64,8 @@ yarn start
 ```
 
 Open `http://localhost:4200/`. The page reloads when you change a source file. The dev server
-proxies `/api`, `/analytics`, `/eagle-search`, `/notify-api` and `/demi-search`. `/api`,
-`/analytics` and `/eagle-search` take their target from `API_LOCATION` in `src/env.js`, so change
-it there and restart. `/demi-search` goes straight to the test APIM gateway unless `API_LOCATION`
+proxies `/api`, `/eagle-search`, `/notify-api` and `/demi-search`. `/api` and `/eagle-search` take
+their target from `API_LOCATION` in `src/env.js`, so change it there and restart. `/demi-search` goes straight to the test APIM gateway unless `API_LOCATION`
 is set in the shell, in which case it follows that host too. `/notify-api` always points at
 eagle-notify's test host.
 

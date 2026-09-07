@@ -2,8 +2,11 @@ import { test, expect } from '../support/fixtures';
 import { ready, expectA11ySmoke } from '../support/helpers';
 
 /**
- * Every top-level route: it loads, it reports analytics, and it holds the accessibility
- * basics. Route-specific content lives in the other specs.
+ * Every top-level route: it loads and it holds the accessibility basics. Route-specific content
+ * lives in the other specs.
+ *
+ * Analytics is not asserted: penguin-analytics is retired, and the eagle-analytics client only
+ * posts when EAGLE_ANALYTICS_URL is set, which no local or preview run sets.
  */
 const ROUTES = [
   '/',
@@ -21,17 +24,11 @@ const ROUTES = [
 ];
 
 for (const route of ROUTES) {
-  test(`${route} loads, posts analytics and passes the a11y smoke`, async ({ page }, testInfo) => {
-    const analytics = page.waitForRequest(
-      (r) => new URL(r.url()).pathname === '/analytics' && r.method() === 'POST',
-      { timeout: 60_000 },
-    );
-
+  test(`${route} loads and passes the a11y smoke`, async ({ page }, testInfo) => {
     await page.goto(route);
     await ready(page);
 
     expect(new URL(page.url()).pathname).toBe(route === '/' ? '/' : route);
-    await analytics;
 
     const { skipLinks } = await expectA11ySmoke(page);
     // Recorded, not asserted: prod ships no skip link on any route.

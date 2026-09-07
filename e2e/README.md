@@ -16,7 +16,7 @@ BASE_URL=http://localhost:4173 yarn test
 
 A `BASE_URL` on port 4173 makes Playwright start the server itself (`webServer` in
 `playwright.config.ts`): `vite preview`, serving `dist/eagle-public/browser` with the dev server's
-proxy rules, so `/api`, `/demi-search`, `/analytics`, `/eagle-search` and `/notify-api` reach the
+proxy rules, so `/api`, `/demi-search`, `/eagle-search` and `/notify-api` reach the
 same backends as `yarn start`. Build first, or preview has nothing to serve. It reuses a server
 already listening on 4173 unless `CI` is set. Every other `BASE_URL`, a dev server on 4200
 included, is left alone.
@@ -267,7 +267,7 @@ is applied, a keyword returning hits). Deselect with `yarn playwright test --gre
 
 | File | Tests | Covers |
 |---|---|---|
-| `tests/smoke.spec.ts` | 12 | every top-level route loads, posts `/analytics`, one `h1`, no `img` without `alt` |
+| `tests/smoke.spec.ts` | 12 | every top-level route loads, one `h1`, no `img` without `alt` |
 | `tests/static-pages.spec.ts` | 12 | home, contact, legislation, compliance-oversight, process, search-help, news, project-notifications, cac-unsubscribe |
 | `tests/projects-list.spec.ts` | 5 | table, sort, pagination, keyword filter, deep link |
 | `tests/projects-map.spec.ts` | 6 | map and clusters, inline filters panel, filter, pin card, list-card card, basemap switch |

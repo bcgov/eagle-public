@@ -41,14 +41,14 @@ export interface EnvConfig {
   NOTIFY_API?: string;
   SURVEY_URL?: string | null;
   SHOW_SURVEY_BANNER?: boolean;
-  ANALYTICS_API_URL?: string | null;
+  /** Analytics client options; see vendor/eagle-analytics-client/README.md for what each does. */
   ANALYTICS_DEBUG?: boolean;
   ANALYTICS_ENHANCED_TRACKING?: boolean;
   ANALYTICS_TRAFFIC_TRACKING?: boolean;
   /**
-   * eagle-analytics ingest base for @digitalspace/eagle-analytics-client, which runs beside the
-   * penguin plugin. Empty or unset gives that client a no-op instance. Served from /api/config like
-   * SEARCH_API_PATH, so it turns on with no redeploy.
+   * eagle-analytics ingest base for @digitalspace/eagle-analytics-client, the only analytics backend
+   * now that penguin-analytics is retired. Empty or unset gives that client a no-op instance. Served
+   * from /api/config like SEARCH_API_PATH, so it turns on with no redeploy.
    */
   EAGLE_ANALYTICS_URL?: string;
   /**
@@ -74,7 +74,7 @@ let config: EnvConfig = {};
  * LOCAL DEV (configEndpoint = false):
  *   - Uses env.js values directly (src/env.js)
  *   - vite.config.ts reads API_LOCATION from env.js to generate dev server proxy rules
- *   - App uses relative paths (/api, /analytics) — never API_LOCATION directly
+ *   - App uses relative paths (/api) — never API_LOCATION directly
  *
  * DEPLOYED (configEndpoint = true):
  *   - The Azure deploy workflows sed configEndpoint to true
