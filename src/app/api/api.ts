@@ -65,12 +65,6 @@ function rowsFrom<T>(envelope: unknown): T[] {
   return (envelope as ISearchResult<T>[] | undefined)?.[0]?.searchResults ?? [];
 }
 
-/** Row count for the whole query, out of the same envelope. 0 when the backend sends no meta. */
-function totalFrom(envelope: unknown): number {
-  const meta = (envelope as ISearchResult<unknown>[] | undefined)?.[0]?.meta;
-  return (meta?.[0]?.searchResultsTotal as number) ?? 0;
-}
-
 async function send(
   url: string,
   init: RequestInit = {},
@@ -406,8 +400,8 @@ export async function getOrgsByCompanyType(type: string): Promise<Org[]> {
     );
     const rows = rowsFrom<Org>(envelope);
     orgs.push(...rows);
-    // A short page means the last one; the total check stops the loop when the count is exact.
-    if (rows.length < ORGS_PAGE_SIZE || orgs.length >= totalFrom(envelope)) {
+    // A short page means the last one.
+    if (rows.length < ORGS_PAGE_SIZE) {
       return orgs;
     }
   }
