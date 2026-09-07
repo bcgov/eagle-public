@@ -4,6 +4,13 @@
 an upstream release of the EPIC analytics browser client. Do not edit them here;
 change them upstream and re-vendor.
 
+Parts of the upstream `README.md` do not apply here. Its Install section covers
+pulling the package from GitHub Packages with an auth token; eagle-public instead
+resolves it from this directory (`"@digitalspace/eagle-analytics-client":
+"file:./vendor/eagle-analytics-client"` in the root `package.json`), so no registry
+and no token are involved. Its Vendoring section is an example pinned to an older
+version. The tag and hash below are the ones this checkout actually carries.
+
 | Field | Value |
 |---|---|
 | Upstream repo | `digitalspace/eagle-analytics` (`client/`) |
