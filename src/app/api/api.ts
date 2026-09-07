@@ -65,6 +65,12 @@ function rowsFrom<T>(envelope: unknown): T[] {
   return (envelope as ISearchResult<T>[] | undefined)?.[0]?.searchResults ?? [];
 }
 
+/** Row count for the whole query, out of the same envelope. 0 when the backend sends no meta. */
+function totalFrom(envelope: unknown): number {
+  const meta = (envelope as ISearchResult<unknown>[] | undefined)?.[0]?.meta;
+  return (meta?.[0]?.searchResultsTotal as number) ?? 0;
+}
+
 async function send(
   url: string,
   init: RequestInit = {},
@@ -369,15 +375,42 @@ export async function cacRemoveMember(projectId: string, meta: any): Promise<any
 
 // Organizations
 
-/** Well above the number of organizations EPIC holds, so the filter list is never truncated. */
-const ORGS_PAGE_SIZE = 1000;
+/** demi-search 400s above 500 rows on a filtered search, and this query is always filtered. */
+const ORGS_PAGE_SIZE = 500;
 
+/**
+ * Every organization of one company type, for the proponent filter dropdown.
+ *
+ * The eagle-api fallback keeps its `/organization` route, which projects the name only:
+ * `/search?dataset=Organization` there answers the stored row, internal user ids included.
+ */
 export async function getOrgsByCompanyType(type: string): Promise<Org[]> {
-  return rowsFrom<Org>(
-    await searchKeywords('', 'Organization', [], 1, ORGS_PAGE_SIZE, '', '+name', {
-      companyType: type,
-    }),
-  );
+  if (searchPath() === apiPath()) {
+    const queryString = `organization?companyType=${type}&sortBy=+name&fields=${buildValues(['name'])}`;
+    return getJson<Org[]>(`${apiPath()}/${queryString}`);
+  }
+
+  const orgs: Org[] = [];
+  for (let pageNum = 1; ; pageNum++) {
+    const envelope = await searchKeywords(
+      '',
+      'Organization',
+      [],
+      pageNum,
+      ORGS_PAGE_SIZE,
+      '',
+      '+name',
+      {
+        companyType: type,
+      },
+    );
+    const rows = rowsFrom<Org>(envelope);
+    orgs.push(...rows);
+    // A short page means the last one; the total check stops the loop when the count is exact.
+    if (rows.length < ORGS_PAGE_SIZE || orgs.length >= totalFrom(envelope)) {
+      return orgs;
+    }
+  }
 }
 
 export async function getProject(
@@ -605,18 +638,26 @@ export async function checkGatePassword(password: string): Promise<void> {
 const TOP_NEWS_PAGE_SIZE = 4;
 
 /**
- * The home page's top-news strip. eagle-api answers it from a bespoke pinned/unpinned pipeline
- * rather than `/search`, so this is the one RecentActivity read that has two URLs. No sort is
- * sent on the demi-search path: `top=true` already orders pinned first, then newest.
+ * The home page's top-news strip, the one RecentActivity read with two URLs: eagle-api answers it
+ * from a bespoke pinned/unpinned pipeline rather than `/search`.
+ *
+ * demi-search reads `top` BARE, not `and[top]`, hence the `fields` argument, which emits
+ * `&name=value`. It answers the whole strip pinned first then newest, so no sort is sent.
  */
 export async function getTopNewsItems(): Promise<any[]> {
   if (searchPath() === apiPath()) {
     return getJson<any[]>(`${apiPath()}/public/recentActivity?top=true`);
   }
   return rowsFrom(
-    await searchKeywords('', 'RecentActivity', [], 1, TOP_NEWS_PAGE_SIZE, '', null, {
-      top: 'true',
-    }),
+    await searchKeywords(
+      '',
+      'RecentActivity',
+      [{ name: 'top', value: 'true' }],
+      1,
+      TOP_NEWS_PAGE_SIZE,
+      '',
+      null,
+    ),
   );
 }
 

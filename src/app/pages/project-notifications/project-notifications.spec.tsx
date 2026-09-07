@@ -37,7 +37,8 @@ function jsonResponse(body: unknown) {
   });
 }
 
-function renderNotifications(path: string) {
+function renderNotifications(path: string, data: { notifications?: any[]; periods?: any[] } = {}) {
+  const notifications = data.notifications ?? NOTIFICATIONS;
   requests = [];
   vi.stubGlobal(
     'fetch',
@@ -45,7 +46,7 @@ function renderNotifications(path: string) {
       const url = String(input);
       requests.push(url);
       if (url.includes('dataset=ProjectNotification')) {
-        return jsonResponse([{ searchResults: NOTIFICATIONS, meta: [{ searchResultsTotal: 30 }] }]);
+        return jsonResponse([{ searchResults: notifications, meta: [{ searchResultsTotal: 30 }] }]);
       }
       if (url.includes('dataset=Document')) {
         return jsonResponse([{ searchResults: DOCUMENTS, meta: [{ searchResultsTotal: 1 }] }]);
@@ -56,7 +57,7 @@ function renderNotifications(path: string) {
         ]);
       }
       if (url.includes('/commentperiod')) {
-        return jsonResponse([]);
+        return jsonResponse(data.periods ?? []);
       }
       return jsonResponse([{ searchResults: [], meta: [] }]);
     }),
@@ -134,6 +135,25 @@ describe('project notifications', () => {
     expect(lastRequestFor('Document')).toBe(
       '/api/search?dataset=Document&project=n1&pageNum=0&pageSize=5&projectLegislation=default&sortBy=+datePosted&sortBy=&populate=true&and[documentSource]=PROJECT-NOTIFICATION&fuzzy=false',
     );
+  });
+
+  // demi-search stores "no comment-period id" as 'none' where eagle-api leaves the field off, so a
+  // record whose periods only the lookup knows about must still get the tab on both backends.
+  it('offers the engagement tab when pcp is none but the lookup finds a period', async () => {
+    renderNotifications('/project-notifications', {
+      notifications: [{ ...NOTIFICATIONS[0], pcp: 'none' }],
+      periods: [
+        {
+          _id: 'cp1',
+          project: 'n1',
+          dateStarted: '2026-08-01T00:00:00.000Z',
+          dateCompleted: '2099-09-01T00:00:00.000Z',
+        },
+      ],
+    });
+    await screen.findByText('CEDAR QUARRY');
+
+    expect(await screen.findByRole('tab', { name: 'Engagement' })).toBeInTheDocument();
   });
 
   it('offers the engagement tab for a notification with an open comment period', async () => {

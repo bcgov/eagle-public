@@ -26,13 +26,20 @@ describe('reads served by demi-search', () => {
   ];
 
   /** demi-search and eagle-api both wrap `/search` rows in this. */
-  function envelope(rows: unknown[]): string {
-    return JSON.stringify([{ searchResults: rows, meta: [{ searchResultsTotal: rows.length }] }]);
+  function envelope(rows: unknown[], total = rows.length): string {
+    return JSON.stringify([{ searchResults: rows, meta: [{ searchResultsTotal: total }] }]);
   }
 
-  function respondWith(body: string): void {
-    fetchMock = vi.fn(async () => new Response(body, { status: 200 }));
+  function respondWith(...bodies: string[]): void {
+    let call = 0;
+    fetchMock = vi.fn(
+      async () => new Response(bodies[Math.min(call++, bodies.length - 1)], { status: 200 }),
+    );
     vi.stubGlobal('fetch', fetchMock);
+  }
+
+  function requestedUrls(): string[] {
+    return fetchMock.mock.calls.map((call) => call[0] as string);
   }
 
   async function setup(searchApiPath: string): Promise<void> {
@@ -64,20 +71,42 @@ describe('reads served by demi-search', () => {
       expect(url.startsWith(`${SEARCH}/search?dataset=Organization`)).toBe(true);
       expect(url).toContain('&and[companyType]=Proponent/Certificate Holder');
       expect(url).toContain('&sortBy=+name');
-      expect(url).toContain('&pageSize=1000');
       expect(orgs).toEqual(ORGS);
     });
 
-    it('asks eagle-api for the same query when SEARCH_API_PATH is empty', async () => {
-      await setup('');
+    // demi-search answers 400 above 500 rows on any filtered search, and this query is always filtered.
+    it('never asks a filtered page bigger than demi-search allows', async () => {
+      await setup(SEARCH);
       respondWith(envelope(ORGS));
+
+      await getOrgsByCompanyType('Proponent/Certificate Holder');
+
+      const pageSize = Number(new URL(requestedUrl(), 'http://x').searchParams.get('pageSize'));
+      expect(pageSize).toBeLessThanOrEqual(500);
+    });
+
+    it('pages until it holds every organization the backend counted', async () => {
+      await setup(SEARCH);
+      const first = Array.from({ length: 500 }, (_, i) => ({ _id: `o${i}`, name: `Org ${i}` }));
+      respondWith(envelope(first, 502), envelope(ORGS, 502));
 
       const orgs = await getOrgsByCompanyType('Proponent/Certificate Holder');
 
-      const url = requestedUrl();
-      expect(url.startsWith('/api/search?dataset=Organization')).toBe(true);
-      expect(url).not.toContain(SEARCH);
-      expect(url).toContain('&and[companyType]=Proponent/Certificate Holder');
+      expect(orgs).toHaveLength(502);
+      expect(
+        requestedUrls().map((u) => new URL(u, 'http://x').searchParams.get('pageNum')),
+      ).toEqual(['0', '1']);
+    });
+
+    it('keeps the eagle-api route, which projects name only, when SEARCH_API_PATH is empty', async () => {
+      await setup('');
+      respondWith(JSON.stringify(ORGS));
+
+      const orgs = await getOrgsByCompanyType('Proponent/Certificate Holder');
+
+      expect(requestedUrl()).toBe(
+        '/api/organization?companyType=Proponent/Certificate Holder&sortBy=+name&fields=name',
+      );
       expect(orgs).toEqual(ORGS);
     });
 
@@ -86,6 +115,47 @@ describe('reads served by demi-search', () => {
       respondWith(JSON.stringify([]));
 
       expect(await getOrgsByCompanyType('Proponent/Certificate Holder')).toEqual([]);
+    });
+
+    /**
+     * Envelope recorded from demi-search on test
+     * (`/demi-search/search?dataset=Organization&pageSize=1`): rows carry `count` alongside `meta`,
+     * and the row itself is the redacted catalog shape, not eagle-api's Mongo document.
+     */
+    it('unwraps a recorded demi-search envelope', async () => {
+      await setup(SEARCH);
+      respondWith(
+        JSON.stringify([
+          {
+            searchResults: [
+              {
+                id: '58850f68aaecd9001b808530',
+                kind: 'Organization',
+                eagleId: '58850f68aaecd9001b808530',
+                sourceSystem: 'eagle',
+                name: '445026 BC Limited',
+                companyType: 'Proponent/Certificate Holder',
+                province: 'British Columbia',
+                country: 'Canada',
+                address1: '',
+                city: '',
+                postal: '',
+                website: '',
+                isPublished: true,
+                _id: '58850f68aaecd9001b808530',
+                _schemaName: 'Organization',
+              },
+            ],
+            count: 1,
+            meta: [{ searchResultsTotal: 1 }],
+          },
+        ]),
+      );
+
+      const orgs = await getOrgsByCompanyType('Proponent/Certificate Holder');
+
+      expect(orgs).toHaveLength(1);
+      expect(orgs[0]).toMatchObject({ _id: '58850f68aaecd9001b808530', name: '445026 BC Limited' });
     });
   });
 
@@ -120,7 +190,10 @@ describe('reads served by demi-search', () => {
 
       const url = requestedUrl();
       expect(url.startsWith(`${SEARCH}/search?dataset=RecentActivity`)).toBe(true);
-      expect(url).toContain('&and[top]=true');
+      // demi-search reads `top` bare; under `and[]` it is accepted and ignored, which serves the
+      // whole activity feed instead of the curated strip.
+      expect(url).toContain('&top=true');
+      expect(url).not.toContain('and[top]');
       expect(url).toContain('&pageSize=4');
       // `top=true` orders pinned first; a sort of our own would undo that.
       expect(url).not.toContain('&sortBy=');

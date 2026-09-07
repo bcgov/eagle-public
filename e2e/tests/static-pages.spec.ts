@@ -6,6 +6,8 @@ import {
   waitForSearch,
   total,
   pageCount,
+  isTopNewsUrl,
+  topNewsRows,
 } from '../support/helpers';
 
 test.describe('content pages', () => {
@@ -65,16 +67,15 @@ test.describe('home', () => {
     checkBaseline('home', calls);
   });
 
-  test('@data recent activity cards come from /api/public/recentActivity', async ({ page }) => {
-    const res = page.waitForResponse(
-      (r) => r.url().includes('/api/public/recentActivity') && r.status() === 200,
-    );
+  // Either backend can serve the strip: eagle-api from its bespoke route, demi-search from
+  // `/search?dataset=RecentActivity&top=true`. Both answer the same four curated items.
+  test('@data recent activity cards come from the top-news read', async ({ page }) => {
+    const res = page.waitForResponse((r) => isTopNewsUrl(r.url()) && r.status() === 200);
     await page.goto('/');
-    const body = await (await res).json();
-    const active = body.filter((a: any) => a.active);
+    const active = topNewsRows(await (await res).json()).filter((a: any) => a.active);
     await ready(page);
     await expect(page.locator('#tableTop tbody tr')).toHaveCount(active.length);
-    await expect(page.locator('#tableTop tbody tr').first()).toContainText(active[0].project.name);
+    await expect(page.locator('#tableTop tbody tr').first()).toContainText(active[0].headline);
   });
 });
 
@@ -94,8 +95,12 @@ test.describe('news', () => {
 
     const rows = page.locator('table[aria-label="table-template"] tbody tr');
     await expect(rows).toHaveCount(Math.min(10, total(env)));
-    await expect(rows.first()).toContainText(env.searchResults[0].project.name);
     await expect(rows.first()).toContainText(env.searchResults[0].headline.trim());
+    // An activity whose project was never mirrored comes back with `project: null`, and the card
+    // then renders no project line, so the name is read off a row that carries one.
+    const withProject = env.searchResults.findIndex((a: any) => a.project?.name);
+    expect(withProject, 'no activity on this environment carries a project').toBeGreaterThan(-1);
+    await expect(rows.nth(withProject)).toContainText(env.searchResults[withProject].project.name);
 
     checkBaseline('news', calls);
   });

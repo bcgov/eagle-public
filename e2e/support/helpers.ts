@@ -12,6 +12,9 @@ export const VOLATILE_PARAMS = new Set(['cpStart[since]', 'cpEnd[until]']);
 /** API paths worth recording. Everything else (assets, map tiles) is noise. */
 const API_PATH = /^\/(api|demi-search|eagle-search)(\/|$|\?)/;
 
+/** Analytics ingest. It flushes on a timer, so whether it lands inside a recording window is luck. */
+const TELEMETRY_PATH = /^\/api\/usage(\/|$)/;
+
 /**
  * Path + sorted query with ids and timestamps masked, so the same call made about a
  * different project/document/env collapses to one comparable string.
@@ -35,7 +38,7 @@ export function recordApiCalls(page: Page): Set<string> {
   const seen = new Set<string>();
   page.on('request', (r) => {
     const u = new URL(r.url());
-    if (API_PATH.test(u.pathname + (u.search ? '?' : ''))) {
+    if (API_PATH.test(u.pathname + (u.search ? '?' : '')) && !TELEMETRY_PATH.test(u.pathname)) {
       seen.add(`${r.method()} ${normalizeUrl(r.url())}`);
     }
   });
@@ -122,6 +125,19 @@ export function unwrap(body: any): SearchEnvelope {
 
 export function total(env: SearchEnvelope): number {
   return env.meta?.[0]?.searchResultsTotal ?? 0;
+}
+
+/** The home strip's read, whichever backend serves it. */
+export function isTopNewsUrl(url: string): boolean {
+  return (
+    url.includes('/public/recentActivity?top=true') ||
+    (url.includes('dataset=RecentActivity') && /[?&]top=true/.test(url))
+  );
+}
+
+/** Its rows: eagle-api answers a bare array, demi-search the search envelope. */
+export function topNewsRows(body: any): any[] {
+  return Array.isArray(body) && !body[0]?.searchResults ? body : unwrap(body).searchResults;
 }
 
 /**
