@@ -1,89 +1,32 @@
-import { Injectable, inject } from '@angular/core';
-import Analytics from 'analytics';
-import type { AnalyticsInstance, AnalyticsPlugin } from 'analytics';
-import { originalSourcePlugin } from '@analytics/original-source-plugin';
-import { penguinAnalyticsPlugin } from './penguin-analytics-plugin';
-import { ConfigService } from '../config.service';
-
-interface PluginWithStartTracking {
-  startTracking?: () => void;
-}
+import { Injectable } from '@angular/core';
 
 /**
- * Analytics service for anonymous tracking (no PII).
- * Auto-tracks: page views, link clicks, button clicks, user activity.
+ * Analytics is off on this line.
+ *
+ * penguin-analytics was decommissioned on 2026-09-07: rproxy answers `/analytics` and
+ * `/api/analytics` with 410, and eagle-api's `/api/config` no longer serves ANALYTICS_API_URL as
+ * anything but an empty string. Nothing here reads that key any more, so the empty value cannot
+ * turn a tracker back on.
+ *
+ * The methods stay because the ~36 call sites are the record of what the app wants measured. They
+ * are no-ops until a replacement client is wired in here; the eagle-analytics client ships on the
+ * React line only.
  */
 @Injectable({ providedIn: 'root' })
 export class AnalyticsService {
-  private configService = inject(ConfigService);
-  private analytics: AnalyticsInstance | null = null;
-  private plugin: PluginWithStartTracking | null = null;
-  private initialized = false;
-
-  /**
-   * Initialize analytics with configuration from ConfigService.
-   * Called after ConfigService.init() completes.
-   */
   initialize(): void {
-    if (this.initialized) return;
-
-    const config = this.configService.config();
-    const apiUrl = config.ANALYTICS_API_URL || '';
-    
-    // Skip analytics if no API URL configured
-    if (!apiUrl) {
-      this.initialized = true;
-      return;
-    }
-
-    const debug = config.ANALYTICS_DEBUG ?? (config.ENVIRONMENT !== 'prod');
-    const enhancedTracking = config.ANALYTICS_ENHANCED_TRACKING ?? false;
-    const trafficTracking = config.ANALYTICS_TRAFFIC_TRACKING ?? false;
-
-    const plugins: AnalyticsPlugin[] = [];
-
-    // Add traffic source plugin first (if enabled) - stores source in localStorage
-    if (trafficTracking) {
-      plugins.push(originalSourcePlugin());
-    }
-
-    // Add penguin analytics plugin - sends events to backend
-    const plugin = penguinAnalyticsPlugin({ 
-      apiUrl, 
-      sourceApp: 'eagle-public', 
-      debug,
-      enhancedTracking 
-    });
-    plugins.push(plugin);
-    
-    this.plugin = plugin as unknown as PluginWithStartTracking;
-    this.analytics = Analytics({ app: 'eagle-public', debug, plugins });
-    this.initialized = true;
-    
-    if (debug) {
-      console.log('Analytics initialized with API URL:', apiUrl);
-      console.log('Enhanced tracking (browser context):', enhancedTracking ? 'enabled' : 'disabled');
-      console.log('Traffic source tracking:', trafficTracking ? 'enabled' : 'disabled');
-    }
+    // No tracker to start.
   }
 
-  startTracking(): void {
-    if (!this.initialized) {
-      console.warn('Analytics not initialized, call initialize() first');
-      return;
-    }
-    this.plugin?.startTracking?.();
+  page(_name?: string, _properties?: Record<string, unknown>): void {
+    // No tracker to send to.
   }
 
-  page(name?: string, properties?: Record<string, unknown>): void {
-    this.analytics?.page({ name, ...properties });
-  }
-
-  track(event: string, properties?: Record<string, unknown>): void {
-    this.analytics?.track(event, properties);
+  track(_event: string, _properties?: Record<string, unknown>): void {
+    // No tracker to send to.
   }
 
   reset(): void {
-    this.analytics?.reset();
+    // No tracker to reset.
   }
 }

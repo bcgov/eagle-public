@@ -27,9 +27,7 @@ describe('App', () => {
       ENVIRONMENT: 'test',
       BANNER_COLOUR: 'red',
       API_PATH: 'https://great-api.gov.bc.ca/api/public',
-      ADMIN_PATH: 'http://localhost:4000/admin/',
-      ANALYTICS_API_URL: 'http://localhost:3001',
-      ANALYTICS_DEBUG: true
+      ADMIN_PATH: 'http://localhost:4000/admin/'
     });
 
     const mockConfigService = {

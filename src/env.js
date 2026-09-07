@@ -18,7 +18,7 @@
   // ==========================================================================
 
   // KEEP EVERY PATH IN THIS FILE RELATIVE.
-  // rproxy fronts the Azure bundle in test and prod, so `/api`, `/analytics`, `/admin/` and the
+  // rproxy fronts the Azure bundle in test and prod, so `/api`, `/admin/` and the
   // search paths are all same-origin locations it already serves. An absolute value baked in here
   // would follow the bundle into both environments and send those calls cross-origin.
 
@@ -36,7 +36,7 @@
   // Environment label
   window.__env.ENVIRONMENT = 'dev';
 
-  // API target — proxy.conf.js reads this to route /api, /analytics and /demi-search.
+  // API target — proxy.conf.js reads this to route /api and /demi-search.
   //
   // TEST, not dev: the Azure estate is
   // staging-and-prod rather than dev-test-prod, so test IS staging and is the only deployed
@@ -75,12 +75,6 @@
 
   // eagle-admin link
   window.__env.ADMIN_PATH = 'https://eagle-test.apps.silver.devops.gov.bc.ca/admin/';
-
-  // Analytics — proxied through /analytics (eagle-api forwards to penguin-analytics)
-  window.__env.ANALYTICS_API_URL = '/analytics';
-  window.__env.ANALYTICS_DEBUG = true;
-  window.__env.ANALYTICS_ENHANCED_TRACKING = true;
-  window.__env.ANALYTICS_TRAFFIC_TRACKING = true;
 
   // Build hash — replaced during CI build
   window.__env.GH_HASH = 'local-build';

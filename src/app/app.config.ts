@@ -19,12 +19,11 @@ export const appConfig: ApplicationConfig = {
       const configService = inject(ConfigService);
       const analyticsService = inject(AnalyticsService);
 
-      // Load config — awaits /api/config fetch so analytics gets correct environment values.
+      // Load config — awaits the /api/config fetch before anything reads a config value.
       await configService.init();
 
-      // Initialize analytics. Skips silently if ANALYTICS_API_URL is empty.
+      // Initialize analytics. A no-op while this line has no tracker.
       analyticsService.initialize();
-      analyticsService.startTracking();
     })
   ]
 };

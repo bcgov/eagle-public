@@ -47,9 +47,7 @@
             },
             "allowedCommonJsDependencies": [
               "leaflet",
-              "leaflet.markercluster",
-              "analytics",
-              "dlv"
+              "leaflet.markercluster"
             ]
           },
           "configurations": {

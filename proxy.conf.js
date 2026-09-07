@@ -18,7 +18,6 @@ const proxyRule = { target, secure: false, changeOrigin: true };
 
 module.exports = {
   '/api':       proxyRule,
-  '/analytics': proxyRule,
   // `/eagle-search` too, because `SEARCH_API_PATH` from a deployed `/api/config` is RELATIVE
   // ('/eagle-search') — nginx supplies the `/api`. Without this rule every Project, Document and
   // DocumentChunk search from `ng serve` hits localhost:4200 and 404s, while everything else works,

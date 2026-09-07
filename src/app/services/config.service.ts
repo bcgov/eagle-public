@@ -36,10 +36,6 @@ export interface EnvConfig {
   ADMIN_PATH?: string;
   SURVEY_URL?: string | null;
   SHOW_SURVEY_BANNER?: boolean;
-  ANALYTICS_API_URL?: string | null;
-  ANALYTICS_DEBUG?: boolean;
-  ANALYTICS_ENHANCED_TRACKING?: boolean;
-  ANALYTICS_TRAFFIC_TRACKING?: boolean;
   GH_HASH?: string;
 }
 
@@ -54,7 +50,7 @@ declare global {
  * LOCAL DEV (configEndpoint = false):
  *   - Uses env.js values directly (src/env.js)
  *   - proxy.conf.js reads API_LOCATION from env.js to generate dev server proxy rules
- *   - App uses relative paths (/api, /analytics) — never API_LOCATION directly
+ *   - App uses relative paths (/api) — never API_LOCATION directly
  *
  * DEPLOYED (configEndpoint = true):
  *   - The Azure deploy workflows sed configEndpoint to true
@@ -99,7 +95,7 @@ export class ConfigService {
    * 1. Load env.js values (synchronous — already on window.__env)
    * 2. If deployed (configEndpoint=true), fetch and merge /api/config before returning
    *
-   * Must be awaited so that dependent services (analytics, Keycloak) initialize
+   * Must be awaited so that dependent services (Keycloak) initialize
    * with the correct environment-specific values from the API config.
    */
   public async init(): Promise<void> {

@@ -184,16 +184,16 @@ jobs:
       # Azure preview stands alone: no rproxy in front, no `/api/config` to fetch, so every
       # backend had to be named at build time. Production is the opposite arrangement. The
       # cutover puts this bundle BEHIND eao-nginx (`location /` proxies to Front Door), so
-      # `/api`, `/analytics` and `/admin/` are same-origin and resolve through rproxy.
+      # `/api` and `/admin/` are same-origin and resolve through rproxy.
       # Baking a hostname in would create a
       # cross-origin request where none exists, which means CORS config to maintain, a CSP
       # to widen, and a second thing to change at cutover.
       #
-      # So the rewrites below start from four: configEndpoint on, API_LOCATION cleared,
-      # logLevel to errors-only, analytics debug off. TWO MORE run here, and the body below
+      # So the rewrites below start from three: configEndpoint on, API_LOCATION cleared,
+      # logLevel to errors-only. TWO MORE run here, and the body below
       # says why: ENVIRONMENT and ADMIN_PATH, both of which the committed file holds at dev
       # values (`dev`, and an absolute eagle-dev URL) that would otherwise ship to prod.
-      # Six in total. API_PATH stays `/api`, ANALYTICS_API_URL stays `/analytics`, and
+      # Five in total. API_PATH stays `/api` and
       # SEARCH_API_PATH stays empty. EMPTY IS NOT "NO SEARCH SERVICE" ANY MORE —
       # prod cut over to eagle-search on 2026-08-20 and `/api/config` now answers
       # `/eagle-search`, which merges over this file at runtime. Empty here is what keeps the
@@ -202,7 +202,7 @@ jobs:
       #
       # `configEndpoint = true` means the SPA fetches `/api/config` same-origin at runtime
       # and merges the response over these defaults (`src/app/services/config.service.ts`),
-      # so ENVIRONMENT, ANALYTICS_API_URL and friends come from the rproxy ConfigMap exactly
+      # so ENVIRONMENT and friends come from the rproxy ConfigMap exactly
       # as they do today. That is also why the values above can stay at their committed
       # dev-ish defaults without shipping dev behaviour.
       #
@@ -247,7 +247,6 @@ jobs:
           sed -i "s|window.__env.configEndpoint = .*|window.__env.configEndpoint = true;|" src/env.js
           sed -i "s|window.__env.API_LOCATION = .*|window.__env.API_LOCATION = null;|" src/env.js
           sed -i "s|window.__env.logLevel = .*|window.__env.logLevel = 4;|" src/env.js
-          sed -i "s|window.__env.ANALYTICS_DEBUG = .*|window.__env.ANALYTICS_DEBUG = false;|" src/env.js
           # TWO MORE, and the reason outlived the dark window.
           #
           # `configEndpoint = true` means the SPA immediately fetches /api/config and overwrites
@@ -265,7 +264,6 @@ jobs:
             "window.__env.configEndpoint = true;" \
             "window.__env.API_LOCATION = null;" \
             "window.__env.logLevel = 4;" \
-            "window.__env.ANALYTICS_DEBUG = false;" \
             "window.__env.ENVIRONMENT = 'prod';" \
             "window.__env.ADMIN_PATH = '/admin/';"; do
             grep -qF "$expected" src/env.js \
@@ -276,7 +274,6 @@ jobs:
           # as CORS failures in a browser nobody has open.
           for relative in \
             "window.__env.API_PATH = '/api';" \
-            "window.__env.ANALYTICS_API_URL = '/analytics';" \
             "window.__env.SEARCH_API_PATH = '';"; do
             grep -qF "$relative" src/env.js \
               || { echo "::error::env.js no longer holds the same-origin default: $relative — the production bundle must stay relative and ungated"; exit 1; }
@@ -515,7 +512,7 @@ jobs:
       #   the Cache-Control assertions — proof the per-blob metadata above actually landed.
       #
       # The staging file's CORS preflight against the search API is NOT here and must not be
-      # added: this bundle is same-origin by construction (`/api`, `/analytics`, `/admin/`),
+      # added: this bundle is same-origin by construction (`/api`, `/admin/`),
       # so there is no cross-origin request to preflight. Production DOES have a search API now
       # (cut over 2026-08-20), but the bundle reaches it as the same-origin `/eagle-search` that
       # `/api/config` hands out, proxied by rproxy — still nothing to preflight.
