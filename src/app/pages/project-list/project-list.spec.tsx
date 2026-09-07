@@ -181,6 +181,21 @@ describe('projects list', () => {
     await waitFor(() => expect(lastProjectRequest()).toContain('&and[eacDecision]=d1'));
   });
 
+  // The proponent options are the one filter set that comes from a second dataset, so a base
+  // change moves them silently: a wrong URL still renders the panel, just with nothing in it.
+  // No SEARCH_API_PATH here, so this is the eagle-api fallback, whose `/organization` route
+  // projects the name and nothing else.
+  it('fills the proponent filter from the organization route', async () => {
+    renderList('/projects-list');
+    await screen.findByText('Alpha Mine');
+
+    expect(requests.some((url) => url.startsWith('/api/organization?companyType='))).toBe(true);
+
+    await userEvent.click(screen.getByRole('button', { name: /Open Advanced Filters/ }));
+    await userEvent.click(screen.getByRole('combobox', { name: 'Type Proponent' }));
+    expect(await screen.findByRole('option', { name: 'Acme Resources' })).toBeInTheDocument();
+  });
+
   it('opens the advanced filter panel when the URL already carries a filter', async () => {
     renderList('/projects-list?region=skeena');
 

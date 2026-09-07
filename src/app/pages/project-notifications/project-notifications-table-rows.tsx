@@ -50,9 +50,10 @@ export function ProjectNotificationsTableRow({ rowData }: TableRowProps) {
   const navigate = useNavigate();
 
   const hasPcp = !!rowData?.pcp && rowData.pcp !== 'none';
-  // Records predating the pcp field need a lookup to know whether they have any comment periods.
-  // One query serves both that check and the tab body, so opening the tab costs no second request.
-  const needsLookup = !!rowData?._id && (rowData.pcp === undefined || activeTab === 'commenting');
+  // A record carrying no comment-period id needs a lookup to know whether it has any comment
+  // periods: eagle-api leaves the field off, demi-search spells the same thing 'none'. One query
+  // serves both that check and the tab body, so opening the tab costs no second request.
+  const needsLookup = !!rowData?._id && (!hasPcp || activeTab === 'commenting');
 
   const { data, isPending } = useCommentPeriods(rowData?._id, needsLookup);
 

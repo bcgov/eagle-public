@@ -18,6 +18,14 @@ function isSingleDoc(item: any): boolean {
   return item !== '' && item !== null && item !== undefined;
 }
 
+/**
+ * demi-search can answer a comment-period update with `project: null`, and the engagement route is
+ * built from a project id. A MET period links out instead, so it opens without one.
+ */
+function canOpenCP(item: any): boolean {
+  return Boolean((item?.pcp?.isMet && item?.pcp?.metURL) || item?.project?._id);
+}
+
 export function ActivityCard({
   rowData,
   tableMode = false,
@@ -82,7 +90,7 @@ export function ActivityCard({
                 Project Info
               </Link>
             )}
-          {rowData?.pcp && rowData?.type === 'Public Comment Period' && (
+          {rowData?.pcp && rowData?.type === 'Public Comment Period' && canOpenCP(rowData) && (
             <button className="btn btn-sm btn-outline-primary" onClick={() => goToCP(rowData)}>
               View Engagement
             </button>
