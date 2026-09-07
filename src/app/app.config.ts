@@ -22,7 +22,8 @@ export const appConfig: ApplicationConfig = {
       // Load config — awaits the /api/config fetch before anything reads a config value.
       await configService.init();
 
-      // Initialize analytics. A no-op while this line has no tracker.
+      // Build the analytics client. Must follow config.init(): it reads EAGLE_ANALYTICS_URL, which
+      // only /api/config supplies, and an empty value leaves the client a no-op.
       analyticsService.initialize();
     })
   ]

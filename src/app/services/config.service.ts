@@ -34,6 +34,13 @@ export interface EnvConfig {
    */
   ACCESS_GATE?: boolean;
   ADMIN_PATH?: string;
+  /**
+   * Ingest base URL for the eagle-analytics client. Empty or unset gives a no-op client, so that is
+   * the kill switch for tracking and it flips with no redeploy. Deployed environments get it from
+   * `/api/config`; it is deliberately absent from env.js, because a value baked in at build time
+   * would follow the bundle into every environment.
+   */
+  EAGLE_ANALYTICS_URL?: string;
   SURVEY_URL?: string | null;
   SHOW_SURVEY_BANNER?: boolean;
   GH_HASH?: string;
