@@ -35,12 +35,7 @@ function mockFetch() {
     const url = String(input);
     requests.push(url);
     if (url.includes('dataset=List')) return searchResponse(LISTS, LISTS.length);
-    if (url.includes('/organization')) {
-      return new Response(JSON.stringify(ORGS), {
-        status: 200,
-        headers: { 'content-type': 'application/json' },
-      });
-    }
+    if (url.includes('dataset=Organization')) return searchResponse(ORGS, ORGS.length);
     if (url.includes('dataset=Project')) return searchResponse(PROJECTS, 42);
     return searchResponse([], 0);
   });
@@ -179,6 +174,19 @@ describe('projects list', () => {
       expect(new URLSearchParams(router.state.location.search).get('eacDecision')).toBe('d1'),
     );
     await waitFor(() => expect(lastProjectRequest()).toContain('&and[eacDecision]=d1'));
+  });
+
+  // The proponent options are the one filter set that comes from a second dataset, so a base
+  // change moves them silently: a wrong URL still renders the panel, just with nothing in it.
+  it('fills the proponent filter from an Organization search', async () => {
+    renderList('/projects-list');
+    await screen.findByText('Alpha Mine');
+
+    expect(requests.some((url) => url.startsWith('/api/search?dataset=Organization'))).toBe(true);
+
+    await userEvent.click(screen.getByRole('button', { name: /Open Advanced Filters/ }));
+    await userEvent.click(screen.getByRole('combobox', { name: 'Type Proponent' }));
+    expect(await screen.findByRole('option', { name: 'Acme Resources' })).toBeInTheDocument();
   });
 
   it('opens the advanced filter panel when the URL already carries a filter', async () => {

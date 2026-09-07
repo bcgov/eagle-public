@@ -2,7 +2,7 @@ import type { Project } from 'app/models/project';
 import type { Comment } from 'app/models/comment';
 import type { CommentPeriod } from 'app/models/commentperiod';
 import type { Document } from 'app/models/document';
-import type { SearchResults } from 'app/models/search';
+import type { ISearchResult, SearchResults } from 'app/models/search';
 import type { Org } from 'app/models/organization';
 import { encodeString } from 'app/utils/utils';
 import { logger } from 'app/config/logging';
@@ -32,17 +32,38 @@ export function apiPath(): string {
 }
 
 /**
- * Base URL for search. eagle-search when SEARCH_API_PATH is set, eagle-api otherwise.
+ * Base URL for search. demi-search when SEARCH_API_PATH is set, eagle-api otherwise.
  *
- * Only the datasets in AZURE_DATASETS move; RecentActivity and ProjectNotification stay on
- * eagle-api. The two backends answer the same query language and the same
- * `[{searchResults, meta}]` envelope, which is why nothing downstream has to change.
+ * Only the datasets in AZURE_DATASETS move. The two backends answer the same query language and
+ * the same `[{searchResults, meta}]` envelope, which is why nothing downstream has to change.
  */
 export function searchPath(): string {
   return getSearchApiPath();
 }
 
-const AZURE_DATASETS = new Set(['Project', 'Document', 'DocumentChunk']);
+const AZURE_DATASETS = new Set([
+  'Project',
+  'Document',
+  'DocumentChunk',
+  'List',
+  'Organization',
+  'RecentActivity',
+  'ProjectNotification',
+]);
+
+/** Which backend answers `/search` for a dataset. Anything not moved stays on eagle-api. */
+function searchBaseFor(dataset: string): string {
+  return AZURE_DATASETS.has(dataset) ? searchPath() : apiPath();
+}
+
+/**
+ * Rows out of the `[{ searchResults, meta }]` envelope both backends answer `/search` with.
+ * `searchKeywords` is declared as returning that envelope, not the rows, so every caller that
+ * wants a plain array unwraps it here rather than reaching through `any`.
+ */
+function rowsFrom<T>(envelope: unknown): T[] {
+  return (envelope as ISearchResult<T>[] | undefined)?.[0]?.searchResults ?? [];
+}
 
 async function send(
   url: string,
@@ -285,22 +306,25 @@ export async function searchKeywords(
   // because `fields` holds `{name, value}` pairs, already emitted above as `&name=value`.
   queryString += '&fuzzy=' + fuzzy;
 
-  const base = AZURE_DATASETS.has(dataset) ? searchPath() : apiPath();
-  const fullUrl = `${base}/${queryString}`;
+  const fullUrl = `${searchBaseFor(dataset)}/${queryString}`;
   logger.trace(`API call URL: ${fullUrl}`, 'api');
 
   return getJson<SearchResults[]>(fullUrl);
 }
+
+/** One page holds every list row; the filter dropdowns need all of them at once. */
+const LISTS_PAGE_SIZE = 250;
 
 /** Dropdown/filter list items, lazily fetched and cached by TanStack Query. */
 export function listsQueryOptions() {
   return {
     queryKey: ['lists'],
     queryFn: async (): Promise<any[]> => {
-      const data = await getJson<{ searchResults?: any[] }[]>(
-        `${apiPath()}/search?pageSize=250&dataset=List`,
+      return rowsFrom(
+        await getJson<unknown>(
+          `${searchBaseFor('List')}/search?pageSize=${LISTS_PAGE_SIZE}&dataset=List`,
+        ),
       );
-      return data?.[0]?.searchResults ?? [];
     },
   };
 }
@@ -345,11 +369,15 @@ export async function cacRemoveMember(projectId: string, meta: any): Promise<any
 
 // Organizations
 
-export async function getOrgsByCompanyType(type: string): Promise<Org[]> {
-  const fields = ['name'];
+/** Well above the number of organizations EPIC holds, so the filter list is never truncated. */
+const ORGS_PAGE_SIZE = 1000;
 
-  const queryString = `organization?companyType=${type}&sortBy=+name&fields=${buildValues(fields)}`;
-  return getJson<Org[]>(`${apiPath()}/${queryString}`);
+export async function getOrgsByCompanyType(type: string): Promise<Org[]> {
+  return rowsFrom<Org>(
+    await searchKeywords('', 'Organization', [], 1, ORGS_PAGE_SIZE, '', '+name', {
+      companyType: type,
+    }),
+  );
 }
 
 export async function getProject(
@@ -573,9 +601,23 @@ export async function checkGatePassword(password: string): Promise<void> {
   });
 }
 
+/** How many items the home strip shows. Both backends cap the top set at this. */
+const TOP_NEWS_PAGE_SIZE = 4;
+
+/**
+ * The home page's top-news strip. eagle-api answers it from a bespoke pinned/unpinned pipeline
+ * rather than `/search`, so this is the one RecentActivity read that has two URLs. No sort is
+ * sent on the demi-search path: `top=true` already orders pinned first, then newest.
+ */
 export async function getTopNewsItems(): Promise<any[]> {
-  const queryString = 'public/recentActivity?top=true';
-  return getJson<any[]>(`${apiPath()}/${queryString}`);
+  if (searchPath() === apiPath()) {
+    return getJson<any[]>(`${apiPath()}/public/recentActivity?top=true`);
+  }
+  return rowsFrom(
+    await searchKeywords('', 'RecentActivity', [], 1, TOP_NEWS_PAGE_SIZE, '', null, {
+      top: 'true',
+    }),
+  );
 }
 
 //

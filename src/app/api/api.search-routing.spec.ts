@@ -5,9 +5,9 @@ import { loadConfig } from 'app/config/config';
 /**
  * Which backend does a search go to?
  *
- * Project, Document and DocumentChunk move to eagle-search (Azure AI Search) when SEARCH_API_PATH
- * is set; everything else stays on eagle-api. Getting this wrong is invisible in the UI — results
- * still render, they just come from the wrong place, or the kill switch silently fails to work.
+ * The datasets in AZURE_DATASETS move to demi-search when SEARCH_API_PATH is set; everything else
+ * stays on eagle-api. Getting this wrong is invisible in the UI — results still render, they just
+ * come from the wrong place, or the kill switch silently fails to work.
  */
 describe('search routing', () => {
   const SEARCH = 'https://eagle-search-api-dev.azurewebsites.net';
@@ -37,16 +37,27 @@ describe('search routing', () => {
     return fetchMock.mock.calls[0][0] as string;
   }
 
-  it('routes Project, Document and DocumentChunk to eagle-search when configured', async () => {
+  /** Every dataset demi-search answers. Comment and CommentPeriod are not here yet. */
+  const MOVED = [
+    'Project',
+    'Document',
+    'DocumentChunk',
+    'List',
+    'Organization',
+    'RecentActivity',
+    'ProjectNotification',
+  ];
+
+  it('routes every moved dataset to demi-search when configured', async () => {
     await setup(SEARCH);
-    for (const dataset of ['Project', 'Document', 'DocumentChunk']) {
+    for (const dataset of MOVED) {
       expect(await urlFor(dataset)).toContain(SEARCH);
     }
   });
 
-  it('leaves every other dataset on eagle-api', async () => {
+  it('leaves a dataset demi-search does not answer on eagle-api', async () => {
     await setup(SEARCH);
-    for (const dataset of ['RecentActivity', 'ProjectNotification', 'Organization']) {
+    for (const dataset of ['CommentPeriod', 'Comment']) {
       const url = await urlFor(dataset);
       expect(url).not.toContain(SEARCH);
       expect(url.startsWith('/api/')).toBe(true);
@@ -57,7 +68,7 @@ describe('search routing', () => {
   // redeploy — a kill switch that has never been exercised is not a kill switch.
   it('falls back to eagle-api when SEARCH_API_PATH is empty', async () => {
     await setup('');
-    for (const dataset of ['Project', 'Document', 'DocumentChunk']) {
+    for (const dataset of MOVED) {
       const url = await urlFor(dataset);
       expect(url).not.toContain(SEARCH);
       expect(url.startsWith('/api/')).toBe(true);
