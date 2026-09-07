@@ -19,8 +19,8 @@ All documentation has been consolidated in the [Eagle Documentation Wiki](https:
 ## Deployment
 
 Test and prod serve this app as a static bundle from an Azure Storage `$web` container behind
-Azure Front Door. eao-nginx (rproxy) sits in front of Front Door, so `/api`, `/analytics` and
-`/admin/` stay same-origin. There are no containers and no Helm charts.
+Azure Front Door. eao-nginx (rproxy) sits in front of Front Door, so `/api` and `/admin/`
+stay same-origin. There are no containers and no Helm charts.
 
 Deploys run from a release tag, never a branch. Cut the tag first, then deploy:
 
