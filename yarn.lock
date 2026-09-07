@@ -303,9 +303,9 @@ __metadata:
   linkType: hard
 
 "@digitalspace/eagle-analytics-client@file:./vendor/eagle-analytics-client::locator=eagle-public%40workspace%3A.":
-  version: 0.1.0
-  resolution: "@digitalspace/eagle-analytics-client@file:./vendor/eagle-analytics-client#./vendor/eagle-analytics-client::hash=2fdd8c&locator=eagle-public%40workspace%3A."
-  checksum: 10c0/9128ec5ed56f54856a7bf865a393f0c19e8bcb46f8ca63df4b242b5355dc30bced43cb74607e063fbbe43be6c27509db592565a04fabe31fa9191f18963b7d9a
+  version: 0.1.1
+  resolution: "@digitalspace/eagle-analytics-client@file:./vendor/eagle-analytics-client#./vendor/eagle-analytics-client::hash=a29496&locator=eagle-public%40workspace%3A."
+  checksum: 10c0/cd3079e78e6195c8e366d6ab0732256ddd2b87f13016e2f4447ab4df46cc64d95a6d8b7b2b60fd4214ff02cf9171031c96758b1d2a312c13096ab26b1c60dad4
   languageName: node
   linkType: hard
 
