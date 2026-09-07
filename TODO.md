@@ -23,7 +23,7 @@ src/
     routes.tsx        route table (mirror app.routes.ts)
     api/              api.ts port (fetch wrapper, endpoints, search routing), query hooks
     config/           config.ts (env.js + /api/config), logging
-    analytics/        analytics.ts + penguin plugin (ported near-verbatim)
+    analytics/        analytics.ts (eagle-analytics client only; penguin plugin removed)
     models/           ported as-is
     utils/            constants, utils, word-html-sanitizer, newlines, list-converter
     components/       shared UI (table engine, filters, pagination, toast, date-picker, ...)

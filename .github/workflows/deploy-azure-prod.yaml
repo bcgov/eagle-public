@@ -115,7 +115,6 @@ jobs:
           # The other half of the contract: the paths that must NOT have been touched.
           for relative in \
             "window.__env.API_PATH = '/api';" \
-            "window.__env.ANALYTICS_API_URL = '/analytics';" \
             "window.__env.SEARCH_API_PATH = '';" \
             "window.__env.NOTIFY_API = '';"; do
             grep -qF "$relative" src/env.js \

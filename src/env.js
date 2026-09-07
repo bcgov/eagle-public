@@ -18,8 +18,8 @@
   // ==========================================================================
 
   // KEEP EVERY PATH IN THIS FILE RELATIVE.
-  // rproxy fronts the Azure bundle in test and prod, so `/api`, `/analytics`, `/admin/` and the
-  // search paths are all same-origin locations it already serves. An absolute value baked in here
+  // rproxy fronts the Azure bundle in test and prod, so `/api`, `/admin/` and the search paths
+  // are all same-origin locations it already serves. An absolute value baked in here
   // would follow the bundle into both environments and send those calls cross-origin.
 
   // false = use values below (local dev)
@@ -36,8 +36,7 @@
   // Environment label
   window.__env.ENVIRONMENT = 'dev';
 
-  // API target — vite.config.ts reads this to route the dev proxy's /api, /analytics and
-  // /eagle-search. /demi-search goes to the test APIM gateway unless API_LOCATION is set in the
+  // API target — vite.config.ts reads this to route the dev proxy's /api and /eagle-search. /demi-search goes to the test APIM gateway unless API_LOCATION is set in the
   // shell, which points it at that host too. /notify-api always has its own target.
   //
   // TEST, not dev: the Azure estate is
@@ -86,15 +85,15 @@
   // which keeps the POST same-origin so the dev server needs no CORS grant from eagle-notify.
   window.__env.NOTIFY_API = '';
 
-  // Analytics — proxied through /analytics (eagle-api forwards to penguin-analytics)
-  window.__env.ANALYTICS_API_URL = '/analytics';
+  // Analytics client options. eagle-api stopped serving these three, so what ships here is what
+  // the client uses; the deploy workflows sed ANALYTICS_DEBUG off.
   window.__env.ANALYTICS_DEBUG = true;
   window.__env.ANALYTICS_ENHANCED_TRACKING = true;
   window.__env.ANALYTICS_TRAFFIC_TRACKING = true;
 
-  // eagle-analytics ingest base; the client appends /events. Deployed proxies (rproxy, Front Door)
-  // send /analytics/* to eagle-analytics and bare /analytics to penguin, so '/analytics' fits both
-  // keys during dual-write; empty keeps the client off.
+  // eagle-analytics ingest base; the client appends /events. Deployed /api/config serves
+  // '/api/usage', which rproxy rewrites onto the gateway — ad blockers drop any browser path
+  // holding the word analytics. Empty keeps the client off, which is what local work wants.
   window.__env.EAGLE_ANALYTICS_URL = '';
 
   // Build hash — replaced during CI build

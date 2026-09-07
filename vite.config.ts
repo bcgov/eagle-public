@@ -26,8 +26,9 @@ export default defineConfig({
     allowedHosts: true,
     port: 4200,
     proxy: {
+      // `/api` also carries analytics: deployed /api/config sets EAGLE_ANALYTICS_URL to
+      // `/api/usage`, which rproxy rewrites onto the eagle-analytics gateway.
       '/api': proxyRule,
-      '/analytics': proxyRule,
       // `/eagle-search` too, because `SEARCH_API_PATH` from a deployed `/api/config` is RELATIVE
       // ('/eagle-search') — nginx supplies the `/api`. Without this rule every Project, Document
       // and DocumentChunk search from the dev server hits localhost:4200 and 404s, while
@@ -79,8 +80,8 @@ export default defineConfig({
         // Hashed output stays at the root: the deploy workflow uploads everything under
         // `assets/` with `no-cache` (that directory holds the unhashed fonts, images and
         // stylesheets copied from `public/`) and caches only root-level hashed files.
-        // Prefixed so no chunk can land on a proxied path: a chunk named `analytics-*.js` was
-        // routed to penguin-analytics by rproxy and the dev proxy, and the app never booted.
+        // Prefixed so no chunk can land on a proxied path: a chunk named `analytics-*.js` was once
+        // proxied away as an API call instead of served, and the app never booted.
         chunkFileNames: 'chunk-[name]-[hash].js',
         assetFileNames: 'asset-[name]-[hash][extname]',
       },

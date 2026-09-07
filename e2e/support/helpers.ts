@@ -10,7 +10,7 @@ const ISO_TS = /^\d{4}-\d{2}-\d{2}T[\d:.]+(Z|[+-]\d{2}:?\d{2})$/;
 export const VOLATILE_PARAMS = new Set(['cpStart[since]', 'cpEnd[until]']);
 
 /** API paths worth recording. Everything else (assets, map tiles) is noise. */
-const API_PATH = /^\/(api|demi-search|eagle-search|analytics)(\/|$|\?)/;
+const API_PATH = /^\/(api|demi-search|eagle-search)(\/|$|\?)/;
 
 /**
  * Path + sorted query with ids and timestamps masked, so the same call made about a
