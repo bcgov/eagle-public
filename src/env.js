@@ -32,11 +32,10 @@
 
   // Where the runtime config itself is fetched from, when configEndpoint is true.
   //
-  // EMPTY MEANS runtime config comes from eagle-api's /api/config; eagle-api's Mongo
-  // `Config` document stays the kill switch either way. Planned value, once later work
-  // lands: /demi-search/config, applied by the deploy workflows — when set, config is
-  // read from DEMI first and falls back to /api/config on any failure or partial body.
-  // Changing this value needs a redeploy of env.js; nothing here clears it at runtime.
+  // EMPTY MEANS eagle-api /api/config. Staging deploy sets /demi-search/config (prod not yet):
+  // a whole DEMI answer then governs everything, /api/config is never asked.
+  // DEMI's copy is a seeded snapshot: after editing eagle-api Mongo `Config`, re-run
+  // `npm run db:seed-public-config -- --live --force` on the devbox. Redeploy env.js to change.
   window.__env.CONFIG_PATH = '';
 
   // Log level: 0 = All, 1 = Debug, 2 = Info, 3 = Warn, 4 = Error
