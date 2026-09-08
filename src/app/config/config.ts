@@ -1,7 +1,17 @@
+import { logger } from './logging';
+
 export interface EnvConfig {
   logLevel?: number;
   LOG_LEVEL?: number;
   configEndpoint?: boolean;
+  /**
+   * Where the runtime config itself comes from, when `configEndpoint` is true. Set, it is tried
+   * once before `/api/config` and its body is only accepted whole; empty or unset means
+   * `/api/config` alone. eagle-api stays the source of truth and the kill switch either way —
+   * clearing this reverts to it with no redeploy, and an unreachable or partial answer here falls
+   * through to it rather than booting on env.js.
+   */
+  CONFIG_PATH?: string;
   ENVIRONMENT?: string;
   BANNER_COLOUR?: string;
   API_PATH?: string;
@@ -79,7 +89,8 @@ let config: EnvConfig = {};
  * DEPLOYED (configEndpoint = true):
  *   - The Azure deploy workflows sed configEndpoint to true
  *   - App fetches /api/config on startup. rproxy proxies that to eagle-api, which serves it from
- *     its Mongo `Config` document.
+ *     its Mongo `Config` document. A non-empty CONFIG_PATH is asked first, with /api/config as the
+ *     fallback; see fetchRemoteConfig.
  *   - Those values override env.js
  *
  * Must be awaited so that dependent code (analytics) initializes with the correct
@@ -168,27 +179,70 @@ export function showSurveyBanner(): boolean {
 }
 
 /**
- * Fetch remote config from /api/config (deployed only) and merge it over env.js. A failure is
+ * Fetch remote config and merge it over env.js.
+ *
+ * `/api/config` (eagle-api, from its Mongo `Config` document) is the source of truth. A failure is
  * retried, then thrown: env.js ships ACCESS_GATE false and no search path, so falling back to it
  * would open the access curtain and point search at the wrong backend.
+ *
+ * CONFIG_PATH, when set, is asked first — one attempt, same 5 s budget — and anything short of a
+ * whole payload logs once and falls through to the loop below.
  */
 const CONFIG_ATTEMPTS = 3;
+const CONFIG_TIMEOUT_MS = 5000;
+const EAGLE_CONFIG_PATH = '/api/config';
+
+/**
+ * A remote payload is usable only whole. Merging a partial one over env.js would leave
+ * ACCESS_GATE false and open the curtain, so a body missing either marker is treated as a failure.
+ */
+function isWholeConfig(payload: unknown): payload is EnvConfig {
+  if (typeof payload !== 'object' || payload === null) {
+    return false;
+  }
+  const candidate = payload as EnvConfig;
+  return !!candidate.ENVIRONMENT && typeof candidate.ACCESS_GATE === 'boolean';
+}
+
+async function fetchConfigFrom(path: string): Promise<EnvConfig> {
+  const response = await fetch(path, { signal: AbortSignal.timeout(CONFIG_TIMEOUT_MS) });
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+function merge(remote: EnvConfig): void {
+  config = { ...config, ...remote };
+  if (import.meta.env.DEV && config.logLevel === 0) {
+    console.log('config: merged with API config:', config);
+  }
+}
 
 async function fetchRemoteConfig(): Promise<void> {
-  for (let attempt = 1; ; attempt++) {
+  const configPath = (config.CONFIG_PATH || '').trim();
+  if (configPath) {
     try {
-      const response = await fetch('/api/config', { signal: AbortSignal.timeout(5000) });
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      const remote = await fetchConfigFrom(configPath);
+      if (!isWholeConfig(remote)) {
+        throw new Error('payload is missing ENVIRONMENT or a boolean ACCESS_GATE');
       }
-      const apiConfig: EnvConfig = await response.json();
-      config = { ...config, ...apiConfig };
-      if (import.meta.env.DEV && config.logLevel === 0) {
-        console.log('config: merged with API config:', config);
-      }
+      merge(remote);
       return;
     } catch (e) {
-      console.error(`config: /api/config attempt ${attempt} of ${CONFIG_ATTEMPTS} failed:`, e);
+      logger.error(`config: ${configPath} failed, using ${EAGLE_CONFIG_PATH}`, 'config', e);
+    }
+  }
+
+  for (let attempt = 1; ; attempt++) {
+    try {
+      merge(await fetchConfigFrom(EAGLE_CONFIG_PATH));
+      return;
+    } catch (e) {
+      console.error(
+        `config: ${EAGLE_CONFIG_PATH} attempt ${attempt} of ${CONFIG_ATTEMPTS} failed:`,
+        e,
+      );
       if (attempt >= CONFIG_ATTEMPTS) throw e;
       await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
     }

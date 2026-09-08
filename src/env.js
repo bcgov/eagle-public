@@ -30,6 +30,17 @@
   // dangerous. Set false and fill in the values to work against something else.
   window.__env.configEndpoint = true;
 
+  // Where the runtime config itself is fetched from, when configEndpoint is true.
+  //
+  // EMPTY MEANS eagle-api's /api/config, and eagle-api stays the kill switch either way: it is the
+  // source of truth, and clearing this reverts to it with no redeploy. A value here is only tried
+  // first — one attempt, 5 seconds — and the app falls through to /api/config when that path is
+  // unreachable or answers with a partial body, so a bad value costs one console error, not a boot.
+  //
+  // KEEP IT EMPTY HERE. Like SEARCH_API_PATH, a value baked in at build time would follow the
+  // bundle into every environment; the deploy workflows sed it per environment instead.
+  window.__env.CONFIG_PATH = '';
+
   // Log level: 0 = All, 1 = Debug, 2 = Info, 3 = Warn, 4 = Error
   window.__env.logLevel = 0;
 
