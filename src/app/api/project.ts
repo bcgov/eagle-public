@@ -73,7 +73,8 @@ export function periodsInWindow(
   return periods.filter((period) => {
     const started = Date.parse(period?.dateStarted as unknown as string);
     const completed = Date.parse(period?.dateCompleted as unknown as string);
-    if (Number.isNaN(started) || Number.isNaN(completed)) return false;
+    // Each clause is independent, as the three Mongo `$or` branches are: a date the record does
+    // not hold fails only the clauses that read it.
     const startsInside = started >= from && started <= to;
     const endsInside = completed >= from && completed <= to;
     const spans = started <= from && completed >= to;
@@ -82,13 +83,11 @@ export function periodsInWindow(
 }
 
 /**
- * The eagle-api project payload, before `new Project(...)` is built from it. Both extras are
- * carried on the record rather than declared on the model: `featuredDocuments` is a list of
- * document ids on DEMI, and `pins` rides along so the pins card can read it off the same document.
+ * The eagle-api project payload, before `new Project(...)` is built from it. `featuredDocuments`
+ * is widened because DEMI carries document ids where the model declares whole documents.
  */
 export type EagleProjectPayload = Omit<Partial<Project>, 'featuredDocuments'> & {
   featuredDocuments?: unknown[];
-  pins?: unknown[];
 };
 
 /**
@@ -151,7 +150,6 @@ export function demiProjectToEagle(
     projectCACPublished: doc.projectCACPublished,
     cacEmail: doc.cacEmail,
     featuredDocuments: doc.featuredDocuments ?? [],
-    pins: doc.pins ?? [],
     commentPeriodForBanner,
   };
 }
@@ -178,8 +176,9 @@ async function readProject(
     }
     if (doc) {
       // The banner is a project field on eagle-api and a comment-period read here, so it is
-      // derived from the periods rather than requested.
-      const periods = await api.getPeriodsByProjId(projId);
+      // derived from the periods rather than requested. No window, no banner, so no request.
+      const periods =
+        cpStart !== null && cpEnd !== null ? await api.getPeriodsByProjId(projId) : [];
       return [demiProjectToEagle(doc, periodsInWindow(periods, cpStart, cpEnd))];
     }
   }

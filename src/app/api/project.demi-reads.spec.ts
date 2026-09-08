@@ -191,12 +191,10 @@ describe('project reads served by DEMI', () => {
       });
     });
 
-    it('gives the pins and featured documents empty arrays when the document has neither', () => {
-      const { pins: _p, featuredDocuments: _f, ...bare } = DEMI_DOC;
-      const mapped = demiProjectToEagle(bare);
+    it('gives featured documents an empty array when the document carries none', () => {
+      const { featuredDocuments: _dropped, ...bare } = DEMI_DOC;
 
-      expect(mapped.pins).toEqual([]);
-      expect(mapped.featuredDocuments).toEqual([]);
+      expect(demiProjectToEagle(bare).featuredDocuments).toEqual([]);
     });
   });
 
@@ -250,7 +248,15 @@ describe('project reads served by DEMI', () => {
       expect(rows).toEqual([]);
     });
 
-    it('drops a period with no usable dates', () => {
+    it('keeps a period that starts inside the window but has no completion date', () => {
+      // eagle-api's first `$or` branch reads only `dateStarted`, so a record missing
+      // `dateCompleted` still matches there.
+      const rows = periodsInWindow([period('2026-09-10T00:00:00.000Z', '')], SINCE, UNTIL);
+
+      expect(rows).toHaveLength(1);
+    });
+
+    it('drops a period with no usable dates at all', () => {
       const rows = periodsInWindow([period('', '')], SINCE, UNTIL);
 
       expect(rows).toEqual([]);
@@ -305,6 +311,15 @@ describe('project reads served by DEMI', () => {
       const project = await getById('58851197aaecd9001b8227cc', false, null, null);
 
       expect(project.nature).toBe('New Construction');
+    });
+
+    it('does not ask for comment periods when there is no banner window', async () => {
+      await setup({ demi: DEMI, search: SEARCH });
+      respondWith(JSON.stringify(DEMI_DOC), envelope([]));
+
+      await getById('58851197aaecd9001b8227cc', false, null, null);
+
+      expect(requestedUrls()).toEqual([`${DEMI}/58851197aaecd9001b8227cc`]);
     });
 
     it('leaves the banner empty when no period falls in the window', async () => {
@@ -386,14 +401,48 @@ describe('project reads served by DEMI', () => {
       expect(response[0].results.map((pin: any) => pin.name)).toEqual(['Kwadacha Nation']);
     });
 
-    it('answers an empty list for a project DEMI has no record of', async () => {
+    const EAGLE_PINS = JSON.stringify([
+      {
+        total_items: 1,
+        results: [{ _id: 'n1', name: 'Tsay Keh Dene Band', province: 'BC' }],
+      },
+    ]);
+
+    it('falls back to the eagle-api pin route for a project DEMI has no record of', async () => {
       await setup({ demi: DEMI, search: SEARCH });
-      respondWith(new Response('{}', { status: 404, statusText: 'Not Found' }));
+      respondWith(new Response('{}', { status: 404, statusText: 'Not Found' }), EAGLE_PINS);
 
       const response = (await getPins('p1', 1, 100, '+name')) as any;
 
+      expect(response[0].results.map((pin: any) => pin.name)).toEqual(['Tsay Keh Dene Band']);
+      expect(requestedUrls()[0]).toBe(`${DEMI}/p1`);
+      expect(requestedUrls()[1]).toBe('/api/project/p1/pin?pageNum=0&pageSize=100&sortBy=+name');
+    });
+
+    it('falls back to the eagle-api pin route when the DEMI read fails outright', async () => {
+      await setup({ demi: DEMI, search: SEARCH });
+      respondWith(
+        new Response('{}', { status: 500, statusText: 'Internal Server Error' }),
+        EAGLE_PINS,
+      );
+
+      const response = (await getProjectPins('p1', 1, 100, '+name')) as any;
+
+      expect(response[0].results.map((pin: any) => pin.name)).toEqual(['Tsay Keh Dene Band']);
+      expect(requestedUrls()[0]).toBe(`${DEMI}/p1`);
+      expect(requestedUrls()[1]).toBe('/api/project/p1/pin?pageNum=0&pageSize=100&sortBy=+name');
+    });
+
+    it('answers an empty list for a DEMI record that carries no pins', async () => {
+      await setup({ demi: DEMI, search: SEARCH });
+      const { pins: _dropped, ...withoutPins } = DEMI_DOC;
+      respondWith(JSON.stringify(withoutPins));
+
+      const response = (await getProjectPins('p1', 1, 100, '+name')) as any;
+
       expect(response[0].total_items).toBe(0);
       expect(response[0].results).toEqual([]);
+      expect(requestedUrls()).toEqual([`${DEMI}/p1`]);
     });
 
     it('asks the eagle-api pin route when DEMI is not configured', async () => {

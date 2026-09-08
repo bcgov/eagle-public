@@ -391,6 +391,10 @@ export function listsQueryOptions() {
  * project by its `pinsRead[]`), so when DEMI is configured this reads them off that one shared
  * document instead of a second round trip. Sorting and paging then happen here, because a stored
  * array arrives in whatever order Mongo held it.
+ *
+ * No DEMI record for the project, or a read that fails, falls through to the eagle-api route the
+ * way the project record does. A record that carries no pins does not: there the document is the
+ * answer, and the card is meant to be absent.
  */
 export async function getProjectPins(
   id: string,
@@ -399,15 +403,22 @@ export async function getProjectPins(
   sortBy: any,
 ): Promise<Org> {
   if (demiProjectsPath()) {
-    const doc = await getDemiProject(id);
-    const pins = [...(doc?.pins ?? [])];
-    if (sortBy === '+name' || sortBy === '-name') {
-      const direction = sortBy === '-name' ? -1 : 1;
-      pins.sort((a, b) => direction * (a.name ?? '').localeCompare(b.name ?? ''));
+    let doc: DemiProject | null = null;
+    try {
+      doc = await getDemiProject(id);
+    } catch (error) {
+      logger.warn('DEMI pins read failed, falling back to eagle-api', 'api', error);
     }
-    const from = pageNum !== null && pageSize !== null ? (pageNum - 1) * pageSize : 0;
-    const page = pageSize !== null ? pins.slice(from, from + pageSize) : pins;
-    return [{ total_items: pins.length, results: page }] as unknown as Org;
+    if (doc) {
+      const pins = [...(doc.pins ?? [])];
+      if (sortBy === '+name' || sortBy === '-name') {
+        const direction = sortBy === '-name' ? -1 : 1;
+        pins.sort((a, b) => direction * (a.name ?? '').localeCompare(b.name ?? ''));
+      }
+      const from = pageNum !== null && pageSize !== null ? (pageNum - 1) * pageSize : 0;
+      const page = pageSize !== null ? pins.slice(from, from + pageSize) : pins;
+      return [{ total_items: pins.length, results: page }] as unknown as Org;
+    }
   }
   let queryString = `project/${id}/pin`;
   if (pageNum !== null) {

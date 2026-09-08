@@ -4,7 +4,6 @@
     "GET /demi-projects/:id",
     "GET /demi-search/search?and[_id]=:id&dataset=CommentPeriod&fuzzy=false&pageNum=0&pageSize=1&populate=false&projectLegislation=default",
     "GET /demi-search/search?and[period]=:id&dataset=Comment&fuzzy=false&pageNum=0&pageSize=10&populate=false&projectLegislation=default&sortBy=-commentId",
-    "GET /demi-search/search?and[project]=:id&dataset=CommentPeriod&fuzzy=false&pageNum=0&pageSize=250&populate=false&projectLegislation=default&sortBy=-dateStarted",
     "GET /demi-search/search?dataset=Document&docIds=&fuzzy=false&pageNum=0&pageSize=1&populate=false&projectLegislation=default"
   ],
   "home": [
