@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { Link } from 'react-router';
 import { useProjectEaCertificate } from 'app/api/project-phases';
 import { track } from 'app/analytics/analytics';
+import { EngagementLink, NewTabHint } from 'app/components/engagement-link';
 import { Skeleton } from 'app/components/skeleton/skeleton';
 import { SubscribePopover } from 'app/components/subscribe-popover';
 import { useTable } from 'app/components/table/use-table';
@@ -9,7 +10,7 @@ import { getNotifyApi } from 'app/config/config';
 import type { Project } from 'app/models/project';
 import { newlines } from 'app/utils/newlines';
 import { htmlToText, safeHtml } from 'app/utils/safe-html';
-import { isSafeUrl, openExternal } from 'app/utils/safe-url';
+import { isSafeUrl } from 'app/utils/safe-url';
 import { legislationLink, longDate, regulatorLink } from 'app/utils/utils';
 import { FeaturedDocuments } from './featured-documents';
 import { Pins } from './pins';
@@ -29,10 +30,7 @@ function ExternalLink({ href, children }: { href: string; children: ReactNode })
   return (
     <a href={href} target="_blank" rel="noopener noreferrer">
       {children}
-      <i className="material-icons overview-tab__external-icon" aria-hidden="true">
-        open_in_new
-      </i>
-      <span className="visually-hidden">(opens in new tab)</span>
+      <NewTabHint />
     </a>
   );
 }
@@ -48,7 +46,6 @@ function Fact({ label, children }: { label: string; children: ReactNode }) {
 
 /** The comment period the project record carries, whether it is hosted in EPIC or on ENGAGE. */
 function EngagementCallout({ project, banner }: { project: Project; banner: any }) {
-  const navigate = useNavigate();
   const external = !!(banner.isMet && isSafeUrl(banner.metURL));
   const cta = external
     ? banner.bannerCTA
@@ -56,7 +53,7 @@ function EngagementCallout({ project, banner }: { project: Project; banner: any 
       ? 'Share your thoughts'
       : 'View comment period';
 
-  function go(): void {
+  function trackClick(): void {
     track('Comment Period Banner Clicked', {
       project_id: project._id,
       project_name: project.name,
@@ -64,11 +61,6 @@ function EngagementCallout({ project, banner }: { project: Project; banner: any 
       is_met: external,
       destination: external ? 'external_met' : 'comment_period_details',
     });
-    if (external) {
-      openExternal(banner.metURL);
-    } else {
-      navigate(`/p/${project._id}/cp/${banner._id}/details`);
-    }
   }
 
   return (
@@ -101,14 +93,14 @@ function EngagementCallout({ project, banner }: { project: Project; banner: any 
           )
         )}
         <div className="overview-tab__callout-actions">
-          <button type="button" className="overview-tab__cta" onClick={go}>
-            {cta}
-            {external && (
-              <i className="material-icons overview-tab__external-icon" aria-hidden="true">
-                open_in_new
-              </i>
-            )}
-          </button>
+          <EngagementLink
+            className="overview-tab__cta"
+            isMet={banner.isMet}
+            metURL={banner.metURL}
+            to={`/p/${project._id}/cp/${banner._id}/details`}
+            label={cta}
+            onClick={trackClick}
+          />
           <Link className="overview-tab__cta-secondary" to={`/p/${project._id}/documents`}>
             Read the documents
           </Link>

@@ -42,7 +42,7 @@ describe('ActivityCard', () => {
     const user = userEvent.setup();
     renderCard(newsRow());
 
-    await user.click(screen.getByRole('button', { name: 'View Engagement' }));
+    await user.click(screen.getByRole('link', { name: 'View Engagement' }));
 
     expect(await screen.findByText('Engagement page')).toBeInTheDocument();
   });
@@ -50,14 +50,12 @@ describe('ActivityCard', () => {
   it('hides "View Engagement" when demi-search returns the period with no project', async () => {
     renderCard(newsRow({ project: null }));
 
-    expect(screen.queryByRole('button', { name: 'View Engagement' })).not.toBeInTheDocument();
-    // The rest of the card still renders; only the button that needs a project id is gone.
+    expect(screen.queryByRole('link', { name: 'View Engagement' })).not.toBeInTheDocument();
+    // The rest of the card still renders; only the link that needs a project id is gone.
     expect(screen.getByText('Cedar Quarry comment period open')).toBeInTheDocument();
   });
 
-  it('still opens a MET period with no project, because that link is external', async () => {
-    const open = vi.spyOn(window, 'open').mockImplementation(() => null);
-    const user = userEvent.setup();
+  it('still links a MET period with no project, because that link is external', () => {
     renderCard(
       newsRow({
         project: null,
@@ -65,8 +63,9 @@ describe('ActivityCard', () => {
       }),
     );
 
-    await user.click(screen.getByRole('button', { name: 'View Engagement' }));
-
-    expect(open).toHaveBeenCalledWith('https://met.example/cp1', '_blank', 'noopener,noreferrer');
+    const link = screen.getByRole('link', { name: 'View Engagement (opens in new tab)' });
+    expect(link).toHaveAttribute('href', 'https://met.example/cp1');
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
   });
 });

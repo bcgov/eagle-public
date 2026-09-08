@@ -1,9 +1,8 @@
-import { useNavigate } from 'react-router';
 import { isClosed, isNotStarted, isOpen } from 'app/api/commentperiod';
+import { EngagementLink } from 'app/components/engagement-link';
 import { Skeleton } from 'app/components/skeleton/skeleton';
 import { useCommentPeriods } from 'app/components/use-comment-periods';
 import type { CommentPeriod } from 'app/models/commentperiod';
-import { openExternal } from 'app/utils/safe-url';
 import { mediumDate } from 'app/utils/utils';
 import { useProjectContext } from './project-context';
 import './engagement-tab.css';
@@ -21,17 +20,8 @@ function pill(cp: CommentPeriod): { text: string; modifier: string } | null {
 
 export function EngagementTab() {
   const { projId } = useProjectContext();
-  const navigate = useNavigate();
 
   const { data: commentPeriods, isPending } = useCommentPeriods(projId);
-
-  function goToCP(commentPeriod: CommentPeriod): void {
-    if (commentPeriod.isMet && commentPeriod.metURL) {
-      openExternal(commentPeriod.metURL);
-    } else {
-      navigate(`/p/${projId}/cp/${commentPeriod._id}`);
-    }
-  }
 
   return (
     <div className="engagement-tab">
@@ -84,13 +74,13 @@ export function EngagementTab() {
                 {cp.additionalText && (
                   <p className="engagement-tab__description">{cp.additionalText}</p>
                 )}
-                <button
-                  type="button"
+                <EngagementLink
                   className={`engagement-tab__cta engagement-tab__cta--${open ? 'primary' : 'secondary'}`}
-                  onClick={() => goToCP(cp)}
-                >
-                  {open ? 'Share your thoughts' : 'View Engagement'}
-                </button>
+                  isMet={cp.isMet}
+                  metURL={cp.metURL}
+                  to={`/p/${projId}/cp/${cp._id}`}
+                  label={open ? 'Share your thoughts' : 'View Engagement'}
+                />
               </li>
             );
           })}

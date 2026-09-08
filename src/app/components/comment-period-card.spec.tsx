@@ -1,9 +1,8 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { render, renderHook, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { renderHook, screen, waitFor } from '@testing-library/react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { CommentPeriod } from 'app/models/commentperiod';
-import { makeQueryClient } from '../../test-utils';
+import { makeQueryClient, renderAt } from '../../test-utils';
 import { CommentPeriodCards } from './comment-period-card';
 import { useCommentPeriods } from './use-comment-periods';
 
@@ -23,16 +22,23 @@ function period(overrides: Record<string, unknown> = {}): CommentPeriod {
   });
 }
 
-function renderCards(periods: CommentPeriod[] | null, onOpen = vi.fn(), loading = false) {
-  const result = render(
-    <CommentPeriodCards
-      periods={periods}
-      loading={loading}
-      emptyMessage="No comment periods yet."
-      onOpen={onOpen}
-    />,
-  );
-  return { ...result, onOpen };
+function renderCards(
+  periods: CommentPeriod[] | null,
+  { basePath = '/p/proj-1', loading = false }: { basePath?: string | null; loading?: boolean } = {},
+) {
+  return renderAt('/start', [
+    {
+      path: '/start',
+      element: (
+        <CommentPeriodCards
+          periods={periods}
+          loading={loading}
+          emptyMessage="No comment periods yet."
+          basePath={basePath}
+        />
+      ),
+    },
+  ]);
 }
 
 /** Comment periods arrive in the `/search` envelope both backends answer with. */
@@ -63,37 +69,52 @@ describe('comment period cards', () => {
     renderCards([period()]);
 
     expect(screen.getByText(/Remaining|Final Day/)).toHaveClass('cp-card__pill--open');
-    expect(screen.getByRole('button', { name: 'Share your thoughts' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Share your thoughts' })).toBeInTheDocument();
   });
 
   it('badges a period that has not started with its start date', () => {
     renderCards([period({ dateStarted: daysFromNow(5), dateCompleted: daysFromNow(20) })]);
 
     expect(screen.getByText(/^Starts /)).toHaveClass('cp-card__pill--pending');
-    expect(screen.getByRole('button', { name: 'View Engagement' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'View Engagement' })).toBeInTheDocument();
   });
 
   it('badges a closed period with its end date', () => {
     renderCards([period({ dateStarted: daysFromNow(-20), dateCompleted: daysFromNow(-5) })]);
 
     expect(screen.getByText(/^Closed /)).toHaveClass('cp-card__pill--closed');
-    expect(screen.getByRole('button', { name: 'View Engagement' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'View Engagement' })).toBeInTheDocument();
   });
 
-  it('hands the clicked period back to the caller', async () => {
-    const open = period();
-    const { onOpen } = renderCards([open]);
+  it('points an EPIC-hosted period at the route the caller owns', () => {
+    renderCards([period()], { basePath: '/pn/notification-1' });
 
-    await userEvent.click(screen.getByRole('button', { name: 'Share your thoughts' }));
+    expect(screen.getByRole('link', { name: 'Share your thoughts' })).toHaveAttribute(
+      'href',
+      '/pn/notification-1/cp/cp-1',
+    );
+  });
 
-    expect(onOpen).toHaveBeenCalledWith(open);
+  it('sends an ENGAGE-hosted period out to its own site, whatever the caller routes', () => {
+    renderCards([period({ isMet: true, metURL: 'https://engage.example/cedar' })]);
+
+    const link = screen.getByRole('link', { name: 'Share your thoughts (opens in new tab)' });
+    expect(link).toHaveAttribute('href', 'https://engage.example/cedar');
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+  });
+
+  it('drops the call to action when the caller has no route for the period', () => {
+    renderCards([period()], { basePath: null });
+
+    expect(screen.queryByRole('link')).toBeNull();
   });
 
   it('shows placeholder cards while the periods load', () => {
-    const { container } = renderCards(null, vi.fn(), true);
+    const { container } = renderCards(null, { loading: true });
 
     expect(container.getElementsByClassName('cp-card--skeleton')).toHaveLength(2);
-    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
     expect(screen.queryByText('No comment periods yet.')).not.toBeInTheDocument();
   });
 

@@ -1,11 +1,9 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router';
 import { CommentPeriodCards } from 'app/components/comment-period-card';
 import { useCommentPeriods } from 'app/components/use-comment-periods';
 import { CommentPeriod } from 'app/models/commentperiod';
 import type { TableRowProps } from 'app/components/table/table-object';
 import { useResponsive } from 'app/state/responsive';
-import { openExternal } from 'app/utils/safe-url';
 import { ProjectNotificationDocumentsTable } from './project-notification-documents-table';
 import { ProjectNotificationDocumentsTableDetails } from './project-notification-documents-table-details';
 import './project-notifications-table-rows.css';
@@ -47,7 +45,6 @@ export function ProjectNotificationsTableRow({ rowData }: TableRowProps) {
   const [activeTab, setActiveTab] = useState<Tab>('details');
   const [documentsTabLoaded, setDocumentsTabLoaded] = useState(false);
   const { isMobile } = useResponsive();
-  const navigate = useNavigate();
 
   const hasPcp = !!rowData?.pcp && rowData.pcp !== 'none';
   // A record carrying no comment-period id needs a lookup to know whether it has any comment
@@ -59,21 +56,18 @@ export function ProjectNotificationsTableRow({ rowData }: TableRowProps) {
 
   const commentPeriods = data?.length === 0 && hasPcp ? [fallbackPeriod(rowData)] : data;
   const showCommentingTab = hasPcp || (commentPeriods?.length ?? 0) > 0;
+  // A notification that belongs to a project shows its periods on the project; the rest keep
+  // theirs under the notification itself.
+  const basePath = rowData?.associatedProjectId
+    ? `/p/${rowData.associatedProjectId}`
+    : rowData?._id
+      ? `/pn/${rowData._id}`
+      : null;
 
   function selectTab(tab: Tab): void {
     setActiveTab(tab);
     if (tab === 'documents') {
       setDocumentsTabLoaded(true);
-    }
-  }
-
-  function goToCP(commentPeriod: CommentPeriod): void {
-    if (commentPeriod.isMet && commentPeriod.metURL) {
-      openExternal(commentPeriod.metURL);
-    } else if (rowData?.associatedProjectId) {
-      navigate(`/p/${rowData.associatedProjectId}/cp/${commentPeriod._id}`);
-    } else if (rowData?._id) {
-      navigate(`/pn/${rowData._id}/cp/${commentPeriod._id}`);
     }
   }
 
@@ -151,7 +145,7 @@ export function ProjectNotificationsTableRow({ rowData }: TableRowProps) {
                       periods={commentPeriods}
                       loading={needsLookup && isPending}
                       emptyMessage="No comment periods are currently scheduled for this project notification."
-                      onOpen={goToCP}
+                      basePath={basePath}
                     />
                   </div>
                 </div>

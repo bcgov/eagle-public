@@ -1,8 +1,8 @@
-import { Link, useNavigate } from 'react-router';
+import { Link } from 'react-router';
 import { track } from 'app/analytics/analytics';
+import { EngagementLink } from 'app/components/engagement-link';
 import { sanitizeWordHtml } from 'app/utils/word-html-sanitizer';
 import { safeHtml } from 'app/utils/safe-html';
-import { openExternal } from 'app/utils/safe-url';
 import { longDate } from 'app/utils/utils';
 import './activity-card.css';
 
@@ -18,34 +18,26 @@ function isSingleDoc(item: any): boolean {
   return item !== '' && item !== null && item !== undefined;
 }
 
-/**
- * demi-search can answer a comment-period update with `project: null`, and the engagement route is
- * built from a project id. A MET period links out instead, so it opens without one.
- */
-function canOpenCP(item: any): boolean {
-  return Boolean((item?.pcp?.isMet && item?.pcp?.metURL) || item?.project?._id);
-}
-
 export function ActivityCard({
   rowData,
   tableMode = false,
   showProjectInfo = true,
 }: ActivityCardProps) {
-  const navigate = useNavigate();
+  // demi-search can answer a comment-period update with `project: null`, and the engagement route
+  // is built from a project id. A MET period links out instead, so it opens without one.
+  const commentPeriodRoute =
+    rowData?.project?._id && rowData?.pcp?._id
+      ? `/p/${rowData.project._id}/cp/${rowData.pcp._id}`
+      : null;
 
-  function goToCP(activity: any): void {
+  function trackClick(): void {
     track('News Item Clicked', {
-      activity_type: activity.type,
-      project_id: activity.project?._id,
-      project_name: activity.project?.name,
-      has_comment_period: !!activity.pcp,
-      is_met: activity.pcp?.isMet || false,
+      activity_type: rowData?.type,
+      project_id: rowData?.project?._id,
+      project_name: rowData?.project?.name,
+      has_comment_period: !!rowData?.pcp,
+      is_met: rowData?.pcp?.isMet || false,
     });
-    if (activity.pcp?.isMet && activity.pcp?.metURL) {
-      openExternal(activity.pcp.metURL);
-    } else {
-      navigate(`/p/${activity.project._id}/cp/${activity.pcp._id}`);
-    }
   }
 
   return (
@@ -90,10 +82,15 @@ export function ActivityCard({
                 Project Info
               </Link>
             )}
-          {rowData?.pcp && rowData?.type === 'Public Comment Period' && canOpenCP(rowData) && (
-            <button className="btn btn-sm btn-outline-primary" onClick={() => goToCP(rowData)}>
-              View Engagement
-            </button>
+          {rowData?.pcp && rowData?.type === 'Public Comment Period' && (
+            <EngagementLink
+              className="btn btn-sm btn-outline-primary"
+              isMet={rowData.pcp.isMet}
+              metURL={rowData.pcp.metURL}
+              to={commentPeriodRoute}
+              label="View Engagement"
+              onClick={trackClick}
+            />
           )}
           {isSingleDoc(rowData?.documentUrl) &&
             !rowData?.documentUrl?.includes('docs?folder') &&

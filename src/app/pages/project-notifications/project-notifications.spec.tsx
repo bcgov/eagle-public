@@ -168,6 +168,10 @@ describe('project notifications', () => {
     expect(
       await screen.findByRole('heading', { name: 'Public Comment Period' }),
     ).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Share your thoughts' })).toBeInTheDocument();
+    // No associated project, so the stand-in period hangs off the notification's own route.
+    expect(screen.getByRole('link', { name: 'Share your thoughts' })).toHaveAttribute(
+      'href',
+      '/pn/n1/cp/n1',
+    );
   });
 });

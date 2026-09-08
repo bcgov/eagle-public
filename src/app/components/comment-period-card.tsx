@@ -1,4 +1,5 @@
 import { isClosed, isNotStarted, isOpen } from 'app/api/commentperiod';
+import { EngagementLink } from 'app/components/engagement-link';
 import type { CommentPeriod } from 'app/models/commentperiod';
 import { mediumDate } from 'app/utils/utils';
 import './comment-period-card.css';
@@ -9,14 +10,15 @@ interface CommentPeriodCardsProps {
   periods: CommentPeriod[] | null | undefined;
   loading: boolean;
   emptyMessage: string;
-  onOpen: (period: CommentPeriod) => void;
+  /** Route the in-EPIC periods hang off, e.g. `/p/<projId>`. Null when the caller has no id.  */
+  basePath: string | null;
 }
 
 export function CommentPeriodCards({
   periods,
   loading,
   emptyMessage,
-  onOpen,
+  basePath,
 }: CommentPeriodCardsProps) {
   if (loading) {
     return (
@@ -75,9 +77,13 @@ export function CommentPeriodCards({
               </p>
             )}
             {cp.additionalText && <p className="cp-card__description">{cp.additionalText}</p>}
-            <button className="btn btn-epic-cta" onClick={() => onOpen(cp)}>
-              {cp.commentPeriodStatus === 'Open' ? 'Share your thoughts' : 'View Engagement'}
-            </button>
+            <EngagementLink
+              className="btn btn-epic-cta"
+              isMet={cp.isMet}
+              metURL={cp.metURL}
+              to={basePath && `${basePath}/cp/${cp._id}`}
+              label={cp.commentPeriodStatus === 'Open' ? 'Share your thoughts' : 'View Engagement'}
+            />
           </div>
         </article>
       ))}
