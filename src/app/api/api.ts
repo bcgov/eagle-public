@@ -70,6 +70,16 @@ function totalFrom(envelope: unknown): number | null {
   return typeof total === 'number' ? total : null;
 }
 
+/**
+ * Drops every key but `fields`. `/search` ignores `fields=` and answers the whole stored record,
+ * so the projection the bespoke routes used to do has to happen on this side instead.
+ */
+function pickFields<T>(row: unknown, fields: string[]): T {
+  return Object.fromEntries(
+    Object.entries(row as Record<string, unknown>).filter(([field]) => fields.includes(field)),
+  ) as unknown as T;
+}
+
 async function send(
   url: string,
   init: RequestInit = {},
@@ -458,21 +468,38 @@ export async function getPeriodsByProjId(projId: string): Promise<CommentPeriod[
     '-dateStarted',
     { project: projId },
   );
-  return rowsFrom<Record<string, unknown>>(envelope).map(
-    (period) =>
-      Object.fromEntries(
-        Object.entries(period).filter(([field]) => PERIOD_LIST_FIELDS.includes(field)),
-      ) as unknown as CommentPeriod,
+  return rowsFrom<Record<string, unknown>>(envelope).map((period) =>
+    pickFields<CommentPeriod>(period, PERIOD_LIST_FIELDS),
   );
 }
+
+/**
+ * The fields the old `/commentperiod/{id}` route projected for the details page, plus `_id`.
+ * The stored record also carries the admin and role fields (`metURLAdmin`, `classificationRoles`,
+ * `commenterRoles`, `downloadRoles`, ...), which nothing on the page reads and which have no
+ * business reaching it.
+ */
+const PERIOD_DETAIL_FIELDS = [
+  '_id',
+  'additionalText',
+  'dateCompleted',
+  'dateStarted',
+  'informationLabel',
+  'instructions',
+  'openHouses',
+  'project',
+  'relatedDocuments',
+  'commentTip',
+];
 
 /**
  * One comment period. `and[_id]` on both backends: eagle-api's `/search` ignores a bare `_id`
  * and answers the whole collection, which would render an unrelated period.
  */
 export async function getPeriod(id: string): Promise<CommentPeriod[]> {
-  return rowsFrom<CommentPeriod>(
-    await searchKeywords('', 'CommentPeriod', [], 1, 1, '', null, { _id: id }),
+  const envelope = await searchKeywords('', 'CommentPeriod', [], 1, 1, '', null, { _id: id });
+  return rowsFrom<Record<string, unknown>>(envelope).map((period) =>
+    pickFields<CommentPeriod>(period, PERIOD_DETAIL_FIELDS),
   );
 }
 
@@ -548,15 +575,6 @@ export async function getCommentsByPeriodId(
   const response = await getWithHeaders<any[]>(`${apiPath()}/${queryString}`);
   const total = response.headers.get('x-total-count');
   return { comments: response.body, totalCount: total === null ? null : Number(total) };
-}
-
-/** One comment, with its attachment ids. Empty when nothing matches the id. */
-export async function getComment(id: string): Promise<any[]> {
-  if (searchPath() !== apiPath()) {
-    return rowsFrom(await searchKeywords('', 'Comment', [], 1, 1, '', null, { _id: id }));
-  }
-  const queryString = 'public/comment/' + id + '?fields=' + buildValues(COMMENT_FIELDS);
-  return getJson<any[]>(`${apiPath()}/${queryString}`);
 }
 
 export async function addComment(comment: Comment): Promise<Comment> {

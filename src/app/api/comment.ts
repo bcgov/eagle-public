@@ -1,5 +1,4 @@
 import * as api from './api';
-import * as documentApi from './document';
 import { Comment } from 'app/models/comment';
 
 // get all comments for the specified comment period id (without documents)
@@ -22,24 +21,6 @@ export async function getByPeriodId(
     totalCount: res.totalCount,
     currentComments: res.comments.map((comment: any) => new Comment(comment)),
   };
-}
-
-// get a specific comment by its id (including documents)
-export async function getById(commentId: string): Promise<Comment> {
-  const comments = await api.getComment(commentId);
-  if (!comments || comments.length === 0) {
-    return null as unknown as Comment;
-  }
-  const comment = new Comment(comments[0]);
-  // Safety check for null documents or an empty array of documents.
-  if (
-    comments[0].documents === null ||
-    (comments[0].documents && comments[0].documents.length === 0)
-  ) {
-    return comment;
-  }
-  comment.documentsList = await documentApi.getByMultiId(comment.documents);
-  return comment;
 }
 
 export async function add(orig: Comment): Promise<Comment | null> {

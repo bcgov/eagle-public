@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { getByPeriodId, getById } from './comment';
+import { getByPeriodId } from './comment';
 import { loadConfig } from 'app/config/config';
 
 /**
@@ -89,37 +89,6 @@ describe('comment reads', () => {
       await getByPeriodId('cp-1', 4, 10, true);
 
       expect(new URL(requestedUrl(), 'http://x').searchParams.get('pageNum')).toBe('3');
-    });
-  });
-
-  describe('getById', () => {
-    it('returns the comment with its attachments resolved', async () => {
-      await setup('');
-      let call = 0;
-      fetchMock = vi.fn(async () => {
-        const body =
-          call++ === 0
-            ? JSON.stringify([{ _id: 'c1', comment: 'With an attachment', documents: ['doc-1'] }])
-            : JSON.stringify([{ _id: 'doc-1', internalOriginalName: 'attachment.pdf' }]);
-        return new Response(body, { status: 200 });
-      });
-      vi.stubGlobal('fetch', fetchMock);
-
-      const comment = await getById('c1');
-
-      expect(comment.comment).toBe('With an attachment');
-      expect(
-        comment.documentsList.map((document: { internalOriginalName: string }) => {
-          return document.internalOriginalName;
-        }),
-      ).toEqual(['attachment.pdf']);
-    });
-
-    it('answers null when nothing matches the id', async () => {
-      await setup('');
-      respondWith(JSON.stringify([]));
-
-      expect(await getById('missing')).toBeNull();
     });
   });
 });

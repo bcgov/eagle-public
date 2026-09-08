@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
-  getComment,
   getCommentsByPeriodId,
   getOrgsByCompanyType,
   getPeriod,
@@ -356,6 +355,51 @@ describe('reads served by demi-search', () => {
       });
       expect(period.openHouses).toHaveLength(1);
     });
+
+    /**
+     * eagle-api's `/search` answers the whole stored record where the removed `/commentperiod`
+     * route projected nine fields, so without a projection here the admin and role fields
+     * (`metURLAdmin`, `classificationRoles`, ...) reach the details page.
+     */
+    it('carries only the fields the details page has always been given', async () => {
+      await setup('');
+      respondWith(
+        envelope([
+          {
+            _id: 'cp-1',
+            project: 'proj-1',
+            dateStarted: '2026-01-01',
+            dateCompleted: '2026-02-01',
+            instructions: '<p>Comment on the draft application for Cedar</p>',
+            informationLabel: 'Round two',
+            additionalText: 'A legacy paragraph',
+            openHouses: [{ description: 'Kamloops', eventDate: '2026-01-15' }],
+            relatedDocuments: ['doc-1'],
+            commentTip: '<em>Keep it on topic</em>',
+            metURLAdmin: 'https://admin.example/internal',
+            classificationRoles: ['staff'],
+            commenterRoles: ['staff'],
+            downloadRoles: ['staff'],
+            read: ['public'],
+          },
+        ]),
+      );
+
+      const [period] = await getPeriod('cp-1');
+
+      expect(period).toEqual({
+        _id: 'cp-1',
+        project: 'proj-1',
+        dateStarted: '2026-01-01',
+        dateCompleted: '2026-02-01',
+        instructions: '<p>Comment on the draft application for Cedar</p>',
+        informationLabel: 'Round two',
+        additionalText: 'A legacy paragraph',
+        openHouses: [{ description: 'Kamloops', eventDate: '2026-01-15' }],
+        relatedDocuments: ['doc-1'],
+        commentTip: '<em>Keep it on topic</em>',
+      });
+    });
   });
 
   describe('getCommentsByPeriodId', () => {
@@ -483,30 +527,6 @@ describe('reads served by demi-search', () => {
         author: 'Crystal Brand',
         documents: ['598cc094832a6300190e476e'],
       });
-    });
-  });
-
-  describe('getComment', () => {
-    it('filters one comment by id on demi-search', async () => {
-      await setup(SEARCH);
-      respondWith(envelope([{ _id: 'c1' }]));
-
-      const comments = await getComment('c1');
-
-      const url = requestedUrl();
-      expect(url.startsWith(`${SEARCH}/search?dataset=Comment`)).toBe(true);
-      expect(url).toContain('&and[_id]=c1');
-      expect(comments).toEqual([{ _id: 'c1' }]);
-    });
-
-    it('keeps the bespoke eagle-api route when SEARCH_API_PATH is empty', async () => {
-      await setup('');
-      respondWith(JSON.stringify([{ _id: 'c1' }]));
-
-      const comments = await getComment('c1');
-
-      expect(requestedUrl().startsWith('/api/public/comment/c1?fields=')).toBe(true);
-      expect(comments).toEqual([{ _id: 'c1' }]);
     });
   });
 });
