@@ -30,6 +30,15 @@
   // dangerous. Set false and fill in the values to work against something else.
   window.__env.configEndpoint = true;
 
+  // Where the runtime config itself is fetched from, when configEndpoint is true.
+  //
+  // EMPTY MEANS runtime config comes from eagle-api's /api/config; eagle-api's Mongo
+  // `Config` document stays the kill switch either way. Planned value, once later work
+  // lands: /demi-search/config, applied by the deploy workflows — when set, config is
+  // read from DEMI first and falls back to /api/config on any failure or partial body.
+  // Changing this value needs a redeploy of env.js; nothing here clears it at runtime.
+  window.__env.CONFIG_PATH = '';
+
   // Log level: 0 = All, 1 = Debug, 2 = Info, 3 = Warn, 4 = Error
   window.__env.logLevel = 0;
 
