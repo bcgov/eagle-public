@@ -1,4 +1,4 @@
-import { Link } from 'react-router';
+import { EngagementLink } from 'app/components/engagement-link';
 import { safeHtml } from 'app/utils/safe-html';
 import { isSafeUrl } from 'app/utils/safe-url';
 import { sanitizeWordHtml } from 'app/utils/word-html-sanitizer';
@@ -44,7 +44,7 @@ export function UpdateCard({ update }: { update: UpdateRecord }) {
   const document = update.documentUrl && isSafeUrl(update.documentUrl) ? update.documentUrl : null;
   const commentPeriod =
     update.pcp?._id && update.project?._id ? `/p/${update.project._id}/cp/${update.pcp._id}` : null;
-  const externalPeriod = update.pcp?.isMet && isSafeUrl(update.pcp.metURL ?? '');
+  const externalPeriod = !!update.pcp?.isMet && isSafeUrl(update.pcp.metURL ?? '');
 
   return (
     <li className="update-card">
@@ -76,18 +76,15 @@ export function UpdateCard({ update }: { update: UpdateRecord }) {
                   </a>
                 </li>
               )}
-              {externalPeriod ? (
+              {(externalPeriod || commentPeriod) && (
                 <li>
-                  <a href={update.pcp!.metURL} target="_blank" rel="noopener noreferrer">
-                    View engagement
-                  </a>
+                  <EngagementLink
+                    isMet={update.pcp?.isMet}
+                    metURL={update.pcp?.metURL}
+                    to={commentPeriod}
+                    label="View engagement"
+                  />
                 </li>
-              ) : (
-                commentPeriod && (
-                  <li>
-                    <Link to={commentPeriod}>View engagement</Link>
-                  </li>
-                )
               )}
             </ul>
           </div>

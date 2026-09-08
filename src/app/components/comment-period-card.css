@@ -145,6 +145,10 @@
 
 /* Premium EPIC Navy CTA Button */
 .btn-epic-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  text-decoration: none;
   color: #ffffff;
   background-color: var(--bc-blue, #003366);
   border: 2px solid var(--bc-blue, #003366);
@@ -171,6 +175,7 @@
 @media (max-width: 576px) {
   .btn-epic-cta {
     width: 100%;
+    justify-content: center;
     text-align: center;
   }
 }

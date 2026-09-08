@@ -109,7 +109,9 @@
 .engagement-tab__cta {
   display: inline-flex;
   align-items: center;
+  gap: var(--layout-padding-xsmall);
   min-height: 44px;
+  text-decoration: none;
   padding: 0 var(--layout-padding-large);
   border: var(--layout-border-width-small) solid transparent;
   border-radius: var(--layout-border-radius-medium);

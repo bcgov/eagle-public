@@ -55,11 +55,6 @@
   color: var(--typography-color-secondary);
 }
 
-.overview-tab__external-icon {
-  font-size: var(--icons-size-small);
-  vertical-align: middle;
-}
-
 /* About this project */
 
 .overview-tab__description {

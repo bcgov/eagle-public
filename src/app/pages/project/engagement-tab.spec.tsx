@@ -90,15 +90,15 @@ describe('engagement tab', () => {
     renderTab();
 
     expect(await screen.findByText('Draft Application')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Share your thoughts' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Share your thoughts' })).toBeInTheDocument();
   });
 
-  it('shows the closed period with its label and a View Engagement button', async () => {
+  it('shows the closed period with its label and a View Engagement link', async () => {
     renderTab();
 
     expect(await screen.findByRole('heading', { name: 'Early Engagement' })).toBeInTheDocument();
     expect(screen.getByText(/^Closed /)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'View Engagement' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'View Engagement' })).toBeInTheDocument();
   });
 
   it('drops duplicate periods that point at the same engagement', async () => {
@@ -113,26 +113,26 @@ describe('engagement tab', () => {
     expect(screen.getAllByText('Draft Application')).toHaveLength(1);
   });
 
-  it('opens an ENGAGE-hosted period in a new tab instead of navigating', async () => {
-    const open = vi.spyOn(window, 'open').mockImplementation(() => null);
+  it('links an ENGAGE-hosted period out to its own site, in a new tab', async () => {
     periods = [{ ...OPEN_PERIOD, isMet: true, metURL: 'https://engage.example/cedar' }];
 
-    const router = renderTab();
-    await userEvent.click(await screen.findByRole('button', { name: 'Share your thoughts' }));
+    renderTab();
 
-    expect(open).toHaveBeenCalledWith(
-      'https://engage.example/cedar',
-      '_blank',
-      'noopener,noreferrer',
-    );
-    expect(router.state.location.pathname).toBe('/p/proj-1/engagement');
-    open.mockRestore();
+    const link = await screen.findByRole('link', {
+      name: 'Share your thoughts (opens in new tab)',
+    });
+    expect(link).toHaveAttribute('href', 'https://engage.example/cedar');
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
   });
 
   it('navigates to the comment period page for an eagle-hosted period', async () => {
     const router = renderTab();
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Share your thoughts' }));
+    const link = await screen.findByRole('link', { name: 'Share your thoughts' });
+    expect(link).toHaveAttribute('href', '/p/proj-1/cp/cp-open');
+
+    await userEvent.click(link);
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/p/proj-1/cp/cp-open'));
   });

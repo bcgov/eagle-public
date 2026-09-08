@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
-import { isSafeUrl, openExternal } from './safe-url';
+import { describe, it, expect } from 'vitest';
+import { isSafeUrl } from './safe-url';
 
 describe('isSafeUrl', () => {
   it.each([
@@ -28,27 +28,5 @@ describe('isSafeUrl', () => {
     expect(isSafeUrl(undefined)).toBe(false);
     expect(isSafeUrl(null)).toBe(false);
     expect(isSafeUrl({ toString: () => 'https://example.gov.bc.ca' })).toBe(false);
-  });
-});
-
-describe('openExternal', () => {
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  it('opens a safe URL in a new tab without handing over the opener', () => {
-    const open = vi.spyOn(window, 'open').mockReturnValue(null);
-    openExternal('https://example.gov.bc.ca/engagement');
-    expect(open).toHaveBeenCalledWith(
-      'https://example.gov.bc.ca/engagement',
-      '_blank',
-      'noopener,noreferrer',
-    );
-  });
-
-  it('opens nothing for an unsafe URL', () => {
-    const open = vi.spyOn(window, 'open').mockReturnValue(null);
-    openExternal('javascript:alert(1)');
-    expect(open).not.toHaveBeenCalled();
   });
 });

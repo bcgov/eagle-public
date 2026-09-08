@@ -212,7 +212,10 @@ describe('overview tab', () => {
     ).toBeInTheDocument();
     expect(screen.getByText('Draft Application')).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('button', { name: 'Share your thoughts' }));
+    const link = screen.getByRole('link', { name: 'Share your thoughts' });
+    expect(link).toHaveAttribute('href', '/p/proj-1/cp/cp-1/details');
+
+    await userEvent.click(link);
 
     expect(track).toHaveBeenCalledWith('Comment Period Banner Clicked', {
       project_id: 'proj-1',
@@ -233,9 +236,7 @@ describe('overview tab', () => {
         metBannerImageUrl: 'https://engage.gov.bc.ca/banner.jpg',
       }),
     });
-    const open = vi.fn();
     const router = renderTab();
-    vi.stubGlobal('open', open);
 
     await screen.findByRole('heading', { name: 'Public comment period is Open' });
     expect(document.querySelector('.overview-tab__callout-image')).toHaveAttribute(
@@ -243,13 +244,13 @@ describe('overview tab', () => {
       'https://engage.gov.bc.ca/banner.jpg',
     );
 
-    await userEvent.click(screen.getByRole('button', { name: /Share your thoughts/ }));
+    const link = screen.getByRole('link', { name: /Share your thoughts \(opens in new tab\)/ });
+    expect(link).toHaveAttribute('href', 'https://engage.gov.bc.ca/cedar');
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
 
-    expect(open).toHaveBeenCalledWith(
-      'https://engage.gov.bc.ca/cedar',
-      '_blank',
-      'noopener,noreferrer',
-    );
+    await userEvent.click(link);
+
     expect(track).toHaveBeenCalledWith(
       'Comment Period Banner Clicked',
       expect.objectContaining({ is_met: true, destination: 'external_met' }),
