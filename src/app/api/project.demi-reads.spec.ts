@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { getDocumentsByMultiId, getProjectPins } from './api';
 import { queryClient } from './query-client';
+import { commentPeriodsQueryOptions } from './commentperiod';
 import { demiProjectToEagle, getById, getPins, periodsInWindow } from './project';
 import { loadConfig } from 'app/config/config';
 import type { CommentPeriod } from 'app/models/commentperiod';
@@ -180,7 +181,6 @@ describe('project reads served by DEMI', () => {
       expect(mapped.projectLeadPhone).toBe('778-698-9280');
       expect(mapped.responsibleEPDPhone).toBe('778-698-9280');
       expect(mapped.eaCertificate).toBe('E17-01');
-      expect(mapped.featuredDocuments).toEqual(['5cf00136a8cfcc0019e2f4e5']);
       expect(mapped.eacDecision).toEqual({
         _id: '5e27937a749c83437054f215',
         name: 'Certificate Refused',
@@ -189,12 +189,6 @@ describe('project reads served by DEMI', () => {
         _id: '5d3f6c7eda7a384218296039',
         name: 'Post Decision - Complete',
       });
-    });
-
-    it('gives featured documents an empty array when the document carries none', () => {
-      const { featuredDocuments: _dropped, ...bare } = DEMI_DOC;
-
-      expect(demiProjectToEagle(bare).featuredDocuments).toEqual([]);
     });
   });
 
@@ -334,6 +328,41 @@ describe('project reads served by DEMI', () => {
       );
 
       expect(project.commentPeriodForBanner).toBeNull();
+    });
+
+    it('still answers the project when the banner comment period read fails', async () => {
+      await setup({ demi: DEMI, search: SEARCH });
+      respondWith(JSON.stringify(DEMI_DOC), new Response('search unavailable', { status: 500 }));
+
+      const project = await getById(
+        '58851197aaecd9001b8227cc',
+        false,
+        '2026-09-01T00:00:00.000Z',
+        '2026-09-30T00:00:00.000Z',
+      );
+
+      expect(project.name).toBe('Ajax Mine');
+      expect(project.commentPeriodForBanner).toBeNull();
+    });
+
+    it('shares its comment period read with the query the page runs', async () => {
+      await setup({ demi: DEMI, search: SEARCH });
+      respondWith(JSON.stringify(DEMI_DOC), envelope([OPEN_PERIOD]));
+
+      await getById(
+        '58851197aaecd9001b8227cc',
+        false,
+        '2026-09-01T00:00:00.000Z',
+        '2026-09-30T00:00:00.000Z',
+      );
+      const periods = await queryClient.fetchQuery(
+        commentPeriodsQueryOptions('58851197aaecd9001b8227cc'),
+      );
+
+      expect(periods[0]?._id).toBe('cp-open');
+      expect(requestedUrls().filter((url) => url.includes('dataset=CommentPeriod'))).toHaveLength(
+        1,
+      );
     });
 
     it('asks eagle-api when DEMI is not configured', async () => {
@@ -489,6 +518,15 @@ describe('project reads served by DEMI', () => {
       expect(documents[0].documentFileName).toBe('application.pdf');
       expect(documents[0].projectName).toBeUndefined();
       expect(documents[0].highlighted).toBeUndefined();
+    });
+
+    it('labels a row the demi-search index holds no original name for', async () => {
+      await setup({ search: SEARCH });
+      respondWith(envelope([ROW]));
+
+      const documents = (await getDocumentsByMultiId(['d1'])) as any[];
+
+      expect(documents[0].internalOriginalName).toBe('application.pdf');
     });
 
     it('asks eagle-api when no search backend is configured', async () => {

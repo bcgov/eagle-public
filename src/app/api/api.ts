@@ -110,7 +110,6 @@ export interface DemiProject {
   projectCAC?: boolean;
   projectCACPublished?: boolean;
   cacEmail?: string;
-  featuredDocuments?: unknown[];
   phases?: unknown[];
   shortUrl?: string;
   /** EA certificate number, e.g. `E23-01`. No source has the conditions count it carries. */
@@ -760,7 +759,19 @@ export async function getDocumentsByMultiId(ids: string[]): Promise<Document[]> 
     );
     // `_id` is not in `fields`, because eagle-api answers with it whether or not it is asked for,
     // and every caller keys documents by it.
-    return rowsFrom<Document>(envelope).map((row) => pickFields<Document>(row, ['_id', ...fields]));
+    return rowsFrom<Document>(envelope).map((row) => {
+      const record = row as unknown as Record<string, unknown>;
+      return pickFields<Document>(
+        {
+          ...record,
+          // The demi-search index holds no `internalOriginalName`, and it is the only label the
+          // comment attachment list renders.
+          internalOriginalName:
+            record['internalOriginalName'] ?? record['documentFileName'] ?? record['displayName'],
+        } as unknown as Document,
+        ['_id', ...fields],
+      );
+    });
   }
   const queryString = `document?docIds=${buildValues(ids)}&fields=${buildValues(fields)}`;
   return getJson<Document[]>(`${apiPath()}/${queryString}`);

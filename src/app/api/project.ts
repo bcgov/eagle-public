@@ -2,6 +2,8 @@ import { Project } from 'app/models/project';
 import * as api from './api';
 import type { DemiProject } from './api';
 import { CommentPeriod } from 'app/models/commentperiod';
+import { commentPeriodsQueryOptions } from './commentperiod';
+import { queryClient } from './query-client';
 import type { Org } from 'app/models/organization';
 import type { ISearchResults } from 'app/models/search';
 import * as search from './search';
@@ -70,9 +72,12 @@ export function periodsInWindow(
   const to = Date.parse(until);
   if (Number.isNaN(from) || Number.isNaN(to)) return [];
 
+  // Rows arrive either as raw API date strings or as `CommentPeriod` instances holding `Date`s.
+  const timeOf = (value: string | Date | undefined): number => new Date(value ?? '').getTime();
+
   return periods.filter((period) => {
-    const started = Date.parse(period?.dateStarted as unknown as string);
-    const completed = Date.parse(period?.dateCompleted as unknown as string);
+    const started = timeOf(period?.dateStarted);
+    const completed = timeOf(period?.dateCompleted);
     // Each clause is independent, as the three Mongo `$or` branches are: a date the record does
     // not hold fails only the clauses that read it.
     const startsInside = started >= from && started <= to;
@@ -81,14 +86,6 @@ export function periodsInWindow(
     return startsInside || endsInside || spans;
   });
 }
-
-/**
- * The eagle-api project payload, before `new Project(...)` is built from it. `featuredDocuments`
- * is widened because DEMI carries document ids where the model declares whole documents.
- */
-export type EagleProjectPayload = Omit<Partial<Project>, 'featuredDocuments'> & {
-  featuredDocuments?: unknown[];
-};
 
 /**
  * A DEMI project document as the eagle-api project payload the app has always consumed, so
@@ -103,6 +100,8 @@ export type EagleProjectPayload = Omit<Partial<Project>, 'featuredDocuments'> & 
  * `updatedAt` is NOT `dateUpdated`: it stamps the last DEMI sync, so every project carries the same
  * recent date. "Last updated" is left empty rather than shown a mirror timestamp.
  *
+ * `featuredDocuments` is not mapped: the featured-documents page runs its own document search.
+ *
  * DEMI has no counterpart for `CELead*`, `projectLeadId`, `responsibleEPDId`, `epicProjectID`,
  * `commodity`, `fedElecDist`, `shortName`, `duration`, `primaryContact`, `proMember`,
  * `isTermsAgreed`, `dateCommentsClosed`, `addedBy`/`updatedBy`, or the `read`/`write`/`delete` ACLs
@@ -111,7 +110,7 @@ export type EagleProjectPayload = Omit<Partial<Project>, 'featuredDocuments'> & 
 export function demiProjectToEagle(
   doc: DemiProject,
   commentPeriodForBanner: CommentPeriod[] = [],
-): EagleProjectPayload {
+): Partial<Project> {
   const centroid = doc.centroid;
   return {
     _id: doc.eagleId ?? doc._id,
@@ -149,7 +148,6 @@ export function demiProjectToEagle(
     projectCAC: doc.projectCAC,
     projectCACPublished: doc.projectCACPublished,
     cacEmail: doc.cacEmail,
-    featuredDocuments: doc.featuredDocuments ?? [],
     commentPeriodForBanner,
   };
 }
@@ -166,7 +164,7 @@ async function readProject(
   projId: string,
   cpStart: string | null,
   cpEnd: string | null,
-): Promise<(EagleProjectPayload | Project)[]> {
+): Promise<(Partial<Project> | Project)[]> {
   if (api.demiProjectsPath()) {
     let doc: DemiProject | null = null;
     try {
@@ -176,9 +174,20 @@ async function readProject(
     }
     if (doc) {
       // The banner is a project field on eagle-api and a comment-period read here, so it is
-      // derived from the periods rather than requested. No window, no banner, so no request.
-      const periods =
-        cpStart !== null && cpEnd !== null ? await api.getPeriodsByProjId(projId) : [];
+      // derived from the periods rather than requested. No window, no banner, so no request; and a
+      // banner that cannot be read is a missing banner, never a missing project.
+      let periods: CommentPeriod[] = [];
+      if (cpStart !== null && cpEnd !== null) {
+        try {
+          // No retries: the project record is already in hand and must not wait on a banner.
+          periods = await queryClient.fetchQuery({
+            ...commentPeriodsQueryOptions(projId),
+            retry: false,
+          });
+        } catch (error) {
+          logger.warn('Banner comment period read failed, showing no banner', 'project', error);
+        }
+      }
       return [demiProjectToEagle(doc, periodsInWindow(periods, cpStart, cpEnd))];
     }
   }
