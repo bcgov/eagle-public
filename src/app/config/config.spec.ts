@@ -148,6 +148,14 @@ describe('loadConfig with a config endpoint', () => {
   });
 });
 
+const EAGLE = '/api/config';
+const WHOLE_EAGLE = { ENVIRONMENT: 'test', ACCESS_GATE: true, ADMIN_PATH: '/admin/' };
+
+/** Answers only the paths named, so a fetch of anything else fails the way an unrouted URL would. */
+function serving(responses: Record<string, () => Response>) {
+  return vi.fn(async (path: string) => responses[path]());
+}
+
 /**
  * CONFIG_PATH names a second source for the runtime config, asked once before /api/config.
  * eagle-api stays the source of truth and the kill switch: anything short of a whole payload has to
@@ -157,9 +165,7 @@ describe('loadConfig with a config endpoint', () => {
 describe('loadConfig with CONFIG_PATH', () => {
   const original = window.__env;
   const DEMI = '/demi-search/config';
-  const EAGLE = '/api/config';
   const WHOLE_DEMI = { ENVIRONMENT: 'test', ACCESS_GATE: true, SEARCH_API_PATH: '/demi-search' };
-  const WHOLE_EAGLE = { ENVIRONMENT: 'test', ACCESS_GATE: true, ADMIN_PATH: '/admin/' };
 
   afterEach(() => {
     window.__env = original;
@@ -175,11 +181,6 @@ describe('loadConfig with CONFIG_PATH', () => {
     const { logger } = await import('./logging');
     const { loadConfig, getConfig } = await import('./config');
     return { loadConfig, getConfig, logger };
-  }
-
-  /** Answers only the paths named, so a fetch of anything else fails the way an unrouted URL would. */
-  function serving(responses: Record<string, () => Response>) {
-    return vi.fn(async (path: string) => responses[path]());
   }
 
   function requested(fetchMock: ReturnType<typeof serving>): string[] {
@@ -269,21 +270,42 @@ describe('loadConfig with CONFIG_PATH', () => {
  */
 describe('config dumps', () => {
   const original = window.__env;
+  const MERGE_DUMP = 'config: merged with API config:';
 
   afterEach(() => {
     window.__env = original;
     vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
 
-  it('stay out of a production build even at log level 0', async () => {
-    vi.stubEnv('DEV', false);
+  /** Returns the first argument of every console.log, so the merge dump can be told from the env.js one. */
+  async function logsWhileLoadingAt(logLevel: number): Promise<unknown[]> {
     const log = vi.spyOn(console, 'log').mockImplementation(() => undefined);
-    window.__env = { logLevel: 0 };
+    vi.stubGlobal('fetch', serving({ [EAGLE]: () => Response.json(WHOLE_EAGLE) }));
+    window.__env = { logLevel, configEndpoint: true };
 
     await loadConfig();
 
-    expect(log).not.toHaveBeenCalled();
+    return log.mock.calls.map((call) => call[0]);
+  }
+
+  it('stay out of a production build even at log level 0', async () => {
+    vi.stubEnv('DEV', false);
+
+    expect(await logsWhileLoadingAt(0)).toEqual([]);
+  });
+
+  it('stay out of a dev build above log level 0', async () => {
+    vi.stubEnv('DEV', true);
+
+    expect(await logsWhileLoadingAt(4)).not.toContain(MERGE_DUMP);
+  });
+
+  it('reach the console in a dev build at log level 0', async () => {
+    vi.stubEnv('DEV', true);
+
+    expect(await logsWhileLoadingAt(0)).toContain(MERGE_DUMP);
   });
 });
 

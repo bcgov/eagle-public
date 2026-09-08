@@ -7,9 +7,10 @@ export interface EnvConfig {
   /**
    * Where the runtime config itself comes from, when `configEndpoint` is true. Set, it is tried
    * once before `/api/config` and its body is only accepted whole; empty or unset means
-   * `/api/config` alone. eagle-api stays the source of truth and the kill switch either way —
-   * clearing this reverts to it with no redeploy, and an unreachable or partial answer here falls
-   * through to it rather than booting on env.js.
+   * `/api/config` alone. Read from env.js before any remote merge, so setting or clearing it
+   * needs a redeploy of env.js. eagle-api stays the source of truth either way: its Mongo
+   * `Config` document is the kill switch for what the app reads at runtime, and an unreachable
+   * or partial answer here falls through to `/api/config` rather than booting on env.js.
    */
   CONFIG_PATH?: string;
   ENVIRONMENT?: string;
