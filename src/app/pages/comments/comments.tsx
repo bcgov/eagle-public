@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
-import { downloadDocument, searchKeywords } from 'app/api/api';
+import { searchKeywords } from 'app/api/api';
 import * as commentApi from 'app/api/comment';
 import * as commentPeriodApi from 'app/api/commentperiod';
 import * as documentApi from 'app/api/document';
@@ -14,7 +14,7 @@ import type { Project } from 'app/models/project';
 import { showToast } from 'app/state/toast';
 import { TableTemplate } from 'app/components/table/table-template';
 import { tableObject, type ITableMessage } from 'app/components/table/table-object';
-import { mediumDate } from 'app/utils/utils';
+import { mediumDate, openDocumentDownload } from 'app/utils/utils';
 import { safeHtml } from 'app/utils/safe-html';
 import { CommentsTableRow } from './comments-table-rows';
 import './comments.css';
@@ -205,15 +205,11 @@ export function Comments() {
     }
   }
 
+  // `openDocumentDownload` starts the transfer and falls back to eagle-api on its own, so there
+  // is no failure for the caller to report.
   function onDownloadDocument(doc: Document) {
-    downloadDocument(doc)
-      .then(() => showToast('Downloading document', { duration: 2000, type: 'info' }))
-      .catch(() =>
-        showToast('Error opening document! Please try again later', {
-          duration: 2000,
-          type: 'error',
-        }),
-      );
+    openDocumentDownload(doc);
+    showToast('Downloading document', { duration: 2000, type: 'info' });
   }
 
   function goBackToProjectDetails() {

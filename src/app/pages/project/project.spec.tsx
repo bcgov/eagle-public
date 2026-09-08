@@ -130,8 +130,8 @@ function stubFetch() {
     vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       requests.push(url);
-      if (url.includes('/commentperiod?')) {
-        return jsonResponse(commentPeriods);
+      if (url.includes('dataset=CommentPeriod')) {
+        return jsonResponse(searchResponse(commentPeriods.length, commentPeriods));
       }
       if (url.startsWith('/api/project/')) {
         return jsonResponse(project ? [project] : []);
@@ -252,7 +252,9 @@ describe('project shell', () => {
     renderShell();
 
     await screen.findByRole('link', { name: 'Overview' });
-    await waitFor(() => expect(requests.some((url) => url.includes('/commentperiod?'))).toBe(true));
+    await waitFor(() =>
+      expect(requests.some((url) => url.includes('dataset=CommentPeriod'))).toBe(true),
+    );
     expect(tabLink('Engagement')).toHaveTextContent(/^Engagement$/);
   });
 
@@ -416,8 +418,10 @@ function deferredFetch() {
                 ]),
               );
             }
-            if (url.includes('/commentperiod?')) {
-              return resolve(jsonResponse([]));
+            if (url.includes('dataset=CommentPeriod')) {
+              return resolve(
+                jsonResponse([{ searchResults: [], meta: [{ searchResultsTotal: 0 }] }]),
+              );
             }
             if (url.startsWith('/api/project/') && !url.includes('/pin')) {
               return resolve(jsonResponse([PROJECT]));
@@ -466,7 +470,7 @@ describe('project page first paint', () => {
     const issued = fetchStub.urls.join('\n');
     expect(issued).toMatch(/^\/api\/project\/proj-1\?/m);
     expect(issued).toMatch(/^\/api\/project\/proj-1\/pin\?/m);
-    expect(issued).toMatch(/\/commentperiod\?project=proj-1/);
+    expect(issued).toMatch(/dataset=CommentPeriod.*and\[project\]=proj-1/);
     expect(issued).toMatch(/dataset=List/);
     expect(issued).toMatch(/dataset=RecentActivity.*pageSize=1/);
     expect(issued).toMatch(/dataset=RecentActivity.*pageSize=10/);

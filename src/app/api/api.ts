@@ -7,7 +7,6 @@ import type { Org } from 'app/models/organization';
 import { encodeString } from 'app/utils/utils';
 import { logger } from 'app/config/logging';
 import { getApiPath, getSearchApiPath } from 'app/config/config';
-import { track } from 'app/analytics/analytics';
 
 export class ApiError extends Error {
   constructor(
@@ -23,9 +22,6 @@ interface ResponseWithHeaders<T> {
   body: T;
   headers: Headers;
 }
-
-// IE, Edge, etc
-export const isMS = !!(window.navigator as any).msSaveOrOpenBlob;
 
 export function apiPath(): string {
   return getApiPath();
@@ -49,6 +45,8 @@ const AZURE_DATASETS = new Set([
   'Organization',
   'RecentActivity',
   'ProjectNotification',
+  'CommentPeriod',
+  'Comment',
 ]);
 
 /** Which backend answers `/search` for a dataset. Anything not moved stays on eagle-api. */
@@ -63,6 +61,13 @@ function searchBaseFor(dataset: string): string {
  */
 function rowsFrom<T>(envelope: unknown): T[] {
   return (envelope as ISearchResult<T>[] | undefined)?.[0]?.searchResults ?? [];
+}
+
+/** How many rows match, ignoring paging. `null` when the backend did not count. */
+function totalFrom(envelope: unknown): number | null {
+  const total = (envelope as ISearchResult<unknown>[] | undefined)?.[0]?.meta?.[0]
+    ?.searchResultsTotal;
+  return typeof total === 'number' ? total : null;
 }
 
 async function send(
@@ -107,63 +112,6 @@ async function postJson<T>(url: string, body: unknown): Promise<T> {
     body: JSON.stringify(body),
   });
   return response.json() as Promise<T>;
-}
-
-export async function downloadDocument(document: Document): Promise<void> {
-  track('Document Downloaded', {
-    document_id: document._id,
-    document_name: document.displayName,
-    document_type: document.internalMime || 'unknown',
-  });
-
-  let blob;
-  try {
-    blob = await downloadResource(document._id);
-  } catch (e) {
-    throw new Error(String(e));
-  }
-  if (!blob) {
-    throw new Error();
-  }
-  let filename = document.displayName;
-  filename = encodeString(filename, false);
-  if (isMS) {
-    (window.navigator as any).msSaveBlob(blob, filename);
-  } else {
-    const url = window.URL.createObjectURL(blob);
-    const a = window.document.createElement('a');
-    window.document.body.appendChild(a);
-    a.setAttribute('style', 'display: none');
-    a.href = url;
-    a.download = filename;
-    a.click();
-    window.URL.revokeObjectURL(url);
-    a.remove();
-  }
-}
-
-export async function openDocument(document: Document): Promise<void> {
-  track('Document Opened', {
-    document_id: document._id,
-    document_name: document.displayName || document.documentFileName,
-    document_source: document.documentSource || 'unknown',
-  });
-
-  let filename;
-  if (document.documentSource === 'COMMENT') {
-    filename = document.internalOriginalName;
-  } else {
-    filename = document.documentFileName;
-  }
-  logger.debug('Opening document', 'api', { document });
-  let safeName = '';
-  try {
-    safeName = encodeString(filename || '', true);
-  } catch (e) {
-    logger.warn('Failed to encode document filename', 'api', e);
-  }
-  logger.debug('Opening document with safe name', 'api', { safeName });
-  window.open('/api/public/document/' + document._id + '/download/' + safeName, '_blank');
 }
 
 //
@@ -230,15 +178,6 @@ export async function cancelBulkDownload(id: string, keepalive = false): Promise
   await send(`${searchPath()}/bulk-downloads/${id}`, { method: 'DELETE', keepalive });
 }
 
-async function downloadResource(id: string): Promise<Blob> {
-  const queryString = `document/${id}/download`;
-  const blob = await (await send(apiPath() + '/' + queryString)).blob();
-  if (!blob) {
-    throw new Error('Failed to download document');
-  }
-  return blob;
-}
-
 //
 // Searching
 //
@@ -246,8 +185,9 @@ export async function searchKeywords(
   keys: string,
   dataset: string,
   fields: any[],
-  pageNum: number,
-  pageSize: number,
+  // Null on either means "no paging parameter", which the body has always honoured.
+  pageNum: number | null,
+  pageSize: number | null,
   projectLegislation = '',
   sortBy: string | null = null,
   queryModifier: Record<string, string> = {},
@@ -312,8 +252,8 @@ export async function searchKeywords(
   return getJson<SearchResults[]>(fullUrl);
 }
 
-/** One page holds every list row; the filter dropdowns need all of them at once. */
-const LISTS_PAGE_SIZE = 250;
+/** One page holds every row of these small collections; callers need all of them at once. */
+const ALL_ROWS_PAGE_SIZE = 250;
 
 /** Dropdown/filter list items, lazily fetched and cached by TanStack Query. */
 export function listsQueryOptions() {
@@ -322,7 +262,7 @@ export function listsQueryOptions() {
     queryFn: async (): Promise<any[]> => {
       return rowsFrom(
         await getJson<unknown>(
-          `${searchBaseFor('List')}/search?pageSize=${LISTS_PAGE_SIZE}&dataset=List`,
+          `${searchBaseFor('List')}/search?pageSize=${ALL_ROWS_PAGE_SIZE}&dataset=List`,
         ),
       );
     },
@@ -483,66 +423,119 @@ export async function getProject(
 //
 // Comment Periods
 //
-export async function getPeriodsByProjId(projId: string): Promise<any> {
-  const fields = [
-    'project',
-    'dateStarted',
-    'dateCompleted',
-    'instructions',
-    'isMet',
-    'metURL',
-    'informationLabel',
-  ];
-  const queryString = `commentperiod?project=${projId}&sortBy=-dateStarted&fields=${buildValues(fields)}`;
-  return getJson<any>(`${apiPath()}/${queryString}`);
+/**
+ * The fields the engagement cards have always been given. `/search` ignores `fields=`, so the
+ * projection the old `/commentperiod` route did happens here: the full record also carries
+ * `additionalText`, which the cards would then show in place of the description they derive from
+ * the instructions, and which demi-search does not store - so keeping it out also keeps the two
+ * backends rendering the same cards.
+ */
+const PERIOD_LIST_FIELDS = [
+  '_id',
+  'project',
+  'dateStarted',
+  'dateCompleted',
+  'instructions',
+  'isMet',
+  'metURL',
+  'informationLabel',
+];
+
+/**
+ * Every comment period of one project, newest first.
+ *
+ * Both backends answer `/search?dataset=CommentPeriod` and both read the project as `and[project]`,
+ * so this needs no branch. A project has single-digit comment periods, hence the one page.
+ */
+export async function getPeriodsByProjId(projId: string): Promise<CommentPeriod[]> {
+  const envelope = await searchKeywords(
+    '',
+    'CommentPeriod',
+    [],
+    1,
+    ALL_ROWS_PAGE_SIZE,
+    '',
+    '-dateStarted',
+    { project: projId },
+  );
+  return rowsFrom<Record<string, unknown>>(envelope).map(
+    (period) =>
+      Object.fromEntries(
+        Object.entries(period).filter(([field]) => PERIOD_LIST_FIELDS.includes(field)),
+      ) as unknown as CommentPeriod,
+  );
 }
 
+/**
+ * One comment period. `and[_id]` on both backends: eagle-api's `/search` ignores a bare `_id`
+ * and answers the whole collection, which would render an unrelated period.
+ */
 export async function getPeriod(id: string): Promise<CommentPeriod[]> {
-  const fields = [
-    'additionalText',
-    'dateCompleted',
-    'dateStarted',
-    'informationLabel',
-    'instructions',
-    'openHouses',
-    'project',
-    'relatedDocuments',
-    'commentTip',
-  ];
-  const queryString = 'commentperiod/' + id + '?fields=' + buildValues(fields);
-  return getJson<CommentPeriod[]>(`${apiPath()}/${queryString}`);
+  return rowsFrom<CommentPeriod>(
+    await searchKeywords('', 'CommentPeriod', [], 1, 1, '', null, { _id: id }),
+  );
 }
 
 //
 // Comments
 //
+/** Newest comment first, the order the comments table has always shown. */
+const COMMENTS_SORT = '-commentId';
+
+/** The fields eagle-api projects on a comment; demi-search answers its redacted row instead. */
+const COMMENT_FIELDS = [
+  'author',
+  'comment',
+  'documents',
+  'commentId',
+  'dateAdded',
+  'dateUpdated',
+  'isAnonymous',
+  'location',
+  'period',
+  'read',
+  'write',
+  'delete',
+];
+
+/** One page of comments plus how many there are in total, whichever backend answered. */
+export interface CommentPage {
+  comments: any[];
+  totalCount: number | null;
+}
+
+/**
+ * One page of a comment period's comments, newest first.
+ *
+ * eagle-api's `/search` has no Comment case at all - it answers 500 - so the fallback keeps the
+ * bespoke `/public/comment` route, which counts into the `x-total-count` header. demi-search
+ * counts into the envelope's `meta` instead, so the total is read from two different places.
+ *
+ * `pageNum` is zero-based here, as `/public/comment` takes it; `searchKeywords` takes it one-based.
+ */
 export async function getCommentsByPeriodId(
   pageNum: number | null,
   pageSize: number | null,
   getCount: boolean,
   periodId: string,
-): Promise<ResponseWithHeaders<any>> {
-  const fields = [
-    'author',
-    'comment',
-    'documents',
-    'commentId',
-    'dateAdded',
-    'dateUpdated',
-    'isAnonymous',
-    'location',
-    'period',
-    'read',
-    'write',
-    'delete',
-  ];
-  // TODO: May want to pass this as a parameter in the future.
-  const sort = '-commentId';
-
-  let queryString = 'public/comment?period=' + periodId + '&fields=' + buildValues(fields) + '&';
-  if (sort !== null) {
-    queryString += `sortBy=${sort}&`;
+): Promise<CommentPage> {
+  if (searchPath() !== apiPath()) {
+    const envelope = await searchKeywords(
+      '',
+      'Comment',
+      [],
+      pageNum === null ? null : pageNum + 1,
+      pageSize,
+      '',
+      COMMENTS_SORT,
+      { period: periodId },
+    );
+    return { comments: rowsFrom(envelope), totalCount: totalFrom(envelope) };
   }
+
+  let queryString =
+    'public/comment?period=' + periodId + '&fields=' + buildValues(COMMENT_FIELDS) + '&';
+  queryString += `sortBy=${COMMENTS_SORT}&`;
   if (pageNum !== null) {
     queryString += `pageNum=${pageNum}&`;
   }
@@ -552,25 +545,18 @@ export async function getCommentsByPeriodId(
   if (getCount !== null) {
     queryString += `count=${getCount}&`;
   }
-  return getWithHeaders<any>(`${apiPath()}/${queryString}`);
+  const response = await getWithHeaders<any[]>(`${apiPath()}/${queryString}`);
+  const total = response.headers.get('x-total-count');
+  return { comments: response.body, totalCount: total === null ? null : Number(total) };
 }
 
-export async function getComment(id: string): Promise<ResponseWithHeaders<any>> {
-  const fields = [
-    'author',
-    'comment',
-    'commentId',
-    'dateAdded',
-    'dateUpdated',
-    'isAnonymous',
-    'location',
-    'period',
-    'read',
-    'write',
-    'delete',
-  ];
-  const queryString = 'public/comment/' + id + '?fields=' + buildValues(fields);
-  return getWithHeaders<any>(`${apiPath()}/${queryString}`);
+/** One comment, with its attachment ids. Empty when nothing matches the id. */
+export async function getComment(id: string): Promise<any[]> {
+  if (searchPath() !== apiPath()) {
+    return rowsFrom(await searchKeywords('', 'Comment', [], 1, 1, '', null, { _id: id }));
+  }
+  const queryString = 'public/comment/' + id + '?fields=' + buildValues(COMMENT_FIELDS);
+  return getJson<any[]>(`${apiPath()}/${queryString}`);
 }
 
 export async function addComment(comment: Comment): Promise<Comment> {

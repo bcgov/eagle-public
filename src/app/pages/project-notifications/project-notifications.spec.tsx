@@ -56,8 +56,11 @@ function renderNotifications(path: string, data: { notifications?: any[]; period
           { searchResults: [{ _id: 'auth1', name: 'EAO' }], meta: [{ searchResultsTotal: 1 }] },
         ]);
       }
-      if (url.includes('/commentperiod')) {
-        return jsonResponse(data.periods ?? []);
+      if (url.includes('dataset=CommentPeriod')) {
+        const periods = data.periods ?? [];
+        return jsonResponse([
+          { searchResults: periods, meta: [{ searchResultsTotal: periods.length }] },
+        ]);
       }
       return jsonResponse([{ searchResults: [], meta: [] }]);
     }),

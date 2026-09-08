@@ -1,7 +1,6 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import type { TableRowProps } from 'app/components/table/table-object';
-import { openDocument } from 'app/api/api';
-import { longDate } from 'app/utils/utils';
+import { longDate, openDocumentDownload } from 'app/utils/utils';
 
 export function CommentsTableRow({ rowData }: TableRowProps) {
   const [expanded, setExpanded] = useState(false);
@@ -79,12 +78,12 @@ export function CommentsTableRow({ rowData }: TableRowProps) {
                 role="button"
                 tabIndex={0}
                 onClick={(event) => {
-                  openDocument(file);
+                  openDocumentDownload(file);
                   event.stopPropagation();
                 }}
                 onKeyDown={(event) => {
                   if (event.key === 'Enter' || event.key === ' ') {
-                    openDocument(file);
+                    openDocumentDownload(file);
                     event.stopPropagation();
                   }
                 }}

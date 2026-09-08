@@ -105,6 +105,11 @@ function jsonResponse(body: unknown) {
   });
 }
 
+/** The `/search` envelope a comment period list comes back in. */
+function periodEnvelope(periods: unknown[]) {
+  return [{ searchResults: periods, meta: [{ searchResultsTotal: periods.length }] }];
+}
+
 function stubFetch() {
   requests = [];
   projectFixtures = PROJECTS;
@@ -130,10 +135,10 @@ function stubFetch() {
       if (url.includes('eao-regions.geojson')) {
         return jsonResponse(REGION_SHAPES);
       }
-      if (url.includes('commentperiod')) {
-        const projId = new URL(url, 'http://localhost').searchParams.get('project') ?? '';
+      if (url.includes('dataset=CommentPeriod')) {
+        const projId = new URL(url, 'http://localhost').searchParams.get('and[project]') ?? '';
         const responder = commentPeriodResponders.get(projId);
-        return responder ? responder() : jsonResponse([]);
+        return responder ? responder() : jsonResponse(periodEnvelope([]));
       }
       return jsonResponse([]);
     }),
@@ -803,7 +808,9 @@ describe('projects map on a phone', () => {
 describe('project detail popup', () => {
   it('fetches the comment period for the selected pin', async () => {
     commentPeriodResponders.set('p1', async () =>
-      jsonResponse([{ _id: 'cp1', dateStarted: '2026-01-01', dateCompleted: '2099-01-01' }]),
+      jsonResponse(
+        periodEnvelope([{ _id: 'cp1', dateStarted: '2026-01-01', dateCompleted: '2099-01-01' }]),
+      ),
     );
     renderProjects();
     await screen.findByText('Application Review');
@@ -812,9 +819,11 @@ describe('project detail popup', () => {
 
     const popup = await screen.findByTestId('map-popup');
     expect(await within(popup).findByText('Open for comment')).toBeInTheDocument();
-    expect(requests).toContain(
-      '/api/commentperiod?project=p1&sortBy=-dateStarted&fields=project|dateStarted|dateCompleted|instructions|isMet|metURL|informationLabel',
-    );
+    expect(
+      requests.some(
+        (url) => url.includes('dataset=CommentPeriod&') && url.includes('and[project]=p1'),
+      ),
+    ).toBe(true);
   });
 
   it('expands the clamped description', async () => {
@@ -847,10 +856,14 @@ describe('project detail popup', () => {
       await new Promise<void>((resolve) => {
         releaseFirst = resolve;
       });
-      return jsonResponse([{ _id: 'cp1', dateStarted: '2020-01-01', dateCompleted: '2020-06-01' }]);
+      return jsonResponse(
+        periodEnvelope([{ _id: 'cp1', dateStarted: '2020-01-01', dateCompleted: '2020-06-01' }]),
+      );
     });
     commentPeriodResponders.set('p2', async () =>
-      jsonResponse([{ _id: 'cp2', dateStarted: '2026-01-01', dateCompleted: '2099-01-01' }]),
+      jsonResponse(
+        periodEnvelope([{ _id: 'cp2', dateStarted: '2026-01-01', dateCompleted: '2099-01-01' }]),
+      ),
     );
 
     renderProjects();

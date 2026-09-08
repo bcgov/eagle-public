@@ -37,7 +37,7 @@ describe('search routing', () => {
     return fetchMock.mock.calls[0][0] as string;
   }
 
-  /** Every dataset demi-search answers. Comment and CommentPeriod are not here yet. */
+  /** Every dataset demi-search answers. */
   const MOVED = [
     'Project',
     'Document',
@@ -46,6 +46,8 @@ describe('search routing', () => {
     'Organization',
     'RecentActivity',
     'ProjectNotification',
+    'CommentPeriod',
+    'Comment',
   ];
 
   it('routes every moved dataset to demi-search when configured', async () => {
@@ -55,13 +57,15 @@ describe('search routing', () => {
     }
   });
 
+  // Inspection is a real eagle-api `/search` dataset that eagle-public does not read; nothing the
+  // app asks for is off the list today, so this guards the gate rather than a live read.
   it('leaves a dataset demi-search does not answer on eagle-api', async () => {
     await setup(SEARCH);
-    for (const dataset of ['CommentPeriod', 'Comment']) {
-      const url = await urlFor(dataset);
-      expect(url).not.toContain(SEARCH);
-      expect(url.startsWith('/api/')).toBe(true);
-    }
+
+    const url = await urlFor('Inspection');
+
+    expect(url).not.toContain(SEARCH);
+    expect(url.startsWith('/api/')).toBe(true);
   });
 
   // The kill switch. Clearing SEARCH_API_PATH must send everything back to eagle-api with no

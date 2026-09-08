@@ -8,7 +8,7 @@ export async function getByPeriodId(
   pageNum: number | null = null,
   pageSize: number | null = null,
   getCount = false,
-): Promise<{ totalCount: string | null; currentComments: Comment[] } | null> {
+): Promise<{ totalCount: number | null; currentComments: Comment[] } | null> {
   const res = await api.getCommentsByPeriodId(
     pageNum ? pageNum - 1 : null,
     pageSize,
@@ -19,15 +19,14 @@ export async function getByPeriodId(
     return null;
   }
   return {
-    totalCount: res.headers.get('x-total-count'),
-    currentComments: (res.body as any[]).map((comment: any) => new Comment(comment)),
+    totalCount: res.totalCount,
+    currentComments: res.comments.map((comment: any) => new Comment(comment)),
   };
 }
 
 // get a specific comment by its id (including documents)
 export async function getById(commentId: string): Promise<Comment> {
-  const res = await api.getComment(commentId);
-  const comments = res.body as any[];
+  const comments = await api.getComment(commentId);
   if (!comments || comments.length === 0) {
     return null as unknown as Comment;
   }

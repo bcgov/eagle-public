@@ -46,7 +46,9 @@ function renderTab() {
     'fetch',
     vi.fn(async (input: RequestInfo | URL) => {
       requests.push(String(input));
-      return jsonResponse(periods);
+      return jsonResponse([
+        { searchResults: periods, meta: [{ searchResultsTotal: periods.length }] },
+      ]);
     }),
   );
 
@@ -64,14 +66,15 @@ describe('engagement tab', () => {
 
   afterEach(() => vi.unstubAllGlobals());
 
-  it('asks eagle-api for the project comment periods, newest first', async () => {
+  it('asks for the project comment periods through search, newest first', async () => {
     renderTab();
 
     await screen.findByText('Draft Application');
-    expect(requests[0]).toBe(
-      '/api/commentperiod?project=proj-1&sortBy=-dateStarted' +
-        '&fields=project|dateStarted|dateCompleted|instructions|isMet|metURL|informationLabel',
-    );
+    const url = new URL(requests[0], 'http://x');
+    expect(url.pathname).toBe('/api/search');
+    expect(url.searchParams.get('dataset')).toBe('CommentPeriod');
+    expect(url.searchParams.get('and[project]')).toBe('proj-1');
+    expect(url.searchParams.get('sortBy')).toBe('-dateStarted');
   });
 
   it('heads the tab and labels each card with its period status', async () => {
