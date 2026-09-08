@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import type { Project } from 'app/models/project';
-import { getAllByProjectId } from 'app/api/commentperiod';
-import { periodsOf } from 'app/api/commentperiod';
+import { getAllByProjectId, periodsOf } from 'app/api/commentperiod';
 import { track } from 'app/analytics/analytics';
 import { logger } from 'app/config/logging';
 import { safeHtml } from 'app/utils/safe-html';
