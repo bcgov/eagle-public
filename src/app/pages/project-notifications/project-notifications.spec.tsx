@@ -174,4 +174,26 @@ describe('project notifications', () => {
       '/pn/n1/cp/n1',
     );
   });
+
+  it('routes the period to the project when the notification names one', async () => {
+    renderNotifications('/project-notifications', {
+      notifications: [{ ...NOTIFICATIONS[0], associatedProjectId: 'proj-9' }],
+      periods: [
+        {
+          _id: 'cp-7',
+          project: 'n1',
+          dateStarted: '2026-08-01T00:00:00.000Z',
+          dateCompleted: '2099-09-01T00:00:00.000Z',
+        },
+      ],
+    });
+    await screen.findByText('CEDAR QUARRY');
+
+    await userEvent.click(screen.getByRole('tab', { name: 'Engagement' }));
+
+    expect(await screen.findByRole('link', { name: 'Share your thoughts' })).toHaveAttribute(
+      'href',
+      '/p/proj-9/cp/cp-7',
+    );
+  });
 });
