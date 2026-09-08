@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { ApiError, getJson } from './api';
+import { demiProjectQueryOptions } from './api';
 import { getAllFull } from './project';
-import { getApiPath, getDemiProjectsPath, getSearchApiPath } from 'app/config/config';
+import { getApiPath, getSearchApiPath } from 'app/config/config';
 
 /**
  * One Track work phase, as DEMI mirrors it onto the project document's `phases`. The rail uses
@@ -36,43 +36,9 @@ export function phasesOf(payload: unknown): Phase[] {
   return phases;
 }
 
-/** The DEMI project document fields the public app reads, beyond `phases` (see {@link Phase}). */
-export interface DemiProject {
-  phases?: unknown[];
-  shortUrl?: string;
-  /** EA certificate number, e.g. `E23-01`. No source has the conditions count it carries. */
-  eaCertificate?: string;
-}
-
-/**
- * Query options for the single-project DEMI fetch, shared by every consumer that needs a field
- * off that document (phase dates, the short link, …) so they collapse onto one request via the
- * shared query key. Disabled when DEMI_PROJECTS_PATH is unset — that empty path is the feature's
- * off switch and asks for nothing.
- */
-function demiProjectQuery(projId: string) {
-  const base = getDemiProjectsPath();
-  return {
-    queryKey: ['demi-project', projId],
-    enabled: !!base && !!projId,
-    retry: false,
-    queryFn: async (): Promise<DemiProject | null> => {
-      try {
-        return await getJson<DemiProject>(`${base}/${encodeURIComponent(projId)}`, {
-          quiet404: true,
-        });
-      } catch (err) {
-        // 404 means DEMI has no record for this project — an answer, not a failure.
-        if (err instanceof ApiError && err.status === 404) return null;
-        throw err;
-      }
-    },
-  };
-}
-
 /** The raw DEMI project document. `data` is `undefined` while in flight or when DEMI is off. */
 export function useDemiProject(projId: string) {
-  return useQuery(demiProjectQuery(projId));
+  return useQuery(demiProjectQueryOptions(projId));
 }
 
 /**
@@ -99,6 +65,6 @@ export function useProjectEaCertificate(projId: string): string | undefined {
 
 /** A project's Track work phases from DEMI, `null` while loading, when DEMI is off, or absent. */
 export function useProjectPhases(projId: string): Phase[] | null {
-  const { data } = useQuery({ ...demiProjectQuery(projId), select: phasesOf });
+  const { data } = useQuery({ ...demiProjectQueryOptions(projId), select: phasesOf });
   return data ?? null;
 }
