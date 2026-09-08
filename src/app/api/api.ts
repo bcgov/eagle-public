@@ -6,7 +6,8 @@ import type { ISearchResult, SearchResults } from 'app/models/search';
 import type { Org } from 'app/models/organization';
 import { encodeString } from 'app/utils/utils';
 import { logger } from 'app/config/logging';
-import { getApiPath, getSearchApiPath } from 'app/config/config';
+import { getApiPath, getDemiProjectsPath, getSearchApiPath } from 'app/config/config';
+import { queryClient } from './query-client';
 
 export class ApiError extends Error {
   constructor(
@@ -52,6 +53,105 @@ const AZURE_DATASETS = new Set([
 /** Which backend answers `/search` for a dataset. Anything not moved stays on eagle-api. */
 function searchBaseFor(dataset: string): string {
   return AZURE_DATASETS.has(dataset) ? searchPath() : apiPath();
+}
+
+/**
+ * Base URL for the single-project DEMI document, without a trailing slash. Empty when DEMI is off,
+ * which is what every caller branches on before reaching for it.
+ */
+export function demiProjectsPath(): string {
+  return getDemiProjectsPath();
+}
+
+/**
+ * The DEMI project document, as far as the public app reads it. Everything else on the document is
+ * passed through untouched and ignored, hence the index signature.
+ */
+export interface DemiProject {
+  /** The Eagle Mongo `_id`. DEMI's own `id` is the Track project id and means nothing here. */
+  eagleId?: string;
+  _id?: string;
+  name?: string;
+  description?: string;
+  /** Track's spelling of eagle-api's `type`, `status` and `location`. */
+  projectType?: string;
+  projectState?: string;
+  address?: string;
+  /** When DEMI last synced the document, NOT Eagle's `dateUpdated`. */
+  updatedAt?: string;
+  region?: string;
+  provElecDist?: string;
+  sector?: string;
+  /** GeoJSON `{type, coordinates}`, where eagle-api answers a bare `[lon, lat]`. */
+  centroid?: { coordinates?: number[] } | number[];
+  legislation?: string;
+  build?: string;
+  code?: string;
+  substitution?: boolean;
+  overallProgress?: number;
+  eaoMember?: string;
+  dateAdded?: string;
+  decisionDate?: string;
+  eacDecision?: unknown;
+  applicableRegulation?: unknown;
+  currentPhaseName?: unknown;
+  phaseHistory?: unknown[];
+  CEAAInvolvement?: unknown;
+  CEAALink?: string;
+  projectLead?: string;
+  projectLeadEmail?: string;
+  projectLeadPhone?: string;
+  responsibleEPD?: string;
+  responsibleEPDEmail?: string;
+  responsibleEPDPhone?: string;
+  /** The proponent as two scalars, where eagle-api populates the whole Organization. */
+  proponentId?: string;
+  proponentName?: string;
+  projectCAC?: boolean;
+  projectCACPublished?: boolean;
+  cacEmail?: string;
+  phases?: unknown[];
+  shortUrl?: string;
+  /** EA certificate number, e.g. `E23-01`. No source has the conditions count it carries. */
+  eaCertificate?: string;
+  /** Pinned Indigenous Nations, `{_id, name, province}` rows. Public per project, not per Nation. */
+  pins?: { _id?: string; name?: string; province?: string }[];
+  [field: string]: unknown;
+}
+
+/**
+ * Query options for the single-project DEMI fetch, shared by every consumer that needs a field off
+ * that document (the project record itself, phase dates, pins, the short link, …) so they collapse
+ * onto one request via the shared query key. Disabled when DEMI_PROJECTS_PATH is unset — that empty
+ * path is the feature's off switch and asks for nothing.
+ */
+export function demiProjectQueryOptions(projId: string) {
+  const base = demiProjectsPath();
+  return {
+    queryKey: ['demi-project', projId],
+    enabled: !!base && !!projId,
+    retry: false,
+    queryFn: async (): Promise<DemiProject | null> => {
+      try {
+        return await getJson<DemiProject>(`${base}/${encodeURIComponent(projId)}`, {
+          quiet404: true,
+        });
+      } catch (err) {
+        // 404 means DEMI has no record for this project — an answer, not a failure.
+        if (err instanceof ApiError && err.status === 404) return null;
+        throw err;
+      }
+    },
+  };
+}
+
+/**
+ * The DEMI project document for a plain (non-hook) caller, through the app's own query cache so it
+ * shares the one request the hooks already make for the same project. `null` when DEMI has no
+ * record for it.
+ */
+export async function getDemiProject(projId: string): Promise<DemiProject | null> {
+  return queryClient.fetchQuery(demiProjectQueryOptions(projId));
 }
 
 /**
@@ -282,12 +382,43 @@ export function listsQueryOptions() {
 //
 // Projects
 //
+/**
+ * One page of a project's pinned Indigenous Nations, in the `[{total_items, results}]` envelope the
+ * eagle-api route answers with.
+ *
+ * DEMI carries the same rows on the project document (`{_id, name, province}`, published per
+ * project by its `pinsRead[]`), so when DEMI is configured this reads them off that one shared
+ * document instead of a second round trip. Sorting and paging then happen here, because a stored
+ * array arrives in whatever order Mongo held it.
+ *
+ * No DEMI record for the project, or a read that fails, falls through to the eagle-api route the
+ * way the project record does. A record that carries no pins does not: there the document is the
+ * answer, and the card is meant to be absent.
+ */
 export async function getProjectPins(
   id: string,
   pageNum: number,
   pageSize: number,
   sortBy: any,
 ): Promise<Org> {
+  if (demiProjectsPath()) {
+    let doc: DemiProject | null = null;
+    try {
+      doc = await getDemiProject(id);
+    } catch (error) {
+      logger.warn('DEMI pins read failed, falling back to eagle-api', 'api', error);
+    }
+    if (doc) {
+      const pins = [...(doc.pins ?? [])];
+      if (sortBy === '+name' || sortBy === '-name') {
+        const direction = sortBy === '-name' ? -1 : 1;
+        pins.sort((a, b) => direction * (a.name ?? '').localeCompare(b.name ?? ''));
+      }
+      const from = pageNum !== null && pageSize !== null ? (pageNum - 1) * pageSize : 0;
+      const page = pageSize !== null ? pins.slice(from, from + pageSize) : pins;
+      return [{ total_items: pins.length, results: page }] as unknown as Org;
+    }
+  }
   let queryString = `project/${id}/pin`;
   if (pageNum !== null) {
     queryString += `?pageNum=${pageNum - 1}`;
@@ -448,6 +579,8 @@ const PERIOD_LIST_FIELDS = [
   'instructions',
   'isMet',
   'metURL',
+  // Only the overview banner draws this, and only for a MET period; the cards ignore it.
+  'metBannerImageUrl',
   'informationLabel',
 ];
 
@@ -612,6 +745,34 @@ export async function getDocumentsByMultiId(ids: string[]): Promise<Document[]> 
     'isPublished',
     'isFeatured',
   ];
+  if (searchPath() !== apiPath()) {
+    // demi-search reads `docIds` bare rather than as `and[docIds]`, and takes the same
+    // pipe-separated list eagle-api's route does. A present-but-empty value matches nothing there,
+    // which is what an empty `ids` means here too. It goes through the `fields` argument because
+    // that is the only one `searchKeywords` emits as a plain parameter.
+    const envelope = await searchKeywords(
+      '',
+      'Document',
+      [{ name: 'docIds', value: buildValues(ids) }],
+      1,
+      Math.max(ids.length, 1),
+    );
+    // `_id` is not in `fields`, because eagle-api answers with it whether or not it is asked for,
+    // and every caller keys documents by it.
+    return rowsFrom<Document>(envelope).map((row) => {
+      const record = row as unknown as Record<string, unknown>;
+      return pickFields<Document>(
+        {
+          ...record,
+          // The demi-search index holds no `internalOriginalName`, and it is the only label the
+          // comment attachment list renders.
+          internalOriginalName:
+            record['internalOriginalName'] ?? record['documentFileName'] ?? record['displayName'],
+        } as unknown as Document,
+        ['_id', ...fields],
+      );
+    });
+  }
   const queryString = `document?docIds=${buildValues(ids)}&fields=${buildValues(fields)}`;
   return getJson<Document[]>(`${apiPath()}/${queryString}`);
 }

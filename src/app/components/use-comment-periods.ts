@@ -1,11 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
-import { getAllByProjectId } from 'app/api/commentperiod';
-import type { CommentPeriod } from 'app/models/commentperiod';
+import { commentPeriodsQueryOptions } from 'app/api/commentperiod';
+import { CommentPeriod } from 'app/models/commentperiod';
 
 /**
  * Legacy periods carry the period name inside the instructions HTML, so it is pulled out and the
  * raw text kept as the description. Deduplicated by id, and by MET URL for ENGAGE-hosted periods,
  * since the same engagement can be synced into more than one period.
+ *
+ * Copies rather than edits: this runs as a `select` over rows other readers share.
  */
 function normalize(raw: CommentPeriod[]): CommentPeriod[] {
   const seenIds = new Set<string>();
@@ -20,9 +22,11 @@ function normalize(raw: CommentPeriod[]): CommentPeriod[] {
             .trim()
         : '';
       const match = fullText.match(/Comment Period on the (.*?) for /);
-      period.additionalText = period.additionalText || fullText || period.informationLabel;
-      period.instructions = match ? match[1] : '';
-      return period;
+      return new CommentPeriod({
+        ...period,
+        additionalText: period.additionalText || fullText || period.informationLabel,
+        instructions: match ? match[1] : '',
+      });
     })
     .filter((period) => {
       if (seenIds.has(period._id)) return false;
@@ -35,17 +39,11 @@ function normalize(raw: CommentPeriod[]): CommentPeriod[] {
     });
 }
 
-/** eagle-api answers a bare array or a `{ totalCount, data }` envelope; both become a list. */
-export function periodsOf(res: unknown): CommentPeriod[] {
-  if (Array.isArray(res)) return res as CommentPeriod[];
-  return (res as { data?: CommentPeriod[] })?.data ?? [];
-}
-
 /** Comment periods of a project or project notification, normalized and deduplicated. */
 export function useCommentPeriods(projectId: string, enabled = true) {
   return useQuery({
-    queryKey: ['commentPeriods', projectId],
+    ...commentPeriodsQueryOptions(projectId),
     enabled: !!projectId && enabled,
-    queryFn: async () => normalize(periodsOf(await getAllByProjectId(projectId))),
+    select: normalize,
   });
 }

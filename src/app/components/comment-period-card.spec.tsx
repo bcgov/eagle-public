@@ -46,11 +46,14 @@ function stubFetch(periods: unknown[]) {
 
 function renderPeriodsHook(projectId: string) {
   const queryClient = makeQueryClient();
-  return renderHook(() => useCommentPeriods(projectId), {
-    wrapper: ({ children }) => (
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-    ),
-  });
+  return {
+    ...renderHook(() => useCommentPeriods(projectId), {
+      wrapper: ({ children }) => (
+        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      ),
+    }),
+    queryClient,
+  };
 }
 
 describe('comment period cards', () => {
@@ -145,5 +148,34 @@ describe('useCommentPeriods', () => {
     expect(result.current.data?.[0].additionalText).toBe(
       'Public Comment Period on the Draft Application for Cedar.',
     );
+  });
+
+  it('leaves the cached rows other readers share unedited', async () => {
+    const instructions = '<p>Comment Period on the <b>Draft Application</b> for Cedar.</p>';
+    stubFetch([{ _id: 'cp-1', instructions, informationLabel: 'Cedar Quarry' }]);
+
+    const { result, queryClient } = renderPeriodsHook('proj-1');
+
+    await waitFor(() => expect(result.current.data).toBeDefined());
+    const cached = queryClient.getQueryData<CommentPeriod[]>(['commentPeriods', 'proj-1']);
+    expect(cached?.[0].instructions).toBe(instructions);
+    expect(cached?.[0].additionalText).toBeUndefined();
+  });
+
+  it('keeps the model getters on the normalized rows', async () => {
+    stubFetch([
+      {
+        _id: 'cp-1',
+        dateStarted: daysFromNow(-3),
+        dateCompleted: daysFromNow(4),
+        instructions: '<p>Comment Period on the <b>Draft Application</b> for Cedar.</p>',
+      },
+    ]);
+
+    const { result } = renderPeriodsHook('proj-1');
+
+    await waitFor(() => expect(result.current.data).toBeDefined());
+    expect(result.current.data?.[0].bannerState).toBe('Open');
+    expect(result.current.data?.[0].bannerCTA).toBe('Share your thoughts');
   });
 });

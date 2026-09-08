@@ -21,6 +21,25 @@ export async function getAllByProjectId(
   return { totalCount: res.length, data: res.map((cp: any) => new CommentPeriod(cp)) };
 }
 
+/** eagle-api answers a bare array or a `{ totalCount, data }` envelope; both become a list. */
+export function periodsOf(res: unknown): CommentPeriod[] {
+  if (Array.isArray(res)) return res as CommentPeriod[];
+  return (res as { data?: CommentPeriod[] })?.data ?? [];
+}
+
+/**
+ * Every read of a project's comment periods shares this key, so a project view that draws both the
+ * banner and the engagement list issues one request. Rows are cached raw; the list's normalizing is
+ * a `select` on top.
+ */
+export function commentPeriodsQueryOptions(projId: string) {
+  return {
+    queryKey: ['commentPeriods', projId],
+    enabled: !!projId,
+    queryFn: async (): Promise<CommentPeriod[]> => periodsOf(await getAllByProjectId(projId)),
+  };
+}
+
 // get a specific comment period by its id
 export async function getById(periodId: string): Promise<CommentPeriod> {
   const res = await api.getPeriod(periodId);

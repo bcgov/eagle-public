@@ -1,10 +1,10 @@
 {
   "comment-period-details": [
     "GET /api/config",
-    "GET /api/document?docIds=&fields=eaoStatus|internalOriginalName|documentFileName|labels|internalOriginalName|displayName|documentType|datePosted|dateUploaded|dateReceived|documentFileSize|documentSource|internalURL|internalMime|checkbox|project|type|documentAuthor|documentAuthorType|milestone|description|isPublished|isFeatured",
-    "GET /api/project/:id?fields=CEAAInvolvement|CELead|CELeadEmail|CELeadPhone|centroid|description|eacDecision|location|name|projectLeadId|projectLead|projectLeadEmail|projectLeadPhone|proponent|region|responsibleEPDId|responsibleEPD|responsibleEPDEmail|responsibleEPDPhone|type|legislation|addedBy|build|CEAALink|code|commodity|currentPhaseName|dateAdded|dateCommentsClosed|commentPeriodStatus|dateUpdated|decisionDate|duration|eaoMember|epicProjectID|fedElecDist|isTermsAgreed|overallProgress|primaryContact|proMember|provElecDist|sector|shortName|status|legislation|substitution|featuredDocuments|updatedBy|read|write|delete|featuredDocuments|projectCAC|projectCACPublished|cacEmail&populate=true",
+    "GET /demi-projects/:id",
     "GET /demi-search/search?and[_id]=:id&dataset=CommentPeriod&fuzzy=false&pageNum=0&pageSize=1&populate=false&projectLegislation=default",
-    "GET /demi-search/search?and[period]=:id&dataset=Comment&fuzzy=false&pageNum=0&pageSize=10&populate=false&projectLegislation=default&sortBy=-commentId"
+    "GET /demi-search/search?and[period]=:id&dataset=Comment&fuzzy=false&pageNum=0&pageSize=10&populate=false&projectLegislation=default&sortBy=-commentId",
+    "GET /demi-search/search?dataset=Document&docIds=&fuzzy=false&pageNum=0&pageSize=1&populate=false&projectLegislation=default"
   ],
   "home": [
     "GET /api/config",
@@ -16,8 +16,7 @@
   ],
   "overview-tab": [
     "GET /api/config",
-    "GET /api/project/:id/pin?pageNum=0&pageSize=100&sortBy= name",
-    "GET /api/project/:id?fields=CEAAInvolvement|CELead|CELeadEmail|CELeadPhone|centroid|description|eacDecision|location|name|projectLeadId|projectLead|projectLeadEmail|projectLeadPhone|proponent|region|responsibleEPDId|responsibleEPD|responsibleEPDEmail|responsibleEPDPhone|type|legislation|addedBy|build|CEAALink|code|commodity|currentPhaseName|dateAdded|dateCommentsClosed|commentPeriodStatus|dateUpdated|decisionDate|duration|eaoMember|epicProjectID|fedElecDist|isTermsAgreed|overallProgress|primaryContact|proMember|provElecDist|sector|shortName|status|legislation|substitution|featuredDocuments|updatedBy|read|write|delete|featuredDocuments|projectCAC|projectCACPublished|cacEmail&populate=true",
+    "GET /demi-projects/:id",
     "GET /demi-search/search?and[documentSource]=PROJECT&and[milestone]=:id&and[milestone]=:id&and[milestone]=:id&and[milestone]=:id&and[milestone]=:id&and[milestone]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&dataset=Document&fuzzy=false&pageNum=0&pageSize=1&populate=true&project=:id&projectLegislation=default&sortBy=&sortBy=",
     "GET /demi-search/search?and[documentSource]=PROJECT&and[milestone]=:id&and[milestone]=:id&and[milestone]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&dataset=Document&fuzzy=false&pageNum=0&pageSize=1&populate=true&project=:id&projectLegislation=default&sortBy=&sortBy=",
     "GET /demi-search/search?and[documentSource]=PROJECT&and[milestone]=:id&and[milestone]=:id&and[projectPhase]=:id&and[projectPhase]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&dataset=Document&fuzzy=false&pageNum=0&pageSize=1&populate=true&project=:id&projectLegislation=default&sortBy=&sortBy=",
@@ -31,7 +30,7 @@
   ],
   "project-documents-tab": [
     "GET /api/config",
-    "GET /api/project/:id?fields=CEAAInvolvement|CELead|CELeadEmail|CELeadPhone|centroid|description|eacDecision|location|name|projectLeadId|projectLead|projectLeadEmail|projectLeadPhone|proponent|region|responsibleEPDId|responsibleEPD|responsibleEPDEmail|responsibleEPDPhone|type|legislation|addedBy|build|CEAALink|code|commodity|currentPhaseName|dateAdded|dateCommentsClosed|commentPeriodStatus|dateUpdated|decisionDate|duration|eaoMember|epicProjectID|fedElecDist|isTermsAgreed|overallProgress|primaryContact|proMember|provElecDist|sector|shortName|status|legislation|substitution|featuredDocuments|updatedBy|read|write|delete|featuredDocuments|projectCAC|projectCACPublished|cacEmail&populate=true",
+    "GET /demi-projects/:id",
     "GET /demi-search/search?and[documentSource]=PROJECT&and[milestone]=:id&and[milestone]=:id&and[milestone]=:id&and[milestone]=:id&and[milestone]=:id&and[milestone]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&dataset=Document&fuzzy=false&pageNum=0&pageSize=1&populate=true&project=:id&projectLegislation=default&sortBy=&sortBy=",
     "GET /demi-search/search?and[documentSource]=PROJECT&and[milestone]=:id&and[milestone]=:id&and[milestone]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&dataset=Document&fuzzy=false&pageNum=0&pageSize=1&populate=true&project=:id&projectLegislation=default&sortBy=&sortBy=",
     "GET /demi-search/search?and[documentSource]=PROJECT&and[milestone]=:id&and[milestone]=:id&and[projectPhase]=:id&and[projectPhase]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&dataset=Document&fuzzy=false&pageNum=0&pageSize=1&populate=true&project=:id&projectLegislation=default&sortBy=&sortBy=",
