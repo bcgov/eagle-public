@@ -32,13 +32,11 @@
 
   // Where the runtime config itself is fetched from, when configEndpoint is true.
   //
-  // EMPTY MEANS eagle-api's /api/config, and eagle-api stays the kill switch either way: it is the
-  // source of truth, and clearing this reverts to it with no redeploy. A value here is only tried
-  // first — one attempt, 5 seconds — and the app falls through to /api/config when that path is
-  // unreachable or answers with a partial body, so a bad value costs one console error, not a boot.
-  //
-  // KEEP IT EMPTY HERE. Like SEARCH_API_PATH, a value baked in at build time would follow the
-  // bundle into every environment; the deploy workflows sed it per environment instead.
+  // EMPTY MEANS runtime config comes from eagle-api's /api/config; eagle-api's Mongo
+  // `Config` document stays the kill switch either way. Planned value, once later work
+  // lands: /demi-search/config, applied by the deploy workflows — when set, config is
+  // read from DEMI first and falls back to /api/config on any failure or partial body.
+  // Changing this value needs a redeploy of env.js; nothing here clears it at runtime.
   window.__env.CONFIG_PATH = '';
 
   // Log level: 0 = All, 1 = Debug, 2 = Info, 3 = Warn, 4 = Error
