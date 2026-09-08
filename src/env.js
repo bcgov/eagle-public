@@ -34,8 +34,8 @@
   //
   // EMPTY MEANS eagle-api /api/config. Staging deploy sets /demi-search/config (prod not yet):
   // a whole DEMI answer then governs everything, /api/config is never asked.
-  // DEMI's copy is a seeded snapshot: after editing eagle-api Mongo `Config`, re-run
-  // `npm run db:seed-public-config -- --live --force` on the devbox. Redeploy env.js to change.
+  // DEMI's copy is kept current by eagle-api, which pushes /api/config whenever it changes;
+  // eagle-api Mongo `Config` stays the source of truth. Redeploy env.js to change this value.
   window.__env.CONFIG_PATH = '';
 
   // Log level: 0 = All, 1 = Debug, 2 = Info, 3 = Warn, 4 = Error
