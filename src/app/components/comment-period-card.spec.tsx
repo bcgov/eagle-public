@@ -35,7 +35,9 @@ function renderCards(periods: CommentPeriod[] | null, onOpen = vi.fn(), loading 
   return { ...result, onOpen };
 }
 
-function stubFetch(body: unknown) {
+/** Comment periods arrive in the `/search` envelope both backends answer with. */
+function stubFetch(periods: unknown[]) {
+  const body = [{ searchResults: periods, meta: [{ searchResultsTotal: periods.length }] }];
   vi.stubGlobal(
     'fetch',
     vi.fn(async () => new Response(JSON.stringify(body), { status: 200 })),

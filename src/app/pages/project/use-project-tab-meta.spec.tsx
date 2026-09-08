@@ -63,7 +63,11 @@ async function renderTabs(
 ): Promise<RenderHookResult<ProjectTab[], unknown>> {
   const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
     const url = String(input);
-    if (url.includes('/commentperiod?')) return jsonResponse(commentPeriods);
+    if (url.includes('dataset=CommentPeriod')) {
+      return jsonResponse([
+        { searchResults: commentPeriods, meta: [{ searchResultsTotal: commentPeriods.length }] },
+      ]);
+    }
     if (url.includes('dataset=RecentActivity')) return jsonResponse(searchResponse(updatesTotal));
     if (url.includes('dataset=Document')) {
       const probe = PROBE_MARKERS.find((marker) => url.includes(marker));

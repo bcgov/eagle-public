@@ -1,8 +1,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { openDocumentDownload } from 'app/utils/utils';
 import { renderAt } from '../../../test-utils';
 import { Comments } from './comments';
+
+vi.mock('app/utils/utils', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('app/utils/utils')>()),
+  openDocumentDownload: vi.fn(),
+}));
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -73,7 +79,8 @@ function stubFetch() {
       const method = init?.method ?? 'GET';
       sent.push({ url, init });
 
-      if (url.startsWith('/api/commentperiod/')) return json([PERIOD]);
+      if (url.includes('dataset=CommentPeriod'))
+        return json([{ searchResults: [PERIOD], meta: [{ searchResultsTotal: 1 }] }]);
       if (url.startsWith('/api/project/proj1?populate')) return json([PROJECT]);
       if (url.includes('/cacSignUp')) return json({});
       if (url.startsWith('/api/search?dataset=ProjectNotification'))
@@ -135,6 +142,7 @@ describe('comments', () => {
     };
     sent = [];
     commentCount = 2;
+    vi.mocked(openDocumentDownload).mockClear();
     stubFetch();
   });
 
@@ -180,6 +188,31 @@ describe('comments', () => {
       entry.url.startsWith('/api/document?docIds=commentDoc1'),
     );
     expect(docRequests).toHaveLength(1);
+  });
+
+  /**
+   * Both download paths hand the document to `openDocumentDownload`, which asks demi-api for a
+   * presigned URL and falls back to eagle-api. Fetching that URL from script is barred by the
+   * deployed CSP, so nothing here may fetch it.
+   */
+  it('downloads a comment attachment through the presigned path', async () => {
+    renderComments();
+
+    await userEvent.click(await screen.findByText('attachment.pdf'));
+
+    expect(openDocumentDownload).toHaveBeenCalledWith(
+      expect.objectContaining({ _id: 'commentDoc1' }),
+    );
+  });
+
+  it('downloads a related document through the presigned path', async () => {
+    renderComments();
+
+    await userEvent.click(await screen.findByText('Related report.pdf'));
+
+    expect(openDocumentDownload).toHaveBeenCalledWith(
+      expect.objectContaining({ _id: 'relatedDoc1' }),
+    );
   });
 
   it('requests the first page of comments with a count', async () => {

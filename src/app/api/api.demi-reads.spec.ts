@@ -1,5 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { getOrgsByCompanyType, getTopNewsItems, listsQueryOptions } from './api';
+import {
+  getCommentsByPeriodId,
+  getOrgsByCompanyType,
+  getPeriod,
+  getPeriodsByProjId,
+  getTopNewsItems,
+  listsQueryOptions,
+} from './api';
 import { loadConfig } from 'app/config/config';
 
 /**
@@ -208,6 +215,318 @@ describe('reads served by demi-search', () => {
 
       expect(requestedUrl()).toBe('/api/public/recentActivity?top=true');
       expect(news).toEqual(NEWS);
+    });
+  });
+
+  describe('getPeriodsByProjId', () => {
+    const PERIODS = [
+      { _id: 'cp-1', project: 'proj-1', dateStarted: '2026-01-01', informationLabel: 'Round two' },
+      { _id: 'cp-2', project: 'proj-1', dateStarted: '2020-01-01', informationLabel: 'Round one' },
+    ];
+
+    it('asks demi-search for the project periods, newest first', async () => {
+      await setup(SEARCH);
+      respondWith(envelope(PERIODS));
+
+      const periods = await getPeriodsByProjId('proj-1');
+
+      const url = requestedUrl();
+      expect(url.startsWith(`${SEARCH}/search?dataset=CommentPeriod`)).toBe(true);
+      expect(url).toContain('&and[project]=proj-1');
+      expect(url).toContain('&sortBy=-dateStarted');
+      expect(periods.map((period) => period._id)).toEqual(['cp-1', 'cp-2']);
+    });
+
+    it('asks eagle-api for the same query when SEARCH_API_PATH is empty', async () => {
+      await setup('');
+      respondWith(envelope(PERIODS));
+
+      await getPeriodsByProjId('proj-1');
+
+      const url = requestedUrl();
+      expect(url.startsWith('/api/search?dataset=CommentPeriod')).toBe(true);
+      expect(url).toContain('&and[project]=proj-1');
+    });
+
+    /**
+     * eagle-api's `/search` answers the whole comment period record, the old `/commentperiod`
+     * route answered a projection, and demi-search stores no `additionalText` at all. Without the
+     * projection the engagement cards show a different description on each backend.
+     */
+    it('carries only the fields the engagement cards have always been given', async () => {
+      await setup('');
+      respondWith(
+        envelope([
+          {
+            _id: 'cp-1',
+            project: 'proj-1',
+            dateStarted: '2026-01-01',
+            dateCompleted: '2026-02-01',
+            instructions: '<p>Comment Period on the Draft Application for Cedar</p>',
+            isMet: false,
+            metURL: '',
+            informationLabel: 'Round two',
+            additionalText: 'A long legacy paragraph the cards never showed',
+            phaseName: 'Review',
+            read: ['public'],
+          },
+        ]),
+      );
+
+      const [period] = await getPeriodsByProjId('proj-1');
+
+      expect(period).toEqual({
+        _id: 'cp-1',
+        project: 'proj-1',
+        dateStarted: '2026-01-01',
+        dateCompleted: '2026-02-01',
+        instructions: '<p>Comment Period on the Draft Application for Cedar</p>',
+        isMet: false,
+        metURL: '',
+        informationLabel: 'Round two',
+      });
+    });
+  });
+
+  describe('getPeriod', () => {
+    it('filters one period by id under and[], which is the spelling both backends read', async () => {
+      await setup(SEARCH);
+      respondWith(envelope([{ _id: 'cp-1' }]));
+
+      const periods = await getPeriod('cp-1');
+
+      const url = requestedUrl();
+      expect(url).toContain('&and[_id]=cp-1');
+      // eagle-api's /search ignores a bare `_id` and answers the whole collection, so the details
+      // page would render whichever period happened to sort first.
+      expect(url).not.toContain('&_id=cp-1');
+      expect(periods.map((period) => period._id)).toEqual(['cp-1']);
+    });
+
+    it('stays on eagle-api when SEARCH_API_PATH is empty', async () => {
+      await setup('');
+      respondWith(envelope([{ _id: 'cp-1' }]));
+
+      await getPeriod('cp-1');
+
+      expect(requestedUrl().startsWith('/api/search?dataset=CommentPeriod')).toBe(true);
+    });
+
+    /** Envelope recorded from demi-search on test, period 5980d4f8436253001dcaf8b8. */
+    it('unwraps a recorded demi-search envelope', async () => {
+      await setup(SEARCH);
+      respondWith(
+        JSON.stringify([
+          {
+            searchResults: [
+              {
+                id: '5980d4f8436253001dcaf8b8',
+                projectId: '3',
+                eagleId: '5980d4f8436253001dcaf8b8',
+                sourceSystem: 'eagle',
+                dateStarted: '2017-08-08T20:00:00.000Z',
+                dateCompleted: '2017-10-11T06:59:00.000Z',
+                dateAdded: '2017-08-01T18:24:24.406Z',
+                isMet: false,
+                metURL: '',
+                informationLabel: '',
+                instructions: 'Comment on the Ajax Mine Project.',
+                openHouses: [{ description: 'Kamloops', eventDate: '2017-08-22T17:00:00.000Z' }],
+                relatedDocuments: [''],
+                commentTip: '',
+                isPublished: true,
+                _id: '5980d4f8436253001dcaf8b8',
+                _schemaName: 'CommentPeriod',
+                project: '58851197aaecd9001b8227cc',
+              },
+            ],
+            count: 1,
+            meta: [{ searchResultsTotal: 1 }],
+          },
+        ]),
+      );
+
+      const [period] = await getPeriod('5980d4f8436253001dcaf8b8');
+
+      expect(period).toMatchObject({
+        _id: '5980d4f8436253001dcaf8b8',
+        project: '58851197aaecd9001b8227cc',
+        instructions: 'Comment on the Ajax Mine Project.',
+      });
+      expect(period.openHouses).toHaveLength(1);
+    });
+
+    /**
+     * eagle-api's `/search` answers the whole stored record where the removed `/commentperiod`
+     * route projected nine fields, so without a projection here the admin and role fields
+     * (`metURLAdmin`, `classificationRoles`, ...) reach the details page.
+     */
+    it('carries only the fields the details page has always been given', async () => {
+      await setup('');
+      respondWith(
+        envelope([
+          {
+            _id: 'cp-1',
+            project: 'proj-1',
+            dateStarted: '2026-01-01',
+            dateCompleted: '2026-02-01',
+            instructions: '<p>Comment on the draft application for Cedar</p>',
+            informationLabel: 'Round two',
+            additionalText: 'A legacy paragraph',
+            openHouses: [{ description: 'Kamloops', eventDate: '2026-01-15' }],
+            relatedDocuments: ['doc-1'],
+            commentTip: '<em>Keep it on topic</em>',
+            metURLAdmin: 'https://admin.example/internal',
+            classificationRoles: ['staff'],
+            commenterRoles: ['staff'],
+            downloadRoles: ['staff'],
+            read: ['public'],
+          },
+        ]),
+      );
+
+      const [period] = await getPeriod('cp-1');
+
+      expect(period).toEqual({
+        _id: 'cp-1',
+        project: 'proj-1',
+        dateStarted: '2026-01-01',
+        dateCompleted: '2026-02-01',
+        instructions: '<p>Comment on the draft application for Cedar</p>',
+        informationLabel: 'Round two',
+        additionalText: 'A legacy paragraph',
+        openHouses: [{ description: 'Kamloops', eventDate: '2026-01-15' }],
+        relatedDocuments: ['doc-1'],
+        commentTip: '<em>Keep it on topic</em>',
+      });
+    });
+  });
+
+  describe('getCommentsByPeriodId', () => {
+    const ROWS = [
+      { _id: 'c1', commentId: 2, author: 'Jane', comment: 'Second' },
+      { _id: 'c2', commentId: 1, comment: 'First' },
+    ];
+
+    it('asks demi-search for one page of a period, newest first', async () => {
+      await setup(SEARCH);
+      respondWith(envelope(ROWS, 783));
+
+      const page = await getCommentsByPeriodId(0, 10, true, 'cp-1');
+
+      const url = requestedUrl();
+      expect(url.startsWith(`${SEARCH}/search?dataset=Comment`)).toBe(true);
+      expect(url).toContain('&and[period]=cp-1');
+      expect(url).toContain('&sortBy=-commentId');
+      expect(url).toContain('&pageSize=10');
+      expect(page.comments).toEqual(ROWS);
+    });
+
+    // `/public/comment` counts pages from zero and `searchKeywords` from one; sending the raw
+    // number would serve page two's comments under page one's controls.
+    it('keeps the caller on the page it asked for', async () => {
+      await setup(SEARCH);
+      respondWith(envelope(ROWS, 783));
+
+      await getCommentsByPeriodId(3, 10, true, 'cp-1');
+
+      expect(new URL(requestedUrl(), 'http://x').searchParams.get('pageNum')).toBe('3');
+    });
+
+    it('counts the period from the envelope demi-search answers with', async () => {
+      await setup(SEARCH);
+      respondWith(envelope(ROWS, 783));
+
+      expect((await getCommentsByPeriodId(0, 10, true, 'cp-1')).totalCount).toBe(783);
+    });
+
+    /**
+     * eagle-api's `/search` has no Comment case - it answers 500 - so the fallback stays on the
+     * bespoke route, which counts into a header instead of the envelope.
+     */
+    it('keeps the bespoke eagle-api route and its header count', async () => {
+      await setup('');
+      fetchMock = vi.fn(
+        async () =>
+          new Response(JSON.stringify(ROWS), { status: 200, headers: { 'x-total-count': '783' } }),
+      );
+      vi.stubGlobal('fetch', fetchMock);
+
+      const page = await getCommentsByPeriodId(0, 10, true, 'cp-1');
+
+      const url = requestedUrl();
+      expect(url.startsWith('/api/public/comment?period=cp-1')).toBe(true);
+      expect(url).toContain('sortBy=-commentId');
+      expect(page.comments).toEqual(ROWS);
+      expect(page.totalCount).toBe(783);
+    });
+
+    it('reports no count when eagle-api sends no x-total-count header', async () => {
+      await setup('');
+      respondWith(JSON.stringify(ROWS));
+
+      expect((await getCommentsByPeriodId(0, 10, true, 'cp-1')).totalCount).toBeNull();
+    });
+
+    /**
+     * Rows recorded from demi-search on test, period 5980d4f8436253001dcaf8b8. An anonymous
+     * comment carries no `author` key at all; the table prints "Anonymous" for it, and nothing
+     * here may invent one.
+     */
+    it('unwraps a recorded demi-search envelope, anonymous rows included', async () => {
+      await setup(SEARCH);
+      respondWith(
+        JSON.stringify([
+          {
+            searchResults: [
+              {
+                id: '598b9e271ecbc9001dfeba56',
+                projectId: '3',
+                eagleId: '598b9e271ecbc9001dfeba56',
+                periodId: '5980d4f8436253001dcaf8b8',
+                sourceSystem: 'eagle',
+                comment: 'Hurrah for the Indigenous peoples.',
+                dateAdded: '2017-08-09T23:48:06.876Z',
+                dateUpdated: null,
+                location: null,
+                submittedCAC: false,
+                isAnonymous: true,
+                documents: [],
+                commentId: 2,
+                eaoStatus: 'Published',
+                isPublished: true,
+                _id: '598b9e271ecbc9001dfeba56',
+                _schemaName: 'Comment',
+                period: '5980d4f8436253001dcaf8b8',
+              },
+              {
+                id: '598c783677a2820019e6e47a',
+                periodId: '5980d4f8436253001dcaf8b8',
+                comment: 'This mine is too close to the city.',
+                dateAdded: '2017-08-10T15:20:12.393Z',
+                isAnonymous: false,
+                documents: ['598cc094832a6300190e476e'],
+                commentId: 7,
+                author: 'Crystal Brand',
+                _id: '598c783677a2820019e6e47a',
+                _schemaName: 'Comment',
+                period: '5980d4f8436253001dcaf8b8',
+              },
+            ],
+            count: 783,
+            meta: [{ searchResultsTotal: 783 }],
+          },
+        ]),
+      );
+
+      const page = await getCommentsByPeriodId(0, 10, true, '5980d4f8436253001dcaf8b8');
+
+      expect(page.totalCount).toBe(783);
+      expect(page.comments[0].author).toBeUndefined();
+      expect(page.comments[1]).toMatchObject({
+        author: 'Crystal Brand',
+        documents: ['598cc094832a6300190e476e'],
+      });
     });
   });
 });
