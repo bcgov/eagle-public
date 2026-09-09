@@ -18,6 +18,7 @@ import {
   useStartError,
   type BulkDownloadJob,
 } from 'app/state/bulk-download';
+import { fileSize, sizeEstimate } from 'app/utils/file-size';
 import { triggerDownload } from 'app/utils/utils';
 import './download-panel.css';
 
@@ -78,19 +79,21 @@ const WARNING = (
   </i>
 );
 
-function progressRows(job: { count: number }, state?: BulkDownloadStatus): ReactNode {
+function progressRows(job: BulkDownloadJob, state?: BulkDownloadStatus): ReactNode {
   const partCount = state?.partCount ?? 0;
   // The part being zipped, not the last one finished: "part 0 of 3" reads as nothing happening.
   const part = Math.min((state?.partsReady ?? 0) + 1, partCount);
+  const detail = [
+    partCount > 1 ? `part ${part} of ${partCount}` : '',
+    job.estimate ? sizeEstimate(job.estimate) : '',
+  ]
+    .filter(Boolean)
+    .join(' · ');
 
   return (
     <Row icon={SPINNER}>
       Zipping {plural(job.count, 'document')}…
-      {partCount > 1 && (
-        <span className="download-panel__detail">
-          part {part} of {partCount}
-        </span>
-      )}
+      {detail && <span className="download-panel__detail">{detail}</span>}
     </Row>
   );
 }
@@ -133,9 +136,13 @@ function readyRows(state: BulkDownloadStatus, downloaded: boolean): ReactNode {
     return errorRows(state);
   }
 
+  const parts = state.parts ?? [];
+  // The zip as it was built, so this one is exact where the estimate was not.
+  const total = parts.reduce((sum, part) => sum + (part.bytes || 0), 0);
+
   return (
     <>
-      {(state.parts ?? []).map((part) => {
+      {parts.map((part) => {
         // demi-api names the zip; the reader must see that name, not one this app made up.
         const name = part.fileName || `part ${part.n}`;
         return (
@@ -159,11 +166,18 @@ function readyRows(state: BulkDownloadStatus, downloaded: boolean): ReactNode {
           >
             <span className="download-panel__name">{name}</span>
             <span className="download-panel__detail">
-              {downloaded ? 'Downloaded' : 'Downloading…'}
+              {[fileSize(part.bytes), downloaded ? 'Downloaded' : 'Downloading…']
+                .filter(Boolean)
+                .join(' · ')}
             </span>
           </Row>
         );
       })}
+      {parts.length > 1 && total > 0 && (
+        <li className="download-panel__total">
+          {plural(parts.length, 'file')} · {fileSize(total)}
+        </li>
+      )}
       {state.errorCount > 0 && errorRows(state)}
     </>
   );

@@ -73,6 +73,7 @@ export function DataTable({
   const {
     selectable,
     selectedCount,
+    selectedSizeText,
     pageAllSelected,
     pageMixed,
     showSelectAll,
@@ -83,6 +84,10 @@ export function DataTable({
   } = usePageSelection(data);
   const downloadInProgress = useDownloadInProgress();
   const selectionActive = selectedCount > 0;
+  // The size the reader decides on, so it goes on the button they decide with, not just the count.
+  const downloadLabel = `Download ${selectedCount.toLocaleString()}${
+    selectedSizeText ? ` (${selectedSizeText})` : ''
+  }`;
   const noResults = !loading && data.items.length === 0 && data.totalListItems === 0;
   // No count is known while the request is in flight, and the live region must not read out
   // "No documents" over a page that is still loading.
@@ -170,7 +175,7 @@ export function DataTable({
               <i className="material-icons" aria-hidden="true">
                 cloud_download
               </i>
-              Download {selectedCount.toLocaleString()}
+              {downloadLabel}
             </button>
           </div>
         )}

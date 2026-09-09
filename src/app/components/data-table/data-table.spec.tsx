@@ -176,6 +176,41 @@ describe('DataTable action bar', () => {
     expect(screen.getByRole('button', { name: /Download 2/ })).toBeInTheDocument();
   });
 
+  /** The size is what a reader decides on before starting a download, so it sits on the button. */
+  it('puts the estimated size on the Download button once the rows carry one', () => {
+    setSelected('documents', [
+      { id: 'doc-a', displayName: 'Alpha', size: 2 * 1024 * 1024 },
+      { id: 'doc-b', displayName: 'Beta', size: 3 * 1024 * 1024 },
+    ]);
+
+    render(<DataTable caption="Documents" data={table()} onMessage={() => undefined} />);
+
+    expect(screen.getByText('Download 2 (about 5.0 MB)')).toBeVisible();
+  });
+
+  // A sum missing some of its documents is a floor, and saying "about" would undersell the wait.
+  it('says at least when some of the selected rows have no known size', () => {
+    setSelected('documents', [
+      { id: 'doc-a', displayName: 'Alpha', size: 2 * 1024 * 1024 },
+      { id: 'doc-b', displayName: 'Beta' },
+    ]);
+
+    render(<DataTable caption="Documents" data={table()} onMessage={() => undefined} />);
+
+    expect(screen.getByText('Download 2 (at least 2.0 MB)')).toBeVisible();
+  });
+
+  it('offers the count on its own when no selected row has a known size', () => {
+    setSelected('documents', [
+      { id: 'doc-a', displayName: 'Alpha' },
+      { id: 'doc-b', displayName: 'Beta' },
+    ]);
+
+    render(<DataTable caption="Documents" data={table()} onMessage={() => undefined} />);
+
+    expect(screen.getByRole('button', { name: 'Download 2' })).toBeInTheDocument();
+  });
+
   it('drops the selection from the Clear button', async () => {
     const { container } = render(
       <DataTable caption="Documents" data={table()} onMessage={() => undefined} />,

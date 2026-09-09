@@ -3,6 +3,7 @@ import { track } from 'app/analytics/analytics';
 import { ApiError, createBulkDownload, type BulkDownloadStatus } from 'app/api/api';
 import { fetchData, type SearchParamObject } from 'app/api/search';
 import { logger } from 'app/config/logging';
+import type { SizeEstimate } from 'app/utils/file-size';
 import { triggerDownload } from 'app/utils/utils';
 import { showToast } from './toast';
 
@@ -35,6 +36,8 @@ export interface BulkDownloadJob {
   startedAt: number;
   /** Last status demi-api reported. Absent until the panel has polled once. */
   status?: BulkDownloadStatus['status'];
+  /** The selection's size when the job was posted: demi-api's 202 carries no byte count. */
+  estimate?: SizeEstimate;
   /** When the ready parts were fired; the guard against firing them a second time. */
   downloadedAt?: number;
 }
@@ -48,11 +51,20 @@ export function isTerminal(status?: string): boolean {
 
 export type TableSelection = Map<string, SelectedDocument>;
 
+/** Sum of the known sizes in a selection, with a count of the documents that carried none. */
+export function selectionSummary(docs: TableSelection): SizeEstimate {
+  let bytes = 0;
+  let unknownCount = 0;
+  docs.forEach((doc) => {
+    if (doc.size === undefined) unknownCount += 1;
+    else bytes += doc.size;
+  });
+  return { bytes, unknownCount };
+}
+
 /** Sum of the known sizes in a selection; documents with no known size add nothing. */
 export function selectionSize(docs: TableSelection): number {
-  let total = 0;
-  docs.forEach((doc) => (total += doc.size ?? 0));
-  return total;
+  return selectionSummary(docs).bytes;
 }
 
 const EMPTY: TableSelection = new Map();
@@ -240,8 +252,11 @@ export function dismissAll(): void {
  * failed start leaves the reader their selection to try again with.
  */
 export async function startDownload(): Promise<void> {
-  const ids = [...merged(selection.get()).keys()];
+  const selected = merged(selection.get());
+  const ids = [...selected.keys()];
   if (ids.length === 0) return;
+  // Read before the selection is cleared: it is the only size the panel has while zipping runs.
+  const estimate = selectionSummary(selected);
   startError.set(null);
   track('Bulk Download Started', { count: ids.length });
 
@@ -253,7 +268,7 @@ export async function startDownload(): Promise<void> {
       triggerDownload(result.url);
       return;
     }
-    addJob({ id: result.id, count: ids.length, startedAt: Date.now() });
+    addJob({ id: result.id, count: ids.length, startedAt: Date.now(), estimate });
   } catch (failure) {
     logger.warn('Bulk download could not be started', 'bulk-download', failure);
     const status = failure instanceof ApiError ? failure.status : 0;

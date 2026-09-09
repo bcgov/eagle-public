@@ -11,6 +11,8 @@ import {
   selectAllMatching,
   SELECT_ALL_FAILED_MESSAGE,
   SELECT_ALL_MAX,
+  selectionSize,
+  selectionSummary,
   setJobStatus,
   setSelected,
   toggleSelected,
@@ -18,6 +20,7 @@ import {
   useJobs,
   useSelection,
   type BulkDownloadJob,
+  type TableSelection,
 } from './bulk-download';
 
 vi.mock('app/api/search', async (importOriginal) => ({
@@ -29,7 +32,7 @@ const ALPHA = { id: 'doc-a', displayName: 'Alpha' };
 const BETA = { id: 'doc-b', displayName: 'Beta' };
 
 /** The store's read surface is a hook; every assertion goes through it. */
-function selectionOf(tableId?: string): Map<string, { id: string; displayName: string }> {
+function selectionOf(tableId?: string): TableSelection {
   return renderHook(() => useSelection(tableId)).result.current;
 }
 
@@ -73,6 +76,45 @@ describe('bulk download selection', () => {
     clearSelection();
 
     expect(selectionOf().size).toBe(0);
+  });
+});
+
+/** The bar's estimate: rows carry `internalSize`, and plenty of them carry nothing. */
+describe('the size of a selection', () => {
+  beforeEach(() => {
+    clearSelection();
+  });
+
+  it('sums the sizes it knows and counts the documents carrying none', () => {
+    setSelected('documents', [
+      { id: 'doc-a', displayName: 'Alpha', size: 2 * 1024 * 1024 },
+      { id: 'doc-b', displayName: 'Beta', size: 3 * 1024 * 1024 },
+      { id: 'doc-c', displayName: 'Gamma' },
+    ]);
+
+    expect(selectionSummary(selectionOf('documents'))).toEqual({
+      bytes: 5 * 1024 * 1024,
+      unknownCount: 1,
+    });
+  });
+
+  it('knows nothing about a selection where no size came through', () => {
+    setSelected('documents', [ALPHA, BETA]);
+
+    expect(selectionSummary(selectionOf('documents'))).toEqual({ bytes: 0, unknownCount: 2 });
+  });
+
+  it('adds up every table, because they are downloaded as one job', () => {
+    setSelected('documents', [{ id: 'doc-a', displayName: 'Alpha', size: 1024 }]);
+    setSelected('search', [{ id: 'doc-b', displayName: 'Beta', size: 2048 }]);
+
+    expect(selectionSummary(selectionOf())).toEqual({ bytes: 3072, unknownCount: 0 });
+  });
+
+  it('answers with the byte total on its own', () => {
+    setSelected('documents', [{ id: 'doc-a', displayName: 'Alpha', size: 4096 }, BETA]);
+
+    expect(selectionSize(selectionOf('documents'))).toBe(4096);
   });
 });
 

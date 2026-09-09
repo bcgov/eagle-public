@@ -1,6 +1,5 @@
 import { useRef } from 'react';
 import { Constants } from 'app/utils/constants';
-import { fileSize } from 'app/utils/file-size';
 import {
   clearSelection,
   MAX_JOBS_IN_FLIGHT,
@@ -69,7 +68,7 @@ export function TableTemplate({
   const {
     selectable,
     selectedCount,
-    selectedSize,
+    selectedSizeText,
     pageAllSelected,
     pageMixed,
     showSelectAll,
@@ -78,8 +77,7 @@ export function TableTemplate({
     selectAllTitle,
     toggleAllOnPage,
   } = usePageSelection(data);
-  // Sum of the originals, not the zip demi-api builds from them, so it is only ever an estimate.
-  const selectedSizeLabel = selectedSize > 0 ? ` · about ${fileSize(selectedSize)}` : '';
+  const selectedSizeLabel = selectedSizeText ? ` · ${selectedSizeText}` : '';
   const downloadInProgress = useDownloadInProgress();
 
   const { onSort, onUpdatePageNumber, onUpdatePageSize } = useTableHandlers({
