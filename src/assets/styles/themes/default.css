@@ -17,7 +17,6 @@
   --header-height: 4.2rem;
   --env-banner-height: 0rem;
   --header-total-height: 4.2rem;
-  --footer-height: 17rem;
   --sidebar-width: 30%;
 
   /* Background Colors */
@@ -36,10 +35,6 @@
   /* Header */
   --header-font-color: var(--white);
   --header-bg: var(--bs-secondary);
-
-  /* Footer */
-  --footer-bg: var(--bs-secondary);
-  --footer-color: var(--white);
 
   /* Main Navigation - uses theme typography scale */
   --mn-font-size: var(--bs-font-size-sm);

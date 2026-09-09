@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Outlet, useLocation } from 'react-router';
 import { Header } from './header';
-import { Footer } from './footer';
+import { SiteFooter } from './site-footer';
 import { DownloadPanel } from 'app/components/download-panel';
 import { ToastContainer } from 'app/components/toast-container';
 import { Gate } from './gate';
@@ -86,7 +86,7 @@ export function AppShell() {
             <Outlet />
           </div>
         </main>
-        <Footer />
+        <SiteFooter />
       </div>
 
       <a
