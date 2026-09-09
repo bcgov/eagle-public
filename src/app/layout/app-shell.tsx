@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Outlet, useLocation } from 'react-router';
-import { Header } from './header';
+import { SiteHeader } from './site-header';
 import { SiteFooter } from './site-footer';
 import { DownloadPanel } from 'app/components/download-panel';
 import { ToastContainer } from 'app/components/toast-container';
@@ -76,7 +76,7 @@ export function AppShell() {
         Skip to main content
       </a>
       <div className="app-wrapper">
-        <Header />
+        <SiteHeader />
         <main
           id="main-content"
           tabIndex={-1}

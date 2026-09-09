@@ -32,19 +32,8 @@
   /* Links */
   --link-color: #1a5a96;
 
-  /* Header */
-  --header-font-color: var(--white);
+  /* Header — the masthead has its own file; this is the hero banner's band. */
   --header-bg: var(--bs-secondary);
-
-  /* Main Navigation - uses theme typography scale */
-  --mn-font-size: var(--bs-font-size-sm);
-  --mn-dropdown-menu-size: var(--bs-font-size-sm);
-  --mn-color: var(--white);
-  --mn-border-color: #5f79a2;
-  --mn-hover-bg: #2b4777;
-  --mn-hover-color: var(--gold);
-  --mn-toggle-color: var(--gold);
-  --mn-dropdown-bg: #2b4777;
 
   /* COMPONENTS */
 

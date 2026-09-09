@@ -4,7 +4,8 @@ import { logger } from 'app/config/logging';
 import { isSafeUrl } from 'app/utils/safe-url';
 import './engagement-link.css';
 
-const NEW_TAB_SUFFIX = ' (opens in new tab)';
+/** The wording every link that leaves the tab announces. Shared with layout/site-header.tsx. */
+export const NEW_TAB_SUFFIX = ' (opens in new tab)';
 
 /** The mark every link that leaves the tab carries. Decorative: the name says it in words. */
 function NewTabIcon() {

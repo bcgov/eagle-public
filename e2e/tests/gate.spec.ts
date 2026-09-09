@@ -42,8 +42,10 @@ test.describe('access gate', () => {
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
       'EPIC is not open to the public yet',
     );
-    // The app itself is not rendered behind the curtain.
-    await expect(page.locator('header .navbar, nav.navbar')).toHaveCount(0);
+    // The app itself is not rendered behind the curtain: no masthead, no main nav. The curtain
+    // has a <header> of its own (`.gate__header`), so the class is what separates them.
+    await expect(page.locator('header.eao-header')).toHaveCount(0);
+    await expect(page.getByRole('navigation', { name: 'Main' })).toHaveCount(0);
 
     await field.fill(PASSWORD!);
     await page.getByRole('button', { name: 'Continue' }).click();
@@ -52,6 +54,9 @@ test.describe('access gate', () => {
     await expect(page.getByRole('heading', { level: 1 })).not.toHaveText(
       'EPIC is not open to the public yet',
     );
+    // The mirror of the assertion above: the masthead the curtain was hiding is now on the page,
+    // so a selector that had stopped matching anything could not pass both halves.
+    await expect(page.locator('header.eao-header')).toBeVisible();
     // The flag is remembered in localStorage, so a reload does not re-ask.
     expect(await page.evaluate(() => localStorage.getItem('eagle-gate'))).toBe('1');
     await page.reload();

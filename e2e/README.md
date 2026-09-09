@@ -215,7 +215,7 @@ into `screenshots/`, which is gitignored.
 
 | Tool | Writes | Use |
 |---|---|---|
-| `node tools/shots.ts` | `screenshots/<OUT>/<shot>-{desktop,mobile}.png` | every route at 1280x800 and 390x844, plus the map project card (the expanded list card on mobile), the mobile list sheet, the open header menus, the mobile menu, the search filters and the three add-comment pages |
+| `node tools/shots.ts` | `screenshots/<OUT>/<shot>-{desktop,mobile}.png` | every route at 1280x800 and 390x844, plus the map project card (the expanded list card on mobile), the mobile list sheet, the mobile menu, the search filters and the three add-comment pages |
 | `node tools/dom-dump.ts` | `screenshots/<OUT>.dom.txt` | `tag.class \| text` for every element, framework wrapper elements dropped, so an Angular tree and a React tree line up under `diff` |
 | `node tools/style-dump.ts` | `screenshots/<OUT>.styles.json` | ~50 computed properties per element; `python3 tools/style-diff.py a.styles.json b.styles.json` aligns the two and prints only what differs |
 

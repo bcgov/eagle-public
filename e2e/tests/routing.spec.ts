@@ -77,7 +77,7 @@ test('the header navigates to every top-level destination', async ({ page }) => 
   await page.goto('/');
   await ready(page, 1000);
 
-  await page.getByRole('banner').getByRole('link', { name: 'Map View' }).click();
+  await page.getByRole('banner').getByRole('link', { name: 'Map Explorer' }).click();
   await page.waitForURL('**/projects');
 
   await page.goto('/');
