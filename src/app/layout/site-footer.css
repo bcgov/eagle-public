@@ -11,9 +11,9 @@
   z-index: 150;
 }
 
-/* The map page fills the viewport on a phone, so the footer gives way. Keyed on the page's own
-   `data-mobile` rather than a width query: a landscape phone is wider than 768px. */
-.app-wrapper:has(.projects-view[data-mobile]) .app-footer {
+/* The map page is a fixed 100dvh shell (pages/projects/projects.css), so the footer's height
+   would come out of the map. Hidden on the map route at every width. */
+.app-wrapper:has(.projects-view) .app-footer {
   display: none;
 }
 

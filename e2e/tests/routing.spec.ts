@@ -77,11 +77,12 @@ test('the header navigates to every top-level destination', async ({ page }) => 
   await page.goto('/');
   await ready(page, 1000);
 
-  await page.getByRole('link', { name: 'Map View' }).click();
+  await page.getByRole('banner').getByRole('link', { name: 'Map View' }).click();
   await page.waitForURL('**/projects');
 
   await page.goto('/');
   await ready(page, 1000);
-  await page.getByRole('link', { name: 'Contact Us' }).click();
+  // The footer carries a gov.bc.ca "Contact us" link too, so scope the lookup to the header.
+  await page.getByRole('banner').getByRole('link', { name: 'Contact Us' }).click();
   await page.waitForURL('**/contact');
 });
