@@ -24,6 +24,8 @@
   justify-content: space-around;
   background-color: var(--theme-gray-110);
   padding: var(--layout-padding-xlarge);
+  border-top: var(--layout-border-width-large) solid var(--theme-gold-60);
+  border-bottom: var(--layout-border-width-large) solid var(--theme-gold-60);
 }
 
 .app-footer--acknowledgement-text {
