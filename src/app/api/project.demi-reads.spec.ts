@@ -404,6 +404,22 @@ describe('project reads served by DEMI', () => {
       expect(requestedUrls().filter((url) => url.includes('dataset=List'))).toHaveLength(1);
     });
 
+    it('skips the List read entirely when the three List-backed fields already arrive populated', async () => {
+      await setup({ demi: DEMI, search: SEARCH });
+      const populatedDoc = {
+        ...DEMI_DOC,
+        eacDecision: LISTS[0],
+        currentPhaseName: LISTS[1],
+        CEAAInvolvement: LISTS[2],
+      };
+      respondWith(JSON.stringify(populatedDoc));
+
+      const project = await getById('58851197aaecd9001b8227cc', false, null, null);
+
+      expect(project.eacDecision).toEqual(LISTS[0]);
+      expect(requestedUrls().filter((url) => url.includes('dataset=List'))).toHaveLength(0);
+    });
+
     it('leaves the banner empty when no period falls in the window', async () => {
       await setup({ demi: DEMI, search: SEARCH });
       respondWith(JSON.stringify(DEMI_DOC), envelope([OLD_PERIOD]));

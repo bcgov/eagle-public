@@ -196,15 +196,23 @@ async function readProject(
           logger.warn('Banner comment period read failed, showing no banner', 'project', error);
         }
       }
-      // The `List` rows the id-shaped project fields resolve against. The project shell asks for
-      // the same key on mount, so this joins that one in-flight request rather than adding a
-      // second. No retries, for the reason the banner has none; rows that never arrive leave the
-      // List-backed facts empty, which is what they already show today.
+      // The `List` rows the id-shaped project fields resolve against. Only worth asking for when
+      // at least one of the three fields is a bare id string; a DEMI doc that answers all three
+      // pre-populated (as eagle-api does) has nothing left to look up. The project shell asks for
+      // the same key on mount, so when needed this joins that one in-flight request rather than
+      // adding a second. No retries, for the reason the banner has none; rows that never arrive
+      // leave the List-backed facts empty, which is what they already show today.
       let lists: ListRef[] = [];
-      try {
-        lists = await queryClient.fetchQuery({ ...api.listsQueryOptions(), retry: false });
-      } catch (error) {
-        logger.warn('List read failed, leaving the List-backed facts empty', 'project', error);
+      if (
+        typeof doc.eacDecision === 'string' ||
+        typeof doc.currentPhaseName === 'string' ||
+        typeof doc.CEAAInvolvement === 'string'
+      ) {
+        try {
+          lists = await queryClient.fetchQuery({ ...api.listsQueryOptions(), retry: false });
+        } catch (error) {
+          logger.warn('List read failed, leaving the List-backed facts empty', 'project', error);
+        }
       }
       return [demiProjectToEagle(doc, periodsInWindow(periods, cpStart, cpEnd), lists)];
     }
