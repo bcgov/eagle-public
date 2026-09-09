@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router';
+import { NEW_TAB_SUFFIX } from 'app/components/engagement-link';
 import { adminUrl, bannerColour, env } from 'app/config/config';
 import './site-header.css';
 
@@ -11,9 +12,6 @@ const NAV_LINKS = [
 ];
 
 const SITE_TITLE = 'Environmental Assessment Office Project Information Centre';
-
-/** The same wording every link that leaves the tab uses (components/engagement-link.tsx). */
-const NEW_TAB_SUFFIX = ' (opens in new tab)';
 
 /** The desktop breakpoint, the same 768px the media query in site-header.css uses. */
 const DESKTOP_QUERY = '(min-width: 768px)';

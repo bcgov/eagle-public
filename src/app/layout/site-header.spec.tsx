@@ -1,9 +1,9 @@
-import { describe, it, expect } from 'vitest';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { describe, it, expect, afterEach } from 'vitest';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { SiteHeader } from './site-header';
-import { adminUrl } from 'app/config/config';
+import { adminUrl, loadConfig, type EnvConfig } from 'app/config/config';
 
 /** The masthead alone, on a router, so a spec can drive the route without the whole app. */
 function renderHeader(path = '/') {
@@ -24,6 +24,39 @@ function nav() {
 
 function staffLogin() {
   return screen.getByRole('link', { name: /^Staff Login/ });
+}
+
+type MediaChangeListener = (event: MediaQueryListEvent) => void;
+
+/**
+ * jsdom has no viewport, so the header's 768px listener is driven by hand: install before render,
+ * then `cross(true)` is the window widening past the breakpoint.
+ */
+function stubDesktopQuery() {
+  const listeners = new Set<MediaChangeListener>();
+  const original = window.matchMedia;
+  window.matchMedia = ((query: string) =>
+    ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addEventListener: (_type: string, listener: MediaChangeListener) => listeners.add(listener),
+      removeEventListener: (_type: string, listener: MediaChangeListener) =>
+        listeners.delete(listener),
+      addListener: () => undefined,
+      removeListener: () => undefined,
+      dispatchEvent: () => false,
+    }) as MediaQueryList) as typeof window.matchMedia;
+
+  return {
+    cross: (matches: boolean) =>
+      act(() => {
+        listeners.forEach((listener) => listener({ matches } as MediaQueryListEvent));
+      }),
+    restore: () => {
+      window.matchMedia = original;
+    },
+  };
 }
 
 describe('site header', () => {
@@ -88,11 +121,41 @@ describe('site header', () => {
     expect(screen.getByRole('link', { name: 'Search' })).not.toHaveAttribute('aria-current');
   });
 
-  it('names the environment above the bar', () => {
-    renderHeader();
+  describe('the environment banner', () => {
+    const originalEnv = window.__env;
 
-    const header = screen.getByRole('banner');
-    expect(within(header).getByText(/This is the/).textContent).toContain('local');
+    /** The runtime config the banner reads, loaded the way the app loads it at startup. */
+    async function configureWith(values: EnvConfig): Promise<void> {
+      window.__env = { logLevel: 4, ...values };
+      await loadConfig();
+    }
+
+    afterEach(async () => {
+      window.__env = originalEnv;
+      await loadConfig();
+    });
+
+    it('names the environment above the bar', () => {
+      renderHeader();
+
+      const header = screen.getByRole('banner');
+      expect(within(header).getByText(/This is the/).textContent).toContain('local');
+    });
+
+    it('stays hidden on a deployed environment with no colour set', async () => {
+      await configureWith({ ENVIRONMENT: 'test', BANNER_COLOUR: 'no-banner-colour-set' });
+      renderHeader();
+
+      expect(screen.queryByText(/This is the/)).not.toBeInTheDocument();
+    });
+
+    it('shows locally even with no colour set, because local is never the real site', async () => {
+      await configureWith({ ENVIRONMENT: 'local', BANNER_COLOUR: '' });
+      renderHeader();
+
+      const header = screen.getByRole('banner');
+      expect(within(header).getByText(/This is the/).textContent).toContain('local');
+    });
   });
 
   // jsdom has no layout, so the height is always 0; what a spec can hold is that the map page's
@@ -168,6 +231,26 @@ describe('site header', () => {
       await router.navigate('/contact');
 
       await waitFor(() => expect(toggler()).toHaveAttribute('aria-expanded', 'false'));
+    });
+
+    it('closes when the window widens past the desktop breakpoint, and only then', async () => {
+      const user = userEvent.setup();
+      const desktop = stubDesktopQuery();
+      try {
+        renderHeader();
+        await user.click(toggler());
+
+        // Narrowing leaves the panel alone: it is the only way to reach the links down there.
+        desktop.cross(false);
+        expect(toggler()).toHaveAttribute('aria-expanded', 'true');
+
+        // Above the breakpoint the links are on the bar, so the panel state has to be dropped or
+        // it comes back open the next time the window narrows.
+        desktop.cross(true);
+        expect(toggler()).toHaveAttribute('aria-expanded', 'false');
+      } finally {
+        desktop.restore();
+      }
     });
 
     it('closes on a pointer down outside the masthead', async () => {
