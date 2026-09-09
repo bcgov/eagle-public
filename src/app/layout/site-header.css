@@ -54,21 +54,29 @@
   font: var(--typography-bold-h4);
 }
 
-.eao-header__toggler {
+/* The glyph alone: the button is named by aria-label, so no words sit beside it. */
+.eao-header .eao-header__toggler {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--layout-margin-xsmall);
   /* 44px is the touch target size the B.C. Design System asks for. */
   min-width: 44px;
   min-height: 44px;
   margin-inline: auto var(--layout-padding-small);
   padding: var(--layout-padding-xsmall) var(--layout-padding-small);
-  border: var(--layout-border-width-none);
-  background: none;
-  color: var(--theme-primary-gold);
-  font: var(--typography-bold-body);
+  border: var(--layout-border-width-none) solid;
   cursor: pointer;
+}
+
+/* White in every state: a bare button otherwise takes the theme's dark body colour, which is
+   near-invisible on this bar. The focus ring below is what marks focus. */
+.eao-header .eao-header__toggler,
+.eao-header .eao-header__toggler:hover,
+.eao-header .eao-header__toggler:focus,
+.eao-header .eao-header__toggler:active {
+  color: var(--typography-color-primary-invert);
+  border-color: var(--typography-color-primary-invert);
+  background: none;
 }
 
 .eao-header__nav {
@@ -111,10 +119,10 @@
   font: var(--typography-bold-body);
 }
 
-/* Staff Login carries the same states as the links beside it; in the panel it keeps its label,
-   so the row is not a lone glyph. */
-.eao-header .eao-header__link--action {
-  gap: var(--layout-margin-small);
+/* In the panel Staff Login is a row of words like the links above it, so the glyph is dropped
+   rather than doubled up with the label. */
+.eao-header .eao-header__action-icon {
+  display: none;
 }
 
 /* Keyboard focus is gold, because the B.C. active blue is invisible against this surface. */
@@ -125,7 +133,7 @@
 }
 
 @media (width >= 768px) {
-  .eao-header__toggler {
+  .eao-header .eao-header__toggler {
     display: none;
   }
 
@@ -153,6 +161,10 @@
     justify-content: center;
     min-width: 44px;
     padding-block: var(--layout-padding-xsmall);
+  }
+
+  .eao-header .eao-header__action-icon {
+    display: block;
   }
 
   /* Clipped rather than display:none: the accessible name is still "Staff Login (opens in new

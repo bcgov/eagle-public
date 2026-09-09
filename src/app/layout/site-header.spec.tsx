@@ -99,6 +99,16 @@ describe('site header', () => {
     expect(links[3]).toHaveAccessibleName(/^Staff Login\s*\(opens in new tab\)$/);
   });
 
+  it('puts the Staff Login words ahead of its icon', () => {
+    renderHeader();
+
+    // The icon is decorative and has no text of its own, so only the DOM order pins the reading
+    // order: the words come first, the glyph trails them.
+    const staff = staffLogin();
+    expect(staff.firstElementChild).toHaveTextContent('Staff Login');
+    expect(staff.lastElementChild?.tagName.toLowerCase()).toBe('svg');
+  });
+
   it('sends Staff Login to the configured admin app in a new tab, and says so', () => {
     renderHeader();
 
@@ -169,6 +179,14 @@ describe('site header', () => {
   });
 
   describe('the mobile panel', () => {
+    it('is named Menu without printing the word beside the glyph', () => {
+      renderHeader();
+
+      expect(toggler()).toHaveAccessibleName('Menu');
+      // The bar shows the hamburger alone; the ligature text inside it is lowercase `menu`.
+      expect(screen.queryByText('Menu')).not.toBeInTheDocument();
+    });
+
     it('opens and closes from the toggler', async () => {
       const user = userEvent.setup();
       renderHeader();
