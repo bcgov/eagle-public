@@ -350,3 +350,60 @@ describe('config getters', () => {
     expect(bannerColour()).toBe('');
   });
 });
+
+/**
+ * `/api/config` serves ADMIN_PATH as `/admin/`, which is only correct on the rproxy host that
+ * fronts both apps. On the Azure static site and on the Vite dev server that path is the public
+ * app itself, so it has to be resolved against the API host before it is used as a link target.
+ */
+describe('adminUrl', () => {
+  const original = window.__env;
+
+  afterEach(() => {
+    window.__env = original;
+  });
+
+  async function configuredWith(env: Record<string, unknown>): Promise<void> {
+    window.__env = { logLevel: 4, ...env };
+    await loadConfig();
+  }
+
+  it('resolve a relative path against the API host', async () => {
+    await configuredWith({
+      ADMIN_PATH: '/admin/',
+      API_LOCATION: 'https://eagle-test.apps.silver.devops.gov.bc.ca/api',
+    });
+
+    expect(adminUrl()).toBe('https://eagle-test.apps.silver.devops.gov.bc.ca/admin/');
+  });
+
+  it('resolve against an API host that carries no path', async () => {
+    await configuredWith({
+      ADMIN_PATH: '/admin/',
+      API_LOCATION: 'https://eagle-test.apps.silver.devops.gov.bc.ca',
+    });
+
+    expect(adminUrl()).toBe('https://eagle-test.apps.silver.devops.gov.bc.ca/admin/');
+  });
+
+  it('leave an absolute path alone', async () => {
+    await configuredWith({
+      ADMIN_PATH: 'https://admin.example/admin/',
+      API_LOCATION: 'https://eagle-test.apps.silver.devops.gov.bc.ca',
+    });
+
+    expect(adminUrl()).toBe('https://admin.example/admin/');
+  });
+
+  it('keep the relative path when there is no API host to resolve against', async () => {
+    await configuredWith({ ADMIN_PATH: '/admin/' });
+
+    expect(adminUrl()).toBe('/admin/');
+  });
+
+  it('fall back to the local admin when no path is configured', async () => {
+    await configuredWith({ API_LOCATION: 'https://eagle-test.apps.silver.devops.gov.bc.ca' });
+
+    expect(adminUrl()).toBe('http://localhost:4200/admin/');
+  });
+});

@@ -1,0 +1,201 @@
+/* Site masthead, hand-ported from the EPIC design kit's header (eagle-design-kit/components.css,
+   `.eao-header`): a dark blue bar under a gold rule, the treatment every EPIC service wears.
+   Colours, spacing and type come from @bcgov/design-tokens, same as the site footer. */
+
+.eao-header {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  width: 100%;
+  position: relative;
+  z-index: 1005;
+  /* The blue the footer's content band uses. No @bcgov/design-tokens value matches the EPIC
+     #003366 (--theme-primary-blue is #013366), so both take it from bootstrap. */
+  background-color: var(--bs-secondary);
+  color: var(--typography-color-primary-invert);
+  /* The same rule the footer draws (site-footer.css). */
+  border-bottom: var(--layout-border-width-large) solid var(--theme-gold-60);
+}
+
+/* Below 768px the nav wraps onto its own row under the mark, the title and the toggler. */
+.eao-header__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* The theme's `a:hover, a:focus` (assets/styles/themes/bcgov-bootstrap-theme.css) paints any link
+   --bs-link-hover-color, the same #003366 as this bar, so a hovered or focused link reads as gone.
+   Every state here is written on a `.eao-header` descendant chain, which outranks it. */
+
+/* Mark and wordmark share one link; the wordmark sits beside the mark, not spaced off it. */
+.eao-header .eao-header__home {
+  display: flex;
+  align-items: center;
+  gap: var(--layout-margin-xsmall);
+  padding: var(--layout-padding-small) var(--layout-padding-medium);
+  color: var(--typography-color-primary-invert);
+  text-decoration: none;
+}
+
+.eao-header .eao-header__home:hover,
+.eao-header .eao-header__home:focus {
+  color: var(--typography-color-primary-invert);
+  text-decoration: none;
+}
+
+.eao-header__mark {
+  /* The visual identity sets the floor for the horizontal mark at 25px. */
+  height: 2rem;
+  width: auto;
+}
+
+.eao-header__title {
+  font: var(--typography-bold-h4);
+}
+
+.eao-header__toggler {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--layout-margin-xsmall);
+  /* 44px is the touch target size the B.C. Design System asks for. */
+  min-width: 44px;
+  min-height: 44px;
+  margin-inline: auto var(--layout-padding-small);
+  padding: var(--layout-padding-xsmall) var(--layout-padding-small);
+  border: var(--layout-border-width-none);
+  background: none;
+  color: var(--theme-primary-gold);
+  font: var(--typography-bold-body);
+  cursor: pointer;
+}
+
+.eao-header__nav {
+  display: none;
+  flex-basis: 100%;
+  flex-direction: column;
+}
+
+.eao-header__nav--open {
+  display: flex;
+}
+
+/* Navigation, not body copy: no underline in any state, and no rule of its own under an item —
+   the bar already carries a gold rule. Below 768px each link is a full-width row in the panel. */
+.eao-header .eao-header__link {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  padding: var(--layout-padding-small) var(--layout-padding-medium);
+  border-top: var(--layout-border-width-small) solid rgb(255 255 255 / 25%);
+  color: var(--typography-color-primary-invert);
+  font: var(--typography-regular-body);
+  text-decoration: none;
+}
+
+.eao-header .eao-header__link:hover,
+.eao-header .eao-header__link:focus {
+  color: var(--typography-color-primary-invert);
+  text-decoration: none;
+}
+
+.eao-header .eao-header__link:hover,
+.eao-header .eao-header__link:focus-visible {
+  background-color: rgb(255 255 255 / 12%);
+}
+
+/* After the hover rules, so the page being viewed keeps its gold under the pointer too. */
+.eao-header .eao-header__link[aria-current='page'] {
+  color: var(--theme-primary-gold);
+  font: var(--typography-bold-body);
+}
+
+/* Staff Login carries the same states as the links beside it; in the panel it keeps its label,
+   so the row is not a lone glyph. */
+.eao-header .eao-header__link--action {
+  gap: var(--layout-margin-small);
+}
+
+/* Keyboard focus is gold, because the B.C. active blue is invisible against this surface. */
+.eao-header a:focus-visible,
+.eao-header button:focus-visible {
+  outline: var(--layout-border-width-medium) solid var(--theme-primary-gold);
+  outline-offset: var(--layout-margin-hair);
+}
+
+@media (width >= 768px) {
+  .eao-header__toggler {
+    display: none;
+  }
+
+  .eao-header__nav {
+    display: flex;
+    flex-basis: auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-inline-start: auto;
+    padding-inline-end: var(--layout-padding-small);
+  }
+
+  /* Tighter than the panel rows and butted together, so the four controls read as one cluster;
+     44px keeps the touch target, and the hover fill covers the whole padded box. */
+  .eao-header .eao-header__link {
+    min-height: 44px;
+    padding-inline: var(--layout-padding-small);
+    border-top: var(--layout-border-width-none);
+  }
+
+  /* On the bar it is the icon alone, on the 44px touch target the B.C. Design System asks for.
+     That fits inside the 52px row, so the target costs no layout. */
+  .eao-header .eao-header__link--action {
+    justify-content: center;
+    min-width: 44px;
+    padding-block: var(--layout-padding-xsmall);
+  }
+
+  /* Clipped rather than display:none: the accessible name is still "Staff Login (opens in new
+     tab)", and the title attribute gives pointer users the same words. */
+  .eao-header .eao-header__action-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+/* Environment banner, carried over from the Angular header: it names the deployment on every
+   non-production site. Its five colours are set by /api/config, not by the design system. */
+.eao-header .env-banner {
+  width: 100%;
+  padding: 5px 10px;
+  text-align: center;
+}
+
+.eao-header .env-banner.red {
+  background-color: #ff8e8e;
+  color: #870303; /* 4.65:1 */
+}
+
+.eao-header .env-banner.orange {
+  background-color: #ffd47e;
+  color: #825701; /* 4.52:1 */
+}
+
+.eao-header .env-banner.yellow {
+  background-color: #f1ef63;
+  color: #6c6c0b; /* 4.56:1 */
+}
+
+.eao-header .env-banner.green {
+  background-color: #aaf1a0;
+  color: #057312; /* 4.56:1 */
+}
+
+.eao-header .env-banner.purple {
+  background-color: #d39eff;
+  color: #6500b7; /* 4.52:1 */
+}

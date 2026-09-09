@@ -48,3 +48,33 @@ Blockers to clear first:
   design; keep that in a separate workflow so the tag rule stays intact for test and prod.
 - The existing `next` channel becomes one more preview (`preview/react`) once this exists; then
   `deployNextSite`, environment `azure-next` and the `target` input can go.
+
+## Staff mode
+
+Let staff log into the public site instead of keeping a separate app for staff-only reads.
+
+Mechanism: Keycloak realm `eao-epic`, a public client with check-sso and PKCE (the pattern
+eagle-demi-admin uses), bearer token sent on eagle-api and demi-api reads. The backends already
+gate by role: eagle-api filters on `read[]`, DEMI has RBAC. Anonymous visitors see what they see
+today. A staff token unlocks unpublished projects, documents and comment periods, and staff-only
+actions.
+
+What it buys:
+
+- Preview unpublished content in the real public layout before publishing.
+- Create and repoint short URLs on the page itself instead of in DEMI Admin.
+- The masthead's Staff Login becomes a login button, then an account chip. Today it is an
+  external link to eagle-admin, kept as one isolated element so the swap touches one component.
+- Over time, eagle-admin's read-only views can retire into it.
+
+Cost:
+
+- A Keycloak client per environment with the public site's redirect URIs (Front Door host and
+  beta host).
+- Token plumbing in `api.ts`; `/demi-search` behind APIM must accept and forward the bearer token.
+- Every list and detail component gains a "staff sees more" path, so tests double for those
+  screens.
+- Three staff surfaces (eagle-admin, DEMI Admin, this) until something retires.
+
+Scope for a first cut: preview plus short URLs, after the v3.0.0 cutover. Own epic, not part of
+PUBLIC-166.

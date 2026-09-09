@@ -158,8 +158,34 @@ export function contentSearchEnabled(): boolean {
   return config.CONTENT_SEARCH === true;
 }
 
+/** Origin of API_LOCATION — the rproxy host. Empty when unset or unparsable. */
+function apiOrigin(): string {
+  const location = (config.API_LOCATION || '').trim();
+  if (!location) return '';
+  try {
+    return new URL(location).origin;
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * Where eagle-admin lives.
+ *
+ * `/api/config` serves ADMIN_PATH relative (`/admin/`) because rproxy fronts eagle-admin and the
+ * public app on one host. The Azure-hosted public site and the Vite dev server are NOT that host,
+ * so a relative path there resolves to the public app itself, whose wildcard route sends the
+ * visitor back to `/`. Resolve a relative path against API_LOCATION's origin instead. An absolute
+ * ADMIN_PATH is already a full URL and passes through; with no API_LOCATION to resolve against,
+ * the relative path is left alone.
+ */
 export function adminUrl(): string {
-  return config.ADMIN_PATH || 'http://localhost:4200/admin/';
+  const path = config.ADMIN_PATH;
+  if (!path) return 'http://localhost:4200/admin/';
+  if (!path.startsWith('/')) return path;
+
+  const origin = apiOrigin();
+  return origin ? new URL(path, origin).href : path;
 }
 
 export function env(): string {

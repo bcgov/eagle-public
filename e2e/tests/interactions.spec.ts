@@ -1,4 +1,4 @@
-import { test, expect } from '../support/fixtures';
+import { test, expect, type Page } from '../support/fixtures';
 import { ready, waitForSearch, total } from '../support/helpers';
 
 /**
@@ -72,30 +72,35 @@ test('@data the map region filter narrows the result count and syncs the URL', a
   expect(filtered).not.toBe(unfiltered);
 });
 
+/** The visible + screen-reader text of whatever holds focus, whitespace collapsed. */
+async function focusedName(page: Page): Promise<string> {
+  return page.evaluate(() =>
+    (document.activeElement?.textContent ?? '').replace(/\s+/g, ' ').trim(),
+  );
+}
+
 test('the header tabs through its links in visual order', async ({ page }) => {
   await page.goto('/');
   await ready(page, 1000);
 
-  await page.locator('a.navbar-brand').focus();
-  const seen: string[] = [];
-  for (let i = 0; i < 5; i++) {
+  // Start on the masthead's home link, so the skip link that sits ahead of the header does not
+  // have to be counted. The Menu toggler is display:none at this viewport, so it is not a stop.
+  const home = page.getByRole('banner').getByRole('link', { name: /^EPIC\b/ });
+  await home.focus();
+
+  const seen = [await focusedName(page)];
+  for (let i = 0; i < 4; i++) {
     await page.keyboard.press('Tab');
-    seen.push(
-      (await page.evaluate(() => document.activeElement?.textContent?.trim() ?? '')).replace(
-        /\s+/g,
-        ' ',
-      ),
-    );
+    seen.push(await focusedName(page));
   }
 
-  // Angular renders the two dropdown toggles as `<a>` with no href, so a keyboard user cannot
-  // reach them at all; the port makes them `<button>` (see `docs/deviations-from-angular.md`). What has to hold on
-  // both is that whatever is reachable comes in the order the links are drawn in.
-  const order = ['Map View', 'Project Information', 'The EA Process', 'Contact Us'];
-  const reached = seen.filter((name) => order.includes(name));
-  expect(reached).toEqual(order.filter((name) => reached.includes(name)));
-  expect(reached).toContain('Map View');
-  expect(reached).toContain('Contact Us');
+  expect(seen).toEqual([
+    'EPIC Environmental Assessment Office Project Information Centre',
+    'Map Explorer',
+    'Search',
+    'Contact Us',
+    'Staff Login (opens in new tab)',
+  ]);
 });
 
 test('Escape closes the comment modal without submitting', async ({ page, request }) => {

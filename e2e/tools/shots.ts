@@ -196,31 +196,18 @@ async function main(): Promise<void> {
       },
     },
     {
-      name: 'header-dropdown-1',
-      desktopOnly: true,
-      go: async (p) => {
-        await goto(p, '/');
-        // Both builds open these menus on CSS hover; the toggle itself has pointer-events: none.
-        await p.locator('header li.dropdown').filter({ hasText: 'Project Information' }).hover();
-        await p.waitForTimeout(600);
-      },
-    },
-    {
-      name: 'header-dropdown-2',
-      desktopOnly: true,
-      go: async (p) => {
-        await goto(p, '/');
-        await p.locator('header li.dropdown').filter({ hasText: 'The EA Process' }).hover();
-        await p.waitForTimeout(600);
-      },
-    },
-    {
+      // The masthead has no dropdowns: below 768px the Menu button discloses the whole nav, and
+      // above it every link is already on the bar, which the plain `home` shot captures.
       name: 'mobile-menu',
       mobileOnly: true,
       go: async (p) => {
         await goto(p, '/');
-        await p.locator('button.navbar-toggler, .navbar-toggler').first().click();
-        await p.waitForTimeout(800);
+        await p.getByRole('button', { name: 'Menu' }).click();
+        // Fail the shot rather than capture a closed menu: the panel is display:none until it
+        // opens, so this waits on the disclosure itself instead of on a timer.
+        await p
+          .getByRole('navigation', { name: 'Main' })
+          .waitFor({ state: 'visible', timeout: 5000 });
       },
     },
     {
