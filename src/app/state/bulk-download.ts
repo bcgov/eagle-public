@@ -62,11 +62,6 @@ export function selectionSummary(docs: TableSelection): SizeEstimate {
   return { bytes, unknownCount };
 }
 
-/** Sum of the known sizes in a selection; documents with no known size add nothing. */
-export function selectionSize(docs: TableSelection): number {
-  return selectionSummary(docs).bytes;
-}
-
 const EMPTY: TableSelection = new Map();
 const selection = createStore<Map<string, TableSelection>>(new Map());
 

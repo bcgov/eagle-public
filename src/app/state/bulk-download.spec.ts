@@ -11,7 +11,6 @@ import {
   selectAllMatching,
   SELECT_ALL_FAILED_MESSAGE,
   SELECT_ALL_MAX,
-  selectionSize,
   selectionSummary,
   setJobStatus,
   setSelected,
@@ -109,12 +108,6 @@ describe('the size of a selection', () => {
     setSelected('search', [{ id: 'doc-b', displayName: 'Beta', size: 2048 }]);
 
     expect(selectionSummary(selectionOf())).toEqual({ bytes: 3072, unknownCount: 0 });
-  });
-
-  it('answers with the byte total on its own', () => {
-    setSelected('documents', [{ id: 'doc-a', displayName: 'Alpha', size: 4096 }, BETA]);
-
-    expect(selectionSize(selectionOf('documents'))).toBe(4096);
   });
 });
 
