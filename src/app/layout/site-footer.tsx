@@ -1,5 +1,3 @@
-import { useEffect, useRef } from 'react';
-import { useLocation } from 'react-router';
 import { adminUrl } from 'app/config/config';
 import './site-footer.css';
 
@@ -20,26 +18,9 @@ const GOV_LINKS = [
   },
 ];
 
-export function SiteFooter({ className = '' }: { className?: string }) {
-  const { pathname } = useLocation();
-  const footerRef = useRef<HTMLElement>(null);
-
-  // Re-measured on navigation as well as resize: the map page hides the footer, so the height has
-  // to be taken again once a route that shows it is back.
-  useEffect(() => {
-    const updateFooterHeight = () => {
-      const height = footerRef.current?.offsetHeight;
-      if (height) {
-        document.documentElement.style.setProperty('--footer-height', `${height}px`);
-      }
-    };
-    updateFooterHeight();
-    window.addEventListener('resize', updateFooterHeight);
-    return () => window.removeEventListener('resize', updateFooterHeight);
-  }, [pathname]);
-
+export function SiteFooter() {
   return (
-    <footer ref={footerRef} className={`app-footer${className ? ' ' + className : ''}`} id="footer">
+    <footer className="app-footer" id="footer">
       <div className="app-footer--acknowledgement">
         <div className="app-footer--acknowledgement-text">
           <p>

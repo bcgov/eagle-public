@@ -1,14 +1,10 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
-import { createMemoryRouter, RouterProvider } from 'react-router';
 import { SiteFooter } from './site-footer';
 import { adminUrl } from 'app/config/config';
 
 function renderFooter() {
-  const router = createMemoryRouter([{ path: '/', element: <SiteFooter /> }], {
-    initialEntries: ['/'],
-  });
-  return render(<RouterProvider router={router} />);
+  return render(<SiteFooter />);
 }
 
 describe('site footer', () => {
@@ -69,17 +65,5 @@ describe('site footer', () => {
 
     const year = new Date().getUTCFullYear();
     expect(screen.getByText(`© ${year} Government of British Columbia.`)).toBeInTheDocument();
-  });
-
-  it('publishes its measured height as --footer-height', () => {
-    // jsdom reports offsetHeight 0, so the effect has to see a real number to write anything.
-    const spy = vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(320);
-    try {
-      renderFooter();
-      expect(document.documentElement.style.getPropertyValue('--footer-height')).toBe('320px');
-    } finally {
-      spy.mockRestore();
-      document.documentElement.style.removeProperty('--footer-height');
-    }
   });
 });
