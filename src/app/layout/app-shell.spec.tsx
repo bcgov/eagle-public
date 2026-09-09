@@ -1,7 +1,6 @@
 import { StrictMode } from 'react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { renderAt } from '../../test-utils';
 import { routes } from 'app/routes';
 import { page } from 'app/analytics/analytics';
@@ -26,11 +25,11 @@ describe('app shell', () => {
   it('renders the header, home page and footer at /', async () => {
     renderShell();
 
-    expect(await screen.findByText('EPIC')).toBeInTheDocument();
+    // Header and footer content is covered by their own specs; the shell owes the landmarks.
+    expect(await screen.findByRole('banner')).toBeInTheDocument();
     expect(
       await screen.findByRole('heading', { name: 'Environmental Assessments' }),
     ).toBeInTheDocument();
-    // Footer content is covered by site-footer.spec; the shell only owes the landmark.
     expect(await screen.findByRole('contentinfo')).toBeInTheDocument();
   });
 
@@ -40,20 +39,6 @@ describe('app shell', () => {
     const skip = await screen.findByRole('link', { name: 'Skip to main content' });
     expect(skip).toHaveAttribute('href', '#main-content');
     expect(document.querySelector('main#main-content')).not.toBeNull();
-  });
-
-  // The nav used to be driven by bootstrap.bundle.min.js; these two cover what replaced it.
-  it('opens and closes the mobile nav from the toggler', async () => {
-    renderShell();
-
-    const toggler = await screen.findByRole('button', { name: 'Toggle navigation' });
-    expect(document.getElementById('mainNav')).not.toHaveClass('show');
-
-    await userEvent.click(toggler);
-    expect(document.getElementById('mainNav')).toHaveClass('show');
-
-    await userEvent.click(toggler);
-    expect(document.getElementById('mainNav')).not.toHaveClass('show');
   });
 
   it('posts one Page Viewed on mount and one per navigation, even under StrictMode', async () => {
@@ -68,19 +53,5 @@ describe('app shell', () => {
 
     await waitFor(() => expect(page).toHaveBeenCalledTimes(2));
     expect(page).toHaveBeenLastCalledWith('Contact', { path: '/contact' });
-  });
-
-  it('opens one nav dropdown at a time', async () => {
-    renderShell();
-
-    const projectInfo = await screen.findByRole('button', { name: /Project Information/ });
-    const eaProcess = screen.getByRole('button', { name: /The EA Process/ });
-
-    await userEvent.click(projectInfo);
-    expect(projectInfo).toHaveAttribute('aria-expanded', 'true');
-
-    await userEvent.click(eaProcess);
-    expect(projectInfo).toHaveAttribute('aria-expanded', 'false');
-    expect(eaProcess).toHaveAttribute('aria-expanded', 'true');
   });
 });

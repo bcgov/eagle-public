@@ -34,7 +34,7 @@ afterEach(() => vi.unstubAllGlobals());
 describe('the curtain', () => {
   /** The header exists only outside the curtain; the curtain's own brand block also says "EPIC". */
   async function expectOpen(): Promise<void> {
-    await waitFor(() => expect(document.querySelector('.app-header')).not.toBe(null));
+    await waitFor(() => expect(document.querySelector('.eao-header')).not.toBe(null));
     expect(screen.queryByLabelText('Password')).not.toBeInTheDocument();
   }
 
@@ -66,7 +66,7 @@ describe('the curtain', () => {
   it('replaces the whole shell when the flag is true', async () => {
     await renderShell({ ACCESS_GATE: true });
     expect(await screen.findByLabelText('Password')).toBeInTheDocument();
-    expect(document.querySelector('.app-header')).toBe(null);
+    expect(document.querySelector('.eao-header')).toBe(null);
     expect(screen.queryByText('Admin Login')).not.toBeInTheDocument();
     expect(document.querySelector('.app-footer')).toBe(null);
     expect(document.querySelector('.toast-container')).toBe(null);
