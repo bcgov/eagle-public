@@ -37,10 +37,6 @@
   --header-font-color: var(--white);
   --header-bg: var(--bs-secondary);
 
-  /* Footer */
-  --footer-bg: var(--bs-secondary);
-  --footer-color: var(--white);
-
   /* Main Navigation - uses theme typography scale */
   --mn-font-size: var(--bs-font-size-sm);
   --mn-dropdown-menu-size: var(--bs-font-size-sm);

@@ -1,0 +1,194 @@
+/* Site footer, hand-ported from the B.C. Design System Footer component. Colours, spacing and
+   type all come from @bcgov/design-tokens; the BCDS descendant chains are flattened to plain
+   class selectors. */
+
+.app-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  position: relative;
+  z-index: 150;
+}
+
+/* The map page fills the viewport on a phone, so the footer gives way. Keyed on the page's own
+   `data-mobile` rather than a width query: a landscape phone is wider than 768px. */
+.app-wrapper:has(.projects-view[data-mobile]) .app-footer {
+  display: none;
+}
+
+.app-footer--acknowledgement {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-around;
+  background-color: var(--theme-gray-110);
+  padding: var(--layout-padding-xlarge);
+}
+
+.app-footer--acknowledgement-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: stretch;
+  color: var(--typography-color-primary-invert);
+  font: var(--typography-regular-small-body);
+  max-width: 1100px;
+  width: 100%;
+}
+
+.app-footer--acknowledgement-text p {
+  margin: var(--layout-margin-none);
+}
+
+.app-footer--container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-around;
+  /* No exact @bcgov/design-tokens match for the old --bs-secondary blue (#003366; closest
+     token, --theme-primary-blue, is #013366), so fall back to the bootstrap variable. */
+  background-color: var(--bs-secondary);
+  padding: var(--layout-padding-xlarge);
+}
+
+.app-footer--container-content {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--layout-padding-xlarge);
+  max-width: 1100px;
+  width: 100%;
+}
+
+.app-footer--logo-links {
+  display: flex;
+  flex-flow: row nowrap;
+  align-items: flex-start;
+  gap: var(--layout-padding-medium) var(--layout-padding-xlarge);
+  justify-content: space-between;
+  width: 100%;
+}
+
+.app-footer--logo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-padding-large);
+  min-width: 324px;
+  width: 576px;
+}
+
+.app-footer--logo #bcgov-logo-footer {
+  width: 146px;
+  min-width: 146px;
+  height: auto;
+}
+
+.app-footer--logo p {
+  color: var(--typography-color-primary-invert);
+  font: var(--typography-regular-small-body);
+  margin: var(--layout-margin-none);
+}
+
+.app-footer--logo p a {
+  color: var(--typography-color-primary-invert);
+  font: var(--typography-regular-small-body);
+  text-decoration: underline;
+}
+
+.app-footer--logo p a:hover,
+.app-footer--logo p a:focus {
+  color: var(--theme-primary-gold);
+  text-decoration: none;
+}
+
+.app-footer--links {
+  margin: var(--layout-margin-none);
+  min-width: 320px;
+}
+
+.app-footer--links-title {
+  display: block;
+  font: var(--typography-bold-small-body);
+  color: var(--typography-color-primary-invert);
+  margin-bottom: var(--layout-padding-medium);
+  text-transform: uppercase;
+}
+
+.app-footer--links ul {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: auto;
+  gap: var(--layout-padding-small) var(--layout-padding-xlarge);
+  list-style: none;
+  margin: var(--layout-margin-none);
+  padding: var(--layout-padding-none);
+}
+
+.app-footer--links ul li {
+  font: var(--typography-regular-small-body);
+}
+
+.app-footer--links ul li a {
+  color: var(--typography-color-primary-invert);
+  text-decoration: none;
+}
+
+.app-footer--links ul li a:hover,
+.app-footer--links ul li a:focus {
+  color: var(--theme-primary-gold);
+  text-decoration: underline;
+}
+
+.app-footer--container-content hr {
+  background-color: rgba(255, 255, 255, 0.35);
+  border: var(--layout-border-width-none);
+  height: var(--layout-border-width-small);
+  margin: var(--layout-margin-none);
+  width: 100%;
+  opacity: 1;
+}
+
+p.app-footer--copyright {
+  color: var(--typography-color-primary-invert);
+  font: var(--typography-regular-body);
+  margin: var(--layout-margin-none);
+}
+
+/* Below 768px the link menu drops beneath the logo and contact block. */
+@media (width < 768px) {
+  .app-footer--logo-links {
+    flex-wrap: wrap;
+  }
+
+  .app-footer--logo {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  /* Keep the 320px link block once it drops below the logo, so the two columns split it evenly
+     instead of hugging their text. Capped at the row width so a 320px phone does not scroll. */
+  .app-footer--links {
+    min-width: 0;
+    width: min(100%, 320px);
+  }
+}
+
+/* Extra small screens */
+@media (width <= 575px) {
+  .app-footer--acknowledgement {
+    padding: var(--layout-padding-xlarge) var(--layout-padding-medium);
+  }
+
+  .app-footer--container {
+    padding: var(--layout-padding-medium);
+  }
+
+  .app-footer--container-content {
+    gap: var(--layout-padding-medium);
+  }
+
+  .app-footer--logo {
+    gap: var(--layout-padding-medium);
+  }
+}

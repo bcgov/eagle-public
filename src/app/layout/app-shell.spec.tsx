@@ -30,7 +30,8 @@ describe('app shell', () => {
     expect(
       await screen.findByRole('heading', { name: 'Environmental Assessments' }),
     ).toBeInTheDocument();
-    expect(await screen.findByText('Admin Login')).toBeInTheDocument();
+    // Footer content is covered by site-footer.spec; the shell only owes the landmark.
+    expect(await screen.findByRole('contentinfo')).toBeInTheDocument();
   });
 
   it('skips to the main landmark', async () => {
