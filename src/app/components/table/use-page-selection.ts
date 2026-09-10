@@ -3,13 +3,14 @@ import {
   CAP_MESSAGE,
   clearSelection,
   SELECT_ALL_MAX,
-  selectionSize,
+  selectionSummary,
   setSelected,
   toSize,
   useSelection,
   type SelectedDocument,
 } from 'app/state/bulk-download';
 import { showToast } from 'app/state/toast';
+import { sizeEstimate } from 'app/utils/file-size';
 import type { TableObject } from './table-object';
 
 const SELECT_ALL_CAP_TITLE = `Downloads are limited to ${SELECT_ALL_MAX} documents at a time`;
@@ -21,8 +22,8 @@ export function usePageSelection(data: TableObject) {
   // Download posts every table's selection as one job, so the toolbar counts them all.
   const mergedSelection = useSelection();
   const selectedCount = mergedSelection.size;
-  // Sum of the sizes known across every table's selection; used for the download bar's estimate.
-  const selectedSize = selectionSize(mergedSelection);
+  // One wording for every frame's download bar, from the sizes known across every table.
+  const selectedSizeText = sizeEstimate(selectionSummary(mergedSelection));
   // Every row subscribes to the selection store, so a new array here re-renders the whole page.
   const pageDocs: SelectedDocument[] = useMemo(
     () =>
@@ -62,7 +63,7 @@ export function usePageSelection(data: TableObject) {
   return {
     selectable,
     selectedCount,
-    selectedSize,
+    selectedSizeText,
     pageAllSelected,
     pageMixed,
     showSelectAll,

@@ -177,6 +177,95 @@ describe('DownloadPanel', () => {
     expect(screen.getByText('documents-2.zip')).toBeInTheDocument();
   });
 
+  /**
+   * demi-api's 202 carries no byte count, so the size shown while zipping is the one the selection
+   * had when Download was pressed.
+   */
+  it('shows the size it estimated while the zip is being built', async () => {
+    postResponse = () =>
+      new Response(JSON.stringify({ id: 'job-1', status: 'queued', documentCount: 2 }), {
+        status: 202,
+      });
+    statusResponses = [{ id: 'job-1', status: 'running', partCount: 1, partsReady: 0 }];
+    const panel = await mount();
+    panel.store.setSelected('documents', [
+      { ...ALPHA, size: 2 * 1024 * 1024 },
+      { ...BETA, size: 3 * 1024 * 1024 },
+    ]);
+    panel.render();
+
+    await startDownload(panel.store);
+    await tick(0);
+
+    expect(screen.getByText('Zipping 2 documents…')).toBeInTheDocument();
+    expect(screen.getByText('about 5.0 MB')).toBeInTheDocument();
+  });
+
+  it('shows the size of every finished part and the total across them', async () => {
+    statusResponses = [
+      {
+        id: 'job-9',
+        status: 'ready',
+        partCount: 2,
+        partsReady: 2,
+        includedCount: 4,
+        errorCount: 0,
+        errors: [],
+        parts: [
+          {
+            n: 1,
+            fileName: 'documents-1.zip',
+            url: 'https://nrs.example/part1.zip',
+            bytes: 2 * 1024 * 1024,
+          },
+          {
+            n: 2,
+            fileName: 'documents-2.zip',
+            url: 'https://nrs.example/part2.zip',
+            bytes: 3 * 1024 * 1024,
+          },
+        ],
+      },
+    ];
+    const panel = await mount({ id: 'job-9', count: 4, startedAt: Date.now() });
+
+    panel.render();
+    await tick(2000);
+
+    expect(screen.getByText('2.0 MB · Downloaded')).toBeInTheDocument();
+    expect(screen.getByText('3.0 MB · Downloaded')).toBeInTheDocument();
+    expect(screen.getByText('2 files · 5.0 MB')).toBeInTheDocument();
+  });
+
+  it('leaves the total off a single-file zip, whose own size already is the total', async () => {
+    statusResponses = [
+      {
+        id: 'job-9',
+        status: 'ready',
+        partCount: 1,
+        partsReady: 1,
+        includedCount: 2,
+        errorCount: 0,
+        errors: [],
+        parts: [
+          {
+            n: 1,
+            fileName: 'documents.zip',
+            url: 'https://nrs.example/part1.zip',
+            bytes: 5 * 1024 * 1024,
+          },
+        ],
+      },
+    ];
+    const panel = await mount({ id: 'job-9', count: 2, startedAt: Date.now() });
+
+    panel.render();
+    await tick(2000);
+
+    expect(screen.getByText('5.0 MB · Downloaded')).toBeInTheDocument();
+    expect(screen.queryByText('1 file · 5.0 MB')).not.toBeInTheDocument();
+  });
+
   it('names every document the zip could not include, and still downloads the parts', async () => {
     statusResponses = [
       {
