@@ -25,7 +25,6 @@ import { DocumentsTab } from './pages/project/documents-tab';
 import { ComplianceDocumentsTab } from './pages/project/compliance-documents-tab';
 import { DecisionsTab } from './pages/project/decisions-tab';
 import { Comments } from './pages/comments/comments';
-import { CacUnsubscribe } from './pages/cac-unsubscribe';
 import { contentSearchEnabled } from './config/config';
 
 /**
@@ -48,16 +47,6 @@ export const routes: RouteObject[] = [
       { index: true, Component: Home },
 
       { path: 'contact', Component: Contact },
-
-      { path: 'cac-unsubscribe', Component: CacUnsubscribe },
-      // The unsubscribe link eagle-api mails out carries Angular matrix parameters
-      // (`/cac-unsubscribe;project=…;email=…`), which react-router sees as one path segment.
-      {
-        path: ':cacUnsubscribe',
-        loader: ({ params }) =>
-          params['cacUnsubscribe']?.startsWith('cac-unsubscribe;') ? null : redirect('/'),
-        Component: CacUnsubscribe,
-      },
 
       { path: 'projects', Component: Projects },
       { path: 'projects-list', Component: ProjectList },

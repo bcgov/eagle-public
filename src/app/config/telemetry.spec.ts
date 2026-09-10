@@ -108,20 +108,20 @@ describe('the telemetry initializer', () => {
     const initializer = await initialized();
     const item = dependency({
       success: false,
-      uri: 'https://epic.example.gov.bc.ca/api/search?q=secret',
+      uri: 'https://epic.example.gov.bc.ca/demi-search/search?q=secret',
       target: 'epic.example.gov.bc.ca?q=secret',
-      name: 'GET /api/search?q=secret',
-      message: 'GET /api/search?q=secret failed',
+      name: 'GET /demi-search/search?q=secret',
+      message: 'GET /demi-search/search?q=secret failed',
     });
 
     initializer(item);
 
     expect(item.baseData).toEqual({
       success: false,
-      uri: 'https://epic.example.gov.bc.ca/api/search',
+      uri: 'https://epic.example.gov.bc.ca/demi-search/search',
       target: 'epic.example.gov.bc.ca',
-      name: 'GET /api/search',
-      message: 'GET /api/search failed',
+      name: 'GET /demi-search/search',
+      message: 'GET /demi-search/search failed',
     });
   });
 

@@ -20,7 +20,6 @@ const ROUTES = [
   '/projects-list',
   '/projects',
   '/search',
-  '/cac-unsubscribe',
 ];
 
 for (const route of ROUTES) {

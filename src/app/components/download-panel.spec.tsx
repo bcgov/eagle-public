@@ -82,7 +82,7 @@ describe('DownloadPanel', () => {
    */
   async function mount(...initialJobs: BulkDownloadJob[]) {
     vi.resetModules();
-    window.__env = { logLevel: 4, API_PATH: '/api', SEARCH_API_PATH: '/demi-search' };
+    window.__env = { logLevel: 4, SEARCH_API_PATH: '/demi-search' };
     const config = await import('app/config/config');
     await config.loadConfig();
     const store = await import('app/state/bulk-download');

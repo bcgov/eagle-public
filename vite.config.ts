@@ -26,15 +26,10 @@ export default defineConfig({
     allowedHosts: true,
     port: 4200,
     proxy: {
-      // `/api` also carries analytics: deployed /api/config sets EAGLE_ANALYTICS_URL to
-      // `/api/usage`, which rproxy rewrites onto the eagle-analytics gateway.
-      '/api': proxyRule,
-      // `/eagle-search` too, because `SEARCH_API_PATH` from a deployed `/api/config` is RELATIVE
-      // ('/eagle-search') — nginx supplies the `/api`. Without this rule every Project, Document
-      // and DocumentChunk search from the dev server hits localhost:4200 and 404s, while
-      // everything else works, which reads as "search is broken" rather than "the proxy is short
-      // a line".
-      '/eagle-search': proxyRule,
+      // The one `/api` path the app still calls: a deployed `/demi-search/config` sets
+      // EAGLE_ANALYTICS_URL to `/api/usage`, which rproxy rewrites onto the eagle-analytics
+      // gateway. Without this every telemetry POST 404s against the dev server.
+      '/api/usage': proxyRule,
       // eagle-notify's API is a different origin in every environment, so the subscribe form's POST
       // would need a CORS grant from it. Proxying keeps the dev server's call same-origin.
       '/notify-api': {
@@ -51,11 +46,10 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path: string) => path.replace(/^\/demi-projects/, '/api/projects'),
       },
-      // `/demi-search` is what test's /api/config returns today, and it does NOT follow
-      // API_LOCATION: test's rproxy answers that location with `401 WWW-Authenticate: Basic`
-      // (only `/` and `/demi-search` are gated there; `/api` is open), so routing it through the
-      // site would 401 every Project, Document and DocumentChunk search. It goes straight to the
-      // APIM gateway the rproxy itself proxies to, whose `/api` answers anonymously.
+      // `/demi-search` answers every read the app makes, and it does NOT follow API_LOCATION:
+      // test's rproxy answers that location with `401 WWW-Authenticate: Basic`, so routing it
+      // through the site would 401 the whole app. It goes straight to the APIM gateway the rproxy
+      // itself proxies to, whose `/api` answers anonymously.
       // When API_LOCATION is set in the environment the whole site is being pointed at one
       // deployed host, so `/demi-search` follows it (that host's nginx supplies the `/api`).
       '/demi-search': envTarget
@@ -66,7 +60,13 @@ export default defineConfig({
             changeOrigin: true,
             // The base path is `/demi-search` because nginx supplies the `/api`. Nothing supplies
             // it here.
-            rewrite: (path: string) => path.replace(/^\/demi-search/, '/api'),
+            // `/config` is the one path nginx does not map straight through: it answers
+            // `/api/config/public`, the gateway's public config. `/api/config` is DEMI's internal
+            // one, which carries no ACCESS_GATE, so booting on it fails `isWholeConfig`.
+            rewrite: (path: string) =>
+              path
+                .replace(/^\/demi-search\/config(?=$|[?#])/, '/api/config/public')
+                .replace(/^\/demi-search/, '/api'),
           },
     },
   },

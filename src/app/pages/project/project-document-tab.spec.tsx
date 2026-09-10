@@ -128,7 +128,7 @@ describe('project document tabs', () => {
 
     expect(await screen.findByText('Cedar Quarry Certificate')).toBeInTheDocument();
     expect(documentRequests().at(-1)).toBe(
-      '/api/search?dataset=Document&project=proj-1&pageNum=0&pageSize=10&projectLegislation=default' +
+      '/demi-search/search?dataset=Document&project=proj-1&pageNum=0&pageSize=10&projectLegislation=default' +
         '&sortBy=-datePosted&sortBy=+displayName&populate=false' +
         '&and[documentSource]=PROJECT' +
         '&and[type]=type-cert-2002&and[type]=type-cert-2018&and[type]=type-order-2002&and[type]=type-order-2018' +
@@ -180,7 +180,7 @@ describe('project document tabs', () => {
 
     expect(await screen.findByText('Cedar Quarry Certificate')).toBeInTheDocument();
     expect(documentRequests().at(-1)).toBe(
-      '/api/search?dataset=Document&project=proj-1&pageNum=0&pageSize=10&projectLegislation=default' +
+      '/demi-search/search?dataset=Document&project=proj-1&pageNum=0&pageSize=10&projectLegislation=default' +
         '&sortBy=-datePosted&sortBy=+displayName&populate=false' +
         '&and[documentSource]=PROJECT' +
         '&and[type]=type-amend-2002&and[type]=type-amend-2018&and[type]=type-req-2002&and[type]=type-dm-2002' +
@@ -210,7 +210,7 @@ describe('project document tabs', () => {
 
     await screen.findByText('Cedar Quarry Certificate');
     expect(documentRequests().at(-1)).toBe(
-      '/api/search?dataset=Document&project=proj-1&keywords=slope&pageNum=0&pageSize=10&projectLegislation=default' +
+      '/demi-search/search?dataset=Document&project=proj-1&keywords=slope&pageNum=0&pageSize=10&projectLegislation=default' +
         '&sortBy=-score&sortBy=+displayName&populate=false' +
         '&and[documentSource]=PROJECT' +
         '&and[type]=type-app-2002&and[type]=type-app-2018&and[type]=type-memo-2002&and[type]=type-memo-2018' +
@@ -235,7 +235,7 @@ describe('project document tabs', () => {
 
     expect(await screen.findByText('Cedar Quarry Certificate')).toBeInTheDocument();
     expect(documentRequests().at(-1)).toBe(
-      '/api/search?dataset=Document&pageNum=0&pageSize=10&projectLegislation=default' +
+      '/demi-search/search?dataset=Document&pageNum=0&pageSize=10&projectLegislation=default' +
         '&sortBy=-datePosted&sortBy=+displayName&populate=true' +
         '&and[project]=proj-1&fuzzy=false',
     );

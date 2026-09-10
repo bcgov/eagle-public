@@ -1,5 +1,5 @@
 import { expect } from '@playwright/test';
-import type { APIRequestContext, Page } from '@playwright/test';
+import type { APIRequestContext, APIResponse, Page } from '@playwright/test';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -9,11 +9,18 @@ const ISO_TS = /^\d{4}-\d{2}-\d{2}T[\d:.]+(Z|[+-]\d{2}:?\d{2})$/;
 /** Query params whose value changes on every page load and carries no parity signal. */
 export const VOLATILE_PARAMS = new Set(['cpStart[since]', 'cpEnd[until]']);
 
-/** API paths worth recording. Everything else (assets, map tiles) is noise. */
+/**
+ * API paths worth recording. Everything else (assets, map tiles) is noise. `api` and `eagle-search`
+ * stay in the list although the app no longer calls either: a call that comes back gets recorded
+ * and fails the baseline instead of passing unnoticed.
+ */
 const API_PATH = /^\/(api|demi-search|eagle-search|demi-projects)(\/|$|\?)/;
 
-/** Analytics ingest. It flushes on a timer, so whether it lands inside a recording window is luck. */
-const TELEMETRY_PATH = /^\/api\/usage(\/|$)/;
+/**
+ * Analytics ingest, under either path rproxy serves it on. It flushes on a timer, so whether it
+ * lands inside a recording window is luck.
+ */
+const TELEMETRY_PATH = /^\/(api\/usage|analytics)(\/|$)/;
 
 /**
  * Path + sorted query with ids and timestamps masked, so the same call made about a
@@ -112,7 +119,7 @@ function applyDeviations(line: string): string {
   );
 }
 
-/** Envelope both /api/search and /demi-search/search answer with. */
+/** Envelope /demi-search/search answers with. */
 export interface SearchEnvelope {
   searchResults: any[];
   meta: { searchResultsTotal: number }[];
@@ -210,23 +217,26 @@ export async function pageCount(page: Page): Promise<{ shown: number; total: num
 }
 
 /**
- * Fixture lookups must not die when the backend under test is unavailable, otherwise a
- * real difference reads as a crashed suite. /demi-search is the live path; /api/search
- * answers the same envelope and is the fallback (the test environment gates
- * /demi-search behind HTTP basic auth).
+ * A fixture response's JSON. An unproxied path is answered by the SPA with 200 text/html, so
+ * without the content-type check that failure surfaces as a parse error far from its cause.
  */
-async function searchFixture(request: APIRequestContext, query: string): Promise<any[]> {
-  for (const base of ['/demi-search/search', '/api/search']) {
-    const r = await request.get(`${base}?${query}`);
-    if (r.status() === 200) {
-      try {
-        return unwrap(await r.json()).searchResults;
-      } catch {
-        /* not JSON: fall through to the next backend */
-      }
-    }
-  }
-  throw new Error(`no search backend answered ${query}`);
+export async function jsonBody(r: APIResponse, what: string): Promise<any> {
+  expect(r.status(), `${what}: ${r.url()} answered HTTP ${r.status()}`).toBe(200);
+  const contentType = r.headers()['content-type'] ?? '';
+  expect(
+    contentType,
+    `${what}: ${r.url()} answered ${contentType || 'no content-type'}, not JSON - the SPA fallback served this`,
+  ).toContain('application/json');
+  return r.json();
+}
+
+/**
+ * `/demi-search/search` is the only backend, and the path the app itself uses. The app never asks
+ * these questions - this is how the suite finds ids to navigate to.
+ */
+export async function searchFixture(request: APIRequestContext, query: string): Promise<any[]> {
+  const r = await request.get(`/demi-search/search?${query}`);
+  return unwrap(await jsonBody(r, `search ${query}`)).searchResults;
 }
 
 /** First published projects, sorted by name so the pick is stable per environment. */
@@ -248,16 +258,35 @@ export async function projectByKeyword(request: APIRequestContext, keyword: stri
   return results[0] ?? (await firstProjects(request, 1))[0];
 }
 
-/** Most recent comment period plus its project id. */
-export async function latestCommentPeriod(request: APIRequestContext): Promise<any> {
-  const r = await request.get(
-    '/api/commentperiod?sortBy=-dateStarted&fields=project|dateStarted|dateCompleted|instructions|informationLabel',
+/** A project's comment periods, newest first - the read `api.getPeriodsByProjId` makes. */
+export async function commentPeriodsOf(
+  request: APIRequestContext,
+  projectId: string,
+  pageSize = 5,
+): Promise<any[]> {
+  return searchFixture(
+    request,
+    `dataset=CommentPeriod&sortBy=-dateStarted&pageNum=0&pageSize=${pageSize}&and[project]=${projectId}`,
   );
-  expect(r.status()).toBe(200);
-  const list = await r.json();
-  const cp = list.find((c: any) => c.project && c.dateStarted && c.dateCompleted);
-  expect(cp, 'no comment period with a project on this environment').toBeTruthy();
-  return cp;
+}
+
+/** How many projects the comment-period pick walks before giving up. */
+const CP_PROJECT_SCAN = 10;
+
+/**
+ * A comment period plus its project id. demi-search answers `dataset=CommentPeriod` only when the
+ * query filters on `project` or `_id` - an unfiltered one is 0 rows - so the pick walks the same
+ * name-sorted projects `firstProjects` returns and takes the newest period of the first one that
+ * has any. Stable per environment, because the project order is.
+ */
+export async function latestCommentPeriod(request: APIRequestContext): Promise<any> {
+  for (const project of await firstProjects(request, CP_PROJECT_SCAN)) {
+    const cp = (await commentPeriodsOf(request, project._id)).find(
+      (c: any) => c.project && c.dateStarted && c.dateCompleted,
+    );
+    if (cp) return cp;
+  }
+  throw new Error(`no comment period on the first ${CP_PROJECT_SCAN} projects of this environment`);
 }
 
 export function isOpen(cp: any): boolean {

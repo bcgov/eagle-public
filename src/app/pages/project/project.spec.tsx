@@ -1,6 +1,8 @@
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import type { RouteObject } from 'react-router';
+import { loadConfig } from 'app/config/config';
+import { queryClient } from 'app/api/query-client';
 import { renderAt } from '../../../test-utils';
 import { routes } from 'app/routes';
 import { ProjectPage } from './project';
@@ -57,17 +59,32 @@ const LISTS = [
   { _id: 'ms-ce-2018', name: 'Compliance & Enforcement', legislation: 2018, type: 'label' },
 ];
 
+const DEMI = '/demi-projects';
+
+/** The project as DEMI answers it: Track's field names, the proponent as a bare scalar. */
 const PROJECT = {
-  _id: 'proj-1',
+  eagleId: 'proj-1',
   name: 'Cedar Quarry',
   legislation: '2018 Environmental Assessment Act',
   region: 'Skeena',
-  location: 'Near Cedar Creek',
+  address: 'Near Cedar Creek',
   eacDecision: { name: 'In Progress' },
-  proponent: { name: 'Cedar Quarry Partners LP' },
+  proponentName: 'Cedar Quarry Partners LP',
   centroid: [],
-  commentPeriodForBanner: [],
 };
+
+const originalEnv = window.__env;
+
+beforeEach(async () => {
+  window.__env = { logLevel: 4, DEMI_PROJECTS_PATH: DEMI };
+  await loadConfig();
+  // The project document is read through the app's own cache, which outlives one test.
+  queryClient.clear();
+});
+
+afterEach(() => {
+  window.__env = originalEnv;
+});
 
 /** Each optional document kind's probe, told apart by a list id only its modifiers carry. */
 const PROBE_MARKERS = {
@@ -133,8 +150,9 @@ function stubFetch() {
       if (url.includes('dataset=CommentPeriod')) {
         return jsonResponse(searchResponse(commentPeriods.length, commentPeriods));
       }
-      if (url.startsWith('/api/project/')) {
-        return jsonResponse(project ? [project] : []);
+      if (url.startsWith(`${DEMI}/`)) {
+        // 404 is how DEMI says it holds no such project.
+        return project ? jsonResponse(project) : new Response('{}', { status: 404 });
       }
       if (url.includes('dataset=List')) {
         return jsonResponse(searchResponse(LISTS.length, LISTS));
@@ -423,11 +441,8 @@ function deferredFetch() {
                 jsonResponse([{ searchResults: [], meta: [{ searchResultsTotal: 0 }] }]),
               );
             }
-            if (url.startsWith('/api/project/') && !url.includes('/pin')) {
-              return resolve(jsonResponse([PROJECT]));
-            }
-            if (url.includes('/pin')) {
-              return resolve(jsonResponse([{ results: [], total_items: 0 }]));
+            if (url.startsWith(`${DEMI}/`)) {
+              return resolve(jsonResponse(PROJECT));
             }
             resolve(jsonResponse([{ searchResults: [], meta: [{ searchResultsTotal: 0 }] }]));
           },
@@ -443,14 +458,20 @@ function deferredFetch() {
 }
 
 function renderShellWithOverviewTab() {
-  return renderAt('/p/proj-1/overview', [
-    {
-      path: '/p/:projId',
-      Component: ProjectPage,
-      children: [{ path: 'overview', Component: OverviewTab }],
-    },
-    { path: '/projects', element: <div>projects page</div> },
-  ]);
+  return renderAt(
+    '/p/proj-1/overview',
+    [
+      {
+        path: '/p/:projId',
+        Component: ProjectPage,
+        children: [{ path: 'overview', Component: OverviewTab }],
+      },
+      { path: '/projects', element: <div>projects page</div> },
+    ],
+    // The app's own client, as main.tsx mounts it: counting requests only means something when the
+    // hooks and the plain readers share one cache the way they do in the browser.
+    { queryClient },
+  );
 }
 
 describe('project page first paint', () => {
@@ -465,11 +486,12 @@ describe('project page first paint', () => {
     renderShellWithOverviewTab();
 
     // Nothing has been resolved, so anything in this list was issued from the project id alone
-    // rather than from another request's answer.
-    await waitFor(() => expect(fetchStub.urls).toHaveLength(8));
+    // rather than from another request's answer. Seven, not eight: the pins ride the project
+    // document, so the nations card costs no request of its own.
+    await waitFor(() => expect(fetchStub.urls).toHaveLength(7));
     const issued = fetchStub.urls.join('\n');
-    expect(issued).toMatch(/^\/api\/project\/proj-1\?/m);
-    expect(issued).toMatch(/^\/api\/project\/proj-1\/pin\?/m);
+    expect(issued).toMatch(/^\/demi-projects\/proj-1$/m);
+    expect(fetchStub.urls.filter((url) => url.startsWith(`${DEMI}/`))).toHaveLength(1);
     expect(issued).toMatch(/dataset=CommentPeriod.*and\[project\]=proj-1/);
     expect(issued).toMatch(/dataset=List/);
     expect(issued).toMatch(/dataset=RecentActivity.*pageSize=1/);

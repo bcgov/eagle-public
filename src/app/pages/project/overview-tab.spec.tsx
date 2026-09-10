@@ -2,6 +2,7 @@ import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { loadConfig } from 'app/config/config';
+import { queryClient } from 'app/api/query-client';
 import { renderAt } from '../../../test-utils';
 import { CommentPeriod } from 'app/models/commentperiod';
 import { Project } from 'app/models/project';
@@ -92,6 +93,8 @@ function jsonResponse(body: unknown) {
   });
 }
 
+const DEMI = '/demi-projects';
+
 function renderTab(demiProject?: { eaCertificate?: string }) {
   requests = [];
   vi.stubGlobal(
@@ -99,11 +102,9 @@ function renderTab(demiProject?: { eaCertificate?: string }) {
     vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       requests.push(url);
-      if (url.includes('/demi-projects/')) {
-        return jsonResponse(demiProject ?? {});
-      }
-      if (url.includes('/pin')) {
-        return jsonResponse([{ results: pinsTotal > 0 ? PINS : [], total_items: pinsTotal }]);
+      if (url.startsWith(`${DEMI}/`)) {
+        // The nations card reads its rows off this one document, not a route of its own.
+        return jsonResponse({ ...(pinsTotal > 0 ? { pins: PINS } : {}), ...demiProject });
       }
       if (url.includes('dataset=RecentActivity')) {
         return jsonResponse([
@@ -122,22 +123,37 @@ function renderTab(demiProject?: { eaCertificate?: string }) {
     }),
   );
 
-  return renderAt('/p/proj-1/overview', [
-    { path: '/p/:projId/overview', Component: OverviewTab },
-    { path: '/p/:projId/cp/:cpId/details', element: <div>comment period details</div> },
-    { path: '/p/:projId/updates', element: <div>updates tab</div> },
-  ]).router;
+  return renderAt(
+    '/p/proj-1/overview',
+    [
+      { path: '/p/:projId/overview', Component: OverviewTab },
+      { path: '/p/:projId/cp/:cpId/details', element: <div>comment period details</div> },
+      { path: '/p/:projId/updates', element: <div>updates tab</div> },
+    ],
+    // The app's own client, as main.tsx mounts it: the hooks and the plain readers only share the
+    // one project-document request when they share a cache.
+    { queryClient },
+  ).router;
 }
 
 describe('overview tab', () => {
-  beforeEach(() => {
+  const originalEnv = window.__env;
+
+  beforeEach(async () => {
     project = PROJECT;
     pinsTotal = 1;
     featuredTotal = 1;
     track.mockClear();
+    window.__env = { logLevel: 4, DEMI_PROJECTS_PATH: DEMI };
+    await loadConfig();
+    // The project document is read through the app's own cache, which outlives one test.
+    queryClient.clear();
   });
 
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    window.__env = originalEnv;
+    vi.unstubAllGlobals();
+  });
 
   it('lists the project record under About this project', async () => {
     renderTab();
@@ -192,15 +208,16 @@ describe('overview tab', () => {
   });
 
   it('invites email updates from the aside when eagle-notify is configured', async () => {
-    window.__env = { logLevel: 4, NOTIFY_API: 'https://notify-api.example' };
+    window.__env = {
+      logLevel: 4,
+      DEMI_PROJECTS_PATH: DEMI,
+      NOTIFY_API: 'https://notify-api.example',
+    };
     await loadConfig();
     renderTab();
 
     expect(await screen.findByText('Get these by email')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Subscribe to updates' })).toBeInTheDocument();
-
-    window.__env = { logLevel: 4, NOTIFY_API: '' };
-    await loadConfig();
   });
 
   it('sends an in-EPIC comment period to its details page, and records the click', async () => {
@@ -298,7 +315,7 @@ describe('overview tab', () => {
     expect(screen.getByText('The proponent submitted their application.')).toBeInTheDocument();
     // The Updates tab's own request, so the two tabs share one cached page.
     expect(requests.find((url) => url.includes('dataset=RecentActivity'))).toBe(
-      '/api/search?dataset=RecentActivity&pageNum=0&pageSize=10&projectLegislation=default' +
+      '/demi-search/search?dataset=RecentActivity&pageNum=0&pageSize=10&projectLegislation=default' +
         '&sortBy=-dateAdded&sortBy=&populate=true&and[project]=proj-1&fuzzy=false',
     );
   });
@@ -308,7 +325,7 @@ describe('overview tab', () => {
 
     expect(await screen.findByRole('link', { name: 'Featured Report' })).toHaveAttribute(
       'href',
-      '/api/public/document/doc-1/download/Featured%20Report',
+      '/demi-search/documents/doc-1/download?redirect=1',
     );
     expect(screen.getByText('Certificate Package · May 1, 2026 · 2.0 MB')).toBeInTheDocument();
   });
@@ -319,7 +336,7 @@ describe('overview tab', () => {
     await screen.findByRole('link', { name: 'Featured Report' });
     expect(screen.getByRole('link', { name: 'Download Featured Report' })).toHaveAttribute(
       'href',
-      '/api/public/document/doc-1/download/Featured%20Report',
+      '/demi-search/documents/doc-1/download?redirect=1',
     );
     expect(screen.getByRole('link', { name: 'All 1 documents' })).toHaveAttribute(
       'href',
@@ -332,7 +349,7 @@ describe('overview tab', () => {
 
     await screen.findByText('Featured Report');
     expect(requests.find((url) => url.includes('isFeatured'))).toBe(
-      '/api/search?dataset=Document&project=proj-1&pageNum=0&pageSize=5&projectLegislation=default' +
+      '/demi-search/search?dataset=Document&project=proj-1&pageNum=0&pageSize=5&projectLegislation=default' +
         '&sortBy=-datePosted&sortBy=&populate=false&and[isFeatured]=true&fuzzy=false',
     );
   });
@@ -353,34 +370,28 @@ describe('overview tab', () => {
     ).toBeInTheDocument();
     expect(await screen.findByText('Cedar Nation')).toBeInTheDocument();
     expect(screen.getByText('British Columbia')).toBeInTheDocument();
-    expect(requests.find((url) => url.includes('/pin'))).toBe(
-      '/api/project/proj-1/pin?pageNum=0&pageSize=100&sortBy=+name',
-    );
+    // One request, not two: the rows ride the project document the rest of the page already reads.
+    expect(requests.filter((url) => url.startsWith(`${DEMI}/`))).toEqual([`${DEMI}/proj-1`]);
   });
 
   it('hides the participating nations card when the project has none', async () => {
     pinsTotal = 0;
     renderTab();
 
-    await waitFor(() => expect(requests.some((url) => url.includes('/pin'))).toBe(true));
+    await waitFor(() => expect(requests).toContain(`${DEMI}/proj-1`));
     await waitFor(() =>
       expect(screen.queryByText('Participating Indigenous Nations')).not.toBeInTheDocument(),
     );
   });
 
   it('names the EA Certificate once DEMI has one', async () => {
-    window.__env = { logLevel: 4, DEMI_PROJECTS_PATH: '/demi-projects' };
-    await loadConfig();
     renderTab({ eaCertificate: 'E23-01' });
 
     expect(await screen.findByText('EA Certificate')).toBeInTheDocument();
     expect(screen.getByText('E23-01')).toBeInTheDocument();
-
-    window.__env = { logLevel: 4, DEMI_PROJECTS_PATH: '' };
-    await loadConfig();
   });
 
-  it('hides the EA Certificate fact when DEMI is off', async () => {
+  it('hides the EA Certificate fact when no source has one', async () => {
     renderTab();
 
     await screen.findByRole('heading', { level: 2, name: 'About this project' });

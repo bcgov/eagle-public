@@ -52,7 +52,7 @@ async function getNotificationProject(projId: string): Promise<Project | null> {
 }
 
 async function loadComments(periodId: string, pageNum: number, pageSize: number) {
-  const res = await commentApi.getByPeriodId(periodId, pageNum, pageSize, true);
+  const res = await commentApi.getByPeriodId(periodId, pageNum, pageSize);
   const comments: Comment[] = res?.currentComments ?? [];
 
   // Every comment's attachments come back in one request rather than one request per comment.

@@ -27,7 +27,7 @@ const unlocked = createStore(remembered());
 /**
  * Shared-password curtain for pre-launch environments.
  *
- * The password is only ever checked by eagle-api — the client holds nothing to compare against,
+ * The password is only ever checked by the backend — the client holds nothing to compare against,
  * and localStorage carries a flag, not a secret. Only a literal `ACCESS_GATE: true` closes the
  * curtain, so prod (false or unset) renders as it always has.
  */

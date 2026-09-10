@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { demiProjectQueryOptions } from './api';
 import { getAllFull } from './project';
-import { getApiPath, getSearchApiPath } from 'app/config/config';
 
 /**
  * One Track work phase, as DEMI mirrors it onto the project document's `phases`. The rail uses
@@ -36,15 +35,14 @@ export function phasesOf(payload: unknown): Phase[] {
   return phases;
 }
 
-/** The raw DEMI project document. `data` is `undefined` while in flight or when DEMI is off. */
+/** The raw DEMI project document. `data` is `undefined` while in flight. */
 export function useDemiProject(projId: string) {
   return useQuery(demiProjectQueryOptions(projId));
 }
 
 /**
  * A project's EA certificate number, from the DEMI project document when it carries one and from
- * the project search hit otherwise. `undefined` while loading, when neither source has it, or when
- * eagle-api answers search — that backend has no such field.
+ * the project search hit otherwise. `undefined` while loading or when neither source has it.
  *
  * Only demi-search's keywordless list carries `eaCertificate`; an id-filtered search is answered by
  * the index, which has no such column. So the fallback reads the whole list under the map's own
@@ -57,13 +55,13 @@ export function useProjectEaCertificate(projId: string): string | undefined {
     queryKey: ['projects', 'all'],
     queryFn: () => getAllFull(1, 1000000),
     // `isFetching`, not `isPending`: a disabled DEMI query stays pending forever.
-    enabled: !fromDemi && !demi.isFetching && !!projId && getSearchApiPath() !== getApiPath(),
+    enabled: !fromDemi && !demi.isFetching && !!projId,
     select: (projects) => projects.find((project) => project._id === projId),
   });
   return fromDemi || hit?.eaCertificate?.trim() || undefined;
 }
 
-/** A project's Track work phases from DEMI, `null` while loading, when DEMI is off, or absent. */
+/** A project's Track work phases from DEMI, `null` while loading or when absent. */
 export function useProjectPhases(projId: string): Phase[] | null {
   const { data } = useQuery({ ...demiProjectQueryOptions(projId), select: phasesOf });
   return data ?? null;

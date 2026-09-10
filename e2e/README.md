@@ -16,7 +16,7 @@ BASE_URL=http://localhost:4173 yarn test
 
 A `BASE_URL` on port 4173 makes Playwright start the server itself (`webServer` in
 `playwright.config.ts`): `vite preview`, serving `dist/eagle-public/browser` with the dev server's
-proxy rules, so `/api`, `/demi-search`, `/eagle-search` and `/notify-api` reach the
+proxy rules, so `/demi-search`, `/demi-projects` and `/notify-api` reach the
 same backends as `yarn start`. Build first, or preview has nothing to serve. It reuses a server
 already listening on 4173 unless `CI` is set. Every other `BASE_URL`, a dev server on 4200
 included, is left alone.
@@ -42,8 +42,8 @@ The `e2e` job in `.github/workflows/pr.yaml` runs the local-build path and uploa
 `playwright-report` when it fails.
 
 The **test environment serves every HTML route and `/demi-search` behind HTTP basic auth**
-(`WWW-Authenticate: Basic realm="Restricted Content"`); only `/api/*` is open. Supply the
-credential to run there:
+(`WWW-Authenticate: Basic realm="Restricted Content"`), so nothing the suite reads is open.
+Supply the credential to run there:
 
 ```bash
 BASE_URL=https://test.projects.eao.gov.bc.ca \
@@ -55,7 +55,7 @@ behaviour difference.
 
 ## The password curtain
 
-`ACCESS_GATE: true` in `/api/config` puts a shared-password page in front of the whole app, and
+`ACCESS_GATE: true` in `/demi-search/config` puts a shared-password page in front of the whole app, and
 both test and a dev server proxying to test have it on. The flag it remembers is a plain
 `localStorage['eagle-gate'] = '1'`, so `support/fixtures.ts` seeds that in an init script and
 every spec that imports `test` from there sees the app rather than the curtain. Import from
@@ -88,9 +88,8 @@ URLs are normalised before comparison so the file stays environment-independent:
 - 24-hex path segments and param values become `:id`
 - ISO timestamp param values become `:ts`
 - params are sorted by name, then value
-- **volatile params dropped**: `cpStart[since]` and `cpEnd[until]` on `GET /api/project/:id`.
-  They are `Date.now()`-derived comment-period windows and differ on every load. Nothing else was
-  found to be volatile.
+- **volatile params dropped**: `cpStart[since]` and `cpEnd[until]`. They are `Date.now()`-derived
+  comment-period windows and differ on every load. Nothing else was found to be volatile.
 
 8 pages are recorded, 51 request lines in total: `home`, `news`, `projects-list`, `projects-map`,
 `search`, `overview-tab`, `project-documents-tab`, `comment-period-details`.
@@ -113,7 +112,6 @@ contract: keep the hook, or update the test in the same change.
 | `#applist-filters` | map page | the advanced filters, `data-open` and `inert` while collapsed |
 | `#applicantInput` | map page | project-name filter box |
 | `#Milestone` | search advanced filters | facet combobox wrapper |
-| `#emailInput` | cac-unsubscribe | email field |
 
 ### Classes
 
@@ -160,7 +158,7 @@ These are asserted because that is what prod does today. Several are defects; if
 the test will fail and should be updated deliberately.
 
 - **No skip link on any route.** Recorded as a test annotation ("skip-link count"), not asserted.
-- **`/search/content` redirects to `/search`.** `/api/config` on prod and test carries no
+- **`/search/content` redirects to `/search`.** `/demi-search/config` on prod and test carries no
   `CONTENT_SEARCH` flag, so the route guard rewrites the URL. The test reads the flag first and
   asserts the other branch if it is ever turned on.
 - **`/p/:projId/decisions` is not routable.** The deployed build alerts
@@ -185,7 +183,7 @@ the test will fail and should be updated deliberately.
 List and search pages assert against the response that produced them, not against hard-coded
 counts:
 
-- `page.waitForResponse` grabs the `/api/search?...` or `/demi-search/search?...` call.
+- `page.waitForResponse` grabs the `/demi-search/search?...` call.
 - Rendered row count equals `min(pageSize, meta[0].searchResultsTotal)`.
 - First row text equals the first `searchResults` entry (`name` for projects, `displayName` for
   documents).
@@ -202,8 +200,10 @@ environment:
 
 - `firstProjects()` - `dataset=Project`, `sortBy=+name`, take the first N.
 - `projectByKeyword('Site C')` - a project with documents across several tabs.
-- `latestCommentPeriod()` - newest comment period with a project. Tests branch on whether it is
-  open. **No test ever submits a comment.** The cac-unsubscribe form is rendered but never posted.
+- `latestCommentPeriod()` - the newest comment period of the first name-sorted project that has
+  one. demi-search answers `dataset=CommentPeriod` only when filtered by `project` or `_id`, so
+  there is no global list to sort. Tests branch on whether it is open. **No test ever submits a
+  comment.**
 
 ## Comparing two environments
 
@@ -245,12 +245,12 @@ exits non-zero if any of them failed. `--help` prints the full list.
 
 Run against `https://test.projects.eao.gov.bc.ca` with no credential: **1 passed, 60 failed,
 1 skipped**. Every failure is the same cause - the site answers `401 Authorization Required`
-(nginx basic auth) for `/`, every SPA route and `/demi-search`. The one pass is
-`the comment period API is reachable and carries the project`, which only touches `/api/*`, the
-one open path. Nothing behavioural could be compared; rerun with `BASIC_AUTH_USER` /
-`BASIC_AUTH_PASS` set to get a real diff.
+(nginx basic auth) for `/`, every SPA route and `/demi-search`. The one pass read `/api`, open at
+the time; every fixture read is on `/demi-search` now, so a credential-less run would fail all 62.
+Nothing behavioural could be compared; rerun with `BASIC_AUTH_USER` / `BASIC_AUTH_PASS` set to get
+a real diff.
 
-Config differences between the two environments (`/api/config`): test sets
+Config differences between the two environments (`/demi-search/config`): test sets
 `BANNER_COLOUR: orange`, `LOG_LEVEL: 0`, `ANALYTICS_DEBUG: true`, `ACCESS_GATE: true` and the test
 Keycloak URL. `SEARCH_API_PATH` is `/demi-search` on both, and neither carries a `CONTENT_SEARCH`
 flag.
@@ -265,8 +265,8 @@ is applied, a keyword returning hits). Deselect with `yarn playwright test --gre
 
 | File | Tests | Covers |
 |---|---|---|
-| `tests/smoke.spec.ts` | 12 | every top-level route loads, one `h1`, no `img` without `alt` |
-| `tests/static-pages.spec.ts` | 12 | home, contact, legislation, compliance-oversight, process, search-help, news, project-notifications, cac-unsubscribe |
+| `tests/smoke.spec.ts` | 11 | every top-level route loads, one `h1`, no `img` without `alt` |
+| `tests/static-pages.spec.ts` | 11 | home, contact, legislation, compliance-oversight, process, search-help, news, project-notifications |
 | `tests/projects-list.spec.ts` | 5 | table, sort, pagination, keyword filter, deep link |
 | `tests/projects-map.spec.ts` | 6 | map and clusters, inline filters panel, filter, pin card, list-card card, basemap switch |
 | `tests/search.spec.ts` | 6 | table, keyword, milestone facet, pagination, deep link, row links |

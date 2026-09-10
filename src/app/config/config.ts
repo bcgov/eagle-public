@@ -5,35 +5,29 @@ export interface EnvConfig {
   LOG_LEVEL?: number;
   configEndpoint?: boolean;
   /**
-   * Where the runtime config itself comes from, when `configEndpoint` is true. Set, it is tried
-   * once before `/api/config` and its body is only accepted whole; empty or unset means
-   * `/api/config` alone. Read from env.js before any remote merge, so setting or clearing it
-   * needs a redeploy of env.js. eagle-api stays the source of truth either way: its Mongo
-   * `Config` document is the kill switch for what the app reads at runtime, and an unreachable
-   * or partial answer here falls through to `/api/config` rather than booting on env.js.
+   * Where the runtime config itself comes from, when `configEndpoint` is true. It is the only
+   * source: empty or unset means `DEFAULT_CONFIG_PATH` below. The body is accepted only whole, and
+   * a failure is fatal rather than a fall back to env.js. Read from env.js before any remote merge,
+   * so overriding it needs a redeploy of env.js.
    */
   CONFIG_PATH?: string;
   ENVIRONMENT?: string;
   BANNER_COLOUR?: string;
-  API_PATH?: string;
   API_LOCATION?: string;
   /**
-   * Base URL for Project/Document/DocumentChunk search, when it is served by eagle-search
-   * (Azure AI Search) rather than eagle-api.
+   * Base URL for demi-search, which answers every read the app makes: search, item reads, the
+   * access gate and document downloads.
    *
-   * Normally RELATIVE — `/eagle-search` — because rproxy proxies that location to the Azure host,
-   * which keeps the call same-origin and needs no CORS. Absolute (`https://…/api`) only where there
-   * is no rproxy in front, which today means the static Azure Front Door build for test.
-   *
-   * EMPTY OR UNSET FALLS BACK TO eagle-api, and that is also the kill switch. In dev and test the
-   * switch is eagle-api's Mongo `Config` document; prod still reads it from the rproxy ConfigMap
-   * until prod moves to rproxy v2.7.11. Either way it reverts with no redeploy.
+   * Normally RELATIVE — `/demi-search` — because rproxy proxies that location to the DEMI host,
+   * which keeps the call same-origin and needs no CORS. Absolute (`https://…`) only where there is
+   * no rproxy in front. Empty or unset means `/demi-search`; there is no second backend to fall
+   * back to.
    */
   SEARCH_API_PATH?: string;
   /**
    * Base path for DEMI project documents: `GET <path>/<eagleProjectId>` answers the project, whose
-   * `phases` array carries the assessment rail's per-phase dates. Empty or unset asks for nothing
-   * and the rail renders without dates. Served from /api/config like SEARCH_API_PATH.
+   * `phases` array carries the assessment rail's per-phase dates. Empty or unset means
+   * `/demi-projects`.
    */
   DEMI_PROJECTS_PATH?: string;
   /**
@@ -44,7 +38,7 @@ export interface EnvConfig {
   CONTENT_SEARCH?: boolean;
   /**
    * Puts a shared-password curtain in front of the whole app. Only a literal `true` closes it, so
-   * prod (false or unset) renders unchanged. eagle-api checks the password; see state/gate.ts.
+   * prod (false or unset) renders unchanged. demi-search checks the password; see state/gate.ts.
    */
   ACCESS_GATE?: boolean;
   ADMIN_PATH?: string;
@@ -59,12 +53,12 @@ export interface EnvConfig {
   /**
    * eagle-analytics ingest base for @digitalspace/eagle-analytics-client, the only analytics backend
    * now that penguin-analytics is retired. Empty or unset gives that client a no-op instance. Served
-   * from /api/config like SEARCH_API_PATH, so it turns on with no redeploy.
+   * from the runtime config like SEARCH_API_PATH, so it turns on with no redeploy.
    */
   EAGLE_ANALYTICS_URL?: string;
   /**
    * Azure Application Insights connection string for browser error reporting. Empty or unset
-   * sends nothing and loads no SDK. Served from /api/config like SEARCH_API_PATH.
+   * sends nothing and loads no SDK. Served from the runtime config like SEARCH_API_PATH.
    */
   APPINSIGHTS_CONNECTION_STRING?: string;
   GH_HASH?: string;
@@ -85,13 +79,12 @@ let config: EnvConfig = {};
  * LOCAL DEV (configEndpoint = false):
  *   - Uses env.js values directly (src/env.js)
  *   - vite.config.ts reads API_LOCATION from env.js to generate dev server proxy rules
- *   - App uses relative paths (/api) — never API_LOCATION directly
+ *   - App uses relative paths (/demi-search) — never API_LOCATION directly
  *
  * DEPLOYED (configEndpoint = true):
  *   - The Azure deploy workflows sed configEndpoint to true
- *   - App fetches /api/config on startup. rproxy proxies that to eagle-api, which serves it from
- *     its Mongo `Config` document. A non-empty CONFIG_PATH is asked first, with /api/config as the
- *     fallback; see fetchRemoteConfig.
+ *   - App fetches CONFIG_PATH (`/demi-search/config` unless env.js overrides it) on startup;
+ *     see fetchRemoteConfig
  *   - Those values override env.js
  *
  * Must be awaited so that dependent code (analytics) initializes with the correct
@@ -114,35 +107,21 @@ export function getConfig(): EnvConfig {
 }
 
 /**
- * The API path for making API calls.
+ * Base URL for demi-search — search, item reads, the gate and downloads all hang off it.
  * Always relative — the dev server proxy (local) or rproxy (deployed) handles routing.
  */
-export function getApiPath(): string {
-  return config.API_PATH || '/api';
-}
-
-/**
- * Base URL for search, when it is served by eagle-search. Falls back to the eagle-api path, so an
- * unconfigured environment keeps working unchanged.
- */
 export function getSearchApiPath(): string {
-  return config.SEARCH_API_PATH || getApiPath();
+  return config.SEARCH_API_PATH || DEFAULT_SEARCH_API_PATH;
 }
 
-/**
- * DEMI project base path, without a trailing slash. Empty when unset, which is the off switch for
- * the assessment rail's phase dates.
- */
+/** DEMI project base path, without a trailing slash. */
 export function getDemiProjectsPath(): string {
-  return (config.DEMI_PROJECTS_PATH || '').trim().replace(/\/+$/, '');
+  return (config.DEMI_PROJECTS_PATH || DEFAULT_DEMI_PROJECTS_PATH).trim().replace(/\/+$/, '');
 }
 
-/**
- * Whether bulk (and presigned single) download is offered. The routes live on the DEMI search base,
- * so an empty SEARCH_API_PATH means no DEMI at all: hide the UI and fall back to eagle-api.
- */
+/** Whether bulk (and presigned single) download is offered. demi-api always serves it. */
 export function bulkDownloadEnabled(): boolean {
-  return !!config.SEARCH_API_PATH;
+  return true;
 }
 
 /**
@@ -172,7 +151,7 @@ function apiOrigin(): string {
 /**
  * Where eagle-admin lives.
  *
- * `/api/config` serves ADMIN_PATH relative (`/admin/`) because rproxy fronts eagle-admin and the
+ * The runtime config serves ADMIN_PATH relative (`/admin/`) because rproxy fronts eagle-admin and the
  * public app on one host. The Azure-hosted public site and the Vite dev server are NOT that host,
  * so a relative path there resolves to the public app itself, whose wildcard route sends the
  * visitor back to `/`. Resolve a relative path against API_LOCATION's origin instead. An absolute
@@ -208,16 +187,16 @@ export function showSurveyBanner(): boolean {
 /**
  * Fetch remote config and merge it over env.js.
  *
- * `/api/config` (eagle-api, from its Mongo `Config` document) is the source of truth. A failure is
- * retried, then thrown: env.js ships ACCESS_GATE false and no search path, so falling back to it
- * would open the access curtain and point search at the wrong backend.
- *
- * CONFIG_PATH, when set, is asked first — one attempt, same 5 s budget — and anything short of a
- * whole payload logs once and falls through to the loop below.
+ * CONFIG_PATH — `/demi-search/config` unless env.js names another — is the only source of truth.
+ * A failure is retried, then thrown: env.js ships ACCESS_GATE false, so booting on it would open
+ * the access curtain. main.tsx turns that throw into the "temporarily unavailable" page.
  */
 const CONFIG_ATTEMPTS = 3;
 const CONFIG_TIMEOUT_MS = 5000;
-const EAGLE_CONFIG_PATH = '/api/config';
+const DEFAULT_SEARCH_API_PATH = '/demi-search';
+const DEFAULT_DEMI_PROJECTS_PATH = '/demi-projects';
+/** Lives here, not in env.js, so an empty env.js still boots against DEMI. */
+const DEFAULT_CONFIG_PATH = `${DEFAULT_SEARCH_API_PATH}/config`;
 
 /**
  * A remote payload is usable only whole. Merging a partial one over env.js would leave
@@ -247,8 +226,9 @@ function merge(remote: EnvConfig): void {
 }
 
 async function fetchRemoteConfig(): Promise<void> {
-  const configPath = (config.CONFIG_PATH || '').trim();
-  if (configPath) {
+  const configPath = (config.CONFIG_PATH || '').trim() || DEFAULT_CONFIG_PATH;
+
+  for (let attempt = 1; ; attempt++) {
     try {
       const remote = await fetchConfigFrom(configPath);
       if (!isWholeConfig(remote)) {
@@ -257,17 +237,9 @@ async function fetchRemoteConfig(): Promise<void> {
       merge(remote);
       return;
     } catch (e) {
-      logger.error(`config: ${configPath} failed, using ${EAGLE_CONFIG_PATH}`, 'config', e);
-    }
-  }
-
-  for (let attempt = 1; ; attempt++) {
-    try {
-      merge(await fetchConfigFrom(EAGLE_CONFIG_PATH));
-      return;
-    } catch (e) {
-      console.error(
-        `config: ${EAGLE_CONFIG_PATH} attempt ${attempt} of ${CONFIG_ATTEMPTS} failed:`,
+      logger.error(
+        `config: ${configPath} attempt ${attempt} of ${CONFIG_ATTEMPTS} failed`,
+        'config',
         e,
       );
       if (attempt >= CONFIG_ATTEMPTS) throw e;

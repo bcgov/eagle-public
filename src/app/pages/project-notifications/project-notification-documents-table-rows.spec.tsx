@@ -12,7 +12,7 @@ const DOCUMENT = {
   datePosted: '2026-05-04T00:00:00.000Z',
 };
 
-const DOWNLOAD_URL = '/api/public/document/doc-1/download/notification.pdf';
+const DOWNLOAD_URL = '/demi-search/documents/doc-1/download?redirect=1';
 
 /** This table is never selectable, so the Name link is the row's only control. */
 describe('ProjectNotificationDocumentsTableRow', () => {
@@ -20,7 +20,7 @@ describe('ProjectNotificationDocumentsTableRow', () => {
   let openSpy: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
-    window.__env = { logLevel: 4, API_PATH: '/api', SEARCH_API_PATH: '' };
+    window.__env = { logLevel: 4, SEARCH_API_PATH: '/demi-search' };
     await loadConfig();
     openSpy = vi.fn();
     vi.stubGlobal('open', openSpy);

@@ -1,6 +1,6 @@
 import { Link } from 'react-router';
 import { Constants } from 'app/utils/constants';
-import { encodeString, longDate, openDocumentDownload } from 'app/utils/utils';
+import { documentDownloadUrl, longDate, openDocumentDownload } from 'app/utils/utils';
 import { safeHtml } from 'app/utils/safe-html';
 import './content-result.css';
 
@@ -17,16 +17,6 @@ function markOnly(snippet: string): string {
     .replace(/&lt;(\/?)mark&gt;/g, '<$1mark>');
 }
 
-/**
- * The document itself. eagle-api serves PDFs inline, so this opens in the browser's viewer.
- *
- * Deliberately no `#page=N` fragment: a chunk's `pageNumber` is a passage SEQUENCE number, not a
- * PDF page, so every link built from it pointed somewhere arbitrary.
- */
-function documentUrl(result: any): string {
-  return `/api/public/document/${result._id}/download/${encodeString(result.documentName || 'document', true)}`;
-}
-
 /** Matches only. There is no trustworthy page count to pair it with. */
 function matchSummary(result: any): string {
   const matches = result.matchCount || 0;
@@ -40,7 +30,16 @@ export function ContentResult({ result }: { result: any }) {
   return (
     <article className="content-result">
       <h3 className="result-title">
-        <a href={documentUrl(result)} target="_blank" rel="noopener">
+        {/*
+          Same href as the Download button below, so middle-click and copy-link work. Deliberately
+          no `#page=N` fragment: a chunk's `pageNumber` is a passage SEQUENCE number, not a PDF
+          page, so every link built from it pointed somewhere arbitrary.
+        */}
+        <a
+          href={documentDownloadUrl({ _id: result._id, displayName: result.documentName })}
+          target="_blank"
+          rel="noopener"
+        >
           {result.documentName || 'Untitled document'}
         </a>
       </h3>

@@ -1,22 +1,22 @@
 {
   "comment-period-details": [
-    "GET /api/config",
     "GET /demi-projects/:id",
+    "GET /demi-search/config",
     "GET /demi-search/search?and[_id]=:id&dataset=CommentPeriod&fuzzy=false&pageNum=0&pageSize=1&populate=false&projectLegislation=default",
     "GET /demi-search/search?and[period]=:id&dataset=Comment&fuzzy=false&pageNum=0&pageSize=10&populate=false&projectLegislation=default&sortBy=-commentId",
     "GET /demi-search/search?dataset=Document&docIds=&fuzzy=false&pageNum=0&pageSize=1&populate=false&projectLegislation=default"
   ],
   "home": [
-    "GET /api/config",
+    "GET /demi-search/config",
     "GET /demi-search/search?dataset=RecentActivity&fuzzy=false&pageNum=0&pageSize=4&populate=false&projectLegislation=default&top=true"
   ],
   "news": [
-    "GET /api/config",
+    "GET /demi-search/config",
     "GET /demi-search/search?dataset=RecentActivity&fuzzy=false&pageNum=0&pageSize=10&populate=true&projectLegislation=default&sortBy=&sortBy=-dateAdded"
   ],
   "overview-tab": [
-    "GET /api/config",
     "GET /demi-projects/:id",
+    "GET /demi-search/config",
     "GET /demi-search/search?and[documentSource]=PROJECT&and[milestone]=:id&and[milestone]=:id&and[milestone]=:id&and[milestone]=:id&and[milestone]=:id&and[milestone]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&dataset=Document&fuzzy=false&pageNum=0&pageSize=1&populate=true&project=:id&projectLegislation=default&sortBy=&sortBy=",
     "GET /demi-search/search?and[documentSource]=PROJECT&and[milestone]=:id&and[milestone]=:id&and[milestone]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&dataset=Document&fuzzy=false&pageNum=0&pageSize=1&populate=true&project=:id&projectLegislation=default&sortBy=&sortBy=",
     "GET /demi-search/search?and[documentSource]=PROJECT&and[milestone]=:id&and[milestone]=:id&and[projectPhase]=:id&and[projectPhase]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&dataset=Document&fuzzy=false&pageNum=0&pageSize=1&populate=true&project=:id&projectLegislation=default&sortBy=&sortBy=",
@@ -29,8 +29,8 @@
     "GET /demi-search/search?dataset=List&pageSize=250"
   ],
   "project-documents-tab": [
-    "GET /api/config",
     "GET /demi-projects/:id",
+    "GET /demi-search/config",
     "GET /demi-search/search?and[documentSource]=PROJECT&and[milestone]=:id&and[milestone]=:id&and[milestone]=:id&and[milestone]=:id&and[milestone]=:id&and[milestone]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&dataset=Document&fuzzy=false&pageNum=0&pageSize=1&populate=true&project=:id&projectLegislation=default&sortBy=&sortBy=",
     "GET /demi-search/search?and[documentSource]=PROJECT&and[milestone]=:id&and[milestone]=:id&and[milestone]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&dataset=Document&fuzzy=false&pageNum=0&pageSize=1&populate=true&project=:id&projectLegislation=default&sortBy=&sortBy=",
     "GET /demi-search/search?and[documentSource]=PROJECT&and[milestone]=:id&and[milestone]=:id&and[projectPhase]=:id&and[projectPhase]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&and[type]=:id&dataset=Document&fuzzy=false&pageNum=0&pageSize=1&populate=true&project=:id&projectLegislation=default&sortBy=&sortBy=",
@@ -42,18 +42,18 @@
     "GET /demi-search/search?dataset=List&pageSize=250"
   ],
   "projects-list": [
-    "GET /api/config",
+    "GET /demi-search/config",
     "GET /demi-search/search?and[companyType]=Proponent/Certificate Holder&dataset=Organization&fuzzy=false&pageNum=0&pageSize=500&populate=false&projectLegislation=default&sortBy= name",
     "GET /demi-search/search?dataset=List&pageSize=250",
     "GET /demi-search/search?dataset=Project&fuzzy=false&pageNum=0&pageSize=10&populate=true&projectLegislation=default&sortBy=&sortBy= name"
   ],
   "projects-map": [
-    "GET /api/config",
+    "GET /demi-search/config",
     "GET /demi-search/search?dataset=List&pageSize=250",
     "GET /demi-search/search?dataset=Project&fuzzy=false&pageNum=0&pageSize=1000000&populate=true&projectLegislation=default&sortBy=&sortBy="
   ],
   "search": [
-    "GET /api/config",
+    "GET /demi-search/config",
     "GET /demi-search/search?dataset=Document&fuzzy=false&pageNum=0&pageSize=10&populate=true&projectLegislation=default&sortBy=&sortBy=-datePosted",
     "GET /demi-search/search?dataset=List&pageSize=250"
   ]

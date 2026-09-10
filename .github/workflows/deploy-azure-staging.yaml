@@ -89,17 +89,19 @@ jobs:
         run: |
           set -euo pipefail
           # Same-origin, as prod: rproxy serves this bundle on test.projects.eao.gov.bc.ca, so
-          # paths stay relative and `configEndpoint` true — /api/config supplies the rest.
+          # paths stay relative and `configEndpoint` true — the DEMI config document supplies the
+          # rest.
           sed -i "s|window.__env.configEndpoint = .*|window.__env.configEndpoint = true;|" src/env.js
           sed -i "s|window.__env.CONFIG_PATH = .*|window.__env.CONFIG_PATH = '/demi-search/config';|" src/env.js
           sed -i "s|window.__env.API_LOCATION = .*|window.__env.API_LOCATION = null;|" src/env.js
           sed -i "s|window.__env.logLevel = .*|window.__env.logLevel = 4;|" src/env.js
           sed -i "s|window.__env.ANALYTICS_DEBUG = .*|window.__env.ANALYTICS_DEBUG = false;|" src/env.js
-          # Belt and braces: if /api/config cannot answer, whatever ships is what the page uses.
+          # Belt and braces: if the config document cannot answer, whatever ships is what the
+          # page uses.
           sed -i "s|window.__env.ENVIRONMENT = .*|window.__env.ENVIRONMENT = 'test';|" src/env.js
           sed -i "s|window.__env.ADMIN_PATH = .*|window.__env.ADMIN_PATH = '/admin/';|" src/env.js
-          # Absolute because eagle-notify is a different origin with no rproxy location, and
-          # /api/config does not serve NOTIFY_API. Both staging targets use the test notify API.
+          # Absolute because eagle-notify is a different origin with no rproxy location, and the
+          # config document does not carry NOTIFY_API. Both staging targets use the test notify API.
           sed -i "s|window.__env.NOTIFY_API = .*|window.__env.NOTIFY_API = 'https://notify-api-test.azurewebsites.net';|" src/env.js
           for expected in \
             "window.__env.configEndpoint = true;" \
@@ -115,7 +117,6 @@ jobs:
           done
           # The other half of the contract: the paths that must NOT have been touched.
           for relative in \
-            "window.__env.API_PATH = '/api';" \
             "window.__env.SEARCH_API_PATH = '';"; do
             grep -qF "$relative" src/env.js \
               || { echo "::error::env.js no longer holds the same-origin default: $relative — the test bundle must stay relative"; exit 1; }
@@ -261,20 +262,20 @@ jobs:
           # step, and the day someone copies an absolute hostname back in.
           deployed_env=$(curl -s --max-time 15 "$host/env.js")
           echo "$deployed_env" | grep -qF 'window.__env.configEndpoint = true;' \
-            || { echo "::error::the deployed env.js still has configEndpoint = false — it will never fetch /api/config and will serve the committed dev defaults"; exit 1; }
-          echo "$deployed_env" | grep -qF "window.__env.API_PATH = '/api';" \
-            || { echo "::error::the deployed env.js does not use the relative /api path — the test bundle must stay same-origin"; exit 1; }
+            || { echo "::error::the deployed env.js still has configEndpoint = false — it will never fetch its runtime config and will serve the committed dev defaults"; exit 1; }
+          echo "$deployed_env" | grep -qF "window.__env.CONFIG_PATH = '/demi-search/config';" \
+            || { echo "::error::the deployed env.js does not point CONFIG_PATH at /demi-search/config"; exit 1; }
           echo "$deployed_env" | grep -qF "window.__env.SEARCH_API_PATH = '';" \
-            || { echo "::error::the deployed env.js bakes an absolute SEARCH_API_PATH — rproxy serves /eagle-search and /demi-search same-origin, and /api/config supplies the value at runtime"; exit 1; }
+            || { echo "::error::the deployed env.js bakes an absolute SEARCH_API_PATH — rproxy serves /demi-search same-origin, and the config document supplies the value at runtime"; exit 1; }
           echo "$deployed_env" | grep -qF "window.__env.ENVIRONMENT = 'test';" \
             || { echo "::error::the deployed env.js does not announce the test environment — the banner would be wrong"; exit 1; }
 
           echo "deployed and correctly cached."
           if [ "$TARGET" = "next" ]; then
-            echo "NOTE: this endpoint has the test /api behind it (eagle-edge gives the next site a backend route),"
+            echo "NOTE: this endpoint has the test backend behind it (eagle-edge gives the next site a backend route),"
             echo "so it is the site to share for review. It shows test data."
           else
-            echo "NOTE: this raw Front Door hostname has no /api behind it —"
+            echo "NOTE: this raw Front Door hostname has no backend behind it —"
             echo "the working site is the one rproxy serves, where the same bundle is same-origin."
           fi
 

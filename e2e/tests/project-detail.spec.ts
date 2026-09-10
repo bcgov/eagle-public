@@ -194,16 +194,15 @@ test('a document download presigns through demi-api and keeps the eagle-api href
 
   const documentId = env.searchResults[0]._id;
 
-  // The href stays the eagle-api URL so middle-click and copy-link still fetch the file.
+  // The href stays a real download URL so middle-click and copy-link still fetch the file.
   const link = page.locator(ROWS).first().locator(NAME).locator('a');
   const href = await link.getAttribute('href');
-  expect(href).toMatch(new RegExp(`^/api/public/document/${documentId}/download/.+`));
+  expect(href).toBe(`/demi-search/documents/${documentId}/download?redirect=1`);
 
   // The click does not follow it: it asks demi-api for a presigned URL for that one document.
   const presign = page.waitForRequest(
     (r) =>
-      r.method() === 'POST' &&
-      /\/(api|demi-search)\/bulk-downloads$/.test(new URL(r.url()).pathname),
+      r.method() === 'POST' && /\/demi-search\/bulk-downloads$/.test(new URL(r.url()).pathname),
     { timeout: 20_000 },
   );
   await link.click();

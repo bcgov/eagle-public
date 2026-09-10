@@ -76,7 +76,7 @@ describe('document search', () => {
 
     expect(await screen.findByText('Fish and Fish Habitat.pdf')).toBeInTheDocument();
     expect(lastDocumentRequest()).toBe(
-      '/api/search?dataset=Document&pageNum=0&pageSize=10&projectLegislation=default&sortBy=-datePosted&sortBy=&populate=true&fuzzy=false',
+      '/demi-search/search?dataset=Document&pageNum=0&pageSize=10&projectLegislation=default&sortBy=-datePosted&sortBy=&populate=true&fuzzy=false',
     );
   });
 
@@ -103,7 +103,7 @@ describe('document search', () => {
 
     await screen.findByText('Fish and Fish Habitat.pdf');
     expect(lastDocumentRequest()).toBe(
-      '/api/search?dataset=Document&pageNum=2&pageSize=25&projectLegislation=default&sortBy=+displayName&sortBy=&populate=true&fuzzy=false',
+      '/demi-search/search?dataset=Document&pageNum=2&pageSize=25&projectLegislation=default&sortBy=+displayName&sortBy=&populate=true&fuzzy=false',
     );
   });
 

@@ -15,7 +15,7 @@ const DOCUMENT = {
   project: { _id: 'proj-1', name: 'Alpha Mine' },
 };
 
-const DOWNLOAD_URL = '/api/public/document/doc-1/download/fish-habitat.pdf';
+const DOWNLOAD_URL = '/demi-search/documents/doc-1/download?redirect=1';
 
 /** The Name cell is a real link here too, and the row's only download. */
 describe('DocSearchTableRow name cell', () => {
@@ -23,7 +23,7 @@ describe('DocSearchTableRow name cell', () => {
   let openSpy: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
-    window.__env = { logLevel: 4, API_PATH: '/api', SEARCH_API_PATH: '' };
+    window.__env = { logLevel: 4, SEARCH_API_PATH: '/demi-search' };
     await loadConfig();
     openSpy = vi.fn();
     vi.stubGlobal('open', openSpy);
@@ -48,7 +48,7 @@ describe('DocSearchTableRow name cell', () => {
     vi.unstubAllGlobals();
   });
 
-  it('links to the eagle-api download URL', () => {
+  it('links to the demi-api download URL', () => {
     expect(screen.getByRole('link', { name: 'Fish Habitat Report' })).toHaveAttribute(
       'href',
       DOWNLOAD_URL,
@@ -73,7 +73,7 @@ describe('DocSearchTableRow row interaction', () => {
   let openSpy: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
-    window.__env = { logLevel: 4, API_PATH: '/api', SEARCH_API_PATH: '' };
+    window.__env = { logLevel: 4, SEARCH_API_PATH: '/demi-search' };
     await loadConfig();
     openSpy = vi.fn();
     vi.stubGlobal('open', openSpy);

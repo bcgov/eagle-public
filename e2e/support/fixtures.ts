@@ -1,7 +1,7 @@
 import { test as base } from '@playwright/test';
 
 /**
- * `ACCESS_GATE: true` in /api/config puts a shared-password curtain in front of the whole app.
+ * `ACCESS_GATE: true` in /demi-search/config puts a shared-password curtain in front of the whole app.
  * The flag it remembers is a plain localStorage marker, so seeding it keeps every other spec
  * testing the app rather than the curtain. `gate.spec.ts` exercises the real password flow.
  */

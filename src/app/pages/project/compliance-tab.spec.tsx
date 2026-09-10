@@ -67,17 +67,21 @@ describe('ComplianceTab', () => {
     expect(screen.getByText('Orders issued')).toBeInTheDocument();
 
     const search = (typeIds: string) =>
-      '/api/search?dataset=Document&project=proj-1&pageNum=0&pageSize=1&projectLegislation=default' +
+      '/demi-search/search?dataset=Document&project=proj-1&pageNum=0&pageSize=1&projectLegislation=default' +
       '&sortBy=&sortBy=&populate=false&and[documentSource]=PROJECT' +
       '&and[milestone]=ms-ce-2002&and[milestone]=ms-ce-2018' +
       typeIds +
       '&fuzzy=false';
 
-    expect(requests).toHaveLength(2);
-    expect(requests).toContain(
+    // Two document searches and no more: a third would mean a count asked for twice.
+    const documentSearches = requests.filter((url) => url.includes('dataset=Document&'));
+    expect(documentSearches).toHaveLength(2);
+    expect(documentSearches).toContain(
       search('&and[type]=type-inspection-2002&and[type]=type-inspection-2018'),
     );
-    expect(requests).toContain(search('&and[type]=type-order-2002&and[type]=type-order-2018'));
+    expect(documentSearches).toContain(
+      search('&and[type]=type-order-2002&and[type]=type-order-2018'),
+    );
   });
 
   it('links into the compliance and enforcement documents', () => {
