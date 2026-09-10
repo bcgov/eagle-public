@@ -177,6 +177,8 @@ function serving(responses: Record<string, () => Response>) {
 describe('loadConfig with CONFIG_PATH', () => {
   const original = window.__env;
   const DEMI = '/demi-search/config';
+  /** proxy_connect_timeout 1s + proxy_read_timeout 10s on the /demi-search route in eao-nginx. */
+  const NGINX_GIVES_UP_MS = 11_000;
   const WHOLE_DEMI = { ENVIRONMENT: 'test', ACCESS_GATE: true, SEARCH_API_PATH: '/demi-search' };
 
   afterEach(() => {
@@ -208,6 +210,19 @@ describe('loadConfig with CONFIG_PATH', () => {
 
     expect(requested(fetchMock)).toEqual([DEMI]);
     expect(getConfig().SEARCH_API_PATH).toBe('/demi-search');
+  });
+
+  it('lets each attempt run past the point nginx gives up', async () => {
+    const abortAfter = vi.spyOn(AbortSignal, 'timeout');
+    const fetchMock = serving({ [DEMI]: () => Response.json(WHOLE_DEMI) });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { loadConfig } = await loadWith({ CONFIG_PATH: DEMI });
+    await loadConfig();
+
+    // Aborting first would show a browser error instead of nginx's own answer on a cold start.
+    expect(abortAfter).toHaveBeenCalledTimes(1);
+    expect(abortAfter.mock.calls[0][0]).toBeGreaterThan(NGINX_GIVES_UP_MS);
   });
 
   it('retries the same path when it is down, then rejects rather than booting on env.js', async () => {
