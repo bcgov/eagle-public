@@ -115,6 +115,7 @@ export function SiteHeader() {
         {/* Mark and name are one link, so home is a single stop rather than two in a row. */}
         <Link className="eao-header__home" to="/" onClick={closeMenu}>
           <img className="eao-header__mark" src="/assets/images/BCID_H_rgb_rev.svg" alt="" />
+          <span className="eao-header__line" aria-hidden="true" />
           <span className="eao-header__title">EPIC</span>
           <span className="visually-hidden">{` ${SITE_TITLE}`}</span>
         </Link>
@@ -143,28 +144,15 @@ export function SiteHeader() {
           ))}
           {/* No sign-in of its own here: staff sign in to eagle-admin, as from the footer. */}
           <a
-            className="eao-header__link eao-header__link--action"
+            className="eao-header__login"
             href={adminUrl()}
             target="_blank"
             rel="noopener"
             title="Staff Login"
             onClick={closeStaffLogin}
           >
-            {/* Words first: the panel shows them, the bar clips them so the name still reads. */}
-            <span className="eao-header__action-label">Staff Login</span>
+            Log in
             <span className="visually-hidden">{NEW_TAB_SUFFIX}</span>
-            {/* Material's `login` glyph, inline: it is not in the bundled Material Icons font.
-                It stands in for the words on the bar, and is hidden in the panel below them. */}
-            <svg
-              className="eao-header__action-icon"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              aria-hidden="true"
-            >
-              <path d="M11 7L9.6 8.4l2.6 2.6H2v2h10.2l-2.6 2.6L11 17l5-5-5-5zm9 12h-8v2h8c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-8v2h8v14z" />
-            </svg>
           </a>
         </nav>
       </div>

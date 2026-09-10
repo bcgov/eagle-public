@@ -23,7 +23,7 @@ function nav() {
 }
 
 function staffLogin() {
-  return screen.getByRole('link', { name: /^Staff Login/ });
+  return screen.getByRole('link', { name: /^Log in/ });
 }
 
 type MediaChangeListener = (event: MediaQueryListEvent) => void;
@@ -95,33 +95,18 @@ describe('site header', () => {
       'Search',
       'Contact Us',
     ]);
-    // Staff Login carries a decorative icon, so its name is what matters, not its text content.
-    expect(links[3]).toHaveAccessibleName(/^Staff Login\s*\(opens in new tab\)$/);
+    expect(links[3].textContent).toBe('Log in (opens in new tab)');
+    expect(links[3]).toHaveAccessibleName(/^Log in\s*\(opens in new tab\)$/);
   });
 
-  it('puts the Staff Login words ahead of its icon', () => {
-    renderHeader();
-
-    // The icon is decorative and has no text of its own, so only the DOM order pins the reading
-    // order: the words come first, the glyph trails them.
-    const staff = staffLogin();
-    expect(staff.firstElementChild).toHaveTextContent('Staff Login');
-    expect(staff.lastElementChild?.tagName.toLowerCase()).toBe('svg');
-    // The class is the only switch the CSS has: the glyph shows on the bar and is hidden in the
-    // panel, so losing it leaves an empty box where the Staff Login control sits.
-    expect(staff.lastElementChild).toHaveClass('eao-header__action-icon');
-  });
-
-  it('sends Staff Login to the configured admin app in a new tab, and says so', () => {
+  it('sends staff login to the configured admin app in a new tab, and says so', () => {
     renderHeader();
 
     const staff = staffLogin();
     expect(staff).toHaveAttribute('href', adminUrl());
     expect(staff).toHaveAttribute('target', '_blank');
     expect(staff).toHaveAttribute('rel', 'noopener');
-    expect(staff).toHaveAccessibleName(/^Staff Login\s*\(opens in new tab\)$/);
-    // The bar shows the icon alone, so pointer users get the words from the tooltip.
-    expect(staff).toHaveAttribute('title', 'Staff Login');
+    expect(staff).toHaveAccessibleName(/^Log in\s*\(opens in new tab\)$/);
   });
 
   it('marks the link for the page being viewed', () => {
@@ -219,7 +204,7 @@ describe('site header', () => {
       expect(toggler()).toHaveFocus();
     });
 
-    it('hands focus back to the toggler when Staff Login opens its new tab', async () => {
+    it('hands focus back to the toggler when staff login opens its new tab', async () => {
       const user = userEvent.setup();
       renderHeader();
 

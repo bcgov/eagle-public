@@ -98,6 +98,6 @@ test('the header tabs through its links in visual order', async ({ page }) => {
     'Map Explorer',
     'Search',
     'Contact Us',
-    'Staff Login (opens in new tab)',
+    'Log in (opens in new tab)',
   ]);
 });

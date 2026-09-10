@@ -32,8 +32,9 @@
 .eao-header .eao-header__home {
   display: flex;
   align-items: center;
-  gap: var(--layout-margin-xsmall);
-  padding: var(--layout-padding-small) var(--layout-padding-medium);
+  gap: var(--layout-padding-medium);
+  padding-block: var(--layout-padding-small);
+  padding-inline: var(--layout-padding-medium);
   color: var(--typography-color-primary-invert);
   text-decoration: none;
 }
@@ -48,6 +49,16 @@
   /* The visual identity sets the floor for the horizontal mark at 25px. */
   height: 2rem;
   width: auto;
+}
+
+/* B.C. Design System header rule (.bcds-header--line). Grey uses
+   --surface-color-border-default (#d8d8d8), too low-contrast on this bar's dark blue background
+   with no reversed border token in @bcgov/design-tokens; white at 40% alpha instead. */
+.eao-header__line {
+  width: 1px;
+  height: 2rem;
+  flex: none;
+  background-color: rgba(255, 255, 255, 0.4);
 }
 
 .eao-header__title {
@@ -118,10 +129,38 @@
   font: var(--typography-bold-body);
 }
 
-/* In the panel Staff Login is a row of words like the links above it, so the glyph is dropped
-   rather than doubled up with the label. */
-.eao-header .eao-header__action-icon {
-  display: none;
+/* B.C. Design System Button, variant="secondary" size="small" (@bcgov/design-system-react-components
+   `.bcds-react-aria-Button.secondary`/`.small`), hand-ported since that package is not a dependency
+   here. In the mobile panel `.eao-header__nav`'s flex column stretches every child full width like
+   the links above it; the button keeps that width rather than breaking the column's rhythm. */
+.eao-header .eao-header__login {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  margin-block: var(--layout-padding-small);
+  padding-inline: 0.75rem; /* BCDS ships this as a bare rem value too, no token yet for it */
+  background-color: var(--surface-color-secondary-button-default);
+  border: var(--layout-border-width-small) solid var(--surface-color-border-dark);
+  border-radius: var(--layout-border-radius-medium);
+  color: var(--typography-color-primary);
+  font: var(--typography-regular-small-body);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.eao-header .eao-header__login:hover,
+.eao-header .eao-header__login:focus {
+  color: var(--typography-color-primary);
+  text-decoration: none;
+}
+
+.eao-header .eao-header__login:hover {
+  background-color: var(--surface-color-secondary-button-hover);
+}
+
+.eao-header .eao-header__login:active {
+  background-color: var(--surface-color-secondary-pressed);
 }
 
 /* Keyboard focus is gold, because the B.C. active blue is invisible against this surface. */
@@ -154,27 +193,11 @@
     border-top: var(--layout-border-width-none);
   }
 
-  /* On the bar it is the icon alone, on the 44px touch target the B.C. Design System asks for.
-     That fits inside the 52px row, so the target costs no layout. */
-  .eao-header .eao-header__link--action {
-    justify-content: center;
-    min-width: 44px;
-    padding-block: var(--layout-padding-xsmall);
-  }
-
-  .eao-header .eao-header__action-icon {
-    display: block;
-  }
-
-  /* Clipped rather than display:none: the accessible name is still "Staff Login (opens in new
-     tab)", and the title attribute gives pointer users the same words. */
-  .eao-header .eao-header__action-label {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
+  /* The row's own align-items: center sizes it to content here, so only the gap from the last
+     nav link needs setting; the mobile margin-block above is dropped in favour of it. */
+  .eao-header .eao-header__login {
+    margin-block: 0;
+    margin-inline-start: var(--layout-padding-small);
   }
 }
 
