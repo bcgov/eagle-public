@@ -124,9 +124,6 @@ export interface DemiProject {
   /** The proponent as two scalars, where eagle-api populates the whole Organization. */
   proponentId?: string;
   proponentName?: string;
-  projectCAC?: boolean;
-  projectCACPublished?: boolean;
-  cacEmail?: string;
   phases?: unknown[];
   shortUrl?: string;
   /** EA certificate number, e.g. `E23-01`. No source has the conditions count it carries. */
@@ -558,9 +555,6 @@ export async function getProject(
     'write',
     'delete',
     'featuredDocuments',
-    'projectCAC',
-    'projectCACPublished',
-    'cacEmail',
   ];
   let queryString = `project/${id}?populate=true`;
   if (cpStart !== null) {
@@ -619,7 +613,8 @@ export async function getPeriodsByProjId(projId: string): Promise<CommentPeriod[
 }
 
 /**
- * The fields the old `/commentperiod/{id}` route projected for the details page, plus `_id`.
+ * The fields the old `/commentperiod/{id}` route projected for the details page, plus `_id`, less
+ * `commentTip`, which only the removed comment form showed.
  * The stored record also carries the admin and role fields (`metURLAdmin`, `classificationRoles`,
  * `commenterRoles`, `downloadRoles`, ...), which nothing on the page reads and which have no
  * business reaching it.
@@ -634,7 +629,6 @@ const PERIOD_DETAIL_FIELDS = [
   'openHouses',
   'project',
   'relatedDocuments',
-  'commentTip',
 ];
 
 /**

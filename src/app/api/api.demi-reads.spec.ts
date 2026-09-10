@@ -358,8 +358,9 @@ describe('reads served by demi-search', () => {
 
     /**
      * eagle-api's `/search` answers the whole stored record where the removed `/commentperiod`
-     * route projected nine fields, so without a projection here the admin and role fields
-     * (`metURLAdmin`, `classificationRoles`, ...) reach the details page.
+     * route projected a fixed set, so without a projection here the admin and role fields
+     * (`metURLAdmin`, `classificationRoles`, ...) and the unread `commentTip` reach the details
+     * page.
      */
     it('carries only the fields the details page has always been given', async () => {
       await setup('');
@@ -397,7 +398,6 @@ describe('reads served by demi-search', () => {
         additionalText: 'A legacy paragraph',
         openHouses: [{ description: 'Kamloops', eventDate: '2026-01-15' }],
         relatedDocuments: ['doc-1'],
-        commentTip: '<em>Keep it on topic</em>',
       });
     });
   });

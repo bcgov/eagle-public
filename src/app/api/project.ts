@@ -153,9 +153,6 @@ export function demiProjectToEagle(
     responsibleEPDEmail: doc.responsibleEPDEmail,
     responsibleEPDPhone: doc.responsibleEPDPhone,
     proponent: { _id: doc.proponentId, name: doc.proponentName },
-    projectCAC: doc.projectCAC,
-    projectCACPublished: doc.projectCACPublished,
-    cacEmail: doc.cacEmail,
     commentPeriodForBanner,
   };
 }

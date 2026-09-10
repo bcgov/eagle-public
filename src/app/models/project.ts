@@ -60,9 +60,6 @@ export class Project {
   operational?: any;
   nature?: any;
   commentPeriodForBanner: any;
-  projectCAC!: boolean;
-  projectCACPublished!: boolean;
-  cacEmail: any;
 
   // Permissions
   read?: string[] = [];
