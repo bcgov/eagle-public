@@ -17,11 +17,24 @@
   border-bottom: var(--layout-border-width-large) solid var(--theme-gold-60);
 }
 
-/* Below 768px the nav wraps onto its own row under the mark, the title and the toggler. */
+/* Below 768px the nav wraps onto its own row under the mark, the title and the toggler.
+   Width, max-width, margin-inline and padding-inline mirror `.project-page__container`
+   (pages/project/project.css) so the bar's contents land on the same edges as page content;
+   the home link, toggler and nav below no longer carry their own inline padding. */
 .eao-header__row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  width: 100%;
+  max-width: 1440px;
+  margin-inline: auto;
+  padding-inline: var(--layout-padding-large);
+}
+
+@media (max-width: 859.98px) {
+  .eao-header__row {
+    padding-inline: var(--layout-padding-medium);
+  }
 }
 
 /* The theme's `a:hover, a:focus` (assets/styles/themes/bcgov-bootstrap-theme.css) paints any link
@@ -32,8 +45,8 @@
 .eao-header .eao-header__home {
   display: flex;
   align-items: center;
-  gap: var(--layout-margin-xsmall);
-  padding: var(--layout-padding-small) var(--layout-padding-medium);
+  gap: var(--layout-padding-medium);
+  padding-block: var(--layout-padding-small);
   color: var(--typography-color-primary-invert);
   text-decoration: none;
 }
@@ -50,6 +63,16 @@
   width: auto;
 }
 
+/* B.C. Design System header rule (.bcds-header--line). Grey uses
+   --surface-color-border-default (#d8d8d8), too low-contrast on this bar's dark blue background
+   with no reversed border token in @bcgov/design-tokens; white at 40% alpha instead. */
+.eao-header__line {
+  width: 1px;
+  height: 2rem;
+  flex: none;
+  background-color: rgba(255, 255, 255, 0.4);
+}
+
 .eao-header__title {
   font: var(--typography-bold-h4);
 }
@@ -62,7 +85,7 @@
   /* 44px is the touch target size the B.C. Design System asks for. */
   min-width: 44px;
   min-height: 44px;
-  margin-inline: auto var(--layout-padding-small);
+  margin-inline-start: auto;
   padding: var(--layout-padding-xsmall) var(--layout-padding-small);
   border: var(--layout-border-width-none);
   cursor: pointer;
@@ -143,7 +166,6 @@
     flex-wrap: wrap;
     align-items: center;
     margin-inline-start: auto;
-    padding-inline-end: var(--layout-padding-small);
   }
 
   /* Tighter than the panel rows and butted together, so the four controls read as one cluster;

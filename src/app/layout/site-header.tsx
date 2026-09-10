@@ -115,6 +115,7 @@ export function SiteHeader() {
         {/* Mark and name are one link, so home is a single stop rather than two in a row. */}
         <Link className="eao-header__home" to="/" onClick={closeMenu}>
           <img className="eao-header__mark" src="/assets/images/BCID_H_rgb_rev.svg" alt="" />
+          <span className="eao-header__line" aria-hidden="true" />
           <span className="eao-header__title">EPIC</span>
           <span className="visually-hidden">{` ${SITE_TITLE}`}</span>
         </Link>
