@@ -357,7 +357,7 @@ describe('reads served by demi-search', () => {
       await setup(SEARCH);
       respondWith(envelope(ROWS, 783));
 
-      const page = await getCommentsByPeriodId(0, 10, true, 'cp-1');
+      const page = await getCommentsByPeriodId(0, 10, 'cp-1');
 
       const url = requestedUrl();
       expect(url.startsWith(`${SEARCH}/search?dataset=Comment`)).toBe(true);
@@ -373,7 +373,7 @@ describe('reads served by demi-search', () => {
       await setup(SEARCH);
       respondWith(envelope(ROWS, 783));
 
-      await getCommentsByPeriodId(3, 10, true, 'cp-1');
+      await getCommentsByPeriodId(3, 10, 'cp-1');
 
       expect(new URL(requestedUrl(), 'http://x').searchParams.get('pageNum')).toBe('3');
     });
@@ -382,7 +382,7 @@ describe('reads served by demi-search', () => {
       await setup(SEARCH);
       respondWith(envelope(ROWS, 783));
 
-      expect((await getCommentsByPeriodId(0, 10, true, 'cp-1')).totalCount).toBe(783);
+      expect((await getCommentsByPeriodId(0, 10, 'cp-1')).totalCount).toBe(783);
     });
 
     // The table falls back to "unknown total" rather than reporting zero comments.
@@ -390,7 +390,7 @@ describe('reads served by demi-search', () => {
       await setup(SEARCH);
       respondWith(JSON.stringify([{ searchResults: ROWS }]));
 
-      expect((await getCommentsByPeriodId(0, 10, true, 'cp-1')).totalCount).toBeNull();
+      expect((await getCommentsByPeriodId(0, 10, 'cp-1')).totalCount).toBeNull();
     });
 
     /**
@@ -444,7 +444,7 @@ describe('reads served by demi-search', () => {
         ]),
       );
 
-      const page = await getCommentsByPeriodId(0, 10, true, '5980d4f8436253001dcaf8b8');
+      const page = await getCommentsByPeriodId(0, 10, '5980d4f8436253001dcaf8b8');
 
       expect(page.totalCount).toBe(783);
       expect(page.comments[0].author).toBeUndefined();

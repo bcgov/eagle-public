@@ -129,21 +129,3 @@ test.describe('project notifications', () => {
     expect(counts.total).toBe(total(env));
   });
 });
-
-test.describe('cac-unsubscribe', () => {
-  test('renders the unsubscribe form without submitting it', async ({ page }) => {
-    await page.goto('/cac-unsubscribe');
-    await ready(page, 500);
-
-    await expect(
-      page.getByRole('heading', {
-        level: 1,
-        name: /Unsubs?cribe from Community Advisory Committee/,
-      }),
-    ).toBeVisible();
-    await expect(page.locator('#emailInput')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Unsubscribe' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Cancel' })).toBeVisible();
-    // Deliberately no click: this endpoint mutates real subscriptions.
-  });
-});

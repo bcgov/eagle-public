@@ -5,7 +5,8 @@ import {
   checkBaseline,
   latestCommentPeriod,
   isOpen,
-  unwrap,
+  searchFixture,
+  commentPeriodsOf,
 } from '../support/helpers';
 
 /**
@@ -65,29 +66,27 @@ test('a comment period offers no way to submit a comment, open or closed', async
 
 test('the comment period API is reachable and carries the project', async ({ request }) => {
   const cp = await latestCommentPeriod(request);
-  const res = await request.get(`/api/commentperiod/${cp._id}`);
-  expect(res.status()).toBe(200);
-  const body = await res.json();
-  const record = Array.isArray(body) ? body[0] : body;
-  expect(record._id).toBe(cp._id);
+  // `and[_id]`, the filter form `api.getPeriod` uses: a bare `_id` is not read as a filter.
+  const [record] = await searchFixture(
+    request,
+    `dataset=CommentPeriod&pageNum=0&pageSize=1&and[_id]=${cp._id}`,
+  );
+  expect(record?._id).toBe(cp._id);
+  expect(record.project).toBeTruthy();
 });
 
 test('@data a project notification comment period renders through /pn', async ({
   page,
   request,
 }) => {
-  const list = await request.get(
-    '/api/search?dataset=ProjectNotification&pageNum=0&pageSize=25&projectLegislation=default&sortBy=-_id&populate=true&fuzzy=false',
+  const notifications = await searchFixture(
+    request,
+    'dataset=ProjectNotification&pageNum=0&pageSize=25&projectLegislation=default&sortBy=-_id&populate=true&fuzzy=false',
   );
-  expect(list.status()).toBe(200);
-  const notifications = unwrap(await list.json()).searchResults;
 
   let pn: any, cp: any;
   for (const n of notifications) {
-    const r = await request.get(
-      `/api/commentperiod?project=${n._id}&sortBy=-dateStarted&fields=project|dateStarted|dateCompleted`,
-    );
-    const periods = await r.json();
+    const periods = await commentPeriodsOf(request, n._id, 1);
     if (periods.length) {
       pn = n;
       cp = periods[0];
@@ -100,7 +99,5 @@ test('@data a project notification comment period renders through /pn', async ({
   await ready(page);
 
   expect(new URL(page.url()).pathname).toBe(`/pn/${pn._id}/cp/${cp._id}/details`);
-  await expect(page.getByRole('heading', { level: 2 }).first()).toHaveText(
-    /Public Comment Period is/,
-  );
+  await expect(page.getByRole('heading', { level: 2 }).first()).toHaveText(expectedHeading(cp));
 });

@@ -26,6 +26,10 @@ export default defineConfig({
     allowedHosts: true,
     port: 4200,
     proxy: {
+      // The one `/api` path the app still calls: a deployed `/demi-search/config` sets
+      // EAGLE_ANALYTICS_URL to `/api/usage`, which rproxy rewrites onto the eagle-analytics
+      // gateway. Without this every telemetry POST 404s against the dev server.
+      '/api/usage': proxyRule,
       // eagle-notify's API is a different origin in every environment, so the subscribe form's POST
       // would need a CORS grant from it. Proxying keeps the dev server's call same-origin.
       '/notify-api': {
@@ -56,7 +60,13 @@ export default defineConfig({
             changeOrigin: true,
             // The base path is `/demi-search` because nginx supplies the `/api`. Nothing supplies
             // it here.
-            rewrite: (path: string) => path.replace(/^\/demi-search/, '/api'),
+            // `/config` is the one path nginx does not map straight through: it answers
+            // `/api/config/public`, the gateway's public config. `/api/config` is DEMI's internal
+            // one, which carries no ACCESS_GATE, so booting on it fails `isWholeConfig`.
+            rewrite: (path: string) =>
+              path
+                .replace(/^\/demi-search\/config(?=$|[?#])/, '/api/config/public')
+                .replace(/^\/demi-search/, '/api'),
           },
     },
   },

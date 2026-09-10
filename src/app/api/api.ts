@@ -494,14 +494,12 @@ export interface CommentPage {
 /**
  * One page of a comment period's comments, newest first.
  *
- * `pageNum` is zero-based here, where `searchKeywords` takes it one-based. `_getCount` is accepted
- * and ignored: demi-search always counts into the envelope's `meta`, so the total is there whether
- * or not it was asked for.
+ * `pageNum` is zero-based here, where `searchKeywords` takes it one-based. The total always comes
+ * back: demi-search counts into the envelope's `meta` whether or not it was asked to.
  */
 export async function getCommentsByPeriodId(
   pageNum: number | null,
   pageSize: number | null,
-  _getCount: boolean,
   periodId: string,
 ): Promise<CommentPage> {
   const envelope = await searchKeywords(
@@ -577,24 +575,16 @@ export async function getDocumentsByMultiId(ids: string[]): Promise<Document[]> 
 /**
  * Checks the shared access password. Resolves when accepted; throws ApiError 401 when not.
  *
- * A 404 resolves too: it means the backend has no gate configured, and there is nothing to check a
- * password against. Failing shut there would lock an environment out of its own site with no way in.
+ * A 404 throws like any other failure. The curtain renders only where the config says
+ * `ACCESS_GATE: true`, so a backend with no gate route is a broken deployment, and resolving there
+ * would open a site that asked to be closed.
  */
 export async function checkGatePassword(password: string): Promise<void> {
-  try {
-    await send(
-      `${searchPath()}/gate`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
-      },
-      [404],
-    );
-  } catch (error) {
-    if (error instanceof ApiError && error.status === 404) return;
-    throw error;
-  }
+  await send(`${searchPath()}/gate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password }),
+  });
 }
 
 /** How many items the home strip shows. */

@@ -49,7 +49,7 @@ describe('comment reads', () => {
       await setup();
       respondWith(DEMI_PAGE);
 
-      const page = await getByPeriodId('cp-1', 1, 10, true);
+      const page = await getByPeriodId('cp-1', 1, 10);
 
       expect(page?.totalCount).toBe(783);
       expect(page?.currentComments.map((comment) => comment.comment)).toEqual([
@@ -63,7 +63,7 @@ describe('comment reads', () => {
       await setup();
       respondWith(DEMI_PAGE);
 
-      await getByPeriodId('cp-1', 1, 10, true);
+      await getByPeriodId('cp-1', 1, 10);
 
       expect(new URL(requestedUrl(), 'http://x').searchParams.get('pageNum')).toBe('0');
     });
@@ -72,7 +72,7 @@ describe('comment reads', () => {
       await setup();
       respondWith(DEMI_PAGE);
 
-      await getByPeriodId('cp-1', 4, 10, true);
+      await getByPeriodId('cp-1', 4, 10);
 
       expect(new URL(requestedUrl(), 'http://x').searchParams.get('pageNum')).toBe('3');
     });

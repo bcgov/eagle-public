@@ -1,5 +1,5 @@
 import { expect } from '@playwright/test';
-import type { APIRequestContext, Page } from '@playwright/test';
+import type { APIRequestContext, APIResponse, Page } from '@playwright/test';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -217,24 +217,26 @@ export async function pageCount(page: Page): Promise<{ shown: number; total: num
 }
 
 /**
- * Fixture lookups must not die when the backend under test is unavailable, otherwise a
- * real difference reads as a crashed suite. /demi-search is the path the app itself uses;
- * /api/search is kept as a fixture-only fallback because the test environment gates
- * /demi-search behind HTTP basic auth while leaving /api open. The app never asks either
- * question - this is how the suite finds ids to navigate to.
+ * A fixture response's JSON. An unproxied path is answered by the SPA with 200 text/html, so
+ * without the content-type check that failure surfaces as a parse error far from its cause.
+ */
+export async function jsonBody(r: APIResponse, what: string): Promise<any> {
+  expect(r.status(), `${what}: ${r.url()} answered HTTP ${r.status()}`).toBe(200);
+  const contentType = r.headers()['content-type'] ?? '';
+  expect(
+    contentType,
+    `${what}: ${r.url()} answered ${contentType || 'no content-type'}, not JSON - the SPA fallback served this`,
+  ).toContain('application/json');
+  return r.json();
+}
+
+/**
+ * `/demi-search/search` is the only backend, and the path the app itself uses. The app never asks
+ * these questions - this is how the suite finds ids to navigate to.
  */
 export async function searchFixture(request: APIRequestContext, query: string): Promise<any[]> {
-  for (const base of ['/demi-search/search', '/api/search']) {
-    const r = await request.get(`${base}?${query}`);
-    if (r.status() === 200) {
-      try {
-        return unwrap(await r.json()).searchResults;
-      } catch {
-        /* not JSON: fall through to the next backend */
-      }
-    }
-  }
-  throw new Error(`no search backend answered ${query}`);
+  const r = await request.get(`/demi-search/search?${query}`);
+  return unwrap(await jsonBody(r, `search ${query}`)).searchResults;
 }
 
 /** First published projects, sorted by name so the pick is stable per environment. */
@@ -256,16 +258,35 @@ export async function projectByKeyword(request: APIRequestContext, keyword: stri
   return results[0] ?? (await firstProjects(request, 1))[0];
 }
 
-/** Most recent comment period plus its project id. */
-export async function latestCommentPeriod(request: APIRequestContext): Promise<any> {
-  const r = await request.get(
-    '/api/commentperiod?sortBy=-dateStarted&fields=project|dateStarted|dateCompleted|instructions|informationLabel',
+/** A project's comment periods, newest first - the read `api.getPeriodsByProjId` makes. */
+export async function commentPeriodsOf(
+  request: APIRequestContext,
+  projectId: string,
+  pageSize = 5,
+): Promise<any[]> {
+  return searchFixture(
+    request,
+    `dataset=CommentPeriod&sortBy=-dateStarted&pageNum=0&pageSize=${pageSize}&and[project]=${projectId}`,
   );
-  expect(r.status()).toBe(200);
-  const list = await r.json();
-  const cp = list.find((c: any) => c.project && c.dateStarted && c.dateCompleted);
-  expect(cp, 'no comment period with a project on this environment').toBeTruthy();
-  return cp;
+}
+
+/** How many projects the comment-period pick walks before giving up. */
+const CP_PROJECT_SCAN = 10;
+
+/**
+ * A comment period plus its project id. demi-search answers `dataset=CommentPeriod` only when the
+ * query filters on `project` or `_id` - an unfiltered one is 0 rows - so the pick walks the same
+ * name-sorted projects `firstProjects` returns and takes the newest period of the first one that
+ * has any. Stable per environment, because the project order is.
+ */
+export async function latestCommentPeriod(request: APIRequestContext): Promise<any> {
+  for (const project of await firstProjects(request, CP_PROJECT_SCAN)) {
+    const cp = (await commentPeriodsOf(request, project._id)).find(
+      (c: any) => c.project && c.dateStarted && c.dateCompleted,
+    );
+    if (cp) return cp;
+  }
+  throw new Error(`no comment period on the first ${CP_PROJECT_SCAN} projects of this environment`);
 }
 
 export function isOpen(cp: any): boolean {

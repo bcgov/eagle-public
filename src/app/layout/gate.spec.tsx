@@ -128,15 +128,15 @@ describe('the password form', () => {
     expect(localStorage.getItem('eagle-gate')).toBe(null);
   });
 
-  // demi-search answers 404 where no gate is configured. Nothing can check a password there, so
-  // failing shut would lock the environment out of its own site with no way back in.
-  it('opens the curtain when the backend has no gate', async () => {
+  // A 404 means the backend carries no gate route while the config asked for a curtain. Broken
+  // deployment, not permission to open the site.
+  it('stays locked when the backend has no gate', async () => {
     fetchMock.mockResolvedValue(responding(404, 'Not Found'));
     await renderGate();
     await submit('anything');
 
-    expect(error()).toBe(null);
-    expect(localStorage.getItem('eagle-gate')).toBe('1');
+    expect(error()).toHaveTextContent('Could not check the password');
+    expect(localStorage.getItem('eagle-gate')).toBe(null);
   });
 
   it('shows a generic error when the check itself fails', async () => {

@@ -6,14 +6,8 @@ export async function getByPeriodId(
   periodId: string,
   pageNum: number | null = null,
   pageSize: number | null = null,
-  getCount = false,
 ): Promise<{ totalCount: number | null; currentComments: Comment[] } | null> {
-  const res = await api.getCommentsByPeriodId(
-    pageNum ? pageNum - 1 : null,
-    pageSize,
-    getCount,
-    periodId,
-  );
+  const res = await api.getCommentsByPeriodId(pageNum ? pageNum - 1 : null, pageSize, periodId);
   if (!res) {
     return null;
   }
