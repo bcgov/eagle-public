@@ -125,11 +125,11 @@ export function SiteHeader() {
           onClick={() => setMenuOpen((open) => !open)}
           aria-controls="mainNav"
           aria-expanded={menuOpen}
+          aria-label="Menu"
         >
           <i className="material-icons" aria-hidden="true">
             {menuOpen ? 'close' : 'menu'}
           </i>
-          <span>Menu</span>
         </button>
         <nav
           className={`eao-header__nav${menuOpen ? ' eao-header__nav--open' : ''}`}
@@ -150,13 +150,21 @@ export function SiteHeader() {
             title="Staff Login"
             onClick={closeStaffLogin}
           >
-            {/* Material's `login` glyph, inline: it is not in the bundled Material Icons font. */}
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <path d="M11 7L9.6 8.4l2.6 2.6H2v2h10.2l-2.6 2.6L11 17l5-5-5-5zm9 12h-8v2h8c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-8v2h8v14z" />
-            </svg>
-            {/* Visible in the panel; clipped, not removed, on the bar, so the name still reads. */}
+            {/* Words first: the panel shows them, the bar clips them so the name still reads. */}
             <span className="eao-header__action-label">Staff Login</span>
             <span className="visually-hidden">{NEW_TAB_SUFFIX}</span>
+            {/* Material's `login` glyph, inline: it is not in the bundled Material Icons font.
+                It stands in for the words on the bar, and is hidden in the panel below them. */}
+            <svg
+              className="eao-header__action-icon"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path d="M11 7L9.6 8.4l2.6 2.6H2v2h10.2l-2.6 2.6L11 17l5-5-5-5zm9 12h-8v2h8c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-8v2h8v14z" />
+            </svg>
           </a>
         </nav>
       </div>
