@@ -17,24 +17,11 @@
   border-bottom: var(--layout-border-width-large) solid var(--theme-gold-60);
 }
 
-/* Below 768px the nav wraps onto its own row under the mark, the title and the toggler.
-   Width, max-width, margin-inline and padding-inline mirror `.project-page__container`
-   (pages/project/project.css) so the bar's contents land on the same edges as page content;
-   the home link, toggler and nav below no longer carry their own inline padding. */
+/* Below 768px the nav wraps onto its own row under the mark, the title and the toggler. */
 .eao-header__row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  width: 100%;
-  max-width: 1440px;
-  margin-inline: auto;
-  padding-inline: var(--layout-padding-large);
-}
-
-@media (max-width: 859.98px) {
-  .eao-header__row {
-    padding-inline: var(--layout-padding-medium);
-  }
 }
 
 /* The theme's `a:hover, a:focus` (assets/styles/themes/bcgov-bootstrap-theme.css) paints any link
@@ -47,6 +34,7 @@
   align-items: center;
   gap: var(--layout-padding-medium);
   padding-block: var(--layout-padding-small);
+  padding-inline: var(--layout-padding-medium);
   color: var(--typography-color-primary-invert);
   text-decoration: none;
 }
@@ -85,7 +73,7 @@
   /* 44px is the touch target size the B.C. Design System asks for. */
   min-width: 44px;
   min-height: 44px;
-  margin-inline-start: auto;
+  margin-inline: auto var(--layout-padding-small);
   padding: var(--layout-padding-xsmall) var(--layout-padding-small);
   border: var(--layout-border-width-none);
   cursor: pointer;
@@ -194,6 +182,7 @@
     flex-wrap: wrap;
     align-items: center;
     margin-inline-start: auto;
+    padding-inline-end: var(--layout-padding-small);
   }
 
   /* Tighter than the panel rows and butted together, so the four controls read as one cluster;
