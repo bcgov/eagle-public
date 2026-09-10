@@ -97,8 +97,7 @@ export function periodsInWindow(
  * two scalars rather than the populated Organization, so it is rebuilt as the `{_id, name}` the
  * masthead and panel read.
  *
- * `updatedAt` is NOT `dateUpdated`: it stamps the last DEMI sync, so every project carries the same
- * recent date. "Last updated" is left empty rather than shown a mirror timestamp.
+ * `dateUpdated` is Eagle's own, mirrored by DEMI; `updatedAt` stamps the last DEMI sync and is ignored.
  *
  * `featuredDocuments` is not mapped: the featured-documents page runs its own document search.
  *
@@ -138,6 +137,7 @@ export function demiProjectToEagle(
     overallProgress: doc.overallProgress,
     eaoMember: doc.eaoMember,
     dateAdded: doc.dateAdded,
+    dateUpdated: doc.dateUpdated,
     decisionDate: doc.decisionDate,
     eacDecision: resolveListRef(doc.eacDecision),
     eaCertificate: doc.eaCertificate,

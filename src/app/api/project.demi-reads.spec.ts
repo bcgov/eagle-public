@@ -38,6 +38,7 @@ describe('project reads served by DEMI', () => {
     projectState: 'Closed',
     address: 'Southern Interior BC',
     updatedAt: '2026-09-07T17:17:43.028Z',
+    dateUpdated: '2019-01-10T21:03:15.945Z',
     region: 'Thompson-Nicola',
     provElecDist: 'FRN; KAS',
     sector: 'Mineral Mines',
@@ -152,10 +153,16 @@ describe('project reads served by DEMI', () => {
       expect(mapped.location).toBe('Southern Interior BC');
     });
 
-    it('does not pass the DEMI sync stamp off as the record last-updated date', () => {
+    it('carries the record last-updated date DEMI mirrors from Eagle', () => {
+      expect(demiProjectToEagle(DEMI_DOC).dateUpdated).toBe('2019-01-10T21:03:15.945Z');
+    });
+
+    it('leaves the last-updated date empty rather than falling back to the DEMI sync stamp', () => {
       // Every project carries the same recent `updatedAt`, so "Last updated" would read as the
       // day of the last sync for all of them.
-      expect(demiProjectToEagle(DEMI_DOC).dateUpdated).toBeUndefined();
+      const { dateUpdated: _dropped, ...withoutDateUpdated } = DEMI_DOC;
+
+      expect(demiProjectToEagle(withoutDateUpdated).dateUpdated).toBeUndefined();
     });
 
     it('unwraps the GeoJSON centroid into the [lon, lat] pair the map takes', () => {
