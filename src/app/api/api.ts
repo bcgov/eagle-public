@@ -90,6 +90,8 @@ export interface DemiProject {
   address?: string;
   /** When DEMI last synced the document, NOT Eagle's `dateUpdated`. */
   updatedAt?: string;
+  /** Eagle's own last-modified date, mirrored by DEMI. */
+  dateUpdated?: string;
   region?: string;
   provElecDist?: string;
   sector?: string;
