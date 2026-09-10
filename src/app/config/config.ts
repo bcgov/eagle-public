@@ -192,7 +192,8 @@ export function showSurveyBanner(): boolean {
  * the access curtain. main.tsx turns that throw into the "temporarily unavailable" page.
  */
 const CONFIG_ATTEMPTS = 3;
-const CONFIG_TIMEOUT_MS = 5000;
+/** nginx gives up at 11 s on this route, so the browser must abort after nginx, not before. */
+const CONFIG_TIMEOUT_MS = 12_000;
 const DEFAULT_SEARCH_API_PATH = '/demi-search';
 const DEFAULT_DEMI_PROJECTS_PATH = '/demi-projects';
 /** Lives here, not in env.js, so an empty env.js still boots against DEMI. */
