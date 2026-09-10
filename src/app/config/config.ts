@@ -192,7 +192,10 @@ export function showSurveyBanner(): boolean {
  * the access curtain. main.tsx turns that throw into the "temporarily unavailable" page.
  */
 const CONFIG_ATTEMPTS = 3;
-/** nginx gives up at 11 s on this route, so the browser must abort after nginx, not before. */
+/**
+ * nginx gives up at 11 s on this route, so the browser must abort after nginx, not before.
+ * Worst case with nginx never answering: 3 attempts plus 1 s and 2 s backoff is 12 + 1 + 12 + 2 + 12 = 39 s before `loadConfig` throws; in practice nginx fails each attempt at 11 s, so 36 s.
+ */
 const CONFIG_TIMEOUT_MS = 12_000;
 const DEFAULT_SEARCH_API_PATH = '/demi-search';
 const DEFAULT_DEMI_PROJECTS_PATH = '/demi-projects';
