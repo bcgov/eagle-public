@@ -64,18 +64,17 @@
   min-height: 44px;
   margin-inline: auto var(--layout-padding-small);
   padding: var(--layout-padding-xsmall) var(--layout-padding-small);
-  border: var(--layout-border-width-none) solid;
+  border: var(--layout-border-width-none);
   cursor: pointer;
 }
 
-/* White in every state: a bare button otherwise takes the theme's dark body colour, which is
-   near-invisible on this bar. The focus ring below is what marks focus. */
+/* The glyph stays white in every state: a bare button otherwise takes the theme's dark body
+   colour, which is near-invisible on this bar. The focus ring below is what marks focus. */
 .eao-header .eao-header__toggler,
 .eao-header .eao-header__toggler:hover,
 .eao-header .eao-header__toggler:focus,
 .eao-header .eao-header__toggler:active {
   color: var(--typography-color-primary-invert);
-  border-color: var(--typography-color-primary-invert);
   background: none;
 }
 

@@ -107,6 +107,9 @@ describe('site header', () => {
     const staff = staffLogin();
     expect(staff.firstElementChild).toHaveTextContent('Staff Login');
     expect(staff.lastElementChild?.tagName.toLowerCase()).toBe('svg');
+    // The class is the only switch the CSS has: the glyph shows on the bar and is hidden in the
+    // panel, so losing it leaves an empty box where the Staff Login control sits.
+    expect(staff.lastElementChild).toHaveClass('eao-header__action-icon');
   });
 
   it('sends Staff Login to the configured admin app in a new tab, and says so', () => {
