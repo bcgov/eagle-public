@@ -9,7 +9,6 @@ export class Comment {
   isAnonymous!: boolean;
   location!: string;
   period: any;
-  submittedCAC!: boolean;
   documents: any;
   documentsList: any = [];
 

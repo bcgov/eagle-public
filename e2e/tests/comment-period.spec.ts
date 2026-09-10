@@ -8,6 +8,24 @@ import {
   unwrap,
 } from '../support/helpers';
 
+/**
+ * The three headings `comments.tsx` renders, one per `commentPeriodStatus`. Anchored, so the
+ * heading for one status cannot satisfy an assertion meant for another.
+ */
+const PERIOD_HEADINGS = {
+  Open: /^Public Comment Period is Now Open$/i,
+  Closed: /^Public Comment Period is Now Closed$/i,
+  Upcoming: /^Public Comment Period is Upcoming$/i,
+};
+
+/** The heading the period's own dates call for, on the same window `isOpen` reads. */
+function expectedHeading(cp: any): RegExp {
+  if (isOpen(cp)) return PERIOD_HEADINGS.Open;
+  return Date.now() < Date.parse(cp.dateStarted)
+    ? PERIOD_HEADINGS.Upcoming
+    : PERIOD_HEADINGS.Closed;
+}
+
 test('comment period details page renders the period status and dates', async ({
   page,
   request,
@@ -20,41 +38,29 @@ test('comment period details page renders the period status and dates', async ({
 
   await expect(page.locator('h1')).toHaveCount(1);
   const status = page.getByRole('heading', { level: 2 }).first();
-  await expect(status).toHaveText(/Public Comment Period is/);
-  await expect(status).toHaveText(isOpen(cp) ? /Open|Now Open/i : /Closed|Now Closed/i);
+  await expect(status).toHaveText(expectedHeading(cp));
   await expect(page.getByRole('button', { name: /BACK TO PROJECT DETAILS/i })).toBeVisible();
 
   checkBaseline('comment-period-details', calls);
 });
 
-test('a closed comment period offers no way to submit a comment', async ({ page, request }) => {
-  const cp = await latestCommentPeriod(request);
-  test.skip(isOpen(cp), 'this environment has an open comment period; see the open-period test');
-
-  await page.goto(`/p/${cp.project}/cp/${cp._id}/details`);
-  await ready(page);
-
-  await expect(
-    page.getByRole('heading', { level: 2, name: /Public Comment Period is Now Closed/i }),
-  ).toBeVisible();
-  await expect(page.getByRole('button', { name: /Add (a )?Comment|Submit/i })).toHaveCount(0);
-  await expect(page.locator('app-add-comment, form.add-comment')).toHaveCount(0);
-});
-
-test('an open comment period exposes the add-comment entry point but is never submitted', async ({
+test('a comment period offers no way to submit a comment, open or closed', async ({
   page,
   request,
 }) => {
   const cp = await latestCommentPeriod(request);
-  test.skip(!isOpen(cp), 'no open comment period on this environment');
 
   await page.goto(`/p/${cp.project}/cp/${cp._id}/details`);
   await ready(page);
 
   await expect(
-    page.getByRole('button', { name: /(Add|Submit) (a )?Comment/i }).first(),
+    page.getByRole('heading', {
+      level: 2,
+      name: expectedHeading(cp),
+    }),
   ).toBeVisible();
-  // Deliberately not clicked through to submit: this is a live public inbox.
+  await expect(page.getByRole('button', { name: /Add (a )?Comment|Submit/i })).toHaveCount(0);
+  await expect(page.getByRole('dialog')).toHaveCount(0);
 });
 
 test('the comment period API is reachable and carries the project', async ({ request }) => {

@@ -153,9 +153,6 @@ export function demiProjectToEagle(
     responsibleEPDEmail: doc.responsibleEPDEmail,
     responsibleEPDPhone: doc.responsibleEPDPhone,
     proponent: { _id: doc.proponentId, name: doc.proponentName },
-    projectCAC: doc.projectCAC,
-    projectCACPublished: doc.projectCACPublished,
-    cacEmail: doc.cacEmail,
     commentPeriodForBanner,
   };
 }
@@ -279,11 +276,6 @@ export async function getPins(
     pageSize,
     sortBy,
   )) as unknown as DataQueryResponse<Org>[];
-}
-
-// Send this users' information to our CAC back-end
-export async function cacSignUp(project: Project, meta: any): Promise<any> {
-  return api.cacSignUp(project, meta);
 }
 
 // Remove this user from the CAC membership on this project

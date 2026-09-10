@@ -93,14 +93,12 @@ describe('Project', () => {
         overallProgress: 0,
         substitution: false,
         isTermsAgreed: false,
-        projectCAC: false,
         description: '',
       });
 
       expect(project.overallProgress).toBe(0);
       expect(project.substitution).toBe(false);
       expect(project.isTermsAgreed).toBe(false);
-      expect(project.projectCAC).toBe(false);
       expect(project.description).toBe('');
     });
 

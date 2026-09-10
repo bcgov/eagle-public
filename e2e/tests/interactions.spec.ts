@@ -3,9 +3,8 @@ import { ready, waitForSearch, total } from '../support/helpers';
 
 /**
  * Controls the route specs do not reach: every sortable column rather than one, the page-size
- * picker, the map's advanced filters, keyboard order through the header, and Escape on the
- * comment modal. Every assertion is data-independent so the same run means the same thing on the
- * deployed site and on the port.
+ * picker, the map's advanced filters, and keyboard order through the header. Every assertion is
+ * data-independent so the same run means the same thing on the deployed site and on the port.
  */
 
 const ROWS = 'table[aria-label="table-template"] tbody tr';
@@ -101,26 +100,4 @@ test('the header tabs through its links in visual order', async ({ page }) => {
     'Contact Us',
     'Staff Login (opens in new tab)',
   ]);
-});
-
-test('Escape closes the comment modal without submitting', async ({ page, request }) => {
-  const list = await (
-    await request.get(
-      '/api/commentperiod?sortBy=-dateStarted&fields=project|dateStarted|dateCompleted',
-    )
-  ).json();
-  const cp = list.find((c: any) => c.project && c.dateStarted && c.dateCompleted);
-  expect(cp, 'no comment period on this environment').toBeTruthy();
-
-  await page.goto(`/p/${cp.project}/cp/${cp._id}/details`);
-  await ready(page);
-
-  const open = page.getByRole('button', { name: 'Submit Comment' }).first();
-  test.skip(!(await open.count()), 'this comment period is not open');
-  await open.click();
-
-  const title = page.getByText('Submit a Comment', { exact: true });
-  await expect(title).toBeVisible();
-  await page.keyboard.press('Escape');
-  await expect(title).toHaveCount(0);
 });

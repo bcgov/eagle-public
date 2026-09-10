@@ -22,14 +22,3 @@ export async function getByPeriodId(
     currentComments: res.comments.map((comment: any) => new Comment(comment)),
   };
 }
-
-export async function add(orig: Comment): Promise<Comment | null> {
-  // make a (deep) copy of the passed-in comment so we don't change it
-  const comment = JSON.parse(JSON.stringify(orig));
-
-  // ID must not exist on POST
-  delete comment._id;
-
-  const res = await api.addComment(comment);
-  return res ? new Comment(res) : null;
-}

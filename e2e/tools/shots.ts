@@ -103,12 +103,6 @@ async function main(): Promise<void> {
     ['comment-period', `/p/${cp.project}/cp/${cp._id}/details`],
   ];
 
-  async function openCommentModal(p: Page): Promise<void> {
-    await goto(p, `/p/${cp.project}/cp/${cp._id}/details`);
-    await p.getByRole('button', { name: 'Submit Comment' }).first().click();
-    await p.waitForTimeout(1500);
-  }
-
   const shots: Shot[] = [
     ...plain.map(([name, url]): Shot => ({ name, go: (p) => goto(p, url) })),
 
@@ -162,37 +156,6 @@ async function main(): Promise<void> {
         const toggle = p.getByRole('button', { name: /filter/i }).first();
         if (await toggle.count()) await toggle.click();
         await p.waitForTimeout(1000);
-      },
-    },
-    {
-      name: 'add-comment',
-      go: async (p) => {
-        await openCommentModal(p);
-      },
-    },
-    {
-      // Page 1's Next is disabled until the conditions box is ticked. Nothing is ever submitted.
-      name: 'add-comment-page2',
-      go: async (p) => {
-        await openCommentModal(p);
-        await p.locator('input[name="agreeConditions"]').check();
-        await p.getByRole('button', { name: /^Next$/ }).click();
-        await p.waitForTimeout(1200);
-      },
-    },
-    {
-      name: 'add-comment-page3',
-      go: async (p) => {
-        await openCommentModal(p);
-        await p.locator('input[name="agreeConditions"]').check();
-        await p.getByRole('button', { name: /^Next$/ }).click();
-        await p.waitForTimeout(1200);
-        // The CAC invitation only appears for projects that have one; skip past it when it does.
-        const noThanks = p.getByRole('button', { name: 'No Thanks' });
-        if (await noThanks.count()) {
-          await noThanks.click();
-          await p.waitForTimeout(1200);
-        }
       },
     },
     {

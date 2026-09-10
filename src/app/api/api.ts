@@ -1,5 +1,4 @@
 import type { Project } from 'app/models/project';
-import type { Comment } from 'app/models/comment';
 import type { CommentPeriod } from 'app/models/commentperiod';
 import type { Document } from 'app/models/document';
 import type { ISearchResult, SearchResults } from 'app/models/search';
@@ -125,9 +124,6 @@ export interface DemiProject {
   /** The proponent as two scalars, where eagle-api populates the whole Organization. */
   proponentId?: string;
   proponentName?: string;
-  projectCAC?: boolean;
-  projectCACPublished?: boolean;
-  cacEmail?: string;
   phases?: unknown[];
   shortUrl?: string;
   /** EA certificate number, e.g. `E23-01`. No source has the conditions count it carries. */
@@ -451,11 +447,6 @@ export async function getProjectPins(
 }
 
 // CAC
-export async function cacSignUp(project: Project, meta: any): Promise<any> {
-  // We are just looking for a 200 OK
-  return postJson(`${apiPath()}/project/${project._id}/cacSignUp`, meta);
-}
-
 export async function cacRemoveMember(projectId: string, meta: any): Promise<any> {
   // We are just looking for a 200 OK
   const response = await send(`${apiPath()}/project/${projectId}/cacRemoveMember`, {
@@ -564,9 +555,6 @@ export async function getProject(
     'write',
     'delete',
     'featuredDocuments',
-    'projectCAC',
-    'projectCACPublished',
-    'cacEmail',
   ];
   let queryString = `project/${id}?populate=true`;
   if (cpStart !== null) {
@@ -625,7 +613,8 @@ export async function getPeriodsByProjId(projId: string): Promise<CommentPeriod[
 }
 
 /**
- * The fields the old `/commentperiod/{id}` route projected for the details page, plus `_id`.
+ * The fields the old `/commentperiod/{id}` route projected for the details page, plus `_id`, less
+ * `commentTip`, which only the removed comment form showed.
  * The stored record also carries the admin and role fields (`metURLAdmin`, `classificationRoles`,
  * `commenterRoles`, `downloadRoles`, ...), which nothing on the page reads and which have no
  * business reaching it.
@@ -640,7 +629,6 @@ const PERIOD_DETAIL_FIELDS = [
   'openHouses',
   'project',
   'relatedDocuments',
-  'commentTip',
 ];
 
 /**
@@ -728,12 +716,6 @@ export async function getCommentsByPeriodId(
   return { comments: response.body, totalCount: total === null ? null : Number(total) };
 }
 
-export async function addComment(comment: Comment): Promise<Comment> {
-  const fields = ['comment', 'author'];
-  const queryString = 'public/comment?fields=' + buildValues(fields);
-  return postJson<Comment>(`${apiPath()}/${queryString}`, comment);
-}
-
 //
 // Documents
 //
@@ -793,13 +775,6 @@ export async function getDocumentsByMultiId(ids: string[]): Promise<Document[]> 
   }
   const queryString = `document?docIds=${buildValues(ids)}&fields=${buildValues(fields)}`;
   return getJson<Document[]>(`${apiPath()}/${queryString}`);
-}
-
-export async function uploadDocument(formData: FormData): Promise<Document> {
-  const fields = ['documentFileName', 'displayName', 'internalURL', 'internalMime'];
-  const queryString = 'document/?fields=' + buildValues(fields);
-  const response = await send(`${apiPath()}/${queryString}`, { method: 'POST', body: formData });
-  return response.json() as Promise<Document>;
 }
 
 /** Checks the shared access password. Resolves when accepted; throws ApiError 401 when not. */

@@ -17,7 +17,6 @@ export class CommentPeriod {
   classificationRoles!: string;
   classifiedPercent!: number;
   commenterRoles!: string;
-  commentTip!: string;
   dateAdded!: string;
   dateCompleted!: Date;
   dateCompletedEst!: string;

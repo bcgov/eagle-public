@@ -69,9 +69,6 @@ describe('project reads served by DEMI', () => {
     responsibleEPDPhone: '778-698-9280',
     proponentId: '58850f69aaecd9001b8085cd',
     proponentName: 'KGHM Ajax Mining Incorporated',
-    projectCAC: false,
-    projectCACPublished: false,
-    cacEmail: 'noreply@projects.eao.gov.bc.ca',
     featuredDocuments: ['5cf00136a8cfcc0019e2f4e5'],
     eaCertificate: 'E17-01',
     // Deliberately neither sorted nor reverse-sorted, so a sort cannot be mistaken for a reverse.
