@@ -64,6 +64,17 @@ export function demiProjectsPath(): string {
 }
 
 /**
+ * A `List` row as the project document points at one. DEMI stores these fields as bare `List` ids
+ * and eagle-api populates them into rows, so the reader has to accept either.
+ */
+export interface ListRef {
+  _id?: string;
+  name?: string;
+  type?: string;
+  legislation?: number;
+}
+
+/**
  * The DEMI project document, as far as the public app reads it. Everything else on the document is
  * passed through untouched and ignored, hence the index signature.
  */
@@ -92,11 +103,16 @@ export interface DemiProject {
   eaoMember?: string;
   dateAdded?: string;
   decisionDate?: string;
-  eacDecision?: unknown;
+  /**
+   * `eacDecision`, `currentPhaseName` and `CEAAInvolvement` arrive as bare `List` ids from DEMI
+   * today and as populated rows from eagle-api, so the mapper resolves the id form against the
+   * `List` rows the page already holds.
+   */
+  eacDecision?: string | ListRef;
   applicableRegulation?: unknown;
-  currentPhaseName?: unknown;
+  currentPhaseName?: string | ListRef;
   phaseHistory?: unknown[];
-  CEAAInvolvement?: unknown;
+  CEAAInvolvement?: string | ListRef;
   CEAALink?: string;
   projectLead?: string;
   projectLeadEmail?: string;

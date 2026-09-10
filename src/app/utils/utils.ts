@@ -1,4 +1,5 @@
 import type { ISearchResults } from 'app/models/search';
+import type { ListRef } from 'app/api/api';
 import { Constants } from './constants';
 import { track } from 'app/analytics/analytics';
 import { createBulkDownload } from 'app/api/api';
@@ -172,15 +173,22 @@ function getIdsByName(terms: any[], list: any[]): { name: string; id: string }[]
 }
 
 /**
+ * Looks up a list item by ID and returns the whole row, for callers that need more than its name.
+ * `undefined` when the id is empty, the rows have not loaded, or no row carries that id.
+ */
+export function idToListRow(id: string, lists: any[]): ListRef | undefined {
+  if (!id) return undefined;
+  if (!lists?.length) return undefined;
+
+  return lists.find((listItem) => listItem._id === id);
+}
+
+/**
  * Looks up a list item by ID and returns its name.
  * Commonly used in table rows to display human-readable names for IDs.
  */
 export function idToListName(id: string, lists: any[]): string {
-  if (!id) return '-';
-  if (!lists?.length) return '-';
-
-  const item = lists.find((listItem) => listItem._id === id);
-  return item?.name ?? '-';
+  return idToListRow(id, lists)?.name ?? '-';
 }
 
 export interface DownloadableDocument {

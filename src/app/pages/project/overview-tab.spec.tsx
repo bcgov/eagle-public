@@ -23,7 +23,6 @@ const PROJECT = new Project({
   CEAALink: 'https://iaac-aeic.gc.ca/050/evaluations',
   projectLead: 'Alex Lead',
   projectLeadEmail: 'alex.lead@gov.bc.ca',
-  epicProjectID: 4321,
   dateAdded: '2026-01-05T00:00:00.000Z',
   dateUpdated: '2026-06-02T00:00:00.000Z',
 });
@@ -163,10 +162,11 @@ describe('overview tab', () => {
       'href',
       'mailto:alex.lead@gov.bc.ca',
     );
-    expect(screen.getByText('4321')).toBeInTheDocument();
     expect(screen.getByText('January 5, 2026')).toBeInTheDocument();
     expect(screen.getByText('June 2, 2026')).toBeInTheDocument();
     expect(screen.getByText('Sand and Gravel')).toBeInTheDocument();
+    // No project on either backend carries `epicProjectID`, so the fact was only ever a dash.
+    expect(screen.queryByText('Project ID')).not.toBeInTheDocument();
     // The panel above the tab owns these, so the tab must not repeat them.
     expect(screen.queryByText('Proponent')).not.toBeInTheDocument();
     expect(screen.queryByText('EA decision')).not.toBeInTheDocument();

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { getDocumentsByMultiId, getProjectPins } from './api';
+import { getDocumentsByMultiId, getProjectPins, listsQueryOptions } from './api';
 import { queryClient } from './query-client';
 import { commentPeriodsQueryOptions } from './commentperiod';
 import { demiProjectToEagle, getById, getPins, periodsInWindow } from './project';
@@ -23,6 +23,9 @@ describe('project reads served by DEMI', () => {
    * `GET /demi-projects/58851197aaecd9001b8227cc` on test, 2026-09-08, trimmed to the fields the
    * mapper reads. `applicableRegulation` is catalogued public by DEMI but absent from every stored
    * document sampled there, so its `{_id, name, item}` shape is the eagle-api one it mirrors.
+   *
+   * `eacDecision`, `currentPhaseName` and `CEAAInvolvement` are the bare `List` ids DEMI answers
+   * with today. eagle-api populates the same three into rows, so `LISTS` below covers that shape.
    */
   const DEMI_DOC = {
     id: '3',
@@ -47,15 +50,15 @@ describe('project reads served by DEMI', () => {
     eaoMember: 'project-eao-staff',
     dateAdded: 'Sun Jan 22 2017 20:10:00 GMT+0000 (Coordinated Universal Time)',
     decisionDate: '2017-12-13T08:00:00.000Z',
-    eacDecision: { _id: '5e27937a749c83437054f215', name: 'Certificate Refused' },
+    eacDecision: '5e27937a749c83437054f215',
     applicableRegulation: {
       _id: '5f1a2b3c4d5e6f0011223344',
       name: 'BC Energy Regulator',
       item: 'https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/00_08036_01',
     },
-    currentPhaseName: { _id: '5d3f6c7eda7a384218296039', name: 'Post Decision - Complete' },
+    currentPhaseName: '5d3f6c7eda7a384218296039',
     phaseHistory: ['5d3f6c7eda7a38421829602f'],
-    CEAAInvolvement: { _id: '5e27937a749c83437054f202', name: 'Coordinated' },
+    CEAAInvolvement: '5e27937a749c83437054f202',
     CEAALink: 'https://iaac-aeic.gc.ca/050/evaluations/proj/62225',
     projectLead: 'Nathan Braun',
     projectLeadEmail: 'Nathan.Braun@gov.bc.ca',
@@ -77,6 +80,28 @@ describe('project reads served by DEMI', () => {
       { _id: '5d8d48b9aae358f02271fa99', name: 'Kwadacha Nation', province: 'BC' },
     ],
   };
+
+  /** The three `List` rows `DEMI_DOC` points at, as `GET /search?dataset=List` answers them. */
+  const LISTS = [
+    {
+      _id: '5e27937a749c83437054f215',
+      name: 'Certificate Refused',
+      type: 'eaDecisions',
+      legislation: 2002,
+    },
+    {
+      _id: '5d3f6c7eda7a384218296039',
+      name: 'Post Decision - Complete',
+      type: 'projectPhase',
+      legislation: 2002,
+    },
+    {
+      _id: '5e27937a749c83437054f202',
+      name: 'Coordinated',
+      type: 'ceaaInvolvements',
+      legislation: 2002,
+    },
+  ];
 
   /** demi-search and eagle-api both wrap `/search` rows in this. */
   function envelope(rows: unknown[], total = rows.length): string {
@@ -181,14 +206,41 @@ describe('project reads served by DEMI', () => {
       expect(mapped.projectLeadPhone).toBe('778-698-9280');
       expect(mapped.responsibleEPDPhone).toBe('778-698-9280');
       expect(mapped.eaCertificate).toBe('E17-01');
-      expect(mapped.eacDecision).toEqual({
-        _id: '5e27937a749c83437054f215',
-        name: 'Certificate Refused',
-      });
-      expect(mapped.currentPhaseName).toEqual({
-        _id: '5d3f6c7eda7a384218296039',
-        name: 'Post Decision - Complete',
-      });
+    });
+
+    it('resolves the bare List ids DEMI answers with against the rows the page holds', () => {
+      const mapped = demiProjectToEagle(DEMI_DOC, [], LISTS);
+
+      expect(mapped.eacDecision).toEqual(LISTS[0]);
+      expect(mapped.currentPhaseName).toEqual(LISTS[1]);
+      expect(mapped.CEAAInvolvement).toEqual(LISTS[2]);
+    });
+
+    it('passes a populated List row through without consulting the rows', () => {
+      // eagle-api answers these three populated, and the fix in flight makes DEMI do the same, so
+      // the row has to survive a mapper that was handed no rows to look anything up in.
+      const row = { _id: '5e27937a749c83437054f215', name: 'Certificate Refused' };
+      const mapped = demiProjectToEagle({ ...DEMI_DOC, eacDecision: row }, [], []);
+
+      expect(mapped.eacDecision).toEqual(row);
+    });
+
+    it('leaves a List id no row names undefined, so the fact keeps its dash', () => {
+      const mapped = demiProjectToEagle(
+        { ...DEMI_DOC, eacDecision: '000000000000000000000000' },
+        [],
+        LISTS,
+      );
+
+      expect(mapped.eacDecision).toBeUndefined();
+    });
+
+    it('leaves the List-backed fields undefined when no rows were loaded', () => {
+      const mapped = demiProjectToEagle(DEMI_DOC);
+
+      expect(mapped.eacDecision).toBeUndefined();
+      expect(mapped.currentPhaseName).toBeUndefined();
+      expect(mapped.CEAAInvolvement).toBeUndefined();
     });
   });
 
@@ -313,7 +365,59 @@ describe('project reads served by DEMI', () => {
 
       await getById('58851197aaecd9001b8227cc', false, null, null);
 
-      expect(requestedUrls()).toEqual([`${DEMI}/58851197aaecd9001b8227cc`]);
+      // The List read is not the banner: it happens either way, and it is the only other request.
+      expect(requestedUrls()).toEqual([
+        `${DEMI}/58851197aaecd9001b8227cc`,
+        `${SEARCH}/search?pageSize=250&dataset=List`,
+      ]);
+    });
+
+    it('names the List-backed facts by resolving the ids DEMI answers with', async () => {
+      await setup({ demi: DEMI, search: SEARCH });
+      respondWith(JSON.stringify(DEMI_DOC), envelope(LISTS));
+
+      const project = await getById('58851197aaecd9001b8227cc', false, null, null);
+
+      expect(project.eacDecision.name).toBe('Certificate Refused');
+      expect(project.currentPhaseName.name).toBe('Post Decision - Complete');
+      expect(project.CEAAInvolvement.name).toBe('Coordinated');
+    });
+
+    it('still answers the project when the List read fails', async () => {
+      await setup({ demi: DEMI, search: SEARCH });
+      respondWith(JSON.stringify(DEMI_DOC), new Response('search unavailable', { status: 500 }));
+
+      const project = await getById('58851197aaecd9001b8227cc', false, null, null);
+
+      expect(project.name).toBe('Ajax Mine');
+      expect(project.eacDecision).toBeUndefined();
+    });
+
+    it('shares its List read with the query every project page runs', async () => {
+      await setup({ demi: DEMI, search: SEARCH });
+      respondWith(JSON.stringify(DEMI_DOC), envelope(LISTS));
+
+      await getById('58851197aaecd9001b8227cc', false, null, null);
+      const lists = await queryClient.fetchQuery(listsQueryOptions());
+
+      expect(lists).toHaveLength(3);
+      expect(requestedUrls().filter((url) => url.includes('dataset=List'))).toHaveLength(1);
+    });
+
+    it('skips the List read entirely when the three List-backed fields already arrive populated', async () => {
+      await setup({ demi: DEMI, search: SEARCH });
+      const populatedDoc = {
+        ...DEMI_DOC,
+        eacDecision: LISTS[0],
+        currentPhaseName: LISTS[1],
+        CEAAInvolvement: LISTS[2],
+      };
+      respondWith(JSON.stringify(populatedDoc));
+
+      const project = await getById('58851197aaecd9001b8227cc', false, null, null);
+
+      expect(project.eacDecision).toEqual(LISTS[0]);
+      expect(requestedUrls().filter((url) => url.includes('dataset=List'))).toHaveLength(0);
     });
 
     it('leaves the banner empty when no period falls in the window', async () => {

@@ -1,13 +1,13 @@
 import { Project } from 'app/models/project';
 import * as api from './api';
-import type { DemiProject } from './api';
+import type { DemiProject, ListRef } from './api';
 import { CommentPeriod } from 'app/models/commentperiod';
 import { commentPeriodsQueryOptions } from './commentperiod';
 import { queryClient } from './query-client';
 import type { Org } from 'app/models/organization';
 import type { ISearchResults } from 'app/models/search';
 import * as search from './search';
-import { extractFromSearchResults, natureBuildMapper } from 'app/utils/utils';
+import { extractFromSearchResults, idToListRow, natureBuildMapper } from 'app/utils/utils';
 import type { DataQueryResponse } from 'app/models/api-response';
 import { logger } from 'app/config/logging';
 
@@ -102,6 +102,11 @@ export function periodsInWindow(
  *
  * `featuredDocuments` is not mapped: the featured-documents page runs its own document search.
  *
+ * `eacDecision`, `currentPhaseName` and `CEAAInvolvement` are `List` references, which DEMI answers
+ * as bare ids where eagle-api populates the row. Both shapes are accepted: a row passes through, an
+ * id is looked up in `lists`. An id no row names stays undefined, so the fact renders "-" rather
+ * than the id.
+ *
  * DEMI has no counterpart for `CELead*`, `projectLeadId`, `responsibleEPDId`, `epicProjectID`,
  * `commodity`, `fedElecDist`, `shortName`, `duration`, `primaryContact`, `proMember`,
  * `isTermsAgreed`, `dateCommentsClosed`, `addedBy`/`updatedBy`, or the `read`/`write`/`delete` ACLs
@@ -110,8 +115,11 @@ export function periodsInWindow(
 export function demiProjectToEagle(
   doc: DemiProject,
   commentPeriodForBanner: CommentPeriod[] = [],
+  lists: ListRef[] = [],
 ): Partial<Project> {
   const centroid = doc.centroid;
+  const resolveListRef = (value: string | ListRef | undefined): ListRef | undefined =>
+    typeof value === 'string' ? idToListRow(value, lists) : value;
   return {
     _id: doc.eagleId ?? doc._id,
     name: doc.name,
@@ -131,12 +139,12 @@ export function demiProjectToEagle(
     eaoMember: doc.eaoMember,
     dateAdded: doc.dateAdded,
     decisionDate: doc.decisionDate,
-    eacDecision: doc.eacDecision,
+    eacDecision: resolveListRef(doc.eacDecision),
     eaCertificate: doc.eaCertificate,
     applicableRegulation: doc.applicableRegulation,
-    currentPhaseName: doc.currentPhaseName,
+    currentPhaseName: resolveListRef(doc.currentPhaseName),
     phaseHistory: doc.phaseHistory,
-    CEAAInvolvement: doc.CEAAInvolvement,
+    CEAAInvolvement: resolveListRef(doc.CEAAInvolvement),
     CEAALink: doc.CEAALink,
     projectLead: doc.projectLead,
     projectLeadEmail: doc.projectLeadEmail,
@@ -188,7 +196,25 @@ async function readProject(
           logger.warn('Banner comment period read failed, showing no banner', 'project', error);
         }
       }
-      return [demiProjectToEagle(doc, periodsInWindow(periods, cpStart, cpEnd))];
+      // The `List` rows the id-shaped project fields resolve against. Only worth asking for when
+      // at least one of the three fields is a bare id string; a DEMI doc that answers all three
+      // pre-populated (as eagle-api does) has nothing left to look up. The project shell asks for
+      // the same key on mount, so when needed this joins that one in-flight request rather than
+      // adding a second. No retries, for the reason the banner has none; rows that never arrive
+      // leave the List-backed facts empty, which is what they already show today.
+      let lists: ListRef[] = [];
+      if (
+        typeof doc.eacDecision === 'string' ||
+        typeof doc.currentPhaseName === 'string' ||
+        typeof doc.CEAAInvolvement === 'string'
+      ) {
+        try {
+          lists = await queryClient.fetchQuery({ ...api.listsQueryOptions(), retry: false });
+        } catch (error) {
+          logger.warn('List read failed, leaving the List-backed facts empty', 'project', error);
+        }
+      }
+      return [demiProjectToEagle(doc, periodsInWindow(periods, cpStart, cpEnd), lists)];
     }
   }
   return api.getProject(projId, cpStart, cpEnd);

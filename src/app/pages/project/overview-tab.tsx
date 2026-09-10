@@ -289,7 +289,6 @@ export function OverviewTab() {
                   project?.projectLead
                 )}
               </Fact>
-              <Fact label="Project ID">{project?.epicProjectID}</Fact>
               <Fact label="First posted">{longDate(project?.dateAdded)}</Fact>
               <Fact label="Last updated">{longDate(project?.dateUpdated)}</Fact>
             </dl>
