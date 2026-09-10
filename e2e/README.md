@@ -173,8 +173,6 @@ the test will fail and should be updated deliberately.
 - **Project detail shows 3 fixed tabs** (Project Details, Commenting, Documents) plus
   Application / Certificate / Amendment(s) / Unsubscribe only when that project has the matching
   documents.
-- **The open comment period's entry point is labelled "Submit Comment".** The suite was first
-  recorded against a build that said "Add Comment"; the regex accepts both.
 - **A milestone facet value can have no documents.** The facet list is alphabetical, so the first
   option differs by corpus. The test asserts the milestone query param and that the rendered rows
   match the response - an empty result shows "No results found" and no page-count line.
@@ -215,7 +213,7 @@ into `screenshots/`, which is gitignored.
 
 | Tool | Writes | Use |
 |---|---|---|
-| `node tools/shots.ts` | `screenshots/<OUT>/<shot>-{desktop,mobile}.png` | every route at 1280x800 and 390x844, plus the map project card (the expanded list card on mobile), the mobile list sheet, the mobile menu, the search filters and the three add-comment pages |
+| `node tools/shots.ts` | `screenshots/<OUT>/<shot>-{desktop,mobile}.png` | every route at 1280x800 and 390x844, plus the map project card (the expanded list card on mobile), the mobile list sheet, the mobile menu and the search filters |
 | `node tools/dom-dump.ts` | `screenshots/<OUT>.dom.txt` | `tag.class \| text` for every element, framework wrapper elements dropped, so an Angular tree and a React tree line up under `diff` |
 | `node tools/style-dump.ts` | `screenshots/<OUT>.styles.json` | ~50 computed properties per element; `python3 tools/style-diff.py a.styles.json b.styles.json` aligns the two and prints only what differs |
 
@@ -273,8 +271,8 @@ is applied, a keyword returning hits). Deselect with `yarn playwright test --gre
 | `tests/projects-map.spec.ts` | 6 | map and clusters, inline filters panel, filter, pin card, list-card card, basemap switch |
 | `tests/search.spec.ts` | 6 | table, keyword, milestone facet, pagination, deep link, row links |
 | `tests/project-detail.spec.ts` | 11 | tab strip and all 7 child routes, download link shape |
-| `tests/comment-period.spec.ts` | 5 | `/p/../cp/../details`, `/pn/../cp/../details`, closed and open states |
+| `tests/comment-period.spec.ts` | 4 | `/p/../cp/../details`, `/pn/../cp/../details`, no submission entry point |
 | `tests/routing.spec.ts` | 6 | 404 fallback, `/p/:id`, `/p/../cp/:id`, `/pn/../cp/:id`, `/search/content`, header nav |
 | `tests/gate.spec.ts` | 3 | the `ACCESS_GATE` curtain: wrong password, right password, focus and label |
-| `tests/interactions.spec.ts` | 5 | every sortable column, page-size picker, map region filter, header tab order, Escape on the comment modal |
+| `tests/interactions.spec.ts` | 4 | every sortable column, page-size picker, map region filter, header tab order |
 | `tests/css-scoping.spec.ts` | 7 | computed styles that a lost Angular view-encapsulation boundary broke in the port |

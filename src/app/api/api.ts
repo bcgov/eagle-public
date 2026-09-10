@@ -1,5 +1,4 @@
 import type { Project } from 'app/models/project';
-import type { Comment } from 'app/models/comment';
 import type { CommentPeriod } from 'app/models/commentperiod';
 import type { Document } from 'app/models/document';
 import type { ISearchResult, SearchResults } from 'app/models/search';
@@ -451,11 +450,6 @@ export async function getProjectPins(
 }
 
 // CAC
-export async function cacSignUp(project: Project, meta: any): Promise<any> {
-  // We are just looking for a 200 OK
-  return postJson(`${apiPath()}/project/${project._id}/cacSignUp`, meta);
-}
-
 export async function cacRemoveMember(projectId: string, meta: any): Promise<any> {
   // We are just looking for a 200 OK
   const response = await send(`${apiPath()}/project/${projectId}/cacRemoveMember`, {
@@ -728,12 +722,6 @@ export async function getCommentsByPeriodId(
   return { comments: response.body, totalCount: total === null ? null : Number(total) };
 }
 
-export async function addComment(comment: Comment): Promise<Comment> {
-  const fields = ['comment', 'author'];
-  const queryString = 'public/comment?fields=' + buildValues(fields);
-  return postJson<Comment>(`${apiPath()}/${queryString}`, comment);
-}
-
 //
 // Documents
 //
@@ -793,13 +781,6 @@ export async function getDocumentsByMultiId(ids: string[]): Promise<Document[]> 
   }
   const queryString = `document?docIds=${buildValues(ids)}&fields=${buildValues(fields)}`;
   return getJson<Document[]>(`${apiPath()}/${queryString}`);
-}
-
-export async function uploadDocument(formData: FormData): Promise<Document> {
-  const fields = ['documentFileName', 'displayName', 'internalURL', 'internalMime'];
-  const queryString = 'document/?fields=' + buildValues(fields);
-  const response = await send(`${apiPath()}/${queryString}`, { method: 'POST', body: formData });
-  return response.json() as Promise<Document>;
 }
 
 /** Checks the shared access password. Resolves when accepted; throws ApiError 401 when not. */

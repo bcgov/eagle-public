@@ -281,11 +281,6 @@ export async function getPins(
   )) as unknown as DataQueryResponse<Org>[];
 }
 
-// Send this users' information to our CAC back-end
-export async function cacSignUp(project: Project, meta: any): Promise<any> {
-  return api.cacSignUp(project, meta);
-}
-
 // Remove this user from the CAC membership on this project
 export async function cacRemoveMember(projectId: string, meta: any): Promise<any> {
   return api.cacRemoveMember(projectId, meta);

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { searchKeywords } from 'app/api/api';
@@ -7,7 +7,6 @@ import * as commentPeriodApi from 'app/api/commentperiod';
 import * as documentApi from 'app/api/document';
 import * as projectApi from 'app/api/project';
 import { logger } from 'app/config/logging';
-import { track } from 'app/analytics/analytics';
 import type { Comment } from 'app/models/comment';
 import type { Document } from 'app/models/document';
 import type { Project } from 'app/models/project';
@@ -18,11 +17,6 @@ import { mediumDate, openDocumentDownload } from 'app/utils/utils';
 import { safeHtml } from 'app/utils/safe-html';
 import { CommentsTableRow } from './comments-table-rows';
 import './comments.css';
-
-// 500-odd lines of form that only readers who submit a comment ever open.
-const AddComment = lazy(() =>
-  import('./add-comment').then((module) => ({ default: module.AddComment })),
-);
 
 type CommentsType = 'PROJECT' | 'PROJECT-NOTIFICATION';
 
@@ -103,7 +97,6 @@ export function Comments() {
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const [modalOpen, setModalOpen] = useState(false);
 
   const projectQuery = useQuery({
     queryKey: ['comments-project', projId, isProjectNotificationRoute],
@@ -217,20 +210,6 @@ export function Comments() {
       navigate(`/p/${project._id}`);
     } else {
       navigate('/project-notifications');
-    }
-  }
-
-  function onModalDismiss(reason: string, modalPage: number) {
-    setModalOpen(false);
-    logger.debug('Modal cancelled', 'Comments', { reason });
-    if (project) {
-      track('Comment Modal Dismissed', {
-        project_id: project._id,
-        project_name: project.name,
-        comment_period_id: commentPeriod?._id,
-        page: modalPage,
-        reason,
-      });
     }
   }
 
@@ -378,18 +357,6 @@ export function Comments() {
           </div>
         ) : (
           <>
-            {commentPeriod?.commentPeriodStatus === 'Open' && (
-              <div className="mb-3 d-flex justify-content-end">
-                <button
-                  className="btn btn-warning"
-                  onClick={() => commentPeriod._id && setModalOpen(true)}
-                  type="button"
-                >
-                  Submit Comment
-                </button>
-              </div>
-            )}
-
             {tableData.totalListItems > 0 && (
               <div>
                 <TableTemplate data={tableData} onMessage={onMessageOut} />
@@ -399,18 +366,6 @@ export function Comments() {
           </>
         )}
       </div>
-
-      {modalOpen && commentPeriod && (
-        <Suspense
-          fallback={<div className="placeholder placeholder-wave w-100" aria-busy="true"></div>}
-        >
-          <AddComment
-            currentPeriod={commentPeriod}
-            project={project as Project}
-            onDismiss={onModalDismiss}
-          />
-        </Suspense>
-      )}
     </>
   );
 }
