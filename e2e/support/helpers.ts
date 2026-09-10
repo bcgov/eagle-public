@@ -9,11 +9,18 @@ const ISO_TS = /^\d{4}-\d{2}-\d{2}T[\d:.]+(Z|[+-]\d{2}:?\d{2})$/;
 /** Query params whose value changes on every page load and carries no parity signal. */
 export const VOLATILE_PARAMS = new Set(['cpStart[since]', 'cpEnd[until]']);
 
-/** API paths worth recording. Everything else (assets, map tiles) is noise. */
+/**
+ * API paths worth recording. Everything else (assets, map tiles) is noise. `api` and `eagle-search`
+ * stay in the list although the app no longer calls either: a call that comes back gets recorded
+ * and fails the baseline instead of passing unnoticed.
+ */
 const API_PATH = /^\/(api|demi-search|eagle-search|demi-projects)(\/|$|\?)/;
 
-/** Analytics ingest. It flushes on a timer, so whether it lands inside a recording window is luck. */
-const TELEMETRY_PATH = /^\/api\/usage(\/|$)/;
+/**
+ * Analytics ingest, under either path rproxy serves it on. It flushes on a timer, so whether it
+ * lands inside a recording window is luck.
+ */
+const TELEMETRY_PATH = /^\/(api\/usage|analytics)(\/|$)/;
 
 /**
  * Path + sorted query with ids and timestamps masked, so the same call made about a
@@ -112,7 +119,7 @@ function applyDeviations(line: string): string {
   );
 }
 
-/** Envelope both /api/search and /demi-search/search answer with. */
+/** Envelope /demi-search/search answers with. */
 export interface SearchEnvelope {
   searchResults: any[];
   meta: { searchResultsTotal: number }[];
@@ -211,11 +218,12 @@ export async function pageCount(page: Page): Promise<{ shown: number; total: num
 
 /**
  * Fixture lookups must not die when the backend under test is unavailable, otherwise a
- * real difference reads as a crashed suite. /demi-search is the live path; /api/search
- * answers the same envelope and is the fallback (the test environment gates
- * /demi-search behind HTTP basic auth).
+ * real difference reads as a crashed suite. /demi-search is the path the app itself uses;
+ * /api/search is kept as a fixture-only fallback because the test environment gates
+ * /demi-search behind HTTP basic auth while leaving /api open. The app never asks either
+ * question - this is how the suite finds ids to navigate to.
  */
-async function searchFixture(request: APIRequestContext, query: string): Promise<any[]> {
+export async function searchFixture(request: APIRequestContext, query: string): Promise<any[]> {
   for (const base of ['/demi-search/search', '/api/search']) {
     const r = await request.get(`${base}?${query}`);
     if (r.status() === 200) {

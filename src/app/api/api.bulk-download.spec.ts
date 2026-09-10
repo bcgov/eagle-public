@@ -12,7 +12,7 @@ describe('bulk download requests', () => {
   let fetchMock: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
-    window.__env = { logLevel: 4, API_PATH: '/api', SEARCH_API_PATH: '/demi-search' };
+    window.__env = { logLevel: 4, SEARCH_API_PATH: '/demi-search' };
     await loadConfig();
   });
 

@@ -4,7 +4,8 @@ import { openDocumentDownload } from 'app/utils/utils';
 import { DocumentLink } from './document-link';
 
 vi.mock('app/utils/utils', () => ({
-  documentDownloadUrl: (document: { _id: string }) => `/api/public/document/${document._id}`,
+  documentDownloadUrl: (document: { _id: string }) =>
+    `/demi-search/documents/${document._id}/download?redirect=1`,
   openDocumentDownload: vi.fn(),
 }));
 
@@ -19,7 +20,7 @@ describe('DocumentLink', () => {
   it('renders the download URL as a real href, so copy-link and middle-click still work', () => {
     expect(screen.getByRole('link', { name: 'Fish Habitat Report' })).toHaveAttribute(
       'href',
-      '/api/public/document/doc-1',
+      '/demi-search/documents/doc-1/download?redirect=1',
     );
   });
 

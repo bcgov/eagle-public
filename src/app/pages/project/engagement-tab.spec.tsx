@@ -71,7 +71,7 @@ describe('engagement tab', () => {
 
     await screen.findByText('Draft Application');
     const url = new URL(requests[0], 'http://x');
-    expect(url.pathname).toBe('/api/search');
+    expect(url.pathname).toBe('/demi-search/search');
     expect(url.searchParams.get('dataset')).toBe('CommentPeriod');
     expect(url.searchParams.get('and[project]')).toBe('proj-1');
     expect(url.searchParams.get('sortBy')).toBe('-dateStarted');

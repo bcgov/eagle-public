@@ -18,7 +18,7 @@ describe('content result card', () => {
     card({ _id: 'doc1', documentName: 'Fish and Fish Habitat.pdf' });
 
     const link = screen.getByRole('link', { name: 'Fish and Fish Habitat.pdf' });
-    expect(link.getAttribute('href')).toContain('/api/public/document/doc1/download/');
+    expect(link.getAttribute('href')).toBe('/demi-search/documents/doc1/download?redirect=1');
     expect(link.getAttribute('href')).not.toContain('#');
   });
 

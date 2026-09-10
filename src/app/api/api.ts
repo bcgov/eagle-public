@@ -1,11 +1,10 @@
-import type { Project } from 'app/models/project';
 import type { CommentPeriod } from 'app/models/commentperiod';
 import type { Document } from 'app/models/document';
 import type { ISearchResult, SearchResults } from 'app/models/search';
 import type { Org } from 'app/models/organization';
 import { encodeString } from 'app/utils/utils';
 import { logger } from 'app/config/logging';
-import { getApiPath, getDemiProjectsPath, getSearchApiPath } from 'app/config/config';
+import { getDemiProjectsPath, getSearchApiPath } from 'app/config/config';
 import { queryClient } from './query-client';
 
 export class ApiError extends Error {
@@ -18,46 +17,12 @@ export class ApiError extends Error {
   }
 }
 
-interface ResponseWithHeaders<T> {
-  body: T;
-  headers: Headers;
-}
-
-export function apiPath(): string {
-  return getApiPath();
-}
-
-/**
- * Base URL for search. demi-search when SEARCH_API_PATH is set, eagle-api otherwise.
- *
- * Only the datasets in AZURE_DATASETS move. The two backends answer the same query language and
- * the same `[{searchResults, meta}]` envelope, which is why nothing downstream has to change.
- */
+/** Base URL for search and for every other read: demi-search answers all of them. */
 export function searchPath(): string {
   return getSearchApiPath();
 }
 
-const AZURE_DATASETS = new Set([
-  'Project',
-  'Document',
-  'DocumentChunk',
-  'List',
-  'Organization',
-  'RecentActivity',
-  'ProjectNotification',
-  'CommentPeriod',
-  'Comment',
-]);
-
-/** Which backend answers `/search` for a dataset. Anything not moved stays on eagle-api. */
-function searchBaseFor(dataset: string): string {
-  return AZURE_DATASETS.has(dataset) ? searchPath() : apiPath();
-}
-
-/**
- * Base URL for the single-project DEMI document, without a trailing slash. Empty when DEMI is off,
- * which is what every caller branches on before reaching for it.
- */
+/** Base URL for the single-project DEMI document, without a trailing slash. */
 export function demiProjectsPath(): string {
   return getDemiProjectsPath();
 }
@@ -136,8 +101,7 @@ export interface DemiProject {
 /**
  * Query options for the single-project DEMI fetch, shared by every consumer that needs a field off
  * that document (the project record itself, phase dates, pins, the short link, …) so they collapse
- * onto one request via the shared query key. Disabled when DEMI_PROJECTS_PATH is unset — that empty
- * path is the feature's off switch and asks for nothing.
+ * onto one request via the shared query key. An unset DEMI_PROJECTS_PATH asks for nothing.
  */
 export function demiProjectQueryOptions(projId: string) {
   const base = demiProjectsPath();
@@ -169,7 +133,7 @@ export async function getDemiProject(projId: string): Promise<DemiProject | null
 }
 
 /**
- * Rows out of the `[{ searchResults, meta }]` envelope both backends answer `/search` with.
+ * Rows out of the `[{ searchResults, meta }]` envelope `/search` answers with.
  * `searchKeywords` is declared as returning that envelope, not the rows, so every caller that
  * wants a plain array unwraps it here rather than reaching through `any`.
  */
@@ -185,8 +149,8 @@ function totalFrom(envelope: unknown): number | null {
 }
 
 /**
- * Drops every key but `fields`. `/search` ignores `fields=` and answers the whole stored record,
- * so the projection the bespoke routes used to do has to happen on this side instead.
+ * Drops every key but `fields`. `/search` ignores `fields=` and answers the whole stored record, so
+ * the projection the bespoke eagle-api routes used to do happens on this side instead.
  */
 function pickFields<T>(row: unknown, fields: string[]): T {
   return Object.fromEntries(
@@ -224,11 +188,6 @@ export async function getJson<T>(url: string, options?: { quiet404?: boolean }):
   return (await send(url, {}, options?.quiet404 ? [404] : [])).json() as Promise<T>;
 }
 
-async function getWithHeaders<T>(url: string): Promise<ResponseWithHeaders<T>> {
-  const response = await send(url);
-  return { body: (await response.json()) as T, headers: response.headers };
-}
-
 async function postJson<T>(url: string, body: unknown): Promise<T> {
   const response = await send(url, {
     method: 'POST',
@@ -239,7 +198,7 @@ async function postJson<T>(url: string, body: unknown): Promise<T> {
 }
 
 //
-// Bulk download (demi-api). Rides the search base path, so an empty SEARCH_API_PATH turns it off.
+// Bulk download (demi-api). Rides the search base path.
 //
 
 /** One document: demi-api answers 200 with a presigned URL instead of queueing a job. */
@@ -364,13 +323,12 @@ export async function searchKeywords(
       queryString += `&and[${key}]=${safeItem}`;
     });
   });
-  // No `&fields=`: neither backend reads it on /search. eagle-api's search controller never
-  // touches the parameter and swagger does not declare it; demi-search accepts it only to keep
-  // saved URLs out of its unknown-parameter 400. Angular sent `fields=[object Object]` here
-  // because `fields` holds `{name, value}` pairs, already emitted above as `&name=value`.
+  // No `&fields=`: demi-search does not read it on /search, and accepts it only to keep saved URLs
+  // out of its unknown-parameter 400. Angular sent `fields=[object Object]` here because `fields`
+  // holds `{name, value}` pairs, already emitted above as `&name=value`.
   queryString += '&fuzzy=' + fuzzy;
 
-  const fullUrl = `${searchBaseFor(dataset)}/${queryString}`;
+  const fullUrl = `${searchPath()}/${queryString}`;
   logger.trace(`API call URL: ${fullUrl}`, 'api');
 
   return getJson<SearchResults[]>(fullUrl);
@@ -386,7 +344,7 @@ export function listsQueryOptions() {
     queryFn: async (): Promise<any[]> => {
       return rowsFrom(
         await getJson<unknown>(
-          `${searchBaseFor('List')}/search?pageSize=${ALL_ROWS_PAGE_SIZE}&dataset=List`,
+          `${searchPath()}/search?pageSize=${ALL_ROWS_PAGE_SIZE}&dataset=List`,
         ),
       );
     },
@@ -398,16 +356,12 @@ export function listsQueryOptions() {
 //
 /**
  * One page of a project's pinned Indigenous Nations, in the `[{total_items, results}]` envelope the
- * eagle-api route answers with.
+ * page reads.
  *
- * DEMI carries the same rows on the project document (`{_id, name, province}`, published per
- * project by its `pinsRead[]`), so when DEMI is configured this reads them off that one shared
- * document instead of a second round trip. Sorting and paging then happen here, because a stored
- * array arrives in whatever order Mongo held it.
- *
- * No DEMI record for the project, or a read that fails, falls through to the eagle-api route the
- * way the project record does. A record that carries no pins does not: there the document is the
- * answer, and the card is meant to be absent.
+ * DEMI carries the rows on the project document (`{_id, name, province}`, published per project by
+ * its `pinsRead[]`), so this reads them off the one shared document rather than making a second
+ * round trip. Sorting and paging happen here, because a stored array arrives in whatever order
+ * Mongo held it. No document, or a document with no pins, means no pins and an absent card.
  */
 export async function getProjectPins(
   id: string,
@@ -415,46 +369,15 @@ export async function getProjectPins(
   pageSize: number,
   sortBy: any,
 ): Promise<Org> {
-  if (demiProjectsPath()) {
-    let doc: DemiProject | null = null;
-    try {
-      doc = await getDemiProject(id);
-    } catch (error) {
-      logger.warn('DEMI pins read failed, falling back to eagle-api', 'api', error);
-    }
-    if (doc) {
-      const pins = [...(doc.pins ?? [])];
-      if (sortBy === '+name' || sortBy === '-name') {
-        const direction = sortBy === '-name' ? -1 : 1;
-        pins.sort((a, b) => direction * (a.name ?? '').localeCompare(b.name ?? ''));
-      }
-      const from = pageNum !== null && pageSize !== null ? (pageNum - 1) * pageSize : 0;
-      const page = pageSize !== null ? pins.slice(from, from + pageSize) : pins;
-      return [{ total_items: pins.length, results: page }] as unknown as Org;
-    }
+  const doc = await getDemiProject(id);
+  const pins = [...(doc?.pins ?? [])];
+  if (sortBy === '+name' || sortBy === '-name') {
+    const direction = sortBy === '-name' ? -1 : 1;
+    pins.sort((a, b) => direction * (a.name ?? '').localeCompare(b.name ?? ''));
   }
-  let queryString = `project/${id}/pin`;
-  if (pageNum !== null) {
-    queryString += `?pageNum=${pageNum - 1}`;
-  }
-  if (pageSize !== null) {
-    queryString += `&pageSize=${pageSize}`;
-  }
-  if (sortBy !== '' && sortBy !== null) {
-    queryString += `&sortBy=${sortBy}`;
-  }
-  return getJson<Org>(`${apiPath()}/${queryString}`);
-}
-
-// CAC
-export async function cacRemoveMember(projectId: string, meta: any): Promise<any> {
-  // We are just looking for a 200 OK
-  const response = await send(`${apiPath()}/project/${projectId}/cacRemoveMember`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(meta),
-  });
-  return response.json();
+  const from = pageNum !== null && pageSize !== null ? (pageNum - 1) * pageSize : 0;
+  const page = pageSize !== null ? pins.slice(from, from + pageSize) : pins;
+  return [{ total_items: pins.length, results: page }] as unknown as Org;
 }
 
 // Organizations
@@ -462,18 +385,8 @@ export async function cacRemoveMember(projectId: string, meta: any): Promise<any
 /** demi-search 400s above 500 rows on a filtered search, and this query is always filtered. */
 const ORGS_PAGE_SIZE = 500;
 
-/**
- * Every organization of one company type, for the proponent filter dropdown.
- *
- * The eagle-api fallback keeps its `/organization` route, which projects the name only:
- * `/search?dataset=Organization` there answers the stored row, internal user ids included.
- */
+/** Every organization of one company type, for the proponent filter dropdown. */
 export async function getOrgsByCompanyType(type: string): Promise<Org[]> {
-  if (searchPath() === apiPath()) {
-    const queryString = `organization?companyType=${type}&sortBy=+name&fields=${buildValues(['name'])}`;
-    return getJson<Org[]>(`${apiPath()}/${queryString}`);
-  }
-
   const orgs: Org[] = [];
   for (let pageNum = 1; ; pageNum++) {
     const envelope = await searchKeywords(
@@ -497,85 +410,14 @@ export async function getOrgsByCompanyType(type: string): Promise<Org[]> {
   }
 }
 
-export async function getProject(
-  id: string,
-  cpStart: string | null,
-  cpEnd: string | null,
-): Promise<Project[]> {
-  const fields = [
-    'CEAAInvolvement',
-    'CELead',
-    'CELeadEmail',
-    'CELeadPhone',
-    'centroid',
-    'description',
-    'eacDecision',
-    'location',
-    'name',
-    'projectLeadId',
-    'projectLead',
-    'projectLeadEmail',
-    'projectLeadPhone',
-    'proponent',
-    'region',
-    'responsibleEPDId',
-    'responsibleEPD',
-    'responsibleEPDEmail',
-    'responsibleEPDPhone',
-    'type',
-    'legislation',
-    'addedBy',
-    'build',
-    'CEAALink',
-    'code',
-    'commodity',
-    'currentPhaseName',
-    'dateAdded',
-    'dateCommentsClosed',
-    'commentPeriodStatus',
-    'dateUpdated',
-    'decisionDate',
-    'duration',
-    'eaoMember',
-    'epicProjectID',
-    'fedElecDist',
-    'isTermsAgreed',
-    'overallProgress',
-    'primaryContact',
-    'proMember',
-    'provElecDist',
-    'sector',
-    'shortName',
-    'status',
-    'legislation',
-    'substitution',
-    'featuredDocuments',
-    'updatedBy',
-    'read',
-    'write',
-    'delete',
-    'featuredDocuments',
-  ];
-  let queryString = `project/${id}?populate=true`;
-  if (cpStart !== null) {
-    queryString += `&cpStart[since]=${cpStart}`;
-  }
-  if (cpEnd !== null) {
-    queryString += `&cpEnd[until]=${cpEnd}`;
-  }
-  queryString += `&fields=${buildValues(fields)}`;
-  return getJson<Project[]>(`${apiPath()}/${queryString}`);
-}
-
 //
 // Comment Periods
 //
 /**
  * The fields the engagement cards have always been given. `/search` ignores `fields=`, so the
  * projection the old `/commentperiod` route did happens here: the full record also carries
- * `additionalText`, which the cards would then show in place of the description they derive from
- * the instructions, and which demi-search does not store - so keeping it out also keeps the two
- * backends rendering the same cards.
+ * `additionalText`, which the cards would otherwise show in place of the description they derive
+ * from the instructions.
  */
 const PERIOD_LIST_FIELDS = [
   '_id',
@@ -591,10 +433,8 @@ const PERIOD_LIST_FIELDS = [
 ];
 
 /**
- * Every comment period of one project, newest first.
- *
- * Both backends answer `/search?dataset=CommentPeriod` and both read the project as `and[project]`,
- * so this needs no branch. A project has single-digit comment periods, hence the one page.
+ * Every comment period of one project, newest first, read as `and[project]`. A project has
+ * single-digit comment periods, hence the one page.
  */
 export async function getPeriodsByProjId(projId: string): Promise<CommentPeriod[]> {
   const envelope = await searchKeywords(
@@ -631,10 +471,7 @@ const PERIOD_DETAIL_FIELDS = [
   'relatedDocuments',
 ];
 
-/**
- * One comment period. `and[_id]` on both backends: eagle-api's `/search` ignores a bare `_id`
- * and answers the whole collection, which would render an unrelated period.
- */
+/** One comment period, filtered as `and[_id]`: a bare `_id` is not read as a filter. */
 export async function getPeriod(id: string): Promise<CommentPeriod[]> {
   const envelope = await searchKeywords('', 'CommentPeriod', [], 1, 1, '', null, { _id: id });
   return rowsFrom<Record<string, unknown>>(envelope).map((period) =>
@@ -648,22 +485,6 @@ export async function getPeriod(id: string): Promise<CommentPeriod[]> {
 /** Newest comment first, the order the comments table has always shown. */
 const COMMENTS_SORT = '-commentId';
 
-/** The fields eagle-api projects on a comment; demi-search answers its redacted row instead. */
-const COMMENT_FIELDS = [
-  'author',
-  'comment',
-  'documents',
-  'commentId',
-  'dateAdded',
-  'dateUpdated',
-  'isAnonymous',
-  'location',
-  'period',
-  'read',
-  'write',
-  'delete',
-];
-
 /** One page of comments plus how many there are in total, whichever backend answered. */
 export interface CommentPage {
   comments: any[];
@@ -673,47 +494,27 @@ export interface CommentPage {
 /**
  * One page of a comment period's comments, newest first.
  *
- * eagle-api's `/search` has no Comment case at all - it answers 500 - so the fallback keeps the
- * bespoke `/public/comment` route, which counts into the `x-total-count` header. demi-search
- * counts into the envelope's `meta` instead, so the total is read from two different places.
- *
- * `pageNum` is zero-based here, as `/public/comment` takes it; `searchKeywords` takes it one-based.
+ * `pageNum` is zero-based here, where `searchKeywords` takes it one-based. `_getCount` is accepted
+ * and ignored: demi-search always counts into the envelope's `meta`, so the total is there whether
+ * or not it was asked for.
  */
 export async function getCommentsByPeriodId(
   pageNum: number | null,
   pageSize: number | null,
-  getCount: boolean,
+  _getCount: boolean,
   periodId: string,
 ): Promise<CommentPage> {
-  if (searchPath() !== apiPath()) {
-    const envelope = await searchKeywords(
-      '',
-      'Comment',
-      [],
-      pageNum === null ? null : pageNum + 1,
-      pageSize,
-      '',
-      COMMENTS_SORT,
-      { period: periodId },
-    );
-    return { comments: rowsFrom(envelope), totalCount: totalFrom(envelope) };
-  }
-
-  let queryString =
-    'public/comment?period=' + periodId + '&fields=' + buildValues(COMMENT_FIELDS) + '&';
-  queryString += `sortBy=${COMMENTS_SORT}&`;
-  if (pageNum !== null) {
-    queryString += `pageNum=${pageNum}&`;
-  }
-  if (pageSize !== null) {
-    queryString += `pageSize=${pageSize}&`;
-  }
-  if (getCount !== null) {
-    queryString += `count=${getCount}&`;
-  }
-  const response = await getWithHeaders<any[]>(`${apiPath()}/${queryString}`);
-  const total = response.headers.get('x-total-count');
-  return { comments: response.body, totalCount: total === null ? null : Number(total) };
+  const envelope = await searchKeywords(
+    '',
+    'Comment',
+    [],
+    pageNum === null ? null : pageNum + 1,
+    pageSize,
+    '',
+    COMMENTS_SORT,
+    { period: periodId },
+  );
+  return { comments: rowsFrom(envelope), totalCount: totalFrom(envelope) };
 }
 
 //
@@ -745,61 +546,67 @@ export async function getDocumentsByMultiId(ids: string[]): Promise<Document[]> 
     'isPublished',
     'isFeatured',
   ];
-  if (searchPath() !== apiPath()) {
-    // demi-search reads `docIds` bare rather than as `and[docIds]`, and takes the same
-    // pipe-separated list eagle-api's route does. A present-but-empty value matches nothing there,
-    // which is what an empty `ids` means here too. It goes through the `fields` argument because
-    // that is the only one `searchKeywords` emits as a plain parameter.
-    const envelope = await searchKeywords(
-      '',
-      'Document',
-      [{ name: 'docIds', value: buildValues(ids) }],
-      1,
-      Math.max(ids.length, 1),
+  // demi-search reads `docIds` bare rather than as `and[docIds]`, and takes a pipe-separated list.
+  // A present-but-empty value matches nothing there, which is what an empty `ids` means here too.
+  // It goes through the `fields` argument because that is the only one `searchKeywords` emits as a
+  // plain parameter.
+  const envelope = await searchKeywords(
+    '',
+    'Document',
+    [{ name: 'docIds', value: buildValues(ids) }],
+    1,
+    Math.max(ids.length, 1),
+  );
+  // `_id` is not in `fields`, because it is answered whether or not it is asked for and every
+  // caller keys documents by it.
+  return rowsFrom<Document>(envelope).map((row) => {
+    const record = row as unknown as Record<string, unknown>;
+    return pickFields<Document>(
+      {
+        ...record,
+        // The demi-search index holds no `internalOriginalName`, and it is the only label the
+        // comment attachment list renders.
+        internalOriginalName:
+          record['internalOriginalName'] ?? record['documentFileName'] ?? record['displayName'],
+      } as unknown as Document,
+      ['_id', ...fields],
     );
-    // `_id` is not in `fields`, because eagle-api answers with it whether or not it is asked for,
-    // and every caller keys documents by it.
-    return rowsFrom<Document>(envelope).map((row) => {
-      const record = row as unknown as Record<string, unknown>;
-      return pickFields<Document>(
-        {
-          ...record,
-          // The demi-search index holds no `internalOriginalName`, and it is the only label the
-          // comment attachment list renders.
-          internalOriginalName:
-            record['internalOriginalName'] ?? record['documentFileName'] ?? record['displayName'],
-        } as unknown as Document,
-        ['_id', ...fields],
-      );
-    });
-  }
-  const queryString = `document?docIds=${buildValues(ids)}&fields=${buildValues(fields)}`;
-  return getJson<Document[]>(`${apiPath()}/${queryString}`);
-}
-
-/** Checks the shared access password. Resolves when accepted; throws ApiError 401 when not. */
-export async function checkGatePassword(password: string): Promise<void> {
-  await send(`${apiPath()}/public/gate`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ password }),
   });
 }
 
-/** How many items the home strip shows. Both backends cap the top set at this. */
+/**
+ * Checks the shared access password. Resolves when accepted; throws ApiError 401 when not.
+ *
+ * A 404 resolves too: it means the backend has no gate configured, and there is nothing to check a
+ * password against. Failing shut there would lock an environment out of its own site with no way in.
+ */
+export async function checkGatePassword(password: string): Promise<void> {
+  try {
+    await send(
+      `${searchPath()}/gate`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      },
+      [404],
+    );
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) return;
+    throw error;
+  }
+}
+
+/** How many items the home strip shows. */
 const TOP_NEWS_PAGE_SIZE = 4;
 
 /**
- * The home page's top-news strip, the one RecentActivity read with two URLs: eagle-api answers it
- * from a bespoke pinned/unpinned pipeline rather than `/search`.
+ * The home page's top-news strip.
  *
  * demi-search reads `top` BARE, not `and[top]`, hence the `fields` argument, which emits
  * `&name=value`. It answers the whole strip pinned first then newest, so no sort is sent.
  */
 export async function getTopNewsItems(): Promise<any[]> {
-  if (searchPath() === apiPath()) {
-    return getJson<any[]>(`${apiPath()}/public/recentActivity?top=true`);
-  }
   return rowsFrom(
     await searchKeywords(
       '',

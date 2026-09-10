@@ -2,16 +2,15 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { getDocumentsByMultiId, getProjectPins, listsQueryOptions } from './api';
 import { queryClient } from './query-client';
 import { commentPeriodsQueryOptions } from './commentperiod';
-import { demiProjectToEagle, getById, getPins, periodsInWindow } from './project';
+import { demiProjectToEagle, getById, periodsInWindow } from './project';
 import { loadConfig } from 'app/config/config';
 import type { CommentPeriod } from 'app/models/commentperiod';
 
 /**
  * The project record, its pins and the multi-id document read, once DEMI answers them.
  *
- * DEMI stores a project under Track's field names and eagle-api under Eagle's, so unlike the
- * `/search` reads these cannot share a payload: the difference is the mapping, and that is what
- * most of this file pins down.
+ * DEMI stores a project under Track's field names where the app reads Eagle's, so the read is a
+ * mapping as much as a request, and that is what most of this file pins down.
  */
 describe('project reads served by DEMI', () => {
   const DEMI = '/demi-projects';
@@ -22,10 +21,10 @@ describe('project reads served by DEMI', () => {
   /**
    * `GET /demi-projects/58851197aaecd9001b8227cc` on test, 2026-09-08, trimmed to the fields the
    * mapper reads. `applicableRegulation` is catalogued public by DEMI but absent from every stored
-   * document sampled there, so its `{_id, name, item}` shape is the eagle-api one it mirrors.
+   * document sampled there, so its `{_id, name, item}` shape is the Eagle one it mirrors.
    *
    * `eacDecision`, `currentPhaseName` and `CEAAInvolvement` are the bare `List` ids DEMI answers
-   * with today. eagle-api populates the same three into rows, so `LISTS` below covers that shape.
+   * with today; `LISTS` below covers the populated-row shape it may answer instead.
    */
   const DEMI_DOC = {
     id: '3',
@@ -101,7 +100,7 @@ describe('project reads served by DEMI', () => {
     },
   ];
 
-  /** demi-search and eagle-api both wrap `/search` rows in this. */
+  /** How demi-search wraps `/search` rows. */
   function envelope(rows: unknown[], total = rows.length): string {
     return JSON.stringify([{ searchResults: rows, meta: [{ searchResultsTotal: total }] }]);
   }
@@ -122,7 +121,6 @@ describe('project reads served by DEMI', () => {
   async function setup(paths: { demi?: string; search?: string }): Promise<void> {
     window.__env = {
       logLevel: 4,
-      API_PATH: '/api',
       DEMI_PROJECTS_PATH: paths.demi ?? '',
       SEARCH_API_PATH: paths.search ?? '',
     };
@@ -221,8 +219,8 @@ describe('project reads served by DEMI', () => {
     });
 
     it('passes a populated List row through without consulting the rows', () => {
-      // eagle-api answers these three populated, and the fix in flight makes DEMI do the same, so
-      // the row has to survive a mapper that was handed no rows to look anything up in.
+      // The fix in flight makes DEMI answer these three populated, so the row has to survive a
+      // mapper that was handed no rows to look anything up in.
       const row = { _id: '5e27937a749c83437054f215', name: 'Certificate Refused' };
       const mapped = demiProjectToEagle({ ...DEMI_DOC, eacDecision: row }, [], []);
 
@@ -299,8 +297,7 @@ describe('project reads served by DEMI', () => {
     });
 
     it('keeps a period that starts inside the window but has no completion date', () => {
-      // eagle-api's first `$or` branch reads only `dateStarted`, so a record missing
-      // `dateCompleted` still matches there.
+      // The first clause reads only `dateStarted`, so a record missing `dateCompleted` matches.
       const rows = periodsInWindow([period('2026-09-10T00:00:00.000Z', '')], SINCE, UNTIL);
 
       expect(rows).toHaveLength(1);
@@ -473,42 +470,24 @@ describe('project reads served by DEMI', () => {
       );
     });
 
-    it('asks eagle-api when DEMI is not configured', async () => {
-      await setup({ search: SEARCH });
-      respondWith(JSON.stringify([{ _id: 'p1', name: 'From eagle-api' }]));
+    // DEMI is the only store there is, so a 404 is the answer: the page renders "not found" off
+    // the null rather than asking a second backend.
+    it('answers no project when DEMI has no record for it', async () => {
+      await setup({ demi: DEMI, search: SEARCH });
+      respondWith(new Response('{}', { status: 404, statusText: 'Not Found' }));
 
-      const project = await getById('p1', false, null, null);
-
-      expect(project.name).toBe('From eagle-api');
-      expect(requestedUrls()[0].startsWith('/api/project/p1?populate=true')).toBe(true);
+      expect(await getById('p1', false, null, null)).toBeNull();
+      expect(requestedUrls()).toEqual([`${DEMI}/p1`]);
     });
 
-    it('falls back to eagle-api when DEMI has no record for the project', async () => {
+    // A store that cannot be reached is not a project that does not exist; the page has its own
+    // error state, and swallowing this would show "not found" for an outage.
+    it('surfaces a failed DEMI read instead of reporting the project missing', async () => {
       await setup({ demi: DEMI, search: SEARCH });
-      respondWith(
-        new Response('{}', { status: 404, statusText: 'Not Found' }),
-        JSON.stringify([{ _id: 'p1', name: 'From eagle-api' }]),
-      );
+      respondWith(new Response('{}', { status: 500, statusText: 'Internal Server Error' }));
 
-      const project = await getById('p1', false, null, null);
-
-      expect(project.name).toBe('From eagle-api');
-      expect(requestedUrls()[0]).toBe(`${DEMI}/p1`);
-      expect(requestedUrls()[1].startsWith('/api/project/p1?populate=true')).toBe(true);
-    });
-
-    it('falls back to eagle-api when the DEMI read fails outright', async () => {
-      await setup({ demi: DEMI, search: SEARCH });
-      respondWith(
-        new Response('{}', { status: 500, statusText: 'Internal Server Error' }),
-        JSON.stringify([{ _id: 'p1', name: 'From eagle-api' }]),
-      );
-
-      const project = await getById('p1', false, null, null);
-
-      expect(project.name).toBe('From eagle-api');
-      expect(requestedUrls()[0]).toBe(`${DEMI}/p1`);
-      expect(requestedUrls()[1].startsWith('/api/project/p1?populate=true')).toBe(true);
+      await expect(getById('p1', false, null, null)).rejects.toThrow('500');
+      expect(requestedUrls()).toEqual([`${DEMI}/p1`]);
     });
   });
 
@@ -528,7 +507,7 @@ describe('project reads served by DEMI', () => {
       expect(requestedUrls()).toEqual([`${DEMI}/58851197aaecd9001b8227cc`]);
     });
 
-    it('pages the pins the way the eagle-api route does', async () => {
+    it('pages the pins the way the page asks for them', async () => {
       await setup({ demi: DEMI, search: SEARCH });
       respondWith(JSON.stringify(DEMI_DOC));
 
@@ -538,36 +517,23 @@ describe('project reads served by DEMI', () => {
       expect(response[0].results.map((pin: any) => pin.name)).toEqual(['Kwadacha Nation']);
     });
 
-    const EAGLE_PINS = JSON.stringify([
-      {
-        total_items: 1,
-        results: [{ _id: 'n1', name: 'Tsay Keh Dene Band', province: 'BC' }],
-      },
-    ]);
-
-    it('falls back to the eagle-api pin route for a project DEMI has no record of', async () => {
+    // No document means no pins, and the card is meant to be absent — not filled from elsewhere.
+    it('answers an empty list for a project DEMI has no record of', async () => {
       await setup({ demi: DEMI, search: SEARCH });
-      respondWith(new Response('{}', { status: 404, statusText: 'Not Found' }), EAGLE_PINS);
-
-      const response = (await getPins('p1', 1, 100, '+name')) as any;
-
-      expect(response[0].results.map((pin: any) => pin.name)).toEqual(['Tsay Keh Dene Band']);
-      expect(requestedUrls()[0]).toBe(`${DEMI}/p1`);
-      expect(requestedUrls()[1]).toBe('/api/project/p1/pin?pageNum=0&pageSize=100&sortBy=+name');
-    });
-
-    it('falls back to the eagle-api pin route when the DEMI read fails outright', async () => {
-      await setup({ demi: DEMI, search: SEARCH });
-      respondWith(
-        new Response('{}', { status: 500, statusText: 'Internal Server Error' }),
-        EAGLE_PINS,
-      );
+      respondWith(new Response('{}', { status: 404, statusText: 'Not Found' }));
 
       const response = (await getProjectPins('p1', 1, 100, '+name')) as any;
 
-      expect(response[0].results.map((pin: any) => pin.name)).toEqual(['Tsay Keh Dene Band']);
-      expect(requestedUrls()[0]).toBe(`${DEMI}/p1`);
-      expect(requestedUrls()[1]).toBe('/api/project/p1/pin?pageNum=0&pageSize=100&sortBy=+name');
+      expect(response[0].total_items).toBe(0);
+      expect(response[0].results).toEqual([]);
+      expect(requestedUrls()).toEqual([`${DEMI}/p1`]);
+    });
+
+    it('surfaces a failed DEMI read rather than answering an empty card', async () => {
+      await setup({ demi: DEMI, search: SEARCH });
+      respondWith(new Response('{}', { status: 500, statusText: 'Internal Server Error' }));
+
+      await expect(getProjectPins('p1', 1, 100, '+name')).rejects.toThrow('500');
     });
 
     it('answers an empty list for a DEMI record that carries no pins', async () => {
@@ -581,15 +547,6 @@ describe('project reads served by DEMI', () => {
       expect(response[0].results).toEqual([]);
       expect(requestedUrls()).toEqual([`${DEMI}/p1`]);
     });
-
-    it('asks the eagle-api pin route when DEMI is not configured', async () => {
-      await setup({ search: SEARCH });
-      respondWith(JSON.stringify([{ total_items: 0, results: [] }]));
-
-      await getProjectPins('p1', 1, 100, '+name');
-
-      expect(requestedUrls()[0]).toBe('/api/project/p1/pin?pageNum=0&pageSize=100&sortBy=+name');
-    });
   });
 
   describe('getDocumentsByMultiId', () => {
@@ -598,8 +555,8 @@ describe('project reads served by DEMI', () => {
       displayName: 'Application',
       documentFileName: 'application.pdf',
       project: 'p1',
-      // demi-search answers the whole indexed row; these two are not in the projection eagle-api
-      // was asked for, so they must not survive.
+      // demi-search answers the whole indexed row; these two are outside the projection the pages
+      // read, so they must not survive.
       projectName: 'Ajax Mine',
       highlighted: [],
     };
@@ -616,7 +573,7 @@ describe('project reads served by DEMI', () => {
       expect(url).not.toContain('and[docIds]');
     });
 
-    it('projects the demi-search row down to the fields eagle-api was asked for', async () => {
+    it('projects the demi-search row down to the fields the pages read', async () => {
       await setup({ search: SEARCH });
       respondWith(envelope([ROW]));
 
@@ -635,15 +592,6 @@ describe('project reads served by DEMI', () => {
       const documents = (await getDocumentsByMultiId(['d1'])) as any[];
 
       expect(documents[0].internalOriginalName).toBe('application.pdf');
-    });
-
-    it('asks eagle-api when no search backend is configured', async () => {
-      await setup({});
-      respondWith(JSON.stringify([ROW]));
-
-      await getDocumentsByMultiId(['d1', 'd2']);
-
-      expect(requestedUrls()[0].startsWith('/api/document?docIds=d1|d2&fields=')).toBe(true);
     });
   });
 });

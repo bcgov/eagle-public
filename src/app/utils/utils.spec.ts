@@ -131,8 +131,8 @@ describe('triggerDownload()', () => {
 
 /**
  * A single download goes through demi-api for a presigned, forced-attachment URL and starts in a
- * hidden iframe. With no DEMI configured, or when DEMI does not answer with a URL, it falls back to
- * the eagle-api URL, which is also the anchor href.
+ * hidden iframe. When demi-api does not answer with a URL it falls back to demi-api's redirecting
+ * download route, which is also the anchor href.
  */
 describe('openDocumentDownload()', () => {
   const originalEnv = window.__env;
@@ -156,14 +156,13 @@ describe('openDocumentDownload()', () => {
   });
 
   async function configuredWith(searchApiPath: string): Promise<void> {
-    window.__env = { logLevel: 4, API_PATH: '/api', SEARCH_API_PATH: searchApiPath };
+    window.__env = { logLevel: 4, SEARCH_API_PATH: searchApiPath };
     await loadConfig();
   }
 
-  it('builds the eagle-api download URL from the file name', () => {
-    expect(documentDownloadUrl(DOCUMENT)).toBe(
-      '/api/public/document/doc-1/download/Fish%20Habitat.pdf',
-    );
+  it('builds the download URL on the search base, asking demi-api to redirect', async () => {
+    await configuredWith('/demi-search');
+    expect(documentDownloadUrl(DOCUMENT)).toBe('/demi-search/documents/doc-1/download?redirect=1');
   });
 
   it('starts the presigned download when DEMI is configured', async () => {
@@ -179,19 +178,25 @@ describe('openDocumentDownload()', () => {
     expect(openSpy).not.toHaveBeenCalled();
   });
 
-  it('opens the eagle-api URL when no search backend is configured', async () => {
+  it('falls back to the redirect URL on the default base when nothing is configured', async () => {
     await configuredWith('');
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('', { status: 500, statusText: 'Server Error' })),
+    );
 
     openDocumentDownload(DOCUMENT);
 
-    expect(openSpy).toHaveBeenCalledWith(
-      '/api/public/document/doc-1/download/Fish%20Habitat.pdf',
-      '_blank',
+    await waitFor(() =>
+      expect(openSpy).toHaveBeenCalledWith(
+        '/demi-search/documents/doc-1/download?redirect=1',
+        '_blank',
+      ),
     );
   });
 
-  // The deployed hosts do not route /demi-search/bulk-downloads; the file still has to arrive.
-  it('falls back to the eagle-api URL when demi-api refuses the POST', async () => {
+  // The deployed hosts do not all route /demi-search/bulk-downloads; the file still has to arrive.
+  it('falls back to the redirect URL when demi-api refuses the POST', async () => {
     await configuredWith('/demi-search');
     vi.stubGlobal(
       'fetch',
@@ -202,14 +207,14 @@ describe('openDocumentDownload()', () => {
 
     await waitFor(() =>
       expect(openSpy).toHaveBeenCalledWith(
-        '/api/public/document/doc-1/download/Fish%20Habitat.pdf',
+        '/demi-search/documents/doc-1/download?redirect=1',
         '_blank',
       ),
     );
     expect(downloadUrls()).toEqual([]);
   });
 
-  it('falls back to the eagle-api URL when the POST answers a job instead of a url', async () => {
+  it('falls back to the redirect URL when the POST answers a job instead of a url', async () => {
     await configuredWith('/demi-search');
     vi.stubGlobal(
       'fetch',
@@ -222,14 +227,14 @@ describe('openDocumentDownload()', () => {
 
     await waitFor(() =>
       expect(openSpy).toHaveBeenCalledWith(
-        '/api/public/document/doc-1/download/Fish%20Habitat.pdf',
+        '/demi-search/documents/doc-1/download?redirect=1',
         '_blank',
       ),
     );
     expect(downloadUrls()).toEqual([]);
   });
 
-  it('falls back to the eagle-api URL when the POST answers with HTML', async () => {
+  it('falls back to the redirect URL when the POST answers with HTML', async () => {
     await configuredWith('/demi-search');
     vi.stubGlobal(
       'fetch',
@@ -240,7 +245,7 @@ describe('openDocumentDownload()', () => {
 
     await waitFor(() =>
       expect(openSpy).toHaveBeenCalledWith(
-        '/api/public/document/doc-1/download/Fish%20Habitat.pdf',
+        '/demi-search/documents/doc-1/download?redirect=1',
         '_blank',
       ),
     );

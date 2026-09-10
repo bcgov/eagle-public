@@ -19,7 +19,7 @@ interface LogEntry {
 }
 
 /**
- * Minimum log level from the merged config (env.js + /api/config).
+ * Minimum log level from the merged config (env.js + the runtime config document).
  * Log levels: 0=All, 1=Debug, 2=Info, 3=Warn, 4=Error
  */
 function minLevel(): LogLevel {

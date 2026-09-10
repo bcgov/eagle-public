@@ -89,8 +89,9 @@ jobs:
       - name: Test
         run: yarn test
 
-      # Production is same-origin behind rproxy, so nothing is baked in: configEndpoint on and
-      # /api/config supplies the rest. `sed` exits 0 on no match, so each rewrite is verified.
+      # Production is same-origin behind rproxy, so nothing is baked in: configEndpoint on and the
+      # runtime config document supplies the rest. `sed` exits 0 on no match, so each rewrite is
+      # verified.
       - name: Point env.js at the same-origin production runtime
         run: |
           set -euo pipefail
@@ -99,7 +100,7 @@ jobs:
           sed -i "s|window.__env.logLevel = .*|window.__env.logLevel = 4;|" src/env.js
           sed -i "s|window.__env.ANALYTICS_DEBUG = .*|window.__env.ANALYTICS_DEBUG = false;|" src/env.js
           # Two more: unrewritten, src/env.js ships ENVIRONMENT = 'dev' and a dev ADMIN_PATH.
-          # /api/config merges the same values over them at boot.
+          # The config document merges the same values over them at boot.
           sed -i "s|window.__env.ENVIRONMENT = .*|window.__env.ENVIRONMENT = 'prod';|" src/env.js
           sed -i "s|window.__env.ADMIN_PATH = .*|window.__env.ADMIN_PATH = '/admin/';|" src/env.js
           for expected in \
@@ -114,7 +115,6 @@ jobs:
           done
           # The other half of the contract: the paths that must NOT have been touched.
           for relative in \
-            "window.__env.API_PATH = '/api';" \
             "window.__env.SEARCH_API_PATH = '';" \
             "window.__env.NOTIFY_API = '';"; do
             grep -qF "$relative" src/env.js \
@@ -308,9 +308,9 @@ jobs:
           # rewrite step, and a hostname copied across from the staging workflow.
           deployed_env=$(curl -s --max-time 15 "$host/env.js")
           echo "$deployed_env" | grep -qF 'window.__env.configEndpoint = true;' \
-            || { echo "::error::the deployed env.js still has configEndpoint = false — it will never fetch /api/config and will serve the committed dev defaults"; exit 1; }
-          echo "$deployed_env" | grep -qF "window.__env.API_PATH = '/api';" \
-            || { echo "::error::the deployed env.js does not use the relative /api path — the production bundle must stay same-origin"; exit 1; }
+            || { echo "::error::the deployed env.js still has configEndpoint = false — it will never fetch its runtime config and will serve the committed dev defaults"; exit 1; }
+          echo "$deployed_env" | grep -qF "window.__env.SEARCH_API_PATH = '';" \
+            || { echo "::error::the deployed env.js bakes an absolute SEARCH_API_PATH — the production bundle must stay same-origin"; exit 1; }
 
           echo "PUBLISHED TO THE LIVE PRODUCTION ORIGIN, same-origin and correctly cached"
 

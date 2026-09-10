@@ -1,5 +1,5 @@
 import { test, expect } from '../support/fixtures';
-import { ready, latestCommentPeriod, unwrap, firstProjects } from '../support/helpers';
+import { ready, latestCommentPeriod, searchFixture, firstProjects } from '../support/helpers';
 
 test('an unknown route falls back to the home page', async ({ page }) => {
   await page.goto('/this-route-does-not-exist');
@@ -28,17 +28,17 @@ test('/p/:projId/cp/:cpId redirects to /details', async ({ page, request }) => {
 });
 
 test('@data /pn/:projId/cp/:cpId redirects to /details', async ({ page, request }) => {
-  const list = await request.get(
-    '/api/search?dataset=ProjectNotification&pageNum=0&pageSize=25&projectLegislation=default&sortBy=-_id&populate=true&fuzzy=false',
+  const notifications = await searchFixture(
+    request,
+    'dataset=ProjectNotification&pageNum=0&pageSize=25&projectLegislation=default&sortBy=-_id&populate=true&fuzzy=false',
   );
-  const notifications = unwrap(await list.json()).searchResults;
 
   let pn: any, cp: any;
   for (const n of notifications) {
-    const r = await request.get(
-      `/api/commentperiod?project=${n._id}&sortBy=-dateStarted&fields=project|dateStarted`,
+    const periods = await searchFixture(
+      request,
+      `and[project]=${n._id}&dataset=CommentPeriod&pageNum=0&pageSize=1&projectLegislation=default&sortBy=-dateStarted&populate=false&fuzzy=false`,
     );
-    const periods = await r.json();
     if (periods.length) {
       pn = n;
       cp = periods[0];
@@ -56,7 +56,7 @@ test('/search/content redirects to /search while CONTENT_SEARCH is off', async (
   page,
   request,
 }) => {
-  const cfg = await (await request.get('/api/config')).json();
+  const cfg = await (await request.get('/demi-search/config')).json();
   const contentSearchEnabled = Boolean(cfg.CONTENT_SEARCH);
 
   await page.goto('/search/content');

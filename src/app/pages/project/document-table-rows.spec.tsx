@@ -16,19 +16,19 @@ const DOCUMENT = {
   datePosted: '2026-05-04T00:00:00.000Z',
 };
 
-const DOWNLOAD_URL = '/api/public/document/doc-1/download/fish-habitat.pdf';
+const DOWNLOAD_URL = '/demi-search/documents/doc-1/download?redirect=1';
 
 /**
  * The Name cell is a real link so it can be middle-clicked, copied and opened in a new tab. Its
- * href is the eagle-api URL; a plain click still goes through `openDocumentDownload`.
+ * href is the demi-api download URL; a plain click still goes through `openDocumentDownload`.
  */
 describe('DocumentTableRow name cell', () => {
   const originalEnv = window.__env;
   let openSpy: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
-    // No search backend, so the download takes the eagle-api path and `window.open` is observable.
-    window.__env = { logLevel: 4, API_PATH: '/api', SEARCH_API_PATH: '' };
+    // No presign answer, so the download falls back to the redirect URL and `window.open` is observable.
+    window.__env = { logLevel: 4, SEARCH_API_PATH: '/demi-search' };
     await loadConfig();
     openSpy = vi.fn();
     vi.stubGlobal('open', openSpy);
@@ -57,7 +57,7 @@ describe('DocumentTableRow name cell', () => {
     return screen.getByRole('link', { name: 'Fish Habitat Report' });
   }
 
-  it('links to the eagle-api download URL', () => {
+  it('links to the demi-api download URL', () => {
     const link = renderRow();
     expect(link).toHaveAttribute('href', DOWNLOAD_URL);
     expect(link).toHaveAttribute('target', '_blank');
@@ -92,7 +92,7 @@ describe('DocumentTableRow row interaction', () => {
   let openSpy: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
-    window.__env = { logLevel: 4, API_PATH: '/api', SEARCH_API_PATH: '' };
+    window.__env = { logLevel: 4, SEARCH_API_PATH: '/demi-search' };
     await loadConfig();
     openSpy = vi.fn();
     vi.stubGlobal('open', openSpy);
@@ -227,7 +227,7 @@ describe('DocumentTableRow selection', () => {
   let openSpy: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
-    window.__env = { logLevel: 4, API_PATH: '/api', SEARCH_API_PATH: '' };
+    window.__env = { logLevel: 4, SEARCH_API_PATH: '/demi-search' };
     await loadConfig();
     openSpy = vi.fn();
     vi.stubGlobal('open', openSpy);

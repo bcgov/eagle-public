@@ -6,7 +6,9 @@ import {
   contentSearchEnabled,
   env,
   getConfig,
+  getDemiProjectsPath,
   getNotifyApi,
+  getSearchApiPath,
   loadConfig,
   showSurveyBanner,
   surveyUrl,
@@ -14,8 +16,8 @@ import {
 
 /**
  * CONTENT_SEARCH decides whether the Document Content tab and route are offered at all, so a
- * truthy-but-not-true value must not turn it on: `/api/config` is hand-edited in Mongo and the
- * string "false" is truthy.
+ * truthy-but-not-true value must not turn it on: the config document is hand-edited in Mongo and
+ * the string "false" is truthy.
  */
 describe('contentSearchEnabled', () => {
   const original = window.__env;
@@ -73,10 +75,10 @@ describe('getNotifyApi', () => {
 });
 
 /**
- * The bulk download routes live on the DEMI search base. No search path means no DEMI, so the UI
- * has to hide rather than post to eagle-api, which has no such route.
+ * demi-search is the only backend, so an unconfigured environment must still resolve to it rather
+ * than to nothing. env.js ships both paths empty on purpose - the default lives here.
  */
-describe('bulkDownloadEnabled', () => {
+describe('DEMI base paths', () => {
   const original = window.__env;
 
   afterEach(() => {
@@ -88,25 +90,37 @@ describe('bulkDownloadEnabled', () => {
     await loadConfig();
   }
 
-  it('is off when SEARCH_API_PATH is absent', async () => {
+  it('default to /demi-search and /demi-projects when nothing is configured', async () => {
     await configuredWith({});
-    expect(bulkDownloadEnabled()).toBe(false);
+    expect(getSearchApiPath()).toBe('/demi-search');
+    expect(getDemiProjectsPath()).toBe('/demi-projects');
   });
 
-  it('is off when SEARCH_API_PATH is empty, which is the kill switch', async () => {
+  it('default when the configured values are empty, so a blank env.js still boots', async () => {
+    await configuredWith({ SEARCH_API_PATH: '', DEMI_PROJECTS_PATH: '' });
+    expect(getSearchApiPath()).toBe('/demi-search');
+    expect(getDemiProjectsPath()).toBe('/demi-projects');
+  });
+
+  it('read the configured values, trailing slashes trimmed off the projects path', async () => {
+    await configuredWith({
+      SEARCH_API_PATH: '/other-search',
+      DEMI_PROJECTS_PATH: '  /other-projects//  ',
+    });
+    expect(getSearchApiPath()).toBe('/other-search');
+    expect(getDemiProjectsPath()).toBe('/other-projects');
+  });
+
+  /** demi-api serves the bulk and presigned download routes everywhere; there is no off state. */
+  it('offer bulk download whatever is configured', async () => {
     await configuredWith({ SEARCH_API_PATH: '' });
-    expect(bulkDownloadEnabled()).toBe(false);
-  });
-
-  it('is on when SEARCH_API_PATH names a backend', async () => {
-    await configuredWith({ SEARCH_API_PATH: '/demi-search' });
     expect(bulkDownloadEnabled()).toBe(true);
   });
 });
 
 /**
- * env.js ships ACCESS_GATE false and an empty search path, so a silent fallback to it would open
- * the curtain and point search at the wrong backend. A failed /api/config is retried, then fatal.
+ * env.js ships ACCESS_GATE false, so a silent fallback to it would open the curtain. A failed
+ * config fetch is retried, then fatal - main.tsx turns that into the unavailable page.
  */
 describe('loadConfig with a config endpoint', () => {
   const original = window.__env;
@@ -117,10 +131,10 @@ describe('loadConfig with a config endpoint', () => {
     vi.useRealTimers();
   });
 
-  it('merges /api/config over env.js', async () => {
+  it('merges the remote config over env.js', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn(async () => Response.json({ ACCESS_GATE: true })),
+      vi.fn(async () => Response.json({ ENVIRONMENT: 'test', ACCESS_GATE: true })),
     );
     window.__env = { logLevel: 4, configEndpoint: true, ACCESS_GATE: false };
     await loadConfig();
@@ -133,7 +147,6 @@ describe('loadConfig with a config endpoint', () => {
       async () => new Response(null, { status: 502, statusText: 'Bad Gateway' }),
     );
     vi.stubGlobal('fetch', fetchMock);
-    vi.spyOn(console, 'error').mockImplementation(() => undefined);
     window.__env = { logLevel: 4, configEndpoint: true, ACCESS_GATE: false };
 
     const pending = loadConfig();
@@ -148,8 +161,8 @@ describe('loadConfig with a config endpoint', () => {
   });
 });
 
-const EAGLE = '/api/config';
-const WHOLE_EAGLE = { ENVIRONMENT: 'test', ACCESS_GATE: true, ADMIN_PATH: '/admin/' };
+const DEFAULT_CONFIG = '/demi-search/config';
+const WHOLE_CONFIG = { ENVIRONMENT: 'test', ACCESS_GATE: true, ADMIN_PATH: '/admin/' };
 
 /** Answers only the paths named, so a fetch of anything else fails the way an unrouted URL would. */
 function serving(responses: Record<string, () => Response>) {
@@ -157,10 +170,9 @@ function serving(responses: Record<string, () => Response>) {
 }
 
 /**
- * CONFIG_PATH names a second source for the runtime config, asked once before /api/config.
- * eagle-api stays the source of truth and the kill switch: anything short of a whole payload has to
- * fall through, because a partial one merged over env.js would leave ACCESS_GATE false and open the
- * curtain. Empty means /api/config alone, unchanged.
+ * CONFIG_PATH is the only source for the runtime config, and `/demi-search/config` when env.js
+ * leaves it empty. Anything short of a whole payload is a failure, because a partial one merged
+ * over env.js would leave ACCESS_GATE false and open the curtain.
  */
 describe('loadConfig with CONFIG_PATH', () => {
   const original = window.__env;
@@ -198,48 +210,14 @@ describe('loadConfig with CONFIG_PATH', () => {
     expect(getConfig().SEARCH_API_PATH).toBe('/demi-search');
   });
 
-  it('falls through to /api/config when CONFIG_PATH is down, and logs it once', async () => {
-    const fetchMock = serving({
-      [DEMI]: () => new Response(null, { status: 503, statusText: 'Service Unavailable' }),
-      [EAGLE]: () => Response.json(WHOLE_EAGLE),
-    });
-    vi.stubGlobal('fetch', fetchMock);
-
-    const { loadConfig, getConfig, logger } = await loadWith({ CONFIG_PATH: DEMI });
-    const logged = vi.spyOn(logger, 'error').mockImplementation(() => undefined);
-    await loadConfig();
-
-    expect(requested(fetchMock)).toEqual([DEMI, EAGLE]);
-    expect(getConfig().ADMIN_PATH).toBe('/admin/');
-    expect(logged).toHaveBeenCalledTimes(1);
-  });
-
-  it('discards a CONFIG_PATH body with no ACCESS_GATE and lets /api/config win', async () => {
-    const fetchMock = serving({
-      [DEMI]: () => Response.json({ ENVIRONMENT: 'test', SEARCH_API_PATH: '/demi-search' }),
-      [EAGLE]: () => Response.json({ ENVIRONMENT: 'test', ACCESS_GATE: true }),
-    });
-    vi.stubGlobal('fetch', fetchMock);
-
-    const { loadConfig, getConfig, logger } = await loadWith({ CONFIG_PATH: DEMI });
-    vi.spyOn(logger, 'error').mockImplementation(() => undefined);
-    await loadConfig();
-
-    expect(requested(fetchMock)).toEqual([DEMI, EAGLE]);
-    expect(getConfig().ACCESS_GATE).toBe(true);
-    // Nothing from the partial body survives: it is dropped whole, not merged then overwritten.
-    expect(getConfig().SEARCH_API_PATH).toBeUndefined();
-  });
-
-  it('rejects when neither source answers, rather than booting on env.js', async () => {
+  it('retries the same path when it is down, then rejects rather than booting on env.js', async () => {
     const fetchMock = vi.fn(
       async () => new Response(null, { status: 503, statusText: 'Service Unavailable' }),
     );
     vi.stubGlobal('fetch', fetchMock);
 
     const { loadConfig, logger } = await loadWith({ CONFIG_PATH: DEMI });
-    vi.spyOn(logger, 'error').mockImplementation(() => undefined);
-    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const logged = vi.spyOn(logger, 'error').mockImplementation(() => undefined);
     vi.useFakeTimers();
 
     const outcome = loadConfig().then(
@@ -249,17 +227,39 @@ describe('loadConfig with CONFIG_PATH', () => {
     await vi.runAllTimersAsync();
 
     expect(await outcome).toBe('rejected');
-    expect(fetchMock).toHaveBeenCalledTimes(4);
+    expect(requested(fetchMock)).toEqual([DEMI, DEMI, DEMI]);
+    expect(logged).toHaveBeenCalledTimes(3);
   });
 
-  it('asks /api/config once and nothing else while CONFIG_PATH is empty', async () => {
-    const fetchMock = serving({ [EAGLE]: () => Response.json(WHOLE_EAGLE) });
+  it('rejects a body with no ACCESS_GATE instead of merging half of it over env.js', async () => {
+    const fetchMock = serving({
+      [DEMI]: () => Response.json({ ENVIRONMENT: 'test', SEARCH_API_PATH: '/other-search' }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { loadConfig, getConfig, logger } = await loadWith({ CONFIG_PATH: DEMI });
+    vi.spyOn(logger, 'error').mockImplementation(() => undefined);
+    vi.useFakeTimers();
+
+    const outcome = loadConfig().then(
+      () => 'resolved',
+      () => 'rejected',
+    );
+    await vi.runAllTimersAsync();
+
+    expect(await outcome).toBe('rejected');
+    // Nothing from the partial body survives: it is dropped whole, not merged then overwritten.
+    expect(getConfig().SEARCH_API_PATH).toBeUndefined();
+  });
+
+  it('asks /demi-search/config while CONFIG_PATH is empty, and nothing else', async () => {
+    const fetchMock = serving({ [DEFAULT_CONFIG]: () => Response.json(WHOLE_CONFIG) });
     vi.stubGlobal('fetch', fetchMock);
 
     const { loadConfig, getConfig } = await loadWith({ CONFIG_PATH: '' });
     await loadConfig();
 
-    expect(requested(fetchMock)).toEqual([EAGLE]);
+    expect(requested(fetchMock)).toEqual([DEFAULT_CONFIG]);
     expect(getConfig().ADMIN_PATH).toBe('/admin/');
   });
 });
@@ -282,7 +282,7 @@ describe('config dumps', () => {
   /** Returns the first argument of every console.log, so the merge dump can be told from the env.js one. */
   async function logsWhileLoadingAt(logLevel: number): Promise<unknown[]> {
     const log = vi.spyOn(console, 'log').mockImplementation(() => undefined);
-    vi.stubGlobal('fetch', serving({ [EAGLE]: () => Response.json(WHOLE_EAGLE) }));
+    vi.stubGlobal('fetch', serving({ [DEFAULT_CONFIG]: () => Response.json(WHOLE_CONFIG) }));
     window.__env = { logLevel, configEndpoint: true };
 
     await loadConfig();
@@ -352,7 +352,7 @@ describe('config getters', () => {
 });
 
 /**
- * `/api/config` serves ADMIN_PATH as `/admin/`, which is only correct on the rproxy host that
+ * The runtime config serves ADMIN_PATH as `/admin/`, which is only correct on the rproxy host that
  * fronts both apps. On the Azure static site and on the Vite dev server that path is the public
  * app itself, so it has to be resolved against the API host before it is used as a link target.
  */

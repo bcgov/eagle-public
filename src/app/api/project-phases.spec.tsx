@@ -16,7 +16,7 @@ function wrapper({ children }: { children: React.ReactNode }) {
 }
 
 async function setup(demiProjectsPath: string): Promise<void> {
-  window.__env = { logLevel: 4, API_PATH: '/api', DEMI_PROJECTS_PATH: demiProjectsPath };
+  window.__env = { logLevel: 4, DEMI_PROJECTS_PATH: demiProjectsPath };
   await loadConfig();
 }
 
@@ -48,15 +48,6 @@ describe('useProjectPhases', () => {
     expect(result.current).toEqual([
       { name: 'Early Engagement', startDate: '2020-08-01', endDate: null },
     ]);
-  });
-
-  // The off switch: no path means no DEMI, so the rail must ask for nothing at all.
-  it('asks for nothing when DEMI_PROJECTS_PATH is unset', async () => {
-    await setup('');
-    const { result } = renderHook(() => useProjectPhases('proj-1'), { wrapper });
-
-    await waitFor(() => expect(fetchMock).not.toHaveBeenCalled());
-    expect(result.current).toBeNull();
   });
 
   it('asks for nothing without a project id', async () => {

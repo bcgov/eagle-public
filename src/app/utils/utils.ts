@@ -3,7 +3,7 @@ import type { ListRef } from 'app/api/api';
 import { Constants } from './constants';
 import { track } from 'app/analytics/analytics';
 import { createBulkDownload } from 'app/api/api';
-import { bulkDownloadEnabled } from 'app/config/config';
+import { getSearchApiPath } from 'app/config/config';
 import { logger } from 'app/config/logging';
 import { isSafeUrl } from './safe-url';
 
@@ -204,9 +204,13 @@ function downloadFileName(document: DownloadableDocument): string {
   );
 }
 
-/** The eagle-api download URL. Also the anchor href, so middle-click and copy-link still work. */
+/**
+ * The demi-search download URL. Also the anchor href, so middle-click and copy-link still work.
+ * `redirect=1` makes demi-api answer 302 to the presigned object URL instead of a JSON body, so a
+ * plain navigation downloads the file.
+ */
 export function documentDownloadUrl(document: DownloadableDocument): string {
-  return `/api/public/document/${document._id}/download/${encodeString(downloadFileName(document), true)}`;
+  return `${getSearchApiPath()}/documents/${document._id}/download?redirect=1`;
 }
 
 /**
@@ -230,9 +234,9 @@ export function triggerDownload(url: string): void {
 }
 
 /**
- * Starts a single document download: presigned through demi-api when it is configured, the
- * eagle-api URL otherwise. Never rejects - anything demi-api does other than answer with a URL
- * falls back to eagle-api, which still serves the file.
+ * Starts a single document download: presigned through demi-api first, its redirecting download
+ * route otherwise. Never rejects - anything demi-api does other than answer with a URL falls back
+ * to that route, which still serves the file.
  */
 export function openDocumentDownload(document: DownloadableDocument): void {
   track('Document Downloaded', {
@@ -241,12 +245,7 @@ export function openDocumentDownload(document: DownloadableDocument): void {
     document_type: 'unknown',
   });
 
-  const eagleApiDownload = () => window.open(documentDownloadUrl(document), '_blank');
-
-  if (!bulkDownloadEnabled()) {
-    eagleApiDownload();
-    return;
-  }
+  const redirectDownload = () => window.open(documentDownloadUrl(document), '_blank');
 
   void createBulkDownload([document._id])
     .then((result) => {
@@ -257,8 +256,8 @@ export function openDocumentDownload(document: DownloadableDocument): void {
       triggerDownload(url);
     })
     .catch((error) => {
-      logger.warn('Presigned download failed, falling back to eagle-api', 'utils', error);
-      eagleApiDownload();
+      logger.warn('Presigned download failed, falling back to the redirect URL', 'utils', error);
+      redirectDownload();
     });
 }
 

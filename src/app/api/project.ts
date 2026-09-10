@@ -57,10 +57,9 @@ export async function getAllFull(pageNum = 0, pageSize = 1000000): Promise<Proje
 /**
  * The comment periods the banner may draw, from every period of the project.
  *
- * Same window eagle-api's `cpStart`/`cpEnd` lookup applies (controllers/project.js
- * `handleCommentPeriodForBannerQueryParameters`): a period qualifies when it starts inside the
- * window, ends inside it, or spans it. `getPeriodsByProjId` already asks a public backend, so the
- * read-array check that goes with it on eagle-api has happened before the rows get here.
+ * A period qualifies when it starts inside the window, ends inside it, or spans it — the window the
+ * old `cpStart`/`cpEnd` lookup applied. `getPeriodsByProjId` asks a public backend, so visibility
+ * has already been decided before the rows get here.
  */
 export function periodsInWindow(
   periods: CommentPeriod[],
@@ -88,8 +87,8 @@ export function periodsInWindow(
 }
 
 /**
- * A DEMI project document as the eagle-api project payload the app has always consumed, so
- * `Project` and every page reading it stay untouched.
+ * A DEMI project document as the project payload the app has always consumed, so `Project` and
+ * every page reading it stay untouched.
  *
  * Most fields are the same name on both sides. The ones that are not: `eagleId` is the Eagle `_id`;
  * `projectType`/`projectState`/`address` are Track's spelling of `type`/`status`/`location`;
@@ -102,8 +101,8 @@ export function periodsInWindow(
  * `featuredDocuments` is not mapped: the featured-documents page runs its own document search.
  *
  * `eacDecision`, `currentPhaseName` and `CEAAInvolvement` are `List` references, which DEMI answers
- * as bare ids where eagle-api populates the row. Both shapes are accepted: a row passes through, an
- * id is looked up in `lists`. An id no row names stays undefined, so the fact renders "-" rather
+ * as bare ids and may also answer as populated rows. Both shapes are accepted: a row passes through,
+ * an id is looked up in `lists`. An id no row names stays undefined, so the fact renders "-" rather
  * than the id.
  *
  * DEMI has no counterpart for `CELead*`, `projectLeadId`, `responsibleEPDId`, `epicProjectID`,
@@ -158,63 +157,55 @@ export function demiProjectToEagle(
 }
 
 /**
- * The single project record, from DEMI when it is configured and from eagle-api otherwise. The
- * result is the one-element array eagle-api's route answers with, so the caller keeps one shape.
+ * The single project record, from DEMI. The result is the one-element array the caller has always
+ * been given, so every page reading it keeps one shape.
  *
- * A DEMI project that answers 404, one whose read fails outright, or a DEMI that is off all fall
- * through to eagle-api rather than showing "Project not found": the two stores are not guaranteed
- * to hold the same set, and DEMI being down is not the project being missing.
+ * An empty array means DEMI holds no such project, which the caller renders as "Project not found".
+ * A read that fails throws instead: a store that cannot be reached is not a missing project, and
+ * the page has its own error state for it.
  */
 async function readProject(
   projId: string,
   cpStart: string | null,
   cpEnd: string | null,
-): Promise<(Partial<Project> | Project)[]> {
-  if (api.demiProjectsPath()) {
-    let doc: DemiProject | null = null;
+): Promise<Partial<Project>[]> {
+  const doc: DemiProject | null = await api.getDemiProject(projId);
+  if (!doc) {
+    return [];
+  }
+  // The banner is derived from the project's comment periods rather than carried on the record.
+  // No window, no banner, so no request; and a banner that cannot be read is a missing banner,
+  // never a missing project.
+  let periods: CommentPeriod[] = [];
+  if (cpStart !== null && cpEnd !== null) {
     try {
-      doc = await api.getDemiProject(projId);
+      // No retries: the project record is already in hand and must not wait on a banner.
+      periods = await queryClient.fetchQuery({
+        ...commentPeriodsQueryOptions(projId),
+        retry: false,
+      });
     } catch (error) {
-      logger.warn('DEMI project read failed, falling back to eagle-api', 'project', error);
-    }
-    if (doc) {
-      // The banner is a project field on eagle-api and a comment-period read here, so it is
-      // derived from the periods rather than requested. No window, no banner, so no request; and a
-      // banner that cannot be read is a missing banner, never a missing project.
-      let periods: CommentPeriod[] = [];
-      if (cpStart !== null && cpEnd !== null) {
-        try {
-          // No retries: the project record is already in hand and must not wait on a banner.
-          periods = await queryClient.fetchQuery({
-            ...commentPeriodsQueryOptions(projId),
-            retry: false,
-          });
-        } catch (error) {
-          logger.warn('Banner comment period read failed, showing no banner', 'project', error);
-        }
-      }
-      // The `List` rows the id-shaped project fields resolve against. Only worth asking for when
-      // at least one of the three fields is a bare id string; a DEMI doc that answers all three
-      // pre-populated (as eagle-api does) has nothing left to look up. The project shell asks for
-      // the same key on mount, so when needed this joins that one in-flight request rather than
-      // adding a second. No retries, for the reason the banner has none; rows that never arrive
-      // leave the List-backed facts empty, which is what they already show today.
-      let lists: ListRef[] = [];
-      if (
-        typeof doc.eacDecision === 'string' ||
-        typeof doc.currentPhaseName === 'string' ||
-        typeof doc.CEAAInvolvement === 'string'
-      ) {
-        try {
-          lists = await queryClient.fetchQuery({ ...api.listsQueryOptions(), retry: false });
-        } catch (error) {
-          logger.warn('List read failed, leaving the List-backed facts empty', 'project', error);
-        }
-      }
-      return [demiProjectToEagle(doc, periodsInWindow(periods, cpStart, cpEnd), lists)];
+      logger.warn('Banner comment period read failed, showing no banner', 'project', error);
     }
   }
-  return api.getProject(projId, cpStart, cpEnd);
+  // The `List` rows the id-shaped project fields resolve against. Only worth asking for when at
+  // least one of the three fields is a bare id string; a doc that answers all three pre-populated
+  // has nothing left to look up. The project shell asks for the same key on mount, so when needed
+  // this joins that one in-flight request rather than adding a second. No retries, for the reason
+  // the banner has none; rows that never arrive leave the List-backed facts empty.
+  let lists: ListRef[] = [];
+  if (
+    typeof doc.eacDecision === 'string' ||
+    typeof doc.currentPhaseName === 'string' ||
+    typeof doc.CEAAInvolvement === 'string'
+  ) {
+    try {
+      lists = await queryClient.fetchQuery({ ...api.listsQueryOptions(), retry: false });
+    } catch (error) {
+      logger.warn('List read failed, leaving the List-backed facts empty', 'project', error);
+    }
+  }
+  return [demiProjectToEagle(doc, periodsInWindow(periods, cpStart, cpEnd), lists)];
 }
 
 // get a specific project by its id
@@ -276,9 +267,4 @@ export async function getPins(
     pageSize,
     sortBy,
   )) as unknown as DataQueryResponse<Org>[];
-}
-
-// Remove this user from the CAC membership on this project
-export async function cacRemoveMember(projectId: string, meta: any): Promise<any> {
-  return api.cacRemoveMember(projectId, meta);
 }

@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { openDocumentDownload } from 'app/utils/utils';
+import { loadConfig } from 'app/config/config';
 import { renderAt } from '../../../test-utils';
 import { Comments } from './comments';
 
@@ -23,12 +24,13 @@ const PERIOD = {
   openHouses: [{ eventDate: '2026-09-01T00:00:00.000Z', description: 'Community hall' }],
 };
 
-const PROJECT = {
-  _id: 'proj1',
+/** The project as DEMI answers it: Track's field names, the proponent as a bare scalar. */
+const DEMI_PROJECT = {
+  eagleId: 'proj1',
   name: 'Site C',
-  type: 'Energy-Electricity',
+  projectType: 'Energy-Electricity',
   sector: 'Hydroelectric',
-  proponent: { name: 'BC Hydro' },
+  proponentName: 'BC Hydro',
   eacDecision: { name: 'Certificate Issued' },
 };
 
@@ -42,13 +44,17 @@ const COMMENTS = [
     documents: ['commentDoc1'],
   },
   {
-    // eagle-api deletes the author field on anonymous comments rather than nulling it.
+    // An anonymous comment carries no author field at all rather than a null one.
     _id: 'c2',
     comment: 'Anonymous comment',
     dateAdded: '2026-08-02T00:00:00.000Z',
     documents: [],
   },
 ];
+
+// Trailing `&` on purpose: without it these also match dataset=CommentPeriod and DocumentChunk.
+const COMMENT_LIST_PREFIX = '/demi-search/search?dataset=Comment&';
+const DOCUMENT_PREFIX = '/demi-search/search?dataset=Document&';
 
 interface Sent {
   url: string;
@@ -74,16 +80,29 @@ function stubFetch() {
 
       if (url.includes('dataset=CommentPeriod'))
         return json([{ searchResults: [PERIOD], meta: [{ searchResultsTotal: 1 }] }]);
-      if (url.startsWith('/api/project/proj1?populate')) return json([PROJECT]);
-      if (url.startsWith('/api/search?dataset=ProjectNotification'))
+      if (url.startsWith('/demi-projects/proj1')) return json(DEMI_PROJECT);
+      if (url.startsWith('/demi-search/search?dataset=ProjectNotification'))
         return json([{ searchResults: [{ _id: 'pn1', name: 'Notified Project' }] }]);
-      if (url.startsWith('/api/public/comment')) {
-        return json(COMMENTS.slice(0, commentCount), { 'x-total-count': String(commentCount) });
-      }
-      if (url.startsWith('/api/document?docIds=')) {
+      if (url.startsWith(COMMENT_LIST_PREFIX)) {
         return json([
-          { _id: 'relatedDoc1', displayName: 'Related report.pdf' },
-          { _id: 'commentDoc1', internalOriginalName: 'attachment.pdf', documentSource: 'COMMENT' },
+          {
+            searchResults: COMMENTS.slice(0, commentCount),
+            meta: [{ searchResultsTotal: commentCount }],
+          },
+        ]);
+      }
+      if (url.startsWith(`${DOCUMENT_PREFIX}docIds=`)) {
+        return json([
+          {
+            searchResults: [
+              { _id: 'relatedDoc1', displayName: 'Related report.pdf' },
+              {
+                _id: 'commentDoc1',
+                internalOriginalName: 'attachment.pdf',
+                documentSource: 'COMMENT',
+              },
+            ],
+          },
         ]);
       }
       return json([]);
@@ -101,18 +120,25 @@ function renderComments(path = '/p/proj1/cp/cp1/details') {
 }
 
 function lastCommentListUrl(): string | undefined {
-  return sent.filter((entry) => entry.url.startsWith('/api/public/comment?period=')).at(-1)?.url;
+  return sent.filter((entry) => entry.url.startsWith(COMMENT_LIST_PREFIX)).at(-1)?.url;
 }
 
 describe('comments', () => {
-  beforeEach(() => {
+  const originalEnv = window.__env;
+
+  beforeEach(async () => {
     sent = [];
     commentCount = 2;
+    window.__env = { logLevel: 4, DEMI_PROJECTS_PATH: '/demi-projects' };
+    await loadConfig();
     vi.mocked(openDocumentDownload).mockClear();
     stubFetch();
   });
 
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    window.__env = originalEnv;
+    vi.unstubAllGlobals();
+  });
 
   it('renders the comment period header, instructions and project details', async () => {
     renderComments();
@@ -151,15 +177,15 @@ describe('comments', () => {
     expect(screen.getByText('attachment.pdf')).toBeInTheDocument();
 
     const docRequests = sent.filter((entry) =>
-      entry.url.startsWith('/api/document?docIds=commentDoc1'),
+      entry.url.startsWith(`${DOCUMENT_PREFIX}docIds=commentDoc1`),
     );
     expect(docRequests).toHaveLength(1);
   });
 
   /**
    * Both download paths hand the document to `openDocumentDownload`, which asks demi-api for a
-   * presigned URL and falls back to eagle-api. Fetching that URL from script is barred by the
-   * deployed CSP, so nothing here may fetch it.
+   * presigned URL. Fetching that URL from script is barred by the deployed CSP, so nothing here may
+   * fetch it.
    */
   it('downloads a comment attachment through the presigned path', async () => {
     renderComments();
@@ -181,15 +207,13 @@ describe('comments', () => {
     );
   });
 
-  it('requests the first page of comments with a count', async () => {
+  it('requests the first page of the period comments, newest first', async () => {
     renderComments();
 
     await screen.findByText('First comment');
-    const listRequest = sent.find((entry) =>
-      entry.url.startsWith('/api/public/comment?period=cp1'),
-    );
+    const listRequest = sent.find((entry) => entry.url.startsWith(COMMENT_LIST_PREFIX));
     expect(listRequest?.url).toBe(
-      '/api/public/comment?period=cp1&fields=author|comment|documents|commentId|dateAdded|dateUpdated|isAnonymous|location|period|read|write|delete&sortBy=-commentId&pageNum=0&pageSize=10&count=true&',
+      `${COMMENT_LIST_PREFIX}pageNum=0&pageSize=10&projectLegislation=default&sortBy=-commentId&populate=false&and[period]=cp1&fuzzy=false`,
     );
   });
 
@@ -226,9 +250,9 @@ describe('comments', () => {
       await screen.findByRole('heading', { level: 1, name: 'Notified Project' }),
     ).toBeInTheDocument();
     expect(
-      sent.some((entry) => entry.url.startsWith('/api/search?dataset=ProjectNotification')),
+      sent.some((entry) => entry.url.startsWith('/demi-search/search?dataset=ProjectNotification')),
     ).toBe(true);
-    expect(sent.some((entry) => entry.url.startsWith('/api/project/pn1'))).toBe(false);
+    expect(sent.some((entry) => entry.url.startsWith('/demi-projects/pn1'))).toBe(false);
 
     await userEvent.click(screen.getByRole('button', { name: 'Back to Project Notifications' }));
     expect(router.state.location.pathname).toBe('/project-notifications');

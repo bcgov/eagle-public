@@ -66,19 +66,20 @@ describe('project', () => {
   });
 
   describe('getById()', () => {
-    it('returns the project the api answered with', async () => {
-      vi.mocked(api.getProject).mockResolvedValue([
-        { _id: '58851197aaecd9001b8227cc', description: 'Test project' },
-      ] as any);
+    it('returns the project DEMI answered with', async () => {
+      vi.mocked(api.getDemiProject).mockResolvedValue({
+        eagleId: '58851197aaecd9001b8227cc',
+        description: 'Test project',
+      });
 
       const result = await project.getById('58851197aaecd9001b8227cc', true);
 
       expect(result._id).toEqual('58851197aaecd9001b8227cc');
-      expect(api.getProject).toHaveBeenCalled();
+      expect(api.getDemiProject).toHaveBeenCalledWith('58851197aaecd9001b8227cc');
     });
 
-    it('returns null when the api answers with no project', async () => {
-      vi.mocked(api.getProject).mockResolvedValue([] as any);
+    it('returns null when DEMI holds no such project', async () => {
+      vi.mocked(api.getDemiProject).mockResolvedValue(null);
 
       expect(await project.getById('missing', true)).toBeNull();
     });

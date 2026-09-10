@@ -185,11 +185,13 @@ describe('DecisionsTab', () => {
     expect(screen.getByText('Certificate Package')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'certificate-e23-01.pdf' })).toHaveAttribute(
       'href',
-      '/api/public/document/doc-1/download/certificate-e23-01.pdf',
+      '/demi-search/documents/doc-1/download?redirect=1',
     );
 
-    expect(requests.at(-1)).toBe(
-      '/api/search?dataset=Document&project=proj-1&pageNum=0&pageSize=10&projectLegislation=default' +
+    // Not `.at(-1)`: the DEMI project read and its certificate-number fallback resolve around
+    // this one, so which call lands last is a race.
+    expect(requests).toContain(
+      '/demi-search/search?dataset=Document&project=proj-1&pageNum=0&pageSize=10&projectLegislation=default' +
         '&sortBy=-datePosted&sortBy=+displayName&populate=false' +
         '&and[documentSource]=PROJECT' +
         '&and[type]=type-cert-2002&and[type]=type-cert-2018&and[type]=type-order-2002&and[type]=type-order-2018' +

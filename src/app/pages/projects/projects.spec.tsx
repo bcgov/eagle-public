@@ -296,7 +296,7 @@ describe('projects page', () => {
 
     const projectRequests = requests.filter((url) => url.includes('dataset=Project'));
     expect(projectRequests).toEqual([
-      '/api/search?dataset=Project&pageNum=0&pageSize=1000000&projectLegislation=default&sortBy=&sortBy=&populate=true&fuzzy=false',
+      '/demi-search/search?dataset=Project&pageNum=0&pageSize=1000000&projectLegislation=default&sortBy=&sortBy=&populate=true&fuzzy=false',
     ]);
   });
 

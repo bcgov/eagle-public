@@ -4,16 +4,17 @@ import userEvent from '@testing-library/user-event';
 
 /**
  * The curtain must never open on its own: prod sends ACCESS_GATE false, and a wrong password must
- * leave the app hidden. Only a 2xx from eagle-api counts as unlocked.
+ * leave the app hidden. Only a 2xx from the backend counts as unlocked.
  */
-const URL = '/api/public/gate';
+const SEARCH = '/demi-search';
+const URL = `${SEARCH}/gate`;
 
 let fetchMock: ReturnType<typeof vi.fn>;
 
 /** Fresh module graph per test — the unlocked flag is read from localStorage once, at load. */
 async function loadWith(env: Record<string, unknown>) {
   vi.resetModules();
-  window.__env = { logLevel: 4, ...env };
+  window.__env = { logLevel: 4, SEARCH_API_PATH: SEARCH, ...env };
   const { loadConfig } = await import('app/config/config');
   await loadConfig();
   return import('./gate');
@@ -127,8 +128,19 @@ describe('the password form', () => {
     expect(localStorage.getItem('eagle-gate')).toBe(null);
   });
 
-  it('shows a generic error when the check itself fails', async () => {
+  // demi-search answers 404 where no gate is configured. Nothing can check a password there, so
+  // failing shut would lock the environment out of its own site with no way back in.
+  it('opens the curtain when the backend has no gate', async () => {
     fetchMock.mockResolvedValue(responding(404, 'Not Found'));
+    await renderGate();
+    await submit('anything');
+
+    expect(error()).toBe(null);
+    expect(localStorage.getItem('eagle-gate')).toBe('1');
+  });
+
+  it('shows a generic error when the check itself fails', async () => {
+    fetchMock.mockResolvedValue(responding(500, 'Internal Server Error'));
     await renderGate();
     await submit('anything');
 

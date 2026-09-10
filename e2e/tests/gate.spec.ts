@@ -8,14 +8,14 @@ import { test, expect } from '@playwright/test';
 const PASSWORD = process.env['GATE_PASSWORD'];
 
 async function gateIsOn(request: import('@playwright/test').APIRequestContext): Promise<boolean> {
-  const r = await request.get('/api/config');
+  const r = await request.get('/demi-search/config');
   return r.ok() && (await r.json()).ACCESS_GATE === true;
 }
 
 /**
- * The curtain is decided by `/api/config`, fetched once at boot. When that request fails the app
- * falls back to `env.js`, where ACCESS_GATE is off - so a missing curtain can mean a dropped
- * request rather than a defect. Reload before believing it.
+ * The curtain is decided by the runtime config, fetched once at boot from `/demi-search/config`.
+ * A dropped request renders the "temporarily unavailable" page rather than the curtain, so a
+ * missing curtain can mean a dropped request rather than a defect. Reload before believing it.
  */
 async function openCurtain(page: import('@playwright/test').Page): Promise<void> {
   for (let attempt = 0; attempt < 3; attempt++) {

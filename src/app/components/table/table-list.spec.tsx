@@ -36,7 +36,7 @@ describe('TableList', () => {
   const originalEnv = window.__env;
 
   beforeEach(async () => {
-    window.__env = { logLevel: 4, API_PATH: '/api', SEARCH_API_PATH: '' };
+    window.__env = { logLevel: 4, SEARCH_API_PATH: '/demi-search' };
     await loadConfig();
     vi.stubGlobal(
       'fetch',
