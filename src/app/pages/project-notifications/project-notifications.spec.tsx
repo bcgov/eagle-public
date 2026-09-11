@@ -71,7 +71,11 @@ function renderNotifications(path: string, data: { notifications?: any[]; period
 }
 
 function lastRequestFor(dataset: string): string | undefined {
-  return requests.filter((url) => url.includes(`dataset=${dataset}`)).at(-1);
+  return requestsFor(dataset).at(-1);
+}
+
+function requestsFor(dataset: string): string[] {
+  return requests.filter((url) => url.includes(`dataset=${dataset}`));
 }
 
 describe('project notifications', () => {
@@ -115,6 +119,35 @@ describe('project notifications', () => {
 
     await waitFor(() => expect(router.state.location.search).toContain('currentPage=2'));
     await waitFor(() => expect(lastRequestFor('ProjectNotification')).toContain('&pageNum=1&'));
+  });
+
+  it('searches while the user types, with no click on Search', async () => {
+    const router = renderNotifications('/project-notifications?currentPage=3');
+    await screen.findByText('CEDAR QUARRY');
+    const before = requestsFor('ProjectNotification').length;
+
+    await userEvent.type(screen.getByPlaceholderText('Type keyword to search'), 'ce');
+
+    await waitFor(() => expect(lastRequestFor('ProjectNotification')).toContain('&keywords=ce&'));
+    // One request for the whole word: a single character is below the typeahead minimum.
+    expect(requestsFor('ProjectNotification').length).toBe(before + 1);
+    const params = new URLSearchParams(router.state.location.search);
+    expect(params.get('keywords')).toBe('ce');
+    expect(params.get('currentPage')).toBe('1');
+  });
+
+  it('sends an applied region filter alongside the keyword', async () => {
+    const router = renderNotifications('/project-notifications?region=Skeena');
+    await screen.findByText('CEDAR QUARRY');
+
+    await userEvent.type(screen.getByPlaceholderText('Type keyword to search'), 'ce');
+
+    // Wait on the request, not on the URL: the navigation lands one render before the refetch.
+    await waitFor(() => expect(lastRequestFor('ProjectNotification')).toContain('&keywords=ce&'));
+    expect(lastRequestFor('ProjectNotification')).toContain('&and[region]=Skeena');
+    const params = new URLSearchParams(router.state.location.search);
+    expect(params.get('keywords')).toBe('ce');
+    expect(params.get('region')).toBe('Skeena');
   });
 
   it('shows the details tab first, with the notification decision', async () => {

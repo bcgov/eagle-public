@@ -153,6 +153,42 @@ describe('projects list', () => {
     await waitFor(() => expect(lastProjectRequest()).toContain('&keywords=copper&'));
   });
 
+  it('searches while the user types, with no click on Search', async () => {
+    const router = renderList('/projects-list?currentPage=5');
+    await screen.findByText('Alpha Mine');
+    const before = requests.filter((url) => url.includes('dataset=Project')).length;
+
+    await userEvent.type(screen.getByPlaceholderText('Type keyword to search'), 'co');
+
+    await waitFor(() => expect(lastProjectRequest()).toContain('&keywords=co&'));
+    expect(requests.filter((url) => url.includes('dataset=Project')).length).toBe(before + 1);
+    const params = new URLSearchParams(router.state.location.search);
+    expect(params.get('keywords')).toBe('co');
+    expect(params.get('currentPage')).toBe('1');
+  });
+
+  // Typing must not stack one history entry per keystroke, or the back button walks the user
+  // through every prefix they typed. A keyword deep link still restores the box and the request.
+  it('replaces the history entry as the keyword changes', async () => {
+    const router = renderList('/projects-list');
+    await screen.findByText('Alpha Mine');
+
+    await userEvent.type(screen.getByPlaceholderText('Type keyword to search'), 'co');
+
+    await waitFor(() =>
+      expect(new URLSearchParams(router.state.location.search).get('keywords')).toBe('co'),
+    );
+    expect(router.state.historyAction).toBe('REPLACE');
+  });
+
+  it('restores the keyword from the URL into the box and the request', async () => {
+    renderList('/projects-list?keywords=coal');
+
+    await screen.findByText('Alpha Mine');
+    expect(screen.getByPlaceholderText('Type keyword to search')).toHaveValue('coal');
+    expect(lastProjectRequest()).toContain('&keywords=coal&');
+  });
+
   it('sends a filter from the URL as an and[] param', async () => {
     renderList('/projects-list?type=id-mines,id-other&region=skeena');
 

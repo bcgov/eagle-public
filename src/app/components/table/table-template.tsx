@@ -104,11 +104,12 @@ export function TableTemplate({
     !selectable && !!data.options.showTopControls && (showPageCount || showPagination);
   const noResults = !loading && data.items.length === 0 && data.totalListItems === 0;
   const selectionActive = selectedCount > 0;
-  // No count is known while the request is in flight, and the live region must not read out
-  // "No documents" over a page that is still loading.
-  const countMessage = loading
-    ? ''
-    : documentCountMessage(data.totalListItems, data.currentPage, data.pageSize);
+  // The live region must not read out "No documents" over a page that has not loaded yet. Rows
+  // already on screen keep their count, so a keystroke refetch does not blank it.
+  const countMessage =
+    loading && data.items.length === 0
+      ? ''
+      : documentCountMessage(data.totalListItems, data.currentPage, data.pageSize);
 
   return (
     <div className="table-template" ref={containerRef}>

@@ -1,4 +1,4 @@
-import { test, expect } from '../support/fixtures';
+import { test, expect, type Page } from '../support/fixtures';
 import {
   ready,
   recordApiCalls,
@@ -9,6 +9,19 @@ import {
   isTopNewsUrl,
   topNewsRows,
 } from '../support/helpers';
+
+/**
+ * Types `keyword` into the box one character at a time and resolves on the search request the
+ * typing itself fires. Nothing is clicked: the Search button and Enter are not used.
+ */
+async function typeAhead(page: Page, keyword: string, dataset: string): Promise<void> {
+  const typed = page.waitForRequest(
+    (r) => r.url().includes(`dataset=${dataset}`) && r.url().includes(`keywords=${keyword}`),
+    { timeout: 30_000 },
+  );
+  await page.getByPlaceholder('Type keyword to search').pressSequentially(keyword, { delay: 100 });
+  await typed;
+}
 
 test.describe('content pages', () => {
   const HEADINGS: [string, string][] = [
@@ -104,6 +117,15 @@ test.describe('news', () => {
 
     checkBaseline('news', calls);
   });
+
+  test('searches the activities list as the user types', async ({ page }) => {
+    await page.goto('/news');
+    await ready(page);
+
+    await typeAhead(page, 'pe', 'RecentActivity');
+
+    expect(new URL(page.url()).searchParams.get('keywords')).toBe('pe');
+  });
 });
 
 test.describe('project notifications', () => {
@@ -127,5 +149,14 @@ test.describe('project notifications', () => {
 
     const counts = await pageCount(page);
     expect(counts.total).toBe(total(env));
+  });
+
+  test('searches the notifications list as the user types', async ({ page }) => {
+    await page.goto('/project-notifications');
+    await ready(page);
+
+    await typeAhead(page, 'mi', 'ProjectNotification');
+
+    expect(new URL(page.url()).searchParams.get('keywords')).toBe('mi');
   });
 });

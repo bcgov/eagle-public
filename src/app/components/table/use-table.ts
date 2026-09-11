@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { fetchData, SearchParamObject } from 'app/api/search';
 
 export interface TableQueryConfig {
@@ -55,7 +55,10 @@ export function useTable(id: string, config: TableQueryConfig): TableResult {
   const query = useQuery({
     queryKey: ['table', id, params],
     enabled,
-    queryFn: () => fetchData(tableSearchParams(id, params)),
+    // The last page stays on screen while the next one loads, so typing a keyword does not blank
+    // the table between keystrokes. `signal` drops the request the next keystroke supersedes.
+    placeholderData: keepPreviousData,
+    queryFn: ({ signal }) => fetchData(tableSearchParams(id, params), signal),
   });
 
   return {

@@ -45,6 +45,8 @@ export interface TableListConfig {
   filters: FilterObject[];
   /** The filter panel and its search-help link. Off leaves the keyword box on its own. */
   advancedFilters?: boolean;
+  /** Search while the user types, instead of only on Enter or the Search button. */
+  searchAsYouType?: boolean;
   /** Replaces the table's default "No results found". */
   emptyMessage?: string;
   /** Extra data handed to every row as `tableData.data`. */
@@ -185,6 +187,7 @@ export function TableList({ config, children }: { config: TableListConfig; child
               advancedFilters={advancedFilters}
               showAdvancedFilters={config.filterList.some((filter) => params[filter])}
               searchOnFilterChange
+              searchAsYouType={config.searchAsYouType}
               filters={config.filters}
               searchHelpLink={advancedFilters ? '/search-help' : null}
               searching={table.loading}

@@ -24,6 +24,11 @@ const LISTS = [
 ];
 
 let requests: string[];
+/** The abort signal each keyword search was given, in request order. */
+let keywordSignals: (AbortSignal | undefined)[];
+/** Keyword searches hang while set, so a later keystroke lands while one is still in flight. */
+let holdKeywordSearches: boolean;
+let releaseHeldSearches: (() => void)[];
 
 function jsonResponse(body: unknown) {
   return new Response(JSON.stringify(body), {
@@ -46,11 +51,14 @@ describe('document search', () => {
 
   beforeEach(async () => {
     requests = [];
+    keywordSignals = [];
+    holdKeywordSearches = false;
+    releaseHeldSearches = [];
     window.__env = { logLevel: 4, CONTENT_SEARCH: true };
     await loadConfig();
     vi.stubGlobal(
       'fetch',
-      vi.fn(async (input: RequestInfo | URL) => {
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
         const url = String(input);
         requests.push(url);
         if (url.includes('dataset=List')) {
@@ -59,6 +67,12 @@ describe('document search', () => {
           ]);
         }
         if (url.includes('dataset=Document')) {
+          if (url.includes('&keywords=')) {
+            keywordSignals.push(init?.signal ?? undefined);
+            if (holdKeywordSearches) {
+              await new Promise<void>((release) => releaseHeldSearches.push(release));
+            }
+          }
           return jsonResponse([{ searchResults: DOCUMENTS, meta: [{ searchResultsTotal: 42 }] }]);
         }
         return jsonResponse([{ searchResults: [], meta: [] }]);
@@ -67,6 +81,7 @@ describe('document search', () => {
   });
 
   afterEach(() => {
+    releaseHeldSearches.forEach((release) => release());
     vi.unstubAllGlobals();
     window.__env = originalEnv;
   });
@@ -191,6 +206,58 @@ describe('document search', () => {
       expect(params.get('currentPage')).toBe('1');
     });
     await waitFor(() => expect(lastDocumentRequest()).toContain('&keywords=caribou&'));
+  });
+
+  it('searches while the user types, with no click on Search', async () => {
+    const router = renderSearch('/search?currentPage=5');
+    await screen.findByText('Fish and Fish Habitat.pdf');
+    const before = requests.filter((url) => url.includes('dataset=Document')).length;
+
+    await userEvent.type(screen.getByPlaceholderText('Type keyword to search'), 'ca');
+
+    await waitFor(() => expect(lastDocumentRequest()).toContain('&keywords=ca&'));
+    expect(requests.filter((url) => url.includes('dataset=Document')).length).toBe(before + 1);
+    expect(new URLSearchParams(router.state.location.search).get('currentPage')).toBe('1');
+  });
+
+  it('emptying the box searches again without the keyword', async () => {
+    const router = renderSearch('/search');
+    await screen.findByText('Fish and Fish Habitat.pdf');
+    const box = screen.getByPlaceholderText('Type keyword to search');
+
+    await userEvent.type(box, 'caribou');
+    await waitFor(() => expect(lastDocumentRequest()).toContain('&keywords=caribou&'));
+
+    await userEvent.clear(box);
+
+    await waitFor(() => expect(lastDocumentRequest()).not.toContain('&keywords='));
+    expect(new URLSearchParams(router.state.location.search).get('keywords')).toBeNull();
+  });
+
+  it('aborts the in-flight search the next keystroke supersedes', async () => {
+    holdKeywordSearches = true;
+    renderSearch('/search');
+    await screen.findByText('Fish and Fish Habitat.pdf');
+    const box = screen.getByPlaceholderText('Type keyword to search');
+
+    await userEvent.type(box, 'ca');
+    await waitFor(() => expect(keywordSignals).toHaveLength(1));
+    expect(keywordSignals[0]?.aborted).toBe(false);
+
+    await userEvent.type(box, 'r');
+
+    await waitFor(() => expect(keywordSignals[0]?.aborted).toBe(true));
+  });
+
+  it('keeps the previous rows on screen while the next search loads', async () => {
+    holdKeywordSearches = true;
+    renderSearch('/search');
+    await screen.findByText('Fish and Fish Habitat.pdf');
+
+    await userEvent.type(screen.getByPlaceholderText('Type keyword to search'), 'ca');
+
+    await waitFor(() => expect(keywordSignals).toHaveLength(1));
+    expect(screen.getByText('Fish and Fish Habitat.pdf')).toBeInTheDocument();
   });
 
   it('writes a column sort to the URL and the request, returning to page 1', async () => {
