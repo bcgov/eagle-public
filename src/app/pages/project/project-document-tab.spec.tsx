@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { renderAt } from '../../../test-utils';
 import { Amendments } from './amendments';
 import { Application } from './application';
+import { ManagementPlans } from './management-plans';
 import { Certificates } from './certificates';
 import { DocumentsTab } from './documents-tab';
 
@@ -53,6 +54,9 @@ const LISTS = [
     legislation: 2018,
     type: 'projectPhase',
   },
+
+  { _id: 'type-mp-2018', name: 'Management Plan', legislation: 2018, type: 'doctype' },
+  { _id: 'type-plan-2002', name: 'Plan', legislation: 2002, type: 'doctype' },
 
   { _id: 'author-eao', name: 'EAO', legislation: 2018, type: 'author' },
 ];
@@ -203,6 +207,42 @@ describe('project document tabs', () => {
     await userEvent.click(toggle);
 
     expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('management plans ask for the management plan type, with no milestone', async () => {
+    renderTab(ManagementPlans, '/p/proj-1/management-plans');
+
+    expect(await screen.findByText('Cedar Quarry Certificate')).toBeInTheDocument();
+    expect(documentRequests().at(-1)).toBe(
+      '/demi-search/search?dataset=Document&project=proj-1&pageNum=0&pageSize=10&projectLegislation=default' +
+        '&sortBy=-datePosted&sortBy=+displayName&populate=false' +
+        '&and[documentSource]=PROJECT' +
+        '&and[type]=type-mp-2018' +
+        '&fuzzy=false',
+    );
+  });
+
+  it('management plans show their own empty message', async () => {
+    total = 0;
+    renderTab(ManagementPlans, '/p/proj-1/management-plans');
+
+    expect(
+      await screen.findByText(
+        'There are no management plan documents associated with this project.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('management plans offer the filter panel with milestone and project phase, no document type', async () => {
+    renderTab(ManagementPlans, '/p/proj-1/management-plans');
+
+    await screen.findByText('Cedar Quarry Certificate');
+    await userEvent.click(screen.getByRole('button', { name: 'Filters' }));
+
+    const panel = document.querySelector('#advancedFilterPanel') as HTMLElement;
+    expect(within(panel).getByText('Milestone')).toBeInTheDocument();
+    expect(within(panel).getByText('Project Phase')).toBeInTheDocument();
+    expect(within(panel).queryByText('Document Type')).not.toBeInTheDocument();
   });
 
   it('application carries the URL keywords and filters into the request', async () => {

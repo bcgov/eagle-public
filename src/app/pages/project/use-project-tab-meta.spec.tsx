@@ -14,15 +14,22 @@ const LISTS = [
   { _id: 'type-app-2002', name: 'Application Materials', legislation: 2002, type: 'doctype' },
   { _id: 'ms-appreview', name: 'Application Review', legislation: 2002, type: 'label' },
   { _id: 'ms-ce-2002', name: 'Compliance & Enforcement', legislation: 2002, type: 'label' },
+  { _id: 'type-mp-2018', name: 'Management Plan', legislation: 2018, type: 'doctype' },
 ];
 
 /** Probes are told apart by a list id only that kind's query modifiers carry. */
 const CERTIFICATE_PROBE = 'type-cert-2002';
 const COMPLIANCE_PROBE = 'ms-ce-2002';
-const PROBE_MARKERS = [CERTIFICATE_PROBE, COMPLIANCE_PROBE, 'type-amend-2002', 'type-app-2002'];
+const PROBE_MARKERS = [
+  CERTIFICATE_PROBE,
+  COMPLIANCE_PROBE,
+  'type-amend-2002',
+  'type-app-2002',
+  'type-mp-2018',
+];
 
-/** Four document probes, the updates and documents counts, and the comment periods. */
-const EXPECTED_REQUESTS = 7;
+/** Five document probes, the updates and documents counts, and the comment periods. */
+const EXPECTED_REQUESTS = 8;
 
 let commentPeriods: unknown[];
 let updatesTotal: number;

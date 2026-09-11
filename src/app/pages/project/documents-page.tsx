@@ -15,6 +15,11 @@ const OPTIONAL_TABS = [
   { key: Constants.optionalProjectDocTabs.CERTIFICATE, label: 'Certificate', link: 'certificates' },
   { key: Constants.optionalProjectDocTabs.AMENDMENT, label: 'Amendment(s)', link: 'amendments' },
   { key: Constants.optionalProjectDocTabs.COMPLIANCE, label: 'Compliance', link: 'compliance' },
+  {
+    key: Constants.optionalProjectDocTabs.MANAGEMENT_PLAN,
+    label: 'Management Plan',
+    link: 'management-plans',
+  },
 ];
 
 /** Documents tab shell: the document-type filter, and whichever document view it selects. */
