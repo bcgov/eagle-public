@@ -74,11 +74,9 @@ test('@data a keyword filter narrows the rows and syncs the query params', async
   const before = (await pageCount(page)).total;
 
   const search = waitForSearch(page, 'Project');
-  await page.getByPlaceholder('Type keyword to search').fill('coal');
-  await page
-    .getByRole('button', { name: /^search Search$|Search/ })
-    .first()
-    .click();
+  const box = page.getByPlaceholder('Type keyword to search');
+  await box.fill('coal');
+  await box.press('Enter');
   const env = await search;
   await page.waitForTimeout(1500);
 

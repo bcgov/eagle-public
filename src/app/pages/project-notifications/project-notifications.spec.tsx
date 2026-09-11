@@ -121,7 +121,7 @@ describe('project notifications', () => {
     await waitFor(() => expect(lastRequestFor('ProjectNotification')).toContain('&pageNum=1&'));
   });
 
-  it('searches while the user types, with no click on Search', async () => {
+  it('searches while the user types', async () => {
     const router = renderNotifications('/project-notifications?currentPage=3');
     await screen.findByText('CEDAR QUARRY');
     const before = requestsFor('ProjectNotification').length;

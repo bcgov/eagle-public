@@ -105,7 +105,6 @@ export function ContentSearch() {
               onSearch={executeSearch}
               advancedFilters={false}
               searchHelpLink="/search-help"
-              searching={table.loading}
             />
           </section>
 

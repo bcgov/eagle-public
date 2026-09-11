@@ -12,7 +12,7 @@ import {
 
 /**
  * Types `keyword` into the box one character at a time and resolves on the search request the
- * typing itself fires. Nothing is clicked: the Search button and Enter are not used.
+ * typing itself fires, without pressing Enter.
  */
 async function typeAhead(page: Page, keyword: string, dataset: string): Promise<void> {
   const typed = page.waitForRequest(

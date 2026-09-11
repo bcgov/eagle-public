@@ -22,7 +22,6 @@ export const newsConfig: TableListConfig = {
   },
   tableColumns: NEWS_TABLE_COLUMNS,
   tableRowComponent: NewsRow,
-  searchAsYouType: true,
   filterList: [],
   dateFilterList: [],
   filters: [],

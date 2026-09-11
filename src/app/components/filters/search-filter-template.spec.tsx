@@ -8,8 +8,6 @@ const { track } = vi.hoisted(() => ({ track: vi.fn() }));
 vi.mock('app/analytics/analytics', () => ({ track }));
 
 interface Options {
-  searchAsYouType?: boolean;
-  searching?: boolean;
   advancedFilters?: boolean;
   showAdvancedFilters?: boolean;
   filters?: FilterObject[];
@@ -24,19 +22,17 @@ const dateFilter = new FilterObject(
 
 function renderTemplate(options: Options = {}) {
   const onSearch = vi.fn();
-  const { container } = render(
+  const { container, unmount } = render(
     <MemoryRouter>
       <SearchFilterTemplate
         onSearch={onSearch}
-        searchAsYouType={options.searchAsYouType}
-        searching={options.searching}
         advancedFilters={options.advancedFilters}
         showAdvancedFilters={options.showAdvancedFilters}
         filters={options.filters}
       />
     </MemoryRouter>,
   );
-  return { onSearch, container };
+  return { onSearch, container, unmount };
 }
 
 function typeKeyword(value: string) {
@@ -46,25 +42,15 @@ function typeKeyword(value: string) {
 describe('SearchFilterTemplate keyword search', () => {
   afterEach(() => vi.useRealTimers());
 
-  it('keeps the Search button and click-to-search without the prop (Documents tab)', () => {
-    vi.useFakeTimers();
-    const { onSearch } = renderTemplate({ searchAsYouType: false });
+  it('offers no Search button: typing is the only way to run a search', () => {
+    renderTemplate({ advancedFilters: true, filters: [dateFilter] });
 
-    expect(screen.getByRole('button', { name: /Search/ })).toBeInTheDocument();
-
-    typeKeyword('water');
-    act(() => vi.advanceTimersByTime(1000));
-    expect(onSearch).not.toHaveBeenCalled();
-
-    fireEvent.click(screen.getByRole('button', { name: /Search/ }));
-    expect(onSearch).toHaveBeenCalledWith(expect.objectContaining({ keywords: 'water' }));
+    expect(screen.queryByRole('button', { name: /Search/ })).not.toBeInTheDocument();
   });
 
-  it('keeps the Search button and searches 300ms after the last keystroke', () => {
+  it('searches 300ms after the last keystroke', () => {
     vi.useFakeTimers();
-    const { onSearch } = renderTemplate({ searchAsYouType: true });
-
-    expect(screen.getByRole('button', { name: /Search/ })).toBeInTheDocument();
+    const { onSearch } = renderTemplate();
 
     typeKeyword('water');
     expect(onSearch).not.toHaveBeenCalled();
@@ -77,7 +63,7 @@ describe('SearchFilterTemplate keyword search', () => {
 
   it('ignores a single character, and searches once it has two', () => {
     vi.useFakeTimers();
-    const { onSearch } = renderTemplate({ searchAsYouType: true });
+    const { onSearch } = renderTemplate();
 
     typeKeyword('w');
     act(() => vi.advanceTimersByTime(300));
@@ -91,7 +77,7 @@ describe('SearchFilterTemplate keyword search', () => {
 
   it('backspacing below two characters searches for nothing, rather than leaving the last results', () => {
     vi.useFakeTimers();
-    const { onSearch } = renderTemplate({ searchAsYouType: true });
+    const { onSearch } = renderTemplate();
 
     typeKeyword('pe');
     act(() => vi.advanceTimersByTime(300));
@@ -106,7 +92,7 @@ describe('SearchFilterTemplate keyword search', () => {
 
   it('a single space is an empty keyword, not a one-character one', () => {
     vi.useFakeTimers();
-    const { onSearch } = renderTemplate({ searchAsYouType: true });
+    const { onSearch } = renderTemplate();
 
     typeKeyword('water');
     act(() => vi.advanceTimersByTime(300));
@@ -120,7 +106,7 @@ describe('SearchFilterTemplate keyword search', () => {
 
   it('does not search when the box has never searched for anything', () => {
     vi.useFakeTimers();
-    const { onSearch } = renderTemplate({ searchAsYouType: true });
+    const { onSearch } = renderTemplate();
 
     typeKeyword('w');
     typeKeyword('');
@@ -131,7 +117,7 @@ describe('SearchFilterTemplate keyword search', () => {
 
   it('coalesces two keystrokes inside the debounce window into one search', () => {
     vi.useFakeTimers();
-    const { onSearch } = renderTemplate({ searchAsYouType: true });
+    const { onSearch } = renderTemplate();
 
     typeKeyword('wa');
     act(() => vi.advanceTimersByTime(200));
@@ -142,9 +128,9 @@ describe('SearchFilterTemplate keyword search', () => {
     expect(onSearch).toHaveBeenCalledWith(expect.objectContaining({ keywords: 'wat' }));
   });
 
-  it('still fires immediately on Enter, cancelling any pending debounce', () => {
+  it('fires immediately on Enter, cancelling any pending debounce', () => {
     vi.useFakeTimers();
-    const { onSearch } = renderTemplate({ searchAsYouType: true });
+    const { onSearch } = renderTemplate();
 
     const box = screen.getByPlaceholderText('Type keyword to search');
     fireEvent.change(box, { target: { value: 'water' } });
@@ -158,9 +144,22 @@ describe('SearchFilterTemplate keyword search', () => {
     expect(onSearch).toHaveBeenCalledTimes(1);
   });
 
+  it('searches on Enter for a keyword too short for the typeahead floor', () => {
+    vi.useFakeTimers();
+    const { onSearch } = renderTemplate();
+
+    const box = screen.getByPlaceholderText('Type keyword to search');
+    fireEvent.change(box, { target: { value: 'w' } });
+    act(() => vi.advanceTimersByTime(300));
+    expect(onSearch).not.toHaveBeenCalled();
+
+    fireEvent.keyUp(box, { key: 'Enter' });
+    expect(onSearch).toHaveBeenCalledWith(expect.objectContaining({ keywords: 'w' }));
+  });
+
   it('clearing the box to empty also searches', () => {
     vi.useFakeTimers();
-    const { onSearch } = renderTemplate({ searchAsYouType: true });
+    const { onSearch } = renderTemplate();
 
     typeKeyword('water');
     act(() => vi.advanceTimersByTime(300));
@@ -169,6 +168,29 @@ describe('SearchFilterTemplate keyword search', () => {
 
     expect(onSearch).toHaveBeenCalledTimes(2);
     expect(onSearch).toHaveBeenLastCalledWith(expect.objectContaining({ keywords: '' }));
+  });
+
+  it('the clear button empties the box and searches at once', () => {
+    vi.useFakeTimers();
+    const { onSearch } = renderTemplate();
+
+    typeKeyword('water');
+    act(() => vi.advanceTimersByTime(300));
+
+    fireEvent.click(screen.getByTitle('Clear search'));
+
+    expect(onSearch).toHaveBeenCalledTimes(2);
+    expect(onSearch).toHaveBeenLastCalledWith(expect.objectContaining({ keywords: '' }));
+  });
+
+  it('tells a screen reader the results update as you type', () => {
+    renderTemplate();
+
+    const box = screen.getByPlaceholderText('Type keyword to search');
+    const hint = screen.getByText('Results update as you type');
+
+    expect(hint).toHaveClass('visually-hidden');
+    expect(box).toHaveAttribute('aria-describedby', hint.id);
   });
 });
 
@@ -182,7 +204,7 @@ describe('SearchFilterTemplate analytics', () => {
 
   it('records one event with the whole word, not one per typed prefix', () => {
     vi.useFakeTimers();
-    renderTemplate({ searchAsYouType: true });
+    renderTemplate();
 
     for (const prefix of ['c', 'ca', 'car', 'cari', 'carib', 'caribo', 'caribou']) {
       typeKeyword(prefix);
@@ -198,7 +220,7 @@ describe('SearchFilterTemplate analytics', () => {
 
   it('records the event on Enter without waiting, and not again afterwards', () => {
     vi.useFakeTimers();
-    renderTemplate({ searchAsYouType: true });
+    renderTemplate();
 
     const box = screen.getByPlaceholderText('Type keyword to search');
     fireEvent.change(box, { target: { value: 'caribou' } });
@@ -212,12 +234,56 @@ describe('SearchFilterTemplate analytics', () => {
 
   it('records nothing for a keyword too short to search', () => {
     vi.useFakeTimers();
-    renderTemplate({ searchAsYouType: true });
+    renderTemplate();
 
     typeKeyword('c');
     act(() => vi.advanceTimersByTime(1500));
 
     expect(searchEvents()).toHaveLength(0);
+  });
+
+  it('records a search whose reader leaves before the pause is over', () => {
+    vi.useFakeTimers();
+    const { unmount } = renderTemplate();
+
+    typeKeyword('caribou');
+    act(() => vi.advanceTimersByTime(300));
+    act(() => vi.advanceTimersByTime(100));
+    act(() => unmount());
+
+    expect(searchEvents()).toHaveLength(1);
+    expect(searchEvents()[0][1]).toEqual(expect.objectContaining({ search_term: 'caribou' }));
+  });
+
+  it('records nothing when the reader leaves before the debounced search has gone out', () => {
+    vi.useFakeTimers();
+    const { onSearch, unmount } = renderTemplate();
+
+    typeKeyword('caribou');
+    act(() => vi.advanceTimersByTime(100));
+    act(() => unmount());
+
+    expect(onSearch).not.toHaveBeenCalled();
+    expect(searchEvents()).toHaveLength(0);
+  });
+
+  it('records nothing extra for an edit reverted inside the debounce window', () => {
+    vi.useFakeTimers();
+    const { onSearch } = renderTemplate();
+
+    typeKeyword('wa');
+    act(() => vi.advanceTimersByTime(300));
+    act(() => vi.advanceTimersByTime(1500));
+    expect(onSearch).toHaveBeenCalledTimes(1);
+    expect(searchEvents()).toHaveLength(1);
+
+    typeKeyword('wax');
+    act(() => vi.advanceTimersByTime(100));
+    typeKeyword('wa');
+    act(() => vi.advanceTimersByTime(1500));
+
+    expect(onSearch).toHaveBeenCalledTimes(1);
+    expect(searchEvents()).toHaveLength(1);
   });
 });
 
@@ -227,7 +293,6 @@ describe('SearchFilterTemplate filter changes', () => {
   it('a filter set inside the debounce window keeps the keyword and the filter', () => {
     vi.useFakeTimers();
     const { onSearch, container } = renderTemplate({
-      searchAsYouType: true,
       advancedFilters: true,
       filters: [dateFilter],
     });
@@ -255,12 +320,7 @@ describe('SearchFilterTemplate filter changes', () => {
     const loadedFilters = [dateFilter];
     const view = (filters: FilterObject[]) => (
       <MemoryRouter initialEntries={['/?datePostedStart=2024-01-01']}>
-        <SearchFilterTemplate
-          onSearch={onSearch}
-          searchAsYouType
-          advancedFilters
-          filters={filters}
-        />
+        <SearchFilterTemplate onSearch={onSearch} advancedFilters filters={filters} />
       </MemoryRouter>
     );
     const { rerender } = render(view(noFilters));
@@ -279,32 +339,17 @@ describe('SearchFilterTemplate filter changes', () => {
       }),
     );
   });
-});
 
-describe('SearchFilterTemplate in-flight state', () => {
-  it('disables the Search button and locks the filter panel while a search runs', () => {
-    const { container } = renderTemplate({
-      searching: true,
-      advancedFilters: true,
-      showAdvancedFilters: true,
-      filters: [dateFilter],
-    });
+  it('enables Reset Filters once the keyword box holds a search', () => {
+    vi.useFakeTimers();
+    renderTemplate({ advancedFilters: true, showAdvancedFilters: true, filters: [dateFilter] });
 
-    expect(screen.getByRole('button', { name: /Searching/ })).toBeDisabled();
-    expect(container.querySelector('.disable-div')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Reset Filters' })).toBeDisabled();
-  });
+    const reset = screen.getByRole('button', { name: 'Reset Filters' });
+    expect(reset).toBeDisabled();
 
-  it('leaves both usable while typing, since every keystroke is another search', () => {
-    const { container } = renderTemplate({
-      searching: true,
-      searchAsYouType: true,
-      advancedFilters: true,
-      showAdvancedFilters: true,
-      filters: [dateFilter],
-    });
+    typeKeyword('water');
+    act(() => vi.advanceTimersByTime(300));
 
-    expect(screen.getByRole('button', { name: /Search/ })).toBeEnabled();
-    expect(container.querySelector('.disable-div')).not.toBeInTheDocument();
+    expect(reset).toBeEnabled();
   });
 });

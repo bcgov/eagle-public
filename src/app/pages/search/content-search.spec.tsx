@@ -118,8 +118,7 @@ describe('content search', () => {
 
     const box = screen.getByPlaceholderText('Type keyword to search');
     await userEvent.clear(box);
-    await userEvent.type(box, 'caribou');
-    await userEvent.click(screen.getByRole('button', { name: /Search/ }));
+    await userEvent.type(box, 'caribou{Enter}');
 
     await waitFor(() => {
       const params = new URLSearchParams(router.state.location.search);

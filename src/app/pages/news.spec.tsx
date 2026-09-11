@@ -109,8 +109,7 @@ describe('news', () => {
     const router = renderNews('/news?currentPage=4');
     await screen.findByText('Permit granted');
 
-    await userEvent.type(screen.getByPlaceholderText('Type keyword to search'), 'permit');
-    await userEvent.click(screen.getByRole('button', { name: /Search/ }));
+    await userEvent.type(screen.getByPlaceholderText('Type keyword to search'), 'permit{Enter}');
 
     await waitFor(() => {
       const params = new URLSearchParams(router.state.location.search);
@@ -120,7 +119,7 @@ describe('news', () => {
     await waitFor(() => expect(requests.at(-1)).toContain('&keywords=permit&'));
   });
 
-  it('searches while the user types, with no click on Search', async () => {
+  it('searches while the user types', async () => {
     const router = renderNews('/news?currentPage=4');
     await screen.findByText('Permit granted');
     const before = activityRequests().length;

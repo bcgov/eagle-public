@@ -40,11 +40,9 @@ test('@data a keyword search returns results and syncs the query params', async 
   const before = (await pageCount(page)).total;
 
   const search = waitForSearch(page, 'Document');
-  await page.getByPlaceholder('Type keyword to search').fill('caribou');
-  await page
-    .getByRole('button', { name: /Search/ })
-    .first()
-    .click();
+  const box = page.getByPlaceholder('Type keyword to search');
+  await box.fill('caribou');
+  await box.press('Enter');
   const env = await search;
   await page.waitForTimeout(1500);
 

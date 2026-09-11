@@ -196,8 +196,7 @@ describe('document search', () => {
     const router = renderSearch('/search?currentPage=5');
     await screen.findByText('Fish and Fish Habitat.pdf');
 
-    await userEvent.type(screen.getByPlaceholderText('Type keyword to search'), 'caribou');
-    await userEvent.click(screen.getByRole('button', { name: /Search/ }));
+    await userEvent.type(screen.getByPlaceholderText('Type keyword to search'), 'caribou{Enter}');
 
     await waitFor(() => {
       const params = new URLSearchParams(router.state.location.search);
@@ -208,7 +207,7 @@ describe('document search', () => {
     await waitFor(() => expect(lastDocumentRequest()).toContain('&keywords=caribou&'));
   });
 
-  it('searches while the user types, with no click on Search', async () => {
+  it('searches while the user types', async () => {
     const router = renderSearch('/search?currentPage=5');
     await screen.findByText('Fish and Fish Habitat.pdf');
     const before = requests.filter((url) => url.includes('dataset=Document')).length;
