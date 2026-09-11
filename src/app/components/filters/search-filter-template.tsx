@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { track } from 'app/analytics/analytics';
 import { CustomMultiSelect } from './custom-multi-select';
@@ -26,14 +26,8 @@ interface SearchFilterTemplateProps {
   /** Seeds the keyword box from a param the host owns (tab-scoped keywords). */
   keywordOverride?: string;
   searchHelpLink?: string | null;
-  searching?: boolean;
   /** 'filters' renders the redesigned tune-icon toggle; 'advanced' keeps the legacy label. */
   filterToggle?: 'advanced' | 'filters';
-  /**
-   * Searches 300ms after the last keystroke, treating a keyword shorter than
-   * `MIN_TYPEAHEAD_LENGTH` as empty. The Search button and Enter still fire immediately.
-   */
-  searchAsYouType?: boolean;
   onSearch: (searchPackage: SearchPackage) => void;
   onToggleFiltersPanel?: (event: { showPanel: boolean }) => void;
   onFilterChange?: (values: FilterValues) => void;
@@ -58,6 +52,7 @@ function typeaheadKeywords(keywords: string): string {
   return keywords.trim().length >= MIN_TYPEAHEAD_LENGTH ? keywords : '';
 }
 
+/** Keyword box and filter panel. Searches as the user types; Enter searches without the pause. */
 export function SearchFilterTemplate({
   title,
   tooltip,
@@ -69,15 +64,14 @@ export function SearchFilterTemplate({
   filters = [],
   keywordOverride = '',
   searchHelpLink = null,
-  searching = false,
   filterToggle = 'advanced',
-  searchAsYouType = false,
   onSearch,
   onToggleFiltersPanel,
   onFilterChange,
   onResetControls,
 }: SearchFilterTemplateProps) {
   const [searchParams] = useSearchParams();
+  const hintId = `${useId()}-search-hint`;
   const [keywords, setKeywords] = useState(
     () => keywordOverride || searchParams.get('keywords') || '',
   );
@@ -93,9 +87,8 @@ export function SearchFilterTemplate({
   // handler closed over.
   const latestValues = useRef(values);
   const latestFilters = useRef(filters);
-  // Typeahead refetches on every keystroke. Blocking the button and the filter panel on each one
-  // would fight the user, and the previous results stay on screen while the next ones load.
-  const busy = searching && !searchAsYouType;
+  // Records the search the track timer is waiting on, so leaving the page can still send it.
+  const pendingTrack = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     latestValues.current = values;
@@ -104,8 +97,12 @@ export function SearchFilterTemplate({
 
   useEffect(() => {
     return () => {
+      const searchNeverRan = debounceTimer.current !== null;
       if (debounceTimer.current) clearTimeout(debounceTimer.current);
-      if (trackTimer.current) clearTimeout(trackTimer.current);
+      if (trackTimer.current) {
+        clearTimeout(trackTimer.current);
+        if (!searchNeverRan) pendingTrack.current?.();
+      }
     };
   }, []);
 
@@ -118,6 +115,7 @@ export function SearchFilterTemplate({
       clearTimeout(trackTimer.current);
       trackTimer.current = null;
     }
+    pendingTrack.current = null;
   }
 
   // The host opens the panel when the URL already carries a filter; follow it without an effect.
@@ -172,11 +170,15 @@ export function SearchFilterTemplate({
   /** One event per finished word: armed on each keystroke, so only the last one survives. */
   function scheduleSearchTracking(nextKeywords: string): void {
     if (!nextKeywords) return;
-    trackTimer.current = setTimeout(() => {
+    const send = () => {
+      pendingTrack.current = null;
+      trackTimer.current = null;
       trackSearch(
         buildSearchPackage(latestFilters.current, latestValues.current, nextKeywords, true),
       );
-    }, TYPEAHEAD_TRACK_MS);
+    };
+    pendingTrack.current = send;
+    trackTimer.current = setTimeout(send, TYPEAHEAD_TRACK_MS);
   }
 
   function setValue(key: string, value: any): void {
@@ -245,16 +247,16 @@ export function SearchFilterTemplate({
                   onChange={(event) => {
                     const nextKeywords = event.target.value;
                     setKeywords(nextKeywords);
-                    if (searchAsYouType) {
-                      cancelPendingSearch();
-                      const searchFor = typeaheadKeywords(nextKeywords);
-                      if (searchFor !== previousKeywords.current) {
-                        debounceTimer.current = setTimeout(() => {
-                          emitSearch(latestValues.current, searchFor, false);
-                        }, TYPEAHEAD_DEBOUNCE_MS);
-                      }
-                      scheduleSearchTracking(searchFor);
-                    }
+                    cancelPendingSearch();
+                    const searchFor = typeaheadKeywords(nextKeywords);
+                    // Typing back to the term already on screen is not a new search, so it earns
+                    // neither a request nor an event.
+                    if (searchFor === previousKeywords.current) return;
+                    debounceTimer.current = setTimeout(() => {
+                      debounceTimer.current = null;
+                      emitSearch(latestValues.current, searchFor, false);
+                    }, TYPEAHEAD_DEBOUNCE_MS);
+                    scheduleSearchTracking(searchFor);
                   }}
                   onKeyUp={(event) => {
                     if (event.key === 'Enter') {
@@ -264,7 +266,7 @@ export function SearchFilterTemplate({
                   }}
                   placeholder={keywordWatermark || 'Type keyword to search'}
                   aria-label={keywordWatermark || 'Type keyword to search'}
-                  aria-describedby="basic-addon2"
+                  aria-describedby={hintId}
                 />
                 {keywords.length > 0 && (
                   <button
@@ -281,26 +283,9 @@ export function SearchFilterTemplate({
                   </button>
                 )}
               </div>
-              <button
-                className="btn btn-warning"
-                type="button"
-                onClick={() => {
-                  cancelPendingSearch();
-                  emitSearch(values, keywords);
-                }}
-                disabled={busy}
-              >
-                {busy ? (
-                  <span
-                    className="spinner-border spinner-border-sm"
-                    role="status"
-                    aria-hidden="true"
-                  ></span>
-                ) : (
-                  <span className="material-icons">search</span>
-                )}
-                <span className="ms-2">{busy ? 'Searching...' : 'Search'}</span>
-              </button>
+              <span id={hintId} className="visually-hidden">
+                Results update as you type
+              </span>
             </div>
           </div>
         </div>
@@ -358,7 +343,7 @@ export function SearchFilterTemplate({
             hidden={!showFiltersPanel}
           >
             <form className="filter-form" noValidate onSubmit={(event) => event.preventDefault()}>
-              <div className={`row${busy ? ' disable-div' : ''}`}>
+              <div className="row">
                 {filters.map((filter) => (
                   <div
                     key={filter.id}
@@ -434,7 +419,7 @@ export function SearchFilterTemplate({
               <button
                 className="btn btn-primary float-end"
                 onClick={clearFilters}
-                disabled={busy || !hasActiveFilters(values, keywords)}
+                disabled={!hasActiveFilters(values, keywords)}
               >
                 Reset Filters
               </button>

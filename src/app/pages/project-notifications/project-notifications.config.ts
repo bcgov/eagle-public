@@ -62,7 +62,6 @@ export const projectNotificationsConfig: TableListConfig = {
   },
   tableColumns: PROJECT_NOTIFICATIONS_TABLE_COLUMNS,
   tableRowComponent: ProjectNotificationsTableRow,
-  searchAsYouType: true,
   filterList: FILTER_LIST,
   dateFilterList: DATE_FILTER_LIST,
   filters: PROJECT_NOTIFICATIONS_FILTERS,

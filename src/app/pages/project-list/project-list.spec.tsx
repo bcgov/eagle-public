@@ -141,8 +141,7 @@ describe('projects list', () => {
     const router = renderList('/projects-list?currentPage=5');
     await screen.findByText('Alpha Mine');
 
-    await userEvent.type(screen.getByPlaceholderText('Type keyword to search'), 'copper');
-    await userEvent.click(screen.getByRole('button', { name: /Search/ }));
+    await userEvent.type(screen.getByPlaceholderText('Type keyword to search'), 'copper{Enter}');
 
     await waitFor(() => {
       const params = new URLSearchParams(router.state.location.search);
@@ -153,7 +152,7 @@ describe('projects list', () => {
     await waitFor(() => expect(lastProjectRequest()).toContain('&keywords=copper&'));
   });
 
-  it('searches while the user types, with no click on Search', async () => {
+  it('searches while the user types', async () => {
     const router = renderList('/projects-list?currentPage=5');
     await screen.findByText('Alpha Mine');
     const before = requests.filter((url) => url.includes('dataset=Project')).length;
