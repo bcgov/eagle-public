@@ -17,6 +17,22 @@ describe('DocumentLink', () => {
     render(<DocumentLink document={DOCUMENT}>{DOCUMENT.displayName}</DocumentLink>);
   });
 
+  it('tells the caller about the click before downloading', () => {
+    const onClick = vi.fn();
+    render(
+      <DocumentLink document={DOCUMENT} onClick={onClick}>
+        Reported copy
+      </DocumentLink>,
+    );
+
+    fireEvent.click(screen.getByRole('link', { name: 'Reported copy' }));
+
+    expect(onClick).toHaveBeenCalledOnce();
+    expect(vi.mocked(openDocumentDownload).mock.invocationCallOrder[0]).toBeGreaterThan(
+      onClick.mock.invocationCallOrder[0]!,
+    );
+  });
+
   it('renders the download URL as a real href, so copy-link and middle-click still work', () => {
     expect(screen.getByRole('link', { name: 'Fish Habitat Report' })).toHaveAttribute(
       'href',

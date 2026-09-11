@@ -1,12 +1,20 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router';
 import { getTopNewsItems } from 'app/api/search';
+import { getRecentUploads, listsQueryOptions } from 'app/api/api';
+import { track } from 'app/analytics/analytics';
 import { surveyUrl, showSurveyBanner } from 'app/config/config';
 import type { News } from 'app/models/news';
+import type { RecentUpload, RecentUploadDocument } from 'app/models/recent-upload';
+import { idToListName, longDate } from 'app/utils/utils';
 import { HeroBanner, type HeroBannerAction } from 'app/components/hero-banner';
 import { InfoCard, type InfoCardButton } from 'app/components/info-card';
 import { ActivityCard } from 'app/components/activity-card';
+import { DocumentLink } from 'app/components/table/document-link';
 import './home.css';
+
+/** Matches the five minutes demi-search caches the feed for; asking sooner cannot say anything new. */
+const RECENT_UPLOADS_STALE_MS = 5 * 60 * 1000;
 
 const HERO_TITLE = 'Environmental Assessments';
 const HERO_DESCRIPTION =
@@ -45,6 +53,150 @@ const ABOUT_CARDS: { title: string; description: string; button: InfoCardButton 
     },
   },
 ];
+
+/** The wait the home page shows while a feed loads. */
+function FeedSpinner() {
+  return (
+    <div className="d-flex justify-content-center align-items-center py-5">
+      <div
+        className="spinner-border text-primary"
+        style={{ width: '3rem', height: '3rem' }}
+        role="status"
+      >
+        <span className="visually-hidden">Loading...</span>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The sort the document tables land on. `datePosted` is the only date those tables hold a column
+ * for, and the one the API sorts documents by, so it is also the sort their header can show. The
+ * feed's own `dateUploaded` is not a sortable field there, so the preset does not claim it.
+ */
+const NEWEST_FIRST = '-datePosted';
+
+/** The project id links route on: Eagle's `_id`, falling back to DEMI's for a project Eagle lacks. */
+function linkProjectId(upload: RecentUpload): string {
+  return upload.eagleProjectId ?? upload.projectId;
+}
+
+/** The project's All Documents table, newest first. */
+function documentsHref(upload: RecentUpload): string {
+  return `/p/${linkProjectId(upload)}/documents?sortBy=${NEWEST_FIRST}`;
+}
+
+/** One project in the feed: its newest documents, and the ways into the full list. */
+function UploadRow({ upload, lists }: { upload: RecentUpload; lists: any[] }) {
+  const documents = upload.documents ?? [];
+  const projectHref = documentsHref(upload);
+  const rowDate = longDate(upload.dateUploaded);
+
+  function trackClick(
+    doc: RecentUploadDocument | null,
+    target: 'project' | 'document' | 'all-documents',
+  ): void {
+    track('Recent Upload Clicked', {
+      project_id: linkProjectId(upload),
+      project_name: upload.projectName,
+      document_id: doc?.id ?? null,
+      target,
+    });
+  }
+
+  return (
+    <li>
+      <h3 className="home-recent-uploads__project">
+        <Link to={projectHref} onClick={() => trackClick(null, 'project')}>
+          {upload.projectName}
+        </Link>
+      </h3>
+      <small className="d-block text-muted mb-3">{rowDate}</small>
+
+      {documents.length > 0 && (
+        <ul className="home-recent-uploads__docs">
+          {documents.map((doc) => {
+            const typeName = idToListName(doc.type, lists);
+            const docDate = longDate(doc.dateUploaded);
+            // `-` is what an unresolved List id reads as, and the row already carries the date the
+            // newest documents share; either one missing just shortens the meta line.
+            const type = typeName === '-' ? null : typeName;
+            const date = docDate === rowDate ? null : docDate;
+            return (
+              <li key={doc.id}>
+                <DocumentLink
+                  document={{
+                    _id: doc.id,
+                    displayName: doc.displayName,
+                    documentFileName: doc.documentFileName ?? undefined,
+                  }}
+                  onClick={() => trackClick(doc, 'document')}
+                >
+                  {doc.displayName}
+                </DocumentLink>
+                {(type || date) && (
+                  <small className="d-block text-muted">
+                    {type}
+                    {type && date && ' \u00b7 '}
+                    {date && <span className="text-nowrap">{date}</span>}
+                  </small>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      <div className="d-flex flex-wrap gap-2 mt-3">
+        <Link
+          className="btn btn-sm btn-outline-primary"
+          to={projectHref}
+          aria-label={`All documents for ${upload.projectName}`}
+          onClick={() => trackClick(null, 'all-documents')}
+        >
+          All documents
+        </Link>
+      </div>
+    </li>
+  );
+}
+
+/** The projects that received a document most recently. Nothing to show means no section. */
+function RecentUploads() {
+  // A document's type is a `List` id, and the rest of the app already caches the rows under this
+  // key, so the first project page opened does not ask for them again.
+  const { data: lists = [], isPending: listsPending } = useQuery(listsQueryOptions());
+  const {
+    data: uploads = [],
+    isPending,
+    isError,
+  } = useQuery({
+    queryKey: ['recentUploads'],
+    queryFn: () => getRecentUploads(),
+    staleTime: RECENT_UPLOADS_STALE_MS,
+  });
+
+  if (isError || (!isPending && uploads.length === 0)) {
+    return null;
+  }
+
+  return (
+    <section className="container home-recent-uploads mt-5">
+      <div className="home-feed-panel">
+        <h2>Recent Uploads</h2>
+        {isPending || listsPending ? (
+          <FeedSpinner />
+        ) : (
+          <ul className="home-recent-uploads__list">
+            {uploads.map((upload) => (
+              <UploadRow key={upload.projectId} upload={upload} lists={lists} />
+            ))}
+          </ul>
+        )}
+      </div>
+    </section>
+  );
+}
 
 export function Home() {
   const { data: results = [], isPending } = useQuery<News[]>({
@@ -93,18 +245,10 @@ export function Home() {
       <main className="home-main">
         <div id="anchor-point">
           <section className="container">
-            <div className="home-news-feed">
+            <div className="home-feed-panel home-news-feed">
               <h2>Recent Activities &amp; Updates</h2>
               {isPending ? (
-                <div className="d-flex justify-content-center align-items-center py-5">
-                  <div
-                    className="spinner-border text-primary"
-                    style={{ width: '3rem', height: '3rem' }}
-                    role="status"
-                  >
-                    <span className="visually-hidden">Loading...</span>
-                  </div>
-                </div>
+                <FeedSpinner />
               ) : results.length > 0 ? (
                 <table className="table" id="tableTop">
                   {results
@@ -127,6 +271,8 @@ export function Home() {
               </div>
             </div>
           </section>
+
+          <RecentUploads />
 
           <div className="bg-faded mt-5">
             <section className="container">

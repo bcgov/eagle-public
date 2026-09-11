@@ -1,6 +1,7 @@
 import type { ISearchResults } from 'app/models/search';
 import type { ListRef } from 'app/api/api';
 import { Constants } from './constants';
+import { documentTabByKey, idsForTerms } from './document-tabs';
 import { track } from 'app/analytics/analytics';
 import { createBulkDownload } from 'app/api/api';
 import { getSearchApiPath } from 'app/config/config';
@@ -59,89 +60,11 @@ export function natureBuildMapper(key: string): string {
 
 // Creates query modifiers used for tab display in a project.
 export function createProjectTabModifiers(projectTab: string, list: any[]): Record<string, string> {
-  let types: object[] = [];
-  let milestones: object[] = [];
-  let phases: string | undefined;
-
-  switch (projectTab) {
-    case Constants.optionalProjectDocTabs.UNSUBSCRIBE_CAC:
-      break;
-    case Constants.optionalProjectDocTabs.AMENDMENT: {
-      types = [
-        { legislation: 2002, name: 'Amendment Package' },
-        { legislation: 2018, name: 'Amendment Package' },
-        { legislation: 2002, name: 'Request' },
-        { legislation: 2002, name: 'Decision Materials' },
-        { legislation: 2018, name: 'Decision Materials' },
-        { legislation: 2002, name: 'Tracking Table' },
-        { legislation: 2018, name: 'Tracking Table' },
-      ];
-      milestones = [
-        { legislation: 2002, name: 'Amendment' },
-        { legislation: 2018, name: 'Amendment' },
-      ];
-
-      const amendPhase = [
-        { legislation: 2002, name: 'Post Decision - Amendment' },
-        { legislation: 2018, name: 'Post Decision - Amendment' },
-      ];
-
-      // Special case for phases.
-      phases = getIdsByName(amendPhase, list)
-        .map((phase) => phase.id)
-        .join(',');
-      break;
-    }
-    case Constants.optionalProjectDocTabs.CERTIFICATE:
-      types = [
-        { legislation: 2002, name: 'Certificate Package' },
-        { legislation: 2018, name: 'Certificate Package' },
-        { legislation: 2002, name: 'Order' },
-        { legislation: 2018, name: 'Order' },
-        { legislation: 2002, name: 'Decision Materials' },
-        { legislation: 2018, name: 'Decision Materials' },
-      ];
-      milestones = [
-        { legislation: 2002, name: 'Certificate' },
-        { legislation: 2018, name: 'Certificate Decision' },
-        { legislation: 2002, name: 'Decision' },
-        { legislation: 2002, name: 'Certificate Extension' },
-        { legislation: 2018, name: 'Certificate Extension' },
-        { legislation: 2018, name: 'Transfer of Certificate/Order' },
-      ];
-      break;
-    case Constants.optionalProjectDocTabs.COMPLIANCE:
-      // Compliance & Enforcement documents carry the milestone but no dedicated document type,
-      // so this tab filters on milestone alone.
-      milestones = [
-        { legislation: 2002, name: 'Compliance & Enforcement' },
-        { legislation: 2018, name: 'Compliance & Enforcement' },
-      ];
-      break;
-    case Constants.optionalProjectDocTabs.APPLICATION: {
-      // Application documents are identified by type and milestone only.
-      // Adding projectPhase filter causes query issues with many AND conditions.
-      types = [
-        { legislation: 2002, name: 'Application Materials' },
-        { legislation: 2018, name: 'Application Materials' },
-        { legislation: 2002, name: 'Scientific Memo' },
-        { legislation: 2018, name: 'Independent Memo' },
-      ];
-      milestones = [
-        { legislation: 2002, name: 'Application Review' },
-        { legislation: 2018, name: 'EAC Application' },
-        { legislation: 2018, name: 'Revised EAC Application' },
-      ];
-      break;
-    }
-  }
-
-  const typeIds = getIdsByName(types, list)
-    .map((type) => type.id)
-    .join(',');
-  const milestoneIds = getIdsByName(milestones, list)
-    .map((milestone) => milestone.id)
-    .join(',');
+  // The same name tables the segment resolver reads, so a tab lists exactly what it claims.
+  const tab = documentTabByKey(projectTab);
+  const typeIds = idsForTerms(tab?.types ?? [], list).join(',');
+  const milestoneIds = idsForTerms(tab?.milestones ?? [], list).join(',');
+  const phaseIds = idsForTerms(tab?.phases ?? [], list).join(',');
 
   // Empty ids must not reach the query: api.searchKeywords turns `''` into `&and[type]=`, and
   // eagle-api answers that with nothing at all.
@@ -153,23 +76,11 @@ export function createProjectTabModifiers(projectTab: string, list: any[]): Reco
   if (milestoneIds) {
     queryModifier['milestone'] = milestoneIds;
   }
-  if (phases) {
-    queryModifier['projectPhase'] = phases;
+  if (phaseIds) {
+    queryModifier['projectPhase'] = phaseIds;
   }
 
   return queryModifier;
-}
-
-// Searches the list of terms for a name and legislation year.
-function getIdsByName(terms: any[], list: any[]): { name: string; id: string }[] {
-  // A term with no `List` entry yields no id. Angular read `_id` off the undefined match, which
-  // threw whenever the lists had not loaded yet and took the whole tab down with it.
-  return terms.flatMap((term) => {
-    const listItem = list.find(
-      (item) => item.name === term.name && item.legislation === term.legislation,
-    );
-    return listItem ? [{ name: term.name, id: listItem._id }] : [];
-  });
 }
 
 /**
