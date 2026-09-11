@@ -1,26 +1,13 @@
 import { Link, NavLink, Outlet } from 'react-router';
 import { track } from 'app/analytics/analytics';
 import { Skeleton } from 'app/components/skeleton/skeleton';
-import { Constants } from 'app/utils/constants';
+import { DOCUMENT_TABS } from 'app/utils/document-tabs';
 import { useDocTabProbes } from './use-doc-tab-probes';
 import { useProjectContext } from './project-context';
 import './documents-page.css';
 
 /** Stand-ins for the segments still being probed, sized like the labels they replace. */
 const PLACEHOLDER_WIDTHS = ['7.5rem', '8.5rem', '9.5rem'];
-
-/** Segments shown only when the project actually has documents of that kind. */
-const OPTIONAL_TABS = [
-  { key: Constants.optionalProjectDocTabs.APPLICATION, label: 'Application', link: 'application' },
-  { key: Constants.optionalProjectDocTabs.CERTIFICATE, label: 'Certificate', link: 'certificates' },
-  { key: Constants.optionalProjectDocTabs.AMENDMENT, label: 'Amendment(s)', link: 'amendments' },
-  { key: Constants.optionalProjectDocTabs.COMPLIANCE, label: 'Compliance', link: 'compliance' },
-  {
-    key: Constants.optionalProjectDocTabs.MANAGEMENT_PLAN,
-    label: 'Management Plan',
-    link: 'management-plans',
-  },
-];
 
 /** Documents tab shell: the document-type filter, and whichever document view it selects. */
 export function DocumentsPage() {
@@ -36,9 +23,10 @@ export function DocumentsPage() {
 
   const tabs = [
     { label: 'All Documents', link: documentsPath, end: true },
-    ...OPTIONAL_TABS.filter((tab) => probes.has[tab.key] === true).map((tab) => ({
-      ...tab,
-      link: `${documentsPath}/${tab.link}`,
+    // Segments shown only when the project actually has documents of that kind.
+    ...DOCUMENT_TABS.filter((tab) => probes.has[tab.key] === true).map((tab) => ({
+      label: tab.label,
+      link: `${documentsPath}/${tab.path}`,
       end: false,
     })),
   ];

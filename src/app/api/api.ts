@@ -2,6 +2,7 @@ import type { CommentPeriod } from 'app/models/commentperiod';
 import type { Document } from 'app/models/document';
 import type { ISearchResult, SearchResults } from 'app/models/search';
 import type { Org } from 'app/models/organization';
+import type { RecentUpload, RecentUploads } from 'app/models/recent-upload';
 import { encodeString } from 'app/utils/utils';
 import { logger } from 'app/config/logging';
 import { getDemiProjectsPath, getSearchApiPath } from 'app/config/config';
@@ -536,6 +537,18 @@ export async function getCommentsByPeriodId(
 //
 // Documents
 //
+
+/**
+ * The projects that received a document most recently, newest first. demi-search holds the answer
+ * for five minutes, so this stays cheap even though every home page visit asks for it.
+ */
+export async function getRecentUploads(limit = 5): Promise<RecentUpload[]> {
+  const response = await getJson<RecentUploads>(
+    `${searchPath()}/documents/recent-uploads?limit=${limit}`,
+  );
+  return response?.items ?? [];
+}
+
 export async function getDocumentsByMultiId(ids: string[]): Promise<Document[]> {
   const fields = [
     'eaoStatus',

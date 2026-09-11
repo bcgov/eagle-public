@@ -9,9 +9,12 @@ import {
 export function DocumentLink({
   document,
   children,
+  onClick,
 }: {
   document: DownloadableDocument;
   children: ReactNode;
+  /** Runs before the download starts, for a caller that reports where the click came from. */
+  onClick?: () => void;
 }) {
   return (
     <a
@@ -20,6 +23,7 @@ export function DocumentLink({
       rel="noopener noreferrer"
       onClick={(event) => {
         event.preventDefault();
+        onClick?.();
         openDocumentDownload(document);
       }}
     >
