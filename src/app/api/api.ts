@@ -158,6 +158,11 @@ function pickFields<T>(row: unknown, fields: string[]): T {
   ) as unknown as T;
 }
 
+/** An abort is a request the app dropped on purpose, never a failure to report or swallow. */
+export function isAbortError(error: unknown): boolean {
+  return (error as Error | undefined)?.name === 'AbortError';
+}
+
 async function send(
   url: string,
   init: RequestInit = {},
@@ -170,6 +175,9 @@ async function send(
   try {
     response = await fetch(url, init);
   } catch (error) {
+    // Search-as-you-type aborts the request each keystroke supersedes. Logging those would send
+    // Application Insights one exception per keystroke.
+    if (init.signal?.aborted || isAbortError(error)) throw error;
     logger.logHttpError(method, url, error, 'api');
     throw error;
   }

@@ -30,8 +30,8 @@ interface SearchFilterTemplateProps {
   /** 'filters' renders the redesigned tune-icon toggle; 'advanced' keeps the legacy label. */
   filterToggle?: 'advanced' | 'filters';
   /**
-   * Searches 300ms after the last keystroke, once the keyword is empty or at least
-   * `MIN_TYPEAHEAD_LENGTH` characters. The Search button and Enter still fire immediately.
+   * Searches 300ms after the last keystroke, treating a keyword shorter than
+   * `MIN_TYPEAHEAD_LENGTH` as empty. The Search button and Enter still fire immediately.
    */
   searchAsYouType?: boolean;
   onSearch: (searchPackage: SearchPackage) => void;
@@ -45,10 +45,17 @@ const RESERVED_PARAMS = ['currentPage', 'pageSize', 'sortBy', 'keywords'];
 /** Shortest keyword worth a round trip. One character matches most of the corpus. */
 const MIN_TYPEAHEAD_LENGTH = 2;
 
-/** Emptying the box restores the unfiltered list, so it searches at any length below the minimum. */
-function worthSearching(keywords: string): boolean {
-  const trimmed = keywords.trim();
-  return trimmed.length === 0 || trimmed.length >= MIN_TYPEAHEAD_LENGTH;
+const TYPEAHEAD_DEBOUNCE_MS = 300;
+
+/** A pause this long means the word is finished, so the analytics event carries the whole term. */
+const TYPEAHEAD_TRACK_MS = 1500;
+
+/**
+ * What a typed box searches for. Anything shorter than the minimum searches as an empty keyword:
+ * backspacing to one character restores the unfiltered list instead of leaving the last results up.
+ */
+function typeaheadKeywords(keywords: string): string {
+  return keywords.trim().length >= MIN_TYPEAHEAD_LENGTH ? keywords : '';
 }
 
 export function SearchFilterTemplate({
@@ -80,13 +87,25 @@ export function SearchFilterTemplate({
   const previousKeywords = useRef(keywords);
   const seededFrom = useRef<FilterObject[] | null>(null);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const trackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // A debounced search fires after the filter set and its values may have moved — the host loads
+  // filters asynchronously — so it reads both from here rather than from what the keystroke's
+  // handler closed over.
+  const latestValues = useRef(values);
+  const latestFilters = useRef(filters);
   // Typeahead refetches on every keystroke. Blocking the button and the filter panel on each one
   // would fight the user, and the previous results stay on screen while the next ones load.
   const busy = searching && !searchAsYouType;
 
   useEffect(() => {
+    latestValues.current = values;
+    latestFilters.current = filters;
+  });
+
+  useEffect(() => {
     return () => {
       if (debounceTimer.current) clearTimeout(debounceTimer.current);
+      if (trackTimer.current) clearTimeout(trackTimer.current);
     };
   }, []);
 
@@ -94,6 +113,10 @@ export function SearchFilterTemplate({
     if (debounceTimer.current) {
       clearTimeout(debounceTimer.current);
       debounceTimer.current = null;
+    }
+    if (trackTimer.current) {
+      clearTimeout(trackTimer.current);
+      trackTimer.current = null;
     }
   }
 
@@ -119,15 +142,7 @@ export function SearchFilterTemplate({
     setValues(initialFilterValues(filters, urlValues));
   }, [advancedFilters, filters, searchParams]);
 
-  function emitSearch(nextValues: FilterValues, nextKeywords: string): void {
-    const searchPackage = buildSearchPackage(
-      filters,
-      nextValues,
-      nextKeywords,
-      nextKeywords !== previousKeywords.current,
-    );
-    previousKeywords.current = nextKeywords;
-
+  function trackSearch(searchPackage: SearchPackage): void {
     track('Search Executed', {
       search_term: searchPackage.keywords || '',
       has_keywords: !!searchPackage.keywords,
@@ -135,11 +150,39 @@ export function SearchFilterTemplate({
       filter_count: Object.keys(searchPackage.filters).length,
       subset: null,
     });
+  }
+
+  /** `tracked` is false for a typeahead search: every prefix of a word would be its own event. */
+  function emitSearch(nextValues: FilterValues, nextKeywords: string, tracked = true): void {
+    const searchPackage = buildSearchPackage(
+      latestFilters.current,
+      nextValues,
+      nextKeywords,
+      nextKeywords !== previousKeywords.current,
+    );
+    previousKeywords.current = nextKeywords;
+
+    if (tracked) {
+      trackSearch(searchPackage);
+    }
 
     onSearch(searchPackage);
   }
 
+  /** One event per finished word: armed on each keystroke, so only the last one survives. */
+  function scheduleSearchTracking(nextKeywords: string): void {
+    if (!nextKeywords) return;
+    trackTimer.current = setTimeout(() => {
+      trackSearch(
+        buildSearchPackage(latestFilters.current, latestValues.current, nextKeywords, true),
+      );
+    }, TYPEAHEAD_TRACK_MS);
+  }
+
   function setValue(key: string, value: any): void {
+    // A search armed by an earlier keystroke carries the values from before this change, so it
+    // would revert the filter the moment it fires.
+    cancelPendingSearch();
     const nextValues = { ...values, [key]: value };
     setValues(nextValues);
     onFilterChange?.(nextValues);
@@ -204,11 +247,13 @@ export function SearchFilterTemplate({
                     setKeywords(nextKeywords);
                     if (searchAsYouType) {
                       cancelPendingSearch();
-                      if (worthSearching(nextKeywords)) {
+                      const searchFor = typeaheadKeywords(nextKeywords);
+                      if (searchFor !== previousKeywords.current) {
                         debounceTimer.current = setTimeout(() => {
-                          emitSearch(values, nextKeywords);
-                        }, 300);
+                          emitSearch(latestValues.current, searchFor, false);
+                        }, TYPEAHEAD_DEBOUNCE_MS);
                       }
+                      scheduleSearchTracking(searchFor);
                     }
                   }}
                   onKeyUp={(event) => {
