@@ -4,6 +4,11 @@ import { News } from 'app/models/news';
 import { Constants } from 'app/utils/constants';
 import { logger } from 'app/config/logging';
 
+/** An abort must reject: reported as "no results" it would empty the table the user is typing over. */
+function isAbortError(error: unknown): boolean {
+  return (error as Error | undefined)?.name === 'AbortError';
+}
+
 export async function getSearchResults(
   keys: string,
   dataset: string,
@@ -17,6 +22,7 @@ export async function getSearchResults(
   filter: Record<string, string> = {},
   projectLegislation = '',
   fuzzy = false,
+  signal?: AbortSignal,
 ): Promise<any[] | null> {
   try {
     const res = await api.searchKeywords(
@@ -32,9 +38,11 @@ export async function getSearchResults(
       secondarySort,
       filter,
       fuzzy,
+      signal,
     );
     return res.map((item: any) => new SearchResults({ type: item._schemaName, data: item }));
-  } catch {
+  } catch (error) {
+    if (isAbortError(error)) throw error;
     // if call fails, return null results
     return null;
   }
@@ -50,7 +58,10 @@ export async function getTopNewsItems(): Promise<News[]> {
   }
 }
 
-export async function fetchData(searchParamObject: SearchParamObject): Promise<SearchResults> {
+export async function fetchData(
+  searchParamObject: SearchParamObject,
+  signal?: AbortSignal,
+): Promise<SearchResults> {
   let res: any[] | null = null;
 
   logger.debug('search.fetchData called', 'search', searchParamObject);
@@ -79,8 +90,10 @@ export async function fetchData(searchParamObject: SearchParamObject): Promise<S
       searchParamObject.filters,
       searchParamObject.projectLegislation,
       searchParamObject.fuzzy,
+      signal,
     );
   } catch (error) {
+    if (isAbortError(error)) throw error;
     logger.error(`Error in fetchData for table ${searchParamObject.tableId}`, 'search', error);
     // Return empty results on error
     return new SearchResults();

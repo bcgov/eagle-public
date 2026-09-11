@@ -22,6 +22,11 @@ const ACTIVITIES = [
 
 let requests: string[];
 
+/** Every activities search the page issued, oldest first. */
+function activityRequests(): string[] {
+  return requests.filter((url) => url.includes('dataset=RecentActivity'));
+}
+
 function renderNews(path: string, total = 42) {
   requests = [];
   vi.stubGlobal(
@@ -113,6 +118,21 @@ describe('news', () => {
       expect(params.get('currentPage')).toBe('1');
     });
     await waitFor(() => expect(requests.at(-1)).toContain('&keywords=permit&'));
+  });
+
+  it('searches while the user types, with no click on Search', async () => {
+    const router = renderNews('/news?currentPage=4');
+    await screen.findByText('Permit granted');
+    const before = activityRequests().length;
+
+    await userEvent.type(screen.getByPlaceholderText('Type keyword to search'), 'pe');
+
+    await waitFor(() => expect(activityRequests().at(-1)).toContain('&keywords=pe&'));
+    // One request for the whole word: a single character is below the typeahead minimum.
+    expect(activityRequests().length).toBe(before + 1);
+    const params = new URLSearchParams(router.state.location.search);
+    expect(params.get('keywords')).toBe('pe');
+    expect(params.get('currentPage')).toBe('1');
   });
 
   it('shows the empty state instead of the table when nothing matches', async () => {

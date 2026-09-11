@@ -77,6 +77,7 @@ export function createProjectListConfig(filters: FilterObject[]): TableListConfi
     },
     tableColumns: PROJECT_LIST_TABLE_COLUMNS,
     tableRowComponent: ProjectListTableRow,
+    searchAsYouType: true,
     filterList: FILTER_LIST,
     dateFilterList: DATE_FILTER_LIST,
     filters,

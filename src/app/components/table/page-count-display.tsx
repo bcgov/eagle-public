@@ -20,7 +20,8 @@ export function PageCountDisplay({
   }
 
   return (
-    <div className="lib-page-count-display text-muted" id={id}>
+    // Search-as-you-type changes this count without moving focus; a reader hears the new total.
+    <div className="lib-page-count-display text-muted" id={id} aria-live="polite">
       <small>{pageCountMessage(totalItems, currentPageNum, currentPageSize)}</small>
     </div>
   );

@@ -71,6 +71,7 @@ export function createSearchConfig(filters: FilterObject[], lists: any[]): Table
     },
     tableColumns: SEARCH_TABLE_COLUMNS,
     tableRowComponent: DocSearchTableRow,
+    searchAsYouType: true,
     tableOptions: { disableRowHighlight: true, selectable: bulkDownloadEnabled() },
     tabs: visibleSearchTabs(contentSearchEnabled()),
     filterList: filterListFrom(SEARCH_PANEL_SIZES),

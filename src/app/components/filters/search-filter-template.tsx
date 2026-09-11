@@ -29,7 +29,10 @@ interface SearchFilterTemplateProps {
   searching?: boolean;
   /** 'filters' renders the redesigned tune-icon toggle; 'advanced' keeps the legacy label. */
   filterToggle?: 'advanced' | 'filters';
-  /** Debounces the keyword box 300ms after the last keystroke and hides the Search button, since there is nothing left to click. */
+  /**
+   * Searches 300ms after the last keystroke, once the keyword is empty or at least
+   * `MIN_TYPEAHEAD_LENGTH` characters. The Search button and Enter still fire immediately.
+   */
   searchAsYouType?: boolean;
   onSearch: (searchPackage: SearchPackage) => void;
   onToggleFiltersPanel?: (event: { showPanel: boolean }) => void;
@@ -38,6 +41,15 @@ interface SearchFilterTemplateProps {
 }
 
 const RESERVED_PARAMS = ['currentPage', 'pageSize', 'sortBy', 'keywords'];
+
+/** Shortest keyword worth a round trip. One character matches most of the corpus. */
+const MIN_TYPEAHEAD_LENGTH = 2;
+
+/** Emptying the box restores the unfiltered list, so it searches at any length below the minimum. */
+function worthSearching(keywords: string): boolean {
+  const trimmed = keywords.trim();
+  return trimmed.length === 0 || trimmed.length >= MIN_TYPEAHEAD_LENGTH;
+}
 
 export function SearchFilterTemplate({
   title,
@@ -68,6 +80,9 @@ export function SearchFilterTemplate({
   const previousKeywords = useRef(keywords);
   const seededFrom = useRef<FilterObject[] | null>(null);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Typeahead refetches on every keystroke. Blocking the button and the filter panel on each one
+  // would fight the user, and the previous results stay on screen while the next ones load.
+  const busy = searching && !searchAsYouType;
 
   useEffect(() => {
     return () => {
@@ -189,9 +204,11 @@ export function SearchFilterTemplate({
                     setKeywords(nextKeywords);
                     if (searchAsYouType) {
                       cancelPendingSearch();
-                      debounceTimer.current = setTimeout(() => {
-                        emitSearch(values, nextKeywords);
-                      }, 300);
+                      if (worthSearching(nextKeywords)) {
+                        debounceTimer.current = setTimeout(() => {
+                          emitSearch(values, nextKeywords);
+                        }, 300);
+                      }
                     }
                   }}
                   onKeyUp={(event) => {
@@ -219,25 +236,26 @@ export function SearchFilterTemplate({
                   </button>
                 )}
               </div>
-              {!searchAsYouType && (
-                <button
-                  className="btn btn-warning"
-                  type="button"
-                  onClick={() => emitSearch(values, keywords)}
-                  disabled={searching}
-                >
-                  {searching ? (
-                    <span
-                      className="spinner-border spinner-border-sm"
-                      role="status"
-                      aria-hidden="true"
-                    ></span>
-                  ) : (
-                    <span className="material-icons">search</span>
-                  )}
-                  <span className="ms-2">{searching ? 'Searching...' : 'Search'}</span>
-                </button>
-              )}
+              <button
+                className="btn btn-warning"
+                type="button"
+                onClick={() => {
+                  cancelPendingSearch();
+                  emitSearch(values, keywords);
+                }}
+                disabled={busy}
+              >
+                {busy ? (
+                  <span
+                    className="spinner-border spinner-border-sm"
+                    role="status"
+                    aria-hidden="true"
+                  ></span>
+                ) : (
+                  <span className="material-icons">search</span>
+                )}
+                <span className="ms-2">{busy ? 'Searching...' : 'Search'}</span>
+              </button>
             </div>
           </div>
         </div>
@@ -295,7 +313,7 @@ export function SearchFilterTemplate({
             hidden={!showFiltersPanel}
           >
             <form className="filter-form" noValidate onSubmit={(event) => event.preventDefault()}>
-              <div className={`row${searching ? ' disable-div' : ''}`}>
+              <div className={`row${busy ? ' disable-div' : ''}`}>
                 {filters.map((filter) => (
                   <div
                     key={filter.id}
@@ -371,7 +389,7 @@ export function SearchFilterTemplate({
               <button
                 className="btn btn-primary float-end"
                 onClick={clearFilters}
-                disabled={searching || !hasActiveFilters(values, keywords)}
+                disabled={busy || !hasActiveFilters(values, keywords)}
               >
                 Reset Filters
               </button>

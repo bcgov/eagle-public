@@ -32,11 +32,11 @@ describe('SearchFilterTemplate keyword search', () => {
     expect(onSearch).toHaveBeenCalledWith(expect.objectContaining({ keywords: 'water' }));
   });
 
-  it('hides the Search button and searches 300ms after the last keystroke (Updates tab)', () => {
+  it('keeps the Search button and searches 300ms after the last keystroke', () => {
     vi.useFakeTimers();
     const onSearch = renderTemplate(true);
 
-    expect(screen.queryByRole('button', { name: /Search/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Search/ })).toBeInTheDocument();
 
     fireEvent.change(screen.getByPlaceholderText('Type keyword to search'), {
       target: { value: 'water' },
@@ -47,6 +47,47 @@ describe('SearchFilterTemplate keyword search', () => {
 
     expect(onSearch).toHaveBeenCalledTimes(1);
     expect(onSearch).toHaveBeenCalledWith(expect.objectContaining({ keywords: 'water' }));
+  });
+
+  it('ignores a single character, and searches once it has two', () => {
+    vi.useFakeTimers();
+    const onSearch = renderTemplate(true);
+
+    const box = screen.getByPlaceholderText('Type keyword to search');
+    fireEvent.change(box, { target: { value: 'w' } });
+    act(() => vi.advanceTimersByTime(300));
+    expect(onSearch).not.toHaveBeenCalled();
+
+    fireEvent.change(box, { target: { value: 'wa' } });
+    act(() => vi.advanceTimersByTime(300));
+    expect(onSearch).toHaveBeenCalledTimes(1);
+    expect(onSearch).toHaveBeenCalledWith(expect.objectContaining({ keywords: 'wa' }));
+  });
+
+  it('a single space is an empty keyword, not a one-character one', () => {
+    vi.useFakeTimers();
+    const onSearch = renderTemplate(true);
+
+    fireEvent.change(screen.getByPlaceholderText('Type keyword to search'), {
+      target: { value: ' ' },
+    });
+    act(() => vi.advanceTimersByTime(300));
+
+    expect(onSearch).toHaveBeenCalledTimes(1);
+  });
+
+  it('coalesces two keystrokes inside the debounce window into one search', () => {
+    vi.useFakeTimers();
+    const onSearch = renderTemplate(true);
+
+    const box = screen.getByPlaceholderText('Type keyword to search');
+    fireEvent.change(box, { target: { value: 'wa' } });
+    act(() => vi.advanceTimersByTime(200));
+    fireEvent.change(box, { target: { value: 'wat' } });
+    act(() => vi.advanceTimersByTime(300));
+
+    expect(onSearch).toHaveBeenCalledTimes(1);
+    expect(onSearch).toHaveBeenCalledWith(expect.objectContaining({ keywords: 'wat' }));
   });
 
   it('still fires immediately on Enter, cancelling any pending debounce', () => {

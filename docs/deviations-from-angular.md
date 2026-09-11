@@ -10,12 +10,15 @@ One deviation runs through most of the `api:` entries below: **demi-search is th
 - assets: `styles/components/datepicker.css` deleted; it only styled ng-bootstrap's calendar, which the native `<input type="date">` replaces.
 - filters: `subsets`, `attachPanelToDiv`, `advancedFilterTitle`/`advancedFilterText` and the Checkbox / RadioPicker / SliderToggle / Dropdown filter types dropped; no consumer in the Angular app uses any of them. The `FilterType` enum keeps every member.
 - filters: `skipNextSearch` in `search-filter-template` dropped; nothing ever set it true.
+- filters/search-filter-template: the Documents search, the project list, the activities list and the project notifications list search as the user types — 300ms after the last keystroke, once the keyword is empty or two characters long. Angular only searched on Enter or the Search button, which both still work.
+- filters/search-filter-template: search-as-you-type keeps the Search button and leaves the filter panel usable while a request is in flight. Hiding the button and locking the panel on every keystroke fought the user, and the previous results stay on screen anyway.
 - filters/custom-multi-select: search box focus and option highlight are per-instance; Angular queried `document` globally, so two selects on one page fought over focus.
 - table/table-object: `ITableOptions.rowSpacing` kept as a field but still unread — no CSS or template ever consumed it in Angular either.
 - table/table-params: `toggleSortDirection` matches the whole field name. Angular used `currentSort.includes(field)`, so sorting `name` while sorted by `+displayName` flipped instead of starting fresh.
 - table/table-params: a `sortBy` that `URLSearchParams` form-decoded from `+name` to `" name"` is restored to `+name`. Angular's router never form-decoded, so its deep links need this on the way in.
 - table/table-list: a filter or keyword search keeps the current `pageSize`. Angular rebuilt the params without it, dropping the user's page-size choice on every filter change.
 - table/table-list: the table request no longer waits for the filter option lists (orgs, `List`) to load; the request only needs URL params, so the two now run in parallel.
+- table/use-table: the last results stay on screen while the next page or keyword loads, and a request the next keystroke supersedes is aborted. Angular blanked the table on every request.
 - pages/project-list: `useGroup` / `LEGISLATION_FILTER_GROUP` dropped. `autocomplete-multi-select` grouped on `filterDefinition.group`, which project-list never set, so the flag grouped nothing. Rendering is unchanged.
 - pages/project-list: `project-list.component.css` dropped; every selector in it (`.project-table__*-col`, `.project-table__project-details*`, `.project-list__options`, `.loading-overlay`) is unused by any template in the app.
 - pages/project-notifications: the comment-period lookup runs once per notification. Angular fetched it on row init to decide whether to show the Engagement tab, then fetched the same URL again when the tab opened.

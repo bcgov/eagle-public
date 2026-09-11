@@ -183,9 +183,18 @@ async function send(
   return response;
 }
 
-/** `quiet404`: skip the error log (and telemetry) for a 404 an expected/off-switch caller already handles. */
-export async function getJson<T>(url: string, options?: { quiet404?: boolean }): Promise<T> {
-  return (await send(url, {}, options?.quiet404 ? [404] : [])).json() as Promise<T>;
+/**
+ * `quiet404`: skip the error log (and telemetry) for a 404 an expected/off-switch caller already
+ * handles. `signal`: let the caller drop a request it no longer wants, e.g. a search superseded by
+ * the next keystroke.
+ */
+export async function getJson<T>(
+  url: string,
+  options?: { quiet404?: boolean; signal?: AbortSignal },
+): Promise<T> {
+  return (
+    await send(url, { signal: options?.signal }, options?.quiet404 ? [404] : [])
+  ).json() as Promise<T>;
 }
 
 async function postJson<T>(url: string, body: unknown): Promise<T> {
@@ -278,6 +287,7 @@ export async function searchKeywords(
   secondarySort: string | null = null,
   filter: Record<string, string> = {},
   fuzzy = false,
+  signal?: AbortSignal,
 ): Promise<SearchResults[]> {
   logger.debug(`api.searchKeywords called with keys: ${keys}`, 'api', { filter });
 
@@ -331,7 +341,7 @@ export async function searchKeywords(
   const fullUrl = `${searchPath()}/${queryString}`;
   logger.trace(`API call URL: ${fullUrl}`, 'api');
 
-  return getJson<SearchResults[]>(fullUrl);
+  return getJson<SearchResults[]>(fullUrl, { signal });
 }
 
 /** One page holds every row of these small collections; callers need all of them at once. */
