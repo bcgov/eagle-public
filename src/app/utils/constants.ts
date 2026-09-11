@@ -21,6 +21,7 @@ export class Constants {
     CERTIFICATE: 'certificate',
     AMENDMENT: 'amendment',
     COMPLIANCE: 'compliance',
+    MANAGEMENT_PLAN: 'management-plan',
     UNSUBSCRIBE_CAC: 'project-unsubscribe',
   };
 

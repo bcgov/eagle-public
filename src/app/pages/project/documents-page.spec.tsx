@@ -30,6 +30,8 @@ const LISTS = [
 
   { _id: 'ms-ce-2002', name: 'Compliance & Enforcement', legislation: 2002, type: 'label' },
   { _id: 'ms-ce-2018', name: 'Compliance & Enforcement', legislation: 2018, type: 'label' },
+
+  { _id: 'type-mp-2018', name: 'Management Plan', legislation: 2018, type: 'doctype' },
 ];
 
 let requests: string[];
@@ -92,6 +94,7 @@ function renderRouter(
               { path: 'compliance', element: <div>compliance documents</div> },
               { path: 'certificates', element: <div>certificate documents</div> },
               { path: 'amendments', element: <div>amendment documents</div> },
+              { path: 'management-plans', element: <div>management plan documents</div> },
             ],
           },
         ],
@@ -159,7 +162,7 @@ describe('documents page', () => {
   });
 
   it('holds the group as placeholders until every probe has answered', async () => {
-    // Four probes resolve independently; rendering each answer as it lands makes the segments pop
+    // The probes resolve independently; rendering each answer as it lands makes the segments pop
     // in one at a time.
     let release: () => void = () => undefined;
     const gate = new Promise<void>((resolve) => {
@@ -180,7 +183,7 @@ describe('documents page', () => {
     renderRouter();
 
     const group = await screen.findByRole('navigation', { name: 'Document type' });
-    await waitFor(() => expect(requests).toHaveLength(4));
+    await waitFor(() => expect(requests).toHaveLength(5));
     expect(within(group).queryByRole('link')).not.toBeInTheDocument();
     expect(group.querySelector('[aria-busy="true"]')).not.toBeNull();
     expect(screen.getByText('Loading document types')).toBeInTheDocument();
@@ -188,7 +191,7 @@ describe('documents page', () => {
     release();
 
     expect(await findSegment('Compliance')).toBeInTheDocument();
-    expect(within(group).getAllByRole('link')).toHaveLength(5);
+    expect(within(group).getAllByRole('link')).toHaveLength(6);
     expect(group.querySelector('[aria-busy="true"]')).toBeNull();
   });
 
@@ -207,19 +210,20 @@ describe('documents page', () => {
 
     expect(await findSegment('All Documents')).toHaveAttribute('href', '/p/proj-1/documents');
     await waitFor(() =>
-      expect(requests.filter((url) => url.includes('dataset=Document'))).toHaveLength(4),
+      expect(requests.filter((url) => url.includes('dataset=Document'))).toHaveLength(5),
     );
     expect(querySegment('Application')).not.toBeInTheDocument();
     expect(querySegment('Certificate')).not.toBeInTheDocument();
     expect(querySegment('Amendment(s)')).not.toBeInTheDocument();
     expect(querySegment('Compliance')).not.toBeInTheDocument();
+    expect(querySegment('Management Plan')).not.toBeInTheDocument();
   });
 
   it('asks for one document per segment, filtered by that view type and milestone ids', async () => {
     renderDocuments();
 
     await waitFor(() =>
-      expect(requests.filter((url) => url.includes('dataset=Document'))).toHaveLength(4),
+      expect(requests.filter((url) => url.includes('dataset=Document'))).toHaveLength(5),
     );
 
     expect(requests.find((url) => url.includes('and[type]=type-app-2002'))).toBe(
@@ -235,7 +239,7 @@ describe('documents page', () => {
     renderDocuments();
 
     await waitFor(() =>
-      expect(requests.filter((url) => url.includes('dataset=Document'))).toHaveLength(4),
+      expect(requests.filter((url) => url.includes('dataset=Document'))).toHaveLength(5),
     );
 
     const probe = requests.find((url) => url.includes('and[milestone]=ms-ce-2002'));
@@ -257,6 +261,25 @@ describe('documents page', () => {
       '/p/proj-1/documents/compliance',
     );
     expect(querySegment('Certificate')).not.toBeInTheDocument();
+  });
+
+  it('shows the Management Plan segment once its search finds a document', async () => {
+    tabSearchResponse = (url) =>
+      url.includes('and[type]=type-mp-2018')
+        ? [{ searchResults: [{ _id: 'doc-1' }], meta: [{ searchResultsTotal: 1 }] }]
+        : [{ searchResults: [], meta: [{ searchResultsTotal: 0 }] }];
+
+    renderDocuments();
+
+    const managementPlan = await findSegment('Management Plan');
+    expect(managementPlan).toHaveAttribute('href', '/p/proj-1/documents/management-plans');
+    // The type is the whole filter: no milestone, and no empty parameter to empty the view.
+    const probe = requests.find((url) => url.includes('and[type]=type-mp-2018'));
+    expect(probe).not.toContain('and[milestone]=');
+    expect(querySegment('Compliance')).not.toBeInTheDocument();
+
+    await userEvent.click(managementPlan);
+    expect(await screen.findByText('management plan documents')).toBeInTheDocument();
   });
 
   it('leaves a segment hidden and logs when the search answers unusably', async () => {
@@ -313,7 +336,7 @@ describe('documents page', () => {
     renderDocuments();
 
     await waitFor(() =>
-      expect(requests.filter((url) => url.includes('dataset=Document'))).toHaveLength(4),
+      expect(requests.filter((url) => url.includes('dataset=Document'))).toHaveLength(5),
     );
     expect(error).not.toHaveBeenCalled();
   });

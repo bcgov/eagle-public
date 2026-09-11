@@ -87,6 +87,7 @@ describe('routes', () => {
       'certificates',
       'amendments',
       'compliance',
+      'management-plans',
     ]);
   });
 
