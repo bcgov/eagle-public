@@ -10,6 +10,7 @@ const PROBE_KEYS = [
   Constants.optionalProjectDocTabs.CERTIFICATE,
   Constants.optionalProjectDocTabs.AMENDMENT,
   Constants.optionalProjectDocTabs.COMPLIANCE,
+  Constants.optionalProjectDocTabs.MANAGEMENT_PLAN,
 ];
 
 export interface DocTabProbes {

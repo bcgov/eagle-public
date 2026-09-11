@@ -20,6 +20,7 @@ import { ComplianceTab } from './pages/project/compliance-tab';
 import { Certificates } from './pages/project/certificates';
 import { Amendments } from './pages/project/amendments';
 import { Application } from './pages/project/application';
+import { ManagementPlans } from './pages/project/management-plans';
 import { DocumentsPage } from './pages/project/documents-page';
 import { DocumentsTab } from './pages/project/documents-tab';
 import { ComplianceDocumentsTab } from './pages/project/compliance-documents-tab';
@@ -109,6 +110,7 @@ export const routes: RouteObject[] = [
               { path: 'certificates', Component: Certificates },
               { path: 'amendments', Component: Amendments },
               { path: 'compliance', Component: ComplianceDocumentsTab },
+              { path: 'management-plans', Component: ManagementPlans },
             ],
           },
           // The document-type tabs used to sit at the top level. Keep the old paths pointing at

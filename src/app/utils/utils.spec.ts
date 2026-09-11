@@ -60,6 +60,9 @@ describe('createProjectTabModifiers()', () => {
       legislation: 2002,
       type: 'projectPhase',
     },
+    { _id: 'type-mp-2018', name: 'Management Plan', legislation: 2018, type: 'doctype' },
+    { _id: 'type-plan-2002', name: 'Plan', legislation: 2002, type: 'doctype' },
+    { _id: 'ms-mp-2018', name: 'Management Plan', legislation: 2018, type: 'label' },
   ];
 
   it('selects compliance documents by milestone alone', () => {
@@ -77,6 +80,16 @@ describe('createProjectTabModifiers()', () => {
       LISTS,
     );
     expect(modifiers).toEqual({ documentSource: 'PROJECT' });
+  });
+
+  it('selects management plans by document type alone, across legislations', () => {
+    // Only the 2018 list holds the type, and the 2002 "Plan" type is a different thing.
+    expect(
+      createProjectTabModifiers(Constants.optionalProjectDocTabs.MANAGEMENT_PLAN, LISTS),
+    ).toEqual({
+      documentSource: 'PROJECT',
+      type: 'type-mp-2018',
+    });
   });
 
   it('still sends type, milestone and phase for the amendment tab', () => {

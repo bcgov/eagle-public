@@ -62,6 +62,7 @@ export function createProjectTabModifiers(projectTab: string, list: any[]): Reco
   let types: object[] = [];
   let milestones: object[] = [];
   let phases: string | undefined;
+  let typeIdsFromList: string[] = [];
 
   switch (projectTab) {
     case Constants.optionalProjectDocTabs.UNSUBSCRIBE_CAC:
@@ -118,6 +119,12 @@ export function createProjectTabModifiers(projectTab: string, list: any[]): Reco
         { legislation: 2018, name: 'Compliance & Enforcement' },
       ];
       break;
+    case Constants.optionalProjectDocTabs.MANAGEMENT_PLAN:
+      // Management plans carry a document type but no milestone of their own, and only some
+      // legislations list the type, so the ids come off the list by name rather than from a fixed
+      // set of legislation pairs. The match is exact: 2002 also lists a separate "Plan" type.
+      typeIdsFromList = getIdsByListName('doctype', 'Management Plan', list);
+      break;
     case Constants.optionalProjectDocTabs.APPLICATION: {
       // Application documents are identified by type and milestone only.
       // Adding projectPhase filter causes query issues with many AND conditions.
@@ -136,9 +143,9 @@ export function createProjectTabModifiers(projectTab: string, list: any[]): Reco
     }
   }
 
-  const typeIds = getIdsByName(types, list)
-    .map((type) => type.id)
-    .join(',');
+  const typeIds = [...getIdsByName(types, list).map((type) => type.id), ...typeIdsFromList].join(
+    ',',
+  );
   const milestoneIds = getIdsByName(milestones, list)
     .map((milestone) => milestone.id)
     .join(',');
@@ -158,6 +165,11 @@ export function createProjectTabModifiers(projectTab: string, list: any[]): Reco
   }
 
   return queryModifier;
+}
+
+// Ids of every list entry of one kind with this exact name, whatever legislation it belongs to.
+function getIdsByListName(kind: string, name: string, list: any[]): string[] {
+  return list.filter((item) => item.type === kind && item.name === name).map((item) => item._id);
 }
 
 // Searches the list of terms for a name and legislation year.
