@@ -8,6 +8,8 @@
   ],
   "home": [
     "GET /demi-search/config",
+    "GET /demi-search/documents/recent-uploads?limit=5",
+    "GET /demi-search/search?dataset=List&pageSize=250",
     "GET /demi-search/search?dataset=RecentActivity&fuzzy=false&pageNum=0&pageSize=4&populate=false&projectLegislation=default&top=true"
   ],
   "news": [
