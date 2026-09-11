@@ -13,9 +13,6 @@ import { ActivityCard } from 'app/components/activity-card';
 import { DocumentLink } from 'app/components/table/document-link';
 import './home.css';
 
-/** Matches the five minutes demi-search caches the feed for; asking sooner cannot say anything new. */
-const RECENT_UPLOADS_STALE_MS = 5 * 60 * 1000;
-
 const HERO_TITLE = 'Environmental Assessments';
 const HERO_DESCRIPTION =
   "British Columbia's environmental assessment process provides opportunities for Indigenous Nations, government agencies and the public to influence the outcome of environmental assessments in British Columbia.";
@@ -76,20 +73,16 @@ function FeedSpinner() {
  */
 const NEWEST_FIRST = '-datePosted';
 
-/** The project id links route on: Eagle's `_id`, falling back to DEMI's for a project Eagle lacks. */
-function linkProjectId(upload: RecentUpload): string {
-  return upload.eagleProjectId ?? upload.projectId;
-}
-
-/** The project's All Documents table, newest first. */
-function documentsHref(upload: RecentUpload): string {
-  return `/p/${linkProjectId(upload)}/documents?sortBy=${NEWEST_FIRST}`;
+/** The project's All Documents table, newest first. Takes the Eagle `_id`: no route resolves a DEMI id. */
+function documentsHref(eagleProjectId: string): string {
+  return `/p/${eagleProjectId}/documents?sortBy=${NEWEST_FIRST}`;
 }
 
 /** One project in the feed: its newest documents, and the ways into the full list. */
 function UploadRow({ upload, lists }: { upload: RecentUpload; lists: any[] }) {
   const documents = upload.documents ?? [];
-  const projectHref = documentsHref(upload);
+  // A project Eagle has no row for has nowhere to link to, so its name stays plain text.
+  const projectHref = upload.eagleProjectId ? documentsHref(upload.eagleProjectId) : null;
   const rowDate = longDate(upload.dateUploaded);
 
   function trackClick(
@@ -97,7 +90,8 @@ function UploadRow({ upload, lists }: { upload: RecentUpload; lists: any[] }) {
     target: 'project' | 'document' | 'all-documents',
   ): void {
     track('Recent Upload Clicked', {
-      project_id: linkProjectId(upload),
+      // Not a route, so the DEMI id still names the project when Eagle has no row.
+      project_id: upload.eagleProjectId ?? upload.projectId,
       project_name: upload.projectName,
       document_id: doc?.id ?? null,
       target,
@@ -107,9 +101,13 @@ function UploadRow({ upload, lists }: { upload: RecentUpload; lists: any[] }) {
   return (
     <li>
       <h3 className="home-recent-uploads__project">
-        <Link to={projectHref} onClick={() => trackClick(null, 'project')}>
-          {upload.projectName}
-        </Link>
+        {projectHref ? (
+          <Link to={projectHref} onClick={() => trackClick(null, 'project')}>
+            {upload.projectName}
+          </Link>
+        ) : (
+          upload.projectName
+        )}
       </h3>
       <small className="d-block text-muted mb-3">{rowDate}</small>
 
@@ -147,16 +145,18 @@ function UploadRow({ upload, lists }: { upload: RecentUpload; lists: any[] }) {
         </ul>
       )}
 
-      <div className="d-flex flex-wrap gap-2 mt-3">
-        <Link
-          className="btn btn-sm btn-outline-primary"
-          to={projectHref}
-          aria-label={`All documents for ${upload.projectName}`}
-          onClick={() => trackClick(null, 'all-documents')}
-        >
-          All documents
-        </Link>
-      </div>
+      {projectHref && (
+        <div className="d-flex flex-wrap gap-2 mt-3">
+          <Link
+            className="btn btn-sm btn-outline-primary"
+            to={projectHref}
+            aria-label={`All documents for ${upload.projectName}`}
+            onClick={() => trackClick(null, 'all-documents')}
+          >
+            All documents
+          </Link>
+        </div>
+      )}
     </li>
   );
 }
@@ -173,7 +173,9 @@ function RecentUploads() {
   } = useQuery({
     queryKey: ['recentUploads'],
     queryFn: () => getRecentUploads(),
-    staleTime: RECENT_UPLOADS_STALE_MS,
+    // demi-search caches the feed for five minutes, the window the client's default staleTime holds.
+    // A failed feed drops the section, so retrying only holds the spinner up.
+    retry: false,
   });
 
   if (isError || (!isPending && uploads.length === 0)) {

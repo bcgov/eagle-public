@@ -1,7 +1,7 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { screen, waitForElementToBeRemoved, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { renderAt } from '../../test-utils';
+import { makeQueryClient, renderAt } from '../../test-utils';
 import { Home } from './home';
 
 const { track, openDocumentDownload } = vi.hoisted(() => ({
@@ -127,7 +127,8 @@ let requests: string[] = [];
 function renderHome({
   items = UPLOADS,
   uploadsStatus = 200,
-}: { items?: unknown[]; uploadsStatus?: number } = {}) {
+  retries = false,
+}: { items?: unknown[]; uploadsStatus?: number; retries?: boolean } = {}) {
   requests = [];
   vi.stubGlobal(
     'fetch',
@@ -156,11 +157,17 @@ function renderHome({
     }),
   );
 
-  return renderAt('/', [
-    { path: '/', Component: Home },
-    // Where the feed's links point, so a click under test navigates instead of failing the route.
-    { path: '/p/:projId/documents/*', Component: () => <p>documents</p> },
-  ]);
+  return renderAt(
+    '/',
+    [
+      { path: '/', Component: Home },
+      // Where the feed's links point, so a click under test navigates instead of failing the route.
+      { path: '/p/:projId/documents/*', Component: () => <p>documents</p> },
+    ],
+    // The spec helper turns retries off for every query; `retries` puts back the app client's
+    // default of 3, so a query that has to opt out itself cannot pass on the helper's setting.
+    retries ? { queryClient: makeQueryClient({ retry: 3 }) } : {},
+  );
 }
 
 /** The Recent Uploads section, once its feed has rendered. */
@@ -229,11 +236,18 @@ describe('home recent uploads', () => {
     expect(href('Cedar LNG')).toBe('/p/eagle-1/documents?sortBy=-datePosted');
   });
 
-  it('routes a project Eagle has no row for on the DEMI id', async () => {
+  it('leaves a project Eagle has no row for unlinked, and still lists its documents', async () => {
     renderHome();
-    await rows();
+    const row = await rowFor('Willow Creek Wind');
 
-    expect(href('Willow Creek Wind')).toBe('/p/demi-5/documents?sortBy=-datePosted');
+    // No route resolves a DEMI id, so the name is text and there is no table to send anyone to.
+    expect(within(row).queryByRole('link', { name: 'Willow Creek Wind' })).not.toBeInTheDocument();
+    expect(within(row).queryByRole('link', { name: /^All documents/ })).not.toBeInTheDocument();
+    // Documents open by their own id, which works with or without an Eagle project row.
+    expect(within(row).getByRole('link', { name: 'Correspondence' })).toHaveAttribute(
+      'href',
+      '/demi-search/documents/d5/download?redirect=1',
+    );
   });
 
   it('shows every project its documents at once, with nothing to expand', async () => {
@@ -291,20 +305,17 @@ describe('home recent uploads', () => {
     expect(within(row).getAllByText('September 1, 2026')).toHaveLength(1);
   });
 
-  it('closes each project block with an All documents link that names its project', async () => {
+  it('closes each linked project block with an All documents link that names its project', async () => {
     renderHome();
-    const list = await rows();
+    await rows();
 
     const allDocuments = screen.getAllByRole('link', { name: /^All documents for / });
-    expect(allDocuments).toHaveLength(5);
+    expect(allDocuments).toHaveLength(4);
     // The project only extends the name a reader hears; the label on screen stays short.
     allDocuments.forEach((link) => expect(link).toHaveTextContent(/^All documents/));
     expect(href('All documents for Kitimat Terminal')).toBe(
       '/p/eagle-2/documents?sortBy=-datePosted',
     );
-    expect(
-      within(list[4]!).getByRole('link', { name: 'All documents for Willow Creek Wind' }),
-    ).toHaveAttribute('href', '/p/demi-5/documents?sortBy=-datePosted');
   });
 
   it.each([
@@ -334,6 +345,15 @@ describe('home recent uploads', () => {
       screen.queryByRole('heading', { name: 'Recent Uploads' }),
     );
     expect(screen.getByText('Recent Activities & Updates')).toBeInTheDocument();
+  });
+
+  it('asks the failing feed once, whatever the client retries', async () => {
+    renderHome({ uploadsStatus: 500, retries: true });
+
+    await waitForElementToBeRemoved(() =>
+      screen.queryByRole('heading', { name: 'Recent Uploads' }),
+    );
+    expect(requests.filter((url) => url.includes('/documents/recent-uploads'))).toHaveLength(1);
   });
 
   it('drops the section when the request fails, leaving the rest of the page', async () => {
