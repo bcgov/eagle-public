@@ -39,15 +39,31 @@ function proponentName(row: Record<string, unknown>): string {
   return String(proponent ?? '');
 }
 
+/** The project's own page. `/p/:id` lands on the overview tab. */
+function projectHref(row: Record<string, unknown>): string | undefined {
+  const id = row['_id'];
+  return typeof id === 'string' && id !== '' ? `/p/${id}` : undefined;
+}
+
 const COLUMNS: GridColumn<Record<string, unknown>>[] = [
-  { key: 'name', label: 'Project', sortable: true, link: true, locked: true, width: '24%' },
+  {
+    key: 'name',
+    label: 'Project',
+    sortable: true,
+    link: true,
+    href: projectHref,
+    locked: true,
+    width: '24%',
+  },
   {
     key: 'dateUpdated',
     label: 'Last updated',
     sortable: true,
+    // One whole year, which the page turns into the range the index takes.
+    filter: 'year',
     date: true,
     primaryDate: true,
-    width: '13%',
+    width: '14%',
   },
   {
     key: 'proponent',
@@ -55,16 +71,16 @@ const COLUMNS: GridColumn<Record<string, unknown>>[] = [
     filter: 'values',
     filterId: 'proponent',
     render: proponentName,
-    width: '19%',
+    width: '22%',
   },
-  { key: 'type', label: 'Type', filter: 'values', filterId: 'type', width: '16%' },
-  { key: 'region', label: 'Region', filter: 'values', filterId: 'region', width: '14%' },
+  { key: 'type', label: 'Type', filter: 'values', filterId: 'type', width: '17%' },
+  { key: 'region', label: 'Region', filter: 'values', filterId: 'region', width: '11%' },
   {
     key: 'currentPhaseName',
     label: 'Phase',
     filter: 'values',
     filterId: 'currentPhaseName',
-    width: '14%',
+    width: '12%',
   },
 ];
 
@@ -79,10 +95,12 @@ export const projectsConfig: RecordTypeConfig = {
   defaultSort: PROJECTS_SORT,
   template: 'grid',
   columns: COLUMNS,
-  filterIds: ['proponent', 'type', 'region', 'currentPhaseName'],
   advancedFields: [
     { id: 'dateUpdatedStart', label: 'Updated after', kind: 'date', placeholder: 'YYYY-MM-DD' },
     { id: 'dateUpdatedEnd', label: 'Updated before', kind: 'date', placeholder: 'YYYY-MM-DD' },
+    // The Angular project list put these on the query string, so the redirect still carries them.
+    { id: 'decisionDateStart', label: 'Decision after', kind: 'date', placeholder: 'YYYY-MM-DD' },
+    { id: 'decisionDateEnd', label: 'Decision before', kind: 'date', placeholder: 'YYYY-MM-DD' },
     { id: 'eacDecision', label: 'EA decision', kind: 'select' },
     { id: 'CEAAInvolvement', label: 'IAAC involvement', kind: 'select' },
   ],
@@ -97,7 +115,6 @@ export const projectsConfig: RecordTypeConfig = {
       CEAAInvolvement: ofType(LIST_TYPES.CEAAInvolvement),
     };
   },
-  recordHasPage: true,
   selectable: false,
   headerless: false,
 };

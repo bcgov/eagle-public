@@ -56,18 +56,6 @@ export const SORTABLE_FIELDS: Record<RecordType, string[]> = {
   notifications: ['name', 'dateUpdated'],
 };
 
-/**
- * Params only the Angular document search offered. A bare /search carrying one of these is a
- * document search; anything else goes to the default projects tab.
- */
-const DOCUMENT_ONLY_PARAMS = [
-  'milestone',
-  'documentAuthorType',
-  'projectPhase',
-  'datePostedStart',
-  'datePostedEnd',
-];
-
 function validSortBy(record: RecordType, raw: string | null): string | null {
   if (!raw) return null;
   const sortBy = normalizeSortBy(raw);
@@ -114,9 +102,10 @@ export function legacySearchRedirect(record: RecordType, options: { scope?: Sear
 
 /**
  * Where a /search address should go, or null when it is already a new-style one and the page can
- * render it as it stands. Angular's /search meant documents, so a document param or `dataset=
- * Document` picks that tab; anything else is the default projects tab. Relative input is resolved
- * against a throwaway origin, so read `pathname` and `search` off the result, not `href`.
+ * render it as it stands. Angular's /search was the document search, and documents are what the
+ * new page opens on, so an old address keeps its document filters and drops everything else —
+ * `dataset` included. Relative input is resolved against a throwaway origin, so read `pathname`
+ * and `search` off the result, not `href`.
  */
 export function resolveLegacySearch(url: string | URL): URL | null {
   const current = new URL(url, 'http://localhost');
@@ -125,12 +114,9 @@ export function resolveLegacySearch(url: string | URL): URL | null {
   const record = search.get('record');
   if (record && (RECORD_TYPES as string[]).includes(record)) return null;
 
-  const looksLikeDocuments =
-    search.get('dataset') === 'Document' || DOCUMENT_ONLY_PARAMS.some((param) => search.get(param));
-
   const next = new URL(current);
   next.pathname = '/search';
-  next.search = legacySearchQuery(looksLikeDocuments ? 'documents' : 'projects', search).toString();
+  next.search = legacySearchQuery('documents', search).toString();
 
   return next.href === current.href ? null : next;
 }

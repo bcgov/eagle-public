@@ -149,17 +149,17 @@ deviations. The deviations the pass turned up are below.
 ## URLs
 
 The four Angular list pages — the project list, document search, news and project notifications —
-become one `/search` page with a `record` param. The old addresses still work: each one redirects on
-arrival, keeping the keyword, the page, the page size and its own filters. `dataset` is dropped,
-because the record type now says which dataset to read. A `sortBy` naming a column the new tab
+become one `/search` page with a `record` param. Documents is the record type the page opens on,
+which is what a bare `/search` listed under Angular. The old addresses still work: each one
+redirects on arrival, keeping the keyword, the page, the page size and its own filters. `dataset`
+is dropped, because the record type now says which dataset to read. A `sortBy` naming a column the new tab
 cannot sort by is dropped too, so the page falls back to its own default instead of asking the API
 for an order it would reject. Any other param is dropped.
 
 | Old address | Lands on | |
 |---|---|---|
 | `/projects-list` | `/search?record=projects` | live |
-| `/search` with a document param or `dataset=Document` | `/search?record=documents` | live |
-| `/search` with no document param | `/search?record=projects` | live |
+| `/search`, with or without document params | `/search?record=documents` | live |
 | `/#/<any of the above>` | the same path without the `#`, then the row above | live |
 | `/search/content` | `/search?record=documents&scope=inside` | planned, the inside-document scope is not built yet |
 | `/news` | `/search?record=activities` | planned, the activities tab is not built yet |

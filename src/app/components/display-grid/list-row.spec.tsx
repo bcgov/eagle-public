@@ -1,6 +1,13 @@
-import { render, screen } from '@testing-library/react';
+import type { ReactElement } from 'react';
+import { render as rtlRender, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router';
 import { ListRow } from './list-row';
+
+/** The headline link is a router link, so every row needs a router around it. */
+function render(ui: ReactElement) {
+  return rtlRender(<MemoryRouter>{ui}</MemoryRouter>);
+}
 
 const longBody = `Sediment control works were inspected. ${'Findings follow. '.repeat(30)}`;
 

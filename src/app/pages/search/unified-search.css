@@ -10,7 +10,9 @@
   min-width: 0;
   max-width: 1180px;
   margin: 0 auto;
-  padding: var(--layout-padding-large) var(--layout-padding-medium);
+  /* 0.75rem side gutter: half the site grid's gutter, so the page lines up with every other
+     container on the site rather than sitting 4px narrower. */
+  padding: var(--layout-padding-large) 0.75rem;
   color: var(--typography-color-primary);
   font-family: 'BC Sans', sans-serif;
 }
@@ -29,17 +31,35 @@
   white-space: nowrap;
 }
 
+/* Size and weight come from the site's own h1, which every other page uses. */
 .unified-search .unified-search__title {
-  margin: 0 0 var(--layout-margin-xsmall);
-  font: var(--typography-bold-h4);
+  margin: 0 0 var(--layout-margin-large);
 }
 
-.unified-search .unified-search__intro {
-  margin: 0 0 var(--layout-margin-large);
-  max-width: 66ch;
-  font: var(--typography-regular-body);
+/* Breadcrumb: the page's own, because the only other one on the site rides a dark masthead and
+   carries inverted ink. Same order and separator, light-ground colours. */
+.unified-search .unified-search__breadcrumb ol {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--layout-padding-xsmall);
+  margin: 0 0 var(--layout-margin-medium);
+  padding: 0;
+  list-style: none;
+}
+
+.unified-search .unified-search__breadcrumb li {
   color: var(--typography-color-secondary);
-  text-wrap: pretty;
+}
+
+.unified-search .unified-search__breadcrumb a {
+  color: var(--typography-color-link);
+  text-decoration: none;
+}
+
+.unified-search .unified-search__breadcrumb a:hover,
+.unified-search .unified-search__breadcrumb a:focus-visible {
+  text-decoration: underline;
 }
 
 /* Keyword field */
@@ -177,9 +197,9 @@
 
 /* Empty state, rendered inside the grid's own empty slot */
 
+/* The grid's empty frame supplies the padding; a second one here would double it. */
 .unified-search .unified-search__empty {
   display: block;
-  padding: var(--layout-padding-large) var(--layout-padding-medium);
   text-align: center;
 }
 
@@ -193,7 +213,6 @@
 .unified-search .unified-search__empty-detail {
   display: block;
   margin: 0 auto var(--layout-margin-medium);
-  max-width: 56ch;
   font: var(--typography-regular-small-body);
   color: var(--typography-color-secondary);
   text-wrap: pretty;

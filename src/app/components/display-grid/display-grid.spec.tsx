@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router';
 import { DisplayGrid } from './display-grid';
 import type { GridColumn } from './types';
 
@@ -14,6 +15,9 @@ const columns: GridColumn<Doc>[] = [
   { key: 'name', label: 'Name', filter: 'text', link: true, locked: true },
   { key: 'date', label: 'Date posted', filter: 'year', date: true },
 ];
+
+/** The narrow sort select only offers the orders the columns say they can be sorted in. */
+const sortableColumns: GridColumn<Doc>[] = columns.map((column) => ({ ...column, sortable: true }));
 
 const rows: Doc[] = [
   { id: 'a', name: 'Application', date: '2024-03-01' },
@@ -41,20 +45,35 @@ function renderGrid(props: Partial<React.ComponentProps<typeof DisplayGrid<Doc>>
   const onPageChange = vi.fn();
   const onPageSizeChange = vi.fn();
   const view = render(
-    <DisplayGrid<Doc>
-      caption="Documents"
-      columns={columns}
-      rows={rows}
-      page={1}
-      pageSize={25}
-      total={rows.length}
-      rowId={(row) => row.id}
-      onPageChange={onPageChange}
-      onPageSizeChange={onPageSizeChange}
-      {...props}
-    />,
+    <MemoryRouter>
+      <DisplayGrid<Doc>
+        caption="Documents"
+        columns={columns}
+        rows={rows}
+        page={1}
+        pageSize={25}
+        total={rows.length}
+        rowId={(row) => row.id}
+        onPageChange={onPageChange}
+        onPageSizeChange={onPageSizeChange}
+        {...props}
+      />
+    </MemoryRouter>,
   );
   return { ...view, onPageChange, onPageSizeChange };
+}
+
+/** The narrow viewport the cards render at; jsdom answers every query false without this. */
+function stubNarrow(matches: boolean) {
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn((query: string) => ({
+      matches,
+      media: query,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    })),
+  );
 }
 
 afterEach(() => {
@@ -125,11 +144,11 @@ describe('DisplayGrid', () => {
     function Row({ row }: { row: Doc }) {
       return <h3>{row.name}</h3>;
     }
-    renderGrid({ template: 'list', rowComponent: Row });
+    const { container } = renderGrid({ template: 'list', rowComponent: Row });
 
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Application' })).toBeInTheDocument();
-    expect(screen.getAllByRole('listitem')).toHaveLength(2);
+    expect(container.querySelectorAll('.display-grid__list > li')).toHaveLength(2);
   });
 
   it('hands the column filters to the panel when no column is on screen', () => {
@@ -140,8 +159,20 @@ describe('DisplayGrid', () => {
       ),
     });
 
-    expect(screen.getByTestId('panel')).toHaveTextContent('Name, Date posted');
+    // The date column is not among them: its range is the panel's own field, not a second copy.
+    expect(screen.getByTestId('panel')).toHaveTextContent('Name');
+    expect(screen.getByTestId('panel')).not.toHaveTextContent('Date posted');
     expect(screen.queryByRole('columnheader')).not.toBeInTheDocument();
+  });
+
+  it('keeps the column filters out of the panel while the filter row shows them', () => {
+    renderGrid({
+      panel: (fields) => (
+        <div data-testid="panel">{fields.map((field) => field.label).join(', ') || 'none'}</div>
+      ),
+    });
+
+    expect(screen.getByTestId('panel')).toHaveTextContent('none');
   });
 
   it('scrolls the grid back into view when the page changes', async () => {
@@ -154,6 +185,50 @@ describe('DisplayGrid', () => {
 
     expect(onPageChange).toHaveBeenCalledWith(2);
     expect(scrollIntoView).toHaveBeenCalled();
+  });
+
+  it('keeps the pager and the page sizes on screen when nothing matched', () => {
+    renderGrid({ rows: [], total: 0, emptyMessage: 'No documents found' });
+
+    // Page one of one, both arrows spent: the row under the grid does not come and go.
+    expect(screen.getByRole('button', { name: 'Go to page 1' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+    expect(screen.getByRole('button', { name: 'Previous page' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Next page' })).toBeDisabled();
+    expect(screen.getByRole('group', { name: 'Rows per page' })).toBeInTheDocument();
+  });
+
+  it('presses the page size in force', () => {
+    renderGrid({ pageSize: 25 });
+
+    expect(screen.getByRole('button', { name: '25' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: '10' })).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('moves focus to the caption when the page changes', async () => {
+    Element.prototype.scrollIntoView = vi.fn();
+    const user = userEvent.setup();
+    renderGrid({ total: 120 });
+
+    await user.click(screen.getByRole('button', { name: 'Go to page 2' }));
+
+    // Focus left on the pager is off screen after the scroll, so the next Tab starts nowhere.
+    expect(screen.getByRole('caption')).toHaveFocus();
+  });
+
+  it('moves focus to the top of a list-mode grid too', async () => {
+    function Row({ row }: { row: Doc }) {
+      return <h3>{row.name}</h3>;
+    }
+    Element.prototype.scrollIntoView = vi.fn();
+    const user = userEvent.setup();
+    renderGrid({ total: 120, template: 'list', rowComponent: Row });
+
+    await user.click(screen.getByRole('button', { name: 'Go to page 2' }));
+
+    expect(screen.getByText('Documents')).toHaveFocus();
   });
 
   it('reports the page size the reader picks', async () => {
@@ -195,8 +270,99 @@ describe('DisplayGrid', () => {
     const { container } = renderGrid();
     const body = container.querySelector('tbody');
 
-    expect(within(body as HTMLElement).getByText('2024-03-01')).toHaveClass(
-      'display-grid__cell--date',
+    expect(
+      within(body as HTMLElement)
+        .getByText('2024-03-01')
+        .closest('td'),
+    ).toHaveClass('display-grid__cell--date');
+  });
+  it('hides the column headings and the filter row when nothing matched', () => {
+    renderGrid({ rows: [], total: 0, emptyMessage: 'No documents match these filters' });
+
+    expect(screen.queryByRole('columnheader')).not.toBeInTheDocument();
+    expect(document.querySelector('.display-grid__filter-row')).toBeNull();
+    expect(screen.getByText('No documents match these filters')).toBeInTheDocument();
+  });
+
+  it('truncates a cell to one line and keeps the whole value as its tooltip', () => {
+    renderGrid();
+
+    expect(screen.getByText('Application')).toHaveAttribute('title', 'Application');
+    expect(screen.getByText('Application')).toHaveClass('display-grid__cell-text');
+  });
+
+  it('links the record name when the column names a target', () => {
+    const linked = columns.map((column) =>
+      column.link ? { ...column, href: (row: Doc) => `/p/${row.id}` } : column,
     );
+    renderGrid({ columns: linked });
+
+    expect(screen.getByRole('link', { name: 'Application' })).toHaveAttribute('href', '/p/a');
+  });
+
+  it('leaves the record name as text when the column names no target', () => {
+    renderGrid();
+
+    expect(screen.queryByRole('link', { name: 'Application' })).not.toBeInTheDocument();
+  });
+
+  it('opens a target outside the app in its own tab', () => {
+    const linked = columns.map((column) =>
+      column.link
+        ? { ...column, hrefExternal: true, href: (row: Doc) => `/demi-search/${row.id}` }
+        : column,
+    );
+    renderGrid({ columns: linked });
+
+    const link = screen.getByRole('link', { name: 'Application' });
+    expect(link).toHaveAttribute('href', '/demi-search/a');
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'));
+  });
+
+  describe('below the breakpoint', () => {
+    it('renders one card per record instead of the table', () => {
+      stubNarrow(true);
+      const { container } = renderGrid();
+
+      expect(screen.queryByRole('table')).not.toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Application', level: 3 })).toBeInTheDocument();
+      expect(container.querySelectorAll('.display-grid__cards > li')).toHaveLength(rows.length);
+    });
+
+    it('shows each record attribute as a labelled pair, extras included', () => {
+      stubNarrow(true);
+      renderGrid({ narrowExtras: () => [{ label: 'Legislation', value: '2018 Act' }] });
+
+      const card = screen.getAllByRole('listitem')[0] as HTMLElement;
+      expect(within(card).getByText('2024-03-01')).toBeInTheDocument();
+      expect(within(card).getByText('Legislation')).toBeInTheDocument();
+      expect(within(card).getByText('2018 Act')).toBeInTheDocument();
+    });
+
+    it('links the card headline at the same target as the cell', () => {
+      stubNarrow(true);
+      const linked = columns.map((column) =>
+        column.link ? { ...column, href: (row: Doc) => `/p/${row.id}` } : column,
+      );
+      renderGrid({ columns: linked });
+
+      const card = screen.getAllByRole('listitem')[0] as HTMLElement;
+      expect(within(card).getByRole('link', { name: 'Application' })).toHaveAttribute(
+        'href',
+        '/p/a',
+      );
+    });
+
+    it('sorts from a select, naming the direction the reader picked', async () => {
+      stubNarrow(true);
+      const user = userEvent.setup();
+      const onSort = vi.fn();
+      renderGrid({ onSort, sort: { key: 'date', dir: 'desc' }, columns: sortableColumns });
+
+      await user.selectOptions(screen.getByLabelText('Sort'), '+date');
+
+      expect(onSort).toHaveBeenCalledWith('date', '+');
+    });
   });
 });

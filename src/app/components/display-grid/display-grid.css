@@ -460,6 +460,20 @@
   text-overflow: ellipsis;
 }
 
+.display-grid__cell-link {
+  color: var(--typography-color-link);
+  text-decoration: none;
+}
+
+.display-grid__cell-link:hover {
+  text-decoration: underline;
+}
+
+.display-grid__cell-link:focus-visible {
+  outline: var(--layout-border-width-medium) solid var(--surface-color-primary-default);
+  outline-offset: 2px;
+}
+
 /* The old rows stay while the next page loads; dimming says they are stale without a jump. */
 .display-grid__body--loading {
   opacity: 0.55;
@@ -476,7 +490,7 @@
 
 .display-grid__empty {
   margin: 0;
-  padding: var(--layout-padding-xlarge);
+  padding: var(--layout-padding-xlarge) var(--layout-padding-large);
   font: var(--typography-regular-body);
   color: var(--typography-color-secondary);
   text-align: center;
@@ -499,6 +513,75 @@
   border-bottom: none;
 }
 
+/* === NARROW CARDS === */
+
+/* One record per card below the breakpoint: the checkbox and the date lead, then the headline and
+   the record's own fields, which is every column the table would have had to hide. */
+.display-grid__cards {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.display-grid__card {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--layout-padding-small);
+  padding: var(--layout-padding-medium);
+  border-bottom: var(--layout-border-width-small) solid var(--theme-gray-30);
+}
+
+.display-grid__card:last-child {
+  border-bottom: none;
+}
+
+.display-grid__card--selected {
+  background: var(--theme-blue-10);
+}
+
+/* The card is the padded box; the row inside it carries content only. */
+.display-grid__card .display-grid__row {
+  min-width: 0;
+  flex: 1 1 auto;
+  padding: 0;
+  border-bottom: none;
+}
+
+.display-grid__card-check {
+  margin-top: 3px;
+  flex: 0 0 auto;
+}
+
+/* The sort control the cards have instead of a sortable heading row. */
+.display-grid__sort-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--layout-padding-small);
+  padding: var(--layout-padding-small) var(--layout-padding-medium);
+  background: var(--theme-gray-10);
+  border-bottom: var(--layout-border-width-small) solid var(--theme-gray-40);
+}
+
+/* Its own name, not the heading label's: one class for both would have the last rule in the file
+   decide how a sortable column heading reads. */
+.display-grid__sort-bar-label {
+  display: flex;
+  align-items: center;
+  gap: var(--layout-padding-xsmall);
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-secondary);
+}
+
+.display-grid__sort-select {
+  min-height: 32px;
+  padding: 0 var(--layout-padding-xsmall);
+  border: var(--layout-border-width-small) solid var(--theme-gray-50);
+  border-radius: var(--layout-border-radius-small);
+  background: var(--theme-gray-white);
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-primary);
+}
+
 /* === FOOTER === */
 
 .display-grid__footer {
@@ -509,15 +592,66 @@
   gap: var(--layout-padding-small);
   padding: var(--layout-padding-small) var(--layout-padding-medium);
   border-top: var(--layout-border-width-small) solid var(--theme-gray-40);
+  background: var(--theme-gray-10);
 }
 
 .display-grid__footer-group {
   display: flex;
   align-items: center;
-  gap: var(--layout-padding-small);
+  gap: var(--layout-padding-xsmall);
 }
 
 .display-grid__footer-label {
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-secondary);
+}
+
+.display-grid__pager {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* One chip for a page size and for a page number: both are a square choice in the same row. */
+.display-grid__page-chip {
+  min-width: 32px;
+  min-height: 32px;
+  padding: 0 var(--layout-padding-xsmall);
+  border: var(--layout-border-width-small) solid var(--theme-gray-50);
+  border-radius: var(--layout-border-radius-small);
+  background: var(--theme-gray-white);
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-primary);
+  cursor: pointer;
+}
+
+.display-grid__page-chip--current {
+  border-color: var(--typography-color-link);
+  background: var(--surface-color-primary-default);
+  color: var(--theme-gray-white);
+  font-weight: 700;
+}
+
+/* An end of the range, so the arrow stays in place and states that it is spent. */
+.display-grid__page-chip:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.display-grid__page-chip:focus-visible {
+  outline: var(--layout-border-width-medium) solid var(--surface-color-primary-default);
+  outline-offset: 1px;
+}
+
+.display-grid__page-gap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  min-height: 32px;
   font: var(--typography-regular-small-body);
   color: var(--typography-color-secondary);
 }
@@ -535,9 +669,23 @@
   }
 }
 
-/* Below 720 the list template takes over, and a column filter row has no columns to sit under. */
-@media (max-width: 720px) {
+/* Below 720 the cards take over, and a column filter row has no columns to sit under. */
+@media (max-width: 719.98px) {
   .display-grid__filter-row {
     display: none;
+  }
+
+  /* The toolbar stacks: the count, then the scope switch, then the tools two to a line with Copy
+     link falling to its own. A phone reads it as a card, so it carries the whole border. */
+  .display-grid__bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--layout-padding-small);
+    border: var(--layout-border-width-small) solid var(--theme-gray-40);
+    border-bottom: none;
+  }
+
+  .display-grid__bar-group {
+    gap: var(--layout-padding-small);
   }
 }

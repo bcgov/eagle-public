@@ -119,19 +119,19 @@ describe('resolveLegacySearch', () => {
       to: '/search?record=documents&keywords=pipeline&projectPhase=p1',
     },
     {
-      name: 'no document param means the default projects tab',
+      name: 'a plain keyword search is the documents tab, as Angular /search was',
       from: '/search?keywords=pipeline',
-      to: '/search?record=projects&keywords=pipeline',
+      to: '/search?record=documents&keywords=pipeline',
     },
     {
       name: 'a bare /search still names its record type',
       from: '/search',
-      to: '/search?record=projects',
+      to: '/search?record=documents',
     },
     {
-      name: 'an unknown record type falls back to projects',
+      name: 'an unknown record type falls back to documents',
       from: '/search?record=bogus&keywords=pipeline',
-      to: '/search?record=projects&keywords=pipeline',
+      to: '/search?record=documents&keywords=pipeline',
     },
   ])('rewrites $name', ({ from, to }) => {
     expect(resolved(from)).toBe(to);

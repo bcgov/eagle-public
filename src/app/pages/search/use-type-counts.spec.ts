@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
-import { renderHook, waitFor, act } from '@testing-library/react';
+import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClientProvider, type QueryClient } from '@tanstack/react-query';
 import { createElement, type ReactNode } from 'react';
 import { makeQueryClient, emptySearchEnvelope } from '../../../test-utils';
@@ -23,7 +23,7 @@ function jsonResponse(body: unknown) {
 }
 
 function countsBody() {
-  return [{ counts: totals, meta: [{ unavailable: [], degraded: [], cached: false }] }];
+  return [{ counts: totals }];
 }
 
 function searchBody(url: string) {
@@ -149,16 +149,18 @@ describe('useTypeCounts', () => {
     expect(signals[0]?.aborted).toBe(true);
   });
 
-  it('asks for nothing below the keyword floor', async () => {
-    vi.useFakeTimers();
-
+  it('counts everything below the keyword floor, as the results themselves do', async () => {
     const { result } = await renderCounts('l');
-    await act(async () => {
-      vi.advanceTimersByTime(1000);
-    });
 
-    expect(countsCalls).toHaveLength(0);
-    expect(searchCalls).toHaveLength(0);
-    expect(result.current.counts).toBeUndefined();
+    await waitFor(() => expect(result.current.counts).toBeDefined());
+    expect(countsCalls).toHaveLength(1);
+    expect(countsCalls[0]).toContain('keywords=');
+  });
+
+  it('counts everything before a keyword is typed, so the tabs open with totals', async () => {
+    const { result } = await renderCounts('');
+
+    await waitFor(() => expect(result.current.counts).toBeDefined());
+    expect(result.current.counts?.documents).toBe(11);
   });
 });

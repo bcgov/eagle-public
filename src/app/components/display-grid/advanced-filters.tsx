@@ -121,6 +121,7 @@ export function AdvancedFilters({ fields, values, onChange, open }: AdvancedFilt
           }
 
           if (field.kind === 'date') {
+            const errorId = `${headingId}-${field.id}-error`;
             return (
               <label className="display-grid__panel-field" key={field.id}>
                 <span className="display-grid__panel-label">
@@ -132,11 +133,12 @@ export function AdvancedFilters({ fields, values, onChange, open }: AdvancedFilt
                   placeholder={DATE_FORMAT}
                   className="display-grid__panel-control"
                   aria-invalid={invalid || undefined}
+                  aria-describedby={invalid ? errorId : undefined}
                   value={value}
                   onChange={(event) => onDateInput(field, event.target.value)}
                 />
                 {invalid ? (
-                  <span role="alert" className="display-grid__panel-error">
+                  <span id={errorId} role="alert" className="display-grid__panel-error">
                     Use {DATE_FORMAT}, for example 2025-06-01
                   </span>
                 ) : null}

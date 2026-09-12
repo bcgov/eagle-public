@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { ApiError, getJson, isAbortError, searchPath } from 'app/api/api';
 import { fetchData, SearchParamObject } from 'app/api/search';
 import { RECORD_TYPES, type RecordType } from 'app/components/display-grid/use-grid-url-state';
 import { TYPEAHEAD_DEBOUNCE_MS, typeaheadKeywords } from 'app/components/filters/typeahead';
 import { RECORD_DATASETS } from './types';
+import { useSettled } from './use-settled';
 
 /** A count per record type. `null` is "unknown", which the tab renders without a badge. */
 export type TypeCounts = Record<RecordType, number | null>;
@@ -12,12 +12,10 @@ export type TypeCounts = Record<RecordType, number | null>;
 export interface TypeCountsResult {
   /** Absent until a keyword long enough to search has settled. */
   counts?: TypeCounts;
-  isFetching: boolean;
 }
 
 interface CountsEnvelope {
   counts?: Record<string, number | null>;
-  meta?: { unavailable?: string[]; degraded?: string[]; cached?: boolean }[];
 }
 
 /**
@@ -80,33 +78,20 @@ async function readCounts(keywords: string, signal?: AbortSignal): Promise<TypeC
   return countsFromSearches(keywords, signal);
 }
 
-/** Holds `value` back until it has stopped changing for `delay`. The first value passes straight. */
-function useSettled(value: string, delay: number): string {
-  const [settled, setSettled] = useState(value);
-
-  useEffect(() => {
-    if (value === settled) return;
-    const timer = setTimeout(() => setSettled(value), delay);
-    return () => clearTimeout(timer);
-  }, [value, settled, delay]);
-
-  return settled;
-}
-
 /**
  * The totals the record-type tabs badge, on the same beat as the results: one request per typing
- * pause, nothing below the keyword floor, and the last answer left on screen while the next one
- * loads. A keyword change drops the request in flight through the query's abort signal.
+ * pause and the last answer left on screen while the next one loads. An empty keyword counts
+ * everything, which is what the tabs show when the page opens. A keyword change drops the request
+ * in flight through the query's abort signal.
  */
 export function useTypeCounts(keywords: string): TypeCountsResult {
   const term = useSettled(typeaheadKeywords(keywords).trim(), TYPEAHEAD_DEBOUNCE_MS);
 
-  const { data, isFetching } = useQuery({
+  const { data } = useQuery({
     queryKey: ['search-counts', term],
     queryFn: ({ signal }) => readCounts(term, signal),
-    enabled: term !== '',
     placeholderData: keepPreviousData,
   });
 
-  return { counts: data, isFetching };
+  return { counts: data };
 }

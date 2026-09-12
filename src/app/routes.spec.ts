@@ -35,9 +35,9 @@ describe('searchLoader', () => {
     ).toBe('/search?record=documents&keywords=coal&milestone=m1');
   });
 
-  it('reads an Angular /search with no document param as projects', async () => {
+  it('reads an Angular /search with no document param as documents, the tab it opens on', async () => {
     expect(await loaderLocation('search', 'http://localhost/search?keywords=coal')).toBe(
-      '/search?record=projects&keywords=coal',
+      '/search?record=documents&keywords=coal',
     );
   });
 

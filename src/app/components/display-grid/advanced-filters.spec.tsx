@@ -15,7 +15,7 @@ const fields: AdvancedField[] = [
       { value: '2018', label: '2018 Act' },
     ],
   },
-  { id: 'isFeatured', label: 'Featured only', kind: 'toggle' },
+  { id: 'isFeatured', label: 'Featured documents', kind: 'toggle' },
   { id: 'proponent', label: 'Proponent', kind: 'text' },
 ];
 
@@ -58,6 +58,28 @@ describe('AdvancedFilters', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('Use YYYY-MM-DD');
     expect(screen.getByLabelText(/Posted from/)).toHaveAttribute('aria-invalid', 'true');
     expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('points the invalid field at the message about it', async () => {
+    const user = userEvent.setup();
+    setup();
+
+    await user.type(screen.getByLabelText(/Posted from/), '2025-13-45');
+
+    expect(screen.getByLabelText(/Posted from/)).toHaveAccessibleDescription(
+      'Use YYYY-MM-DD, for example 2025-06-01',
+    );
+    // The other date field is untouched, so nothing describes it.
+    expect(screen.getByLabelText(/Posted to/)).not.toHaveAttribute('aria-describedby');
+  });
+
+  it('drops the description once the date parses', async () => {
+    const user = userEvent.setup();
+    setup();
+
+    await user.type(screen.getByLabelText(/Posted from/), '2025-06-01');
+
+    expect(screen.getByLabelText(/Posted from/)).not.toHaveAttribute('aria-describedby');
   });
 
   it('applies the date once it parses', async () => {
@@ -138,7 +160,7 @@ describe('AdvancedFilters', () => {
     const user = userEvent.setup();
     const { onChange } = setup();
 
-    await user.click(screen.getByLabelText('Featured only'));
+    await user.click(screen.getByLabelText('Featured documents'));
 
     expect(onChange).toHaveBeenLastCalledWith('isFeatured', 'true');
   });
@@ -147,7 +169,7 @@ describe('AdvancedFilters', () => {
     const user = userEvent.setup();
     const { onChange } = setup({ isFeatured: 'true' });
 
-    await user.click(screen.getByLabelText('Featured only'));
+    await user.click(screen.getByLabelText('Featured documents'));
 
     expect(onChange).toHaveBeenLastCalledWith('isFeatured', null);
   });

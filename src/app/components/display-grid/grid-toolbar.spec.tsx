@@ -115,10 +115,69 @@ describe('GridToolbar', () => {
 
     await user.click(screen.getByRole('button', { name: /columns/i }));
 
-    const locked = screen.getByRole('checkbox', { name: 'Name' });
+    // Disabled alone is silent: the name has to say why the box cannot be unticked.
+    // Regex, not a string: the space before the hidden suffix survives in a browser but not jsdom.
+    const locked = screen.getByRole('checkbox', { name: /^Name\s*\(required\)$/ });
     expect(locked).toBeDisabled();
     expect(locked).toBeChecked();
     expect(screen.getByRole('checkbox', { name: 'Type' })).toBeEnabled();
+  });
+
+  it('names the columns menu it opens, and names nothing while it is shut', async () => {
+    const user = userEvent.setup();
+    render(
+      <GridToolbar
+        noun="documents"
+        page={1}
+        pageSize={25}
+        total={10}
+        columns={columns}
+        onToggleColumn={vi.fn()}
+      />,
+    );
+
+    const trigger = screen.getByRole('button', { name: 'Columns' });
+    expect(trigger).toHaveAttribute('aria-haspopup', 'true');
+    expect(trigger).not.toHaveAttribute('aria-controls');
+
+    await user.click(trigger);
+
+    const menu = screen.getByRole('group', { name: 'Columns shown' });
+    expect(menu.id).not.toBe('');
+    expect(trigger).toHaveAttribute('aria-controls', menu.id);
+  });
+
+  it('says what the Clear button clears, keeping the word on screen', () => {
+    render(
+      <GridToolbar
+        noun="documents"
+        page={1}
+        pageSize={25}
+        total={10}
+        selectedCount={3}
+        onClearSelection={vi.fn()}
+      />,
+    );
+
+    const clear = screen.getByRole('button', { name: 'Clear selection' });
+    expect(clear).toHaveTextContent('Clear');
+  });
+
+  it('announces a copied link in the live region, not only on the button', async () => {
+    vi.useFakeTimers();
+    stubClipboard();
+    render(<GridToolbar noun="documents" page={1} pageSize={25} total={10} />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /copy link to this view/i }));
+    });
+
+    expect(screen.getByRole('status')).toHaveTextContent('Link copied to clipboard');
+
+    await act(async () => {
+      vi.advanceTimersByTime(2000);
+    });
+    expect(screen.getByRole('status')).not.toHaveTextContent('Link copied to clipboard');
   });
 
   it('confirms a copied link in place and goes back to itself', async () => {
@@ -184,7 +243,7 @@ describe('GridToolbar', () => {
     ).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Download 3' }));
-    await user.click(screen.getByRole('button', { name: 'Clear' }));
+    await user.click(screen.getByRole('button', { name: 'Clear selection' }));
 
     expect(onDownload).toHaveBeenCalled();
     expect(onClearSelection).toHaveBeenCalled();

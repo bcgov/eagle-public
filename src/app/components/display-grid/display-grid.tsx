@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState, type ComponentType, type ReactNode } from 'react';
-import { PageSizePicker } from 'app/components/table/page-size-picker';
-import { Pagination } from 'app/components/table/pagination';
-import type { IPageSizePickerOption } from 'app/components/table/table-object';
+import { useMediaQuery } from 'app/state/responsive';
 import { FilterRow } from './filter-row';
+import { GridPageSizes, GridPager } from './grid-footer';
 import { GridHeader } from './grid-header';
 import { columnFiltersForPanel } from './grid-helpers';
+import { ListRow, type ListRowField } from './list-row';
+import { RecordLink } from './record-link';
 import { SelectCell } from './select-cell';
 import { PAGE_SIZES } from './use-grid-url-state';
 import type {
@@ -15,17 +16,16 @@ import type {
   GridTemplate,
   SortState,
 } from './types';
-// The paging controls keep the look they already have; only the frame around them is new.
-import 'app/components/table/table.css';
 import './display-grid.css';
-
-const PAGE_SIZE_OPTIONS: IPageSizePickerOption[] = PAGE_SIZES.map((value) => ({
-  value,
-  displayText: String(value),
-}));
 
 /** Enough rows to read as a table; a full page of them would be a bigger jump than it saves. */
 const SKELETON_ROWS = 5;
+
+/**
+ * Below this the table becomes one card per record: seven columns cannot be read on a phone, and
+ * a sideways scroll hides whichever of them the reader has not thought to look for.
+ */
+const NARROW_QUERY = '(max-width: 719.98px)';
 
 function readCell(row: unknown, key: string): ReactNode {
   if (row && typeof row === 'object' && key in row) {
@@ -33,6 +33,46 @@ function readCell(row: unknown, key: string): ReactNode {
     if (typeof value === 'string' || typeof value === 'number') return String(value);
   }
   return '';
+}
+
+interface SortOption {
+  /** `-datePosted` as the URL spells it, so the select's value is the sort itself. */
+  value: string;
+  label: string;
+}
+
+/**
+ * What the narrow layout offers instead of sortable headings: the record's date both ways and its
+ * name both ways, which is every order a card can be read in.
+ */
+function sortOptionsFor<Row>(columns: GridColumn<Row>[]): SortOption[] {
+  const date =
+    columns.find((column) => column.primaryDate) ?? columns.find((column) => column.date);
+  const name = columns.find((column) => column.link) ?? columns.find((column) => column.sortable);
+  const options: SortOption[] = [];
+  if (date?.sortable) {
+    options.push(
+      { value: `-${date.key}`, label: 'Newest first' },
+      { value: `+${date.key}`, label: 'Oldest first' },
+    );
+  }
+  if (name?.sortable) {
+    options.push(
+      { value: `+${name.key}`, label: 'Name A–Z' },
+      { value: `-${name.key}`, label: 'Name Z–A' },
+    );
+  }
+  return options;
+}
+
+/** The card's label/value pairs: every column that is neither the headline nor the date. */
+function cardFields<Row>(columns: GridColumn<Row>[], row: Row): ListRowField[] {
+  return columns
+    .filter((column) => !column.link && !column.date)
+    .map((column) => ({
+      label: column.label,
+      value: column.render ? column.render(row) : readCell(row, column.key),
+    }));
 }
 
 interface DisplayGridProps<Row> {
@@ -48,7 +88,13 @@ interface DisplayGridProps<Row> {
   selectable?: boolean;
   sort?: SortState | null;
   filters?: FilterValues;
-  onSort?: (key: string) => void;
+  /** A header click leaves the direction to the caller; the narrow sort select names one. */
+  onSort?: (key: string, dir?: '+' | '-') => void;
+  /**
+   * Record attributes no column carries, shown on the narrow card where there is room for them.
+   * They are the fields only the advanced panel can filter by, so the page owns their values.
+   */
+  narrowExtras?: (row: Row) => ListRowField[];
   onFilterChange?: (id: string, value: FilterValue) => void;
   page: number;
   pageSize: number;
@@ -82,6 +128,7 @@ export function DisplayGrid<Row>({
   sort,
   filters = {},
   onSort,
+  narrowExtras,
   onFilterChange,
   page,
   pageSize,
@@ -99,14 +146,22 @@ export function DisplayGrid<Row>({
   onToggleAllOnPage,
 }: DisplayGridProps<Row>) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const captionRef = useRef<HTMLElement | null>(null);
   const headRowRef = useRef<HTMLTableRowElement>(null);
   const [headHeight, setHeadHeight] = useState(0);
 
+  const narrow = useMediaQuery(NARROW_QUERY);
   const listMode = template === 'list';
-  const showHead = !listMode && !headerless;
-  const showFilterRow = showHead && columns.some((column) => !!column.filter);
   const showSkeleton = loading && rows.length === 0;
   const showEmpty = !loading && rows.length === 0;
+  /* One record per card below the breakpoint. The reader's hidden columns still apply: a column
+     switched off is off in both layouts. */
+  const cardMode = narrow && !listMode && !showEmpty;
+  /* Nothing to head: an empty result has no columns to sort and no values to filter, so the
+     message follows the chips rather than a row of controls over nothing. */
+  const showHead = !listMode && !headerless && !showEmpty && !cardMode;
+  const showFilterRow = showHead && columns.some((column) => !!column.filter);
+  const showSortBar = cardMode && sortOptionsFor(columns).length > 0;
 
   // The filter row sticks under the header, whose height changes when a label wraps.
   useEffect(() => {
@@ -123,13 +178,27 @@ export function DisplayGrid<Row>({
     onPageChange(next);
     // `body` is the scrolling box in this shell, so the grid scrolls itself into view.
     containerRef.current?.scrollIntoView({ block: 'start' });
+    /* Focus would otherwise stay on the pager that just scrolled away, so the next Tab starts
+       from off screen. The scroll above already put the caption where it belongs. */
+    captionRef.current?.focus({ preventScroll: true });
   }
 
   const ids = rowId ? rows.map(rowId) : [];
   const allSelected = ids.length > 0 && ids.every((id) => selectedIds.includes(id));
   const someSelected = !allSelected && ids.some((id) => selectedIds.includes(id));
 
-  const panelContent = typeof panel === 'function' ? panel(columnFiltersForPanel(columns)) : panel;
+  /* A column filter has one home. While the filter row is on screen it lives there; when the
+     layout drops that row - a phone, a list, an empty result - the panel is the only place left
+     for it, so it moves rather than going missing. */
+  const panelContent =
+    typeof panel === 'function'
+      ? panel(showFilterRow ? [] : columnFiltersForPanel(columns))
+      : panel;
+
+  // The card's headline and its meta line, which are the link column and the record's own date.
+  const headline = columns.find((column) => column.link) ?? columns[0];
+  const dateColumn =
+    columns.find((column) => column.primaryDate) ?? columns.find((column) => column.date);
 
   return (
     <div className="display-grid" ref={containerRef}>
@@ -143,18 +212,115 @@ export function DisplayGrid<Row>({
       >
         {showSkeleton && <span className="display-grid__visually-hidden">Loading</span>}
 
-        {listMode ? (
-          <ul className="display-grid__list">
-            {rows.map((row, index) => (
-              <li className="display-grid__list-item" key={rowId ? rowId(row) : index}>
-                {RowComponent ? <RowComponent row={row} /> : null}
-              </li>
-            ))}
-          </ul>
+        {showSortBar && (
+          <div className="display-grid__sort-bar">
+            <label className="display-grid__sort-bar-label">
+              Sort
+              <select
+                className="display-grid__sort-select"
+                value={sort ? `${sort.dir === 'desc' ? '-' : '+'}${sort.key}` : ''}
+                onChange={(event) => {
+                  const next = event.target.value;
+                  onSort?.(next.slice(1), next.startsWith('-') ? '-' : '+');
+                }}
+              >
+                {sortOptionsFor(columns).map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        )}
+
+        {cardMode ? (
+          <>
+            <p
+              className="display-grid__visually-hidden"
+              tabIndex={-1}
+              ref={(node) => {
+                captionRef.current = node;
+              }}
+            >
+              {caption}
+            </p>
+            <ol className="display-grid__cards">
+              {rows.map((row, index) => {
+                const id = rowId ? rowId(row) : String(index);
+                const selected = selectedIds.includes(id);
+                const title = headline
+                  ? String(
+                      (headline.render ? headline.render(row) : readCell(row, headline.key)) ?? '',
+                    )
+                  : id;
+                const date = dateColumn
+                  ? dateColumn.render
+                    ? dateColumn.render(row)
+                    : readCell(row, dateColumn.key)
+                  : null;
+                return (
+                  <li
+                    className={`display-grid__card${
+                      selected ? ' display-grid__card--selected' : ''
+                    }`}
+                    key={id}
+                  >
+                    {selectable && (
+                      <input
+                        type="checkbox"
+                        className="display-grid__checkbox display-grid__card-check"
+                        aria-label={`Select ${rowLabel ? rowLabel(row) : title}`}
+                        checked={selected}
+                        onChange={() => onToggleRow?.(row)}
+                      />
+                    )}
+                    <ListRow
+                      meta={date ? [date] : []}
+                      title={title}
+                      href={headline?.href?.(row)}
+                      external={headline?.hrefExternal}
+                      fields={[
+                        ...cardFields(columns, row),
+                        ...(narrowExtras ? narrowExtras(row) : []),
+                      ]}
+                    />
+                  </li>
+                );
+              })}
+            </ol>
+          </>
+        ) : listMode ? (
+          <>
+            <p
+              className="display-grid__visually-hidden"
+              tabIndex={-1}
+              ref={(node) => {
+                captionRef.current = node;
+              }}
+            >
+              {caption}
+            </p>
+            <ul className="display-grid__list">
+              {rows.map((row, index) => (
+                <li className="display-grid__list-item" key={rowId ? rowId(row) : index}>
+                  {RowComponent ? <RowComponent row={row} /> : null}
+                </li>
+              ))}
+            </ul>
+          </>
         ) : (
           <div className="display-grid__scroll">
             <table className="display-grid__table">
-              <caption className="display-grid__visually-hidden">{caption}</caption>
+              <caption
+                className="display-grid__visually-hidden"
+                tabIndex={-1}
+                ref={(node) => {
+                  captionRef.current = node;
+                }}
+              >
+                {caption}
+              </caption>
               {showHead && (
                 <thead>
                   <GridHeader
@@ -207,16 +373,36 @@ export function DisplayGrid<Row>({
                           onChange={() => onToggleRow?.(row)}
                         />
                       )}
-                      {columns.map((column) => (
-                        <td
-                          key={column.key}
-                          className={`display-grid__cell${
-                            column.date ? ' display-grid__cell--date' : ''
-                          }`}
-                        >
-                          {column.render ? column.render(row) : readCell(row, column.key)}
-                        </td>
-                      ))}
+                      {columns.map((column) => {
+                        const content = column.render
+                          ? column.render(row)
+                          : readCell(row, column.key);
+                        const title = typeof content === 'string' ? content : undefined;
+                        return (
+                          <td
+                            key={column.key}
+                            className={`display-grid__cell${
+                              column.date ? ' display-grid__cell--date' : ''
+                            }`}
+                          >
+                            {/* One line per cell, so a row is a row. The full value is still
+                                readable: it is the cell's own tooltip. */}
+                            <span className="display-grid__cell-text" title={title}>
+                              {column.link ? (
+                                <RecordLink
+                                  href={column.href?.(row)}
+                                  external={column.hrefExternal}
+                                  className="display-grid__cell-link"
+                                >
+                                  {content}
+                                </RecordLink>
+                              ) : (
+                                content
+                              )}
+                            </span>
+                          </td>
+                        );
+                      })}
                     </tr>
                   );
                 })}
@@ -228,20 +414,11 @@ export function DisplayGrid<Row>({
         {showEmpty && <p className="display-grid__empty">{emptyMessage}</p>}
 
         <div className="display-grid__footer">
-          <div className="display-grid__footer-group">
-            <span className="display-grid__footer-label" id="display-grid-per-page">
-              Per page
-            </span>
-            <PageSizePicker
-              currentPageSize={pageSize}
-              sizeOptions={PAGE_SIZE_OPTIONS}
-              onPageSizeChosen={(option) => onPageSizeChange(option.value)}
-            />
-          </div>
-          <Pagination
-            currentPage={page}
+          <GridPageSizes sizes={PAGE_SIZES} current={pageSize} onChoose={onPageSizeChange} />
+          <GridPager
+            page={page}
             pageSize={pageSize}
-            totalItems={total}
+            total={total}
             ariaLabel="Result pages"
             onPageChange={changePage}
           />

@@ -19,6 +19,14 @@ const FILLED: Record<string, string> = {
 
 const ADVANCED_IDS = documentsConfig.advancedFields.map((field) => field.id);
 
+/**
+ * Filter ids the columns offer in the filter row, in column order. A year column is left out: its
+ * value is a year standing for a range, so it reaches the API as two other ids.
+ */
+const COLUMN_FILTER_IDS = documentsConfig.columns
+  .filter((column) => column.filter && column.filter !== 'year')
+  .map((column) => column.filterId ?? column.key);
+
 let requested: string;
 
 async function urlFor(filters: Record<string, string>): Promise<string> {
@@ -52,12 +60,13 @@ describe('documents record type', () => {
   });
 
   it('offers the four document column filters', () => {
-    expect(documentsConfig.filterIds).toEqual([
-      'type',
-      'milestone',
-      'projectPhase',
-      'documentAuthorType',
-    ]);
+    expect(COLUMN_FILTER_IDS).toEqual(['type', 'milestone', 'projectPhase', 'documentAuthorType']);
+  });
+
+  it('filters the date posted column by year', () => {
+    const posted = documentsConfig.columns.find((column) => column.key === 'datePosted');
+
+    expect(posted).toMatchObject({ filter: 'year', date: true });
   });
 
   it('offers the posted-date range, legislation and featured advanced fields', () => {
@@ -78,14 +87,14 @@ describe('documents record type', () => {
   });
 
   it('covers every offered filter with a filled value', () => {
-    expect(Object.keys(FILLED)).toEqual([...documentsConfig.filterIds, ...ADVANCED_IDS]);
+    expect(Object.keys(FILLED)).toEqual([...COLUMN_FILTER_IDS, ...ADVANCED_IDS]);
   });
 
-  it.each([...documentsConfig.filterIds, ...ADVANCED_IDS])('names %s to the API as and[]', (id) => {
+  it.each([...COLUMN_FILTER_IDS, ...ADVANCED_IDS])('names %s to the API as and[]', (id) => {
     expect(requested).toContain(`and[${id}]=${FILLED[id]}`);
   });
 
-  it.each([...documentsConfig.filterIds, ...ADVANCED_IDS])('wraps %s once for a URL', (id) => {
+  it.each([...COLUMN_FILTER_IDS, ...ADVANCED_IDS])('wraps %s once for a URL', (id) => {
     expect(toApiFilters(FILLED)[`and[${id}]`]).toBe(FILLED[id]);
   });
 
@@ -119,5 +128,23 @@ describe('documents record type', () => {
 
   it('offers selection only while bulk download is on', () => {
     expect(documentsConfig.selectable).toBe(bulkDownloadEnabled());
+  });
+});
+
+describe('documents record link', () => {
+  const nameColumn = documentsConfig.columns.find((column) => column.link);
+
+  it('points the document name at the file, the target the old table used', () => {
+    expect(nameColumn?.href?.({ _id: 'doc-1', displayName: 'Order.pdf' })).toBe(
+      '/demi-search/documents/doc-1/download?redirect=1',
+    );
+  });
+
+  it('marks the target as leaving the app, so it opens as a plain anchor', () => {
+    expect(nameColumn?.hrefExternal).toBe(true);
+  });
+
+  it('leaves a document with no id unlinked', () => {
+    expect(nameColumn?.href?.({ displayName: 'Order.pdf' })).toBeUndefined();
   });
 });

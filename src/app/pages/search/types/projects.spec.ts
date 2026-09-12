@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { toApiFilters } from 'app/components/display-grid/use-grid-url-state';
 import { fetchData, SearchParamObject } from 'app/api/search';
+import { LEGACY_FILTERS } from 'app/routes/legacy-search';
 import { capturedRequestUrl } from '../../../../test-utils';
 import { projectsConfig, resolveSort, PROJECTS_FALLBACK_SORT, PROJECTS_SORT } from './projects';
 
@@ -12,11 +13,21 @@ const FILLED: Record<string, string> = {
   currentPhaseName: 'phase-1',
   dateUpdatedStart: '2020-01-01',
   dateUpdatedEnd: '2020-12-31',
+  decisionDateStart: '2019-01-01',
+  decisionDateEnd: '2019-12-31',
   eacDecision: 'decision-1',
   CEAAInvolvement: 'ceaa-1',
 };
 
 const ADVANCED_IDS = projectsConfig.advancedFields.map((field) => field.id);
+
+/**
+ * Filter ids the columns offer in the filter row, in column order. A year column is left out: its
+ * value is a year standing for a range, so it reaches the API as two other ids.
+ */
+const COLUMN_FILTER_IDS = projectsConfig.columns
+  .filter((column) => column.filter && column.filter !== 'year')
+  .map((column) => column.filterId ?? column.key);
 
 /** The URL the API layer issues for that state; the filters ride raw, not pre-wrapped. */
 let requested: string;
@@ -49,16 +60,30 @@ describe('projects record type', () => {
 
   it('offers the four column filters the projects index carries', () => {
     // Legislation is absent on purpose: the projects index has no such field.
-    expect(projectsConfig.filterIds).toEqual(['proponent', 'type', 'region', 'currentPhaseName']);
+    expect(COLUMN_FILTER_IDS).toEqual(['proponent', 'type', 'region', 'currentPhaseName']);
   });
 
-  it('offers the decision, involvement and updated-date advanced fields', () => {
+  it('filters the last updated column by year', () => {
+    const updated = projectsConfig.columns.find((column) => column.key === 'dateUpdated');
+
+    expect(updated).toMatchObject({ filter: 'year', date: true });
+  });
+
+  it('offers the decision, involvement and two date ranges as advanced fields', () => {
     expect(ADVANCED_IDS).toEqual([
       'dateUpdatedStart',
       'dateUpdatedEnd',
+      'decisionDateStart',
+      'decisionDateEnd',
       'eacDecision',
       'CEAAInvolvement',
     ]);
+  });
+
+  it('gives every filter the Angular project list carried a control of its own', () => {
+    const controlled = [...COLUMN_FILTER_IDS, ...ADVANCED_IDS];
+
+    expect(LEGACY_FILTERS.projects.filter((id) => !controlled.includes(id))).toEqual([]);
   });
 
   it('columns lead with a locked link to the project', () => {
@@ -74,14 +99,14 @@ describe('projects record type', () => {
   });
 
   it('covers every offered filter with a filled value', () => {
-    expect(Object.keys(FILLED)).toEqual([...projectsConfig.filterIds, ...ADVANCED_IDS]);
+    expect(Object.keys(FILLED)).toEqual([...COLUMN_FILTER_IDS, ...ADVANCED_IDS]);
   });
 
-  it.each([...projectsConfig.filterIds, ...ADVANCED_IDS])('names %s to the API as and[]', (id) => {
+  it.each([...COLUMN_FILTER_IDS, ...ADVANCED_IDS])('names %s to the API as and[]', (id) => {
     expect(requested).toContain(`and[${id}]=${FILLED[id]}`);
   });
 
-  it.each([...projectsConfig.filterIds, ...ADVANCED_IDS])('wraps %s once for a URL', (id) => {
+  it.each([...COLUMN_FILTER_IDS, ...ADVANCED_IDS])('wraps %s once for a URL', (id) => {
     expect(toApiFilters(FILLED)[`and[${id}]`]).toBe(FILLED[id]);
   });
 
@@ -123,5 +148,21 @@ describe('resolveSort', () => {
 
   it('sorts by last updated when there is no meta to read', () => {
     expect(resolveSort()).toBe(PROJECTS_SORT);
+  });
+});
+
+describe('projects record link', () => {
+  const nameColumn = projectsConfig.columns.find((column) => column.link);
+
+  it('points the project name at the project page', () => {
+    expect(nameColumn?.href?.({ _id: 'proj-1', name: 'Cedar LNG' })).toBe('/p/proj-1');
+  });
+
+  it('keeps the target in the app, so the name routes rather than reloads', () => {
+    expect(nameColumn?.hrefExternal).toBeFalsy();
+  });
+
+  it('leaves a project with no id unlinked', () => {
+    expect(nameColumn?.href?.({ name: 'Cedar LNG' })).toBeUndefined();
   });
 });

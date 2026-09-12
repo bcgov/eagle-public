@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router';
 import { track } from 'app/analytics/analytics';
@@ -9,6 +9,7 @@ import { AdvancedFilters } from 'app/components/display-grid/advanced-filters';
 import { ChipRow, type GridChip } from 'app/components/display-grid/chip-row';
 import { DisplayGrid } from 'app/components/display-grid/display-grid';
 import { GridToolbar } from 'app/components/display-grid/grid-toolbar';
+import type { ListRowField } from 'app/components/display-grid/list-row';
 import type {
   AdvancedField,
   FilterValues,
@@ -36,9 +37,10 @@ import {
   MAX_JOBS_IN_FLIGHT,
 } from 'app/state/bulk-download';
 import { showToast } from 'app/state/toast';
-import { mediumDate } from 'app/utils/utils';
+import { toWireFilters, yearOptions } from './search-filters';
 import { recordConfig, type RecordTypeConfig, type SearchMeta } from './types';
 import { PROJECTS_FALLBACK_SORT, PROJECTS_SORT, resolveSort } from './types/projects';
+import { useSettled } from './use-settled';
 import { useTypeCounts } from './use-type-counts';
 import './unified-search.css';
 
@@ -69,16 +71,6 @@ function sortStateOf(sortBy: string): SortState | null {
   return { key: sortBy.replace(/^[+-]/, ''), dir };
 }
 
-/** Filters as the API takes them: raw ids, because `searchKeywords` is what wraps them as `and[]`. */
-function toWireFilters(filters: FilterValues): Record<string, string> {
-  const wire: Record<string, string> = {};
-  for (const [id, value] of Object.entries(filters)) {
-    const joined = Array.isArray(value) ? value.join(',') : value;
-    if (joined) wire[id] = joined;
-  }
-  return wire;
-}
-
 /**
  * demi-search reports what it could not honour as `dropped: {filter: [], sort: []}`, while the
  * record configs read one flat list of field names. Flatten it here rather than teach both.
@@ -95,7 +87,6 @@ function readMeta(entry: Record<string, unknown>): SearchMeta {
   return {
     searchResultsTotal: entry?.['searchResultsTotal'] as number | undefined,
     dropped: names.map(String),
-    degraded: entry?.['degraded'] as boolean | undefined,
   };
 }
 
@@ -135,6 +126,9 @@ async function runSearch(request: SearchRequest, signal?: AbortSignal): Promise<
     false,
     signal,
   );
+
+  // A failed read answers null, which otherwise reads downstream as a search that matched nothing.
+  if (!results) throw new Error('Search request failed');
 
   // An aborted request throws above, so nothing past this line runs for a search that was replaced.
   track('Search Executed', {
@@ -184,13 +178,30 @@ function optionText(options: ValueOption[], value: unknown): string {
     .join(', ');
 }
 
+/**
+ * A date in the grid is YYYY-MM-DD, so the digits line up column to column and a row reads as a
+ * row. Read in UTC: the stored date is the day the record carries, not a local instant.
+ */
+function gridDate(value: unknown): string {
+  if (!value) return '';
+  const date = new Date(String(value));
+  return Number.isNaN(date.getTime()) ? String(value) : date.toISOString().slice(0, 10);
+}
+
 /** A coded value reads as its name, a date as a date; anything else is the stored text. */
+/** A filter value as one string; a multi-select holds a list, a year holds one. */
+function asFilterText(value: FilterValues[string] | undefined): string {
+  if (value == null) return '';
+  return Array.isArray(value) ? (value[0] ?? '') : value;
+}
+
 function cellRenderer(
   column: GridColumn<Row>,
   picks: ValueOption[] | undefined,
 ): ((row: Row) => string) | undefined {
+  // A date is read, never looked up: the year options a date column offers are not its cell values.
+  if (column.date) return (row) => gridDate(row[column.key]);
   if (picks) return (row) => optionText(picks, row[column.key]);
-  if (column.date) return (row) => mediumDate(row[column.key] as string);
   return undefined;
 }
 
@@ -231,27 +242,20 @@ export function UnifiedSearch() {
   /* The field holds what is being typed; the URL holds what has been searched for. Without the
      draft every keystroke would wait on the debounce before it showed up. */
   const [draft, setDraft] = useState(keywords);
-  const [applied, setApplied] = useState(keywords);
+
+  /* The typed draft searches once it has stopped changing, on the same beat as the type counts. */
+  const settledDraft = useSettled(draft, TYPEAHEAD_DEBOUNCE_MS);
+
   const [lastUrlKeyword, setLastUrlKeyword] = useState(keywords);
   if (keywords !== lastUrlKeyword) {
     setLastUrlKeyword(keywords);
     // A keyword this page did not write - Clear all, a chip, the back button - wins over the draft.
-    if (keywords !== applied) setDraft(keywords);
+    if (keywords !== settledDraft.trim()) setDraft(keywords);
   }
 
-  const debounce = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  useEffect(() => () => clearTimeout(debounce.current), []);
-
-  function applyKeyword(typed: string): void {
-    setApplied(typed.trim());
-    setKeyword(typed);
-  }
-
-  function onKeywordInput(typed: string): void {
-    setDraft(typed);
-    clearTimeout(debounce.current);
-    debounce.current = setTimeout(() => applyKeyword(typed), TYPEAHEAD_DEBOUNCE_MS);
-  }
+  useEffect(() => {
+    if (settledDraft.trim() !== keywords) setKeyword(settledDraft);
+  }, [settledDraft, keywords, setKeyword]);
 
   const { counts } = useTypeCounts(draft);
 
@@ -288,10 +292,38 @@ export function UnifiedSearch() {
     [config, options],
   );
 
-  const searchTerm = typeaheadKeywords(keywords).trim();
-  const wireFilters = useMemo(() => toWireFilters(filters), [filters]);
+  /* The narrow card has room the table never had, so it carries the attributes only the advanced
+     panel can filter by. An attribute the record does not have is left off rather than shown empty. */
+  function narrowExtras(row: Row): ListRowField[] {
+    const pairs: ListRowField[] = [];
+    for (const field of advancedFields) {
+      const value = row[field.id];
+      if (field.kind === 'toggle') {
+        if (value) pairs.push({ label: field.label, value: 'Yes' });
+        continue;
+      }
+      if (field.kind !== 'select' || value == null || value === '') continue;
+      pairs.push({ label: field.label, value: optionText(options[field.id] ?? [], value) });
+    }
+    return pairs;
+  }
 
-  const { data, isFetching } = useQuery({
+  const searchTerm = typeaheadKeywords(keywords).trim();
+  /* The columns whose filter is a year. Their value stands for a range, so it is not sent as it
+     is written, and the panel's own date bounds keep precedence over it. */
+  const yearFilterIds = useMemo(
+    () =>
+      (config?.columns ?? [])
+        .filter((column) => column.filter === 'year')
+        .map((column) => column.filterId ?? column.key),
+    [config],
+  );
+  const wireFilters = useMemo(
+    () => toWireFilters(filters, yearFilterIds),
+    [filters, yearFilterIds],
+  );
+
+  const { data, isFetching, isError } = useQuery({
     queryKey: [
       'unified-search',
       record,
@@ -333,6 +365,19 @@ export function UnifiedSearch() {
   // of its own must not inherit: it asked for nothing, so it shows nothing.
   const rows = config ? (data?.rows ?? []) : [];
   const total = config ? (data?.total ?? 0) : 0;
+
+  /* A date column offers the years its results carry - the index has no year facet to ask - plus
+     whichever year is filtered on, so the choice in force never drops out of its own list. */
+  const gridColumns: GridColumn<Row>[] = useMemo(
+    () =>
+      columns.map((column) => {
+        if (column.filter !== 'year') return column;
+        const id = column.filterId ?? column.key;
+        const chosen = filters[id];
+        return { ...column, options: yearOptions(rows, column.key, asFilterText(chosen)) };
+      }),
+    [columns, rows, filters],
+  );
 
   const selectable = config?.selectable ?? false;
   const selection = useSelection(TABLE_ID);
@@ -400,7 +445,7 @@ export function UnifiedSearch() {
   function removeChip(id: string, value?: string): void {
     if (id === 'keywords') {
       setDraft('');
-      applyKeyword('');
+      setKeyword('');
       return;
     }
     const current = filters[id];
@@ -415,7 +460,6 @@ export function UnifiedSearch() {
 
   function clearEverything(): void {
     setDraft('');
-    setApplied('');
     clearSelection(TABLE_ID);
     clearAll();
   }
@@ -433,6 +477,14 @@ export function UnifiedSearch() {
             {recordLabel(record)} joins the search in a later release. Projects and documents are
             searchable now.
           </span>
+        </span>
+      );
+    }
+    if (isError) {
+      return (
+        <span className="unified-search__empty">
+          <span className="unified-search__empty-title">Search is unavailable right now</span>
+          <span className="unified-search__empty-detail">Try again in a moment.</span>
         </span>
       );
     }
@@ -487,11 +539,17 @@ export function UnifiedSearch() {
 
   return (
     <div className="unified-search">
+      <nav aria-label="Breadcrumb" className="unified-search__breadcrumb">
+        <ol>
+          <li>
+            <Link to="/">Home</Link>
+          </li>
+          <li aria-hidden="true">/</li>
+          <li aria-current="page">Search</li>
+        </ol>
+      </nav>
+
       <h1 className="unified-search__title">Search</h1>
-      <p className="unified-search__intro">
-        One search across projects, documents and updates. Switch record type without losing your
-        search; each type brings its own columns, filters and controls from the same grid.
-      </p>
 
       <div className="unified-search__field" data-tour="search">
         <i className="material-icons unified-search__field-icon" aria-hidden="true">
@@ -506,7 +564,7 @@ export function UnifiedSearch() {
             className="unified-search__input"
             placeholder="Search projects, documents and updates"
             value={draft}
-            onChange={(event) => onKeywordInput(event.target.value)}
+            onChange={(event) => setDraft(event.target.value)}
           />
         </label>
       </div>
@@ -550,7 +608,7 @@ export function UnifiedSearch() {
 
       <DisplayGrid<Row>
         caption={`${recordLabel(record)} matching this search`}
-        columns={columns}
+        columns={gridColumns}
         rows={rows}
         template={config?.template ?? 'grid'}
         rowComponent={config?.rowComponent}
@@ -560,7 +618,8 @@ export function UnifiedSearch() {
         selectable={selectable}
         sort={sortStateOf(sortBy)}
         filters={filters}
-        onSort={(key) => setSort(key, '+')}
+        onSort={(key, dir) => setSort(key, dir ?? '+')}
+        narrowExtras={narrowExtras}
         onFilterChange={(id, value) => setFilter(id, value)}
         page={currentPage}
         pageSize={pageSize}
@@ -605,8 +664,9 @@ export function UnifiedSearch() {
         chips={<ChipRow chips={chips} onRemove={removeChip} onClearAll={clearEverything} />}
         panel={(columnFilters) => (
           <AdvancedFilters
-            // With columns on screen their filters live in the filter row, not here twice.
-            fields={config?.headerless ? [...columnFilters, ...advancedFields] : advancedFields}
+            /* The record's own fields first, then whichever column filters the layout has no row
+               for. The grid decides that: with columns on screen it hands back none. */
+            fields={[...advancedFields, ...columnFilters]}
             values={filters}
             onChange={(id, value) => setFilter(id, value)}
             open={panelOpen}

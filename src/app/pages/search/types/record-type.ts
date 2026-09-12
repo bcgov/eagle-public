@@ -37,7 +37,6 @@ export interface SearchMeta {
   searchResultsTotal?: number;
   /** Fields the query named that the index does not carry, so the backend ignored them. */
   dropped?: string[];
-  degraded?: boolean;
 }
 
 export interface RecordTypeConfig<Row = Record<string, unknown>> {
@@ -48,14 +47,10 @@ export interface RecordTypeConfig<Row = Record<string, unknown>> {
   defaultSort: string;
   template: GridTemplate;
   columns: GridColumn<Row>[];
-  /** Wire filter ids offered as column filters, in column order; each rides as `and[<id>]`. */
-  filterIds: string[];
   /** The More filters panel, which carries the ids no column can show. */
   advancedFields: AdvancedField[];
   /** Dropdown values per filter id, built from the cached `List` and `Organization` reads. */
   optionsFrom: (lists: OptionSource[], orgs: OptionSource[]) => Record<string, ValueOption[]>;
-  /** Whether a row has a page of its own to link to. */
-  recordHasPage: boolean;
   /** Whether rows carry a selection checkbox. */
   selectable: boolean;
   /** No column headings and no filter row: the column filters move into the panel. */

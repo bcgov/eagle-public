@@ -13,6 +13,10 @@ export interface GridColumn<Row = unknown> {
   filter?: ColumnFilter;
   filterId?: string;
   link?: boolean;
+  /** Where one record's link column points. No target leaves the name as plain text. */
+  href?: (row: Row) => string | undefined;
+  /** The target leaves the app — a file download, say — so it opens as a plain anchor. */
+  hrefExternal?: boolean;
   locked?: boolean;
   date?: boolean;
   primaryDate?: boolean;

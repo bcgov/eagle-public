@@ -1,6 +1,7 @@
 import type { GridColumn, ValueOption } from 'app/components/display-grid/types';
 import { bulkDownloadEnabled } from 'app/config/config';
 import { DOCUMENT_FILTERS } from 'app/pages/project/document-filters';
+import { documentDownloadUrl } from 'app/utils/utils';
 import {
   RECORD_DATASETS,
   toOptions,
@@ -10,31 +11,48 @@ import {
 
 export const DOCUMENTS_SORT = '-datePosted';
 
+/** The file itself, the target the old document tables used. It leaves the app. */
+function documentHref(row: Record<string, unknown>): string | undefined {
+  const id = row['_id'];
+  return typeof id === 'string' && id !== '' ? documentDownloadUrl({ _id: id }) : undefined;
+}
+
 const COLUMNS: GridColumn<Record<string, unknown>>[] = [
-  { key: 'displayName', label: 'Name', sortable: true, link: true, locked: true, width: '30%' },
+  {
+    key: 'displayName',
+    label: 'Name',
+    sortable: true,
+    link: true,
+    href: documentHref,
+    hrefExternal: true,
+    locked: true,
+    width: '28%',
+  },
   {
     key: 'datePosted',
     label: 'Date posted',
     sortable: true,
+    // One whole year, which the page turns into the range the index takes.
+    filter: 'year',
     date: true,
     primaryDate: true,
     width: '13%',
   },
   { key: 'type', label: 'Document type', filter: 'values', filterId: 'type', width: '16%' },
-  { key: 'milestone', label: 'Milestone', filter: 'values', filterId: 'milestone', width: '15%' },
+  { key: 'milestone', label: 'Milestone', filter: 'values', filterId: 'milestone', width: '17%' },
   {
     key: 'projectPhase',
     label: 'Project phase',
     filter: 'values',
     filterId: 'projectPhase',
-    width: '13%',
+    width: '17%',
   },
   {
     key: 'documentAuthorType',
     label: 'Author',
     filter: 'values',
     filterId: 'documentAuthorType',
-    width: '13%',
+    width: '9%',
   },
 ];
 
@@ -58,12 +76,11 @@ export const documentsConfig: RecordTypeConfig = {
   defaultSort: DOCUMENTS_SORT,
   template: 'grid',
   columns: COLUMNS,
-  filterIds: ['type', 'milestone', 'projectPhase', 'documentAuthorType'],
   advancedFields: [
     { id: 'datePostedStart', label: 'Posted after', kind: 'date', placeholder: 'YYYY-MM-DD' },
     { id: 'datePostedEnd', label: 'Posted before', kind: 'date', placeholder: 'YYYY-MM-DD' },
     { id: 'legislation', label: 'Legislation', kind: 'select' },
-    { id: 'isFeatured', label: 'Featured only', kind: 'toggle' },
+    { id: 'isFeatured', label: 'Featured documents', kind: 'toggle' },
   ],
   optionsFrom: (lists: OptionSource[]) => {
     const options: Record<string, ValueOption[]> = { legislation: legislationOptions(lists) };
@@ -72,7 +89,6 @@ export const documentsConfig: RecordTypeConfig = {
     }
     return options;
   },
-  recordHasPage: true,
   selectable: bulkDownloadEnabled(),
   headerless: false,
 };
