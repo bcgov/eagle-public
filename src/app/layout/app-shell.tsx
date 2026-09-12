@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Outlet, useLocation } from 'react-router';
+import { Outlet, useLocation, useNavigate } from 'react-router';
 import { SiteHeader } from './site-header';
 import { SiteFooter } from './site-footer';
 import { DownloadPanel } from 'app/components/download-panel';
@@ -7,6 +7,7 @@ import { ToastContainer } from 'app/components/toast-container';
 import { Gate } from './gate';
 import { useGateOpen } from 'app/state/gate';
 import { page } from 'app/analytics/analytics';
+import { hashToPath } from 'app/routes/legacy-search';
 import './app-shell.css';
 
 /**
@@ -37,7 +38,8 @@ function getPageName(path: string): string {
 }
 
 export function AppShell() {
-  const { pathname, search } = useLocation();
+  const { pathname, search, hash } = useLocation();
+  const navigate = useNavigate();
   const [showScrollButton, setShowScrollButton] = useState(false);
   const gateOpen = useGateOpen();
   const isProjectsRoute = pathname.startsWith('/projects');
@@ -53,6 +55,14 @@ export function AppShell() {
     lastTrackedPath.current = path;
     page(getPageName(path), { path });
   }, [pathname, search]);
+
+  // The Angular app addressed pages through the hash: /#/projects-list. Turn one back into a real
+  // path so the route loaders can redirect it like any other legacy address. The hash is gone
+  // after this, so it runs once.
+  useEffect(() => {
+    const path = hashToPath(hash);
+    if (path) navigate(path, { replace: true });
+  }, [hash, navigate]);
 
   useEffect(() => {
     // Show button when scrolled down more than 300px

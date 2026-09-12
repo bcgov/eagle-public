@@ -26,19 +26,7 @@ import { DocumentsTab } from './pages/project/documents-tab';
 import { ComplianceDocumentsTab } from './pages/project/compliance-documents-tab';
 import { DecisionsTab } from './pages/project/decisions-tab';
 import { Comments } from './pages/comments/comments';
-import { contentSearchEnabled } from './config/config';
-
-/**
- * Content search is served by the API in every environment, but the UI is offered only where the
- * CONTENT_SEARCH config flag says so. Redirects rather than falling through, so a bookmarked or
- * shared link lands on document search instead of the home page.
- */
-export function contentSearchLoader() {
-  if (!contentSearchEnabled()) {
-    throw redirect('/search');
-  }
-  return null;
-}
+import { legacySearchRedirect } from './routes/legacy-search';
 
 export const routes: RouteObject[] = [
   {
@@ -50,9 +38,17 @@ export const routes: RouteObject[] = [
       { path: 'contact', Component: Contact },
 
       { path: 'projects', Component: Projects },
-      { path: 'projects-list', Component: ProjectList },
+      {
+        path: 'projects-list',
+        loader: legacySearchRedirect('projects'),
+        Component: ProjectList,
+      },
 
-      { path: 'project-notifications', Component: ProjectNotifications },
+      {
+        path: 'project-notifications',
+        loader: legacySearchRedirect('notifications'),
+        Component: ProjectNotifications,
+      },
 
       {
         path: 'pn/:projId/cp/:commentPeriodId',
@@ -61,7 +57,7 @@ export const routes: RouteObject[] = [
       },
       { path: 'pn/:projId/cp/:commentPeriodId/details', Component: Comments },
 
-      { path: 'news', Component: News },
+      { path: 'news', loader: legacySearchRedirect('activities'), Component: News },
 
       { path: 'legislation', Component: Legislation },
 
@@ -71,11 +67,11 @@ export const routes: RouteObject[] = [
 
       { path: 'search', Component: Search },
 
-      // Its own component, not the table-driven one: content results are a list of documents with
-      // the matched text, which a table layout cannot render.
+      // Content search folds into the documents tab as the "inside" scope. The component stays
+      // mounted until that tab lands; the loader means nothing reaches it.
       {
         path: 'search/content',
-        loader: contentSearchLoader,
+        loader: legacySearchRedirect('documents', { scope: 'inside' }),
         Component: ContentSearch,
       },
 
