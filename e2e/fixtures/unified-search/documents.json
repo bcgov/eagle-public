@@ -1,0 +1,200 @@
+[
+  {
+    "id": "d1",
+    "name": "Amendment #3 Application — Volume 1",
+    "date": "2026-02-18",
+    "type": "Amendment Application",
+    "milestone": "Amendment",
+    "phase": "Post decision",
+    "author": "Proponent",
+    "legislation": "2018 Act",
+    "featured": true
+  },
+  {
+    "id": "d2",
+    "name": "Application Information Requirements — Draft",
+    "date": "2026-02-11",
+    "type": "Requirements",
+    "milestone": "Amendment",
+    "phase": "Post decision",
+    "author": "EAO",
+    "legislation": "2018 Act",
+    "featured": false
+  },
+  {
+    "id": "d3",
+    "name": "Inspection Record 2026-01-22",
+    "date": "2026-01-29",
+    "type": "Inspection Record",
+    "milestone": "Compliance & Enforcement",
+    "phase": "Post decision",
+    "author": "EAO",
+    "legislation": "2018 Act",
+    "featured": false
+  },
+  {
+    "id": "d4",
+    "name": "Amendment Process Order",
+    "date": "2025-12-03",
+    "type": "Order",
+    "milestone": "Amendment",
+    "phase": "Post decision",
+    "author": "EAO",
+    "legislation": "2018 Act",
+    "featured": false
+  },
+  {
+    "id": "d5",
+    "name": "Annual Compliance Report 2025",
+    "date": "2025-11-14",
+    "type": "Report",
+    "milestone": "Compliance & Enforcement",
+    "phase": "Post decision",
+    "author": "Proponent",
+    "legislation": "2018 Act",
+    "featured": false
+  },
+  {
+    "id": "d6",
+    "name": "Condition 12 Management Plan — Revision 2",
+    "date": "2025-09-08",
+    "type": "Management Plan",
+    "milestone": "Post-Certificate",
+    "phase": "Post decision",
+    "author": "Proponent",
+    "legislation": "2018 Act",
+    "featured": false
+  },
+  {
+    "id": "d7",
+    "name": "Condition 12 Management Plan — Revision 10",
+    "date": "2025-06-30",
+    "type": "Management Plan",
+    "milestone": "Post-Certificate",
+    "phase": "Post decision",
+    "author": "Proponent",
+    "legislation": "2018 Act",
+    "featured": false
+  },
+  {
+    "id": "d8",
+    "name": "Environmental Assessment Certificate E23-01",
+    "date": "2023-03-14",
+    "type": "Certificate",
+    "milestone": "Decision",
+    "phase": "Referral",
+    "author": "Minister",
+    "legislation": "2018 Act",
+    "featured": true
+  },
+  {
+    "id": "d9",
+    "name": "Referral Package — Reasons for Decision",
+    "date": "2023-03-14",
+    "type": "Decision Material",
+    "milestone": "Decision",
+    "phase": "Referral",
+    "author": "EAO",
+    "legislation": "2018 Act",
+    "featured": false
+  },
+  {
+    "id": "d10",
+    "name": "Assessment Report",
+    "date": "2023-02-02",
+    "type": "Report",
+    "milestone": "Effects Assessment",
+    "phase": "Effects Assessment",
+    "author": "EAO",
+    "legislation": "2018 Act",
+    "featured": true
+  },
+  {
+    "id": "d11",
+    "name": "Recommendation of the Executive Director",
+    "date": "2023-02-24",
+    "type": "Decision Material",
+    "milestone": "Effects Assessment",
+    "phase": "Effects Assessment",
+    "author": "EAO",
+    "legislation": "2018 Act",
+    "featured": false
+  },
+  {
+    "id": "d12",
+    "name": "Public Comment Period — Summary of Submissions",
+    "date": "2022-11-18",
+    "type": "Report",
+    "milestone": "Application Review",
+    "phase": "Application Development and Review",
+    "author": "EAO",
+    "legislation": "2018 Act",
+    "featured": false
+  },
+  {
+    "id": "d13",
+    "name": "EAC Application — Volume 2 of 9",
+    "date": "2022-08-05",
+    "type": "Application",
+    "milestone": "Application Review",
+    "phase": "Application Development and Review",
+    "author": "Proponent",
+    "legislation": "2018 Act",
+    "featured": false
+  },
+  {
+    "id": "d14",
+    "name": "EAC Application — Volume 10 of 9",
+    "date": "2022-08-05",
+    "type": "Application",
+    "milestone": "Application Review",
+    "phase": "Application Development and Review",
+    "author": "Proponent",
+    "legislation": "2018 Act",
+    "featured": false
+  },
+  {
+    "id": "d15",
+    "name": "Process Order and Schedule",
+    "date": "2021-11-02",
+    "type": "Order",
+    "milestone": "Process Planning",
+    "phase": "Process Planning",
+    "author": "EAO",
+    "legislation": "2002 Act",
+    "featured": false
+  },
+  {
+    "id": "d16",
+    "name": "Readiness Decision",
+    "date": "2021-08-19",
+    "type": "Decision Material",
+    "milestone": "Readiness Decision",
+    "phase": "Readiness Decision",
+    "author": "EAO",
+    "legislation": "2002 Act",
+    "featured": false
+  },
+  {
+    "id": "d17",
+    "name": "Detailed Project Description",
+    "date": "2021-07-12",
+    "type": "Application",
+    "milestone": "Early Engagement",
+    "phase": "Early Engagement",
+    "author": "Proponent",
+    "legislation": "2002 Act",
+    "featured": false
+  },
+  {
+    "id": "d18",
+    "name": "Early Engagement Summary Report",
+    "date": "2021-01-26",
+    "type": "Report",
+    "milestone": "Early Engagement",
+    "phase": "Early Engagement",
+    "author": "EAO",
+    "legislation": "2002 Act",
+    "featured": false
+  }
+]

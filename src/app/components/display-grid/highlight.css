@@ -1,0 +1,12 @@
+/* Search hits. Scoped to the grid so the component never restyles a host page's <mark>. */
+
+.display-grid .display-grid__hit {
+  /* Inherited from a link, the hit text measures 2.49:1 on the gold ground, so it states its own
+     ink: #2d2d2d on #fce2b0 is 10.92:1. */
+  color: var(--typography-color-primary);
+  background: var(--theme-gold-40);
+  /* No padding or border-radius: a mark that grows shifts the words around it mid-line. */
+  padding: 0;
+  border-radius: 0;
+  font-weight: inherit;
+}
