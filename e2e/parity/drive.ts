@@ -6,7 +6,13 @@
 import { expect, type Page } from '@playwright/test';
 
 import { selectorFor, type Side } from './selectors';
-import { FIXED_NOW, type Measurement, type Step } from './states';
+import {
+  CONTENT_SEARCH_STATE,
+  FIXED_NOW,
+  type Measurement,
+  type ParityState,
+  type Step,
+} from './states';
 
 /**
  * No transitions, no caret blink, no smooth scrolling. Left on, each of these turns a pixel
@@ -38,6 +44,29 @@ export const OUT_OF_SCOPE_CSS = `
   /* Deployment name strip above the header row: 34px at 924, ~72px wrapped at 400. */
   .eao-header .env-banner { display: none !important; }
 `;
+
+/**
+ * The scope segment, hidden on both sides: an accepted deviation, 2026-09-12.
+ *
+ * Inside-document search is Phase 4, so the prototype draws both options and the app draws only
+ * the one it can honour. Drop this rule and recapture when the phase lands.
+ */
+export const SCOPE_SEGMENT_CSS = `[data-tour="scope"] { display: none !important; }`;
+
+/**
+ * The count badge on the app's fourth record pill, hidden: accepted deviation, 2026-09-12.
+ *
+ * The design was drawn before Project notifications joined the record types, so there is no
+ * designed number to compare against; `capture-reference.ts` adds the pill without one.
+ */
+export const NOTIFICATIONS_COUNT_CSS = `
+  [data-tour="types"] > button:nth-of-type(4) span { display: none !important; }
+`;
+
+/** Every state but the one whose subject is the scope segment keeps it hidden. */
+export function hidesScopeSegment(state: ParityState): boolean {
+  return state.id !== CONTENT_SEARCH_STATE;
+}
 
 /** Pins the clock before any page script runs, so "today" is the same on every capture. */
 export async function freezeClock(page: Page): Promise<void> {

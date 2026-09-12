@@ -40,6 +40,12 @@ export interface ParityState {
   /** Defaults to both widths. A state the narrow layout has no equivalent for names one. */
   widths?: readonly number[];
   /**
+   * Compare the viewport instead of the whole document, on both sides. For a state whose subject
+   * is a `position: fixed` overlay: the app's picker closes on the scroll a full-page shot does,
+   * so the full-page image would be of a page with the picker already gone.
+   */
+  viewportOnly?: boolean;
+  /**
    * A selector the state's feature puts on the page at load. Absent from the page means the phase
    * that owns the feature has not been built, and the state skips rather than times out.
    */
@@ -61,6 +67,14 @@ const ALWAYS: Measurement[] = [
 
 /** Present only where the table renders. */
 const GRID_ONLY: Measurement[] = [{ kind: 'boxMinWidth', control: 'resultsTable', px: 880 }];
+
+/**
+ * The only state whose subject is the Names & details / Inside documents scope segment. Every
+ * other state hides it on both sides: the app has no inside-documents scope yet (Phase 4), and
+ * the product owner accepted that deviation on 2026-09-12. This state stays out of the way
+ * behind its own `requires` guard until the phase lands, so its reference keeps the segment.
+ */
+export const CONTENT_SEARCH_STATE = '04-document-content-search';
 
 /** The search help entry point, which the dialog and every tour step are reached through. Phase 5. */
 const HELP_AND_TOUR = '[data-help]';
@@ -102,7 +116,7 @@ export const STATES: ParityState[] = [
     measurements: ALWAYS,
   },
   {
-    id: '04-document-content-search',
+    id: CONTENT_SEARCH_STATE,
     description: 'Scope switched to Inside documents with the keyword "sediment".',
     // Phase 4.
     requires: '[data-tour="scope"] button:has-text("Inside documents")',
@@ -138,6 +152,8 @@ export const STATES: ParityState[] = [
     description: 'Document type column filter menu open.',
     // The column filter row belongs to the table; the narrow layout has no equivalent control.
     widths: [WIDE],
+    // The app's picker is fixed-position and closes on scroll, which a full-page shot performs.
+    viewportOnly: true,
     steps: [{ do: 'click', control: 'filterPickDocumentType' }],
     measurements: [...ALWAYS, { kind: 'boxHeight', control: 'filterPickDocumentType', px: 30 }],
   },

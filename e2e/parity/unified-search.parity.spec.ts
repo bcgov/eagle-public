@@ -19,8 +19,11 @@ import { routeDemiSearch } from '../fixtures/unified-search/demi-search';
 import {
   checkMeasurements,
   freezeClock,
+  hidesScopeSegment,
+  NOTIFICATIONS_COUNT_CSS,
   OUT_OF_SCOPE_CSS,
   runSteps,
+  SCOPE_SEGMENT_CSS,
   settle,
   STILL_CSS,
 } from './drive';
@@ -51,6 +54,9 @@ for (const state of STATES) {
 
       await page.addStyleTag({ content: STILL_CSS });
       await page.addStyleTag({ content: OUT_OF_SCOPE_CSS });
+      // Deviations the product owner accepted on 2026-09-12; each one is explained in `drive.ts`.
+      await page.addStyleTag({ content: NOTIFICATIONS_COUNT_CSS });
+      if (hidesScopeSegment(state)) await page.addStyleTag({ content: SCOPE_SEGMENT_CSS });
       await grid.first().waitFor({ state: 'visible' });
       await settle(page);
 
@@ -65,8 +71,9 @@ for (const state of STATES) {
 
       await expect(page).toHaveScreenshot(`${state.id}-${width}.png`, {
         // The whole page against the whole design: a height that differs fails before a pixel is
-        // compared, because content below the fold is part of what was designed.
-        fullPage: true,
+        // compared, because content below the fold is part of what was designed. A state whose
+        // subject cannot survive being scrolled compares the viewport instead, on both sides.
+        fullPage: !state.viewportOnly,
         // 0.5% of the frame: enough for font hinting, not enough to hide a moved control.
         maxDiffPixelRatio: 0.005,
         animations: 'disabled',
