@@ -43,12 +43,6 @@
     "GET /demi-search/search?and[project]=:id&dataset=RecentActivity&fuzzy=false&pageNum=0&pageSize=1&populate=false&projectLegislation=default&sortBy=&sortBy=",
     "GET /demi-search/search?dataset=List&pageSize=250"
   ],
-  "projects-list": [
-    "GET /demi-search/config",
-    "GET /demi-search/search?and[companyType]=Proponent/Certificate Holder&dataset=Organization&fuzzy=false&pageNum=0&pageSize=500&populate=false&projectLegislation=default&sortBy= name",
-    "GET /demi-search/search?dataset=List&pageSize=250",
-    "GET /demi-search/search?dataset=Project&fuzzy=false&pageNum=0&pageSize=10&populate=true&projectLegislation=default&sortBy=&sortBy= name"
-  ],
   "projects-map": [
     "GET /demi-search/config",
     "GET /demi-search/search?dataset=List&pageSize=250",
@@ -56,7 +50,8 @@
   ],
   "search": [
     "GET /demi-search/config",
-    "GET /demi-search/search?dataset=Document&fuzzy=false&pageNum=0&pageSize=10&populate=true&projectLegislation=default&sortBy=&sortBy=-datePosted",
-    "GET /demi-search/search?dataset=List&pageSize=250"
+    "GET /demi-search/search?and[companyType]=Proponent/Certificate Holder&dataset=Organization&fuzzy=false&pageNum=0&pageSize=500&populate=false&projectLegislation=default&sortBy= name",
+    "GET /demi-search/search?dataset=List&pageSize=250",
+    "GET /demi-search/search?dataset=Project&fuzzy=false&pageNum=0&pageSize=25&populate=false&projectLegislation=default&sortBy=-dateUpdated"
   ]
 }

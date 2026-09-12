@@ -7,13 +7,13 @@ import { ready, waitForSearch, total } from '../support/helpers';
  * data-independent so the same run means the same thing on the deployed site and on the port.
  */
 
-const ROWS = 'table[aria-label="table-template"] tbody tr';
+const ROWS = '.display-grid__row';
 
-test('every projects-list column header sorts through the URL and the API', async ({ page }) => {
-  await page.goto('/projects-list');
+test('every projects column header sorts through the URL and the API', async ({ page }) => {
+  await page.goto('/search');
   await ready(page);
 
-  const headers = page.locator('th.sortable button');
+  const headers = page.locator('.display-grid thead button.display-grid__sort');
   const count = await headers.count();
   expect(count, 'no sortable column headers').toBeGreaterThan(0);
 
@@ -25,24 +25,25 @@ test('every projects-list column header sorts through the URL and the API', asyn
     // `+name` survives a round trip through URLSearchParams as `" name"`.
     const sortBy = new URL(page.url()).searchParams.get('sortBy');
     expect(sortBy, `sortBy after sorting on "${label}"`).toMatch(/^[+ -]\S/);
-    await expect(page.locator(ROWS)).toHaveCount(Math.min(10, total(env)));
+    await expect(page.locator(ROWS)).toHaveCount(Math.min(25, total(env)));
   }
 });
 
 test('the page size picker drives pageSize in the URL and the rendered rows', async ({ page }) => {
-  await page.goto('/projects-list');
+  await page.goto('/search');
   await ready(page);
 
-  const picker = page.locator('[id^="table-template-page-size-picker"]');
+  // 25 is the grid's default, so picking it would write nothing to the URL.
+  const picker = page.locator('.display-grid .lib-page-size-display');
   await expect(picker).toBeVisible();
 
-  const search = waitForSearch(page, 'Project', 'pageSize=25');
-  await picker.getByText('25', { exact: true }).click();
+  const search = waitForSearch(page, 'Project', 'pageSize=50');
+  await picker.getByText('50', { exact: true }).click();
   const env = await search;
   await page.waitForTimeout(1500);
 
-  expect(new URL(page.url()).searchParams.get('pageSize')).toBe('25');
-  await expect(page.locator(ROWS)).toHaveCount(Math.min(25, total(env)));
+  expect(new URL(page.url()).searchParams.get('pageSize')).toBe('50');
+  await expect(page.locator(ROWS)).toHaveCount(Math.min(50, total(env)));
 });
 
 test('@data the map region filter narrows the result count and syncs the URL', async ({ page }) => {
