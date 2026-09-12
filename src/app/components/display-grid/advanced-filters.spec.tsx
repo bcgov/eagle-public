@@ -5,6 +5,7 @@ import type { AdvancedField, FilterValues } from './types';
 
 const fields: AdvancedField[] = [
   { id: 'datePostedStart', label: 'Posted from', kind: 'date' },
+  { id: 'datePostedEnd', label: 'Posted to', kind: 'date' },
   {
     id: 'legislation',
     label: 'Legislation',
@@ -102,6 +103,35 @@ describe('AdvancedFilters', () => {
     applyValues({ proponent: 'Cedar' });
 
     expect(input).toHaveValue('2025-06');
+  });
+
+  it('keeps a second date draft when only the first field changed', async () => {
+    const user = userEvent.setup();
+    const { applyValues } = setup();
+    const half = screen.getByLabelText(/Posted to/);
+
+    await user.type(half, '2025-06');
+    // Only the field whose applied filter moved may lose its draft.
+    applyValues({ datePostedStart: '2025-06-01' });
+
+    expect(screen.getByLabelText(/Posted from/)).toHaveValue('2025-06-01');
+    expect(half).toHaveValue('2025-06');
+  });
+
+  it('drops a never-parsed date when the applied filters are all cleared', async () => {
+    const user = userEvent.setup();
+    const { applyValues } = setup({ datePostedStart: '2025-06-01' });
+    const half = screen.getByLabelText(/Posted to/);
+
+    // Never parses, so it was never applied: only the set going empty can drop it.
+    await user.type(half, '2025-06');
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+
+    applyValues({});
+
+    expect(half).toHaveValue('');
+    expect(screen.getByLabelText(/Posted from/)).toHaveValue('');
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
   it('emits true when a toggle is turned on', async () => {

@@ -54,14 +54,21 @@ export function AdvancedFilters({ fields, values, onChange, open }: AdvancedFilt
   const [lastApplied, setLastApplied] = useState<Record<string, string>>(() =>
     dateTexts(fields, values),
   );
+  const [lastCount, setLastCount] = useState(() => Object.keys(values).length);
 
   /* A draft only outlives the keystroke that made it. Once the applied filter changes from
-     outside - a chip dropped, Clear all - the typed text is stale and the prop wins again. */
+     outside - a chip dropped, Clear all - the typed text is stale and the prop wins again.
+     A date that never parsed has no applied text to change, so clearing the whole set is what
+     drops it: otherwise it would sit there with its format error after every filter is gone. */
   const applied = dateTexts(fields, values);
+  const count = Object.keys(values).length;
+  const cleared = count === 0 && lastCount > 0;
   const changed = Object.keys(applied).filter((id) => applied[id] !== lastApplied[id]);
-  if (changed.length > 0) {
+  if (changed.length > 0 || count !== lastCount) {
     setLastApplied(applied);
+    setLastCount(count);
     setDrafts((current) => {
+      if (cleared) return {};
       const next = { ...current };
       for (const id of changed) delete next[id];
       return next;

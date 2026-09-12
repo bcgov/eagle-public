@@ -1,0 +1,211 @@
+/* The unified search page. Every rule is scoped under `.unified-search`: the page mounts inside a
+   shell that owns `body`, `a`, `label` and `input`, and a bare element selector here would
+   silently beat the host's. Colour comes from @bcgov/design-tokens roles, never the raw scale. */
+
+.unified-search {
+  /* A flex item's `min-width: auto` would let the grid's 880px table set this page's width, which
+     on a phone pushes the pills and the keyword field off screen instead of scrolling the table. */
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: var(--layout-padding-large) var(--layout-padding-medium);
+  color: var(--typography-color-primary);
+  font-family: 'BC Sans', sans-serif;
+}
+
+.unified-search input,
+.unified-search button {
+  font-family: 'BC Sans', sans-serif;
+}
+
+.unified-search .unified-search__visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.unified-search .unified-search__title {
+  margin: 0 0 var(--layout-margin-xsmall);
+  font: var(--typography-bold-h4);
+}
+
+.unified-search .unified-search__intro {
+  margin: 0 0 var(--layout-margin-large);
+  max-width: 66ch;
+  font: var(--typography-regular-body);
+  color: var(--typography-color-secondary);
+  text-wrap: pretty;
+}
+
+/* Keyword field */
+
+.unified-search .unified-search__field {
+  position: relative;
+  margin-bottom: var(--layout-margin-medium);
+}
+
+.unified-search .unified-search__field-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 20px;
+  color: var(--typography-color-secondary);
+  pointer-events: none;
+}
+
+.unified-search .unified-search__field-label {
+  display: block;
+  margin: 0;
+}
+
+/* `epic/styles.css` sets a height on bare `input`, so this states its own rather than a min. */
+.unified-search .unified-search__input {
+  box-sizing: border-box;
+  width: 100%;
+  height: 48px;
+  min-height: 48px;
+  padding: 0 var(--layout-padding-medium) 0 40px;
+  border: var(--layout-border-width-small) solid var(--theme-gray-50);
+  border-radius: var(--layout-border-radius-medium);
+  background: var(--theme-gray-white);
+  font: var(--typography-regular-body);
+  color: var(--typography-color-primary);
+}
+
+/* Record-type pills and the help link */
+
+.unified-search .unified-search__types-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--layout-padding-medium);
+  margin-bottom: var(--layout-margin-medium);
+}
+
+.unified-search .unified-search__types {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--layout-padding-xsmall);
+}
+
+.unified-search .unified-search__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--layout-padding-xsmall);
+  min-height: 40px;
+  padding: 0 var(--layout-padding-medium);
+  border: var(--layout-border-width-small) solid var(--theme-gray-50);
+  border-radius: var(--layout-border-radius-medium);
+  background: var(--theme-gray-white);
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-primary);
+  cursor: pointer;
+}
+
+.unified-search .unified-search__pill--on {
+  border-color: var(--typography-color-link);
+  background: var(--surface-color-primary-default);
+  font: var(--typography-bold-small-body);
+  color: var(--theme-gray-white);
+}
+
+.unified-search .unified-search__pill-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: var(--theme-gray-20);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--typography-color-secondary);
+}
+
+.unified-search .unified-search__pill--on .unified-search__pill-count {
+  background: var(--theme-gray-white);
+  color: var(--typography-color-link);
+}
+
+.unified-search .unified-search__help {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-link);
+}
+
+.unified-search .unified-search__help-icon {
+  font-size: 17px;
+}
+
+/* Document scope switch, in the toolbar's scope slot */
+
+.unified-search .unified-search__scope {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--layout-border-radius-medium);
+  background: var(--theme-gray-20);
+}
+
+.unified-search .unified-search__scope-option {
+  min-height: 28px;
+  padding: 0 var(--layout-padding-small);
+  border: none;
+  border-radius: var(--layout-border-radius-small);
+  background: transparent;
+  font: var(--typography-regular-label);
+  color: var(--typography-color-secondary);
+  cursor: pointer;
+}
+
+.unified-search .unified-search__scope-option--on {
+  background: var(--theme-gray-white);
+  box-shadow: var(--surface-shadow-small);
+  font: var(--typography-bold-label);
+  color: var(--typography-color-primary);
+}
+
+/* Empty state, rendered inside the grid's own empty slot */
+
+.unified-search .unified-search__empty {
+  display: block;
+  padding: var(--layout-padding-large) var(--layout-padding-medium);
+  text-align: center;
+}
+
+.unified-search .unified-search__empty-title {
+  display: block;
+  margin-bottom: var(--layout-margin-xsmall);
+  font: var(--typography-bold-body);
+  color: var(--typography-color-primary);
+}
+
+.unified-search .unified-search__empty-detail {
+  display: block;
+  margin: 0 auto var(--layout-margin-medium);
+  max-width: 56ch;
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-secondary);
+  text-wrap: pretty;
+}
+
+.unified-search .unified-search__empty-action {
+  min-height: 40px;
+  padding: 0 var(--layout-padding-large);
+  border: var(--layout-border-width-medium) solid var(--typography-color-link);
+  border-radius: var(--layout-border-radius-small);
+  background: var(--theme-gray-white);
+  font: var(--typography-bold-small-body);
+  color: var(--typography-color-link);
+  cursor: pointer;
+}
