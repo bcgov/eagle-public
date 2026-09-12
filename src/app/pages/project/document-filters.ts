@@ -7,7 +7,7 @@ import {
 } from 'app/components/filters/filter-object';
 
 /** The `List` item `type` each document filter draws its options from, and its label. */
-const DOCUMENT_FILTERS: Record<string, { listType: string; label: string }> = {
+export const DOCUMENT_FILTERS: Record<string, { listType: string; label: string }> = {
   milestone: { listType: 'label', label: 'Milestone' },
   documentAuthorType: { listType: 'author', label: 'Document Author' },
   type: { listType: 'doctype', label: 'Document Type' },
