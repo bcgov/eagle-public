@@ -58,13 +58,75 @@ function write(name, value) {
 
 const { DOCS, PROJECTS, UPDATES, CONTENTS } = evaluate(sliceDataRegion(readFileSync(PROTOTYPE, 'utf8')));
 
-mkdirSync(OUT_DIR, { recursive: true });
+/**
+ * The prototype names its fields for the mockup; the page reads the names demi-search sends. The
+ * values are carried over untouched, only the keys change. `src/app/pages/search/types/*.ts` and
+ * `src/app/models/*.ts` are where the target names come from.
+ */
+const collator = new Intl.Collator('en-CA', { numeric: true, sensitivity: 'base' });
+const orgIds = new Map(
+  [...new Set(PROJECTS.map((project) => project.proponent))]
+    .sort(collator.compare)
+    .map((name, index) => [name, `org-${index + 1}`]),
+);
+
+const projects = PROJECTS.map((project) => ({
+  _id: project.id,
+  name: project.name,
+  dateUpdated: project.date,
+  proponent: { _id: orgIds.get(project.proponent), name: project.proponent },
+  type: project.type,
+  region: project.region,
+  currentPhaseName: project.phase,
+  eacDecision: project.decision,
+  // The prototype records IAAC involvement as a flag; the filter offers it as a value list.
+  CEAAInvolvement: project.iaac ? 'Yes' : 'No',
+}));
+
+// Every prototype document belongs to the project the sample set is drawn from.
+const hostProject = { _id: projects[0]._id, name: projects[0].name };
+
 // `contents` is written once, as passages.json; carrying it on the document rows too would let the
 // two copies drift.
-write(
-  'documents',
-  DOCS.map(({ contents: _contents, ...rest }) => rest),
-);
-write('projects', PROJECTS);
-write('activities', UPDATES);
+const documents = DOCS.map((doc) => ({
+  _id: doc.id,
+  displayName: doc.name,
+  datePosted: doc.date,
+  type: doc.type,
+  milestone: doc.milestone,
+  projectPhase: doc.phase,
+  documentAuthorType: doc.author,
+  legislation: Number(String(doc.legislation).replace(/\D/g, '')),
+  isFeatured: doc.featured,
+  project: hostProject,
+}));
+
+const documentIdsByFile = new Map(documents.map((doc) => [`${doc.displayName}.pdf`, doc._id]));
+const projectsByName = new Map(projects.map((project) => [project.name, project]));
+
+/** One attachment link, as `documentUrl` carries it: the file name lives in the URL. */
+function documentUrl(update) {
+  const first = update.docs?.[0];
+  if (!first) return '';
+  const id = documentIdsByFile.get(first.name) ?? `${update.id}-1`;
+  return `/api/document/${id}/fetch/${encodeURIComponent(first.name)}`;
+}
+
+const activities = UPDATES.map((update) => {
+  const project = projectsByName.get(update.project);
+  return {
+    _id: update.id,
+    headline: update.name,
+    content: update.body,
+    dateAdded: update.date,
+    type: update.kind,
+    project: { _id: project?._id ?? '', name: update.project },
+    documentUrl: documentUrl(update),
+  };
+});
+
+mkdirSync(OUT_DIR, { recursive: true });
+write('documents', documents);
+write('projects', projects);
+write('activities', activities);
 write('passages', CONTENTS);
