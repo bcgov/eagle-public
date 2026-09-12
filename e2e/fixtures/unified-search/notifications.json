@@ -1,82 +1,82 @@
 [
   {
-    "id": "n1",
+    "_id": "n1",
     "name": "Bear Creek Aggregate Expansion",
     "type": "Mines",
     "region": "Cariboo",
     "pcp": "open",
     "decision": "In Progress",
-    "notificationReceivedDate": "2026-02-24",
-    "description": "Expansion of an existing sand and gravel operation by 42 hectares, including a new processing plant and haul road."
+    "description": "Expansion of an existing sand and gravel operation by 42 hectares, including a new processing plant and haul road.",
+    "dateUpdated": "2026-02-24"
   },
   {
-    "id": "n2",
+    "_id": "n2",
     "name": "Nechako Valley Wind",
     "type": "Energy-Electricity",
     "region": "Omineca",
     "pcp": "pending",
     "decision": "In Progress",
-    "notificationReceivedDate": "2026-02-09",
-    "description": "Thirty-six turbine wind facility with a nameplate capacity of 180 megawatts and a 24 kilometre collector line."
+    "description": "Thirty-six turbine wind facility with a nameplate capacity of 180 megawatts and a 24 kilometre collector line.",
+    "dateUpdated": "2026-02-09"
   },
   {
-    "id": "n3",
+    "_id": "n3",
     "name": "Salish Sea Ferry Terminal Upgrade",
     "type": "Transportation",
     "region": "Vancouver Island",
     "pcp": "closed",
     "decision": "Referred for s.11 consideration",
-    "notificationReceivedDate": "2026-01-15",
-    "description": "Replacement of two berths and a new marshalling area, with dredging inside the existing terminal footprint."
+    "description": "Replacement of two berths and a new marshalling area, with dredging inside the existing terminal footprint.",
+    "dateUpdated": "2026-01-15"
   },
   {
-    "id": "n4",
+    "_id": "n4",
     "name": "Kootenay Biosolids Processing Centre",
     "type": "Waste Disposal",
     "region": "Kootenay",
     "pcp": "none",
     "decision": "Not referred for s.11 consideration",
-    "notificationReceivedDate": "2025-12-02",
-    "description": "Regional facility to compost municipal biosolids, with sediment control ponds discharging to an unnamed tributary."
+    "description": "Regional facility to compost municipal biosolids, with sediment control ponds discharging to an unnamed tributary.",
+    "dateUpdated": "2025-12-02"
   },
   {
-    "id": "n5",
+    "_id": "n5",
     "name": "Peace Region Potato Processing Plant",
     "type": "Food Processing",
     "region": "Peace",
     "pcp": "none",
     "decision": "In Progress",
-    "notificationReceivedDate": "2025-11-19",
-    "description": "New processing plant handling 120,000 tonnes a year, drawing process water from a licensed groundwater well."
+    "description": "New processing plant handling 120,000 tonnes a year, drawing process water from a licensed groundwater well.",
+    "dateUpdated": "2025-11-19"
   },
   {
-    "id": "n6",
+    "_id": "n6",
     "name": "Thompson Ridge Ski Resort Master Plan",
     "type": "Tourist Destination Resorts",
     "region": "Thompson-Nicola",
     "pcp": "open",
     "decision": "Referred for s.11 consideration",
-    "notificationReceivedDate": "2025-10-27",
-    "description": "All-season resort with 1,400 bed units, four lifts and a water supply reservoir above the village site."
+    "description": "All-season resort with 1,400 bed units, four lifts and a water supply reservoir above the village site.",
+    "dateUpdated": "2025-10-27"
   },
   {
-    "id": "n7",
+    "_id": "n7",
     "name": "Fraser Lowlands Water Storage",
     "type": "Water Management",
     "region": "Lower Mainland",
     "pcp": "closed",
     "decision": "Not referred for s.11 consideration",
-    "notificationReceivedDate": "2025-09-08",
-    "description": "Off-channel storage reservoir and pump station to supplement irrigation supply during summer low flows."
+    "description": "Off-channel storage reservoir and pump station to supplement irrigation supply during summer low flows.",
+    "dateUpdated": "2025-09-08"
   },
   {
-    "id": "n8",
+    "_id": "n8",
     "name": "Skeena Modular Housing Works",
     "type": "Industrial",
     "region": "Skeena",
     "pcp": "pending",
     "decision": "In Progress",
-    "notificationReceivedDate": "2025-08-14",
-    "description": "Factory producing modular housing units, with an on-site sediment settling basin and a rail spur connection."
+    "description": "Factory producing modular housing units, with an on-site sediment settling basin and a rail spur connection.",
+    "dateUpdated": "2025-08-14"
   }
 ]

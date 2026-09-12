@@ -1,146 +1,170 @@
 [
   {
-    "id": "p1",
+    "_id": "p1",
     "name": "Cedar LNG",
-    "date": "2026-02-18",
-    "proponent": "Cedar LNG Partners LP",
+    "dateUpdated": "2026-02-18",
+    "proponent": {
+      "_id": "org-5",
+      "name": "Cedar LNG Partners LP"
+    },
     "type": "Energy — Petroleum & Natural Gas",
     "region": "Skeena",
-    "phase": "Post decision",
-    "legislation": "2018 Act",
-    "decision": "Certificate issued",
-    "iaac": true
+    "currentPhaseName": "Post decision",
+    "eacDecision": "Certificate issued",
+    "CEAAInvolvement": "Yes"
   },
   {
-    "id": "p2",
+    "_id": "p2",
     "name": "7 Mile Renewable Fuels Production Facility",
-    "date": "2026-02-02",
-    "proponent": "Tidewater Renewables Ltd.",
+    "dateUpdated": "2026-02-02",
+    "proponent": {
+      "_id": "org-12",
+      "name": "Tidewater Renewables Ltd."
+    },
     "type": "Industrial",
     "region": "Northeast",
-    "phase": "Application Development and Review",
-    "legislation": "2018 Act",
-    "decision": "Not yet decided",
-    "iaac": false
+    "currentPhaseName": "Application Development and Review",
+    "eacDecision": "Not yet decided",
+    "CEAAInvolvement": "No"
   },
   {
-    "id": "p3",
+    "_id": "p3",
     "name": "Aspen Solar and Energy Storage",
-    "date": "2026-01-20",
-    "proponent": "Aspen Power Partners",
+    "dateUpdated": "2026-01-20",
+    "proponent": {
+      "_id": "org-1",
+      "name": "Aspen Power Partners"
+    },
     "type": "Energy — Electricity",
     "region": "Thompson-Okanagan",
-    "phase": "Early Engagement",
-    "legislation": "2018 Act",
-    "decision": "Not yet decided",
-    "iaac": false
+    "currentPhaseName": "Early Engagement",
+    "eacDecision": "Not yet decided",
+    "CEAAInvolvement": "No"
   },
   {
-    "id": "p4",
+    "_id": "p4",
     "name": "Eskay Creek Revitalization",
-    "date": "2025-12-11",
-    "proponent": "Skeena Resources Limited",
+    "dateUpdated": "2025-12-11",
+    "proponent": {
+      "_id": "org-10",
+      "name": "Skeena Resources Limited"
+    },
     "type": "Mines",
     "region": "Skeena",
-    "phase": "Effects Assessment",
-    "legislation": "2018 Act",
-    "decision": "Not yet decided",
-    "iaac": true
+    "currentPhaseName": "Effects Assessment",
+    "eacDecision": "Not yet decided",
+    "CEAAInvolvement": "Yes"
   },
   {
-    "id": "p5",
+    "_id": "p5",
     "name": "Highland Valley Copper 2040",
-    "date": "2025-11-27",
-    "proponent": "Teck Highland Valley Copper",
+    "dateUpdated": "2025-11-27",
+    "proponent": {
+      "_id": "org-11",
+      "name": "Teck Highland Valley Copper"
+    },
     "type": "Mines",
     "region": "Thompson-Okanagan",
-    "phase": "Referral",
-    "legislation": "2018 Act",
-    "decision": "Certificate issued",
-    "iaac": false
+    "currentPhaseName": "Referral",
+    "eacDecision": "Certificate issued",
+    "CEAAInvolvement": "No"
   },
   {
-    "id": "p6",
+    "_id": "p6",
     "name": "Ksi Lisims LNG",
-    "date": "2025-10-08",
-    "proponent": "Ksi Lisims LNG Limited Partnership",
+    "dateUpdated": "2025-10-08",
+    "proponent": {
+      "_id": "org-8",
+      "name": "Ksi Lisims LNG Limited Partnership"
+    },
     "type": "Energy — Petroleum & Natural Gas",
     "region": "Skeena",
-    "phase": "Effects Assessment",
-    "legislation": "2018 Act",
-    "decision": "Not yet decided",
-    "iaac": false
+    "currentPhaseName": "Effects Assessment",
+    "eacDecision": "Not yet decided",
+    "CEAAInvolvement": "No"
   },
   {
-    "id": "p7",
+    "_id": "p7",
     "name": "North Coast Transmission Line",
-    "date": "2025-09-16",
-    "proponent": "BC Hydro",
+    "dateUpdated": "2025-09-16",
+    "proponent": {
+      "_id": "org-3",
+      "name": "BC Hydro"
+    },
     "type": "Energy — Electricity",
     "region": "Skeena",
-    "phase": "Process Planning",
-    "legislation": "2018 Act",
-    "decision": "Not yet decided",
-    "iaac": true
+    "currentPhaseName": "Process Planning",
+    "eacDecision": "Not yet decided",
+    "CEAAInvolvement": "Yes"
   },
   {
-    "id": "p8",
+    "_id": "p8",
     "name": "Sukunka Coal",
-    "date": "2025-07-02",
-    "proponent": "Glencore Canada Corporation",
+    "dateUpdated": "2025-07-02",
+    "proponent": {
+      "_id": "org-7",
+      "name": "Glencore Canada Corporation"
+    },
     "type": "Mines",
     "region": "Northeast",
-    "phase": "Readiness Decision",
-    "legislation": "2018 Act",
-    "decision": "Not yet decided",
-    "iaac": false
+    "currentPhaseName": "Readiness Decision",
+    "eacDecision": "Not yet decided",
+    "CEAAInvolvement": "No"
   },
   {
-    "id": "p9",
+    "_id": "p9",
     "name": "Tilbury Phase 2 LNG Expansion",
-    "date": "2025-05-21",
-    "proponent": "FortisBC Energy Inc.",
+    "dateUpdated": "2025-05-21",
+    "proponent": {
+      "_id": "org-6",
+      "name": "FortisBC Energy Inc."
+    },
     "type": "Energy — Petroleum & Natural Gas",
     "region": "Lower Mainland",
-    "phase": "Application Development and Review",
-    "legislation": "2018 Act",
-    "decision": "Not yet decided",
-    "iaac": false
+    "currentPhaseName": "Application Development and Review",
+    "eacDecision": "Not yet decided",
+    "CEAAInvolvement": "No"
   },
   {
-    "id": "p10",
+    "_id": "p10",
     "name": "Kitsault Mine Restart",
-    "date": "2025-03-14",
-    "proponent": "Avanti Mining Inc.",
+    "dateUpdated": "2025-03-14",
+    "proponent": {
+      "_id": "org-2",
+      "name": "Avanti Mining Inc."
+    },
     "type": "Mines",
     "region": "Skeena",
-    "phase": "Early Engagement",
-    "legislation": "2002 Act",
-    "decision": "Not yet decided",
-    "iaac": true
+    "currentPhaseName": "Early Engagement",
+    "eacDecision": "Not yet decided",
+    "CEAAInvolvement": "Yes"
   },
   {
-    "id": "p11",
+    "_id": "p11",
     "name": "Willow Creek Wind",
-    "date": "2025-02-28",
-    "proponent": "Pattern Energy",
+    "dateUpdated": "2025-02-28",
+    "proponent": {
+      "_id": "org-9",
+      "name": "Pattern Energy"
+    },
     "type": "Energy — Electricity",
     "region": "Northeast",
-    "phase": "Early Engagement",
-    "legislation": "2002 Act",
-    "decision": "Not yet decided",
-    "iaac": false
+    "currentPhaseName": "Early Engagement",
+    "eacDecision": "Not yet decided",
+    "CEAAInvolvement": "No"
   },
   {
-    "id": "p12",
+    "_id": "p12",
     "name": "Vancouver Island Waste-to-Energy",
-    "date": "2024-11-19",
-    "proponent": "Capital Regional District",
+    "dateUpdated": "2024-11-19",
+    "proponent": {
+      "_id": "org-4",
+      "name": "Capital Regional District"
+    },
     "type": "Waste Disposal",
     "region": "Vancouver Island",
-    "phase": "Process Planning",
-    "legislation": "2002 Act",
-    "decision": "Not yet decided",
-    "iaac": false
+    "currentPhaseName": "Process Planning",
+    "eacDecision": "Not yet decided",
+    "CEAAInvolvement": "No"
   }
 ]
