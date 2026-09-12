@@ -22,6 +22,23 @@ export const STILL_CSS = `
   input, textarea { caret-color: transparent !important; }
 `;
 
+/**
+ * App chrome the design prototype never drew, hidden so a full-page diff is a diff of the search
+ * page. The prototype renders the site header and then the page, with no environment banner, so
+ * the banner would otherwise shift every row down. It lives outside `main`; nothing on the search
+ * page itself is touched.
+ *
+ * The site footer is deliberately not hidden. The prototype draws one from the same
+ * `footer.app-footer` markup, and every reference now ends on it: the capture releases the
+ * prototype's page-level scroll container, so the full-page shot runs to the bottom of the design
+ * and the last row of all 30 references is the footer's navy band. Hiding the app's would leave a
+ * footer-sized hole against every one of them.
+ */
+export const OUT_OF_SCOPE_CSS = `
+  /* Deployment name strip above the header row: 34px at 924, ~72px wrapped at 400. */
+  .eao-header .env-banner { display: none !important; }
+`;
+
 /** Pins the clock before any page script runs, so "today" is the same on every capture. */
 export async function freezeClock(page: Page): Promise<void> {
   await page.addInitScript((now) => {

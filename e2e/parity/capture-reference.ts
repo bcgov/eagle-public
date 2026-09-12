@@ -20,6 +20,22 @@ import { selectorFor } from './selectors';
 import { REFERENCE_DIR } from './paths';
 import { measurementsFor, STATES, widthsFor } from './states';
 
+/**
+ * `support.js` sizes the artboard to the window (`html,body{height:100%}`,
+ * `#dc-root,#dc-root>.sc-host{height:100%}`), which makes the body its own scroll container and
+ * leaves `fullPage` photographing one fold of design over blank canvas. Only these four boxes are
+ * released: scroll regions the design asks for, such as the table's `max-height: 560px`, are part
+ * of what the app has to reproduce.
+ */
+const EXPAND_PAGE_CSS = `
+  html, body, #dc-root, #dc-root > .sc-host {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+`;
+
 let server: PrototypeServer;
 
 test.beforeAll(async () => {
@@ -43,12 +59,27 @@ for (const state of STATES) {
       await page.locator(selectorFor('root', 'proto')).first().waitFor({ state: 'visible' });
       await settle(page);
 
+      // Released before the steps run, not after, so the layout that is measured at the end of the
+      // test is the same layout that was photographed.
+      await page.addStyleTag({ content: EXPAND_PAGE_CSS });
+      await settle(page);
+
       await runSteps(page, state.steps, 'proto');
       await settle(page);
 
       const png = await page.screenshot({ fullPage: true, scale: 'css' });
+
+      // A clipped document writes a reference that cannot fail, so prove the release took before
+      // anything reaches disk. Size out of the PNG's IHDR: width at byte 16, height at 20.
+      const box = await page.evaluate(() => ({
+        documentHeight: document.documentElement.scrollHeight,
+        bodyHeight: document.body.scrollHeight,
+      }));
+      expect(box.documentHeight, 'document is clipped above the body').toBe(box.bodyHeight);
+      expect(png.readUInt32BE(20), 'captured height').toBe(box.documentHeight);
+      expect(png.readUInt32BE(16), 'captured width').toBe(width);
+
       writeFileSync(join(REFERENCE_DIR, `${state.id}-${width}.png`), png);
-      expect(png.byteLength).toBeGreaterThan(0);
 
       // Measuring here too means a reference that no longer meets the design spec fails at
       // capture time, rather than silently becoming the thing the app is held to.
