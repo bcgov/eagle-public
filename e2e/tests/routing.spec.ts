@@ -52,25 +52,35 @@ test('@data /pn/:projId/cp/:cpId redirects to /details', async ({ page, request 
   expect(new URL(page.url()).pathname).toBe(`/pn/${pn._id}/cp/${cp._id}/details`);
 });
 
-test('/search/content redirects to /search while CONTENT_SEARCH is off', async ({
-  page,
-  request,
-}) => {
-  const cfg = await (await request.get('/demi-search/config')).json();
-  const contentSearchEnabled = Boolean(cfg.CONTENT_SEARCH);
+// The Angular-era list pages. Each one keeps working as a bookmark by landing on unified search
+// with its record type and its keyword intact.
+const LEGACY_SEARCH_URLS = [
+  { from: '/projects-list?keywords=coal&currentPage=2', record: 'projects' },
+  { from: '/news?keywords=coal', record: 'activities' },
+  { from: '/project-notifications?keywords=coal', record: 'notifications' },
+  { from: '/search/content?keywords=coal', record: 'documents' },
+];
 
-  await page.goto('/search/content');
-  await ready(page);
+for (const { from, record } of LEGACY_SEARCH_URLS) {
+  test(`${from} lands on unified search as ${record}`, async ({ page }) => {
+    await page.goto(from);
+    await page.waitForURL('**/search?*');
 
-  if (contentSearchEnabled) {
-    expect(new URL(page.url()).pathname).toBe('/search/content');
-  } else {
-    // Recorded prod behaviour: the route guard rewrites a bookmarked link to document search.
-    expect(new URL(page.url()).pathname).toBe('/search');
-    await expect(
-      page.getByRole('heading', { level: 1, name: 'Search All Documents' }),
-    ).toBeVisible();
-  }
+    const url = new URL(page.url());
+    expect(url.pathname).toBe('/search');
+    expect(url.searchParams.get('record')).toBe(record);
+    expect(url.searchParams.get('keywords')).toBe('coal');
+  });
+}
+
+test('an old hash-router address re-enters the path routes', async ({ page }) => {
+  await page.goto('/#/project-notifications?keywords=coal');
+  await page.waitForURL('**/search?*');
+
+  const url = new URL(page.url());
+  expect(url.pathname).toBe('/search');
+  expect(url.searchParams.get('record')).toBe('notifications');
+  expect(url.searchParams.get('keywords')).toBe('coal');
 });
 
 test('the header navigates to every top-level destination', async ({ page }) => {
