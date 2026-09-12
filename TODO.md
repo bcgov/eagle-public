@@ -79,8 +79,8 @@ Phase 1, grid components:
 
 Phase 2, `/search` projects + documents:
 
-- [ ] 2.1 `types/projects.ts`, `types/documents.ts`, `types/index.ts` + specs (`and[]` contract)
-- [ ] 2.2 `use-type-counts.ts` with 404 fallback + spec
+- [ ] 2.1 `types/projects.ts`, `types/documents.ts`, `types/index.ts` + specs (`and[]` contract) (in progress: feat/unified-search-p2a, written and green, uncommitted)
+- [ ] 2.2 `use-type-counts.ts` with 404 fallback + spec (in progress: feat/unified-search-p2a, written and green, uncommitted)
 - [ ] 2.3 `unified-search.tsx` composes grid; URL schema; analytics unchanged
 - [ ] 2.4 route swap, old search page deleted, e2e rewritten
 - [ ] 2.4a `routes/legacy-search.ts` param mapping + table-driven spec (Angular `/projects-list`, bare `/search` disambiguation)
