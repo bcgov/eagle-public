@@ -43,6 +43,15 @@ describe('Highlight', () => {
     expect(container.textContent).toBe('sedimentation');
   });
 
+  it('joins two matches that touch into one mark', () => {
+    const { container } = render(
+      <Highlight text="sedimentation basin" terms={['sediment', 'ation']} />,
+    );
+
+    expect(container.querySelectorAll('mark')).toHaveLength(1);
+    expect(container.querySelector('mark')).toHaveTextContent('sedimentation');
+  });
+
   it('does not nest one mark inside another when terms overlap', () => {
     const { container } = render(
       <Highlight text="sedimentation basin" terms={['sediment', 'mentation']} />,

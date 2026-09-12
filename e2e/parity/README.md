@@ -1,7 +1,8 @@
 # Unified search parity gate
 
-Holds the built `/search` page to the design prototype in
-`design/handoffs/unified-search`, state by state, at 924px and 400px.
+Holds the built `/search` page to the design prototype, state by state, at 924px and
+400px. The prototype is a handoff bundle from the design team; it is not in the
+repository (see Commands).
 
 ## How it works
 
@@ -24,7 +25,13 @@ Run from the repository root.
 
 `test:parity` starts `vite preview` on port 4173 itself, so build first with
 `yarn build`. It also runs the checks on the fixture backend in `demi-search.spec.ts`,
-which need neither a browser nor a server.
+which need neither a browser nor a server. The reference images and the JSON fixtures it
+reads are both committed, so `test:parity` works from a clean checkout.
+
+`parity:reference` and `parity:fixtures` read the prototype instead, so they need the
+design handoff bundle unzipped to `design/handoffs/unified-search/` first. Ask the
+design team for the bundle. It is deliberately kept out of the repository, and both
+commands fail while the folder is missing.
 
 ## Where the references live
 
@@ -34,7 +41,7 @@ screenshot of the design, never one Playwright generated from the app.
 
 ## Recapturing
 
-Recapture only when the handoff file changes. `yarn parity:reference` serves the
+Recapture only when the handoff bundle changes. `yarn parity:reference` serves the
 handoff folder over loopback (the prototype's `dc-import` cannot run from `file://`),
 drives every state, writes the PNGs and re-checks the measurements against the
 prototype. Review the resulting image diff before committing: a reference that changed

@@ -6,6 +6,7 @@ import { FilterRow } from './filter-row';
 import { GridHeader } from './grid-header';
 import { columnFiltersForPanel } from './grid-helpers';
 import { SelectCell } from './select-cell';
+import { PAGE_SIZES } from './use-grid-url-state';
 import type {
   AdvancedField,
   FilterValue,
@@ -18,7 +19,7 @@ import type {
 import 'app/components/table/table.css';
 import './display-grid.css';
 
-const PAGE_SIZES: IPageSizePickerOption[] = [10, 25, 50, 100].map((value) => ({
+const PAGE_SIZE_OPTIONS: IPageSizePickerOption[] = PAGE_SIZES.map((value) => ({
   value,
   displayText: String(value),
 }));
@@ -233,7 +234,7 @@ export function DisplayGrid<Row>({
             </span>
             <PageSizePicker
               currentPageSize={pageSize}
-              sizeOptions={PAGE_SIZES}
+              sizeOptions={PAGE_SIZE_OPTIONS}
               onPageSizeChosen={(option) => onPageSizeChange(option.value)}
             />
           </div>

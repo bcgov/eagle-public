@@ -20,12 +20,13 @@ const fields: AdvancedField[] = [
 
 function setup(values: FilterValues = {}, open = true) {
   const onChange = vi.fn();
-  const view = render(
+  const panel = (applied: FilterValues) => (
     <div className="display-grid">
-      <AdvancedFilters fields={fields} values={values} onChange={onChange} open={open} />
-    </div>,
+      <AdvancedFilters fields={fields} values={applied} onChange={onChange} open={open} />
+    </div>
   );
-  return { onChange, view };
+  const view = render(panel(values));
+  return { onChange, view, applyValues: (applied: FilterValues) => view.rerender(panel(applied)) };
 }
 
 describe('isValidIsoDate', () => {
@@ -75,6 +76,32 @@ describe('AdvancedFilters', () => {
     await user.clear(screen.getByLabelText(/Posted from/));
 
     expect(onChange).toHaveBeenLastCalledWith('datePostedStart', null);
+  });
+
+  it('empties a typed date once the filter is cleared somewhere else', async () => {
+    const user = userEvent.setup();
+    const { applyValues } = setup();
+    const input = screen.getByLabelText(/Posted from/);
+
+    await user.type(input, '2025-06-01');
+    applyValues({ datePostedStart: '2025-06-01' });
+    expect(input).toHaveValue('2025-06-01');
+
+    // What the chip row and Clear all do: the filter goes, the panel has to follow.
+    applyValues({});
+
+    expect(input).toHaveValue('');
+  });
+
+  it('keeps a half-typed date while the applied filters stay put', async () => {
+    const user = userEvent.setup();
+    const { applyValues } = setup();
+    const input = screen.getByLabelText(/Posted from/);
+
+    await user.type(input, '2025-06');
+    applyValues({ proponent: 'Cedar' });
+
+    expect(input).toHaveValue('2025-06');
   });
 
   it('emits true when a toggle is turned on', async () => {

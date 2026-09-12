@@ -25,8 +25,6 @@ export interface AdvancedFiltersProps {
   /** `null` clears the filter. An unparseable date emits nothing at all. */
   onChange: (id: string, value: string | null) => void;
   open: boolean;
-  /** Override only when two grids share a page. */
-  id?: string;
 }
 
 function asText(value: FilterValues[string] | undefined): string {
@@ -34,22 +32,41 @@ function asText(value: FilterValues[string] | undefined): string {
   return Array.isArray(value) ? value.join(',') : value;
 }
 
+/** The applied text of every date field, which is what a draft is measured against. */
+function dateTexts(fields: AdvancedField[], values: FilterValues): Record<string, string> {
+  const texts: Record<string, string> = {};
+  for (const field of fields) {
+    if (field.kind === 'date') texts[field.id] = asText(values[field.id]);
+  }
+  return texts;
+}
+
 /**
  * The filterable parts of a record that no column shows: date ranges, legislation, flags.
  * Collapsed by default and `hidden` rather than unmounted, so the toolbar's `aria-controls`
  * always points at an element that exists.
  */
-export function AdvancedFilters({
-  fields,
-  values,
-  onChange,
-  open,
-  id = ADVANCED_FILTERS_ID,
-}: AdvancedFiltersProps) {
+export function AdvancedFilters({ fields, values, onChange, open }: AdvancedFiltersProps) {
   const headingId = useId();
   /* Dates are typed a character at a time, so the field holds what was typed while the applied
      filter holds only what parsed. Without the draft the input would erase itself mid-entry. */
   const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const [lastApplied, setLastApplied] = useState<Record<string, string>>(() =>
+    dateTexts(fields, values),
+  );
+
+  /* A draft only outlives the keystroke that made it. Once the applied filter changes from
+     outside - a chip dropped, Clear all - the typed text is stale and the prop wins again. */
+  const applied = dateTexts(fields, values);
+  const changed = Object.keys(applied).filter((id) => applied[id] !== lastApplied[id]);
+  if (changed.length > 0) {
+    setLastApplied(applied);
+    setDrafts((current) => {
+      const next = { ...current };
+      for (const id of changed) delete next[id];
+      return next;
+    });
+  }
 
   function draftOf(field: AdvancedField): string {
     return drafts[field.id] ?? asText(values[field.id]);
@@ -66,7 +83,12 @@ export function AdvancedFilters({
   }
 
   return (
-    <div className="display-grid__panel" id={id} hidden={!open} aria-labelledby={headingId}>
+    <div
+      className="display-grid__panel"
+      id={ADVANCED_FILTERS_ID}
+      hidden={!open}
+      aria-labelledby={headingId}
+    >
       <h2 className="display-grid__panel-heading" id={headingId}>
         Advanced filters
       </h2>

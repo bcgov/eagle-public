@@ -63,8 +63,14 @@ export function ValuePicker({ label, options, selected, onChange }: ValuePickerP
       if (event.key === 'Escape') close(true);
     }
 
-    // The button moves with any scroll, and a fixed popover does not follow it, so it closes.
-    const onScroll = () => close(false);
+    /* The button moves with any scroll and a fixed popover does not follow it, so an outer
+       scroll closes it. The popover's own option list scrolls too, and that must not. */
+    function onScroll(event: Event): void {
+      const target = event.target as Node | null;
+      if (target && popoverRef.current?.contains(target)) return;
+      close(false);
+    }
+
     const onResize = () => close(false);
 
     document.addEventListener('pointerdown', onPointerDown);

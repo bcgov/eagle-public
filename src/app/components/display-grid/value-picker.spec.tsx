@@ -131,6 +131,17 @@ describe('ValuePicker', () => {
     expect(screen.queryByRole('group', { name: 'Filter by Type' })).not.toBeInTheDocument();
   });
 
+  it('stays open while its own option list is scrolled', async () => {
+    const user = userEvent.setup();
+    renderPicker();
+
+    await user.click(screen.getByRole('button', { name: 'Filter by Type' }));
+    const popover = screen.getByRole('group', { name: 'Filter by Type' });
+    fireEvent.scroll(popover);
+
+    expect(screen.getByRole('group', { name: 'Filter by Type' })).toBeInTheDocument();
+  });
+
   it('clears every picked value', async () => {
     const user = userEvent.setup();
     const onChange = renderPicker(['report', 'map']);

@@ -52,8 +52,9 @@ export function GridToolbar<Row>({
   const copiedTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const selectionActive = selectedCount > 0;
-  const firstShown = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const lastShown = Math.min(page * pageSize, total);
+  // A page past the end of the result set would otherwise read "51-5 of 5".
+  const firstShown = total === 0 ? 0 : Math.min((page - 1) * pageSize + 1, lastShown);
   const countText = selectionActive
     ? `${selectedCount.toLocaleString('en-CA')} selected`
     : total === 0

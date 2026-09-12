@@ -28,6 +28,18 @@ describe('GridToolbar', () => {
     expect(screen.getByRole('status')).toHaveTextContent('26–50 of 340 documents');
   });
 
+  it('stops the range at the total on a part-full last page', () => {
+    render(<GridToolbar noun="documents" page={2} pageSize={25} total={30} />);
+
+    expect(screen.getByRole('status')).toHaveTextContent('26–30 of 30 documents');
+  });
+
+  it('does not reverse the range on a page past the end of the results', () => {
+    render(<GridToolbar noun="documents" page={3} pageSize={25} total={5} />);
+
+    expect(screen.getByRole('status')).toHaveTextContent('5–5 of 5 documents');
+  });
+
   it('says there are none rather than showing a range of nothing', () => {
     render(<GridToolbar noun="documents" page={1} pageSize={25} total={0} />);
 
