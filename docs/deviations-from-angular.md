@@ -155,16 +155,19 @@ because the record type now says which dataset to read. A `sortBy` naming a colu
 cannot sort by is dropped too, so the page falls back to its own default instead of asking the API
 for an order it would reject. Any other param is dropped.
 
-| Old address | Lands on |
-|---|---|
-| `/projects-list` | `/search?record=projects` |
-| `/search` with a document param or `dataset=Document` | `/search?record=documents` |
-| `/search` with no document param | `/search?record=projects` |
-| `/search/content` | `/search?record=documents&scope=inside` |
-| `/news` | `/search?record=activities` |
-| `/project-notifications` | `/search?record=notifications` |
-| `/#/<any of the above>` | the same path without the `#`, then the row above |
-| `/search-help` | unchanged |
+| Old address | Lands on | |
+|---|---|---|
+| `/projects-list` | `/search?record=projects` | live |
+| `/search` with a document param or `dataset=Document` | `/search?record=documents` | live |
+| `/search` with no document param | `/search?record=projects` | live |
+| `/#/<any of the above>` | the same path without the `#`, then the row above | live |
+| `/search/content` | `/search?record=documents&scope=inside` | planned, the inside-document scope is not built yet |
+| `/news` | `/search?record=activities` | planned, the activities tab is not built yet |
+| `/project-notifications` | `/search?record=notifications` | planned, the notifications tab is not built yet |
+| `/search-help` | unchanged | live |
+
+The planned rows still render their own pages. The mapping is written and covered by unit tests, so
+each one becomes a redirect in the change that builds its tab.
 
 Filters carried, by record type: projects `type`, `eacDecision`, `proponent`, `region`,
 `CEAAInvolvement`, `currentPhaseName`, `decisionDateStart`, `decisionDateEnd`; documents
@@ -174,5 +177,5 @@ project notifications `type`, `region`, `pcp`, `decision`; activities none.
 The redirect happens in the browser, which is all a single page app can do. The edge serves
 `index.html` for every path, so a shared link reaches the app and the route loader rewrites it
 before anything renders. The old hash addresses are handled in the app shell: a `#/` hash becomes a
-real path, and the route loaders take it from there. `/search/content` no longer has a page of its
-own, so the CONTENT_SEARCH flag no longer gates a route, only the tab that links to it.
+real path, and the route loaders take it from there. `/search/content` keeps its own page for now,
+still gated on the CONTENT_SEARCH flag, until the inside-document scope lands on the documents tab.

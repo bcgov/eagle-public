@@ -1,32 +1,80 @@
-import { describe, it, expect } from 'vitest';
-import { routes } from './routes';
+import { describe, it, expect, afterEach } from 'vitest';
+import { contentSearchLoader, routes, searchLoader } from './routes';
+import { loadConfig } from './config/config';
+
+async function configureWith(contentSearch: boolean): Promise<void> {
+  window.__env = { logLevel: 4, CONTENT_SEARCH: contentSearch };
+  await loadConfig();
+}
 
 function findRoute(path: string) {
   return routes[0].children?.find((route) => route.path === path);
 }
 
-describe('the legacy list routes', () => {
-  it.each([
-    ['projects-list', '/search?record=projects&keywords=coal&currentPage=2'],
-    ['news', '/search?record=activities&keywords=coal&currentPage=2'],
-    ['project-notifications', '/search?record=notifications&keywords=coal&currentPage=2'],
-    ['search/content', '/search?record=documents&scope=inside&keywords=coal&currentPage=2'],
-  ])('sends /%s to unified search before its old page renders', async (path, expected) => {
-    const route = findRoute(path);
-    const response = await (route!.loader as any)({
-      request: new Request(`http://localhost/${path}?keywords=coal&currentPage=2`),
-    });
+async function loaderLocation(path: string, url: string): Promise<string | null> {
+  const response = await (findRoute(path)!.loader as any)({ request: new Request(url) });
+  return response ? response.headers.get('Location') : null;
+}
 
-    expect(response.headers.get('Location')).toBe(expected);
+describe('the project list route', () => {
+  it('sends /projects-list to unified search instead of rendering a page of its own', async () => {
+    expect(
+      await loaderLocation(
+        'projects-list',
+        'http://localhost/projects-list?keywords=coal&currentPage=2',
+      ),
+    ).toBe('/search?record=projects&keywords=coal&currentPage=2');
+    expect(findRoute('projects-list')?.Component).toBeUndefined();
+  });
+});
+
+describe('searchLoader', () => {
+  it('reads an Angular /search as documents when it carries a document param', async () => {
+    expect(
+      await loaderLocation('search', 'http://localhost/search?keywords=coal&milestone=m1'),
+    ).toBe('/search?record=documents&keywords=coal&milestone=m1');
   });
 
-  it('keeps the old page components mounted until the unified page lands', () => {
-    expect(findRoute('projects-list')?.Component).toBeDefined();
-    expect(findRoute('search/content')?.Component).toBeDefined();
+  it('reads an Angular /search with no document param as projects', async () => {
+    expect(await loaderLocation('search', 'http://localhost/search?keywords=coal')).toBe(
+      '/search?record=projects&keywords=coal',
+    );
   });
 
-  it('leaves /search itself to its page', () => {
-    expect(findRoute('search')?.loader).toBeUndefined();
+  it('leaves a new-style /search address to the page', async () => {
+    expect(
+      await searchLoader({
+        request: new Request('http://localhost/search?record=documents&keywords=coal'),
+      } as any),
+    ).toBeNull();
+  });
+});
+
+describe('contentSearchLoader', () => {
+  const original = window.__env;
+
+  afterEach(() => {
+    window.__env = original;
+  });
+
+  it('sends /search/content to /search when content search is disabled', async () => {
+    await configureWith(false);
+    try {
+      contentSearchLoader();
+      expect.unreachable('loader should have redirected');
+    } catch (thrown) {
+      expect(thrown).toBeInstanceOf(Response);
+      expect((thrown as Response).headers.get('Location')).toBe('/search');
+    }
+  });
+
+  it('allows /search/content when content search is enabled', async () => {
+    await configureWith(true);
+    expect(contentSearchLoader()).toBeNull();
+  });
+
+  it('guards the content search route', () => {
+    expect(findRoute('search/content')?.loader).toBe(contentSearchLoader);
   });
 });
 

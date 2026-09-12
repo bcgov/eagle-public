@@ -6,11 +6,10 @@ import { Legislation } from './pages/legislation';
 import { Process } from './pages/process';
 import { ComplianceOversight } from './pages/compliance-oversight';
 import { SearchHelp } from './pages/search-help';
-import { ProjectList } from './pages/project-list/project-list';
 import { Projects } from './pages/projects/projects';
 import { News } from './pages/news';
 import { ProjectNotifications } from './pages/project-notifications/project-notifications';
-import { Search } from './pages/search/search';
+import { UnifiedSearch } from './pages/search/unified-search';
 import { ContentSearch } from './pages/search/content-search';
 import { ProjectPage } from './pages/project/project';
 import { OverviewTab } from './pages/project/overview-tab';
@@ -26,7 +25,30 @@ import { DocumentsTab } from './pages/project/documents-tab';
 import { ComplianceDocumentsTab } from './pages/project/compliance-documents-tab';
 import { DecisionsTab } from './pages/project/decisions-tab';
 import { Comments } from './pages/comments/comments';
-import { legacySearchRedirect } from './routes/legacy-search';
+import { contentSearchEnabled } from './config/config';
+import { legacySearchRedirect, resolveLegacySearch } from './routes/legacy-search';
+
+/**
+ * Content search is served by the API in every environment, but the UI is offered only where the
+ * CONTENT_SEARCH config flag says so. Redirects rather than falling through, so a bookmarked or
+ * shared link lands on document search instead of the home page.
+ */
+export function contentSearchLoader() {
+  if (!contentSearchEnabled()) {
+    throw redirect('/search');
+  }
+  return null;
+}
+
+/**
+ * An Angular-era /search address means document search, and carries params the unified page does
+ * not read. Rewrite it before the page renders; a new-style address returns null and renders as
+ * it stands.
+ */
+export function searchLoader({ request }: LoaderFunctionArgs) {
+  const next = resolveLegacySearch(request.url);
+  return next ? redirect(`${next.pathname}${next.search}`) : null;
+}
 
 export const routes: RouteObject[] = [
   {
@@ -38,17 +60,9 @@ export const routes: RouteObject[] = [
       { path: 'contact', Component: Contact },
 
       { path: 'projects', Component: Projects },
-      {
-        path: 'projects-list',
-        loader: legacySearchRedirect('projects'),
-        Component: ProjectList,
-      },
+      { path: 'projects-list', loader: legacySearchRedirect('projects') },
 
-      {
-        path: 'project-notifications',
-        loader: legacySearchRedirect('notifications'),
-        Component: ProjectNotifications,
-      },
+      { path: 'project-notifications', Component: ProjectNotifications },
 
       {
         path: 'pn/:projId/cp/:commentPeriodId',
@@ -57,7 +71,7 @@ export const routes: RouteObject[] = [
       },
       { path: 'pn/:projId/cp/:commentPeriodId/details', Component: Comments },
 
-      { path: 'news', loader: legacySearchRedirect('activities'), Component: News },
+      { path: 'news', Component: News },
 
       { path: 'legislation', Component: Legislation },
 
@@ -65,13 +79,13 @@ export const routes: RouteObject[] = [
 
       { path: 'process', Component: Process },
 
-      { path: 'search', Component: Search },
+      { path: 'search', loader: searchLoader, Component: UnifiedSearch },
 
-      // Content search folds into the documents tab as the "inside" scope. The component stays
-      // mounted until that tab lands; the loader means nothing reaches it.
+      // Its own component, not the table-driven one: content results are a list of documents with
+      // the matched text, which a table layout cannot render.
       {
         path: 'search/content',
-        loader: legacySearchRedirect('documents', { scope: 'inside' }),
+        loader: contentSearchLoader,
         Component: ContentSearch,
       },
 

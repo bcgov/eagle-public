@@ -7,7 +7,7 @@ import { Pagination } from 'app/components/table/pagination';
 import { paramsToObject, toSearchParams, type Params } from 'app/components/table/table-params';
 import { useTable } from 'app/components/table/use-table';
 import { contentSearchEnabled } from 'app/config/config';
-import { visibleSearchTabs } from './search.config';
+import { visibleSearchTabs } from './search-tabs';
 import { ContentResult } from './content-result';
 import './content-search.css';
 
