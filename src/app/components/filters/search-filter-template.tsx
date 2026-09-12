@@ -12,6 +12,7 @@ import {
   type FilterValues,
   type SearchPackage,
 } from './filter-object';
+import { TYPEAHEAD_DEBOUNCE_MS, typeaheadKeywords } from './typeahead';
 import './filters.css';
 
 interface SearchFilterTemplateProps {
@@ -36,21 +37,8 @@ interface SearchFilterTemplateProps {
 
 const RESERVED_PARAMS = ['currentPage', 'pageSize', 'sortBy', 'keywords'];
 
-/** Shortest keyword worth a round trip. One character matches most of the corpus. */
-const MIN_TYPEAHEAD_LENGTH = 2;
-
-const TYPEAHEAD_DEBOUNCE_MS = 300;
-
 /** A pause this long means the word is finished, so the analytics event carries the whole term. */
 const TYPEAHEAD_TRACK_MS = 1500;
-
-/**
- * What a typed box searches for. Anything shorter than the minimum searches as an empty keyword:
- * backspacing to one character restores the unfiltered list instead of leaving the last results up.
- */
-function typeaheadKeywords(keywords: string): string {
-  return keywords.trim().length >= MIN_TYPEAHEAD_LENGTH ? keywords : '';
-}
 
 /** Keyword box and filter panel. Searches as the user types; Enter searches without the pause. */
 export function SearchFilterTemplate({

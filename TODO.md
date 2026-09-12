@@ -79,14 +79,15 @@ Phase 1, grid components:
 
 Phase 2, `/search` projects + documents:
 
-- [ ] 2.1 `types/projects.ts`, `types/documents.ts`, `types/index.ts` + specs (`and[]` contract)
-- [ ] 2.2 `use-type-counts.ts` with 404 fallback + spec
-- [ ] 2.3 `unified-search.tsx` composes grid; URL schema; analytics unchanged
-- [ ] 2.4 route swap, old search page deleted, e2e rewritten
-- [ ] 2.4a `routes/legacy-search.ts` param mapping + table-driven spec (Angular `/projects-list`, bare `/search` disambiguation)
-- [ ] 2.4b hash-router guard (`#/...`) + e2e
-- [ ] 2.5 parity loop passed (states 01, 02, 05, 06 at 924 and 400)
-- [ ] 2.6 a11y pass; PR, review, merged, beta on next
+- [x] 2.1 `types/projects.ts`, `types/documents.ts`, `types/index.ts` + specs (`and[]` contract)
+- [x] 2.2 `use-type-counts.ts` with 404 fallback + spec
+- [x] 2.3 `unified-search.tsx` composes grid; URL schema; analytics unchanged (feat/unified-search-p2)
+- [x] 2.4 route swap, old search page deleted, e2e rewritten (feat/unified-search-p2; e2e 79 passed)
+- [x] 2.4a `routes/legacy-search.ts` param mapping + table-driven spec (Angular `/projects-list`, bare `/search` disambiguation)
+- [x] 2.4b hash-router guard (`#/...`) + e2e
+- [ ] 2.5 parity loop passed (states 01, 02, 05, 06 at 924 and 400) (in progress: feat/unified-search-p2; 3 rounds run, cap reached; 12 states still fail: reference footer carries the legacy footer.css spacing (18px), and the fourth pill, the Inside documents segment and the name text filter are known deviations; product decision needed before the gate can pass)
+- [ ] 2.6 a11y pass; PR, review, merged, beta on next (in progress: PR #882 open; a11y audit done, 8 markup findings fixed; border contrast and CustomMultiSelect in follow-ups; review round 1 PASS with 4 fixes applied; scrollbar styled on `.display-grid__scroll`; open items: Name/Project text filter cell empty, needs demi-search `and[nameContains]` (eagle-demi branch feat/name-contains-filter); state 06 picker opens live (fixed, 232px) but the fullPage parity capture drops it, harness fix needed; Author ids on test are a data gap, fix is `seed-public-reads.js --only lists` against prod on demi-devbox-test)
+- [ ] 2.7 "Inside documents" content search on the documents tab moves up from Phase 4 if wanted before beta
 
 Phase 3, activities + notifications:
 
@@ -122,6 +123,13 @@ Phase 6, nav + retirement:
 
 Phase 0 (counts endpoint, index gaps) and Phase 7 (real page numbers) are tracked in eagle-demi `TODO.md` under the same heading.
 
+Follow-ups from the phase 2 review, none of them blocking:
+
+- `CustomMultiSelect`, which the value picker uses above 40 options, is a div combobox without the ARIA 1.2 structure. Rebuild it on a real input with `aria-activedescendant`.
+- `list-row.tsx` renders an `<h3>` under the page `h1` with no `h2` in between. Add a results `h2` before activities and notifications ship on the list template.
+- `api.ts:323` concatenates `sortBy` unencoded, so `+name` reaches the wire as ` name`. Encode it once the backend contract is confirmed.
+- Move the column `sortable` flags and the cell renderers out of `unified-search.tsx` into the type configs.
+
 ## Port rules (added 2026-08-27)
 
 - Do not port bugs or inefficiencies. When the Angular code is wrong, wasteful (redundant fetches, N+1, dead caches, needless re-renders), or dead, fix or drop it in the port.
@@ -144,7 +152,7 @@ Fixes shipped on `develop` (Angular) not yet re-implemented here. One line each:
 
 ## Follow-ups
 
-- Display grid: control borders (`--theme-gray-50`, 1.55:1) and the inactive sort arrow (`--theme-gray-60`, 1.54:1) follow the prototype and sit under the 3:1 non-text contrast floor; needs a design decision before the grid ships to prod.
+- Display grid: control borders in `display-grid.css` (`--theme-gray-50`, 1.55:1), the same token on the unselected record pill in `unified-search.css`, and the inactive sort arrow (`--theme-gray-60`, 1.54:1) follow the design handoff and sit under the 3:1 non-text contrast floor (WCAG 1.4.11); needs a design decision before the grid ships to prod.
 - Unscheduled ideas live in `docs/FUTURE.md` (per-branch preview URLs, automatic create and teardown).
 - After the prod cutover of the unified search page, submit the new `/search` URL to the search engines. The client redirects keep old indexed links working in the meantime.
 - Assessment rail (`src/app/pages/project/assessment-stages.ts`) has no per-stage dates. Historic stages should scale to how long they actually took and only current and future stages show the statutory maximum, but eagle-api holds no phase dates (`phaseHistory` is bare List ids). Source is Track `work_phases` (start_date, end_date, number_of_days, legislated) through a demi-api endpoint, for example `GET /api/projects/:id/phases`; fill `elapsedDays` and `dates` from it. Same feed can carry the certificate number (`ea_certificate` in DEMI Track data). Never through eagle-api.

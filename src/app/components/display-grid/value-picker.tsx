@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import {
   CustomMultiSelect,
   type CustomMultiSelectOption,
@@ -32,6 +32,7 @@ interface ValuePickerProps {
 
 export function ValuePicker({ label, options, selected, onChange }: ValuePickerProps) {
   const [anchor, setAnchor] = useState<Anchor | null>(null);
+  const popoverId = useId();
   const buttonRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   const open = anchor !== null;
@@ -112,6 +113,7 @@ export function ValuePicker({ label, options, selected, onChange }: ValuePickerP
     popover = (
       <div
         ref={popoverRef}
+        id={popoverId}
         className="display-grid__picker"
         role="group"
         aria-label={`Filter by ${label}`}
@@ -151,6 +153,7 @@ export function ValuePicker({ label, options, selected, onChange }: ValuePickerP
             <button
               type="button"
               className="display-grid__picker-clear"
+              aria-label={`Clear ${label}`}
               onClick={() => onChange([])}
             >
               Clear
@@ -170,8 +173,11 @@ export function ValuePicker({ label, options, selected, onChange }: ValuePickerP
           picked.length ? ' display-grid__control--on' : ''
         }`}
         aria-label={`Filter by ${label}`}
-        aria-haspopup="listbox"
+        /* The popover is a group of checkboxes, not a listbox: a mismatched role sends a screen
+           reader looking for options that are not there. */
+        aria-haspopup="dialog"
         aria-expanded={open}
+        aria-controls={open ? popoverId : undefined}
         title={fullList}
         onClick={toggleOpen}
       >

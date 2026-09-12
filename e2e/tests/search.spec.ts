@@ -1,147 +1,178 @@
-import { test, expect } from '../support/fixtures';
+import { routeDemiSearch } from '../fixtures/unified-search/demi-search';
+import { test, expect, type Page } from '../support/fixtures';
 import {
+  checkBaseline,
+  gridCount,
   ready,
   recordApiCalls,
-  checkBaseline,
-  waitForSearch,
   total,
-  pageCount,
+  waitForSearch,
 } from '../support/helpers';
 
-const ROWS = 'table[aria-label="table-template"] tbody tr';
-const NAME = 'td[data-label="Name"]';
+/**
+ * The one search page at /search: the keyword field, the record-type pills, and the display grid
+ * the chosen record type configures.
+ *
+ * Most tests answer every backend read from `e2e/fixtures/unified-search`, the same rows the parity
+ * gate uses, so a count or a row order is an assertion rather than whatever the environment holds
+ * today. The first test is the exception: it runs against the real backend, because the calls the
+ * page makes are the thing it pins. Legacy /projects-list and Angular /search links live in
+ * `routing.spec.ts`.
+ */
 
-test('search renders the document table and the API it came from', async ({ page }) => {
+const ROWS = '.display-grid__row';
+/** The first data cell of a row. A selectable table puts its checkbox cell ahead of it. */
+const NAME = 'td.display-grid__cell:not(.display-grid__cell--select)';
+
+/** Fixture-backed page: deterministic rows, and nothing leaves the box. */
+async function openSearch(page: Page, url = '/search'): Promise<void> {
+  await routeDemiSearch(page);
+  await page.goto(url);
+  await page.locator('.display-grid').waitFor({ state: 'visible' });
+}
+
+function pill(page: Page, label: string) {
+  return page.locator('[data-tour="types"] button').filter({ hasText: label });
+}
+
+function keywordField(page: Page) {
+  return page.getByPlaceholder('Search projects, documents and updates');
+}
+
+test('the projects tab lists projects from the search API', async ({ page }) => {
   const calls = recordApiCalls(page);
-  const search = waitForSearch(page, 'Document');
+  const search = waitForSearch(page, 'Project');
   await page.goto('/search');
   const env = await search;
   await ready(page);
 
-  await expect(page.getByRole('heading', { level: 1, name: 'Search All Documents' })).toBeVisible();
-  for (const col of ['Document Name', 'Project', 'Date', 'Type', 'Milestone']) {
-    await expect(page.getByRole('columnheader', { name: col, exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'Search' })).toBeVisible();
+  for (const column of ['Project', 'Last updated', 'Proponent', 'Type', 'Region', 'Phase']) {
+    await expect(page.getByRole('columnheader', { name: column, exact: true })).toBeVisible();
   }
 
   const rows = page.locator(ROWS);
-  await expect(rows).toHaveCount(Math.min(10, total(env)));
-  await expect(rows.first().locator(NAME)).toHaveText(env.searchResults[0].displayName);
-
-  const counts = await pageCount(page);
-  expect(counts.shown).toBe(Math.min(10, total(env)));
-  expect(counts.total).toBe(total(env));
+  await expect(rows).toHaveCount(Math.min(25, total(env)));
+  await expect(rows.first().locator(NAME).first()).toHaveText(env.searchResults[0].name);
+  expect((await gridCount(page)).total).toBe(total(env));
 
   checkBaseline('search', calls);
 });
 
-test('@data a keyword search returns results and syncs the query params', async ({ page }) => {
-  await page.goto('/search');
-  await ready(page);
-  const before = (await pageCount(page)).total;
+test('every record pill carries its own count for the typed keyword', async ({ page }) => {
+  await openSearch(page);
+  await keywordField(page).fill('mine');
 
-  const search = waitForSearch(page, 'Document');
-  const box = page.getByPlaceholder('Type keyword to search');
-  await box.fill('caribou');
-  await box.press('Enter');
-  const env = await search;
-  await page.waitForTimeout(1500);
-
-  const params = new URL(page.url()).searchParams;
-  expect(params.get('keywords')).toBe('caribou');
-  expect(params.get('sortBy')).toBe('-score');
-
-  const after = await pageCount(page);
-  expect(after.total).toBe(total(env));
-  expect(after.total).toBeGreaterThan(0);
-  expect(after.total).toBeLessThan(before);
-  await expect(page.locator(ROWS)).toHaveCount(Math.min(10, total(env)));
+  await expect(pill(page, 'Projects').locator('.unified-search__pill-count')).toHaveText('4');
+  await expect(pill(page, 'Documents').locator('.unified-search__pill-count')).toHaveText('0');
+  await expect(
+    pill(page, 'Activities & updates').locator('.unified-search__pill-count'),
+  ).toHaveText('1');
+  await expect(
+    pill(page, 'Project notifications').locator('.unified-search__pill-count'),
+  ).toHaveText('2');
 });
 
-test('@data the Milestone facet narrows the results and adds a milestone query param', async ({
-  page,
-}) => {
-  await page.goto('/search');
-  await ready(page);
-  const before = (await pageCount(page)).total;
+test('a keyword narrows the rows and lands in the URL', async ({ page }) => {
+  await openSearch(page);
+  await keywordField(page).fill('coal');
 
-  await page.getByRole('button', { name: /Open Advanced Filters/ }).click();
-  const facet = page.getByRole('combobox', { name: 'Type Milestone' });
-  await facet.waitFor({ state: 'visible' });
-  await facet.click();
-  const option = page.getByRole('option').first();
-  await option.waitFor();
-  const label = (await option.innerText()).trim();
-
-  const search = waitForSearch(page, 'Document');
-  await option.click();
-  const env = await search;
-  await page.waitForTimeout(1500);
-
-  const milestone = new URL(page.url()).searchParams.get('milestone');
-  expect(milestone, `no milestone param after picking "${label}"`).toMatch(/^[0-9a-f]{24}$/i);
-
-  // The facet list is alphabetical, so which milestone comes first - and whether this
-  // environment's corpus has any document under it - is data, not behaviour.
-  const filtered = total(env);
-  await expect(page.locator(ROWS)).toHaveCount(Math.min(10, filtered));
-  if (filtered === 0) {
-    await expect(page.getByText('No results found')).toBeVisible();
-  } else {
-    const after = await pageCount(page);
-    expect(after.total).toBe(filtered);
-    expect(after.total).toBeLessThan(before);
-  }
+  await expect(page.locator(ROWS)).toHaveCount(1);
+  await expect(page.locator(ROWS).first().locator(NAME).first()).toHaveText('Sukunka Coal');
+  await expect(page).toHaveURL(/[?&]keywords=coal(&|$)/);
+  expect(await gridCount(page)).toEqual({ first: 1, last: 1, total: 1 });
 });
 
-test('pagination moves to page 2 and reflects it in the URL', async ({ page }) => {
-  await page.goto('/search');
-  await ready(page);
+test('a column header sorts the rows, and a second click reverses them', async ({ page }) => {
+  await openSearch(page);
+  const header = page.getByRole('columnheader', { name: 'Project', exact: true });
+  const firstName = page.locator(ROWS).first().locator(NAME).first();
 
-  const first = page.locator(ROWS).first().locator(NAME);
-  const page1 = await first.innerText();
+  await header.getByRole('button').click();
+  await expect(header).toHaveAttribute('aria-sort', 'ascending');
+  // `+name` goes on the wire unencoded, so a URL parser reads it back as " name".
+  expect(new URL(page.url()).searchParams.get('sortBy')).toMatch(/^[+ ]name$/);
 
-  const search = waitForSearch(page, 'Document');
+  await header.getByRole('button').click();
+  await expect(header).toHaveAttribute('aria-sort', 'descending');
+  expect(new URL(page.url()).searchParams.get('sortBy')).toBe('-name');
+  await expect(firstName).toHaveText('Willow Creek Wind');
+});
+
+test('a deep link restores the keyword, the sort and the page size', async ({ page }) => {
+  await openSearch(page, '/search?keywords=mine&sortBy=-name&pageSize=10');
+
+  await expect(keywordField(page)).toHaveValue('mine');
+  await expect(page.locator(ROWS)).toHaveCount(4);
+  await expect(page.locator(ROWS).first().locator(NAME).first()).toHaveText('Sukunka Coal');
+  expect(await gridCount(page)).toEqual({ first: 1, last: 4, total: 4 });
+});
+
+test('pagination moves to the second page and records it in the URL', async ({ page }) => {
+  await openSearch(page, '/search?pageSize=10');
+  await expect(page.locator(ROWS)).toHaveCount(10);
+
   await page.getByRole('button', { name: 'Go to page 2' }).first().click();
-  const env = await search;
 
   expect(new URL(page.url()).searchParams.get('currentPage')).toBe('2');
-  await expect(first).not.toHaveText(page1);
-  await expect(first).toHaveText(env.searchResults[0].displayName);
+  await expect(page.locator(ROWS)).toHaveCount(2);
+  await expect(page.locator(ROWS).first().locator(NAME).first()).toHaveText('Willow Creek Wind');
+  expect(await gridCount(page)).toEqual({ first: 11, last: 12, total: 12 });
 });
 
-test('@data a deep link restores keywords, page and sort', async ({ page }) => {
-  const req = page.waitForRequest(
-    (r) => r.url().includes('dataset=Document') && r.url().includes('keywords=caribou'),
-  );
-  const search = waitForSearch(page, 'Document');
-  await page.goto('/search?keywords=caribou&currentPage=2&sortBy=-score');
-  const env = await search;
-  await ready(page);
+test('a filter in the header row narrows the rows to that value', async ({ page }) => {
+  await openSearch(page);
+  await page.locator('[data-tour="filterrow"] button[aria-label="Filter by Region"]').click();
+  await page.getByRole('group', { name: 'Filter by Region' }).getByText('Skeena').click();
 
-  const wire = new URL((await req).url()).searchParams;
-  expect(wire.get('keywords')).toBe('caribou');
-  expect(wire.get('pageNum')).toBe('1');
-  expect(wire.get('sortBy')).toBe('-score');
+  expect(new URL(page.url()).searchParams.get('region')).toBe('Skeena');
+  await expect(page.locator(ROWS)).toHaveCount(5);
+  await expect(page.locator(ROWS).first().locator(NAME).first()).toHaveText('Cedar LNG');
+});
 
-  await expect(page.getByPlaceholder('Type keyword to search')).toHaveValue('caribou');
-  await expect(page.getByRole('button', { name: 'Go to page 2' }).first()).toHaveAttribute(
-    'aria-current',
-    'page',
-  );
-  await expect(page.locator(ROWS).first().locator(NAME)).toHaveText(
-    env.searchResults[0].displayName,
+test('copy link puts the address of the current view on the clipboard', async ({ page }) => {
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+  await openSearch(page, '/search?keywords=mine&sortBy=-name');
+  const copy = page.locator('[data-tour="copy"]');
+
+  await copy.click();
+
+  // The button carries a Material Icons ligature next to its label, so the label is a substring.
+  await expect(copy).toContainText('Link copied');
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(page.url());
+});
+
+test('the documents pill switches the grid to the document columns', async ({ page }) => {
+  await openSearch(page);
+  await pill(page, 'Documents').click();
+
+  expect(new URL(page.url()).searchParams.get('record')).toBe('documents');
+  for (const column of [
+    'Name',
+    'Date posted',
+    'Document type',
+    'Milestone',
+    'Project phase',
+    'Author',
+  ]) {
+    await expect(page.getByRole('columnheader', { name: column, exact: true })).toBeVisible();
+  }
+  await expect(page.locator(ROWS)).toHaveCount(18);
+  await expect(page.locator(ROWS).first().locator(NAME).first()).toHaveText(
+    'Amendment #3 Application — Volume 1',
   );
 });
 
-test('a search result row links to its project and downloads from its name', async ({ page }) => {
-  const search = waitForSearch(page, 'Document');
-  await page.goto('/search');
-  const env = await search;
-  await ready(page);
+test('selecting a document offers it for download', async ({ page }) => {
+  await openSearch(page, '/search?record=documents');
+  const firstRow = page.locator(ROWS).first();
+  await expect(firstRow.locator(NAME).first()).toHaveText('Amendment #3 Application — Volume 1');
 
-  const row = page.locator(ROWS).first();
-  await expect(
-    row.getByRole('link', { name: `Link to project ${env.searchResults[0].project.name}` }),
-  ).toHaveAttribute('href', `/p/${env.searchResults[0].project._id}/project-details`);
-  await expect(row.locator('td[data-label="Download"]')).toHaveCount(0);
+  await firstRow.getByRole('checkbox').check();
+
+  await expect(page.locator('.display-grid__count')).toHaveText('1 selected');
+  await expect(page.getByRole('button', { name: 'Download 1' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Clear', exact: true }).click();
+  expect(await gridCount(page)).toEqual({ first: 1, last: 18, total: 18 });
 });

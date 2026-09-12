@@ -33,7 +33,7 @@ describe('parseGridParams', () => {
 
     expect(state).toMatchObject({
       keywords: '',
-      record: 'projects',
+      record: 'documents',
       scope: 'names',
       sortBy: '-datePosted',
       currentPage: 1,
@@ -46,7 +46,7 @@ describe('parseGridParams', () => {
   it('refuses a record type and a page size it does not know', () => {
     const state = parseGridParams(params('?record=recipes&pageSize=37'));
 
-    expect(state.record).toBe('projects');
+    expect(state.record).toBe('documents');
     expect(state.pageSize).toBe(25);
   });
 
@@ -125,12 +125,12 @@ describe('useGridUrlState', () => {
   });
 
   it('drops the record param when the type returns to the default', () => {
-    const { result } = renderGrid('/search?record=documents');
+    const { result } = renderGrid('/search?record=projects');
 
-    act(() => result.current.grid.setRecord('projects'));
+    act(() => result.current.grid.setRecord('documents'));
 
     expect(params(result.current.search).get('record')).toBeNull();
-    expect(result.current.grid.state.record).toBe('projects');
+    expect(result.current.grid.state.record).toBe('documents');
   });
 
   it('sorts by match count inside documents and by date back in names and details', () => {

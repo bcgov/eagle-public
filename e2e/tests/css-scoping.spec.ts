@@ -1,3 +1,5 @@
+import * as fs from 'fs';
+import * as path from 'path';
 import { test, expect } from '../support/fixtures';
 import { latestCommentPeriod, projectByKeyword, ready } from '../support/helpers';
 
@@ -64,10 +66,51 @@ test('the comment period hero spans the page', async ({ page, request }) => {
   expect(await styleOf(page, '.hero-banner__content p', 'max-width')).toBe('none');
 });
 
-test('the search keyword clear button stays inside the input', async ({ page }) => {
-  await page.goto('/search?keywords=water');
+test('the search grid states its own control heights and label layout', async ({ page }) => {
+  await page.goto('/search');
   await ready(page);
-  expect(await styleOf(page, '.search-clear-btn', 'position')).toBe('absolute');
+
+  // `epic/styles.css` sets a form-control height on bare inputs, which a `min-height` alone loses
+  // to, so both the page's keyword field and the grid's controls state a height of their own.
+  expect(await styleOf(page, '.unified-search__input', 'height')).toBe('48px');
+  expect(await styleOf(page, '.display-grid__control', 'height')).toBe('30px');
+
+  // The Bootstrap reboot makes `label` inline-block, which shrink-wraps the control inside it.
+  await page.locator('[data-tour="columns"]').click();
+  expect(await styleOf(page, '.display-grid__menu label', 'display')).toBe('block');
+});
+
+/** Every selector the stylesheet declares, at-rules unwrapped and comma lists split. */
+function selectorsOf(file: string): string[] {
+  const css = fs
+    .readFileSync(path.join(__dirname, '..', '..', file), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '');
+  const selectors = [...css.matchAll(/([^{}]+)\{/g)]
+    .map((match) => match[1].trim())
+    .filter((selector) => !selector.startsWith('@'))
+    .flatMap((selector) => selector.split(',').map((part) => part.trim()));
+  expect(selectors.length, `${file} declares no rules`).toBeGreaterThan(0);
+  return selectors;
+}
+
+/**
+ * Angular scoped these files per component. They ship as plain global CSS now, so a bare `body`,
+ * `a`, `label` or `input` rule in either would beat the host shell's own rule for the whole site.
+ */
+test('the unified search page stylesheet stays inside .unified-search', () => {
+  expect(
+    selectorsOf('src/app/pages/search/unified-search.css').filter(
+      (selector) => !selector.startsWith('.unified-search'),
+    ),
+  ).toEqual([]);
+});
+
+test('the display grid stylesheet stays inside .display-grid', () => {
+  expect(
+    selectorsOf('src/app/components/display-grid/display-grid.css').filter(
+      (selector) => !selector.startsWith('.display-grid'),
+    ),
+  ).toEqual([]);
 });
 
 test('the project panel map is not laid out like the full-page map', async ({ page, request }) => {

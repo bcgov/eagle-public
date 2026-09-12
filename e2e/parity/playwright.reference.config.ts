@@ -18,8 +18,12 @@ export default defineConfig({
   reporter: [['list']],
   use: {
     ...devices['Desktop Chrome'],
+    actionTimeout: 10_000,
     // A scale of 1 keeps the PNG in CSS pixels, which is what the app side will produce too.
     deviceScaleFactor: 1,
+    // Same viewport as the parity run, so anything sized in `vh` or against the window lands the
+    // same on both sides. It is not the height of the capture: `capture-reference.ts` releases the
+    // prototype's page-level scroll container first, so the full-page shot is the whole design.
     viewport: { width: 924, height: 900 },
     timezoneId: 'UTC',
     locale: 'en-CA',

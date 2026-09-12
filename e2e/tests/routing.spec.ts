@@ -67,10 +67,42 @@ test('/search/content redirects to /search while CONTENT_SEARCH is off', async (
   } else {
     // Recorded prod behaviour: the route guard rewrites a bookmarked link to document search.
     expect(new URL(page.url()).pathname).toBe('/search');
-    await expect(
-      page.getByRole('heading', { level: 1, name: 'Search All Documents' }),
-    ).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Search' })).toBeVisible();
   }
+});
+
+// The Angular-era project list. It keeps working as a bookmark by landing on unified search with
+// its record type and its keyword intact. /news and /project-notifications still render their own
+// pages until Phases 3 and 4 move them.
+test('/projects-list lands on unified search as projects', async ({ page }) => {
+  await page.goto('/projects-list?keywords=coal&currentPage=2');
+  await page.waitForURL('**/search?*');
+
+  const url = new URL(page.url());
+  expect(url.pathname).toBe('/search');
+  expect(url.searchParams.get('record')).toBe('projects');
+  expect(url.searchParams.get('keywords')).toBe('coal');
+});
+
+// An Angular /search meant documents. With a document-only param on it, the page has to open on
+// the documents tab rather than the default projects one.
+test('an Angular document search opens the documents tab', async ({ page }) => {
+  await page.goto('/search?keywords=coal&milestone=whatever');
+  await page.waitForURL('**/search?record=documents*');
+
+  const url = new URL(page.url());
+  expect(url.searchParams.get('record')).toBe('documents');
+  expect(url.searchParams.get('keywords')).toBe('coal');
+});
+
+test('an old hash-router address re-enters the path routes', async ({ page }) => {
+  await page.goto('/#/projects-list?keywords=coal');
+  await page.waitForURL('**/search?*');
+
+  const url = new URL(page.url());
+  expect(url.pathname).toBe('/search');
+  expect(url.searchParams.get('record')).toBe('projects');
+  expect(url.searchParams.get('keywords')).toBe('coal');
 });
 
 test('the header navigates to every top-level destination', async ({ page }) => {
