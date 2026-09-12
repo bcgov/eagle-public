@@ -134,6 +134,10 @@ jobs:
         env:
           BASE_URL: http://localhost:4173
 
+      # Parity gate: /search against the prototype screenshots in e2e/parity/unified-search.
+      # Skips itself until the unified page exists; see docs/unified-search-plan.md.
+      - run: yarn test:parity
+
       - uses: actions/upload-artifact@v7
         if: failure()
         with:
