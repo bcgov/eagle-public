@@ -86,7 +86,8 @@ Phase 2, `/search` projects + documents:
 - [x] 2.4a `routes/legacy-search.ts` param mapping + table-driven spec (Angular `/projects-list`, bare `/search` disambiguation)
 - [x] 2.4b hash-router guard (`#/...`) + e2e
 - [ ] 2.5 parity loop passed (states 01, 02, 05, 06 at 924 and 400) (in progress: feat/unified-search-p2; 3 rounds run, cap reached; 12 states still fail: reference footer carries the legacy footer.css spacing (18px), and the fourth pill, the Inside documents segment and the name text filter are known deviations; product decision needed before the gate can pass)
-- [ ] 2.6 a11y pass; PR, review, merged, beta on next (in progress: PR #882 open; a11y audit done, 8 markup findings fixed; border contrast and CustomMultiSelect in follow-ups; review round 1 PASS with 4 fixes applied)
+- [ ] 2.6 a11y pass; PR, review, merged, beta on next (in progress: PR #882 open; a11y audit done, 8 markup findings fixed; border contrast and CustomMultiSelect in follow-ups; review round 1 PASS with 4 fixes applied; scrollbar styled on `.display-grid__scroll`; open items: Name/Project text filter cell empty, needs demi-search `and[nameContains]` (eagle-demi branch feat/name-contains-filter); state 06 picker opens live (fixed, 232px) but the fullPage parity capture drops it, harness fix needed; Author ids on test are a data gap, fix is `seed-public-reads.js --only lists` against prod on demi-devbox-test)
+- [ ] 2.7 "Inside documents" content search on the documents tab moves up from Phase 4 if wanted before beta
 
 Phase 3, activities + notifications:
 

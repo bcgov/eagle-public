@@ -249,11 +249,26 @@
      where `top: 0` would put them under the site masthead. */
   max-height: 560px;
   overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--theme-gray-60) var(--theme-gray-10);
 }
 
 .display-grid__scroll::-webkit-scrollbar {
   height: 8px;
   width: 8px;
+}
+
+.display-grid__scroll::-webkit-scrollbar-track {
+  background: var(--theme-gray-10);
+}
+
+.display-grid__scroll::-webkit-scrollbar-thumb {
+  background: var(--theme-gray-60);
+  border-radius: 4px;
+}
+
+.display-grid__scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--theme-gray-70);
 }
 
 .display-grid__table {
