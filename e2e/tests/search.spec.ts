@@ -1,3 +1,4 @@
+import activities from '../fixtures/unified-search/activities.json';
 import { routeDemiSearch } from '../fixtures/unified-search/demi-search';
 import { test, expect, type Page } from '../support/fixtures';
 import {
@@ -21,6 +22,8 @@ import {
  */
 
 const ROWS = '.display-grid__row';
+/** The body of the update the activities list opens on, long enough to be cut to an excerpt. */
+const LONG_UPDATE = activities.find((update) => update._id === 'u1')?.content ?? '';
 /** The first data cell of a row. A selectable table puts its checkbox cell ahead of it. */
 const NAME = 'td.display-grid__cell:not(.display-grid__cell--select)';
 
@@ -185,18 +188,34 @@ test('the activities pill lists updates as full-width rows', async ({ page }) =>
   ).toBeVisible();
 });
 
-test('a long update is clamped until Show more opens it', async ({ page }) => {
+test('a long update is cut to an excerpt until Show more opens it', async ({ page }) => {
   await openSearch(page, '/search?record=activities');
   const first = page.locator(ROWS).first();
   const body = first.locator('.display-grid__row-body');
 
-  await expect(body).toHaveClass(/display-grid__row-body--clamped/);
+  // The cut is by character rather than by line, so the row says the same thing at every width.
+  const excerpt = (await body.innerText()).trim();
+  expect(excerpt).toMatch(/…$/);
+  expect(excerpt.length).toBeLessThan(LONG_UPDATE.length);
+  expect(
+    LONG_UPDATE.startsWith(excerpt.slice(0, -1)),
+    'the excerpt is the head of the update',
+  ).toBe(true);
+
   await first.getByRole('button', { name: 'Show more' }).click();
 
-  await expect(body).not.toHaveClass(/display-grid__row-body--clamped/);
+  await expect(body).toHaveText(LONG_UPDATE);
   await expect(first.getByRole('button', { name: 'Show less' })).toHaveAttribute(
     'aria-expanded',
     'true',
+  );
+
+  await first.getByRole('button', { name: 'Show less' }).click();
+
+  await expect(body).toHaveText(excerpt);
+  await expect(first.getByRole('button', { name: 'Show more' })).toHaveAttribute(
+    'aria-expanded',
+    'false',
   );
 });
 
@@ -222,7 +241,8 @@ test('the notifications pill draws one card per notification', async ({ page }) 
   expect(new URL(page.url()).searchParams.get('record')).toBe('notifications');
   await expect(page.locator(ROWS)).toHaveCount(8);
   const first = page.locator(ROWS).first();
-  await expect(first.getByRole('heading', { level: 4 })).toHaveText('SKEENA MODULAR HOUSING WORKS');
+  // The card names the notification in its open Details tab; the other tab panels stay hidden.
+  await expect(first.getByRole('heading', { level: 3 })).toHaveText('SKEENA MODULAR HOUSING WORKS');
   await expect(first.getByRole('tab', { name: 'Documents' })).toBeVisible();
 });
 
