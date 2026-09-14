@@ -47,10 +47,12 @@ function mockResizeObserver() {
   return { fire: () => act(() => callbacks.forEach((callback) => callback())) };
 }
 
-function renderGrid(props: Partial<React.ComponentProps<typeof DisplayGrid<Doc>>> = {}) {
+type GridProps = Partial<React.ComponentProps<typeof DisplayGrid<Doc>>>;
+
+function renderGrid(props: GridProps = {}) {
   const onPageChange = vi.fn();
   const onPageSizeChange = vi.fn();
-  const view = render(
+  const tree = (extra: GridProps) => (
     <MemoryRouter>
       <DisplayGrid<Doc>
         caption="Documents"
@@ -63,10 +65,18 @@ function renderGrid(props: Partial<React.ComponentProps<typeof DisplayGrid<Doc>>
         onPageChange={onPageChange}
         onPageSizeChange={onPageSizeChange}
         {...props}
+        {...extra}
       />
-    </MemoryRouter>,
+    </MemoryRouter>
   );
-  return { ...view, onPageChange, onPageSizeChange };
+  const view = render(tree({}));
+  return {
+    ...view,
+    onPageChange,
+    onPageSizeChange,
+    /** Re-renders the same grid with some props changed, keeping the mounted DOM. */
+    rerenderGrid: (extra: GridProps) => view.rerender(tree(extra)),
+  };
 }
 
 /** The narrow viewport the cards render at; jsdom answers every query false without this. */
@@ -144,6 +154,20 @@ describe('DisplayGrid', () => {
     renderGrid({ rows: [], total: 0, emptyMessage: 'No documents found' });
 
     expect(screen.getByText('No documents found')).toBeInTheDocument();
+    // Nothing was filtered out, so there is no row of controls over an empty table.
+    expect(screen.queryByLabelText('Filter by Name')).not.toBeInTheDocument();
+  });
+
+  it('keeps the filter box under the reader when what they typed matches nothing', () => {
+    const { rerenderGrid } = renderGrid({ filters: { name: 'zzqq' } });
+    const input = screen.getByLabelText('Filter by Name');
+    act(() => input.focus());
+
+    rerenderGrid({ rows: [], total: 0, emptyMessage: 'No documents found' });
+
+    expect(screen.getByText('No documents found')).toBeInTheDocument();
+    expect(screen.getByLabelText('Filter by Name')).toBe(input);
+    expect(input).toHaveFocus();
   });
 
   it('renders list records without a table', () => {

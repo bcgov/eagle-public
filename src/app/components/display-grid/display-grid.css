@@ -221,7 +221,9 @@
   color: var(--typography-color-secondary);
 }
 
-.display-grid__option {
+/* Two names deep: `.display-grid label { display: block }` above outranks a lone class, and a row
+   that loses its flex box loses the gap and the checkbox alignment with it. */
+.display-grid .display-grid__option {
   display: flex;
   align-items: center;
   gap: var(--layout-padding-small);
@@ -421,18 +423,33 @@
   box-shadow: var(--surface-shadow-medium);
 }
 
+/* The name of the column and the way out of the filter share one line above the list. */
 .display-grid__picker-head {
-  margin: 0 0 var(--layout-margin-hair);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--layout-padding-small);
+  margin-bottom: var(--layout-margin-hair);
+}
+
+.display-grid__picker-title {
+  margin: 0;
   color: var(--typography-color-secondary);
   font: var(--typography-bold-label);
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
 
-.display-grid__picker-foot {
-  display: flex;
-  justify-content: flex-end;
-  padding-top: var(--layout-padding-xsmall);
+/* Tighter than the column menu's rows: this list is longer, and a label that wraps keeps its
+   checkbox against the first line rather than centred on the whole block. */
+.display-grid__picker .display-grid__option {
+  align-items: flex-start;
+  gap: var(--layout-padding-xsmall);
+  padding: 4px 2px;
+}
+
+.display-grid__picker .display-grid__option input[type='checkbox'] {
+  margin-top: 2px;
 }
 
 .display-grid__picker-clear {

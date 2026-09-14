@@ -35,6 +35,13 @@ function readCell(row: unknown, key: string): ReactNode {
   return '';
 }
 
+/** Whether any filter carries a value; a blank string is no narrowing. */
+function anyFilterSet(filters: FilterValues): boolean {
+  return Object.values(filters).some((value) =>
+    Array.isArray(value) ? value.length > 0 : value.trim() !== '',
+  );
+}
+
 interface SortOption {
   /** `-datePosted` as the URL spells it, so the select's value is the sort itself. */
   value: string;
@@ -176,9 +183,11 @@ export function DisplayGrid<Row>({
   /* One record per card below the breakpoint. The reader's hidden columns still apply: a column
      switched off is off in both layouts. */
   const cardMode = narrow && !listMode && !showEmpty;
-  /* Nothing to head: an empty result has no columns to sort and no values to filter, so the
-     message follows the chips rather than a row of controls over nothing. */
-  const showHead = !listMode && !headerless && !showEmpty && !cardMode;
+  /* The head stays over an empty result a filter narrowed into: dropping the filter row under a
+     reader mid-keystroke moves focus to the body and eats the next key. Unfiltered there is
+     nothing to sort or filter, and on a phone those filters live in the panel, which stays put. */
+  const keepHeadWhileEmpty = showEmpty && !narrow && anyFilterSet(filters);
+  const showHead = !listMode && !headerless && !cardMode && (!showEmpty || keepHeadWhileEmpty);
   const showFilterRow = showHead && columns.some((column) => !!column.filter);
   const showSortBar = cardMode && sortOptionsFor(columns, sort).length > 0;
 

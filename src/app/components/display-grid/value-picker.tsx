@@ -127,9 +127,21 @@ export function ValuePicker({ label, options, selected, onChange }: ValuePickerP
           maxHeight: Math.round(height),
         }}
       >
-        {/* The button that opened this reads "All" or a count, so nothing on screen says which
-            column is being filtered until this line does. It is the panel's name too. */}
-        <p className="display-grid__picker-head" id={headingId}>{`Filter by ${label}`}</p>
+        <div className="display-grid__picker-head">
+          {/* The button that opened this reads "All" or a count, so nothing on screen says which
+              column is being filtered until this line does. It is the panel's name too. */}
+          <p className="display-grid__picker-title" id={headingId}>{`Filter by ${label}`}</p>
+          {picked.length > 0 && (
+            <button
+              type="button"
+              className="display-grid__picker-clear"
+              aria-label={`Clear ${label}`}
+              onClick={() => onChange([])}
+            >
+              Clear
+            </button>
+          )}
+        </div>
         {options.length > TYPEAHEAD_FROM ? (
           <CustomMultiSelect
             items={options}
@@ -151,18 +163,6 @@ export function ValuePicker({ label, options, selected, onChange }: ValuePickerP
               {option.label}
             </label>
           ))
-        )}
-        {picked.length > 0 && (
-          <div className="display-grid__picker-foot">
-            <button
-              type="button"
-              className="display-grid__picker-clear"
-              aria-label={`Clear ${label}`}
-              onClick={() => onChange([])}
-            >
-              Clear
-            </button>
-          </div>
         )}
       </div>
     );

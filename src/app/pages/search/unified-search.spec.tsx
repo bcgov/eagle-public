@@ -178,6 +178,20 @@ describe('UnifiedSearch', () => {
     );
   });
 
+  it('chips a name carrying a comma as the one name that was typed', async () => {
+    const fetchMock = stubApi();
+    // The URL layer reads a comma as several picks, so the page has to put this name back together.
+    renderSearch('/search?record=documents&nameContains=a,b');
+    await screen.findByText('Fish habitat report');
+
+    const chip = screen.getByRole('button', { name: 'Remove Name a,b' });
+    expect(chip).toHaveTextContent('Name: a,b');
+    // And it reaches the index as one filter: percent-encoded, so `and[]` does not split it again.
+    const asked = fetchMock.mock.calls.map(String).filter((url) => url.includes('nameContains'));
+    expect(asked.length).toBeGreaterThan(0);
+    expect(asked.every((url) => url.includes('and[nameContains]=a%2Cb'))).toBe(true);
+  });
+
   it('drops the name filter when its chip is cleared', async () => {
     const user = userEvent.setup();
     const { router } = renderSearch('/search?record=documents&nameContains=habitat');
