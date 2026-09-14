@@ -10,7 +10,7 @@ import { ready, waitForSearch, total } from '../support/helpers';
 const ROWS = '.display-grid__row';
 
 test('every projects column header sorts through the URL and the API', async ({ page }) => {
-  await page.goto('/search');
+  await page.goto('/search?record=projects');
   await ready(page);
 
   const headers = page.locator('.display-grid thead button.display-grid__sort');
@@ -30,11 +30,11 @@ test('every projects column header sorts through the URL and the API', async ({ 
 });
 
 test('the page size picker drives pageSize in the URL and the rendered rows', async ({ page }) => {
-  await page.goto('/search');
+  await page.goto('/search?record=projects');
   await ready(page);
 
   // 25 is the grid's default, so picking it would write nothing to the URL.
-  const picker = page.locator('.display-grid .lib-page-size-display');
+  const picker = page.getByRole('group', { name: 'Rows per page' });
   await expect(picker).toBeVisible();
 
   const search = waitForSearch(page, 'Project', 'pageSize=50');

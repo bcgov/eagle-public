@@ -42,7 +42,7 @@ function keywordField(page: Page) {
 test('the projects tab lists projects from the search API', async ({ page }) => {
   const calls = recordApiCalls(page);
   const search = waitForSearch(page, 'Project');
-  await page.goto('/search');
+  await page.goto('/search?record=projects');
   const env = await search;
   await ready(page);
 
@@ -74,7 +74,7 @@ test('every record pill carries its own count for the typed keyword', async ({ p
 });
 
 test('a keyword narrows the rows and lands in the URL', async ({ page }) => {
-  await openSearch(page);
+  await openSearch(page, '/search?record=projects');
   await keywordField(page).fill('coal');
 
   await expect(page.locator(ROWS)).toHaveCount(1);
@@ -84,7 +84,7 @@ test('a keyword narrows the rows and lands in the URL', async ({ page }) => {
 });
 
 test('a column header sorts the rows, and a second click reverses them', async ({ page }) => {
-  await openSearch(page);
+  await openSearch(page, '/search?record=projects');
   const header = page.getByRole('columnheader', { name: 'Project', exact: true });
   const firstName = page.locator(ROWS).first().locator(NAME).first();
 
@@ -100,7 +100,7 @@ test('a column header sorts the rows, and a second click reverses them', async (
 });
 
 test('a deep link restores the keyword, the sort and the page size', async ({ page }) => {
-  await openSearch(page, '/search?keywords=mine&sortBy=-name&pageSize=10');
+  await openSearch(page, '/search?record=projects&keywords=mine&sortBy=-name&pageSize=10');
 
   await expect(keywordField(page)).toHaveValue('mine');
   await expect(page.locator(ROWS)).toHaveCount(4);
@@ -109,7 +109,7 @@ test('a deep link restores the keyword, the sort and the page size', async ({ pa
 });
 
 test('pagination moves to the second page and records it in the URL', async ({ page }) => {
-  await openSearch(page, '/search?pageSize=10');
+  await openSearch(page, '/search?record=projects&pageSize=10');
   await expect(page.locator(ROWS)).toHaveCount(10);
 
   await page.getByRole('button', { name: 'Go to page 2' }).first().click();
@@ -121,7 +121,7 @@ test('pagination moves to the second page and records it in the URL', async ({ p
 });
 
 test('a filter in the header row narrows the rows to that value', async ({ page }) => {
-  await openSearch(page);
+  await openSearch(page, '/search?record=projects');
   await page.locator('[data-tour="filterrow"] button[aria-label="Filter by Region"]').click();
   await page.getByRole('group', { name: 'Filter by Region' }).getByText('Skeena').click();
 
@@ -173,6 +173,6 @@ test('selecting a document offers it for download', async ({ page }) => {
   await expect(page.locator('.display-grid__count')).toHaveText('1 selected');
   await expect(page.getByRole('button', { name: 'Download 1' })).toBeVisible();
 
-  await page.getByRole('button', { name: 'Clear', exact: true }).click();
+  await page.getByRole('button', { name: 'Clear selection', exact: true }).click();
   expect(await gridCount(page)).toEqual({ first: 1, last: 18, total: 18 });
 });
