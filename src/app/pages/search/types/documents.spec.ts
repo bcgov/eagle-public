@@ -3,10 +3,12 @@ import { toApiFilters } from 'app/components/display-grid/use-grid-url-state';
 import { fetchData, SearchParamObject } from 'app/api/search';
 import { bulkDownloadEnabled } from 'app/config/config';
 import { capturedRequestUrl } from '../../../../test-utils';
+import { toWireFilters } from '../search-filters';
 import { documentsConfig } from './documents';
 
 /** One value per filter the tab offers, as a reader who filled in every control would leave it. */
 const FILLED: Record<string, string> = {
+  nameContains: 'habitat',
   type: 'doctype-1',
   milestone: 'milestone-1',
   projectPhase: 'phase-1',
@@ -59,8 +61,30 @@ describe('documents record type', () => {
     expect(documentsConfig.defaultSort).toBe('-datePosted');
   });
 
-  it('offers the four document column filters', () => {
-    expect(COLUMN_FILTER_IDS).toEqual(['type', 'milestone', 'projectPhase', 'documentAuthorType']);
+  it('offers the document column filters', () => {
+    expect(COLUMN_FILTER_IDS).toEqual([
+      'nameContains',
+      'type',
+      'milestone',
+      'projectPhase',
+      'documentAuthorType',
+    ]);
+  });
+
+  it('filters the name column by typed text', () => {
+    expect(documentsConfig.columns[0]).toMatchObject({
+      label: 'Name',
+      filter: 'text',
+      filterId: 'nameContains',
+    });
+  });
+
+  it('sends a typed document name as and[nameContains]', () => {
+    expect(requested).toContain('and[nameContains]=habitat');
+  });
+
+  it('sends no name filter at all when the box holds only spaces', () => {
+    expect(toWireFilters({ nameContains: '   ' }, [], ['nameContains'])).toEqual({});
   });
 
   it('filters the date posted column by year', () => {
@@ -72,6 +96,14 @@ describe('documents record type', () => {
   it('offers the posted-date range, legislation and featured advanced fields', () => {
     expect(ADVANCED_IDS).toEqual(['datePostedStart', 'datePostedEnd', 'legislation', 'isFeatured']);
     expect(documentsConfig.advancedFields.at(-1)?.kind).toBe('toggle');
+  });
+
+  it('names the two ends of the posted range as the range they bound', () => {
+    expect(
+      documentsConfig.advancedFields
+        .filter((field) => field.kind === 'date')
+        .map((field) => field.label),
+    ).toEqual(['Posted from', 'Posted to']);
   });
 
   it('columns lead with a locked link to the document', () => {

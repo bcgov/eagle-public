@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components -- the date rule is this panel's, and the
    grid applies the same test before it turns a typed date into a filter. */
 import { useId, useState } from 'react';
+import { FILTER_TEXT_MAX, useDebouncedDraft } from './use-debounced-draft';
 import type { AdvancedField, FilterValues } from './types';
 import './advanced-filters.css';
 
@@ -30,6 +31,38 @@ export interface AdvancedFiltersProps {
 function asText(value: FilterValues[string] | undefined): string {
   if (value == null) return '';
   return Array.isArray(value) ? value.join(',') : value;
+}
+
+/**
+ * A typed field, which the panel carries only where the layout has no filter row for it: a phone,
+ * a list, an empty result. It applies once typing stops, on the same beat as the filter row's own
+ * box, so the narrow layout does not search once per keystroke.
+ */
+function PanelText({
+  field,
+  value,
+  onChange,
+}: {
+  field: AdvancedField;
+  value: string;
+  onChange: (id: string, value: string | null) => void;
+}) {
+  const [draft, setDraft] = useDebouncedDraft(value, (next) => onChange(field.id, next || null));
+
+  return (
+    <label className="display-grid__panel-field">
+      <span className="display-grid__panel-label">{field.label}</span>
+      <input
+        type="text"
+        autoComplete="off"
+        maxLength={FILTER_TEXT_MAX}
+        className="display-grid__panel-control"
+        placeholder={field.placeholder}
+        value={draft}
+        onChange={(event) => setDraft(event.target.value)}
+      />
+    </label>
+  );
 }
 
 /** The applied text of every date field, which is what a draft is measured against. */
@@ -167,16 +200,12 @@ export function AdvancedFilters({ fields, values, onChange, open }: AdvancedFilt
           }
 
           return (
-            <label className="display-grid__panel-field" key={field.id}>
-              <span className="display-grid__panel-label">{field.label}</span>
-              <input
-                type="text"
-                className="display-grid__panel-control"
-                placeholder={field.placeholder}
-                value={asText(values[field.id])}
-                onChange={(event) => onChange(field.id, event.target.value || null)}
-              />
-            </label>
+            <PanelText
+              key={field.id}
+              field={field}
+              value={asText(values[field.id])}
+              onChange={onChange}
+            />
           );
         })}
       </div>

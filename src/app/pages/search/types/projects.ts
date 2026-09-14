@@ -50,6 +50,9 @@ const COLUMNS: GridColumn<Record<string, unknown>>[] = [
     key: 'name',
     label: 'Project',
     sortable: true,
+    // demi-search reads `nameContains` as a match on the project's own `name`.
+    filter: 'text',
+    filterId: 'nameContains',
     link: true,
     href: projectHref,
     locked: true,
@@ -96,11 +99,11 @@ export const projectsConfig: RecordTypeConfig = {
   template: 'grid',
   columns: COLUMNS,
   advancedFields: [
-    { id: 'dateUpdatedStart', label: 'Updated after', kind: 'date', placeholder: 'YYYY-MM-DD' },
-    { id: 'dateUpdatedEnd', label: 'Updated before', kind: 'date', placeholder: 'YYYY-MM-DD' },
+    { id: 'dateUpdatedStart', label: 'Updated from', kind: 'date', placeholder: 'YYYY-MM-DD' },
+    { id: 'dateUpdatedEnd', label: 'Updated to', kind: 'date', placeholder: 'YYYY-MM-DD' },
     // The Angular project list put these on the query string, so the redirect still carries them.
-    { id: 'decisionDateStart', label: 'Decision after', kind: 'date', placeholder: 'YYYY-MM-DD' },
-    { id: 'decisionDateEnd', label: 'Decision before', kind: 'date', placeholder: 'YYYY-MM-DD' },
+    { id: 'decisionDateStart', label: 'Decision from', kind: 'date', placeholder: 'YYYY-MM-DD' },
+    { id: 'decisionDateEnd', label: 'Decision to', kind: 'date', placeholder: 'YYYY-MM-DD' },
     { id: 'eacDecision', label: 'EA decision', kind: 'select' },
     { id: 'CEAAInvolvement', label: 'IAAC involvement', kind: 'select' },
   ],

@@ -41,11 +41,21 @@ interface SortOption {
   label: string;
 }
 
+/** A sort as the URL spells it, which is the value the select carries. */
+function sortValue(sort: SortState): string {
+  return `${sort.dir === 'desc' ? '-' : '+'}${sort.key}`;
+}
+
 /**
  * What the narrow layout offers instead of sortable headings: the record's date both ways and its
  * name both ways, which is every order a card can be read in.
+ *
+ * The sort in force is added when it is none of those. Every heading sorts in the wide layout and
+ * the toolbar hands out a link to the view, so a sort this list does not name can arrive here; a
+ * select whose value matches no option shows its first one, telling a phone reader the cards are
+ * in an order they are not.
  */
-function sortOptionsFor<Row>(columns: GridColumn<Row>[]): SortOption[] {
+function sortOptionsFor<Row>(columns: GridColumn<Row>[], sort?: SortState | null): SortOption[] {
   const date =
     columns.find((column) => column.primaryDate) ?? columns.find((column) => column.date);
   const name = columns.find((column) => column.link) ?? columns.find((column) => column.sortable);
@@ -61,6 +71,15 @@ function sortOptionsFor<Row>(columns: GridColumn<Row>[]): SortOption[] {
       { value: `+${name.key}`, label: 'Name A–Z' },
       { value: `-${name.key}`, label: 'Name Z–A' },
     );
+  }
+  if (sort && !options.some((option) => option.value === sortValue(sort))) {
+    const column = columns.find((item) => item.key === sort.key);
+    if (column) {
+      options.push({
+        value: sortValue(sort),
+        label: `${column.label} ${sort.dir === 'desc' ? 'Z to A' : 'A to Z'}`,
+      });
+    }
   }
   return options;
 }
@@ -161,7 +180,7 @@ export function DisplayGrid<Row>({
      message follows the chips rather than a row of controls over nothing. */
   const showHead = !listMode && !headerless && !showEmpty && !cardMode;
   const showFilterRow = showHead && columns.some((column) => !!column.filter);
-  const showSortBar = cardMode && sortOptionsFor(columns).length > 0;
+  const showSortBar = cardMode && sortOptionsFor(columns, sort).length > 0;
 
   // The filter row sticks under the header, whose height changes when a label wraps.
   useEffect(() => {
@@ -218,13 +237,13 @@ export function DisplayGrid<Row>({
               Sort
               <select
                 className="display-grid__sort-select"
-                value={sort ? `${sort.dir === 'desc' ? '-' : '+'}${sort.key}` : ''}
+                value={sort ? sortValue(sort) : ''}
                 onChange={(event) => {
                   const next = event.target.value;
                   onSort?.(next.slice(1), next.startsWith('-') ? '-' : '+');
                 }}
               >
-                {sortOptionsFor(columns).map((option) => (
+                {sortOptionsFor(columns, sort).map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
                   </option>

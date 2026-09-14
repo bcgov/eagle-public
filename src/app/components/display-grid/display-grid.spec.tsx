@@ -19,6 +19,12 @@ const columns: GridColumn<Doc>[] = [
 /** The narrow sort select only offers the orders the columns say they can be sorted in. */
 const sortableColumns: GridColumn<Doc>[] = columns.map((column) => ({ ...column, sortable: true }));
 
+/** A sortable column that is neither the record's date nor its headline, so the select skips it. */
+const withMilestone: GridColumn<Doc>[] = [
+  ...sortableColumns,
+  { key: 'milestone', label: 'Milestone', sortable: true },
+];
+
 const rows: Doc[] = [
   { id: 'a', name: 'Application', date: '2024-03-01' },
   { id: 'b', name: 'Amendment', date: '2019-11-20' },
@@ -363,6 +369,36 @@ describe('DisplayGrid', () => {
       await user.selectOptions(screen.getByLabelText('Sort'), '+date');
 
       expect(onSort).toHaveBeenCalledWith('date', '+');
+    });
+
+    it('names the sort in force when it is a column the select does not otherwise offer', () => {
+      stubNarrow(true);
+      renderGrid({ sort: { key: 'milestone', dir: 'asc' }, columns: withMilestone });
+
+      const select = screen.getByLabelText('Sort') as HTMLSelectElement;
+      expect(select).toHaveValue('+milestone');
+      expect(select.options[select.selectedIndex].text).toBe('Milestone A to Z');
+    });
+
+    it('names that column the other way round when the sort is descending', () => {
+      stubNarrow(true);
+      renderGrid({ sort: { key: 'milestone', dir: 'desc' }, columns: withMilestone });
+
+      const select = screen.getByLabelText('Sort') as HTMLSelectElement;
+      expect(select).toHaveValue('-milestone');
+      expect(select.options[select.selectedIndex].text).toBe('Milestone Z to A');
+    });
+
+    it('adds nothing when the sort in force is one the select already names', () => {
+      stubNarrow(true);
+      renderGrid({ sort: { key: 'date', dir: 'desc' }, columns: sortableColumns });
+
+      const select = screen.getByLabelText('Sort');
+      expect(
+        within(select)
+          .getAllByRole('option')
+          .map((option) => option.textContent),
+      ).toEqual(['Newest first', 'Oldest first', 'Name A–Z', 'Name Z–A']);
     });
   });
 });

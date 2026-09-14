@@ -33,6 +33,7 @@ interface ValuePickerProps {
 export function ValuePicker({ label, options, selected, onChange }: ValuePickerProps) {
   const [anchor, setAnchor] = useState<Anchor | null>(null);
   const popoverId = useId();
+  const headingId = `${popoverId}-head`;
   const buttonRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   const open = anchor !== null;
@@ -116,7 +117,7 @@ export function ValuePicker({ label, options, selected, onChange }: ValuePickerP
         id={popoverId}
         className="display-grid__picker"
         role="group"
-        aria-label={`Filter by ${label}`}
+        aria-labelledby={headingId}
         style={{
           left: Math.round(anchor.left),
           ...(flip
@@ -126,6 +127,9 @@ export function ValuePicker({ label, options, selected, onChange }: ValuePickerP
           maxHeight: Math.round(height),
         }}
       >
+        {/* The button that opened this reads "All" or a count, so nothing on screen says which
+            column is being filtered until this line does. It is the panel's name too. */}
+        <p className="display-grid__picker-head" id={headingId}>{`Filter by ${label}`}</p>
         {options.length > TYPEAHEAD_FROM ? (
           <CustomMultiSelect
             items={options}

@@ -22,6 +22,9 @@ const COLUMNS: GridColumn<Record<string, unknown>>[] = [
     key: 'displayName',
     label: 'Name',
     sortable: true,
+    // demi-search reads `nameContains` as a match on the document's own `displayName`.
+    filter: 'text',
+    filterId: 'nameContains',
     link: true,
     href: documentHref,
     hrefExternal: true,
@@ -77,8 +80,8 @@ export const documentsConfig: RecordTypeConfig = {
   template: 'grid',
   columns: COLUMNS,
   advancedFields: [
-    { id: 'datePostedStart', label: 'Posted after', kind: 'date', placeholder: 'YYYY-MM-DD' },
-    { id: 'datePostedEnd', label: 'Posted before', kind: 'date', placeholder: 'YYYY-MM-DD' },
+    { id: 'datePostedStart', label: 'Posted from', kind: 'date', placeholder: 'YYYY-MM-DD' },
+    { id: 'datePostedEnd', label: 'Posted to', kind: 'date', placeholder: 'YYYY-MM-DD' },
     { id: 'legislation', label: 'Legislation', kind: 'select' },
     { id: 'isFeatured', label: 'Featured documents', kind: 'toggle' },
   ],

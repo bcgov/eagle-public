@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ValuePicker } from './value-picker';
 import type { ValueOption } from './types';
@@ -84,6 +84,20 @@ describe('ValuePicker', () => {
     const popover = screen.getByRole('group', { name: 'Filter by Type' });
     expect(popover.id).not.toBe('');
     expect(button).toHaveAttribute('aria-controls', popover.id);
+  });
+
+  it('heads the open list with the column it filters, and is named by it', async () => {
+    const user = userEvent.setup();
+    renderPicker();
+
+    await user.click(screen.getByRole('button', { name: 'Filter by Type' }));
+
+    const popover = screen.getByRole('group', { name: 'Filter by Type' });
+    const head = within(popover).getByText('Filter by Type');
+    expect(popover).toHaveAttribute('aria-labelledby', head.id);
+    expect(popover).not.toHaveAttribute('aria-label');
+    const first = screen.getByRole('checkbox', { name: 'Letter' });
+    expect(head.compareDocumentPosition(first) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it('opens below the button when there is room', async () => {

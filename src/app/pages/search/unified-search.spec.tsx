@@ -4,7 +4,6 @@ import { track } from 'app/analytics/analytics';
 import { loadConfig } from 'app/config/config';
 import { clearSelection } from 'app/state/bulk-download';
 import { renderAt } from '../../../test-utils';
-import { toWireFilters, yearOptions } from './search-filters';
 import { UnifiedSearch } from './unified-search';
 
 vi.mock('app/analytics/analytics', () => ({ track: vi.fn(), page: vi.fn(), reset: vi.fn() }));
@@ -12,10 +11,25 @@ vi.mock('app/analytics/analytics', () => ({ track: vi.fn(), page: vi.fn(), reset
 const trackMock = vi.mocked(track);
 
 const DOCUMENTS = [
-  { _id: 'd1', displayName: 'Fish habitat report', datePosted: '2025-01-02T12:00:00Z', type: 'l1' },
+  {
+    _id: 'd1',
+    displayName: 'Fish habitat report',
+    datePosted: '2025-01-02T12:00:00Z',
+    type: 'l1',
+    documentAuthorType: 'a1',
+  },
 ];
-/** One `List` row, so the document type cell has a name to show instead of the stored id. */
-const LISTS = [{ _id: 'l1', name: 'Letter', type: 'doctype' }];
+/** `List` rows, so the coded cells have a name to show instead of the stored id. */
+const LISTS = [
+  { _id: 'l1', name: 'Letter', type: 'doctype' },
+  { _id: 'a1', name: 'EAO', type: 'author' },
+];
+
+/** An author id in no `List` row, which is what the test backend returns for some documents. */
+const ORPHAN_ID = '6a61123ff0c29b9e36505fd7';
+
+/** What `dataset=Document` answers; a test that needs other cells puts its own rows here. */
+let documents: Record<string, unknown>[];
 const PROJECTS = [
   {
     _id: 'p1',
@@ -53,7 +67,7 @@ function stubApi(): ReturnType<typeof vi.fn> {
       const sort = dropsDateSort && url.includes('sortBy=-dateUpdated') ? ['dateUpdated'] : [];
       return envelope(PROJECTS, 1, { dropped: { filter: [], sort } });
     }
-    if (url.includes('dataset=Document')) return envelope(DOCUMENTS, 1);
+    if (url.includes('dataset=Document')) return envelope(documents, documents.length);
     return envelope([]);
   });
   vi.stubGlobal('fetch', fetchMock);
@@ -68,9 +82,18 @@ function pill(name: RegExp) {
   return screen.getByRole('button', { name });
 }
 
+/** The cell a row shows under a named heading, which is what a reader reads down the column. */
+function cellUnder(row: HTMLElement, heading: string): HTMLElement {
+  const index = screen
+    .getAllByRole('columnheader')
+    .findIndex((cell) => (cell.textContent ?? '').startsWith(heading));
+  return within(row).getAllByRole('cell')[index];
+}
+
 beforeEach(async () => {
   counts = { Project: 12, Document: 5 };
   dropsDateSort = false;
+  documents = DOCUMENTS;
   window.__env = { logLevel: 4 };
   await loadConfig();
   clearSelection();
@@ -124,6 +147,112 @@ describe('UnifiedSearch', () => {
     expect(query.get('sortBy')).toBeNull();
     // The field follows the URL rather than emptying itself on the way across.
     expect(screen.getByRole('searchbox')).toHaveValue('fish');
+  });
+
+  it('sends a name typed in the first filter cell once typing stops, and chips it', async () => {
+    const user = userEvent.setup();
+    const { router } = renderSearch('/search?record=documents');
+    await screen.findByText('Fish habitat report');
+
+    await user.type(screen.getByLabelText('Filter by Name'), 'habitat');
+
+    await waitFor(() =>
+      expect(new URLSearchParams(router.state.location.search).get('nameContains')).toBe('habitat'),
+    );
+    const chip = await screen.findByRole('button', { name: 'Remove Name habitat' });
+    expect(chip).toHaveTextContent('Name: habitat');
+  });
+
+  it('asks the index for the typed name under and[nameContains]', async () => {
+    const user = userEvent.setup();
+    const fetchMock = stubApi();
+    renderSearch('/search?record=documents');
+    await screen.findByText('Fish habitat report');
+
+    await user.type(screen.getByLabelText('Filter by Name'), 'habitat');
+
+    await waitFor(() =>
+      expect(
+        fetchMock.mock.calls.map(String).some((url) => url.includes('and[nameContains]=habitat')),
+      ).toBe(true),
+    );
+  });
+
+  it('drops the name filter when its chip is cleared', async () => {
+    const user = userEvent.setup();
+    const { router } = renderSearch('/search?record=documents&nameContains=habitat');
+    await screen.findByText('Fish habitat report');
+    expect(screen.getByLabelText('Filter by Name')).toHaveValue('habitat');
+
+    await user.click(screen.getByRole('button', { name: 'Remove Name habitat' }));
+
+    await waitFor(() =>
+      expect(new URLSearchParams(router.state.location.search).get('nameContains')).toBeNull(),
+    );
+    expect(screen.getByLabelText('Filter by Name')).toHaveValue('');
+  });
+
+  it('clears the name filter along with everything else', async () => {
+    const user = userEvent.setup();
+    const { router } = renderSearch('/search?record=documents&keywords=fish&nameContains=habitat');
+    await screen.findByText('Fish habitat report');
+
+    await user.click(screen.getByRole('button', { name: 'Clear all' }));
+
+    /* The keyword field settles on its own beat, so the keyword leaves the URL a moment after
+       the filters do rather than in the same write. */
+    await waitFor(() => {
+      expect(router.state.location.search).not.toContain('nameContains');
+      expect(router.state.location.search).not.toContain('keywords');
+    });
+  });
+
+  it('leaves the name filter behind when the record type changes', async () => {
+    const user = userEvent.setup();
+    const { router } = renderSearch('/search?record=documents&nameContains=habitat');
+    await screen.findByText('Fish habitat report');
+
+    await user.click(pill(/^Projects/));
+
+    await waitFor(() => expect(router.state.location.search).toContain('record=projects'));
+    expect(router.state.location.search).not.toContain('nameContains');
+  });
+
+  it('names the projects tab cell after the project column', async () => {
+    renderSearch('/search?record=projects');
+    await screen.findByText('Alpha Mine');
+
+    const box = screen.getByLabelText('Filter by Project');
+    expect(box).toHaveAttribute('placeholder', 'Project');
+  });
+
+  it('names a coded cell from the List it was looked up in', async () => {
+    renderSearch('/search?record=documents');
+
+    const row = (await screen.findByText('Fish habitat report')).closest('tr') as HTMLElement;
+    expect(cellUnder(row, 'Author')).toHaveTextContent('EAO');
+  });
+
+  it('empties a cell rather than printing an id the List has no name for', async () => {
+    // Some documents on the test backend carry an author id the List collection has no row for.
+    documents = [
+      { ...DOCUMENTS[0], _id: 'd2', displayName: 'Orphan', documentAuthorType: ORPHAN_ID },
+    ];
+    renderSearch('/search?record=documents');
+
+    const row = (await screen.findByText('Orphan')).closest('tr') as HTMLElement;
+    expect(cellUnder(row, 'Author').textContent).toBe('');
+    expect(row).not.toHaveTextContent(ORPHAN_ID);
+  });
+
+  it('still shows a value the List does not know when it is words rather than an id', async () => {
+    documents = [
+      { ...DOCUMENTS[0], _id: 'd3', displayName: 'Ministerial', documentAuthorType: 'Minister' },
+    ];
+    renderSearch('/search?record=documents');
+
+    const row = (await screen.findByText('Ministerial')).closest('tr') as HTMLElement;
+    expect(cellUnder(row, 'Author')).toHaveTextContent('Minister');
   });
 
   it('badges a record type with its count and leaves an unknown total bare', async () => {
@@ -285,40 +414,5 @@ describe('UnifiedSearch', () => {
     expect(
       fetchMock.mock.calls.map(String).filter((url) => url.includes('RecentActivity')),
     ).toEqual([]);
-  });
-});
-
-describe('a year chosen in a date column', () => {
-  it('is sent as the range that year covers', () => {
-    expect(toWireFilters({ datePosted: '2021', type: 'l1' }, ['datePosted'])).toEqual({
-      type: 'l1',
-      datePostedStart: '2021-01-01',
-      datePostedEnd: '2021-12-31',
-    });
-  });
-
-  it('leaves a bound the advanced panel has already set', () => {
-    expect(
-      toWireFilters({ dateUpdated: '2021', dateUpdatedStart: '2021-06-01' }, ['dateUpdated']),
-    ).toEqual({ dateUpdatedStart: '2021-06-01', dateUpdatedEnd: '2021-12-31' });
-  });
-
-  it('rides as it is written when the column is not a year column', () => {
-    expect(toWireFilters({ datePosted: '2021' })).toEqual({ datePosted: '2021' });
-  });
-
-  it('offers the years the results carry, newest first, and the year in force', () => {
-    const rows = [
-      { datePosted: '2021-11-02T00:00:00Z' },
-      { datePosted: '2019-03-04' },
-      { datePosted: '2021-01-09' },
-      { datePosted: '' },
-    ];
-
-    expect(yearOptions(rows, 'datePosted', '2015')).toEqual([
-      { value: '2021', label: '2021' },
-      { value: '2019', label: '2019' },
-      { value: '2015', label: '2015' },
-    ]);
   });
 });

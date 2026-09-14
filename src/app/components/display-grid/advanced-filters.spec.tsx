@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AdvancedFilters, isValidIsoDate } from './advanced-filters';
 import type { AdvancedField, FilterValues } from './types';
@@ -185,12 +185,15 @@ describe('AdvancedFilters', () => {
     expect(onChange).toHaveBeenCalledWith('legislation', '2018');
   });
 
-  it('drops a text filter when the box is emptied', async () => {
+  it('drops a text filter when the box is emptied, once typing has stopped', async () => {
     const user = userEvent.setup();
     const { onChange } = setup({ proponent: 'Cedar' });
 
     await user.clear(screen.getByLabelText('Proponent'));
 
-    expect(onChange).toHaveBeenLastCalledWith('proponent', null);
+    // The panel carries a typed filter only where there is no filter row for it, and applies it
+    // on the same beat as that row would: not on the keystroke.
+    expect(onChange).not.toHaveBeenCalled();
+    await waitFor(() => expect(onChange).toHaveBeenLastCalledWith('proponent', null));
   });
 });

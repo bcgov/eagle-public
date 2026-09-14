@@ -160,13 +160,27 @@ function valueOfLabel(options: ValueOption[], label: string): string {
   return options.find((option) => option.label === label)?.value ?? label;
 }
 
+/** A Mongo id, which is a database key and never a word the reader asked to see. */
+const OBJECT_ID = /^[0-9a-f]{24}$/i;
+
+/**
+ * A stored value as the cell's words: the option's label, or the value itself when it is plain
+ * text the index stored directly. An id the List collection has no row for reads as nothing,
+ * because a bare `6a61123ff0c29b9e36505fd7` in an Author cell tells the reader less than a blank.
+ */
+function cellLabel(options: ValueOption[], value: string): string {
+  const label = options.find((option) => option.value === value)?.label;
+  if (label !== undefined) return label;
+  return OBJECT_ID.test(value) ? '' : value;
+}
+
 /** One stored pick as its name. Populated rows carry the whole record, bare ones carry the id. */
 function pickText(options: ValueOption[], pick: unknown): string {
   if (pick && typeof pick === 'object') {
     const held = pick as Record<string, unknown>;
-    return String(held['name'] ?? labelOfValue(options, String(held['_id'] ?? '')));
+    return String(held['name'] ?? cellLabel(options, String(held['_id'] ?? '')));
   }
-  return labelOfValue(options, String(pick ?? ''));
+  return cellLabel(options, String(pick ?? ''));
 }
 
 /** A cell's stored value as the reader's words. A multi-value cell reads as a list. */
@@ -318,9 +332,18 @@ export function UnifiedSearch() {
         .map((column) => column.filterId ?? column.key),
     [config],
   );
+  /* The columns whose filter is typed. Their value is one string, not a list of picks, so it is
+     trimmed before it is sent and stays one chip however many commas it carries. */
+  const textFilterIds = useMemo(
+    () =>
+      (config?.columns ?? [])
+        .filter((column) => column.filter === 'text')
+        .map((column) => column.filterId ?? column.key),
+    [config],
+  );
   const wireFilters = useMemo(
-    () => toWireFilters(filters, yearFilterIds),
-    [filters, yearFilterIds],
+    () => toWireFilters(filters, yearFilterIds, textFilterIds),
+    [filters, yearFilterIds, textFilterIds],
   );
 
   const { data, isFetching, isError } = useQuery({
@@ -366,17 +389,16 @@ export function UnifiedSearch() {
   const rows = config ? (data?.rows ?? []) : [];
   const total = config ? (data?.total ?? 0) : 0;
 
-  /* A date column offers the years its results carry - the index has no year facet to ask - plus
-     whichever year is filtered on, so the choice in force never drops out of its own list. */
+  /* A date column offers every year the record spans, plus whichever year is filtered on, so the
+     choice in force never drops out of its own list. */
   const gridColumns: GridColumn<Row>[] = useMemo(
     () =>
       columns.map((column) => {
         if (column.filter !== 'year') return column;
         const id = column.filterId ?? column.key;
-        const chosen = filters[id];
-        return { ...column, options: yearOptions(rows, column.key, asFilterText(chosen)) };
+        return { ...column, options: yearOptions(asFilterText(filters[id])) };
       }),
-    [columns, rows, filters],
+    [columns, filters],
   );
 
   const selectable = config?.selectable ?? false;
@@ -436,6 +458,13 @@ export function UnifiedSearch() {
   if (keywords) chips.push({ id: 'keywords', label: 'Search', value: keywords });
   for (const [id, value] of Object.entries(filters)) {
     const label = labelOfFilter(id);
+    /* Typed text is one narrowing however it is punctuated: the URL splits a value on commas, so
+       a name carrying one would otherwise read as two chips that each drop half of it. */
+    if (textFilterIds.includes(id)) {
+      const typed = (Array.isArray(value) ? value.join(',') : value).trim();
+      if (typed !== '') chips.push({ id, label, value: typed });
+      continue;
+    }
     const picks = Array.isArray(value) ? value : [value];
     for (const pick of picks) {
       chips.push({ id, label, value: labelOfValue(options[id] ?? [], pick) });
@@ -446,6 +475,10 @@ export function UnifiedSearch() {
     if (id === 'keywords') {
       setDraft('');
       setKeyword('');
+      return;
+    }
+    if (textFilterIds.includes(id)) {
+      setFilter(id, null);
       return;
     }
     const current = filters[id];

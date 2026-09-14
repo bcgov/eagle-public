@@ -3,10 +3,12 @@ import { toApiFilters } from 'app/components/display-grid/use-grid-url-state';
 import { fetchData, SearchParamObject } from 'app/api/search';
 import { LEGACY_FILTERS } from 'app/routes/legacy-search';
 import { capturedRequestUrl } from '../../../../test-utils';
+import { toWireFilters } from '../search-filters';
 import { projectsConfig, resolveSort, PROJECTS_FALLBACK_SORT, PROJECTS_SORT } from './projects';
 
 /** One value per filter the tab offers, as a reader who filled in every control would leave it. */
 const FILLED: Record<string, string> = {
+  nameContains: 'Cedar',
   proponent: 'org-1',
   type: 'Mines',
   region: 'Skeena',
@@ -58,9 +60,31 @@ describe('projects record type', () => {
     expect(projectsConfig.defaultSort).toBe('-dateUpdated');
   });
 
-  it('offers the four column filters the projects index carries', () => {
+  it('offers the column filters the projects index carries', () => {
     // Legislation is absent on purpose: the projects index has no such field.
-    expect(COLUMN_FILTER_IDS).toEqual(['proponent', 'type', 'region', 'currentPhaseName']);
+    expect(COLUMN_FILTER_IDS).toEqual([
+      'nameContains',
+      'proponent',
+      'type',
+      'region',
+      'currentPhaseName',
+    ]);
+  });
+
+  it('filters the project column by typed text', () => {
+    expect(projectsConfig.columns[0]).toMatchObject({
+      label: 'Project',
+      filter: 'text',
+      filterId: 'nameContains',
+    });
+  });
+
+  it('sends a typed project name as and[nameContains]', () => {
+    expect(requested).toContain('and[nameContains]=Cedar');
+  });
+
+  it('sends no name filter at all when the box holds only spaces', () => {
+    expect(toWireFilters({ nameContains: '  ' }, [], ['nameContains'])).toEqual({});
   });
 
   it('filters the last updated column by year', () => {
@@ -78,6 +102,14 @@ describe('projects record type', () => {
       'eacDecision',
       'CEAAInvolvement',
     ]);
+  });
+
+  it('names both ends of every date range as the range they bound', () => {
+    expect(
+      projectsConfig.advancedFields
+        .filter((field) => field.kind === 'date')
+        .map((field) => field.label),
+    ).toEqual(['Updated from', 'Updated to', 'Decision from', 'Decision to']);
   });
 
   it('gives every filter the Angular project list carried a control of its own', () => {
