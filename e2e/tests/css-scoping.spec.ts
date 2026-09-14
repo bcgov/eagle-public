@@ -75,9 +75,10 @@ test('the search grid states its own control heights and label layout', async ({
   expect(await styleOf(page, '.unified-search__input', 'height')).toBe('48px');
   expect(await styleOf(page, '.display-grid__control', 'height')).toBe('30px');
 
-  // The Bootstrap reboot makes `label` inline-block, which shrink-wraps the control inside it.
+  // Option rows (`.display-grid__option`, checkbox + text `label`s) are flex rows by design;
+  // other grid labels still get the reboot fix's `label { display: block }`.
   await page.locator('[data-tour="columns"]').click();
-  expect(await styleOf(page, '.display-grid__menu label', 'display')).toBe('block');
+  expect(await styleOf(page, '.display-grid__menu label', 'display')).toBe('flex');
 });
 
 /** Every selector the stylesheet declares, at-rules unwrapped and comma lists split. */
