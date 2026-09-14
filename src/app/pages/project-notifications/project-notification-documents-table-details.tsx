@@ -19,7 +19,7 @@ export function ProjectNotificationDocumentsTableDetails({ rowData }: { rowData:
     <div>
       <div className="row mb-3 mt-2">
         <div className="col-12">
-          <h4>{rowData.name?.toUpperCase() || '-'}</h4>
+          <h3 className="pn-detail-title">{rowData.name?.toUpperCase() || '-'}</h3>
         </div>
       </div>
 

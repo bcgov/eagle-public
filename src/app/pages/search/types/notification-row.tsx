@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState, type KeyboardEvent } from 'react';
 import { CommentPeriodCards } from 'app/components/comment-period-card';
 import { useCommentPeriods } from 'app/components/use-comment-periods';
 import { CommentPeriod } from 'app/models/commentperiod';
@@ -11,6 +11,27 @@ import 'app/pages/project-notifications/project-notifications-table-rows.css';
 
 type Row = Record<string, unknown>;
 type Tab = 'details' | 'documents' | 'commenting';
+
+/**
+ * Arrow, Home and End inside a tab list, per the ARIA tabs pattern with manual activation: they
+ * only move focus. Enter and Space select through the button's own click.
+ */
+function moveFocus(event: KeyboardEvent<HTMLButtonElement>): void {
+  const list = event.currentTarget.closest('[role="tablist"]');
+  if (!list) return;
+
+  const tabs = Array.from(list.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
+  const here = tabs.indexOf(event.currentTarget);
+  let next: number;
+  if (event.key === 'ArrowRight') next = (here + 1) % tabs.length;
+  else if (event.key === 'ArrowLeft') next = (here - 1 + tabs.length) % tabs.length;
+  else if (event.key === 'Home') next = 0;
+  else if (event.key === 'End') next = tabs.length - 1;
+  else return;
+
+  event.preventDefault();
+  tabs[next]?.focus();
+}
 
 function text(row: Row, key: string): string {
   return String(row[key] ?? '');
@@ -52,6 +73,10 @@ export function NotificationRow({ row }: { row: Row }) {
   const [activeTab, setActiveTab] = useState<Tab>('details');
   const [documentsTabLoaded, setDocumentsTabLoaded] = useState(false);
   const { isMobile } = useResponsive();
+  // Several notification cards share a page, so the tab and panel ids have to be per instance.
+  const baseId = useId();
+  const tabId = (tab: Tab) => `${baseId}-tab-${tab}`;
+  const panelId = (tab: Tab) => `${baseId}-panel-${tab}`;
 
   const id = text(row, '_id');
   const pcp = text(row, 'pcp');
@@ -81,8 +106,28 @@ export function NotificationRow({ row }: { row: Row }) {
     }
   }
 
-  function tabPaneClass(tab: Tab): string {
-    return `tab-pane fade${activeTab === tab ? ' show active' : ''}`;
+  function tabProps(tab: Tab) {
+    return {
+      className: `nav-link${activeTab === tab ? ' active' : ''}`,
+      onClick: () => selectTab(tab),
+      onKeyDown: moveFocus,
+      type: 'button' as const,
+      role: 'tab',
+      id: tabId(tab),
+      'aria-controls': panelId(tab),
+      'aria-selected': activeTab === tab,
+      // One tab stop for the whole list: Tab reaches the selected tab, arrows move between them.
+      tabIndex: activeTab === tab ? 0 : -1,
+    };
+  }
+
+  function panelProps(tab: Tab) {
+    return {
+      className: `tab-pane fade${activeTab === tab ? ' show active' : ''}`,
+      role: 'tabpanel',
+      id: panelId(tab),
+      'aria-labelledby': tabId(tab),
+    };
   }
 
   return (
@@ -91,50 +136,28 @@ export function NotificationRow({ row }: { row: Row }) {
         <div className="tabs-container">
           <ul className="nav nav-tabs" role="tablist">
             <li className="nav-item" role="presentation">
-              <button
-                className={`nav-link${activeTab === 'details' ? ' active' : ''}`}
-                onClick={() => selectTab('details')}
-                type="button"
-                role="tab"
-                aria-selected={activeTab === 'details'}
-              >
+              <button {...tabProps('details')}>
                 {isMobile ? 'Details' : 'Project Notification Details'}
               </button>
             </li>
             <li className="nav-item" role="presentation">
-              <button
-                className={`nav-link${activeTab === 'documents' ? ' active' : ''}`}
-                onClick={() => selectTab('documents')}
-                type="button"
-                role="tab"
-                aria-selected={activeTab === 'documents'}
-              >
-                Documents
-              </button>
+              <button {...tabProps('documents')}>Documents</button>
             </li>
             {showCommentingTab && (
               <li className="nav-item" role="presentation">
-                <button
-                  className={`nav-link${activeTab === 'commenting' ? ' active' : ''}`}
-                  onClick={() => selectTab('commenting')}
-                  type="button"
-                  role="tab"
-                  aria-selected={activeTab === 'commenting'}
-                >
-                  Engagement
-                </button>
+                <button {...tabProps('commenting')}>Engagement</button>
               </li>
             )}
           </ul>
 
           <div className="tab-content">
-            <div className={tabPaneClass('details')} role="tabpanel">
+            <div {...panelProps('details')}>
               <div className="tab-section">
                 <ProjectNotificationDocumentsTableDetails rowData={row} />
               </div>
             </div>
 
-            <div className={tabPaneClass('documents')} role="tabpanel">
+            <div {...panelProps('documents')}>
               {documentsTabLoaded && (
                 <div className="tab-section">
                   <ProjectNotificationDocumentsTable
@@ -148,7 +171,7 @@ export function NotificationRow({ row }: { row: Row }) {
             </div>
 
             {showCommentingTab && (
-              <div className={tabPaneClass('commenting')} role="tabpanel">
+              <div {...panelProps('commenting')}>
                 <div className="tab-section pn-info-block py-2">
                   <CommentPeriodCards
                     periods={commentPeriods}
