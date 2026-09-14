@@ -95,7 +95,7 @@ Phase 3, activities + notifications:
 - [x] 3.2 `types/notifications.ts` headerless + spec; fixture (cards with the Documents and Engagement tabs the old page had, keyboard-reachable; `ProjectNotification` rows added to the demi-search fixture)
 - [x] 3.3 `/news`, `/project-notifications` redirects; home links; old pages and specs removed (both addresses redirect to `/search`, the home and project links point at the new ones, and the two page components, configs and specs are deleted)
 - [x] 3.4 parity loop passed (state 03 and notifications tab at both widths) (`yarn test:parity` is 67 pass / 0 fail / 16 skip. State 03 needed two changes: the reference is recaptured with one attachment per activity and no type or size beside it, because a `RecentActivity` carries a single `documentUrl`, and the app no longer draws an empty type/size element, which was taking a line of its own on a phone and left the page 8px taller than the design)
-- [ ] 3.5 PR, review, merged, beta on next
+- [ ] 3.5 PR, review, merged, beta on next (in progress: PR #884 at b722fa9d, base #882; CI green; review PASS after the subscribe control moved to the activities tab, the tab-change crash and the loading flash were fixed; merge waits on #881 and #882; no beta tag until asked)
 
 Phase 4, inside documents:
 
