@@ -26,6 +26,8 @@ import {
   type SearchScope,
 } from 'app/components/display-grid/use-grid-url-state';
 import { TYPEAHEAD_DEBOUNCE_MS, typeaheadKeywords } from 'app/components/filters/typeahead';
+import { SubscribePopover } from 'app/components/subscribe-popover';
+import { getNotifyApi } from 'app/config/config';
 import {
   CAP_MESSAGE,
   clearSelection,
@@ -656,6 +658,15 @@ export function UnifiedSearch() {
           Search help
         </Link>
       </div>
+
+      {/* The site-wide sign-up the News page used to carry. Updates are what the subscription
+          sends, so it rides that tab only; the guard keeps the band's spacing out of the page
+          when NOTIFY_API is unset. */}
+      {record === 'activities' && !!getNotifyApi() && (
+        <div className="unified-search__subscribe">
+          <SubscribePopover serviceName="eao:updates" variant="all" />
+        </div>
+      )}
 
       <DisplayGrid<Row>
         caption={`${recordLabel(record)} matching this search`}

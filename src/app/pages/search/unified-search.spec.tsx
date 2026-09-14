@@ -116,6 +116,12 @@ function pill(name: RegExp) {
   return screen.getByRole('button', { name });
 }
 
+/** Turns eagle-notify on for one test, the way a deployed environment's config does. */
+async function withNotifyApi(): Promise<void> {
+  window.__env = { ...window.__env, NOTIFY_API: 'https://notify.example' };
+  await loadConfig();
+}
+
 /** The cell a row shows under a named heading, which is what a reader reads down the column. */
 function cellUnder(row: HTMLElement, heading: string): HTMLElement {
   const index = screen
@@ -529,5 +535,45 @@ describe('UnifiedSearch', () => {
 
     expect(screen.getByLabelText('Region')).toBeInTheDocument();
     expect(screen.getByLabelText('Notification decision')).toBeInTheDocument();
+  });
+
+  it('counts a column filter on the Filters button, which a list has no filter row for', async () => {
+    renderSearch('/search?record=activities&type=News');
+
+    await screen.findByRole('heading', { level: 3, name: ACTIVITIES[0].headline });
+
+    const filters = screen.getByRole('button', { name: /More filters/ });
+    expect(within(filters).getByText('1')).toBeInTheDocument();
+  });
+
+  it('offers the sign-up for every project on the updates tab', async () => {
+    await withNotifyApi();
+    renderSearch('/search?record=activities');
+
+    await screen.findByRole('heading', { level: 3, name: ACTIVITIES[0].headline });
+
+    expect(
+      screen.getByText('Get an email when any project publishes an Update.'),
+    ).toBeInTheDocument();
+    const trigger = screen.getByRole('button', { name: 'Subscribe' });
+    // The eagle-notify service the address is filed under: every project, not one of them.
+    expect(trigger.closest('[data-service]')).toHaveAttribute('data-service', 'eao:updates');
+  });
+
+  it('offers no sign-up where the environment has no notify API', async () => {
+    renderSearch('/search?record=activities');
+
+    await screen.findByRole('heading', { level: 3, name: ACTIVITIES[0].headline });
+
+    expect(screen.queryByRole('button', { name: 'Subscribe' })).not.toBeInTheDocument();
+  });
+
+  it('keeps the sign-up off the projects tab, which sends no updates of its own', async () => {
+    await withNotifyApi();
+    renderSearch('/search?record=projects');
+
+    await screen.findByText('Alpha Mine');
+
+    expect(screen.queryByRole('button', { name: 'Subscribe' })).not.toBeInTheDocument();
   });
 });
