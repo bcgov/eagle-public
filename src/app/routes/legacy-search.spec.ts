@@ -1,5 +1,5 @@
 import type { LoaderFunctionArgs } from 'react-router';
-import { hashToPath, legacySearchRedirect, resolveLegacySearch } from './legacy-search';
+import { hashToPath, legacySearchRedirect, resolveLegacySearch, searchUrl } from './legacy-search';
 
 type LegacyLoader = ReturnType<typeof legacySearchRedirect>;
 
@@ -50,6 +50,28 @@ describe('legacySearchRedirect', () => {
       loader: legacySearchRedirect('notifications'),
       from: '/project-notifications?keywords=mine&type=Energy&region=Skeena&pcp=open&decision=Approved',
       to: '/search?record=notifications&keywords=mine&type=Energy&region=Skeena&pcp=open&decision=Approved',
+    },
+    {
+      name: 'the Angular notification list, every param carried over',
+      loader: legacySearchRedirect('notifications'),
+      from:
+        '/project-notifications?keywords=quarry&currentPage=3&pageSize=25&sortBy=-name' +
+        '&type=Mines&region=Skeena&pcp=open&decision=Not+Reviewable',
+      to:
+        '/search?record=notifications&keywords=quarry&sortBy=-name&currentPage=3&pageSize=25' +
+        '&type=Mines&region=Skeena&pcp=open&decision=Not+Reviewable',
+    },
+    {
+      name: 'a hash-router news address',
+      loader: legacySearchRedirect('activities'),
+      from: hashToPath('#/news?keywords=fish') ?? '',
+      to: '/search?record=activities&keywords=fish',
+    },
+    {
+      name: 'a hash-router notification address',
+      loader: legacySearchRedirect('notifications'),
+      from: hashToPath('#/project-notifications?pcp=open') ?? '',
+      to: '/search?record=notifications&pcp=open',
     },
     {
       name: 'content search, which becomes the inside-documents scope',
@@ -149,6 +171,17 @@ describe('resolveLegacySearch', () => {
   it('drops a sort the documents tab cannot honour', () => {
     expect(resolved('/search?dataset=Document&sortBy=-dateAdded')).toBe('/search?record=documents');
   });
+});
+
+describe('searchUrl', () => {
+  it.each(['activities', 'notifications'] as const)(
+    'gives %s a link the search page renders as it stands',
+    (record) => {
+      expect(searchUrl(record)).toBe(`/search?record=${record}`);
+      // A link that needed a rewrite would bounce the reader through a redirect on every click.
+      expect(resolved(searchUrl(record))).toBeNull();
+    },
+  );
 });
 
 describe('hashToPath', () => {

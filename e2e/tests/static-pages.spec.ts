@@ -1,27 +1,17 @@
-import { test, expect, type Page } from '../support/fixtures';
+import { test, expect } from '../support/fixtures';
 import {
   ready,
   recordApiCalls,
   checkBaseline,
-  waitForSearch,
-  total,
-  pageCount,
   isTopNewsUrl,
   topNewsRows,
 } from '../support/helpers';
 
 /**
- * Types `keyword` into the box one character at a time and resolves on the search request the
- * typing itself fires, without pressing Enter.
+ * The static content pages and the home page. The activities and project-notification lists used
+ * to live here too; they are record types on /search now, covered by `search.spec.ts`, and their
+ * old addresses by `routing.spec.ts`.
  */
-async function typeAhead(page: Page, keyword: string, dataset: string): Promise<void> {
-  const typed = page.waitForRequest(
-    (r) => r.url().includes(`dataset=${dataset}`) && r.url().includes(`keywords=${keyword}`),
-    { timeout: 30_000 },
-  );
-  await page.getByPlaceholder('Type keyword to search').pressSequentially(keyword, { delay: 100 });
-  await typed;
-}
 
 test.describe('content pages', () => {
   const HEADINGS: [string, string][] = [
@@ -89,74 +79,5 @@ test.describe('home', () => {
     await ready(page);
     await expect(page.locator('#tableTop tbody tr')).toHaveCount(active.length);
     await expect(page.locator('#tableTop tbody tr').first()).toContainText(active[0].headline);
-  });
-});
-
-test.describe('news', () => {
-  test('lists activities with a headline/date table', async ({ page }) => {
-    const calls = recordApiCalls(page);
-    const search = waitForSearch(page, 'RecentActivity');
-    await page.goto('/news');
-    const env = await search;
-    await ready(page);
-
-    await expect(
-      page.getByRole('heading', { level: 1, name: 'Activities & Updates' }),
-    ).toBeVisible();
-    await expect(page.getByRole('columnheader', { name: /Headline/ })).toBeVisible();
-    await expect(page.getByRole('columnheader', { name: /Date/ })).toBeVisible();
-
-    const rows = page.locator('table[aria-label="table-template"] tbody tr');
-    await expect(rows).toHaveCount(Math.min(10, total(env)));
-    await expect(rows.first()).toContainText(env.searchResults[0].headline.trim());
-    // An activity whose project was never mirrored comes back with `project: null`, and the card
-    // then renders no project line, so the name is read off a row that carries one.
-    const withProject = env.searchResults.findIndex((a: any) => a.project?.name);
-    expect(withProject, 'no activity on this environment carries a project').toBeGreaterThan(-1);
-    await expect(rows.nth(withProject)).toContainText(env.searchResults[withProject].project.name);
-
-    checkBaseline('news', calls);
-  });
-
-  test('searches the activities list as the user types', async ({ page }) => {
-    await page.goto('/news');
-    await ready(page);
-
-    await typeAhead(page, 'pe', 'RecentActivity');
-
-    expect(new URL(page.url()).searchParams.get('keywords')).toBe('pe');
-  });
-});
-
-test.describe('project notifications', () => {
-  test('lists notifications with per-row Details/Documents tabs', async ({ page }) => {
-    const search = waitForSearch(page, 'ProjectNotification');
-    await page.goto('/project-notifications');
-    const env = await search;
-    await ready(page);
-
-    await expect(
-      page.getByRole('heading', { level: 1, name: 'Project Notifications in British Columbia' }),
-    ).toBeVisible();
-
-    const rows = page.locator('table[aria-label="table-template"] tbody tr');
-    await expect(rows).toHaveCount(Math.min(10, total(env)));
-    // The row title is upper-cased by CSS, so match the API value case-insensitively.
-    const name = env.searchResults[0].name.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    await expect(rows.first()).toContainText(new RegExp(name, 'i'));
-    await expect(rows.first().getByRole('tab', { name: /Details/ })).toBeVisible();
-    await expect(rows.first().getByRole('tab', { name: 'Documents' })).toBeVisible();
-
-    const counts = await pageCount(page);
-    expect(counts.total).toBe(total(env));
-  });
-
-  test('searches the notifications list as the user types', async ({ page }) => {
-    await page.goto('/project-notifications');
-    await ready(page);
-
-    await typeAhead(page, 'mi', 'ProjectNotification');
-
-    expect(new URL(page.url()).searchParams.get('keywords')).toBe('mi');
   });
 });

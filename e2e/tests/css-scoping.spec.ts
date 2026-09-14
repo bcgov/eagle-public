@@ -39,16 +39,6 @@ test('home activity cards keep full-width, left-aligned body copy', async ({ pag
   expect(await styleOf(page, '.bg-faded p', 'max-width')).toBe('780px');
 });
 
-test('news activity cells keep the card padding, and the date cell the table padding', async ({
-  page,
-}) => {
-  await page.goto('/news');
-  await ready(page);
-  expect(await styleOf(page, 'td.activity-card', 'padding-top')).toBe('20px');
-  expect(await styleOf(page, 'td.activity-card__date', 'padding-top')).toBe('12px');
-  expect(await styleOf(page, 'td.activity-card__date', 'color')).toBe('rgb(73, 73, 73)');
-});
-
 test('the comment period hero spans the page', async ({ page, request }) => {
   const cp = await latestCommentPeriod(request);
 
@@ -121,12 +111,4 @@ test('the project panel map is not laid out like the full-page map', async ({ pa
   await ready(page);
   expect(await styleOf(page, '.map-container', 'position')).toBe('relative');
   expect(await styleOf(page, '.map-container', 'height')).toBe('192px');
-});
-
-test('the notification Engagement panel is not padded like a detail field block', async ({
-  page,
-}) => {
-  await page.goto('/project-notifications');
-  await ready(page);
-  expect(await styleOf(page, '.pn-info-block.tab-section', 'padding-left')).toBe('0px');
 });

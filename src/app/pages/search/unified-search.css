@@ -108,6 +108,14 @@
   margin-bottom: var(--layout-margin-medium);
 }
 
+/* The site-wide subscribe band. The design has no slot for it on this tab, so it sits under the
+   pills, right-aligned, where it pushes nothing else sideways. */
+.unified-search .unified-search__subscribe {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--layout-margin-medium);
+}
+
 .unified-search .unified-search__types {
   display: flex;
   flex-wrap: wrap;

@@ -115,7 +115,7 @@ function renderComments(path = '/p/proj1/cp/cp1/details') {
     { path: '/p/:projId/cp/:commentPeriodId/details', Component: Comments },
     { path: '/pn/:projId/cp/:commentPeriodId/details', Component: Comments },
     { path: '/p/:projId', element: <h1>Project page</h1> },
-    { path: '/project-notifications', element: <h1>Notifications page</h1> },
+    { path: '/search', element: <h1>Search page</h1> },
   ]).router;
 }
 
@@ -255,7 +255,9 @@ describe('comments', () => {
     expect(sent.some((entry) => entry.url.startsWith('/demi-projects/pn1'))).toBe(false);
 
     await userEvent.click(screen.getByRole('button', { name: 'Back to Project Notifications' }));
-    expect(router.state.location.pathname).toBe('/project-notifications');
+    expect(router.state.location.pathname + router.state.location.search).toBe(
+      '/search?record=notifications',
+    );
   });
 
   it('offers no way to submit a comment on an open period', async () => {

@@ -15,11 +15,12 @@ const ROUTES = [
   '/compliance-oversight',
   '/process',
   '/search-help',
-  '/news',
-  '/project-notifications',
   '/projects',
   '/search',
   '/search?record=projects',
+  // /news and /project-notifications redirect here now, so their record types stand in for them.
+  '/search?record=activities',
+  '/search?record=notifications',
 ];
 
 for (const route of ROUTES) {

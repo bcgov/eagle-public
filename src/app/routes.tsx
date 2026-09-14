@@ -7,8 +7,6 @@ import { Process } from './pages/process';
 import { ComplianceOversight } from './pages/compliance-oversight';
 import { SearchHelp } from './pages/search-help';
 import { Projects } from './pages/projects/projects';
-import { News } from './pages/news';
-import { ProjectNotifications } from './pages/project-notifications/project-notifications';
 import { UnifiedSearch } from './pages/search/unified-search';
 import { ContentSearch } from './pages/search/content-search';
 import { ProjectPage } from './pages/project/project';
@@ -62,7 +60,7 @@ export const routes: RouteObject[] = [
       { path: 'projects', Component: Projects },
       { path: 'projects-list', loader: legacySearchRedirect('projects') },
 
-      { path: 'project-notifications', Component: ProjectNotifications },
+      { path: 'project-notifications', loader: legacySearchRedirect('notifications') },
 
       {
         path: 'pn/:projId/cp/:commentPeriodId',
@@ -71,7 +69,7 @@ export const routes: RouteObject[] = [
       },
       { path: 'pn/:projId/cp/:commentPeriodId/details', Component: Comments },
 
-      { path: 'news', Component: News },
+      { path: 'news', loader: legacySearchRedirect('activities') },
 
       { path: 'legislation', Component: Legislation },
 

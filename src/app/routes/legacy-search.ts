@@ -88,6 +88,11 @@ function legacySearchQuery(
   return toSearchParams(carried);
 }
 
+/** Where a record type's list lives. Links that used to point at a legacy list page use this. */
+export function searchUrl(record: RecordType): string {
+  return `/search?record=${record}`;
+}
+
 /**
  * A react-router loader that sends one legacy list page to its record type on /search. The
  * redirect is client side, which is all a single page app can do, and the edge already serves

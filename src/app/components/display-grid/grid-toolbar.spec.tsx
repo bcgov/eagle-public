@@ -46,6 +46,21 @@ describe('GridToolbar', () => {
     expect(screen.getByRole('status')).toHaveTextContent('No documents');
   });
 
+  it('says nothing about a total before the first answer lands', () => {
+    render(<GridToolbar noun="documents" page={1} pageSize={25} total={0} loading />);
+
+    expect(screen.getByRole('status')).toBeEmptyDOMElement();
+    expect(screen.queryByText(/No documents/)).not.toBeInTheDocument();
+  });
+
+  it('still counts what is selected while the next rows load', () => {
+    render(
+      <GridToolbar noun="documents" page={1} pageSize={25} total={0} loading selectedCount={3} />,
+    );
+
+    expect(screen.getByRole('status')).toHaveTextContent('3 selected');
+  });
+
   it('counts the applied filters on the More filters button', () => {
     render(
       <GridToolbar

@@ -36,14 +36,43 @@ const PROJECTS = [
     name: 'Alpha Mine',
     dateUpdated: '2025-02-03',
     region: 'Skeena',
+    // Populated here, which is not the bare name a notification carries under the same word.
+    proponent: { _id: 'o1', name: 'Coast Aggregates' },
     // Populated on this read, a bare id on others.
     currentPhaseName: { _id: 'ph1', name: 'Effects Assessment' },
+  },
+];
+
+const ACTIVITIES = [
+  {
+    _id: 'u1',
+    headline: 'Amendment application accepted for review',
+    // Stored as HTML, which the row reads as words.
+    content: '<p>The office accepted the amendment&nbsp;application.</p>',
+    dateAdded: '2026-02-18',
+    type: 'News',
+    project: { _id: 'p1', name: 'Cedar LNG' },
+    documentUrl: '/api/document/d1/fetch/Amendment%20Order.pdf',
+  },
+];
+
+const NOTIFICATIONS = [
+  {
+    _id: 'n1',
+    name: 'Bear Creek Aggregate',
+    type: 'Mines',
+    region: 'Cariboo',
+    pcp: 'open',
+    decision: 'In Progress',
+    description: 'Expansion of an existing sand and gravel operation.',
   },
 ];
 
 let counts: Record<string, number | null>;
 /** Whether the index says it could not sort by `dateUpdated`, which it can only say when asked. */
 let dropsDateSort: boolean;
+/** Whether the activities index says it carries no `documentUrl`, which it only says when asked. */
+let dropsAttachmentFilter: boolean;
 
 function json(body: unknown): Response {
   return new Response(JSON.stringify(body), {
@@ -56,18 +85,42 @@ function envelope(rows: unknown[], total = rows.length, meta: Record<string, unk
   return json([{ searchResults: rows, meta: [{ searchResultsTotal: total, ...meta }] }]);
 }
 
+/** The answer a test is holding open, to look at the page while those rows are in flight. */
+let held: { asks: RegExp; gate: Promise<void>; release: () => void } | null;
+
+/** Holds one dataset's answer back until the returned function lets it through. */
+function holdAnswersFor(dataset: string): () => void {
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  held = { asks: new RegExp(`dataset=${dataset}(&|$)`), gate, release };
+  return () => {
+    held = null;
+    release();
+  };
+}
+
 /** Every request the page makes, answered by what the URL asks for. */
 function stubApi(): ReturnType<typeof vi.fn> {
   const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
     const url = String(input);
+    if (held?.asks.test(url)) await held.gate;
     if (url.includes('/search/counts')) return json([{ counts }]);
     if (url.includes('dataset=List')) return envelope(LISTS);
     if (url.includes('dataset=Organization')) return envelope([]);
+    // Ahead of the Project leg: `dataset=ProjectNotification` starts with the same word.
+    if (url.includes('dataset=ProjectNotification')) return envelope(NOTIFICATIONS);
     if (url.includes('dataset=Project')) {
       const sort = dropsDateSort && url.includes('sortBy=-dateUpdated') ? ['dateUpdated'] : [];
       return envelope(PROJECTS, 1, { dropped: { filter: [], sort } });
     }
     if (url.includes('dataset=Document')) return envelope(documents, documents.length);
+    if (url.includes('dataset=RecentActivity')) {
+      const filter =
+        dropsAttachmentFilter && url.includes('and[documentUrl]') ? ['documentUrl'] : [];
+      return envelope(ACTIVITIES, 1, { dropped: { filter, sort: [] } });
+    }
     return envelope([]);
   });
   vi.stubGlobal('fetch', fetchMock);
@@ -82,6 +135,12 @@ function pill(name: RegExp) {
   return screen.getByRole('button', { name });
 }
 
+/** Turns eagle-notify on for one test, the way a deployed environment's config does. */
+async function withNotifyApi(): Promise<void> {
+  window.__env = { ...window.__env, NOTIFY_API: 'https://notify.example' };
+  await loadConfig();
+}
+
 /** The cell a row shows under a named heading, which is what a reader reads down the column. */
 function cellUnder(row: HTMLElement, heading: string): HTMLElement {
   const index = screen
@@ -93,7 +152,9 @@ function cellUnder(row: HTMLElement, heading: string): HTMLElement {
 beforeEach(async () => {
   counts = { Project: 12, Document: 5 };
   dropsDateSort = false;
+  dropsAttachmentFilter = false;
   documents = DOCUMENTS;
+  held = null;
   window.__env = { logLevel: 4 };
   await loadConfig();
   clearSelection();
@@ -416,17 +477,154 @@ describe('UnifiedSearch', () => {
     expect(typedSearches()[0]).toContain('keywords=coal');
   });
 
-  it('offers no results and no request for a record type that has no config yet', async () => {
+  it('lists updates as rows carrying their project and their file', async () => {
     const user = userEvent.setup();
     const fetchMock = stubApi();
-    renderSearch('/search?record=projects&keywords=fish');
-    await screen.findByText('Alpha Mine');
+    renderSearch('/search');
+    await screen.findByText('Fish habitat report');
 
     await user.click(pill(/^Activities & updates/));
 
-    expect(await screen.findByText('Not available yet')).toBeInTheDocument();
     expect(
-      fetchMock.mock.calls.map(String).filter((url) => url.includes('RecentActivity')),
-    ).toEqual([]);
+      await screen.findByRole('heading', { level: 3, name: ACTIVITIES[0].headline }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('The office accepted the amendment application.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Cedar LNG' })).toHaveAttribute('href', '/p/p1');
+    expect(screen.getByRole('link', { name: 'Amendment Order.pdf' })).toHaveAttribute(
+      'href',
+      ACTIVITIES[0].documentUrl,
+    );
+
+    const asked = fetchMock.mock.calls.map(String).filter((url) => url.includes('RecentActivity&'));
+    expect(asked.at(-1)).toContain('sortBy=-dateAdded');
+  });
+
+  it('drops the attachments filter once the index says it has no documentUrl', async () => {
+    const user = userEvent.setup();
+    dropsAttachmentFilter = true;
+    const { router } = renderSearch('/search?record=activities');
+    await screen.findByRole('heading', { level: 3, name: ACTIVITIES[0].headline });
+
+    await user.click(screen.getByRole('button', { name: /More filters/ }));
+    await user.click(screen.getByLabelText('Documents attached'));
+
+    // The control cannot narrow anything, so it goes, and its value goes out of the URL with it.
+    await waitFor(() =>
+      expect(screen.queryByLabelText('Documents attached')).not.toBeInTheDocument(),
+    );
+    await waitFor(() => expect(router.state.location.search).not.toContain('documentUrl'));
+  });
+
+  it('counts activities as updates, the word the toolbar can put in a sentence', async () => {
+    const user = userEvent.setup();
+    renderSearch('/search');
+    await screen.findByText('Fish habitat report');
+
+    await user.click(pill(/^Activities & updates/));
+
+    expect(await screen.findByText('1–1 of 1 updates')).toBeInTheDocument();
+  });
+
+  it('counts project notifications as notifications', async () => {
+    const user = userEvent.setup();
+    renderSearch('/search');
+    await screen.findByText('Fish habitat report');
+
+    await user.click(pill(/^Project notifications/));
+
+    expect(await screen.findByText('1–1 of 1 notifications')).toBeInTheDocument();
+  });
+
+  it('draws each project notification as a card, with its filters in the panel', async () => {
+    const user = userEvent.setup();
+    renderSearch('/search');
+    await screen.findByText('Fish habitat report');
+
+    await user.click(pill(/^Project notifications/));
+
+    expect(
+      await screen.findByRole('heading', { name: 'BEAR CREEK AGGREGATE' }),
+    ).toBeInTheDocument();
+    // The card keeps the tabs the project notifications page gave each row.
+    expect(screen.getByRole('tab', { name: 'Documents' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Engagement' })).toBeInTheDocument();
+    // A card has no columns, so the column filters are only reachable through the panel.
+    expect(screen.queryAllByRole('columnheader')).toHaveLength(0);
+
+    await user.click(screen.getByRole('button', { name: /More filters/ }));
+
+    expect(screen.getByLabelText('Region')).toBeInTheDocument();
+    expect(screen.getByLabelText('Notification decision')).toBeInTheDocument();
+  });
+
+  it('counts a column filter on the Filters button, which a list has no filter row for', async () => {
+    renderSearch('/search?record=activities&type=News');
+
+    await screen.findByRole('heading', { level: 3, name: ACTIVITIES[0].headline });
+
+    const filters = screen.getByRole('button', { name: /More filters/ });
+    expect(within(filters).getByText('1')).toBeInTheDocument();
+  });
+
+  it('drops the rows of the tab it left rather than drawing them through the new one', async () => {
+    const user = userEvent.setup();
+    const release = holdAnswersFor('ProjectNotification');
+    renderSearch('/search?record=projects');
+    await screen.findByText('Alpha Mine');
+
+    await user.click(pill(/^Project notifications/));
+
+    // A project drawn as a notification card would print its populated proponent as an object.
+    await waitFor(() => expect(screen.queryByText(/alpha mine/i)).not.toBeInTheDocument());
+
+    await act(async () => release());
+
+    expect(
+      await screen.findByRole('heading', { name: 'BEAR CREEK AGGREGATE' }),
+    ).toBeInTheDocument();
+  });
+
+  it('holds the count back until the rows land, rather than reading "No projects"', async () => {
+    const release = holdAnswersFor('Project');
+    renderSearch('/search?record=projects');
+
+    // The grid body is the one live region that announces the wait; the bar stays quiet.
+    expect(await screen.findByText('Loading')).toBeInTheDocument();
+    expect(screen.queryAllByText(/No projects/)).toHaveLength(0);
+
+    await act(async () => release());
+
+    expect(await screen.findByText('1–1 of 1 projects')).toBeInTheDocument();
+  });
+
+  it('offers the sign-up for every project on the updates tab', async () => {
+    await withNotifyApi();
+    renderSearch('/search?record=activities');
+
+    await screen.findByRole('heading', { level: 3, name: ACTIVITIES[0].headline });
+
+    expect(
+      screen.getByText('Get an email when any project publishes an Update.'),
+    ).toBeInTheDocument();
+    const trigger = screen.getByRole('button', { name: 'Subscribe' });
+    // The eagle-notify service the address is filed under: every project, not one of them.
+    expect(trigger.closest('[data-service]')).toHaveAttribute('data-service', 'eao:updates');
+  });
+
+  it('offers no sign-up where the environment has no notify API', async () => {
+    renderSearch('/search?record=activities');
+
+    await screen.findByRole('heading', { level: 3, name: ACTIVITIES[0].headline });
+
+    expect(screen.queryByRole('button', { name: 'Subscribe' })).not.toBeInTheDocument();
+  });
+
+  it('keeps the sign-up off the projects tab, which sends no updates of its own', async () => {
+    await withNotifyApi();
+    renderSearch('/search?record=projects');
+
+    await screen.findByText('Alpha Mine');
+
+    expect(screen.queryByRole('button', { name: 'Subscribe' })).not.toBeInTheDocument();
   });
 });

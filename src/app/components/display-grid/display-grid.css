@@ -559,7 +559,12 @@
   border-bottom: var(--layout-border-width-small) solid var(--theme-gray-30);
 }
 
-.display-grid__list-item:last-child {
+/* The last row keeps its rule: it is the line the pager sits under, the way the last card's is. */
+
+/* The list item is the padded box; the row inside it carries content only. Left to its own
+   padding the row would sit a second 16px in, and the text column would miss the toolbar's. */
+.display-grid__list-item .display-grid__row {
+  padding: 0;
   border-bottom: none;
 }
 

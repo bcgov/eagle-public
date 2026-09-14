@@ -29,9 +29,19 @@
 
 /* === DETAILS TAB === */
 
-.pn-content-wrapper h4 {
+/* Named rather than tag-scoped: the Engagement tab's comment-period cards use `h3` too, and they
+   carry their own type. */
+.pn-content-wrapper h4,
+.pn-content-wrapper .pn-detail-title {
   color: var(--bc-blue);
   font-weight: bold;
+}
+
+/* The notification name is an h3 so it sits at the same level as the other card titles; the type
+   stays at the h4 size it was drawn at. */
+.pn-content-wrapper .pn-detail-title {
+  font-size: var(--bs-font-size-4);
+  line-height: 1.7;
 }
 
 /* These came from project-notification-documents-table-details.component.css, which Angular

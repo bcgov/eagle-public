@@ -1,3 +1,4 @@
+import activities from '../fixtures/unified-search/activities.json';
 import { routeDemiSearch } from '../fixtures/unified-search/demi-search';
 import { test, expect, type Page } from '../support/fixtures';
 import {
@@ -21,6 +22,8 @@ import {
  */
 
 const ROWS = '.display-grid__row';
+/** The body of the update the activities list opens on, long enough to be cut to an excerpt. */
+const LONG_UPDATE = activities.find((update) => update._id === 'u1')?.content ?? '';
 /** The first data cell of a row. A selectable table puts its checkbox cell ahead of it. */
 const NAME = 'td.display-grid__cell:not(.display-grid__cell--select)';
 
@@ -161,6 +164,100 @@ test('the documents pill switches the grid to the document columns', async ({ pa
   await expect(page.locator(ROWS).first().locator(NAME).first()).toHaveText(
     'Amendment #3 Application — Volume 1',
   );
+});
+
+test('the activities pill lists updates as full-width rows', async ({ page }) => {
+  await openSearch(page);
+  await pill(page, 'Activities & updates').click();
+
+  expect(new URL(page.url()).searchParams.get('record')).toBe('activities');
+  // A list has no column headings, and nothing to hide, so no column picker either.
+  await expect(page.getByRole('columnheader')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Columns shown' })).toHaveCount(0);
+
+  const rows = page.locator(ROWS);
+  await expect(rows).toHaveCount(10);
+  // Newest first, which for an update is `dateAdded`.
+  const first = rows.first();
+  await expect(first.getByRole('heading', { level: 3 })).toHaveText(
+    'Amendment #3 application accepted for review',
+  );
+  await expect(first.getByRole('link', { name: 'Cedar LNG' })).toHaveAttribute('href', '/p/p1');
+  await expect(
+    first.getByRole('link', { name: 'Amendment #3 Application — Volume 1.pdf' }),
+  ).toBeVisible();
+});
+
+test('a long update is cut to an excerpt until Show more opens it', async ({ page }) => {
+  await openSearch(page, '/search?record=activities');
+  const first = page.locator(ROWS).first();
+  const body = first.locator('.display-grid__row-body');
+
+  // The cut is by character rather than by line, so the row says the same thing at every width.
+  const excerpt = (await body.innerText()).trim();
+  expect(excerpt).toMatch(/…$/);
+  expect(excerpt.length).toBeLessThan(LONG_UPDATE.length);
+  expect(
+    LONG_UPDATE.startsWith(excerpt.slice(0, -1)),
+    'the excerpt is the head of the update',
+  ).toBe(true);
+
+  await first.getByRole('button', { name: 'Show more' }).click();
+
+  await expect(body).toHaveText(LONG_UPDATE);
+  await expect(first.getByRole('button', { name: 'Show less' })).toHaveAttribute(
+    'aria-expanded',
+    'true',
+  );
+
+  await first.getByRole('button', { name: 'Show less' }).click();
+
+  await expect(body).toHaveText(excerpt);
+  await expect(first.getByRole('button', { name: 'Show more' })).toHaveAttribute(
+    'aria-expanded',
+    'false',
+  );
+});
+
+test('the attachments filter keeps only the updates that carry a document', async ({ page }) => {
+  await openSearch(page, '/search?record=activities');
+  await expect(page.locator(ROWS)).toHaveCount(10);
+
+  await page.getByRole('button', { name: /More filters/ }).click();
+  const attached = page.getByRole('checkbox', { name: 'Documents attached' });
+  /* `click`, not `check`: the box is controlled by the URL, which is written a tick after the
+     click, so `check`'s own read of the state lands in between. */
+  await attached.click();
+
+  await expect(attached).toBeChecked();
+  expect(new URL(page.url()).searchParams.get('documentUrl')).toBe('true');
+  await expect(page.locator(ROWS)).toHaveCount(9);
+});
+
+test('the notifications pill draws one card per notification', async ({ page }) => {
+  await openSearch(page);
+  await pill(page, 'Project notifications').click();
+
+  expect(new URL(page.url()).searchParams.get('record')).toBe('notifications');
+  await expect(page.locator(ROWS)).toHaveCount(8);
+  const first = page.locator(ROWS).first();
+  // The card names the notification in its open Details tab; the other tab panels stay hidden.
+  await expect(first.getByRole('heading', { level: 3 })).toHaveText('SKEENA MODULAR HOUSING WORKS');
+  await expect(first.getByRole('tab', { name: 'Documents' })).toBeVisible();
+});
+
+test('a notification filter lives in the panel, because a card has no filter row', async ({
+  page,
+}) => {
+  await openSearch(page, '/search?record=notifications');
+  await expect(page.getByRole('columnheader')).toHaveCount(0);
+
+  await page.getByRole('button', { name: /More filters/ }).click();
+  await page.getByLabel('Notification decision').selectOption('In Progress');
+
+  expect(new URL(page.url()).searchParams.get('decision')).toBe('In Progress');
+  await expect(page.locator(ROWS)).toHaveCount(4);
+  expect((await gridCount(page)).total).toBe(4);
 });
 
 test('selecting a document offers it for download', async ({ page }) => {
