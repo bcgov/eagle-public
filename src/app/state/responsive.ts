@@ -8,7 +8,8 @@ const TABLET =
 const WEB =
   '(min-width: 840px) and (orientation: portrait), (min-width: 1280px) and (orientation: landscape)';
 
-function useMediaQuery(query: string): boolean {
+/** Live answer to one media query. SSR and any environment without `matchMedia` read false. */
+export function useMediaQuery(query: string): boolean {
   const subscribe = useCallback(
     (onChange: () => void) => {
       const list = window.matchMedia(query);

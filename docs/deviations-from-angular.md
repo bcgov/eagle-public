@@ -145,3 +145,37 @@ deviations. The deviations the pass turned up are below.
 - table: the pointer cursor is limited to rows that answer a click (`clickable-row`, `selectable-row`). It used to sit on every row of every highlighted table, including tables where a click does nothing.
 - layout/site-footer: the footer follows the B.C. Design System footer: land acknowledgement band, BC Gov horizontal logo, contact block, the seven standard gov.bc.ca links and a copyright line. Angular shipped a blue bar carrying Home, Copyright, Disclaimer, Privacy and Accessibility. Two EAO variations from the design system: Admin Login stays as the last menu link; the content area keeps the EPIC blue (`--bs-secondary`) with white text and the reverse BC mark instead of white. Home points at gov.bc.ca rather than the site root, as the design system has it. The map page shows no site footer at any width: its fixed-viewport shell would give the footer's height to the map.
 - layout/site-header: the masthead follows the EPIC design kit header (`.eao-header`, a dark blue bar under a gold rule) so it matches the site footer and the other EPIC services. It carries six things, left to right: the reverse BC mark and "EPIC", both linking home, then Map Explorer, Search, Contact Us and Staff Login. Angular shipped a Bootstrap navbar whose "Project Information" and "The EA Process" dropdowns held List of Projects, Project Notifications, All Documents, Legislation, Process & Procedures, Compliance Oversight and Dispute Resolution. Every one of those pages stays; the homepage and the About cards are the way to them. Staff Login opens eagle-admin in a new tab, as the footer's Admin Login does, because the public site has no sign-in of its own. Below 768px the links collapse behind a Menu button and stack in flow under the bar. The masthead is no longer fixed to the top of the window, so it scrolls away with the page.
+
+## URLs
+
+The four Angular list pages — the project list, document search, news and project notifications —
+become one `/search` page with a `record` param. Documents is the record type the page opens on,
+which is what a bare `/search` listed under Angular. The old addresses still work: each one
+redirects on arrival, keeping the keyword, the page, the page size and its own filters. `dataset`
+is dropped, because the record type now says which dataset to read. A `sortBy` naming a column the new tab
+cannot sort by is dropped too, so the page falls back to its own default instead of asking the API
+for an order it would reject. Any other param is dropped.
+
+| Old address | Lands on | |
+|---|---|---|
+| `/projects-list` | `/search?record=projects` | live |
+| `/search`, with or without document params | `/search?record=documents` | live |
+| `/#/<any of the above>` | the same path without the `#`, then the row above | live |
+| `/search/content` | `/search?record=documents&scope=inside` | planned, the inside-document scope is not built yet |
+| `/news` | `/search?record=activities` | planned, the activities tab is not built yet |
+| `/project-notifications` | `/search?record=notifications` | planned, the notifications tab is not built yet |
+| `/search-help` | unchanged | live |
+
+The planned rows still render their own pages. The mapping is written and covered by unit tests, so
+each one becomes a redirect in the change that builds its tab.
+
+Filters carried, by record type: projects `type`, `eacDecision`, `proponent`, `region`,
+`CEAAInvolvement`, `currentPhaseName`, `decisionDateStart`, `decisionDateEnd`; documents
+`milestone`, `documentAuthorType`, `type`, `projectPhase`, `datePostedStart`, `datePostedEnd`;
+project notifications `type`, `region`, `pcp`, `decision`; activities none.
+
+The redirect happens in the browser, which is all a single page app can do. The edge serves
+`index.html` for every path, so a shared link reaches the app and the route loader rewrites it
+before anything renders. The old hash addresses are handled in the app shell: a `#/` hash becomes a
+real path, and the route loaders take it from there. `/search/content` keeps its own page for now,
+still gated on the CONTENT_SEARCH flag, until the inside-document scope lands on the documents tab.

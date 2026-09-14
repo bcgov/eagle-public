@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest';
-import { contentSearchLoader, routes } from './routes';
+import { contentSearchLoader, routes, searchLoader } from './routes';
 import { loadConfig } from './config/config';
 
 async function configureWith(contentSearch: boolean): Promise<void> {
@@ -10,6 +10,45 @@ async function configureWith(contentSearch: boolean): Promise<void> {
 function findRoute(path: string) {
   return routes[0].children?.find((route) => route.path === path);
 }
+
+async function loaderLocation(path: string, url: string): Promise<string | null> {
+  const response = await (findRoute(path)!.loader as any)({ request: new Request(url) });
+  return response ? response.headers.get('Location') : null;
+}
+
+describe('the project list route', () => {
+  it('sends /projects-list to unified search instead of rendering a page of its own', async () => {
+    expect(
+      await loaderLocation(
+        'projects-list',
+        'http://localhost/projects-list?keywords=coal&currentPage=2',
+      ),
+    ).toBe('/search?record=projects&keywords=coal&currentPage=2');
+    expect(findRoute('projects-list')?.Component).toBeUndefined();
+  });
+});
+
+describe('searchLoader', () => {
+  it('reads an Angular /search as documents when it carries a document param', async () => {
+    expect(
+      await loaderLocation('search', 'http://localhost/search?keywords=coal&milestone=m1'),
+    ).toBe('/search?record=documents&keywords=coal&milestone=m1');
+  });
+
+  it('reads an Angular /search with no document param as documents, the tab it opens on', async () => {
+    expect(await loaderLocation('search', 'http://localhost/search?keywords=coal')).toBe(
+      '/search?record=documents&keywords=coal',
+    );
+  });
+
+  it('leaves a new-style /search address to the page', async () => {
+    expect(
+      await searchLoader({
+        request: new Request('http://localhost/search?record=documents&keywords=coal'),
+      } as any),
+    ).toBeNull();
+  });
+});
 
 describe('contentSearchLoader', () => {
   const original = window.__env;

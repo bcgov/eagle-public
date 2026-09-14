@@ -13,7 +13,8 @@ export function columnFiltersForPanel<Row>(columns: GridColumn<Row>[]): Advanced
     const id = column.filterId ?? column.key;
     if (column.filter === 'text') {
       fields.push({ id, label: column.label, kind: 'text', placeholder: column.label });
-    } else if (column.filter === 'year' || column.filter === 'values') {
+      // A date column is not absorbed: the panel already carries that record's date range.
+    } else if (column.filter === 'values') {
       fields.push({ id, label: column.label, kind: 'select', options: column.options ?? [] });
     }
   }

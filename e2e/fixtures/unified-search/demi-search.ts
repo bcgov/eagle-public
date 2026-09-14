@@ -33,14 +33,14 @@ export type Dataset =
 
 const COLLATOR = new Intl.Collator('en-CA', { numeric: true, sensitivity: 'base' });
 
-/** Ids are stable and derived from the fixture id, so a rerun produces byte-identical responses. */
-function withId(row: Row, schemaName: string): Row {
-  return { _id: String(row['id'] ?? ''), _schemaName: schemaName, ...row };
+/** Rows carry their own `_id`; only the collection stamp is added, as demi-search sends one. */
+function withSchema(row: Row, schemaName: string): Row {
+  return { _schemaName: schemaName, ...row };
 }
 
 /** One row per indexed passage: the shape a content-scoped search returns. */
 function chunkRows(): Row[] {
-  const byId = new Map(documents.map((doc) => [doc.id, doc]));
+  const byId = new Map(documents.map((doc) => [doc._id, doc]));
   const rows: Row[] = [];
   for (const [documentId, hits] of Object.entries(
     passages as Record<string, { page: number; text: string }[]>,
@@ -53,8 +53,8 @@ function chunkRows(): Row[] {
         documentId,
         // The document's own metadata travels with the chunk so the row can render without a
         // second lookup, which is what demi-search does.
-        name: doc?.name ?? documentId,
-        date: doc?.date ?? '',
+        name: doc?.displayName ?? documentId,
+        date: doc?.datePosted ?? '',
         type: doc?.type ?? '',
         ordinal: index,
         page: hit.page,
@@ -71,14 +71,22 @@ function chunkRows(): Row[] {
  * is how `listsQueryOptions` consumers group them.
  */
 function listRows(): Row[] {
-  const sources: { type: string; values: string[] }[] = [
-    { type: 'doctype', values: documents.map((d) => d.type) },
+  // `legislation` rides along on the document-type rows, which is where the documents tab reads
+  // the Acts its Legislation filter offers.
+  const legislationByType = new Map(documents.map((d) => [d.type, d.legislation]));
+  const sources: { type: string; values: string[]; legislation?: boolean }[] = [
+    { type: 'doctype', values: documents.map((d) => d.type), legislation: true },
     { type: 'label', values: documents.map((d) => d.milestone) },
-    { type: 'projectPhase', values: documents.map((d) => d.phase) },
-    { type: 'author', values: documents.map((d) => d.author) },
+    {
+      type: 'projectPhase',
+      values: [...documents.map((d) => d.projectPhase), ...projects.map((p) => p.currentPhaseName)],
+    },
+    { type: 'author', values: documents.map((d) => d.documentAuthorType) },
+    { type: 'eaDecisions', values: projects.map((p) => p.eacDecision) },
+    { type: 'ceaaInvolvements', values: projects.map((p) => p.CEAAInvolvement) },
     { type: 'region', values: projects.map((p) => p.region) },
     { type: 'type', values: projects.map((p) => p.type) },
-    { type: 'activityKind', values: activities.map((a) => a.kind) },
+    { type: 'activityKind', values: activities.map((a) => a.type) },
     { type: 'notificationRegion', values: notifications.map((n) => n.region) },
     { type: 'notificationProjectType', values: notifications.map((n) => n.type) },
   ];
@@ -96,6 +104,7 @@ function listRows(): Row[] {
         _schemaName: 'List',
         name,
         type: source.type,
+        ...(source.legislation ? { legislation: legislationByType.get(name) } : {}),
       });
     }
   }
@@ -104,27 +113,22 @@ function listRows(): Row[] {
 
 /** Proponents are an org collection in the app, not a free-text project field. */
 function organizationRows(): Row[] {
-  const seen: string[] = [];
-  for (const project of projects) {
-    if (!seen.includes(project.proponent)) seen.push(project.proponent);
-  }
-  return seen.sort(COLLATOR.compare).map((name, index) => ({
-    _id: `org-${index + 1}`,
-    _schemaName: 'Organization',
-    name,
-  }));
+  const byId = new Map(projects.map((project) => [project.proponent._id, project.proponent.name]));
+  return [...byId.entries()]
+    .sort((a, b) => COLLATOR.compare(a[1], b[1]))
+    .map(([_id, name]) => ({ _id, _schemaName: 'Organization', name }));
 }
 
 export function rowsFor(dataset: Dataset): Row[] {
   switch (dataset) {
     case 'Project':
-      return projects.map((row) => withId(row, 'Project'));
+      return projects.map((row) => withSchema(row, 'Project'));
     case 'Document':
-      return documents.map((row) => withId(row, 'Document'));
+      return documents.map((row) => withSchema(row, 'Document'));
     case 'RecentActivity':
-      return activities.map((row) => withId(row, 'RecentActivity'));
+      return activities.map((row) => withSchema(row, 'RecentActivity'));
     case 'ProjectNotification':
-      return notifications.map((row) => withId(row, 'ProjectNotification'));
+      return notifications.map((row) => withSchema(row, 'ProjectNotification'));
     case 'DocumentChunk':
       return chunkRows();
     case 'List':
@@ -168,16 +172,79 @@ export function filterGroups(params: URLSearchParams): Map<string, string[]> {
   return groups;
 }
 
+/**
+ * The label a dropdown value stands for. Option values are `List` and `Organization` ids
+ * (`toOptions` in `types/record-type.ts`), while a record row carries the label itself for every
+ * field but `proponent`, which carries the organization. Real demi-search does this server side by
+ * filtering the index's `<field>Id` companion (`eagle-query.js` aliases `type` to `typeId` and so
+ * on); resolving the id here lands on the same rows.
+ */
+let optionLabels: Map<string, string> | null = null;
+function labelFor(value: string): string | undefined {
+  optionLabels ??= new Map(
+    [...listRows(), ...organizationRows()].map((row) => [String(row['_id']), String(row['name'])]),
+  );
+  return optionLabels.get(value);
+}
+
+/** What a filter compares against: an id-bearing object answers with its own `_id`. */
+function comparableText(value: unknown): string {
+  if (value && typeof value === 'object') {
+    const record = value as { _id?: unknown; name?: unknown };
+    return String(record._id ?? record.name ?? '');
+  }
+  return typeof value === 'boolean' ? String(value) : String(value ?? '');
+}
+
+/** `and[<field>Start]` and `and[<field>End]` are the generic date range, inclusive at both ends. */
+const RANGE_BOUND = /^(.+)(Start|End)$/;
+
 function passesFilters(row: Row, groups: Map<string, string[]>): boolean {
   for (const [key, values] of groups) {
-    const actual = row[key];
-    const asText = typeof actual === 'boolean' ? String(actual) : String(actual ?? '');
-    if (!values.some((value) => value.toLowerCase() === asText.toLowerCase())) return false;
+    const range = RANGE_BOUND.exec(key);
+    if (range && row[range[1] as string] !== undefined) {
+      const actual = comparableText(row[range[1] as string]);
+      // ISO dates, so a string comparison is a date comparison.
+      const outside = values.some((bound) =>
+        range[2] === 'Start' ? actual < bound : actual > bound,
+      );
+      if (outside) return false;
+      continue;
+    }
+    const asText = comparableText(row[key]);
+    const hit = values.some(
+      (value) =>
+        value.toLowerCase() === asText.toLowerCase() ||
+        labelFor(value)?.toLowerCase() === asText.toLowerCase(),
+    );
+    if (!hit) return false;
   }
   return true;
 }
 
-/** `sortBy=-date` is descending, `+date`/`date` ascending. Ties fall through to the next key. */
+/**
+ * Fields the query named that this dataset does not carry, which is what `meta[0].dropped` reports
+ * and what `types/projects.ts#resolveSort` reads before it picks a sort.
+ */
+function droppedFields(rows: Row[], groups: Map<string, string[]>, sortKeys: string[]): string[] {
+  const carried = new Set(rows.flatMap((row) => Object.keys(row)));
+  const named = [
+    ...[...groups.keys()].map((key) => {
+      const range = RANGE_BOUND.exec(key);
+      return range && carried.has(range[1] as string) ? (range[1] as string) : key;
+    }),
+    ...sortKeys.map((key) => key.replace(/^[+-]/, '')),
+  ];
+  return [...new Set(named)].filter((field) => !carried.has(field));
+}
+
+/**
+ * `sortBy=-date` is descending, `+date`/`date` ascending. Ties fall through to the next key.
+ *
+ * The key is the record's own field. demi-search swaps `displayName` for the index's
+ * `displayNameSort` before it sorts, but that alias never reaches the client, so nothing here
+ * needs it.
+ */
 export function sortRows(rows: Row[], sortKeys: string[]): Row[] {
   if (sortKeys.length === 0) return rows;
   return rows.slice().sort((a, b) => {
@@ -193,7 +260,7 @@ export function sortRows(rows: Row[], sortKeys: string[]): Row[] {
 
 export interface SearchAnswer {
   searchResults: Row[];
-  meta: { searchResultsTotal: number }[];
+  meta: { searchResultsTotal: number; dropped: string[] }[];
 }
 
 /** The whole query pipeline, exported so a unit test can drive it without a browser. */
@@ -204,7 +271,8 @@ export function answerSearch(params: URLSearchParams): SearchAnswer {
   // `searchKeywords` emits one `sortBy` per key, primary first.
   const sortKeys = params.getAll('sortBy').filter(Boolean);
 
-  const matched = rowsFor(dataset)
+  const all = rowsFor(dataset);
+  const matched = all
     .filter((row) => keywordHit(row, keywords))
     .filter((row) => passesFilters(row, groups));
   const sorted = sortRows(matched, sortKeys);
@@ -218,7 +286,7 @@ export function answerSearch(params: URLSearchParams): SearchAnswer {
 
   return {
     searchResults: sorted.slice(start, start + pageSize),
-    meta: [{ searchResultsTotal: sorted.length }],
+    meta: [{ searchResultsTotal: sorted.length, dropped: droppedFields(all, groups, sortKeys) }],
   };
 }
 

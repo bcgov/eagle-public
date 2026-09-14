@@ -77,6 +77,22 @@ describe('FilterRow', () => {
     expect(onChange).toHaveBeenCalledWith('name', 'cedar');
   });
 
+  it('renders the text cell as a capped, unassisted text box', () => {
+    renderRow();
+    const box = screen.getByLabelText('Filter by Name');
+
+    expect(box).toHaveAttribute('type', 'text');
+    expect(box).toHaveAttribute('autocomplete', 'off');
+    expect(box).toHaveAttribute('maxlength', '200');
+    expect(box).toHaveAttribute('placeholder', 'Name');
+  });
+
+  it('shows a stored value the URL split on its comma as the one name that was typed', () => {
+    renderRow({ name: ['Report', ' Volume 2'] });
+
+    expect(screen.getByLabelText('Filter by Name')).toHaveValue('Report, Volume 2');
+  });
+
   it('offers the years newest first under "Any date"', () => {
     renderRow();
 

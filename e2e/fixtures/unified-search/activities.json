@@ -1,179 +1,122 @@
 [
   {
-    "id": "u1",
-    "name": "Amendment #3 application accepted for review",
-    "date": "2026-02-18",
-    "kind": "Amendment",
-    "project": "Cedar LNG",
-    "body": "The Environmental Assessment Office has accepted Cedar LNG Partners LP’s application to amend Environmental Assessment Certificate E23-01. The amendment would change the marine terminal design and extend the construction window by 18 months. A public comment period on the draft Application Information Requirements opens on 11 February 2026 and runs for 30 days. The assessment team will respond to the issues raised in its assessment report, which is published with the decision record.",
-    "docs": [
-      {
-        "name": "Amendment #3 Application — Volume 1.pdf",
-        "meta": "PDF · 4.2 MB"
-      },
-      {
-        "name": "Application Information Requirements — Draft.pdf",
-        "meta": "PDF · 880 KB"
-      }
-    ],
-    "hasDocuments": true
+    "_id": "u1",
+    "headline": "Amendment #3 application accepted for review",
+    "content": "The Environmental Assessment Office has accepted Cedar LNG Partners LP’s application to amend Environmental Assessment Certificate E23-01. The amendment would change the marine terminal design and extend the construction window by 18 months. A public comment period on the draft Application Information Requirements opens on 11 February 2026 and runs for 30 days. The assessment team will respond to the issues raised in its assessment report, which is published with the decision record.",
+    "dateAdded": "2026-02-18",
+    "type": "Amendment",
+    "project": {
+      "_id": "p1",
+      "name": "Cedar LNG"
+    },
+    "documentUrl": "/api/document/d1/fetch/Amendment%20%233%20Application%20%E2%80%94%20Volume%201.pdf"
   },
   {
-    "id": "u2",
-    "name": "Comment period open on draft Application Information Requirements",
-    "date": "2026-02-11",
-    "kind": "Engagement",
-    "project": "Cedar LNG",
-    "body": "Comment on the draft Application Information Requirements, which set out what the proponent must study and report on in its amendment application. Comments are considered by the assessment team and published with the decision record. The period closes at 11:59 pm on 13 March 2026.",
-    "docs": [
-      {
-        "name": "Application Information Requirements — Draft.pdf",
-        "meta": "PDF · 880 KB"
-      }
-    ],
-    "hasDocuments": true
+    "_id": "u2",
+    "headline": "Comment period open on draft Application Information Requirements",
+    "content": "Comment on the draft Application Information Requirements, which set out what the proponent must study and report on in its amendment application. Comments are considered by the assessment team and published with the decision record. The period closes at 11:59 pm on 13 March 2026.",
+    "dateAdded": "2026-02-11",
+    "type": "Engagement",
+    "project": {
+      "_id": "p1",
+      "name": "Cedar LNG"
+    },
+    "documentUrl": "/api/document/d2/fetch/Application%20Information%20Requirements%20%E2%80%94%20Draft.pdf"
   },
   {
-    "id": "u3",
-    "name": "Inspection record published",
-    "date": "2026-01-29",
-    "kind": "Compliance",
-    "project": "Cedar LNG",
-    "body": "Findings from the January site visit are available in the inspection record below. The inspection found the project in compliance with all conditions inspected, with one advisory issued regarding sediment control at the marine terminal laydown area.",
-    "docs": [
-      {
-        "name": "Inspection Record 2026-01-22.pdf",
-        "meta": "PDF · 1.1 MB"
-      }
-    ],
-    "hasDocuments": true
+    "_id": "u3",
+    "headline": "Inspection record published",
+    "content": "Findings from the January site visit are available in the inspection record below. The inspection found the project in compliance with all conditions inspected, with one advisory issued regarding sediment control at the marine terminal laydown area.",
+    "dateAdded": "2026-01-29",
+    "type": "Compliance",
+    "project": {
+      "_id": "p1",
+      "name": "Cedar LNG"
+    },
+    "documentUrl": "/api/document/d3/fetch/Inspection%20Record%202026-01-22.pdf"
   },
   {
-    "id": "u4",
-    "name": "Readiness decision issued",
-    "date": "2026-01-14",
-    "kind": "Decision",
-    "project": "Aspen Solar and Energy Storage",
-    "body": "The Chief Executive Assessment Officer has determined that the project description meets the requirements to proceed to process planning. The reasons for the decision are published with the record, together with the summary of engagement that informed it.",
-    "docs": [
-      {
-        "name": "Readiness Decision and Reasons.pdf",
-        "meta": "PDF · 2.0 MB"
-      },
-      {
-        "name": "Summary of Early Engagement.pdf",
-        "meta": "PDF · 3.4 MB"
-      },
-      {
-        "name": "Detailed Project Description.pdf",
-        "meta": "PDF · 12.6 MB"
-      }
-    ],
-    "hasDocuments": true
+    "_id": "u4",
+    "headline": "Readiness decision issued",
+    "content": "The Chief Executive Assessment Officer has determined that the project description meets the requirements to proceed to process planning. The reasons for the decision are published with the record, together with the summary of engagement that informed it.",
+    "dateAdded": "2026-01-14",
+    "type": "Decision",
+    "project": {
+      "_id": "p3",
+      "name": "Aspen Solar and Energy Storage"
+    },
+    "documentUrl": "/api/document/u4-1/fetch/Readiness%20Decision%20and%20Reasons.pdf"
   },
   {
-    "id": "u5",
-    "name": "Process order issued",
-    "date": "2025-12-03",
-    "kind": "Process",
-    "project": "North Coast Transmission Line",
-    "body": "The order sets out how the assessment will be conducted, which parties participate, and the time limits that apply to each stage of the process. It also confirms the methods the proponent must use to assess effects on caribou habitat.",
-    "docs": [
-      {
-        "name": "Process Order.pdf",
-        "meta": "PDF · 1.8 MB"
-      },
-      {
-        "name": "Assessment Schedule.pdf",
-        "meta": "PDF · 420 KB"
-      }
-    ],
-    "hasDocuments": true
+    "_id": "u5",
+    "headline": "Process order issued",
+    "content": "The order sets out how the assessment will be conducted, which parties participate, and the time limits that apply to each stage of the process. It also confirms the methods the proponent must use to assess effects on caribou habitat.",
+    "dateAdded": "2025-12-03",
+    "type": "Process",
+    "project": {
+      "_id": "p7",
+      "name": "North Coast Transmission Line"
+    },
+    "documentUrl": "/api/document/u5-1/fetch/Process%20Order.pdf"
   },
   {
-    "id": "u6",
-    "name": "Effects assessment begins",
-    "date": "2025-10-22",
-    "kind": "Process",
-    "project": "Ksi Lisims LNG",
-    "body": "The assessment team has begun evaluating the potential effects of the project, working with participating Indigenous nations, technical advisors and local governments. This stage carries a legislated time limit of 150 days.",
-    "docs": [],
-    "hasDocuments": false
+    "_id": "u6",
+    "headline": "Effects assessment begins",
+    "content": "The assessment team has begun evaluating the potential effects of the project, working with participating Indigenous nations, technical advisors and local governments. This stage carries a legislated time limit of 150 days.",
+    "dateAdded": "2025-10-22",
+    "type": "Process",
+    "project": {
+      "_id": "p6",
+      "name": "Ksi Lisims LNG"
+    },
+    "documentUrl": ""
   },
   {
-    "id": "u7",
-    "name": "Certificate issued with 38 conditions",
-    "date": "2025-11-27",
-    "kind": "Decision",
-    "project": "Highland Valley Copper 2040",
-    "body": "Ministers have issued an environmental assessment certificate for the project. The certificate carries 38 legally binding conditions covering water quality, wildlife habitat, air emissions and reclamation. Compliance with each condition is monitored by the Environmental Assessment Office and reported publicly.",
-    "docs": [
-      {
-        "name": "Environmental Assessment Certificate E25-04.pdf",
-        "meta": "PDF · 2.6 MB"
-      },
-      {
-        "name": "Reasons for Ministers’ Decision.pdf",
-        "meta": "PDF · 5.1 MB"
-      },
-      {
-        "name": "Table of Conditions.pdf",
-        "meta": "PDF · 1.3 MB"
-      },
-      {
-        "name": "Assessment Report.pdf",
-        "meta": "PDF · 18.9 MB"
-      }
-    ],
-    "hasDocuments": true
+    "_id": "u7",
+    "headline": "Certificate issued with 38 conditions",
+    "content": "Ministers have issued an environmental assessment certificate for the project. The certificate carries 38 legally binding conditions covering water quality, wildlife habitat, air emissions and reclamation. Compliance with each condition is monitored by the Environmental Assessment Office and reported publicly.",
+    "dateAdded": "2025-11-27",
+    "type": "Decision",
+    "project": {
+      "_id": "p5",
+      "name": "Highland Valley Copper 2040"
+    },
+    "documentUrl": "/api/document/u7-1/fetch/Environmental%20Assessment%20Certificate%20E25-04.pdf"
   },
   {
-    "id": "u8",
-    "name": "Public comment period closed",
-    "date": "2025-09-30",
-    "kind": "Engagement",
-    "project": "Eskay Creek Revitalization",
-    "body": "The comment period on the application closed on 30 September. All submissions are published, and the assessment team will respond to the issues raised in the assessment report.",
-    "docs": [
-      {
-        "name": "Summary of Public Submissions.pdf",
-        "meta": "PDF · 6.7 MB"
-      }
-    ],
-    "hasDocuments": true
+    "_id": "u8",
+    "headline": "Public comment period closed",
+    "content": "The comment period on the application closed on 30 September. All submissions are published, and the assessment team will respond to the issues raised in the assessment report.",
+    "dateAdded": "2025-09-30",
+    "type": "Engagement",
+    "project": {
+      "_id": "p4",
+      "name": "Eskay Creek Revitalization"
+    },
+    "documentUrl": "/api/document/u8-1/fetch/Summary%20of%20Public%20Submissions.pdf"
   },
   {
-    "id": "u9",
-    "name": "Application accepted for review",
-    "date": "2025-07-02",
-    "kind": "Process",
-    "project": "Sukunka Coal",
-    "body": "The application has been accepted as complete and moves into review. The review considers whether the application meets the information requirements set during process planning, and runs to a legislated limit of 180 days.",
-    "docs": [
-      {
-        "name": "EAC Application — Volume 1 of 9.pdf",
-        "meta": "PDF · 22.4 MB"
-      },
-      {
-        "name": "Acceptance Letter.pdf",
-        "meta": "PDF · 240 KB"
-      }
-    ],
-    "hasDocuments": true
+    "_id": "u9",
+    "headline": "Application accepted for review",
+    "content": "The application has been accepted as complete and moves into review. The review considers whether the application meets the information requirements set during process planning, and runs to a legislated limit of 180 days.",
+    "dateAdded": "2025-07-02",
+    "type": "Process",
+    "project": {
+      "_id": "p8",
+      "name": "Sukunka Coal"
+    },
+    "documentUrl": "/api/document/u9-1/fetch/EAC%20Application%20%E2%80%94%20Volume%201%20of%209.pdf"
   },
   {
-    "id": "u10",
-    "name": "Enforcement action concluded",
-    "date": "2025-05-21",
-    "kind": "Compliance",
-    "project": "Tilbury Phase 2 LNG Expansion",
-    "body": "The compliance and enforcement branch has closed its file on the sediment control matter reported in March. The proponent completed the required remediation and reporting, and no further action is planned.",
-    "docs": [
-      {
-        "name": "Enforcement Record 2025-05-21.pdf",
-        "meta": "PDF · 760 KB"
-      }
-    ],
-    "hasDocuments": true
+    "_id": "u10",
+    "headline": "Enforcement action concluded",
+    "content": "The compliance and enforcement branch has closed its file on the sediment control matter reported in March. The proponent completed the required remediation and reporting, and no further action is planned.",
+    "dateAdded": "2025-05-21",
+    "type": "Compliance",
+    "project": {
+      "_id": "p9",
+      "name": "Tilbury Phase 2 LNG Expansion"
+    },
+    "documentUrl": "/api/document/u10-1/fetch/Enforcement%20Record%202025-05-21.pdf"
   }
 ]

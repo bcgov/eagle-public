@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ValuePicker } from './value-picker';
 import type { ValueOption } from './types';
@@ -68,6 +68,36 @@ describe('ValuePicker', () => {
 
     await user.click(screen.getByRole('checkbox', { name: 'Map' }));
     expect(onChange).toHaveBeenCalledWith(['report', 'map']);
+  });
+
+  it('calls the popover what it is, and names it only while it exists', async () => {
+    const user = userEvent.setup();
+    renderPicker();
+    const button = screen.getByRole('button', { name: 'Filter by Type' });
+
+    // A group of checkboxes is not a listbox, and there is nothing to control while it is shut.
+    expect(button).toHaveAttribute('aria-haspopup', 'dialog');
+    expect(button).not.toHaveAttribute('aria-controls');
+
+    await user.click(button);
+
+    const popover = screen.getByRole('group', { name: 'Filter by Type' });
+    expect(popover.id).not.toBe('');
+    expect(button).toHaveAttribute('aria-controls', popover.id);
+  });
+
+  it('heads the open list with the column it filters, and is named by it', async () => {
+    const user = userEvent.setup();
+    renderPicker();
+
+    await user.click(screen.getByRole('button', { name: 'Filter by Type' }));
+
+    const popover = screen.getByRole('group', { name: 'Filter by Type' });
+    const head = within(popover).getByText('Filter by Type');
+    expect(popover).toHaveAttribute('aria-labelledby', head.id);
+    expect(popover).not.toHaveAttribute('aria-label');
+    const first = screen.getByRole('checkbox', { name: 'Letter' });
+    expect(head.compareDocumentPosition(first) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it('opens below the button when there is room', async () => {
@@ -147,7 +177,11 @@ describe('ValuePicker', () => {
     const onChange = renderPicker(['report', 'map']);
 
     await user.click(screen.getByRole('button', { name: 'Filter by Type' }));
-    await user.click(screen.getByRole('button', { name: 'Clear' }));
+    const clear = screen.getByRole('button', { name: 'Clear Type' });
+    // Several pickers sit in one row, so "Clear" alone does not say which one.
+    expect(clear).toHaveTextContent('Clear');
+
+    await user.click(clear);
 
     expect(onChange).toHaveBeenCalledWith([]);
   });
@@ -158,7 +192,7 @@ describe('ValuePicker', () => {
 
     await user.click(screen.getByRole('button', { name: 'Filter by Type' }));
 
-    expect(screen.queryByRole('button', { name: 'Clear' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Clear Type' })).not.toBeInTheDocument();
   });
 
   it('hands a long list to the typeahead instead of a wall of checkboxes', async () => {

@@ -17,9 +17,9 @@ const ROUTES = [
   '/search-help',
   '/news',
   '/project-notifications',
-  '/projects-list',
   '/projects',
   '/search',
+  '/search?record=projects',
 ];
 
 for (const route of ROUTES) {
@@ -27,7 +27,7 @@ for (const route of ROUTES) {
     await page.goto(route);
     await ready(page);
 
-    expect(new URL(page.url()).pathname).toBe(route === '/' ? '/' : route);
+    expect(new URL(page.url()).pathname).toBe(new URL(route, page.url()).pathname);
 
     const { skipLinks } = await expectA11ySmoke(page);
     // Recorded, not asserted: prod ships no skip link on any route.

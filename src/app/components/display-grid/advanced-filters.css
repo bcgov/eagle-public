@@ -26,19 +26,17 @@
   cursor: pointer;
 }
 
+/* A field label, not a caption: it reads at the same weight and size as the panel's own heading,
+   so a panel of eight fields is a list of questions rather than a wall of small capitals. */
 .display-grid .display-grid__panel-label {
   display: block;
   margin-bottom: var(--layout-margin-hair);
-  font: var(--typography-bold-label);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--typography-color-secondary);
+  font: var(--typography-bold-small-body);
+  color: var(--typography-color-primary);
 }
 
 .display-grid .display-grid__panel-format {
   font: var(--typography-regular-label);
-  text-transform: none;
-  letter-spacing: 0;
   color: var(--typography-color-secondary);
 }
 
@@ -47,9 +45,9 @@
   box-sizing: border-box;
   width: 100%;
   height: 40px;
-  padding: 0 var(--layout-padding-small);
-  border: var(--layout-border-width-small) solid var(--theme-gray-50);
-  border-radius: var(--layout-border-radius-medium);
+  padding: 0 var(--layout-padding-xsmall);
+  border: var(--layout-border-width-medium) solid var(--theme-gray-50);
+  border-radius: var(--layout-border-radius-small);
   background: var(--theme-gray-white);
   font: var(--typography-regular-small-body);
   color: var(--typography-color-primary);
