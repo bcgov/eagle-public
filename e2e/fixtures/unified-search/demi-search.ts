@@ -255,12 +255,17 @@ function passesFilters(row: Row, groups: Map<string, string[]>): boolean {
   return true;
 }
 
+/** Every field name some row in the set carries. */
+function carriedFields(rows: Row[]): Set<string> {
+  return new Set(rows.flatMap((row) => Object.keys(row)));
+}
+
 /**
  * Fields the query named that this dataset does not carry, which is what `meta[0].dropped` reports
  * and what `types/projects.ts#resolveSort` reads before it picks a sort.
  */
 function droppedFields(rows: Row[], groups: Map<string, string[]>, sortKeys: string[]): string[] {
-  const carried = new Set(rows.flatMap((row) => Object.keys(row)));
+  const carried = carriedFields(rows);
   const named = [
     ...[...groups.keys()].map((key) => {
       const range = RANGE_BOUND.exec(key);
@@ -272,23 +277,39 @@ function droppedFields(rows: Row[], groups: Map<string, string[]>, sortKeys: str
   return [...new Set(named)].filter((field) => field !== 'score' && !carried.has(field));
 }
 
+/** The record's display name, whatever its dataset calls it: the prototype's `row.name`. */
+function nameOf(row: Row): string {
+  // A chunk row carries no name of its own; the passage list titles it with its document.
+  return String(row['displayName'] ?? row['name'] ?? row['headline'] ?? row['documentName'] ?? '');
+}
+
 /**
- * `sortBy=-date` is descending, `+date`/`date` ascending. Ties fall through to the next key.
+ * `sortBy=-date` is descending, `+date`/`date` ascending. Ties fall through to the next key, and
+ * what is still tied after the last key falls to the name, flipped with that key: the prototype
+ * breaks a tied date the same way, so a descending date puts "Volume 10 of 9" above "Volume 2".
+ *
+ * A key naming a field the dataset does not carry is dropped rather than sorted on, so a chunk
+ * search asking for `-matches` keeps the index's own order: no key left means no $orderby, and
+ * no name tie-break either.
  *
  * The key is the record's own field. demi-search swaps `displayName` for the index's
  * `displayNameSort` before it sorts, but that alias never reaches the client, so nothing here
  * needs it.
  */
 export function sortRows(rows: Row[], sortKeys: string[]): Row[] {
-  if (sortKeys.length === 0) return rows;
+  const carried = carriedFields(rows);
+  const keys = sortKeys.filter((raw) => carried.has(raw.replace(/^[+-]/, '')));
+  if (keys.length === 0) return rows;
+  const last = keys[keys.length - 1] as string;
+  const tieDirection = last.startsWith('-') ? -1 : 1;
   return rows.slice().sort((a, b) => {
-    for (const raw of sortKeys) {
+    for (const raw of keys) {
       const direction = raw.startsWith('-') ? -1 : 1;
       const key = raw.replace(/^[+-]/, '');
       const compared = COLLATOR.compare(String(a[key] ?? ''), String(b[key] ?? '')) * direction;
       if (compared !== 0) return compared;
     }
-    return 0;
+    return COLLATOR.compare(nameOf(a), nameOf(b)) * tieDirection;
   });
 }
 

@@ -34,6 +34,8 @@ export type ControlKey =
   | 'tourNext'
   | 'copyLink'
   | 'toolbar'
+  | 'toolbarStatus'
+  | 'scopeSegment'
   | 'resultsTable'
   | 'sortedHeader'
   | 'chipRow'
@@ -108,6 +110,17 @@ export const SELECTORS: Record<ControlKey, ControlSelector> = {
   toolbar: {
     proto: 'section > div:first-child',
     app: '.display-grid__bar',
+  },
+  // The live region the count renders into; the tour's step list is only as good as this having
+  // answered, since it is the one signal the first search has actually landed.
+  toolbarStatus: {
+    proto: 'section > div:first-child p[role="status"]',
+    app: '.display-grid__bar [role="status"]',
+  },
+  // The container the scope buttons render in, present as soon as the documents tab mounts.
+  scopeSegment: {
+    proto: '[data-tour="scope"]',
+    app: '[data-tour="scope"]',
   },
   resultsTable: { proto: 'table', app: '.display-grid__table' },
   // The 2px sorted marker is an inset box-shadow on the th, not a border.

@@ -273,3 +273,56 @@ test('selecting a document offers it for download', async ({ page }) => {
   await page.getByRole('button', { name: 'Clear selection', exact: true }).click();
   expect(await gridCount(page)).toEqual({ first: 1, last: 18, total: 18 });
 });
+
+function helpLink(page: Page) {
+  return page.getByRole('link', { name: 'Search help' });
+}
+
+test('search help opens over the results and Escape gives the page back', async ({ page }) => {
+  await openSearch(page);
+  await helpLink(page).click();
+
+  const help = page.getByRole('dialog', { name: 'Search help' });
+  await expect(help.getByRole('heading', { name: 'Quotes' })).toBeVisible();
+  await expect(help.getByRole('heading', { name: 'Hyphens' })).toBeVisible();
+  // The long-form page keeps the folder-structure lists this summary does not repeat.
+  await expect(help.getByRole('link', { name: 'Advanced search help' })).toHaveAttribute(
+    'href',
+    '/search-help',
+  );
+
+  await page.keyboard.press('Escape');
+
+  await expect(help).toBeHidden();
+  await expect(helpLink(page)).toBeFocused();
+});
+
+test('the tour walks every control from the keyboard', async ({ page }) => {
+  await openSearch(page);
+  await helpLink(page).click();
+  await page.getByRole('button', { name: 'Take the tour' }).click();
+
+  const card = page.getByRole('dialog', { name: 'One search box' });
+  await expect(card).toBeVisible();
+
+  // Each step lands focus on the card, and Shift+Tab out of it wraps to the last control in it,
+  // which is Next. Seven steps, so Next is pressed six times.
+  for (const step of [1, 2, 3, 4, 5, 6]) {
+    const open = page.getByRole('dialog');
+    // Exact: the card's own count and the announcement beside it both open with this text.
+    await expect(open.getByText(`Step ${step} of 7`, { exact: true })).toBeVisible();
+    await expect(open).toBeFocused();
+    await page.keyboard.press('Shift+Tab');
+    await expect(open.getByRole('button', { name: 'Next' })).toBeFocused();
+    await page.keyboard.press('Enter');
+  }
+
+  const last = page.getByRole('dialog');
+  await expect(last.getByText('Step 7 of 7', { exact: true })).toBeVisible();
+  await expect(last.getByRole('button', { name: 'Done' })).toBeVisible();
+
+  await page.keyboard.press('Escape');
+
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(helpLink(page)).toBeFocused();
+});
