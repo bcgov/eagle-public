@@ -140,7 +140,11 @@ export function ListRow({
                 ) : (
                   <span>{attachment.name}</span>
                 )}
-                <span className="display-grid__row-docs-meta">{attachmentMeta(attachment)}</span>
+                {/* Empty on a record that states no type or size: an empty flex item would still
+                    take a line of its own on a phone. */}
+                {attachmentMeta(attachment) && (
+                  <span className="display-grid__row-docs-meta">{attachmentMeta(attachment)}</span>
+                )}
               </li>
             ))}
           </ul>

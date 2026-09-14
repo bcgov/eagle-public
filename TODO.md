@@ -91,10 +91,10 @@ Phase 2, `/search` projects + documents:
 
 Phase 3, activities + notifications:
 
-- [ ] 3.1 `types/activities.ts` list rows, attachments + spec
-- [ ] 3.2 `types/notifications.ts` headerless + spec; fixture
-- [ ] 3.3 `/news`, `/project-notifications` redirects; home links; old pages and specs removed
-- [ ] 3.4 parity loop passed (state 03 and notifications tab at both widths)
+- [x] 3.1 `types/activities.ts` list rows, attachments + spec (`types/activities.tsx`: meta line, excerpted body and the one file `documentUrl` names; the Documents attached filter removes itself when the index says it has no such field; the toolbar counts these records as "updates")
+- [x] 3.2 `types/notifications.ts` headerless + spec; fixture (cards with the Documents and Engagement tabs the old page had, keyboard-reachable; `ProjectNotification` rows added to the demi-search fixture)
+- [x] 3.3 `/news`, `/project-notifications` redirects; home links; old pages and specs removed (both addresses redirect to `/search`, the home and project links point at the new ones, and the two page components, configs and specs are deleted)
+- [x] 3.4 parity loop passed (state 03 and notifications tab at both widths) (`yarn test:parity` is 67 pass / 0 fail / 16 skip. State 03 needed two changes: the reference is recaptured with one attachment per activity and no type or size beside it, because a `RecentActivity` carries a single `documentUrl`, and the app no longer draws an empty type/size element, which was taking a line of its own on a phone and left the page 8px taller than the design)
 - [ ] 3.5 PR, review, merged, beta on next
 
 Phase 4, inside documents:
@@ -129,6 +129,15 @@ Follow-ups from the phase 2 review, none of them blocking:
 - `list-row.tsx` renders an `<h3>` under the page `h1` with no `h2` in between. Add a results `h2` before activities and notifications ship on the list template.
 - `api.ts:323` concatenates `sortBy` unencoded, so `+name` reaches the wire as ` name`. Encode it once the backend contract is confirmed.
 - Move the column `sortable` flags and the cell renderers out of `unified-search.tsx` into the type configs.
+
+Follow-ups from phase 3, none of them blocking:
+
+- The sort select on a list offers only Newest first and Oldest first. `sortOptionsFor` in `display-grid.tsx` takes the name option from the first column carrying `link`, which on the activities list is the project rather than the update headline, and that column is not sortable.
+- The gold underline under the active tab in `tab-nav.css` measures 1.72:1 against white, below the 3:1 a non-text indicator needs. It is the pattern the whole app uses, so changing it is a site-wide decision rather than a search one.
+- A project notification title is not a link to its project. The old page did not link it either, but the activities rows beside it do.
+- The tab lists in `content-search.tsx:84` and `table-list.tsx:161` do not move focus with the arrow keys and carry no `aria-controls`. Fix them with the `moveFocus` helper in `notification-row.tsx`, moved somewhere both can read it.
+- The Show more button in `list-row.tsx` has no `aria-controls` naming the body it expands.
+- `headerless` does nothing for `template: 'list'`: a list has no head to drop. Either the flag is read there or the list configs stop setting it.
 
 ## Port rules (added 2026-08-27)
 

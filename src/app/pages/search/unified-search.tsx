@@ -528,7 +528,7 @@ export function UnifiedSearch() {
       : advancedFields.map((field) => field.id);
   const advancedCount = panelIds.filter((id) => filters[id] != null).length;
   const filterCount = Object.keys(filters).length;
-  const noun = config.label.toLowerCase();
+  const noun = config.noun ?? config.label.toLowerCase();
 
   function emptyState(): ReactNode {
     if (isError) {

@@ -33,6 +33,7 @@ const COLUMNS: GridColumn<Record<string, unknown>>[] = [
 export const notificationsConfig: RecordTypeConfig = {
   id: 'notifications',
   label: 'Project notifications',
+  noun: 'notifications',
   dataset: RECORD_DATASETS.notifications,
   defaultSort: NOTIFICATIONS_SORT,
   template: 'list',

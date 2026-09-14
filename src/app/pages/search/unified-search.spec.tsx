@@ -489,6 +489,26 @@ describe('UnifiedSearch', () => {
     await waitFor(() => expect(router.state.location.search).not.toContain('documentUrl'));
   });
 
+  it('counts activities as updates, the word the toolbar can put in a sentence', async () => {
+    const user = userEvent.setup();
+    renderSearch('/search');
+    await screen.findByText('Fish habitat report');
+
+    await user.click(pill(/^Activities & updates/));
+
+    expect(await screen.findByText('1–1 of 1 updates')).toBeInTheDocument();
+  });
+
+  it('counts project notifications as notifications', async () => {
+    const user = userEvent.setup();
+    renderSearch('/search');
+    await screen.findByText('Fish habitat report');
+
+    await user.click(pill(/^Project notifications/));
+
+    expect(await screen.findByText('1–1 of 1 notifications')).toBeInTheDocument();
+  });
+
   it('draws each project notification as a card, with its filters in the panel', async () => {
     const user = userEvent.setup();
     renderSearch('/search');

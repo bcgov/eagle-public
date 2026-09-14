@@ -42,6 +42,12 @@ export interface SearchMeta {
 export interface RecordTypeConfig<Row = Record<string, unknown>> {
   id: RecordId;
   label: string;
+  /**
+   * What a count or an empty line calls these records: "10 of 24 updates". The tab label is the
+   * fallback, and reads as a heading rather than as a noun in a sentence for the types that set
+   * this.
+   */
+  noun?: string;
   /** demi-search `dataset=` value. */
   dataset: string;
   defaultSort: string;

@@ -179,6 +179,7 @@ const COLUMNS: GridColumn<Row>[] = [
 export const activitiesConfig: RecordTypeConfig = {
   id: 'activities',
   label: 'Activities & updates',
+  noun: 'updates',
   dataset: RECORD_DATASETS.activities,
   defaultSort: ACTIVITIES_SORT,
   template: 'list',

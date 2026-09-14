@@ -350,6 +350,33 @@ describe('DisplayGrid', () => {
     expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'));
   });
 
+  describe('the list template', () => {
+    /** A list draws its own rows; the grid has no columns to lay out there. */
+    function Row({ row }: { row: Doc }) {
+      return <h3>{row.name}</h3>;
+    }
+
+    it('offers the sort select at full width, where a list has no headings to click', () => {
+      stubNarrow(false);
+      renderGrid({
+        template: 'list',
+        rowComponent: Row,
+        columns: sortableColumns,
+        sort: { key: 'date', dir: 'desc' },
+      });
+
+      expect(screen.getByLabelText('Sort')).toBeInTheDocument();
+    });
+
+    it('leaves the select off a table at full width, whose headings sort it', () => {
+      stubNarrow(false);
+      renderGrid({ columns: sortableColumns, sort: { key: 'date', dir: 'desc' } });
+
+      expect(screen.queryByLabelText('Sort')).not.toBeInTheDocument();
+      expect(screen.getByRole('columnheader', { name: /Date posted/ })).toBeInTheDocument();
+    });
+  });
+
   describe('below the breakpoint', () => {
     it('renders one card per record instead of the table', () => {
       stubNarrow(true);

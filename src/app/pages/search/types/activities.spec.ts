@@ -1,8 +1,12 @@
+import { createElement } from 'react';
 import { describe, it, expect, beforeAll } from 'vitest';
+import { render } from '@testing-library/react';
+import { MemoryRouter } from 'react-router';
 import { fetchData, SearchParamObject } from 'app/api/search';
 import { capturedRequestUrl } from '../../../../test-utils';
 import {
   activitiesConfig,
+  ActivityRow,
   attachmentsFilterDropped,
   attachmentsOf,
   plainText,
@@ -176,5 +180,33 @@ describe('update attachment', () => {
     // Built from parts so no linter rewrites the literal the test is about.
     const unsafe = `${'java'}script:alert(1)`;
     expect(attachmentsOf({ documentUrl: unsafe })).toEqual([]);
+  });
+});
+
+describe('update meta line', () => {
+  /** The row as the feed sends one: a midnight date, a kind, and the project it belongs to. */
+  function renderRow() {
+    return render(
+      createElement(
+        MemoryRouter,
+        null,
+        createElement(ActivityRow, {
+          row: {
+            headline: 'Amendment application accepted',
+            dateAdded: '2026-02-18T00:00:00.000Z',
+            type: 'News',
+            project: { _id: 'p1', name: 'Cedar LNG' },
+          },
+        }),
+      ),
+    );
+  }
+
+  it('dates the update as YYYY-MM-DD, ahead of the kind and the project', () => {
+    const { container } = renderRow();
+
+    expect(container.querySelector('.display-grid__row-meta')?.textContent).toBe(
+      '2026-02-18 · News · Cedar LNG',
+    );
   });
 });
