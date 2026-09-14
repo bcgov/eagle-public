@@ -27,6 +27,7 @@ export type Dataset =
   | 'Document'
   | 'RecentActivity'
   | 'ProjectNotification'
+  | 'CommentPeriod'
   | 'DocumentChunk'
   | 'List'
   | 'Organization';
@@ -129,6 +130,10 @@ export function rowsFor(dataset: Dataset): Row[] {
       return activities.map((row) => withSchema(row, 'RecentActivity'));
     case 'ProjectNotification':
       return notifications.map((row) => withSchema(row, 'ProjectNotification'));
+    // A notification card looks up its own comment periods. The prototype has none, and the row
+    // falls back to the period fields it already carries, so the lookup answers empty.
+    case 'CommentPeriod':
+      return [];
     case 'DocumentChunk':
       return chunkRows();
     case 'List':
@@ -199,8 +204,19 @@ function comparableText(value: unknown): string {
 /** `and[<field>Start]` and `and[<field>End]` are the generic date range, inclusive at both ends. */
 const RANGE_BOUND = /^(.+)(Start|End)$/;
 
+/**
+ * Filters that ask whether a field carries anything rather than what it carries. "Documents
+ * attached" is `and[documentUrl]` non-empty, which is how the plan states it for eagle-demi 0.6.
+ */
+const PRESENCE_FILTERS = new Set(['documentUrl']);
+
 function passesFilters(row: Row, groups: Map<string, string[]>): boolean {
   for (const [key, values] of groups) {
+    if (PRESENCE_FILTERS.has(key)) {
+      const carried = comparableText(row[key]) !== '';
+      if (values.some((value) => (value === 'true') !== carried)) return false;
+      continue;
+    }
     const range = RANGE_BOUND.exec(key);
     if (range && row[range[1] as string] !== undefined) {
       const actual = comparableText(row[range[1] as string]);

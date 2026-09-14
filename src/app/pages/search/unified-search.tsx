@@ -8,6 +8,7 @@ import { getSearchResults } from 'app/api/search';
 import { AdvancedFilters } from 'app/components/display-grid/advanced-filters';
 import { ChipRow, type GridChip } from 'app/components/display-grid/chip-row';
 import { DisplayGrid } from 'app/components/display-grid/display-grid';
+import { columnFiltersForPanel } from 'app/components/display-grid/grid-helpers';
 import { GridToolbar } from 'app/components/display-grid/grid-toolbar';
 import type { ListRowField } from 'app/components/display-grid/list-row';
 import type {
@@ -39,6 +40,7 @@ import {
 import { showToast } from 'app/state/toast';
 import { toWireFilters, yearOptions } from './search-filters';
 import { recordConfig, type RecordTypeConfig, type SearchMeta } from './types';
+import { ATTACHMENTS_FILTER_ID, attachmentsFilterDropped } from './types/activities';
 import { PROJECTS_FALLBACK_SORT, PROJECTS_SORT, resolveSort } from './types/projects';
 import { useSettled } from './use-settled';
 import { useTypeCounts } from './use-type-counts';
@@ -49,19 +51,13 @@ type Row = Record<string, unknown>;
 /** Selection bucket name. The unified page is what `/search` selects documents from. */
 const TABLE_ID = 'search';
 
-/** Pill labels for the record types that have no config yet; the configured ones carry their own. */
-const PENDING_LABELS: Partial<Record<RecordType, string>> = {
-  activities: 'Activities & updates',
-  notifications: 'Project notifications',
-};
-
 /** Inside-document search is Phase 4; until then the control has one option and states the scope. */
 const SCOPE_OPTIONS: { value: SearchScope; label: string }[] = [
   { value: 'names', label: 'Names & details' },
 ];
 
 function recordLabel(record: RecordType): string {
-  return recordConfig(record)?.label ?? PENDING_LABELS[record] ?? record;
+  return recordConfig(record).label;
 }
 
 /** `-datePosted` as the header reads it. */
@@ -233,10 +229,14 @@ export function UnifiedSearch() {
 
   const [panelOpen, setPanelOpen] = useState(false);
 
+  /* The activities tab offers "Documents attached" until a response says the index carries no
+     `documentUrl`, which it can only say once a query has named the field. */
+  const [attachmentsDropped, setAttachmentsDropped] = useState(false);
+
   // The record decides the default sort, which the grid state needs before it can be read.
   const [searchParams] = useSearchParams();
-  const config: RecordTypeConfig | undefined = recordConfig(parseGridParams(searchParams).record);
-  const defaultSort = config?.id === 'projects' ? projectsSort : config?.defaultSort;
+  const config: RecordTypeConfig = recordConfig(parseGridParams(searchParams).record);
+  const defaultSort = config.id === 'projects' ? projectsSort : config.defaultSort;
 
   const {
     state,
@@ -274,16 +274,16 @@ export function UnifiedSearch() {
   const { counts } = useTypeCounts(draft);
 
   const options = useMemo(
-    () => config?.optionsFrom(lists, orgs) ?? {},
+    () => config.optionsFrom(lists, orgs),
     // `optionsFrom` is a property of the config object, so the config identity is the dependency.
     [config, lists, orgs],
   );
 
-  /* Every column of both configured types is sortable in the index, and the dropdown values only
+  /* Every column of every record type is sortable in the index, and the dropdown values only
      exist once the `List` and `Organization` reads land. */
   const columns: GridColumn<Row>[] = useMemo(
     () =>
-      (config?.columns ?? [])
+      config.columns
         .filter((column) => !hiddenColumns.includes(column.key))
         .map((column) => {
           const picks = options[column.filterId ?? column.key] ?? column.options;
@@ -300,10 +300,16 @@ export function UnifiedSearch() {
 
   const advancedFields: AdvancedField[] = useMemo(
     () =>
-      (config?.advancedFields ?? []).map((field) =>
-        field.kind === 'select' ? { ...field, options: options[field.id] ?? field.options } : field,
-      ),
-    [config, options],
+      config.advancedFields
+        // A filter the index cannot honour is taken off the panel rather than left there to
+        // narrow nothing.
+        .filter((field) => !(attachmentsDropped && field.id === ATTACHMENTS_FILTER_ID))
+        .map((field) =>
+          field.kind === 'select'
+            ? { ...field, options: options[field.id] ?? field.options }
+            : field,
+        ),
+    [attachmentsDropped, config, options],
   );
 
   /* The narrow card has room the table never had, so it carries the attributes only the advanced
@@ -327,7 +333,7 @@ export function UnifiedSearch() {
      is written, and the panel's own date bounds keep precedence over it. */
   const yearFilterIds = useMemo(
     () =>
-      (config?.columns ?? [])
+      config.columns
         .filter((column) => column.filter === 'year')
         .map((column) => column.filterId ?? column.key),
     [config],
@@ -336,9 +342,14 @@ export function UnifiedSearch() {
      trimmed before it is sent and stays one chip however many commas it carries. */
   const textFilterIds = useMemo(
     () =>
-      (config?.columns ?? [])
+      config.columns
         .filter((column) => column.filter === 'text')
         .map((column) => column.filterId ?? column.key),
+    [config],
+  );
+  /** The filters a column owns, which a list hands to the panel because it has no filter row. */
+  const columnFilterIds = useMemo(
+    () => columnFiltersForPanel(config.columns).map((field) => field.id),
     [config],
   );
   const wireFilters = useMemo(
@@ -360,7 +371,7 @@ export function UnifiedSearch() {
       runSearch(
         {
           keywords: searchTerm,
-          dataset: config?.dataset ?? '',
+          dataset: config.dataset,
           sortBy,
           currentPage,
           pageSize,
@@ -369,7 +380,6 @@ export function UnifiedSearch() {
         },
         signal,
       ),
-    enabled: config !== undefined,
     placeholderData: keepPreviousData,
   });
 
@@ -384,10 +394,21 @@ export function UnifiedSearch() {
     setProjectsSort(PROJECTS_FALLBACK_SORT);
   }
 
-  // `keepPreviousData` holds the last answer across a record switch, which a type with no config
-  // of its own must not inherit: it asked for nothing, so it shows nothing.
-  const rows = config ? (data?.rows ?? []) : [];
-  const total = config ? (data?.total ?? 0) : 0;
+  /* Same one-way rule as the projects sort: the answer only names `documentUrl` while the query
+     does, so moving back would re-ask with the field the index just refused. */
+  if (record === 'activities' && !attachmentsDropped && attachmentsFilterDropped(data?.meta)) {
+    setAttachmentsDropped(true);
+  }
+
+  useEffect(() => {
+    // The control is gone, so its chip and its URL value would have no way back off the page.
+    if (attachmentsDropped && filters[ATTACHMENTS_FILTER_ID] != null) {
+      setFilter(ATTACHMENTS_FILTER_ID, null);
+    }
+  }, [attachmentsDropped, filters, setFilter]);
+
+  const rows = data?.rows ?? [];
+  const total = data?.total ?? 0;
 
   /* A date column offers every year the record spans, plus whichever year is filtered on, so the
      choice in force never drops out of its own list. */
@@ -401,7 +422,9 @@ export function UnifiedSearch() {
     [columns, filters],
   );
 
-  const selectable = config?.selectable ?? false;
+  const selectable = config.selectable;
+  /** What the column picker offers. A list row draws itself, so it has no column to hide. */
+  const pickableColumns = config.template === 'list' ? undefined : config.columns;
   const selection = useSelection(TABLE_ID);
   const downloadInProgress = useDownloadInProgress();
   const selectedIds = useMemo(() => [...selection.keys()], [selection]);
@@ -449,7 +472,7 @@ export function UnifiedSearch() {
   }
 
   function labelOfFilter(id: string): string {
-    const column = (config?.columns ?? []).find((item) => (item.filterId ?? item.key) === id);
+    const column = config.columns.find((item) => (item.filterId ?? item.key) === id);
     if (column) return column.label;
     return advancedFields.find((field) => field.id === id)?.label ?? id;
   }
@@ -497,22 +520,17 @@ export function UnifiedSearch() {
     clearAll();
   }
 
-  const advancedCount = advancedFields.filter((field) => filters[field.id] != null).length;
+  /* What the Filters button counts. A list has no filter row, so its column filters live in the
+     panel too and belong in its badge. */
+  const panelIds =
+    config.template === 'list'
+      ? [...advancedFields.map((field) => field.id), ...columnFilterIds]
+      : advancedFields.map((field) => field.id);
+  const advancedCount = panelIds.filter((id) => filters[id] != null).length;
   const filterCount = Object.keys(filters).length;
-  const noun = config ? config.label.toLowerCase() : recordLabel(record).toLowerCase();
+  const noun = config.label.toLowerCase();
 
   function emptyState(): ReactNode {
-    if (!config) {
-      return (
-        <span className="unified-search__empty">
-          <span className="unified-search__empty-title">Not available yet</span>
-          <span className="unified-search__empty-detail">
-            {recordLabel(record)} joins the search in a later release. Projects and documents are
-            searchable now.
-          </span>
-        </span>
-      );
-    }
     if (isError) {
       return (
         <span className="unified-search__empty">
@@ -547,7 +565,7 @@ export function UnifiedSearch() {
   }
 
   const scopeControl =
-    config?.id === 'documents' ? (
+    config.id === 'documents' ? (
       <div
         className="unified-search__scope"
         data-tour="scope"
@@ -643,9 +661,9 @@ export function UnifiedSearch() {
         caption={`${recordLabel(record)} matching this search`}
         columns={gridColumns}
         rows={rows}
-        template={config?.template ?? 'grid'}
-        rowComponent={config?.rowComponent}
-        headerless={config?.headerless ?? false}
+        template={config.template}
+        rowComponent={config.rowComponent}
+        headerless={config.headerless}
         loading={isFetching}
         emptyMessage={emptyState()}
         selectable={selectable}
@@ -671,7 +689,7 @@ export function UnifiedSearch() {
             pageSize={pageSize}
             total={total}
             scope={scopeControl}
-            columns={config?.columns}
+            columns={pickableColumns}
             hiddenColumns={hiddenColumns}
             onToggleColumn={(key) =>
               setHiddenColumns(

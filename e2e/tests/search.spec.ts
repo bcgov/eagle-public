@@ -163,6 +163,83 @@ test('the documents pill switches the grid to the document columns', async ({ pa
   );
 });
 
+test('the activities pill lists updates as full-width rows', async ({ page }) => {
+  await openSearch(page);
+  await pill(page, 'Activities & updates').click();
+
+  expect(new URL(page.url()).searchParams.get('record')).toBe('activities');
+  // A list has no column headings, and nothing to hide, so no column picker either.
+  await expect(page.getByRole('columnheader')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Columns shown' })).toHaveCount(0);
+
+  const rows = page.locator(ROWS);
+  await expect(rows).toHaveCount(10);
+  // Newest first, which for an update is `dateAdded`.
+  const first = rows.first();
+  await expect(first.getByRole('heading', { level: 3 })).toHaveText(
+    'Amendment #3 application accepted for review',
+  );
+  await expect(first.getByRole('link', { name: 'Cedar LNG' })).toHaveAttribute('href', '/p/p1');
+  await expect(
+    first.getByRole('link', { name: 'Amendment #3 Application — Volume 1.pdf' }),
+  ).toBeVisible();
+});
+
+test('a long update is clamped until Show more opens it', async ({ page }) => {
+  await openSearch(page, '/search?record=activities');
+  const first = page.locator(ROWS).first();
+  const body = first.locator('.display-grid__row-body');
+
+  await expect(body).toHaveClass(/display-grid__row-body--clamped/);
+  await first.getByRole('button', { name: 'Show more' }).click();
+
+  await expect(body).not.toHaveClass(/display-grid__row-body--clamped/);
+  await expect(first.getByRole('button', { name: 'Show less' })).toHaveAttribute(
+    'aria-expanded',
+    'true',
+  );
+});
+
+test('the attachments filter keeps only the updates that carry a document', async ({ page }) => {
+  await openSearch(page, '/search?record=activities');
+  await expect(page.locator(ROWS)).toHaveCount(10);
+
+  await page.getByRole('button', { name: /More filters/ }).click();
+  const attached = page.getByRole('checkbox', { name: 'Documents attached' });
+  /* `click`, not `check`: the box is controlled by the URL, which is written a tick after the
+     click, so `check`'s own read of the state lands in between. */
+  await attached.click();
+
+  await expect(attached).toBeChecked();
+  expect(new URL(page.url()).searchParams.get('documentUrl')).toBe('true');
+  await expect(page.locator(ROWS)).toHaveCount(9);
+});
+
+test('the notifications pill draws one card per notification', async ({ page }) => {
+  await openSearch(page);
+  await pill(page, 'Project notifications').click();
+
+  expect(new URL(page.url()).searchParams.get('record')).toBe('notifications');
+  await expect(page.locator(ROWS)).toHaveCount(8);
+  const first = page.locator(ROWS).first();
+  await expect(first.getByRole('heading', { level: 4 })).toHaveText('SKEENA MODULAR HOUSING WORKS');
+  await expect(first.getByRole('tab', { name: 'Documents' })).toBeVisible();
+});
+
+test('a notification filter lives in the panel, because a card has no filter row', async ({
+  page,
+}) => {
+  await openSearch(page, '/search?record=notifications');
+  await expect(page.getByRole('columnheader')).toHaveCount(0);
+
+  await page.getByRole('button', { name: /More filters/ }).click();
+  await page.getByLabel('Notification decision').selectOption('In Progress');
+
+  expect(new URL(page.url()).searchParams.get('decision')).toBe('In Progress');
+  await expect(page.locator(ROWS)).toHaveCount(4);
+  expect((await gridCount(page)).total).toBe(4);
+});
+
 test('selecting a document offers it for download', async ({ page }) => {
   await openSearch(page, '/search?record=documents');
   const firstRow = page.locator(ROWS).first();

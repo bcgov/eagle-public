@@ -41,9 +41,36 @@ const PROJECTS = [
   },
 ];
 
+const ACTIVITIES = [
+  {
+    _id: 'u1',
+    headline: 'Amendment application accepted for review',
+    // Stored as HTML, which the row reads as words.
+    content: '<p>The office accepted the amendment&nbsp;application.</p>',
+    dateAdded: '2026-02-18',
+    type: 'News',
+    project: { _id: 'p1', name: 'Cedar LNG' },
+    documentUrl: '/api/document/d1/fetch/Amendment%20Order.pdf',
+  },
+];
+
+const NOTIFICATIONS = [
+  {
+    _id: 'n1',
+    name: 'Bear Creek Aggregate',
+    type: 'Mines',
+    region: 'Cariboo',
+    pcp: 'open',
+    decision: 'In Progress',
+    description: 'Expansion of an existing sand and gravel operation.',
+  },
+];
+
 let counts: Record<string, number | null>;
 /** Whether the index says it could not sort by `dateUpdated`, which it can only say when asked. */
 let dropsDateSort: boolean;
+/** Whether the activities index says it carries no `documentUrl`, which it only says when asked. */
+let dropsAttachmentFilter: boolean;
 
 function json(body: unknown): Response {
   return new Response(JSON.stringify(body), {
@@ -63,11 +90,18 @@ function stubApi(): ReturnType<typeof vi.fn> {
     if (url.includes('/search/counts')) return json([{ counts }]);
     if (url.includes('dataset=List')) return envelope(LISTS);
     if (url.includes('dataset=Organization')) return envelope([]);
+    // Ahead of the Project leg: `dataset=ProjectNotification` starts with the same word.
+    if (url.includes('dataset=ProjectNotification')) return envelope(NOTIFICATIONS);
     if (url.includes('dataset=Project')) {
       const sort = dropsDateSort && url.includes('sortBy=-dateUpdated') ? ['dateUpdated'] : [];
       return envelope(PROJECTS, 1, { dropped: { filter: [], sort } });
     }
     if (url.includes('dataset=Document')) return envelope(documents, documents.length);
+    if (url.includes('dataset=RecentActivity')) {
+      const filter =
+        dropsAttachmentFilter && url.includes('and[documentUrl]') ? ['documentUrl'] : [];
+      return envelope(ACTIVITIES, 1, { dropped: { filter, sort: [] } });
+    }
     return envelope([]);
   });
   vi.stubGlobal('fetch', fetchMock);
@@ -93,6 +127,7 @@ function cellUnder(row: HTMLElement, heading: string): HTMLElement {
 beforeEach(async () => {
   counts = { Project: 12, Document: 5 };
   dropsDateSort = false;
+  dropsAttachmentFilter = false;
   documents = DOCUMENTS;
   window.__env = { logLevel: 4 };
   await loadConfig();
@@ -416,17 +451,63 @@ describe('UnifiedSearch', () => {
     expect(typedSearches()[0]).toContain('keywords=coal');
   });
 
-  it('offers no results and no request for a record type that has no config yet', async () => {
+  it('lists updates as rows carrying their project and their file', async () => {
     const user = userEvent.setup();
     const fetchMock = stubApi();
-    renderSearch('/search?record=projects&keywords=fish');
-    await screen.findByText('Alpha Mine');
+    renderSearch('/search');
+    await screen.findByText('Fish habitat report');
 
     await user.click(pill(/^Activities & updates/));
 
-    expect(await screen.findByText('Not available yet')).toBeInTheDocument();
     expect(
-      fetchMock.mock.calls.map(String).filter((url) => url.includes('RecentActivity')),
-    ).toEqual([]);
+      await screen.findByRole('heading', { level: 3, name: ACTIVITIES[0].headline }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('The office accepted the amendment application.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Cedar LNG' })).toHaveAttribute('href', '/p/p1');
+    expect(screen.getByRole('link', { name: 'Amendment Order.pdf' })).toHaveAttribute(
+      'href',
+      ACTIVITIES[0].documentUrl,
+    );
+
+    const asked = fetchMock.mock.calls.map(String).filter((url) => url.includes('RecentActivity&'));
+    expect(asked.at(-1)).toContain('sortBy=-dateAdded');
+  });
+
+  it('drops the attachments filter once the index says it has no documentUrl', async () => {
+    const user = userEvent.setup();
+    dropsAttachmentFilter = true;
+    const { router } = renderSearch('/search?record=activities');
+    await screen.findByRole('heading', { level: 3, name: ACTIVITIES[0].headline });
+
+    await user.click(screen.getByRole('button', { name: /More filters/ }));
+    await user.click(screen.getByLabelText('Documents attached'));
+
+    // The control cannot narrow anything, so it goes, and its value goes out of the URL with it.
+    await waitFor(() =>
+      expect(screen.queryByLabelText('Documents attached')).not.toBeInTheDocument(),
+    );
+    await waitFor(() => expect(router.state.location.search).not.toContain('documentUrl'));
+  });
+
+  it('draws each project notification as a card, with its filters in the panel', async () => {
+    const user = userEvent.setup();
+    renderSearch('/search');
+    await screen.findByText('Fish habitat report');
+
+    await user.click(pill(/^Project notifications/));
+
+    expect(
+      await screen.findByRole('heading', { name: 'BEAR CREEK AGGREGATE' }),
+    ).toBeInTheDocument();
+    // The card keeps the tabs the project notifications page gave each row.
+    expect(screen.getByRole('tab', { name: 'Documents' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Engagement' })).toBeInTheDocument();
+    // A card has no columns, so the column filters are only reachable through the panel.
+    expect(screen.queryAllByRole('columnheader')).toHaveLength(0);
+
+    await user.click(screen.getByRole('button', { name: /More filters/ }));
+
+    expect(screen.getByLabelText('Region')).toBeInTheDocument();
+    expect(screen.getByLabelText('Notification decision')).toBeInTheDocument();
   });
 });
