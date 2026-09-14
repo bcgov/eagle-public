@@ -110,8 +110,6 @@ export const STATES: ParityState[] = [
   {
     id: '03-activities-list',
     description: 'Activities & updates, which render as a record list rather than a grid.',
-    // Phase 3.
-    requires: '.display-grid__list',
     steps: [{ do: 'click', control: 'tabActivities' }],
     measurements: ALWAYS,
   },

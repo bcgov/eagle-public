@@ -45,14 +45,6 @@
   max-width: 92ch;
 }
 
-.display-grid .display-grid__row-body--clamped {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
-  overflow: hidden;
-}
-
 .display-grid .display-grid__row-more {
   min-height: 32px;
   margin-top: var(--layout-margin-hair);
@@ -116,8 +108,16 @@
 }
 
 .display-grid .display-grid__row-docs a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font: var(--typography-regular-small-body);
   color: var(--typography-color-link);
+}
+
+/* Sized against the line, not the icon set's own 24px: the glyph rides beside the file name. */
+.display-grid .display-grid__row-docs-icon {
+  font-size: 15px;
 }
 
 .display-grid .display-grid__row-docs-meta {

@@ -5,7 +5,6 @@ import { Link } from 'react-router';
 import { ListRow, type ListRowAttachment } from 'app/components/display-grid/list-row';
 import type { GridColumn, ValueOption } from 'app/components/display-grid/types';
 import { isSafeUrl } from 'app/utils/safe-url';
-import { longDate } from 'app/utils/utils';
 import { RECORD_DATASETS, type RecordTypeConfig, type SearchMeta } from './record-type';
 
 type Row = Record<string, unknown>;
@@ -106,6 +105,19 @@ export function attachmentsOf(row: Row): ListRowAttachment[] {
   return [{ name: name || 'Attached document', href: url }];
 }
 
+/**
+ * The posted date as the meta line sets it: numeric `YYYY-MM-DD`, the same form the date columns
+ * carry. The line is a dense run of facts beside a headline rather than prose, and a long date
+ * there reads as the first half of the sentence the headline finishes. UTC, because the feed
+ * sends midnight dates and a local zone slides them into the previous day.
+ */
+export function isoDay(value: unknown): string {
+  const text = String(value ?? '');
+  if (text === '') return '';
+  const date = new Date(text);
+  return Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString('en-CA', { timeZone: 'UTC' });
+}
+
 /** One update as a full-width row: when and what it was, the headline, the body, and its file. */
 export function ActivityRow({ row }: { row: Row }) {
   const { id } = projectOf(row);
@@ -113,7 +125,7 @@ export function ActivityRow({ row }: { row: Row }) {
   const kind = String(row['type'] ?? '');
 
   const meta: ReactNode[] = [];
-  const posted = longDate(String(row['dateAdded'] ?? ''));
+  const posted = isoDay(row['dateAdded']);
   if (posted) meta.push(posted);
   if (kind) meta.push(kind);
   if (subject) {

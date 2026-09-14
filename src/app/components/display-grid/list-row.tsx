@@ -4,7 +4,11 @@ import { Highlight, excerptAround } from './highlight';
 import { RecordLink } from './record-link';
 import './list-row.css';
 
-/** Over this many characters the body is clamped and offered a Show more. */
+/**
+ * Over this many characters the body is cut to an excerpt and offered a Show more. The cut is by
+ * character, not by line: a line clamp shows three lines of a wide row and three of a phone row,
+ * so the same record says a paragraph on a desktop and a sentence on a phone.
+ */
 const CLAMP_AT = 260;
 
 export interface ListRowAttachment {
@@ -45,7 +49,7 @@ function attachmentMeta(attachment: ListRowAttachment): string {
 }
 
 /**
- * One record per row, full width: meta line, headline, clamped body and the record's attachments.
+ * One record per row, full width: meta line, headline, excerpted body and the record's attachments.
  * Used for activities, and for any record shown as a content hit rather than a grid row.
  */
 export function ListRow({
@@ -102,13 +106,7 @@ export function ListRow({
       ) : null}
 
       {full ? (
-        <p
-          className={
-            isOpen
-              ? 'display-grid__row-body'
-              : 'display-grid__row-body display-grid__row-body--clamped'
-          }
-        >
+        <p className="display-grid__row-body">
           <Highlight text={shown} terms={terms} />
         </p>
       ) : null}
@@ -134,6 +132,9 @@ export function ListRow({
               <li key={attachment.href}>
                 {isSafeUrl(attachment.href) ? (
                   <a href={attachment.href} download>
+                    <i className="material-icons display-grid__row-docs-icon" aria-hidden="true">
+                      insert_drive_file
+                    </i>
                     {attachment.name}
                   </a>
                 ) : (
