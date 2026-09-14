@@ -42,7 +42,7 @@ function anyFilterSet(filters: FilterValues): boolean {
   );
 }
 
-interface SortOption {
+export interface SortOption {
   /** `-datePosted` as the URL spells it, so the select's value is the sort itself. */
   value: string;
   label: string;
@@ -109,6 +109,15 @@ interface DisplayGridProps<Row> {
   template?: GridTemplate;
   /** Renders one record in list mode, where there are no columns. */
   rowComponent?: ComponentType<{ row: Row }>;
+  /**
+   * The whole result body, drawn by the page instead of by this grid. For a view whose records are
+   * not one-per-row - the passages inside a document - while the bar, chips, panel and pager stay.
+   */
+  body?: ReactNode;
+  /** What the sort select offers, where the columns are not the orders available. */
+  sortOptions?: SortOption[];
+  /** Page sizes and pager. Off where there is no result set to page: a prompt, not an answer. */
+  footer?: boolean;
   loading?: boolean;
   emptyMessage?: ReactNode;
   selectable?: boolean;
@@ -148,6 +157,9 @@ export function DisplayGrid<Row>({
   rows,
   template = 'grid',
   rowComponent: RowComponent,
+  body,
+  sortOptions,
+  footer = true,
   loading = false,
   emptyMessage = 'No results found',
   selectable = false,
@@ -192,8 +204,10 @@ export function DisplayGrid<Row>({
   /* Wherever the records are rows of prose rather than a table there is no sortable heading to
      click, so the bar is the only way to reorder them: the narrow cards, and the list template at
      every width. */
-  const showSortBar =
-    !showEmpty && (listMode || cardMode) && sortOptionsFor(columns, sort).length > 0;
+  /* The orders this view can be read in: the record's own columns, unless the page names them —
+     a relevance-ranked view has no column to sort by. */
+  const sortChoices = sortOptions ?? sortOptionsFor(columns, sort);
+  const showSortBar = !showEmpty && (listMode || cardMode) && sortChoices.length > 0;
 
   // The filter row sticks under the header, whose height changes when a label wraps.
   useEffect(() => {
@@ -241,6 +255,7 @@ export function DisplayGrid<Row>({
       <div
         className={loading && rows.length > 0 ? 'display-grid__body--loading' : undefined}
         aria-busy={loading || undefined}
+        role="status"
       >
         {showSkeleton && <span className="display-grid__visually-hidden">Loading</span>}
 
@@ -256,7 +271,7 @@ export function DisplayGrid<Row>({
                   onSort?.(next.slice(1), next.startsWith('-') ? '-' : '+');
                 }}
               >
-                {sortOptionsFor(columns, sort).map((option) => (
+                {sortChoices.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
                   </option>
@@ -266,7 +281,9 @@ export function DisplayGrid<Row>({
           </div>
         )}
 
-        {cardMode ? (
+        {body ? (
+          body
+        ) : cardMode ? (
           <>
             <p
               className="display-grid__visually-hidden"
@@ -445,16 +462,18 @@ export function DisplayGrid<Row>({
 
         {showEmpty && <p className="display-grid__empty">{emptyMessage}</p>}
 
-        <div className="display-grid__footer">
-          <GridPageSizes sizes={PAGE_SIZES} current={pageSize} onChoose={onPageSizeChange} />
-          <GridPager
-            page={page}
-            pageSize={pageSize}
-            total={total}
-            ariaLabel="Result pages"
-            onPageChange={changePage}
-          />
-        </div>
+        {footer && (
+          <div className="display-grid__footer">
+            <GridPageSizes sizes={PAGE_SIZES} current={pageSize} onChoose={onPageSizeChange} />
+            <GridPager
+              page={page}
+              pageSize={pageSize}
+              total={total}
+              ariaLabel="Result pages"
+              onPageChange={changePage}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

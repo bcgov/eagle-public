@@ -1,11 +1,5 @@
-import { describe, it, expect, afterEach } from 'vitest';
-import { contentSearchLoader, routes, searchLoader } from './routes';
-import { loadConfig } from './config/config';
-
-async function configureWith(contentSearch: boolean): Promise<void> {
-  window.__env = { logLevel: 4, CONTENT_SEARCH: contentSearch };
-  await loadConfig();
-}
+import { describe, it, expect } from 'vitest';
+import { routes, searchLoader } from './routes';
 
 function findRoute(path: string) {
   return routes[0].children?.find((route) => route.path === path);
@@ -32,6 +26,11 @@ describe('the legacy list routes', () => {
       path: 'project-notifications',
       from: 'http://localhost/project-notifications?keywords=mine&pcp=open&region=Skeena',
       to: '/search?record=notifications&keywords=mine&region=Skeena&pcp=open',
+    },
+    {
+      path: 'search/content',
+      from: 'http://localhost/search/content?keywords=water&currentPage=3&pageSize=10&sortBy=-score',
+      to: '/search?record=documents&scope=inside&keywords=water&currentPage=3&pageSize=10',
     },
   ])(
     'sends /$path to unified search instead of rendering a page of its own',
@@ -61,34 +60,6 @@ describe('searchLoader', () => {
         request: new Request('http://localhost/search?record=documents&keywords=coal'),
       } as any),
     ).toBeNull();
-  });
-});
-
-describe('contentSearchLoader', () => {
-  const original = window.__env;
-
-  afterEach(() => {
-    window.__env = original;
-  });
-
-  it('sends /search/content to /search when content search is disabled', async () => {
-    await configureWith(false);
-    try {
-      contentSearchLoader();
-      expect.unreachable('loader should have redirected');
-    } catch (thrown) {
-      expect(thrown).toBeInstanceOf(Response);
-      expect((thrown as Response).headers.get('Location')).toBe('/search');
-    }
-  });
-
-  it('allows /search/content when content search is enabled', async () => {
-    await configureWith(true);
-    expect(contentSearchLoader()).toBeNull();
-  });
-
-  it('guards the content search route', () => {
-    expect(findRoute('search/content')?.loader).toBe(contentSearchLoader);
   });
 });
 

@@ -77,13 +77,19 @@ describe('legacySearchRedirect', () => {
       name: 'content search, which becomes the inside-documents scope',
       loader: legacySearchRedirect('documents', { scope: 'inside' }),
       from:
-        '/search/content?keywords=tailings&currentPage=2&sortBy=-datePosted&dataset=Document' +
-        '&milestone=m1&documentAuthorType=a1&type=t1&projectPhase=p1' +
+        '/search/content?keywords=tailings&currentPage=2&pageSize=50&sortBy=-datePosted' +
+        '&dataset=DocumentChunk&milestone=m1&documentAuthorType=a1&type=t1&projectPhase=p1' +
         '&datePostedStart=2020-01-01&datePostedEnd=2021-01-01',
       to:
-        '/search?record=documents&scope=inside&keywords=tailings&sortBy=-datePosted&currentPage=2' +
+        '/search?record=documents&scope=inside&keywords=tailings&currentPage=2&pageSize=50' +
         '&milestone=m1&documentAuthorType=a1&type=t1&projectPhase=p1' +
         '&datePostedStart=2020-01-01&datePostedEnd=2021-01-01',
+    },
+    {
+      name: 'a hash-router content search address',
+      loader: legacySearchRedirect('documents', { scope: 'inside' }),
+      from: hashToPath('#/search/content?keywords=tailings') ?? '',
+      to: '/search?record=documents&scope=inside&keywords=tailings',
     },
     {
       name: 'a sort the record type cannot honour, which is dropped',

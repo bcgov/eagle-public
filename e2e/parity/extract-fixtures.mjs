@@ -88,7 +88,7 @@ const projects = PROJECTS.map((project) => ({
 // Every prototype document belongs to the project the sample set is drawn from.
 const hostProject = { _id: projects[0]._id, name: projects[0].name };
 
-// `contents` is written once, as passages.json; carrying it on the document rows too would let the
+// `contents` is written once, as chunks.json; carrying it on the document rows too would let the
 // two copies drift.
 const documents = DOCS.map((doc) => ({
   _id: doc.id,
@@ -127,8 +127,31 @@ const activities = UPDATES.map((update) => {
   };
 });
 
+/**
+ * One row per indexed passage, as the chunk index holds one: a chunk carries a copy of its parent
+ * document's fields, and `demi-search.ts` groups them back into document rows the way the API
+ * does. `chunkId` follows eagle-demi's `<docId>::p<page>::c<index>` form.
+ */
+const chunks = Object.entries(CONTENTS).flatMap(([documentId, hits]) => {
+  const parent = documents.find((doc) => doc._id === documentId);
+  return hits.map((hit, index) => ({
+    _id: `${documentId}::p${hit.page}::c${index}`,
+    documentId,
+    chunkId: `${documentId}::p${hit.page}::c${index}`,
+    project: hostProject,
+    projectName: hostProject.name,
+    documentName: parent?.displayName ?? documentId,
+    documentType: parent?.type ?? '',
+    milestone: parent?.milestone ?? null,
+    datePosted: parent?.datePosted ?? null,
+    pageNumber: hit.page,
+    content: '',
+    snippet: hit.text,
+  }));
+});
+
 mkdirSync(OUT_DIR, { recursive: true });
 write('documents', documents);
 write('projects', projects);
 write('activities', activities);
-write('passages', CONTENTS);
+write('chunks', chunks);

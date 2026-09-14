@@ -8,7 +8,6 @@ import { ComplianceOversight } from './pages/compliance-oversight';
 import { SearchHelp } from './pages/search-help';
 import { Projects } from './pages/projects/projects';
 import { UnifiedSearch } from './pages/search/unified-search';
-import { ContentSearch } from './pages/search/content-search';
 import { ProjectPage } from './pages/project/project';
 import { OverviewTab } from './pages/project/overview-tab';
 import { UpdatesTab } from './pages/project/updates-tab';
@@ -23,20 +22,7 @@ import { DocumentsTab } from './pages/project/documents-tab';
 import { ComplianceDocumentsTab } from './pages/project/compliance-documents-tab';
 import { DecisionsTab } from './pages/project/decisions-tab';
 import { Comments } from './pages/comments/comments';
-import { contentSearchEnabled } from './config/config';
 import { legacySearchRedirect, resolveLegacySearch } from './routes/legacy-search';
-
-/**
- * Content search is served by the API in every environment, but the UI is offered only where the
- * CONTENT_SEARCH config flag says so. Redirects rather than falling through, so a bookmarked or
- * shared link lands on document search instead of the home page.
- */
-export function contentSearchLoader() {
-  if (!contentSearchEnabled()) {
-    throw redirect('/search');
-  }
-  return null;
-}
 
 /**
  * An Angular-era /search address means document search, and carries params the unified page does
@@ -79,12 +65,10 @@ export const routes: RouteObject[] = [
 
       { path: 'search', loader: searchLoader, Component: UnifiedSearch },
 
-      // Its own component, not the table-driven one: content results are a list of documents with
-      // the matched text, which a table layout cannot render.
+      // The content search page is now the documents tab's inside-documents scope.
       {
         path: 'search/content',
-        loader: contentSearchLoader,
-        Component: ContentSearch,
+        loader: legacySearchRedirect('documents', { scope: 'inside' }),
       },
 
       { path: 'search-help', Component: SearchHelp },

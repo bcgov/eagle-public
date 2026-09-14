@@ -40,6 +40,12 @@ describe('GridToolbar', () => {
     expect(screen.getByRole('status')).toHaveTextContent('5–5 of 5 documents');
   });
 
+  it('says the count is of what matched once a keyword or a filter narrows it', () => {
+    render(<GridToolbar noun="documents" page={1} pageSize={25} total={8} narrowed />);
+
+    expect(screen.getByRole('status')).toHaveTextContent('1–8 of 8 documents matching');
+  });
+
   it('says there are none rather than showing a range of nothing', () => {
     render(<GridToolbar noun="documents" page={1} pageSize={25} total={0} />);
 

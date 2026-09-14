@@ -14,10 +14,10 @@
 import type { Page, Route } from '@playwright/test';
 
 import activities from './activities.json';
+import chunks from './chunks.json';
 import documents from './documents.json';
 import notifications from './notifications.json';
 import projects from './projects.json';
-import passages from './passages.json';
 
 export type Row = Record<string, unknown>;
 
@@ -39,31 +39,48 @@ function withSchema(row: Row, schemaName: string): Row {
   return { _schemaName: schemaName, ...row };
 }
 
-/** One row per indexed passage: the shape a content-scoped search returns. */
+/** One row per indexed passage, which is what a content-scoped search matches against. */
 function chunkRows(): Row[] {
-  const byId = new Map(documents.map((doc) => [doc._id, doc]));
-  const rows: Row[] = [];
-  for (const [documentId, hits] of Object.entries(
-    passages as Record<string, { page: number; text: string }[]>,
-  )) {
-    const doc = byId.get(documentId);
-    hits.forEach((hit, index) => {
-      rows.push({
-        _id: `${documentId}-p${hit.page}`,
-        _schemaName: 'DocumentChunk',
-        documentId,
-        // The document's own metadata travels with the chunk so the row can render without a
-        // second lookup, which is what demi-search does.
-        name: doc?.displayName ?? documentId,
-        date: doc?.datePosted ?? '',
-        type: doc?.type ?? '',
-        ordinal: index,
-        page: hit.page,
-        text: hit.text,
+  return chunks.map((row) => withSchema(row, 'DocumentChunk'));
+}
+
+/** Snippets kept per document, as `group-chunks.js#MAX_SNIPPETS` holds it. */
+const MAX_SNIPPETS = 2;
+
+/** Azure AI Search hands back its hits wrapped in `<mark>`, and demi-search passes those through. */
+function marked(snippet: string, keywords: string): string {
+  const needle = keywords.trim();
+  if (!needle) return snippet;
+  const pattern = new RegExp(needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+  return snippet.replace(pattern, (hit) => `<mark>${hit}</mark>`);
+}
+
+/**
+ * Chunk hits collapsed into one row per DOCUMENT, which is what demi-search answers with: Azure AI
+ * Search cannot group, so `src/search/group-chunks.js` does it per page of results. The first
+ * chunk of a document leads and carries its metadata; the rest only add snippets and to the count.
+ */
+function groupByDocument(rows: Row[], keywords: string): Row[] {
+  const byDocument = new Map<string, Row>();
+  for (const raw of rows) {
+    const row: Row = { ...raw, snippet: marked(String(raw['snippet'] ?? ''), keywords) };
+    const id = String(row['documentId'] ?? '');
+    if (!id) continue;
+    const held = byDocument.get(id);
+    if (!held) {
+      byDocument.set(id, {
+        ...row,
+        _id: id,
+        snippets: row['snippet'] ? [row['snippet']] : [],
+        matchCount: 1,
       });
-    });
+      continue;
+    }
+    held['matchCount'] = Number(held['matchCount']) + 1;
+    const snippets = held['snippets'] as unknown[];
+    if (row['snippet'] && snippets.length < MAX_SNIPPETS) snippets.push(row['snippet']);
   }
-  return rows;
+  return [...byDocument.values()];
 }
 
 /**
@@ -251,7 +268,8 @@ function droppedFields(rows: Row[], groups: Map<string, string[]>, sortKeys: str
     }),
     ...sortKeys.map((key) => key.replace(/^[+-]/, '')),
   ];
-  return [...new Set(named)].filter((field) => !carried.has(field));
+  // `score` is the relevance sentinel, not a field: the API reads it as "issue no $orderby".
+  return [...new Set(named)].filter((field) => field !== 'score' && !carried.has(field));
 }
 
 /**
@@ -276,7 +294,13 @@ export function sortRows(rows: Row[], sortKeys: string[]): Row[] {
 
 export interface SearchAnswer {
   searchResults: Row[];
-  meta: { searchResultsTotal: number; dropped: string[] }[];
+  meta: {
+    searchResultsTotal: number;
+    dropped: string[];
+    /** Chunk rows are passages, so the total counts passages and not the documents on the page. */
+    countsPassages?: boolean;
+    documentsOnPage?: number;
+  }[];
 }
 
 /** The whole query pipeline, exported so a unit test can drive it without a browser. */
@@ -288,9 +312,13 @@ export function answerSearch(params: URLSearchParams): SearchAnswer {
   const sortKeys = params.getAll('sortBy').filter(Boolean);
 
   const all = rowsFor(dataset);
-  const matched = all
-    .filter((row) => keywordHit(row, keywords))
-    .filter((row) => passesFilters(row, groups));
+  const passages = dataset === 'DocumentChunk';
+  // Nothing was asked of the text index, so nothing matched: eagle-demi answers a keywordless
+  // chunk search with zero rather than with the whole corpus.
+  const matched =
+    passages && !keywords.trim()
+      ? []
+      : all.filter((row) => keywordHit(row, keywords)).filter((row) => passesFilters(row, groups));
   const sorted = sortRows(matched, sortKeys);
 
   const pageSizeRaw = Number(params.get('pageSize'));
@@ -300,9 +328,20 @@ export function answerSearch(params: URLSearchParams): SearchAnswer {
   const pageNum = Number.isFinite(pageNumRaw) && pageNumRaw > 0 ? pageNumRaw : 0;
   const start = pageNum * pageSize;
 
+  // The window is the page: a chunk page carries every document its passages covered.
+  const shown = passages
+    ? groupByDocument(sorted.slice(start, start + pageSize), keywords)
+    : sorted.slice(start, start + pageSize);
+
   return {
-    searchResults: sorted.slice(start, start + pageSize),
-    meta: [{ searchResultsTotal: sorted.length, dropped: droppedFields(all, groups, sortKeys) }],
+    searchResults: shown,
+    meta: [
+      {
+        searchResultsTotal: sorted.length,
+        dropped: droppedFields(all, groups, sortKeys),
+        ...(passages ? { countsPassages: true, documentsOnPage: shown.length } : {}),
+      },
+    ],
   };
 }
 
@@ -366,6 +405,8 @@ export const CONFIG = {
   ENVIRONMENT: 'parity',
   SEARCH_API_PATH: '/demi-search',
   ACCESS_GATE: false,
+  // The prototype searches inside documents, so the scope switch has to be offered here too.
+  CONTENT_SEARCH: true,
   DEBUG_MODE: false,
   GH_HASH: 'parity',
 };
