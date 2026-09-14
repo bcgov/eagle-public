@@ -384,6 +384,21 @@ describe('DisplayGrid', () => {
       );
     });
 
+    it('drops the head and the filter row when a filter matched nothing', () => {
+      stubNarrow(true);
+      renderGrid({
+        filters: { name: 'zzqq' },
+        rows: [],
+        total: 0,
+        emptyMessage: 'No documents match these filters',
+      });
+
+      // The filters live in the panel here, so there is no focus in the row to keep.
+      expect(screen.queryAllByRole('columnheader')).toHaveLength(0);
+      expect(document.querySelector('.display-grid__filter-row')).toBeNull();
+      expect(screen.getByText('No documents match these filters')).toBeInTheDocument();
+    });
+
     it('sorts from a select, naming the direction the reader picked', async () => {
       stubNarrow(true);
       const user = userEvent.setup();
