@@ -162,12 +162,13 @@ for an order it would reject. Any other param is dropped.
 | `/search`, with or without document params | `/search?record=documents` | live |
 | `/#/<any of the above>` | the same path without the `#`, then the row above | live |
 | `/search/content` | `/search?record=documents&scope=inside` | planned, the inside-document scope is not built yet |
-| `/news` | `/search?record=activities` | planned, the activities tab is not built yet |
-| `/project-notifications` | `/search?record=notifications` | planned, the notifications tab is not built yet |
+| `/news` | `/search?record=activities` | live |
+| `/project-notifications` | `/search?record=notifications` | live |
 | `/search-help` | unchanged | live |
 
-The planned rows still render their own pages. The mapping is written and covered by unit tests, so
-each one becomes a redirect in the change that builds its tab.
+`/news` and `/project-notifications` no longer have pages of their own: both redirect, and the
+activities and project-notification record types carry their lists. `/search/content` still renders
+its own page; it becomes a redirect with the inside-document scope.
 
 Filters carried, by record type: projects `type`, `eacDecision`, `proponent`, `region`,
 `CEAAInvolvement`, `currentPhaseName`, `decisionDateStart`, `decisionDateEnd`; documents

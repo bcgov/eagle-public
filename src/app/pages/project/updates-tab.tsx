@@ -8,6 +8,7 @@ import { paramsToObject, toSearchParams } from 'app/components/table/table-param
 import { useTable } from 'app/components/table/use-table';
 import { UpdateCard } from 'app/components/update-card/update-card';
 import { getNotifyApi } from 'app/config/config';
+import { searchUrl } from 'app/routes/legacy-search';
 import { Constants } from 'app/utils/constants';
 import { useProjectContext } from './project-context';
 import './updates-tab.css';
@@ -122,7 +123,7 @@ export function UpdatesTab() {
               label="Subscribe to this project"
             />
             <p className="updates-tab__subscribe-all">
-              You can also <Link to="/news">subscribe to all projects</Link>.
+              You can also <Link to={searchUrl('activities')}>subscribe to all projects</Link>.
             </p>
           </section>
         </aside>

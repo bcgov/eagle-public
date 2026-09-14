@@ -1,6 +1,11 @@
 import { test, expect } from '../support/fixtures';
 import { ready, latestCommentPeriod, searchFixture, firstProjects } from '../support/helpers';
 
+/** The record-type pill the page is showing, whichever label that type carries. */
+function activePill(page: import('@playwright/test').Page) {
+  return page.locator('[data-tour="types"] button[aria-pressed="true"]');
+}
+
 test('an unknown route falls back to the home page', async ({ page }) => {
   await page.goto('/this-route-does-not-exist');
   await ready(page);
@@ -71,9 +76,8 @@ test('/search/content redirects to /search while CONTENT_SEARCH is off', async (
   }
 });
 
-// The Angular-era project list. It keeps working as a bookmark by landing on unified search with
-// its record type and its keyword intact. /news and /project-notifications still render their own
-// pages until Phases 3 and 4 move them.
+// The Angular-era list pages. Each keeps working as a bookmark by landing on unified search with
+// its record type, its keyword and its own filters intact.
 test('/projects-list lands on unified search as projects', async ({ page }) => {
   await page.goto('/projects-list?keywords=coal&currentPage=2');
   await page.waitForURL('**/search?*');
@@ -82,6 +86,32 @@ test('/projects-list lands on unified search as projects', async ({ page }) => {
   expect(url.pathname).toBe('/search');
   expect(url.searchParams.get('record')).toBe('projects');
   expect(url.searchParams.get('keywords')).toBe('coal');
+});
+
+test('/news lands on unified search as activities', async ({ page }) => {
+  await page.goto('/news?keywords=fish&currentPage=2');
+  await page.waitForURL('**/search?*');
+
+  const url = new URL(page.url());
+  expect(url.pathname).toBe('/search');
+  expect(url.searchParams.get('record')).toBe('activities');
+  expect(url.searchParams.get('keywords')).toBe('fish');
+  expect(url.searchParams.get('currentPage')).toBe('2');
+  await expect(activePill(page)).toHaveText(/activities/i);
+});
+
+test('/project-notifications lands on unified search as notifications', async ({ page }) => {
+  await page.goto('/project-notifications?keywords=mine&pcp=open&region=Skeena');
+  await page.waitForURL('**/search?*');
+
+  const url = new URL(page.url());
+  expect(url.pathname).toBe('/search');
+  expect(url.searchParams.get('record')).toBe('notifications');
+  expect(url.searchParams.get('keywords')).toBe('mine');
+  // The notification filters ride along, so the reader sees the list they bookmarked.
+  expect(url.searchParams.get('pcp')).toBe('open');
+  expect(url.searchParams.get('region')).toBe('Skeena');
+  await expect(activePill(page)).toHaveText(/notifications/i);
 });
 
 // An Angular /search meant documents. With a document-only param on it, the page has to open on

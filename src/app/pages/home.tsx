@@ -11,6 +11,7 @@ import { HeroBanner, type HeroBannerAction } from 'app/components/hero-banner';
 import { InfoCard, type InfoCardButton } from 'app/components/info-card';
 import { ActivityCard } from 'app/components/activity-card';
 import { DocumentLink } from 'app/components/table/document-link';
+import { searchUrl } from 'app/routes/legacy-search';
 import './home.css';
 
 const HERO_TITLE = 'Environmental Assessments';
@@ -19,7 +20,7 @@ const HERO_DESCRIPTION =
 const HERO_ACTIONS: HeroBannerAction[] = [
   { label: 'Find Environmental Assessment Projects', routerLink: '/projects', icon: 'list' },
   { label: 'List of Projects', routerLink: '/projects-list', icon: 'list' },
-  { label: 'Project Notifications', routerLink: '/project-notifications', icon: 'list' },
+  { label: 'Project Notifications', routerLink: searchUrl('notifications'), icon: 'list' },
 ];
 
 const ABOUT_CARDS: { title: string; description: string; button: InfoCardButton }[] = [
@@ -265,7 +266,7 @@ export function Home() {
               <div className="mt-4 text-center">
                 <Link
                   className="btn slide-r-btn btn-outline-primary d-inline-flex align-items-center gap-2"
-                  to="/news"
+                  to={searchUrl('activities')}
                 >
                   <span>View All Activities &amp; Updates</span>
                   <i className="material-icons">&#xE5C8;</i>
