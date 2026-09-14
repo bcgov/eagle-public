@@ -25,7 +25,7 @@
     "region": "Northeast",
     "currentPhaseName": "Application Development and Review",
     "eacDecision": "Not yet decided",
-    "CEAAInvolvement": "No"
+    "CEAAInvolvement": ""
   },
   {
     "_id": "p3",
@@ -39,7 +39,7 @@
     "region": "Thompson-Okanagan",
     "currentPhaseName": "Early Engagement",
     "eacDecision": "Not yet decided",
-    "CEAAInvolvement": "No"
+    "CEAAInvolvement": ""
   },
   {
     "_id": "p4",
@@ -67,7 +67,7 @@
     "region": "Thompson-Okanagan",
     "currentPhaseName": "Referral",
     "eacDecision": "Certificate issued",
-    "CEAAInvolvement": "No"
+    "CEAAInvolvement": ""
   },
   {
     "_id": "p6",
@@ -81,7 +81,7 @@
     "region": "Skeena",
     "currentPhaseName": "Effects Assessment",
     "eacDecision": "Not yet decided",
-    "CEAAInvolvement": "No"
+    "CEAAInvolvement": ""
   },
   {
     "_id": "p7",
@@ -109,7 +109,7 @@
     "region": "Northeast",
     "currentPhaseName": "Readiness Decision",
     "eacDecision": "Not yet decided",
-    "CEAAInvolvement": "No"
+    "CEAAInvolvement": ""
   },
   {
     "_id": "p9",
@@ -123,7 +123,7 @@
     "region": "Lower Mainland",
     "currentPhaseName": "Application Development and Review",
     "eacDecision": "Not yet decided",
-    "CEAAInvolvement": "No"
+    "CEAAInvolvement": ""
   },
   {
     "_id": "p10",
@@ -151,7 +151,7 @@
     "region": "Northeast",
     "currentPhaseName": "Early Engagement",
     "eacDecision": "Not yet decided",
-    "CEAAInvolvement": "No"
+    "CEAAInvolvement": ""
   },
   {
     "_id": "p12",
@@ -165,6 +165,6 @@
     "region": "Vancouver Island",
     "currentPhaseName": "Process Planning",
     "eacDecision": "Not yet decided",
-    "CEAAInvolvement": "No"
+    "CEAAInvolvement": ""
   }
 ]

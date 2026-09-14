@@ -105,7 +105,7 @@ export const projectsConfig: RecordTypeConfig = {
     { id: 'decisionDateStart', label: 'Decision from', kind: 'date', placeholder: 'YYYY-MM-DD' },
     { id: 'decisionDateEnd', label: 'Decision to', kind: 'date', placeholder: 'YYYY-MM-DD' },
     { id: 'eacDecision', label: 'EA decision', kind: 'select' },
-    { id: 'CEAAInvolvement', label: 'IAAC involvement', kind: 'select' },
+    { id: 'CEAAInvolvement', label: 'Joint review with IAAC', kind: 'select' },
   ],
   optionsFrom: (lists: OptionSource[], orgs: OptionSource[]) => {
     const ofType = (type: string) => toOptions(lists.filter((item) => item.type === type));

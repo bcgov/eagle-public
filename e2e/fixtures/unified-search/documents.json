@@ -105,21 +105,6 @@
     }
   },
   {
-    "_id": "d8",
-    "displayName": "Environmental Assessment Certificate E23-01",
-    "datePosted": "2023-03-14",
-    "type": "Certificate",
-    "milestone": "Decision",
-    "projectPhase": "Referral",
-    "documentAuthorType": "Minister",
-    "legislation": 2018,
-    "isFeatured": true,
-    "project": {
-      "_id": "p1",
-      "name": "Cedar LNG"
-    }
-  },
-  {
     "_id": "d9",
     "displayName": "Referral Package — Reasons for Decision",
     "datePosted": "2023-03-14",
@@ -129,6 +114,21 @@
     "documentAuthorType": "EAO",
     "legislation": 2018,
     "isFeatured": false,
+    "project": {
+      "_id": "p1",
+      "name": "Cedar LNG"
+    }
+  },
+  {
+    "_id": "d8",
+    "displayName": "Environmental Assessment Certificate E23-01",
+    "datePosted": "2023-03-14",
+    "type": "Certificate",
+    "milestone": "Decision",
+    "projectPhase": "Referral",
+    "documentAuthorType": "Minister",
+    "legislation": 2018,
+    "isFeatured": true,
     "project": {
       "_id": "p1",
       "name": "Cedar LNG"

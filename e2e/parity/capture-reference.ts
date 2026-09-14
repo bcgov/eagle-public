@@ -26,7 +26,7 @@ import {
 import { startPrototypeServer, type PrototypeServer } from './prototype-server';
 import { selectorFor } from './selectors';
 import { REFERENCE_DIR } from './paths';
-import { measurementsFor, STATES, widthsFor } from './states';
+import { measurementsFor, STATES, WIDE, widthsFor } from './states';
 
 /**
  * `support.js` sizes the artboard to the window (`html,body{height:100%}`,
@@ -80,6 +80,41 @@ async function addNotificationsPill(page: Page): Promise<void> {
   });
 }
 
+/**
+ * Accepted deviation, 2026-09-14: the design's project card prints a Legislation pair the app has
+ * no value for. Projects reach the page through the by-decision index, which carries no
+ * legislation field, so the app would have to invent one. Hidden on the design side, at the one
+ * width and state where a project card is drawn.
+ *
+ * The prototype builds a card's pairs in a fixed order (see `fields` in the handoff): the
+ * non-link, non-date columns first — Proponent, Type, Region, Phase — then the advanced filters
+ * that are a select or a toggle, of which Legislation is the first. That makes it the fifth pair,
+ * and `assertLegislationHidden` checks that before the shot is taken.
+ */
+const PROJECT_LEGISLATION_CSS = `
+  .grid-root ol dl > div:nth-child(5) { display: none !important; }
+`;
+
+/** The state whose narrow layout draws project cards. */
+const PROJECTS_CARD_STATE = '02-projects-grid';
+
+/** An nth-child rule that has drifted onto another pair would quietly change the reference. */
+async function assertLegislationHidden(page: Page): Promise<void> {
+  const labels = await page.evaluate(() =>
+    Array.from(document.querySelectorAll('.grid-root ol dl > div')).map((pair) => ({
+      label: pair.querySelector('dt')?.textContent?.trim() ?? '',
+      hidden: getComputedStyle(pair).display === 'none',
+    })),
+  );
+  expect(labels.length, 'project cards drew no field pairs').toBeGreaterThan(0);
+  const hidden = labels.filter((pair) => pair.hidden).map((pair) => pair.label);
+  expect(new Set(hidden), 'hid a pair that is not Legislation').toEqual(new Set(['Legislation']));
+  expect(
+    labels.filter((pair) => pair.label === 'Legislation' && !pair.hidden),
+    'a Legislation pair survived the rule',
+  ).toEqual([]);
+}
+
 let server: PrototypeServer;
 
 test.beforeAll(async () => {
@@ -112,7 +147,12 @@ for (const state of STATES) {
 
       await runSteps(page, state.steps, 'proto');
       await addNotificationsPill(page);
+      if (state.id === PROJECTS_CARD_STATE && width !== WIDE) {
+        await page.addStyleTag({ content: PROJECT_LEGISLATION_CSS });
+      }
       await settle(page);
+
+      if (state.id === PROJECTS_CARD_STATE && width !== WIDE) await assertLegislationHidden(page);
 
       const fullPage = !state.viewportOnly;
       const png = await page.screenshot({ fullPage, scale: 'css' });

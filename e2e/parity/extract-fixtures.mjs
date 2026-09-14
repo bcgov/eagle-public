@@ -79,8 +79,10 @@ const projects = PROJECTS.map((project) => ({
   region: project.region,
   currentPhaseName: project.phase,
   eacDecision: project.decision,
-  // The prototype records IAAC involvement as a flag; the filter offers it as a value list.
-  CEAAInvolvement: project.iaac ? 'Yes' : 'No',
+  // The prototype records IAAC involvement as a flag; the filter offers it as a value list. A
+  // project without one carries no value, the way the index holds it: a literal "No" would print
+  // on the narrow card, which the design only shows the pair on when there is a joint review.
+  CEAAInvolvement: project.iaac ? 'Yes' : '',
 }));
 
 // Every prototype document belongs to the project the sample set is drawn from.

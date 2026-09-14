@@ -576,13 +576,11 @@
 .display-grid__card {
   display: flex;
   align-items: flex-start;
-  gap: var(--layout-padding-small);
+  /* The design puts the text column 21px in from the card's padding edge. We hold the checkbox at
+     its full 16px rather than let it be squeezed, so the gap carries the remaining 5px. */
+  gap: 5px;
   padding: var(--layout-padding-medium);
   border-bottom: var(--layout-border-width-small) solid var(--theme-gray-30);
-}
-
-.display-grid__card:last-child {
-  border-bottom: none;
 }
 
 .display-grid__card--selected {
@@ -613,8 +611,9 @@
 }
 
 /* Its own name, not the heading label's: one class for both would have the last rule in the file
-   decide how a sortable column heading reads. */
-.display-grid__sort-bar-label {
+   decide how a sortable column heading reads. Carries `.display-grid` so it outranks the
+   `label { display: block }` reset above, which drops the flex box and the gap with it. */
+.display-grid .display-grid__sort-bar-label {
   display: flex;
   align-items: center;
   gap: var(--layout-padding-xsmall);
@@ -708,17 +707,6 @@
 
 /* === BREAKPOINTS === */
 
-/* Narrow: the toolbar's tools wrap under the count before the grid starts scrolling sideways. */
-@media (max-width: 900px) {
-  .display-grid__bar {
-    padding: var(--layout-padding-small);
-  }
-
-  .display-grid__footer {
-    padding: var(--layout-padding-small);
-  }
-}
-
 /* Below 720 the cards take over, and a column filter row has no columns to sit under. */
 @media (max-width: 719.98px) {
   .display-grid__filter-row {
@@ -726,16 +714,11 @@
   }
 
   /* The toolbar stacks: the count, then the scope switch, then the tools two to a line with Copy
-     link falling to its own. A phone reads it as a card, so it carries the whole border. */
+     link falling to its own. The bar keeps its own padding and its one bottom rule: the grid box
+     already draws the outer border, and a second one on the bar doubles the line a phone sees. */
   .display-grid__bar {
     flex-direction: column;
     align-items: stretch;
-    gap: var(--layout-padding-small);
-    border: var(--layout-border-width-small) solid var(--theme-gray-40);
-    border-bottom: none;
-  }
-
-  .display-grid__bar-group {
     gap: var(--layout-padding-small);
   }
 }
