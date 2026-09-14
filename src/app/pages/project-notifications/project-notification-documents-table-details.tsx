@@ -1,4 +1,5 @@
 import { Link } from 'react-router';
+import { proponentName } from 'app/pages/search/types/projects';
 import { newlines } from 'app/utils/newlines';
 import { safeHtml } from 'app/utils/safe-html';
 
@@ -58,7 +59,8 @@ export function ProjectNotificationDocumentsTableDetails({ rowData }: { rowData:
         </div>
         <div className="col-sm-12 col-md-4 pn-info-block">
           <span className="info-label">Proponent</span>
-          <p className="value">{rowData.proponent || '-'}</p>
+          {/* A notification carries a name, a project record a populated org: both read as words. */}
+          <p className="value">{proponentName(rowData) || '-'}</p>
         </div>
         <div className="col-sm-12 col-md-4 pn-info-block">
           <span className="info-label">Sub-Type</span>

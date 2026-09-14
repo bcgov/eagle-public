@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router';
 import { track } from 'app/analytics/analytics';
 import { listsQueryOptions } from 'app/api/api';
@@ -52,6 +52,9 @@ type Row = Record<string, unknown>;
 
 /** Selection bucket name. The unified page is what `/search` selects documents from. */
 const TABLE_ID = 'search';
+
+/** Where the record type sits in the search query key, which the placeholder reads it back off. */
+const RECORD_IN_KEY = 1;
 
 /** Inside-document search is Phase 4; until then the control has one option and states the scope. */
 const SCOPE_OPTIONS: { value: SearchScope; label: string }[] = [
@@ -359,7 +362,7 @@ export function UnifiedSearch() {
     [filters, yearFilterIds, textFilterIds],
   );
 
-  const { data, isFetching, isError } = useQuery({
+  const { data, isFetching, isPending, isError } = useQuery({
     queryKey: [
       'unified-search',
       record,
@@ -382,7 +385,11 @@ export function UnifiedSearch() {
         },
         signal,
       ),
-    placeholderData: keepPreviousData,
+    /* Holding the last page of rows keeps the grid still while a page or a filter changes. Across
+       a record type it would hand the new tab the old tab's rows, which its row component reads
+       as its own shape: drop them and let the grid show it is loading. */
+    placeholderData: (previous, previousQuery) =>
+      previousQuery?.queryKey[RECORD_IN_KEY] === record ? previous : undefined,
   });
 
   /* One way only. The answer to "did you drop dateUpdated" depends on the sort that was asked
@@ -411,6 +418,9 @@ export function UnifiedSearch() {
 
   const rows = data?.rows ?? [];
   const total = data?.total ?? 0;
+  /* No answer yet, so there is no total to read. Without this the bar and the empty state would
+     both say the record has none of whatever was asked for, until the first answer lands. */
+  const awaitingFirstAnswer = (isPending || isFetching) && data === undefined;
 
   /* A date column offers every year the record spans, plus whichever year is filtered on, so the
      choice in force never drops out of its own list. */
@@ -533,6 +543,7 @@ export function UnifiedSearch() {
   const noun = config.noun ?? config.label.toLowerCase();
 
   function emptyState(): ReactNode {
+    if (awaitingFirstAnswer) return null;
     if (isError) {
       return (
         <span className="unified-search__empty">
@@ -699,6 +710,7 @@ export function UnifiedSearch() {
             page={currentPage}
             pageSize={pageSize}
             total={total}
+            loading={awaitingFirstAnswer}
             scope={scopeControl}
             columns={pickableColumns}
             hiddenColumns={hiddenColumns}

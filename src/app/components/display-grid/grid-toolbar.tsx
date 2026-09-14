@@ -11,6 +11,8 @@ interface GridToolbarProps<Row> {
   page: number;
   pageSize: number;
   total: number;
+  /** No total yet. A count of nothing would read "No documents" before the first answer lands. */
+  loading?: boolean;
   /** Record-type or document-scope switch, owned by the page. */
   scope?: ReactNode;
   columns?: GridColumn<Row>[];
@@ -33,6 +35,7 @@ export function GridToolbar<Row>({
   page,
   pageSize,
   total,
+  loading = false,
   scope,
   columns,
   hiddenColumns = [],
@@ -56,11 +59,15 @@ export function GridToolbar<Row>({
   const lastShown = Math.min(page * pageSize, total);
   // A page past the end of the result set would otherwise read "51-5 of 5".
   const firstShown = total === 0 ? 0 : Math.min((page - 1) * pageSize + 1, lastShown);
+  // What is selected is known whether or not the rows are, so a selection still counts while loading.
+  const waiting = loading && !selectionActive;
   const countText = selectionActive
     ? `${selectedCount.toLocaleString('en-CA')} selected`
-    : total === 0
-      ? `No ${noun}`
-      : `${firstShown.toLocaleString('en-CA')}–${lastShown.toLocaleString('en-CA')} of ${total.toLocaleString('en-CA')} ${noun}`;
+    : waiting
+      ? ''
+      : total === 0
+        ? `No ${noun}`
+        : `${firstShown.toLocaleString('en-CA')}–${lastShown.toLocaleString('en-CA')} of ${total.toLocaleString('en-CA')} ${noun}`;
 
   useEffect(() => () => clearTimeout(copiedTimer.current), []);
 
@@ -118,6 +125,7 @@ export function GridToolbar<Row>({
       <div className="display-grid__bar-group">
         {/* The one live region: the count is what every control in this bar changes. */}
         <p className="display-grid__count" role="status">
+          {/* Empty while waiting: the grid body announces the load, so this would say it twice. */}
           {countText}
           {/* The copy button only changes its own label, which a screen reader never revisits. */}
           {copied && (

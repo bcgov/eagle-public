@@ -36,6 +36,8 @@ const PROJECTS = [
     name: 'Alpha Mine',
     dateUpdated: '2025-02-03',
     region: 'Skeena',
+    // Populated here, which is not the bare name a notification carries under the same word.
+    proponent: { _id: 'o1', name: 'Coast Aggregates' },
     // Populated on this read, a bare id on others.
     currentPhaseName: { _id: 'ph1', name: 'Effects Assessment' },
   },
@@ -83,10 +85,27 @@ function envelope(rows: unknown[], total = rows.length, meta: Record<string, unk
   return json([{ searchResults: rows, meta: [{ searchResultsTotal: total, ...meta }] }]);
 }
 
+/** The answer a test is holding open, to look at the page while those rows are in flight. */
+let held: { asks: RegExp; gate: Promise<void>; release: () => void } | null;
+
+/** Holds one dataset's answer back until the returned function lets it through. */
+function holdAnswersFor(dataset: string): () => void {
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  held = { asks: new RegExp(`dataset=${dataset}(&|$)`), gate, release };
+  return () => {
+    held = null;
+    release();
+  };
+}
+
 /** Every request the page makes, answered by what the URL asks for. */
 function stubApi(): ReturnType<typeof vi.fn> {
   const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
     const url = String(input);
+    if (held?.asks.test(url)) await held.gate;
     if (url.includes('/search/counts')) return json([{ counts }]);
     if (url.includes('dataset=List')) return envelope(LISTS);
     if (url.includes('dataset=Organization')) return envelope([]);
@@ -135,6 +154,7 @@ beforeEach(async () => {
   dropsDateSort = false;
   dropsAttachmentFilter = false;
   documents = DOCUMENTS;
+  held = null;
   window.__env = { logLevel: 4 };
   await loadConfig();
   clearSelection();
@@ -544,6 +564,37 @@ describe('UnifiedSearch', () => {
 
     const filters = screen.getByRole('button', { name: /More filters/ });
     expect(within(filters).getByText('1')).toBeInTheDocument();
+  });
+
+  it('drops the rows of the tab it left rather than drawing them through the new one', async () => {
+    const user = userEvent.setup();
+    const release = holdAnswersFor('ProjectNotification');
+    renderSearch('/search?record=projects');
+    await screen.findByText('Alpha Mine');
+
+    await user.click(pill(/^Project notifications/));
+
+    // A project drawn as a notification card would print its populated proponent as an object.
+    await waitFor(() => expect(screen.queryByText(/alpha mine/i)).not.toBeInTheDocument());
+
+    await act(async () => release());
+
+    expect(
+      await screen.findByRole('heading', { name: 'BEAR CREEK AGGREGATE' }),
+    ).toBeInTheDocument();
+  });
+
+  it('holds the count back until the rows land, rather than reading "No projects"', async () => {
+    const release = holdAnswersFor('Project');
+    renderSearch('/search?record=projects');
+
+    // The grid body is the one live region that announces the wait; the bar stays quiet.
+    expect(await screen.findByText('Loading')).toBeInTheDocument();
+    expect(screen.queryAllByText(/No projects/)).toHaveLength(0);
+
+    await act(async () => release());
+
+    expect(await screen.findByText('1–1 of 1 projects')).toBeInTheDocument();
   });
 
   it('offers the sign-up for every project on the updates tab', async () => {

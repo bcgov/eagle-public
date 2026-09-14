@@ -31,7 +31,7 @@ export function resolveSort(meta?: SearchMeta[] | null): string {
 }
 
 /** Proponent arrives populated on some reads and as a bare name on others. */
-function proponentName(row: Record<string, unknown>): string {
+export function proponentName(row: Record<string, unknown>): string {
   const proponent = row['proponent'];
   if (proponent && typeof proponent === 'object') {
     return String((proponent as { name?: unknown }).name ?? '');
