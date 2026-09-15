@@ -297,6 +297,32 @@ test('search help opens over the results and Escape gives the page back', async 
   await expect(helpLink(page)).toBeFocused();
 });
 
+test('the tour recounts when a narrow layout drops a control', async ({ page }) => {
+  await page.setViewportSize({ width: 1400, height: 900 });
+  await openSearch(page);
+  await helpLink(page).click();
+  await page.getByRole('button', { name: 'Take the tour' }).click();
+
+  const card = page.getByRole('dialog');
+  for (const _step of [1, 2, 3, 4]) {
+    await card.getByRole('button', { name: 'Next' }).click();
+  }
+  await expect(card.getByText('Step 5 of 7', { exact: true })).toBeVisible();
+  await expect(card.getByRole('heading', { name: 'Filters that are not columns' })).toBeVisible();
+
+  // Below 720px the column filter row is not rendered at all, so the walk is one step shorter.
+  await page.setViewportSize({ width: 500, height: 900 });
+
+  await expect(page.locator('[data-tour="filterrow"]')).toHaveCount(0);
+  await expect(card.getByText('Step 4 of 6', { exact: true })).toBeVisible();
+  await expect(card.getByRole('heading', { name: 'Filters that are not columns' })).toBeVisible();
+
+  await card.getByRole('button', { name: 'Next' }).click();
+
+  await expect(card.getByText('Step 5 of 6', { exact: true })).toBeVisible();
+  await expect(card.getByRole('heading', { name: 'Choose your columns' })).toBeVisible();
+});
+
 test('the tour walks every control from the keyboard', async ({ page }) => {
   await openSearch(page);
   await helpLink(page).click();

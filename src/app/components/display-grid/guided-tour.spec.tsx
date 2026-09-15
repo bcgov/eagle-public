@@ -1,5 +1,5 @@
 import { useRef, useState, type RefObject } from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { GuidedTour } from './guided-tour';
 import { TOUR_STEPS } from './tour-steps';
@@ -7,10 +7,11 @@ import { TOUR_STEPS } from './tour-steps';
 const ALL = TOUR_STEPS.map((step) => step.target);
 
 /** A page with one stand-in control per `data-tour` key, and a button that starts the tour. */
-function Host({ targets = ALL }: { targets?: string[] }) {
+function Host({ targets = ALL, narrows = [] }: { targets?: string[]; narrows?: string[] }) {
   const trigger = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
   const [late, setLate] = useState<string[]>([]);
+  const [gone, setGone] = useState<string[]>([]);
   return (
     <div>
       <button ref={trigger} type="button" onClick={() => setOpen(true)}>
@@ -20,11 +21,17 @@ function Host({ targets = ALL }: { targets?: string[] }) {
       <button type="button" onClick={() => setLate(['scope'])}>
         answer the search
       </button>
-      {[...targets, ...late.filter((target) => !targets.includes(target))].map((target) => (
-        <div key={target} data-tour={target}>
-          {target}
-        </div>
-      ))}
+      {/* Stands in for the re-render a breakpoint brings: controls leave the page. */}
+      <button type="button" onClick={() => setGone(narrows)}>
+        narrow the page
+      </button>
+      {[...targets, ...late.filter((target) => !targets.includes(target))]
+        .filter((target) => !gone.includes(target))
+        .map((target) => (
+          <div key={target} data-tour={target}>
+            {target}
+          </div>
+        ))}
       <GuidedTour
         open={open}
         onEnd={() => setOpen(false)}
@@ -46,6 +53,37 @@ async function start(): Promise<ReturnType<typeof userEvent.setup>> {
   const user = userEvent.setup();
   await user.click(screen.getByRole('button', { name: 'Take the tour' }));
   return user;
+}
+
+/** The tour recounts a frame after the page changes, so a change has to be given that frame. */
+async function settle(): Promise<void> {
+  await act(async () => {
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+  });
+}
+
+/**
+ * A ResizeObserver that reports the first size the way a browser does: one callback per `observe`.
+ * Capped, so a tour that keeps re-subscribing is counted rather than left to spin.
+ */
+function observingResizeObserver(cap = 20): { observes: number } {
+  const seen = { observes: 0 };
+  vi.stubGlobal(
+    'ResizeObserver',
+    class {
+      readonly callback: () => void;
+      constructor(callback: () => void) {
+        this.callback = callback;
+      }
+      observe = () => {
+        seen.observes += 1;
+        if (seen.observes <= cap) this.callback();
+      };
+      unobserve = () => undefined;
+      disconnect = () => undefined;
+    },
+  );
+  return seen;
 }
 
 /** jsdom lays nothing out, so a target only has a box if it is told to have one. */
@@ -240,6 +278,89 @@ describe('GuidedTour', () => {
     fireEvent(window, new Event('resize'));
 
     expect(card()).toHaveStyle({ top: '352px' });
+  });
+
+  it('keeps the reader on the same control when an earlier one goes away', async () => {
+    render(<Host narrows={['filterrow']} />);
+    const user = await start();
+    for (const _step of [2, 3, 4, 5]) {
+      await user.click(screen.getByRole('button', { name: 'Next' }));
+    }
+    expect(counter()).toBe('Step 5 of 7');
+    expect(
+      screen.getByRole('heading', { name: 'Filters that are not columns' }),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'narrow the page' }));
+    await settle();
+
+    expect(counter()).toBe('Step 4 of 6');
+    expect(
+      screen.getByRole('heading', { name: 'Filters that are not columns' }),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+
+    expect(counter()).toBe('Step 5 of 6');
+    expect(screen.getByRole('heading', { name: 'Choose your columns' })).toBeInTheDocument();
+  });
+
+  it('lands on the next control along when the one being read about goes away', async () => {
+    render(<Host narrows={['more']} />);
+    const user = await start();
+    for (const _step of [2, 3, 4, 5]) {
+      await user.click(screen.getByRole('button', { name: 'Next' }));
+    }
+    expect(counter()).toBe('Step 5 of 7');
+
+    await user.click(screen.getByRole('button', { name: 'narrow the page' }));
+    await settle();
+
+    expect(counter()).toBe('Step 5 of 6');
+    expect(screen.getByRole('heading', { name: 'Choose your columns' })).toBeInTheDocument();
+  });
+
+  it('counts from one when every control before the current one goes away', async () => {
+    render(<Host narrows={['search', 'types']} />);
+    const user = await start();
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+    expect(counter()).toBe('Step 3 of 7');
+
+    await user.click(screen.getByRole('button', { name: 'narrow the page' }));
+    await settle();
+
+    expect(counter()).toBe('Step 1 of 5');
+    expect(
+      screen.getByRole('heading', { name: 'Two ways to search documents' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Back' })).toBeDisabled();
+  });
+
+  it('subscribes once per step, because an unchanged page is not rewritten', async () => {
+    const observer = observingResizeObserver();
+    render(<Host />);
+    const user = await start();
+    expect(counter()).toBe('Step 1 of 7');
+    // A browser answers `observe` with the size it already has. Rewriting a step list that has
+    // not changed re-subscribes on that answer, and the tour never stops re-reading the page.
+    expect(observer.observes).toBe(1);
+
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+
+    expect(counter()).toBe('Step 2 of 7');
+    expect(observer.observes).toBe(2);
+  });
+
+  it('leaves focus where the reader put it when a read finds nothing moved', async () => {
+    render(<Host />);
+    await start();
+    const next = screen.getByRole('button', { name: 'Next' });
+    next.focus();
+
+    fireEvent(window, new Event('resize'));
+
+    expect(next).toHaveFocus();
   });
 
   it('brings a target below the fold into view before it measures', async () => {

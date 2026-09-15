@@ -111,7 +111,7 @@ Phase 5, help + tour:
 - [x] 5.1 `search-help-dialog.tsx` + spec — native `<dialog>`, opened from the Search help link
 - [x] 5.2 `guided-tour.tsx`, `tour-steps.ts`, absent-step skip + spec
 - [x] 5.3 parity loop passed (states 07, 08, tour steps 2-7) — all 28 shots match: 01-03, 05, 07-12, 16, 17 at both widths, 06, 13, 14, 15 wide-only by design, 04 still skipped until Phase 4. The earlier drift was not timing: a remeasure re-pinned the scroll lock, so the resize Chromium does for a full-page shot scrolled the locked page and left it there, and every fixed element painted low. A remeasure now re-reads the box without moving the page.
-- [ ] 5.4 PR, review, merged, beta on next
+- [ ] 5.4 PR, review, merged, beta on next (in progress: PR #886 open, CI green, review PASS with two minors fixed)
 
 Phase 6, nav + retirement:
 

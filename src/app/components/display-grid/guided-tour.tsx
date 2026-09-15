@@ -34,6 +34,22 @@ const CARD_WIDTH = 380;
 /** Below this much room under the control, the card is hung above it instead. */
 const CARD_ROOM = 200;
 
+/** Whether a fresh measurement is the box already lit. */
+function sameSpot(was: Spot | null, at: DOMRect): boolean {
+  return (
+    was !== null &&
+    was.top === at.top &&
+    was.left === at.left &&
+    was.width === at.width &&
+    was.height === at.height
+  );
+}
+
+/** Whether two step lists point at the same controls, in the same order. */
+function sameTargets(a: readonly TourStep[], b: readonly TourStep[]): boolean {
+  return a.length === b.length && a.every((one, at) => one.target === b[at].target);
+}
+
 /**
  * The guided tour: one control at a time, lit by a gold ring and described by a card.
  *
@@ -89,6 +105,18 @@ export function GuidedTour({ open, onEnd, restoreFocusTo }: GuidedTourProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, end]);
 
+  /**
+   * Where the control being read about sits in a freshly read list. A control that has gone hands
+   * its slot to whatever followed it, so the walk carries on from there rather than starting over.
+   */
+  const landingOf = useCallback(
+    (present: TourStep[]) => {
+      const kept = present.findIndex((one) => one.target === steps[index]?.target);
+      return kept >= 0 ? kept : Math.min(index, present.length - 1);
+    },
+    [index, steps],
+  );
+
   /** Reads the page again: a resize moves the controls, and can take one away entirely. */
   const remeasure = useCallback(() => {
     const present = stepsOnPage();
@@ -96,17 +124,12 @@ export function GuidedTour({ open, onEnd, restoreFocusTo }: GuidedTourProps) {
       end();
       return;
     }
-    const same =
-      present.length === steps.length &&
-      present.every((one, at) => one.target === steps[at].target);
-    if (!same) {
-      // Keep the reader on the control they were reading about, wherever it landed in the list.
-      const kept = present.findIndex((one) => one.target === steps[index]?.target);
+    if (!sameTargets(present, steps)) {
       setSteps(present);
-      setIndex(kept >= 0 ? kept : Math.min(index, present.length - 1));
+      setIndex(landingOf(present));
     }
     setTick((was) => was + 1);
-  }, [end, index, steps]);
+  }, [end, landingOf, steps]);
 
   /** Moves the walk, re-reading the page first so a control that has since arrived is counted. */
   const move = useCallback(
@@ -116,8 +139,7 @@ export function GuidedTour({ open, onEnd, restoreFocusTo }: GuidedTourProps) {
         end();
         return;
       }
-      const here = present.findIndex((one) => one.target === steps[index]?.target);
-      const next = (here >= 0 ? here : Math.min(index, present.length - 1)) + delta;
+      const next = landingOf(present) + delta;
       if (next < 0) return;
       if (next >= present.length) {
         end();
@@ -126,7 +148,7 @@ export function GuidedTour({ open, onEnd, restoreFocusTo }: GuidedTourProps) {
       setSteps(present);
       setIndex(next);
     },
-    [end, index, steps],
+    [end, landingOf],
   );
 
   // The spotlight is drawn against the viewport, so a new step brings a target below the fold into
@@ -163,7 +185,11 @@ export function GuidedTour({ open, onEnd, restoreFocusTo }: GuidedTourProps) {
       scrollLockedTo(pinned.current);
     }
     const at = element.getBoundingClientRect();
-    setSpot({ top: at.top, left: at.left, width: at.width, height: at.height });
+    // Same box, same state: a read that reports no movement must not re-render, or the focus
+    // effect below takes focus off whatever button in the card the reader had reached.
+    setSpot((was) =>
+      sameSpot(was, at) ? was : { top: at.top, left: at.left, width: at.width, height: at.height },
+    );
   }, [open, step, steps, index, tick, end, scrollLockedTo]);
 
   // Focus follows the step: the card is the only thing a reader can reach while the tour runs.
@@ -227,12 +253,25 @@ export function GuidedTour({ open, onEnd, restoreFocusTo }: GuidedTourProps) {
     const element = step ? targetOf(step) : null;
     const observer = new ResizeObserver(remeasure);
     if (element) observer.observe(element);
+    // The resize event arrives before React has re-rendered the grid, so the read it triggers
+    // still sees the control a breakpoint is about to take away. The tree watch catches that commit.
+    let frame = 0;
+    const watcher = new MutationObserver(() => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        if (!sameTargets(stepsOnPage(), steps)) remeasure();
+      });
+    });
+    watcher.observe(document.body, { childList: true, subtree: true });
     window.addEventListener('resize', remeasure);
     return () => {
       observer.disconnect();
+      watcher.disconnect();
+      if (frame) cancelAnimationFrame(frame);
       window.removeEventListener('resize', remeasure);
     };
-  }, [open, step, remeasure]);
+  }, [open, step, steps, remeasure]);
 
   useEffect(() => {
     if (!open) return;
