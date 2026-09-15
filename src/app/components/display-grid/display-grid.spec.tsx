@@ -299,6 +299,38 @@ describe('DisplayGrid', () => {
     expect(onToggleRow).toHaveBeenCalledWith(rows[1]);
   });
 
+  it('draws a column badge in the cell, outside the link', () => {
+    renderGrid({
+      columns: [
+        {
+          ...columns[0],
+          href: () => '/doc/a',
+          badge: (row) => (row.id === 'a' ? <i aria-label="Featured" role="img" /> : null),
+        },
+        columns[1],
+      ],
+    });
+
+    const star = screen.getByRole('img', { name: 'Featured' });
+    expect(star.closest('a')).toBeNull();
+    expect(star.closest('td')).toContainElement(screen.getByRole('link', { name: 'Application' }));
+  });
+
+  it('runs a column link handler instead of following the href', async () => {
+    const user = userEvent.setup();
+    const onLinkClick = vi.fn();
+    renderGrid({
+      columns: [
+        { ...columns[0], href: (row) => `/doc/${row.id}`, hrefExternal: true, onLinkClick },
+        columns[1],
+      ],
+    });
+
+    await user.click(screen.getByRole('link', { name: 'Application' }));
+
+    expect(onLinkClick).toHaveBeenCalledWith(rows[0]);
+  });
+
   it('marks the header checkbox mixed while only some rows are selected', () => {
     renderGrid({ selectable: true, selectedIds: ['a'], rowLabel: (row) => row.name });
 

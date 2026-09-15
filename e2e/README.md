@@ -266,13 +266,12 @@ is applied, a keyword returning hits). Deselect with `yarn playwright test --gre
 | File | Tests | Covers |
 |---|---|---|
 | `tests/smoke.spec.ts` | 11 | every top-level route loads, one `h1`, no `img` without `alt` |
-| `tests/static-pages.spec.ts` | 11 | home, contact, legislation, compliance-oversight, process, search-help, news, project-notifications |
-| `tests/projects-list.spec.ts` | 5 | table, sort, pagination, keyword filter, deep link |
+| `tests/static-pages.spec.ts` | 9 | home, contact, legislation, compliance-oversight, process, search-help |
 | `tests/projects-map.spec.ts` | 6 | map and clusters, inline filters panel, filter, pin card, list-card card, basemap switch |
-| `tests/search.spec.ts` | 6 | table, keyword, milestone facet, pagination, deep link, row links |
-| `tests/project-detail.spec.ts` | 11 | tab strip and all 7 child routes, download link shape |
+| `tests/search.spec.ts` | 17 | the unified page: record types, keyword, facets, pagination, deep links, row links, inside documents |
+| `tests/project-detail.spec.ts` | 12 | tab strip and all 7 child routes, download link shape |
 | `tests/comment-period.spec.ts` | 4 | `/p/../cp/../details`, `/pn/../cp/../details`, no submission entry point |
-| `tests/routing.spec.ts` | 6 | 404 fallback, `/p/:id`, `/p/../cp/:id`, `/pn/../cp/:id`, `/search/content`, header nav |
+| `tests/routing.spec.ts` | 11 | 404 fallback, `/p/:id`, `/p/../cp/:id`, `/pn/../cp/:id`, the four old list addresses and a hash one, header nav |
 | `tests/gate.spec.ts` | 3 | the `ACCESS_GATE` curtain: wrong password, right password, focus and label |
 | `tests/interactions.spec.ts` | 4 | every sortable column, page-size picker, map region filter, header tab order |
 | `tests/css-scoping.spec.ts` | 7 | computed styles that a lost Angular view-encapsulation boundary broke in the port |

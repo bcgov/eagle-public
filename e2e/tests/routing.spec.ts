@@ -83,6 +83,7 @@ test('/projects-list lands on unified search as projects', async ({ page }) => {
   expect(url.pathname).toBe('/search');
   expect(url.searchParams.get('record')).toBe('projects');
   expect(url.searchParams.get('keywords')).toBe('coal');
+  await expect(activePill(page)).toHaveText(/projects/i);
 });
 
 test('/news lands on unified search as activities', async ({ page }) => {
@@ -130,6 +131,7 @@ test('an old hash-router address re-enters the path routes', async ({ page }) =>
   expect(url.pathname).toBe('/search');
   expect(url.searchParams.get('record')).toBe('projects');
   expect(url.searchParams.get('keywords')).toBe('coal');
+  await expect(activePill(page)).toHaveText(/projects/i);
 });
 
 test('the header navigates to every top-level destination', async ({ page }) => {
@@ -144,4 +146,14 @@ test('the header navigates to every top-level destination', async ({ page }) => 
   // The footer carries a gov.bc.ca "Contact us" link too, so scope the lookup to the header.
   await page.getByRole('banner').getByRole('link', { name: 'Contact Us' }).click();
   await page.waitForURL('**/contact');
+
+  await page.goto('/');
+  await ready(page, 1000);
+  const search = page.getByRole('banner').getByRole('link', { name: 'Search' });
+  await search.click();
+  await page.waitForURL('**/search?*');
+  // A bare /search is the documents list, the same thing an Angular /search showed.
+  expect(new URL(page.url()).searchParams.get('record')).toBe('documents');
+  // The item stays lit while the reader is on the page, whichever record type they move to.
+  await expect(search).toHaveAttribute('aria-current', 'page');
 });

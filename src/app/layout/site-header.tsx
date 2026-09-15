@@ -7,7 +7,7 @@ import './site-header.css';
 /** The masthead, left to right after the mark and the site name. Staff Login is added last. */
 const NAV_LINKS = [
   { label: 'Map Explorer', to: '/projects' },
-  { label: 'Search', to: '/projects-list' },
+  { label: 'Search', to: '/search' },
   { label: 'Contact Us', to: '/contact' },
 ];
 

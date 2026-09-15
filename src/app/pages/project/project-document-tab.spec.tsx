@@ -1,6 +1,8 @@
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { clearSelection } from 'app/state/bulk-download';
+import { clearToasts } from 'app/state/toast';
 import { renderAt } from '../../../test-utils';
 import { Amendments } from './amendments';
 import { Application } from './application';
@@ -71,6 +73,7 @@ const DOCUMENTS = [
     milestone: 'ms-cert-2002',
     projectPhase: 'ph-amend-2018',
     isFeatured: true,
+    internalSize: String(2 * 1024 * 1024),
   },
 ];
 
@@ -123,6 +126,8 @@ describe('project document tabs', () => {
   beforeEach(() => {
     requests = [];
     total = 1;
+    clearSelection();
+    clearToasts();
   });
 
   afterEach(() => vi.unstubAllGlobals());
@@ -303,6 +308,57 @@ describe('project document tabs', () => {
     );
 
     await waitFor(() => expect(router.state.location.search).toContain('sortBy=%2BdisplayName'));
+  });
+
+  it('counts the documents in the bar until a row is selected', async () => {
+    total = 42;
+    renderTab(DocumentsTab, '/p/proj-1/documents');
+
+    await screen.findByText('Cedar Quarry Certificate');
+    // The grid draws a second live region for the wait, so match the count by its own words.
+    expect(screen.getByText('1–10 of 42 documents')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByLabelText('Select all on this page'));
+
+    expect(screen.getByLabelText('Select Cedar Quarry Certificate')).toBeChecked();
+    expect(screen.getByText('1 selected')).toBeInTheDocument();
+  });
+
+  /** The size is what a reader decides on before starting a download, so it sits on the button. */
+  it('puts the estimated size of the selection on the Download button', async () => {
+    renderTab(DocumentsTab, '/p/proj-1/documents');
+
+    await screen.findByText('Cedar Quarry Certificate');
+    await userEvent.click(screen.getByLabelText('Select Cedar Quarry Certificate'));
+
+    expect(screen.getByRole('button', { name: 'Download 1 (about 2.0 MB)' })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Clear selection' }));
+
+    expect(screen.getByLabelText('Select Cedar Quarry Certificate')).not.toBeChecked();
+    expect(screen.queryByRole('button', { name: /^Download/ })).not.toBeInTheDocument();
+  });
+
+  it('selects every matching document in one request, past the page on screen', async () => {
+    total = 42;
+    renderTab(DocumentsTab, '/p/proj-1/documents');
+
+    await screen.findByText('Cedar Quarry Certificate');
+    await userEvent.click(screen.getByLabelText('Select Cedar Quarry Certificate'));
+    await userEvent.click(screen.getByRole('button', { name: 'Select all 42 documents' }));
+
+    await waitFor(() => expect(documentRequests().at(-1)).toContain('pageSize=100'));
+  });
+
+  it('offers the download limit rather than a total no click could select', async () => {
+    total = 250;
+    renderTab(DocumentsTab, '/p/proj-1/documents');
+
+    await screen.findByText('Cedar Quarry Certificate');
+    await userEvent.click(screen.getByLabelText('Select Cedar Quarry Certificate'));
+
+    expect(screen.queryByRole('button', { name: /Select all/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Select 100 (download limit)' })).toBeInTheDocument();
   });
 
   it('documents keeps the chosen page size when a keyword search runs', async () => {

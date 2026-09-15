@@ -33,6 +33,8 @@ export interface ListRowProps {
   href?: string;
   /** The href leaves the app — a file download, say. */
   external?: boolean;
+  /** Runs instead of following the href, as the grid's cells do. */
+  onLinkClick?: () => void;
   body?: string;
   /** Search terms from `toTerms`, for the excerpt and the highlights. */
   terms?: string[];
@@ -57,6 +59,7 @@ export function ListRow({
   title,
   href,
   external,
+  onLinkClick,
   body,
   terms,
   attachments,
@@ -89,7 +92,12 @@ export function ListRow({
       </p>
 
       <h3 className="display-grid__row-title">
-        <RecordLink href={href} external={external} className="display-grid__row-link">
+        <RecordLink
+          href={href}
+          external={external}
+          onClick={onLinkClick}
+          className="display-grid__row-link"
+        >
           <Highlight text={title} terms={terms} />
         </RecordLink>
       </h3>

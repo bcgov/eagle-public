@@ -162,14 +162,17 @@ for an order it would reject. Any other param is dropped.
 | `/projects-list` | `/search?record=projects` | live |
 | `/search`, with or without document params | `/search?record=documents` | live |
 | `/#/<any of the above>` | the same path without the `#`, then the row above | live |
-| `/search/content` | `/search?record=documents&scope=inside` | planned, the inside-document scope is not built yet |
+| `/search/content` | `/search?record=documents&scope=inside` | live |
 | `/news` | `/search?record=activities` | live |
 | `/project-notifications` | `/search?record=notifications` | live |
 | `/search-help` | unchanged | live |
 
-`/news` and `/project-notifications` no longer have pages of their own: both redirect, and the
-activities and project-notification record types carry their lists. `/search/content` still renders
-its own page; it becomes a redirect with the inside-document scope.
+None of the four old addresses has a page of its own any more. `/projects-list`, `/news`,
+`/project-notifications` and `/search/content` all redirect, and the record types carry their
+lists: projects, activities, project notifications, and documents with the inside-document scope.
+The page components, their table configs and the `TableList` shell they were built on are deleted.
+`TableTemplate` stays, because the comments page and the project-notification documents table
+still use it.
 
 Filters carried, by record type: projects `type`, `eacDecision`, `proponent`, `region`,
 `CEAAInvolvement`, `currentPhaseName`, `decisionDateStart`, `decisionDateEnd`; documents
@@ -179,5 +182,12 @@ project notifications `type`, `region`, `pcp`, `decision`; activities none.
 The redirect happens in the browser, which is all a single page app can do. The edge serves
 `index.html` for every path, so a shared link reaches the app and the route loader rewrites it
 before anything renders. The old hash addresses are handled in the app shell: a `#/` hash becomes a
-real path, and the route loaders take it from there. `/search/content` keeps its own page for now,
-still gated on the CONTENT_SEARCH flag, until the inside-document scope lands on the documents tab.
+real path, and the route loaders take it from there. The scope switch that turns a documents search
+into a search inside the documents is still gated on the CONTENT_SEARCH flag; where the flag is
+off, a `/search/content` link lands on the documents list with its keyword.
+
+Links inside the site point at the new addresses rather than at a redirect. The masthead Search
+item goes to `/search`, so it is the current page for every record type, and the homepage cards go
+to `/search?record=projects`, `/search?record=activities` and `/search?record=notifications`.
+Angular's masthead had no Search item at all: the list pages hung off the "Project Information"
+dropdown.
