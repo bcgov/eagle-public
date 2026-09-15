@@ -877,4 +877,18 @@ describe('the inside-documents scope', () => {
       true,
     );
   });
+
+  it('drops the Name filter from the panel inside the documents, unlike the names scope', async () => {
+    // Inside the documents the list template has no filter row, so a column filter can only
+    // reach the page through the panel - the Name column just never gets there.
+    const user = userEvent.setup();
+    renderSearch('/search?scope=inside&keywords=habitat');
+
+    await screen.findByText(/along the creek/);
+    await user.click(screen.getByRole('button', { name: /More filters/ }));
+
+    // A sibling column filter proves the panel is populated, not just empty.
+    expect(screen.getByLabelText('Document type')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Name')).not.toBeInTheDocument();
+  });
 });
