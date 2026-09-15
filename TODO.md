@@ -99,11 +99,11 @@ Phase 3, activities + notifications:
 
 Phase 4, inside documents:
 
-- [ ] 4.1 scope switch, `DocumentChunk` query, sort swap/restore
-- [ ] 4.2 `passage-list.tsx` + spec, `PASSAGE_LOCATOR` constant, `pageNumbered` hook
-- [ ] 4.3 no-keyword prompt, cross-scope empty states
-- [ ] 4.4 `content-search.tsx`/`content-result.tsx` retired
-- [ ] 4.5 parity loop passed (state 04)
+- [x] 4.1 scope switch, `DocumentChunk` query, sort swap/restore (documents tab only, behind `CONTENT_SEARCH`; `scope=inside` queries the chunk dataset with `prefix=false` and `sortBy=-score`, which is how demi-search is told to issue no `$orderby`. The URL spells the order `-matches` and the sort select offers "Most matches" alone: every field of the chunk index is `sortable: false`, so no other order is real. `and[nameContains]` is dropped in the scope — the API 400s on it there — and the column filter goes with it; the other four facets, the date range, legislation and featured are all expressible on chunks, measured against test. Selection and bulk download work in the scope too, keyed by document id, so a selection survives the switch. The Documents pill in the scope shows this search's own total, the prototype's rule, so the badge matches the list under it. Snippets arrive with the API's `<mark>` wrappers around each hit; those are stripped and the passage list marks the terms itself)
+- [x] 4.2 `passage-list.tsx` + spec, `PASSAGE_LOCATOR` constant, `pageNumbered` hook (`passage-locator.ts` labels "Passage N" by the passage's place in its row until a row carries `pageNumbered`, then "Page N" and the file link gains `#page=N`; two passages shown, then "N more passages" / "Show fewer passages"; a checkbox per row when bulk download is on)
+- [x] 4.3 no-keyword prompt, cross-scope empty states (the prompt reads "Search inside the documents" with "N documents indexed" from the type counts and no pager. The cross-scope offer is one extra `pageSize=1` search, issued only where the current scope came back empty. Two deviations from the prototype copy: the prompt does not promise "the page it appears on", because the index records passage sequence numbers and not PDF pages, and the meta line under a file name is date and type with no author, because a chunk row carries none. Both close when the index carries real pages, Phase 7)
+- [x] 4.4 `content-search.tsx`/`content-result.tsx` retired (with their CSS, specs, `search-tabs.ts` and `contentSearchLoader`; `/search/content` redirects through `legacy-search.ts` to the inside scope, keyword and paging intact. `css-scoping.spec.ts` carried no rule for the page, so nothing to remove there. `contentSearchEnabled()` stays as the gate on the switch)
+- [x] 4.5 parity loop passed (state 04) (two rounds; 71 states pass, 0 fail, 14 skipped for phase 5. The fixtures answer `dataset=DocumentChunk` from `chunks.json`, grouped into document rows the way `group-chunks.js` does; the fixture config sets `CONTENT_SEARCH: true`, without which the switch never renders and the state skips. Round 1: the Documents pill, row checkboxes and the "matching" suffix in the app; the author segment and page labels rewritten capture-side in `capture-reference.ts`, both asserted, references regenerated at the same heights. Round 2: the hit mark takes the design's `padding: 0 1px; border-radius: 2px`, the passage row keeps the locator beside the text at every width, and the row checkbox is a plain flex item so it shrinks to 13px on a phone as the prototype's does. `documents.json` keeps d9 before d8; `parity:fixtures` would swap them back)
 - [ ] 4.6 PR, review, merged, beta on next
 
 Phase 5, help + tour:
@@ -138,6 +138,15 @@ Follow-ups from phase 3, none of them blocking:
 - The tab lists in `content-search.tsx:84` and `table-list.tsx:161` do not move focus with the arrow keys and carry no `aria-controls`. Fix them with the `moveFocus` helper in `notification-row.tsx`, moved somewhere both can read it.
 - The Show more button in `list-row.tsx` has no `aria-controls` naming the body it expands.
 - `headerless` does nothing for `template: 'list'`: a list has no head to drop. Either the flag is read there or the list configs stop setting it.
+
+Follow-ups from phase 4, none of them blocking:
+
+- The scope switch and the record-type pills are single-choice controls built as `role="group"` buttons with `aria-pressed`. A radiogroup (`role="radio"`, `aria-checked`) says "one of a set" where a pressed toggle does not.
+- Row titles in `list-row.tsx` and `passage-list.tsx` are `h3` under the page `h1` with no `h2` between.
+- The row checkbox is 16px, and 13px in the passage list on a phone where the prototype lets it shrink; both sit under the 24px target size. A design decision, the grid tables share it.
+- File links in `record-link.tsx` open a new tab with no "opens in a new tab" cue in the name.
+- In the inside scope the sort select offers "Most matches" alone; the select could hide when it has one option.
+- The site header "Search" item is not active on `/search` (it still points at `/projects-list`); the prototype draws it active. Phase 6.1 moves the link and closes the gap on every parity state.
 
 ## Port rules (added 2026-08-27)
 

@@ -78,6 +78,27 @@ test.describe('keywords', () => {
     ).toHaveLength(8);
   });
 
+  test('a chunk page carries one row per document, with its passages on it', () => {
+    // "marine" is in 6 passages spread over 5 documents; d2 holds two of them.
+    const answer = answerSearch(query('dataset=DocumentChunk&keywords=marine'));
+    expect(answer.searchResults).toHaveLength(5);
+    expect(answer.meta[0]?.searchResultsTotal).toBe(6);
+    expect(answer.meta[0]?.countsPassages).toBe(true);
+    expect(answer.meta[0]?.documentsOnPage).toBe(5);
+
+    const doubled = answer.searchResults.find((row) => row['_id'] === 'd2');
+    expect(doubled?.['matchCount']).toBe(2);
+    expect(doubled?.['snippets']).toHaveLength(2);
+    // The hit comes back wrapped, as Azure AI Search wraps it.
+    expect(String((doubled?.['snippets'] as string[])[0])).toContain('<mark>marine</mark>');
+  });
+
+  test('a chunk search with no keyword matches nothing at all', () => {
+    const answer = answerSearch(query('dataset=DocumentChunk'));
+    expect(answer.searchResults).toEqual([]);
+    expect(answer.meta[0]?.searchResultsTotal).toBe(0);
+  });
+
   test('a keyword nothing matches answers an empty page with a zero total', () => {
     const answer = answerSearch(query('dataset=Document&keywords=zzzz'));
     expect(answer.searchResults).toEqual([]);

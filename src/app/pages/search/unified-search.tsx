@@ -4,13 +4,15 @@ import { Link, useSearchParams } from 'react-router';
 import { track } from 'app/analytics/analytics';
 import { listsQueryOptions } from 'app/api/api';
 import { proponentsQueryOptions } from 'app/api/org';
-import { getSearchResults } from 'app/api/search';
+import { fetchData, getSearchResults, SearchParamObject } from 'app/api/search';
 import { AdvancedFilters } from 'app/components/display-grid/advanced-filters';
 import { ChipRow, type GridChip } from 'app/components/display-grid/chip-row';
-import { DisplayGrid } from 'app/components/display-grid/display-grid';
+import { DisplayGrid, type SortOption } from 'app/components/display-grid/display-grid';
 import { columnFiltersForPanel } from 'app/components/display-grid/grid-helpers';
 import { GridToolbar } from 'app/components/display-grid/grid-toolbar';
+import { toTerms } from 'app/components/display-grid/highlight';
 import type { ListRowField } from 'app/components/display-grid/list-row';
+import { PassageList, type PassageRow } from 'app/components/display-grid/passage-list';
 import type {
   AdvancedField,
   FilterValues,
@@ -19,6 +21,7 @@ import type {
   ValueOption,
 } from 'app/components/display-grid/types';
 import {
+  INSIDE_SORT,
   parseGridParams,
   RECORD_TYPES,
   useGridUrlState,
@@ -27,7 +30,7 @@ import {
 } from 'app/components/display-grid/use-grid-url-state';
 import { TYPEAHEAD_DEBOUNCE_MS, typeaheadKeywords } from 'app/components/filters/typeahead';
 import { SubscribePopover } from 'app/components/subscribe-popover';
-import { getNotifyApi } from 'app/config/config';
+import { contentSearchEnabled, getNotifyApi } from 'app/config/config';
 import {
   CAP_MESSAGE,
   clearSelection,
@@ -40,6 +43,8 @@ import {
   MAX_JOBS_IN_FLIGHT,
 } from 'app/state/bulk-download';
 import { showToast } from 'app/state/toast';
+import { isSafeUrl } from 'app/utils/safe-url';
+import { documentDownloadUrl } from 'app/utils/utils';
 import { toWireFilters, yearOptions } from './search-filters';
 import { recordConfig, type RecordTypeConfig, type SearchMeta } from './types';
 import { ATTACHMENTS_FILTER_ID, attachmentsFilterDropped } from './types/activities';
@@ -53,13 +58,103 @@ type Row = Record<string, unknown>;
 /** Selection bucket name. The unified page is what `/search` selects documents from. */
 const TABLE_ID = 'search';
 
-/** Where the record type sits in the search query key, which the placeholder reads it back off. */
+/** Where the record type and scope sit in the search query key; the placeholder reads them back. */
 const RECORD_IN_KEY = 1;
+const SCOPE_IN_KEY = 2;
 
-/** Inside-document search is Phase 4; until then the control has one option and states the scope. */
 const SCOPE_OPTIONS: { value: SearchScope; label: string }[] = [
   { value: 'names', label: 'Names & details' },
+  { value: 'inside', label: 'Inside documents' },
 ];
+
+/** The text inside the files: one row per document, carrying the passages that matched. */
+const INSIDE_DATASET = 'DocumentChunk';
+
+/**
+ * demi-search reads `-score` as "issue no $orderby", which leaves the relevance ranking in place.
+ * Every field of the chunk index is `sortable: false`, so this is the only order the scope has,
+ * and the URL spells it `-matches` because that is what the reader is choosing.
+ */
+const INSIDE_WIRE_SORT = '-score';
+const INSIDE_SORT_OPTIONS: SortOption[] = [{ value: INSIDE_SORT, label: 'Most matches' }];
+
+/** A half-typed last word is a name affordance; the API leaves prefix matching off for passages. */
+const NO_PREFIX = [{ name: 'prefix', value: 'false' }];
+
+/** demi-search answers 400 for `and[nameContains]` on the chunk dataset: it filters names only. */
+const NAMES_ONLY_FILTERS = ['nameContains'];
+
+/** Whether a scope can narrow by a filter id. The one place that rule is read. */
+function scopeTakes(inside: boolean, id: string): boolean {
+  return !inside || !NAMES_ONLY_FILTERS.includes(id);
+}
+
+/** The filters a scope can answer; the rest come back on the way out of it. */
+function filtersForScope(inside: boolean, values: FilterValues): FilterValues {
+  return Object.fromEntries(Object.entries(values).filter(([id]) => scopeTakes(inside, id)));
+}
+
+/** The API wraps each hit in `<mark>`; the passage list marks the terms itself, from plain text. */
+const MARK_TAG = /<\/?mark>/g;
+
+/**
+ * A grouped chunk row as the passage list reads one. The API returns one row per document with the
+ * passages that matched inside it, ordered by relevance, and `matchCount` is how many this page
+ * found.
+ */
+function toPassageRow(row: Row): PassageRow {
+  /* The document the passages came from, which is what the file link opens and what a selection
+     hands the bulk download. The grouped row repeats it as `_id`; the chunk's own id names no file. */
+  const id = String(row['documentId'] ?? row['_id'] ?? '');
+  const name = String(row['documentName'] ?? '') || 'Untitled document';
+  const href = documentDownloadUrl({ _id: id, displayName: name });
+  const snippets = Array.isArray(row['snippets']) ? (row['snippets'] as unknown[]) : [];
+  const date = row['datePosted'];
+  const type = row['documentType'];
+  return {
+    id,
+    name,
+    href: isSafeUrl(href) ? href : '',
+    date: date ? String(date) : null,
+    type: type ? String(type) : null,
+    // A chunk row carries no author: the four parent facets stamped on it are filter ids.
+    author: null,
+    /* The Nth passage this search returned, which is what the API locates. Its `pageNumber` is the
+       lead chunk's sequence number rather than a PDF page, and no later passage carries one. */
+    passages: snippets.map((text, index) => ({
+      locator: index + 1,
+      text: String(text).replace(MARK_TAG, '').trim(),
+    })),
+    total: Number(row['matchCount']) || snippets.length,
+  };
+}
+
+/** The other scope's total for the same keyword and filters, read one row at a time. */
+async function scopeTotal(
+  dataset: string,
+  keywords: string,
+  filters: Record<string, string>,
+  signal?: AbortSignal,
+): Promise<number | null> {
+  const chunks = dataset === INSIDE_DATASET;
+  const results = await fetchData(
+    new SearchParamObject(
+      `search-scope-${dataset}`,
+      keywords,
+      dataset,
+      chunks ? NO_PREFIX : [],
+      1,
+      1,
+      chunks ? INSIDE_WIRE_SORT : '',
+      {},
+      false,
+      '',
+      filters,
+    ),
+    signal,
+  );
+  return results?.totalSearchCount ?? null;
+}
 
 function recordLabel(record: RecordType): string {
   return recordConfig(record).label;
@@ -105,6 +200,8 @@ interface SearchRequest {
   pageSize: number;
   filters: Record<string, string>;
   record: RecordType;
+  /** Extra query params, as `searchKeywords` appends them: `{name, value}` pairs. */
+  fields?: { name: string; value: string }[];
 }
 
 /**
@@ -115,7 +212,7 @@ async function runSearch(request: SearchRequest, signal?: AbortSignal): Promise<
   const results = await getSearchResults(
     request.keywords,
     request.dataset,
-    [],
+    request.fields ?? [],
     request.currentPage,
     request.pageSize,
     request.sortBy,
@@ -256,7 +353,25 @@ export function UnifiedSearch() {
     clearAll,
   } = useGridUrlState({ defaultSort });
 
-  const { record, keywords, scope, sortBy, currentPage, pageSize, hiddenColumns, filters } = state;
+  const {
+    record,
+    keywords,
+    scope,
+    sortBy,
+    currentPage,
+    pageSize,
+    hiddenColumns,
+    filters: urlFilters,
+  } = state;
+
+  /* The switch is the documents tab's, and only where the environment offers the text search. A
+     `scope=inside` address in an environment that does not reads as the names scope. */
+  const scopeShown = config.id === 'documents' && contentSearchEnabled();
+  const inside = scopeShown && scope === 'inside';
+
+  /* A filter the chunk dataset cannot answer is not applied inside the documents, so it is not
+     offered or shown as a chip there either. It comes back on the way out of the scope. */
+  const filters = useMemo(() => filtersForScope(inside, urlFilters), [inside, urlFilters]);
 
   /* The field holds what is being typed; the URL holds what has been searched for. Without the
      draft every keystroke would wait on the debounce before it showed up. */
@@ -284,11 +399,18 @@ export function UnifiedSearch() {
     [config, lists, orgs],
   );
 
+  /* A column whose filter the scope cannot answer is not offered there at all: not as a filter
+     row, not in the panel, and not in the Filters badge. */
+  const scopeColumns = useMemo(
+    () => config.columns.filter((column) => scopeTakes(inside, column.filterId ?? column.key)),
+    [config, inside],
+  );
+
   /* Every column of every record type is sortable in the index, and the dropdown values only
      exist once the `List` and `Organization` reads land. */
   const columns: GridColumn<Row>[] = useMemo(
     () =>
-      config.columns
+      scopeColumns
         .filter((column) => !hiddenColumns.includes(column.key))
         .map((column) => {
           const picks = options[column.filterId ?? column.key] ?? column.options;
@@ -300,7 +422,7 @@ export function UnifiedSearch() {
             render: column.render ?? cellRenderer(column, picks),
           };
         }),
-    [config, hiddenColumns, options],
+    [scopeColumns, hiddenColumns, options],
   );
 
   const advancedFields: AdvancedField[] = useMemo(
@@ -354,42 +476,52 @@ export function UnifiedSearch() {
   );
   /** The filters a column owns, which a list hands to the panel because it has no filter row. */
   const columnFilterIds = useMemo(
-    () => columnFiltersForPanel(config.columns).map((field) => field.id),
-    [config],
+    () => columnFiltersForPanel(scopeColumns).map((field) => field.id),
+    [scopeColumns],
   );
   const wireFilters = useMemo(
     () => toWireFilters(filters, yearFilterIds, textFilterIds),
     [filters, yearFilterIds, textFilterIds],
   );
 
+  /* Nothing to search inside until there is a word to look for: the API answers a keywordless
+     chunk query with nothing, so the scope shows its prompt rather than asking. */
+  const insidePrompt = inside && !searchTerm;
+
   const { data, isFetching, isPending, isError } = useQuery({
     queryKey: [
       'unified-search',
       record,
+      scope,
       searchTerm,
       sortBy,
       currentPage,
       pageSize,
       JSON.stringify(wireFilters),
     ],
+    enabled: !insidePrompt,
     queryFn: ({ signal }) =>
       runSearch(
         {
           keywords: searchTerm,
-          dataset: config.dataset,
-          sortBy,
+          dataset: inside ? INSIDE_DATASET : config.dataset,
+          sortBy: inside ? INSIDE_WIRE_SORT : sortBy,
           currentPage,
           pageSize,
           filters: wireFilters,
           record,
+          fields: inside ? NO_PREFIX : [],
         },
         signal,
       ),
     /* Holding the last page of rows keeps the grid still while a page or a filter changes. Across
-       a record type it would hand the new tab the old tab's rows, which its row component reads
-       as its own shape: drop them and let the grid show it is loading. */
+       a record type or a scope it would hand the new view the old one's rows, which its row
+       component reads as its own shape: drop them and let the grid show it is loading. */
     placeholderData: (previous, previousQuery) =>
-      previousQuery?.queryKey[RECORD_IN_KEY] === record ? previous : undefined,
+      previousQuery?.queryKey[RECORD_IN_KEY] === record &&
+      previousQuery?.queryKey[SCOPE_IN_KEY] === scope
+        ? previous
+        : undefined,
   });
 
   /* One way only. The answer to "did you drop dateUpdated" depends on the sort that was asked
@@ -416,11 +548,35 @@ export function UnifiedSearch() {
     }
   }, [attachmentsDropped, filters, setFilter]);
 
-  const rows = data?.rows ?? [];
+  const rows = insidePrompt ? [] : (data?.rows ?? []);
   const total = data?.total ?? 0;
   /* No answer yet, so there is no total to read. Without this the bar and the empty state would
-     both say the record has none of whatever was asked for, until the first answer lands. */
-  const awaitingFirstAnswer = (isPending || isFetching) && data === undefined;
+     both say the record has none of whatever was asked for, until the first answer lands. The
+     prompt is not waiting on anything: no query was issued. */
+  const awaitingFirstAnswer = !insidePrompt && (isPending || isFetching) && data === undefined;
+
+  /* The switch keeps the filters in force, so the probe sends the ones the scope it points at
+     would send. Without them the link offers matches the destination then filters away. */
+  const otherScopeFilters = useMemo(
+    () => toWireFilters(filtersForScope(!inside, urlFilters), yearFilterIds, textFilterIds),
+    [inside, urlFilters, yearFilterIds, textFilterIds],
+  );
+
+  /* What the other scope would find for the same word. One extra one-row search, issued only
+     where this scope came back with nothing, because that is the only place it is read. */
+  const { data: otherScopeTotal } = useQuery({
+    queryKey: ['unified-search-other-scope', inside, searchTerm, JSON.stringify(otherScopeFilters)],
+    enabled: scopeShown && !!searchTerm && !awaitingFirstAnswer && !isError && rows.length === 0,
+    queryFn: ({ signal }) =>
+      scopeTotal(inside ? config.dataset : INSIDE_DATASET, searchTerm, otherScopeFilters, signal),
+  });
+  const crossScopeCount = otherScopeTotal ?? 0;
+
+  /* The documents badge counts what the tab's own scope would find, so the number agrees with the
+     list under it. Inside the documents that is this search's own total: `search/counts` measures
+     names and details, and a word that appears only in the text of the files would badge the tab 0
+     while eight documents are listed. Before the first answer it stays unknown rather than 0. */
+  const insideTotal = inside && !insidePrompt && data !== undefined ? total : null;
 
   /* A date column offers every year the record spans, plus whichever year is filtered on, so the
      choice in force never drops out of its own list. */
@@ -434,19 +590,23 @@ export function UnifiedSearch() {
     [columns, filters],
   );
 
+  /* A passage row stands for one document, so it ticks like one: same bulk-download gate as the
+     names scope, and the id that goes into the basket is the document's. */
   const selectable = config.selectable;
+  const template = inside ? 'list' : config.template;
   /** What the column picker offers. A list row draws itself, so it has no column to hide. */
-  const pickableColumns = config.template === 'list' ? undefined : config.columns;
+  const pickableColumns = template === 'list' ? undefined : config.columns;
   const selection = useSelection(TABLE_ID);
   const downloadInProgress = useDownloadInProgress();
   const selectedIds = useMemo(() => [...selection.keys()], [selection]);
 
   function rowId(row: Row): string {
-    return String(row['_id'] ?? '');
+    // A chunk row is a document's passages, and `documentId` is the file the download asks for.
+    return String(row['documentId'] ?? row['_id'] ?? '');
   }
 
   function rowLabel(row: Row): string {
-    return String(row['displayName'] ?? row['name'] ?? rowId(row));
+    return String(row['displayName'] ?? row['documentName'] ?? row['name'] ?? rowId(row));
   }
 
   function toggleRow(row: Row): void {
@@ -456,6 +616,12 @@ export function UnifiedSearch() {
       size: toSize(row['internalSize']),
     });
     if (!accepted) showToast(CAP_MESSAGE, { type: 'warning' });
+  }
+
+  /** The passage list hands back the document id it drew; the row it came from carries the rest. */
+  function toggleById(id: string): void {
+    const row = rows.find((candidate) => rowId(candidate) === id);
+    if (row) toggleRow(row);
   }
 
   function toggleAllOnPage(pageRows: Row[]): void {
@@ -535,14 +701,32 @@ export function UnifiedSearch() {
   /* What the Filters button counts. A list has no filter row, so its column filters live in the
      panel too and belong in its badge. */
   const panelIds =
-    config.template === 'list'
+    template === 'list'
       ? [...advancedFields.map((field) => field.id), ...columnFilterIds]
       : advancedFields.map((field) => field.id);
   const advancedCount = panelIds.filter((id) => filters[id] != null).length;
   const filterCount = Object.keys(filters).length;
   const noun = config.noun ?? config.label.toLowerCase();
 
+  /** "See 4 matches inside the documents", which is the way out of a scope that found none. */
+  function crossScopeLink(): ReactNode {
+    if (crossScopeCount < 1) return null;
+    const matches =
+      crossScopeCount === 1 ? '1 match' : `${crossScopeCount.toLocaleString('en-CA')} matches`;
+    return (
+      <button
+        type="button"
+        className="unified-search__empty-cross"
+        onClick={() => setScope(inside ? 'names' : 'inside')}
+      >
+        {`See ${matches} ${inside ? 'in names & details' : 'inside the documents'}`}
+      </button>
+    );
+  }
+
   function emptyState(): ReactNode {
+    // The prompt stands in for the empty state: nothing was asked, so nothing is missing.
+    if (insidePrompt) return null;
     if (awaitingFirstAnswer) return null;
     if (isError) {
       return (
@@ -557,17 +741,25 @@ export function UnifiedSearch() {
       : filterCount > 0
         ? `No ${noun} match these filters`
         : `No ${noun} found`;
-    const detail = searchTerm
-      ? 'Other record types may still have matches — the counts above tell you which.'
-      : filterCount === 1
-        ? 'One filter is applied. Clearing it brings the rest back.'
-        : filterCount > 1
-          ? `${filterCount} filters are applied. Clearing them brings the rest back.`
-          : '';
+    /* The two scopes point at each other: whichever one is empty, the app already knows whether
+       the other has matches for the same word, so it says so rather than dead-ending. */
+    const detail =
+      crossScopeCount > 0
+        ? inside
+          ? 'No passage inside a document contains it, but the name or details of one do.'
+          : 'No name or detail matches it, but the text inside the documents does.'
+        : searchTerm
+          ? 'Other record types may still have matches — the counts above tell you which.'
+          : filterCount === 1
+            ? 'One filter is applied. Clearing it brings the rest back.'
+            : filterCount > 1
+              ? `${filterCount} filters are applied. Clearing them brings the rest back.`
+              : '';
     return (
       <span className="unified-search__empty">
         <span className="unified-search__empty-title">{title}</span>
         {detail && <span className="unified-search__empty-detail">{detail}</span>}
+        {crossScopeLink()}
         {(searchTerm || filterCount > 0) && (
           <button type="button" className="unified-search__empty-action" onClick={clearEverything}>
             Clear filters and search
@@ -577,29 +769,51 @@ export function UnifiedSearch() {
     );
   }
 
-  const scopeControl =
-    config.id === 'documents' ? (
-      <div
-        className="unified-search__scope"
-        data-tour="scope"
-        role="group"
-        aria-label="Search documents by"
-      >
-        {SCOPE_OPTIONS.map((option) => (
-          <button
-            key={option.value}
-            type="button"
-            className={`unified-search__scope-option${
-              scope === option.value ? ' unified-search__scope-option--on' : ''
-            }`}
-            aria-pressed={scope === option.value}
-            onClick={() => setScope(option.value)}
-          >
-            {option.label}
-          </button>
-        ))}
-      </div>
-    ) : undefined;
+  const passageRows = useMemo(() => (inside ? rows.map(toPassageRow) : []), [inside, rows]);
+
+  /* Inside the documents the records are passages within a file, which no row of cells holds, so
+     the page draws the body and the grid keeps the bar, the chips, the panel and the pager. */
+  const insideBody: ReactNode = !inside ? undefined : insidePrompt ? (
+    <div className="unified-search__prompt">
+      <p className="unified-search__prompt-title">Search inside the documents</p>
+      <p className="unified-search__prompt-detail">
+        Type a word or phrase to find it in the text of the documents, not just their names. Results
+        show the matching passage from each document.
+      </p>
+    </div>
+  ) : (
+    <PassageList
+      rows={passageRows}
+      terms={toTerms(searchTerm)}
+      loading={isFetching}
+      selectable={selectable}
+      selectedIds={selectedIds}
+      onToggle={toggleById}
+    />
+  );
+
+  const scopeControl = scopeShown ? (
+    <div
+      className="unified-search__scope"
+      data-tour="scope"
+      role="group"
+      aria-label="Search documents by"
+    >
+      {SCOPE_OPTIONS.map((option) => (
+        <button
+          key={option.value}
+          type="button"
+          className={`unified-search__scope-option${
+            scope === option.value ? ' unified-search__scope-option--on' : ''
+          }`}
+          aria-pressed={scope === option.value}
+          onClick={() => setScope(option.value)}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
+  ) : undefined;
 
   return (
     <div className="unified-search">
@@ -642,7 +856,7 @@ export function UnifiedSearch() {
         >
           {RECORD_TYPES.map((id) => {
             const on = id === record;
-            const count = counts?.[id];
+            const count = id === 'documents' && insideTotal !== null ? insideTotal : counts?.[id];
             return (
               <button
                 key={id}
@@ -683,10 +897,13 @@ export function UnifiedSearch() {
         caption={`${recordLabel(record)} matching this search`}
         columns={gridColumns}
         rows={rows}
-        template={config.template}
+        template={template}
         rowComponent={config.rowComponent}
+        body={insideBody}
+        sortOptions={inside ? INSIDE_SORT_OPTIONS : undefined}
+        footer={!insidePrompt}
         headerless={config.headerless}
-        loading={isFetching}
+        loading={isFetching && !insidePrompt}
         emptyMessage={emptyState()}
         selectable={selectable}
         sort={sortStateOf(sortBy)}
@@ -711,6 +928,16 @@ export function UnifiedSearch() {
             pageSize={pageSize}
             total={total}
             loading={awaitingFirstAnswer}
+            /* A keyword or a filter is in force, so the count is of what matched rather than of
+               everything the record type holds: "1–8 of 8 documents matching". */
+            narrowed={!!searchTerm || filterCount > 0}
+            /* The prompt has asked the index nothing, so the bar states what is searchable. An
+               unknown documents total says nothing rather than claiming a number. */
+            countText={
+              insidePrompt && typeof counts?.documents === 'number'
+                ? `${counts.documents.toLocaleString('en-CA')} documents indexed`
+                : undefined
+            }
             scope={scopeControl}
             columns={pickableColumns}
             hiddenColumns={hiddenColumns}

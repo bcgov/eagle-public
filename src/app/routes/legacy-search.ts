@@ -72,11 +72,14 @@ function legacySearchQuery(
   search: URLSearchParams,
   scope?: SearchScope,
 ): URLSearchParams {
+  const inside = scope === 'inside';
   const carried: Params = {
     record,
-    scope: scope === 'inside' ? scope : null,
+    scope: inside ? scope : null,
     keywords: search.get('keywords'),
-    sortBy: validSortBy(record, search.get('sortBy')),
+    // Passages rank by relevance and by nothing else, so a field sort is dropped rather than kept
+    // as a choice the index will refuse.
+    sortBy: inside ? null : validSortBy(record, search.get('sortBy')),
     currentPage: search.get('currentPage'),
     pageSize: search.get('pageSize'),
   };

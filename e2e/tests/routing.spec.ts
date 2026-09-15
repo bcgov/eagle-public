@@ -57,23 +57,20 @@ test('@data /pn/:projId/cp/:cpId redirects to /details', async ({ page, request 
   expect(new URL(page.url()).pathname).toBe(`/pn/${pn._id}/cp/${cp._id}/details`);
 });
 
-test('/search/content redirects to /search while CONTENT_SEARCH is off', async ({
+test('/search/content lands on the documents tab, scoped inside the documents', async ({
   page,
-  request,
 }) => {
-  const cfg = await (await request.get('/demi-search/config')).json();
-  const contentSearchEnabled = Boolean(cfg.CONTENT_SEARCH);
+  await page.goto('/search/content?keywords=water&currentPage=2');
+  await page.waitForURL('**/search?*');
 
-  await page.goto('/search/content');
+  const url = new URL(page.url());
+  expect(url.pathname).toBe('/search');
+  expect(url.searchParams.get('record')).toBe('documents');
+  expect(url.searchParams.get('scope')).toBe('inside');
+  expect(url.searchParams.get('keywords')).toBe('water');
+  expect(url.searchParams.get('currentPage')).toBe('2');
   await ready(page);
-
-  if (contentSearchEnabled) {
-    expect(new URL(page.url()).pathname).toBe('/search/content');
-  } else {
-    // Recorded prod behaviour: the route guard rewrites a bookmarked link to document search.
-    expect(new URL(page.url()).pathname).toBe('/search');
-    await expect(page.getByRole('heading', { level: 1, name: 'Search' })).toBeVisible();
-  }
+  await expect(page.getByRole('heading', { level: 1, name: 'Search' })).toBeVisible();
 });
 
 // The Angular-era list pages. Each keeps working as a bookmark by landing on unified search with

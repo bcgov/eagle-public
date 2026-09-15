@@ -26,7 +26,7 @@ import {
 import { startPrototypeServer, type PrototypeServer } from './prototype-server';
 import { selectorFor } from './selectors';
 import { REFERENCE_DIR } from './paths';
-import { measurementsFor, STATES, WIDE, widthsFor } from './states';
+import { CONTENT_SEARCH_STATE, measurementsFor, STATES, WIDE, widthsFor } from './states';
 
 /**
  * `support.js` sizes the artboard to the window (`html,body{height:100%}`,
@@ -138,6 +138,132 @@ async function trimActivityAttachments(page: Page): Promise<void> {
   );
 }
 
+/**
+ * Accepted deviation, 2026-09-14: the design's passage row prints `date · type · author`. A DEMI
+ * `DocumentChunk` carries no author, so the app draws `date · type` and has nothing to put in a
+ * third segment. The author is dropped on the design side, at both widths of the one state that
+ * lists passages.
+ *
+ * The handoff gives every document one of these three authors (`DOCS`), which is what tells a
+ * trailing author apart from the type beside it.
+ */
+const PASSAGE_AUTHORS: string[] = ['Proponent', 'EAO', 'Minister'];
+
+/**
+ * The count line the prototype prints above a row's passages. It is what separates a passage
+ * block from the attachment list an activity draws with the same markup.
+ */
+const PASSAGES_LABEL = /^\d+ matching passages?$/;
+
+/**
+ * Drops the trailing author segment, and its separator, from every passage row's meta line.
+ *
+ * Only the leading text node is rewritten, so a row that also linked its project would keep the
+ * link and fail `assertPassageAuthorsDropped` rather than lose it silently. The finder is written
+ * out again in that assertion: page-context code cannot call a helper from this file.
+ */
+async function dropPassageAuthors(page: Page): Promise<void> {
+  await page.evaluate(
+    ([pattern, authors]) => {
+      const label = new RegExp(pattern!);
+      for (const list of document.querySelectorAll('.grid-root ol ul')) {
+        const line = list.previousElementSibling;
+        if (!line || !label.test((line.textContent ?? '').trim())) continue;
+        // The meta line is the row body's first paragraph, above the name and the count. The
+        // prototype renders the line through React, which wraps the interpolated value in a span
+        // of its own, so the string is a text node somewhere under the paragraph rather than a
+        // child of it. Rewriting that one node leaves the rest of the line alone: a row that also
+        // linked its project would keep the link and fail the assertion rather than lose it.
+        const meta = list.parentElement?.querySelector(':scope > p');
+        if (!meta) continue;
+        const walker = document.createTreeWalker(meta, NodeFilter.SHOW_TEXT);
+        for (let text = walker.nextNode(); text; text = walker.nextNode()) {
+          const parts = (text.nodeValue ?? '').split('·').map((part) => part.trim());
+          if (parts.length < 2 || !authors!.includes(parts[parts.length - 1] ?? '')) continue;
+          text.nodeValue = parts.slice(0, -1).join(' · ');
+        }
+      }
+    },
+    [PASSAGES_LABEL.source, PASSAGE_AUTHORS] as const,
+  );
+}
+
+/**
+ * Accepted deviation, 2026-09-14: page numbers arrive with a later DEMI phase. Until a hit carries
+ * one, the app numbers a passage by its place in the row — `PASSAGE_LOCATOR.label` in
+ * `passage-locator.ts` prints `Passage 1`, `Passage 2` — and draws no link, because a `#page=`
+ * fragment it cannot fill is a broken promise. The design's `Page 62` is rewritten to that ordinal
+ * form, at both widths of the one state that lists passages.
+ */
+async function renumberPassageLocators(page: Page): Promise<void> {
+  await page.evaluate((pattern) => {
+    const label = new RegExp(pattern);
+    for (const list of document.querySelectorAll('.grid-root ol ul')) {
+      const line = list.previousElementSibling;
+      if (!line || !label.test((line.textContent ?? '').trim())) continue;
+      // A passage is a locator span then the text, so the row's first direct span is the label.
+      Array.from(list.children).forEach((passage, index) => {
+        const locator = passage.querySelector(':scope > span');
+        if (locator) locator.textContent = `Passage ${index + 1}`;
+      });
+    }
+  }, PASSAGES_LABEL.source);
+}
+
+/** An author left on a meta line, or a line stripped past its type, would change the reference. */
+async function assertPassageAuthorsDropped(page: Page): Promise<void> {
+  const metas = await page.evaluate((pattern) => {
+    const label = new RegExp(pattern);
+    const found: string[] = [];
+    for (const list of document.querySelectorAll('.grid-root ol ul')) {
+      const line = list.previousElementSibling;
+      if (!line || !label.test((line.textContent ?? '').trim())) continue;
+      found.push((list.parentElement?.querySelector(':scope > p')?.textContent ?? '').trim());
+    }
+    return found;
+  }, PASSAGES_LABEL.source);
+  expect(metas.length, 'no row drew a block of passages').toBeGreaterThan(0);
+  expect(
+    metas.filter((meta) => PASSAGE_AUTHORS.some((author) => meta.endsWith(author))),
+    'a passage row still names its author',
+  ).toEqual([]);
+  expect(
+    metas.filter((meta) => meta.split('·').length !== 2),
+    'a passage row no longer reads date · type',
+  ).toEqual([]);
+}
+
+/** A rewrite that missed a passage, or renumbered across rows, would change the reference. */
+async function assertOrdinalLocators(page: Page): Promise<void> {
+  const rows = await page.evaluate((pattern) => {
+    const label = new RegExp(pattern);
+    const found: string[][] = [];
+    for (const list of document.querySelectorAll('.grid-root ol ul')) {
+      const line = list.previousElementSibling;
+      if (!line || !label.test((line.textContent ?? '').trim())) continue;
+      found.push(
+        Array.from(list.children).map((passage) =>
+          (passage.querySelector(':scope > span')?.textContent ?? '').trim(),
+        ),
+      );
+    }
+    return found;
+  }, PASSAGES_LABEL.source);
+  expect(rows.length, 'no row drew a block of passages').toBeGreaterThan(0);
+  expect(
+    rows.filter((row) => row.length === 0),
+    'a passage block drew no passages',
+  ).toEqual([]);
+  expect(
+    rows.filter((row) => row.some((locator) => locator.startsWith('Page '))),
+    'a passage is still labelled by its page',
+  ).toEqual([]);
+  expect(
+    rows.filter((row) => row.join('|') !== row.map((_, index) => `Passage ${index + 1}`).join('|')),
+    'a passage is not numbered by its place in the row',
+  ).toEqual([]);
+}
+
 /** A trim that matched nothing, or left a second file behind, would quietly change the reference. */
 async function assertOneAttachment(page: Page): Promise<void> {
   const rows = await page.evaluate((pattern) => {
@@ -223,10 +349,18 @@ for (const state of STATES) {
         await page.addStyleTag({ content: PROJECT_LEGISLATION_CSS });
       }
       if (state.id === ACTIVITIES_LIST_STATE) await trimActivityAttachments(page);
+      if (state.id === CONTENT_SEARCH_STATE) {
+        await dropPassageAuthors(page);
+        await renumberPassageLocators(page);
+      }
       await settle(page);
 
       if (state.id === PROJECTS_CARD_STATE && width !== WIDE) await assertLegislationHidden(page);
       if (state.id === ACTIVITIES_LIST_STATE) await assertOneAttachment(page);
+      if (state.id === CONTENT_SEARCH_STATE) {
+        await assertPassageAuthorsDropped(page);
+        await assertOrdinalLocators(page);
+      }
 
       const fullPage = !state.viewportOnly;
       const png = await page.screenshot({ fullPage, scale: 'css' });

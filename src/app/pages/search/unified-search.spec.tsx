@@ -30,6 +30,27 @@ const ORPHAN_ID = '6a61123ff0c29b9e36505fd7';
 
 /** What `dataset=Document` answers; a test that needs other cells puts its own rows here. */
 let documents: Record<string, unknown>[];
+
+/** A grouped chunk row: one document, with the passages that matched inside it. */
+const CHUNKS = [
+  {
+    _id: 'd1',
+    documentId: 'd1',
+    documentName: 'Fish habitat report',
+    documentType: 'Letter',
+    datePosted: '2025-01-02T12:00:00Z',
+    pageNumber: 14,
+    // The API wraps every hit in `<mark>`, as the wire carries it.
+    snippets: [
+      'spawning <mark>habitat</mark> along the creek',
+      '<mark>habitat</mark> offsetting plan',
+    ],
+    matchCount: 2,
+  },
+];
+/** What `dataset=DocumentChunk` answers, and the passage total its meta reports. */
+let chunks: Record<string, unknown>[];
+let chunkTotal: number;
 const PROJECTS = [
   {
     _id: 'p1',
@@ -115,6 +136,10 @@ function stubApi(): ReturnType<typeof vi.fn> {
       const sort = dropsDateSort && url.includes('sortBy=-dateUpdated') ? ['dateUpdated'] : [];
       return envelope(PROJECTS, 1, { dropped: { filter: [], sort } });
     }
+    // Ahead of the Document leg: `dataset=DocumentChunk` starts with the same word.
+    if (url.includes('dataset=DocumentChunk')) {
+      return envelope(chunks, chunkTotal, { countsPassages: true, documentsOnPage: chunks.length });
+    }
     if (url.includes('dataset=Document')) return envelope(documents, documents.length);
     if (url.includes('dataset=RecentActivity')) {
       const filter =
@@ -154,6 +179,8 @@ beforeEach(async () => {
   dropsDateSort = false;
   dropsAttachmentFilter = false;
   documents = DOCUMENTS;
+  chunks = CHUNKS;
+  chunkTotal = 2;
   held = null;
   window.__env = { logLevel: 4 };
   await loadConfig();
@@ -535,6 +562,12 @@ describe('UnifiedSearch', () => {
     expect(await screen.findByText('1–1 of 1 notifications')).toBeInTheDocument();
   });
 
+  it('says the count is of what matched once a keyword narrows it', async () => {
+    renderSearch('/search?record=documents&keywords=fish');
+
+    expect(await screen.findByText('1–1 of 1 documents matching')).toBeInTheDocument();
+  });
+
   it('draws each project notification as a card, with its filters in the panel', async () => {
     const user = userEvent.setup();
     renderSearch('/search');
@@ -588,7 +621,7 @@ describe('UnifiedSearch', () => {
     const release = holdAnswersFor('Project');
     renderSearch('/search?record=projects');
 
-    // The grid body is the one live region that announces the wait; the bar stays quiet.
+    // A hidden status region announces the wait; the count bar stays quiet.
     expect(await screen.findByText('Loading')).toBeInTheDocument();
     expect(screen.queryAllByText(/No projects/)).toHaveLength(0);
 
@@ -626,5 +659,236 @@ describe('UnifiedSearch', () => {
     await screen.findByText('Alpha Mine');
 
     expect(screen.queryByRole('button', { name: 'Subscribe' })).not.toBeInTheDocument();
+  });
+});
+
+/** Turns the text search on for one test, the way a deployed environment's config does. */
+async function withContentSearch(): Promise<void> {
+  window.__env = { ...window.__env, CONTENT_SEARCH: true };
+  await loadConfig();
+}
+
+/** Every search the page asked one dataset for, in the order it asked. */
+function asked(fetchMock: ReturnType<typeof vi.fn>, dataset: string): string[] {
+  return fetchMock.mock.calls.map(String).filter((url) => url.includes(`dataset=${dataset}&`));
+}
+
+describe('the inside-documents scope', () => {
+  beforeEach(withContentSearch);
+
+  it('is offered on the documents tab, and only where the environment turns it on', async () => {
+    const user = userEvent.setup();
+    renderSearch('/search');
+
+    expect(await screen.findByRole('button', { name: 'Inside documents' })).toBeInTheDocument();
+
+    await user.click(pill(/^Projects/));
+    await screen.findByText('Alpha Mine');
+    expect(screen.queryByRole('button', { name: 'Inside documents' })).not.toBeInTheDocument();
+  });
+
+  it('hides the switch where the environment has no text search', async () => {
+    window.__env = { logLevel: 4 };
+    await loadConfig();
+    renderSearch('/search');
+
+    await screen.findByText('Fish habitat report');
+
+    expect(screen.queryByRole('button', { name: 'Inside documents' })).not.toBeInTheDocument();
+  });
+
+  it('searches the passages rather than the names, with prefix matching off', async () => {
+    const user = userEvent.setup();
+    const fetchMock = stubApi();
+    renderSearch('/search?keywords=habitat');
+
+    await screen.findByText('Fish habitat report');
+    await user.click(screen.getByRole('button', { name: 'Inside documents' }));
+
+    // The term itself is wrapped in a mark, so the assertion reads the words around it.
+    await screen.findByText(/along the creek/);
+    const last = asked(fetchMock, 'DocumentChunk').at(-1) ?? '';
+    expect(last).toContain('keywords=habitat');
+    expect(last).toContain('prefix=false');
+  });
+
+  it('shows a passage as text, without the API markup around the hit', async () => {
+    const user = userEvent.setup();
+    renderSearch('/search?keywords=habitat');
+
+    await screen.findByText('Fish habitat report');
+    await user.click(screen.getByRole('button', { name: 'Inside documents' }));
+
+    const passage = await screen.findByText(/along the creek/);
+    expect(passage.textContent).toBe('spawning habitat along the creek');
+    // The page marks the term itself, from the plain text.
+    expect(within(passage).getByText('habitat').tagName).toBe('MARK');
+  });
+
+  it('ranks by relevance in the scope and restores the date sort on the way out', async () => {
+    const user = userEvent.setup();
+    const fetchMock = stubApi();
+    const { router } = renderSearch('/search?keywords=habitat');
+
+    await screen.findByText('Fish habitat report');
+    await user.click(screen.getByRole('button', { name: 'Inside documents' }));
+    // The term itself is wrapped in a mark, so the assertion reads the words around it.
+    await screen.findByText(/along the creek/);
+
+    expect(new URLSearchParams(router.state.location.search).get('sortBy')).toBe('-matches');
+    // The chunk index sorts by no field at all, so the wire asks for relevance.
+    expect(asked(fetchMock, 'DocumentChunk').at(-1)).toContain('sortBy=-score');
+    expect(screen.getByRole('combobox', { name: 'Sort' })).toHaveValue('-matches');
+    expect(within(screen.getByRole('combobox', { name: 'Sort' })).getAllByRole('option')).toEqual([
+      expect.objectContaining({ textContent: 'Most matches' }),
+    ]);
+
+    await user.click(screen.getByRole('button', { name: 'Names & details' }));
+    await screen.findByText('Fish habitat report');
+    expect(new URLSearchParams(router.state.location.search).get('sortBy')).toBe('-datePosted');
+  });
+
+  it('asks for a word instead of searching the corpus with none', async () => {
+    const fetchMock = stubApi();
+    renderSearch('/search?scope=inside');
+
+    expect(await screen.findByText('Search inside the documents')).toBeInTheDocument();
+    // The count states what is searchable rather than claiming a result nobody asked for.
+    expect(await screen.findByText('5 documents indexed')).toBeInTheDocument();
+    expect(asked(fetchMock, 'DocumentChunk')).toHaveLength(0);
+    expect(screen.queryByRole('navigation', { name: 'Result pages' })).not.toBeInTheDocument();
+  });
+
+  it('points at the other scope when this one found nothing', async () => {
+    const user = userEvent.setup();
+    chunks = [];
+    chunkTotal = 0;
+    const { router } = renderSearch('/search?scope=inside&keywords=habitat');
+
+    const cross = await screen.findByRole('button', { name: 'See 1 match in names & details' });
+    expect(
+      screen.getByText(
+        'No passage inside a document contains it, but the name or details of one do.',
+      ),
+    ).toBeInTheDocument();
+
+    await user.click(cross);
+    await screen.findByText('Fish habitat report');
+    expect(new URLSearchParams(router.state.location.search).get('scope')).toBeNull();
+  });
+
+  it('ticks a passage row as the document its passages sit in', async () => {
+    const user = userEvent.setup();
+    const fetchMock = stubApi();
+    renderSearch('/search?scope=inside&keywords=habitat');
+
+    // The term itself is wrapped in a mark, so the assertion reads the words around it.
+    await screen.findByText(/along the creek/);
+    await user.click(screen.getByRole('checkbox', { name: 'Select Fish habitat report' }));
+    await user.click(await screen.findByRole('button', { name: 'Download 1' }));
+
+    // What the basket holds is the document, not the chunk: that is the id a download can fetch.
+    const posted = fetchMock.mock.calls.find(([url]) => String(url).includes('/bulk-downloads'));
+    expect(JSON.parse(String((posted?.[1] as RequestInit | undefined)?.body))).toEqual({
+      documentIds: ['d1'],
+    });
+  });
+
+  it('carries a selection across the scope switch, which selects the same documents', async () => {
+    const user = userEvent.setup();
+    renderSearch('/search?keywords=habitat');
+
+    await screen.findByText('Fish habitat report');
+    await user.click(screen.getByRole('checkbox', { name: 'Select Fish habitat report' }));
+    expect(await screen.findByRole('button', { name: 'Download 1' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Inside documents' }));
+
+    await screen.findByText(/along the creek/);
+    expect(screen.getByRole('checkbox', { name: 'Select Fish habitat report' })).toBeChecked();
+    expect(screen.getByRole('button', { name: 'Download 1' })).toBeInTheDocument();
+  });
+
+  it('badges the documents tab with what its own scope found, not the name matches', async () => {
+    const user = userEvent.setup();
+    // A word in the text of the files and in no document name or field, which is what the tab
+    // would otherwise badge 0 while eight documents are listed under it.
+    counts = { Project: 12, Document: 0 };
+    chunkTotal = 8;
+    renderSearch('/search?scope=inside&keywords=habitat');
+
+    await screen.findByText(/along the creek/);
+    await waitFor(() => expect(within(pill(/^Documents/)).getByText('8')).toBeInTheDocument());
+    // Only the documents tab reads its own scope; the rest still count names and details.
+    expect(within(pill(/^Projects/)).getByText('12')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Names & details' }));
+    await screen.findByText('Fish habitat report');
+    expect(within(pill(/^Documents/)).getByText('0')).toBeInTheDocument();
+  });
+
+  it('counts the documents the passages were found in, and says they matched', async () => {
+    chunkTotal = 8;
+    renderSearch('/search?scope=inside&keywords=habitat');
+
+    expect(await screen.findByText('1–8 of 8 documents matching')).toBeInTheDocument();
+  });
+
+  it('drops the rows of the scope it left rather than drawing them as passages', async () => {
+    const user = userEvent.setup();
+    renderSearch('/search?keywords=habitat');
+    await screen.findByText('Fish habitat report');
+
+    const release = holdAnswersFor('DocumentChunk');
+    await user.click(screen.getByRole('button', { name: 'Inside documents' }));
+
+    /* A name row read as a chunk row carries no `documentName`, so it would draw as an untitled
+       document until the passages land. */
+    await waitFor(() => expect(screen.queryByText('Fish habitat report')).not.toBeInTheDocument());
+    expect(screen.queryByText('Untitled document')).not.toBeInTheDocument();
+
+    await act(async () => release());
+
+    expect(await screen.findByText(/along the creek/)).toBeInTheDocument();
+  });
+
+  it('probes the other scope with the filters the switch would carry across', async () => {
+    // Nothing matches the name, so the page asks what the text of the files holds.
+    documents = [];
+    const fetchMock = stubApi();
+    renderSearch('/search?record=documents&keywords=habitat&milestone=m1');
+
+    await screen.findByRole('button', { name: 'See 2 matches inside the documents' });
+
+    const probe = asked(fetchMock, 'DocumentChunk').at(-1) ?? '';
+    expect(probe).toContain('pageSize=1');
+    expect(probe).toContain('and[milestone]=m1');
+  });
+
+  it('leaves a hand-typed name filter off the wire inside the documents', async () => {
+    // The scope offers no name filter, so only a typed address can put one in the URL.
+    const fetchMock = stubApi();
+    renderSearch('/search?scope=inside&keywords=habitat&nameContains=fish');
+
+    await screen.findByText(/along the creek/);
+
+    expect(asked(fetchMock, 'DocumentChunk').length).toBeGreaterThan(0);
+    expect(asked(fetchMock, 'DocumentChunk').every((url) => !url.includes('nameContains'))).toBe(
+      true,
+    );
+  });
+
+  it('drops the Name filter from the panel inside the documents, unlike the names scope', async () => {
+    // Inside the documents the list template has no filter row, so a column filter can only
+    // reach the page through the panel - the Name column just never gets there.
+    const user = userEvent.setup();
+    renderSearch('/search?scope=inside&keywords=habitat');
+
+    await screen.findByText(/along the creek/);
+    await user.click(screen.getByRole('button', { name: /More filters/ }));
+
+    // A sibling column filter proves the panel is populated, not just empty.
+    expect(screen.getByLabelText('Document type')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Name')).not.toBeInTheDocument();
   });
 });
