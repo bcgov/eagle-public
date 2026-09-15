@@ -170,6 +170,36 @@ test.describe('sorting', () => {
     expect(dates[dates.length - 1]).toBe('2021-01-26');
   });
 
+  test('two rows of the same date fall back to the name, flipped with the sort', () => {
+    const names = answerSearch(query('dataset=Document&sortBy=-datePosted'))
+      .searchResults.filter((row) => row['datePosted'] === '2022-08-05')
+      .map((row) => String(row['displayName']));
+    expect(names).toEqual(['EAC Application — Volume 10 of 9', 'EAC Application — Volume 2 of 9']);
+  });
+
+  test('the same tie reads the other way round when the date sort is ascending', () => {
+    const names = answerSearch(query('dataset=Document&sortBy=%2BdatePosted'))
+      .searchResults.filter((row) => row['datePosted'] === '2022-08-05')
+      .map((row) => String(row['displayName']));
+    expect(names).toEqual(['EAC Application — Volume 2 of 9', 'EAC Application — Volume 10 of 9']);
+  });
+
+  test('a sort key the dataset does not carry leaves the index order alone', () => {
+    const names = answerSearch(
+      query('dataset=DocumentChunk&keywords=sediment&sortBy=-matches'),
+    ).searchResults.map((row) => String(row['documentName']));
+    expect(names).toEqual([
+      'Amendment #3 Application — Volume 1',
+      'Application Information Requirements — Draft',
+      'Inspection Record 2026-01-22',
+      'Annual Compliance Report 2025',
+      'Environmental Assessment Certificate E23-01',
+      'Assessment Report',
+      'Public Comment Period — Summary of Submissions',
+      'EAC Application — Volume 2 of 9',
+    ]);
+  });
+
   test('a second sort key breaks ties in the first', () => {
     const rows = answerSearch(
       query('dataset=Document&sortBy=%2BdocumentAuthorType&sortBy=%2BdisplayName'),

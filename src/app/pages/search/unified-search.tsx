@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router';
 import { track } from 'app/analytics/analytics';
@@ -10,9 +10,11 @@ import { ChipRow, type GridChip } from 'app/components/display-grid/chip-row';
 import { DisplayGrid, type SortOption } from 'app/components/display-grid/display-grid';
 import { columnFiltersForPanel } from 'app/components/display-grid/grid-helpers';
 import { GridToolbar } from 'app/components/display-grid/grid-toolbar';
+import { GuidedTour } from 'app/components/display-grid/guided-tour';
 import { toTerms } from 'app/components/display-grid/highlight';
 import type { ListRowField } from 'app/components/display-grid/list-row';
 import { PassageList, type PassageRow } from 'app/components/display-grid/passage-list';
+import { SearchHelpDialog } from 'app/components/display-grid/search-help-dialog';
 import type {
   AdvancedField,
   FilterValues,
@@ -330,6 +332,11 @@ export function UnifiedSearch() {
   const [projectsSort, setProjectsSort] = useState(PROJECTS_SORT);
 
   const [panelOpen, setPanelOpen] = useState(false);
+
+  /* Search help and the tour it starts. Both hand focus back to the link that opened them. */
+  const helpLink = useRef<HTMLAnchorElement>(null);
+  const [helpOpen, setHelpOpen] = useState(false);
+  const [tourOpen, setTourOpen] = useState(false);
 
   /* The activities tab offers "Documents attached" until a response says the index carries no
      `documentUrl`, which it can only say once a query has named the field. */
@@ -876,13 +883,37 @@ export function UnifiedSearch() {
             );
           })}
         </div>
-        <Link className="unified-search__help" to="/search-help">
+        {/* The long-form page is still the destination for a new tab or a reader with no
+            JavaScript; a plain press gets the summary in a dialog without leaving the results. */}
+        <Link
+          ref={helpLink}
+          className="unified-search__help"
+          to="/search-help"
+          aria-haspopup="dialog"
+          aria-expanded={helpOpen}
+          onClick={(event) => {
+            if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
+            event.preventDefault();
+            setHelpOpen(true);
+          }}
+        >
           <i className="material-icons unified-search__help-icon" aria-hidden="true">
             help_outline
           </i>
           Search help
         </Link>
       </div>
+
+      <SearchHelpDialog
+        open={helpOpen}
+        onClose={() => setHelpOpen(false)}
+        onStartTour={() => {
+          setHelpOpen(false);
+          setTourOpen(true);
+        }}
+        restoreFocusTo={helpLink}
+      />
+      <GuidedTour open={tourOpen} onEnd={() => setTourOpen(false)} restoreFocusTo={helpLink} />
 
       {/* The site-wide sign-up the News page used to carry. Updates are what the subscription
           sends, so it rides that tab only; the guard keeps the band's spacing out of the page

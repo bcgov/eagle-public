@@ -104,8 +104,10 @@ export async function runSteps(page: Page, steps: readonly Step[], side: Side): 
       await target.click();
     } else if (step.do === 'fill') {
       await target.fill(step.value);
+    } else if (step.do === 'waitFor') {
+      await target.waitFor({ state: step.state ?? 'visible' });
     } else {
-      await target.waitFor({ state: 'visible' });
+      await expect(target).not.toBeEmpty();
     }
     await settle(page);
   }

@@ -108,10 +108,10 @@ Phase 4, inside documents:
 
 Phase 5, help + tour:
 
-- [ ] 5.1 `search-help-dialog.tsx` + spec
-- [ ] 5.2 `guided-tour.tsx`, `tour-steps.ts`, absent-step skip + spec
-- [ ] 5.3 parity loop passed (states 07, 08, tour steps 2-7)
-- [ ] 5.4 PR, review, merged, beta on next
+- [x] 5.1 `search-help-dialog.tsx` + spec — native `<dialog>`, opened from the Search help link
+- [x] 5.2 `guided-tour.tsx`, `tour-steps.ts`, absent-step skip + spec
+- [x] 5.3 parity loop passed (states 07, 08, tour steps 2-7) — all 28 shots match: 01-03, 05, 07-12, 16, 17 at both widths, 06, 13, 14, 15 wide-only by design, 04 still skipped until Phase 4. The earlier drift was not timing: a remeasure re-pinned the scroll lock, so the resize Chromium does for a full-page shot scrolled the locked page and left it there, and every fixed element painted low. A remeasure now re-reads the box without moving the page.
+- [ ] 5.4 PR, review, merged, beta on next (in progress: PR #886 open, CI green, review PASS with two minors fixed)
 
 Phase 6, nav + retirement:
 
@@ -147,6 +147,12 @@ Follow-ups from phase 4, none of them blocking:
 - File links in `record-link.tsx` open a new tab with no "opens in a new tab" cue in the name.
 - In the inside scope the sort select offers "Most matches" alone; the select could hide when it has one option.
 - The site header "Search" item is not active on `/search` (it still points at `/projects-list`); the prototype draws it active. Phase 6.1 moves the link and closes the gap on every parity state.
+
+Follow-ups from phase 5, none of them blocking:
+
+- The gold spotlight ring in `guided-tour.tsx` (`--theme-gold-90`) measures 1.73:1 against white, under the 3:1 a non-text indicator needs. It is the handoff's own token and the dim panels around it carry the spotlight, so changing it is a design decision.
+- `search-help-dialog.tsx` keeps a redundant `role="dialog"` on a native `<dialog>`. The parity gate and the e2e walk resolve the dialog through a `[role="dialog"]` selector; drop it when those selectors move off the role.
+- On a phone the tour counts only the steps it can show ("Step 4 of 6"), since the column filter row is not rendered below 720px; the prototype keeps "of 7" and skips the missing step in silence. Ours is the plan's rule; the difference is one digit and sits under the pixel threshold.
 
 ## Port rules (added 2026-08-27)
 
