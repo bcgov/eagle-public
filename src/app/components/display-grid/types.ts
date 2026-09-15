@@ -17,6 +17,10 @@ export interface GridColumn<Row = unknown> {
   href?: (row: Row) => string | undefined;
   /** The target leaves the app — a file download, say — so it opens as a plain anchor. */
   hrefExternal?: boolean;
+  /** Runs instead of following the href: a download that asks for a presigned URL first. */
+  onLinkClick?: (row: Row) => void;
+  /** Drawn in the cell before the link, for a marker the record carries: a featured star. */
+  badge?: (row: Row) => ReactNode;
   locked?: boolean;
   date?: boolean;
   primaryDate?: boolean;

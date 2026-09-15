@@ -38,6 +38,19 @@ interface GridToolbarProps<Row> {
   onDownload?: () => void;
   downloadDisabled?: boolean;
   downloadTitle?: string;
+  /** Replaces "Download N", for a page that also knows how big the selection is. */
+  downloadLabel?: string;
+  /** Offered beside Clear while a selection is active, for a page that can select past this one. */
+  selectAll?: SelectAllOffer;
+}
+
+/** Selecting every match, which only a page that owns the query can run. */
+export interface SelectAllOffer {
+  text: string;
+  /** Read out in place of the text, where the text alone does not say what is selected. */
+  label: string;
+  title?: string;
+  onSelect: () => void;
 }
 
 export function GridToolbar<Row>({
@@ -60,6 +73,8 @@ export function GridToolbar<Row>({
   onDownload,
   downloadDisabled = false,
   downloadTitle,
+  downloadLabel,
+  selectAll,
 }: GridToolbarProps<Row>) {
   const [columnsOpen, setColumnsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -147,17 +162,30 @@ export function GridToolbar<Row>({
         </p>
         {scope}
         {selectionActive && (
-          <button
-            type="button"
-            className="display-grid__clear"
-            aria-label="Clear selection"
-            onClick={() => onClearSelection?.()}
-          >
-            <i className="material-icons" aria-hidden="true">
-              close
-            </i>
-            Clear
-          </button>
+          <>
+            <button
+              type="button"
+              className="display-grid__clear"
+              aria-label="Clear selection"
+              onClick={() => onClearSelection?.()}
+            >
+              <i className="material-icons" aria-hidden="true">
+                close
+              </i>
+              Clear
+            </button>
+            {selectAll && (
+              <button
+                type="button"
+                className="display-grid__clear"
+                aria-label={selectAll.label}
+                title={selectAll.title}
+                onClick={selectAll.onSelect}
+              >
+                {selectAll.text}
+              </button>
+            )}
+          </>
         )}
       </div>
 
@@ -174,7 +202,7 @@ export function GridToolbar<Row>({
             <i className="material-icons" aria-hidden="true">
               cloud_download
             </i>
-            {`Download ${selectedCount.toLocaleString('en-CA')}`}
+            {downloadLabel ?? `Download ${selectedCount.toLocaleString('en-CA')}`}
           </button>
         ) : (
           <>

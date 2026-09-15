@@ -1,8 +1,4 @@
-/**
- * The checkbox column's cell. Copied from `data-table/data-table.tsx` rather than imported: the
- * grid takes its selection from props instead of the bulk-download store, so the old component can
- * be deleted with the old table.
- */
+/** The checkbox column's cell. The grid takes its selection from props, not from the store. */
 export function SelectCell({
   label,
   checked,

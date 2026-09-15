@@ -1,8 +1,4 @@
-/* Document row in the redesigned grid: featured star, name link, phase pill. */
-
-.document-grid__name {
-  color: var(--typography-color-primary);
-}
+/* Project document cells the display grid does not style itself: featured star, phase pill. */
 
 .document-grid__star {
   display: inline-flex;

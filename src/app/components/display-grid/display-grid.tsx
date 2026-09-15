@@ -331,6 +331,9 @@ export function DisplayGrid<Row>({
                       title={title}
                       href={headline?.href?.(row)}
                       external={headline?.hrefExternal}
+                      onLinkClick={
+                        headline?.onLinkClick ? () => headline.onLinkClick?.(row) : undefined
+                      }
                       fields={[
                         ...cardFields(columns, row),
                         ...(narrowExtras ? narrowExtras(row) : []),
@@ -439,10 +442,14 @@ export function DisplayGrid<Row>({
                             {/* One line per cell, so a row is a row. The full value is still
                                 readable: it is the cell's own tooltip. */}
                             <span className="display-grid__cell-text" title={title}>
+                              {column.badge?.(row)}
                               {column.link ? (
                                 <RecordLink
                                   href={column.href?.(row)}
                                   external={column.hrefExternal}
+                                  onClick={
+                                    column.onLinkClick ? () => column.onLinkClick?.(row) : undefined
+                                  }
                                   className="display-grid__cell-link"
                                 >
                                   {content}

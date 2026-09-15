@@ -1,4 +1,10 @@
-import type { AdvancedField, GridColumn } from './types';
+import type { AdvancedField, GridColumn, SortState } from './types';
+
+/** `-datePosted` as the header reads it. */
+export function sortStateOf(sortBy: string): SortState | null {
+  if (!sortBy) return null;
+  return { key: sortBy.replace(/^[+-]/, ''), dir: sortBy.startsWith('-') ? 'desc' : 'asc' };
+}
 
 /** Natural order, so "Volume 2 of 9" precedes "Volume 10 of 9". Client-side comparisons only. */
 export const gridCollator = new Intl.Collator(undefined, { numeric: true });
