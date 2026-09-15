@@ -115,10 +115,10 @@ Phase 5, help + tour:
 
 Phase 6, nav + retirement:
 
-- [ ] 6.1 header Search → `/search`
+- [x] 6.1 header Search → `/search` (the masthead item is `aria-current` on every tab of the page, because a record type is a query param; the homepage "List of Projects" card points at `/search?record=projects`. The legacy redirects in `routes/legacy-search.ts` stay for bookmarks)
 - [ ] 6.2 `project-document-tab.tsx` on `DisplayGrid`; `data-table/*` deleted; parity re-run on project documents tab against `Project Page - Redesign.dc.html` documents tab
-- [ ] 6.3 old pages/configs deleted; `TableList` kept for comments + notification documents; TODO line for those two
-- [ ] 6.4 `deviations-from-angular.md`, wiki routes table
+- [x] 6.3 old pages/configs deleted; `TableTemplate` kept for comments + notification documents; TODO line for those two (phases 2 to 4 had already deleted the four page components and their configs, so what was left was `components/table/table-list.tsx` and its spec: nothing but the spec imported `TableList`. The two survivors use `TableTemplate`, not `TableList`. `css-scoping.spec.ts` carries no rule for a deleted page. `pages/project/document-table-rows.tsx` and its spec are dead too — `project-document-tab.tsx` renders `DocumentGridRow` — but they belong to the `DataTable` stack 6.2 deletes)
+- [ ] 6.4 `deviations-from-angular.md`, wiki routes table (in progress: feat/unified-search-p6, the repo doc's URLs section now marks `/search/content` live, says the four pages and `TableList` are gone, and records where the in-site links point; the wiki routes table is a separate brief)
 - [ ] 6.5 PR, review, merged, beta on next
 
 Phase 0 (counts endpoint, index gaps) and Phase 7 (real page numbers) are tracked in eagle-demi `TODO.md` under the same heading.
@@ -146,13 +146,16 @@ Follow-ups from phase 4, none of them blocking:
 - The row checkbox is 16px, and 13px in the passage list on a phone where the prototype lets it shrink; both sit under the 24px target size. A design decision, the grid tables share it.
 - File links in `record-link.tsx` open a new tab with no "opens in a new tab" cue in the name.
 - In the inside scope the sort select offers "Most matches" alone; the select could hide when it has one option.
-- The site header "Search" item is not active on `/search` (it still points at `/projects-list`); the prototype draws it active. Phase 6.1 moves the link and closes the gap on every parity state.
 
 Follow-ups from phase 5, none of them blocking:
 
 - The gold spotlight ring in `guided-tour.tsx` (`--theme-gold-90`) measures 1.73:1 against white, under the 3:1 a non-text indicator needs. It is the handoff's own token and the dim panels around it carry the spotlight, so changing it is a design decision.
 - `search-help-dialog.tsx` keeps a redundant `role="dialog"` on a native `<dialog>`. The parity gate and the e2e walk resolve the dialog through a `[role="dialog"]` selector; drop it when those selectors move off the role.
 - On a phone the tour counts only the steps it can show ("Step 4 of 6"), since the column filter row is not rendered below 720px; the prototype keeps "of 7" and skips the missing step in silence. Ours is the plan's rule; the difference is one digit and sits under the pixel threshold.
+
+Follow-ups from phase 6, none of them blocking:
+
+- Migrate `pages/comments/comments.tsx` and `project-notifications/project-notification-documents-table.tsx` off `TableTemplate` onto `DisplayGrid`, then delete `components/table/*`. Both are small fixed tables inside a page rather than list pages, so neither blocks the search work.
 
 ## Port rules (added 2026-08-27)
 

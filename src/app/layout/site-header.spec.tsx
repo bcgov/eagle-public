@@ -86,7 +86,7 @@ describe('site header', () => {
     const links = within(nav()).getAllByRole('link');
     expect(links.map((link) => link.getAttribute('href'))).toEqual([
       '/projects',
-      '/projects-list',
+      '/search',
       '/contact',
       adminUrl(),
     ]);
@@ -97,6 +97,17 @@ describe('site header', () => {
     ]);
     expect(links[3].textContent).toBe('Log in (opens in new tab)');
     expect(links[3]).toHaveAccessibleName(/^Log in\s*\(opens in new tab\)$/);
+  });
+
+  it('marks Search as the current page anywhere on the search page', () => {
+    renderHeader('/search?record=activities');
+
+    const search = within(nav()).getByRole('link', { name: 'Search' });
+    expect(search).toHaveAttribute('aria-current', 'page');
+    // The record type is a query param, so every tab of the page keeps the item lit.
+    expect(within(nav()).getByRole('link', { name: 'Map Explorer' })).not.toHaveAttribute(
+      'aria-current',
+    );
   });
 
   it('sends staff login to the configured admin app in a new tab, and says so', () => {
