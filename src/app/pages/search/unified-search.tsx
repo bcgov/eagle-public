@@ -84,6 +84,16 @@ const NO_PREFIX = [{ name: 'prefix', value: 'false' }];
 /** demi-search answers 400 for `and[nameContains]` on the chunk dataset: it filters names only. */
 const NAMES_ONLY_FILTERS = ['nameContains'];
 
+/** Whether a scope can narrow by a filter id. The one place that rule is read. */
+function scopeTakes(inside: boolean, id: string): boolean {
+  return !inside || !NAMES_ONLY_FILTERS.includes(id);
+}
+
+/** The filters a scope can answer; the rest come back on the way out of it. */
+function filtersForScope(inside: boolean, values: FilterValues): FilterValues {
+  return Object.fromEntries(Object.entries(values).filter(([id]) => scopeTakes(inside, id)));
+}
+
 /** The API wraps each hit in `<mark>`; the passage list marks the terms itself, from plain text. */
 const MARK_TAG = /<\/?mark>/g;
 
@@ -119,21 +129,27 @@ function toPassageRow(row: Row): PassageRow {
   };
 }
 
-/** The other scope's total for the same keyword, read one row at a time. */
+/** The other scope's total for the same keyword and filters, read one row at a time. */
 async function scopeTotal(
   dataset: string,
   keywords: string,
+  filters: Record<string, string>,
   signal?: AbortSignal,
 ): Promise<number | null> {
+  const chunks = dataset === INSIDE_DATASET;
   const results = await fetchData(
     new SearchParamObject(
       `search-scope-${dataset}`,
       keywords,
       dataset,
-      dataset === INSIDE_DATASET ? NO_PREFIX : [],
+      chunks ? NO_PREFIX : [],
       1,
       1,
-      dataset === INSIDE_DATASET ? INSIDE_WIRE_SORT : '',
+      chunks ? INSIDE_WIRE_SORT : '',
+      {},
+      false,
+      '',
+      filters,
     ),
     signal,
   );
@@ -355,15 +371,7 @@ export function UnifiedSearch() {
 
   /* A filter the chunk dataset cannot answer is not applied inside the documents, so it is not
      offered or shown as a chip there either. It comes back on the way out of the scope. */
-  const filters = useMemo(
-    () =>
-      inside
-        ? Object.fromEntries(
-            Object.entries(urlFilters).filter(([id]) => !NAMES_ONLY_FILTERS.includes(id)),
-          )
-        : urlFilters,
-    [inside, urlFilters],
-  );
+  const filters = useMemo(() => filtersForScope(inside, urlFilters), [inside, urlFilters]);
 
   /* The field holds what is being typed; the URL holds what has been searched for. Without the
      draft every keystroke would wait on the debounce before it showed up. */
@@ -391,11 +399,18 @@ export function UnifiedSearch() {
     [config, lists, orgs],
   );
 
+  /* A column whose filter the scope cannot answer is not offered there at all: not as a filter
+     row, not in the panel, and not in the Filters badge. */
+  const scopeColumns = useMemo(
+    () => config.columns.filter((column) => scopeTakes(inside, column.filterId ?? column.key)),
+    [config, inside],
+  );
+
   /* Every column of every record type is sortable in the index, and the dropdown values only
      exist once the `List` and `Organization` reads land. */
   const columns: GridColumn<Row>[] = useMemo(
     () =>
-      config.columns
+      scopeColumns
         .filter((column) => !hiddenColumns.includes(column.key))
         .map((column) => {
           const picks = options[column.filterId ?? column.key] ?? column.options;
@@ -407,7 +422,7 @@ export function UnifiedSearch() {
             render: column.render ?? cellRenderer(column, picks),
           };
         }),
-    [config, hiddenColumns, options],
+    [scopeColumns, hiddenColumns, options],
   );
 
   const advancedFields: AdvancedField[] = useMemo(
@@ -461,11 +476,8 @@ export function UnifiedSearch() {
   );
   /** The filters a column owns, which a list hands to the panel because it has no filter row. */
   const columnFilterIds = useMemo(
-    () =>
-      columnFiltersForPanel(config.columns)
-        .map((field) => field.id)
-        .filter((id) => !inside || !NAMES_ONLY_FILTERS.includes(id)),
-    [config, inside],
+    () => columnFiltersForPanel(scopeColumns).map((field) => field.id),
+    [scopeColumns],
   );
   const wireFilters = useMemo(
     () => toWireFilters(filters, yearFilterIds, textFilterIds),
@@ -543,13 +555,20 @@ export function UnifiedSearch() {
      prompt is not waiting on anything: no query was issued. */
   const awaitingFirstAnswer = !insidePrompt && (isPending || isFetching) && data === undefined;
 
+  /* The switch keeps the filters in force, so the probe sends the ones the scope it points at
+     would send. Without them the link offers matches the destination then filters away. */
+  const otherScopeFilters = useMemo(
+    () => toWireFilters(filtersForScope(!inside, urlFilters), yearFilterIds, textFilterIds),
+    [inside, urlFilters, yearFilterIds, textFilterIds],
+  );
+
   /* What the other scope would find for the same word. One extra one-row search, issued only
      where this scope came back with nothing, because that is the only place it is read. */
   const { data: otherScopeTotal } = useQuery({
-    queryKey: ['unified-search-other-scope', inside, searchTerm],
+    queryKey: ['unified-search-other-scope', inside, searchTerm, JSON.stringify(otherScopeFilters)],
     enabled: scopeShown && !!searchTerm && !awaitingFirstAnswer && !isError && rows.length === 0,
     queryFn: ({ signal }) =>
-      scopeTotal(inside ? config.dataset : INSIDE_DATASET, searchTerm, signal),
+      scopeTotal(inside ? config.dataset : INSIDE_DATASET, searchTerm, otherScopeFilters, signal),
   });
   const crossScopeCount = otherScopeTotal ?? 0;
 
@@ -563,14 +582,12 @@ export function UnifiedSearch() {
      choice in force never drops out of its own list. */
   const gridColumns: GridColumn<Row>[] = useMemo(
     () =>
-      columns
-        .filter((column) => !inside || !NAMES_ONLY_FILTERS.includes(column.filterId ?? column.key))
-        .map((column) => {
-          if (column.filter !== 'year') return column;
-          const id = column.filterId ?? column.key;
-          return { ...column, options: yearOptions(asFilterText(filters[id])) };
-        }),
-    [columns, filters, inside],
+      columns.map((column) => {
+        if (column.filter !== 'year') return column;
+        const id = column.filterId ?? column.key;
+        return { ...column, options: yearOptions(asFilterText(filters[id])) };
+      }),
+    [columns, filters],
   );
 
   /* A passage row stands for one document, so it ticks like one: same bulk-download gate as the

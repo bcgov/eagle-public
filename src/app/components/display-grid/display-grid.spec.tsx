@@ -150,6 +150,18 @@ describe('DisplayGrid', () => {
     expect(screen.queryByText('No documents found')).not.toBeInTheDocument();
   });
 
+  it('announces the wait from a region of its own, leaving the rows out of it', () => {
+    const { rerenderGrid } = renderGrid({ loading: true, rows: [] });
+
+    const status = screen.getByRole('status');
+    expect(status).toHaveTextContent('Loading');
+    // Live region over the rows: a screen reader would re-read them on every page and sort.
+    expect(within(status).queryByRole('table')).not.toBeInTheDocument();
+
+    rerenderGrid({ loading: false });
+    expect(screen.getByRole('status')).toBeEmptyDOMElement();
+  });
+
   it('says the result set is empty once the request is done', () => {
     renderGrid({ rows: [], total: 0, emptyMessage: 'No documents found' });
 

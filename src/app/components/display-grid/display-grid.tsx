@@ -249,16 +249,18 @@ export function DisplayGrid<Row>({
   return (
     <div className="display-grid" ref={containerRef}>
       {toolbar}
+      {/* The wait gets its own region rather than the body: role="status" over the rows would make
+          every control in them re-read on each page, sort, keystroke and expand. */}
+      <span className="display-grid__visually-hidden" role="status">
+        {showSkeleton ? 'Loading' : ''}
+      </span>
       {chips}
       {panelContent}
 
       <div
         className={loading && rows.length > 0 ? 'display-grid__body--loading' : undefined}
         aria-busy={loading || undefined}
-        role="status"
       >
-        {showSkeleton && <span className="display-grid__visually-hidden">Loading</span>}
-
         {showSortBar && (
           <div className="display-grid__sort-bar">
             <label className="display-grid__sort-bar-label">

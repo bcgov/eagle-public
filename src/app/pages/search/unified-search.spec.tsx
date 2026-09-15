@@ -621,7 +621,7 @@ describe('UnifiedSearch', () => {
     const release = holdAnswersFor('Project');
     renderSearch('/search?record=projects');
 
-    // The grid body is the one live region that announces the wait; the bar stays quiet.
+    // A hidden status region announces the wait; the count bar stays quiet.
     expect(await screen.findByText('Loading')).toBeInTheDocument();
     expect(screen.queryAllByText(/No projects/)).toHaveLength(0);
 
@@ -832,5 +832,49 @@ describe('the inside-documents scope', () => {
     renderSearch('/search?scope=inside&keywords=habitat');
 
     expect(await screen.findByText('1–8 of 8 documents matching')).toBeInTheDocument();
+  });
+
+  it('drops the rows of the scope it left rather than drawing them as passages', async () => {
+    const user = userEvent.setup();
+    renderSearch('/search?keywords=habitat');
+    await screen.findByText('Fish habitat report');
+
+    const release = holdAnswersFor('DocumentChunk');
+    await user.click(screen.getByRole('button', { name: 'Inside documents' }));
+
+    /* A name row read as a chunk row carries no `documentName`, so it would draw as an untitled
+       document until the passages land. */
+    await waitFor(() => expect(screen.queryByText('Fish habitat report')).not.toBeInTheDocument());
+    expect(screen.queryByText('Untitled document')).not.toBeInTheDocument();
+
+    await act(async () => release());
+
+    expect(await screen.findByText(/along the creek/)).toBeInTheDocument();
+  });
+
+  it('probes the other scope with the filters the switch would carry across', async () => {
+    // Nothing matches the name, so the page asks what the text of the files holds.
+    documents = [];
+    const fetchMock = stubApi();
+    renderSearch('/search?record=documents&keywords=habitat&milestone=m1');
+
+    await screen.findByRole('button', { name: 'See 2 matches inside the documents' });
+
+    const probe = asked(fetchMock, 'DocumentChunk').at(-1) ?? '';
+    expect(probe).toContain('pageSize=1');
+    expect(probe).toContain('and[milestone]=m1');
+  });
+
+  it('leaves a hand-typed name filter off the wire inside the documents', async () => {
+    // The scope offers no name filter, so only a typed address can put one in the URL.
+    const fetchMock = stubApi();
+    renderSearch('/search?scope=inside&keywords=habitat&nameContains=fish');
+
+    await screen.findByText(/along the creek/);
+
+    expect(asked(fetchMock, 'DocumentChunk').length).toBeGreaterThan(0);
+    expect(asked(fetchMock, 'DocumentChunk').every((url) => !url.includes('nameContains'))).toBe(
+      true,
+    );
   });
 });
