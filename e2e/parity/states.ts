@@ -10,7 +10,13 @@ import type { ControlKey } from './selectors';
 export type Step =
   | { do: 'click'; control: ControlKey }
   | { do: 'fill'; control: ControlKey; value: string }
-  | { do: 'waitFor'; control: ControlKey };
+  // `state` defaults to 'visible'. 'attached' is for a control the parity gate deliberately hides
+  // with CSS (the scope segment): what matters there is DOM presence, which is all the app itself
+  // ever reads, not the pixel-visibility a screenshot cares about.
+  | { do: 'waitFor'; control: ControlKey; state?: 'visible' | 'attached' }
+  // Waits for the control's text content to be non-empty, for a control that is on the page and
+  // visible from the start but renders empty until an answer lands (the toolbar's result count).
+  | { do: 'waitForText'; control: ControlKey };
 
 /**
  * Something a viewer can see, checked on both sides. `boxHeight`/`minHeight`/`boxMinWidth` read
@@ -78,6 +84,22 @@ export const CONTENT_SEARCH_STATE = '04-document-content-search';
 
 /** The search help entry point, which the dialog and every tour step are reached through. Phase 5. */
 const HELP_AND_TOUR = '[data-help]';
+
+/**
+ * Waits for the first search answer to have reached the toolbar before anything reads the page.
+ *
+ * `GuidedTour` builds its step list from `document.querySelector` the moment "Take the tour" is
+ * pressed, and skips any `data-tour` anchor not on the page at that instant. Pressed early enough
+ * — before the count status has anything to say — a slow render can still be short one anchor
+ * (the scope switch is the one this gate was built to name), so the tour counts fewer steps than
+ * the reference and every later "Next" lands one step ahead of it. The count going non-empty is
+ * the one signal, from the page itself, that the render this reads is the settled one. Every state
+ * that reads the toolbar this way runs this first.
+ */
+const TOOLBAR_SETTLED: Step[] = [
+  { do: 'waitFor', control: 'scopeSegment', state: 'attached' },
+  { do: 'waitForText', control: 'toolbarStatus' },
+];
 
 /** Every tour step draws the same card and the same ring around whatever it points at. */
 const TOUR_MEASUREMENTS: Measurement[] = [
@@ -159,7 +181,9 @@ export const STATES: ParityState[] = [
     id: '07-search-help-modal',
     description: 'Search help dialog.',
     requires: HELP_AND_TOUR,
+    // The dialog opens over the grid, so the still-loading toolbar behind it is part of the shot.
     steps: [
+      ...TOOLBAR_SETTLED,
       { do: 'click', control: 'searchHelpLink' },
       { do: 'waitFor', control: 'helpDialog' },
     ],
@@ -170,6 +194,7 @@ export const STATES: ParityState[] = [
     description: 'Guided tour, first step, started from the help dialog.',
     requires: HELP_AND_TOUR,
     steps: [
+      ...TOOLBAR_SETTLED,
       { do: 'click', control: 'searchHelpLink' },
       { do: 'waitFor', control: 'helpDialog' },
       { do: 'click', control: 'startTour' },
@@ -230,6 +255,7 @@ export const STATES: ParityState[] = [
  */
 function tourSteps(): ParityState[] {
   const openTour: Step[] = [
+    ...TOOLBAR_SETTLED,
     { do: 'click', control: 'searchHelpLink' },
     { do: 'waitFor', control: 'helpDialog' },
     { do: 'click', control: 'startTour' },

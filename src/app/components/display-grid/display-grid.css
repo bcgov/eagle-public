@@ -7,13 +7,20 @@
    straight from the prototype and sit under the WCAG 1.4.11 3:1 floor for non-text contrast.
    They stay as drawn so the parity gate compares like with like; design decides before prod. */
 
-.display-grid {
-  /* One z-index scale, in one place. The site masthead is 1005, so overlays clear it. */
+/* One z-index scale, in one place. The site masthead is 1005, so overlays clear it. The help
+   dialog and the guided tour sit beside the grid rather than inside it, so they carry
+   `display-grid__overlay` and read the same scale. */
+.display-grid,
+.display-grid__overlay {
   --grid-z-sticky: 10;
   --grid-z-columns: 30;
   --grid-z-picker: 60;
   --grid-z-overlay: 2000;
+  --grid-z-tour-ring: 2001;
+  --grid-z-tour-card: 2002;
+}
 
+.display-grid {
   /* Control heights are explicit everywhere below, because `epic/styles.css` sets a form-control
      height on bare `input[type="text"]` and a `min-height` alone loses to it. */
   --grid-control-h: 30px;

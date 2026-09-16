@@ -104,6 +104,14 @@ test('the display grid stylesheet stays inside .display-grid', () => {
   ).toEqual([]);
 });
 
+test('the help dialog and the tour stay inside .display-grid too', () => {
+  const selectors = [
+    ...selectorsOf('src/app/components/display-grid/search-help-dialog.css'),
+    ...selectorsOf('src/app/components/display-grid/guided-tour.css'),
+  ];
+  expect(selectors.filter((selector) => !selector.startsWith('.display-grid'))).toEqual([]);
+});
+
 test('the project panel map is not laid out like the full-page map', async ({ page, request }) => {
   const project = await projectByKeyword(request, 'Site C');
 
