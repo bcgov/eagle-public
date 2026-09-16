@@ -21,9 +21,12 @@ function Host({ targets = ALL, narrows = [] }: { targets?: string[]; narrows?: s
       <button type="button" onClick={() => setLate(['scope'])}>
         answer the search
       </button>
-      {/* Stands in for the re-render a breakpoint brings: controls leave the page. */}
+      {/* Stands in for the re-render a breakpoint brings: controls leave the page, and come back. */}
       <button type="button" onClick={() => setGone(narrows)}>
         narrow the page
+      </button>
+      <button type="button" onClick={() => setGone([])}>
+        widen the page
       </button>
       {[...targets, ...late.filter((target) => !targets.includes(target))]
         .filter((target) => !gone.includes(target))
@@ -280,6 +283,29 @@ describe('GuidedTour', () => {
     expect(card()).toHaveStyle({ top: '352px' });
   });
 
+  it('places the card against the viewport it measured, not the one a later render sees', async () => {
+    vi.stubGlobal('innerWidth', 1280);
+    vi.stubGlobal('innerHeight', 900);
+    const { rerender } = render(<Host />);
+    boxOf('search', 300, 40);
+    await start();
+    expect(card()).toHaveStyle({ top: '352px', left: '40px', width: '380px' });
+
+    // Chromium swaps the viewport out to take a full-page shot and fires no resize. The ring is
+    // drawn off the stored measurement, so the card has to be too, or the two part company.
+    vi.stubGlobal('innerWidth', 300);
+    vi.stubGlobal('innerHeight', 400);
+    rerender(<Host />);
+
+    expect(card()).toHaveStyle({ top: '352px', left: '40px', width: '380px' });
+    expect(card()?.style.bottom).toBe('');
+
+    fireEvent(window, new Event('resize'));
+
+    expect(card()).toHaveStyle({ bottom: '112px', left: '20px', width: '268px' });
+    expect(card()?.style.top).toBe('');
+  });
+
   it('keeps the reader on the same control when an earlier one goes away', async () => {
     render(<Host narrows={['filterrow']} />);
     const user = await start();
@@ -292,6 +318,60 @@ describe('GuidedTour', () => {
     ).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'narrow the page' }));
+    await settle();
+
+    expect(counter()).toBe('Step 4 of 6');
+    expect(
+      screen.getByRole('heading', { name: 'Filters that are not columns' }),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+
+    expect(counter()).toBe('Step 5 of 6');
+    expect(screen.getByRole('heading', { name: 'Choose your columns' })).toBeInTheDocument();
+  });
+
+  it('keeps the step when a full-page shot takes its control away and puts it back', async () => {
+    const reading = { width: window.innerWidth, height: window.innerHeight };
+    render(<Host narrows={['filterrow']} />);
+    const user = await start();
+    for (const _step of [2, 3, 4]) {
+      await user.click(screen.getByRole('button', { name: 'Next' }));
+    }
+    expect(counter()).toBe('Step 4 of 7');
+
+    // Chromium squeezes the viewport to 1px to take a full-page shot: the grid drops to cards for
+    // as long as the shot takes, taking the column filter row with it, and gets it back after.
+    await user.click(screen.getByRole('button', { name: 'narrow the page' }));
+    vi.stubGlobal('innerWidth', 1);
+    vi.stubGlobal('innerHeight', 1);
+    fireEvent(window, new Event('resize'));
+    await settle();
+    await settle();
+
+    // Still on its own step, however long the shot takes.
+    expect(counter()).toBe('Step 4 of 7');
+
+    await user.click(screen.getByRole('button', { name: 'widen the page' }));
+    vi.stubGlobal('innerWidth', reading.width);
+    vi.stubGlobal('innerHeight', reading.height);
+    fireEvent(window, new Event('resize'));
+    await settle();
+
+    expect(counter()).toBe('Step 4 of 7');
+    expect(screen.getByRole('heading', { name: 'Filter by column' })).toBeInTheDocument();
+  });
+
+  it('drops a control still missing a frame later, and walks on from where it was', async () => {
+    render(<Host narrows={['filterrow']} />);
+    const user = await start();
+    for (const _step of [2, 3, 4]) {
+      await user.click(screen.getByRole('button', { name: 'Next' }));
+    }
+    expect(counter()).toBe('Step 4 of 7');
+
+    await user.click(screen.getByRole('button', { name: 'narrow the page' }));
+    await settle();
     await settle();
 
     expect(counter()).toBe('Step 4 of 6');

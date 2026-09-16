@@ -24,6 +24,11 @@ interface Spot {
   left: number;
   width: number;
   height: number;
+  /** The viewport the box was read against. The card is placed off this pair rather than off a
+      live `window` read, so a viewport that changes without a resize — the swap Chromium makes
+      to take a full-page shot — cannot move the card away from the ring drawn beside it. */
+  viewWidth: number;
+  viewHeight: number;
 }
 
 /** The gap between the spotlighted control and the ring drawn round it. */
@@ -34,20 +39,40 @@ const CARD_WIDTH = 380;
 /** Below this much room under the control, the card is hung above it instead. */
 const CARD_ROOM = 200;
 
-/** Whether a fresh measurement is the box already lit. */
-function sameSpot(was: Spot | null, at: DOMRect): boolean {
+/** Whether a fresh measurement is the box already lit, in the viewport it was lit against. */
+function sameSpot(was: Spot | null, at: DOMRect, viewWidth: number, viewHeight: number): boolean {
   return (
     was !== null &&
     was.top === at.top &&
     was.left === at.left &&
     was.width === at.width &&
-    was.height === at.height
+    was.height === at.height &&
+    was.viewWidth === viewWidth &&
+    was.viewHeight === viewHeight
   );
+}
+
+/** The viewport, as one value two reads of the page can be compared on. */
+function viewNow(): string {
+  return `${window.innerWidth}x${window.innerHeight}`;
 }
 
 /** Whether two step lists point at the same controls, in the same order. */
 function sameTargets(a: readonly TourStep[], b: readonly TourStep[]): boolean {
   return a.length === b.length && a.every((one, at) => one.target === b[at].target);
+}
+
+/**
+ * Where the walk lands when the control it was on has gone: the first control after it that is
+ * still on the page, so the gone control hands its slot on rather than the walk starting over.
+ */
+function landingAfter(was: readonly TourStep[], gone: string | null, left: TourStep[]): number {
+  const goneAt = was.findIndex((one) => one.target === gone);
+  for (let at = goneAt + 1; at < was.length; at += 1) {
+    const found = left.findIndex((one) => one.target === was[at].target);
+    if (found >= 0) return found;
+  }
+  return left.length - 1;
 }
 
 /**
@@ -72,6 +97,14 @@ export function GuidedTour({ open, onEnd, restoreFocusTo }: GuidedTourProps) {
   const pinned = useRef<number | null>(null);
   /** The step the page was last scrolled for: only a new step is allowed to move the page. */
   const scrolledFor = useRef<string | null>(null);
+  /** The control the walk is on, by `data-tour` id. Which step is showing is keyed on this rather
+      than on a position, so a step list that changes under it cannot shift the walk along. */
+  const showing = useRef<string | null>(null);
+  /** The pending re-read of the page, a frame from now. */
+  const frame = useRef(0);
+  /** The viewport the step showing started in, and the one the last read of the page saw. */
+  const stepView = useRef<string | null>(null);
+  const lastView = useRef<string | null>(null);
 
   // Held in a ref so ending the tour is a stable callback: a caller that passes an inline arrow
   // would otherwise restart the tour on its own next render.
@@ -99,37 +132,82 @@ export function GuidedTour({ open, onEnd, restoreFocusTo }: GuidedTourProps) {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- derived from the page, not from props
     setSteps(present);
     setIndex(0);
+    showing.current = present[0]?.target ?? null;
+    stepView.current = lastView.current = viewNow();
     opener.current = (restoreFocusTo?.current ?? document.activeElement) as HTMLElement | null;
     if (!present.length) end();
     // `restoreFocusTo` is read once, at the moment the tour starts.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, end]);
 
-  /**
-   * Where the control being read about sits in a freshly read list. A control that has gone hands
-   * its slot to whatever followed it, so the walk carries on from there rather than starting over.
-   */
-  const landingOf = useCallback(
-    (present: TourStep[]) => {
-      const kept = present.findIndex((one) => one.target === steps[index]?.target);
-      return kept >= 0 ? kept : Math.min(index, present.length - 1);
-    },
-    [index, steps],
-  );
+  /** Holds the latest page read, so the frame check below can call it without re-subscribing. */
+  const reading = useRef<((canDrop: boolean) => void) | null>(null);
 
-  /** Reads the page again: a resize moves the controls, and can take one away entirely. */
-  const remeasure = useCallback(() => {
-    const present = stepsOnPage();
-    if (!present.length) {
-      end();
-      return;
-    }
-    if (!sameTargets(present, steps)) {
-      setSteps(present);
-      setIndex(landingOf(present));
-    }
-    setTick((was) => was + 1);
-  }, [end, landingOf, steps]);
+  /**
+   * Books a fresh read for the next frame, which is where a control that has really gone is told
+   * from one that is only missing for this frame.
+   */
+  const checkLater = useCallback(() => {
+    if (frame.current) return;
+    frame.current = requestAnimationFrame(() => {
+      frame.current = 0;
+      reading.current?.(true);
+    });
+  }, []);
+
+  /**
+   * Reads the page again: a resize moves the controls, and can take one away entirely.
+   *
+   * A read taken while the viewport is on the move is not acted on, and a step is only dropped on
+   * the size it started in. Chromium swaps the viewport for a 1px one to take a full-page shot,
+   * which unmounts the table a step points at for as long as the shot takes and gives it back a
+   * frame after the viewport: acting on either frame loses the step for good and leaves the walk
+   * one ahead of where the reader left it.
+   */
+  const readPage = useCallback(
+    (canDrop: boolean) => {
+      const present = stepsOnPage();
+      if (!present.length) {
+        end();
+        return;
+      }
+      const view = viewNow();
+      const before = lastView.current;
+      lastView.current = view;
+      const settled = view === before;
+      const at = present.findIndex((one) => one.target === showing.current);
+      if (at < 0) {
+        if (!canDrop || !settled) {
+          checkLater();
+          return;
+        }
+        // Not the size this step started in: the viewport coming back is a resize or a commit of
+        // its own, and that is what books the read this is decided on.
+        if (view !== stepView.current) return;
+        const landed = landingAfter(steps, showing.current, present);
+        showing.current = present[landed].target;
+        setSteps(present);
+        setIndex(landed);
+        return;
+      }
+      if (!sameTargets(present, steps)) {
+        if (!settled) {
+          checkLater();
+          return;
+        }
+        setSteps(present);
+        setIndex(at);
+      }
+      setTick((was) => was + 1);
+    },
+    [checkLater, end, steps],
+  );
+  useLayoutEffect(() => {
+    reading.current = readPage;
+  }, [readPage]);
+
+  /** Reads the page for something that has only just changed it, which is never a frame on. */
+  const remeasure = useCallback(() => readPage(false), [readPage]);
 
   /** Moves the walk, re-reading the page first so a control that has since arrived is counted. */
   const move = useCallback(
@@ -139,16 +217,21 @@ export function GuidedTour({ open, onEnd, restoreFocusTo }: GuidedTourProps) {
         end();
         return;
       }
-      const next = landingOf(present) + delta;
+      // A control missing when Next is pressed is skipped there and then: the reader has asked to
+      // move on, so there is nothing left to wait a frame for.
+      const at = present.findIndex((one) => one.target === showing.current);
+      const next = (at >= 0 ? at : landingAfter(steps, showing.current, present)) + delta;
       if (next < 0) return;
       if (next >= present.length) {
         end();
         return;
       }
+      showing.current = present[next].target;
+      stepView.current = lastView.current = viewNow();
       setSteps(present);
       setIndex(next);
     },
-    [end, landingOf],
+    [end, steps],
   );
 
   // The spotlight is drawn against the viewport, so a new step brings a target below the fold into
@@ -158,17 +241,10 @@ export function GuidedTour({ open, onEnd, restoreFocusTo }: GuidedTourProps) {
     if (!open || !step) return;
     const element = targetOf(step);
     if (!element) {
-      // A control that went away between the count and the measurement: drop its step rather than
-      // point at nothing. The list only shrinks here, so this settles instead of spinning.
-      const left = steps.filter((one) => one.target !== step.target);
-      if (!left.length) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect -- nothing left to point at, which only a measurement can see
-        end();
-        return;
-      }
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- the control is gone from the page, which only a measurement can see
-      setSteps(left);
-      setIndex(Math.min(index, left.length - 1));
+      // A control that went away between the count and the measurement. The ring and the card stay
+      // on the last box they were measured against rather than moving, and the step is left alone
+      // until the frame check has seen the page without it.
+      checkLater();
       return;
     }
     if (scrolledFor.current !== step.target) {
@@ -185,12 +261,17 @@ export function GuidedTour({ open, onEnd, restoreFocusTo }: GuidedTourProps) {
       scrollLockedTo(pinned.current);
     }
     const at = element.getBoundingClientRect();
-    // Same box, same state: a read that reports no movement must not re-render, or the focus
-    // effect below takes focus off whatever button in the card the reader had reached.
+    const viewWidth = window.innerWidth;
+    const viewHeight = window.innerHeight;
+    // Same box, same viewport, same state: a read that reports no movement must not re-render, or
+    // the focus effect below takes focus off whatever button in the card the reader had reached.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- where the control sits is a DOM read, and the DOM is only the committed one inside an effect
     setSpot((was) =>
-      sameSpot(was, at) ? was : { top: at.top, left: at.left, width: at.width, height: at.height },
+      sameSpot(was, at, viewWidth, viewHeight)
+        ? was
+        : { top: at.top, left: at.left, width: at.width, height: at.height, viewWidth, viewHeight },
     );
-  }, [open, step, steps, index, tick, end, scrollLockedTo]);
+  }, [open, step, tick, checkLater, scrollLockedTo]);
 
   // Focus follows the step: the card is the only thing a reader can reach while the tour runs.
   useLayoutEffect(() => {
@@ -255,23 +336,27 @@ export function GuidedTour({ open, onEnd, restoreFocusTo }: GuidedTourProps) {
     if (element) observer.observe(element);
     // The resize event arrives before React has re-rendered the grid, so the read it triggers
     // still sees the control a breakpoint is about to take away. The tree watch catches that commit.
-    let frame = 0;
     const watcher = new MutationObserver(() => {
-      if (frame) return;
-      frame = requestAnimationFrame(() => {
-        frame = 0;
-        if (!sameTargets(stepsOnPage(), steps)) remeasure();
-      });
+      if (!sameTargets(stepsOnPage(), steps)) checkLater();
     });
     watcher.observe(document.body, { childList: true, subtree: true });
     window.addEventListener('resize', remeasure);
     return () => {
       observer.disconnect();
       watcher.disconnect();
-      if (frame) cancelAnimationFrame(frame);
       window.removeEventListener('resize', remeasure);
     };
-  }, [open, step, steps, remeasure]);
+  }, [open, step, steps, remeasure, checkLater]);
+
+  // The booked read is dropped when the tour closes, not when a step changes: a step whose anchor
+  // is missing is waiting on exactly that read to decide whether it has really gone.
+  useEffect(() => {
+    if (!open) return;
+    return () => {
+      if (frame.current) cancelAnimationFrame(frame.current);
+      frame.current = 0;
+    };
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -312,9 +397,11 @@ export function GuidedTour({ open, onEnd, restoreFocusTo }: GuidedTourProps) {
 
   const onLastStep = index === steps.length - 1;
   const below = spot.top + spot.height + 12;
-  const room = window.innerHeight - below;
-  const width = Math.min(CARD_WIDTH, window.innerWidth - 32);
-  const left = Math.min(Math.max(12, spot.left), window.innerWidth - width - 12);
+  // Every number below comes off the measurement, never off `window`: the card and the ring have
+  // to be placed against the same viewport or they part company mid-render.
+  const room = spot.viewHeight - below;
+  const width = Math.min(CARD_WIDTH, spot.viewWidth - 32);
+  const left = Math.min(Math.max(12, spot.left), spot.viewWidth - width - 12);
 
   return (
     <div ref={root} className="display-grid__overlay display-grid__tour">
@@ -374,7 +461,7 @@ export function GuidedTour({ open, onEnd, restoreFocusTo }: GuidedTourProps) {
           left: Math.round(left),
           ...(room > CARD_ROOM
             ? { top: Math.round(below) }
-            : { bottom: Math.round(window.innerHeight - spot.top + 12) }),
+            : { bottom: Math.round(spot.viewHeight - spot.top + 12) }),
         }}
       >
         {/* A move keeps focus on the card, and refocusing the element already focused fires

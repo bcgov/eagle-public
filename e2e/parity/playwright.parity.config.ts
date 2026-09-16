@@ -21,7 +21,9 @@ export default defineConfig({
   expect: { timeout: 15_000 },
   // A whole run of states blocked on the same missing control is one answer, not thirty.
   maxFailures: process.env['CI'] ? 10 : 0,
-  reporter: [['list']],
+  // The HTML report carries the diff images and the trace, so a CI failure leaves something to
+  // look at. `never`: opening a browser would hang the run.
+  reporter: [['list'], ['html', { outputFolder: '../parity-report', open: 'never' }]],
   // `{arg}` is the name passed to toHaveScreenshot, `{ext}` the extension.
   snapshotPathTemplate: '{testDir}/unified-search/reference/{arg}{ext}',
   use: {

@@ -5,14 +5,14 @@ import {
   checkBaseline,
   waitForSearch,
   total,
-  pageCount,
+  gridCount,
   firstProjects,
   projectByKeyword,
   unwrap,
 } from '../support/helpers';
 
-const ROWS = '.data-table__table tbody tr';
-const NAME = 'td[data-label="Name"]';
+const ROWS = '.display-grid__table tbody tr';
+const NAME = 'td.display-grid__cell:not(.display-grid__cell--select)';
 const TABS = '.project-tabs nav a';
 const DOC_TYPE_SEGMENTS = '.document-type-filter__segment';
 
@@ -105,10 +105,10 @@ test('documents tab renders a paged document table', async ({ page, request }) =
   const rows = page.locator(ROWS);
   await expect(rows).toHaveCount(Math.min(10, total(env)));
   // The name cell can also carry the featured star, so assert on the document link itself.
-  await expect(rows.first().locator(NAME).locator('a')).toHaveText(
+  await expect(rows.first().locator(NAME).first().locator('a')).toHaveText(
     env.searchResults[0].displayName.trim(),
   );
-  expect((await pageCount(page)).total).toBe(total(env));
+  expect((await gridCount(page)).total).toBe(total(env));
 
   checkBaseline('project-documents-tab', calls);
 });
@@ -202,7 +202,7 @@ test('a document download presigns through demi-api and keeps the eagle-api href
   const documentId = env.searchResults[0]._id;
 
   // The href stays a real download URL so middle-click and copy-link still fetch the file.
-  const link = page.locator(ROWS).first().locator(NAME).locator('a');
+  const link = page.locator(ROWS).first().locator(NAME).first().locator('a');
   const href = await link.getAttribute('href');
   expect(href).toBe(`/demi-search/documents/${documentId}/download?redirect=1`);
 

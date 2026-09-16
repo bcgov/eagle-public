@@ -1,6 +1,8 @@
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { clearSelection } from 'app/state/bulk-download';
+import { clearToasts } from 'app/state/toast';
 import { renderAt } from '../../../test-utils';
 import { Amendments } from './amendments';
 import { Application } from './application';
@@ -71,6 +73,7 @@ const DOCUMENTS = [
     milestone: 'ms-cert-2002',
     projectPhase: 'ph-amend-2018',
     isFeatured: true,
+    internalSize: String(2 * 1024 * 1024),
   },
 ];
 
@@ -109,6 +112,24 @@ function documentRequests(): string[] {
   return requests.filter((url) => url.includes('dataset=Document'));
 }
 
+/** The phone width the grid draws cards at; jsdom answers every media query false without this. */
+function stubNarrow() {
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn((query: string) => ({
+      matches: true,
+      media: query,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    })),
+  );
+}
+
+/** The card a document gets instead of a row at phone width. */
+function cardFor(title: string): HTMLElement {
+  return screen.getByRole('heading', { name: title, level: 3 }).closest('li') as HTMLElement;
+}
+
 // The tabs read their project id and lists off the shell's outlet context; the tests render each
 // tab on its own, so the context comes from a stub instead.
 vi.mock('./project-context', async (importOriginal) => {
@@ -123,6 +144,8 @@ describe('project document tabs', () => {
   beforeEach(() => {
     requests = [];
     total = 1;
+    clearSelection();
+    clearToasts();
   });
 
   afterEach(() => vi.unstubAllGlobals());
@@ -305,6 +328,57 @@ describe('project document tabs', () => {
     await waitFor(() => expect(router.state.location.search).toContain('sortBy=%2BdisplayName'));
   });
 
+  it('counts the documents in the bar until a row is selected', async () => {
+    total = 42;
+    renderTab(DocumentsTab, '/p/proj-1/documents');
+
+    await screen.findByText('Cedar Quarry Certificate');
+    // The grid draws a second live region for the wait, so match the count by its own words.
+    expect(screen.getByText('1–10 of 42 documents')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByLabelText('Select all on this page'));
+
+    expect(screen.getByLabelText('Select Cedar Quarry Certificate')).toBeChecked();
+    expect(screen.getByText('1 selected')).toBeInTheDocument();
+  });
+
+  /** The size is what a reader decides on before starting a download, so it sits on the button. */
+  it('puts the estimated size of the selection on the Download button', async () => {
+    renderTab(DocumentsTab, '/p/proj-1/documents');
+
+    await screen.findByText('Cedar Quarry Certificate');
+    await userEvent.click(screen.getByLabelText('Select Cedar Quarry Certificate'));
+
+    expect(screen.getByRole('button', { name: 'Download 1 (about 2.0 MB)' })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Clear selection' }));
+
+    expect(screen.getByLabelText('Select Cedar Quarry Certificate')).not.toBeChecked();
+    expect(screen.queryByRole('button', { name: /^Download/ })).not.toBeInTheDocument();
+  });
+
+  it('selects every matching document in one request, past the page on screen', async () => {
+    total = 42;
+    renderTab(DocumentsTab, '/p/proj-1/documents');
+
+    await screen.findByText('Cedar Quarry Certificate');
+    await userEvent.click(screen.getByLabelText('Select Cedar Quarry Certificate'));
+    await userEvent.click(screen.getByRole('button', { name: 'Select all 42 documents' }));
+
+    await waitFor(() => expect(documentRequests().at(-1)).toContain('pageSize=100'));
+  });
+
+  it('offers the download limit rather than a total no click could select', async () => {
+    total = 250;
+    renderTab(DocumentsTab, '/p/proj-1/documents');
+
+    await screen.findByText('Cedar Quarry Certificate');
+    await userEvent.click(screen.getByLabelText('Select Cedar Quarry Certificate'));
+
+    expect(screen.queryByRole('button', { name: /Select all/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Select 100 (download limit)' })).toBeInTheDocument();
+  });
+
   it('documents keeps the chosen page size when a keyword search runs', async () => {
     const router = renderTab(DocumentsTab, '/p/proj-1/documents?pageSize=50');
 
@@ -314,5 +388,45 @@ describe('project document tabs', () => {
     await waitFor(() => expect(router.state.location.search).toContain('keywords=slope'));
     expect(router.state.location.search).toContain('pageSize=50');
     expect(router.state.location.search).toContain('sortBy=-score');
+  });
+
+  describe('at phone width, where the rows are cards', () => {
+    /** The star has no cell on a card, so the card says the same thing in words. */
+    it('documents name a featured document in the card', async () => {
+      stubNarrow();
+      renderTab(DocumentsTab, '/p/proj-1/documents');
+
+      await screen.findByText('Cedar Quarry Certificate');
+      const card = cardFor('Cedar Quarry Certificate');
+
+      expect(within(card).getByText('Featured')).toBeInTheDocument();
+      expect(within(card).getByText('Yes')).toBeInTheDocument();
+    });
+
+    it('certificates leave the featured mark off the card, as they leave off the star', async () => {
+      stubNarrow();
+      renderTab(Certificates, '/p/proj-1/certificates');
+
+      await screen.findByText('Cedar Quarry Certificate');
+
+      expect(
+        within(cardFor('Cedar Quarry Certificate')).queryByText('Featured'),
+      ).not.toBeInTheDocument();
+    });
+
+    /* The select names a direction outright, unlike a heading, whose click can only flip the one
+       in force: picking Name Z–A while the documents are newest first must not read A–Z. */
+    it('documents sort the way the select names, not the flip of the sort in force', async () => {
+      stubNarrow();
+      const router = renderTab(DocumentsTab, '/p/proj-1/documents');
+
+      await screen.findByText('Cedar Quarry Certificate');
+      expect(screen.getByLabelText('Sort')).toHaveValue('-datePosted');
+
+      await userEvent.selectOptions(screen.getByLabelText('Sort'), '-displayName');
+
+      await waitFor(() => expect(router.state.location.search).toContain('sortBy=-displayName'));
+      expect(router.state.location.search).toContain('currentPage=1');
+    });
   });
 });

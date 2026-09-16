@@ -1,14 +1,14 @@
 import { useMemo } from 'react';
 import { useSearchParams } from 'react-router';
 import { track } from 'app/analytics/analytics';
+import { DisplayGrid } from 'app/components/display-grid/display-grid';
+import { sortStateOf } from 'app/components/display-grid/grid-helpers';
+import { GridToolbar } from 'app/components/display-grid/grid-toolbar';
+import type { ListRowField } from 'app/components/display-grid/list-row';
 import { SearchFilterTemplate } from 'app/components/filters/search-filter-template';
 import type { SearchPackage } from 'app/components/filters/filter-object';
-import { DataTable } from 'app/components/data-table/data-table';
-import {
-  tableObject,
-  type IColumnObject,
-  type ITableMessage,
-} from 'app/components/table/table-object';
+import { toggleRow } from 'app/components/table/document-row';
+import { tableObject } from 'app/components/table/table-object';
 import {
   getFiltersFromParams,
   getFiltersFromSearchPackage,
@@ -19,20 +19,20 @@ import {
   type Params,
 } from 'app/components/table/table-params';
 import { tableSearchParams, useTable, type TableQueryConfig } from 'app/components/table/use-table';
+import { usePageSelection } from 'app/components/table/use-page-selection';
 import { bulkDownloadEnabled } from 'app/config/config';
-import { selectAllMatching } from 'app/state/bulk-download';
+import {
+  clearSelection,
+  MAX_JOBS_IN_FLIGHT,
+  selectAllMatching,
+  startDownload,
+  useDownloadInProgress,
+  useSelection,
+} from 'app/state/bulk-download';
 import { createProjectTabModifiers } from 'app/utils/utils';
-import { DocumentGridRow } from './document-grid-row';
+import { documentColumns, type DocumentRow } from './document-columns';
 import { buildDocumentFilters, DATE_FILTER_LIST, filterListFrom } from './document-filters';
 import { useProjectContext } from './project-context';
-
-const DOCUMENT_COLUMNS: IColumnObject[] = [
-  { name: 'Name', value: 'displayName' },
-  { name: 'Date', value: 'datePosted' },
-  { name: 'Type', value: 'type' },
-  { name: 'Milestone', value: 'milestone' },
-  { name: 'Phase', value: 'projectPhase' },
-];
 
 interface ProjectDocumentTabProps {
   tableId: string;
@@ -74,7 +74,7 @@ function countFilters(queryFilters: Params): Record<string, number | boolean> {
 }
 
 /**
- * The document table shared by the Documents, Application, Certificate and Amendment tabs. They
+ * The document grid shared by the Documents, Application, Certificate and Amendment tabs. They
  * differ only in which documents they select, whether they offer filters, and their empty message.
  */
 export function ProjectDocumentTab({
@@ -96,9 +96,9 @@ export function ProjectDocumentTab({
     [lists, panelSizes, groupedFilters],
   );
 
+  // The paging, sort and page size the URL carries, with this table's defaults behind them.
   const base = useMemo(
-    () =>
-      updateTableObjectWithUrlParams(params, tableObject({ tableId, component: DocumentGridRow })),
+    () => updateTableObjectWithUrlParams(params, tableObject({ tableId })),
     [params, tableId],
   );
 
@@ -134,19 +134,34 @@ export function ProjectDocumentTab({
   const result = useTable(tableId, query);
   // An optional tab's query waits on the lists; until then it is pending, not empty.
   const pending = result.loading || (!!tabKey && lists.length === 0);
+  const rows: DocumentRow[] = result.data;
 
-  // Rebuilt objects re-render every row, and the rows subscribe to the selection store.
+  const columns = useMemo(() => documentColumns(lists, showFeatured), [lists, showFeatured]);
+
+  // The selection helpers read the page off a table object, which is also what select-all reruns.
   const data = useMemo(
     () => ({
       ...base,
-      columns: DOCUMENT_COLUMNS,
-      items: result.data.map((record) => ({ rowData: record })),
+      items: rows.map((rowData) => ({ rowData })),
       totalListItems: result.totalListItems,
-      options: { ...base.options, showAllPicker: true, selectable: bulkDownloadEnabled() },
-      data: { lists, showFeatured },
+      options: { ...base.options, selectable: bulkDownloadEnabled() },
     }),
-    [base, showFeatured, result.data, result.totalListItems, lists],
+    [base, rows, result.totalListItems],
   );
+
+  const {
+    selectable,
+    selectedCount,
+    selectedSizeText,
+    showSelectAll,
+    selectAllText,
+    selectAllLabel,
+    selectAllTitle,
+    toggleAllOnPage,
+  } = usePageSelection(data);
+  const selection = useSelection(tableId);
+  const selectedIds = useMemo(() => [...selection.keys()], [selection]);
+  const downloadInProgress = useDownloadInProgress();
 
   function submit(next: Params): void {
     setSearchParams(toSearchParams(next), { replace: true });
@@ -177,21 +192,9 @@ export function ProjectDocumentTab({
     });
   }
 
-  function onMessage(msg: ITableMessage): void {
-    switch (msg.label) {
-      case 'columnSort':
-        submit({ ...params, sortBy: toggleSortDirection(base.sortBy, msg.data), currentPage: 1 });
-        break;
-      case 'pageNum':
-        submit({ ...params, currentPage: msg.data });
-        break;
-      case 'pageSize':
-        submit({ ...params, pageSize: msg.data.value, currentPage: 1 });
-        break;
-      case 'selectAllMatching':
-        void selectAllMatching(tableId, tableSearchParams(tableId, query));
-        break;
-    }
+  /** The card has room for what no column carries; the star has no cell of its own there. */
+  function narrowExtras(row: DocumentRow): ListRowField[] {
+    return showFeatured && row.isFeatured === true ? [{ label: 'Featured', value: 'Yes' }] : [];
   }
 
   return (
@@ -218,16 +221,67 @@ export function ProjectDocumentTab({
         </section>
       )}
 
-      {!pending && data.totalListItems === 0 ? (
-        <div>{emptyMessage}</div>
-      ) : (
-        <DataTable
-          caption="Project documents"
-          data={data}
-          loading={pending}
-          onMessage={onMessage}
-        />
-      )}
+      <DisplayGrid<DocumentRow>
+        caption="Project documents"
+        columns={columns}
+        rows={rows}
+        loading={pending}
+        emptyMessage={emptyMessage}
+        selectable={selectable}
+        sort={sortStateOf(base.sortBy)}
+        onSort={(key, dir) =>
+          submit({
+            ...params,
+            sortBy: dir ? `${dir}${key}` : toggleSortDirection(base.sortBy, key),
+            currentPage: 1,
+          })
+        }
+        narrowExtras={narrowExtras}
+        page={base.currentPage}
+        pageSize={base.pageSize}
+        total={result.totalListItems}
+        onPageChange={(page) => submit({ ...params, currentPage: page })}
+        onPageSizeChange={(pageSize) => submit({ ...params, pageSize, currentPage: 1 })}
+        rowId={(row) => row._id}
+        rowLabel={(row) => row.displayName ?? row._id}
+        selectedIds={selectedIds}
+        onToggleRow={(row) => toggleRow(tableId, row)}
+        onToggleAllOnPage={() => toggleAllOnPage()}
+        toolbar={
+          <GridToolbar<DocumentRow>
+            noun="documents"
+            page={base.currentPage}
+            pageSize={base.pageSize}
+            total={result.totalListItems}
+            loading={pending}
+            narrowed={!!params['keywords'] || Object.keys(activeFilters).length > 0}
+            selectedCount={selectable ? selectedCount : 0}
+            onClearSelection={() => clearSelection()}
+            onDownload={() => void startDownload()}
+            downloadDisabled={downloadInProgress}
+            downloadTitle={
+              downloadInProgress
+                ? `${MAX_JOBS_IN_FLIGHT} downloads are already in progress. Wait for one to finish.`
+                : undefined
+            }
+            /* The size the reader decides on, so it goes on the button they decide with. */
+            downloadLabel={`Download ${selectedCount.toLocaleString()}${
+              selectedSizeText ? ` (${selectedSizeText})` : ''
+            }`}
+            selectAll={
+              showSelectAll
+                ? {
+                    text: selectAllText,
+                    label: selectAllLabel,
+                    title: selectAllTitle,
+                    onSelect: () =>
+                      void selectAllMatching(tableId, tableSearchParams(tableId, query)),
+                  }
+                : undefined
+            }
+          />
+        }
+      />
     </>
   );
 }

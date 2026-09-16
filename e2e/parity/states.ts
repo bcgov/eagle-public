@@ -56,6 +56,11 @@ export interface ParityState {
    * that owns the feature has not been built, and the state skips rather than times out.
    */
   requires?: string;
+  /**
+   * Text a control has to carry, by width, read before the shot is taken. A state that ended up
+   * somewhere other than where its steps say then fails as a string rather than as a pixel count.
+   */
+  expectText?: { selector: string; text: Record<number, string> };
 }
 
 /** The two widths the design is specified at: the desktop grid and the narrow list fallback. */
@@ -100,6 +105,17 @@ const TOOLBAR_SETTLED: Step[] = [
   { do: 'waitFor', control: 'scopeSegment', state: 'attached' },
   { do: 'waitForText', control: 'toolbarStatus' },
 ];
+
+/**
+ * What the tour card's counter must read at each width before the shot. The narrow layout has no
+ * column filter row, so the walk there is one step shorter than the wide one.
+ */
+function tourCount(step: number): { selector: string; text: Record<number, string> } {
+  return {
+    selector: '.display-grid__tour-count',
+    text: { [WIDE]: `Step ${step} of 7`, [WIDTHS[1]]: `Step ${step} of 6` },
+  };
+}
 
 /** Every tour step draws the same card and the same ring around whatever it points at. */
 const TOUR_MEASUREMENTS: Measurement[] = [
@@ -200,6 +216,7 @@ export const STATES: ParityState[] = [
       { do: 'click', control: 'startTour' },
       { do: 'waitFor', control: 'tourCard' },
     ],
+    expectText: tourCount(1),
     measurements: TOUR_MEASUREMENTS,
   },
   ...tourSteps(),
@@ -272,6 +289,7 @@ function tourSteps(): ParityState[] {
         ...openTour,
         ...Array.from({ length: step - 1 }, () => ({ do: 'click', control: 'tourNext' }) as Step),
       ],
+      expectText: tourCount(step),
       measurements: TOUR_MEASUREMENTS,
     });
   }

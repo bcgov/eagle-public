@@ -20,6 +20,9 @@ interface Anchor {
   left: number;
   below: number;
   above: number;
+  /** The viewport the button was read against. Held with the rest of the measurement so a render
+      that happens after the viewport changed cannot flip the popover away from its button. */
+  viewHeight: number;
 }
 
 interface ValuePickerProps {
@@ -94,7 +97,12 @@ export function ValuePicker({ label, options, selected, onChange }: ValuePickerP
     }
     const rect = buttonRef.current?.getBoundingClientRect();
     if (!rect) return;
-    setAnchor({ left: rect.left, below: rect.bottom + 2, above: rect.top - 2 });
+    setAnchor({
+      left: rect.left,
+      below: rect.bottom + 2,
+      above: rect.top - 2,
+      viewHeight: window.innerHeight,
+    });
   }
 
   function toggleValue(value: string): void {
@@ -105,7 +113,7 @@ export function ValuePicker({ label, options, selected, onChange }: ValuePickerP
 
   let popover = null;
   if (anchor) {
-    const roomBelow = window.innerHeight - anchor.below - 16;
+    const roomBelow = anchor.viewHeight - anchor.below - 16;
     const roomAbove = anchor.above - 16;
     // Opening past the bottom of the viewport is the same clipping in a new place.
     const flip = roomBelow < MIN_BELOW && roomAbove > roomBelow;
@@ -121,7 +129,7 @@ export function ValuePicker({ label, options, selected, onChange }: ValuePickerP
         style={{
           left: Math.round(anchor.left),
           ...(flip
-            ? { bottom: Math.round(window.innerHeight - anchor.above) }
+            ? { bottom: Math.round(anchor.viewHeight - anchor.above) }
             : { top: Math.round(anchor.below) }),
           width: WIDTH,
           maxHeight: Math.round(height),

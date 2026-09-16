@@ -19,7 +19,7 @@ const HERO_DESCRIPTION =
   "British Columbia's environmental assessment process provides opportunities for Indigenous Nations, government agencies and the public to influence the outcome of environmental assessments in British Columbia.";
 const HERO_ACTIONS: HeroBannerAction[] = [
   { label: 'Find Environmental Assessment Projects', routerLink: '/projects', icon: 'list' },
-  { label: 'List of Projects', routerLink: '/projects-list', icon: 'list' },
+  { label: 'List of Projects', routerLink: searchUrl('projects'), icon: 'list' },
   { label: 'Project Notifications', routerLink: searchUrl('notifications'), icon: 'list' },
 ];
 

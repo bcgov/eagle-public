@@ -8,7 +8,7 @@ import { fetchData, getSearchResults, SearchParamObject } from 'app/api/search';
 import { AdvancedFilters } from 'app/components/display-grid/advanced-filters';
 import { ChipRow, type GridChip } from 'app/components/display-grid/chip-row';
 import { DisplayGrid, type SortOption } from 'app/components/display-grid/display-grid';
-import { columnFiltersForPanel } from 'app/components/display-grid/grid-helpers';
+import { columnFiltersForPanel, sortStateOf } from 'app/components/display-grid/grid-helpers';
 import { GridToolbar } from 'app/components/display-grid/grid-toolbar';
 import { GuidedTour } from 'app/components/display-grid/guided-tour';
 import { toTerms } from 'app/components/display-grid/highlight';
@@ -19,7 +19,6 @@ import type {
   AdvancedField,
   FilterValues,
   GridColumn,
-  SortState,
   ValueOption,
 } from 'app/components/display-grid/types';
 import {
@@ -160,13 +159,6 @@ async function scopeTotal(
 
 function recordLabel(record: RecordType): string {
   return recordConfig(record).label;
-}
-
-/** `-datePosted` as the header reads it. */
-function sortStateOf(sortBy: string): SortState | null {
-  if (!sortBy) return null;
-  const dir = sortBy.startsWith('-') ? 'desc' : 'asc';
-  return { key: sortBy.replace(/^[+-]/, ''), dir };
 }
 
 /**

@@ -269,4 +269,54 @@ describe('GridToolbar', () => {
     expect(onDownload).toHaveBeenCalled();
     expect(onClearSelection).toHaveBeenCalled();
   });
+
+  /** The size is what a reader decides on before starting a download, so it sits on the button. */
+  it('puts the label the page states on the download button', () => {
+    render(
+      <GridToolbar
+        noun="documents"
+        page={1}
+        pageSize={25}
+        total={10}
+        selectedCount={2}
+        downloadLabel="Download 2 (about 5.0 MB)"
+        onDownload={() => undefined}
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: 'Download 2 (about 5.0 MB)' })).toBeInTheDocument();
+  });
+
+  it('offers the select-all the page states beside Clear, and asks for it on click', async () => {
+    const user = userEvent.setup();
+    const onSelect = vi.fn();
+    render(
+      <GridToolbar
+        noun="documents"
+        page={1}
+        pageSize={25}
+        total={40}
+        selectedCount={10}
+        selectAll={{ text: 'Select all 40', label: 'Select all 40 documents', onSelect }}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Select all 40 documents' }));
+
+    expect(onSelect).toHaveBeenCalled();
+  });
+
+  it('keeps the select-all offer out of the bar while nothing is selected', () => {
+    render(
+      <GridToolbar
+        noun="documents"
+        page={1}
+        pageSize={25}
+        total={40}
+        selectAll={{ text: 'Select all 40', label: 'Select all 40 documents', onSelect: vi.fn() }}
+      />,
+    );
+
+    expect(screen.queryByRole('button', { name: /select all/i })).not.toBeInTheDocument();
+  });
 });
