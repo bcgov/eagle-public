@@ -226,6 +226,41 @@
   text-wrap: pretty;
 }
 
+/* The way out of an empty scope: filled, because it is the offer, while "Clear filters and search"
+   beside it stays the outline. */
+.unified-search .unified-search__empty-cross {
+  display: inline-block;
+  min-height: 40px;
+  margin-bottom: var(--layout-margin-medium);
+  padding: 0 var(--layout-padding-large);
+  border: none;
+  border-radius: var(--layout-border-radius-small);
+  background: var(--surface-color-primary-default);
+  font: var(--typography-bold-small-body);
+  color: var(--theme-gray-white);
+  cursor: pointer;
+}
+
+/* No keyword inside the documents: what the scope is for, in place of a result set. */
+.unified-search .unified-search__prompt {
+  padding: var(--layout-padding-xlarge) var(--layout-padding-large);
+  text-align: center;
+}
+
+.unified-search .unified-search__prompt-title {
+  margin: 0 0 var(--layout-margin-xsmall);
+  font: var(--typography-bold-body);
+  color: var(--typography-color-primary);
+}
+
+.unified-search .unified-search__prompt-detail {
+  max-width: 56ch;
+  margin: 0 auto;
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-secondary);
+  text-wrap: pretty;
+}
+
 .unified-search .unified-search__empty-action {
   min-height: 40px;
   padding: 0 var(--layout-padding-large);

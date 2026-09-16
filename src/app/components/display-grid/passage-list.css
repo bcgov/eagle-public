@@ -1,0 +1,72 @@
+/* Passage list: one file per row, with the passages the index matched under it. Scoped under
+   .display-grid, as the list row is, so an embedding page keeps its own list styles. The row's
+   meta line, headline and Show more come from list-row.css; only the passages are new here. */
+
+/* Rendered as the grid's own body the list is dimmed twice while a page loads — the grid's 0.55
+   over this one's — and the rows fade to a third. The outer dim is the one that counts. */
+.display-grid__body--loading .display-grid__body--loading {
+  opacity: 1;
+}
+
+/* The checkbox column the names scope keeps in its table. The list item is the padded box, so it
+   becomes the flex line and the passages column takes what the checkbox leaves. */
+.display-grid .display-grid__list-item--selectable {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--layout-padding-small);
+}
+
+.display-grid .display-grid__list-item--selectable .display-grid__row {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+/* Aligned to the middle of the meta line rather than to the top of its line box. It keeps the
+   default shrink factor, as the design does: on a phone the passage line overflows and the box
+   gives back the 3px between its 16px and a checkbox's own 13px rather than push the text over. */
+.display-grid .display-grid__list-check {
+  margin-top: 3px;
+}
+
+.display-grid .display-grid__passage-count {
+  margin: var(--layout-margin-hair) 0 var(--layout-margin-xsmall);
+  font: var(--typography-regular-label);
+  color: var(--typography-color-secondary);
+}
+
+.display-grid .display-grid__passages {
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-padding-xsmall);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* The quiet left rule reads as a quotation from the file: the words are the document's, not the
+   page's. It replaces the indent a nested list would draw, which the row has no room for. */
+.display-grid .display-grid__passage {
+  display: flex;
+  align-items: baseline;
+  gap: var(--layout-padding-small);
+  padding-left: var(--layout-padding-small);
+  border-left: var(--layout-border-width-medium) solid var(--theme-gray-40);
+}
+
+/* Fixed width so the locators line up down the row even when one reads Passage 9 and the next
+   Passage 141; tabular numerals keep the digits on the same track. */
+.display-grid .display-grid__passage-locator {
+  flex: 0 0 auto;
+  min-width: 62px;
+  font: var(--typography-bold-label);
+  color: var(--typography-color-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.display-grid .display-grid__passage-text {
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-primary);
+  text-wrap: pretty;
+  /* Measure: past about 86 characters the eye loses the next line's start. */
+  max-width: 86ch;
+}

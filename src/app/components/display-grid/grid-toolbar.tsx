@@ -13,6 +13,16 @@ interface GridToolbarProps<Row> {
   total: number;
   /** No total yet. A count of nothing would read "No documents" before the first answer lands. */
   loading?: boolean;
+  /**
+   * What the count says instead of a range. For a view that has asked the index nothing yet: "No
+   * documents" there would contradict the tab above it and announce a result nobody searched for.
+   */
+  countText?: string;
+  /**
+   * A keyword or a filter is narrowing the set, so the count says what it counted: "1–8 of 8
+   * documents matching". Without it the same line would read as the whole record type.
+   */
+  narrowed?: boolean;
   /** Record-type or document-scope switch, owned by the page. */
   scope?: ReactNode;
   columns?: GridColumn<Row>[];
@@ -36,6 +46,8 @@ export function GridToolbar<Row>({
   pageSize,
   total,
   loading = false,
+  countText: countOverride,
+  narrowed = false,
   scope,
   columns,
   hiddenColumns = [],
@@ -65,9 +77,10 @@ export function GridToolbar<Row>({
     ? `${selectedCount.toLocaleString('en-CA')} selected`
     : waiting
       ? ''
-      : total === 0
-        ? `No ${noun}`
-        : `${firstShown.toLocaleString('en-CA')}–${lastShown.toLocaleString('en-CA')} of ${total.toLocaleString('en-CA')} ${noun}`;
+      : (countOverride ??
+        (total === 0
+          ? `No ${noun}`
+          : `${firstShown.toLocaleString('en-CA')}–${lastShown.toLocaleString('en-CA')} of ${total.toLocaleString('en-CA')} ${noun}${narrowed ? ' matching' : ''}`));
 
   useEffect(() => () => clearTimeout(copiedTimer.current), []);
 
