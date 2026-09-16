@@ -16,16 +16,30 @@ async function loaderLocation(path: string, url: string): Promise<string | null>
   return response ? response.headers.get('Location') : null;
 }
 
-describe('the project list route', () => {
-  it('sends /projects-list to unified search instead of rendering a page of its own', async () => {
-    expect(
-      await loaderLocation(
-        'projects-list',
-        'http://localhost/projects-list?keywords=coal&currentPage=2',
-      ),
-    ).toBe('/search?record=projects&keywords=coal&currentPage=2');
-    expect(findRoute('projects-list')?.Component).toBeUndefined();
-  });
+describe('the legacy list routes', () => {
+  it.each([
+    {
+      path: 'projects-list',
+      from: 'http://localhost/projects-list?keywords=coal&currentPage=2',
+      to: '/search?record=projects&keywords=coal&currentPage=2',
+    },
+    {
+      path: 'news',
+      from: 'http://localhost/news?keywords=fish&currentPage=2',
+      to: '/search?record=activities&keywords=fish&currentPage=2',
+    },
+    {
+      path: 'project-notifications',
+      from: 'http://localhost/project-notifications?keywords=mine&pcp=open&region=Skeena',
+      to: '/search?record=notifications&keywords=mine&region=Skeena&pcp=open',
+    },
+  ])(
+    'sends /$path to unified search instead of rendering a page of its own',
+    async ({ path, from, to }) => {
+      expect(await loaderLocation(path, from)).toBe(to);
+      expect(findRoute(path)?.Component).toBeUndefined();
+    },
+  );
 });
 
 describe('searchLoader', () => {

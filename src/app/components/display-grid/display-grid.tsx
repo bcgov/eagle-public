@@ -189,7 +189,11 @@ export function DisplayGrid<Row>({
   const keepHeadWhileEmpty = showEmpty && !narrow && anyFilterSet(filters);
   const showHead = !listMode && !headerless && !cardMode && (!showEmpty || keepHeadWhileEmpty);
   const showFilterRow = showHead && columns.some((column) => !!column.filter);
-  const showSortBar = cardMode && sortOptionsFor(columns, sort).length > 0;
+  /* Wherever the records are rows of prose rather than a table there is no sortable heading to
+     click, so the bar is the only way to reorder them: the narrow cards, and the list template at
+     every width. */
+  const showSortBar =
+    !showEmpty && (listMode || cardMode) && sortOptionsFor(columns, sort).length > 0;
 
   // The filter row sticks under the header, whose height changes when a label wraps.
   useEffect(() => {

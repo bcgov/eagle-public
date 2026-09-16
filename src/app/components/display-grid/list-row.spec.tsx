@@ -143,6 +143,19 @@ describe('ListRow', () => {
     expect(screen.getByText('1 document')).toBeInTheDocument();
   });
 
+  it('draws no type and size element for a file that states neither', () => {
+    const { container } = render(
+      <ListRow
+        meta={['2026-02-18']}
+        title="Amendment issued"
+        attachments={[{ name: 'Order.pdf', href: '/api/document/1/fetch' }]}
+      />,
+    );
+
+    // An empty one still takes a line of its own where the file name fills the width.
+    expect(container.querySelectorAll('.display-grid__row-docs-meta')).toHaveLength(0);
+  });
+
   it('falls back to label and value pairs for a record with no body', () => {
     render(
       <ListRow

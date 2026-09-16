@@ -98,6 +98,78 @@ const PROJECT_LEGISLATION_CSS = `
 /** The state whose narrow layout draws project cards. */
 const PROJECTS_CARD_STATE = '02-projects-grid';
 
+/**
+ * Accepted deviation, 2026-09-14: the design lists up to four attachments per activity and prints
+ * a "PDF · 4.2 MB" span beside each name. A `RecentActivity` carries one `documentUrl` and neither
+ * a file type nor a size, so the app can draw one name and nothing else. Trimmed on the design
+ * side, at both widths of the one state that lists activities.
+ *
+ * The count line above the list is rewritten with the attachments, or the design would keep
+ * announcing files it no longer shows.
+ */
+const ACTIVITIES_LIST_STATE = '03-activities-list';
+
+/** The count line the prototype prints above an activity's attachments, and what one file reads. */
+const DOCS_LABEL = /^\d+ documents?$/;
+const ONE_DOCUMENT = '1 document';
+
+/**
+ * Drops every attachment but the first, and the type/size span beside the one that is left.
+ *
+ * An attachment block is a `ul` whose preceding line is the file count, which is what separates it
+ * from the content-hit snippets the prototype draws with the same markup. The finder is written
+ * out again in `assertOneAttachment`: page-context code cannot call a helper from this file.
+ */
+async function trimActivityAttachments(page: Page): Promise<void> {
+  await page.evaluate(
+    ([pattern, one]) => {
+      const label = new RegExp(pattern!);
+      for (const list of document.querySelectorAll('.grid-root ol ul')) {
+        const line = list.previousElementSibling;
+        if (!line || !label.test((line.textContent ?? '').trim())) continue;
+        const items = Array.from(list.children);
+        for (const extra of items.slice(1)) extra.remove();
+        // The file name is an <a> of its own; the row's only direct span is "PDF · 4.2 MB".
+        items[0]?.querySelector(':scope > span')?.remove();
+        line.textContent = one!;
+      }
+    },
+    [DOCS_LABEL.source, ONE_DOCUMENT] as const,
+  );
+}
+
+/** A trim that matched nothing, or left a second file behind, would quietly change the reference. */
+async function assertOneAttachment(page: Page): Promise<void> {
+  const rows = await page.evaluate((pattern) => {
+    const label = new RegExp(pattern);
+    const found: { files: number; metas: number; line: string }[] = [];
+    for (const list of document.querySelectorAll('.grid-root ol ul')) {
+      const line = list.previousElementSibling;
+      const text = (line?.textContent ?? '').trim();
+      if (!line || !label.test(text)) continue;
+      found.push({
+        files: list.children.length,
+        metas: list.querySelectorAll('li > span').length,
+        line: text,
+      });
+    }
+    return found;
+  }, DOCS_LABEL.source);
+  expect(rows.length, 'no activity drew an attachment block').toBeGreaterThan(0);
+  expect(
+    rows.filter((row) => row.files !== 1),
+    'an activity kept more than one attachment',
+  ).toEqual([]);
+  expect(
+    rows.filter((row) => row.metas !== 0),
+    'an attachment kept its type and size',
+  ).toEqual([]);
+  expect(
+    rows.filter((row) => row.line !== ONE_DOCUMENT),
+    'a count line still names the files the design dropped',
+  ).toEqual([]);
+}
+
 /** An nth-child rule that has drifted onto another pair would quietly change the reference. */
 async function assertLegislationHidden(page: Page): Promise<void> {
   const labels = await page.evaluate(() =>
@@ -150,9 +222,11 @@ for (const state of STATES) {
       if (state.id === PROJECTS_CARD_STATE && width !== WIDE) {
         await page.addStyleTag({ content: PROJECT_LEGISLATION_CSS });
       }
+      if (state.id === ACTIVITIES_LIST_STATE) await trimActivityAttachments(page);
       await settle(page);
 
       if (state.id === PROJECTS_CARD_STATE && width !== WIDE) await assertLegislationHidden(page);
+      if (state.id === ACTIVITIES_LIST_STATE) await assertOneAttachment(page);
 
       const fullPage = !state.viewportOnly;
       const png = await page.screenshot({ fullPage, scale: 'css' });

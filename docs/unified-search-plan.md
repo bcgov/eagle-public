@@ -469,14 +469,20 @@ The loop for each of Phases 2 to 5, fixed before the first round:
   on, so later phases cannot drift earlier screens.
 
 Known non-parity by decision, documented here and not treated as failures:
-sample data is replaced by fixtures; "Page N" reads "Passage N" until Phase 7;
-the activities attachment size is omitted; the Projects Legislation filter is
-absent; the projects card at phone width leaves out the design's Legislation
-label and value, because the by-decision projects index carries no legislation
-field for the app to read; documents that share a posted date come back in the
-order the search service returns them, so a tie between two documents is the
-server's order, not a name sort applied on the client; the Project notifications
-tab is designed in code following the same grid tokens.
+sample data is replaced by fixtures; "Page N" reads "Passage N" until Phase
+7; an activity row shows one attachment, named but without its file type or
+size, because a RecentActivity carries a single `documentUrl` and neither of
+those facts, so the reference screenshots for that state are trimmed to one
+file with no size beside it; the toolbar and the empty state count
+activities as "updates" and project notifications as "notifications" rather
+than repeating the tab label, which is how the design words the count line;
+the Projects Legislation filter is absent; the projects card at phone width
+leaves out the design's Legislation label and value, because the by-decision
+projects index carries no legislation field for the app to read; documents
+that share a posted date come back in the order the search service returns
+them, so a tie between two documents is the server's order, not a name sort
+applied on the client; the Project notifications tab is designed in code
+following the same grid tokens.
 
 ## Loops and stop conditions
 

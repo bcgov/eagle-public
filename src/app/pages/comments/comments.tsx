@@ -7,6 +7,7 @@ import * as commentPeriodApi from 'app/api/commentperiod';
 import * as documentApi from 'app/api/document';
 import * as projectApi from 'app/api/project';
 import { logger } from 'app/config/logging';
+import { searchUrl } from 'app/routes/legacy-search';
 import type { Comment } from 'app/models/comment';
 import type { Document } from 'app/models/document';
 import type { Project } from 'app/models/project';
@@ -209,7 +210,7 @@ export function Comments() {
     if (type === 'PROJECT' && project) {
       navigate(`/p/${project._id}`);
     } else {
-      navigate('/project-notifications');
+      navigate(searchUrl('notifications'));
     }
   }
 

@@ -22,6 +22,7 @@ One deviation runs through most of the `api:` entries below: **demi-search is th
 - table/use-table: the last results stay on screen while the next page or keyword loads, and a request the next keystroke supersedes is aborted. Angular blanked the table on every request.
 - pages/project-list: `useGroup` / `LEGISLATION_FILTER_GROUP` dropped. `autocomplete-multi-select` grouped on `filterDefinition.group`, which project-list never set, so the flag grouped nothing. Rendering is unchanged.
 - pages/project-list: `project-list.component.css` dropped; every selector in it (`.project-table__*-col`, `.project-table__project-details*`, `.project-list__options`, `.loading-overlay`) is unused by any template in the app.
+- pages/news: the Project Info, View Engagement and View Project Notifications Page buttons are gone from each row. The project link in the row's meta line is the way to the project page, which is what Project Info opened; the other two have no counterpart in the design.
 - pages/project-notifications: the comment-period lookup runs once per notification. Angular fetched it on row init to decide whether to show the Engagement tab, then fetched the same URL again when the tab opened.
 - pages/project-notifications: `.skeleton-cell` and its shimmer are now in this page's CSS. In Angular they lived in `commenting-tab`, a different component with view encapsulation, so the notification skeleton rendered unstyled.
 - pages/project-notifications: sorting the documents sub-table returns to page 1. Angular kept the current page, showing a slice of the old ordering.
@@ -108,7 +109,7 @@ One deviation runs through most of the `api:` entries below: **demi-search is th
 - pages/project/pins: the pins request asks for the sort the table header shows (`+name`). Angular's `PinsService` sent its own default, `-datePosted`, so the header claimed one order and the rows arrived in another.
 - layout/footer: the compact fixed footer for the map page (`app-footer--sm`) is dropped, CSS included. Its Angular binding read a non-signal `router.url` under OnPush, so no deployed build has ever rendered it, and applying it also caught /projects-list, where a fixed footer covers the table.
 - pages/project + components/table: the project page's loading states are Bootstrap `.placeholder` skeletons (hero, sidebar details, mini-map, table rows) instead of `spinner-border`; a table that already has rows keeps them dimmed on refetch. Angular showed spinners everywhere.
-- pages/project/project-activites: a Subscribe button sits at the right end of the "Activities and Updates" heading row on Project Details, opening a popover that is the sign-up form itself: it posts the address to eagle-notify's `POST /api/subscriptions` from the page, so the reader never leaves EPIC. eagle-notify still owns everything after that — the confirmation link and the preference centre. The React line has no separate Updates tab to hang the button off. The News page carries the same control under the hero.
+- pages/project/project-activites: a Subscribe button sits at the right end of the "Activities and Updates" heading row on Project Details, opening a popover that is the sign-up form itself: it posts the address to eagle-notify's `POST /api/subscriptions` from the page, so the reader never leaves EPIC. eagle-notify still owns everything after that — the confirmation link and the preference centre. On the React line the per-project button sits in the project masthead and again in a card on the project's Updates tab. The site-wide version — every project, service `eao:updates` — sits under the record pills on `/search?record=activities`, which is where the deleted News page's sign-up went.
 
 ## Found in the 2026-08-27 parity pass against test
 
@@ -162,12 +163,13 @@ for an order it would reject. Any other param is dropped.
 | `/search`, with or without document params | `/search?record=documents` | live |
 | `/#/<any of the above>` | the same path without the `#`, then the row above | live |
 | `/search/content` | `/search?record=documents&scope=inside` | planned, the inside-document scope is not built yet |
-| `/news` | `/search?record=activities` | planned, the activities tab is not built yet |
-| `/project-notifications` | `/search?record=notifications` | planned, the notifications tab is not built yet |
+| `/news` | `/search?record=activities` | live |
+| `/project-notifications` | `/search?record=notifications` | live |
 | `/search-help` | unchanged | live |
 
-The planned rows still render their own pages. The mapping is written and covered by unit tests, so
-each one becomes a redirect in the change that builds its tab.
+`/news` and `/project-notifications` no longer have pages of their own: both redirect, and the
+activities and project-notification record types carry their lists. `/search/content` still renders
+its own page; it becomes a redirect with the inside-document scope.
 
 Filters carried, by record type: projects `type`, `eacDecision`, `proponent`, `region`,
 `CEAAInvolvement`, `currentPhaseName`, `decisionDateStart`, `decisionDateEnd`; documents

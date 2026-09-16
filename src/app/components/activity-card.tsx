@@ -4,6 +4,7 @@ import { EngagementLink } from 'app/components/engagement-link';
 import { sanitizeWordHtml } from 'app/utils/word-html-sanitizer';
 import { safeHtml } from 'app/utils/safe-html';
 import { longDate } from 'app/utils/utils';
+import { searchUrl } from 'app/routes/legacy-search';
 import './activity-card.css';
 
 interface ActivityCardProps {
@@ -67,7 +68,7 @@ export function ActivityCard({
 
         <div className="d-flex flex-wrap gap-2">
           {rowData?.type === 'Project Notification News' && (
-            <Link className="btn btn-sm btn-outline-primary" to="/project-notifications">
+            <Link className="btn btn-sm btn-outline-primary" to={searchUrl('notifications')}>
               View Project Notifications Page
             </Link>
           )}
