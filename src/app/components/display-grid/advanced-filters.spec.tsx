@@ -1,10 +1,11 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AdvancedFilters, isValidIsoDate } from './advanced-filters';
 import type { AdvancedField, FilterValues } from './types';
 
 const fields: AdvancedField[] = [
   { id: 'datePostedStart', label: 'Posted from', kind: 'date' },
+  { id: 'datePostedEnd', label: 'Posted to', kind: 'date' },
   {
     id: 'legislation',
     label: 'Legislation',
@@ -14,7 +15,7 @@ const fields: AdvancedField[] = [
       { value: '2018', label: '2018 Act' },
     ],
   },
-  { id: 'isFeatured', label: 'Featured only', kind: 'toggle' },
+  { id: 'isFeatured', label: 'Featured documents', kind: 'toggle' },
   { id: 'proponent', label: 'Proponent', kind: 'text' },
 ];
 
@@ -57,6 +58,28 @@ describe('AdvancedFilters', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('Use YYYY-MM-DD');
     expect(screen.getByLabelText(/Posted from/)).toHaveAttribute('aria-invalid', 'true');
     expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('points the invalid field at the message about it', async () => {
+    const user = userEvent.setup();
+    setup();
+
+    await user.type(screen.getByLabelText(/Posted from/), '2025-13-45');
+
+    expect(screen.getByLabelText(/Posted from/)).toHaveAccessibleDescription(
+      'Use YYYY-MM-DD, for example 2025-06-01',
+    );
+    // The other date field is untouched, so nothing describes it.
+    expect(screen.getByLabelText(/Posted to/)).not.toHaveAttribute('aria-describedby');
+  });
+
+  it('drops the description once the date parses', async () => {
+    const user = userEvent.setup();
+    setup();
+
+    await user.type(screen.getByLabelText(/Posted from/), '2025-06-01');
+
+    expect(screen.getByLabelText(/Posted from/)).not.toHaveAttribute('aria-describedby');
   });
 
   it('applies the date once it parses', async () => {
@@ -104,11 +127,40 @@ describe('AdvancedFilters', () => {
     expect(input).toHaveValue('2025-06');
   });
 
+  it('keeps a second date draft when only the first field changed', async () => {
+    const user = userEvent.setup();
+    const { applyValues } = setup();
+    const half = screen.getByLabelText(/Posted to/);
+
+    await user.type(half, '2025-06');
+    // Only the field whose applied filter moved may lose its draft.
+    applyValues({ datePostedStart: '2025-06-01' });
+
+    expect(screen.getByLabelText(/Posted from/)).toHaveValue('2025-06-01');
+    expect(half).toHaveValue('2025-06');
+  });
+
+  it('drops a never-parsed date when the applied filters are all cleared', async () => {
+    const user = userEvent.setup();
+    const { applyValues } = setup({ datePostedStart: '2025-06-01' });
+    const half = screen.getByLabelText(/Posted to/);
+
+    // Never parses, so it was never applied: only the set going empty can drop it.
+    await user.type(half, '2025-06');
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+
+    applyValues({});
+
+    expect(half).toHaveValue('');
+    expect(screen.getByLabelText(/Posted from/)).toHaveValue('');
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
   it('emits true when a toggle is turned on', async () => {
     const user = userEvent.setup();
     const { onChange } = setup();
 
-    await user.click(screen.getByLabelText('Featured only'));
+    await user.click(screen.getByLabelText('Featured documents'));
 
     expect(onChange).toHaveBeenLastCalledWith('isFeatured', 'true');
   });
@@ -117,7 +169,7 @@ describe('AdvancedFilters', () => {
     const user = userEvent.setup();
     const { onChange } = setup({ isFeatured: 'true' });
 
-    await user.click(screen.getByLabelText('Featured only'));
+    await user.click(screen.getByLabelText('Featured documents'));
 
     expect(onChange).toHaveBeenLastCalledWith('isFeatured', null);
   });
@@ -133,12 +185,15 @@ describe('AdvancedFilters', () => {
     expect(onChange).toHaveBeenCalledWith('legislation', '2018');
   });
 
-  it('drops a text filter when the box is emptied', async () => {
+  it('drops a text filter when the box is emptied, once typing has stopped', async () => {
     const user = userEvent.setup();
     const { onChange } = setup({ proponent: 'Cedar' });
 
     await user.clear(screen.getByLabelText('Proponent'));
 
-    expect(onChange).toHaveBeenLastCalledWith('proponent', null);
+    // The panel carries a typed filter only where there is no filter row for it, and applies it
+    // on the same beat as that row would: not on the keystroke.
+    expect(onChange).not.toHaveBeenCalled();
+    await waitFor(() => expect(onChange).toHaveBeenLastCalledWith('proponent', null));
   });
 });

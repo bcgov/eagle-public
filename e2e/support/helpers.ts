@@ -217,6 +217,26 @@ export async function pageCount(page: Page): Promise<{ shown: number; total: num
 }
 
 /**
+ * The display grid's toolbar count: "1–25 of 340 projects" -> { first: 1, last: 25, total: 340 }.
+ * "No projects" reads as all zeros. A selection replaces the line with "3 selected", which has no
+ * range, so callers that select rows read the text itself.
+ */
+export async function gridCount(
+  page: Page,
+): Promise<{ first: number; last: number; total: number }> {
+  const text = (await page.locator('.display-grid__count').first().innerText()).trim();
+  if (/^no\s+\S+/i.test(text)) return { first: 0, last: 0, total: 0 };
+  const range = text.match(/^([\d,]+)\s*[–-]\s*([\d,]+)\s+of\s+([\d,]+)\s/);
+  expect(range, `unexpected grid count text: "${text}"`).not.toBeNull();
+  const asNumber = (raw: string) => Number(raw.replace(/,/g, ''));
+  return {
+    first: asNumber(range![1]),
+    last: asNumber(range![2]),
+    total: asNumber(range![3]),
+  };
+}
+
+/**
  * A fixture response's JSON. An unproxied path is answered by the SPA with 200 text/html, so
  * without the content-type check that failure surfaces as a parse error far from its cause.
  */

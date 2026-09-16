@@ -15,7 +15,8 @@ export type SearchScope = 'names' | 'inside';
 export const RECORD_TYPES: RecordType[] = ['projects', 'documents', 'activities', 'notifications'];
 export const PAGE_SIZES = [10, 25, 50, 100];
 
-export const DEFAULT_RECORD: RecordType = 'projects';
+/* Documents: what a bare /search has always listed, from the Angular page through to the design. */
+export const DEFAULT_RECORD: RecordType = 'documents';
 export const DEFAULT_PAGE_SIZE = 25;
 /** Names & details sorts by posted date; inside-document search sorts by match count. */
 export const DEFAULT_SORT = '-datePosted';

@@ -13,7 +13,16 @@ a selector of its own and a rename is a one-line change.
 
 Backend reads are answered from `../fixtures/unified-search`, which carries the
 prototype's own sample rows. Both sides therefore see the same 12 projects, 18
-documents, 10 activities and 14 indexed passages.
+documents, 10 activities and 14 indexed passages, plus 8 hand-made project
+notifications.
+
+The sample values are the prototype's, but the field names are the ones
+demi-search sends, so the page reads a fixture row the same way it reads a real
+one: `displayName` and `datePosted` on a document, `dateUpdated` and a
+`proponent` object on a project, `headline` and `dateAdded` on an activity.
+Dropdown values ride as `List` and `Organization` ids, and the handler resolves
+an id to the label the row carries before it compares, which is the fixture
+stand-in for the `<field>Id` columns the real index filters on.
 
 ## Commands
 

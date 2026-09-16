@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import {
   CustomMultiSelect,
   type CustomMultiSelectOption,
@@ -32,6 +32,8 @@ interface ValuePickerProps {
 
 export function ValuePicker({ label, options, selected, onChange }: ValuePickerProps) {
   const [anchor, setAnchor] = useState<Anchor | null>(null);
+  const popoverId = useId();
+  const headingId = `${popoverId}-head`;
   const buttonRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   const open = anchor !== null;
@@ -112,9 +114,10 @@ export function ValuePicker({ label, options, selected, onChange }: ValuePickerP
     popover = (
       <div
         ref={popoverRef}
+        id={popoverId}
         className="display-grid__picker"
         role="group"
-        aria-label={`Filter by ${label}`}
+        aria-labelledby={headingId}
         style={{
           left: Math.round(anchor.left),
           ...(flip
@@ -124,6 +127,21 @@ export function ValuePicker({ label, options, selected, onChange }: ValuePickerP
           maxHeight: Math.round(height),
         }}
       >
+        <div className="display-grid__picker-head">
+          {/* The button that opened this reads "All" or a count, so nothing on screen says which
+              column is being filtered until this line does. It is the panel's name too. */}
+          <p className="display-grid__picker-title" id={headingId}>{`Filter by ${label}`}</p>
+          {picked.length > 0 && (
+            <button
+              type="button"
+              className="display-grid__picker-clear"
+              aria-label={`Clear ${label}`}
+              onClick={() => onChange([])}
+            >
+              Clear
+            </button>
+          )}
+        </div>
         {options.length > TYPEAHEAD_FROM ? (
           <CustomMultiSelect
             items={options}
@@ -146,17 +164,6 @@ export function ValuePicker({ label, options, selected, onChange }: ValuePickerP
             </label>
           ))
         )}
-        {picked.length > 0 && (
-          <div className="display-grid__picker-foot">
-            <button
-              type="button"
-              className="display-grid__picker-clear"
-              onClick={() => onChange([])}
-            >
-              Clear
-            </button>
-          </div>
-        )}
       </div>
     );
   }
@@ -170,8 +177,11 @@ export function ValuePicker({ label, options, selected, onChange }: ValuePickerP
           picked.length ? ' display-grid__control--on' : ''
         }`}
         aria-label={`Filter by ${label}`}
-        aria-haspopup="listbox"
+        /* The popover is a group of checkboxes, not a listbox: a mismatched role sends a screen
+           reader looking for options that are not there. */
+        aria-haspopup="dialog"
         aria-expanded={open}
+        aria-controls={open ? popoverId : undefined}
         title={fullList}
         onClick={toggleOpen}
       >

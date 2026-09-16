@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { ADVANCED_FILTERS_ID } from './advanced-filters';
 import type { GridColumn } from './types';
 
@@ -48,6 +48,7 @@ export function GridToolbar<Row>({
 }: GridToolbarProps<Row>) {
   const [columnsOpen, setColumnsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const columnsMenuId = useId();
   const columnsRef = useRef<HTMLDivElement>(null);
   const copiedTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
@@ -80,12 +81,32 @@ export function GridToolbar<Row>({
     };
   }, [columnsOpen]);
 
-  async function copyLink(): Promise<void> {
+  /** The pre-`navigator.clipboard` path, which a browser that refuses the async API still runs. */
+  function copyByCommand(url: string): boolean {
+    const field = document.createElement('textarea');
+    field.value = url;
+    field.setAttribute('readonly', '');
+    field.style.position = 'fixed';
+    field.style.opacity = '0';
+    document.body.append(field);
+    field.select();
     try {
-      await navigator.clipboard.writeText(window.location.href);
+      return document.execCommand('copy');
     } catch {
-      // A blocked clipboard leaves the button as it was: claiming a copy that did not happen is worse.
-      return;
+      return false;
+    } finally {
+      field.remove();
+    }
+  }
+
+  async function copyLink(): Promise<void> {
+    const url = window.location.href;
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      // A blocked clipboard is not a dead end: fall back before giving up, and say nothing about a
+      // copy that never happened if the fallback fails too.
+      if (!copyByCommand(url)) return;
     }
     setCopied(true);
     clearTimeout(copiedTimer.current);
@@ -98,12 +119,17 @@ export function GridToolbar<Row>({
         {/* The one live region: the count is what every control in this bar changes. */}
         <p className="display-grid__count" role="status">
           {countText}
+          {/* The copy button only changes its own label, which a screen reader never revisits. */}
+          {copied && (
+            <span className="display-grid__visually-hidden"> Link copied to clipboard</span>
+          )}
         </p>
         {scope}
         {selectionActive && (
           <button
             type="button"
             className="display-grid__clear"
+            aria-label="Clear selection"
             onClick={() => onClearSelection?.()}
           >
             <i className="material-icons" aria-hidden="true">
@@ -156,7 +182,9 @@ export function GridToolbar<Row>({
                   type="button"
                   className={`display-grid__tool${columnsOpen ? ' display-grid__tool--open' : ''}`}
                   data-tour="columns"
+                  aria-haspopup="true"
                   aria-expanded={columnsOpen}
+                  aria-controls={columnsOpen ? columnsMenuId : undefined}
                   onClick={() => setColumnsOpen((open) => !open)}
                 >
                   <i className="material-icons" aria-hidden="true">
@@ -165,7 +193,12 @@ export function GridToolbar<Row>({
                   Columns
                 </button>
                 {columnsOpen && (
-                  <div className="display-grid__menu" role="group" aria-label="Columns shown">
+                  <div
+                    className="display-grid__menu"
+                    id={columnsMenuId}
+                    role="group"
+                    aria-label="Columns shown"
+                  >
                     <p className="display-grid__menu-title">Columns shown</p>
                     {columns.map((column) => (
                       <label key={column.key} className="display-grid__option">
@@ -177,6 +210,9 @@ export function GridToolbar<Row>({
                           onChange={() => onToggleColumn?.(column.key)}
                         />
                         {column.label}
+                        {column.locked && (
+                          <span className="display-grid__visually-hidden"> (required)</span>
+                        )}
                       </label>
                     ))}
                   </div>

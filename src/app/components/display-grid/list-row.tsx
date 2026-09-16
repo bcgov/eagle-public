@@ -1,6 +1,7 @@
 import { Fragment, useId, useState, type ReactNode } from 'react';
 import { isSafeUrl } from 'app/utils/safe-url';
 import { Highlight, excerptAround } from './highlight';
+import { RecordLink } from './record-link';
 import './list-row.css';
 
 /** Over this many characters the body is clamped and offered a Show more. */
@@ -26,6 +27,8 @@ export interface ListRowProps {
   title: string;
   /** Omitted where the record has no page of its own — an activity, for instance. */
   href?: string;
+  /** The href leaves the app — a file download, say. */
+  external?: boolean;
   body?: string;
   /** Search terms from `toTerms`, for the excerpt and the highlights. */
   terms?: string[];
@@ -49,6 +52,7 @@ export function ListRow({
   meta,
   title,
   href,
+  external,
   body,
   terms,
   attachments,
@@ -66,7 +70,6 @@ export function ListRow({
   // Collapsed, the excerpt starts at the first hit: a match in paragraph three is no use if the
   // row shows paragraph one.
   const shown = isOpen || !long ? full : excerptAround(full, terms, { length: CLAMP_AT });
-  const linked = href != null && isSafeUrl(href);
   const attached = attachments ?? [];
   const pairs = full ? [] : (fields ?? []);
 
@@ -82,13 +85,9 @@ export function ListRow({
       </p>
 
       <h3 className="display-grid__row-title">
-        {linked ? (
-          <a href={href} className="display-grid__row-link">
-            <Highlight text={title} terms={terms} />
-          </a>
-        ) : (
+        <RecordLink href={href} external={external} className="display-grid__row-link">
           <Highlight text={title} terms={terms} />
-        )}
+        </RecordLink>
       </h3>
 
       {pairs.length > 0 ? (

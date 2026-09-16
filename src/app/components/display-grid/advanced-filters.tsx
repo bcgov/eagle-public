@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components -- the date rule is this panel's, and the
    grid applies the same test before it turns a typed date into a filter. */
 import { useId, useState } from 'react';
+import { FILTER_TEXT_MAX, useDebouncedDraft } from './use-debounced-draft';
 import type { AdvancedField, FilterValues } from './types';
 import './advanced-filters.css';
 
@@ -32,6 +33,38 @@ function asText(value: FilterValues[string] | undefined): string {
   return Array.isArray(value) ? value.join(',') : value;
 }
 
+/**
+ * A typed field, which the panel carries only where the layout has no filter row for it: a phone,
+ * a list, an empty result. It applies once typing stops, on the same beat as the filter row's own
+ * box, so the narrow layout does not search once per keystroke.
+ */
+function PanelText({
+  field,
+  value,
+  onChange,
+}: {
+  field: AdvancedField;
+  value: string;
+  onChange: (id: string, value: string | null) => void;
+}) {
+  const [draft, setDraft] = useDebouncedDraft(value, (next) => onChange(field.id, next || null));
+
+  return (
+    <label className="display-grid__panel-field">
+      <span className="display-grid__panel-label">{field.label}</span>
+      <input
+        type="text"
+        autoComplete="off"
+        maxLength={FILTER_TEXT_MAX}
+        className="display-grid__panel-control"
+        placeholder={field.placeholder}
+        value={draft}
+        onChange={(event) => setDraft(event.target.value)}
+      />
+    </label>
+  );
+}
+
 /** The applied text of every date field, which is what a draft is measured against. */
 function dateTexts(fields: AdvancedField[], values: FilterValues): Record<string, string> {
   const texts: Record<string, string> = {};
@@ -54,14 +87,21 @@ export function AdvancedFilters({ fields, values, onChange, open }: AdvancedFilt
   const [lastApplied, setLastApplied] = useState<Record<string, string>>(() =>
     dateTexts(fields, values),
   );
+  const [lastCount, setLastCount] = useState(() => Object.keys(values).length);
 
   /* A draft only outlives the keystroke that made it. Once the applied filter changes from
-     outside - a chip dropped, Clear all - the typed text is stale and the prop wins again. */
+     outside - a chip dropped, Clear all - the typed text is stale and the prop wins again.
+     A date that never parsed has no applied text to change, so clearing the whole set is what
+     drops it: otherwise it would sit there with its format error after every filter is gone. */
   const applied = dateTexts(fields, values);
+  const count = Object.keys(values).length;
+  const cleared = count === 0 && lastCount > 0;
   const changed = Object.keys(applied).filter((id) => applied[id] !== lastApplied[id]);
-  if (changed.length > 0) {
+  if (changed.length > 0 || count !== lastCount) {
     setLastApplied(applied);
+    setLastCount(count);
     setDrafts((current) => {
+      if (cleared) return {};
       const next = { ...current };
       for (const id of changed) delete next[id];
       return next;
@@ -114,6 +154,7 @@ export function AdvancedFilters({ fields, values, onChange, open }: AdvancedFilt
           }
 
           if (field.kind === 'date') {
+            const errorId = `${headingId}-${field.id}-error`;
             return (
               <label className="display-grid__panel-field" key={field.id}>
                 <span className="display-grid__panel-label">
@@ -125,11 +166,12 @@ export function AdvancedFilters({ fields, values, onChange, open }: AdvancedFilt
                   placeholder={DATE_FORMAT}
                   className="display-grid__panel-control"
                   aria-invalid={invalid || undefined}
+                  aria-describedby={invalid ? errorId : undefined}
                   value={value}
                   onChange={(event) => onDateInput(field, event.target.value)}
                 />
                 {invalid ? (
-                  <span role="alert" className="display-grid__panel-error">
+                  <span id={errorId} role="alert" className="display-grid__panel-error">
                     Use {DATE_FORMAT}, for example 2025-06-01
                   </span>
                 ) : null}
@@ -158,16 +200,12 @@ export function AdvancedFilters({ fields, values, onChange, open }: AdvancedFilt
           }
 
           return (
-            <label className="display-grid__panel-field" key={field.id}>
-              <span className="display-grid__panel-label">{field.label}</span>
-              <input
-                type="text"
-                className="display-grid__panel-control"
-                placeholder={field.placeholder}
-                value={asText(values[field.id])}
-                onChange={(event) => onChange(field.id, event.target.value || null)}
-              />
-            </label>
+            <PanelText
+              key={field.id}
+              field={field}
+              value={asText(values[field.id])}
+              onChange={onChange}
+            />
           );
         })}
       </div>
