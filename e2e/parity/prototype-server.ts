@@ -8,7 +8,7 @@
  */
 import { createServer, type Server } from 'node:http';
 import { readFile } from 'node:fs/promises';
-import { extname, join, normalize, resolve, sep } from 'node:path';
+import { extname, normalize, resolve, sep } from 'node:path';
 
 const CONTENT_TYPES: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
@@ -38,8 +38,12 @@ export interface PrototypeServer {
 export async function startPrototypeServer(root = PROTOTYPE_DIR): Promise<PrototypeServer> {
   const server: Server = createServer((request, response) => {
     const requested = decodeURIComponent((request.url ?? '/').split('?')[0] ?? '/');
-    const file = join(root, normalize(requested));
-    // Normalising first then re-checking the prefix keeps `../` out of the served tree.
+    if (requested.includes('\0')) {
+      response.writeHead(400).end('bad path');
+      return;
+    }
+    const file = resolve(root, '.' + normalize(requested));
+    // Resolving against root, then re-checking the prefix, keeps `../` and absolute paths out of the served tree.
     if (file !== root && !file.startsWith(root + sep)) {
       response.writeHead(403).end('outside the handoff folder');
       return;
