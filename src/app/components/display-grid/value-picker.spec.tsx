@@ -33,6 +33,7 @@ function placeButton(top: number, bottom: number) {
 
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 describe('ValuePicker', () => {
@@ -122,6 +123,38 @@ describe('ValuePicker', () => {
     const popover = screen.getByRole('group', { name: 'Filter by Type' });
     expect(popover.style.bottom).toBe(`${window.innerHeight - 698}px`);
     expect(popover.style.top).toBe('');
+  });
+
+  it('keeps the popover on the viewport it measured when a later render sees a different one', async () => {
+    vi.stubGlobal('innerHeight', 900);
+    placeButton(400, 430);
+    const user = userEvent.setup();
+    const { rerender } = render(
+      <ValuePicker label="Type" options={options} selected={[]} onChange={vi.fn()} />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Filter by Type' }));
+    const popover = screen.getByRole('group', { name: 'Filter by Type' });
+    expect(popover).toHaveStyle({ top: '432px' });
+
+    // A full-page screenshot changes the viewport and fires no resize; an unrelated render must
+    // not read it and take the popover off its button.
+    vi.stubGlobal('innerHeight', 500);
+    rerender(
+      <ValuePicker label="Type" options={options} selected={['report']} onChange={vi.fn()} />,
+    );
+
+    expect(screen.getByRole('button', { name: 'Clear Type' })).toBeInTheDocument();
+    expect(popover).toHaveStyle({ top: '432px' });
+    expect(popover.style.bottom).toBe('');
+
+    // A real resize closes the popover, so the next open measures the viewport it now has.
+    fireEvent(window, new Event('resize'));
+    await user.click(screen.getByRole('button', { name: 'Filter by Type' }));
+
+    const reopened = screen.getByRole('group', { name: 'Filter by Type' });
+    expect(reopened).toHaveStyle({ bottom: '102px' });
+    expect(reopened.style.top).toBe('');
   });
 
   it('closes on Escape and puts focus back on the button', async () => {

@@ -280,6 +280,29 @@ describe('GuidedTour', () => {
     expect(card()).toHaveStyle({ top: '352px' });
   });
 
+  it('places the card against the viewport it measured, not the one a later render sees', async () => {
+    vi.stubGlobal('innerWidth', 1280);
+    vi.stubGlobal('innerHeight', 900);
+    const { rerender } = render(<Host />);
+    boxOf('search', 300, 40);
+    await start();
+    expect(card()).toHaveStyle({ top: '352px', left: '40px', width: '380px' });
+
+    // Chromium swaps the viewport out to take a full-page shot and fires no resize. The ring is
+    // drawn off the stored measurement, so the card has to be too, or the two part company.
+    vi.stubGlobal('innerWidth', 300);
+    vi.stubGlobal('innerHeight', 400);
+    rerender(<Host />);
+
+    expect(card()).toHaveStyle({ top: '352px', left: '40px', width: '380px' });
+    expect(card()?.style.bottom).toBe('');
+
+    fireEvent(window, new Event('resize'));
+
+    expect(card()).toHaveStyle({ bottom: '112px', left: '20px', width: '268px' });
+    expect(card()?.style.top).toBe('');
+  });
+
   it('keeps the reader on the same control when an earlier one goes away', async () => {
     render(<Host narrows={['filterrow']} />);
     const user = await start();

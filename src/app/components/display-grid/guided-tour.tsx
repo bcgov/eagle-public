@@ -24,6 +24,11 @@ interface Spot {
   left: number;
   width: number;
   height: number;
+  /** The viewport the box was read against. The card is placed off this pair rather than off a
+      live `window` read, so a viewport that changes without a resize — the swap Chromium makes
+      to take a full-page shot — cannot move the card away from the ring drawn beside it. */
+  viewWidth: number;
+  viewHeight: number;
 }
 
 /** The gap between the spotlighted control and the ring drawn round it. */
@@ -34,14 +39,16 @@ const CARD_WIDTH = 380;
 /** Below this much room under the control, the card is hung above it instead. */
 const CARD_ROOM = 200;
 
-/** Whether a fresh measurement is the box already lit. */
-function sameSpot(was: Spot | null, at: DOMRect): boolean {
+/** Whether a fresh measurement is the box already lit, in the viewport it was lit against. */
+function sameSpot(was: Spot | null, at: DOMRect, viewWidth: number, viewHeight: number): boolean {
   return (
     was !== null &&
     was.top === at.top &&
     was.left === at.left &&
     was.width === at.width &&
-    was.height === at.height
+    was.height === at.height &&
+    was.viewWidth === viewWidth &&
+    was.viewHeight === viewHeight
   );
 }
 
@@ -185,10 +192,21 @@ export function GuidedTour({ open, onEnd, restoreFocusTo }: GuidedTourProps) {
       scrollLockedTo(pinned.current);
     }
     const at = element.getBoundingClientRect();
-    // Same box, same state: a read that reports no movement must not re-render, or the focus
-    // effect below takes focus off whatever button in the card the reader had reached.
+    const viewWidth = window.innerWidth;
+    const viewHeight = window.innerHeight;
+    // Same box, same viewport, same state: a read that reports no movement must not re-render, or
+    // the focus effect below takes focus off whatever button in the card the reader had reached.
     setSpot((was) =>
-      sameSpot(was, at) ? was : { top: at.top, left: at.left, width: at.width, height: at.height },
+      sameSpot(was, at, viewWidth, viewHeight)
+        ? was
+        : {
+            top: at.top,
+            left: at.left,
+            width: at.width,
+            height: at.height,
+            viewWidth,
+            viewHeight,
+          },
     );
   }, [open, step, steps, index, tick, end, scrollLockedTo]);
 
@@ -312,9 +330,11 @@ export function GuidedTour({ open, onEnd, restoreFocusTo }: GuidedTourProps) {
 
   const onLastStep = index === steps.length - 1;
   const below = spot.top + spot.height + 12;
-  const room = window.innerHeight - below;
-  const width = Math.min(CARD_WIDTH, window.innerWidth - 32);
-  const left = Math.min(Math.max(12, spot.left), window.innerWidth - width - 12);
+  // Every number below comes off the measurement, never off `window`: the card and the ring have
+  // to be placed against the same viewport or they part company mid-render.
+  const room = spot.viewHeight - below;
+  const width = Math.min(CARD_WIDTH, spot.viewWidth - 32);
+  const left = Math.min(Math.max(12, spot.left), spot.viewWidth - width - 12);
 
   return (
     <div ref={root} className="display-grid__overlay display-grid__tour">
@@ -374,7 +394,7 @@ export function GuidedTour({ open, onEnd, restoreFocusTo }: GuidedTourProps) {
           left: Math.round(left),
           ...(room > CARD_ROOM
             ? { top: Math.round(below) }
-            : { bottom: Math.round(window.innerHeight - spot.top + 12) }),
+            : { bottom: Math.round(spot.viewHeight - spot.top + 12) }),
         }}
       >
         {/* A move keeps focus on the card, and refocusing the element already focused fires
