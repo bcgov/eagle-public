@@ -143,3 +143,13 @@ jobs:
         with:
           name: playwright-report
           path: e2e/playwright-report
+
+      # The parity gate fails on pixels, so its diff images and traces have to leave the runner.
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: parity-report
+          path: |
+            e2e/parity-report
+            e2e/parity/test-results
+          if-no-files-found: ignore
