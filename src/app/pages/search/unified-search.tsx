@@ -13,7 +13,11 @@ import { GridToolbar } from 'app/components/display-grid/grid-toolbar';
 import { GuidedTour } from 'app/components/display-grid/guided-tour';
 import { toTerms } from 'app/components/display-grid/highlight';
 import type { ListRowField } from 'app/components/display-grid/list-row';
-import { PassageList, type PassageRow } from 'app/components/display-grid/passage-list';
+import {
+  PassageList,
+  type PassageHit,
+  type PassageRow,
+} from 'app/components/display-grid/passage-list';
 import { SearchHelpDialog } from 'app/components/display-grid/search-help-dialog';
 import type {
   AdvancedField,
@@ -99,6 +103,16 @@ function filtersForScope(inside: boolean, values: FilterValues): FilterValues {
 const MARK_TAG = /<\/?mark>/g;
 
 /**
+ * The page the row's first passage sits on, where the document was extracted with page markers.
+ * The row's `pageNumber` belongs to the lead chunk, so it says nothing about the passages after it.
+ */
+function leadPage(row: Row): number | null {
+  if (row['pageNumbered'] !== true) return null;
+  const page = Number(row['pageNumber']);
+  return Number.isInteger(page) && page > 0 ? page : null;
+}
+
+/**
  * A grouped chunk row as the passage list reads one. The API returns one row per document with the
  * passages that matched inside it, ordered by relevance, and `matchCount` is how many this page
  * found.
@@ -112,6 +126,7 @@ function toPassageRow(row: Row): PassageRow {
   const snippets = Array.isArray(row['snippets']) ? (row['snippets'] as unknown[]) : [];
   const date = row['datePosted'];
   const type = row['documentType'];
+  const page = leadPage(row);
   return {
     id,
     name,
@@ -120,12 +135,19 @@ function toPassageRow(row: Row): PassageRow {
     type: type ? String(type) : null,
     // A chunk row carries no author: the four parent facets stamped on it are filter ids.
     author: null,
-    /* The Nth passage this search returned, which is what the API locates. Its `pageNumber` is the
-       lead chunk's sequence number rather than a PDF page, and no later passage carries one. */
-    passages: snippets.map((text, index) => ({
-      locator: index + 1,
-      text: String(text).replace(MARK_TAG, '').trim(),
-    })),
+    /* A passage is labelled by its place in the results, except the first one on a row the index
+       gave a page: that one names the page and links into the file at it. */
+    passages: snippets.map((text, index) => {
+      const hit: PassageHit = {
+        locator: index + 1,
+        text: String(text).replace(MARK_TAG, '').trim(),
+      };
+      if (index === 0 && page !== null) {
+        hit.locator = page;
+        hit.pageNumbered = true;
+      }
+      return hit;
+    }),
     total: Number(row['matchCount']) || snippets.length,
   };
 }

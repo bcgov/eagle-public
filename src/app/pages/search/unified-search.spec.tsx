@@ -725,6 +725,42 @@ describe('the inside-documents scope', () => {
     expect(within(passage).getByText('habitat').tagName).toBe('MARK');
   });
 
+  it('names the page of the first passage where the row carries one, and links into the file', async () => {
+    chunks = [{ ...CHUNKS[0], pageNumbered: true, pageNumber: 170 }];
+    renderSearch('/search?scope=inside&keywords=habitat');
+
+    const page = await screen.findByRole('link', { name: 'Page 170' });
+    expect(page.getAttribute('href')).toMatch(/#page=170$/);
+    // The page belongs to the lead chunk, so the next passage keeps its place in the results.
+    expect(screen.getByText('Passage 2')).toBeInTheDocument();
+  });
+
+  it('counts the passages of a row with no page, even where a chunk number came with it', async () => {
+    renderSearch('/search?scope=inside&keywords=habitat');
+
+    expect(await screen.findByText('Passage 1')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^Page / })).not.toBeInTheDocument();
+  });
+
+  it('counts the passages of a flagged row whose page number never arrived', async () => {
+    chunks = [
+      { ...CHUNKS[0], pageNumbered: true, pageNumber: null },
+      {
+        ...CHUNKS[0],
+        _id: 'd2',
+        documentId: 'd2',
+        documentName: 'Creek survey',
+        pageNumbered: true,
+        pageNumber: 0,
+      },
+    ];
+    renderSearch('/search?scope=inside&keywords=habitat');
+
+    // A page of zero is no page at all, so neither row may promise one.
+    expect(await screen.findAllByText('Passage 1')).toHaveLength(2);
+    expect(screen.queryByRole('link', { name: /^Page / })).not.toBeInTheDocument();
+  });
+
   it('ranks by relevance in the scope and restores the date sort on the way out', async () => {
     const user = userEvent.setup();
     const fetchMock = stubApi();
