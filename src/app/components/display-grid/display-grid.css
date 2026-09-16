@@ -1,0 +1,543 @@
+/* Shared display grid. Every rule is scoped under `.display-grid`: this component is mounted
+   inside pages that own `body`, `a`, `label` and `input`, and a bare element selector here would
+   silently beat the host's. Colour comes from @bcgov/design-tokens roles, never the raw scale. */
+
+/* Open design question, not a settled choice: the control and popover borders (--theme-gray-50,
+   measured 1.55:1 against white) and the inactive sort arrow (--theme-gray-60, 1.54:1) come
+   straight from the prototype and sit under the WCAG 1.4.11 3:1 floor for non-text contrast.
+   They stay as drawn so the parity gate compares like with like; design decides before prod. */
+
+.display-grid {
+  /* One z-index scale, in one place. The site masthead is 1005, so overlays clear it. */
+  --grid-z-sticky: 10;
+  --grid-z-columns: 30;
+  --grid-z-picker: 60;
+  --grid-z-overlay: 2000;
+
+  /* Control heights are explicit everywhere below, because `epic/styles.css` sets a form-control
+     height on bare `input[type="text"]` and a `min-height` alone loses to it. */
+  --grid-control-h: 30px;
+  --grid-panel-control-h: 40px;
+  --grid-search-h: 48px;
+  --grid-bar-h: 56px;
+
+  overflow: visible;
+  background: var(--theme-gray-white);
+  border: var(--layout-border-width-small) solid var(--theme-gray-40);
+  border-radius: var(--layout-border-radius-medium);
+  color: var(--typography-color-primary);
+}
+
+.display-grid a {
+  color: var(--typography-color-link);
+}
+
+.display-grid a:hover {
+  color: var(--surface-color-primary-default);
+}
+
+/* The Bootstrap reboot makes `label` inline-block, which shrink-wraps any control inside it. */
+.display-grid label {
+  display: block;
+}
+
+.display-grid input,
+.display-grid select,
+.display-grid button,
+.display-grid textarea {
+  font-family: inherit;
+}
+
+.display-grid :focus-visible {
+  outline: var(--layout-border-width-medium) solid var(--typography-color-link);
+  outline-offset: 1px;
+}
+
+.display-grid__visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* === TOOLBAR === */
+
+.display-grid__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--layout-padding-small);
+  box-sizing: border-box;
+  /* Held in both states, so selecting a row never moves the rows under the pointer. */
+  min-height: var(--grid-bar-h);
+  padding: var(--layout-padding-small) var(--layout-padding-medium);
+  background: var(--theme-gray-white);
+  border-bottom: var(--layout-border-width-small) solid var(--theme-gray-40);
+}
+
+.display-grid__bar--selected {
+  background: var(--theme-blue-10);
+}
+
+.display-grid__bar-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--layout-padding-medium);
+  min-width: 0;
+}
+
+.display-grid__bar-group--tools {
+  gap: var(--layout-padding-xsmall);
+}
+
+.display-grid__count {
+  margin: 0;
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-primary);
+}
+
+.display-grid__bar--selected .display-grid__count {
+  font: var(--typography-bold-small-body);
+}
+
+.display-grid__tool {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--layout-padding-xsmall);
+  box-sizing: border-box;
+  height: 36px;
+  padding: 0 var(--layout-padding-small);
+  border: var(--layout-border-width-small) solid var(--theme-gray-50);
+  border-radius: var(--layout-border-radius-small);
+  background: var(--theme-gray-white);
+  color: var(--typography-color-primary);
+  font: var(--typography-regular-small-body);
+  cursor: pointer;
+}
+
+.display-grid__tool:hover {
+  background: var(--theme-gray-20);
+}
+
+.display-grid__tool--on {
+  border-color: var(--typography-color-link);
+  background: var(--theme-blue-10);
+}
+
+.display-grid__tool--open {
+  background: var(--theme-gray-20);
+}
+
+.display-grid__tool--copied {
+  border-color: var(--support-border-color-success);
+}
+
+.display-grid__tool .material-icons {
+  font-size: 18px;
+}
+
+.display-grid__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--surface-color-primary-default);
+  color: var(--theme-gray-white);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.display-grid__download {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--layout-padding-xsmall);
+  box-sizing: border-box;
+  height: 36px;
+  padding: 0 var(--layout-padding-medium);
+  border: none;
+  border-radius: var(--layout-border-radius-small);
+  background: var(--surface-color-primary-default);
+  color: var(--theme-gray-white);
+  font: var(--typography-bold-small-body);
+  cursor: pointer;
+}
+
+.display-grid__download:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.display-grid__clear {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  box-sizing: border-box;
+  height: 32px;
+  padding: 0 var(--layout-padding-xsmall);
+  border: none;
+  background: transparent;
+  color: var(--typography-color-primary);
+  font: var(--typography-regular-small-body);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.display-grid__clear .material-icons {
+  font-size: 16px;
+}
+
+/* === COLUMNS MENU === */
+
+.display-grid__menu-anchor {
+  position: relative;
+}
+
+.display-grid__menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: var(--grid-z-columns);
+  box-sizing: border-box;
+  width: 232px;
+  padding: var(--layout-padding-small);
+  background: var(--theme-gray-white);
+  border: var(--layout-border-width-small) solid var(--theme-gray-40);
+  border-radius: var(--layout-border-radius-medium);
+  box-shadow: var(--surface-shadow-medium);
+}
+
+.display-grid__menu-title {
+  margin: 0 0 var(--layout-margin-xsmall);
+  font: var(--typography-bold-label);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--typography-color-secondary);
+}
+
+.display-grid__option {
+  display: flex;
+  align-items: center;
+  gap: var(--layout-padding-small);
+  padding: 5px 2px;
+  font: var(--typography-regular-small-body);
+  cursor: pointer;
+}
+
+.display-grid__option input[type='checkbox'] {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--surface-color-primary-default);
+}
+
+.display-grid__option input[type='checkbox']:disabled {
+  cursor: not-allowed;
+}
+
+/* === TABLE === */
+
+.display-grid__scroll {
+  /* Column widths survive on a phone; the grid scrolls sideways inside its own card. The height
+     bound is what makes the head and filter rows stick to this box rather than to the viewport,
+     where `top: 0` would put them under the site masthead. */
+  max-height: 560px;
+  overflow: auto;
+}
+
+.display-grid__scroll::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+
+.display-grid__table {
+  width: 100%;
+  min-width: 880px;
+  border-collapse: separate;
+  border-spacing: 0;
+  /* `table-layout: fixed` reads its widths off the first row, so widths live on the header cells. */
+  table-layout: fixed;
+}
+
+.display-grid__head-cell {
+  position: sticky;
+  top: 0;
+  z-index: var(--grid-z-sticky);
+  box-sizing: border-box;
+  height: 34px;
+  padding: 0 var(--layout-padding-small);
+  text-align: left;
+  vertical-align: middle;
+  background: var(--theme-gray-20);
+  border-right: var(--layout-border-width-small) solid var(--theme-gray-30);
+  /* The accent paints over the bottom rule rather than replacing it, so no cell loses its edge. */
+  box-shadow: inset 0 -2px 0 var(--theme-gray-50);
+}
+
+.display-grid__head-cell--sorted {
+  box-shadow: inset 0 -2px 0 var(--typography-color-link);
+}
+
+.display-grid__head-cell--select {
+  width: 38px;
+  text-align: center;
+}
+
+.display-grid__sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.display-grid__sort-label {
+  font: var(--typography-bold-small-body);
+  color: var(--typography-color-primary);
+  text-wrap: pretty;
+}
+
+.display-grid__head-cell--sorted .display-grid__sort-label {
+  color: var(--typography-color-link);
+}
+
+.display-grid__sort-arrow {
+  flex: 0 0 auto;
+  font-size: 10px;
+  line-height: 1;
+  color: var(--theme-gray-60);
+}
+
+.display-grid__head-cell--sorted .display-grid__sort-arrow {
+  color: var(--typography-color-link);
+}
+
+.display-grid__head-label {
+  font: var(--typography-bold-small-body);
+}
+
+/* === FILTER ROW === */
+
+.display-grid__filter-cell {
+  position: sticky;
+  /* `top` is set inline from the measured header row height, not a constant. */
+  z-index: var(--grid-z-sticky);
+  padding: 4px var(--layout-padding-small);
+  vertical-align: middle;
+  background: var(--theme-gray-10);
+  border-right: var(--layout-border-width-small) solid var(--theme-gray-30);
+  border-bottom: var(--layout-border-width-small) solid var(--theme-gray-40);
+}
+
+.display-grid__control {
+  box-sizing: border-box;
+  width: 100%;
+  /* Explicit height: `epic/styles.css` sets a form-control height on bare text inputs. */
+  height: var(--grid-control-h);
+  min-height: var(--grid-control-h);
+  padding: 0 4px;
+  border: var(--layout-border-width-small) solid var(--theme-gray-50);
+  border-radius: var(--layout-border-radius-small);
+  background: var(--theme-gray-white);
+  color: var(--typography-color-primary);
+  font: var(--typography-regular-label);
+}
+
+.display-grid__control--on {
+  border-color: var(--typography-color-link);
+  box-shadow: inset 0 0 0 1px var(--typography-color-link);
+  font-weight: 700;
+}
+
+.display-grid__pick {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.display-grid__pick-label {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.display-grid__pick-caret {
+  flex: 0 0 auto;
+  font-size: 9px;
+}
+
+/* === VALUE PICKER POPOVER === */
+
+/* Rendered at viewport level so the grid's scroll container cannot clip it. */
+.display-grid__picker {
+  position: fixed;
+  z-index: var(--grid-z-picker);
+  box-sizing: border-box;
+  overflow: auto;
+  padding: var(--layout-padding-small);
+  background: var(--theme-gray-white);
+  border: var(--layout-border-width-small) solid var(--theme-gray-50);
+  border-radius: var(--layout-border-radius-medium);
+  box-shadow: var(--surface-shadow-medium);
+}
+
+.display-grid__picker-foot {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: var(--layout-padding-xsmall);
+}
+
+.display-grid__picker-clear {
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--typography-color-link);
+  font: var(--typography-regular-label);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* === BODY === */
+
+.display-grid__row {
+  background: var(--theme-gray-white);
+}
+
+/* No zebra: a tint carries meaning here (hover, selected), so it cannot also be decoration. */
+.display-grid__row:hover {
+  background: var(--theme-blue-10);
+}
+
+.display-grid__row--selected {
+  background: var(--theme-blue-10);
+}
+
+.display-grid__cell {
+  padding: 5px var(--layout-padding-small);
+  vertical-align: middle;
+  font: var(--typography-regular-small-body);
+  border-right: var(--layout-border-width-small) solid var(--theme-gray-30);
+  border-bottom: var(--layout-border-width-small) solid var(--theme-gray-30);
+}
+
+.display-grid__cell--select {
+  width: 38px;
+  text-align: center;
+}
+
+/* Dates are YYYY-MM-DD everywhere in the grid, so the digits line up column to column. */
+.display-grid__cell--date {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.display-grid__checkbox {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--surface-color-primary-default);
+}
+
+.display-grid__cell-text,
+.display-grid__cell a {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* The old rows stay while the next page loads; dimming says they are stale without a jump. */
+.display-grid__body--loading {
+  opacity: 0.55;
+  pointer-events: none;
+  transition: opacity 120ms ease-in-out;
+}
+
+.display-grid__skeleton-bar {
+  display: block;
+  height: 12px;
+  border-radius: var(--layout-border-radius-small);
+  background: var(--theme-gray-30);
+}
+
+.display-grid__empty {
+  margin: 0;
+  padding: var(--layout-padding-xlarge);
+  font: var(--typography-regular-body);
+  color: var(--typography-color-secondary);
+  text-align: center;
+}
+
+/* === LIST TEMPLATE === */
+
+.display-grid__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.display-grid__list-item {
+  padding: var(--layout-padding-medium);
+  border-bottom: var(--layout-border-width-small) solid var(--theme-gray-30);
+}
+
+.display-grid__list-item:last-child {
+  border-bottom: none;
+}
+
+/* === FOOTER === */
+
+.display-grid__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--layout-padding-small);
+  padding: var(--layout-padding-small) var(--layout-padding-medium);
+  border-top: var(--layout-border-width-small) solid var(--theme-gray-40);
+}
+
+.display-grid__footer-group {
+  display: flex;
+  align-items: center;
+  gap: var(--layout-padding-small);
+}
+
+.display-grid__footer-label {
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-secondary);
+}
+
+/* === BREAKPOINTS === */
+
+/* Narrow: the toolbar's tools wrap under the count before the grid starts scrolling sideways. */
+@media (max-width: 900px) {
+  .display-grid__bar {
+    padding: var(--layout-padding-small);
+  }
+
+  .display-grid__footer {
+    padding: var(--layout-padding-small);
+  }
+}
+
+/* Below 720 the list template takes over, and a column filter row has no columns to sit under. */
+@media (max-width: 720px) {
+  .display-grid__filter-row {
+    display: none;
+  }
+}

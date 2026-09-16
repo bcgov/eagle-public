@@ -1,0 +1,86 @@
+/* "More filters" panel: the filterable fields no column shows. Scoped under .display-grid, and
+   every control states its own height — the site's form-control rule beats min-height and would
+   leave text fields 44px next to 40px selects. */
+
+.display-grid .display-grid__panel {
+  padding: var(--layout-padding-medium);
+  background: var(--theme-gray-10);
+  border-bottom: var(--layout-border-width-small) solid var(--theme-gray-40);
+}
+
+.display-grid .display-grid__panel-heading {
+  margin: 0 0 var(--layout-margin-small);
+  font: var(--typography-bold-small-body);
+  color: var(--typography-color-primary);
+}
+
+.display-grid .display-grid__panel-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: var(--layout-padding-medium);
+}
+
+/* Bootstrap's reboot makes label inline-block, which shrink-wraps the control inside it. */
+.display-grid .display-grid__panel-field {
+  display: block;
+  cursor: pointer;
+}
+
+.display-grid .display-grid__panel-label {
+  display: block;
+  margin-bottom: var(--layout-margin-hair);
+  font: var(--typography-bold-label);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--typography-color-secondary);
+}
+
+.display-grid .display-grid__panel-format {
+  font: var(--typography-regular-label);
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--typography-color-secondary);
+}
+
+.display-grid .display-grid__panel-control {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  height: 40px;
+  padding: 0 var(--layout-padding-small);
+  border: var(--layout-border-width-small) solid var(--theme-gray-50);
+  border-radius: var(--layout-border-radius-medium);
+  background: var(--theme-gray-white);
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-primary);
+}
+
+.display-grid .display-grid__panel-control:focus-visible {
+  outline: var(--layout-border-width-medium) solid var(--surface-color-primary-default);
+  outline-offset: 1px;
+}
+
+.display-grid .display-grid__panel-control[aria-invalid='true'] {
+  border-color: var(--support-border-color-danger);
+}
+
+/* The checkbox keeps the row 40px tall so a toggle column lines up with the fields beside it. */
+.display-grid .display-grid__panel-toggle {
+  display: flex;
+  align-items: center;
+  min-height: 40px;
+}
+
+.display-grid .display-grid__panel-toggle input {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--surface-color-primary-default);
+}
+
+.display-grid .display-grid__panel-error {
+  display: block;
+  margin-top: var(--layout-margin-hair);
+  font: var(--typography-regular-label);
+  color: var(--typography-color-danger);
+}

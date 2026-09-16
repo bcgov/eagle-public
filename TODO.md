@@ -53,6 +53,75 @@ src/
     - [x] CSS scoping regressions fixed: `header.css`, `home.css`, the popup `hr` and the table pagination rules leaked or lost to Bootstrap once view encapsulation went away.
     - [x] Map opening view matches prod again (fit padding), and the map page footer is prod's.
 
+## Unified search (PUBLIC-146)
+
+One `/search` page and one display grid replacing `/projects-list`, `/search`, `/news` and `/project-notifications`. Plan and detail: `docs/unified-search-plan.md`.
+The design prototype sits at `design/handoffs/unified-search/`, local only and never committed; the source archive is kept at `/root/repos/eagle-public-design-handoff.zip` and can be unzipped again if the directory is missing.
+
+Picking up the work:
+
+- Start by reading this section and `docs/unified-search-plan.md`.
+- Take the first unchecked item whose dependencies are already ticked.
+- One item at a time. Never redo a ticked item.
+- Tick an item only when its exit condition holds (tests green, parity passed where it applies, PR open). Partial work goes on the line as `(in progress: <branch>, <what is done>)`, never as a tick.
+- Branch per phase: `feat/unified-search-p<N>` off `react`, worked in its own worktree.
+
+Phase 1, grid components:
+
+- [x] 1.1 `display-grid.tsx`, `grid-header`, `filter-row`, `year-picker`, `display-grid.css` with z-index scale
+- [x] 1.2 `value-picker` (fixed, flip, close rules) + spec
+- [x] 1.3 `chip-row`, `advanced-filters` (date validation) + specs
+- [x] 1.4 `grid-toolbar` (count, scope slot, More filters, Columns, Copy link, selection swap) + spec
+- [x] 1.5 `list-row`, `highlight` + specs
+- [x] 1.6 `use-grid-url-state` + spec
+- [x] 1.7 parity harness: fixtures from prototype, `capture-reference.ts`, `test:parity` script, reference PNGs committed
+- [ ] 1.8 `css-scoping.spec.ts` assertions; PR open, review, merged, `v3.0.0-beta.N` on next (in progress: feat/unified-search-p1, PR open)
+
+Phase 2, `/search` projects + documents:
+
+- [ ] 2.1 `types/projects.ts`, `types/documents.ts`, `types/index.ts` + specs (`and[]` contract)
+- [ ] 2.2 `use-type-counts.ts` with 404 fallback + spec
+- [ ] 2.3 `unified-search.tsx` composes grid; URL schema; analytics unchanged
+- [ ] 2.4 route swap, old search page deleted, e2e rewritten
+- [ ] 2.4a `routes/legacy-search.ts` param mapping + table-driven spec (Angular `/projects-list`, bare `/search` disambiguation)
+- [ ] 2.4b hash-router guard (`#/...`) + e2e
+- [ ] 2.5 parity loop passed (states 01, 02, 05, 06 at 924 and 400)
+- [ ] 2.6 a11y pass; PR, review, merged, beta on next
+
+Phase 3, activities + notifications:
+
+- [ ] 3.1 `types/activities.ts` list rows, attachments + spec
+- [ ] 3.2 `types/notifications.ts` headerless + spec; fixture
+- [ ] 3.3 `/news`, `/project-notifications` redirects; home links; old pages and specs removed
+- [ ] 3.4 parity loop passed (state 03 and notifications tab at both widths)
+- [ ] 3.5 PR, review, merged, beta on next
+
+Phase 4, inside documents:
+
+- [ ] 4.1 scope switch, `DocumentChunk` query, sort swap/restore
+- [ ] 4.2 `passage-list.tsx` + spec, `PASSAGE_LOCATOR` constant, `pageNumbered` hook
+- [ ] 4.3 no-keyword prompt, cross-scope empty states
+- [ ] 4.4 `content-search.tsx`/`content-result.tsx` retired
+- [ ] 4.5 parity loop passed (state 04)
+- [ ] 4.6 PR, review, merged, beta on next
+
+Phase 5, help + tour:
+
+- [ ] 5.1 `search-help-dialog.tsx` + spec
+- [ ] 5.2 `guided-tour.tsx`, `tour-steps.ts`, absent-step skip + spec
+- [ ] 5.3 parity loop passed (states 07, 08, tour steps 2-7)
+- [ ] 5.4 PR, review, merged, beta on next
+
+Phase 6, nav + retirement:
+
+- [ ] 6.1 header Search → `/search`
+- [ ] 6.2 `project-document-tab.tsx` on `DisplayGrid`; `data-table/*` deleted; parity re-run on project documents tab against `Project Page - Redesign.dc.html` documents tab
+- [ ] 6.3 old pages/configs deleted; `TableList` kept for comments + notification documents; TODO line for those two
+- [ ] 6.4 `deviations-from-angular.md`, wiki routes table
+- [ ] 6.5 PR, review, merged, beta on next
+
+Phase 0 (counts endpoint, index gaps) and Phase 7 (real page numbers) are tracked in eagle-demi `TODO.md` under the same heading.
+
 ## Port rules (added 2026-08-27)
 
 - Do not port bugs or inefficiencies. When the Angular code is wrong, wasteful (redundant fetches, N+1, dead caches, needless re-renders), or dead, fix or drop it in the port.
@@ -75,7 +144,9 @@ Fixes shipped on `develop` (Angular) not yet re-implemented here. One line each:
 
 ## Follow-ups
 
+- Display grid: control borders (`--theme-gray-50`, 1.55:1) and the inactive sort arrow (`--theme-gray-60`, 1.54:1) follow the prototype and sit under the 3:1 non-text contrast floor; needs a design decision before the grid ships to prod.
 - Unscheduled ideas live in `docs/FUTURE.md` (per-branch preview URLs, automatic create and teardown).
+- After the prod cutover of the unified search page, submit the new `/search` URL to the search engines. The client redirects keep old indexed links working in the meantime.
 - Assessment rail (`src/app/pages/project/assessment-stages.ts`) has no per-stage dates. Historic stages should scale to how long they actually took and only current and future stages show the statutory maximum, but eagle-api holds no phase dates (`phaseHistory` is bare List ids). Source is Track `work_phases` (start_date, end_date, number_of_days, legislated) through a demi-api endpoint, for example `GET /api/projects/:id/phases`; fill `elapsedDays` and `dates` from it. Same feed can carry the certificate number (`ea_certificate` in DEMI Track data). Never through eagle-api.
 - After cutover, delete `e2e/tools/` and `e2e/tests/css-scoping.spec.ts`. Both only compare the Angular and React renderings, so neither has anything to check once Angular is gone.
 

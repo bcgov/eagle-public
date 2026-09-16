@@ -1,0 +1,132 @@
+/* List row: one record per row, full width. Scoped under .display-grid; no bare element
+   selectors, so an embedding page keeps its own link and list styles. */
+
+.display-grid .display-grid__row {
+  padding: var(--layout-padding-medium);
+  border-bottom: var(--layout-border-width-small) solid var(--theme-gray-30);
+}
+
+.display-grid .display-grid__row-meta {
+  margin: 0 0 var(--layout-margin-hair);
+  font: var(--typography-regular-label);
+  color: var(--typography-color-secondary);
+  /* Dates read as a column even in running text. */
+  font-variant-numeric: tabular-nums;
+}
+
+.display-grid .display-grid__row-meta a {
+  color: var(--typography-color-link);
+}
+
+.display-grid .display-grid__row-title {
+  margin: 0;
+  font: var(--typography-bold-body);
+  color: var(--typography-color-primary);
+  text-wrap: pretty;
+  /* A headline wider than this loses the reader between line ends. */
+  max-width: 78ch;
+}
+
+.display-grid .display-grid__row-link {
+  color: var(--typography-color-link);
+  text-decoration: none;
+}
+
+.display-grid .display-grid__row-link:hover {
+  text-decoration: underline;
+}
+
+.display-grid .display-grid__row-body {
+  margin: var(--layout-margin-hair) 0 0;
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-primary);
+  text-wrap: pretty;
+  /* Measure: past about 92 characters the eye loses the next line's start. */
+  max-width: 92ch;
+}
+
+.display-grid .display-grid__row-body--clamped {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+}
+
+.display-grid .display-grid__row-more {
+  min-height: 32px;
+  margin-top: var(--layout-margin-hair);
+  padding: 0;
+  border: none;
+  background: transparent;
+  font: var(--typography-bold-small-body);
+  color: var(--typography-color-link);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.display-grid .display-grid__row-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--layout-padding-xsmall) var(--layout-padding-large);
+  margin: var(--layout-margin-xsmall) 0 0;
+}
+
+.display-grid .display-grid__row-fields dt {
+  font: var(--typography-bold-label);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--typography-color-secondary);
+}
+
+.display-grid .display-grid__row-fields dd {
+  margin: 0;
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-primary);
+}
+
+.display-grid .display-grid__row-docs {
+  margin-top: var(--layout-margin-small);
+  padding-top: var(--layout-padding-small);
+  border-top: var(--layout-border-width-small) solid var(--theme-gray-30);
+}
+
+.display-grid .display-grid__row-docs-count {
+  margin: 0 0 var(--layout-margin-hair);
+  font: var(--typography-bold-label);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--typography-color-secondary);
+}
+
+.display-grid .display-grid__row-docs ul {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.display-grid .display-grid__row-docs li {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--layout-padding-xsmall);
+}
+
+.display-grid .display-grid__row-docs a {
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-link);
+}
+
+.display-grid .display-grid__row-docs-meta {
+  font: var(--typography-regular-label);
+  color: var(--typography-color-secondary);
+}
+
+.display-grid .display-grid__row a:focus-visible,
+.display-grid .display-grid__row-more:focus-visible {
+  outline: var(--layout-border-width-medium) solid var(--surface-color-primary-default);
+  outline-offset: 2px;
+}
