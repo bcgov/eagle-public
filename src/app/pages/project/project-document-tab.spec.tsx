@@ -112,6 +112,24 @@ function documentRequests(): string[] {
   return requests.filter((url) => url.includes('dataset=Document'));
 }
 
+/** The phone width the grid draws cards at; jsdom answers every media query false without this. */
+function stubNarrow() {
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn((query: string) => ({
+      matches: true,
+      media: query,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    })),
+  );
+}
+
+/** The card a document gets instead of a row at phone width. */
+function cardFor(title: string): HTMLElement {
+  return screen.getByRole('heading', { name: title, level: 3 }).closest('li') as HTMLElement;
+}
+
 // The tabs read their project id and lists off the shell's outlet context; the tests render each
 // tab on its own, so the context comes from a stub instead.
 vi.mock('./project-context', async (importOriginal) => {
@@ -370,5 +388,45 @@ describe('project document tabs', () => {
     await waitFor(() => expect(router.state.location.search).toContain('keywords=slope'));
     expect(router.state.location.search).toContain('pageSize=50');
     expect(router.state.location.search).toContain('sortBy=-score');
+  });
+
+  describe('at phone width, where the rows are cards', () => {
+    /** The star has no cell on a card, so the card says the same thing in words. */
+    it('documents name a featured document in the card', async () => {
+      stubNarrow();
+      renderTab(DocumentsTab, '/p/proj-1/documents');
+
+      await screen.findByText('Cedar Quarry Certificate');
+      const card = cardFor('Cedar Quarry Certificate');
+
+      expect(within(card).getByText('Featured')).toBeInTheDocument();
+      expect(within(card).getByText('Yes')).toBeInTheDocument();
+    });
+
+    it('certificates leave the featured mark off the card, as they leave off the star', async () => {
+      stubNarrow();
+      renderTab(Certificates, '/p/proj-1/certificates');
+
+      await screen.findByText('Cedar Quarry Certificate');
+
+      expect(
+        within(cardFor('Cedar Quarry Certificate')).queryByText('Featured'),
+      ).not.toBeInTheDocument();
+    });
+
+    /* The select names a direction outright, unlike a heading, whose click can only flip the one
+       in force: picking Name Z–A while the documents are newest first must not read A–Z. */
+    it('documents sort the way the select names, not the flip of the sort in force', async () => {
+      stubNarrow();
+      const router = renderTab(DocumentsTab, '/p/proj-1/documents');
+
+      await screen.findByText('Cedar Quarry Certificate');
+      expect(screen.getByLabelText('Sort')).toHaveValue('-datePosted');
+
+      await userEvent.selectOptions(screen.getByLabelText('Sort'), '-displayName');
+
+      await waitFor(() => expect(router.state.location.search).toContain('sortBy=-displayName'));
+      expect(router.state.location.search).toContain('currentPage=1');
+    });
   });
 });

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { act, render, screen, within } from '@testing-library/react';
+import { act, createEvent, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { DisplayGrid } from './display-grid';
@@ -329,6 +329,25 @@ describe('DisplayGrid', () => {
     await user.click(screen.getByRole('link', { name: 'Application' }));
 
     expect(onLinkClick).toHaveBeenCalledWith(rows[0]);
+  });
+
+  /* The handler downloads the record itself, so the browser must not also follow the href: an
+     unblocked click opens the redirect tab on top of the download and fetches the file twice. */
+  it('stops the browser following the href the handler replaced', () => {
+    const onLinkClick = vi.fn();
+    renderGrid({
+      columns: [
+        { ...columns[0], href: (row) => `/doc/${row.id}`, hrefExternal: true, onLinkClick },
+        columns[1],
+      ],
+    });
+
+    const link = screen.getByRole('link', { name: 'Application' });
+    // The event is kept rather than fired through `userEvent`, which hands back no event to read.
+    const click = createEvent.click(link);
+    fireEvent(link, click);
+
+    expect(click.defaultPrevented).toBe(true);
   });
 
   it('marks the header checkbox mixed while only some rows are selected', () => {
