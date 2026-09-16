@@ -69,6 +69,13 @@ for (const state of STATES) {
       await runSteps(page, state.steps, 'app');
       await settle(page);
 
+      // Read before the shot: a state that walked somewhere else says so in words here, rather
+      // than as a pixel count nobody can read back.
+      if (state.expectText) {
+        const carrier = page.locator(state.expectText.selector).first();
+        await expect(carrier, state.expectText.selector).toHaveText(state.expectText.text[width]);
+      }
+
       await expect(page).toHaveScreenshot(`${state.id}-${width}.png`, {
         // The whole page against the whole design: a height that differs fails before a pixel is
         // compared, because content below the fold is part of what was designed. A state whose
