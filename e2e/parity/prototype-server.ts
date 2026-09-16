@@ -8,7 +8,7 @@
  */
 import { createServer, type Server } from 'node:http';
 import { readFile } from 'node:fs/promises';
-import { extname, normalize, resolve, sep } from 'node:path';
+import { extname, isAbsolute, normalize, relative, resolve } from 'node:path';
 
 const CONTENT_TYPES: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
@@ -43,8 +43,9 @@ export async function startPrototypeServer(root = PROTOTYPE_DIR): Promise<Protot
       return;
     }
     const file = resolve(root, '.' + normalize(requested));
-    // Resolving against root, then re-checking the prefix, keeps `../` and absolute paths out of the served tree.
-    if (file !== root && !file.startsWith(root + sep)) {
+    // Relative path back to root keeps `../` and absolute paths out of the served tree.
+    const inside = relative(root, file);
+    if (inside.startsWith('..') || isAbsolute(inside)) {
       response.writeHead(403).end('outside the handoff folder');
       return;
     }
