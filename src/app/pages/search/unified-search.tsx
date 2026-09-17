@@ -103,13 +103,29 @@ function filtersForScope(inside: boolean, values: FilterValues): FilterValues {
 const MARK_TAG = /<\/?mark>/g;
 
 /**
- * The page the row's first passage sits on, where the document was extracted with page markers.
- * The row's `pageNumber` belongs to the lead chunk, so it says nothing about the passages after it.
+ * The page a passage sits on, read off a row or off one entry of its `passages` array. Only a
+ * document extracted with page markers carries one, and a flagged page can still fail to arrive.
  */
-function leadPage(row: Row): number | null {
-  if (row['pageNumbered'] !== true) return null;
-  const page = Number(row['pageNumber']);
+function pageOf(source: unknown): number | null {
+  const fields = (source ?? {}) as Record<string, unknown>;
+  if (fields['pageNumbered'] !== true) return null;
+  const page = Number(fields['pageNumber']);
   return Number.isInteger(page) && page > 0 ? page : null;
+}
+
+/** A passage as the list shows it: named by its page where it has one, otherwise by its place. */
+function toHit(text: unknown, index: number, page: number | null): PassageHit {
+  const hit: PassageHit = {
+    locator: index + 1,
+    text: String(text ?? '')
+      .replace(MARK_TAG, '')
+      .trim(),
+  };
+  if (page !== null) {
+    hit.locator = page;
+    hit.pageNumbered = true;
+  }
+  return hit;
 }
 
 /**
@@ -124,9 +140,15 @@ function toPassageRow(row: Row): PassageRow {
   const name = String(row['documentName'] ?? '') || 'Untitled document';
   const href = documentDownloadUrl({ _id: id, displayName: name });
   const snippets = Array.isArray(row['snippets']) ? (row['snippets'] as unknown[]) : [];
+  const entries = Array.isArray(row['passages']) ? (row['passages'] as unknown[]) : [];
   const date = row['datePosted'];
   const type = row['documentType'];
-  const page = leadPage(row);
+  /* A passage is labelled by its place in the results, except one the index gave a page: that one
+     names the page and links into the file at it. `passages` carries a page per passage; a build
+     without it only says where the row's first passage sits. */
+  const hits = entries.length
+    ? entries.map((entry, index) => toHit((entry as Row | null)?.['text'], index, pageOf(entry)))
+    : snippets.map((text, index) => toHit(text, index, index === 0 ? pageOf(row) : null));
   return {
     id,
     name,
@@ -135,20 +157,8 @@ function toPassageRow(row: Row): PassageRow {
     type: type ? String(type) : null,
     // A chunk row carries no author: the four parent facets stamped on it are filter ids.
     author: null,
-    /* A passage is labelled by its place in the results, except the first one on a row the index
-       gave a page: that one names the page and links into the file at it. */
-    passages: snippets.map((text, index) => {
-      const hit: PassageHit = {
-        locator: index + 1,
-        text: String(text).replace(MARK_TAG, '').trim(),
-      };
-      if (index === 0 && page !== null) {
-        hit.locator = page;
-        hit.pageNumbered = true;
-      }
-      return hit;
-    }),
-    total: Number(row['matchCount']) || snippets.length,
+    passages: hits,
+    total: Number(row['matchCount']) || hits.length,
   };
 }
 

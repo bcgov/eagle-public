@@ -761,6 +761,44 @@ describe('the inside-documents scope', () => {
     expect(screen.queryByRole('link', { name: /^Page / })).not.toBeInTheDocument();
   });
 
+  it('names the page of every passage the row gives one, and links each into the file', async () => {
+    chunks = [
+      {
+        ...CHUNKS[0],
+        passages: [
+          { text: CHUNKS[0].snippets[0], pageNumber: 3, pageNumbered: true },
+          { text: CHUNKS[0].snippets[1], pageNumber: 7, pageNumbered: true },
+        ],
+      },
+    ];
+    renderSearch('/search?scope=inside&keywords=habitat');
+
+    expect(await screen.findByRole('link', { name: 'Page 3' })).toBeInTheDocument();
+    const second = screen.getByRole('link', { name: 'Page 7' });
+    expect(second.getAttribute('href')).toMatch(/#page=7$/);
+    // The text still comes through without the API markup around the hit.
+    expect((await screen.findByText(/along the creek/)).textContent).toBe(
+      'spawning habitat along the creek',
+    );
+  });
+
+  it('counts a passage the row gave no page, beside one it did', async () => {
+    chunks = [
+      {
+        ...CHUNKS[0],
+        passages: [
+          { text: CHUNKS[0].snippets[0], pageNumber: 3, pageNumbered: true },
+          { text: CHUNKS[0].snippets[1], pageNumber: null, pageNumbered: false },
+        ],
+      },
+    ];
+    renderSearch('/search?scope=inside&keywords=habitat');
+
+    expect(await screen.findByRole('link', { name: 'Page 3' })).toBeInTheDocument();
+    expect(screen.getByText('Passage 2')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^Page 2$/ })).not.toBeInTheDocument();
+  });
+
   it('ranks by relevance in the scope and restores the date sort on the way out', async () => {
     const user = userEvent.setup();
     const fetchMock = stubApi();
