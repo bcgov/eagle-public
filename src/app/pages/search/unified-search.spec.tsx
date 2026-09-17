@@ -48,6 +48,13 @@ const CHUNKS = [
     matchCount: 2,
   },
 ];
+
+/* Passage text deliberately differs from the row's snippets, so a list that read the snippets
+   instead of the passages would fail. */
+const PASSAGES = [
+  'fish passage <mark>habitat</mark> near the culvert',
+  'riparian planting on the south bank',
+];
 /** What `dataset=DocumentChunk` answers, and the passage total its meta reports. */
 let chunks: Record<string, unknown>[];
 let chunkTotal: number;
@@ -766,8 +773,8 @@ describe('the inside-documents scope', () => {
       {
         ...CHUNKS[0],
         passages: [
-          { text: CHUNKS[0].snippets[0], pageNumber: 3, pageNumbered: true },
-          { text: CHUNKS[0].snippets[1], pageNumber: 7, pageNumbered: true },
+          { text: PASSAGES[0], pageNumber: 3, pageNumbered: true },
+          { text: PASSAGES[1], pageNumber: 7, pageNumbered: true },
         ],
       },
     ];
@@ -776,10 +783,12 @@ describe('the inside-documents scope', () => {
     expect(await screen.findByRole('link', { name: 'Page 3' })).toBeInTheDocument();
     const second = screen.getByRole('link', { name: 'Page 7' });
     expect(second.getAttribute('href')).toMatch(/#page=7$/);
-    // The text still comes through without the API markup around the hit.
-    expect((await screen.findByText(/along the creek/)).textContent).toBe(
-      'spawning habitat along the creek',
+    // Each passage shows its own text, stripped of the API markup, not the row's snippet.
+    expect((await screen.findByText(/near the culvert/)).textContent).toBe(
+      'fish passage habitat near the culvert',
     );
+    expect(screen.getByText(/south bank/).textContent).toBe('riparian planting on the south bank');
+    expect(screen.queryByText(/along the creek/)).not.toBeInTheDocument();
   });
 
   it('counts a passage the row gave no page, beside one it did', async () => {
@@ -787,8 +796,8 @@ describe('the inside-documents scope', () => {
       {
         ...CHUNKS[0],
         passages: [
-          { text: CHUNKS[0].snippets[0], pageNumber: 3, pageNumbered: true },
-          { text: CHUNKS[0].snippets[1], pageNumber: null, pageNumbered: false },
+          { text: PASSAGES[0], pageNumber: 3, pageNumbered: true },
+          { text: PASSAGES[1], pageNumber: null, pageNumbered: false },
         ],
       },
     ];
