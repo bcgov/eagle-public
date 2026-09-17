@@ -48,6 +48,13 @@ const CHUNKS = [
     matchCount: 2,
   },
 ];
+
+/* Passage text deliberately differs from the row's snippets, so a list that read the snippets
+   instead of the passages would fail. */
+const PASSAGES = [
+  'fish passage <mark>habitat</mark> near the culvert',
+  'riparian planting on the south bank',
+];
 /** What `dataset=DocumentChunk` answers, and the passage total its meta reports. */
 let chunks: Record<string, unknown>[];
 let chunkTotal: number;
@@ -759,6 +766,46 @@ describe('the inside-documents scope', () => {
     // A page of zero is no page at all, so neither row may promise one.
     expect(await screen.findAllByText('Passage 1')).toHaveLength(2);
     expect(screen.queryByRole('link', { name: /^Page / })).not.toBeInTheDocument();
+  });
+
+  it('names the page of every passage the row gives one, and links each into the file', async () => {
+    chunks = [
+      {
+        ...CHUNKS[0],
+        passages: [
+          { text: PASSAGES[0], pageNumber: 3, pageNumbered: true },
+          { text: PASSAGES[1], pageNumber: 7, pageNumbered: true },
+        ],
+      },
+    ];
+    renderSearch('/search?scope=inside&keywords=habitat');
+
+    expect(await screen.findByRole('link', { name: 'Page 3' })).toBeInTheDocument();
+    const second = screen.getByRole('link', { name: 'Page 7' });
+    expect(second.getAttribute('href')).toMatch(/#page=7$/);
+    // Each passage shows its own text, stripped of the API markup, not the row's snippet.
+    expect((await screen.findByText(/near the culvert/)).textContent).toBe(
+      'fish passage habitat near the culvert',
+    );
+    expect(screen.getByText(/south bank/).textContent).toBe('riparian planting on the south bank');
+    expect(screen.queryByText(/along the creek/)).not.toBeInTheDocument();
+  });
+
+  it('counts a passage the row gave no page, beside one it did', async () => {
+    chunks = [
+      {
+        ...CHUNKS[0],
+        passages: [
+          { text: PASSAGES[0], pageNumber: 3, pageNumbered: true },
+          { text: PASSAGES[1], pageNumber: null, pageNumbered: false },
+        ],
+      },
+    ];
+    renderSearch('/search?scope=inside&keywords=habitat');
+
+    expect(await screen.findByRole('link', { name: 'Page 3' })).toBeInTheDocument();
+    expect(screen.getByText('Passage 2')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^Page 2$/ })).not.toBeInTheDocument();
   });
 
   it('ranks by relevance in the scope and restores the date sort on the way out', async () => {
