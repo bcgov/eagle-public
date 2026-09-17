@@ -33,95 +33,15 @@ src/
 
 ## Phases
 
-- [x] 1. Scaffold + foundation + shell + static pages + placeholder pages for every route. Build, lint, test green.
-- [x] 2. Table/filter engine + pagination + query-param sync (`components/table`, `components/filters`).
-- [x] 3a. List pages: ~~projects-list, news, project-notifications~~ (done in phase 2); project shell + 7 tabs.
-- [x] 3b. Map page (`/projects`): projlist-map, filters, list, detail popup.
-- [x] 3c. Comments + cac-unsubscribe. (Add-comment and file upload were removed later; ENGAGE owns comment submission.)
-- [x] 3d. Search + content search + search-help.
-- [x] 4. Parity pass, a11y, delete leftovers, README update.
-  - [x] 4a. Phase-3 findings (project card fields, `fields=[object Object]`), dependency audit, leftovers, a11y basics, docs.
-    - [x] `models/project.ts` fields that no payload carries.
-    - [x] `&fields=` dropped from the search request.
-    - [x] Dependency audit; `bootstrap.bundle.min.js` no longer shipped.
-    - [x] Leftovers deleted (`assets/styles/layout/`, retina marker icons, dead badge CSS).
-    - [x] a11y: skip link, `aria-live` toast container, popup CTA is a real `<button>`.
-    - [x] `README.md` describes the React stack.
-  - [x] 4b. Parity run against prod (`e2e/` against `https://projects.eao.gov.bc.ca` data, 2026-08-27).
-    - [x] Dev proxy follows `API_LOCATION` from the environment, `/demi-search` included, so a run can point at prod without prod URLs in `src/env.js`.
-    - [x] Playwright suite green; the two request-baseline diffs (`&fields=`, pins `sortBy`) are Deviations, applied in `e2e/support/helpers.ts`.
-    - [x] CSS scoping regressions fixed: `header.css`, `home.css`, the popup `hr` and the table pagination rules leaked or lost to Bootstrap once view encapsulation went away.
-    - [x] Map opening view matches prod again (fit padding), and the map page footer is prod's.
+Migration phases 1 to 4 (scaffold, table engine, pages, parity pass against prod) finished 2026-08-27. What remains before prod is under "Cutover prerequisites" and "Follow-ups".
 
 ## Unified search (PUBLIC-146)
 
-One `/search` page and one display grid replacing `/projects-list`, `/search`, `/news` and `/project-notifications`. Plan and detail: `docs/unified-search-plan.md`.
+Done 2026-09-17. One `/search` page and one display grid replaced `/projects-list`, `/search`, `/news` and `/project-notifications`. Phases 1 to 6 landed as PRs #881 to #889 on `react`, live on the next site as `v3.0.0-beta.37` (efc62432). Plan and detail: `docs/unified-search-plan.md`; behaviour changes in `docs/deviations-from-angular.md` (URLs section); redirect table on the `eagle-dev-guides.wiki` page `Eagle-Search`.
+
 The design prototype sits at `design/handoffs/unified-search/`, local only and never committed; the source archive is kept at `/root/repos/eagle-public-design-handoff.zip` and can be unzipped again if the directory is missing.
 
-Picking up the work:
-
-- Start by reading this section and `docs/unified-search-plan.md`.
-- Take the first unchecked item whose dependencies are already ticked.
-- One item at a time. Never redo a ticked item.
-- Tick an item only when its exit condition holds (tests green, parity passed where it applies, PR open). Partial work goes on the line as `(in progress: <branch>, <what is done>)`, never as a tick.
-- Branch per phase: `feat/unified-search-p<N>` off `react`, worked in its own worktree.
-
-Phase 1, grid components:
-
-- [x] 1.1 `display-grid.tsx`, `grid-header`, `filter-row`, `year-picker`, `display-grid.css` with z-index scale
-- [x] 1.2 `value-picker` (fixed, flip, close rules) + spec
-- [x] 1.3 `chip-row`, `advanced-filters` (date validation) + specs
-- [x] 1.4 `grid-toolbar` (count, scope slot, More filters, Columns, Copy link, selection swap) + spec
-- [x] 1.5 `list-row`, `highlight` + specs
-- [x] 1.6 `use-grid-url-state` + spec
-- [x] 1.7 parity harness: fixtures from prototype, `capture-reference.ts`, `test:parity` script, reference PNGs committed
-- [ ] 1.8 `css-scoping.spec.ts` assertions; PR open, review, merged, `v3.0.0-beta.N` on next (in progress: feat/unified-search-p1, PR open)
-
-Phase 2, `/search` projects + documents:
-
-- [x] 2.1 `types/projects.ts`, `types/documents.ts`, `types/index.ts` + specs (`and[]` contract)
-- [x] 2.2 `use-type-counts.ts` with 404 fallback + spec
-- [x] 2.3 `unified-search.tsx` composes grid; URL schema; analytics unchanged (feat/unified-search-p2)
-- [x] 2.4 route swap, old search page deleted, e2e rewritten (feat/unified-search-p2; e2e 79 passed)
-- [x] 2.4a `routes/legacy-search.ts` param mapping + table-driven spec (Angular `/projects-list`, bare `/search` disambiguation)
-- [x] 2.4b hash-router guard (`#/...`) + e2e
-- [x] 2.5 parity loop passed (states 01, 02, 05, 06 at 924 and 400) (feat/unified-search-p2; `yarn test:parity` is 65 pass / 0 fail / 18 skip, every captured state green at both widths. The card height gap closed in `display-grid.css`: the card gap is the design's 5px, the last card keeps its rule, and the narrow bar drops the second border. Two deviations recorded in `docs/unified-search-plan.md`: the projects card at 400 leaves out the design's Legislation pair, hidden capture-side because the projects index has no legislation field, and documents sharing a posted date come back in the server's order. Note: `yarn parity:fixtures` would regenerate `documents.json` in prototype order and put the two 2023-03-14 documents back the other way round, failing state 01; re-apply the swap by hand after a regeneration)
-- [ ] 2.6 a11y pass; PR, review, merged, beta on next (in progress: PR #882 open; a11y audit done, 8 markup findings fixed; border contrast and CustomMultiSelect in follow-ups; review round 1 PASS with 4 fixes applied; scrollbar styled on `.display-grid__scroll`; 7ff8db8d adds the Name/Project text filter cell on `and[nameContains]` (needs eagle-demi PR #393 on test), fixes the 22388f76 review findings, and matches the from/to date labels and picker header; d465a510 matches the picker rows (state 06 passes) and keeps the head mounted on a filtered empty result; parity is green at both widths, see 2.5; Playwright e2e 79 pass against a preview; re-review of d7243b70 PASS; Author ids on test are a data gap, fix is `seed-public-reads.js --only lists` against prod on demi-devbox-test)
-- [ ] 2.7 "Inside documents" content search on the documents tab moves up from Phase 4 if wanted before beta
-
-Phase 3, activities + notifications:
-
-- [x] 3.1 `types/activities.ts` list rows, attachments + spec (`types/activities.tsx`: meta line, excerpted body and the one file `documentUrl` names; the Documents attached filter removes itself when the index says it has no such field; the toolbar counts these records as "updates")
-- [x] 3.2 `types/notifications.ts` headerless + spec; fixture (cards with the Documents and Engagement tabs the old page had, keyboard-reachable; `ProjectNotification` rows added to the demi-search fixture)
-- [x] 3.3 `/news`, `/project-notifications` redirects; home links; old pages and specs removed (both addresses redirect to `/search`, the home and project links point at the new ones, and the two page components, configs and specs are deleted)
-- [x] 3.4 parity loop passed (state 03 and notifications tab at both widths) (`yarn test:parity` is 67 pass / 0 fail / 16 skip. State 03 needed two changes: the reference is recaptured with one attachment per activity and no type or size beside it, because a `RecentActivity` carries a single `documentUrl`, and the app no longer draws an empty type/size element, which was taking a line of its own on a phone and left the page 8px taller than the design)
-- [ ] 3.5 PR, review, merged, beta on next (in progress: PR #884 at b722fa9d, base #882; CI green; review PASS after the subscribe control moved to the activities tab, the tab-change crash and the loading flash were fixed; merge waits on #881 and #882; no beta tag until asked)
-
-Phase 4, inside documents:
-
-- [x] 4.1 scope switch, `DocumentChunk` query, sort swap/restore (documents tab only, behind `CONTENT_SEARCH`; `scope=inside` queries the chunk dataset with `prefix=false` and `sortBy=-score`, which is how demi-search is told to issue no `$orderby`. The URL spells the order `-matches` and the sort select offers "Most matches" alone: every field of the chunk index is `sortable: false`, so no other order is real. `and[nameContains]` is dropped in the scope — the API 400s on it there — and the column filter goes with it; the other four facets, the date range, legislation and featured are all expressible on chunks, measured against test. Selection and bulk download work in the scope too, keyed by document id, so a selection survives the switch. The Documents pill in the scope shows this search's own total, the prototype's rule, so the badge matches the list under it. Snippets arrive with the API's `<mark>` wrappers around each hit; those are stripped and the passage list marks the terms itself)
-- [x] 4.2 `passage-list.tsx` + spec, `PASSAGE_LOCATOR` constant, `pageNumbered` hook (`passage-locator.ts` labels "Passage N" by the passage's place in its row until a row carries `pageNumbered`, then "Page N" and the file link gains `#page=N`; two passages shown, then "N more passages" / "Show fewer passages"; a checkbox per row when bulk download is on)
-- [x] 4.3 no-keyword prompt, cross-scope empty states (the prompt reads "Search inside the documents" with "N documents indexed" from the type counts and no pager. The cross-scope offer is one extra `pageSize=1` search, issued only where the current scope came back empty. Two deviations from the prototype copy: the prompt does not promise "the page it appears on", because the index records passage sequence numbers and not PDF pages, and the meta line under a file name is date and type with no author, because a chunk row carries none. Both close when the index carries real pages, Phase 7)
-- [x] 4.4 `content-search.tsx`/`content-result.tsx` retired (with their CSS, specs, `search-tabs.ts` and `contentSearchLoader`; `/search/content` redirects through `legacy-search.ts` to the inside scope, keyword and paging intact. `css-scoping.spec.ts` carried no rule for the page, so nothing to remove there. `contentSearchEnabled()` stays as the gate on the switch)
-- [x] 4.5 parity loop passed (state 04) (two rounds; 71 states pass, 0 fail, 14 skipped for phase 5. The fixtures answer `dataset=DocumentChunk` from `chunks.json`, grouped into document rows the way `group-chunks.js` does; the fixture config sets `CONTENT_SEARCH: true`, without which the switch never renders and the state skips. Round 1: the Documents pill, row checkboxes and the "matching" suffix in the app; the author segment and page labels rewritten capture-side in `capture-reference.ts`, both asserted, references regenerated at the same heights. Round 2: the hit mark takes the design's `padding: 0 1px; border-radius: 2px`, the passage row keeps the locator beside the text at every width, and the row checkbox is a plain flex item so it shrinks to 13px on a phone as the prototype's does. `documents.json` keeps d9 before d8; `parity:fixtures` would swap them back)
-- [ ] 4.6 PR, review, merged, beta on next
-
-Phase 5, help + tour:
-
-- [x] 5.1 `search-help-dialog.tsx` + spec — native `<dialog>`, opened from the Search help link
-- [x] 5.2 `guided-tour.tsx`, `tour-steps.ts`, absent-step skip + spec
-- [x] 5.3 parity loop passed (states 07, 08, tour steps 2-7) — all 28 shots match: 01-03, 05, 07-12, 16, 17 at both widths, 06, 13, 14, 15 wide-only by design, 04 still skipped until Phase 4. The earlier drift was not timing: a remeasure re-pinned the scroll lock, so the resize Chromium does for a full-page shot scrolled the locked page and left it there, and every fixed element painted low. A remeasure now re-reads the box without moving the page.
-- [ ] 5.4 PR, review, merged, beta on next (in progress: PR #886 open, CI green, review PASS with two minors fixed)
-
-Phase 6, nav + retirement:
-
-- [x] 6.1 header Search → `/search` (the masthead item is `aria-current` on every tab of the page, because a record type is a query param; the homepage "List of Projects" card points at `/search?record=projects`. The legacy redirects in `routes/legacy-search.ts` stay for bookmarks)
-- [x] 6.2 `project-document-tab.tsx` on `DisplayGrid`; `data-table/*` deleted (the tab keeps its own URL params, `useTable` query and `SearchFilterTemplate` panel and hands the grid page, sort, selection and totals. `document-grid-row.tsx` went with `DataTable` — the grid draws its own rows — so its cells are now `document-columns.tsx`, the five columns Name/Date/Type/Milestone/Phase with the same list lookups, long dates, tinted phase pill and featured star; `document-table-rows.*` deleted with it. Selection still runs through `state/bulk-download.ts` via `usePageSelection`, select-all-matching included. Three deviations. **No parity target**: `design/handoffs/` carries no project-page mock, so the plan's `Project Page - Redesign.dc.html` documents tab does not exist; the tab is matched to what it showed before, drawn in the grid's own tokens. **The bar counts differently**: the grid's toolbar says `1–10 of 42 documents` where `DataTable` said `Showing 10 of 42 documents`, it carries the grid's Copy link button, and its page sizes are the fixed 10/25/50/100 with no Show All; `e2e` reads the count through `gridCount` now. **Two column hooks were added to the grid**: `badge` keeps the featured star in the name cell but outside the link, and `onLinkClick` keeps the name click presigning the download and reporting it rather than following the href; the toolbar gained `downloadLabel` for the size estimate and `selectAll` for select-all-matching. On a phone card the star reads as a `Featured: Yes` field)
-- [x] 6.3 old pages/configs deleted; `TableTemplate` kept for comments + notification documents; TODO line for those two (phases 2 to 4 had already deleted the four page components and their configs, so what was left was `components/table/table-list.tsx` and its spec: nothing but the spec imported `TableList`. The two survivors use `TableTemplate`, not `TableList`. `css-scoping.spec.ts` carries no rule for a deleted page. `pages/project/document-table-rows.tsx` and its spec are dead too — `project-document-tab.tsx` renders `DocumentGridRow` — but they belong to the `DataTable` stack 6.2 deletes)
-- [ ] 6.4 `deviations-from-angular.md`, wiki routes table (in progress: feat/unified-search-p6, the repo doc's URLs section now marks `/search/content` live, says the four pages and `TableList` are gone, and records where the in-site links point; the wiki routes table is a separate brief)
-- [ ] 6.5 PR, review, merged, beta on next (in progress: PR #887 at 543a0a0f, review PASS with two minors closed by tests; CI parity had flagged 11-tour-step-4, traced to the tour dropping a step whose control left the page for one frame during the full-page capture, fixed in 543a0a0f with the step text asserted before every tour screenshot; merge waits on the chain)
-
-Phase 0 (counts endpoint, index gaps) and Phase 7 (real page numbers) are tracked in eagle-demi `TODO.md` under the same heading.
+Still open in eagle-demi `TODO.md`: 7.5 re-extraction on test (about 6 days from 2026-09-16, adds "Page N" labels as it goes); 0.6 (counts equal `/search` totals) verified 2026-09-17. Test-only cosmetic: 9 List names appear twice in the filters because the old test rows sit beside the reseeded prod ids.
 
 Follow-ups from the phase 2 review, none of them blocking:
 
