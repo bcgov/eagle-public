@@ -1,11 +1,5 @@
 import { test, expect } from '../support/fixtures';
-import {
-  ready,
-  recordApiCalls,
-  checkBaseline,
-  isTopNewsUrl,
-  topNewsRows,
-} from '../support/helpers';
+import { ready, recordApiCalls, checkBaseline, waitForSearch } from '../support/helpers';
 
 /**
  * The static content pages and the home page. The activities and project-notification lists used
@@ -49,7 +43,7 @@ test.describe('content pages', () => {
 });
 
 test.describe('home', () => {
-  test('shows the updates feed and the rail', async ({ page }) => {
+  test('shows the updates feed, the rail and the Browse strip', async ({ page }) => {
     const calls = recordApiCalls(page);
     await page.goto('/');
     await ready(page);
@@ -57,27 +51,69 @@ test.describe('home', () => {
     await expect(
       page.getByRole('heading', { level: 1, name: 'Environmental Assessments' }),
     ).toBeVisible();
-    await expect(page.getByRole('heading', { level: 2, name: 'Updates' })).toBeVisible();
-    await expect(page.locator('.home-update[href]')).not.toHaveCount(0);
-    await expect(page.getByRole('link', { name: /View all Activities & Updates/ })).toBeVisible();
-    for (const heading of ['Open for comment', 'Recent Uploads']) {
-      await expect(page.getByRole('heading', { level: 2, name: heading })).toBeVisible();
-    }
+    const feed = page.getByRole('region', { name: 'Updates' });
+    await expect(feed.getByRole('heading', { level: 2, name: 'Updates' })).toBeVisible();
+    await expect(feed.locator('.home-update')).not.toHaveCount(0);
+    await expect(feed.getByRole('link', { name: /View all Activities & Updates/ })).toBeVisible();
+    await expect(
+      page.getByRole('region', { name: 'Open for comment' }).getByRole('heading', { level: 2 }),
+    ).toHaveText('Open for comment');
+    await expect(
+      page.getByRole('region', { name: 'Recent Uploads' }).getByRole('heading', { level: 2 }),
+    ).toHaveText('Recent Uploads');
+
+    // The strip is the only way into these three pages; the masthead does not link them.
+    const browse = page.getByRole('navigation', { name: 'Browse' });
+    await expect(browse.getByRole('link', { name: 'The assessment process' })).toHaveAttribute(
+      'href',
+      '/process',
+    );
+    await expect(browse.getByRole('link', { name: 'Legislation' })).toHaveAttribute(
+      'href',
+      '/legislation',
+    );
+    await expect(browse.getByRole('link', { name: 'Compliance oversight' })).toHaveAttribute(
+      'href',
+      '/compliance-oversight',
+    );
 
     checkBaseline('home', calls);
   });
 
-  // Either backend can serve the strip: eagle-api from its bespoke route, demi-search from
-  // `/search?dataset=RecentActivity&top=true`. Both answer the same four curated items.
-  test('@data update cards come from the top-news read', async ({ page }) => {
-    const res = page.waitForResponse((r) => isTopNewsUrl(r.url()) && r.status() === 200);
+  // eagle-demi answers the feed in display order: pinned updates, then updates and decisions
+  // newest first. The page shows every row it gets, in that order.
+  test('@data feed cards come from the HomeFeed read', async ({ page }) => {
+    const feedRead = waitForSearch(page, 'HomeFeed');
     await page.goto('/');
-    // The feed shows updates only; comment-period activity belongs to the rail.
-    const shown = topNewsRows(await (await res).json()).filter(
-      (a: any) => a.active && ['News', 'Project Notification News'].includes(a.type),
-    );
+    const rows = (await feedRead).searchResults.filter((row: any) => row.id);
     await ready(page);
-    await expect(page.locator('.home-update[href]')).toHaveCount(shown.length);
-    await expect(page.locator('.home-update[href]').first()).toContainText(shown[0].headline);
+
+    const cards = page.getByRole('region', { name: 'Updates' }).locator('.home-update');
+    expect(rows.length).toBeGreaterThan(0);
+    await expect(cards).toHaveCount(rows.length);
+    await expect(cards.first()).toContainText(rows[0].headline.trim());
+    await expect(cards.last()).toContainText(rows[rows.length - 1].headline.trim());
+  });
+
+  test('@data an update card opens the reader at /updates/:id and Close returns home', async ({
+    page,
+  }) => {
+    const feedRead = waitForSearch(page, 'HomeFeed');
+    await page.goto('/');
+    const update = (await feedRead).searchResults.find((row: any) => row.kind === 'update');
+    expect(update, 'the HomeFeed read holds no update to open').toBeDefined();
+    await ready(page);
+
+    await page
+      .getByRole('region', { name: 'Updates' })
+      .locator(`a[href="/updates/${encodeURIComponent(update.id)}"]`)
+      .click();
+    await expect(page).toHaveURL(new RegExp(`/updates/${update.id}$`));
+    const reader = page.getByRole('dialog', { name: update.headline.trim() });
+    await expect(reader).toBeVisible();
+
+    await reader.getByRole('button', { name: 'Close' }).click();
+    await expect(reader).toBeHidden();
+    expect(new URL(page.url()).pathname).toBe('/');
   });
 });

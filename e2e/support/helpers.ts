@@ -134,19 +134,6 @@ export function total(env: SearchEnvelope): number {
   return env.meta?.[0]?.searchResultsTotal ?? 0;
 }
 
-/** The home strip's read, whichever backend serves it. */
-export function isTopNewsUrl(url: string): boolean {
-  return (
-    url.includes('/public/recentActivity?top=true') ||
-    (url.includes('dataset=RecentActivity') && /[?&]top=true/.test(url))
-  );
-}
-
-/** Its rows: eagle-api answers a bare array, demi-search the search envelope. */
-export function topNewsRows(body: any): any[] {
-  return Array.isArray(body) && !body[0]?.searchResults ? body : unwrap(body).searchResults;
-}
-
 /**
  * Promise for the next search response for `dataset` on either search backend.
  * The project shell fires extra `dataset=Document` probes (pageSize=1 tab checks,

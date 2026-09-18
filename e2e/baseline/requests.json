@@ -7,10 +7,12 @@
     "GET /demi-search/search?dataset=Document&docIds=&fuzzy=false&pageNum=0&pageSize=1&populate=false&projectLegislation=default"
   ],
   "home": [
+    "GET /demi-projects/:id",
     "GET /demi-search/config",
     "GET /demi-search/documents/recent-uploads?limit=5",
-    "GET /demi-search/search?dataset=List&pageSize=250",
-    "GET /demi-search/search?dataset=RecentActivity&fuzzy=false&pageNum=0&pageSize=4&populate=false&projectLegislation=default&top=true"
+    "GET /demi-search/search?and[status]=open&dataset=CommentPeriod&fuzzy=false&populate=false&projectLegislation=default",
+    "GET /demi-search/search?dataset=HomeFeed&fuzzy=false&pageNum=0&pageSize=5&populate=false&projectLegislation=default",
+    "GET /demi-search/search?dataset=List&pageSize=250"
   ],
   "news": [
     "GET /demi-search/config",
