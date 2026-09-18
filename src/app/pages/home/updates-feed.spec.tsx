@@ -1,14 +1,14 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { screen, within } from '@testing-library/react';
 import { makeQueryClient, renderAt } from '../../../test-utils';
-import { ACTIVITY, envelope, json, PENDING, stubFetch } from './home-fetch.spec-helper';
+import { envelope, HOME_FEED, json, PENDING, stubFetch } from './home-fetch.spec-helper';
 import { UpdatesFeed } from './updates-feed';
 
 function renderFeed(
-  feed: Response | typeof PENDING = envelope(ACTIVITY),
+  feed: Response | typeof PENDING = envelope(HOME_FEED),
   { retries = false }: { retries?: boolean } = {},
 ) {
-  const requests = stubFetch((url) => (url.includes('dataset=RecentActivity') ? feed : undefined));
+  const requests = stubFetch((url) => (url.includes('dataset=HomeFeed') ? feed : undefined));
   renderAt(
     '/',
     [{ path: '/', Component: UpdatesFeed }],
@@ -22,15 +22,25 @@ function renderFeed(
 describe('home updates feed', () => {
   afterEach(() => vi.unstubAllGlobals());
 
-  it('reads the pinned-first top strip', async () => {
+  it('reads five rows of the merged updates-and-decisions feed', async () => {
     const requests = renderFeed();
 
     await screen.findByText('Application accepted for review');
-    expect(requests[0]).toContain('dataset=RecentActivity');
-    expect(requests[0]).toContain('&top=true');
+    expect(requests[0]).toContain('dataset=HomeFeed');
+    expect(requests[0]).toContain('&pageSize=5');
   });
 
-  it('draws each update as a three-line card that opens the reader', async () => {
+  it('draws every row it is sent, in the order sent', async () => {
+    renderFeed();
+
+    await screen.findByText('Application accepted for review');
+    const cards = within(screen.getByRole('list')).getAllByRole('listitem');
+    expect(cards.map((card) => card.querySelector('.home-update__headline')?.textContent)).toEqual(
+      HOME_FEED.map((row) => row.headline),
+    );
+  });
+
+  it('draws an update as a three-line card that opens the reader', async () => {
     renderFeed();
 
     const card = (await screen.findByText('Application accepted for review')).closest('a')!;
@@ -42,19 +52,35 @@ describe('home updates feed', () => {
     expect(within(card).getByText('September 15, 2026')).toBeInTheDocument();
   });
 
-  it('shows updates only: comment-period activity and inactive rows stay out', async () => {
+  it('draws a decision under the Decision label, linking to its project', async () => {
     renderFeed();
 
-    const heading = await screen.findByRole('heading', { name: 'Updates' });
-    await screen.findByText('Application accepted for review');
-    const cards = within(heading.closest('section')!).getAllByRole('link', { name: /^Update/ });
-    expect(cards.map((card) => card.getAttribute('href'))).toEqual(['/updates/u1', '/updates/u4']);
+    const card = (await screen.findByText('Environmental assessment certificate issued')).closest(
+      'a',
+    )!;
+    expect(card).toHaveAttribute('href', '/p/eagle-2/overview');
+    expect(card).not.toHaveAttribute('aria-haspopup');
+    expect(card).toHaveClass('home-update--decision');
+    expect(card).toHaveTextContent(
+      /^Decision Kitimat Terminal September 12, 2026 Environmental assessment certificate issued$/,
+    );
+  });
+
+  it('leaves a decision with no project unlinked', async () => {
+    renderFeed();
+
+    const headline = await screen.findByText('Exemption order issued');
+    expect(headline.closest('a')).toBeNull();
+    const card = headline.closest('.home-update')!;
+    expect(card).toHaveClass('home-update--decision');
+    expect(card).toHaveTextContent(/^Decision September 4, 2026 Exemption order issued$/);
   });
 
   it('leaves the project line off an update with no project', async () => {
     renderFeed();
 
     const card = (await screen.findByText('Draft certificate published')).closest('a')!;
+    expect(card).toHaveAttribute('href', '/updates/u4');
     expect(card).toHaveTextContent(/^Update September 6, 2026 Draft certificate published$/);
   });
 
@@ -85,6 +111,6 @@ describe('home updates feed', () => {
 
     expect(await screen.findByText('Updates are unavailable right now.')).toBeInTheDocument();
     expect(screen.getByText('Try again in a moment.')).toBeInTheDocument();
-    expect(requests.filter((url) => url.includes('dataset=RecentActivity'))).toHaveLength(1);
+    expect(requests.filter((url) => url.includes('dataset=HomeFeed'))).toHaveLength(1);
   });
 });

@@ -37,40 +37,68 @@ export function stubFetch(
   return requests;
 }
 
-/** `RecentActivity` rows. Noon UTC keeps the formatted day the same either side of the date line. */
-export const ACTIVITY = [
+/** A `RecentActivity` row, as the reader's by-id read answers. Noon UTC keeps the day the same everywhere. */
+export const ACTIVITY_ROW = {
+  _id: 'u1',
+  headline: 'Application accepted for review',
+  content: '<p>The application is complete.</p>',
+  type: 'News',
+  active: true,
+  dateAdded: '2026-09-15T12:00:00.000Z',
+  documentUrl: 'https://example.com/files/acceptance-letter.pdf',
+  project: { _id: 'eagle-1', name: 'Cedar LNG' },
+};
+
+/** `HomeFeed` rows: the pinned update, then updates and decisions newest first. */
+export const HOME_FEED = [
   {
-    _id: 'u1',
+    kind: 'update',
+    id: 'u1',
+    projectId: 'eagle-1',
+    projectName: 'Cedar LNG',
+    date: '2026-09-15T12:00:00.000Z',
     headline: 'Application accepted for review',
     content: '<p>The application is complete.</p>',
-    type: 'News',
-    active: true,
-    dateAdded: '2026-09-15T12:00:00.000Z',
     documentUrl: 'https://example.com/files/acceptance-letter.pdf',
-    project: { _id: 'eagle-1', name: 'Cedar LNG' },
   },
   {
-    _id: 'u2',
-    headline: 'Comment period opens',
-    type: 'Public Comment Period',
-    active: true,
-    dateAdded: '2026-09-10T12:00:00.000Z',
-    project: { _id: 'eagle-2', name: 'Kitimat Terminal' },
+    kind: 'decision',
+    id: 'eagle-2',
+    projectId: 'eagle-2',
+    projectName: 'Kitimat Terminal',
+    date: '2026-09-12T12:00:00.000Z',
+    headline: 'Environmental assessment certificate issued',
+    content: null,
+    documentUrl: null,
   },
   {
-    _id: 'u3',
-    headline: 'Withdrawn notice',
-    type: 'News',
-    active: false,
-    dateAdded: '2026-09-08T12:00:00.000Z',
-    project: { _id: 'eagle-3', name: 'Murray River Coal' },
-  },
-  {
-    _id: 'u4',
+    kind: 'update',
+    id: 'u4',
+    projectId: null,
+    projectName: null,
+    date: '2026-09-06T12:00:00.000Z',
     headline: 'Draft certificate published',
-    type: 'Project Notification News',
-    active: true,
-    dateAdded: '2026-09-06T12:00:00.000Z',
-    project: null,
+    content: null,
+    documentUrl: null,
+  },
+  {
+    kind: 'decision',
+    id: 'd-orphan',
+    projectId: null,
+    projectName: null,
+    date: '2026-09-04T12:00:00.000Z',
+    headline: 'Exemption order issued',
+    content: null,
+    documentUrl: null,
+  },
+  {
+    kind: 'update',
+    id: 'u5',
+    projectId: 'eagle-3',
+    projectName: 'Murray River Coal',
+    date: '2026-09-01T12:00:00.000Z',
+    headline: 'Order issued',
+    content: null,
+    documentUrl: null,
   },
 ];

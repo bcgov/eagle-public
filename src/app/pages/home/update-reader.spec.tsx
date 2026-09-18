@@ -2,10 +2,15 @@ import { describe, it, expect, afterEach, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { makeQueryClient, renderAt } from '../../../test-utils';
-import { ACTIVITY, envelope, json, PENDING, stubFetch } from './home-fetch.spec-helper';
+import {
+  ACTIVITY_ROW,
+  envelope,
+  HOME_FEED,
+  json,
+  PENDING,
+  stubFetch,
+} from './home-fetch.spec-helper';
 import { Home } from './home';
-
-const [UPDATE] = ACTIVITY;
 
 interface Answers {
   feed?: Response | typeof PENDING;
@@ -16,9 +21,9 @@ interface Answers {
 function renderAtPath(path: string, answers: Answers = {}, staleTime = 0) {
   const requests = stubFetch((url) => {
     if (url.includes('dataset=RecentActivity') && url.includes('and[_id]=')) {
-      return answers.byId ?? envelope([UPDATE]);
+      return answers.byId ?? envelope([ACTIVITY_ROW]);
     }
-    if (url.includes('dataset=RecentActivity')) return answers.feed ?? envelope(ACTIVITY);
+    if (url.includes('dataset=HomeFeed')) return answers.feed ?? envelope(HOME_FEED);
     if (url.startsWith('/demi-projects/')) {
       return answers.project ?? json({ name: 'Cedar LNG', address: 'Kitimat' });
     }
@@ -132,7 +137,7 @@ describe('home update reader', () => {
 
   it('drops a document URL with an unsafe scheme', async () => {
     renderAtPath('/updates/u1', {
-      byId: envelope([{ ...UPDATE, documentUrl: 'javascript:alert(1)' }]),
+      byId: envelope([{ ...ACTIVITY_ROW, documentUrl: 'javascript:alert(1)' }]),
     });
     const dialog = await reader();
 

@@ -162,8 +162,8 @@
 }
 
 .home-browse__list {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, max-content));
+  display: flex;
+  flex-wrap: wrap;
   justify-content: center;
   gap: var(--layout-padding-small) var(--layout-padding-large);
   max-width: 1180px;
@@ -685,9 +685,5 @@
 
   .home-body__rail {
     flex: 1 1 280px;
-  }
-
-  .home-browse__list {
-    grid-template-columns: repeat(3, max-content);
   }
 }

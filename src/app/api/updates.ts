@@ -1,4 +1,4 @@
-import { getTopNewsItems, rowsFrom, searchKeywords } from './api';
+import { rowsFrom, searchKeywords } from './api';
 
 export type UpdateKind = 'update' | 'decision';
 
@@ -28,10 +28,22 @@ interface ActivityRow {
   project?: { _id?: string; name?: string } | null;
 }
 
-/** Activity types the feed shows. Comment-period activity belongs to the rail, not the feed. */
-const UPDATE_TYPES = new Set(['News', 'Project Notification News']);
+/** A `HomeFeed` row. For a project decision, `id` is the project's id. */
+interface FeedRow {
+  kind?: string;
+  id?: string;
+  projectId?: string | null;
+  projectName?: string | null;
+  date?: string | null;
+  headline?: string;
+  content?: string | null;
+  documentUrl?: string | null;
+}
 
-// `RecentActivity` has no decision type, so every activity reads as an update.
+/** How many cards the feed shows. */
+const FEED_SIZE = 5;
+
+// A `RecentActivity` row holds no decisions, so it always reads as an update.
 function toUpdate(row: ActivityRow): HomeUpdate {
   return {
     id: row._id ?? '',
@@ -45,15 +57,28 @@ function toUpdate(row: ActivityRow): HomeUpdate {
   };
 }
 
+function toFeedItem(row: FeedRow): HomeUpdate {
+  return {
+    id: row.id ?? '',
+    kind: row.kind === 'decision' ? 'decision' : 'update',
+    projectId: row.projectId ?? null,
+    projectName: row.projectName ?? null,
+    date: row.date ?? null,
+    headline: row.headline ?? '',
+    content: row.content ?? null,
+    documentUrl: row.documentUrl ?? null,
+  };
+}
+
 /**
- * The feed's one read. It is the pinned-first `top=true` strip until eagle-demi serves the merged
- * updates-and-decisions feed; swapping the source happens here and nowhere else.
+ * The feed's one read. eagle-demi answers pinned updates first, then News updates and decisions
+ * newest first, with comment-period updates already left out.
  */
 async function readHomeFeed(): Promise<HomeUpdate[]> {
-  const rows: ActivityRow[] = await getTopNewsItems();
-  return rows
-    .filter((row) => row._id && row.active && UPDATE_TYPES.has(row.type ?? ''))
-    .map(toUpdate);
+  const envelope = await searchKeywords('', 'HomeFeed', [], 1, FEED_SIZE, '', null);
+  return rowsFrom<FeedRow>(envelope)
+    .filter((row) => row.id)
+    .map(toFeedItem);
 }
 
 export function homeFeedQueryOptions() {
