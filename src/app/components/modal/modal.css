@@ -1,0 +1,74 @@
+/* The shared modal shell. A native `<dialog>` sits in the top layer, so nothing here has to win a
+   z-index fight with the page. Every rule is scoped and doubled up the way the rest of the app does
+   it: a modal renders inside pages that own bare `h2`, `p` and `button`. Colour comes from
+   @bcgov/design-tokens roles, never the raw scale.
+
+   The block is `eagle-modal`, not `modal`: bootstrap.min.css is loaded app-wide in main.tsx and its
+   own `.modal` sets `display: none`, which hides an open dialog outright. */
+
+.eagle-modal {
+  width: 100%;
+  /* A native dialog centres itself, so the padding a centred card would have sat inside becomes
+     the width the card may not exceed. */
+  max-width: min(760px, calc(100% - 2 * var(--layout-padding-large)));
+  max-height: 84vh;
+  padding: 0;
+  overflow: auto;
+  border: none;
+  border-radius: var(--layout-border-radius-large);
+  background: var(--theme-gray-white);
+  box-shadow: var(--surface-shadow-large);
+  color: var(--typography-color-primary);
+}
+
+/* No token names a scrim, so the design's own value is stated once here. */
+.eagle-modal::backdrop {
+  background: rgb(0 0 0 / 45%);
+}
+
+.eagle-modal:focus-visible,
+.eagle-modal :focus-visible {
+  outline: var(--layout-border-width-medium) solid var(--typography-color-link);
+  outline-offset: 1px;
+}
+
+.eagle-modal .eagle-modal__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--layout-padding-medium);
+  padding: var(--layout-padding-medium) var(--layout-padding-large);
+  border-bottom: var(--layout-border-width-small) solid var(--theme-gray-40);
+}
+
+.eagle-modal .eagle-modal__title {
+  margin: 0;
+  font: var(--typography-bold-h6);
+}
+
+.eagle-modal .eagle-modal__close {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: var(--layout-border-radius-small);
+  background: transparent;
+  color: var(--typography-color-primary);
+  cursor: pointer;
+}
+
+.eagle-modal .eagle-modal__close:hover {
+  background: var(--theme-gray-20);
+}
+
+.eagle-modal .eagle-modal__close .material-icons {
+  font-size: 22px;
+}
+
+.eagle-modal .eagle-modal__body {
+  padding: var(--layout-padding-large);
+}

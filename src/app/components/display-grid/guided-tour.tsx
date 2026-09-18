@@ -7,8 +7,8 @@ import {
   useState,
   type RefObject,
 } from 'react';
+import { useScrollLock } from 'app/components/modal/use-scroll-lock';
 import { stepsOnPage, targetOf, type TourStep } from './tour-steps';
-import { useScrollLock } from './use-scroll-lock';
 import './guided-tour.css';
 
 interface GuidedTourProps {
