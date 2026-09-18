@@ -4,7 +4,6 @@ import {
   getOrgsByCompanyType,
   getPeriod,
   getPeriodsByProjId,
-  getTopNewsItems,
   listsQueryOptions,
 } from './api';
 import { loadConfig } from 'app/config/config';
@@ -26,9 +25,6 @@ describe('reads served by demi-search', () => {
     { _id: 'o2', name: 'Borden Energy' },
   ];
   const LISTS = [{ _id: 'l1', name: 'Certificate Issued', type: 'eaDecisions' }];
-  const NEWS = [
-    { _id: 'n1', headline: 'Pinned item', pinned: true, active: true, project: { _id: 'p1' } },
-  ];
 
   /** How demi-search wraps `/search` rows. */
   function envelope(rows: unknown[], total = rows.length): string {
@@ -161,26 +157,6 @@ describe('reads served by demi-search', () => {
 
       expect(requestedUrl()).toBe(`${SEARCH}/search?pageSize=250&dataset=List`);
       expect(lists).toEqual(LISTS);
-    });
-  });
-
-  describe('getTopNewsItems', () => {
-    it('asks demi-search for the top set and unwraps the envelope', async () => {
-      await setup(SEARCH);
-      respondWith(envelope(NEWS));
-
-      const news = await getTopNewsItems();
-
-      const url = requestedUrl();
-      expect(url.startsWith(`${SEARCH}/search?dataset=RecentActivity`)).toBe(true);
-      // demi-search reads `top` bare; under `and[]` it is accepted and ignored, which serves the
-      // whole activity feed instead of the curated strip.
-      expect(url).toContain('&top=true');
-      expect(url).not.toContain('and[top]');
-      expect(url).toContain('&pageSize=4');
-      // `top=true` orders pinned first; a sort of our own would undo that.
-      expect(url).not.toContain('&sortBy=');
-      expect(news).toEqual(NEWS);
     });
   });
 

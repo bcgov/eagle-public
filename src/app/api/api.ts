@@ -618,29 +618,6 @@ export async function checkGatePassword(password: string): Promise<void> {
   });
 }
 
-/** How many items the home strip shows. */
-const TOP_NEWS_PAGE_SIZE = 4;
-
-/**
- * The home page's top-news strip.
- *
- * demi-search reads `top` BARE, not `and[top]`, hence the `fields` argument, which emits
- * `&name=value`. It answers the whole strip pinned first then newest, so no sort is sent.
- */
-export async function getTopNewsItems(): Promise<any[]> {
-  return rowsFrom(
-    await searchKeywords(
-      '',
-      'RecentActivity',
-      [{ name: 'top', value: 'true' }],
-      1,
-      TOP_NEWS_PAGE_SIZE,
-      '',
-      null,
-    ),
-  );
-}
-
 //
 // Local helpers
 //
