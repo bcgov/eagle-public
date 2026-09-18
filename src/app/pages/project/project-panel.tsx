@@ -112,7 +112,7 @@ export function ProjectPanel({ project, lists, loading = false }: ProjectPanelPr
                 </Suspense>
               </div>
               <Link className="project-panel__map-link" to="/projects">
-                Open in map explorer
+                <span className="link-label">Open in map explorer</span>
                 <span className="material-icons" aria-hidden="true">
                   arrow_forward
                 </span>

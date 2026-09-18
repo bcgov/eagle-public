@@ -91,7 +91,7 @@ export function ComplianceTab() {
         <i className="material-icons" aria-hidden="true">
           folder_open
         </i>
-        View inspection records and orders
+        <span className="link-label">View inspection records and orders</span>
       </Link>
     </section>
   );

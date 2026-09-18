@@ -71,7 +71,7 @@ export function EngagementLink({
         aria-label={`${label}${NEW_TAB_SUFFIX}`}
         onClick={onClick}
       >
-        {label}
+        <span className="link-label">{label}</span>
         <NewTabIcon />
       </a>
     );

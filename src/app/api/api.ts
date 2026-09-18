@@ -138,7 +138,7 @@ export async function getDemiProject(projId: string): Promise<DemiProject | null
  * `searchKeywords` is declared as returning that envelope, not the rows, so every caller that
  * wants a plain array unwraps it here rather than reaching through `any`.
  */
-function rowsFrom<T>(envelope: unknown): T[] {
+export function rowsFrom<T>(envelope: unknown): T[] {
   return (envelope as ISearchResult<T>[] | undefined)?.[0]?.searchResults ?? [];
 }
 
@@ -616,29 +616,6 @@ export async function checkGatePassword(password: string): Promise<void> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ password }),
   });
-}
-
-/** How many items the home strip shows. */
-const TOP_NEWS_PAGE_SIZE = 4;
-
-/**
- * The home page's top-news strip.
- *
- * demi-search reads `top` BARE, not `and[top]`, hence the `fields` argument, which emits
- * `&name=value`. It answers the whole strip pinned first then newest, so no sort is sent.
- */
-export async function getTopNewsItems(): Promise<any[]> {
-  return rowsFrom(
-    await searchKeywords(
-      '',
-      'RecentActivity',
-      [{ name: 'top', value: 'true' }],
-      1,
-      TOP_NEWS_PAGE_SIZE,
-      '',
-      null,
-    ),
-  );
 }
 
 //

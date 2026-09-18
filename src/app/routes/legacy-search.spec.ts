@@ -1,4 +1,5 @@
 import type { LoaderFunctionArgs } from 'react-router';
+import { parseGridParams } from 'app/components/display-grid/use-grid-url-state';
 import { hashToPath, legacySearchRedirect, resolveLegacySearch, searchUrl } from './legacy-search';
 
 type LegacyLoader = ReturnType<typeof legacySearchRedirect>;
@@ -188,6 +189,21 @@ describe('searchUrl', () => {
       expect(resolved(searchUrl(record))).toBeNull();
     },
   );
+
+  it.each(['projects', 'documents', 'activities'] as const)(
+    'opens %s on a keyword the search page reads back as typed',
+    (record) => {
+      const url = searchUrl(record, '  coal & "LNG" 50%  ');
+      const state = parseGridParams(new URL(url, 'http://localhost').searchParams);
+
+      expect(state).toMatchObject({ record, keywords: 'coal & "LNG" 50%' });
+      expect(resolved(url)).toBeNull();
+    },
+  );
+
+  it.each(['', '   ', undefined])('leaves a blank keyword (%j) off the link', (keywords) => {
+    expect(searchUrl('documents', keywords)).toBe('/search?record=documents');
+  });
 });
 
 describe('hashToPath', () => {

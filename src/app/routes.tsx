@@ -1,6 +1,6 @@
 import { redirect, type LoaderFunctionArgs, type RouteObject } from 'react-router';
 import { AppShell } from './layout/app-shell';
-import { Home } from './pages/home';
+import { Home } from './pages/home/home';
 import { Contact } from './pages/contact';
 import { Legislation } from './pages/legislation';
 import { Process } from './pages/process';
@@ -40,6 +40,8 @@ export const routes: RouteObject[] = [
     Component: AppShell,
     children: [
       { index: true, Component: Home },
+      // The home page with one update open in its reader dialog.
+      { path: 'updates/:id', Component: Home },
 
       { path: 'contact', Component: Contact },
 

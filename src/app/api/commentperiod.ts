@@ -40,6 +40,32 @@ export function commentPeriodsQueryOptions(projId: string) {
   };
 }
 
+export interface OpenPeriods {
+  periods: CommentPeriod[];
+  /** Periods closed in the last 30 days. Null when the backend did not count them. */
+  closedCount: number | null;
+}
+
+/** Every comment period open now, across all projects, soonest to close first. */
+export function openCommentPeriodsQueryOptions() {
+  return {
+    queryKey: ['openCommentPeriods'],
+    // The rail shows its own error in place; retrying only holds the skeleton up.
+    retry: false,
+    queryFn: async (): Promise<OpenPeriods> => {
+      const envelope = (await api.searchKeywords('', 'CommentPeriod', [], null, null, '', null, {
+        status: 'open',
+      })) as unknown as { searchResults?: unknown[]; closedCount?: unknown }[];
+      const answer = envelope?.[0];
+      return {
+        // The dates decide "open" here too, so a cached answer never shows a period that has closed.
+        periods: (answer?.searchResults ?? []).map((row) => new CommentPeriod(row)).filter(isOpen),
+        closedCount: typeof answer?.closedCount === 'number' ? answer.closedCount : null,
+      };
+    },
+  };
+}
+
 // get a specific comment period by its id
 export async function getById(periodId: string): Promise<CommentPeriod> {
   const res = await api.getPeriod(periodId);

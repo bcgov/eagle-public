@@ -924,7 +924,7 @@ export function UnifiedSearch() {
           <i className="material-icons unified-search__help-icon" aria-hidden="true">
             help_outline
           </i>
-          Search help
+          <span className="link-label">Search help</span>
         </Link>
       </div>
 

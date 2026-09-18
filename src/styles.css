@@ -63,4 +63,17 @@ body {
   margin-top: 1.5rem;
 }
 
+/* A link's underline reaches a flex (blockified) icon and no rule on the icon stops it, so icon links
+   paint theirs clear and their .link-label repaints whatever the link's own rules ask for. */
+a:has(.material-icons) {
+  text-decoration-color: transparent !important;
+}
+
+a:has(.material-icons) > .link-label {
+  text-decoration-line: inherit;
+  text-decoration-style: inherit;
+  text-decoration-thickness: inherit;
+  text-decoration-color: currentcolor;
+}
+
 /* Word-paste inline style overrides removed — sanitized in word-html-sanitizer.ts at render time */

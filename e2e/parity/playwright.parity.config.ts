@@ -13,7 +13,7 @@ const PREVIEW_URL = `http://localhost:${PORT}`;
 
 export default defineConfig({
   testDir: '.',
-  testMatch: /(unified-search\.parity|demi-search|list-row-hover)\.spec\.ts/,
+  testMatch: /(unified-search\.parity|demi-search|list-row-hover|icon-link-underline)\.spec\.ts/,
   fullyParallel: false,
   workers: 1,
   retries: 0,
