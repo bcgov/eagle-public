@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router';
 import { homeFeedQueryOptions, type HomeUpdate } from 'app/api/updates';
 import { Skeleton } from 'app/components/skeleton/skeleton';
+import { SubscribeDialog } from 'app/components/subscribe/subscribe-dialog';
 import { searchUrl } from 'app/routes/legacy-search';
 import { longDate } from 'app/utils/utils';
 import { KIND_LABELS } from './home-shared';
@@ -99,11 +100,11 @@ function FeedBody() {
 export function UpdatesFeed() {
   return (
     <section className="home-updates" aria-labelledby="home-updates-heading">
-      {/* The Subscribe button joins the heading on this row. */}
       <div className="home-updates__head">
         <h2 id="home-updates-heading" className="home-heading">
           Updates
         </h2>
+        <SubscribeDialog />
       </div>
       <FeedBody />
       <p className="home-updates__foot">
