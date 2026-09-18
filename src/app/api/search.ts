@@ -1,6 +1,5 @@
 import * as api from './api';
 import { SearchResults } from 'app/models/search';
-import { News } from 'app/models/news';
 import { Constants } from 'app/utils/constants';
 import { logger } from 'app/config/logging';
 
@@ -40,16 +39,6 @@ export async function getSearchResults(
     if (api.isAbortError(error)) throw error;
     // if call fails, return null results
     return null;
-  }
-}
-
-export async function getTopNewsItems(): Promise<News[]> {
-  try {
-    const res = await api.getTopNewsItems();
-    return Array.isArray(res) ? res.map((item) => new News(item)) : [];
-  } catch (error) {
-    logger.error('Error fetching top news items', 'search', error);
-    return [];
   }
 }
 

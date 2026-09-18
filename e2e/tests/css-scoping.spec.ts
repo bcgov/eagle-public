@@ -30,12 +30,13 @@ async function styleOf(
   return value!;
 }
 
-test('home activity cards keep full-width, left-aligned body copy', async ({ page }) => {
+test('the home update reader keeps full-width, left-aligned body copy', async ({ page }) => {
   await page.goto('/');
   await ready(page);
+  await page.locator('.home-update[href]').first().click();
   // Angular's `main p { max-width: 780px; margin: 0 auto }` belonged to the old About block, never
-  // to the API HTML the cards render.
-  expect(await styleOf(page, '.home-news-feed .activity-card p', 'max-width')).toBe('none');
+  // to the API HTML the reader renders.
+  expect(await styleOf(page, '.home-reader__content p', 'max-width')).toBe('none');
 });
 
 test('the home page stylesheet stays inside .home', () => {

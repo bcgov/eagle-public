@@ -40,6 +40,8 @@ export const routes: RouteObject[] = [
     Component: AppShell,
     children: [
       { index: true, Component: Home },
+      // The home page with one update open in its reader dialog.
+      { path: 'updates/:id', Component: Home },
 
       { path: 'contact', Component: Contact },
 

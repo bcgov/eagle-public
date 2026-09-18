@@ -138,7 +138,7 @@ export async function getDemiProject(projId: string): Promise<DemiProject | null
  * `searchKeywords` is declared as returning that envelope, not the rows, so every caller that
  * wants a plain array unwraps it here rather than reaching through `any`.
  */
-function rowsFrom<T>(envelope: unknown): T[] {
+export function rowsFrom<T>(envelope: unknown): T[] {
   return (envelope as ISearchResult<T>[] | undefined)?.[0]?.searchResults ?? [];
 }
 

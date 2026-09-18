@@ -1,6 +1,6 @@
 import { EngagementLink } from 'app/components/engagement-link';
 import { safeHtml } from 'app/utils/safe-html';
-import { isSafeUrl } from 'app/utils/safe-url';
+import { fileName, isSafeUrl } from 'app/utils/safe-url';
 import { sanitizeWordHtml } from 'app/utils/word-html-sanitizer';
 import { longDate } from 'app/utils/utils';
 import './update-card.css';
@@ -14,18 +14,6 @@ const ACCENTS: Record<string, string> = {
 };
 
 const NEUTRAL_ACCENT = '--eao-proponent-dark';
-
-/** The file name a document URL ends in, or null when the URL points at a folder or a page. */
-function fileName(url: string): string | null {
-  const path = url.split(/[?#]/)[0];
-  const last = path.slice(path.lastIndexOf('/') + 1);
-  if (!/\.[a-z0-9]{2,5}$/i.test(last)) return null;
-  try {
-    return decodeURIComponent(last);
-  } catch {
-    return last;
-  }
-}
 
 export interface UpdateRecord {
   _id?: string;

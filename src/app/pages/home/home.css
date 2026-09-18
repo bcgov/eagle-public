@@ -132,8 +132,7 @@
   color: var(--surface-color-primary-default);
 }
 
-/* Body: the feed, then the rail; side by side from 768px. `text-align` is what the old page
-   gave both feeds, and the blocks below still lean on it. */
+/* Body: the feed, then the rail; side by side from 768px. */
 
 .home-body {
   display: flex;
@@ -142,12 +141,17 @@
   max-width: 1180px;
   margin: 0 auto;
   padding: var(--layout-padding-large) var(--layout-padding-medium) var(--layout-padding-xlarge);
-  text-align: center;
 }
 
 .home-body__feed,
 .home-body__rail {
   min-width: 0;
+}
+
+.home-body__rail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-padding-large);
 }
 
 /* Browse strip, above the footer. */
@@ -191,6 +195,472 @@
   text-underline-offset: 3px;
 }
 
+/* Shared by the feed and the rail. */
+
+.home-heading {
+  margin: 0 0 var(--layout-margin-small);
+  font: var(--typography-bold-h5);
+  color: var(--typography-color-primary);
+}
+
+.home-body ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Loading, empty and error lines: the app's own two-line in-place pattern, no toast. */
+.home-note {
+  margin: 0;
+  padding: var(--layout-padding-medium);
+  border: var(--layout-border-width-small) solid var(--theme-gray-40);
+  border-radius: var(--layout-border-radius-medium);
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-secondary);
+}
+
+.home-note__title {
+  display: block;
+  font: var(--typography-bold-small-body);
+  color: var(--typography-color-primary);
+}
+
+.home-note__detail {
+  display: block;
+}
+
+/* Updates feed. The 4px left rule carries the kind; a light rule gets a darker ink for its label. */
+
+.home-updates__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--layout-padding-small);
+}
+
+.home-updates__head .home-heading {
+  flex: 1;
+  min-width: 0;
+}
+
+.home-updates__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-padding-small);
+}
+
+.home-update {
+  --kind-rule: var(--theme-blue-70);
+  --kind-ink: var(--theme-blue-90);
+
+  display: block;
+  padding: var(--layout-padding-medium);
+  border: var(--layout-border-width-small) solid var(--theme-gray-40);
+  border-left: var(--layout-border-width-large) solid var(--kind-rule);
+  border-radius: var(--layout-border-radius-medium);
+  background: var(--theme-gray-white);
+  color: var(--typography-color-primary);
+  text-decoration: none;
+}
+
+.home-update--decision {
+  --kind-rule: var(--support-border-color-success);
+  --kind-ink: var(--support-border-color-success);
+}
+
+.home-update--skeleton {
+  --kind-rule: var(--theme-gray-40);
+}
+
+.home-update[href]:hover {
+  background: var(--theme-blue-10);
+  color: var(--typography-color-primary);
+}
+
+.home-update__top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--layout-padding-small);
+}
+
+.home-update__who {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+
+.home-update__kind {
+  display: block;
+  margin-bottom: var(--layout-margin-hair);
+  font: var(--typography-bold-label);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--kind-ink);
+}
+
+.home-update__project {
+  display: block;
+  font: var(--typography-bold-body);
+  font-size: 18px;
+  color: var(--theme-blue-90);
+}
+
+.home-update__date {
+  flex: 0 0 auto;
+  font: var(--typography-regular-body);
+  color: var(--typography-color-secondary);
+}
+
+.home-update__headline {
+  display: block;
+  margin-top: var(--layout-margin-xsmall);
+  font: var(--typography-regular-body);
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+
+.home-updates__foot {
+  margin: var(--layout-margin-medium) 0 0;
+}
+
+.home-updates__all {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--layout-padding-xsmall);
+  min-height: 48px;
+  padding: 0 var(--layout-padding-large);
+  border-radius: var(--layout-border-radius-medium);
+  background: var(--surface-color-primary-button-default);
+  font: var(--typography-bold-body);
+  color: var(--typography-color-primary-invert);
+  text-decoration: none;
+}
+
+.home-updates__all:hover {
+  background: var(--surface-color-primary-button-hover);
+  color: var(--typography-color-primary-invert);
+}
+
+.home-updates__all .material-icons {
+  font-size: 20px;
+}
+
+/* Update reader. The Modal draws the head; the kind tag is lifted above it and the meta line
+   closes it, so the body is `display: contents` and its parts are ordered as flex items. */
+
+.home .home-reader[open] {
+  display: flex;
+  flex-direction: column;
+  max-width: min(640px, calc(100% - 2 * var(--layout-padding-large)));
+  max-height: calc(100vh - 2 * var(--layout-padding-large));
+  overflow: hidden;
+}
+
+.home .home-reader .eagle-modal__body {
+  display: contents;
+}
+
+.home .home-reader .eagle-modal__head {
+  padding: var(--layout-padding-large) calc(var(--layout-padding-large) + 44px) 0
+    var(--layout-padding-large);
+  border-bottom: none;
+}
+
+.home .home-reader:has(.home-reader__kind) .eagle-modal__head {
+  padding-top: var(--layout-margin-xsmall);
+}
+
+.home .home-reader .home-reader__kind ~ * {
+  order: 1;
+}
+
+.home .home-reader .home-reader__kind {
+  order: -1;
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  margin: var(--layout-padding-large) var(--layout-padding-large) 0;
+  padding: 0 var(--layout-padding-xsmall);
+  border-radius: var(--layout-border-radius-small);
+  background: var(--theme-gray-20);
+  font: var(--typography-bold-label);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--theme-blue-90);
+}
+
+.home .home-reader .home-reader__kind--decision {
+  color: var(--support-border-color-success);
+}
+
+.home .home-reader .eagle-modal__title {
+  font: var(--typography-bold-h5);
+}
+
+.home .home-reader .eagle-modal__close {
+  position: absolute;
+  top: calc(var(--layout-padding-large) - 10px);
+  right: calc(var(--layout-padding-large) - 10px);
+  width: 44px;
+  height: 44px;
+  color: var(--icons-color-secondary);
+}
+
+.home .home-reader .home-reader__meta {
+  margin: 0;
+  padding: var(--layout-margin-hair) var(--layout-padding-large) var(--layout-padding-large);
+  border-bottom: var(--layout-border-width-small) solid var(--theme-gray-30);
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-secondary);
+}
+
+.home .home-reader .home-reader__scroll {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: var(--layout-padding-medium);
+  min-height: 0;
+  overflow: auto;
+  padding: var(--layout-padding-large);
+}
+
+/* A flex item that clips (the accordion) would otherwise shrink to fit instead of scrolling. */
+.home .home-reader .home-reader__scroll > * {
+  flex-shrink: 0;
+}
+
+/* API HTML: `epic/styles.css` gives bare `main p` a centred max-width meant for other pages. */
+.home .home-reader .home-reader__content p {
+  max-width: none;
+  margin: 0 0 var(--layout-margin-medium);
+  font: var(--typography-regular-body);
+  color: var(--typography-color-primary);
+}
+
+.home .home-reader .home-reader__content > :last-child {
+  margin-bottom: 0;
+}
+
+.home .home-reader .home-reader__docs {
+  overflow: hidden;
+  border: var(--layout-border-width-small) solid var(--theme-gray-40);
+  border-radius: var(--layout-border-radius-medium);
+}
+
+.home .home-reader .home-reader__docs-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--layout-padding-xsmall);
+  width: 100%;
+  min-height: 48px;
+  padding: 0 var(--layout-padding-medium);
+  border: none;
+  background: var(--theme-gray-10);
+  font: var(--typography-bold-small-body);
+  color: var(--typography-color-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.home .home-reader .home-reader__docs-toggle:hover {
+  background: var(--theme-gray-20);
+}
+
+.home .home-reader .home-reader__docs-toggle > span {
+  flex: 1;
+}
+
+.home .home-reader .home-reader__doc {
+  display: flex;
+  align-items: center;
+  gap: var(--layout-padding-small);
+  min-height: 48px;
+  padding: var(--layout-padding-small) var(--layout-padding-medium);
+  border-top: var(--layout-border-width-small) solid var(--theme-gray-30);
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-link);
+  overflow-wrap: anywhere;
+}
+
+.home .home-reader .home-reader__doc:hover {
+  background: var(--theme-blue-10);
+}
+
+.home .home-reader .home-reader__doc .material-icons {
+  font-size: 18px;
+  color: var(--typography-color-secondary);
+}
+
+.home .home-reader .home-reader__foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--layout-padding-small);
+  padding: var(--layout-padding-large);
+  border-top: var(--layout-border-width-small) solid var(--theme-gray-30);
+  background: var(--theme-gray-10);
+}
+
+.home .home-reader .home-reader__primary,
+.home .home-reader .home-reader__secondary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  border-radius: var(--layout-border-radius-medium);
+  font: var(--typography-bold-small-body);
+  text-decoration: none;
+}
+
+.home .home-reader .home-reader__primary {
+  padding: 0 var(--layout-padding-large);
+  background: var(--surface-color-primary-button-default);
+  color: var(--typography-color-primary-invert);
+}
+
+.home .home-reader .home-reader__primary:hover {
+  background: var(--surface-color-primary-button-hover);
+}
+
+.home .home-reader .home-reader__secondary {
+  padding: 0 var(--layout-padding-medium);
+  border: var(--layout-border-width-small) solid var(--surface-color-primary-button-default);
+  background: var(--theme-gray-white);
+  color: var(--surface-color-primary-button-default);
+}
+
+.home .home-reader .home-reader__secondary:hover {
+  background: var(--theme-blue-10);
+}
+
+/* Open for comment. The name is the link; its `::after` stretches over the card, so the whole
+   card takes the press and the accessible name stays the project's. */
+
+.home-periods__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-padding-small);
+}
+
+.home-period {
+  position: relative;
+  padding: var(--layout-padding-medium);
+  border: var(--layout-border-width-small) solid var(--theme-gold-60);
+  border-radius: var(--layout-border-radius-medium);
+  background: var(--theme-gold-10);
+  color: var(--typography-color-primary);
+}
+
+.home-period:has(a:hover) {
+  border-color: var(--theme-primary-gold);
+  background: var(--theme-gold-20);
+}
+
+.home-period__left {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 var(--layout-padding-xsmall);
+  border-radius: var(--layout-border-radius-circular);
+  background: var(--theme-primary-gold);
+  font: var(--typography-bold-label);
+  color: var(--typography-color-primary);
+}
+
+.home-period__name {
+  display: block;
+  margin-top: 6px;
+  font: var(--typography-bold-small-body);
+  color: var(--theme-blue-90);
+  text-decoration: none;
+}
+
+.home-period__name::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--layout-border-radius-medium);
+}
+
+.home .home-period__name:focus-visible {
+  outline: none;
+}
+
+.home .home-period__name:focus-visible::after {
+  outline: var(--layout-border-width-medium) solid var(--theme-blue-90);
+  outline-offset: 2px;
+}
+
+.home-period__name .material-icons {
+  margin-left: var(--layout-margin-xsmall);
+  font-size: 16px;
+  vertical-align: -2px;
+}
+
+.home-period__window {
+  display: block;
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-secondary);
+}
+
+.home-periods__more {
+  margin: var(--layout-margin-small) 0 0;
+  font: var(--typography-regular-small-body);
+}
+
+/* Recent Uploads: one 48px link per project. */
+
+.home-uploads__list {
+  border-top: var(--layout-border-width-small) solid var(--theme-gray-30);
+}
+
+.home-uploads__list > li {
+  border-bottom: var(--layout-border-width-small) solid var(--theme-gray-30);
+}
+
+.home-upload {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--layout-padding-xsmall) var(--layout-padding-small);
+  min-height: 48px;
+  padding: var(--layout-padding-small) var(--layout-padding-xsmall);
+  color: var(--typography-color-primary);
+  text-decoration: none;
+}
+
+.home-upload[href]:hover {
+  background: var(--theme-blue-10);
+  color: var(--typography-color-primary);
+}
+
+.home-upload--skeleton {
+  flex-direction: column;
+}
+
+.home-upload__text {
+  flex: 1 1 150px;
+  min-width: 0;
+}
+
+.home-upload__name {
+  display: block;
+  font: var(--typography-bold-small-body);
+  color: var(--theme-blue-90);
+  overflow-wrap: break-word;
+}
+
+.home-upload__tab {
+  display: block;
+  font: var(--typography-regular-label);
+  color: var(--typography-color-secondary);
+}
+
+.home-upload__date {
+  flex: 0 0 auto;
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-secondary);
+}
+
 @media (width >= 768px) {
   .home-search__form {
     display: flex;
@@ -220,102 +690,4 @@
   .home-browse__list {
     grid-template-columns: repeat(3, max-content);
   }
-}
-
-/* The slab both home feeds sit on: Recent Activities & Updates, and Recent Uploads. */
-.home-feed-panel {
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
-  border-radius: 0.25rem;
-  background: var(--bs-secondary-bg);
-  overflow: hidden;
-}
-
-/* Child combinators throughout: the activity cards render API HTML that can carry its own
-   headings and tables, which Angular's view encapsulation kept these rules away from. */
-.home-feed-panel > h2 {
-  padding: 1.5rem;
-  margin: 0;
-  text-align: center;
-  font-size: var(--bs-font-size-4);
-}
-
-.home-feed-panel > .mt-4 {
-  padding: 1.5rem;
-  padding-top: 0;
-}
-
-/* Recent Activities & Updates Styles */
-.home-news-feed > .table {
-  border: none;
-  margin: 0;
-  padding: 0 1.5rem;
-  width: 100%;
-}
-
-.home-news-feed > .table > tbody {
-  display: block;
-  border-bottom: 2px solid var(--bs-border-color);
-}
-
-.home-news-feed > .table > tbody:last-child {
-  border-bottom: none;
-}
-
-.home-news-feed > .table > tbody > tr {
-  display: block;
-  border: none;
-  width: 100%;
-  background: var(--bs-secondary-bg) !important;
-}
-
-/* Angular's `.home-news-feed .table tbody td` rules are not ported. The `tr` is in this page's own
-   template so its rule still applies, but the `td` comes from the activity-card component, which
-   view encapsulation kept these away from — `activity-card.css` is what actually styles it. */
-
-/* Recent Uploads: one block per project, laid out like an activity row — same slab, same gutter,
-   same 2px divider, same row padding. */
-.home-recent-uploads__list {
-  margin: 0;
-  padding: 0 1.5rem;
-  list-style: none;
-  text-align: left;
-}
-
-.home-recent-uploads__list > li {
-  padding: 1.25rem 0.75rem;
-  border-bottom: 2px solid var(--bs-border-color);
-}
-
-.home-recent-uploads__list > li:last-child {
-  border-bottom: none;
-}
-
-/* Same treatment `.activity-card__project-name` gives the name at the head of a news row. */
-.home-recent-uploads__project {
-  margin: 0 0 0.25rem;
-  font-size: var(--bs-font-size-6);
-  font-weight: var(--bs-font-weight-bold);
-  overflow-wrap: break-word;
-}
-
-.home-recent-uploads__project > a {
-  color: var(--bc-blue);
-}
-
-.home-recent-uploads__docs {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  font-size: var(--bs-font-size-6);
-}
-
-/* The name takes the lines it needs, type and date share the muted line under it. No clamp: these
-   names differ at the end (`- Schedule A.pdf`), so a cut one stops telling them apart. */
-.home-recent-uploads__docs > li {
-  padding: 0.25rem 0;
-}
-
-/* Wraps at spaces; only a single token wider than the row is broken mid-word. */
-.home-recent-uploads__docs > li > a {
-  overflow-wrap: break-word;
 }
