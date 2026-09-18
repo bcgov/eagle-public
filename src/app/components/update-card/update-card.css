@@ -76,5 +76,4 @@
 .update-card__file-list .material-icons {
   flex: 0 0 auto;
   font-size: var(--icons-size-small);
-  color: var(--icons-color-secondary);
 }
