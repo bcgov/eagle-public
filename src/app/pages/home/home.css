@@ -354,7 +354,7 @@
 .home .home-reader[open] {
   display: flex;
   flex-direction: column;
-  max-width: min(600px, calc(100% - 2 * var(--layout-padding-large)));
+  max-width: min(800px, calc(100% - 2 * var(--layout-padding-large)));
   max-height: calc(100vh - 2 * var(--layout-padding-large));
   overflow: hidden;
 }
@@ -472,6 +472,12 @@
 
 .home .home-reader .home-reader__docs-toggle > span {
   flex: 1;
+}
+
+.home .home-reader .home-reader__docs-list {
+  list-style: none;
+  margin: 0;
+  padding-left: 0;
 }
 
 .home .home-reader .home-reader__doc {
