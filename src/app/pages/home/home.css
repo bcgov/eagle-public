@@ -194,10 +194,6 @@
   text-underline-offset: 3px;
 }
 
-.home-browse__link:hover .home-browse__label {
-  text-decoration: underline;
-}
-
 /* Shared by the feed and the rail. */
 
 .home-heading {

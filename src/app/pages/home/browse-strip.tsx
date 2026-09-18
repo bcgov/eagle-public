@@ -24,8 +24,7 @@ export function BrowseStrip() {
               <i className="material-icons home-browse__icon" aria-hidden="true">
                 {entry.icon}
               </i>
-              {/* The label carries the underline, so the icon is never struck through. */}
-              <span className="home-browse__label">{entry.label}</span>
+              <span className="home-browse__label link-label">{entry.label}</span>
             </Link>
           </li>
         ))}

@@ -36,7 +36,7 @@ function Documents({ url }: { url: string }) {
               <i className="material-icons" aria-hidden="true">
                 insert_drive_file
               </i>
-              <span>{fileName(url) ?? 'Project documents'}</span>
+              <span className="link-label">{fileName(url) ?? 'Project documents'}</span>
             </a>
           </li>
         </ul>

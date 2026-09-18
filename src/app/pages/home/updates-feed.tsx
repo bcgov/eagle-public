@@ -109,7 +109,7 @@ export function UpdatesFeed() {
       <FeedBody />
       <p className="home-updates__foot">
         <Link className="home-updates__all" to={searchUrl('activities')}>
-          View all Activities &amp; Updates
+          <span className="link-label">View all Activities &amp; Updates</span>
           <i className="material-icons" aria-hidden="true">
             arrow_forward
           </i>

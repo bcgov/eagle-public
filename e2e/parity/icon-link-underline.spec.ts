@@ -25,10 +25,10 @@ async function expectUnderlineOnLabelOnly(link: Locator) {
 
 test.beforeEach(async ({ page }) => {
   await routeDemiSearch(page);
-  await page.goto('/search?record=activities', { waitUntil: 'networkidle' });
 });
 
 test('flex icon links underline the label, not the icon', async ({ page }) => {
+  await page.goto('/search?record=activities', { waitUntil: 'networkidle' });
   const help = page.locator('a.unified-search__help');
   await expect(help).toHaveCSS('display', 'flex');
   await expectUnderlineOnLabelOnly(help);
@@ -39,6 +39,7 @@ test('flex icon links underline the label, not the icon', async ({ page }) => {
 });
 
 test('inline icon links underline the label, not the icon', async ({ page }) => {
+  await page.goto('/search?record=activities', { waitUntil: 'networkidle' });
   // No inline icon link renders on /search, so this one is built the way ExternalLink builds it.
   await page.locator('main').evaluate((main) => {
     main.insertAdjacentHTML(
@@ -50,4 +51,17 @@ test('inline icon links underline the label, not the icon', async ({ page }) => 
   const link = page.locator('#inline-icon-link');
   await expect(link).toHaveCSS('display', 'inline');
   await expectUnderlineOnLabelOnly(link);
+});
+
+test('home icon links underline the label, not the icon', async ({ page }) => {
+  // The fixture carries no home feed, so it answers empty; added last, this route wins. Both links
+  // render regardless: the browse strip is static and the feed footer always shows.
+  await page.route(/dataset=HomeFeed/, (route) =>
+    route.fulfill({
+      json: [{ searchResults: [], meta: [{ searchResultsTotal: 0, dropped: [] }] }],
+    }),
+  );
+  await page.goto('/', { waitUntil: 'networkidle' });
+  await expectUnderlineOnLabelOnly(page.locator('a.home-browse__link').first());
+  await expectUnderlineOnLabelOnly(page.locator('a.home-updates__all'));
 });
