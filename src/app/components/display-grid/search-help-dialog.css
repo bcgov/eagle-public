@@ -1,79 +1,14 @@
-/* Search help, as a modal. Every rule is scoped and doubled up the way the rest of the grid does
-   it: this renders inside pages that own bare `p`, `h3`, `a` and `button`. Colour comes from
-   @bcgov/design-tokens roles, never the raw scale. */
+/* Search help, on top of the shared modal shell (modal.css). Only the body content is styled here:
+   every rule is scoped and doubled up the way the rest of the grid does it, because this renders
+   inside pages that own bare `p`, `h3`, `a` and `button`. Colour comes from @bcgov/design-tokens
+   roles, never the raw scale. */
 
 /* The host carries the shared z-index scale (display-grid.css) and the `data-help` state hook; it
    draws nothing itself. */
+/* Kept, not unwrapped: e2e/parity/selectors.ts:89-94 resolves the dialog through this wrapper, and
+   `display: contents` keeps it from boxing the top-layer dialog. */
 .display-grid__overlay {
   display: contents;
-}
-
-.display-grid__help {
-  width: 100%;
-  /* The prototype centres the card inside a padded overlay; a native dialog centres itself, so
-     the overlay's padding becomes the width the card may not exceed. */
-  max-width: min(760px, calc(100% - 2 * var(--layout-padding-large)));
-  max-height: 84vh;
-  padding: 0;
-  overflow: auto;
-  z-index: var(--grid-z-overlay);
-  border: none;
-  border-radius: var(--layout-border-radius-large);
-  background: var(--theme-gray-white);
-  box-shadow: var(--surface-shadow-large);
-  color: var(--typography-color-primary);
-}
-
-/* No token names a scrim, so the design's own value is stated once here. */
-.display-grid__help::backdrop {
-  background: rgb(0 0 0 / 45%);
-}
-
-.display-grid__help:focus-visible,
-.display-grid__help :focus-visible {
-  outline: var(--layout-border-width-medium) solid var(--typography-color-link);
-  outline-offset: 1px;
-}
-
-.display-grid__help .display-grid__help-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--layout-padding-medium);
-  padding: var(--layout-padding-medium) var(--layout-padding-large);
-  border-bottom: var(--layout-border-width-small) solid var(--theme-gray-40);
-}
-
-.display-grid__help .display-grid__help-title {
-  margin: 0;
-  font: var(--typography-bold-h6);
-}
-
-.display-grid__help .display-grid__help-close {
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  border: none;
-  border-radius: var(--layout-border-radius-small);
-  background: transparent;
-  color: var(--typography-color-primary);
-  cursor: pointer;
-}
-
-.display-grid__help .display-grid__help-close:hover {
-  background: var(--theme-gray-20);
-}
-
-.display-grid__help .display-grid__help-close .material-icons {
-  font-size: 22px;
-}
-
-.display-grid__help .display-grid__help-body {
-  padding: var(--layout-padding-large);
 }
 
 .display-grid__help .display-grid__help-heading {
