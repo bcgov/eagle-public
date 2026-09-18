@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react';
-import { Link, useSearchParams } from 'react-router';
+import { useSearchParams } from 'react-router';
 import { track } from 'app/analytics/analytics';
 import { CustomMultiSelect } from './custom-multi-select';
 import { DatePicker } from './date-picker';
@@ -26,7 +26,6 @@ interface SearchFilterTemplateProps {
   filters?: FilterObject[];
   /** Seeds the keyword box from a param the host owns (tab-scoped keywords). */
   keywordOverride?: string;
-  searchHelpLink?: string | null;
   /** 'filters' renders the redesigned tune-icon toggle; 'advanced' keeps the legacy label. */
   filterToggle?: 'advanced' | 'filters';
   onSearch: (searchPackage: SearchPackage) => void;
@@ -51,7 +50,6 @@ export function SearchFilterTemplate({
   filterItemPanelSize = 4,
   filters = [],
   keywordOverride = '',
-  searchHelpLink = null,
   filterToggle = 'advanced',
   onSearch,
   onToggleFiltersPanel,
@@ -279,22 +277,11 @@ export function SearchFilterTemplate({
         </div>
       </div>
 
-      {(searchHelpLink || advancedFilters) && (
+      {advancedFilters && (
         <div className="action-buttons-section">
           <div className="row">
-            <div className="col-sm-12 col-md-6 text-md-start text-center mb-md-0 mb-3">
-              {searchHelpLink && (
-                <Link
-                  className="btn btn-primary d-inline-flex align-items-center"
-                  to={searchHelpLink}
-                  target="_blank"
-                  rel="noopener"
-                >
-                  <span className="material-icons">info</span>
-                  <span className="ms-2">Search Help</span>
-                </Link>
-              )}
-            </div>
+            <div className="col-sm-12 col-md-6 text-md-start text-center mb-md-0 mb-3" />
+
             <div className="col-sm-12 col-md-6 text-md-end text-center">
               {advancedFilters && filterToggle === 'filters' && (
                 <button
