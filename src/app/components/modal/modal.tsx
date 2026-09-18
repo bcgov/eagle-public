@@ -97,7 +97,11 @@ export function Modal({
       aria-labelledby={titleId}
       tabIndex={-1}
       className={className ? `eagle-modal ${className}` : 'eagle-modal'}
-      onClose={onClose}
+      // The browser queues `close`. StrictMode's effect replay closes and reopens the dialog, and
+      // that stale event lands on an open dialog; only a dialog that is shut asked to close.
+      onClose={(event) => {
+        if (!event.currentTarget.open) onClose();
+      }}
     >
       <div className="eagle-modal__head">
         <h2 id={titleId} className="eagle-modal__title">

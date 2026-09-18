@@ -186,6 +186,19 @@ describe('Modal', () => {
     expect(modal('Details')).not.toHaveAttribute('open');
   });
 
+  it('ignores a close event that lands after the dialog reopened', async () => {
+    const onClose = vi.fn();
+    render(<Host onClose={onClose} />);
+    await open();
+
+    // What a real browser delivers after StrictMode's replay: close() queued the event, the effect
+    // opened the dialog again, then the event arrived.
+    fireEvent(modal('Details'), new Event('close'));
+
+    expect(onClose).not.toHaveBeenCalled();
+    expect(modal('Details')).toHaveAttribute('open');
+  });
+
   it('closes on the close button', async () => {
     render(<Host />);
     const user = await open();
