@@ -146,6 +146,16 @@ describe('Modal', () => {
     expect(modal('Details')).toHaveFocus();
   });
 
+  it('carries a consumer className on the dialog, alongside the modal class', () => {
+    render(
+      <Modal open onClose={() => undefined} title="Details" className="details-modal">
+        <p>content</p>
+      </Modal>,
+    );
+
+    expect(modal('Details')).toHaveClass('eagle-modal', 'details-modal');
+  });
+
   it('keeps Tab inside the dialog and comes back around to its first control', async () => {
     render(<Host />);
     const user = await open();
