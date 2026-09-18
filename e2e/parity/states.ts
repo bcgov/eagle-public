@@ -29,7 +29,10 @@ export type Measurement =
   | { kind: 'minHeight'; control: ControlKey; px: number }
   | { kind: 'styleContains'; control: ControlKey; property: string; contains: string }
   | { kind: 'styleVar'; control: ControlKey; property: string; variable: string }
-  | { kind: 'zIndexAbove'; control: ControlKey; floor: number };
+  | { kind: 'zIndexAbove'; control: ControlKey; floor: number }
+  // For a control that stacks via the top layer (a native `<dialog>` opened with `showModal()`)
+  // rather than `z-index`, which the browser ignores there.
+  | { kind: 'isModal'; control: ControlKey };
 
 export interface ParityState {
   /** File-name stem: `<id>-<width>.png`. */
@@ -203,7 +206,7 @@ export const STATES: ParityState[] = [
       { do: 'click', control: 'searchHelpLink' },
       { do: 'waitFor', control: 'helpDialog' },
     ],
-    measurements: [{ kind: 'zIndexAbove', control: 'helpDialog', floor: 1005 }],
+    measurements: [{ kind: 'isModal', control: 'helpDialog' }],
   },
   {
     id: '08-guided-tour-step-1',

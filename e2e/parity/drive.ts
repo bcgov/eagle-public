@@ -187,6 +187,11 @@ export async function checkMeasurements(
       }
       continue;
     }
+    if (measurement.kind === 'isModal') {
+      const isModal = await locator.evaluate((element) => element.matches(':modal'));
+      expect(isModal, `${measurement.control} is modal (top layer)`).toBe(true);
+      continue;
+    }
     const zIndex = await locator.evaluate((element) => {
       // The stacking value that matters is the nearest positioned ancestor's, which is what the
       // overlay sets; a dialog inside it inherits `auto`.
