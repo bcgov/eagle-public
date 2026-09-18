@@ -102,11 +102,6 @@
   transition: background-color 0.2s ease-in-out;
 }
 
-/* Project notifications row - add padding around entire content */
-.table tbody tr td.pn-location-info {
-  padding: 1.5rem;
-}
-
 /* === INTERACTIVE STATES === */
 
 /* Clickable rows - generic utility class */
