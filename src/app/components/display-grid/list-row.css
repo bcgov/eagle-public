@@ -130,3 +130,15 @@
   outline: var(--layout-border-width-medium) solid var(--surface-color-primary-default);
   outline-offset: 2px;
 }
+
+.display-grid .display-grid__list-item .display-grid__row,
+.display-grid .display-grid__card .display-grid__row {
+  padding: 0;
+  border-bottom: none;
+  background: transparent;
+}
+
+.display-grid .display-grid__list-item:hover,
+.display-grid .display-grid__card:hover {
+  background: var(--theme-blue-10);
+}

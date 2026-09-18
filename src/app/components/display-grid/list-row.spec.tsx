@@ -131,6 +131,20 @@ describe('ListRow', () => {
     expect(screen.getByText('PDF · 240 KB')).toBeInTheDocument();
   });
 
+  it('draws no documents section, and so no rule above it, for a record with none', () => {
+    const { container } = render(
+      <ListRow
+        meta={['2026-02-18']}
+        title="Amendment issued"
+        body="Short note."
+        attachments={[]}
+      />,
+    );
+
+    expect(screen.queryByText(/documents?$/)).not.toBeInTheDocument();
+    expect(container.querySelector('.display-grid__row-docs')).toBeNull();
+  });
+
   it('counts a single attachment in the singular', () => {
     render(
       <ListRow
