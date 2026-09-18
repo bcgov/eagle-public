@@ -147,6 +147,34 @@ deviations. The deviations the pass turned up are below.
 - layout/site-footer: the footer follows the B.C. Design System footer: land acknowledgement band, BC Gov horizontal logo, contact block, the seven standard gov.bc.ca links and a copyright line. Angular shipped a blue bar carrying Home, Copyright, Disclaimer, Privacy and Accessibility. Two EAO variations from the design system: Admin Login stays as the last menu link; the content area keeps the EPIC blue (`--bs-secondary`) with white text and the reverse BC mark instead of white. Home points at gov.bc.ca rather than the site root, as the design system has it. The map page shows no site footer at any width: its fixed-viewport shell would give the footer's height to the map.
 - layout/site-header: the masthead follows the EPIC design kit header (`.eao-header`, a dark blue bar under a gold rule) so it matches the site footer and the other EPIC services. It carries six things, left to right: the reverse BC mark and "EPIC", both linking home, then Map Explorer, Search, Contact Us and Staff Login. Angular shipped a Bootstrap navbar whose "Project Information" and "The EA Process" dropdowns held List of Projects, Project Notifications, All Documents, Legislation, Process & Procedures, Compliance Oversight and Dispute Resolution. Every one of those pages stays; the homepage and the About cards are the way to them. Staff Login opens eagle-admin in a new tab, as the footer's Admin Login does, because the public site has no sign-in of its own. Below 768px the links collapse behind a Menu button and stack in flow under the bar. The masthead is no longer fixed to the top of the window, so it scrolls away with the page.
 
+## Home page redesign
+
+- pages/home: the home request set changed. Angular's `/` asked for `config`,
+  `documents/recent-uploads?limit=5`, `dataset=List&pageSize=250` and
+  `dataset=RecentActivity&top=true&pageSize=4`. The redesigned page adds a project read
+  (`/demi-projects/:id`, for a comment-period card's name) and a
+  `dataset=CommentPeriod&and[status]=open` read, and replaces the `RecentActivity` read
+  with `dataset=HomeFeed&pageSize=5`, a merged feed of updates and decisions.
+- pages/home/update-reader: the reader's Documents section shows a single link. An
+  update carries one `documentUrl` and no document name, type or date, so the accordion
+  the design calls for cannot list more than that one file.
+- pages/home/open-for-comment: the "Upcoming and recently closed periods" link lands on
+  `/search?record=notifications&pcp=pending`, project notifications, not comment
+  periods. No record type on `/search` lists comment periods.
+- pages/home/updates-feed: activity kind mapping. A `RecentActivity` row (Angular's
+  "News") reads as "Update"; a project decision reads as "Decision". `RecentActivity`
+  itself has no decision type; the merged feed adds decisions from project data.
+- pages/home/open-for-comment: the rail is ENGAGE-only by intent. Every comment period
+  it can show is an ENGAGE engagement with an outbound `metURL`; Eagle no longer creates
+  comment periods on its own, so an internal-only period is historic and rarely, if
+  ever, the row a reader sees.
+- pages/home/recent-uploads: the rail rows are not built on the shared display grid
+  component. Five 48px rows — project name, a document-type tab label, a date — are not
+  a grid; PUBLIC-152 asks for the shared component, but the shipped rows are hand-built.
+- pages/home: the hero banner, the About cards and the survey banner are gone. The
+  Browse strip carries Legislation, The assessment process and Compliance oversight in
+  their place, since the About cards were the only in-app link to those three pages.
+
 ## URLs
 
 The four Angular list pages — the project list, document search, news and project notifications —

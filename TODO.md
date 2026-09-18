@@ -78,6 +78,20 @@ Follow-ups from phase 6, none of them blocking:
 - Migrate `pages/comments/comments.tsx` and `project-notifications/project-notification-documents-table.tsx` off `TableTemplate` onto `DisplayGrid`, then delete `components/table/*`. Both are small fixed tables inside a page rather than list pages, so neither blocks the search work.
 - `responsive.ts` reads `matchMedia` live, so any component gated on it re-renders during a full-page capture's one-frame 1px viewport (the table branch of `display-grid.tsx` unmounts and remounts). The tour now tolerates it; other width-gated components may still churn in that frame. Consider debouncing the `narrow` snapshot by a frame.
 
+## Home page redesign
+
+Plan and detail: `docs/home-redesign-plan.md`; behaviour changes in
+`docs/deviations-from-angular.md` ("Home page redesign" section).
+
+The design handoff sits at `design/handoffs/home/`, local only and never committed; the
+source archive is kept at `/root/repos/eagle-public-design-handoff-home.zip` and can be
+unzipped again if the directory is missing.
+
+Nine ticket-reconciliation items are tracked, not filed as Jira tickets yet — see
+`docs/home-redesign-plan.md`, "Take back to design and Jira". Update notification
+emails still link to the project page; they move to `/updates/:id` once this line serves
+production.
+
 ## Port rules (added 2026-08-27)
 
 - Do not port bugs or inefficiencies. When the Angular code is wrong, wasteful (redundant fetches, N+1, dead caches, needless re-renders), or dead, fix or drop it in the port.
