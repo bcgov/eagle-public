@@ -39,7 +39,7 @@ export function DocumentsPage() {
           <i className="material-icons" aria-hidden="true">
             help_outline
           </i>
-          Search help
+          <span className="link-label">Search help</span>
         </Link>
       </div>
 

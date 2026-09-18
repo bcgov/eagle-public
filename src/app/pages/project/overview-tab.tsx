@@ -29,7 +29,7 @@ function monthAndDay(value: Date | string): string {
 function ExternalLink({ href, children }: { href: string; children: ReactNode }) {
   return (
     <a href={href} target="_blank" rel="noopener noreferrer">
-      {children}
+      <span className="link-label">{children}</span>
       <NewTabHint />
     </a>
   );

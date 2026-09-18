@@ -143,7 +143,7 @@ export function ListRow({
                     <i className="material-icons display-grid__row-docs-icon" aria-hidden="true">
                       insert_drive_file
                     </i>
-                    {attachment.name}
+                    <span className="link-label">{attachment.name}</span>
                   </a>
                 ) : (
                   <span>{attachment.name}</span>

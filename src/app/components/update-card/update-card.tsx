@@ -60,7 +60,7 @@ export function UpdateCard({ update }: { update: UpdateRecord }) {
                     <i className="material-icons" aria-hidden="true">
                       insert_drive_file
                     </i>
-                    {fileName(document) ?? 'Project documents'}
+                    <span className="link-label">{fileName(document) ?? 'Project documents'}</span>
                   </a>
                 </li>
               )}
