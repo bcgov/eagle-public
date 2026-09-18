@@ -191,8 +191,11 @@
 }
 
 .home-browse__label {
-  text-decoration: underline;
   text-underline-offset: 3px;
+}
+
+.home-browse__link:hover .home-browse__label {
+  text-decoration: underline;
 }
 
 /* Shared by the feed and the rail. */
@@ -558,8 +561,7 @@
 .home-period__left {
   display: inline-flex;
   align-items: center;
-  height: 22px;
-  padding: 0 var(--layout-padding-xsmall);
+  padding: var(--layout-padding-xsmall) var(--layout-padding-small);
   border-radius: var(--layout-border-radius-circular);
   background: var(--theme-primary-gold);
   font: var(--typography-bold-label);
