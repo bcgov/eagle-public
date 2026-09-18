@@ -351,7 +351,7 @@
 .home .home-reader[open] {
   display: flex;
   flex-direction: column;
-  max-width: min(640px, calc(100% - 2 * var(--layout-padding-large)));
+  max-width: min(600px, calc(100% - 2 * var(--layout-padding-large)));
   max-height: calc(100vh - 2 * var(--layout-padding-large));
   overflow: hidden;
 }
