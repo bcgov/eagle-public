@@ -9,9 +9,9 @@
   width: 100%;
   position: relative;
   z-index: 1005;
-  /* The blue the footer's content band uses. No @bcgov/design-tokens value matches the EPIC
-     #003366 (--theme-primary-blue is #013366), so both take it from bootstrap. */
-  background-color: var(--bs-secondary);
+  /* The design-token blue the footer's content band also uses (#013366, one step off the old
+     bootstrap #003366). */
+  background-color: var(--surface-color-primary-default);
   color: var(--typography-color-primary-invert);
   /* The same rule the footer draws (site-footer.css). */
   border-bottom: var(--layout-border-width-large) solid var(--theme-gold-60);

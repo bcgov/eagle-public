@@ -1,7 +1,7 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { screen, waitForElementToBeRemoved, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { makeQueryClient, renderAt } from '../../test-utils';
+import { makeQueryClient, renderAt } from '../../../test-utils';
 import { Home } from './home';
 
 const { track, openDocumentDownload } = vi.hoisted(() => ({
@@ -363,8 +363,47 @@ describe('home recent uploads', () => {
       screen.queryByRole('heading', { name: 'Recent Uploads' }),
     );
     expect(screen.getByText('Recent Activities & Updates')).toBeInTheDocument();
+    expect(screen.getByRole('navigation', { name: 'Browse' })).toBeInTheDocument();
+  });
+});
+
+describe('home page shell', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('opens on one h1, inside the labelled statement band with the search row', async () => {
+    renderHome();
+
+    const band = screen.getByRole('region', { name: 'Environmental Assessments' });
+    expect(screen.getAllByRole('heading', { level: 1 })).toEqual([
+      within(band).getByRole('heading', { level: 1, name: 'Environmental Assessments' }),
+    ]);
+    expect(within(band).getByRole('search')).toBeInTheDocument();
+    await rows();
+  });
+
+  it('keeps the activity feed and Recent Uploads, then closes on the Browse strip', async () => {
+    renderHome();
+
+    await rows();
+    const feed = screen.getByRole('heading', { level: 2, name: 'Recent Activities & Updates' });
+    const uploads = screen.getByRole('heading', { level: 2, name: 'Recent Uploads' });
+    const browse = screen.getByRole('navigation', { name: 'Browse' });
+    // Document order is reading order: feed, rail, strip.
+    expect(feed.compareDocumentPosition(uploads) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(uploads.compareDocumentPosition(browse) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('no longer carries the hero actions or the About cards', async () => {
+    renderHome();
+
+    await rows();
     expect(
-      screen.getByRole('heading', { name: 'About the B.C. Environmental Assessment Process' }),
-    ).toBeInTheDocument();
+      screen.queryByRole('link', { name: 'Find Environmental Assessment Projects' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', { name: 'About the B.C. Environmental Assessment Process' }),
+    ).not.toBeInTheDocument();
   });
 });

@@ -91,9 +91,15 @@ function legacySearchQuery(
   return toSearchParams(carried);
 }
 
-/** Where a record type's list lives. Links that used to point at a legacy list page use this. */
-export function searchUrl(record: RecordType): string {
-  return `/search?record=${record}`;
+/**
+ * Where a record type's list lives, optionally opened on a keyword. Links that used to point at a
+ * legacy list page use this, and so does the home page's search row. A blank keyword is left off.
+ */
+export function searchUrl(record: RecordType, keywords?: string): string {
+  const typed = keywords?.trim();
+  return typed
+    ? `/search?${new URLSearchParams({ record, keywords: typed })}`
+    : `/search?record=${record}`;
 }
 
 /**

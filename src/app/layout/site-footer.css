@@ -48,9 +48,9 @@
   flex-direction: column;
   align-items: center;
   justify-content: space-around;
-  /* No exact @bcgov/design-tokens match for the old --bs-secondary blue (#003366; closest
-     token, --theme-primary-blue, is #013366), so fall back to the bootstrap variable. */
-  background-color: var(--bs-secondary);
+  /* The design-token blue the masthead also uses (#013366, one step off the old bootstrap
+     #003366). */
+  background-color: var(--surface-color-primary-default);
   padding: var(--layout-padding-xlarge);
 }
 

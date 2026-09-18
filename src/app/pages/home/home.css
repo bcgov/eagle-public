@@ -1,0 +1,321 @@
+/* Home page. Every selector starts `.home` (e2e/tests/css-scoping.spec.ts holds it there): this
+   ships as global CSS, and Bootstrap is loaded app-wide, so no block borrows a Bootstrap name.
+   Mobile first; the one breakpoint is the masthead's 768px (site-header.css). */
+
+.home :focus-visible {
+  outline: var(--layout-border-width-medium) solid var(--theme-blue-90);
+  outline-offset: 2px;
+}
+
+/* Statement band: the same construction as the project page's opening band. */
+
+.home-band {
+  background: var(--theme-primary-blue);
+  color: var(--theme-gray-white);
+}
+
+.home-band__inner {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: var(--layout-padding-medium) var(--layout-padding-large) var(--layout-padding-large);
+}
+
+/* Blue-90 is lost on the band's blue; gold is the ring the masthead uses on the same blue. */
+.home-band :focus-visible {
+  outline-color: var(--theme-primary-gold);
+}
+
+.home-band__title {
+  margin: 0 0 var(--layout-margin-xsmall);
+  font: var(--typography-bold-h2);
+  line-height: 1.15;
+  color: var(--typography-color-primary-invert);
+}
+
+.home-band__intro {
+  margin: 0 0 var(--layout-margin-large);
+  font: var(--typography-regular-large-body);
+  color: var(--eao-on-dark-muted);
+  text-wrap: pretty;
+}
+
+/* Search row. Below 768px the field takes a line and the picker and button share the next. */
+
+.home-search__form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--layout-padding-small);
+}
+
+.home-search__field {
+  position: relative;
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
+.home-search__icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 20px;
+  color: var(--typography-color-secondary);
+  pointer-events: none;
+}
+
+.home-search__label {
+  display: block;
+  margin: 0;
+}
+
+/* `epic/styles.css` sets a height on bare `input`, so these state their own rather than a min. */
+.home-search__input,
+.home-search__select {
+  box-sizing: border-box;
+  width: 100%;
+  height: 48px;
+  border: var(--layout-border-width-small) solid var(--theme-gray-60);
+  border-radius: var(--layout-border-radius-medium);
+  background: var(--theme-gray-white);
+  font: var(--typography-regular-body);
+  color: var(--typography-color-primary);
+}
+
+.home-search__input {
+  padding: 0 var(--layout-padding-medium) 0 40px;
+}
+
+.home-search__select {
+  padding: 0 var(--layout-padding-medium);
+  cursor: pointer;
+}
+
+.home-search__submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0 var(--layout-padding-large);
+  border: var(--layout-border-width-medium) solid var(--theme-primary-gold);
+  border-radius: var(--layout-border-radius-medium);
+  background: var(--theme-primary-gold);
+  font: var(--typography-bold-body);
+  color: var(--theme-primary-blue);
+  cursor: pointer;
+}
+
+.home-search__submit:hover {
+  background: transparent;
+  color: var(--theme-primary-gold);
+}
+
+/* Always in the page so the live region is heard; it only takes space once it has text. */
+.home-search__status {
+  margin: 0;
+}
+
+.home-search__status--on {
+  display: flex;
+  align-items: center;
+  gap: var(--layout-padding-small);
+  margin-top: var(--layout-margin-medium);
+  padding: var(--layout-padding-small) var(--layout-padding-medium);
+  border: var(--layout-border-width-small) solid var(--theme-gray-40);
+  border-radius: var(--layout-border-radius-medium);
+  background: var(--theme-gray-white);
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-primary);
+}
+
+.home-search__spinner {
+  flex: 0 0 auto;
+  color: var(--surface-color-primary-default);
+}
+
+/* Body: the feed, then the rail; side by side from 768px. `text-align` is what the old page
+   gave both feeds, and the blocks below still lean on it. */
+
+.home-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-padding-large);
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: var(--layout-padding-large) var(--layout-padding-medium) var(--layout-padding-xlarge);
+  text-align: center;
+}
+
+.home-body__feed,
+.home-body__rail {
+  min-width: 0;
+}
+
+/* Browse strip, above the footer. */
+
+.home-browse {
+  background: var(--theme-gray-20);
+  border-top: var(--layout-border-width-small) solid var(--theme-gray-30);
+}
+
+.home-browse__list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, max-content));
+  justify-content: center;
+  gap: var(--layout-padding-small) var(--layout-padding-large);
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: var(--layout-padding-medium);
+  list-style: none;
+}
+
+.home-browse__link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--layout-padding-xsmall);
+  min-height: 44px;
+  font: var(--typography-bold-small-body);
+  color: var(--typography-color-link);
+  text-decoration: none;
+}
+
+.home-browse__link:hover {
+  color: var(--theme-blue-90);
+}
+
+.home-browse__icon {
+  font-size: 20px;
+}
+
+.home-browse__label {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+@media (width >= 768px) {
+  .home-search__form {
+    display: flex;
+  }
+
+  .home-search__field {
+    flex: 1 1 320px;
+  }
+
+  .home-search__select {
+    width: auto;
+  }
+
+  .home-body {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .home-body__feed {
+    flex: 1.6 1 480px;
+  }
+
+  .home-body__rail {
+    flex: 1 1 280px;
+  }
+
+  .home-browse__list {
+    grid-template-columns: repeat(3, max-content);
+  }
+}
+
+/* The slab both home feeds sit on: Recent Activities & Updates, and Recent Uploads. */
+.home-feed-panel {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+  border-radius: 0.25rem;
+  background: var(--bs-secondary-bg);
+  overflow: hidden;
+}
+
+/* Child combinators throughout: the activity cards render API HTML that can carry its own
+   headings and tables, which Angular's view encapsulation kept these rules away from. */
+.home-feed-panel > h2 {
+  padding: 1.5rem;
+  margin: 0;
+  text-align: center;
+  font-size: var(--bs-font-size-4);
+}
+
+.home-feed-panel > .mt-4 {
+  padding: 1.5rem;
+  padding-top: 0;
+}
+
+/* Recent Activities & Updates Styles */
+.home-news-feed > .table {
+  border: none;
+  margin: 0;
+  padding: 0 1.5rem;
+  width: 100%;
+}
+
+.home-news-feed > .table > tbody {
+  display: block;
+  border-bottom: 2px solid var(--bs-border-color);
+}
+
+.home-news-feed > .table > tbody:last-child {
+  border-bottom: none;
+}
+
+.home-news-feed > .table > tbody > tr {
+  display: block;
+  border: none;
+  width: 100%;
+  background: var(--bs-secondary-bg) !important;
+}
+
+/* Angular's `.home-news-feed .table tbody td` rules are not ported. The `tr` is in this page's own
+   template so its rule still applies, but the `td` comes from the activity-card component, which
+   view encapsulation kept these away from — `activity-card.css` is what actually styles it. */
+
+/* Recent Uploads: one block per project, laid out like an activity row — same slab, same gutter,
+   same 2px divider, same row padding. */
+.home-recent-uploads__list {
+  margin: 0;
+  padding: 0 1.5rem;
+  list-style: none;
+  text-align: left;
+}
+
+.home-recent-uploads__list > li {
+  padding: 1.25rem 0.75rem;
+  border-bottom: 2px solid var(--bs-border-color);
+}
+
+.home-recent-uploads__list > li:last-child {
+  border-bottom: none;
+}
+
+/* Same treatment `.activity-card__project-name` gives the name at the head of a news row. */
+.home-recent-uploads__project {
+  margin: 0 0 0.25rem;
+  font-size: var(--bs-font-size-6);
+  font-weight: var(--bs-font-weight-bold);
+  overflow-wrap: break-word;
+}
+
+.home-recent-uploads__project > a {
+  color: var(--bc-blue);
+}
+
+.home-recent-uploads__docs {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--bs-font-size-6);
+}
+
+/* The name takes the lines it needs, type and date share the muted line under it. No clamp: these
+   names differ at the end (`- Schedule A.pdf`), so a cut one stops telling them apart. */
+.home-recent-uploads__docs > li {
+  padding: 0.25rem 0;
+}
+
+/* Wraps at spaces; only a single token wider than the row is broken mid-word. */
+.home-recent-uploads__docs > li > a {
+  overflow-wrap: break-word;
+}
