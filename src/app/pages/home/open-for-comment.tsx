@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router';
-import { demiProjectQueryOptions } from 'app/api/api';
 import { openCommentPeriodsQueryOptions } from 'app/api/commentperiod';
 import { EngagementLink } from 'app/components/engagement-link';
 import { Skeleton } from 'app/components/skeleton/skeleton';
@@ -22,9 +21,7 @@ function projectIdOf(period: CommentPeriod): string {
 
 function PeriodCard({ period }: { period: CommentPeriod }) {
   const projectId = projectIdOf(period);
-  // The open-periods read carries no project name, so the card asks the project document for it.
-  const { data: project } = useQuery(demiProjectQueryOptions(projectId));
-  const name = project?.name ?? period.informationLabel ?? 'Comment period';
+  const name = period.projectName ?? period.informationLabel ?? 'Comment period';
 
   return (
     <li className="home-period">

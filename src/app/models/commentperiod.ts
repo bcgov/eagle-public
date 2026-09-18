@@ -40,6 +40,8 @@ export class CommentPeriod {
   phase!: string;
   phaseName!: string;
   project!: Project;
+  /** Set only by the open-periods read; absent when the project is hidden or the parent is a notification. */
+  projectName?: string;
   publishedPercent!: number;
   rangeOption!: string;
   rangeType!: string;
