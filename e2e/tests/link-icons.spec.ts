@@ -1,4 +1,5 @@
-import { test, expect, type APIRequestContext } from '../support/fixtures';
+import { test, expect } from '../support/fixtures';
+import type { APIRequestContext } from '@playwright/test';
 import { ready, searchFixture } from '../support/helpers';
 
 /**
