@@ -226,6 +226,18 @@ test('a document download presigns through demi-api and keeps the eagle-api href
 
 test('the subscribe form opens rightward from the band trigger', async ({ page, request }) => {
   const [project] = await twoProjects(request);
+
+  // The control renders only where NOTIFY_API is set, and no config document carries it: each
+  // deploy seds the value into that environment's env.js, and the repo's copy is empty. Add it to
+  // the environment's own config so the rest of the runtime values stay real.
+  await page.route('**/demi-search/config', async (route) => {
+    const response = await route.fetch();
+    await route.fulfill({
+      response,
+      json: { ...(await response.json()), NOTIFY_API: '/notify-api' },
+    });
+  });
+
   await page.goto(`/p/${project._id}/overview`);
   await ready(page);
 

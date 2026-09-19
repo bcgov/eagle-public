@@ -59,6 +59,16 @@ describe('htmlToText', () => {
     expect((window as unknown as { __pwned?: boolean }).__pwned).toBeUndefined();
   });
 
+  it('leaves a phrase an inline link interrupts unbroken', () => {
+    expect(htmlToText('<p>the <a href="/x">Yellowhead Copper Project</a>, a mine</p>')).toBe(
+      'the Yellowhead Copper Project, a mine',
+    );
+  });
+
+  it('keeps an angle bracket inside an attribute out of the words', () => {
+    expect(htmlToText('<a title="a>b">x</a>')).toBe('x');
+  });
+
   it('reads a missing value as nothing', () => {
     expect(htmlToText(undefined)).toBe('');
   });
