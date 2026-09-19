@@ -28,7 +28,7 @@ stand-in for the `<field>Id` columns the real index filters on.
 
 Run from the repository root.
 
-    yarn test:parity        # compare /search against the references
+    yarn test:parity        # check /search against the design (see Pixel comparison parked)
     yarn parity:reference   # recapture the references from the prototype
     yarn parity:fixtures    # re-extract the JSON fixtures from the prototype
 
@@ -56,8 +56,12 @@ drives every state, writes the PNGs and re-checks the measurements against the
 prototype. Review the resulting image diff before committing: a reference that changed
 because the app changed is the gate failing silently.
 
-## Until the page exists
+## Pixel comparison parked (2026-09-19)
 
-The unified `/search` page is not built yet. Each screenshot test navigates, finds no
-grid, and skips. The suite goes live with no change here the moment the component
-renders `.display-grid`.
+The search page was redesigned on purpose, so the references predate the shared page
+band and the wider layout and no longer show what the page is meant to look like. Each
+state therefore runs as two tests: the measurement and text checks, which still run and
+still fail the build, and the screenshot, which is parked behind
+`PIXEL_COMPARISON_PARKED` in `unified-search.parity.spec.ts` and reports as fixme. To
+restore it, recapture with `yarn parity:reference` from an updated handoff bundle,
+review the diff, then delete that constant.

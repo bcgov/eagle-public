@@ -19,8 +19,9 @@ export default defineConfig({
   retries: 0,
   timeout: 90_000,
   expect: { timeout: 15_000 },
-  // A whole run of states blocked on the same missing control is one answer, not thirty.
-  maxFailures: process.env['CI'] ? 10 : 0,
+  // No cap. A cap of 10 under CI stopped the run after a third of the states, so a CI log showed
+  // ten failures where there were thirty and the rest looked untested.
+  maxFailures: 0,
   // The HTML report carries the diff images and the trace, so a CI failure leaves something to
   // look at. `never`: opening a browser would hang the run.
   reporter: [['list'], ['html', { outputFolder: '../parity-report', open: 'never' }]],
