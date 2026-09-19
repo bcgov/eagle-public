@@ -1,5 +1,5 @@
 /* Project page shell: masthead band, full-width white band holding the persistent panel, full-width
-   white tab strip, then the open tab. Every band's content sits on one 1440px container. `.project`
+   white tab strip, then the open tab. Every band's content sits on `.page-container`. `.project`
    belongs to the Comments page (`pages/comments/comments.tsx`), never style it here. Tokens come from
    @bcgov/design-tokens and eao-tokens.css. */
 
@@ -10,20 +10,13 @@
   overflow-x: hidden;
 }
 
-.project-page__container {
-  width: 100%;
-  max-width: 1440px;
-  margin-inline: auto;
-  padding-inline: var(--layout-padding-large);
-}
-
 .project-page__panel,
 .project-page__tabs {
   background: var(--theme-gray-white);
   border-bottom: var(--layout-border-width-small) solid var(--theme-gray-40);
 }
 
-.project-page__panel .project-page__container {
+.project-page__panel .page-container {
   padding-block: var(--layout-padding-large);
 }
 
@@ -70,11 +63,7 @@
 }
 
 @media (max-width: 859.98px) {
-  .project-page__container {
-    padding-inline: var(--layout-padding-medium);
-  }
-
-  .project-page__panel .project-page__container {
+  .project-page__panel .page-container {
     padding-block: var(--layout-padding-medium);
   }
 

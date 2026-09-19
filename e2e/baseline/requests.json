@@ -54,6 +54,6 @@
     "GET /demi-search/search/counts?keywords=",
     "GET /demi-search/search?and[companyType]=Proponent/Certificate Holder&dataset=Organization&fuzzy=false&pageNum=0&pageSize=500&populate=false&projectLegislation=default&sortBy= name",
     "GET /demi-search/search?dataset=List&pageSize=250",
-    "GET /demi-search/search?dataset=Project&fuzzy=false&pageNum=0&pageSize=25&populate=false&projectLegislation=default&sortBy=-dateUpdated"
+    "GET /demi-search/search?dataset=Project&fuzzy=false&pageNum=0&pageSize=25&populate=false&projectLegislation=default&sortBy= name"
   ]
 }

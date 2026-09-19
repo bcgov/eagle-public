@@ -6,22 +6,26 @@ import {
   serializeGridParams,
   toApiFilters,
   useGridUrlState,
+  type GridDefaults,
   type GridUrlApi,
 } from './use-grid-url-state';
 
 /** The hook plus the address it has written, so a spec can assert on the URL the reader can copy. */
-function renderGrid(initial = '/search') {
+function renderGrid(initial = '/search', defaults: GridDefaults = {}) {
   function wrapper({ children }: { children: ReactNode }) {
     return createElement(MemoryRouter, { initialEntries: [initial] }, children);
   }
   return renderHook(
     (): { grid: GridUrlApi; search: string } => ({
-      grid: useGridUrlState(),
+      grid: useGridUrlState(defaults),
       search: useLocation().search,
     }),
     { wrapper },
   );
 }
+
+/** A record type that starts with one column switched off, the way projects hides Last updated. */
+const HIDES_DATE: GridDefaults = { defaultHiddenColumns: ['dateUpdated'] };
 
 function params(search: string): URLSearchParams {
   return new URLSearchParams(search);
@@ -70,6 +74,18 @@ describe('parseGridParams', () => {
       'phase',
     ]);
   });
+
+  it("hides the record type's own columns when the address names none", () => {
+    expect(parseGridParams(params(''), HIDES_DATE).hiddenColumns).toEqual(['dateUpdated']);
+  });
+
+  it('reads cols=none as the reader having switched every column back on', () => {
+    expect(parseGridParams(params('?cols=none'), HIDES_DATE).hiddenColumns).toEqual([]);
+  });
+
+  it('lets a named column list win over the record type defaults', () => {
+    expect(parseGridParams(params('?cols=region'), HIDES_DATE).hiddenColumns).toEqual(['region']);
+  });
 });
 
 describe('serializeGridParams', () => {
@@ -85,6 +101,27 @@ describe('serializeGridParams', () => {
 
     const round = parseGridParams(serializeGridParams(state));
     expect(round).toEqual(state);
+  });
+
+  it('writes cols=none when a record type that hides a column has none hidden', () => {
+    const state = parseGridParams(params(''), HIDES_DATE);
+
+    const search = serializeGridParams({ ...state, hiddenColumns: [] }, HIDES_DATE);
+    expect(search.get('cols')).toBe('none');
+  });
+
+  it('round-trips "every column on" rather than reading it back as the default', () => {
+    const state = parseGridParams(params('?cols=none'), HIDES_DATE);
+    expect(state.hiddenColumns).toEqual([]);
+
+    const round = parseGridParams(serializeGridParams(state, HIDES_DATE), HIDES_DATE);
+    expect(round.hiddenColumns).toEqual([]);
+  });
+
+  it('leaves cols off when the record type hides nothing of its own', () => {
+    const state = parseGridParams(params(''));
+
+    expect(serializeGridParams({ ...state, hiddenColumns: [] }).get('cols')).toBeNull();
   });
 });
 
@@ -216,6 +253,22 @@ describe('useGridUrlState', () => {
 
     act(() => result.current.grid.setHiddenColumns([]));
     expect(params(result.current.search).get('cols')).toBeNull();
+  });
+
+  it('starts a record type on its own hidden columns, with nothing on the address', () => {
+    const { result } = renderGrid('/search?record=projects', HIDES_DATE);
+
+    expect(result.current.grid.state.hiddenColumns).toEqual(['dateUpdated']);
+    expect(params(result.current.search).get('cols')).toBeNull();
+  });
+
+  it('records switching that column on as cols=none, so a reload keeps it on', () => {
+    const { result } = renderGrid('/search?record=projects', HIDES_DATE);
+
+    act(() => result.current.grid.setHiddenColumns([]));
+
+    expect(params(result.current.search).get('cols')).toBe('none');
+    expect(result.current.grid.state.hiddenColumns).toEqual([]);
   });
 
   it('clears the filters but keeps the keyword and the arrangement', () => {

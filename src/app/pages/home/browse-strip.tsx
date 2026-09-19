@@ -17,7 +17,7 @@ const ENTRIES: { label: string; to: string; icon: string }[] = [
 export function BrowseStrip() {
   return (
     <nav className="home-browse" aria-label="Browse">
-      <ul className="home-browse__list">
+      <ul className="home-browse__list page-container">
         {ENTRIES.map((entry) => (
           <li key={entry.to}>
             <Link className="home-browse__link" to={entry.to}>

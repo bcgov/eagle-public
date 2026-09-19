@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import { ListRow, type ListRowAttachment } from 'app/components/display-grid/list-row';
 import type { GridColumn, ValueOption } from 'app/components/display-grid/types';
+import { htmlToText } from 'app/utils/safe-html';
 import { isSafeUrl } from 'app/utils/safe-url';
 import { RECORD_DATASETS, type RecordTypeConfig, type SearchMeta } from './record-type';
 
@@ -66,27 +67,6 @@ function projectHref(row: Row): string | undefined {
   return id === '' ? undefined : `/p/${id}`;
 }
 
-const ENTITIES: Record<string, string> = {
-  '&nbsp;': ' ',
-  '&amp;': '&',
-  '&lt;': '<',
-  '&gt;': '>',
-  '&quot;': '"',
-  '&#39;': "'",
-};
-
-/**
- * The update's body as words. `content` is stored as HTML, and the row clamps, excerpts and
- * highlights plain text, so the markup comes out here rather than being rendered and measured.
- */
-export function plainText(value: unknown): string {
-  return String(value ?? '')
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/&nbsp;|&amp;|&lt;|&gt;|&quot;|&#39;/g, (entity) => ENTITIES[entity] ?? entity)
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
 /**
  * The file an update points at, named by the last segment of its URL. The record carries no size
  * and no file type, so the row offers the name and nothing else.
@@ -144,7 +124,7 @@ export function ActivityRow({ row }: { row: Row }) {
     <ListRow
       meta={meta}
       title={String(row['headline'] ?? '')}
-      body={plainText(row['content'])}
+      body={htmlToText(row['content'])}
       attachments={attachmentsOf(row)}
     />
   );

@@ -47,11 +47,12 @@ describe('project masthead', () => {
     expect(screen.getByText('Cedar Quarry Partners LP · Near Cedar Creek')).toBeInTheDocument();
 
     const crumbs = screen.getByRole('navigation', { name: 'Breadcrumb' });
-    expect(within(crumbs).getAllByRole('link')).toHaveLength(1);
-    expect(within(crumbs).getByRole('link', { name: 'Projects' })).toHaveAttribute(
-      'href',
-      '/projects',
-    );
+    const links = within(crumbs).getAllByRole('link');
+    // Search leads back to the projects tab, not to the bare /search page, which lists documents.
+    expect(links.map((link) => [link.textContent, link.getAttribute('href')])).toEqual([
+      ['Home', '/'],
+      ['Search', '/search?record=projects'],
+    ]);
     expect(within(crumbs).getByText('Cedar Quarry')).toHaveAttribute('aria-current', 'page');
   });
 
@@ -81,7 +82,8 @@ describe('project masthead', () => {
 
     expect(screen.getByText('Loading project')).toBeInTheDocument();
     expect(container.querySelector('h1 .placeholder')).toBeInTheDocument();
-    expect(container.querySelector('.project-masthead__meta .placeholder')).toBeInTheDocument();
+    expect(container.querySelector('.page-masthead__meta .placeholder')).toBeInTheDocument();
+    expect(container.querySelector('.page-masthead')).toHaveAttribute('aria-busy', 'true');
   });
 
   it('copies the project link and shows an in-button copied state instead of a toast', async () => {

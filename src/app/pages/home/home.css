@@ -2,41 +2,11 @@
    ships as global CSS, and Bootstrap is loaded app-wide, so no block borrows a Bootstrap name.
    Mobile first; the one breakpoint is the masthead's 768px (site-header.css). */
 
+/* Blue-90 is lost on the opening band's blue, so the ring colour is a variable the band overrides
+   (src/app/layout/page-masthead.css) rather than a second rule racing this one. */
 .home :focus-visible {
-  outline: var(--layout-border-width-medium) solid var(--theme-blue-90);
+  outline: var(--layout-border-width-medium) solid var(--focus-ring-color, var(--theme-blue-90));
   outline-offset: 2px;
-}
-
-/* Statement band: the same construction as the project page's opening band. */
-
-.home-band {
-  background: var(--theme-primary-blue);
-  color: var(--theme-gray-white);
-}
-
-.home-band__inner {
-  max-width: 1180px;
-  margin: 0 auto;
-  padding: var(--layout-padding-medium) var(--layout-padding-large) var(--layout-padding-large);
-}
-
-/* Blue-90 is lost on the band's blue; gold is the ring the masthead uses on the same blue. */
-.home-band :focus-visible {
-  outline-color: var(--theme-primary-gold);
-}
-
-.home-band__title {
-  margin: 0 0 var(--layout-margin-xsmall);
-  font: var(--typography-bold-h2);
-  line-height: 1.15;
-  color: var(--typography-color-primary-invert);
-}
-
-.home-band__intro {
-  margin: 0 0 var(--layout-margin-large);
-  font: var(--typography-regular-large-body);
-  color: var(--eao-on-dark-muted);
-  text-wrap: pretty;
 }
 
 /* Search row. Below 768px the field takes a line and the picker and button share the next. */
@@ -138,9 +108,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--layout-padding-large);
-  max-width: 1180px;
-  margin: 0 auto;
-  padding: var(--layout-padding-large) var(--layout-padding-medium) var(--layout-padding-xlarge);
+  padding-block: var(--layout-padding-large) var(--layout-padding-xlarge);
 }
 
 .home-body__feed,
@@ -166,9 +134,8 @@
   flex-wrap: wrap;
   justify-content: center;
   gap: var(--layout-padding-small) var(--layout-padding-large);
-  max-width: 1180px;
-  margin: 0 auto;
-  padding: var(--layout-padding-medium);
+  margin-block: 0;
+  padding-block: var(--layout-padding-medium);
   list-style: none;
 }
 

@@ -97,8 +97,6 @@ const NOTIFICATIONS = [
 ];
 
 let counts: Record<string, number | null>;
-/** Whether the index says it could not sort by `dateUpdated`, which it can only say when asked. */
-let dropsDateSort: boolean;
 /** Whether the activities index says it carries no `documentUrl`, which it only says when asked. */
 let dropsAttachmentFilter: boolean;
 
@@ -140,8 +138,7 @@ function stubApi(): ReturnType<typeof vi.fn> {
     // Ahead of the Project leg: `dataset=ProjectNotification` starts with the same word.
     if (url.includes('dataset=ProjectNotification')) return envelope(NOTIFICATIONS);
     if (url.includes('dataset=Project')) {
-      const sort = dropsDateSort && url.includes('sortBy=-dateUpdated') ? ['dateUpdated'] : [];
-      return envelope(PROJECTS, 1, { dropped: { filter: [], sort } });
+      return envelope(PROJECTS, 1, { dropped: { filter: [], sort: [] } });
     }
     // Ahead of the Document leg: `dataset=DocumentChunk` starts with the same word.
     if (url.includes('dataset=DocumentChunk')) {
@@ -183,7 +180,6 @@ function cellUnder(row: HTMLElement, heading: string): HTMLElement {
 
 beforeEach(async () => {
   counts = { Project: 12, Document: 5 };
-  dropsDateSort = false;
   dropsAttachmentFilter = false;
   documents = DOCUMENTS;
   chunks = CHUNKS;
@@ -217,6 +213,19 @@ describe('UnifiedSearch', () => {
     expect(crumbs).toHaveTextContent('Home');
     expect(within(crumbs).getByText('Search')).toHaveAttribute('aria-current', 'page');
     expect(screen.getByRole('heading', { level: 1, name: 'Search' })).toBeInTheDocument();
+  });
+
+  it('carries the keyword field, the record types and the help link in the band', async () => {
+    renderSearch('/search');
+
+    const band = screen
+      .getByRole('heading', { level: 1, name: 'Search' })
+      .closest('section') as HTMLElement;
+    expect(
+      within(band).getByRole('searchbox', { name: 'Search projects, documents and updates' }),
+    ).toBeInTheDocument();
+    expect(within(band).getByRole('group', { name: 'Record type' })).toBeInTheDocument();
+    expect(within(band).getByRole('link', { name: /Search help/ })).toBeInTheDocument();
   });
 
   it('badges every record type before a keyword is typed', async () => {
@@ -420,21 +429,28 @@ describe('UnifiedSearch', () => {
     expect(trackMock.mock.calls[1][1]).toMatchObject({ filter_count: 1 });
   });
 
-  it('settles on name order once the index says it dropped the date sort', async () => {
-    // demi-search groups `dropped` by what it applied it to, and only reports the sort it was
-    // asked for: an answer read as "date works again" would send the page back and forth forever.
-    dropsDateSort = true;
-    const fetchMock = stubApi();
-    renderSearch('/search?record=projects&keywords=fish');
+  it('opens the projects tab with Last updated switched off but still in the picker', async () => {
+    const user = userEvent.setup();
+    renderSearch('/search?record=projects');
+    await screen.findByText('Alpha Mine');
 
-    const projectSorts = () =>
-      fetchMock.mock.calls.map(String).filter((url) => url.includes('dataset=Project&'));
-    await waitFor(() =>
-      // Scoped to the projects search: the organizations read always sorts by name.
-      expect(projectSorts().some((url) => url.includes('sortBy=+name'))).toBe(true),
-    );
-    // Asked for the date sort once, then not again: the fallback is one way.
-    expect(projectSorts().filter((url) => url.includes('sortBy=-dateUpdated'))).toHaveLength(1);
+    expect(screen.queryByRole('columnheader', { name: /Last updated/ })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Columns' }));
+    expect(screen.getByRole('checkbox', { name: 'Last updated' })).not.toBeChecked();
+  });
+
+  it('shows Last updated once the reader picks it, and says so on the address', async () => {
+    const user = userEvent.setup();
+    const { router } = renderSearch('/search?record=projects');
+    await screen.findByText('Alpha Mine');
+
+    await user.click(screen.getByRole('button', { name: 'Columns' }));
+    await user.click(screen.getByRole('checkbox', { name: 'Last updated' }));
+
+    expect(await screen.findByRole('columnheader', { name: /Last updated/ })).toBeInTheDocument();
+    // `none` and not an empty value: an absent `cols` would read back as the tab's own default.
+    expect(new URLSearchParams(router.state.location.search).get('cols')).toBe('none');
   });
 
   it('names a populated record in a cell rather than printing the object', async () => {

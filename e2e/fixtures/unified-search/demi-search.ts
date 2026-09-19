@@ -262,7 +262,7 @@ function carriedFields(rows: Row[]): Set<string> {
 
 /**
  * Fields the query named that this dataset does not carry, which is what `meta[0].dropped` reports
- * and what `types/projects.ts#resolveSort` reads before it picks a sort.
+ * and what `types/activities.tsx#attachmentsFilterDropped` reads before it offers that filter.
  */
 function droppedFields(rows: Row[], groups: Map<string, string[]>, sortKeys: string[]): string[] {
   const carried = carriedFields(rows);
@@ -329,8 +329,14 @@ export function answerSearch(params: URLSearchParams): SearchAnswer {
   const dataset = (params.get('dataset') ?? 'Document') as Dataset;
   const keywords = params.get('keywords') ?? '';
   const groups = filterGroups(params);
-  // `searchKeywords` emits one `sortBy` per key, primary first.
-  const sortKeys = params.getAll('sortBy').filter(Boolean);
+  // `searchKeywords` emits one `sortBy` per key, primary first. An ascending key goes on the wire
+  // as a bare `+`, which form decoding reads back as a space; demi-search sorts ascending on it
+  // all the same (`sortBy=+name` and `sortBy=%2Bname` answer identically), so the space is put
+  // back rather than left to drop the key.
+  const sortKeys = params
+    .getAll('sortBy')
+    .filter(Boolean)
+    .map((key) => key.replace(/^ /, '+'));
 
   const all = rowsFor(dataset);
   const passages = dataset === 'DocumentChunk';

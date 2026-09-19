@@ -50,9 +50,13 @@ test('the projects tab lists projects from the search API', async ({ page }) => 
   await ready(page);
 
   await expect(page.getByRole('heading', { level: 1, name: 'Search' })).toBeVisible();
-  for (const column of ['Project', 'Last updated', 'Proponent', 'Type', 'Region', 'Phase']) {
+  for (const column of ['Project', 'Proponent', 'Type', 'Region', 'Phase']) {
     await expect(page.getByRole('columnheader', { name: column, exact: true })).toBeVisible();
   }
+  // Last updated starts switched off, so the tab opens on what a project is rather than its date.
+  await expect(page.getByRole('columnheader', { name: 'Last updated', exact: true })).toHaveCount(
+    0,
+  );
 
   const rows = page.locator(ROWS);
   await expect(rows).toHaveCount(Math.min(25, total(env)));
@@ -60,6 +64,49 @@ test('the projects tab lists projects from the search API', async ({ page }) => 
   expect((await gridCount(page)).total).toBe(total(env));
 
   checkBaseline('search', calls);
+});
+
+/** A colour as its sRGB channels, whatever notation the browser reports it in. */
+function channels(colour: string): number[] {
+  const numbers = colour.match(/[\d.]+/g)?.map(Number) ?? [];
+  return colour.startsWith('color(')
+    ? numbers.slice(0, 3)
+    : numbers.slice(0, 3).map((n) => n / 255);
+}
+
+/** Rough lightness, enough to say one fill is a step towards white from another. */
+function lightness(colour: string): number {
+  const [r, g, b] = channels(colour);
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+test('the chosen record pill is a white chip, and hover lifts the fill of the others', async ({
+  page,
+}) => {
+  await openSearch(page, '/search?record=projects');
+
+  const bandBlue = await page
+    .locator('.page-masthead')
+    .evaluate((el) => getComputedStyle(el).backgroundColor);
+  const style = (label: string) =>
+    pill(page, label).evaluate((el) => {
+      const computed = getComputedStyle(el);
+      return { colour: computed.color, background: computed.backgroundColor };
+    });
+
+  // Chosen: the band's blue on white, the reverse of the band's own ink.
+  expect(await style('Projects')).toEqual({ colour: bandBlue, background: 'rgb(255, 255, 255)' });
+  // The rest carry no fill at all, so the band shows through.
+  expect((await style('Documents')).background).toBe('rgba(0, 0, 0, 0)');
+
+  await pill(page, 'Documents').hover();
+  const hovered = await style('Documents');
+  expect(hovered.colour).toBe('rgb(255, 255, 255)');
+  expect(hovered.background, 'the hover fill is not the bare band').not.toBe(bandBlue);
+  expect(
+    lightness(hovered.background),
+    'the hover fill is the band blue a step towards white',
+  ).toBeGreaterThan(lightness(bandBlue));
 });
 
 test('every record pill carries its own count for the typed keyword', async ({ page }) => {
@@ -86,20 +133,27 @@ test('a keyword narrows the rows and lands in the URL', async ({ page }) => {
   expect(await gridCount(page)).toEqual({ first: 1, last: 1, total: 1 });
 });
 
-test('a column header sorts the rows, and a second click reverses them', async ({ page }) => {
+test('the projects tab opens in name order, and the header reverses it', async ({ page }) => {
   await openSearch(page, '/search?record=projects');
   const header = page.getByRole('columnheader', { name: 'Project', exact: true });
   const firstName = page.locator(ROWS).first().locator(NAME).first();
 
-  await header.getByRole('button').click();
+  // The tab's own sort, with nothing on the address to say so.
   await expect(header).toHaveAttribute('aria-sort', 'ascending');
-  // `+name` goes on the wire unencoded, so a URL parser reads it back as " name".
-  expect(new URL(page.url()).searchParams.get('sortBy')).toMatch(/^[+ ]name$/);
+  expect(new URL(page.url()).searchParams.get('sortBy')).toBeNull();
+  await expect(firstName).toHaveText('7 Mile Renewable Fuels Production Facility');
 
   await header.getByRole('button').click();
+  // The URL settles first; reading aria-sort before it would find the pre-click value.
+  await expect.poll(() => new URL(page.url()).searchParams.get('sortBy')).toBe('-name');
   await expect(header).toHaveAttribute('aria-sort', 'descending');
-  expect(new URL(page.url()).searchParams.get('sortBy')).toBe('-name');
   await expect(firstName).toHaveText('Willow Creek Wind');
+
+  await header.getByRole('button').click();
+  // `+name` goes on the wire unencoded, so a URL parser reads it back as " name".
+  await expect.poll(() => new URL(page.url()).searchParams.get('sortBy')).toMatch(/^[+ ]name$/);
+  await expect(header).toHaveAttribute('aria-sort', 'ascending');
+  await expect(firstName).toHaveText('7 Mile Renewable Fuels Production Facility');
 });
 
 test('a deep link restores the keyword, the sort and the page size', async ({ page }) => {
@@ -119,7 +173,10 @@ test('pagination moves to the second page and records it in the URL', async ({ p
 
   expect(new URL(page.url()).searchParams.get('currentPage')).toBe('2');
   await expect(page.locator(ROWS)).toHaveCount(2);
-  await expect(page.locator(ROWS).first().locator(NAME).first()).toHaveText('Willow Creek Wind');
+  // 11th of the 12 fixture projects in name order, which is what the tab lists by.
+  await expect(page.locator(ROWS).first().locator(NAME).first()).toHaveText(
+    'Vancouver Island Waste-to-Energy',
+  );
   expect(await gridCount(page)).toEqual({ first: 11, last: 12, total: 12 });
 });
 
@@ -186,6 +243,19 @@ test('the activities pill lists updates as full-width rows', async ({ page }) =>
   await expect(
     first.getByRole('link', { name: 'Amendment #3 Application — Volume 1.pdf' }),
   ).toBeVisible();
+
+  // Full width in earnest: the reading measure the other templates keep is lifted for these rows,
+  // which stack their parts and put nothing beside them.
+  const size = await first.evaluate((row) => {
+    const body = row.querySelector('.display-grid__row-body') as HTMLElement;
+    return {
+      row: row.getBoundingClientRect().width,
+      body: body.getBoundingClientRect().width,
+      cap: getComputedStyle(body).maxWidth,
+    };
+  });
+  expect(size.cap).toBe('none');
+  expect(size.body).toBeGreaterThan(size.row * 0.9);
 });
 
 test('a long update is cut to an excerpt until Show more opens it', async ({ page }) => {

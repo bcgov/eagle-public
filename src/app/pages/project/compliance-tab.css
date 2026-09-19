@@ -11,7 +11,7 @@
 }
 
 .compliance-tab__intro {
-  max-width: 62ch;
+  max-width: var(--page-measure);
   margin-bottom: var(--layout-margin-large);
   font: var(--typography-regular-body);
   color: var(--typography-color-secondary);

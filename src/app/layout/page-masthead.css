@@ -1,0 +1,104 @@
+/* The one blue band. Every page that opens with one draws it here: background, vertical padding,
+   title scale and breadcrumb position are stated once and nowhere else. Tokens come from
+   @bcgov/design-tokens and eao-tokens.css. The inner element carries `page-container`, so the
+   band's content lines up with the header, the footer and the rest of the page. */
+
+.page-masthead {
+  /* The app's blue focus ring is lost on this blue; gold clears 3:1 on it. Inherited, so a page
+     rule that paints its own ring picks the band's colour up wherever the two stylesheets land in
+     the cascade. */
+  --focus-ring-color: var(--theme-primary-gold);
+
+  background: var(--theme-primary-blue);
+  color: var(--typography-color-primary-invert);
+}
+
+.page-masthead__inner {
+  padding-block: var(--layout-padding-medium) var(--layout-padding-large);
+}
+
+.page-masthead :focus-visible {
+  outline: var(--layout-border-width-medium) solid var(--focus-ring-color);
+  outline-offset: 2px;
+}
+
+/* One breadcrumb line, held open whether or not the page has a trail. The height is the trail's
+   own line box (--typography-regular-small-body), so the title starts level on every page. */
+.page-masthead__trail {
+  min-height: 1.313rem;
+  margin-bottom: var(--layout-margin-medium);
+}
+
+/* The trail keeps to that one line whatever the page is called: a second crumb line lands under
+   the title on that page alone. The current page's crumb elides, the way its title does; the
+   crumbs above it are short and stay whole. */
+.page-masthead__trail .breadcrumbs__list {
+  flex-wrap: nowrap;
+}
+
+.page-masthead__trail .breadcrumbs__item:not(:last-child) {
+  flex: none;
+}
+
+.page-masthead__trail .breadcrumbs__item:last-child,
+.page-masthead__trail .breadcrumbs__item:last-child > * {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Title and its meta line, then the page's controls under them, left-aligned with the title: the
+   same shape at every width, so the three bands come out within a few pixels of each other before
+   the floor below is applied. */
+.page-masthead__row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-padding-medium);
+}
+
+.page-masthead__titles {
+  min-width: 0;
+}
+
+.page-masthead__title {
+  margin: 0 0 var(--layout-margin-xsmall);
+  font: var(--typography-bold-h2);
+  /* The h1's line box: 2rem type on a 1.15 lead, so the title measures the same on every page. */
+  line-height: 2.3rem;
+  color: var(--typography-color-primary-invert);
+}
+
+.page-masthead__meta {
+  margin: 0;
+  font: var(--typography-regular-large-body);
+  color: var(--theme-gray-30);
+}
+
+.page-masthead__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--layout-padding-small);
+}
+
+/* From the wide gutter up, every band is the same height, whatever the page puts in it.
+   The floor is the tallest band the site has - search, whose title is followed by the keyword
+   field and the record-type row - and e2e/tests/page-layout.spec.ts fails if a page outgrows it.
+   The title and the meta line take one line each and elide, so a long project name cannot push
+   the band past this; the full name stays in the element's `title`.
+   Below this width the bands are sized by their content: a project name and the home search row
+   wrap by different amounts on a phone, and holding a phone band open to the tallest of them would
+   push the page itself off the screen. */
+@media (width >= 860px) {
+  .page-masthead {
+    min-height: 14rem;
+  }
+
+  .page-masthead__title,
+  .page-masthead__meta {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+}

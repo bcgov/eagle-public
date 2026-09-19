@@ -19,6 +19,7 @@
 @import url('./assets/styles/themes/eao-tokens.css');
 
 /* Base */
+@import url('./assets/styles/base/layout.css');
 @import url('./assets/styles/base/accessibility.css');
 @import url('./assets/styles/base/typography.css');
 @import url('./assets/styles/base/material-icons.css');
@@ -48,8 +49,9 @@ body {
   max-width: 100%;
 }
 
-/* Global Content Styles */
+/* Global Content Styles. Long-form copy keeps a reading measure inside the wide container. */
 .content-wrapper {
+  max-width: var(--page-measure);
   font-size: 1rem;
   line-height: 1.5;
   color: var(--bc-gray);

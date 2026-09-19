@@ -1,79 +1,6 @@
-/* Blue band under the site header. Tokens come from @bcgov/design-tokens and eao-tokens.css. */
-
-.project-masthead {
-  background: var(--theme-primary-blue);
-  color: var(--typography-color-primary-invert);
-}
-
-.project-masthead__inner {
-  max-width: 1440px;
-  margin-inline: auto;
-  padding: var(--layout-padding-medium) var(--layout-padding-large) var(--layout-padding-large);
-}
-
-.project-masthead__breadcrumb ol {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--layout-padding-xsmall);
-  margin: 0 0 var(--layout-margin-medium);
-  padding: 0;
-  list-style: none;
-  font: var(--typography-regular-small-body);
-}
-
-.project-masthead__breadcrumb li {
-  color: var(--theme-gray-30);
-}
-
-.project-masthead__breadcrumb a {
-  color: var(--theme-gray-30);
-  text-decoration: underline;
-}
-
-.project-masthead__breadcrumb a:hover,
-.project-masthead__breadcrumb a:focus {
-  color: var(--theme-primary-gold);
-}
-
-.project-masthead__breadcrumb li[aria-current='page'] {
-  color: var(--typography-color-primary-invert);
-}
-
-.project-masthead__row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: var(--layout-padding-large);
-}
-
-.project-masthead__titles {
-  min-width: 0;
-  flex: 1 1 20rem;
-}
-
-.project-masthead__name {
-  margin: 0 0 var(--layout-margin-xsmall);
-  font: var(--typography-bold-h2);
-  line-height: 1.15;
-  color: var(--typography-color-primary-invert);
-}
-
-.project-masthead__meta {
-  margin: 0;
-  font: var(--typography-regular-large-body);
-  color: var(--theme-gray-30);
-}
-
-/* The two banner actions, right-aligned as a pair. The status line is the only thing that stacks
-   under them, and it is hidden unless the clipboard refused the copy. */
-.project-masthead__actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--layout-padding-small);
-}
+/* The project band's own two actions. The band itself - background, padding, title scale,
+   breadcrumb - lives in src/app/layout/page-masthead.css, which this page passes its class to.
+   Tokens come from @bcgov/design-tokens and eao-tokens.css. */
 
 /* Shared shape: 44px of touch target either way, so the pair reads as one control group. */
 .project-masthead__action,
@@ -201,16 +128,8 @@
   outline-offset: 2px;
 }
 
-/* Under the title on a phone, where the pair has no room beside it. */
+/* Filling the row on a phone, where the pair has one control per line. */
 @media (max-width: 859.98px) {
-  .project-masthead__inner {
-    padding-inline: var(--layout-padding-medium);
-  }
-
-  .project-masthead__actions {
-    width: 100%;
-  }
-
   .project-masthead__action,
   .project-masthead .subscribe-popover__trigger {
     flex: 1 1 12rem;

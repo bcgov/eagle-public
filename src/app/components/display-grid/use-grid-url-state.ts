@@ -25,6 +25,27 @@ export const INSIDE_SORT = '-matches';
 /** URL keys the grid owns. Anything else on the query string is a filter id. */
 const RESERVED = ['keywords', 'record', 'scope', 'sortBy', 'currentPage', 'pageSize', 'cols'];
 
+/**
+ * What `cols` carries once the reader has switched on every column of a record type that starts
+ * with one off. An absent `cols` means "the record type's own default", so an empty list needs a
+ * value of its own to say the reader chose it. No column key can be `none`.
+ */
+const NO_HIDDEN_COLUMNS = 'none';
+
+/** One identity, so a caller that names no default columns does not re-parse the URL each render. */
+const NO_COLUMNS: string[] = [];
+
+function readHiddenColumns(raw: unknown, byDefault: string[]): string[] {
+  if (raw == null || raw === '') return byDefault;
+  if (raw === NO_HIDDEN_COLUMNS) return [];
+  return String(raw).split(',').filter(Boolean);
+}
+
+function writeHiddenColumns(hidden: string[], byDefault: string[]): string | null {
+  if (hidden.length > 0) return hidden.join(',');
+  return byDefault.length > 0 ? NO_HIDDEN_COLUMNS : null;
+}
+
 export interface GridUrlState {
   keywords: string;
   record: RecordType;
@@ -44,6 +65,8 @@ export interface GridDefaults {
   defaultSort?: string;
   defaultRecord?: RecordType;
   defaultPageSize?: number;
+  /** Columns a record type starts with switched off, until the URL says otherwise. */
+  defaultHiddenColumns?: string[];
 }
 
 function readFilterValue(raw: string): FilterValue {
@@ -83,7 +106,7 @@ export function parseGridParams(
         : (defaults.defaultSort ?? DEFAULT_SORT),
     currentPage: Number.isFinite(page) && page > 0 ? page : 1,
     pageSize: PAGE_SIZES.includes(size) ? size : (defaults.defaultPageSize ?? DEFAULT_PAGE_SIZE),
-    hiddenColumns: params['cols'] ? String(params['cols']).split(',').filter(Boolean) : [],
+    hiddenColumns: readHiddenColumns(params['cols'], defaults.defaultHiddenColumns ?? []),
     filters,
   };
 }
@@ -101,7 +124,7 @@ export function serializeGridParams(
     currentPage: state.currentPage > 1 ? state.currentPage : null,
     pageSize:
       state.pageSize === (defaults.defaultPageSize ?? DEFAULT_PAGE_SIZE) ? null : state.pageSize,
-    cols: state.hiddenColumns.length > 0 ? state.hiddenColumns.join(',') : null,
+    cols: writeHiddenColumns(state.hiddenColumns, defaults.defaultHiddenColumns ?? []),
   };
 
   for (const [id, value] of Object.entries(state.filters)) {
@@ -148,13 +171,20 @@ export function useGridUrlState(defaults: GridDefaults = {}): GridUrlApi {
     defaultSort = DEFAULT_SORT,
     defaultRecord = DEFAULT_RECORD,
     defaultPageSize = DEFAULT_PAGE_SIZE,
+    defaultHiddenColumns = NO_COLUMNS,
   } = defaults;
 
   // Depend on the values, not the options object: a caller passing an object literal would
   // otherwise re-parse the URL on every render.
   const state = useMemo(
-    () => parseGridParams(searchParams, { defaultSort, defaultRecord, defaultPageSize }),
-    [searchParams, defaultSort, defaultRecord, defaultPageSize],
+    () =>
+      parseGridParams(searchParams, {
+        defaultSort,
+        defaultRecord,
+        defaultPageSize,
+        defaultHiddenColumns,
+      }),
+    [searchParams, defaultSort, defaultRecord, defaultPageSize, defaultHiddenColumns],
   );
 
   const write = useCallback(
@@ -233,9 +263,9 @@ export function useGridUrlState(defaults: GridDefaults = {}): GridUrlApi {
 
   const setHiddenColumns = useCallback(
     (keys: string[]) => {
-      write({ ...current(), cols: keys.length > 0 ? keys.join(',') : null });
+      write({ ...current(), cols: writeHiddenColumns(keys, defaultHiddenColumns) });
     },
-    [current, write],
+    [current, defaultHiddenColumns, write],
   );
 
   const clearFilters = useCallback(() => {

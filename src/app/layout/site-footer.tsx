@@ -22,7 +22,7 @@ export function SiteFooter() {
   return (
     <footer className="app-footer" id="footer">
       <div className="app-footer--acknowledgement">
-        <div className="app-footer--acknowledgement-text">
+        <div className="app-footer--acknowledgement-text page-container">
           <p>
             The B.C. Public Service acknowledges the territories of First Nations around B.C. and is
             grateful to carry out our work on these lands. We acknowledge the rights, interests,
@@ -33,7 +33,7 @@ export function SiteFooter() {
         </div>
       </div>
       <div className="app-footer--container">
-        <div className="app-footer--container-content">
+        <div className="app-footer--container-content page-container">
           <div className="app-footer--logo-links">
             <div className="app-footer--logo">
               <img src="/assets/images/BCID_H_rgb_rev.svg" alt="" id="bcgov-logo-footer" />

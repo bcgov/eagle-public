@@ -142,3 +142,11 @@
 .display-grid .display-grid__card:hover {
   background: var(--theme-blue-10);
 }
+
+/* The list template stacks its parts and puts nothing beside them, so the measure caps above only
+   leave the right half of a 1440 row empty. Full row width here; cards and passage rows keep
+   theirs, as those sit next to a checkbox or run under a page width of their own. */
+.display-grid .display-grid__list--rows .display-grid__row-title,
+.display-grid .display-grid__list--rows .display-grid__row-body {
+  max-width: none;
+}

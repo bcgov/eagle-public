@@ -9,7 +9,6 @@ import {
   ActivityRow,
   attachmentsFilterDropped,
   attachmentsOf,
-  plainText,
   ATTACHMENTS_FILTER_ID,
 } from './activities';
 
@@ -138,22 +137,6 @@ describe('attachments filter', () => {
   });
 });
 
-describe('update body', () => {
-  it('reads the stored HTML as words', () => {
-    expect(plainText('<p>Comment period <b>opens</b>&nbsp;13 March.</p>')).toBe(
-      'Comment period opens 13 March.',
-    );
-  });
-
-  it('decodes the entities an editor leaves behind', () => {
-    expect(plainText('Fish &amp; wildlife &quot;values&quot;')).toBe('Fish & wildlife "values"');
-  });
-
-  it('reads a missing body as nothing', () => {
-    expect(plainText(undefined)).toBe('');
-  });
-});
-
 describe('update attachment', () => {
   it('names the file after the last segment of its URL', () => {
     expect(
@@ -208,5 +191,19 @@ describe('update meta line', () => {
     expect(container.querySelector('.display-grid__row-meta')?.textContent).toBe(
       '2026-02-18 · News · Cedar LNG',
     );
+  });
+
+  it('reads the stored HTML body as words, entities and all', () => {
+    const { container } = render(
+      createElement(
+        MemoryRouter,
+        null,
+        createElement(ActivityRow, {
+          row: { headline: 'Update', content: '<p>The EAO&rsquo;s decision</p>' },
+        }),
+      ),
+    );
+
+    expect(container.textContent).toContain('The EAO’s decision');
   });
 });

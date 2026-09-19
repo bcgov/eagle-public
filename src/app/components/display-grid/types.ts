@@ -22,6 +22,8 @@ export interface GridColumn<Row = unknown> {
   /** Drawn in the cell before the link, for a marker the record carries: a featured star. */
   badge?: (row: Row) => ReactNode;
   locked?: boolean;
+  /** Starts switched off. The column picker still lists it, so the reader can turn it on. */
+  defaultHidden?: boolean;
   date?: boolean;
   primaryDate?: boolean;
   render?: (row: Row) => ReactNode;
