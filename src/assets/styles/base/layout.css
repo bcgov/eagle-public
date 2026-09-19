@@ -1,0 +1,31 @@
+/* The site's content width, side gutter and reading measure, stated once. Every band on every page
+   draws its background full width and puts `.page-container` on the element inside it, so nothing
+   else in the app declares a content width or a side gutter. */
+
+:root {
+  --page-max-width: 1440px;
+  --page-gutter: var(--layout-padding-medium);
+  --page-measure: 78ch;
+}
+
+@media (width >= 860px) {
+  :root {
+    --page-gutter: var(--layout-padding-large);
+  }
+}
+
+/* Bootstrap's container family is folded in: the static pages, the hero banner and the comments
+   page mark their content up with it, so it has to land on the same edges. */
+.page-container,
+.container,
+.container-fluid,
+.container-sm,
+.container-md,
+.container-lg,
+.container-xl,
+.container-xxl {
+  width: 100%;
+  max-width: var(--page-max-width);
+  margin-inline: auto;
+  padding-inline: var(--page-gutter);
+}

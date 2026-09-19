@@ -4,7 +4,7 @@ import { fetchData, SearchParamObject } from 'app/api/search';
 import { LEGACY_FILTERS } from 'app/routes/legacy-search';
 import { capturedRequestUrl } from '../../../../test-utils';
 import { toWireFilters } from '../search-filters';
-import { projectsConfig, resolveSort, PROJECTS_FALLBACK_SORT, PROJECTS_SORT } from './projects';
+import { projectsConfig } from './projects';
 
 /** One value per filter the tab offers, as a reader who filled in every control would leave it. */
 const FILLED: Record<string, string> = {
@@ -55,9 +55,9 @@ beforeAll(async () => {
 });
 
 describe('projects record type', () => {
-  it('searches the Project dataset, newest first', () => {
+  it('searches the Project dataset, in name order', () => {
     expect(projectsConfig.dataset).toBe('Project');
-    expect(projectsConfig.defaultSort).toBe('-dateUpdated');
+    expect(projectsConfig.defaultSort).toBe('+name');
   });
 
   it('offers the column filters the projects index carries', () => {
@@ -164,22 +164,6 @@ describe('projects record type', () => {
     expect(proponent?.render?.({ proponent: { name: 'Cedar LNG Partners LP' } })).toBe(
       'Cedar LNG Partners LP',
     );
-  });
-});
-
-describe('resolveSort', () => {
-  it('sorts by last updated when the backend kept the field', () => {
-    expect(resolveSort([{ searchResultsTotal: 3, dropped: [] }])).toBe(PROJECTS_SORT);
-  });
-
-  it('falls back to name order when the backend dropped dateUpdated', () => {
-    expect(resolveSort([{ searchResultsTotal: 3, dropped: ['dateUpdated'] }])).toBe(
-      PROJECTS_FALLBACK_SORT,
-    );
-  });
-
-  it('sorts by last updated when there is no meta to read', () => {
-    expect(resolveSort()).toBe(PROJECTS_SORT);
   });
 });
 

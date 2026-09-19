@@ -355,7 +355,7 @@ export function DisplayGrid<Row>({
             >
               {caption}
             </p>
-            <ul className="display-grid__list">
+            <ul className="display-grid__list display-grid__list--rows">
               {rows.map((row, index) => (
                 <li className="display-grid__list-item" key={rowId ? rowId(row) : index}>
                   {RowComponent ? <RowComponent row={row} /> : null}

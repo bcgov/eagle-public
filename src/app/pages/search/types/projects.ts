@@ -5,14 +5,10 @@ import {
   toOptions,
   type OptionSource,
   type RecordTypeConfig,
-  type SearchMeta,
 } from './record-type';
 
-/** Sort the tab asks for. The index gained `dateUpdated` in Phase 0 of the search work. */
-export const PROJECTS_SORT = '-dateUpdated';
-
-/** Sort used instead when the backend says it dropped `dateUpdated`, so rows stay in an order. */
-export const PROJECTS_FALLBACK_SORT = '+name';
+/** What the tab lists by until the URL names a sort: project name, A to Z. */
+export const PROJECTS_SORT = '+name';
 
 /** The `List` item `type` each list-backed project filter draws its options from. */
 const LIST_TYPES = {
@@ -20,15 +16,6 @@ const LIST_TYPES = {
   eacDecision: 'eaDecisions',
   CEAAInvolvement: 'ceaaInvolvements',
 };
-
-/**
- * The sort to send. demi-search reports a field it could not honour under `meta[0].dropped`, so a
- * response naming `dateUpdated` means the index has no such field and the date sort would be
- * silently ignored: fall back to name order rather than show an arbitrary one.
- */
-export function resolveSort(meta?: SearchMeta[] | null): string {
-  return meta?.[0]?.dropped?.includes('dateUpdated') ? PROJECTS_FALLBACK_SORT : PROJECTS_SORT;
-}
 
 /** Proponent arrives populated on some reads and as a bare name on others. */
 export function proponentName(row: Record<string, unknown>): string {
@@ -66,6 +53,7 @@ const COLUMNS: GridColumn<Record<string, unknown>>[] = [
     filter: 'year',
     date: true,
     primaryDate: true,
+    defaultHidden: true,
     width: '14%',
   },
   {

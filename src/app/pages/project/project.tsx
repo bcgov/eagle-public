@@ -57,13 +57,13 @@ export function ProjectPage() {
       <ProjectMasthead project={project ?? null} projId={projId} loading={projectLoading} />
 
       <div className="project-page__panel">
-        <div className="project-page__container">
+        <div className="page-container">
           <ProjectPanel project={project ?? null} lists={lists} loading={projectLoading} />
         </div>
       </div>
 
       <div className="project-page__tabs project-tabs">
-        <div className="project-page__container">
+        <div className="page-container">
           <TabBar
             projId={projId}
             tabs={tabs.filter((tab) => tab.show)}
@@ -73,7 +73,7 @@ export function ProjectPage() {
         </div>
       </div>
 
-      <main className="project-page__container tab-content">
+      <main className="page-container tab-content">
         <Outlet context={{ project: project ?? null, projId, lists, projectLoading }} />
       </main>
     </div>

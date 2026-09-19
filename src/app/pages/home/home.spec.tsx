@@ -15,14 +15,19 @@ const follows = (first: Element, second: Element) =>
 describe('home page shell', () => {
   afterEach(() => vi.unstubAllGlobals());
 
-  it('opens on one h1, inside the labelled statement band with the search row', () => {
+  it('opens on one h1, inside the shared band with the search row', () => {
     renderHome();
 
-    const band = screen.getByRole('region', { name: 'Environmental Assessments' });
-    expect(screen.getAllByRole('heading', { level: 1 })).toEqual([
-      within(band).getByRole('heading', { level: 1, name: 'Environmental Assessments' }),
-    ]);
+    const title = screen.getByRole('heading', { level: 1, name: 'Environmental Assessments' });
+    expect(screen.getAllByRole('heading', { level: 1 })).toEqual([title]);
+    const band = title.closest('section') as HTMLElement;
     expect(within(band).getByRole('search')).toBeInTheDocument();
+  });
+
+  it('carries no breadcrumb: the home page is the root of the trail', () => {
+    renderHome();
+
+    expect(screen.queryByRole('navigation', { name: 'Breadcrumb' })).not.toBeInTheDocument();
   });
 
   it('reads feed, then the rail (comment periods, uploads), then the Browse strip', () => {
@@ -41,6 +46,16 @@ describe('home page shell', () => {
     renderHome();
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('drops the intro paragraph: the band opens on the title and the search row', () => {
+    renderHome();
+
+    const title = screen.getByRole('heading', { level: 1, name: 'Environmental Assessments' });
+    const band = title.closest('section') as HTMLElement;
+    expect(within(band).queryByText(/provides opportunities for Indigenous Nations/)).toBeNull();
+    // The search row is what follows the title, with nothing of the page's own prose in between.
+    expect(follows(title, within(band).getByRole('search'))).toBe(true);
   });
 
   it('no longer carries the hero actions, the About cards or the old activity table', () => {

@@ -224,6 +224,35 @@ test('a document download presigns through demi-api and keeps the eagle-api href
   test.info().annotations.push({ type: 'download HEAD', description: String(head.status()) });
 });
 
+test('the subscribe form opens rightward from the band trigger', async ({ page, request }) => {
+  const [project] = await twoProjects(request);
+  await page.goto(`/p/${project._id}/overview`);
+  await ready(page);
+
+  // The overview tab offers a second sign-up further down the page; this is the band's own.
+  const masthead = page.locator('.subscribe-popover--masthead');
+  await masthead.getByRole('button', { name: 'Subscribe to updates' }).click();
+
+  await expect(masthead.locator('.subscribe-popover__panel')).toBeVisible();
+  const boxes = await page.evaluate(() => {
+    const button = document.querySelector(
+      '.subscribe-popover--masthead .subscribe-popover__trigger',
+    ) as HTMLElement;
+    const sheet = document.querySelector(
+      '.subscribe-popover--masthead .subscribe-popover__panel',
+    ) as HTMLElement;
+    return {
+      trigger: button.getBoundingClientRect().toJSON(),
+      panel: sheet.getBoundingClientRect().toJSON(),
+    };
+  });
+
+  // The trigger sits at the content's left edge, so a panel hanging the other way would spill
+  // into the page gutter.
+  expect(boxes.panel.left).toBeGreaterThanOrEqual(boxes.trigger.left - 1);
+  expect(boxes.panel.right).toBeGreaterThan(boxes.trigger.right);
+});
+
 test('@data project search API is scoped to the project', async ({ page, request }) => {
   const [project] = await twoProjects(request);
   const req = page.waitForRequest(

@@ -55,9 +55,15 @@
 
 .subscribe-popover__trigger {
   flex: none;
-  margin-left: auto;
   white-space: nowrap;
   anchor-name: var(--subscribe-anchor);
+}
+
+/* Band only, keyed on the invite line the band alone renders: the button sits against the band's
+   right edge. The other two surfaces drop the box with `display: contents`, where the trigger is
+   laid out by the page's own group and an auto margin would shunt that whole group sideways. */
+.subscribe-popover__invite ~ .subscribe-popover__trigger {
+  margin-left: auto;
 }
 
 /* Stacked: the sentence keeps the icon, the button spans the band. */
@@ -68,6 +74,9 @@
 
   .subscribe-popover__trigger {
     width: 100%;
+  }
+
+  .subscribe-popover__invite ~ .subscribe-popover__trigger {
     margin-left: 0;
   }
 }
@@ -98,6 +107,16 @@
   font-family: inherit;
   text-align: start;
   z-index: 30;
+}
+
+/* The banner's trigger sits at the content's left edge, under the title, so its panel opens the
+   other way: hanging left would put it out in the page's gutter. Held above the sheet width below,
+   where this selector would otherwise outweigh the sheet's own `position-area`. */
+@media (width > 30rem) {
+  .subscribe-popover--masthead .subscribe-popover__panel {
+    position-area: bottom span-right;
+    position-try-fallbacks: flip-inline, flip-block;
+  }
 }
 
 .subscribe-popover__panel::backdrop {

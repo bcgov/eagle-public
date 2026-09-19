@@ -332,7 +332,9 @@ test.describe('meta.dropped', () => {
     ).toEqual(['milestone', 'datePosted']);
   });
 
-  test('projects carry dateUpdated, so the page keeps its date sort', () => {
+  test('reports nothing dropped for a field the dataset does carry', () => {
+    // Projects list in name order, but Last updated is a column the reader can switch on and
+    // sort by, so the fixture has to honour that sort rather than report it away.
     expect(answerSearch(query('dataset=Project&sortBy=-dateUpdated')).meta[0]?.dropped).toEqual([]);
   });
 });

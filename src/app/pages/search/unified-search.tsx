@@ -36,6 +36,7 @@ import {
 import { TYPEAHEAD_DEBOUNCE_MS, typeaheadKeywords } from 'app/components/filters/typeahead';
 import { SubscribePopover } from 'app/components/subscribe-popover';
 import { contentSearchEnabled, getNotifyApi } from 'app/config/config';
+import { PageMasthead } from 'app/layout/page-masthead';
 import {
   CAP_MESSAGE,
   clearSelection,
@@ -53,7 +54,6 @@ import { documentDownloadUrl } from 'app/utils/utils';
 import { toWireFilters, yearOptions } from './search-filters';
 import { recordConfig, type RecordTypeConfig, type SearchMeta } from './types';
 import { ATTACHMENTS_FILTER_ID, attachmentsFilterDropped } from './types/activities';
-import { PROJECTS_FALLBACK_SORT, PROJECTS_SORT, resolveSort } from './types/projects';
 import { useSettled } from './use-settled';
 import { useTypeCounts } from './use-type-counts';
 import './unified-search.css';
@@ -351,10 +351,6 @@ export function UnifiedSearch() {
   const { data: lists = [] } = useQuery(listsQueryOptions());
   const { data: orgs = [] } = useQuery(proponentsQueryOptions());
 
-  /* The projects tab sorts by last updated where the index carries it, and says so only after a
-     response has shown whether it does. */
-  const [projectsSort, setProjectsSort] = useState(PROJECTS_SORT);
-
   const [panelOpen, setPanelOpen] = useState(false);
 
   /* Search help and the tour it starts. Both hand focus back to the link that opened them. */
@@ -369,7 +365,13 @@ export function UnifiedSearch() {
   // The record decides the default sort, which the grid state needs before it can be read.
   const [searchParams] = useSearchParams();
   const config: RecordTypeConfig = recordConfig(parseGridParams(searchParams).record);
-  const defaultSort = config.id === 'projects' ? projectsSort : config.defaultSort;
+
+  /* Columns the record type starts with switched off. The picker still lists them, and a `cols`
+     value on the URL wins over this. */
+  const defaultHiddenColumns = useMemo(
+    () => config.columns.filter((column) => column.defaultHidden).map((column) => column.key),
+    [config],
+  );
 
   const {
     state,
@@ -382,7 +384,7 @@ export function UnifiedSearch() {
     setPageSize,
     setHiddenColumns,
     clearAll,
-  } = useGridUrlState({ defaultSort });
+  } = useGridUrlState({ defaultSort: config.defaultSort, defaultHiddenColumns });
 
   const {
     record,
@@ -555,19 +557,8 @@ export function UnifiedSearch() {
         : undefined,
   });
 
-  /* One way only. The answer to "did you drop dateUpdated" depends on the sort that was asked
-     for, so moving back would re-ask with the field the index just refused, forever. */
-  if (
-    record === 'projects' &&
-    projectsSort !== PROJECTS_FALLBACK_SORT &&
-    data?.meta &&
-    resolveSort(data.meta) === PROJECTS_FALLBACK_SORT
-  ) {
-    setProjectsSort(PROJECTS_FALLBACK_SORT);
-  }
-
-  /* Same one-way rule as the projects sort: the answer only names `documentUrl` while the query
-     does, so moving back would re-ask with the field the index just refused. */
+  /* One way only: the answer only names `documentUrl` while the query does, so moving back would
+     re-ask with the field the index just refused, forever. */
   if (record === 'activities' && !attachmentsDropped && attachmentsFilterDropped(data?.meta)) {
     setAttachmentsDropped(true);
   }
@@ -848,187 +839,179 @@ export function UnifiedSearch() {
 
   return (
     <div className="unified-search">
-      <nav aria-label="Breadcrumb" className="unified-search__breadcrumb">
-        <ol>
-          <li>
-            <Link to="/">Home</Link>
-          </li>
-          <li aria-hidden="true">/</li>
-          <li aria-current="page">Search</li>
-        </ol>
-      </nav>
-
-      <h1 className="unified-search__title">Search</h1>
-
-      <div className="unified-search__field" data-tour="search">
-        <i className="material-icons unified-search__field-icon" aria-hidden="true">
-          search
-        </i>
-        <label className="unified-search__field-label">
-          <span className="unified-search__visually-hidden">
-            Search projects, documents and updates
-          </span>
-          <input
-            type="search"
-            className="unified-search__input"
-            placeholder="Search projects, documents and updates"
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-          />
-        </label>
-      </div>
-
-      <div className="unified-search__types-row">
-        <div
-          className="unified-search__types"
-          data-tour="types"
-          role="group"
-          aria-label="Record type"
-        >
-          {RECORD_TYPES.map((id) => {
-            const on = id === record;
-            const count = id === 'documents' && insideTotal !== null ? insideTotal : counts?.[id];
-            return (
-              <button
-                key={id}
-                type="button"
-                className={`unified-search__pill${on ? ' unified-search__pill--on' : ''}`}
-                aria-pressed={on}
-                onClick={() => switchRecord(id)}
-              >
-                {recordLabel(id)}
-                {/* An unknown total renders no badge: a zero would claim the type has no matches. */}
-                {typeof count === 'number' && (
-                  <span className="unified-search__pill-count">
-                    {count.toLocaleString('en-CA')}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-        {/* The long-form page is still the destination for a new tab or a reader with no
-            JavaScript; a plain press gets the summary in a dialog without leaving the results. */}
-        <Link
-          ref={helpLink}
-          className="unified-search__help"
-          to="/search-help"
-          aria-haspopup="dialog"
-          aria-expanded={helpOpen}
-          onClick={(event) => {
-            if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
-            event.preventDefault();
-            setHelpOpen(true);
-          }}
-        >
-          <i className="material-icons unified-search__help-icon" aria-hidden="true">
-            help_outline
+      <PageMasthead title="Search" breadcrumbs={[{ label: 'Home', to: '/' }, { label: 'Search' }]}>
+        <div className="unified-search__field" data-tour="search">
+          <i className="material-icons unified-search__field-icon" aria-hidden="true">
+            search
           </i>
-          <span className="link-label">Search help</span>
-        </Link>
-      </div>
+          <label className="unified-search__field-label">
+            <span className="unified-search__visually-hidden">
+              Search projects, documents and updates
+            </span>
+            <input
+              type="search"
+              className="unified-search__input"
+              placeholder="Search projects, documents and updates"
+              value={draft}
+              onChange={(event) => setDraft(event.target.value)}
+            />
+          </label>
+        </div>
 
-      <SearchHelpDialog
-        open={helpOpen}
-        onClose={() => setHelpOpen(false)}
-        onStartTour={() => {
-          setHelpOpen(false);
-          setTourOpen(true);
-        }}
-        restoreFocusTo={helpLink}
-      />
-      <GuidedTour open={tourOpen} onEnd={() => setTourOpen(false)} restoreFocusTo={helpLink} />
+        <div className="unified-search__types-row">
+          <div
+            className="unified-search__types"
+            data-tour="types"
+            role="group"
+            aria-label="Record type"
+          >
+            {RECORD_TYPES.map((id) => {
+              const on = id === record;
+              const count = id === 'documents' && insideTotal !== null ? insideTotal : counts?.[id];
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  className={`unified-search__pill${on ? ' unified-search__pill--on' : ''}`}
+                  aria-pressed={on}
+                  onClick={() => switchRecord(id)}
+                >
+                  {recordLabel(id)}
+                  {/* An unknown total renders no badge: a zero would claim the type has no matches. */}
+                  {typeof count === 'number' && (
+                    <span className="unified-search__pill-count">
+                      {count.toLocaleString('en-CA')}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+          {/* The long-form page is still the destination for a new tab or a reader with no
+            JavaScript; a plain press gets the summary in a dialog without leaving the results. */}
+          <Link
+            ref={helpLink}
+            className="unified-search__help"
+            to="/search-help"
+            aria-haspopup="dialog"
+            aria-expanded={helpOpen}
+            onClick={(event) => {
+              if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
+              event.preventDefault();
+              setHelpOpen(true);
+            }}
+          >
+            <i className="material-icons unified-search__help-icon" aria-hidden="true">
+              help_outline
+            </i>
+            <span className="link-label">Search help</span>
+          </Link>
+        </div>
+      </PageMasthead>
 
-      {/* The site-wide sign-up the News page used to carry. Updates are what the subscription
+      <div className="unified-search__body page-container">
+        <SearchHelpDialog
+          open={helpOpen}
+          onClose={() => setHelpOpen(false)}
+          onStartTour={() => {
+            setHelpOpen(false);
+            setTourOpen(true);
+          }}
+          restoreFocusTo={helpLink}
+        />
+        <GuidedTour open={tourOpen} onEnd={() => setTourOpen(false)} restoreFocusTo={helpLink} />
+
+        {/* The site-wide sign-up the News page used to carry. Updates are what the subscription
           sends, so it rides that tab only; the guard keeps the band's spacing out of the page
           when NOTIFY_API is unset. */}
-      {record === 'activities' && !!getNotifyApi() && (
-        <div className="unified-search__subscribe">
-          <SubscribePopover serviceName="eao:updates" variant="all" />
-        </div>
-      )}
-
-      <DisplayGrid<Row>
-        caption={`${recordLabel(record)} matching this search`}
-        columns={gridColumns}
-        rows={rows}
-        template={template}
-        rowComponent={config.rowComponent}
-        body={insideBody}
-        sortOptions={inside ? INSIDE_SORT_OPTIONS : undefined}
-        footer={!insidePrompt}
-        headerless={config.headerless}
-        loading={isFetching && !insidePrompt}
-        emptyMessage={emptyState()}
-        selectable={selectable}
-        sort={sortStateOf(sortBy)}
-        filters={filters}
-        onSort={(key, dir) => setSort(key, dir ?? '+')}
-        narrowExtras={narrowExtras}
-        onFilterChange={(id, value) => setFilter(id, value)}
-        page={currentPage}
-        pageSize={pageSize}
-        total={total}
-        onPageChange={setPage}
-        onPageSizeChange={setPageSize}
-        rowId={rowId}
-        rowLabel={rowLabel}
-        selectedIds={selectedIds}
-        onToggleRow={toggleRow}
-        onToggleAllOnPage={toggleAllOnPage}
-        toolbar={
-          <GridToolbar<Row>
-            noun={noun}
-            page={currentPage}
-            pageSize={pageSize}
-            total={total}
-            loading={awaitingFirstAnswer}
-            /* A keyword or a filter is in force, so the count is of what matched rather than of
-               everything the record type holds: "1–8 of 8 documents matching". */
-            narrowed={!!searchTerm || filterCount > 0}
-            /* The prompt has asked the index nothing, so the bar states what is searchable. An
-               unknown documents total says nothing rather than claiming a number. */
-            countText={
-              insidePrompt && typeof counts?.documents === 'number'
-                ? `${counts.documents.toLocaleString('en-CA')} documents indexed`
-                : undefined
-            }
-            scope={scopeControl}
-            columns={pickableColumns}
-            hiddenColumns={hiddenColumns}
-            onToggleColumn={(key) =>
-              setHiddenColumns(
-                hiddenColumns.includes(key)
-                  ? hiddenColumns.filter((hidden) => hidden !== key)
-                  : [...hiddenColumns, key],
-              )
-            }
-            filterCount={advancedCount}
-            panelOpen={panelOpen}
-            onTogglePanel={config ? () => setPanelOpen((open) => !open) : undefined}
-            selectedCount={selectable ? selection.size : 0}
-            onClearSelection={() => clearSelection(TABLE_ID)}
-            onDownload={() => void startDownload()}
-            downloadDisabled={downloadInProgress}
-            downloadTitle={
-              downloadInProgress
-                ? `${MAX_JOBS_IN_FLIGHT} downloads are already in progress. Wait for one to finish.`
-                : undefined
-            }
-          />
-        }
-        chips={<ChipRow chips={chips} onRemove={removeChip} onClearAll={clearEverything} />}
-        panel={(columnFilters) => (
-          <AdvancedFilters
-            /* The record's own fields first, then whichever column filters the layout has no row
-               for. The grid decides that: with columns on screen it hands back none. */
-            fields={[...advancedFields, ...columnFilters]}
-            values={filters}
-            onChange={(id, value) => setFilter(id, value)}
-            open={panelOpen}
-          />
+        {record === 'activities' && !!getNotifyApi() && (
+          <div className="unified-search__subscribe">
+            <SubscribePopover serviceName="eao:updates" variant="all" />
+          </div>
         )}
-      />
+
+        <DisplayGrid<Row>
+          caption={`${recordLabel(record)} matching this search`}
+          columns={gridColumns}
+          rows={rows}
+          template={template}
+          rowComponent={config.rowComponent}
+          body={insideBody}
+          sortOptions={inside ? INSIDE_SORT_OPTIONS : undefined}
+          footer={!insidePrompt}
+          headerless={config.headerless}
+          loading={isFetching && !insidePrompt}
+          emptyMessage={emptyState()}
+          selectable={selectable}
+          sort={sortStateOf(sortBy)}
+          filters={filters}
+          onSort={(key, dir) => setSort(key, dir ?? '+')}
+          narrowExtras={narrowExtras}
+          onFilterChange={(id, value) => setFilter(id, value)}
+          page={currentPage}
+          pageSize={pageSize}
+          total={total}
+          onPageChange={setPage}
+          onPageSizeChange={setPageSize}
+          rowId={rowId}
+          rowLabel={rowLabel}
+          selectedIds={selectedIds}
+          onToggleRow={toggleRow}
+          onToggleAllOnPage={toggleAllOnPage}
+          toolbar={
+            <GridToolbar<Row>
+              noun={noun}
+              page={currentPage}
+              pageSize={pageSize}
+              total={total}
+              loading={awaitingFirstAnswer}
+              /* A keyword or a filter is in force, so the count is of what matched rather than of
+               everything the record type holds: "1–8 of 8 documents matching". */
+              narrowed={!!searchTerm || filterCount > 0}
+              /* The prompt has asked the index nothing, so the bar states what is searchable. An
+               unknown documents total says nothing rather than claiming a number. */
+              countText={
+                insidePrompt && typeof counts?.documents === 'number'
+                  ? `${counts.documents.toLocaleString('en-CA')} documents indexed`
+                  : undefined
+              }
+              scope={scopeControl}
+              columns={pickableColumns}
+              hiddenColumns={hiddenColumns}
+              onToggleColumn={(key) =>
+                setHiddenColumns(
+                  hiddenColumns.includes(key)
+                    ? hiddenColumns.filter((hidden) => hidden !== key)
+                    : [...hiddenColumns, key],
+                )
+              }
+              filterCount={advancedCount}
+              panelOpen={panelOpen}
+              onTogglePanel={config ? () => setPanelOpen((open) => !open) : undefined}
+              selectedCount={selectable ? selection.size : 0}
+              onClearSelection={() => clearSelection(TABLE_ID)}
+              onDownload={() => void startDownload()}
+              downloadDisabled={downloadInProgress}
+              downloadTitle={
+                downloadInProgress
+                  ? `${MAX_JOBS_IN_FLIGHT} downloads are already in progress. Wait for one to finish.`
+                  : undefined
+              }
+            />
+          }
+          chips={<ChipRow chips={chips} onRemove={removeChip} onClearAll={clearEverything} />}
+          panel={(columnFilters) => (
+            <AdvancedFilters
+              /* The record's own fields first, then whichever column filters the layout has no row
+               for. The grid decides that: with columns on screen it hands back none. */
+              fields={[...advancedFields, ...columnFilters]}
+              values={filters}
+              onChange={(id, value) => setFilter(id, value)}
+              open={panelOpen}
+            />
+          )}
+        />
+      </div>
     </div>
   );
 }

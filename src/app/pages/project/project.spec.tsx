@@ -328,9 +328,9 @@ describe('project shell', () => {
       await screen.findByRole('heading', { level: 1, name: 'Cedar Quarry' }),
     ).toBeInTheDocument();
     const crumbs = screen.getByRole('navigation', { name: 'Breadcrumb' });
-    expect(within(crumbs).getByRole('link', { name: 'Projects' })).toHaveAttribute(
+    expect(within(crumbs).getByRole('link', { name: 'Search' })).toHaveAttribute(
       'href',
-      '/projects',
+      '/search?record=projects',
     );
     expect(within(crumbs).getByText('Cedar Quarry')).toHaveAttribute('aria-current', 'page');
   });
