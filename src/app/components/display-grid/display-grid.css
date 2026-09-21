@@ -474,11 +474,8 @@
   background: var(--theme-gray-white);
 }
 
-/* No zebra: a tint carries meaning here (hover, selected), so it cannot also be decoration. */
-.display-grid__row:hover {
-  background: var(--theme-blue-10);
-}
-
+/* No zebra and no hover tint: a tint means selected here. No row opens anything as a whole (only
+   its link does), so hover would promise a click the row does not take. */
 .display-grid__row--selected {
   background: var(--theme-blue-10);
 }

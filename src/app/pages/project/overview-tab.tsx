@@ -2,9 +2,7 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import { useProjectEaCertificate } from 'app/api/project-phases';
 import { track } from 'app/analytics/analytics';
-import { DetailsPanel, Fact } from 'app/components/details-panel';
 import { EngagementLink, NewTabHint } from 'app/components/engagement-link';
-import { SideCard } from 'app/components/side-card';
 import { Skeleton } from 'app/components/skeleton/skeleton';
 import { SubscribePopover } from 'app/components/subscribe-popover';
 import { useTable } from 'app/components/table/use-table';
@@ -17,7 +15,6 @@ import { legislationLink, longDate, regulatorLink } from 'app/utils/utils';
 import { FeaturedDocuments } from './featured-documents';
 import { Pins } from './pins';
 import { useProjectContext } from './project-context';
-import 'app/components/record-layout.css';
 import './overview-tab.css';
 
 const OPERATIONS_EMAIL = 'EAO.operations@gov.bc.ca';
@@ -35,6 +32,59 @@ function ExternalLink({ href, children }: { href: string; children: ReactNode })
       <span className="link-label">{children}</span>
       <NewTabHint />
     </a>
+  );
+}
+
+/** A card in the aside: a header with the title and an optional link, then rows. */
+function SideCard({
+  title,
+  titleId,
+  action,
+  children,
+}: {
+  title: string;
+  titleId: string;
+  action?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <section className="side-card" aria-labelledby={titleId}>
+      <div className="side-card__header">
+        <h2 id={titleId}>{title}</h2>
+        {action}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+/** The card the project's details sit in: heading, a line or two, then a `dl` of `Fact`s. */
+function DetailsPanel({
+  title,
+  titleId,
+  children,
+}: {
+  title: ReactNode;
+  titleId: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="details-panel" aria-labelledby={titleId}>
+      <h2 id={titleId} className="details-panel__title">
+        {title}
+      </h2>
+      {children}
+    </section>
+  );
+}
+
+/** One label and value. An empty value reads "-", so a missing field still holds its cell. */
+function Fact({ label, children }: { label: string; children?: ReactNode }) {
+  return (
+    <div className="details-panel__fact">
+      <dt>{label}</dt>
+      <dd>{children || '-'}</dd>
+    </div>
   );
 }
 
