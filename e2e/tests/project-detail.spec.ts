@@ -149,7 +149,7 @@ test('application tab renders, with an empty-state when the project has no appli
 
   const rows = await page.locator(ROWS).count();
   if (rows === 0) {
-    await expect(page.locator('.tab-content')).toContainText(
+    await expect(page.locator('.project-page__content')).toContainText(
       'There are no application documents associated with this project.',
     );
   }
@@ -161,7 +161,7 @@ test('engagement tab lists the project comment periods', async ({ page, request 
   await ready(page);
 
   await expect(page.getByRole('heading', { level: 1, name: project.name })).toBeVisible();
-  const content = page.locator('.tab-content');
+  const content = page.locator('.project-page__content');
   await expect(content).toContainText(/CLOSED|OPEN|No comment periods|Closed|Open/i);
 });
 

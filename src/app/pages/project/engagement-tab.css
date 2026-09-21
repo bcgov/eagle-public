@@ -52,34 +52,6 @@
   color: var(--typography-color-secondary);
 }
 
-.engagement-tab__pill {
-  padding: var(--layout-padding-hair) var(--layout-padding-small);
-  border: var(--layout-border-width-small) solid transparent;
-  border-radius: var(--layout-border-radius-circular);
-  font: var(--typography-bold-label);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  white-space: nowrap;
-  color: var(--typography-color-primary);
-}
-
-.engagement-tab__pill--open {
-  background: var(--support-surface-color-success);
-  border-color: var(--support-border-color-success);
-  color: var(--support-border-color-success);
-}
-
-.engagement-tab__pill--closed {
-  background: var(--theme-gray-20);
-  border-color: var(--theme-gray-40);
-  color: var(--typography-color-secondary);
-}
-
-.engagement-tab__pill--pending {
-  background: var(--support-surface-color-warning);
-  border-color: var(--support-border-color-warning);
-}
-
 .engagement-tab__card-title {
   margin: 0 0 var(--layout-margin-hair);
   font: var(--typography-bold-h5);

@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { openDocumentDownload } from 'app/utils/utils';
 import { loadConfig } from 'app/config/config';
+import { queryClient } from 'app/api/query-client';
 import { renderAt } from '../../../test-utils';
 import { Comments } from './comments';
 
@@ -44,8 +45,10 @@ const COMMENTS = [
     documents: ['commentDoc1'],
   },
   {
-    // An anonymous comment carries no author field at all rather than a null one.
+    // An anonymous comment carries no author field at all rather than a null one, but eagle-api
+    // keeps its location.
     _id: 'c2',
+    location: 'Nanaimo',
     comment: 'Anonymous comment',
     dateAdded: '2026-08-02T00:00:00.000Z',
     documents: [],
@@ -63,6 +66,8 @@ interface Sent {
 
 let sent: Sent[];
 let commentCount: number;
+let period: typeof PERIOD;
+let demiProject: Record<string, unknown>;
 
 function json(body: unknown, headers: Record<string, string> = {}): Response {
   return new Response(JSON.stringify(body), {
@@ -79,8 +84,8 @@ function stubFetch() {
       sent.push({ url, init });
 
       if (url.includes('dataset=CommentPeriod'))
-        return json([{ searchResults: [PERIOD], meta: [{ searchResultsTotal: 1 }] }]);
-      if (url.startsWith('/demi-projects/proj1')) return json(DEMI_PROJECT);
+        return json([{ searchResults: [period], meta: [{ searchResultsTotal: 1 }] }]);
+      if (url.startsWith('/demi-projects/proj1')) return json(demiProject);
       if (url.startsWith('/demi-search/search?dataset=ProjectNotification'))
         return json([{ searchResults: [{ _id: 'pn1', name: 'Notified Project' }] }]);
       if (url.startsWith(COMMENT_LIST_PREFIX)) {
@@ -129,6 +134,13 @@ describe('comments', () => {
   beforeEach(async () => {
     sent = [];
     commentCount = 2;
+    period = PERIOD;
+    demiProject = DEMI_PROJECT;
+    // The project read goes through the app-wide cache, which would otherwise carry one test's
+    // project into the next.
+    queryClient.clear();
+    // jsdom has no scrollIntoView; the grid calls it on a page change.
+    Element.prototype.scrollIntoView = vi.fn();
     window.__env = { logLevel: 4, DEMI_PROJECTS_PATH: '/demi-projects' };
     await loadConfig();
     vi.mocked(openDocumentDownload).mockClear();
@@ -140,41 +152,173 @@ describe('comments', () => {
     vi.unstubAllGlobals();
   });
 
-  it('renders the comment period header, instructions and project details', async () => {
+  /** The blue band, once the project name is in its h1. */
+  async function findBanner(name = 'Site C'): Promise<HTMLElement> {
+    const heading = await screen.findByRole('heading', { level: 1, name });
+    const band = heading.closest('.page-masthead.comment-banner');
+    expect(band, 'the title is not in the comment banner').not.toBeNull();
+    return band as HTMLElement;
+  }
+
+  it('holds the period, its instructions and the project facts in the banner under the title', async () => {
     renderComments();
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'Site C' })).toBeInTheDocument();
-    expect(
-      screen.getByRole('heading', { name: 'Public Comment Period is Now Open' }),
-    ).toBeInTheDocument();
-    expect(document.querySelector('#instructions')?.innerHTML).toBe(
+    const band = await findBanner();
+
+    const [status, dates] = within(band).getAllByRole('heading', { level: 2 });
+    expect(status).toHaveTextContent('Public Comment Period is Now Open');
+    expect(dates.textContent).toMatch(
+      /^\w{3} \d{1,2}, \d{4} - \w+ \d{2} @ \d{2}:\d{2} [AP]M P[DS]T$/,
+    );
+    expect(band.querySelector('#instructions')?.innerHTML).toBe(
       '<p id="instruction-body">Read the guidance</p>',
     );
-    expect(screen.getByText('Additional text here')).toBeInTheDocument();
-    expect(screen.getByText('Information label here')).toBeInTheDocument();
-    expect(screen.getByText('Certificate Issued')).toBeInTheDocument();
-    expect(screen.getByText('BC Hydro')).toBeInTheDocument();
-    expect(screen.getByText('Hydroelectric')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Back to Project Details' })).toBeInTheDocument();
+    expect(within(band).getByText('Additional text here')).toBeInTheDocument();
+    expect(within(band).getByText('Information label here')).toBeInTheDocument();
+
+    const fact = (term: string) =>
+      within(band).getByText(term, { selector: 'dt' }).nextElementSibling?.textContent;
+    expect(fact('Proponent')).toBe('BC Hydro');
+    expect(fact('Type')).toBe('Energy-Electricity');
+    expect(fact('Sub-type')).toBe('Hydroelectric');
   });
 
-  it('lists the related documents and open houses', async () => {
+  it.each([
+    ['Certificate Issued', 'success'],
+    ['Certificate Refused', 'danger'],
+    ['Assessment Terminated', 'danger'],
+    ['Exemption Order', 'info'],
+  ])('shows the "%s" decision in the banner as a read-only %s pill', async (decision, tone) => {
+    demiProject = { ...DEMI_PROJECT, eacDecision: { name: decision } };
     renderComments();
 
-    expect(await screen.findByText('Related report.pdf')).toBeInTheDocument();
-    expect(screen.getByText('Related Documents')).toBeInTheDocument();
-    expect(screen.getByText('Open Houses')).toBeInTheDocument();
-    expect(screen.getByText('Community hall')).toBeInTheDocument();
+    const pill = within(await findBanner()).getByText(decision);
+    expect(pill).toHaveClass('status-pill', `status-pill--${tone}`);
+    expect(pill.closest('button, a')).toBeNull();
   });
 
-  it('renders comments through the table engine, resolving attachments in one batch', async () => {
+  it('leaves the decision pill out when the project has none', async () => {
+    demiProject = { ...DEMI_PROJECT, eacDecision: undefined };
+    renderComments();
+
+    const band = await findBanner();
+    expect(within(band).getByText('Proponent', { selector: 'dt' })).toBeInTheDocument();
+    expect(band.querySelector('.status-pill')).toBeNull();
+  });
+
+  it('leaves the main landmark to the app shell', async () => {
+    renderComments();
+
+    await findBanner();
+    expect(screen.queryByRole('main')).not.toBeInTheDocument();
+  });
+
+  it('lists the related documents and open houses in the banner, and downloads a document', async () => {
+    renderComments();
+
+    const band = await findBanner();
+    const docs = await within(band).findByRole('region', { name: 'Related Documents' });
+    await userEvent.click(within(docs).getByRole('button', { name: /Related report.pdf/ }));
+    expect(openDocumentDownload).toHaveBeenCalledWith(
+      expect.objectContaining({ _id: 'relatedDoc1' }),
+    );
+
+    const openHouses = within(band).getByRole('region', { name: 'Open Houses' });
+    expect(within(openHouses).getByText('Community hall')).toBeInTheDocument();
+  });
+
+  it('leaves out the document and open house cards when the period has neither', async () => {
+    period = { ...PERIOD, relatedDocuments: [], openHouses: [] };
+    renderComments();
+
+    await findBanner();
+    await screen.findByText('First comment');
+    expect(screen.queryByRole('region', { name: 'Related Documents' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Open Houses' })).not.toBeInTheDocument();
+  });
+
+  it('ends the banner with Back in the on-dark button style', async () => {
+    renderComments();
+
+    const band = await findBanner();
+    expect(within(band).getByRole('button', { name: 'Back to Project Details' })).toHaveClass(
+      'btn-on-dark',
+    );
+    expect(band).not.toHaveAttribute('aria-busy');
+  });
+
+  it.each([
+    [
+      'Public Comment Period is Now Closed',
+      '2017-04-05T19:00:00.000Z',
+      '2017-05-04T16:00:00.000Z',
+      'Apr 5, 2017 - May 04 @ 09:00 AM PDT',
+    ],
+    [
+      'Public Comment Period is Upcoming',
+      new Date(Date.now() + DAY).toISOString(),
+      new Date(Date.now() + 30 * DAY).toISOString(),
+      null,
+    ],
+  ])('states "%s" and the date range under the title', async (status, start, end, range) => {
+    period = { ...PERIOD, dateStarted: start, dateCompleted: end };
+    renderComments();
+
+    const [heading, dates] = within(await findBanner()).getAllByRole('heading', { level: 2 });
+    expect(heading).toHaveTextContent(status);
+    if (range) expect(dates).toHaveTextContent(range);
+  });
+
+  it('leads back through the project in the banner trail', async () => {
+    renderComments();
+
+    const band = await findBanner();
+    const trail = within(band).getByRole('navigation', { name: 'Breadcrumb' });
+    expect(within(trail).getByRole('link', { name: 'Home' })).toHaveAttribute('href', '/');
+    expect(within(trail).getByRole('link', { name: 'Search' })).toHaveAttribute(
+      'href',
+      '/search?record=projects',
+    );
+    expect(within(trail).getByRole('link', { name: 'Site C' })).toHaveAttribute('href', '/p/proj1');
+    expect(within(trail).getByText('Comment period')).toHaveAttribute('aria-current', 'page');
+    expect(screen.getAllByRole('navigation', { name: 'Breadcrumb' })).toHaveLength(1);
+  });
+
+  it('holds the banner busy, with no Back button, until the period loads', async () => {
+    renderComments();
+
+    const loading = screen.getByText('Loading comment period');
+    expect(loading.closest('.page-masthead')).toHaveAttribute('aria-busy', 'true');
+    expect(screen.queryByRole('button', { name: /Back to/ })).not.toBeInTheDocument();
+    expect(await findBanner()).not.toHaveAttribute('aria-busy');
+  });
+
+  it('leaves the project facts off a project notification period', async () => {
+    renderComments('/pn/pn1/cp/cp1/details');
+
+    const band = await findBanner('Notified Project');
+    expect(within(band).getByText('Additional text here')).toBeInTheDocument();
+    expect(within(band).queryByText('Proponent', { selector: 'dt' })).not.toBeInTheDocument();
+    expect(band.querySelector('.status-pill')).toBeNull();
+    expect(within(band).getByText('Public Comment Period is Now Open')).toBeInTheDocument();
+  });
+
+  it('lists each comment under its author, with place and files, resolving files in one batch', async () => {
     renderComments();
 
     expect(await screen.findByText('First comment')).toBeInTheDocument();
-    expect(screen.getByText('Jane')).toBeInTheDocument();
-    expect(screen.getByText(', Victoria')).toBeInTheDocument();
-    expect(screen.getByText('Anonymous')).toBeInTheDocument();
-    expect(screen.getByText('attachment.pdf')).toBeInTheDocument();
+    const [jane, anonymous] = screen
+      .getAllByRole('listitem')
+      .filter((item) => within(item).queryByRole('heading', { level: 3 }));
+    expect(within(jane).getByRole('heading', { level: 3 })).toHaveTextContent('Jane');
+    expect(within(jane).getByText(/August 1, 2026.*Victoria$/)).toBeInTheDocument();
+    expect(within(jane).getByText('1 document')).toBeInTheDocument();
+    expect(within(jane).getByRole('link', { name: 'attachment.pdf' })).toHaveAttribute(
+      'href',
+      '/demi-search/documents/commentDoc1/download?redirect=1',
+    );
+    expect(within(anonymous).getByRole('heading', { level: 3 })).toHaveTextContent('Anonymous');
+    expect(within(anonymous).getByText('Anonymous comment')).toBeInTheDocument();
 
     const docRequests = sent.filter((entry) =>
       entry.url.startsWith(`${DOCUMENT_PREFIX}docIds=commentDoc1`),
@@ -229,11 +373,47 @@ describe('comments', () => {
     await waitFor(() => expect(lastCommentListUrl()).toContain('&pageNum=0&pageSize=25&'));
   });
 
+  it('counts the comments above the list, with a pager beside the count', async () => {
+    commentCount = 25;
+    renderComments();
+
+    const count = await screen.findByText('1–10 of 25 comments');
+    expect(count).toHaveAttribute('role', 'status');
+    const bar = count.closest('.display-grid__bar') as HTMLElement;
+    const topPager = within(bar).getByRole('navigation', { name: 'Comment pages, top' });
+
+    await userEvent.click(within(topPager).getByLabelText('Go to page 2'));
+    await waitFor(() => expect(lastCommentListUrl()).toContain('&pageNum=1&pageSize=10&'));
+    expect(await screen.findByText('11–20 of 25 comments')).toBeInTheDocument();
+    // The bottom pager stays.
+    expect(screen.getByRole('navigation', { name: 'Result pages' })).toBeInTheDocument();
+  });
+
   it('says so when there are no comments', async () => {
     commentCount = 0;
     renderComments();
 
     expect(await screen.findByText('There are no comments.')).toBeInTheDocument();
+  });
+
+  it('holds back the no-comments message until the period and its comments have loaded', async () => {
+    commentCount = 0;
+    renderComments();
+
+    expect(screen.getByText('Loading comment period')).toBeInTheDocument();
+    expect(screen.queryByText('There are no comments.')).not.toBeInTheDocument();
+    expect(await screen.findByText('There are no comments.')).toBeInTheDocument();
+  });
+
+  it('keeps the place off an anonymous comment and shows it on a named one', async () => {
+    renderComments();
+
+    await screen.findByText('Anonymous comment');
+    const [named, anonymous] = screen
+      .getAllByRole('listitem')
+      .filter((item) => within(item).queryByRole('heading', { level: 3 }));
+    expect(within(named).getByText(/Victoria$/)).toBeInTheDocument();
+    expect(within(anonymous).queryByText(/Nanaimo/)).not.toBeInTheDocument();
   });
 
   it('goes back to the project page', async () => {
@@ -246,9 +426,9 @@ describe('comments', () => {
   it('names a project notification from search and sends Back to the notifications list', async () => {
     const router = renderComments('/pn/pn1/cp/cp1/details');
 
-    expect(
-      await screen.findByRole('heading', { level: 1, name: 'Notified Project' }),
-    ).toBeInTheDocument();
+    const heading = await screen.findByRole('heading', { level: 1, name: 'Notified Project' });
+    // A notification has no EA decision to show.
+    expect(within(heading.closest('.page-masthead') as HTMLElement).queryByText('-')).toBeNull();
     expect(
       sent.some((entry) => entry.url.startsWith('/demi-search/search?dataset=ProjectNotification')),
     ).toBe(true);
@@ -263,7 +443,7 @@ describe('comments', () => {
   it('offers no way to submit a comment on an open period', async () => {
     renderComments();
 
-    await screen.findByRole('heading', { level: 2, name: 'Public Comment Period is Now Open' });
+    await screen.findByText('Public Comment Period is Now Open');
     // The comment list settling is what puts the whole page on screen; asserting before it
     // would pass whether or not the entry point is there.
     await screen.findByText('First comment');

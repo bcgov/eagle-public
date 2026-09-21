@@ -1,0 +1,45 @@
+/* A read-only status label: tint, hairline and text from one BCDS support colour each. Never a
+   control, so no hover, cursor or focus. */
+.status-pill {
+  display: inline-block;
+  padding: var(--layout-padding-hair) var(--layout-padding-small);
+  border: var(--layout-border-width-small) solid transparent;
+  border-radius: var(--layout-border-radius-circular);
+  font: var(--typography-bold-label);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  color: var(--typography-color-primary);
+}
+
+.status-pill--neutral {
+  background: var(--theme-gray-20);
+  border-color: var(--theme-gray-40);
+  color: var(--typography-color-secondary);
+}
+
+/* #42814a on #f6fff8, 4.6:1. */
+.status-pill--success {
+  background: var(--support-surface-color-success);
+  border-color: var(--support-border-color-success);
+  color: var(--support-border-color-success);
+}
+
+/* The danger text token (#ce3e39) is 3.8:1 on this tint; its hover shade #a2312d is 5.5:1. */
+.status-pill--danger {
+  background: var(--support-surface-color-danger);
+  border-color: var(--support-border-color-danger);
+  color: var(--surface-color-primary-danger-button-hover);
+}
+
+/* #013366 on #f1f8fe, 11.8:1. */
+.status-pill--info {
+  background: var(--theme-blue-10);
+  border-color: var(--theme-blue-40);
+  color: var(--theme-blue-100);
+}
+
+.status-pill--warning {
+  background: var(--support-surface-color-warning);
+  border-color: var(--support-border-color-warning);
+}

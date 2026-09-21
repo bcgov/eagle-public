@@ -1,0 +1,44 @@
+/* The details card: white on the page's grey, a light grey border, the facts under a rule.
+   Tokens come from @bcgov/design-tokens. */
+
+.details-panel {
+  padding: var(--layout-padding-large);
+  background: var(--theme-gray-white);
+  border: var(--layout-border-width-small) solid var(--theme-gray-40);
+  border-radius: var(--layout-border-radius-medium);
+}
+
+.details-panel__title {
+  margin: 0 0 var(--layout-margin-small);
+  font: var(--typography-bold-h5);
+  color: var(--typography-color-primary);
+}
+
+.details-panel__description {
+  margin: 0 0 var(--layout-margin-medium);
+  font: var(--typography-regular-body);
+  color: var(--typography-color-secondary);
+}
+
+.details-panel__facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: var(--layout-padding-medium);
+  margin: 0;
+  padding-top: var(--layout-padding-medium);
+  border-top: var(--layout-border-width-small) solid var(--theme-gray-30);
+}
+
+.details-panel__fact dt {
+  margin-bottom: var(--layout-margin-hair);
+  font: var(--typography-bold-label);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--typography-color-secondary);
+}
+
+.details-panel__fact dd {
+  margin: 0;
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-primary);
+}

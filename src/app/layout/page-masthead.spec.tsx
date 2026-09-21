@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { screen, within } from '@testing-library/react';
 import { renderAt } from '../../test-utils';
-import { PageMasthead } from './page-masthead';
+import { MastheadLink, PageMasthead } from './page-masthead';
 
 function renderMasthead(element: React.ReactElement) {
   return renderAt('/', [{ path: '/', element }]);
@@ -68,5 +68,43 @@ describe('page masthead', () => {
 
     rerender(<PageMasthead title="Cedar Quarry" />);
     expect(container.querySelector('.page-masthead')).not.toHaveAttribute('aria-busy');
+  });
+
+  it('puts the lede under the title, before the actions', () => {
+    renderMasthead(
+      <PageMasthead
+        title="Legislation"
+        lede="Learn about the legislation."
+        actions={<MastheadLink label="Act" href="https://example.gov.bc.ca/act" />}
+      />,
+    );
+
+    const lede = screen.getByText('Learn about the legislation.');
+    const heading = screen.getByRole('heading', { level: 1, name: 'Legislation' });
+    const action = screen.getByRole('link', { name: 'Act' });
+    expect(heading.compareDocumentPosition(lede) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(lede.compareDocumentPosition(action) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+});
+
+describe('masthead link', () => {
+  it('says a new-tab link opens a new tab, and cuts the opener', () => {
+    renderMasthead(<MastheadLink label="2018 Act" href="https://example.gov.bc.ca/act" newTab />);
+
+    const link = screen.getByRole('link', { name: /^2018 Act\s*\(opens in new tab\)$/ });
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+    expect(link).toHaveClass('btn-on-dark');
+  });
+
+  it('keeps a same-tab link in the tab, its icon hidden from the name', () => {
+    renderMasthead(
+      <MastheadLink label="Submit your Feedback" href="mailto:someone@gov.bc.ca" icon="email" />,
+    );
+
+    const link = screen.getByRole('link', { name: 'Submit your Feedback' });
+    expect(link).not.toHaveAttribute('target');
+    expect(link).not.toHaveAttribute('rel');
+    expect(link).toHaveAttribute('href', 'mailto:someone@gov.bc.ca');
   });
 });

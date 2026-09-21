@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { NewTabHint } from 'app/components/engagement-link';
 import { Breadcrumbs, type Crumb } from './breadcrumbs';
 import './page-masthead.css';
 
@@ -7,8 +8,10 @@ interface PageMastheadProps {
   title: ReactNode;
   /** Root first, current page last. Left off on the site root, which leads nowhere. */
   breadcrumbs?: Crumb[];
-  /** One line under the title. */
+  /** One line under the title. Elides at desktop, so keep it short. */
   meta?: ReactNode;
+  /** A sentence or two about the page, under the title. Wraps, at the page measure. */
+  lede?: ReactNode;
   /** Controls that sit beside the title. */
   actions?: ReactNode;
   /** What the page puts under the title row, inside the band. */
@@ -24,6 +27,7 @@ export function PageMasthead({
   title,
   breadcrumbs,
   meta,
+  lede,
   actions,
   children,
   busy,
@@ -53,6 +57,7 @@ export function PageMasthead({
               {title}
             </h1>
             {meta && <p className="page-masthead__meta">{meta}</p>}
+            {lede && <p className="page-masthead__lede">{lede}</p>}
           </div>
           {actions && <div className="page-masthead__actions">{actions}</div>}
         </div>
@@ -60,5 +65,34 @@ export function PageMasthead({
         {children}
       </div>
     </section>
+  );
+}
+
+interface MastheadLinkProps {
+  label: string;
+  href: string;
+  /** Material icon shown before the label. Ignored on a new-tab link, which carries its own. */
+  icon?: string;
+  /** Open in a new tab. The accessible name then says so. */
+  newTab?: boolean;
+}
+
+/** A link in the band's actions row, in the site's one on-dark button style. */
+export function MastheadLink({ label, href, icon, newTab }: MastheadLinkProps) {
+  return (
+    <a
+      className="btn-on-dark"
+      href={href}
+      target={newTab ? '_blank' : undefined}
+      rel={newTab ? 'noopener noreferrer' : undefined}
+    >
+      {icon && !newTab && (
+        <i className="material-icons" aria-hidden="true">
+          {icon}
+        </i>
+      )}
+      <span className="link-label">{label}</span>
+      {newTab && <NewTabHint />}
+    </a>
   );
 }

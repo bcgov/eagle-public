@@ -1,18 +1,18 @@
-import { HeroBanner } from 'app/components/hero-banner';
+import { PageMasthead } from 'app/layout/page-masthead';
 import './search-help.css';
 
 export function SearchHelp() {
   return (
     <div className="search-help">
-      <HeroBanner
+      <PageMasthead
         title="Advanced Search Help"
-        description="Learn some tips to improve your search results on our documents."
+        lede="Learn some tips to improve your search results on our documents."
       />
 
       <section>
-        <div className="container static-content" id="anchor-point">
+        <div className="page-container static-content" id="anchor-point">
           <div className="row">
-            <main className="col-md-12">
+            <div className="col-md-12">
               <br />
               <h3>Quotes</h3>
               <p>
@@ -184,7 +184,7 @@ export function SearchHelp() {
                   </div>
                 </div>
               </section>
-            </main>
+            </div>
           </div>
         </div>
       </section>

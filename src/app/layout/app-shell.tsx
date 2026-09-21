@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Outlet, useLocation, useNavigate } from 'react-router';
+import { Outlet, ScrollRestoration, useLocation, useNavigate } from 'react-router';
+import type { GetScrollRestorationKeyFunction } from 'react-router';
 import { SiteHeader } from './site-header';
 import { SiteFooter } from './site-footer';
 import { DownloadPanel } from 'app/components/download-panel';
@@ -37,12 +38,34 @@ function getPageName(path: string): string {
     .join(' > ');
 }
 
+/**
+ * Scroll key per page visit, not per history entry or per path: a link to a page opens it at the
+ * top, back and forward restore, and a tab or filter change on the same page keeps the position.
+ */
+function createScrollKey(): GetScrollRestorationKeyFunction {
+  const keyByEntry = new Map<string, string>();
+  let last: { page: string; key: string } | null = null;
+  return (location, matches) => {
+    const page = matches[1]?.pathname ?? location.pathname;
+    let key = keyByEntry.get(location.key);
+    if (!key) {
+      // The router reads the outgoing entry's key just before a new entry's, so `last` is the
+      // page being left.
+      key = last?.page === page ? last.key : `${page}#${location.key}`;
+      keyByEntry.set(location.key, key);
+    }
+    last = { page, key };
+    return key;
+  };
+}
+
 export function AppShell() {
   const { pathname, search, hash } = useLocation();
   const navigate = useNavigate();
   const [showScrollButton, setShowScrollButton] = useState(false);
   const gateOpen = useGateOpen();
   const isProjectsRoute = pathname.startsWith('/projects');
+  const [scrollKey] = useState(createScrollKey);
 
   // Ref guard, not a dep-array change: React StrictMode re-runs this effect once on mount
   // (setup, cleanup, setup) in dev without an intervening path change, which would otherwise
@@ -82,6 +105,7 @@ export function AppShell() {
 
   return (
     <div className="app-root">
+      <ScrollRestoration getKey={scrollKey} />
       <a className="skip-to-main" href="#main-content">
         Skip to main content
       </a>

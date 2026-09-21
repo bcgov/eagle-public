@@ -45,21 +45,26 @@ test('the home page stylesheet stays inside .home', () => {
   ).toEqual([]);
 });
 
-test('the comment period hero spans the page', async ({ page, request }) => {
+test('the comment period banner spans the page on the masthead edge', async ({ page, request }) => {
   const cp = await latestCommentPeriod(request);
 
   await page.goto(`/p/${cp.project}/cp/${cp._id}/details`);
   await ready(page);
 
-  // The page renders its own `.project > main.project-info`; the project shell styles `.project-page`
-  // only, so nothing here may reach these.
-  expect(await styleOf(page, 'main.project-info', 'display')).toBe('block');
+  // The project shell styles `.project-page` only, so none of it may reach the period's banner.
+  expect(await styleOf(page, '.comment-banner__body', 'display')).toBe('block');
   const width = await page
-    .locator('main.project-info')
+    .locator('.comment-banner')
     .evaluate((el) => el.getBoundingClientRect().width);
   expect(width).toBeGreaterThan(1000);
-  // The hero copy is not the shared hero-banner component's.
-  expect(await styleOf(page, '.hero-banner__content p', 'max-width')).toBe('none');
+  // The banner's content starts on the shared masthead's left edge, under its title.
+  const titleLeft = await page
+    .locator('.comment-banner h1')
+    .evaluate((el) => el.getBoundingClientRect().left);
+  const bodyLeft = await page
+    .locator('.comment-banner__body')
+    .evaluate((el) => el.getBoundingClientRect().left);
+  expect(bodyLeft).toBeCloseTo(titleLeft, 1);
 });
 
 test('the search grid states its own control heights and label layout', async ({ page }) => {

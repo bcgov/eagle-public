@@ -1,17 +1,10 @@
-import { HeroBanner, type HeroBannerAction } from 'app/components/hero-banner';
+import { MastheadLink, PageMasthead } from 'app/layout/page-masthead';
 import { InfoCard, type InfoCardButton } from 'app/components/info-card';
 
 const HERO_TITLE = 'Connect With Us';
 const HERO_DESCRIPTION =
   'This website aims to improve transparency of the provincial environmental assessment process, and to provide citizens and stakeholders with access to project data and information. If you are interested in providing us with feedback about your experience using this website, please feel free to send us your feedback.';
-const HERO_ACTIONS: HeroBannerAction[] = [
-  {
-    label: 'Submit your Feedback',
-    href: 'mailto:EAO.EPICsystem@gov.bc.ca',
-    icon: 'email',
-    title: 'Submit your feedback to the Environmental Assessment Office',
-  },
-];
+const FEEDBACK_EMAIL = 'EAO.EPICsystem@gov.bc.ca';
 
 const INFO_CARDS: { title: string; description: string; icon: string; button: InfoCardButton }[] = [
   {
@@ -56,10 +49,20 @@ const INFO_CARDS: { title: string; description: string; icon: string; button: In
 export function Contact() {
   return (
     <>
-      <HeroBanner title={HERO_TITLE} description={HERO_DESCRIPTION} actions={HERO_ACTIONS} />
+      <PageMasthead
+        title={HERO_TITLE}
+        lede={HERO_DESCRIPTION}
+        actions={
+          <MastheadLink
+            label="Submit your Feedback"
+            href={`mailto:${FEEDBACK_EMAIL}`}
+            icon="email"
+          />
+        }
+      />
 
       <div className="bg-faded">
-        <section className="container">
+        <section className="page-container page-body">
           <div className="feature-cards-container">
             {INFO_CARDS.map((card) => (
               <div className="feature-card" key={card.title}>

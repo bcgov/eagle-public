@@ -23,8 +23,8 @@
   font: var(--typography-bold-body);
   color: var(--typography-color-primary);
   text-wrap: pretty;
-  /* A headline wider than this loses the reader between line ends. */
-  max-width: 78ch;
+  /* A headline wider than the page measure loses the reader between line ends. */
+  max-width: var(--page-measure);
 }
 
 .display-grid .display-grid__row-link {
@@ -136,11 +136,6 @@
   padding: 0;
   border-bottom: none;
   background: transparent;
-}
-
-.display-grid .display-grid__list-item:hover,
-.display-grid .display-grid__card:hover {
-  background: var(--theme-blue-10);
 }
 
 /* The list template stacks its parts and puts nothing beside them, so the measure caps above only

@@ -1,34 +1,32 @@
-import { HeroBanner, type HeroBannerAction } from 'app/components/hero-banner';
+import { MastheadLink, PageMasthead } from 'app/layout/page-masthead';
 
 const HERO_TITLE = 'Legislation';
 const HERO_DESCRIPTION =
   'Learn about the legislation and regulations that apply to environmental assessments in the province of British Columbia.';
-const HERO_ACTIONS: HeroBannerAction[] = [
+const HERO_ACTIONS: { label: string; href: string }[] = [
   {
     label: '2002 Environmental Assessment Act',
     href: 'https://www2.gov.bc.ca/gov/content?id=1D2FF7DF6672482A84705D2519574C27',
-    icon: 'open_in_new',
-    target: '_blank',
-    rel: 'noopener',
-    title: 'View more information',
   },
   {
     label: '2018 Environmental Assessment Act',
     href: 'https://www2.gov.bc.ca/gov/content?id=B5737A3A620146219ABED73B5066DEC6',
-    icon: 'open_in_new',
-    target: '_blank',
-    rel: 'noopener',
-    title: 'View more information',
   },
 ];
 
 export function Legislation() {
   return (
     <>
-      <HeroBanner title={HERO_TITLE} description={HERO_DESCRIPTION} actions={HERO_ACTIONS} />
+      <PageMasthead
+        title={HERO_TITLE}
+        lede={HERO_DESCRIPTION}
+        actions={HERO_ACTIONS.map((action) => (
+          <MastheadLink key={action.label} label={action.label} href={action.href} newTab />
+        ))}
+      />
 
-      <section>
-        <div className="container" id="anchor-point">
+      <section className="page-body">
+        <div className="page-container" id="anchor-point">
           <div className="content-wrapper">
             <p>
               The Environmental Assessment Act and associated regulations set a clear path for

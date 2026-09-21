@@ -1,6 +1,7 @@
 import { isClosed, isNotStarted, isOpen } from 'app/api/commentperiod';
 import { EngagementLink } from 'app/components/engagement-link';
 import { Skeleton } from 'app/components/skeleton/skeleton';
+import { StatusPill, type StatusTone } from 'app/components/status-pill';
 import { useCommentPeriods } from 'app/components/use-comment-periods';
 import type { CommentPeriod } from 'app/models/commentperiod';
 import { mediumDate } from 'app/utils/utils';
@@ -10,11 +11,10 @@ import './engagement-tab.css';
 const SKELETON_CARDS = [1, 2];
 
 /** The pill beside the status label: how long is left, or when the period ran. */
-function pill(cp: CommentPeriod): { text: string; modifier: string } | null {
-  if (isOpen(cp)) return { text: cp.daysRemaining, modifier: 'open' };
-  if (isClosed(cp)) return { text: `Closed ${mediumDate(cp.dateCompleted)}`, modifier: 'closed' };
-  if (isNotStarted(cp))
-    return { text: `Starts ${mediumDate(cp.dateStarted)}`, modifier: 'pending' };
+function pill(cp: CommentPeriod): { text: string; tone: StatusTone } | null {
+  if (isOpen(cp)) return { text: cp.daysRemaining, tone: 'success' };
+  if (isClosed(cp)) return { text: `Closed ${mediumDate(cp.dateCompleted)}`, tone: 'neutral' };
+  if (isNotStarted(cp)) return { text: `Starts ${mediumDate(cp.dateStarted)}`, tone: 'warning' };
   return null;
 }
 
@@ -55,13 +55,7 @@ export function EngagementTab() {
                     aria-hidden="true"
                   ></span>
                   <span className="engagement-tab__status-label">{cp.commentPeriodStatus}</span>
-                  {badge && (
-                    <span
-                      className={`engagement-tab__pill engagement-tab__pill--${badge.modifier}`}
-                    >
-                      {badge.text}
-                    </span>
-                  )}
+                  {badge && <StatusPill tone={badge.tone}>{badge.text}</StatusPill>}
                 </p>
                 <h3 className="engagement-tab__card-title">
                   {cp.informationLabel || cp.instructions || 'Public Comment Period'}

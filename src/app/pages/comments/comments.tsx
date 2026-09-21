@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { searchKeywords } from 'app/api/api';
@@ -12,11 +12,15 @@ import type { Comment } from 'app/models/comment';
 import type { Document } from 'app/models/document';
 import type { Project } from 'app/models/project';
 import { showToast } from 'app/state/toast';
-import { TableTemplate } from 'app/components/table/table-template';
-import { tableObject, type ITableMessage } from 'app/components/table/table-object';
+import { PageMasthead } from 'app/layout/page-masthead';
+import { Skeleton } from 'app/components/skeleton/skeleton';
+import { DisplayGrid } from 'app/components/display-grid/display-grid';
+import { GridPager } from 'app/components/display-grid/grid-footer';
+import { GridToolbar } from 'app/components/display-grid/grid-toolbar';
 import { mediumDate, openDocumentDownload } from 'app/utils/utils';
 import { safeHtml } from 'app/utils/safe-html';
-import { CommentsTableRow } from './comments-table-rows';
+import { StatusPill, type StatusTone } from 'app/components/status-pill';
+import { CommentRow } from './comment-row';
 import './comments.css';
 
 type CommentsType = 'PROJECT' | 'PROJECT-NOTIFICATION';
@@ -26,6 +30,22 @@ const COMMENT_PERIOD_HEADERS: Record<string, string> = {
   Upcoming: 'Public Comment Period is Upcoming',
   Open: 'Public Comment Period is Now Open',
 };
+
+// `eaDecisions` List names. Anything not named (exemption, withdrawn, in progress) reads as info.
+const EA_DECISION_TONES: Record<string, StatusTone> = {
+  'Certificate Issued': 'success',
+  'Certificate Reinstated': 'success',
+  'Pre-EA Act Approval': 'success',
+  'Certificate Refused': 'danger',
+  'Certificate Cancelled': 'danger',
+  'Assessment Terminated': 'danger',
+  'Readiness Termination': 'danger',
+  Terminated: 'danger',
+};
+
+function eaDecisionTone(name: string): StatusTone {
+  return EA_DECISION_TONES[name] ?? 'info';
+}
 
 /** Project notifications have no project endpoint, so their name comes out of search. */
 async function getNotificationProject(projId: string): Promise<Project | null> {
@@ -169,36 +189,6 @@ export function Comments() {
     navigate,
   ]);
 
-  const tableData = useMemo(
-    () =>
-      tableObject({
-        tableId: 'comments',
-        component: CommentsTableRow,
-        options: {
-          showPageCountDisplay: true,
-          showPagination: true,
-          showPageSizePicker: true,
-          showTopControls: true,
-          showHeader: false,
-          disableRowHighlight: true,
-        },
-        currentPage: page,
-        pageSize,
-        totalListItems: commentsQuery.data?.totalCount ?? 0,
-        items: (commentsQuery.data?.comments ?? []).map((comment) => ({ rowData: comment })),
-      }),
-    [page, pageSize, commentsQuery.data],
-  );
-
-  function onMessageOut(msg: ITableMessage) {
-    if (msg.label === 'pageNum') {
-      setPage(msg.data);
-    } else if (msg.label === 'pageSize') {
-      setPageSize(Number(msg.data.value));
-      setPage(1);
-    }
-  }
-
   // `openDocumentDownload` starts the transfer and falls back to eagle-api on its own, so there
   // is no failure for the caller to report.
   function onDownloadDocument(doc: Document) {
@@ -214,7 +204,11 @@ export function Comments() {
     }
   }
 
+  const commentsTotal = commentsQuery.data?.totalCount ?? 0;
+  // Pending covers the wait for the period too: the comments query is idle, not fetching, then.
+  const commentsLoading = commentsQuery.isPending || commentsQuery.isFetching;
   const commentPeriodDocs = docsQuery.data ?? [];
+  const openHouses: { eventDate: string; description: string }[] = commentPeriod?.openHouses ?? [];
   const commentPeriodHeader = commentPeriod
     ? COMMENT_PERIOD_HEADERS[commentPeriod.commentPeriodStatus] || ''
     : '';
@@ -222,150 +216,168 @@ export function Comments() {
 
   return (
     <>
-      <div className="project">
-        <main className="project-info">
-          <div className="hero-banner-alt">
-            <div className="container">
-              <div className="hero-banner__content">
-                {pageLoading ? (
-                  <div className="d-flex justify-content-center align-items-center py-5">
-                    <div className="spinner-border" role="status">
-                      <span className="visually-hidden">Loading...</span>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <h1>{project?.name || '-'}</h1>
+      <PageMasthead
+        busy={pageLoading}
+        breadcrumbs={[
+          { label: 'Home', to: '/' },
+          { label: 'Search', to: searchUrl(type === 'PROJECT' ? 'projects' : 'notifications') },
+          // A notification has no page of its own, so its name is plain text.
+          { label: project?.name ?? '', to: type === 'PROJECT' ? `/p/${projId}` : undefined },
+          { label: 'Comment period' },
+        ]}
+        title={
+          pageLoading ? (
+            <>
+              <span className="visually-hidden">Loading comment period</span>
+              <Skeleton width="60%" />
+            </>
+          ) : (
+            project?.name || '-'
+          )
+        }
+        className="comment-banner"
+      >
+        {!pageLoading && (
+          <div className="comment-banner__body">
+            {commentPeriod._id && (
+              <>
+                <h2 className="comment-banner__status">{commentPeriodHeader || '-'}</h2>
+                <h2 className="comment-banner__status">
+                  {mediumDate(commentPeriod.dateStarted)} -{' '}
+                  {commentPeriod.longEndDate.toFormat('MMMM dd @ hh:mm a ZZZZ')}
+                </h2>
+                <hr className="comment-banner__divider" />
 
-                    {commentPeriod._id && (
-                      <>
-                        <h2>{commentPeriodHeader || '-'}</h2>
-                        <h2>
-                          {mediumDate(commentPeriod.dateStarted)} -{' '}
-                          {commentPeriod.longEndDate.toFormat('MMMM dd @ hh:mm a ZZZZ')}
-                        </h2>
-                        <hr className="comment-period-divider" />
-
-                        <div className="header-section">
-                          <div>
-                            <div
-                              id="instructions"
-                              dangerouslySetInnerHTML={safeHtml(
-                                String(commentPeriod.instructions ?? ''),
-                              )}
-                            ></div>
-                            {commentPeriod.additionalText && <p>{commentPeriod.additionalText}</p>}
-                            {commentPeriod.informationLabel && (
-                              <p>{commentPeriod.informationLabel}</p>
-                            )}
-                          </div>
-                        </div>
-                      </>
-                    )}
-
-                    {type === 'PROJECT' && (
-                      <>
-                        <span className="ea-decision">{project?.eacDecision?.name || '-'}</span>
-                        <div className="basic-info">
-                          <div>
-                            <span className="info-label">Proponent</span>
-                            <p className="value">{project?.proponent?.name || '-'}</p>
-                          </div>
-                          <div>
-                            <span className="info-label">Type</span>
-                            <p className="value">{project?.type || '-'}</p>
-                          </div>
-                          <div>
-                            <span className="info-label">Sub-type</span>
-                            <p className="value">{project?.sector || '-'}</p>
-                          </div>
-                        </div>
-                      </>
-                    )}
-
-                    {commentPeriodDocs.length > 0 && (
-                      <div className="mb-3">
-                        <div className="card-header">Related Documents</div>
-                        <ul className="doc-list mb-0">
-                          {commentPeriodDocs.map((doc) => (
-                            <li key={doc._id}>
-                              <button
-                                type="button"
-                                className="doc-list__row clickable-row"
-                                onClick={() => onDownloadDocument(doc)}
-                              >
-                                <span className="cell icon">
-                                  <i className="material-icons">insert_drive_file</i>
-                                </span>
-                                <span className="cell name" title={doc.displayName || ''}>
-                                  {doc.displayName}
-                                </span>
-                              </button>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-
-                    {commentPeriod.openHouses && commentPeriod.openHouses.length > 0 && (
-                      <div className="mb-3">
-                        <div className="card border-0">
-                          <div className="card-header">Open Houses</div>
-                          <ul className="list-group mb-0">
-                            {commentPeriod.openHouses.map(
-                              (openHouse: { eventDate: string; description: string }) => (
-                                <li
-                                  className="list-group-item"
-                                  key={`${openHouse.eventDate}-${openHouse.description}`}
-                                >
-                                  <h6 className="mb-2">
-                                    <b>Date:</b>&nbsp;{mediumDate(openHouse.eventDate)}
-                                  </h6>
-                                  <h6 className="mb-0">
-                                    <b>Description:</b>&nbsp;{openHouse.description}
-                                  </h6>
-                                </li>
-                              ),
-                            )}
-                          </ul>
-                        </div>
-                      </div>
-                    )}
-
-                    <button
-                      className="btn btn-sm inverted"
-                      onClick={goBackToProjectDetails}
-                      type="button"
-                    >
-                      {type === 'PROJECT'
-                        ? 'Back to Project Details'
-                        : 'Back to Project Notifications'}
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-        </main>
-      </div>
-
-      <div className="container comments">
-        {commentsQuery.isPending ? (
-          <div className="d-flex justify-content-center my-5">
-            <div className="spinner-border" role="status">
-              <span className="visually-hidden">Loading...</span>
-            </div>
-          </div>
-        ) : (
-          <>
-            {tableData.totalListItems > 0 && (
-              <div>
-                <TableTemplate data={tableData} onMessage={onMessageOut} />
-              </div>
+                <div className="comment-banner__instructions">
+                  <div
+                    id="instructions"
+                    dangerouslySetInnerHTML={safeHtml(String(commentPeriod.instructions ?? ''))}
+                  ></div>
+                  {commentPeriod.additionalText && <p>{commentPeriod.additionalText}</p>}
+                  {commentPeriod.informationLabel && <p>{commentPeriod.informationLabel}</p>}
+                </div>
+              </>
             )}
-            {tableData.totalListItems === 0 && <div>There are no comments.</div>}
-          </>
+
+            {type === 'PROJECT' && (
+              <>
+                {project?.eacDecision?.name && (
+                  <StatusPill tone={eaDecisionTone(project.eacDecision.name)}>
+                    {project.eacDecision.name}
+                  </StatusPill>
+                )}
+                <dl className="comment-banner__facts">
+                  {(
+                    [
+                      ['Proponent', project?.proponent?.name],
+                      ['Type', project?.type],
+                      ['Sub-type', project?.sector],
+                    ] as const
+                  ).map(([label, value]) => (
+                    <div key={label}>
+                      <dt>{label}</dt>
+                      <dd>{value || '-'}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </>
+            )}
+
+            {commentPeriodDocs.length > 0 && (
+              <section className="comment-banner__card" aria-labelledby="related-docs-title">
+                <h2 id="related-docs-title" className="comment-banner__card-title">
+                  Related Documents
+                </h2>
+                <ul className="comment-banner__docs">
+                  {commentPeriodDocs.map((doc) => (
+                    <li key={doc._id}>
+                      {/* A button, not a link: the download URL is fetched on click. */}
+                      <button
+                        type="button"
+                        className="comment-banner__doc"
+                        onClick={() => onDownloadDocument(doc)}
+                      >
+                        <i className="material-icons" aria-hidden="true">
+                          insert_drive_file
+                        </i>
+                        <span title={doc.displayName || ''}>{doc.displayName}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
+            {openHouses.length > 0 && (
+              <section className="comment-banner__card" aria-labelledby="open-houses-title">
+                <h2 id="open-houses-title" className="comment-banner__card-title">
+                  Open Houses
+                </h2>
+                <ul className="comment-banner__open-houses">
+                  {openHouses.map((openHouse) => (
+                    <li key={`${openHouse.eventDate}-${openHouse.description}`}>
+                      <p>
+                        <b>Date:</b>&nbsp;{mediumDate(openHouse.eventDate)}
+                      </p>
+                      <p>
+                        <b>Description:</b>&nbsp;{openHouse.description}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
+            <button
+              className="btn-on-dark comment-banner__back"
+              onClick={goBackToProjectDetails}
+              type="button"
+            >
+              {type === 'PROJECT' ? 'Back to Project Details' : 'Back to Project Notifications'}
+            </button>
+          </div>
         )}
+      </PageMasthead>
+
+      <div className="comment-period__list">
+        <div className="page-container page-body">
+          <DisplayGrid<Comment>
+            caption="Public comments on this period"
+            template="list"
+            columns={[]}
+            rows={commentsQuery.data?.comments ?? []}
+            rowComponent={CommentRow}
+            rowId={(comment) => comment._id}
+            loading={commentsLoading}
+            emptyMessage="There are no comments."
+            page={page}
+            pageSize={pageSize}
+            total={commentsTotal}
+            onPageChange={setPage}
+            onPageSizeChange={(size) => {
+              setPageSize(size);
+              setPage(1);
+            }}
+            toolbar={
+              <GridToolbar<Comment>
+                noun="comments"
+                page={page}
+                pageSize={pageSize}
+                total={commentsTotal}
+                loading={commentsLoading}
+                pager={
+                  <GridPager
+                    page={page}
+                    pageSize={pageSize}
+                    total={commentsTotal}
+                    ariaLabel="Comment pages, top"
+                    onPageChange={setPage}
+                  />
+                }
+              />
+            }
+          />
+        </div>
       </div>
     </>
   );

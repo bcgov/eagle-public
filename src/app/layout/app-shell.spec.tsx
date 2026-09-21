@@ -4,6 +4,7 @@ import { screen, waitFor } from '@testing-library/react';
 import { renderAt } from '../../test-utils';
 import { routes } from 'app/routes';
 import { page } from 'app/analytics/analytics';
+import { AppShell } from './app-shell';
 
 vi.mock('app/analytics/analytics', () => ({ page: vi.fn() }));
 
@@ -53,5 +54,112 @@ describe('app shell', () => {
 
     await waitFor(() => expect(page).toHaveBeenCalledTimes(2));
     expect(page).toHaveBeenLastCalledWith('Contact', { path: '/contact' });
+  });
+
+  describe('scroll on navigation', () => {
+    const scrollTo = vi.fn();
+
+    beforeEach(() => {
+      scrollTo.mockClear();
+      vi.stubGlobal('scrollTo', scrollTo);
+    });
+
+    afterEach(() => {
+      Object.defineProperty(window, 'scrollY', { value: 0, configurable: true });
+    });
+
+    /** A project page with two tabs, and a second page, under the real shell. */
+    function renderPages() {
+      return renderAt('/p/1/overview', [
+        {
+          path: '/',
+          element: <AppShell />,
+          children: [
+            {
+              path: 'p/:projId',
+              children: [
+                { path: 'overview', element: <h1>Overview</h1> },
+                { path: 'engagement', element: <h1>Engagement</h1> },
+              ],
+            },
+            { path: 'p/:projId/cp/:cpId/details', element: <h1>Comment period</h1> },
+          ],
+        },
+      ]).router;
+    }
+
+    function scrolledTo(y: number) {
+      Object.defineProperty(window, 'scrollY', { value: y, configurable: true });
+    }
+
+    function scrolledDown() {
+      scrolledTo(900);
+    }
+
+    it('opens a page already visited at the top when a link leads back to it', async () => {
+      const router = renderPages();
+      await screen.findByRole('heading', { name: 'Overview' });
+      scrolledDown();
+      await router.navigate('/p/1/cp/2/details');
+      await screen.findByRole('heading', { name: 'Comment period' });
+      scrolledTo(0);
+
+      await router.navigate('/p/1/overview');
+
+      await screen.findByRole('heading', { name: 'Overview' });
+      expect(scrollTo).toHaveBeenLastCalledWith(0, 0);
+    });
+
+    it('restores the old position on browser back', async () => {
+      const router = renderPages();
+      await screen.findByRole('heading', { name: 'Overview' });
+      scrolledDown();
+      await router.navigate('/p/1/cp/2/details');
+      await screen.findByRole('heading', { name: 'Comment period' });
+      scrolledTo(200);
+
+      await router.navigate(-1);
+
+      await screen.findByRole('heading', { name: 'Overview' });
+      expect(scrollTo).toHaveBeenLastCalledWith(0, 900);
+    });
+
+    it('restores the old position on browser back to a tab reached within the page', async () => {
+      const router = renderPages();
+      await screen.findByRole('heading', { name: 'Overview' });
+      await router.navigate('/p/1/engagement');
+      await screen.findByRole('heading', { name: 'Engagement' });
+      scrolledDown();
+      await router.navigate('/p/1/cp/2/details');
+      await screen.findByRole('heading', { name: 'Comment period' });
+      scrolledTo(200);
+
+      await router.navigate(-1);
+
+      await screen.findByRole('heading', { name: 'Engagement' });
+      expect(scrollTo).toHaveBeenLastCalledWith(0, 900);
+    });
+
+    it('opens a new page at the top', async () => {
+      const router = renderPages();
+      await screen.findByRole('heading', { name: 'Overview' });
+      scrolledDown();
+
+      await router.navigate('/p/1/cp/2/details');
+
+      await screen.findByRole('heading', { name: 'Comment period' });
+      expect(scrollTo).toHaveBeenLastCalledWith(0, 0);
+    });
+
+    it('keeps the reader in place on a tab change within the same page', async () => {
+      const router = renderPages();
+      await screen.findByRole('heading', { name: 'Overview' });
+      scrolledDown();
+
+      await router.navigate('/p/1/engagement');
+
+      await screen.findByRole('heading', { name: 'Engagement' });
+      expect(scrollTo).toHaveBeenLastCalledWith(0, 900);
+    });
   });
 });

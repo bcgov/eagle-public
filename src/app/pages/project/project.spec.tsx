@@ -233,6 +233,17 @@ describe('project shell', () => {
     expect(tabLink('Documents')).toHaveAttribute('href', '/p/proj-1/documents');
   });
 
+  it('holds the tab body on the page gutter, with no main landmark of its own', async () => {
+    renderShell();
+
+    const body = await screen.findByText('tab body');
+    // The app shell owns the one <main>; a second would split the page for screen readers.
+    expect(screen.queryByRole('main')).not.toBeInTheDocument();
+    expect(body.parentElement).toHaveClass('page-container', 'project-page__content');
+    // `.tab-content` carries a global `padding: 0` that would strip the gutter.
+    expect(body.parentElement).not.toHaveClass('tab-content');
+  });
+
   it('names the strip for screen readers without claiming the ARIA tab pattern', async () => {
     renderShell();
 

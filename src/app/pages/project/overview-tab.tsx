@@ -2,7 +2,9 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import { useProjectEaCertificate } from 'app/api/project-phases';
 import { track } from 'app/analytics/analytics';
+import { DetailsPanel, Fact } from 'app/components/details-panel';
 import { EngagementLink, NewTabHint } from 'app/components/engagement-link';
+import { SideCard } from 'app/components/side-card';
 import { Skeleton } from 'app/components/skeleton/skeleton';
 import { SubscribePopover } from 'app/components/subscribe-popover';
 import { useTable } from 'app/components/table/use-table';
@@ -15,6 +17,7 @@ import { legislationLink, longDate, regulatorLink } from 'app/utils/utils';
 import { FeaturedDocuments } from './featured-documents';
 import { Pins } from './pins';
 import { useProjectContext } from './project-context';
+import 'app/components/record-layout.css';
 import './overview-tab.css';
 
 const OPERATIONS_EMAIL = 'EAO.operations@gov.bc.ca';
@@ -32,15 +35,6 @@ function ExternalLink({ href, children }: { href: string; children: ReactNode })
       <span className="link-label">{children}</span>
       <NewTabHint />
     </a>
-  );
-}
-
-function Fact({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div className="overview-tab__fact">
-      <dt>{label}</dt>
-      <dd>{children || '-'}</dd>
-    </div>
   );
 }
 
@@ -131,17 +125,19 @@ function UpdatesCard({ projId }: { projId: string }) {
   const updatesHref = `/p/${projId}/updates`;
 
   return (
-    <section className="overview-tab__panel" aria-labelledby="updates-title">
-      <div className="overview-tab__panel-header">
-        <h2 id="updates-title">Updates</h2>
+    <SideCard
+      title="Updates"
+      titleId="updates-title"
+      action={
         <Link to={updatesHref}>
           {result.totalListItems > 0
             ? `See all ${result.totalListItems.toLocaleString('en-CA')}`
             : 'See all'}
         </Link>
-      </div>
+      }
+    >
       {result.loading && result.data.length === 0 ? (
-        <ul className="overview-tab__panel-list" aria-busy="true">
+        <ul className="side-card__list" aria-busy="true">
           <li className="visually-hidden">Loading updates</li>
           {SKELETON_ROWS.map((row) => (
             <li key={row}>
@@ -151,21 +147,19 @@ function UpdatesCard({ projId }: { projId: string }) {
           ))}
         </ul>
       ) : result.data.length === 0 ? (
-        <p className="overview-tab__empty overview-tab__panel-empty">No recent updates.</p>
+        <p className="side-card__empty">No recent updates.</p>
       ) : (
-        <ul className="overview-tab__panel-list">
+        <ul className="side-card__list">
           {result.data.slice(0, UPDATES_SHOWN).map((update: any) => (
             <li key={update._id}>
-              <p className="overview-tab__panel-meta">
+              <p className="side-card__meta">
                 {longDate(update.dateAdded)}
                 {update.type && ` · ${update.type}`}
               </p>
-              <Link to={updatesHref} className="overview-tab__panel-headline">
+              <Link to={updatesHref} className="side-card__headline">
                 {update.headline}
               </Link>
-              {update.content && (
-                <p className="overview-tab__panel-summary">{htmlToText(update.content)}</p>
-              )}
+              {update.content && <p className="side-card__summary">{htmlToText(update.content)}</p>}
             </li>
           ))}
         </ul>
@@ -180,7 +174,7 @@ function UpdatesCard({ projId }: { projId: string }) {
           <SubscribePopover serviceName={`project:${projId}`} variant="project" surface="card" />
         </div>
       )}
-    </section>
+    </SideCard>
   );
 }
 
@@ -221,8 +215,8 @@ export function OverviewTab() {
   });
 
   return (
-    <div className="overview-tab">
-      <div className="overview-tab__main">
+    <div className="record-layout">
+      <div className="record-layout__main">
         {projectLoading ? (
           <div className="overview-tab__callout-loading" aria-busy="true">
             <span className="visually-hidden">Loading comment period</span>
@@ -242,13 +236,12 @@ export function OverviewTab() {
             <Skeleton lines={3} />
           </section>
         ) : (
-          <section aria-labelledby="about-title">
-            <h2 id="about-title">About this project</h2>
+          <DetailsPanel title="About this project" titleId="about-title">
             <p
-              className="overview-tab__description"
+              className="details-panel__description"
               dangerouslySetInnerHTML={safeHtml(newlines(project?.description?.toString() || '-'))}
             ></p>
-            <dl className="overview-tab__facts">
+            <dl className="details-panel__facts">
               <Fact label="Legislation">
                 <ExternalLink href={legislationLink(project?.legislation)}>
                   {project?.legislation || '2018 Environmental Assessment Act'}
@@ -292,14 +285,14 @@ export function OverviewTab() {
               <Fact label="First posted">{longDate(project?.dateAdded)}</Fact>
               <Fact label="Last updated">{longDate(project?.dateUpdated)}</Fact>
             </dl>
-          </section>
+          </DetailsPanel>
         )}
 
         <Pins />
         <FeaturedDocuments />
       </div>
 
-      <aside className="overview-tab__aside">
+      <aside className="record-layout__aside">
         <UpdatesCard projId={projId} />
         <ContactCard project={project} />
       </aside>

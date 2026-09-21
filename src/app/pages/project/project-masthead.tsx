@@ -104,8 +104,8 @@ export function ProjectMasthead({ project, projId, loading = false }: ProjectMas
             type="button"
             className={
               copyState === 'copied'
-                ? 'project-masthead__action project-masthead__action--link project-masthead__action--copied'
-                : 'project-masthead__action project-masthead__action--link'
+                ? 'btn-on-dark project-masthead__action project-masthead__action--link project-masthead__action--copied'
+                : 'btn-on-dark project-masthead__action project-masthead__action--link'
             }
             onClick={copyLink}
           >
