@@ -119,6 +119,11 @@
   overflow-wrap: anywhere;
 }
 
+/* An unnamed document's label is empty; holding a line keeps its row as tall as a named one. */
+.comment-banner__doc span {
+  min-height: 1lh;
+}
+
 .comment-banner__doc:hover {
   background: var(--table-row-hover-bg);
 }

@@ -56,6 +56,12 @@ const COMMENTS = [
 ];
 
 // Trailing `&` on purpose: without it these also match dataset=CommentPeriod and DocumentChunk.
+const DOCUMENTS = [
+  { _id: 'relatedDoc1', displayName: 'Related report.pdf' },
+  { _id: 'unnamedDoc', displayName: null },
+  { _id: 'commentDoc1', internalOriginalName: 'attachment.pdf', documentSource: 'COMMENT' },
+];
+
 const COMMENT_LIST_PREFIX = '/demi-search/search?dataset=Comment&';
 const DOCUMENT_PREFIX = '/demi-search/search?dataset=Document&';
 
@@ -97,18 +103,8 @@ function stubFetch() {
         ]);
       }
       if (url.startsWith(`${DOCUMENT_PREFIX}docIds=`)) {
-        return json([
-          {
-            searchResults: [
-              { _id: 'relatedDoc1', displayName: 'Related report.pdf' },
-              {
-                _id: 'commentDoc1',
-                internalOriginalName: 'attachment.pdf',
-                documentSource: 'COMMENT',
-              },
-            ],
-          },
-        ]);
+        const ids = new URL(url, 'http://x').searchParams.get('docIds')?.split('|') ?? [];
+        return json([{ searchResults: DOCUMENTS.filter((doc) => ids.includes(doc._id)) }]);
       }
       return json([]);
     }),
@@ -225,6 +221,24 @@ describe('comments', () => {
 
     const openHouses = within(band).getByRole('region', { name: 'Open Houses' });
     expect(within(openHouses).getByText('Community hall')).toBeInTheDocument();
+  });
+
+  it('leaves an unnamed related document blank on its own row, still named for a screen reader', async () => {
+    period = { ...PERIOD, relatedDocuments: ['relatedDoc1', 'unnamedDoc'] };
+    renderComments();
+
+    const docs = await screen.findByRole('region', { name: 'Related Documents' });
+    const unnamed = await within(docs).findByRole('button', { name: 'Download unnamed document' });
+    const label = unnamed.querySelector('span');
+    expect(label).toHaveTextContent(/^$/);
+    expect(label).not.toHaveAttribute('title');
+    expect(unnamed.closest('li')?.parentElement).toBe(docs.querySelector('ul'));
+    expect(docs.textContent).not.toMatch(/undefined|null|[-·|,]\s*$/);
+
+    await userEvent.click(unnamed);
+    expect(openDocumentDownload).toHaveBeenCalledWith(
+      expect.objectContaining({ _id: 'unnamedDoc' }),
+    );
   });
 
   it('leaves out the document and open house cards when the period has neither', async () => {

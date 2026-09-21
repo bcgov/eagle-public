@@ -296,11 +296,13 @@ export function Comments() {
                         type="button"
                         className="comment-banner__doc"
                         onClick={() => onDownloadDocument(doc)}
+                        // An unnamed document shows no text, but the button still needs a name.
+                        aria-label={doc.displayName ? undefined : 'Download unnamed document'}
                       >
                         <i className="material-icons" aria-hidden="true">
                           insert_drive_file
                         </i>
-                        <span title={doc.displayName || ''}>{doc.displayName}</span>
+                        <span title={doc.displayName || undefined}>{doc.displayName}</span>
                       </button>
                     </li>
                   ))}

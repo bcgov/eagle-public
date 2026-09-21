@@ -2,7 +2,6 @@ import { useQuery } from '@tanstack/react-query';
 import { getPins } from 'app/api/project';
 import { Skeleton } from 'app/components/skeleton/skeleton';
 import { useProjectContext } from './project-context';
-import 'app/components/details-panel.css';
 
 /** No project publishes anywhere near this many Nations, so the card never pages. */
 const PAGE_SIZE = 100;

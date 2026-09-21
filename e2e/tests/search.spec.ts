@@ -109,6 +109,24 @@ test('the chosen record pill is a white chip, and hover lifts the fill of the ot
   ).toBeGreaterThan(lightness(bandBlue));
 });
 
+test('a table row takes no hover tint or pointer, because only its link opens anything', async ({
+  page,
+}) => {
+  await openSearch(page, '/search?record=projects');
+  const row = page.locator(`tbody ${ROWS}`).first();
+  const style = () =>
+    row.evaluate((el) => {
+      const computed = getComputedStyle(el);
+      return { background: computed.backgroundColor, cursor: computed.cursor };
+    });
+  const resting = await style();
+
+  // The last cell, not the name: hovering the link itself would say nothing about the row.
+  await row.locator('td').last().hover();
+  expect(await style()).toEqual(resting);
+  expect(resting.cursor).toBe('auto');
+});
+
 test('every record pill carries its own count for the typed keyword', async ({ page }) => {
   await openSearch(page);
   await keywordField(page).fill('mine');
