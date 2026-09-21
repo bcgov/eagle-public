@@ -116,6 +116,11 @@ interface DisplayGridProps<Row> {
   body?: ReactNode;
   /** What the sort select offers, where the columns are not the orders available. */
   sortOptions?: SortOption[];
+  /**
+   * The columns the sort select reads, hidden ones included. A column switched off still sorts:
+   * the cards show no headings, so the select is the only way back to that order.
+   */
+  sortColumns?: GridColumn<Row>[];
   /** Page sizes and pager. Off where there is no result set to page: a prompt, not an answer. */
   footer?: boolean;
   loading?: boolean;
@@ -159,6 +164,7 @@ export function DisplayGrid<Row>({
   rowComponent: RowComponent,
   body,
   sortOptions,
+  sortColumns,
   footer = true,
   loading = false,
   emptyMessage = 'No results found',
@@ -206,7 +212,7 @@ export function DisplayGrid<Row>({
      every width. */
   /* The orders this view can be read in: the record's own columns, unless the page names them —
      a relevance-ranked view has no column to sort by. */
-  const sortChoices = sortOptions ?? sortOptionsFor(columns, sort);
+  const sortChoices = sortOptions ?? sortOptionsFor(sortColumns ?? columns, sort);
   const showSortBar = !showEmpty && (listMode || cardMode) && sortChoices.length > 0;
 
   // The filter row sticks under the header, whose height changes when a label wraps.

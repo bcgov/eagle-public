@@ -441,21 +441,24 @@ export function UnifiedSearch() {
 
   /* Every column of every record type is sortable in the index, and the dropdown values only
      exist once the `List` and `Organization` reads land. */
-  const columns: GridColumn<Row>[] = useMemo(
+  const sortColumns: GridColumn<Row>[] = useMemo(
     () =>
-      scopeColumns
-        .filter((column) => !hiddenColumns.includes(column.key))
-        .map((column) => {
-          const picks = options[column.filterId ?? column.key] ?? column.options;
-          return {
-            ...column,
-            sortable: true,
-            options: picks,
-            // A values column stores ids; without the lookup the cell shows a raw ObjectId.
-            render: column.render ?? cellRenderer(column, picks),
-          };
-        }),
-    [scopeColumns, hiddenColumns, options],
+      scopeColumns.map((column) => {
+        const picks = options[column.filterId ?? column.key] ?? column.options;
+        return {
+          ...column,
+          sortable: true,
+          options: picks,
+          // A values column stores ids; without the lookup the cell shows a raw ObjectId.
+          render: column.render ?? cellRenderer(column, picks),
+        };
+      }),
+    [scopeColumns, options],
+  );
+
+  const columns: GridColumn<Row>[] = useMemo(
+    () => sortColumns.filter((column) => !hiddenColumns.includes(column.key)),
+    [sortColumns, hiddenColumns],
   );
 
   const advancedFields: AdvancedField[] = useMemo(
@@ -938,6 +941,7 @@ export function UnifiedSearch() {
           rowComponent={config.rowComponent}
           body={insideBody}
           sortOptions={inside ? INSIDE_SORT_OPTIONS : undefined}
+          sortColumns={sortColumns}
           footer={!insidePrompt}
           headerless={config.headerless}
           loading={isFetching && !insidePrompt}
