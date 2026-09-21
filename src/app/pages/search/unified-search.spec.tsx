@@ -170,6 +170,19 @@ async function withNotifyApi(): Promise<void> {
   await loadConfig();
 }
 
+/** The phone width where the rows become cards and the sort select stands in for the headings. */
+function stubNarrow(): void {
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn((query: string) => ({
+      matches: query.includes('max-width: 719.98px'),
+      media: query,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    })),
+  );
+}
+
 /** The cell a row shows under a named heading, which is what a reader reads down the column. */
 function cellUnder(row: HTMLElement, heading: string): HTMLElement {
   const index = screen
@@ -438,6 +451,19 @@ describe('UnifiedSearch', () => {
 
     await user.click(screen.getByRole('button', { name: 'Columns' }));
     expect(screen.getByRole('checkbox', { name: 'Last updated' })).not.toBeChecked();
+  });
+
+  it('offers last updated in the phone sort select, though its column starts switched off', async () => {
+    stubNarrow();
+    renderSearch('/search?record=projects');
+    await screen.findByText('Alpha Mine');
+
+    const select = screen.getByRole('combobox', { name: 'Sort' });
+    expect(
+      within(select)
+        .getAllByRole('option')
+        .map((option) => option.textContent),
+    ).toEqual(['Newest first', 'Oldest first', 'Name A–Z', 'Name Z–A']);
   });
 
   it('shows Last updated once the reader picks it, and says so on the address', async () => {

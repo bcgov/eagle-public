@@ -25,7 +25,6 @@
      height on bare `input[type="text"]` and a `min-height` alone loses to it. */
   --grid-control-h: 30px;
   --grid-panel-control-h: 40px;
-  --grid-search-h: 48px;
   --grid-bar-h: 56px;
 
   overflow: visible;

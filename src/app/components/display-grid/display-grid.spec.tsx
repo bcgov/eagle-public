@@ -529,5 +529,21 @@ describe('DisplayGrid', () => {
           .map((option) => option.textContent),
       ).toEqual(['Newest first', 'Oldest first', 'Name A–Z', 'Name Z–A']);
     });
+
+    it('offers an order whose column is switched off, which the cards have no other way to reach', () => {
+      stubNarrow(true);
+      renderGrid({
+        columns: [sortableColumns[0]],
+        sortColumns: sortableColumns,
+        sort: { key: 'name', dir: 'asc' },
+      });
+
+      const select = screen.getByLabelText('Sort');
+      expect(
+        within(select)
+          .getAllByRole('option')
+          .map((option) => option.textContent),
+      ).toEqual(['Newest first', 'Oldest first', 'Name A–Z', 'Name Z–A']);
+    });
   });
 });
