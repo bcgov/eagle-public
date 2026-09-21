@@ -18,6 +18,8 @@ export interface ListRowAttachment {
   type?: string;
   /** Already formatted, e.g. `1.2 MB`. */
   size?: string;
+  /** Runs instead of following the href on a plain click; the href still serves new-tab and copy. */
+  onClick?: () => void;
 }
 
 export interface ListRowField {
@@ -139,7 +141,18 @@ export function ListRow({
             {attached.map((attachment) => (
               <li key={attachment.href}>
                 {isSafeUrl(attachment.href) ? (
-                  <a href={attachment.href} download>
+                  <a
+                    href={attachment.href}
+                    download
+                    onClick={
+                      attachment.onClick
+                        ? (event) => {
+                            event.preventDefault();
+                            attachment.onClick?.();
+                          }
+                        : undefined
+                    }
+                  >
                     <i className="material-icons display-grid__row-docs-icon" aria-hidden="true">
                       insert_drive_file
                     </i>

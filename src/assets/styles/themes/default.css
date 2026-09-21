@@ -32,9 +32,6 @@
   /* Links */
   --link-color: #1a5a96;
 
-  /* Header — the masthead has its own file; this is the hero banner's band. */
-  --header-bg: var(--bs-secondary);
-
   /* COMPONENTS */
 
   /* Aside */
@@ -97,10 +94,6 @@
   --map-cluster-bg: rgba(80, 145, 205, 0.6); /* BC blue light - lighter */
   --map-cluster-inner-bg: rgba(80, 145, 205, 0.9); /* BC blue light - darker */
   --map-pin-stroke: var(--bc-blue, #003366);
-
-  /* Hero Banner */
-  --hero-shadow-color: #00264d;
-  --hero-btn-overlay: rgba(0, 38, 77, 0.3);
 
   /* Buttons */
   --btn-disabled-color: #808080;

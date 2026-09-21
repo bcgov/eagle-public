@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getPins } from 'app/api/project';
 import { Skeleton } from 'app/components/skeleton/skeleton';
 import { useProjectContext } from './project-context';
+import 'app/components/details-panel.css';
 
 /** No project publishes anywhere near this many Nations, so the card never pages. */
 const PAGE_SIZE = 100;
@@ -29,7 +30,7 @@ export function Pins() {
   return (
     <section aria-labelledby="pins-title">
       <h2 id="pins-title">Participating Indigenous Nations</h2>
-      <p className="overview-tab__description overview-tab__description--tight">
+      <p className="details-panel__description overview-tab__description--tight">
         Nations participating in the assessment of this project.
       </p>
       {isPending ? (

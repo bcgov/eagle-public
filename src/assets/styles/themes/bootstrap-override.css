@@ -7,6 +7,12 @@
 
 /* Container width and gutter: assets/styles/base/layout.css */
 
+/* Bootstrap's reboot smooths every page scroll, so a new page glided up from the old one's
+   position. Scrolls that should animate (back to top) ask for it themselves. */
+:root {
+  scroll-behavior: auto;
+}
+
 /* === EAGLE COMPONENT CUSTOMIZATIONS === */
 
 /* Aside section styling */

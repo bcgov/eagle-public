@@ -5,7 +5,10 @@
 :root {
   --page-max-width: 1440px;
   --page-gutter: var(--layout-padding-medium);
+  /* Measures resolve on the element that reads them: `ch` is that element's own character width. */
   --page-measure: 78ch;
+  /* Search passages run in smaller type, so they carry a slightly longer line. */
+  --passage-measure: 86ch;
 }
 
 @media (width >= 860px) {
@@ -14,8 +17,8 @@
   }
 }
 
-/* Bootstrap's container family is folded in: the static pages, the hero banner and the comments
-   page mark their content up with it, so it has to land on the same edges. */
+/* Bootstrap's container family is folded in: the error screens and the project shell's fallback
+   still mark their content up with it, so it has to land on the same edges. */
 .page-container,
 .container,
 .container-fluid,
@@ -28,4 +31,10 @@
   max-width: var(--page-max-width);
   margin-inline: auto;
   padding-inline: var(--page-gutter);
+}
+
+/* The body under a static page's masthead: the band's gutter, then breathing room above and below.
+   The copy inside keeps to `.content-wrapper`'s measure, left-aligned on the band's edge. */
+.page-body {
+  padding-block: var(--layout-padding-xlarge);
 }

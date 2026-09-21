@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Outlet, useLocation, useNavigate } from 'react-router';
+import { Outlet, ScrollRestoration, useLocation, useNavigate } from 'react-router';
 import { SiteHeader } from './site-header';
 import { SiteFooter } from './site-footer';
 import { DownloadPanel } from 'app/components/download-panel';
@@ -82,6 +82,11 @@ export function AppShell() {
 
   return (
     <div className="app-root">
+      {/* Keyed by page, not by history entry: a new page opens at the top, while a tab or filter
+          change on the same page (a new entry too) keeps the reader where they were. */}
+      <ScrollRestoration
+        getKey={(location, matches) => matches[1]?.pathname ?? location.pathname}
+      />
       <a className="skip-to-main" href="#main-content">
         Skip to main content
       </a>

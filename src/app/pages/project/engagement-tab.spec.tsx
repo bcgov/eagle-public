@@ -86,6 +86,19 @@ describe('engagement tab', () => {
     expect(screen.getByText('Closed', { exact: true })).toBeInTheDocument();
   });
 
+  it('colours each period pill by its state: open green, closed grey, upcoming amber', async () => {
+    periods = [
+      OPEN_PERIOD,
+      CLOSED_PERIOD,
+      { _id: 'cp-next', dateStarted: daysFromNow(5), dateCompleted: daysFromNow(30) },
+    ];
+    renderTab();
+
+    expect(await screen.findByText(/Days Remaining$/)).toHaveClass('status-pill--success');
+    expect(screen.getByText(/^Closed /)).toHaveClass('status-pill--neutral');
+    expect(screen.getByText(/^Starts /)).toHaveClass('status-pill--warning');
+  });
+
   it('titles an open period from the subject in its instructions', async () => {
     renderTab();
 

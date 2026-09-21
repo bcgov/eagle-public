@@ -20,9 +20,8 @@
   padding-block: var(--layout-padding-large);
 }
 
-.project-page .tab-content {
+.project-page__content {
   flex: 1;
-  margin-top: 0;
   padding-block: var(--layout-padding-xlarge) var(--layout-margin-huge);
 }
 
@@ -67,7 +66,7 @@
     padding-block: var(--layout-padding-medium);
   }
 
-  .project-page .tab-content {
+  .project-page__content {
     padding-block: var(--layout-padding-large);
   }
 }

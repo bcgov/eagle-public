@@ -75,6 +75,14 @@
   color: var(--theme-gray-30);
 }
 
+.page-masthead__lede {
+  max-width: var(--page-measure);
+  margin: var(--layout-margin-small) 0 0;
+  font: var(--typography-regular-body);
+  color: var(--typography-color-primary-invert);
+}
+
+/* Every control in this row takes `.btn-on-dark` (buttons.css), the site's one on-dark style. */
 .page-masthead__actions {
   display: flex;
   flex-wrap: wrap;
@@ -82,7 +90,9 @@
   gap: var(--layout-padding-small);
 }
 
-/* From the wide gutter up, every band is the same height, whatever the page puts in it.
+/* From the wide gutter up, every band is at least the same height, whatever the page puts in it.
+   The text pages' lede can take it past the floor: it wraps rather than elide, since cutting a
+   sentence short loses what the page is for.
    The floor is the tallest band the site has - search, whose title is followed by the keyword
    field and the record-type row - and e2e/tests/page-layout.spec.ts fails if a page outgrows it.
    The title and the meta line take one line each and elide, so a long project name cannot push

@@ -1,26 +1,28 @@
-import { HeroBanner, type HeroBannerAction } from 'app/components/hero-banner';
+import { MastheadLink, PageMasthead } from 'app/layout/page-masthead';
 
 const HERO_TITLE = 'Compliance Oversight';
 const HERO_DESCRIPTION =
   'Learn about how we collaborate with other government agencies to coordinate oversight of projects that have successfully completed an environmental assessment.';
-const HERO_ACTIONS: HeroBannerAction[] = [
+const HERO_ACTIONS: { label: string; href: string }[] = [
   {
     label: 'View Compliance & Enforcement Policies and Procedures',
     href: 'https://www2.gov.bc.ca/gov/content/environment/natural-resource-stewardship/environmental-assessments/compliance-and-enforcement',
-    icon: 'open_in_new',
-    target: '_blank',
-    rel: 'noopener',
-    title: 'View compliance and enforcement policies and procedures',
   },
 ];
 
 export function ComplianceOversight() {
   return (
     <>
-      <HeroBanner title={HERO_TITLE} description={HERO_DESCRIPTION} actions={HERO_ACTIONS} />
+      <PageMasthead
+        title={HERO_TITLE}
+        lede={HERO_DESCRIPTION}
+        actions={HERO_ACTIONS.map((action) => (
+          <MastheadLink key={action.label} label={action.label} href={action.href} newTab />
+        ))}
+      />
 
-      <section>
-        <div className="container" id="anchor-point">
+      <section className="page-body">
+        <div className="page-container" id="anchor-point">
           <div className="content-wrapper">
             <p>
               The Environmental Assessment Office&apos;s work doesn&apos;t end when a project

@@ -73,9 +73,10 @@ export function ProjectPage() {
         </div>
       </div>
 
-      <main className="page-container tab-content">
+      {/* Not a landmark: the app shell's <main> already holds the whole page. */}
+      <div className="page-container project-page__content">
         <Outlet context={{ project: project ?? null, projId, lists, projectLoading }} />
-      </main>
+      </div>
     </div>
   );
 }

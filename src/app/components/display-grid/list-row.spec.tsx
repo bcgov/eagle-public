@@ -157,6 +157,22 @@ describe('ListRow', () => {
     expect(screen.getByText('1 document')).toBeInTheDocument();
   });
 
+  it('runs the attachment handler on a click, keeping the href for new-tab and copy', async () => {
+    const onClick = vi.fn();
+    render(
+      <ListRow
+        meta={['2026-02-18']}
+        title="Amendment issued"
+        attachments={[{ name: 'Order.pdf', href: '/api/document/1/fetch', onClick }]}
+      />,
+    );
+
+    const link = screen.getByRole('link', { name: 'Order.pdf' });
+    expect(link).toHaveAttribute('href', '/api/document/1/fetch');
+    await userEvent.click(link);
+    expect(onClick).toHaveBeenCalledTimes(1);
+  });
+
   it('draws no type and size element for a file that states neither', () => {
     const { container } = render(
       <ListRow

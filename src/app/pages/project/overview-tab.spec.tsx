@@ -161,7 +161,7 @@ describe('overview tab', () => {
     expect(
       await screen.findByRole('heading', { level: 2, name: 'About this project' }),
     ).toBeInTheDocument();
-    expect(document.querySelector('.overview-tab__description')?.innerHTML).toBe(
+    expect(document.querySelector('.details-panel__description')?.innerHTML).toBe(
       'First line.<br>Second line.',
     );
     // The 2002 Act, not the 2018 default.

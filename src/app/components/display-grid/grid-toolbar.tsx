@@ -42,6 +42,8 @@ interface GridToolbarProps<Row> {
   downloadLabel?: string;
   /** Offered beside Clear while a selection is active, for a page that can select past this one. */
   selectAll?: SelectAllOffer;
+  /** Shown in place of the view tools, for a list with nothing to filter, pick or share. */
+  pager?: ReactNode;
 }
 
 /** Selecting every match, which only a page that owns the query can run. */
@@ -75,6 +77,7 @@ export function GridToolbar<Row>({
   downloadTitle,
   downloadLabel,
   selectAll,
+  pager,
 }: GridToolbarProps<Row>) {
   const [columnsOpen, setColumnsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -204,6 +207,8 @@ export function GridToolbar<Row>({
             </i>
             {downloadLabel ?? `Download ${selectedCount.toLocaleString('en-CA')}`}
           </button>
+        ) : pager ? (
+          pager
         ) : (
           <>
             {onTogglePanel && (

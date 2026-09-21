@@ -67,6 +67,6 @@
   font: var(--typography-regular-small-body);
   color: var(--typography-color-primary);
   text-wrap: pretty;
-  /* Measure: past about 86 characters the eye loses the next line's start. */
-  max-width: 86ch;
+  /* Measure: past about 86 characters the eye loses the next line's start (--passage-measure). */
+  max-width: var(--passage-measure);
 }

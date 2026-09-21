@@ -103,7 +103,9 @@ export function SubscribePopover({
         className={
           band
             ? 'btn btn-primary btn-sm subscribe-popover__trigger'
-            : `subscribe-popover__trigger subscribe-popover__trigger--${surface}`
+            : masthead
+              ? 'btn-on-dark subscribe-popover__trigger subscribe-popover__trigger--masthead'
+              : `subscribe-popover__trigger subscribe-popover__trigger--${surface}`
         }
         popoverTarget={panelId}
         aria-haspopup="dialog"
