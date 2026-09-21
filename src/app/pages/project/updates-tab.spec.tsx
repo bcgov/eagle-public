@@ -77,6 +77,12 @@ describe('updates tab', () => {
     expect(requests[0]).toContain('sortBy=-dateAdded');
   });
 
+  it('announces the count as a status, since typing reruns the search', async () => {
+    await renderTab('https://notify-api.example');
+
+    expect(await screen.findByRole('status')).toHaveTextContent('2 updates, newest first');
+  });
+
   it('says the list is by relevance when a keyword search reorders it', async () => {
     await renderTab(
       'https://notify-api.example',

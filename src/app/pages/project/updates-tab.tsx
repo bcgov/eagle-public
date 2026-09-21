@@ -56,7 +56,7 @@ export function UpdatesTab() {
             </p>
           )}
           {total > 0 && (
-            <p className="updates-tab__count">
+            <p className="updates-tab__count" role="status">
               {total.toLocaleString('en-CA')} {total === 1 ? 'update' : 'updates'},{' '}
               {sortBy === DEFAULT_SORT ? 'newest first' : 'by relevance'}
             </p>
