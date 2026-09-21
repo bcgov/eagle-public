@@ -205,6 +205,8 @@ export function Comments() {
   }
 
   const commentsTotal = commentsQuery.data?.totalCount ?? 0;
+  // Pending covers the wait for the period too: the comments query is idle, not fetching, then.
+  const commentsLoading = commentsQuery.isPending || commentsQuery.isFetching;
   const commentPeriodDocs = docsQuery.data ?? [];
   const openHouses: { eventDate: string; description: string }[] = commentPeriod?.openHouses ?? [];
   const commentPeriodHeader = commentPeriod
@@ -346,7 +348,7 @@ export function Comments() {
             rows={commentsQuery.data?.comments ?? []}
             rowComponent={CommentRow}
             rowId={(comment) => comment._id}
-            loading={commentsQuery.isFetching}
+            loading={commentsLoading}
             emptyMessage="There are no comments."
             page={page}
             pageSize={pageSize}
@@ -362,7 +364,7 @@ export function Comments() {
                 page={page}
                 pageSize={pageSize}
                 total={commentsTotal}
-                loading={commentsQuery.isFetching}
+                loading={commentsLoading}
                 pager={
                   <GridPager
                     page={page}

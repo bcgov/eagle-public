@@ -88,9 +88,57 @@ describe('app shell', () => {
       ]).router;
     }
 
-    function scrolledDown() {
-      Object.defineProperty(window, 'scrollY', { value: 900, configurable: true });
+    function scrolledTo(y: number) {
+      Object.defineProperty(window, 'scrollY', { value: y, configurable: true });
     }
+
+    function scrolledDown() {
+      scrolledTo(900);
+    }
+
+    it('opens a page already visited at the top when a link leads back to it', async () => {
+      const router = renderPages();
+      await screen.findByRole('heading', { name: 'Overview' });
+      scrolledDown();
+      await router.navigate('/p/1/cp/2/details');
+      await screen.findByRole('heading', { name: 'Comment period' });
+      scrolledTo(0);
+
+      await router.navigate('/p/1/overview');
+
+      await screen.findByRole('heading', { name: 'Overview' });
+      expect(scrollTo).toHaveBeenLastCalledWith(0, 0);
+    });
+
+    it('restores the old position on browser back', async () => {
+      const router = renderPages();
+      await screen.findByRole('heading', { name: 'Overview' });
+      scrolledDown();
+      await router.navigate('/p/1/cp/2/details');
+      await screen.findByRole('heading', { name: 'Comment period' });
+      scrolledTo(200);
+
+      await router.navigate(-1);
+
+      await screen.findByRole('heading', { name: 'Overview' });
+      expect(scrollTo).toHaveBeenLastCalledWith(0, 900);
+    });
+
+    it('restores the old position on browser back to a tab reached within the page', async () => {
+      const router = renderPages();
+      await screen.findByRole('heading', { name: 'Overview' });
+      await router.navigate('/p/1/engagement');
+      await screen.findByRole('heading', { name: 'Engagement' });
+      scrolledDown();
+      await router.navigate('/p/1/cp/2/details');
+      await screen.findByRole('heading', { name: 'Comment period' });
+      scrolledTo(200);
+
+      await router.navigate(-1);
+
+      await screen.findByRole('heading', { name: 'Engagement' });
+      expect(scrollTo).toHaveBeenLastCalledWith(0, 900);
+    });
 
     it('opens a new page at the top', async () => {
       const router = renderPages();

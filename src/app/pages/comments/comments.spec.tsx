@@ -45,8 +45,10 @@ const COMMENTS = [
     documents: ['commentDoc1'],
   },
   {
-    // An anonymous comment carries no author field at all rather than a null one.
+    // An anonymous comment carries no author field at all rather than a null one, but eagle-api
+    // keeps its location.
     _id: 'c2',
+    location: 'Nanaimo',
     comment: 'Anonymous comment',
     dateAdded: '2026-08-02T00:00:00.000Z',
     documents: [],
@@ -392,6 +394,26 @@ describe('comments', () => {
     renderComments();
 
     expect(await screen.findByText('There are no comments.')).toBeInTheDocument();
+  });
+
+  it('holds back the no-comments message until the period and its comments have loaded', async () => {
+    commentCount = 0;
+    renderComments();
+
+    expect(screen.getByText('Loading comment period')).toBeInTheDocument();
+    expect(screen.queryByText('There are no comments.')).not.toBeInTheDocument();
+    expect(await screen.findByText('There are no comments.')).toBeInTheDocument();
+  });
+
+  it('keeps the place off an anonymous comment and shows it on a named one', async () => {
+    renderComments();
+
+    await screen.findByText('Anonymous comment');
+    const [named, anonymous] = screen
+      .getAllByRole('listitem')
+      .filter((item) => within(item).queryByRole('heading', { level: 3 }));
+    expect(within(named).getByText(/Victoria$/)).toBeInTheDocument();
+    expect(within(anonymous).queryByText(/Nanaimo/)).not.toBeInTheDocument();
   });
 
   it('goes back to the project page', async () => {
