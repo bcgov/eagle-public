@@ -56,9 +56,8 @@ first. Every period in the rail is an ENGAGE engagement, so a card links out thr
 `/p/:id/cp/:id/details` route is the fallback. The empty state names how many periods
 closed in the last 30 days when that count is available.
 
-The foot link, "Upcoming and recently closed periods," has no comment-period record type
-to land on. It goes to `/search?record=notifications&pcp=pending` instead, which lists
-project notifications rather than periods.
+The foot link, "Upcoming and recently closed periods," goes to
+`/search?record=commentPeriods`, the Comment periods tab on `/search`.
 
 ### Recent Uploads
 
@@ -128,5 +127,3 @@ Tracked here, not yet filed:
 
 - Update notification emails link to the project page. They move to `/updates/:id` only
   once this line serves production.
-- There is no comment-period record type on `/search`, so "Upcoming and recently closed
-  periods" links to project notifications instead.

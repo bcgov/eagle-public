@@ -1,8 +1,9 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { ApiError, getJson, isAbortError, searchPath } from 'app/api/api';
-import { fetchData, SearchParamObject } from 'app/api/search';
+import { getSearchResults } from 'app/api/search';
 import { RECORD_TYPES, type RecordType } from 'app/components/display-grid/use-grid-url-state';
 import { TYPEAHEAD_DEBOUNCE_MS, typeaheadKeywords } from 'app/components/filters/typeahead';
+import { logger } from 'app/config/logging';
 import { RECORD_DATASETS } from './types';
 import { useSettled } from './use-settled';
 
@@ -40,24 +41,46 @@ function fromEnvelope(envelope: CountsEnvelope[]): TypeCounts {
   return out;
 }
 
+/** One type's total from a one-row search; null when the search failed or sent no total. */
+async function searchTotal(
+  id: RecordType,
+  keywords: string,
+  signal?: AbortSignal,
+): Promise<number | null> {
+  // Not `fetchData`: it answers a failed search as an empty one, which would badge the tab 0.
+  const res = await getSearchResults(
+    keywords,
+    RECORD_DATASETS[id],
+    [],
+    1,
+    1,
+    '',
+    {},
+    false,
+    null,
+    {},
+    '',
+    false,
+    signal,
+  );
+  if (!res) {
+    logger.warn('Count search failed; the tab shows no badge', 'search-counts', id);
+    return null;
+  }
+  const meta = res[0]?.data?.meta;
+  // eagle-api answers zero hits with an empty `meta`.
+  if (Array.isArray(meta) && meta.length === 0) return 0;
+  const total = meta?.[0]?.searchResultsTotal;
+  return typeof total === 'number' ? total : null;
+}
+
 /**
  * What the tabs showed before `search/counts` existed: one one-row search per type, read for its
- * total. Four requests instead of one, which is why it is the fallback and not the path.
+ * total. One request per type instead of one in all, which is why it is the fallback and not the path.
  */
 async function countsFromSearches(keywords: string, signal?: AbortSignal): Promise<TypeCounts> {
-  const totals = await Promise.all(
-    RECORD_TYPES.map((id) =>
-      fetchData(
-        new SearchParamObject(`search-counts-${id}`, keywords, RECORD_DATASETS[id], [], 1, 1, ''),
-        signal,
-      ),
-    ),
-  );
-  const out = unknownCounts();
-  RECORD_TYPES.forEach((id, index) => {
-    out[id] = totals[index]?.totalSearchCount ?? null;
-  });
-  return out;
+  const totals = await Promise.all(RECORD_TYPES.map((id) => searchTotal(id, keywords, signal)));
+  return Object.fromEntries(RECORD_TYPES.map((id, index) => [id, totals[index]])) as TypeCounts;
 }
 
 async function readCounts(keywords: string, signal?: AbortSignal): Promise<TypeCounts> {

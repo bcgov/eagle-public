@@ -1,6 +1,6 @@
 # Unified search page (PUBLIC-146)
 
-One `/search` page and one display grid across four record types.
+One `/search` page and one display grid across five record types.
 
 ## Context
 
@@ -221,9 +221,10 @@ Counts. `useTypeCounts(keywords)` is a `useQuery(['search-counts', keywords])`
 with `keepPreviousData` and an abort signal, driven by the same 300 ms debounce
 and two character floor as the main query (`TYPEAHEAD_DEBOUNCE_MS`,
 `MIN_TYPEAHEAD_LENGTH`). On a 404 from `/search/counts` it memoizes
-`countsUnsupported` and falls back to four parallel `fetchData(pageSize: 1)`
-reads of `searchResultsTotal`, so this work can ship before Phase 0 is deployed.
-A `null` count renders a pill without a badge. Analytics is unchanged: one event
+`countsUnsupported` and falls back to one parallel `getSearchResults(pageSize: 1)`
+read of `searchResultsTotal` per record type, so this work can ship before Phase 0
+is deployed. A failed read counts as `null`, not 0. A `null` count renders a pill
+without a badge. Analytics is unchanged: one event
 per typing pause, aborts not logged.
 
 Routing. `/search` renders `UnifiedSearch`. The old `pages/search/search.tsx`,

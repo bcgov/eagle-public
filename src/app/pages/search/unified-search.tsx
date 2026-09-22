@@ -63,6 +63,10 @@ type Row = Record<string, unknown>;
 /** Selection bucket name. The unified page is what `/search` selects documents from. */
 const TABLE_ID = 'search';
 
+const SEARCH_LABEL = 'Search projects, documents, updates and comment periods';
+/** The full label is cut off in a 390px-wide field; the short hint fits, the label stays for screen readers. */
+const SEARCH_PLACEHOLDER = 'Search projects and more';
+
 /** Where the record type and scope sit in the search query key; the placeholder reads them back. */
 const RECORD_IN_KEY = 1;
 const SCOPE_IN_KEY = 2;
@@ -390,7 +394,7 @@ export function UnifiedSearch() {
     record,
     keywords,
     scope,
-    sortBy,
+    sortBy: urlSortBy,
     currentPage,
     pageSize,
     hiddenColumns,
@@ -401,6 +405,14 @@ export function UnifiedSearch() {
      `scope=inside` address in an environment that does not reads as the names scope. */
   const scopeShown = config.id === 'documents' && contentSearchEnabled();
   const inside = scopeShown && scope === 'inside';
+  /* A tab with a fixed sort list reads a sort it does not offer as its default: the select could
+     not show it, and could not be used to get back from it. */
+  const sortBy =
+    !inside &&
+    config.sortOptions &&
+    !config.sortOptions.some((option) => option.value === urlSortBy)
+      ? config.defaultSort
+      : urlSortBy;
 
   /* A filter the chunk dataset cannot answer is not applied inside the documents, so it is not
      offered or shown as a chip there either. It comes back on the way out of the scope. */
@@ -848,13 +860,11 @@ export function UnifiedSearch() {
             search
           </i>
           <label className="unified-search__field-label">
-            <span className="unified-search__visually-hidden">
-              Search projects, documents and updates
-            </span>
+            <span className="unified-search__visually-hidden">{SEARCH_LABEL}</span>
             <input
               type="search"
               className="unified-search__input"
-              placeholder="Search projects, documents and updates"
+              placeholder={SEARCH_PLACEHOLDER}
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
             />
@@ -940,7 +950,7 @@ export function UnifiedSearch() {
           template={template}
           rowComponent={config.rowComponent}
           body={insideBody}
-          sortOptions={inside ? INSIDE_SORT_OPTIONS : undefined}
+          sortOptions={inside ? INSIDE_SORT_OPTIONS : config.sortOptions}
           sortColumns={sortColumns}
           footer={!insidePrompt}
           headerless={config.headerless}

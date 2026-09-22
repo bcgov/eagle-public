@@ -84,14 +84,16 @@ export function ListRow({
 
   return (
     <div className="display-grid__row">
-      <p className="display-grid__row-meta">
-        {meta.map((part, index) => (
-          <Fragment key={index}>
-            {index > 0 ? <span aria-hidden="true"> · </span> : null}
-            {part}
-          </Fragment>
-        ))}
-      </p>
+      {meta.length > 0 ? (
+        <p className="display-grid__row-meta">
+          {meta.map((part, index) => (
+            <Fragment key={index}>
+              {index > 0 ? <span aria-hidden="true"> · </span> : null}
+              {part}
+            </Fragment>
+          ))}
+        </p>
+      ) : null}
 
       <h3 className="display-grid__row-title">
         <RecordLink

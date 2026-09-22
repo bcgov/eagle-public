@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router';
-import { NEW_TAB_SUFFIX } from 'app/components/engagement-link';
+import { NEW_TAB_SUFFIX } from 'app/components/new-tab-hint';
 import { adminUrl, bannerColour, env } from 'app/config/config';
 import './site-header.css';
 

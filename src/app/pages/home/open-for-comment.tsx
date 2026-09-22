@@ -3,26 +3,15 @@ import { Link } from 'react-router';
 import { openCommentPeriodsQueryOptions } from 'app/api/commentperiod';
 import { EngagementLink } from 'app/components/engagement-link';
 import { Skeleton } from 'app/components/skeleton/skeleton';
-import type { CommentPeriod } from 'app/models/commentperiod';
+import { periodDetailsHref, periodName, type CommentPeriod } from 'app/models/commentperiod';
 import { searchUrl } from 'app/routes/legacy-search';
 import { longDate } from 'app/utils/utils';
 
-// No record type lists comment periods yet; notifications with a pending period are the nearest.
-const MORE_PERIODS_HREF = `${searchUrl('notifications')}&pcp=pending`;
+const MORE_PERIODS_HREF = searchUrl('commentPeriods');
 
 const SKELETON_CARDS = [1, 2];
 
-/** The period's project as the row carries it: an Eagle id, or a populated project. */
-function projectIdOf(period: CommentPeriod): string {
-  const project = period.project as unknown;
-  if (typeof project === 'string') return project;
-  return (project as { _id?: string } | null)?._id ?? '';
-}
-
 function PeriodCard({ period }: { period: CommentPeriod }) {
-  const projectId = projectIdOf(period);
-  const name = period.projectName ?? period.informationLabel ?? 'Comment period';
-
   return (
     <li className="home-period">
       <span className="home-period__left">{period.daysRemaining}</span>
@@ -30,8 +19,8 @@ function PeriodCard({ period }: { period: CommentPeriod }) {
         className="home-period__name"
         isMet={period.isMet}
         metURL={period.metURL}
-        to={projectId ? `/p/${projectId}/cp/${period._id}/details` : null}
-        label={name}
+        to={periodDetailsHref(period)}
+        label={periodName(period)}
       />
       <span className="home-period__window">
         {longDate(period.dateStarted)} – {longDate(period.dateCompleted)}

@@ -171,6 +171,8 @@ describe('resolveLegacySearch', () => {
     '/search?record=projects&keywords=coal',
     '/search?record=documents&scope=inside&keywords=coal',
     '/search?record=notifications&pcp=open',
+    '/search?record=commentPeriods',
+    '/search?record=commentPeriods&status=open',
   ])('leaves %s alone, so the page does not redirect to itself', (from) => {
     expect(resolved(from)).toBeNull();
   });

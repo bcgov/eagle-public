@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { NewTabHint } from 'app/components/engagement-link';
+import { NewTabHint } from 'app/components/new-tab-hint';
 import { Breadcrumbs, type Crumb } from './breadcrumbs';
 import './page-masthead.css';
 

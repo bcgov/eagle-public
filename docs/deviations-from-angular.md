@@ -162,9 +162,6 @@ deviations. The deviations the pass turned up are below.
 - pages/home/update-reader: the reader's Documents section shows a single link. An
   update carries one `documentUrl` and no document name, type or date, so the accordion
   the design calls for cannot list more than that one file.
-- pages/home/open-for-comment: the "Upcoming and recently closed periods" link lands on
-  `/search?record=notifications&pcp=pending`, project notifications, not comment
-  periods. No record type on `/search` lists comment periods.
 - pages/home/updates-feed: activity kind mapping. A `RecentActivity` row (Angular's
   "News") reads as "Update"; a project decision reads as "Decision". `RecentActivity`
   itself has no decision type; the merged feed adds decisions from project data.

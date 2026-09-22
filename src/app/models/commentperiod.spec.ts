@@ -67,6 +67,43 @@ describe('CommentPeriod', () => {
     });
   });
 
+  describe('bannerTimerPillText', () => {
+    // A UTC browser, where the day a Date prints on can differ from the Pacific one.
+    beforeEach(() => {
+      vi.stubEnv('TZ', 'UTC');
+    });
+    afterEach(() => {
+      vi.unstubAllEnvs();
+    });
+
+    it('dates an upcoming start by its Pacific day', () => {
+      const period = new CommentPeriod({
+        dateStarted: '2026-06-20T03:00:00Z',
+        dateCompleted: '2026-07-20T12:00:00-07:00',
+      });
+
+      expect(period.bannerTimerPillText).toBe('Starts Jun 19, 2026');
+    });
+
+    it('dates a close at Pacific midnight by that day, not the next', () => {
+      const period = new CommentPeriod({
+        dateStarted: '2026-05-01T09:00:00-07:00',
+        dateCompleted: '2026-06-10T00:00:00-07:00',
+      });
+
+      expect(period.bannerTimerPillText).toBe('Closed Jun 10, 2026');
+    });
+
+    it('dates a close late in the Pacific evening by its Pacific day', () => {
+      const period = new CommentPeriod({
+        dateStarted: '2026-05-01T09:00:00-07:00',
+        dateCompleted: '2026-06-10T23:59:00-07:00',
+      });
+
+      expect(period.bannerTimerPillText).toBe('Closed Jun 10, 2026');
+    });
+  });
+
   describe('endDateDisplay', () => {
     it('shows the date alone when the period ends at midnight', () => {
       const period = new CommentPeriod({ dateCompleted: '2026-06-15T00:00:00-07:00' });

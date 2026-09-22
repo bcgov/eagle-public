@@ -124,3 +124,12 @@ Fixes shipped on `develop` (Angular) not yet re-implemented here. One line each:
 - Non-interactive `tabIndex={0}` on `<td>` in `pins` and `activity-card` is an Angular-era idiom that puts unactionable content in the tab order (WCAG 2.4.3). `jsx-a11y/no-noninteractive-tabindex` does not flag table cells, so lint will not catch it; it needs a decision on how those tables should be navigated.
 - `surveyUrl()` and `showSurveyBanner()` in `src/app/config/config.ts` have no consumer since the home redesign removed the survey banner. Decide whether the survey returns somewhere else; if not, delete both and the `SURVEY_URL` / `SHOW_SURVEY_BANNER` config keys.
 - Project reads all come from demi-search now, so the two corpora can no longer disagree. Background on why the split existed: `eagle-demi/docs/FUTURE.md`, "Serve eagle-public's project reads".
+- Comment periods search tab, open items (2026-09-22):
+  - `docs/unified-search-plan.md` still says four tabs (L28-29, L500, L527) and has no section on the Comment periods tab.
+  - No e2e opens `/search?record=commentPeriods` or follows the home "Upcoming and recently closed periods" link. Add one once the eagle-demi list change is on test.
+  - Documents tab: on long names the ellipsis hides the new-tab icon.
+  - `periodDates` shows "Opens <date>" even when the date is years in the past.
+  - `open-for-comment.spec.tsx` has no case for `projectName: ''`.
+  - The home card shows dates in the browser's time zone (`longDate`); search rows show Pacific.
+  - Check whether the longer search placeholder is cut off at 390px.
+  - A period whose parent is a project notification links to `/p/<id>/cp/...` instead of `/pn/...`, because the search row does not say what kind of parent it has.
