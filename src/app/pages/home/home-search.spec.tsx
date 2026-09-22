@@ -32,18 +32,18 @@ function landedOn(router: ReturnType<typeof renderSearch>['router']): Record<str
 }
 
 describe('home search row', () => {
-  it('labels the field and the record-type picker, which offers three types', () => {
+  it('labels the field and the record-type picker, which offers the /search types', () => {
     renderSearch();
 
-    expect(
-      screen.getByRole('searchbox', { name: 'Search projects and documents by keyword' }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('searchbox', { name: 'Search by keyword' })).toBeInTheDocument();
     const picker = screen.getByRole('combobox', { name: 'What to search' });
     expect(picker).toHaveValue('projects');
     expect(screen.getAllByRole('option').map((option) => option.textContent)).toEqual([
       'Projects',
       'Documents',
-      'Updates',
+      'Activities & updates',
+      'Project notifications',
+      'Comment periods',
     ]);
   });
 
@@ -60,16 +60,46 @@ describe('home search row', () => {
     expect(landedOn(router)).toEqual({ record: 'documents', keywords: 'Site C' });
   });
 
-  it('sends Updates to the activities record type, submitted with Enter', async () => {
+  it('sends Activities & updates to the activities record type, submitted with Enter', async () => {
     const user = userEvent.setup();
     const { router, release } = renderSearch();
 
-    await user.selectOptions(screen.getByRole('combobox'), 'Updates');
+    // By the option node: user-event matches text through innerHTML, where `&` reads `&amp;`.
+    await user.selectOptions(
+      screen.getByRole('combobox'),
+      screen.getByRole('option', { name: 'Activities & updates' }),
+    );
     await user.type(screen.getByRole('searchbox'), 'decision{Enter}');
     release();
 
     await screen.findByText(/search page/);
     expect(landedOn(router)).toEqual({ record: 'activities', keywords: 'decision' });
+  });
+
+  it('sends Project notifications to the notifications record type', async () => {
+    const user = userEvent.setup();
+    const { router, release } = renderSearch();
+
+    await user.type(screen.getByRole('searchbox'), 'mine');
+    await user.selectOptions(screen.getByRole('combobox'), 'Project notifications');
+    await user.click(screen.getByRole('button', { name: 'Search' }));
+    release();
+
+    await screen.findByText(/search page/);
+    expect(landedOn(router)).toEqual({ record: 'notifications', keywords: 'mine' });
+  });
+
+  it('sends Comment periods to the commentPeriods record type', async () => {
+    const user = userEvent.setup();
+    const { router, release } = renderSearch();
+
+    await user.selectOptions(screen.getByRole('combobox'), 'Comment periods');
+    await user.type(screen.getByRole('searchbox'), 'pipeline');
+    await user.click(screen.getByRole('button', { name: 'Search' }));
+    release();
+
+    await screen.findByText(/search page/);
+    expect(landedOn(router)).toEqual({ record: 'commentPeriods', keywords: 'pipeline' });
   });
 
   it('opens /search with no keyword when the field is empty', async () => {
