@@ -33,13 +33,13 @@ export function HomeSearch() {
             search
           </i>
           <label className="home-search__label">
-            <span className="visually-hidden">Search projects and documents by keyword</span>
+            <span className="visually-hidden">Search by keyword</span>
             <input
               className="home-search__input"
               type="search"
               value={keyword}
               onChange={(event) => setKeyword(event.target.value)}
-              placeholder="Project name, proponent, document title or text"
+              placeholder="Enter a keyword"
             />
           </label>
         </div>

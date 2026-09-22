@@ -2,8 +2,6 @@ import { describe, it, expect } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useLocation } from 'react-router';
-import { RECORD_TYPES } from 'app/components/display-grid/use-grid-url-state';
-import { recordConfig } from 'app/pages/search/types';
 import { renderAt } from '../../../test-utils';
 import { HomeSearch } from './home-search';
 
@@ -37,14 +35,16 @@ describe('home search row', () => {
   it('labels the field and the record-type picker, which offers the /search types', () => {
     renderSearch();
 
-    expect(
-      screen.getByRole('searchbox', { name: 'Search projects and documents by keyword' }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('searchbox', { name: 'Search by keyword' })).toBeInTheDocument();
     const picker = screen.getByRole('combobox', { name: 'What to search' });
     expect(picker).toHaveValue('projects');
-    expect(screen.getAllByRole('option').map((option) => option.textContent)).toEqual(
-      RECORD_TYPES.map((id) => recordConfig(id).label),
-    );
+    expect(screen.getAllByRole('option').map((option) => option.textContent)).toEqual([
+      'Projects',
+      'Documents',
+      'Activities & updates',
+      'Project notifications',
+      'Comment periods',
+    ]);
   });
 
   it('hands the keyword and the record type to /search', async () => {
@@ -87,6 +87,19 @@ describe('home search row', () => {
 
     await screen.findByText(/search page/);
     expect(landedOn(router)).toEqual({ record: 'notifications', keywords: 'mine' });
+  });
+
+  it('sends Comment periods to the commentPeriods record type', async () => {
+    const user = userEvent.setup();
+    const { router, release } = renderSearch();
+
+    await user.selectOptions(screen.getByRole('combobox'), 'Comment periods');
+    await user.type(screen.getByRole('searchbox'), 'pipeline');
+    await user.click(screen.getByRole('button', { name: 'Search' }));
+    release();
+
+    await screen.findByText(/search page/);
+    expect(landedOn(router)).toEqual({ record: 'commentPeriods', keywords: 'pipeline' });
   });
 
   it('opens /search with no keyword when the field is empty', async () => {
