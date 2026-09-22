@@ -1,14 +1,8 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate, useNavigation } from 'react-router';
-import type { RecordType } from 'app/components/display-grid/use-grid-url-state';
+import { RECORD_TYPES, type RecordType } from 'app/components/display-grid/use-grid-url-state';
+import { recordConfig } from 'app/pages/search/types';
 import { searchUrl } from 'app/routes/legacy-search';
-
-/** What the home page can search. There is no "everything" search: /search opens on one type. */
-const RECORD_OPTIONS: { value: RecordType; label: string }[] = [
-  { value: 'projects', label: 'Projects' },
-  { value: 'documents', label: 'Documents' },
-  { value: 'activities', label: 'Updates' },
-];
 
 /**
  * The home page's one keyword search. It shows no results: submit hands the keyword and record
@@ -56,9 +50,10 @@ export function HomeSearch() {
             value={record}
             onChange={(event) => setRecord(event.target.value as RecordType)}
           >
-            {RECORD_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
+            {/* The /search type pills, same order and names. There is no "everything" search. */}
+            {RECORD_TYPES.map((id) => (
+              <option key={id} value={id}>
+                {recordConfig(id).label}
               </option>
             ))}
           </select>
