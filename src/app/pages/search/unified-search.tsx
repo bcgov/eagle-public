@@ -855,51 +855,23 @@ export function UnifiedSearch() {
   return (
     <div className="unified-search">
       <PageMasthead title="Search" breadcrumbs={[{ label: 'Home', to: '/' }, { label: 'Search' }]}>
-        <div className="unified-search__field" data-tour="search">
-          <i className="material-icons unified-search__field-icon" aria-hidden="true">
-            search
-          </i>
-          <label className="unified-search__field-label">
-            <span className="unified-search__visually-hidden">{SEARCH_LABEL}</span>
-            <input
-              type="search"
-              className="unified-search__input"
-              placeholder={SEARCH_PLACEHOLDER}
-              value={draft}
-              onChange={(event) => setDraft(event.target.value)}
-            />
-          </label>
-        </div>
-
-        <div className="unified-search__types-row">
-          <div
-            className="unified-search__types"
-            data-tour="types"
-            role="group"
-            aria-label="Record type"
-          >
-            {RECORD_TYPES.map((id) => {
-              const on = id === record;
-              const count = id === 'documents' && insideTotal !== null ? insideTotal : counts?.[id];
-              return (
-                <button
-                  key={id}
-                  type="button"
-                  className={`unified-search__pill${on ? ' unified-search__pill--on' : ''}`}
-                  aria-pressed={on}
-                  onClick={() => switchRecord(id)}
-                >
-                  {recordLabel(id)}
-                  {/* An unknown total renders no badge: a zero would claim the type has no matches. */}
-                  {typeof count === 'number' && (
-                    <span className="unified-search__pill-count">
-                      {count.toLocaleString('en-CA')}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
+        <div className="unified-search__query">
+          <div className="unified-search__field" data-tour="search">
+            <i className="material-icons unified-search__field-icon" aria-hidden="true">
+              search
+            </i>
+            <label className="unified-search__field-label">
+              <span className="unified-search__visually-hidden">{SEARCH_LABEL}</span>
+              <input
+                type="search"
+                className="unified-search__input"
+                placeholder={SEARCH_PLACEHOLDER}
+                value={draft}
+                onChange={(event) => setDraft(event.target.value)}
+              />
+            </label>
           </div>
+
           {/* The long-form page is still the destination for a new tab or a reader with no
             JavaScript; a plain press gets the summary in a dialog without leaving the results. */}
           <Link
@@ -919,6 +891,35 @@ export function UnifiedSearch() {
             </i>
             <span className="link-label">Search help</span>
           </Link>
+        </div>
+
+        <div
+          className="unified-search__types"
+          data-tour="types"
+          role="group"
+          aria-label="Record type"
+        >
+          {RECORD_TYPES.map((id) => {
+            const on = id === record;
+            const count = id === 'documents' && insideTotal !== null ? insideTotal : counts?.[id];
+            return (
+              <button
+                key={id}
+                type="button"
+                className={`unified-search__pill${on ? ' unified-search__pill--on' : ''}`}
+                aria-pressed={on}
+                onClick={() => switchRecord(id)}
+              >
+                {recordLabel(id)}
+                {/* An unknown total renders no badge: a zero would claim the type has no matches. */}
+                {typeof count === 'number' && (
+                  <span className="unified-search__pill-count">
+                    {count.toLocaleString('en-CA')}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
       </PageMasthead>
 
