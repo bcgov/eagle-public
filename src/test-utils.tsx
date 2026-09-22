@@ -1,6 +1,11 @@
 import { render, type RenderOptions } from '@testing-library/react';
 import { QueryClient, QueryClientProvider, type QueryClientConfig } from '@tanstack/react-query';
-import { RouterProvider, createMemoryRouter, type RouteObject } from 'react-router';
+import {
+  RouterProvider,
+  createMemoryRouter,
+  type InitialEntry,
+  type RouteObject,
+} from 'react-router';
 import { vi } from 'vitest';
 
 type QueryDefaults = NonNullable<NonNullable<QueryClientConfig['defaultOptions']>['queries']>;
@@ -30,16 +35,21 @@ export async function capturedRequestUrl(issue: () => Promise<unknown>): Promise
   }
 }
 
-/** Renders `routes` at `path` inside the providers the app mounts in main.tsx. */
+/**
+ * Renders `routes` at `at`, a path or a history stack opened at `initialIndex`, inside the
+ * providers the app mounts in main.tsx.
+ */
 export function renderAt(
-  path: string,
+  at: string | InitialEntry[],
   routes: RouteObject[],
   {
     queryClient = makeQueryClient(),
+    initialIndex,
     ...options
-  }: RenderOptions & { queryClient?: QueryClient } = {},
+  }: RenderOptions & { queryClient?: QueryClient; initialIndex?: number } = {},
 ) {
-  const router = createMemoryRouter(routes, { initialEntries: [path] });
+  const initialEntries = typeof at === 'string' ? [at] : at;
+  const router = createMemoryRouter(routes, { initialEntries, initialIndex });
   return {
     ...render(
       <QueryClientProvider client={queryClient}>

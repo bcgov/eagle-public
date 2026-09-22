@@ -38,12 +38,38 @@ function getPageName(path: string): string {
     .join(' > ');
 }
 
+export const SCROLL_KEYS_STORAGE_KEY = 'eagle-public-scroll-keys';
+export const SCROLL_KEYS_CAP = 200;
+
+/** Entry-to-scroll-key pairs saved in this tab, oldest first; empty when storage is unreadable. */
+function readScrollKeys(): Map<string, string> {
+  try {
+    const saved: unknown = JSON.parse(sessionStorage.getItem(SCROLL_KEYS_STORAGE_KEY) ?? '[]');
+    const keyByEntry = new Map<string, string>(Array.isArray(saved) ? saved : []);
+    // Every fresh document load has entry key 'default', so a stored one belongs to another page.
+    keyByEntry.delete('default');
+    return keyByEntry;
+  } catch {
+    return new Map();
+  }
+}
+
+function writeScrollKeys(keyByEntry: Map<string, string>): void {
+  try {
+    sessionStorage.setItem(SCROLL_KEYS_STORAGE_KEY, JSON.stringify([...keyByEntry]));
+  } catch {
+    // Storage full or blocked: positions still hold until the next reload.
+  }
+}
+
 /**
  * Scroll key per page visit, not per history entry or per path: a link to a page opens it at the
  * top, back and forward restore, and a tab or filter change on the same page keeps the position.
+ * The entry-to-key map lives in sessionStorage because the router's saved positions survive a
+ * reload and are useless if an entry reached by a tab change no longer finds its page's key.
  */
 function createScrollKey(): GetScrollRestorationKeyFunction {
-  const keyByEntry = new Map<string, string>();
+  const keyByEntry = readScrollKeys();
   let last: { page: string; key: string } | null = null;
   return (location, matches) => {
     const page = matches[1]?.pathname ?? location.pathname;
@@ -53,6 +79,12 @@ function createScrollKey(): GetScrollRestorationKeyFunction {
       // page being left.
       key = last?.page === page ? last.key : `${page}#${location.key}`;
       keyByEntry.set(location.key, key);
+      // FIFO eviction: a Map iterates in insertion order, so the first key is the oldest entry.
+      for (const oldest of keyByEntry.keys()) {
+        if (keyByEntry.size <= SCROLL_KEYS_CAP) break;
+        keyByEntry.delete(oldest);
+      }
+      writeScrollKeys(keyByEntry);
     }
     last = { page, key };
     return key;
