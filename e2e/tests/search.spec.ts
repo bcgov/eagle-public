@@ -26,6 +26,8 @@ const ROWS = '.display-grid__row';
 const LONG_UPDATE = activities.find((update) => update._id === 'u1')?.content ?? '';
 /** The first data cell of a row. A selectable table puts its checkbox cell ahead of it. */
 const NAME = 'td.display-grid__cell:not(.display-grid__cell--select)';
+/** The documents tab's first row: its name links to the file in a new tab, and says so. */
+const FIRST_DOCUMENT = 'Amendment #3 Application — Volume 1 (opens in new tab)';
 
 /** Fixture-backed page: deterministic rows, and nothing leaves the box. */
 async function openSearch(page: Page, url = '/search'): Promise<void> {
@@ -238,9 +240,9 @@ test('the documents pill switches the grid to the document columns', async ({ pa
     await expect(page.getByRole('columnheader', { name: column, exact: true })).toBeVisible();
   }
   await expect(page.locator(ROWS)).toHaveCount(18);
-  await expect(page.locator(ROWS).first().locator(NAME).first()).toHaveText(
-    'Amendment #3 Application — Volume 1',
-  );
+  await expect(
+    page.locator(ROWS).first().locator(NAME).first().getByRole('link'),
+  ).toHaveAccessibleName(FIRST_DOCUMENT);
 });
 
 test('the activities pill lists updates as full-width rows', async ({ page }) => {
@@ -353,7 +355,9 @@ test('a notification filter lives in the panel, because a card has no filter row
 test('selecting a document offers it for download', async ({ page }) => {
   await openSearch(page, '/search?record=documents');
   const firstRow = page.locator(ROWS).first();
-  await expect(firstRow.locator(NAME).first()).toHaveText('Amendment #3 Application — Volume 1');
+  await expect(firstRow.locator(NAME).first().getByRole('link')).toHaveAccessibleName(
+    FIRST_DOCUMENT,
+  );
 
   await firstRow.getByRole('checkbox').check();
 

@@ -35,9 +35,20 @@
    inverted set: on #013366 gray-30 is 10.5:1, white 12.6:1 and gold 7.3:1. The band sets
    --focus-ring-color, which the page's own focus rule reads. */
 
+/* The help link rides beside the field, not the pills: at 860px, where the band's equal-height floor
+   starts, five pills alone fill the content width. On a phone it wraps under the field. */
+.unified-search .unified-search__query {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--layout-padding-small) var(--layout-padding-medium);
+  margin-bottom: var(--layout-margin-medium);
+}
+
 .unified-search .unified-search__field {
   position: relative;
-  margin-bottom: var(--layout-margin-medium);
+  flex: 1 1 20rem;
+  min-width: 0;
 }
 
 .unified-search .unified-search__field-icon {
@@ -71,14 +82,6 @@
 
 /* Record-type pills and the help link */
 
-/* Last row in the band, which owns the space under it. */
-.unified-search .unified-search__types-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--layout-padding-medium);
-}
-
 /* The site-wide subscribe band. The design has no slot for it on this tab, so it sits under the
    pills, right-aligned, where it pushes nothing else sideways. */
 .unified-search .unified-search__subscribe {
@@ -95,15 +98,14 @@
 
 /* Outlined on the band, white fill when chosen: the chosen type is marked by fill and weight as
    well as colour, beside the aria-pressed the button already sets. */
-/* The inset is BCDS's small-button one, the pair of this pill's small-body type: at 860px, where
-   the band's equal-height floor starts, the medium inset put the row 4px over the content width
-   and dropped the help link onto a second line, which stands the band 35px above that floor. */
+/* The small inset keeps all five pills on one line at 860px, where the band's equal-height floor
+   starts; BCDS's 0.75rem small-button inset put the row 41px over and wrapped the last pill. */
 .unified-search .unified-search__pill {
   display: inline-flex;
   align-items: center;
   gap: var(--layout-padding-xsmall);
   min-height: 40px;
-  padding: 0 0.75rem;
+  padding: 0 var(--layout-padding-small);
   border: var(--layout-border-width-small) solid var(--theme-gray-30);
   border-radius: var(--layout-border-radius-medium);
   background: transparent;
@@ -139,7 +141,7 @@
   justify-content: center;
   min-width: 20px;
   height: 20px;
-  padding: 0 6px;
+  padding: 0 var(--layout-padding-xsmall);
   border: var(--layout-border-width-small) solid var(--theme-gray-30);
   border-radius: 10px;
   /* Opaque, so the count keeps its 12.6:1 whatever fill the pill is wearing. */
