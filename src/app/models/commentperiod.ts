@@ -1,4 +1,5 @@
 import { DateTime } from 'luxon';
+import { isSafeUrl } from 'app/utils/safe-url';
 import { Project } from './project';
 
 // Deadlines are BC-based, so every date is read and displayed in Pacific time.
@@ -40,7 +41,7 @@ export class CommentPeriod {
   phase!: string;
   phaseName!: string;
   project!: Project;
-  /** Set only by the open-periods read; absent when the project is hidden or the parent is a notification. */
+  /** Set on every search row; absent when the project is hidden or the parent is a notification. */
   projectName?: string;
   publishedPercent!: number;
   rangeOption!: string;
@@ -159,14 +160,56 @@ export class CommentPeriod {
   }
 
   public get bannerTimerPillText(): string {
-    const start = DateTime.fromJSDate(this.dateStarted).setZone(PACIFIC);
-
     if (this.bannerState === 'Upcoming') {
-      return `Starts ${start.toFormat('MMM d, yyyy')}`;
+      return `Starts ${pacificDay(this.dateStarted)}`;
     }
     if (this.bannerState === 'Open') {
       return this.daysRemaining;
     }
-    return `Closed ${this.closesAt.toFormat('MMM d, yyyy')}`;
+    return `Closed ${pacificDay(this.dateCompleted)}`;
   }
+}
+
+/** A period date as a BC reader dates it, e.g. `Mar 3, 2025`, whatever the browser's zone. */
+function pacificDay(value: Date): string {
+  return DateTime.fromJSDate(value).setZone(PACIFIC).toFormat('MMM d, yyyy');
+}
+
+/** The period's span, or the one end of it the row carries; blank when it has neither date. */
+export function periodDates(period: CommentPeriod): string {
+  const start = period.dateStarted ? pacificDay(period.dateStarted) : '';
+  const end = period.dateCompleted ? pacificDay(period.dateCompleted) : '';
+  if (start && end) return `${start} – ${end}`;
+  if (start) return `Opens ${start}`;
+  return end ? `Closes ${end}` : '';
+}
+
+/** The period's details page, or null when the row names no project to reach it through. */
+export function periodDetailsHref(period: CommentPeriod): string | null {
+  // A row carries its project as an Eagle id or as a populated project.
+  const project = period.project as unknown;
+  const projectId =
+    typeof project === 'string' ? project : ((project as { _id?: string } | null)?._id ?? '');
+  // The row does not say whether its parent is a notification, so such a period gets /p/, not /pn/.
+  return projectId ? `/p/${projectId}/cp/${period._id}/details` : null;
+}
+
+/** The ENGAGE page of an ENGAGE-hosted period, or null when it is not hosted there or the URL is unsafe. */
+export function engageUrl(period: {
+  isMet?: boolean | null;
+  metURL?: string | null;
+}): string | null {
+  return period.isMet && isSafeUrl(period.metURL) ? period.metURL : null;
+}
+
+/** What a list of periods across projects calls one: its project, else its own label. */
+export function periodName(period: CommentPeriod): string {
+  // `||`: the index sends an unset label as ''.
+  return period.projectName || period.informationLabel || 'Comment period';
+}
+
+/** The period's own label, where it says more than the name the row already shows. */
+export function periodLabel(period: CommentPeriod): string {
+  const label = period.informationLabel?.trim() ?? '';
+  return label && label !== periodName(period).trim() ? label : '';
 }

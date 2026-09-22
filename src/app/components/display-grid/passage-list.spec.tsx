@@ -122,14 +122,19 @@ describe('PassageList', () => {
   it('links a page-numbered passage into the file at that page', () => {
     render(<PassageList rows={[makeRow({ passages: hits(1, true), total: 1 })]} terms={[]} />);
 
-    expect(screen.getByRole('link', { name: 'Page 1' })).toHaveAttribute('href', `${FILE}#page=1`);
+    expect(screen.getByRole('link', { name: /^Page 1\s*\(opens in new tab\)$/ })).toHaveAttribute(
+      'href',
+      `${FILE}#page=1`,
+    );
   });
 
   it('links the file name at the document itself', () => {
     render(<PassageList rows={[makeRow()]} terms={[]} />);
 
     expect(
-      screen.getByRole('link', { name: 'Amendment #3 Application — Volume 1' }),
+      screen.getByRole('link', {
+        name: /^Amendment #3 Application — Volume 1\s*\(opens in new tab\)$/,
+      }),
     ).toHaveAttribute('href', FILE);
   });
 

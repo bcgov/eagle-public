@@ -2,11 +2,13 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import { useProjectEaCertificate } from 'app/api/project-phases';
 import { track } from 'app/analytics/analytics';
-import { EngagementLink, NewTabHint } from 'app/components/engagement-link';
+import { EngagementLink } from 'app/components/engagement-link';
+import { NewTabHint } from 'app/components/new-tab-hint';
 import { Skeleton } from 'app/components/skeleton/skeleton';
 import { SubscribePopover } from 'app/components/subscribe-popover';
 import { useTable } from 'app/components/table/use-table';
 import { getNotifyApi } from 'app/config/config';
+import { engageUrl } from 'app/models/commentperiod';
 import type { Project } from 'app/models/project';
 import { newlines } from 'app/utils/newlines';
 import { htmlToText, safeHtml } from 'app/utils/safe-html';
@@ -90,7 +92,7 @@ function Fact({ label, children }: { label: string; children?: ReactNode }) {
 
 /** The comment period the project record carries, whether it is hosted in EPIC or on ENGAGE. */
 function EngagementCallout({ project, banner }: { project: Project; banner: any }) {
-  const external = !!(banner.isMet && isSafeUrl(banner.metURL));
+  const external = !!engageUrl(banner);
   const cta = external
     ? banner.bannerCTA
     : banner.commentPeriodStatus === 'Open'

@@ -407,7 +407,8 @@ describe('DisplayGrid', () => {
     );
     renderGrid({ columns: linked });
 
-    const link = screen.getByRole('link', { name: 'Application' });
+    // The name says so, as a new tab is a change of context the reader should hear about first.
+    const link = screen.getByRole('link', { name: /^Application\s*\(opens in new tab\)$/ });
     expect(link).toHaveAttribute('href', '/demi-search/a');
     expect(link).toHaveAttribute('target', '_blank');
     expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'));

@@ -1,4 +1,5 @@
 import type { ComponentType } from 'react';
+import type { SortOption } from 'app/components/display-grid/display-grid';
 import type {
   AdvancedField,
   GridColumn,
@@ -30,6 +31,7 @@ export const RECORD_DATASETS: Record<RecordId, string> = {
   documents: 'Document',
   activities: 'RecentActivity',
   notifications: 'ProjectNotification',
+  commentPeriods: 'CommentPeriod',
 };
 
 /** `meta[0]` of a search envelope: the totals, and what the index could not honour. */
@@ -51,6 +53,8 @@ export interface RecordTypeConfig<Row = Record<string, unknown>> {
   /** demi-search `dataset=` value. */
   dataset: string;
   defaultSort: string;
+  /** The sort select's choices, where the grid's own newest, oldest and name pair is not enough. */
+  sortOptions?: SortOption[];
   template: GridTemplate;
   columns: GridColumn<Row>[];
   /** The More filters panel, which carries the ids no column can show. */

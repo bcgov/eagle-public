@@ -39,7 +39,9 @@ function pill(page: Page, label: string) {
 }
 
 function keywordField(page: Page) {
-  return page.getByPlaceholder('Search projects, documents and updates');
+  return page.getByRole('searchbox', {
+    name: 'Search projects, documents, updates and comment periods',
+  });
 }
 
 test('the projects tab lists projects from the search API', async ({ page }) => {

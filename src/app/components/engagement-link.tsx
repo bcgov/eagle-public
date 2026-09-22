@@ -1,30 +1,8 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router';
 import { logger } from 'app/config/logging';
-import { isSafeUrl } from 'app/utils/safe-url';
-import './engagement-link.css';
-
-/** The wording every link that leaves the tab announces. Shared with layout/site-header.tsx. */
-export const NEW_TAB_SUFFIX = ' (opens in new tab)';
-
-/** The mark every link that leaves the tab carries. Decorative: the name says it in words. */
-function NewTabIcon() {
-  return (
-    <i className="material-icons new-tab-hint__icon" aria-hidden="true">
-      open_in_new
-    </i>
-  );
-}
-
-/** The icon plus screen-reader text, for links whose label is markup rather than a string. */
-export function NewTabHint() {
-  return (
-    <>
-      <NewTabIcon />
-      <span className="visually-hidden">{NEW_TAB_SUFFIX}</span>
-    </>
-  );
-}
+import { engageUrl } from 'app/models/commentperiod';
+import { NEW_TAB_SUFFIX, NewTabIcon } from './new-tab-hint';
 
 interface EngagementLinkProps {
   /** The period's ENGAGE fields. A safe `metURL` makes this an external link. */
@@ -52,7 +30,7 @@ export function EngagementLink({
   className,
   onClick,
 }: EngagementLinkProps) {
-  const externalUrl = isMet && isSafeUrl(metURL) ? metURL : null;
+  const externalUrl = engageUrl({ isMet, metURL });
   const dropped = !!isMet && !externalUrl;
 
   useEffect(() => {

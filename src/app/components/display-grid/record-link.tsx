@@ -1,5 +1,6 @@
 import type { MouseEvent, ReactNode } from 'react';
 import { Link } from 'react-router';
+import { NewTabHint } from 'app/components/new-tab-hint';
 import { isSafeUrl } from 'app/utils/safe-url';
 
 interface RecordLinkProps {
@@ -40,6 +41,8 @@ export function RecordLink({
         onClick={intercept}
       >
         {children}
+        {/* An intercepted click downloads in place, so only a plain anchor announces the new tab. */}
+        {intercept ? null : <NewTabHint />}
       </a>
     );
   }

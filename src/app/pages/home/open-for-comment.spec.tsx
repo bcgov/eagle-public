@@ -116,12 +116,12 @@ describe('home open for comment', () => {
     expect(within(section()).getAllByRole('listitem')).toHaveLength(2);
   });
 
-  it('points at upcoming and recently closed periods', () => {
+  it('points at upcoming and recently closed periods on the comment periods tab', () => {
     renderRail();
 
     expect(
       screen.getByRole('link', { name: 'Upcoming and recently closed periods' }),
-    ).toHaveAttribute('href', '/search?record=notifications&pcp=pending');
+    ).toHaveAttribute('href', '/search?record=commentPeriods');
   });
 
   it('holds a busy skeleton while the periods load', () => {

@@ -14,6 +14,10 @@ let countsCalls: string[];
 let searchCalls: string[];
 let signals: (AbortSignal | undefined)[];
 let pendingCounts: boolean;
+/** The one dataset whose fallback search answers 500. */
+let failingDataset: string | null;
+/** The one dataset whose fallback search answers as eagle-api does for zero hits: `meta: []`. */
+let emptyMetaDataset: string | null;
 
 function jsonResponse(body: unknown) {
   return new Response(JSON.stringify(body), {
@@ -49,6 +53,11 @@ function stubFetch() {
       return jsonResponse(countsBody());
     }
     searchCalls.push(url);
+    const dataset = new URL(url, 'http://localhost').searchParams.get('dataset');
+    if (dataset && dataset === failingDataset) return new Response('', { status: 500 });
+    if (dataset && dataset === emptyMetaDataset) {
+      return jsonResponse([{ searchResults: [], meta: [] }]);
+    }
     if (url.includes('dataset=')) return jsonResponse(searchBody(url));
     return emptySearchEnvelope();
   });
@@ -76,12 +85,20 @@ async function renderCounts(keywords: string) {
 }
 
 beforeEach(() => {
-  totals = { Project: 4, Document: 11, RecentActivity: 2, ProjectNotification: 7 };
+  totals = {
+    Project: 4,
+    Document: 11,
+    RecentActivity: 2,
+    ProjectNotification: 7,
+    CommentPeriod: 3,
+  };
   countsStatus = 200;
   countsCalls = [];
   searchCalls = [];
   signals = [];
   pendingCounts = false;
+  failingDataset = null;
+  emptyMetaDataset = null;
   window.__env = { logLevel: 4, SEARCH_API_PATH: '/demi-search' };
   stubFetch();
 });
@@ -102,6 +119,7 @@ describe('useTypeCounts', () => {
       documents: 11,
       activities: 2,
       notifications: 7,
+      commentPeriods: 3,
     });
     expect(countsCalls[0]).toContain('/demi-search/search/counts?keywords=lng');
     expect(searchCalls).toHaveLength(0);
@@ -117,7 +135,7 @@ describe('useTypeCounts', () => {
     expect(result.current.counts?.documents).toBe(11);
   });
 
-  it('counts with four searches when the endpoint is not deployed, and probes it once', async () => {
+  it('counts with one search per type when the endpoint is not deployed, and probes it once', async () => {
     countsStatus = 404;
 
     const { result, rerender } = await renderCounts('lng');
@@ -128,13 +146,45 @@ describe('useTypeCounts', () => {
       documents: 11,
       activities: 2,
       notifications: 7,
+      commentPeriods: 3,
     });
-    expect(searchCalls).toHaveLength(4);
+    expect(searchCalls).toHaveLength(5);
     expect(searchCalls[0]).toContain('dataset=Project');
 
     rerender({ keywords: 'mine' });
-    await waitFor(() => expect(searchCalls).toHaveLength(8));
+    await waitFor(() => expect(searchCalls).toHaveLength(10));
     expect(countsCalls).toHaveLength(1);
+  });
+
+  it('leaves a type unknown, not zero, when its fallback search fails', async () => {
+    countsStatus = 404;
+    failingDataset = 'CommentPeriod';
+
+    const { result } = await renderCounts('lng');
+
+    await waitFor(() => expect(result.current.counts).toBeDefined());
+    expect(result.current.counts?.commentPeriods).toBeNull();
+    expect(result.current.counts?.documents).toBe(11);
+  });
+
+  it('counts zero for a fallback search that answers with an empty meta', async () => {
+    countsStatus = 404;
+    emptyMetaDataset = 'RecentActivity';
+
+    const { result } = await renderCounts('lng');
+
+    await waitFor(() => expect(result.current.counts).toBeDefined());
+    expect(result.current.counts?.activities).toBe(0);
+  });
+
+  it('leaves comment periods unknown when the counts envelope has no entry for them', async () => {
+    delete totals['CommentPeriod'];
+
+    const { result } = await renderCounts('lng');
+
+    await waitFor(() => expect(result.current.counts).toBeDefined());
+    expect(result.current.counts?.commentPeriods).toBeNull();
+    expect(result.current.counts?.projects).toBe(4);
   });
 
   it('drops the request in flight when the keyword changes', async () => {

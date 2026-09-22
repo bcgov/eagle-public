@@ -102,3 +102,8 @@ export function isNotStarted(commentPeriod: CommentPeriod): boolean {
 export function isOpen(commentPeriod: CommentPeriod): boolean {
   return getStatusCode(commentPeriod) === OPEN;
 }
+
+/** The status a reader sees: Open, Upcoming or Closed, or blank for a period with no dates. */
+export function statusLabel(commentPeriod: CommentPeriod): string {
+  return getStatusCode(commentPeriod) === NOT_OPEN ? '' : commentPeriod.commentPeriodStatus;
+}

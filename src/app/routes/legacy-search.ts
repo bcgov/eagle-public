@@ -13,8 +13,11 @@ import {
  * The table of old address to new one is in docs/deviations-from-angular.md.
  */
 
+/** The record types a legacy page becomes. No legacy page listed comment periods. */
+type LegacyRecord = Exclude<RecordType, 'commentPeriods'>;
+
 /** Filter ids each legacy page put on the query string, by the record type it becomes. */
-export const LEGACY_FILTERS: Record<RecordType, string[]> = {
+export const LEGACY_FILTERS: Record<LegacyRecord, string[]> = {
   projects: [
     'type',
     'eacDecision',
@@ -42,7 +45,7 @@ export const LEGACY_FILTERS: Record<RecordType, string[]> = {
  * exists is dropped rather than passed on, so the page falls back to its own default instead of
  * asking the API to sort by something it will reject.
  */
-export const SORTABLE_FIELDS: Record<RecordType, string[]> = {
+export const SORTABLE_FIELDS: Record<LegacyRecord, string[]> = {
   projects: ['name', 'dateUpdated', 'proponent', 'type', 'region', 'currentPhaseName'],
   documents: [
     'displayName',
@@ -56,7 +59,7 @@ export const SORTABLE_FIELDS: Record<RecordType, string[]> = {
   notifications: ['name', 'dateUpdated'],
 };
 
-function validSortBy(record: RecordType, raw: string | null): string | null {
+function validSortBy(record: LegacyRecord, raw: string | null): string | null {
   if (!raw) return null;
   const sortBy = normalizeSortBy(raw);
   return SORTABLE_FIELDS[record].includes(sortBy.replace(/^[+-]/, '')) ? sortBy : null;
@@ -68,7 +71,7 @@ function validSortBy(record: RecordType, raw: string | null): string | null {
  * `dataset` included, is dropped.
  */
 function legacySearchQuery(
-  record: RecordType,
+  record: LegacyRecord,
   search: URLSearchParams,
   scope?: SearchScope,
 ): URLSearchParams {
@@ -107,7 +110,7 @@ export function searchUrl(record: RecordType, keywords?: string): string {
  * redirect is client side, which is all a single page app can do, and the edge already serves
  * index.html for every path.
  */
-export function legacySearchRedirect(record: RecordType, options: { scope?: SearchScope } = {}) {
+export function legacySearchRedirect(record: LegacyRecord, options: { scope?: SearchScope } = {}) {
   return ({ request }: LoaderFunctionArgs) => {
     const search = new URL(request.url).searchParams;
     return redirect(`/search?${legacySearchQuery(record, search, options.scope)}`);

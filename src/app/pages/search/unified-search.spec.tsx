@@ -96,6 +96,17 @@ const NOTIFICATIONS = [
   },
 ];
 
+/** A `dataset=CommentPeriod` row. How a row draws is covered in types/comment-periods.spec.tsx. */
+const COMMENT_PERIOD = {
+  _id: 'cp-2',
+  project: 'eagle-2',
+  isMet: false,
+  projectName: 'Kitimat Terminal',
+  informationLabel: 'Kitimat Terminal comment period',
+  dateStarted: '2025-03-03T12:00:00.000Z',
+  dateCompleted: '2025-04-02T12:00:00.000Z',
+};
+
 let counts: Record<string, number | null>;
 /** Whether the activities index says it carries no `documentUrl`, which it only says when asked. */
 let dropsAttachmentFilter: boolean;
@@ -150,6 +161,7 @@ function stubApi(): ReturnType<typeof vi.fn> {
         dropsAttachmentFilter && url.includes('and[documentUrl]') ? ['documentUrl'] : [];
       return envelope(ACTIVITIES, 1, { dropped: { filter, sort: [] } });
     }
+    if (url.includes('dataset=CommentPeriod')) return envelope([COMMENT_PERIOD]);
     return envelope([]);
   });
   vi.stubGlobal('fetch', fetchMock);
@@ -235,8 +247,10 @@ describe('UnifiedSearch', () => {
       .getByRole('heading', { level: 1, name: 'Search' })
       .closest('section') as HTMLElement;
     expect(
-      within(band).getByRole('searchbox', { name: 'Search projects, documents and updates' }),
-    ).toBeInTheDocument();
+      within(band).getByRole('searchbox', {
+        name: 'Search projects, documents, updates and comment periods',
+      }),
+    ).toHaveAttribute('placeholder', 'Search projects and more');
     expect(within(band).getByRole('group', { name: 'Record type' })).toBeInTheDocument();
     expect(within(band).getByRole('link', { name: /Search help/ })).toBeInTheDocument();
   });
@@ -778,7 +792,7 @@ describe('the inside-documents scope', () => {
     chunks = [{ ...CHUNKS[0], pageNumbered: true, pageNumber: 170 }];
     renderSearch('/search?scope=inside&keywords=habitat');
 
-    const page = await screen.findByRole('link', { name: 'Page 170' });
+    const page = await screen.findByRole('link', { name: /^Page 170\b/ });
     expect(page.getAttribute('href')).toMatch(/#page=170$/);
     // The page belongs to the lead chunk, so the next passage keeps its place in the results.
     expect(screen.getByText('Passage 2')).toBeInTheDocument();
@@ -822,8 +836,8 @@ describe('the inside-documents scope', () => {
     ];
     renderSearch('/search?scope=inside&keywords=habitat');
 
-    expect(await screen.findByRole('link', { name: 'Page 3' })).toBeInTheDocument();
-    const second = screen.getByRole('link', { name: 'Page 7' });
+    expect(await screen.findByRole('link', { name: /^Page 3\b/ })).toBeInTheDocument();
+    const second = screen.getByRole('link', { name: /^Page 7\b/ });
     expect(second.getAttribute('href')).toMatch(/#page=7$/);
     // Each passage shows its own text, stripped of the API markup, not the row's snippet.
     expect((await screen.findByText(/near the culvert/)).textContent).toBe(
@@ -845,9 +859,9 @@ describe('the inside-documents scope', () => {
     ];
     renderSearch('/search?scope=inside&keywords=habitat');
 
-    expect(await screen.findByRole('link', { name: 'Page 3' })).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: /^Page 3\b/ })).toBeInTheDocument();
     expect(screen.getByText('Passage 2')).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: /^Page 2$/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^Page 2\b/ })).not.toBeInTheDocument();
   });
 
   it('ranks by relevance in the scope and restores the date sort on the way out', async () => {
@@ -1015,5 +1029,133 @@ describe('the inside-documents scope', () => {
     // A sibling column filter proves the panel is populated, not just empty.
     expect(screen.getByLabelText('Document type')).toBeInTheDocument();
     expect(screen.queryByLabelText('Name')).not.toBeInTheDocument();
+  });
+});
+
+describe('the comment periods tab', () => {
+  it('is offered among the record types', () => {
+    renderSearch('/search');
+
+    const types = screen.getByRole('group', { name: 'Record type' });
+    expect(within(types).getByRole('button', { name: /^Comment periods/ })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
+  });
+
+  it('asks the index for comment periods when the address names the tab', async () => {
+    const fetchMock = stubApi();
+    renderSearch('/search?record=commentPeriods');
+
+    await waitFor(() => expect(asked(fetchMock, 'CommentPeriod').length).toBeGreaterThan(0));
+    expect(pill(/^Comment periods/)).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('draws each period as a row linking to its details page under its project', async () => {
+    renderSearch('/search?record=commentPeriods');
+
+    const link = await screen.findByRole('link', { name: /Kitimat Terminal/ });
+    expect(link).toHaveAttribute('href', '/p/eagle-2/cp/cp-2/details');
+  });
+
+  it('narrows to one status, on the address and in the query, until the reader clears it', async () => {
+    const user = userEvent.setup();
+    const fetchMock = stubApi();
+    const { router } = renderSearch('/search?record=commentPeriods');
+    await screen.findByRole('link', { name: /Kitimat Terminal/ });
+
+    await user.click(screen.getByRole('button', { name: /More filters/ }));
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Status' }), 'Upcoming');
+
+    await waitFor(() =>
+      expect(new URLSearchParams(router.state.location.search).get('status')).toBe('upcoming'),
+    );
+    await waitFor(() =>
+      expect(asked(fetchMock, 'CommentPeriod').at(-1)).toContain('and[status]=upcoming'),
+    );
+
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Status' }), 'All');
+
+    await waitFor(() =>
+      expect(new URLSearchParams(router.state.location.search).has('status')).toBe(false),
+    );
+    await waitFor(() =>
+      expect(asked(fetchMock, 'CommentPeriod').at(-1)).not.toContain('and[status]'),
+    );
+  });
+
+  // Closing date as well as opening date, and either date in the other direction.
+  it.each([
+    ['Closing date, newest first', '-dateCompleted'],
+    ['Oldest first', '+dateStarted'],
+  ])('sorts by "%s" on the address and in the query', async (option, sortBy) => {
+    const user = userEvent.setup();
+    const fetchMock = stubApi();
+    const { router } = renderSearch('/search?record=commentPeriods');
+    await screen.findByRole('link', { name: /Kitimat Terminal/ });
+
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Sort' }), option);
+
+    await waitFor(() =>
+      expect(new URLSearchParams(router.state.location.search).get('sortBy')).toBe(sortBy),
+    );
+    await waitFor(() =>
+      expect(asked(fetchMock, 'CommentPeriod').at(-1)).toContain(`sortBy=${sortBy}`),
+    );
+  });
+
+  it('reads a sort the tab does not offer as its default, and can still leave it', async () => {
+    const user = userEvent.setup();
+    const fetchMock = stubApi();
+    const { router } = renderSearch('/search?record=commentPeriods&sortBy=-dateAdded');
+    await screen.findByRole('link', { name: /Kitimat Terminal/ });
+
+    const select = screen.getByRole('combobox', { name: 'Sort' });
+    expect(select).toHaveDisplayValue('Newest first');
+    expect(asked(fetchMock, 'CommentPeriod').at(-1)).toContain('sortBy=-dateStarted');
+
+    await user.selectOptions(select, 'Closing date, oldest first');
+
+    await waitFor(() =>
+      expect(new URLSearchParams(router.state.location.search).get('sortBy')).toBe(
+        '+dateCompleted',
+      ),
+    );
+  });
+
+  it('drops its status filter and sort on the way to another tab', async () => {
+    const user = userEvent.setup();
+    const fetchMock = stubApi();
+    const { router } = renderSearch(
+      '/search?record=commentPeriods&status=open&sortBy=-dateCompleted',
+    );
+    await screen.findByRole('link', { name: /Kitimat Terminal/ });
+
+    await user.click(pill(/^Documents/));
+
+    // Documents is the default tab, so its address names no record type.
+    await waitFor(() =>
+      expect(new URLSearchParams(router.state.location.search).has('record')).toBe(false),
+    );
+    const params = new URLSearchParams(router.state.location.search);
+    expect(params.has('status')).toBe(false);
+    expect(params.has('sortBy')).toBe(false);
+    await waitFor(() => expect(asked(fetchMock, 'Document').length).toBeGreaterThan(0));
+    expect(asked(fetchMock, 'Document').at(-1)).not.toContain('and[status]');
+  });
+
+  it('moves the address to the tab when it is picked from another one', async () => {
+    const user = userEvent.setup();
+    const { router } = renderSearch('/search?record=projects');
+    await screen.findByText('Alpha Mine');
+
+    await user.click(pill(/^Comment periods/));
+
+    await waitFor(() =>
+      expect(new URLSearchParams(router.state.location.search).get('record')).toBe(
+        'commentPeriods',
+      ),
+    );
+    expect(await screen.findByRole('link', { name: /Kitimat Terminal/ })).toBeInTheDocument();
   });
 });
