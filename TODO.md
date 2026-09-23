@@ -87,10 +87,27 @@ The design handoff sits at `design/handoffs/home/`, local only and never committ
 source archive is kept at `/root/repos/eagle-public-design-handoff-home.zip` and can be
 unzipped again if the directory is missing.
 
-Nine ticket-reconciliation items are tracked, not filed as Jira tickets yet — see
-`docs/home-redesign-plan.md`, "Take back to design and Jira". Update notification
-emails still link to the project page; they move to `/updates/:id` once this line serves
-production.
+Update notification emails still link to the project page; they move to `/updates/:id`
+once this line serves production.
+
+Open (moved from the redesign tracker, 2026-09-23):
+
+- Accessibility audit of the home page, not done yet: one h1, labelled landmarks,
+  contrast re-measured, keyboard-only pass.
+- Take these back to design and Jira. PUBLIC-142 and PUBLIC-152 are settled in the plan.
+  - PUBLIC-154: the ticket says results show on the home page. The design sends them to
+    `/search`. Record the change.
+  - PUBLIC-136: no ticket owns how the home page is put together. Raise one story.
+  - PUBLIC-160: covers the Updates tab, project panel and email, not the home feed. Widen
+    it or point the feed at another ticket.
+  - PUBLIC-32: asked for upcoming, open and recently closed periods. The home rail shows
+    open only and links to the `/search` comment periods tab for the rest. Confirm.
+  - PUBLIC-31: asked for cards that expand in place with three buttons each. Built as a
+    reader dialog. Record that the ask was set aside.
+  - PUBLIC-158: asks for a home page map, and the design has none. Descope it from the
+    home page or plan a map section.
+  - PUBLIC-146: the handoff does not mention the display grid contract. Confirm the rail
+    rows are exempt.
 
 ## Port rules (added 2026-08-27)
 
