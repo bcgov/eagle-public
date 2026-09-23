@@ -1,0 +1,92 @@
+/* One Update's body, shared by the home reader dialog and the project Updates tab. Tokens come
+   from @bcgov/design-tokens and eao-tokens.css. */
+
+.update-detail__image {
+  display: block;
+  width: 100%;
+  /* Holds the box while the image loads, so the body text does not jump. */
+  aspect-ratio: 16 / 9;
+  max-height: 24rem;
+  object-fit: cover;
+  border-radius: var(--layout-border-radius-medium);
+}
+
+/* API HTML: `epic/styles.css` gives bare `main p` a centred max-width meant for other pages. */
+.update-detail__content p {
+  max-width: none;
+  margin: 0 0 var(--layout-margin-medium);
+  font: var(--typography-regular-body);
+  color: var(--typography-color-primary);
+}
+
+.update-detail__content > :last-child {
+  margin-bottom: 0;
+}
+
+.update-detail__docs {
+  overflow: hidden;
+  border: var(--layout-border-width-small) solid var(--theme-gray-40);
+  border-radius: var(--layout-border-radius-medium);
+}
+
+.update-detail__docs-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--layout-padding-xsmall);
+  width: 100%;
+  min-height: 48px;
+  padding: 0 var(--layout-padding-medium);
+  border: none;
+  background: var(--theme-gray-10);
+  font: var(--typography-bold-small-body);
+  color: var(--typography-color-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.update-detail__docs-toggle:hover {
+  background: var(--theme-gray-20);
+}
+
+.update-detail__docs-toggle > span {
+  flex: 1;
+}
+
+.update-detail__docs-list {
+  list-style: none;
+  margin: 0;
+  padding-left: 0;
+}
+
+.update-detail__doc {
+  display: flex;
+  align-items: center;
+  gap: var(--layout-padding-small);
+  min-height: 48px;
+  padding: var(--layout-padding-small) var(--layout-padding-medium);
+  border-top: var(--layout-border-width-small) solid var(--theme-gray-30);
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-link);
+  overflow-wrap: anywhere;
+}
+
+.update-detail__doc:hover {
+  background: var(--theme-blue-10);
+}
+
+.update-detail__doc .material-icons {
+  font-size: 18px;
+  color: var(--typography-color-secondary);
+}
+
+.update-detail__engage {
+  margin: 0;
+  font: var(--typography-regular-small-body);
+}
+
+.update-detail__engage a {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--layout-padding-xsmall);
+  min-height: 2.75rem;
+}

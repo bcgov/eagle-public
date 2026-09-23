@@ -396,74 +396,6 @@
   flex-shrink: 0;
 }
 
-/* API HTML: `epic/styles.css` gives bare `main p` a centred max-width meant for other pages. */
-.home .home-reader .home-reader__content p {
-  max-width: none;
-  margin: 0 0 var(--layout-margin-medium);
-  font: var(--typography-regular-body);
-  color: var(--typography-color-primary);
-}
-
-.home .home-reader .home-reader__content > :last-child {
-  margin-bottom: 0;
-}
-
-.home .home-reader .home-reader__docs {
-  overflow: hidden;
-  border: var(--layout-border-width-small) solid var(--theme-gray-40);
-  border-radius: var(--layout-border-radius-medium);
-}
-
-.home .home-reader .home-reader__docs-toggle {
-  display: flex;
-  align-items: center;
-  gap: var(--layout-padding-xsmall);
-  width: 100%;
-  min-height: 48px;
-  padding: 0 var(--layout-padding-medium);
-  border: none;
-  background: var(--theme-gray-10);
-  font: var(--typography-bold-small-body);
-  color: var(--typography-color-primary);
-  text-align: left;
-  cursor: pointer;
-}
-
-.home .home-reader .home-reader__docs-toggle:hover {
-  background: var(--theme-gray-20);
-}
-
-.home .home-reader .home-reader__docs-toggle > span {
-  flex: 1;
-}
-
-.home .home-reader .home-reader__docs-list {
-  list-style: none;
-  margin: 0;
-  padding-left: 0;
-}
-
-.home .home-reader .home-reader__doc {
-  display: flex;
-  align-items: center;
-  gap: var(--layout-padding-small);
-  min-height: 48px;
-  padding: var(--layout-padding-small) var(--layout-padding-medium);
-  border-top: var(--layout-border-width-small) solid var(--theme-gray-30);
-  font: var(--typography-regular-small-body);
-  color: var(--typography-color-link);
-  overflow-wrap: anywhere;
-}
-
-.home .home-reader .home-reader__doc:hover {
-  background: var(--theme-blue-10);
-}
-
-.home .home-reader .home-reader__doc .material-icons {
-  font-size: 18px;
-  color: var(--typography-color-secondary);
-}
-
 .home .home-reader .home-reader__foot {
   display: flex;
   flex-wrap: wrap;
@@ -471,6 +403,12 @@
   padding: var(--layout-padding-large);
   border-top: var(--layout-border-width-small) solid var(--theme-gray-30);
   background: var(--theme-gray-10);
+}
+
+.home .home-reader .home-reader__subject {
+  margin: 0;
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-secondary);
 }
 
 .home .home-reader .home-reader__primary,

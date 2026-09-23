@@ -143,7 +143,7 @@ export function rowsFrom<T>(envelope: unknown): T[] {
 }
 
 /** How many rows match, ignoring paging. `null` when the backend did not count. */
-function totalFrom(envelope: unknown): number | null {
+export function totalFrom(envelope: unknown): number | null {
   const total = (envelope as ISearchResult<unknown>[] | undefined)?.[0]?.meta?.[0]
     ?.searchResultsTotal;
   return typeof total === 'number' ? total : null;
@@ -354,7 +354,7 @@ export async function searchKeywords(
 }
 
 /** One page holds every row of these small collections; callers need all of them at once. */
-const ALL_ROWS_PAGE_SIZE = 250;
+export const ALL_ROWS_PAGE_SIZE = 250;
 
 /** Dropdown/filter list items, lazily fetched and cached by TanStack Query. */
 export function listsQueryOptions() {

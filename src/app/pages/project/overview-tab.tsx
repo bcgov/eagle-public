@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router';
+import { projectUpdatesQueryOptions } from 'app/api/updates';
 import { useProjectEaCertificate } from 'app/api/project-phases';
 import { track } from 'app/analytics/analytics';
 import { EngagementLink } from 'app/components/engagement-link';
@@ -11,7 +13,7 @@ import { getNotifyApi } from 'app/config/config';
 import { engageUrl } from 'app/models/commentperiod';
 import type { Project } from 'app/models/project';
 import { newlines } from 'app/utils/newlines';
-import { htmlToText, safeHtml } from 'app/utils/safe-html';
+import { safeHtml } from 'app/utils/safe-html';
 import { isSafeUrl } from 'app/utils/safe-url';
 import { legislationLink, longDate, regulatorLink } from 'app/utils/utils';
 import { FeaturedDocuments } from './featured-documents';
@@ -161,19 +163,10 @@ const UPDATES_SHOWN = 3;
 /** Rows a list holds open while its first page is in flight. */
 const SKELETON_ROWS = [1, 2, 3];
 
-/** The three most recent updates. Same query as the Updates tab, so both read one cached page. */
+/** The three most recent visible updates, from the same cached list as the Updates tab. */
 function UpdatesCard({ projId }: { projId: string }) {
-  const result = useTable('projectActivities', {
-    dataset: 'RecentActivity',
-    enabled: !!projId,
-    keywords: '',
-    currentPage: 1,
-    pageSize: 10,
-    sortBy: '-dateAdded',
-    queryModifiers: { project: projId },
-    populate: true,
-  });
-
+  const { data, isError } = useQuery(projectUpdatesQueryOptions(projId));
+  const updates = data ?? null;
   const updatesHref = `/p/${projId}/updates`;
 
   return (
@@ -181,14 +174,14 @@ function UpdatesCard({ projId }: { projId: string }) {
       title="Updates"
       titleId="updates-title"
       action={
-        <Link to={updatesHref}>
-          {result.totalListItems > 0
-            ? `See all ${result.totalListItems.toLocaleString('en-CA')}`
-            : 'See all'}
-        </Link>
+        updates?.length ? (
+          <Link to={updatesHref}>See all {updates.length.toLocaleString('en-CA')}</Link>
+        ) : undefined
       }
     >
-      {result.loading && result.data.length === 0 ? (
+      {isError && !updates ? (
+        <p className="side-card__empty">Updates could not be loaded right now.</p>
+      ) : !updates ? (
         <ul className="side-card__list" aria-busy="true">
           <li className="visually-hidden">Loading updates</li>
           {SKELETON_ROWS.map((row) => (
@@ -198,20 +191,20 @@ function UpdatesCard({ projId }: { projId: string }) {
             </li>
           ))}
         </ul>
-      ) : result.data.length === 0 ? (
+      ) : updates.length === 0 ? (
         <p className="side-card__empty">No recent updates.</p>
       ) : (
         <ul className="side-card__list">
-          {result.data.slice(0, UPDATES_SHOWN).map((update: any) => (
-            <li key={update._id}>
+          {updates.slice(0, UPDATES_SHOWN).map((update) => (
+            <li key={update.id}>
               <p className="side-card__meta">
-                {longDate(update.dateAdded)}
-                {update.type && ` · ${update.type}`}
+                {longDate(update.date)}
+                {(update.category ?? update.type) && ` · ${update.category ?? update.type}`}
               </p>
               <Link to={updatesHref} className="side-card__headline">
-                {update.headline}
+                {update.shortHeadline}
               </Link>
-              {update.content && <p className="side-card__summary">{htmlToText(update.content)}</p>}
+              {update.summary && <p className="side-card__summary">{update.summary}</p>}
             </li>
           ))}
         </ul>

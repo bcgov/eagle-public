@@ -32,7 +32,11 @@ const PROBE_MARKERS = [
 const EXPECTED_REQUESTS = 8;
 
 let commentPeriods: unknown[];
-let updatesTotal: number;
+let updateRows: Record<string, unknown>[];
+
+function visibleUpdates(count: number) {
+  return Array.from({ length: count }, (_, index) => ({ _id: `u${index}`, headline: 'Update' }));
+}
 let documentsTotal: number;
 let probeHits: string[];
 
@@ -60,8 +64,10 @@ function openPeriod() {
   };
 }
 
+let client = makeQueryClient();
+
 function wrapper({ children }: { children: ReactNode }) {
-  return <QueryClientProvider client={makeQueryClient()}>{children}</QueryClientProvider>;
+  return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
 }
 
 /** Renders the hook against the stubbed API and waits for every request to answer. */
@@ -75,7 +81,9 @@ async function renderTabs(
         { searchResults: commentPeriods, meta: [{ searchResultsTotal: commentPeriods.length }] },
       ]);
     }
-    if (url.includes('dataset=RecentActivity')) return jsonResponse(searchResponse(updatesTotal));
+    if (url.includes('dataset=RecentActivity')) {
+      return jsonResponse(searchResponse(updateRows.length, updateRows));
+    }
     if (url.includes('dataset=Document')) {
       const probe = PROBE_MARKERS.find((marker) => url.includes(marker));
       if (probe) {
@@ -86,6 +94,7 @@ async function renderTabs(
     return jsonResponse(searchResponse(0));
   });
   vi.stubGlobal('fetch', fetchMock);
+  client = makeQueryClient();
 
   const rendered = renderHook(() => useProjectTabMeta('proj-1', LISTS, project as Project | null), {
     wrapper,
@@ -106,7 +115,7 @@ function shown(tabs: ProjectTab[]): string[] {
 describe('useProjectTabMeta', () => {
   beforeEach(() => {
     commentPeriods = [];
-    updatesTotal = 0;
+    updateRows = [];
     documentsTotal = 0;
     probeHits = [];
   });
@@ -116,8 +125,8 @@ describe('useProjectTabMeta', () => {
     vi.restoreAllMocks();
   });
 
-  it('always offers Overview, Updates, Engagement and Documents', async () => {
-    updatesTotal = 3;
+  it('offers Overview, Engagement and Documents always, and Updates once one is visible', async () => {
+    updateRows = visibleUpdates(3);
 
     const { result } = await renderTabs({ eacDecision: { name: 'In Progress' } });
 
@@ -134,13 +143,39 @@ describe('useProjectTabMeta', () => {
   });
 
   it('counts updates and documents, formatting the document total', async () => {
-    updatesTotal = 24;
+    updateRows = visibleUpdates(24);
     documentsTotal = 1284;
 
     const { result } = await renderTabs();
 
     await waitFor(() => expect(countOf(result.current, 'documents')).toBe('1,284'));
     expect(countOf(result.current, 'updates')).toBe('24');
+  });
+
+  it('hides Updates once the list lands with only drafts and archived rows', async () => {
+    updateRows = [
+      { _id: 'd', headline: 'Draft', status: 'draft' },
+      { _id: 'a', headline: 'Gone', status: 'archived' },
+    ];
+
+    const { result } = await renderTabs();
+
+    await waitFor(() => expect(client.isFetching()).toBe(0));
+    expect(shown(result.current)).toEqual(['overview', 'engagement', 'documents']);
+  });
+
+  it('holds Updates in the strip while its list is loading', () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => new Promise<Response>(() => undefined)),
+    );
+    client = makeQueryClient();
+
+    const { result } = renderHook(() => useProjectTabMeta('proj-1', LISTS, null), { wrapper });
+
+    const updates = result.current.find((tab) => tab.key === 'updates');
+    expect(updates?.show).toBe(true);
+    expect(updates?.countPending).toBe(true);
   });
 
   it('leaves a zero total uncounted', async () => {

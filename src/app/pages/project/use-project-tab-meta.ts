@@ -1,4 +1,6 @@
+import { useQuery } from '@tanstack/react-query';
 import { isOpen } from 'app/api/commentperiod';
+import { projectUpdatesQueryOptions } from 'app/api/updates';
 import { useTable } from 'app/components/table/use-table';
 import { useCommentPeriods } from 'app/components/use-comment-periods';
 import type { Project } from 'app/models/project';
@@ -30,12 +32,8 @@ export function useProjectTabMeta(
 ): ProjectTab[] {
   const probes = useDocTabProbes(projId, lists);
 
-  const updates = useTable('projectTabUpdates', {
-    ...COUNT_QUERY,
-    dataset: 'RecentActivity',
-    enabled: !!projId,
-    queryModifiers: { project: projId },
-  });
+  // The visible list, not a raw count: a draft row must not open the tab.
+  const { data: updates, isPending: updatesPending } = useQuery(projectUpdatesQueryOptions(projId));
 
   const documents = useTable('projectTabDocuments', {
     ...COUNT_QUERY,
@@ -54,9 +52,10 @@ export function useProjectTabMeta(
     {
       key: 'updates',
       label: 'Updates',
-      count: updates.totalListItems ? String(updates.totalListItems) : undefined,
-      countPending: !updates.totalListItems && updates.loading,
-      show: true,
+      count: updates?.length ? String(updates.length) : undefined,
+      countPending: updatesPending,
+      // Held in the strip while the list loads, so it does not pop in after its neighbours.
+      show: updatesPending || !!updates?.length,
     },
     {
       key: 'engagement',

@@ -1,7 +1,8 @@
+import { useId, useState } from 'react';
+import type { Update } from 'app/api/updates';
 import { EngagementLink } from 'app/components/engagement-link';
-import { safeHtml } from 'app/utils/safe-html';
-import { fileName, isSafeUrl } from 'app/utils/safe-url';
-import { sanitizeWordHtml } from 'app/utils/word-html-sanitizer';
+import { UpdateBody } from 'app/components/update-detail/update-detail';
+import { ENGAGE_LABEL, updateMeta } from 'app/components/update-detail/update-meta';
 import { longDate } from 'app/utils/utils';
 import './update-card.css';
 
@@ -15,69 +16,65 @@ const ACCENTS: Record<string, string> = {
 
 const NEUTRAL_ACCENT = '--eao-proponent-dark';
 
-export interface UpdateRecord {
-  _id?: string;
-  headline?: string;
-  content?: string;
-  dateAdded?: string;
-  type?: string;
-  documentUrl?: string;
-  pcp?: { _id?: string; isMet?: boolean; metURL?: string };
-  project?: { _id?: string };
-}
-
-/** One published update: a colour-coded card of what changed, and the files it points at. */
-export function UpdateCard({ update }: { update: UpdateRecord }) {
+/** One published update: its summary, opening in place to the full Update. */
+export function UpdateCard({ update }: { update: Update }) {
+  const [open, setOpen] = useState(false);
+  const panelId = useId();
   const accent = ACCENTS[update.type ?? ''] ?? NEUTRAL_ACCENT;
-  const document = update.documentUrl && isSafeUrl(update.documentUrl) ? update.documentUrl : null;
+  const label = update.category ?? update.type;
+  const period = update.commentPeriod;
   const commentPeriod =
-    update.pcp?._id && update.project?._id ? `/p/${update.project._id}/cp/${update.pcp._id}` : null;
-  const externalPeriod = !!update.pcp?.isMet && isSafeUrl(update.pcp.metURL ?? '');
+    period && update.projectId ? `/p/${update.projectId}/cp/${period.id}` : null;
 
   return (
     <li className="update-card">
       <div className="update-card__accent" style={{ background: `var(${accent})` }}></div>
-      <div className="update-card__body">
+      <article className="update-card__body">
         <p className="update-card__eyebrow">
-          {longDate(update.dateAdded)}
-          {update.type && ` · ${update.type}`}
+          {longDate(update.date)}
+          {label && ` · ${label}`}
         </p>
-        <h3 className="update-card__headline">{update.headline}</h3>
-        {update.content && (
-          <div
-            className="update-card__content"
-            dangerouslySetInnerHTML={safeHtml(sanitizeWordHtml(update.content))}
-          ></div>
+        <h3 className="update-card__headline">{open ? update.headline : update.shortHeadline}</h3>
+
+        {open ? (
+          <div id={panelId} className="update-card__full">
+            <p className="update-card__meta">{updateMeta(update)}</p>
+            <UpdateBody update={update} engagement={false} />
+            {/* The card sits on its own project's tab, so only a subject needs naming. */}
+            {!update.projectId && update.subject && (
+              <p className="update-card__origin">About: {update.subject}</p>
+            )}
+          </div>
+        ) : (
+          update.summary && <p className="update-card__summary">{update.summary}</p>
         )}
 
-        {(document || commentPeriod || externalPeriod) && (
-          <div className="update-card__files">
-            <p className="update-card__files-label">Referenced by this update</p>
-            <ul className="update-card__file-list">
-              {document && (
-                <li>
-                  <a href={document} target="_blank" rel="noopener noreferrer">
-                    <i className="material-icons" aria-hidden="true">
-                      insert_drive_file
-                    </i>
-                    <span className="link-label">{fileName(document) ?? 'Project documents'}</span>
-                  </a>
-                </li>
-              )}
-              {(externalPeriod || commentPeriod) && (
-                <li>
-                  <EngagementLink
-                    isMet={update.pcp?.isMet}
-                    metURL={update.pcp?.metURL}
-                    to={commentPeriod}
-                    label="View engagement"
-                  />
-                </li>
-              )}
-            </ul>
-          </div>
-        )}
-      </div>
+        <div className="update-card__actions">
+          <button
+            type="button"
+            className="update-card__toggle"
+            aria-expanded={open}
+            aria-controls={open ? panelId : undefined}
+            onClick={() => setOpen((was) => !was)}
+          >
+            {open ? 'Show less' : 'Read full update'}
+            <span className="visually-hidden">: {update.shortHeadline}</span>
+          </button>
+          {/* One engagement call to action: the Update's own ENGAGE link wins over its period. */}
+          {update.engagementUrl ? (
+            <EngagementLink isMet metURL={update.engagementUrl} label={ENGAGE_LABEL} />
+          ) : (
+            period && (
+              <EngagementLink
+                isMet={period.isMet}
+                metURL={period.metURL}
+                to={commentPeriod}
+                label="View engagement"
+              />
+            )
+          )}
+        </div>
+      </article>
     </li>
   );
 }

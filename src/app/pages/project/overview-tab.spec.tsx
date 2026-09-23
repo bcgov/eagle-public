@@ -35,7 +35,20 @@ const ACTIVITIES = [
     dateAdded: '2026-06-01T00:00:00.000Z',
     content: '<p>The <strong>proponent</strong> submitted their application.</p>',
   },
-  { _id: 'act-2', headline: 'Public comment period open', dateAdded: '2026-05-01T00:00:00.000Z' },
+  {
+    _id: 'act-2',
+    headline: 'Public comment period open on the application',
+    shortHeadline: 'Comment period open',
+    summary: 'Have your say by June 30.',
+    content: '<p>Longer body text.</p>',
+    dateAdded: '2026-05-01T00:00:00.000Z',
+  },
+  {
+    _id: 'act-draft',
+    headline: 'Unpublished draft',
+    status: 'draft',
+    dateAdded: '2026-07-01T00:00:00.000Z',
+  },
   { _id: 'act-3', headline: 'Process order issued', dateAdded: '2026-04-01T00:00:00.000Z' },
   { _id: 'act-4', headline: 'Readiness decision', dateAdded: '2026-03-01T00:00:00.000Z' },
 ];
@@ -54,6 +67,7 @@ const PINS = [{ _id: 'org-1', name: 'Cedar Nation', province: 'British Columbia'
 
 let pinsTotal = 1;
 let featuredTotal = 1;
+let updatesFail = false;
 
 /** A period whose window brackets today, so it counts as open and its banner is visible. */
 function openPeriod(extra: Record<string, unknown> = {}) {
@@ -107,6 +121,7 @@ function renderTab(demiProject?: { eaCertificate?: string }) {
         return jsonResponse({ ...(pinsTotal > 0 ? { pins: PINS } : {}), ...demiProject });
       }
       if (url.includes('dataset=RecentActivity')) {
+        if (updatesFail) return new Response('', { status: 500 });
         return jsonResponse([
           { searchResults: ACTIVITIES, meta: [{ searchResultsTotal: ACTIVITIES.length }] },
         ]);
@@ -143,11 +158,14 @@ describe('overview tab', () => {
     project = PROJECT;
     pinsTotal = 1;
     featuredTotal = 1;
+    updatesFail = false;
     track.mockClear();
     window.__env = { logLevel: 4, DEMI_PROJECTS_PATH: DEMI };
     await loadConfig();
     // The project document is read through the app's own cache, which outlives one test.
     queryClient.clear();
+    // The app client retries with backoff, which would hold a failed read past any test timeout.
+    queryClient.setQueryDefaults(['projectUpdates'], { retry: false });
   });
 
   afterEach(() => {
@@ -306,18 +324,40 @@ describe('overview tab', () => {
     );
     expect(screen.getByText('Process order issued')).toBeInTheDocument();
     expect(screen.queryByText('Readiness decision')).not.toBeInTheDocument();
-    // Total comes from the same RecentActivity page, so the count never needs its own request.
+    expect(screen.queryByText('Unpublished draft')).not.toBeInTheDocument();
+    // The count is of visible updates, so the draft is not in it.
     expect(screen.getByRole('link', { name: 'See all 4' })).toHaveAttribute(
       'href',
       '/p/proj-1/updates',
     );
-    // Summary strips markup to plain text; no dangerouslySetInnerHTML for this slot.
+    // The Updates tab's own request, so the two tabs share one cached list.
+    expect(requests.filter((url) => url.includes('dataset=RecentActivity'))).toEqual([
+      '/demi-search/search?dataset=RecentActivity&pageNum=0&pageSize=250&projectLegislation=default' +
+        '&sortBy=-publishDate&populate=true&and[project]=proj-1&fuzzy=false',
+    ]);
+  });
+
+  it('says the updates could not be loaded instead of holding the skeleton', async () => {
+    updatesFail = true;
+    renderTab();
+
+    expect(await screen.findByText('Updates could not be loaded right now.')).toBeInTheDocument();
+    expect(screen.queryByText('Loading updates')).not.toBeInTheDocument();
+  });
+
+  it('shows each update by short headline and summary', async () => {
+    renderTab();
+
+    expect(await screen.findByRole('link', { name: 'Comment period open' })).toBeInTheDocument();
+    expect(screen.getByText('Have your say by June 30.')).toBeInTheDocument();
+    expect(screen.queryByText('Longer body text.')).not.toBeInTheDocument();
+  });
+
+  it('falls back to the headline and the first paragraph as plain text', async () => {
+    renderTab();
+
+    expect(await screen.findByRole('link', { name: 'Application accepted' })).toBeInTheDocument();
     expect(screen.getByText('The proponent submitted their application.')).toBeInTheDocument();
-    // The Updates tab's own request, so the two tabs share one cached page.
-    expect(requests.find((url) => url.includes('dataset=RecentActivity'))).toBe(
-      '/demi-search/search?dataset=RecentActivity&pageNum=0&pageSize=10&projectLegislation=default' +
-        '&sortBy=-dateAdded&sortBy=&populate=true&and[project]=proj-1&fuzzy=false',
-    );
   });
 
   it('lists featured documents with their type, date and size', async () => {

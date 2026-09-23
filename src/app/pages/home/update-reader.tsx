@@ -1,72 +1,33 @@
-import { useId, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link } from 'react-router';
+import { Link, useLocation } from 'react-router';
 import { demiProjectQueryOptions } from 'app/api/api';
-import { homeFeedQueryOptions, updateQueryOptions, type HomeUpdate } from 'app/api/updates';
+import {
+  feedRowToUpdate,
+  homeFeedQueryOptions,
+  updateQueryOptions,
+  type HomeUpdate,
+  type Update,
+} from 'app/api/updates';
 import { Modal } from 'app/components/modal/modal';
 import { Skeleton } from 'app/components/skeleton/skeleton';
-import { safeHtml } from 'app/utils/safe-html';
-import { fileName, isSafeUrl } from 'app/utils/safe-url';
-import { longDate } from 'app/utils/utils';
-import { sanitizeWordHtml } from 'app/utils/word-html-sanitizer';
+import { UpdateBody } from 'app/components/update-detail/update-detail';
+import { updateMeta } from 'app/components/update-detail/update-meta';
 import { KIND_LABELS, projectDocumentsHref } from './home-shared';
 
-/** An update carries one `documentUrl` and no name, type or date, so the accordion lists one link. */
-function Documents({ url }: { url: string }) {
-  const [open, setOpen] = useState(false);
-  const listId = useId();
-  return (
-    <div className="home-reader__docs">
-      <button
-        type="button"
-        className="home-reader__docs-toggle"
-        aria-expanded={open}
-        aria-controls={listId}
-        onClick={() => setOpen((was) => !was)}
-      >
-        <span>Documents (1)</span>
-        <i className="material-icons" aria-hidden="true">
-          {open ? 'expand_less' : 'expand_more'}
-        </i>
-      </button>
-      {open && (
-        <ul id={listId} className="home-reader__docs-list">
-          <li>
-            <a className="home-reader__doc" href={url} target="_blank" rel="noopener noreferrer">
-              <i className="material-icons" aria-hidden="true">
-                insert_drive_file
-              </i>
-              <span className="link-label">{fileName(url) ?? 'Project documents'}</span>
-            </a>
-          </li>
-        </ul>
-      )}
-    </div>
-  );
-}
-
-function ReaderBody({ update }: { update: HomeUpdate }) {
+function ReaderBody({ update }: { update: Update }) {
   // The project read adds the location; until it lands the line is project and date alone.
   const { data: project } = useQuery(demiProjectQueryOptions(update.projectId ?? ''));
-  const meta = [update.projectName, project?.address, longDate(update.date)].filter(Boolean);
-  const document = update.documentUrl && isSafeUrl(update.documentUrl) ? update.documentUrl : null;
 
   return (
     <>
-      <span className={`home-reader__kind home-reader__kind--${update.kind}`}>
-        {KIND_LABELS[update.kind]}
+      <span className="home-reader__kind home-reader__kind--update">
+        {update.category ?? KIND_LABELS.update}
       </span>
-      <p className="home-reader__meta">{meta.join(' · ')}</p>
+      <p className="home-reader__meta">{updateMeta(update, project?.address)}</p>
       <div className="home-reader__scroll">
-        {update.content && (
-          <div
-            className="home-reader__content"
-            dangerouslySetInnerHTML={safeHtml(sanitizeWordHtml(update.content))}
-          ></div>
-        )}
-        {document && <Documents url={document} />}
+        <UpdateBody update={update} />
       </div>
-      {update.projectId && (
+      {update.projectId ? (
         <div className="home-reader__foot">
           <Link className="home-reader__primary" to={`/p/${update.projectId}/overview`}>
             View Project
@@ -75,8 +36,32 @@ function ReaderBody({ update }: { update: HomeUpdate }) {
             All project documents
           </Link>
         </div>
+      ) : (
+        update.subject && (
+          <div className="home-reader__foot">
+            <p className="home-reader__subject">About: {update.subject}</p>
+          </div>
+        )
       )}
     </>
+  );
+}
+
+/** demi-search names no project for a hidden Update, so only one the app already knows is linked. */
+function Unavailable({ projectId }: { projectId: string | null }) {
+  return (
+    <div className="home-reader__scroll">
+      <p className="home-note">
+        <span className="home-note__title">This update is no longer available.</span>
+        <span className="home-note__detail">
+          {projectId ? (
+            <Link to={`/p/${projectId}/overview`}>Go to the project</Link>
+          ) : (
+            <Link to="/">See recent updates</Link>
+          )}
+        </span>
+      </p>
+    </div>
   );
 }
 
@@ -86,17 +71,19 @@ function ReaderBody({ update }: { update: HomeUpdate }) {
  */
 export function UpdateReader({ id, onClose }: { id: string; onClose: () => void }) {
   const queryClient = useQueryClient();
-  const feedKey = homeFeedQueryOptions().queryKey;
-  // Opened from the feed, the row is already in hand; only a cold `/updates/:id` load asks.
-  const {
-    data: update,
-    isPending,
-    isError,
-  } = useQuery({
+  const location = useLocation();
+  const feedRow = queryClient
+    .getQueryData<HomeUpdate[]>(homeFeedQueryOptions().queryKey)
+    ?.find((u) => u.id === id);
+  const fromFeed = feedRow ? feedRowToUpdate(feedRow) : undefined;
+  const knownProjectId =
+    feedRow?.projectId ?? (location.state as { projectId?: string } | null)?.projectId ?? null;
+  // Opened from the feed, the row shows at once and stays if the full read fails.
+  const { data, isPending, isError } = useQuery({
     ...updateQueryOptions(id),
-    initialData: () => queryClient.getQueryData<HomeUpdate[]>(feedKey)?.find((u) => u.id === id),
-    initialDataUpdatedAt: () => queryClient.getQueryState(feedKey)?.dataUpdatedAt,
+    placeholderData: fromFeed,
   });
+  const update = data ?? (isError ? fromFeed : undefined);
 
   const title = update?.headline ?? (isPending ? 'Loading update' : 'Update not available');
 
@@ -116,11 +103,7 @@ export function UpdateReader({ id, onClose }: { id: string; onClose: () => void 
           </p>
         </div>
       ) : (
-        <div className="home-reader__scroll">
-          <p className="home-note">
-            This update is not available. It may have been removed, or the link may be wrong.
-          </p>
-        </div>
+        <Unavailable projectId={knownProjectId} />
       )}
     </Modal>
   );
