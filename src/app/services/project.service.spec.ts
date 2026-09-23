@@ -1,9 +1,13 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting, TestRequest } from '@angular/common/http/testing';
 import { ProjectService } from './project.service';
 import { ApiService } from 'app/services/api';
+import { ConfigService } from './config.service';
+import { AnalyticsService } from './analytics/analytics.service';
 import { DecisionService } from './decision.service';
-import { of, lastValueFrom } from 'rxjs';
+import { of, lastValueFrom, firstValueFrom } from 'rxjs';
 import { Project } from 'app/models/project';
 import { Decision } from 'app/models/decision';
 import { SearchService } from './search.service';
@@ -24,6 +28,7 @@ describe('ProjectService', () => {
       getProject: vi.fn((id: string) => {
         return of([{ _id: id, status: 'ACCEPTED' }]);
       }),
+      getDemiProponentName: vi.fn(() => of(null)),
       getProjects: vi.fn(() => {
         return of([
           { _id: '58851197aaecd9001b8227cc', status: 'ACCEPTED' },
@@ -158,5 +163,147 @@ describe('ProjectService', () => {
         expect(mockApiService.getProject).toHaveBeenCalled();
       });
     });
+  });
+});
+
+/**
+ * The project detail page shows DEMI's proponent name, the same one the project list shows.
+ *
+ * Eagle Mongo and DEMI disagree for some projects because DEMI merges Track in and lets Track win.
+ * Only the name comes from DEMI; the Eagle org _id stays because the proponent filter keys on it.
+ * DEMI must never break or hold up the page: any failure keeps the Eagle value. Real ApiService
+ * over HttpTestingController, so the DEMI query and the fallbacks are exercised end to end.
+ */
+describe('ProjectService.getById DEMI proponent name', () => {
+  const SEARCH = 'https://demi.example/demi-search';
+  const PROJECT_ID = '60f078d3332ebd0022a39224';
+  const EAGLE_ORG = { _id: '5c8a7b6d5e4f3a2b1c0d9e8f', name: 'Skeena Resources Limited' };
+  let httpMock: HttpTestingController;
+
+  function setup(searchApiPath: string) {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        ApiService,
+        ProjectService,
+        {
+          provide: ConfigService,
+          useValue: {
+            getApiPath: () => '/api',
+            getSearchApiPath: () => searchApiPath || '/api',
+            config: () => ({}),
+          },
+        },
+        { provide: LoggingService, useValue: { debug: vi.fn(), trace: vi.fn(), warn: vi.fn(), error: vi.fn(), log: vi.fn() } },
+        { provide: SearchService, useValue: {} },
+        { provide: AnalyticsService, useValue: { track: vi.fn() } },
+        { provide: Utils, useValue: { natureBuildMapper: () => '' } },
+      ],
+    });
+    httpMock = TestBed.inject(HttpTestingController);
+    return TestBed.inject(ProjectService);
+  }
+
+  function load(service: ProjectService): Promise<Project> {
+    return firstValueFrom(service.getById(PROJECT_ID, true));
+  }
+
+  function demiRequest(): TestRequest {
+    return httpMock.expectOne(req => req.url.startsWith(`${SEARCH}/search?dataset=Project`));
+  }
+
+  function flushEagle() {
+    httpMock.expectOne(req => req.url.startsWith(`/api/project/${PROJECT_ID}`))
+      .flush([{ _id: PROJECT_ID, name: 'Eskay Creek', proponent: { ...EAGLE_ORG } }]);
+  }
+
+  function demiRow(proponentName: string, id = PROJECT_ID) {
+    return [{ searchResults: [{ _id: id, _schemaName: 'Project', proponent: { _id: null, name: proponentName } }], meta: [] }];
+  }
+
+  afterEach(() => {
+    httpMock.verify();
+    vi.useRealTimers();
+  });
+
+  it('asks DEMI for the one project by its Eagle id', async () => {
+    const service = setup(SEARCH);
+    const project = load(service);
+    const req = demiRequest();
+    expect(req.request.url).toContain(`and[_id]=${PROJECT_ID}`);
+    expect(req.request.url).toContain('pageSize=1');
+    req.flush(demiRow('Eskay Creek Mining Ltd.'));
+    flushEagle();
+    await project;
+  });
+
+  it('shows the DEMI name and keeps the Eagle proponent _id', async () => {
+    const service = setup(SEARCH);
+    const project = load(service);
+    demiRequest().flush(demiRow('Eskay Creek Mining Ltd.'));
+    flushEagle();
+
+    const result = await project;
+    expect(result.proponent.name).toBe('Eskay Creek Mining Ltd.');
+    expect(result.proponent._id).toBe(EAGLE_ORG._id);
+  });
+
+  it('keeps the Eagle name when the DEMI call fails', async () => {
+    const service = setup(SEARCH);
+    const project = load(service);
+    demiRequest().flush({ message: 'Project search is unavailable' }, { status: 502, statusText: 'Bad Gateway' });
+    flushEagle();
+
+    expect((await project).proponent).toEqual(EAGLE_ORG);
+  });
+
+  it('keeps the Eagle name when DEMI has no matching row', async () => {
+    const service = setup(SEARCH);
+    const project = load(service);
+    demiRequest().flush([{ searchResults: [], count: 0 }]);
+    flushEagle();
+
+    expect((await project).proponent).toEqual(EAGLE_ORG);
+  });
+
+  it('ignores a DEMI row for a different project', async () => {
+    const service = setup(SEARCH);
+    const project = load(service);
+    demiRequest().flush(demiRow('Some Other Proponent', '000000000000000000000000'));
+    flushEagle();
+
+    expect((await project).proponent).toEqual(EAGLE_ORG);
+  });
+
+  it("ignores DEMI's placeholder name for a project with no proponent", async () => {
+    const service = setup(SEARCH);
+    const project = load(service);
+    demiRequest().flush(demiRow('Proponent Organization'));
+    flushEagle();
+
+    expect((await project).proponent).toEqual(EAGLE_ORG);
+  });
+
+  it('gives up on a slow DEMI call and shows the Eagle name', async () => {
+    vi.useFakeTimers();
+    const service = setup(SEARCH);
+    const project = load(service);
+    demiRequest(); // never answered
+    flushEagle();
+    await vi.advanceTimersByTimeAsync(3000);
+
+    expect((await project).proponent).toEqual(EAGLE_ORG);
+  });
+
+  // Kill switch: with SEARCH_API_PATH empty, search is eagle-api, so there is nothing to overlay.
+  it('makes no DEMI call and keeps the Eagle name when SEARCH_API_PATH is empty', async () => {
+    const service = setup('');
+    const project = load(service);
+    flushEagle();
+    httpMock.expectNone(req => req.url.includes('/search?'));
+
+    expect((await project).proponent).toEqual(EAGLE_ORG);
   });
 });

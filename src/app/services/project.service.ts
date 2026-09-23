@@ -136,8 +136,15 @@ export class ProjectService {
     }
     const loadingId = `project-${projId}`;
     this.loadingState.startLoading(loadingId, 'Loading project');
-    return this.api.getProject(projId, cpStart, cpEnd)
+    // Both requests run at once; the DEMI side never errors and gives up after a short timeout.
+    return forkJoin([this.api.getProject(projId, cpStart, cpEnd), this.api.getDemiProponentName(projId)])
       .pipe(
+        map(([projects, demiProponentName]) => {
+          if (demiProponentName && projects?.[0]) {
+            projects[0].proponent = this.withProponentName(projects[0].proponent, demiProponentName);
+          }
+          return projects;
+        }),
         map((projects: Project[]) => {
           // get upcoming comment period if there is one and convert it into a comment period object.
           // If there are multiple comment periods any that is currently running is a higher priority than a past comment period
@@ -207,6 +214,14 @@ export class ProjectService {
           return this.api.handleError(error);
         })
       );
+  }
+
+  // Only the name changes: the Eagle org _id stays, the proponent filter and links key on it.
+  private withProponentName(proponent: any, name: string): any {
+    if (proponent && typeof proponent === 'object') {
+      return { ...proponent, name };
+    }
+    return proponent ? { _id: proponent, name } : { name };
   }
 
   private _getExtraAppData(project: Project, { getresponsibleEPD = false, getprojectLead = false }: GetParameters): Observable<Project> {
