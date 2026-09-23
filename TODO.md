@@ -140,7 +140,6 @@ Fixes shipped on `develop` (Angular) not yet re-implemented here. One line each:
 - 2026-09-23: `LEADING_BLOCK` in `updates.ts` misses content that starts with bare text before any block tag, so the summary falls back to later text.
 - 2026-09-23: Content that starts with an empty block (`<p></p>`) gives a blank summary; skip empty blocks.
 - 2026-09-23: Unnamed attachments are numbered by position in the whole list, so the only unnamed one can be "Document 2"; number unnamed ones on their own.
-- 2026-09-23: No test covers the status filter on the `/updates/:id` point read (`updateQueryOptions`).
 - 2026-09-23: Encode the project id in the `/p/:projId/...` links built from Update rows.
 - 2026-09-23: Decide the retry option on the project updates query, so an error shows without the default backoff wait.
 - 2026-09-23: Spec fixtures should use the real `featuredImage` object shape from DEMI.

@@ -153,6 +153,19 @@ describe('home update reader', () => {
     expect(within(dialog).queryByText('The application is complete.')).not.toBeInTheDocument();
   });
 
+  it.each(['draft', 'archived'])(
+    'says an update the backend returns as %s is no longer available',
+    async (status) => {
+      renderAtPath('/updates/u1', { byId: envelope([{ ...ACTIVITY_ROW, status }]) });
+      const dialog = await reader();
+
+      expect(
+        await within(dialog).findByText('This update is no longer available.'),
+      ).toBeInTheDocument();
+      expect(within(dialog).queryByText('The application is complete.')).not.toBeInTheDocument();
+    },
+  );
+
   it('links the project a link handed over in route state', async () => {
     renderAtPath([{ pathname: '/updates/gone', state: { projectId: 'eagle-7' } }], {
       byId: envelope([]),
