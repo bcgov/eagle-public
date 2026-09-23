@@ -36,7 +36,7 @@ test('the home update reader keeps full-width, left-aligned body copy', async ({
   await page.locator('.home-update[href]').first().click();
   // Angular's `main p { max-width: 780px; margin: 0 auto }` belonged to the old About block, never
   // to the API HTML the reader renders.
-  expect(await styleOf(page, '.home-reader__content p', 'max-width')).toBe('none');
+  expect(await styleOf(page, '.home-reader .update-detail__content p', 'max-width')).toBe('none');
 });
 
 test('the home page stylesheet stays inside .home', () => {
