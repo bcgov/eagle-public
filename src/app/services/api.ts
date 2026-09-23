@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpResponse } from '@angular/common/http';
-import { Observable, throwError } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { Observable, of, throwError } from 'rxjs';
+import { catchError, map, timeout } from 'rxjs/operators';
 
 import { Project } from 'app/models/project';
 import { Comment } from 'app/models/comment';
@@ -323,6 +323,37 @@ export class ApiService {
     queryString += `&fields=${this.buildValues(fields)}`;
     return this.http.get<Project[]>(`${this.apiPath}/${queryString}`, {});
   }
+
+  /**
+   * DEMI's proponent name for one project, looked up by its Eagle id (`and[_id]` maps to
+   * `legacyEagleId` in the DEMI project index). DEMI merges Track in and lets Track win, which is
+   * what the project list already shows. Emits null, never an error, when there is nothing usable:
+   * search kill switch on, request failed or slow, no row, or only DEMI's placeholder name.
+   */
+  getDemiProponentName(eagleId: string): Observable<string | null> {
+    // Kill switch: searchPath is eagle-api itself, which would only echo the Mongo value.
+    if (this.searchPath === this.apiPath) {
+      return of(null);
+    }
+    return this.searchKeywords('', 'Project', [], 1, 1, '', null, {}, false, null, { _id: eagleId }).pipe(
+      timeout(ApiService.DEMI_PROPONENT_TIMEOUT_MS),
+      map((res: any) => {
+        const row = res?.[0]?.searchResults?.[0];
+        // The _id check stops a dropped filter from answering with some other project's row.
+        if (!row || row._id !== eagleId) { return null; }
+        const name = typeof row.proponent?.name === 'string' ? row.proponent.name.trim() : '';
+        return name && name !== ApiService.DEMI_PROPONENT_PLACEHOLDER ? name : null;
+      }),
+      catchError(error => {
+        this.logger.warn(`DEMI proponent lookup failed for project ${eagleId}, keeping the Eagle value`, 'ApiService', error);
+        return of(null);
+      })
+    );
+  }
+
+  private static readonly DEMI_PROPONENT_TIMEOUT_MS = 3000;
+  // DEMI's search emits this when the project has no proponent (eagle-demi search.js).
+  private static readonly DEMI_PROPONENT_PLACEHOLDER = 'Proponent Organization';
 
   //
   // Decisions
