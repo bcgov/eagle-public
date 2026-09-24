@@ -16,6 +16,8 @@ export const test = base.extend({
         /* private mode: the gate spec covers the password path */
       }
     }, GATE_KEY);
+    // Analytics POSTs keep the network busy, so `networkidle` never comes.
+    await page.route('**/api/usage/**', (route) => route.fulfill({ status: 204 }));
     await use(page);
   },
 });
