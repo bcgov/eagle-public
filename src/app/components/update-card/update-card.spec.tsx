@@ -68,19 +68,6 @@ describe('update card', () => {
     expect(screen.queryByText(/It applies from March/)).not.toBeInTheDocument();
   });
 
-  it('colours the accent by type, and falls back to the neutral token', () => {
-    const { unmount } = renderCard({ ...OLD_ROW, type: 'Public Comment Period' });
-    expect(document.querySelector('.update-card__accent')).toHaveStyle({
-      background: 'var(--eao-early-engagement-dark)',
-    });
-    unmount();
-
-    renderCard({ ...OLD_ROW, type: 'Something new' });
-    expect(document.querySelector('.update-card__accent')).toHaveStyle({
-      background: 'var(--eao-proponent-dark)',
-    });
-  });
-
   it('expands to the full update: headline, meta, image and body', async () => {
     renderCard(FULL_ROW);
 
@@ -157,6 +144,16 @@ describe('update card', () => {
       'href',
       '/p/proj-1/cp/cp-9',
     );
+  });
+
+  it('heads its photo series h4, under the card headline', async () => {
+    renderCard({ ...FULL_ROW, images: [{ document: 'img-2', alt: 'The outfall' }] });
+
+    expect(screen.queryByRole('heading', { name: 'Photos' })).not.toBeInTheDocument();
+    await userEvent.setup().click(readMore());
+
+    expect(screen.getByRole('heading', { level: 4, name: 'Photos' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'The outfall' })).toBeInTheDocument();
   });
 
   it('drops a document link whose URL is not a scheme we allow', async () => {

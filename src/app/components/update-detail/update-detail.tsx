@@ -2,6 +2,7 @@ import { useId, useState } from 'react';
 import type { Update, UpdateDocument } from 'app/api/updates';
 import { EngagementLink } from 'app/components/engagement-link';
 import { NewTabHint } from 'app/components/new-tab-hint';
+import { ImageCaption, UpdateGallery } from 'app/components/update-gallery/update-gallery';
 import { safeHtml } from 'app/utils/safe-html';
 import { fileName, isSafeUrl } from 'app/utils/safe-url';
 import { sanitizeWordHtml } from 'app/utils/word-html-sanitizer';
@@ -65,28 +66,40 @@ function Documents({ documents }: { documents: UpdateDocument[] }) {
 }
 
 /**
- * The body of one Update: featured image, text, documents and, unless the host shows its own
- * call to action, the ENGAGE link. The reader dialog and the project Updates tab both render it.
+ * The body of one Update: featured image, text, photos, documents and, unless the host shows its
+ * own call to action, the ENGAGE link. The reader dialog and the project Updates tab both render it.
  */
 export function UpdateBody({
   update,
   engagement = true,
+  headingLevel = 3,
 }: {
   update: Update;
   engagement?: boolean;
+  /** Level of the body's own headings, one below the host's headline. */
+  headingLevel?: 3 | 4;
 }) {
   const documents = documentsOf(update);
   const image =
     update.featuredImage && isSafeUrl(update.featuredImage.src) ? update.featuredImage : null;
   return (
     <>
-      {image && <img className="update-detail__image" src={image.src} alt={image.alt} />}
+      {image &&
+        (image.caption || image.credit ? (
+          <figure className="update-gallery__item">
+            <img className="update-detail__image" src={image.src} alt={image.alt} />
+            <ImageCaption image={image} />
+          </figure>
+        ) : (
+          <img className="update-detail__image" src={image.src} alt={image.alt} />
+        ))}
       {update.content && (
         <div
           className="update-detail__content"
           dangerouslySetInnerHTML={safeHtml(sanitizeWordHtml(update.content))}
         ></div>
       )}
+      <UpdateGallery images={update.images} headingLevel={headingLevel} />
       {documents.length > 0 && <Documents documents={documents} />}
       {engagement && update.engagementUrl && (
         <p className="update-detail__engage">

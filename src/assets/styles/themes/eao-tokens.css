@@ -43,4 +43,7 @@
   /* On a dark surface (the project masthead band). */
   --eao-on-dark-muted: rgba(255, 255, 255, 0.65);
   --eao-on-dark-divider: rgba(255, 255, 255, 0.12);
+
+  /* Left rule on an update item: the home feed and a project's Updates tab share it. */
+  --eao-update-rule: var(--theme-blue-70);
 }

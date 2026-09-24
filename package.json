@@ -40,7 +40,8 @@
     "maplibre-gl": "^6",
     "react": "^19",
     "react-dom": "^19",
-    "react-router": "^7"
+    "react-router": "^7",
+    "yet-another-react-lightbox": "^3.32.2"
   },
   "devDependencies": {
     "@eslint/js": "^9",

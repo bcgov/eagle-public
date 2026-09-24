@@ -65,10 +65,12 @@
   color: var(--typography-color-secondary);
 }
 
+/* Loading row: the card's shape, its left rule greyed like the home feed's skeleton. */
 .updates-tab__skeleton {
   padding: var(--layout-padding-large);
   background: var(--theme-gray-white);
   border: var(--layout-border-width-small) solid var(--theme-gray-40);
+  border-left-width: var(--layout-border-width-large);
   border-radius: var(--layout-border-radius-medium);
 }
 

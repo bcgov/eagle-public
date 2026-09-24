@@ -6,21 +6,10 @@ import { ENGAGE_LABEL, updateMeta } from 'app/components/update-detail/update-me
 import { longDate } from 'app/utils/utils';
 import './update-card.css';
 
-/** Activity type to the stage colour its accent takes. Anything else gets the neutral token. */
-const ACCENTS: Record<string, string> = {
-  'Public Comment Period': '--eao-early-engagement-dark',
-  'Project Notification Public Comment Period': '--eao-early-engagement-dark',
-  News: '--eao-process-planning-dark',
-  'Project Notification News': '--eao-process-planning-dark',
-};
-
-const NEUTRAL_ACCENT = '--eao-proponent-dark';
-
 /** One published update: its summary, opening in place to the full Update. */
 export function UpdateCard({ update }: { update: Update }) {
   const [open, setOpen] = useState(false);
   const panelId = useId();
-  const accent = ACCENTS[update.type ?? ''] ?? NEUTRAL_ACCENT;
   const label = update.category ?? update.type;
   const period = update.commentPeriod;
   const commentPeriod =
@@ -28,7 +17,6 @@ export function UpdateCard({ update }: { update: Update }) {
 
   return (
     <li className="update-card">
-      <div className="update-card__accent" style={{ background: `var(${accent})` }}></div>
       <article className="update-card__body">
         <p className="update-card__eyebrow">
           {longDate(update.date)}
@@ -39,7 +27,7 @@ export function UpdateCard({ update }: { update: Update }) {
         {open ? (
           <div id={panelId} className="update-card__full">
             <p className="update-card__meta">{updateMeta(update)}</p>
-            <UpdateBody update={update} engagement={false} />
+            <UpdateBody update={update} engagement={false} headingLevel={4} />
             {/* The card sits on its own project's tab, so only a subject needs naming. */}
             {!update.projectId && update.subject && (
               <p className="update-card__origin">About: {update.subject}</p>

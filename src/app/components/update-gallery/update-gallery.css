@@ -1,0 +1,129 @@
+/* An Update's photo series. Tokens come from @bcgov/design-tokens, as in update-detail.css. */
+
+.update-gallery {
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-padding-small);
+}
+
+/* Same face as the Documents toggle, the reader's other section label. */
+.update-gallery .update-gallery__title {
+  margin: 0;
+  font: var(--typography-bold-small-body);
+  color: var(--typography-color-primary);
+}
+
+.update-gallery .update-gallery__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  /* Space between photos is well above the image-to-caption space, so a caption reads as part of
+     the photo above it and not the one beside or below. */
+  gap: var(--layout-padding-large) var(--layout-padding-medium);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.update-gallery .update-gallery__grid--1 {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 576px) {
+  .update-gallery .update-gallery__grid--3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* Five is a wide lead photo over a 2x2; on a phone an odd three leads the same way. */
+.update-gallery .update-gallery__grid--5 > :first-child {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 575.98px) {
+  .update-gallery .update-gallery__grid--3 > :first-child {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Each photo and its caption sit in one bordered frame, the same border the site's cards use. The
+   frame, caption and credit are unscoped so the featured image in update-detail shares them. */
+.update-gallery__item {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  border: var(--layout-border-width-small) solid var(--theme-gray-40);
+  border-radius: var(--layout-border-radius-medium);
+  background: var(--surface-color-background-white);
+}
+
+/* Cells in a row stretch to one height, so frames line up whether or not a photo has a caption. */
+.update-gallery .update-gallery__item {
+  height: 100%;
+}
+
+.update-gallery .update-gallery__thumb {
+  display: block;
+  width: 100%;
+  padding: 0;
+  overflow: hidden;
+  border: none;
+  /* Rounded to sit inside the frame's corners; square at the foot where a caption follows. */
+  border-radius: var(--layout-border-radius-small) var(--layout-border-radius-small) 0 0;
+  background: var(--theme-gray-10);
+  cursor: zoom-in;
+}
+
+.update-gallery .update-gallery__thumb:focus-visible {
+  outline: var(--layout-border-width-medium) solid var(--typography-color-link);
+  outline-offset: 2px;
+}
+
+.update-gallery .update-gallery__thumb img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  /* Update images are often maps and charts, so the preview shows the whole image on the grey
+     frame rather than cropping it to fill. */
+  object-fit: contain;
+  transition: transform 0.2s ease;
+}
+
+.update-gallery .update-gallery__thumb:hover img {
+  transform: scale(1.03);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .update-gallery .update-gallery__thumb img {
+    transition: none;
+  }
+}
+
+/* A full-row photo takes the featured image's frame, so it is not a tall 4:3 block. */
+.update-gallery .update-gallery__grid--1 .update-gallery__thumb img,
+.update-gallery .update-gallery__grid--5 > :first-child .update-gallery__thumb img {
+  aspect-ratio: 16 / 9;
+  max-height: 24rem;
+}
+
+@media (max-width: 575.98px) {
+  .update-gallery .update-gallery__grid--3 > :first-child .update-gallery__thumb img {
+    aspect-ratio: 16 / 9;
+  }
+}
+
+.update-gallery .update-gallery__thumb:last-child {
+  border-radius: var(--layout-border-radius-small);
+}
+
+.update-gallery__caption {
+  display: flex;
+  flex-direction: column;
+  padding: var(--layout-padding-small);
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-primary);
+}
+
+.update-gallery__credit {
+  font: var(--typography-regular-label);
+  color: var(--typography-color-secondary);
+}
