@@ -40,6 +40,16 @@
   color: var(--typography-color-secondary);
 }
 
+.updates-tab__filter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-margin-xsmall);
+  max-width: 30rem;
+  margin-bottom: var(--layout-margin-large);
+  font: var(--typography-bold-small-body);
+  color: var(--typography-color-primary);
+}
+
 .updates-tab__list {
   display: flex;
   flex-direction: column;

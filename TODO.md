@@ -151,6 +151,30 @@ Fixes shipped on `develop` (Angular) not yet re-implemented here. One line each:
   - Check whether the longer search placeholder is cut off at 390px.
   - A period whose parent is a project notification links to `/p/<id>/cp/...` instead of `/pn/...`, because the search row does not say what kind of parent it has.
 
+## Updates tab and reader
+
+- 2026-09-23: Document what `ALL_ROWS_PAGE_SIZE` in `src/app/api/api.ts` is for and who pages with it.
+- 2026-09-23: `LEADING_BLOCK` in `updates.ts` misses content that starts with bare text before any block tag, so the summary falls back to later text.
+- 2026-09-23: Content that starts with an empty block (`<p></p>`) gives a blank summary; skip empty blocks.
+- 2026-09-23: Unnamed attachments are numbered by position in the whole list, so the only unnamed one can be "Document 2"; number unnamed ones on their own.
+- 2026-09-23: Encode the project id in the `/p/:projId/...` links built from Update rows.
+- 2026-09-23: Decide the retry option on the project updates query, so an error shows without the default backoff wait.
+- 2026-09-23: Spec fixtures should use the real `featuredImage` object shape from DEMI.
+- 2026-09-23: The update-card spec's `/overview/` link assertion is a no-op; assert on a link that would really appear.
+- 2026-09-23: The subject shows twice on a corporate update (meta line and "About:").
+- 2026-09-23: The featured image crops with `object-fit: cover`; use `contain` so charts and maps stay whole.
+- 2026-09-23: The Documents list keys on the document id, which repeats when an attachment is also the legacy `documentUrl`.
+- 2026-09-23: Add the new Update fields (shortHeadline, summary, category, publishDate) to the `HOME_FEED` fixture.
+- 2026-09-23: The `waitFor` at `update-reader.spec.tsx:176` passes before the failed read settles; wait on the settled read instead.
+- 2026-09-23: Skip the `/demi-projects` read in the reader when the Update already carries a location.
+- 2026-09-23: Point "See recent updates" at the home page updates list anchor, not `/`.
+- 2026-09-23: The reader's feed-row lookup matches on id only and ignores the row kind.
+- 2026-09-23: Nothing sets the route-state `projectId` the reader reads; add a caller or delete the branch.
+- 2026-09-23: The home feed card shows the headline; use shortHeadline with the headline as fallback.
+- 2026-09-23: Add a test for the rule that keeps the open tab in the project strip, apart from the Updates case.
+- 2026-09-23: Keep the Updates tab count live region mounted so screen readers announce changes.
+- 2026-09-23: The Updates tab stays in the strip when its read fails (`isError`); decide whether it should.
+
 ## Parity harness follow-ups (added 2026-09-24)
 
 - README.md: say that `--update-snapshots` on the command line still overwrites references despite `updateSnapshots: 'none'`; the SHA check only catches it on the next run.

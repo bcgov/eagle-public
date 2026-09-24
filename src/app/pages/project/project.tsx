@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, NavLink, Outlet, useParams } from 'react-router';
+import { Link, NavLink, Outlet, useMatch, useParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { track } from 'app/analytics/analytics';
 import { getById } from 'app/api/project';
@@ -39,6 +39,8 @@ export function ProjectPage() {
   });
 
   const tabs = useProjectTabMeta(projId, lists, project ?? null);
+  // The open tab stays in the strip even when its rule would hide it, so the page never loses it.
+  const activeTab = useMatch('/p/:projId/:tab/*')?.params['tab'];
 
   const notFound = isError || (isSuccess && !project);
 
@@ -66,7 +68,7 @@ export function ProjectPage() {
         <div className="page-container">
           <TabBar
             projId={projId}
-            tabs={tabs.filter((tab) => tab.show)}
+            tabs={tabs.filter((tab) => tab.show || tab.key === activeTab)}
             projectName={project?.name}
             ariaLabel="Project sections"
           />

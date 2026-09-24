@@ -124,8 +124,12 @@ function closedCommentPeriod() {
 let requests: string[];
 let project: Record<string, unknown> | undefined;
 let commentPeriods: unknown[];
-let updatesTotal: number;
+let updateRows: Record<string, unknown>[];
 let documentsTotal: number;
+
+function visibleUpdates(count: number) {
+  return Array.from({ length: count }, (_, index) => ({ _id: `u${index}`, headline: 'Update' }));
+}
 /** Document kinds this project holds, by probe marker. */
 let probeHits: string[];
 
@@ -158,7 +162,7 @@ function stubFetch() {
         return jsonResponse(searchResponse(LISTS.length, LISTS));
       }
       if (url.includes('dataset=RecentActivity')) {
-        return jsonResponse(searchResponse(updatesTotal));
+        return jsonResponse(searchResponse(updateRows.length, updateRows));
       }
       if (url.includes('dataset=Document')) {
         const probe = Object.values(PROBE_MARKERS).find((marker) => url.includes(marker));
@@ -184,6 +188,7 @@ function renderShell(path = '/p/proj-1/overview') {
       children: [
         { path: 'overview', element: <div>tab body</div> },
         { path: 'documents', element: <div>documents body</div> },
+        { path: 'updates', element: <div>updates body</div> },
       ],
     },
     { path: '/projects', element: <div>projects page</div> },
@@ -209,7 +214,7 @@ describe('project shell', () => {
     requests = [];
     project = { ...PROJECT };
     commentPeriods = [];
-    updatesTotal = 0;
+    updateRows = [];
     documentsTotal = 0;
     probeHits = [];
   });
@@ -219,18 +224,26 @@ describe('project shell', () => {
     vi.restoreAllMocks();
   });
 
-  it('renders the always-on tabs, and no Decisions or Compliance for a project with neither', async () => {
+  it('renders the always-on tabs, and no Updates, Decisions or Compliance for a project with none', async () => {
     renderShell();
 
     expect(await screen.findByRole('link', { name: 'Overview' })).toHaveAttribute(
       'href',
       '/p/proj-1/overview',
     );
-    await waitFor(() =>
-      expect(tabLabels()).toEqual(['Overview', 'Updates', 'Engagement', 'Documents']),
-    );
+    await waitFor(() => expect(tabLabels()).toEqual(['Overview', 'Engagement', 'Documents']));
     expect(tabLink('Engagement')).toHaveAttribute('href', '/p/proj-1/engagement');
     expect(tabLink('Documents')).toHaveAttribute('href', '/p/proj-1/documents');
+  });
+
+  it('keeps the open tab in the strip even when its rule would hide it', async () => {
+    renderShell('/p/proj-1/updates');
+
+    await screen.findByText('updates body');
+    // Once the empty list lands the rule says hide; only the open route keeps the tab.
+    await waitFor(() => expect(tabLink('Updates').querySelector('.tab-count--loading')).toBeNull());
+    expect(tabLabels()).toEqual(['Overview', 'Updates', 'Engagement', 'Documents']);
+    expect(tabLink('Updates')).toHaveAttribute('aria-current', 'page');
   });
 
   it('holds the tab body on the page gutter, with no main landmark of its own', async () => {
@@ -264,7 +277,7 @@ describe('project shell', () => {
   });
 
   it('counts updates, open comment periods and documents beside the labels', async () => {
-    updatesTotal = 24;
+    updateRows = visibleUpdates(24);
     documentsTotal = 1284;
     commentPeriods = openCommentPeriod();
 
@@ -325,9 +338,7 @@ describe('project shell', () => {
     await waitFor(() =>
       expect(requests.some((url) => url.includes('dataset=Document'))).toBe(true),
     );
-    const counts = requests.filter(
-      (url) => url.includes('dataset=Document') || url.includes('dataset=RecentActivity'),
-    );
+    const counts = requests.filter((url) => url.includes('dataset=Document'));
     expect(counts.length).toBeGreaterThan(0);
     expect(counts.every((url) => url.includes('pageSize=1'))).toBe(true);
   });
@@ -396,7 +407,7 @@ describe('renamed tab paths', () => {
   beforeEach(() => {
     project = { ...PROJECT };
     commentPeriods = [];
-    updatesTotal = 0;
+    updateRows = [];
     documentsTotal = 0;
     probeHits = [];
   });
@@ -497,16 +508,15 @@ describe('project page first paint', () => {
     renderShellWithOverviewTab();
 
     // Nothing has been resolved, so anything in this list was issued from the project id alone
-    // rather than from another request's answer. Seven, not eight: the pins ride the project
-    // document, so the nations card costs no request of its own.
-    await waitFor(() => expect(fetchStub.urls).toHaveLength(7));
+    // rather than from another request's answer. Six: the pins ride the project document, and the
+    // tab strip and the updates panel share one updates read.
+    await waitFor(() => expect(fetchStub.urls).toHaveLength(6));
     const issued = fetchStub.urls.join('\n');
     expect(issued).toMatch(/^\/demi-projects\/proj-1$/m);
     expect(fetchStub.urls.filter((url) => url.startsWith(`${DEMI}/`))).toHaveLength(1);
     expect(issued).toMatch(/dataset=CommentPeriod.*and\[project\]=proj-1/);
     expect(issued).toMatch(/dataset=List/);
-    expect(issued).toMatch(/dataset=RecentActivity.*pageSize=1/);
-    expect(issued).toMatch(/dataset=RecentActivity.*pageSize=10/);
+    expect(fetchStub.urls.filter((url) => url.includes('dataset=RecentActivity'))).toHaveLength(1);
     expect(issued).toMatch(/dataset=Document.*pageSize=1/);
     expect(issued).toMatch(/dataset=Document.*pageSize=5/);
   });

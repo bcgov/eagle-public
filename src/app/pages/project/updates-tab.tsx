@@ -1,11 +1,11 @@
-import { useMemo } from 'react';
-import { Link, useSearchParams } from 'react-router';
-import { SearchFilterTemplate } from 'app/components/filters/search-filter-template';
+import { useEffect, useId, useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Link, Navigate, useSearchParams } from 'react-router';
+import { filterUpdates, projectUpdatesQueryOptions } from 'app/api/updates';
 import { Skeleton } from 'app/components/skeleton/skeleton';
 import { SubscribePopover } from 'app/components/subscribe-popover';
 import { Pagination } from 'app/components/table/pagination';
 import { paramsToObject, toSearchParams } from 'app/components/table/table-params';
-import { useTable } from 'app/components/table/use-table';
 import { UpdateCard } from 'app/components/update-card/update-card';
 import { getNotifyApi } from 'app/config/config';
 import { searchUrl } from 'app/routes/legacy-search';
@@ -13,35 +13,58 @@ import { Constants } from 'app/utils/constants';
 import { useProjectContext } from './project-context';
 import './updates-tab.css';
 
-const DEFAULT_SORT = '-dateAdded';
 const PAGE_SIZE = Constants.tableDefaults.DEFAULT_PAGE_SIZE;
+
+/** How long typing must pause before the filter applies. */
+const FILTER_DELAY_MS = 300;
 
 /** Rows a list holds open while its first page is in flight. */
 const SKELETON_ROWS = [1, 2, 3];
 
-/** Updates published for this project, newest first. Its own `*Activities` query params. */
+function plural(count: number): string {
+  return `${count.toLocaleString('en-CA')} ${count === 1 ? 'update' : 'updates'}`;
+}
+
+/**
+ * The project's visible Updates, newest first, filtered in place over the loaded list. Its own
+ * `*Activities` query params. With nothing visible there is no tab, so it leaves for the overview.
+ */
 export function UpdatesTab() {
   const { projId } = useProjectContext();
+  const filterId = useId();
   const [searchParams, setSearchParams] = useSearchParams();
   const params = useMemo(() => paramsToObject(searchParams), [searchParams]);
-
+  const text = params['keywordsActivities'] || '';
   const page = +(params['currentPageActivities'] || Constants.tableDefaults.DEFAULT_CURRENT_PAGE);
-  const sortBy = params['sortByActivities'] || DEFAULT_SORT;
 
-  const result = useTable('projectActivities', {
-    dataset: 'RecentActivity',
-    enabled: !!projId,
-    keywords: params['keywordsActivities'] || '',
-    currentPage: page,
-    pageSize: PAGE_SIZE,
-    sortBy,
-    queryModifiers: { project: projId },
-    populate: true,
-  });
+  // The box answers every keystroke; the URL, the list and the announced count follow it once
+  // typing pauses. Back and Forward change the URL, and the box follows that.
+  const [draft, setDraft] = useState(text);
+  const [synced, setSynced] = useState(text);
+  if (text !== synced) {
+    setSynced(text);
+    setDraft(text);
+  }
+  useEffect(() => {
+    if (draft === text) return;
+    const timer = window.setTimeout(() => {
+      setSearchParams(
+        toSearchParams({ ...params, keywordsActivities: draft || null, currentPageActivities: 1 }),
+        { replace: true },
+      );
+    }, FILTER_DELAY_MS);
+    return () => window.clearTimeout(timer);
+  }, [draft, text, params, setSearchParams]);
 
-  const total = result.totalListItems;
+  const { data, isError } = useQuery(projectUpdatesQueryOptions(projId));
+  const updates = data ?? null;
+  const shown = useMemo(() => (updates ? filterUpdates(updates, text) : null), [updates, text]);
+  const lastPage = Math.max(1, Math.ceil((shown?.length ?? 0) / PAGE_SIZE));
+  const current = Math.min(Math.max(1, Math.trunc(page) || 1), lastPage);
 
-  function submit(next: Record<string, any>): void {
+  if (updates?.length === 0) return <Navigate to={`/p/${projId}/overview`} replace />;
+
+  function submit(next: Record<string, unknown>): void {
     setSearchParams(toSearchParams(next), { replace: true });
   }
 
@@ -50,34 +73,37 @@ export function UpdatesTab() {
       <div className="updates-tab__main">
         <div className="updates-tab__header">
           <h2 className="updates-tab__title">Updates</h2>
-          {result.loading && !total && (
-            <p className="updates-tab__count">
-              <Skeleton width="9rem" />
-            </p>
-          )}
-          {total > 0 && (
+          {updates && shown ? (
             <p className="updates-tab__count" role="status">
-              {total.toLocaleString('en-CA')} {total === 1 ? 'update' : 'updates'},{' '}
-              {sortBy === DEFAULT_SORT ? 'newest first' : 'by relevance'}
+              {text
+                ? `${shown.length.toLocaleString('en-CA')} of ${plural(updates.length)} match`
+                : `${plural(updates.length)}, newest first`}
             </p>
+          ) : (
+            !isError && (
+              <p className="updates-tab__count">
+                <Skeleton width="9rem" />
+              </p>
+            )
           )}
         </div>
 
-        <SearchFilterTemplate
-          keywordOverride={params['keywordsActivities']}
-          onSearch={(searchPackage) => {
-            const hasKeywords = searchPackage.keywords?.trim();
-            submit({
-              ...params,
-              keywordsActivities: hasKeywords || null,
-              sortByActivities:
-                hasKeywords && searchPackage.keywordsChanged ? '-score' : DEFAULT_SORT,
-              currentPageActivities: 1,
-            });
-          }}
-        />
+        <div className="updates-tab__filter">
+          <label htmlFor={filterId}>Filter updates</label>
+          <input
+            id={filterId}
+            type="search"
+            className="form-control"
+            value={draft}
+            onChange={(event) => setDraft(event.target.value)}
+          />
+        </div>
 
-        {result.loading && result.data.length === 0 ? (
+        {isError && !shown ? (
+          <p className="updates-tab__empty">
+            Updates could not be loaded right now. Try again in a moment.
+          </p>
+        ) : !shown ? (
           <ol className="updates-tab__list" aria-busy="true">
             <li className="visually-hidden">Loading</li>
             {SKELETON_ROWS.map((index) => (
@@ -88,20 +114,20 @@ export function UpdatesTab() {
               </li>
             ))}
           </ol>
-        ) : total === 0 ? (
-          <p className="updates-tab__empty">No updates have been published for this project.</p>
+        ) : shown.length === 0 ? (
+          <p className="updates-tab__empty">No updates match that filter.</p>
         ) : (
           <ol className="updates-tab__list">
-            {result.data.map((update: any) => (
-              <UpdateCard key={update._id} update={update} />
+            {shown.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE).map((update) => (
+              <UpdateCard key={update.id} update={update} />
             ))}
           </ol>
         )}
 
         <Pagination
-          currentPage={page}
+          currentPage={current}
           pageSize={PAGE_SIZE}
-          totalItems={total}
+          totalItems={shown?.length ?? 0}
           ariaLabel="Updates pagination"
           onPageChange={(next) => submit({ ...params, currentPageActivities: next })}
         />
