@@ -126,6 +126,26 @@ describe('home update reader', () => {
     ).toBeInTheDocument();
   });
 
+  it('shows the photo series under an h3, one level below the reader headline', async () => {
+    renderAtPath('/updates/u1', {
+      byId: envelope([
+        {
+          ...ACTIVITY_ROW,
+          images: [
+            { document: 'img-1', alt: 'The intake' },
+            { document: 'img-2', alt: 'The outfall' },
+          ],
+        },
+      ]),
+    });
+
+    const dialog = await reader();
+    expect(
+      await within(dialog).findByRole('heading', { level: 3, name: 'Photos' }),
+    ).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: 'The outfall' })).toBeInTheDocument();
+  });
+
   it('names the subject in place of a project', async () => {
     renderAtPath('/updates/u1', {
       byId: envelope([{ ...ACTIVITY_ROW, project: null, category: 'Corporate', subject: 'Fees' }]),

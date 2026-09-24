@@ -216,7 +216,7 @@
 }
 
 .home-update {
-  --kind-rule: var(--theme-blue-70);
+  --kind-rule: var(--eao-update-rule);
   --kind-ink: var(--theme-blue-90);
 
   display: block;
@@ -312,12 +312,13 @@
 }
 
 /* Update reader. The Modal draws the head; the kind tag is lifted above it and the meta line
-   closes it, so the body is `display: contents` and its parts are ordered as flex items. */
+   closes it, so the body is `display: contents` and its parts are ordered as flex items.
+   The dialog is wide so the featured image and photos get room. */
 
 .home .home-reader[open] {
   display: flex;
   flex-direction: column;
-  max-width: min(800px, calc(100% - 2 * var(--layout-padding-large)));
+  max-width: min(960px, calc(100% - 2 * var(--layout-padding-large)));
   max-height: calc(100vh - 2 * var(--layout-padding-large));
   overflow: hidden;
 }

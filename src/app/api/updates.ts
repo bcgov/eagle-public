@@ -1,3 +1,4 @@
+import { logger } from 'app/config/logging';
 import { htmlToText } from 'app/utils/safe-html';
 import { documentDownloadUrl, type DownloadableDocument } from 'app/utils/utils';
 import { ALL_ROWS_PAGE_SIZE, rowsFrom, searchKeywords, totalFrom } from './api';
@@ -24,6 +25,14 @@ export interface HomeUpdate {
 /** A document reference as demi-search answers it: a bare id, or the row when populated. */
 type DocumentRef = string | (Partial<DownloadableDocument> & { _id?: string }) | null;
 
+/** One image of an Update: the featured image, or one of its series in the order the editor set. */
+interface ImageRow {
+  document?: DocumentRef;
+  alt?: string | null;
+  caption?: string | null;
+  credit?: string | null;
+}
+
 /**
  * A `RecentActivity` row as demi-search stores it. Every field after `project` is newer than the
  * index, so any of them may be missing on an old row.
@@ -41,13 +50,22 @@ interface ActivityRow {
   category?: string | null;
   shortHeadline?: string | null;
   summary?: string | null;
-  featuredImage?: { document?: DocumentRef; alt?: string | null } | null;
+  featuredImage?: ImageRow | null;
+  images?: ImageRow[] | null;
   attachments?: DocumentRef[] | null;
   location?: string | null;
   engagementUrl?: string | null;
   subject?: string | null;
   status?: string | null;
   publishDate?: string | null;
+}
+
+export interface UpdateImage {
+  id: string;
+  src: string;
+  alt: string;
+  caption: string | null;
+  credit: string | null;
 }
 
 export interface UpdateDocument {
@@ -73,7 +91,9 @@ export interface Update {
   category: string | null;
   type: string | null;
   location: string | null;
-  featuredImage: { src: string; alt: string } | null;
+  featuredImage: UpdateImage | null;
+  /** The photo series shown under the body, in display order. */
+  images: UpdateImage[];
   attachments: UpdateDocument[];
   /** The one link an old row carries in place of attachments. */
   documentUrl: string | null;
@@ -121,6 +141,11 @@ function refName(ref: DocumentRef | undefined): string | null {
   return ref.displayName || ref.documentFileName || ref.internalOriginalName || null;
 }
 
+/** Ids come from the search index, so they are encoded before they go into a URL path. */
+function downloadUrl(id: string): string {
+  return documentDownloadUrl({ _id: encodeURIComponent(id) });
+}
+
 function toDocuments(refs: DocumentRef[]): UpdateDocument[] {
   return refs
     .filter((ref) => refId(ref))
@@ -129,9 +154,31 @@ function toDocuments(refs: DocumentRef[]): UpdateDocument[] {
       return {
         id,
         name: refName(ref) ?? `Document ${index + 1}`,
-        href: documentDownloadUrl({ _id: id }),
+        href: downloadUrl(id),
       };
     });
+}
+
+/** Admin and the API both stop an Update at five photos; the gallery grid is laid out for five. */
+const MAX_IMAGES = 5;
+
+function toImages(rows: ImageRow[]): UpdateImage[] {
+  const images = rows.flatMap((row) => {
+    const id = refId(row.document);
+    if (!id) return [];
+    const alt = row.alt?.trim() ?? '';
+    if (!alt) logger.warn('Update image has no alt text', 'updates', id);
+    return [
+      {
+        id,
+        src: downloadUrl(id),
+        alt,
+        caption: row.caption?.trim() || null,
+        credit: row.credit?.trim() || null,
+      },
+    ];
+  });
+  return images.slice(0, MAX_IMAGES);
 }
 
 /** ENGAGE links leave the site, so only http and https pass. */
@@ -148,7 +195,6 @@ export function toUpdate(row: ActivityRow): Update {
   const headline = row.headline ?? '';
   const shortHeadline = row.shortHeadline?.trim() || headline;
   const summary = summaryOf(row.summary, row.content);
-  const imageId = refId(row.featuredImage?.document);
   return {
     id: row._id ?? '',
     projectId: row.project?._id ?? null,
@@ -162,9 +208,8 @@ export function toUpdate(row: ActivityRow): Update {
     category: row.category || null,
     type: row.type || null,
     location: row.location || row.project?.location || null,
-    featuredImage: imageId
-      ? { src: documentDownloadUrl({ _id: imageId }), alt: row.featuredImage?.alt ?? '' }
-      : null,
+    featuredImage: toImages(row.featuredImage ? [row.featuredImage] : [])[0] ?? null,
+    images: toImages(row.images ?? []),
     attachments: toDocuments(row.attachments ?? []),
     documentUrl: row.documentUrl ?? null,
     engagementUrl: httpUrl(row.engagementUrl),

@@ -1,0 +1,18 @@
+/* The photo viewer's overrides of yet-another-react-lightbox, loaded with the viewer. */
+
+/* The caption band sits over the photo. At the library's 50% a white description over a white
+   map reads about 4:1; at 70% it is about 8:1. */
+.update-lightbox {
+  --yarl__slide_captions_container_background: rgb(0 0 0 / 70%);
+}
+
+/* The library keeps the title on one line and cuts it with an ellipsis. A caption wraps instead,
+   at the H6 face, to three lines: enough for a long caption on a phone. */
+.update-lightbox .yarl__slide_title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  font: var(--typography-bold-h6);
+  white-space: normal;
+}

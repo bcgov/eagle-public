@@ -8,7 +8,12 @@
   aspect-ratio: 16 / 9;
   max-height: 24rem;
   object-fit: cover;
+  /* Squared at the foot inside the caption frame, below. */
   border-radius: var(--layout-border-radius-medium);
+}
+
+.update-gallery__item .update-detail__image:not(:last-child) {
+  border-radius: var(--layout-border-radius-small) var(--layout-border-radius-small) 0 0;
 }
 
 /* API HTML: `epic/styles.css` gives bare `main p` a centred max-width meant for other pages. */

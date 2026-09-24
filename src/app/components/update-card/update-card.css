@@ -1,15 +1,12 @@
-/* One update: a card with a category-coloured top accent. Tokens come from @bcgov/design-tokens
-   and eao-tokens.css. */
+/* One update: a card with the home feed's left rule (--eao-update-rule), so the two match. Tokens
+   come from @bcgov/design-tokens and eao-tokens.css. */
 
 .update-card {
   overflow: hidden;
   background: var(--theme-gray-white);
   border: var(--layout-border-width-small) solid var(--theme-gray-40);
+  border-left: var(--layout-border-width-large) solid var(--eao-update-rule);
   border-radius: var(--layout-border-radius-medium);
-}
-
-.update-card__accent {
-  height: var(--layout-border-width-large);
 }
 
 .update-card__body {
@@ -30,6 +27,7 @@
   color: var(--typography-color-primary);
 }
 
+/* No reading measure: an Update's text runs the card's full width, collapsed or open. */
 .update-card__summary {
   margin: 0;
   font: var(--typography-regular-body);

@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { test, expect } from '../support/fixtures';
-import { latestCommentPeriod, projectByKeyword, ready } from '../support/helpers';
+import { latestCommentPeriod, projectByKeyword, ready, searchFixture } from '../support/helpers';
 
 /**
  * Angular scoped every component stylesheet with a `[_ngcontent]` attribute on its last compound
@@ -37,6 +37,62 @@ test('the home update reader keeps full-width, left-aligned body copy', async ({
   // Angular's `main p { max-width: 780px; margin: 0 auto }` belonged to the old About block, never
   // to the API HTML the reader renders.
   expect(await styleOf(page, '.home-reader .update-detail__content p', 'max-width')).toBe('none');
+});
+
+test('the home update reader is 960px wide on a wide screen', async ({ page }) => {
+  await page.goto('/');
+  await ready(page);
+  await page.locator('.home-update[href]').first().click();
+  const reader = page.locator('.home-reader[open]');
+  await reader.waitFor({ state: 'visible', timeout: 60_000 });
+
+  // The config viewport (1400px) leaves room, so the cap is what sets the width.
+  expect(await reader.evaluate((el) => el.getBoundingClientRect().width)).toBe(960);
+});
+
+/** A project whose Updates tab has at least one card: the newest visible update's project. */
+async function projectWithUpdate(request: import('@playwright/test').APIRequestContext) {
+  const rows = await searchFixture(
+    request,
+    'dataset=RecentActivity&pageNum=0&pageSize=20&sortBy=-dateAdded&populate=true&fuzzy=false',
+  );
+  const row = (
+    rows as { status?: string | null; project?: string | { _id: string } | null }[]
+  ).find((r) => (r.status == null || r.status === 'published') && r.project);
+  return typeof row?.project === 'object' ? (row.project?._id ?? null) : (row?.project ?? null);
+}
+
+test('a project update card takes the home feed update rule on its left edge', async ({
+  page,
+  request,
+}) => {
+  const projectId = await projectWithUpdate(request);
+  test.skip(!projectId, 'no recent published update with a project');
+
+  await page.goto('/');
+  await ready(page);
+  const homeRule = await styleOf(
+    page,
+    '.home-update:not(.home-update--decision):not(.home-update--skeleton)',
+    'border-left-color',
+  );
+
+  await page.goto(`/p/${projectId}/updates`);
+  await ready(page);
+  expect(await styleOf(page, '.update-card', 'border-left-color')).toBe(homeRule);
+  expect(await styleOf(page, '.update-card', 'border-left-width')).toBe('4px');
+});
+
+test('a project update card summary runs the card width, with no reading measure', async ({
+  page,
+  request,
+}) => {
+  const projectId = await projectWithUpdate(request);
+  test.skip(!projectId, 'no recent published update with a project');
+
+  await page.goto(`/p/${projectId}/updates`);
+  await ready(page);
+  expect(await styleOf(page, '.update-card__summary', 'max-width')).toBe('none');
 });
 
 test('the home page stylesheet stays inside .home', () => {

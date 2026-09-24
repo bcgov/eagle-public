@@ -1,5 +1,6 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { json, stubFetch } from 'app/pages/home/home-fetch.spec-helper';
+import { logger } from 'app/config/logging';
 import {
   filterUpdates,
   isVisibleUpdate,
@@ -65,6 +66,85 @@ describe('toUpdate attachments', () => {
 
   it('takes the location from the project when the update has none', () => {
     expect(toUpdate({ project: { _id: 'p1', location: 'Kitimat' } }).location).toBe('Kitimat');
+  });
+});
+
+describe('toUpdate images', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it('keeps the editor order and drops rows with no document', () => {
+    const { images } = toUpdate({
+      images: [
+        { document: 'img-b', alt: 'B' },
+        { document: null, alt: 'Gone' },
+        { document: { _id: 'img-a' }, alt: 'A' },
+        { document: '', alt: 'Empty' },
+      ],
+    });
+
+    expect(images.map((image) => image.id)).toEqual(['img-b', 'img-a']);
+  });
+
+  it('stops at five photos, counting only the usable ones', () => {
+    const { images } = toUpdate({
+      images: [
+        { document: null },
+        ...['1', '2', '3', '4', '5', '6', '7'].map((n) => ({
+          document: `img-${n}`,
+          alt: `Photo ${n}`,
+        })),
+      ],
+    });
+
+    expect(images.map((image) => image.id)).toEqual(['img-1', 'img-2', 'img-3', 'img-4', 'img-5']);
+  });
+
+  it('trims caption and credit, and turns blank ones into null', () => {
+    const { images } = toUpdate({
+      images: [
+        { document: 'img-1', alt: 'A', caption: '  The intake  ', credit: ' EAO staff ' },
+        { document: 'img-2', alt: 'B', caption: '   ', credit: null },
+      ],
+    });
+
+    expect(images[0]).toMatchObject({ caption: 'The intake', credit: 'EAO staff' });
+    expect(images[1]).toMatchObject({ caption: null, credit: null });
+  });
+
+  it('trims alt text and warns when a photo has none', () => {
+    const warn = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
+    const { images } = toUpdate({
+      images: [
+        { document: 'img-1', alt: '  The river  ' },
+        { document: 'img-2', alt: '   ' },
+        { document: 'img-3' },
+      ],
+    });
+
+    expect(images.map((image) => image.alt)).toEqual(['The river', '', '']);
+    expect(warn.mock.calls.map((call) => call[2])).toEqual(['img-2', 'img-3']);
+  });
+
+  it('encodes the id into the download address and keeps it raw as the id', () => {
+    const { images } = toUpdate({ images: [{ document: 'a/b c?d', alt: 'A' }] });
+
+    expect(images[0].id).toBe('a/b c?d');
+    expect(images[0].src).toMatch(/\/documents\/a%2Fb%20c%3Fd\/download\?redirect=1$/);
+  });
+
+  it('gives the featured image its caption and credit, and null when it has no document', () => {
+    expect(
+      toUpdate({
+        featuredImage: { document: 'img-9', alt: 'Site', caption: 'Site', credit: 'EAO' },
+      }).featuredImage,
+    ).toMatchObject({ id: 'img-9', alt: 'Site', caption: 'Site', credit: 'EAO' });
+    expect(toUpdate({ featuredImage: { document: null, alt: 'Site' } }).featuredImage).toBeNull();
+    expect(toUpdate({ featuredImage: null }).featuredImage).toBeNull();
+  });
+
+  it('reads a row without images as an empty series', () => {
+    expect(toUpdate({ images: null }).images).toEqual([]);
+    expect(toUpdate({}).images).toEqual([]);
   });
 });
 
