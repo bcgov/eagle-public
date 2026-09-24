@@ -65,7 +65,6 @@
 }
 
 .engagement-tab__description {
-  max-width: 62ch;
   margin: 0 0 var(--layout-margin-medium);
   font: var(--typography-regular-body);
   color: var(--typography-color-secondary);
