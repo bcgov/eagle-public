@@ -31,7 +31,6 @@
 }
 
 .update-card__content {
-  max-width: 62ch;
   font: var(--typography-regular-body);
   color: var(--typography-color-secondary);
   text-wrap: pretty;

@@ -10,7 +10,7 @@ interface PageMastheadProps {
   breadcrumbs?: Crumb[];
   /** One line under the title. Elides at desktop, so keep it short. */
   meta?: ReactNode;
-  /** A sentence or two about the page, under the title. Wraps, at the page measure. */
+  /** A sentence or two about the page, under the title. Wraps at the masthead width. */
   lede?: ReactNode;
   /** Controls that sit beside the title. */
   actions?: ReactNode;

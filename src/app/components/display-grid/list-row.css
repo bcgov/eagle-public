@@ -23,8 +23,6 @@
   font: var(--typography-bold-body);
   color: var(--typography-color-primary);
   text-wrap: pretty;
-  /* A headline wider than the page measure loses the reader between line ends. */
-  max-width: var(--page-measure);
 }
 
 .display-grid .display-grid__row-link {
@@ -41,8 +39,6 @@
   font: var(--typography-regular-small-body);
   color: var(--typography-color-primary);
   text-wrap: pretty;
-  /* Measure: past about 92 characters the eye loses the next line's start. */
-  max-width: 92ch;
 }
 
 .display-grid .display-grid__row-more {
@@ -136,12 +132,4 @@
   padding: 0;
   border-bottom: none;
   background: transparent;
-}
-
-/* The list template stacks its parts and puts nothing beside them, so the measure caps above only
-   leave the right half of a 1440 row empty. Full row width here; cards and passage rows keep
-   theirs, as those sit next to a checkbox or run under a page width of their own. */
-.display-grid .display-grid__list--rows .display-grid__row-title,
-.display-grid .display-grid__list--rows .display-grid__row-body {
-  max-width: none;
 }

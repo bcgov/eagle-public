@@ -1,14 +1,10 @@
-/* The site's content width, side gutter and reading measure, stated once. Every band on every page
+/* The site's content width and side gutter, stated once. Every band on every page
    draws its background full width and puts `.page-container` on the element inside it, so nothing
    else in the app declares a content width or a side gutter. */
 
 :root {
   --page-max-width: 1440px;
   --page-gutter: var(--layout-padding-medium);
-  /* Measures resolve on the element that reads them: `ch` is that element's own character width. */
-  --page-measure: 78ch;
-  /* Search passages run in smaller type, so they carry a slightly longer line. */
-  --passage-measure: 86ch;
 }
 
 @media (width >= 860px) {
@@ -34,7 +30,7 @@
 }
 
 /* The body under a static page's masthead: the band's gutter, then breathing room above and below.
-   The copy inside keeps to `.content-wrapper`'s measure, left-aligned on the band's edge. */
+   The copy inside fills the band's content width. */
 .page-body {
   padding-block: var(--layout-padding-xlarge);
 }
