@@ -21,6 +21,9 @@ export type ControlKey =
   | 'tabProjects'
   | 'tabDocuments'
   | 'tabActivities'
+  | 'recordPills'
+  | 'recordPillOn'
+  | 'recordPillOff'
   | 'scopeNames'
   | 'scopeInside'
   | 'moreFilters'
@@ -66,6 +69,18 @@ export const SELECTORS: Record<ControlKey, ControlSelector> = {
   tabActivities: {
     proto: '[data-tour="types"] button:has-text("Activities & updates")',
     app: '[data-tour="types"] button:has-text("Activities & updates")',
+  },
+  recordPills: {
+    proto: '[data-tour="types"] button',
+    app: '[data-tour="types"] button',
+  },
+  recordPillOn: {
+    proto: '[data-tour="types"] button[aria-pressed="true"]',
+    app: '[data-tour="types"] button[aria-pressed="true"]',
+  },
+  recordPillOff: {
+    proto: '[data-tour="types"] button[aria-pressed="false"]',
+    app: '[data-tour="types"] button[aria-pressed="false"]',
   },
   scopeNames: {
     proto: '[data-tour="scope"] button:has-text("Names & details")',

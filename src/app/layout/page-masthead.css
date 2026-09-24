@@ -76,7 +76,6 @@
 }
 
 .page-masthead__lede {
-  max-width: var(--page-measure);
   margin: var(--layout-margin-small) 0 0;
   font: var(--typography-regular-body);
   color: var(--typography-color-primary-invert);

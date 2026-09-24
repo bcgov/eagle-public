@@ -49,9 +49,8 @@ body {
   max-width: 100%;
 }
 
-/* Global Content Styles. Long-form copy keeps a reading measure inside the wide container. */
+/* Global Content Styles. Long-form copy fills the page container. */
 .content-wrapper {
-  max-width: var(--page-measure);
   font-size: 1rem;
   line-height: 1.5;
   color: var(--bc-gray);

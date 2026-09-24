@@ -1,0 +1,152 @@
+{
+  "01-documents-grid-400.png": {
+    "pageHeight": 4820,
+    "fullPage": true,
+    "sha256": "59582ea481ca7898e0e684ff3504aeb4f8a57fa879071c1a015a87f891e90251"
+  },
+  "01-documents-grid-924.png": {
+    "pageHeight": 1434,
+    "fullPage": true,
+    "sha256": "4ffc459dac3f7c9833b8acb7ea4a7462b97b319a0eb74399a873d6af65eea5cc"
+  },
+  "02-projects-grid-400.png": {
+    "pageHeight": 3850,
+    "fullPage": true,
+    "sha256": "0343f8eac4394667c373de6f60768aede521182cbbf68e7a44da8fffa590baad"
+  },
+  "02-projects-grid-924.png": {
+    "pageHeight": 1331,
+    "fullPage": true,
+    "sha256": "4d7a9fdf70e7d4a16c702bee0583fcd6153b6673cc5dd75062eb4d3672ddc298"
+  },
+  "03-activities-list-400.png": {
+    "pageHeight": 3847,
+    "fullPage": true,
+    "sha256": "68ecc9b8280f6b2e5cb992e608f1fdfe63a91a56faee988ecc87406cc3cbbbdc"
+  },
+  "03-activities-list-924.png": {
+    "pageHeight": 2956,
+    "fullPage": true,
+    "sha256": "e0048c7d3d8ec754a506dcecb45228e270e3364e5329eee8ef8d86f44618507b"
+  },
+  "04-document-content-search-400.png": {
+    "pageHeight": 3019,
+    "fullPage": true,
+    "sha256": "65eba4336990413403a6d895e3d171d02a034cb0cf546b4dee2fa5cbeaabd827"
+  },
+  "04-document-content-search-924.png": {
+    "pageHeight": 2137,
+    "fullPage": true,
+    "sha256": "43768228e4619e23a6e880bcece297959e6b538ef35ea69e1efd83b25f8554ea"
+  },
+  "05-advanced-filters-400.png": {
+    "pageHeight": 5577,
+    "fullPage": true,
+    "sha256": "d871cc108b1a3d38807e8751d54218379c75adf0a7c634d49323b03a68c7bf42"
+  },
+  "05-advanced-filters-924.png": {
+    "pageHeight": 1638,
+    "fullPage": true,
+    "sha256": "a8eec064a7e7e980eb36764576baf30c61f2c8ed396a39c7d2834ade452aee2e"
+  },
+  "06-multiselect-picker-924.png": {
+    "pageHeight": 900,
+    "fullPage": false,
+    "sha256": "0facd688f87637d1127ed8824b5dc43cddf6b1dd89a878ad0e7b778a874df67c"
+  },
+  "07-search-help-modal-400.png": {
+    "pageHeight": 4820,
+    "fullPage": true,
+    "sha256": "3297c94397130cd2a3548085d9cda9e3821f604a963568613730881f7dbdac92"
+  },
+  "07-search-help-modal-924.png": {
+    "pageHeight": 1434,
+    "fullPage": true,
+    "sha256": "3cfac41dd4c27bbfb35a8ba46fb3c7287fa9acd8fdaf1a7816d94f7d190c76c0"
+  },
+  "08-guided-tour-step-1-400.png": {
+    "pageHeight": 4820,
+    "fullPage": true,
+    "sha256": "fa0e380980cc5db1398cd30436dac2d1752eb014d30eb3be3ac3d373a11a70b8"
+  },
+  "08-guided-tour-step-1-924.png": {
+    "pageHeight": 1434,
+    "fullPage": true,
+    "sha256": "4e16fd0b7c680ef4171a16356fd75ba5c28b04f55fb9ae6ffe85cc2b7ba6974e"
+  },
+  "09-tour-step-2-400.png": {
+    "pageHeight": 4820,
+    "fullPage": true,
+    "sha256": "096b7ddb74b73290b87df880639c143d3a470641132ad8a4caf8c0b3463640f1"
+  },
+  "09-tour-step-2-924.png": {
+    "pageHeight": 1434,
+    "fullPage": true,
+    "sha256": "2540ea09373c9aa8336b3fbe5d74f04ed071f7b5f6e7c88cd323267b1f1da2de"
+  },
+  "10-tour-step-3-400.png": {
+    "pageHeight": 4820,
+    "fullPage": true,
+    "sha256": "f83f5d35243494876695cddb7bc71385f339b00fe956a4c8ce118bfd3723390e"
+  },
+  "10-tour-step-3-924.png": {
+    "pageHeight": 1434,
+    "fullPage": true,
+    "sha256": "2bac0293b471891ab7d663f98ca50c91e9207a7e5097ba2a684ac8d02d2ebe5e"
+  },
+  "11-tour-step-4-400.png": {
+    "pageHeight": 4820,
+    "fullPage": true,
+    "sha256": "c21d0554efaa543745b8eddfa8b27a38e00d4e75af35a1a0f8625f6a10f1fa76"
+  },
+  "11-tour-step-4-924.png": {
+    "pageHeight": 1434,
+    "fullPage": true,
+    "sha256": "b489ce64bfbd5850ee4e3c5004e26cb01607b9b56fbff653a520efdf343918c1"
+  },
+  "12-tour-step-5-400.png": {
+    "pageHeight": 4820,
+    "fullPage": true,
+    "sha256": "f302fc1b14d43b6132b42c4750487ddb5fd17ee42952ca4db299617aedd20311"
+  },
+  "12-tour-step-5-924.png": {
+    "pageHeight": 1434,
+    "fullPage": true,
+    "sha256": "c838b8a8aa4deb0a3d44e445b465fbaa835d8b7d61b18f5fdc6b892a9a682f15"
+  },
+  "13-tour-step-6-924.png": {
+    "pageHeight": 1434,
+    "fullPage": true,
+    "sha256": "318bb5034e9608872d552347bcaf37658ee73d8b3a53dd06441a3d2e4c90e446"
+  },
+  "14-tour-step-7-924.png": {
+    "pageHeight": 1434,
+    "fullPage": true,
+    "sha256": "f4e1df463ee2d856a7feb7742684bc5b944bf34509ec4997d4eb3f141b626626"
+  },
+  "15-selected-state-924.png": {
+    "pageHeight": 1434,
+    "fullPage": true,
+    "sha256": "16c535227c3079520b1f34cd46776e707310d2800f6af2a4c9502d7e2d5c3d5f"
+  },
+  "16-empty-state-400.png": {
+    "pageHeight": 1401,
+    "fullPage": true,
+    "sha256": "6f2ded3cd9d5fd6f5aa0c4cc6ecc0661f917a0440e568e6957bd1f6ba59265ec"
+  },
+  "16-empty-state-924.png": {
+    "pageHeight": 1091,
+    "fullPage": true,
+    "sha256": "33505a6d8f5c5f3969d84b79ee03ab0384314af2624e5058dd45f1ef8f285b07"
+  },
+  "17-copy-link-confirm-400.png": {
+    "pageHeight": 4780,
+    "fullPage": true,
+    "sha256": "5676765ce5ee722dc1256336fa0c42651d17ca435ea0041eeef5adf48f181ada"
+  },
+  "17-copy-link-confirm-924.png": {
+    "pageHeight": 1434,
+    "fullPage": true,
+    "sha256": "0ceb15018492ad81d8496a0d2dd1592bf9a11ed5649e108726101268cf307f32"
+  }
+}

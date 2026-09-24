@@ -8,9 +8,12 @@
  * Runs under the parity config: local preview build, every backend read answered from
  * `e2e/fixtures/unified-search`, nothing leaves the box.
  */
-import { expect, test, type Locator } from '@playwright/test';
+import { expect, type Locator } from '@playwright/test';
 
 import { routeDemiSearch } from '../fixtures/unified-search/demi-search';
+import { test } from './capture';
+import { selectorFor } from './selectors';
+import { HELP_HOVER, HELP_REST } from './tokens';
 
 const CLEAR = 'rgba(0, 0, 0, 0)';
 
@@ -36,6 +39,24 @@ test('flex icon links underline the label, not the icon', async ({ page }) => {
   const attachment = page.locator('.display-grid__row-docs a').first();
   await expect(attachment).toHaveCSS('display', /flex/);
   await expectUnderlineOnLabelOnly(attachment);
+});
+
+test(`search help link turns from ${HELP_REST.token} to ${HELP_HOVER.token} on hover`, async ({
+  page,
+}) => {
+  await page.goto('/search?record=activities', { waitUntil: 'networkidle' });
+  // `.first()`: the page also links "Advanced search help".
+  const help = page.locator(selectorFor('searchHelpLink', 'app')).first();
+  // Read at rest first, so a link that is always gold cannot pass.
+  await expect(help, `${HELP_REST.element} (${HELP_REST.token})`).toHaveCSS(
+    'color',
+    HELP_REST.value,
+  );
+  await help.hover();
+  await expect(help, `${HELP_HOVER.element} (${HELP_HOVER.token})`).toHaveCSS(
+    'color',
+    HELP_HOVER.value,
+  );
 });
 
 test('inline icon links underline the label, not the icon', async ({ page }) => {

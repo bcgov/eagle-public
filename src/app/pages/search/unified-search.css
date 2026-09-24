@@ -219,7 +219,7 @@
 
 .unified-search .unified-search__empty-detail {
   display: block;
-  margin: 0 auto var(--layout-margin-medium);
+  margin: 0 0 var(--layout-margin-medium);
   font: var(--typography-regular-small-body);
   color: var(--typography-color-secondary);
   text-wrap: pretty;
@@ -253,8 +253,7 @@
 }
 
 .unified-search .unified-search__prompt-detail {
-  max-width: 56ch;
-  margin: 0 auto;
+  margin: 0;
   font: var(--typography-regular-small-body);
   color: var(--typography-color-secondary);
   text-wrap: pretty;
