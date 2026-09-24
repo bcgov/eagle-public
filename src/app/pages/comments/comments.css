@@ -16,7 +16,6 @@
 }
 
 .comment-banner__instructions {
-  max-width: var(--page-measure);
   margin: var(--layout-margin-large) 0;
 }
 

@@ -266,8 +266,7 @@ test('the activities pill lists updates as full-width rows', async ({ page }) =>
     first.getByRole('link', { name: 'Amendment #3 Application — Volume 1.pdf' }),
   ).toBeVisible();
 
-  // Full width in earnest: the reading measure the other templates keep is lifted for these rows,
-  // which stack their parts and put nothing beside them.
+  // Rows stack their parts with nothing beside them, so the body runs the full row width.
   const size = await first.evaluate((row) => {
     const body = row.querySelector('.display-grid__row-body') as HTMLElement;
     return {

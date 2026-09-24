@@ -17,8 +17,6 @@
 }
 
 .display-grid__help .display-grid__help-text {
-  /* The page measure: a line a reader's eye can return from, which the dialog is wider than. */
-  max-width: var(--page-measure);
   margin: 0 0 var(--layout-margin-small);
   font: var(--typography-regular-small-body);
   color: var(--typography-color-primary);

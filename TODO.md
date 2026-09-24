@@ -87,10 +87,27 @@ The design handoff sits at `design/handoffs/home/`, local only and never committ
 source archive is kept at `/root/repos/eagle-public-design-handoff-home.zip` and can be
 unzipped again if the directory is missing.
 
-Nine ticket-reconciliation items are tracked, not filed as Jira tickets yet — see
-`docs/home-redesign-plan.md`, "Take back to design and Jira". Update notification
-emails still link to the project page; they move to `/updates/:id` once this line serves
-production.
+Update notification emails still link to the project page; they move to `/updates/:id`
+once this line serves production.
+
+Open (moved from the redesign tracker, 2026-09-23):
+
+- Accessibility audit of the home page, not done yet: one h1, labelled landmarks,
+  contrast re-measured, keyboard-only pass.
+- Take these back to design and Jira. PUBLIC-142 and PUBLIC-152 are settled in the plan.
+  - PUBLIC-154: the ticket says results show on the home page. The design sends them to
+    `/search`. Record the change.
+  - PUBLIC-136: no ticket owns how the home page is put together. Raise one story.
+  - PUBLIC-160: covers the Updates tab, project panel and email, not the home feed. Widen
+    it or point the feed at another ticket.
+  - PUBLIC-32: asked for upcoming, open and recently closed periods. The home rail shows
+    open only and links to the `/search` comment periods tab for the rest. Confirm.
+  - PUBLIC-31: asked for cards that expand in place with three buttons each. Built as a
+    reader dialog. Record that the ask was set aside.
+  - PUBLIC-158: asks for a home page map, and the design has none. Descope it from the
+    home page or plan a map section.
+  - PUBLIC-146: the handoff does not mention the display grid contract. Confirm the rail
+    rows are exempt.
 
 ## Port rules (added 2026-08-27)
 
@@ -157,3 +174,20 @@ Fixes shipped on `develop` (Angular) not yet re-implemented here. One line each:
 - 2026-09-23: Add a test for the rule that keeps the open tab in the project strip, apart from the Updates case.
 - 2026-09-23: Keep the Updates tab count live region mounted so screen readers announce changes.
 - 2026-09-23: The Updates tab stays in the strip when its read fails (`isError`); decide whether it should.
+
+## Parity harness follow-ups (added 2026-09-24)
+
+- README.md: say that `--update-snapshots` on the command line still overwrites references despite `updateSnapshots: 'none'`; the SHA check only catches it on the next run.
+- capture-reference.ts: run the prototype capture-twice check before the capture loop, so an unstable prototype cannot overwrite references first.
+- capture-reference.ts and unified-search.parity.spec.ts: use `stateById()` instead of `STATES.find(...)!` so a renamed state gives a named error.
+- reference-check.ts: validate manifest shape (plain object, each entry has width, pageHeight, fullPage, sha256) so a `null` manifest or missing field gives a named problem, not a TypeError.
+- reference-check.ts: move the `scope` helper to module level.
+- reference-check.spec.ts: cover `expectedReferences()` (a `viewportOnly` state maps to `fullPage: false`, e.g. 06-multiselect-picker) and the parked flag passed to `gate`.
+- stay-local.spec.ts: add a browser test that `keepLocal` really aborts an external fetch and WebSocket through the context and fails the test at teardown.
+- tokens.ts: reword the header so the `literal('solid')` exception is allowed.
+- unified-search.parity.spec.ts: in the capture-twice test, check `stopped` only after the try block succeeds, so a thrown error or skip is not hidden.
+- unified-search.parity.spec.ts: drop `baseURL`/`permissions` passed from `test.info().project.use` if Playwright already applies them to `browser.newContext()`; confirm first.
+- unified-search.parity.spec.ts: use `widthsFor(state)` instead of `WIDTHS` in the capture-twice loop.
+- unified-search.parity.spec.ts: move `.unified-search__query` and `[data-tour="types"]` into selectors.ts.
+- reference/manifest.json: all 30 entries were backfilled from the committed PNGs (07-search-help-modal cannot be captured yet), so the height check is circular until references are recaptured. Replace the manifest on the next full recapture.
+- 07-search-help-modal: reference capture fails `helpDialog is modal (top layer)` at 924 and 400 on the base commit too; the prototype never calls `showModal`. Decide in states.ts whether that check applies to the prototype.

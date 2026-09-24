@@ -8,7 +8,6 @@
 }
 
 .decisions-tab__intro {
-  max-width: 62ch;
   margin-bottom: var(--layout-margin-large);
   font: var(--typography-regular-body);
   color: var(--typography-color-secondary);

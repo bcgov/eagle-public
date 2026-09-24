@@ -34,6 +34,32 @@ test.describe('content pages', () => {
     ).toBeVisible();
   });
 
+  test.describe('at 1440px', () => {
+    test.use({ viewport: { width: 1440, height: 900 } });
+
+    test('/legislation copy runs the full width of its container', async ({ page }) => {
+      await page.goto('/legislation');
+      const copy = page.locator('.page-body .content-wrapper');
+      await expect(copy).toBeVisible();
+
+      const size = await copy.evaluate((el) => {
+        const container = el.parentElement as HTMLElement;
+        const style = getComputedStyle(container);
+        return {
+          cap: getComputedStyle(el).maxWidth,
+          copy: el.getBoundingClientRect().width,
+          container:
+            container.getBoundingClientRect().width -
+            parseFloat(style.paddingLeft) -
+            parseFloat(style.paddingRight),
+        };
+      });
+      // No reading measure: a 78ch cap held this copy to about half the container at this width.
+      expect(size.cap).toBe('none');
+      expect(size.copy).toBeGreaterThan(size.container * 0.98);
+    });
+  });
+
   test('/search-help explains quotes and hyphens', async ({ page }) => {
     await page.goto('/search-help');
     await ready(page, 500);
