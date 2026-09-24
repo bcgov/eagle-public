@@ -12,8 +12,11 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { test, expect, type Page } from '@playwright/test';
+// Not the `test` from `capture.ts`: the prototype loads version-pinned React and Bootstrap from
+// public CDNs, so the capture needs the network the parity run refuses.
+import { expect, test, type Browser, type Page } from '@playwright/test';
 
+import { CAPTURE_USE, masksFor, SHOT_OPTIONS, VIEWPORT } from './capture';
 import {
   checkMeasurements,
   freezeClock,
@@ -26,7 +29,15 @@ import {
 import { startPrototypeServer, type PrototypeServer } from './prototype-server';
 import { selectorFor } from './selectors';
 import { REFERENCE_DIR } from './paths';
-import { CONTENT_SEARCH_STATE, measurementsFor, STATES, WIDE, widthsFor } from './states';
+import { recordReference, sha256 } from './reference-check';
+import {
+  CONTENT_SEARCH_STATE,
+  measurementsFor,
+  type ParityState,
+  STATES,
+  WIDE,
+  widthsFor,
+} from './states';
 
 /**
  * `support.js` sizes the artboard to the window (`html,body{height:100%}`,
@@ -43,9 +54,6 @@ const EXPAND_PAGE_CSS = `
     overflow: visible !important;
   }
 `;
-
-/** Matches the viewport the parity spec compares against. */
-const VIEWPORT_HEIGHT = 900;
 
 /**
  * Accepted deviation, 2026-09-12: the prototype's `epic/styles.css` still `@import`s the
@@ -324,66 +332,96 @@ test.afterAll(async () => {
   await server.close();
 });
 
+/** Drives the prototype to `state` and photographs it, proving the shot covers the page. */
+async function shoot(
+  page: Page,
+  state: ParityState,
+  width: number,
+): Promise<{ png: Buffer; pageHeight: number; fullPage: boolean }> {
+  await freezeClock(page);
+  await blockLegacyFooterStyles(page);
+  await page.setViewportSize({ width, height: VIEWPORT.height });
+  await page.goto(server.url, { waitUntil: 'networkidle' });
+  await page.addStyleTag({ content: STILL_CSS });
+  if (hidesScopeSegment(state)) await page.addStyleTag({ content: SCOPE_SEGMENT_CSS });
+
+  // The grid arrives through `dc-import`, so the wrapper's load event is not enough.
+  await page.locator(selectorFor('root', 'proto')).first().waitFor({ state: 'visible' });
+  await settle(page);
+
+  // Released before the steps run, not after, so the layout that is measured at the end of the
+  // test is the same layout that was photographed.
+  await page.addStyleTag({ content: EXPAND_PAGE_CSS });
+  await settle(page);
+
+  await runSteps(page, state.steps, 'proto');
+  await addNotificationsPill(page);
+  if (state.id === PROJECTS_CARD_STATE && width !== WIDE) {
+    await page.addStyleTag({ content: PROJECT_LEGISLATION_CSS });
+  }
+  if (state.id === ACTIVITIES_LIST_STATE) await trimActivityAttachments(page);
+  if (state.id === CONTENT_SEARCH_STATE) {
+    await dropPassageAuthors(page);
+    await renumberPassageLocators(page);
+  }
+  await settle(page);
+
+  if (state.id === PROJECTS_CARD_STATE && width !== WIDE) await assertLegislationHidden(page);
+  if (state.id === ACTIVITIES_LIST_STATE) await assertOneAttachment(page);
+  if (state.id === CONTENT_SEARCH_STATE) {
+    await assertPassageAuthorsDropped(page);
+    await assertOrdinalLocators(page);
+  }
+
+  const fullPage = !state.viewportOnly;
+  const png = await page.screenshot({ ...SHOT_OPTIONS, fullPage, mask: masksFor(page, 'proto') });
+
+  // A clipped document writes a reference that cannot fail, so prove the release took before
+  // anything reaches disk. Size out of the PNG's IHDR: width at byte 16, height at 20.
+  let pageHeight: number = VIEWPORT.height;
+  if (fullPage) {
+    const box = await page.evaluate(() => ({
+      documentHeight: document.documentElement.scrollHeight,
+      bodyHeight: document.body.scrollHeight,
+    }));
+    expect(box.documentHeight, 'document is clipped above the body').toBe(box.bodyHeight);
+    pageHeight = box.documentHeight;
+  }
+  expect(png.readUInt32BE(20), 'captured height').toBe(pageHeight);
+  expect(png.readUInt32BE(16), 'captured width').toBe(width);
+  return { png, pageHeight, fullPage };
+}
+
 for (const state of STATES) {
   for (const width of widthsFor(state)) {
     test(`${state.id} @ ${width}`, async ({ page }) => {
-      await freezeClock(page);
-      await blockLegacyFooterStyles(page);
-      await page.setViewportSize({ width, height: VIEWPORT_HEIGHT });
-      await page.goto(server.url, { waitUntil: 'networkidle' });
-      await page.addStyleTag({ content: STILL_CSS });
-      if (hidesScopeSegment(state)) await page.addStyleTag({ content: SCOPE_SEGMENT_CSS });
+      const { png, pageHeight, fullPage } = await shoot(page, state, width);
 
-      // The grid arrives through `dc-import`, so the wrapper's load event is not enough.
-      await page.locator(selectorFor('root', 'proto')).first().waitFor({ state: 'visible' });
-      await settle(page);
-
-      // Released before the steps run, not after, so the layout that is measured at the end of the
-      // test is the same layout that was photographed.
-      await page.addStyleTag({ content: EXPAND_PAGE_CSS });
-      await settle(page);
-
-      await runSteps(page, state.steps, 'proto');
-      await addNotificationsPill(page);
-      if (state.id === PROJECTS_CARD_STATE && width !== WIDE) {
-        await page.addStyleTag({ content: PROJECT_LEGISLATION_CSS });
-      }
-      if (state.id === ACTIVITIES_LIST_STATE) await trimActivityAttachments(page);
-      if (state.id === CONTENT_SEARCH_STATE) {
-        await dropPassageAuthors(page);
-        await renumberPassageLocators(page);
-      }
-      await settle(page);
-
-      if (state.id === PROJECTS_CARD_STATE && width !== WIDE) await assertLegislationHidden(page);
-      if (state.id === ACTIVITIES_LIST_STATE) await assertOneAttachment(page);
-      if (state.id === CONTENT_SEARCH_STATE) {
-        await assertPassageAuthorsDropped(page);
-        await assertOrdinalLocators(page);
-      }
-
-      const fullPage = !state.viewportOnly;
-      const png = await page.screenshot({ fullPage, scale: 'css' });
-
-      // A clipped document writes a reference that cannot fail, so prove the release took before
-      // anything reaches disk. Size out of the PNG's IHDR: width at byte 16, height at 20.
-      if (fullPage) {
-        const box = await page.evaluate(() => ({
-          documentHeight: document.documentElement.scrollHeight,
-          bodyHeight: document.body.scrollHeight,
-        }));
-        expect(box.documentHeight, 'document is clipped above the body').toBe(box.bodyHeight);
-        expect(png.readUInt32BE(20), 'captured height').toBe(box.documentHeight);
-      } else {
-        expect(png.readUInt32BE(20), 'captured height').toBe(VIEWPORT_HEIGHT);
-      }
-      expect(png.readUInt32BE(16), 'captured width').toBe(width);
-
-      writeFileSync(join(REFERENCE_DIR, `${state.id}-${width}.png`), png);
-
-      // Measuring here too means a reference that no longer meets the design spec fails at
-      // capture time, rather than silently becoming the thing the app is held to.
+      // Measured before anything reaches disk, so a reference that no longer meets the design
+      // spec fails here rather than silently becoming the thing the app is held to.
       await checkMeasurements(page, measurementsFor(state, width), 'proto');
+
+      const file = `${state.id}-${width}.png`;
+      writeFileSync(join(REFERENCE_DIR, file), png);
+      recordReference(REFERENCE_DIR, file, { pageHeight, fullPage, sha256: sha256(png) });
     });
   }
 }
+
+/** Captures `state` in a context of its own, so nothing carries over from an earlier capture. */
+async function shootFresh(browser: Browser, state: ParityState, width: number): Promise<Buffer> {
+  const context = await browser.newContext(CAPTURE_USE);
+  try {
+    return (await shoot(await context.newPage(), state, width)).png;
+  } finally {
+    await context.close();
+  }
+}
+
+// Same check as the app side: a difference is something that moves between runs.
+const REPEAT_STATE = STATES.find((state) => state.id === '01-documents-grid')!;
+test(`${REPEAT_STATE.id} @ ${WIDE} captures the same twice`, async ({ browser }) => {
+  const first = await shootFresh(browser, REPEAT_STATE, WIDE);
+  const second = await shootFresh(browser, REPEAT_STATE, WIDE);
+  expect(second.equals(first), 'second capture differs from the first').toBe(true);
+});

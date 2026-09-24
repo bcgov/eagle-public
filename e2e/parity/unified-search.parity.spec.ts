@@ -9,7 +9,7 @@
  *
  * Each state runs as two tests off the same driving code: the structural one, which reads
  * measurements off the page, and the pixel one, which compares the screenshot and is parked (see
- * `PIXEL_COMPARISON_PARKED`).
+ * `PIXEL_COMPARISON_PARKED` in `capture.ts`).
  *
  * Three guards, all read off the page rather than off a phase list. A test skips when the grid is
  * absent, when the `requires` selector its feature needs at load is absent, and when the first
@@ -17,9 +17,19 @@
  * of the way without any of them costing a timeout. A state whose controls are all present is
  * compared in full; nothing about it is relaxed.
  */
-import { expect, test, type Page } from '@playwright/test';
+import { expect, type Browser, type Page } from '@playwright/test';
 
 import { routeDemiSearch } from '../fixtures/unified-search/demi-search';
+import {
+  CAPTURE_USE,
+  keepLocal,
+  masksFor,
+  PIXEL_COMPARISON_PARKED,
+  SHOT_OPTIONS,
+  STAYED_LOCAL,
+  test,
+  VIEWPORT,
+} from './capture';
 import {
   checkMeasurements,
   freezeClock,
@@ -32,26 +42,14 @@ import {
   STILL_CSS,
 } from './drive';
 import { selectorFor } from './selectors';
-import { measurementsFor, type ParityState, STATES, widthsFor } from './states';
-
-/**
- * Matches the reference capture's viewport, so anything sized against the window lands the same on
- * both sides. Neither image is this tall: both are full-page shots of their whole document.
- */
-const VIEWPORT_HEIGHT = 900;
-
-/**
- * Parked 2026-09-19: the references predate the shared page band and the wider layout, so they no
- * longer describe the page that was designed. Recapture from an updated design handoff with
- * `yarn parity:reference`, then delete this constant and the `test.fixme` it feeds.
- */
-const PIXEL_COMPARISON_PARKED = true;
+import { measurementsFor, type ParityState, STATES, WIDE, WIDTHS, widthsFor } from './states';
+import { computed, rootFontPx, SEARCH_STYLES, spacing } from './tokens';
 
 /** Navigate, freeze everything that moves, replay the state's steps. Shared by both tests. */
 async function driveState(page: Page, state: ParityState, width: number): Promise<void> {
   await freezeClock(page);
   await routeDemiSearch(page);
-  await page.setViewportSize({ width, height: VIEWPORT_HEIGHT });
+  await page.setViewportSize({ width, height: VIEWPORT.height });
   await page.goto('/search', { waitUntil: 'networkidle' });
 
   const grid = page.locator(selectorFor('root', 'app'));
@@ -108,9 +106,145 @@ for (const state of STATES) {
         fullPage: !state.viewportOnly,
         // 0.5% of the frame: enough for font hinting, not enough to hide a moved control.
         maxDiffPixelRatio: 0.005,
-        animations: 'disabled',
-        scale: 'css',
+        // Animations, caret and scale come from the config (`SHOT_OPTIONS`).
+        mask: masksFor(page, 'app'),
       });
     });
   }
+}
+
+/** The default view, and the one the value checks below read. */
+const DEFAULT_STATE = STATES.find((state) => state.id === '01-documents-grid')!;
+/** An overlay state, so the check covers a dialog as well as the page under it. */
+const HELP_STATE = STATES.find((state) => state.id === '07-search-help-modal')!;
+
+/** Drives `state` in a context of its own, so nothing carries over from an earlier capture. */
+async function captureFresh(browser: Browser, state: ParityState, width: number): Promise<Buffer> {
+  const context = await browser.newContext({
+    ...CAPTURE_USE,
+    baseURL: test.info().project.use.baseURL,
+    permissions: test.info().project.use.permissions,
+  });
+  const stopped = await keepLocal(context);
+  try {
+    const page = await context.newPage();
+    await driveState(page, state, width);
+    return await page.screenshot({
+      ...SHOT_OPTIONS,
+      fullPage: !state.viewportOnly,
+      mask: masksFor(page, 'app'),
+    });
+  } finally {
+    await context.close();
+    expect(stopped, STAYED_LOCAL).toEqual([]);
+  }
+}
+
+// A difference here is something that moves between runs: freeze it, or add it to `MASKS`.
+for (const state of [DEFAULT_STATE, HELP_STATE]) {
+  for (const width of WIDTHS) {
+    test(`${state.id} @ ${width} captures the same twice`, async ({ browser }) => {
+      const first = await captureFresh(browser, state, width);
+      const second = await captureFresh(browser, state, width);
+      expect(second.equals(first), 'second capture differs from the first').toBe(true);
+    });
+  }
+}
+
+/*
+ * Value checks. Separate tests from the pixel ones, so they run and report while the screenshot
+ * is parked or failing, and a wrong colour fails as two values rather than as an image.
+ */
+
+for (const style of SEARCH_STYLES) {
+  const expected = style.token ?? style.value;
+  test(`${style.element} ${style.property} is ${expected}`, async ({ page }) => {
+    await driveState(page, DEFAULT_STATE, WIDE);
+    await expect(
+      page.locator(selectorFor(style.control, 'app')).first(),
+      `${style.element} ${style.property} (${expected})`,
+    ).toHaveCSS(style.property, computed(style.value, await rootFontPx(page)));
+  });
+}
+
+/** Sub-pixel layout and rounding; a moved control is off by far more. */
+const TOLERANCE_PX = 1;
+
+function expectNear(actual: number, expected: number, what: string): void {
+  expect(
+    actual,
+    `${what}: ${actual}px, expected ${expected}px ±${TOLERANCE_PX}`,
+  ).toBeGreaterThanOrEqual(expected - TOLERANCE_PX);
+  expect(
+    actual,
+    `${what}: ${actual}px, expected ${expected}px ±${TOLERANCE_PX}`,
+  ).toBeLessThanOrEqual(expected + TOLERANCE_PX);
+}
+
+async function box(page: Page, selector: string, nth = 0) {
+  const found = await page.locator(selector).nth(nth).boundingBox();
+  expect(found, `${selector} is not laid out`).not.toBeNull();
+  return found!;
+}
+
+const GRID = selectorFor('root', 'app');
+const SEARCH = selectorFor('searchInput', 'app');
+const HELP = selectorFor('searchHelpLink', 'app');
+const PILLS = selectorFor('recordPills', 'app');
+
+for (const width of WIDTHS) {
+  test(`search box and record pills start on the grid's left edge @ ${width}`, async ({ page }) => {
+    await driveState(page, DEFAULT_STATE, width);
+    const grid = await box(page, GRID);
+    expectNear((await box(page, SEARCH)).x, grid.x, 'search box left');
+    expectNear((await box(page, PILLS)).x, grid.x, 'first record pill left');
+  });
+
+  test(`search help link ends on the grid's right edge @ ${width}`, async ({ page }) => {
+    await driveState(page, DEFAULT_STATE, width);
+    const grid = await box(page, GRID);
+    const help = await box(page, HELP);
+    expectNear(help.x + help.width, grid.x + grid.width, 'search help right');
+  });
+
+  test(`record pills sit --layout-padding-xsmall apart @ ${width}`, async ({ page }) => {
+    await driveState(page, DEFAULT_STATE, width);
+    const first = await box(page, PILLS, 0);
+    const second = await box(page, PILLS, 1);
+    expectNear(second.y, first.y, 'second pill top');
+    const gap = spacing('layoutPaddingXsmall', await rootFontPx(page));
+    expectNear(second.x - (first.x + first.width), gap, 'pill gap');
+  });
+
+  test(`toolbar status is inset by --layout-padding-medium @ ${width}`, async ({ page }) => {
+    await driveState(page, DEFAULT_STATE, width);
+    const toolbar = await box(page, selectorFor('toolbar', 'app'));
+    const status = await box(page, selectorFor('toolbarStatus', 'app'));
+    const inset = spacing('layoutPaddingMedium', await rootFontPx(page));
+    expectNear(status.x - toolbar.x, inset, 'status inset');
+  });
+
+  test(`search controls keep their roles and names @ ${width}`, async ({ page }) => {
+    await driveState(page, DEFAULT_STATE, width);
+    await expect(page.locator('.unified-search__query')).toMatchAriaSnapshot(`
+      - searchbox "Search projects, documents, updates and comment periods"
+      - link "Search help"
+    `);
+    await expect(page.locator('[data-tour="types"]')).toMatchAriaSnapshot(`
+      - group "Record type":
+        - /children: equal
+        - button "Projects 12"
+        - button "Documents 18" [pressed]
+        - button "Activities & updates 10"
+        - button "Project notifications"
+        - button "Comment periods"
+    `);
+    // The scope segment and the notifications count are hidden by this harness (`drive.ts`).
+    await expect(page.locator(selectorFor('toolbar', 'app'))).toMatchAriaSnapshot(`
+      - status: 1–18 of 18 documents
+      - button "More filters"
+      - button "Columns"
+      - button "Copy link to this view"
+    `);
+  });
 }
