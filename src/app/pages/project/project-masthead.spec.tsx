@@ -161,3 +161,105 @@ describe('project masthead', () => {
     );
   });
 });
+
+describe('project masthead for a project notification', () => {
+  const NOTIFICATION_ID = '5c8a3a3ce7f1f1002466c2b1';
+  const NOTIFICATION = {
+    _id: NOTIFICATION_ID,
+    name: 'Birch Mine Expansion',
+    proponent: { name: 'Birch Resources Ltd.' },
+    location: 'Near Birch Lake',
+    notification: { associatedProjectId: undefined },
+  } as unknown as Project;
+
+  async function renderNotificationMasthead(
+    project: Project | null = NOTIFICATION,
+    loading = false,
+  ) {
+    window.__env = { logLevel: 4, NOTIFY_API: 'https://notify.example' };
+    await loadConfig();
+    return renderAt(`/pn/${NOTIFICATION_ID}/overview`, [
+      {
+        path: '/pn/:projId/overview',
+        element: (
+          <ProjectMasthead
+            project={project}
+            projId={NOTIFICATION_ID}
+            isNotification
+            loading={loading}
+          />
+        ),
+      },
+    ]);
+  }
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    clearToasts();
+  });
+
+  it('labels the sub-line as a project notification and leads the trail to notifications', async () => {
+    await renderNotificationMasthead();
+
+    expect(
+      screen.getByText('Project notification · Birch Resources Ltd. · Near Birch Lake'),
+    ).toBeInTheDocument();
+    const crumbs = screen.getByRole('navigation', { name: 'Breadcrumb' });
+    expect(within(crumbs).getByRole('link', { name: 'Search' })).toHaveAttribute(
+      'href',
+      '/search?record=notifications',
+    );
+  });
+
+  it('offers no Subscribe button, as notify has no notification topic', async () => {
+    await renderNotificationMasthead();
+
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Birch Mine Expansion');
+    expect(screen.queryByRole('button', { name: 'Subscribe to updates' })).not.toBeInTheDocument();
+  });
+
+  it('says a project notification is loading', async () => {
+    await renderNotificationMasthead(null, true);
+
+    expect(screen.getByText('Loading project notification')).toBeInTheDocument();
+  });
+
+  it('copies the /pn/ link, never asking DEMI for a short link', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText } });
+    const requests: string[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        requests.push(String(input));
+        return new Response(JSON.stringify({ shortUrl: 'https://projects.eao.gov.bc.ca/s/x' }), {
+          status: 200,
+        });
+      }),
+    );
+    window.__env = { logLevel: 4, DEMI_PROJECTS_PATH: '/demi-projects' };
+    await loadConfig();
+    // A project masthead beside it: its short link landing marks when the notification's would.
+    const { queryClient } = renderAt(`/pn/${NOTIFICATION_ID}/overview`, [
+      {
+        path: '/pn/:projId/overview',
+        element: (
+          <>
+            <ProjectMasthead project={PROJECT} projId="proj-1" />
+            <ProjectMasthead project={NOTIFICATION} projId={NOTIFICATION_ID} isNotification />
+          </>
+        ),
+      },
+    ]);
+    await waitFor(() =>
+      expect(queryClient.getQueryData(['demi-project', 'proj-1'])).toEqual({
+        shortUrl: 'https://projects.eao.gov.bc.ca/s/x',
+      }),
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Copy link' }));
+
+    expect(writeText).toHaveBeenCalledWith(`${window.location.origin}/pn/${NOTIFICATION_ID}`);
+    expect(requests.filter((url) => url.includes(NOTIFICATION_ID))).toEqual([]);
+  });
+});

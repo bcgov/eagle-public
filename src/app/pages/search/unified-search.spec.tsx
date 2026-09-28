@@ -93,6 +93,9 @@ const NOTIFICATIONS = [
     pcp: 'open',
     decision: 'In Progress',
     description: 'Expansion of an existing sand and gravel operation.',
+    // Populated on this read, as a project's is.
+    proponent: { _id: 'o2', name: 'Cariboo Gravel Ltd.' },
+    notificationReceivedDate: '2025-03-14T12:00:00.000Z',
   },
 ];
 
@@ -631,26 +634,27 @@ describe('UnifiedSearch', () => {
     expect(await screen.findByText('1–1 of 1 documents matching')).toBeInTheDocument();
   });
 
-  it('draws each project notification as a card, with its filters in the panel', async () => {
+  it('draws each project notification as a row linking to its page, with its filters in the panel', async () => {
     const user = userEvent.setup();
     renderSearch('/search');
     await screen.findByText('Fish habitat report');
 
     await user.click(pill(/^Project notifications/));
 
-    expect(
-      await screen.findByRole('heading', { name: 'BEAR CREEK AGGREGATE' }),
-    ).toBeInTheDocument();
-    // The card keeps the tabs the project notifications page gave each row.
-    expect(screen.getByRole('tab', { name: 'Documents' })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'Engagement' })).toBeInTheDocument();
-    // A card has no columns, so the column filters are only reachable through the panel.
-    expect(screen.queryAllByRole('columnheader')).toHaveLength(0);
+    const link = await screen.findByRole('link', { name: 'Bear Creek Aggregate' });
+    // No associated project, so the name opens the notification's own page.
+    expect(link).toHaveAttribute('href', '/pn/n1');
+    const row = link.closest('tr') as HTMLElement;
+    expect(cellUnder(row, 'Type')).toHaveTextContent('Mines');
+    expect(cellUnder(row, 'Region')).toHaveTextContent('Cariboo');
+    expect(cellUnder(row, 'Proponent')).toHaveTextContent('Cariboo Gravel Ltd.');
+    expect(cellUnder(row, 'Decision')).toHaveTextContent('In Progress');
+    expect(cellUnder(row, 'Received')).toHaveTextContent('2025-03-14');
 
+    // The comment period has no column, so its filter is reached through the panel.
     await user.click(screen.getByRole('button', { name: /More filters/ }));
 
-    expect(screen.getByLabelText('Region')).toBeInTheDocument();
-    expect(screen.getByLabelText('Notification decision')).toBeInTheDocument();
+    expect(screen.getByLabelText('Public comment period')).toBeInTheDocument();
   });
 
   it('counts a column filter on the Filters button, which a list has no filter row for', async () => {
@@ -670,14 +674,12 @@ describe('UnifiedSearch', () => {
 
     await user.click(pill(/^Project notifications/));
 
-    // A project drawn as a notification card would print its populated proponent as an object.
+    // A project drawn under the notification columns would link to /pn/ and lose its phase.
     await waitFor(() => expect(screen.queryByText(/alpha mine/i)).not.toBeInTheDocument());
 
     await act(async () => release());
 
-    expect(
-      await screen.findByRole('heading', { name: 'BEAR CREEK AGGREGATE' }),
-    ).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: 'Bear Creek Aggregate' })).toBeInTheDocument();
   });
 
   it('holds the count back until the rows land, rather than reading "No projects"', async () => {

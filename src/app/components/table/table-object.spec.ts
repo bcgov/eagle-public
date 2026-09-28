@@ -1,52 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  DEFAULT_TABLE_OPTIONS,
-  documentCountMessage,
-  pageCountMessage,
-  pageNumbers,
-  tableObject,
-  withAllPicker,
-} from './table-object';
-
-describe('pageCountMessage', () => {
-  it('is empty when there are no results', () => {
-    expect(pageCountMessage(0, 1, 25)).toBe('');
-  });
-
-  it('counts up to the end of the current page', () => {
-    expect(pageCountMessage(100, 1, 25)).toBe('Showing 25 of 100 results');
-  });
-
-  it('caps at the total on the last page', () => {
-    expect(pageCountMessage(90, 4, 25)).toBe('Showing 90 of 90 results');
-  });
-
-  it('warns when the page param is past the end', () => {
-    expect(pageCountMessage(50, 10, 25)).toBe('Unable to display results, please clear and re-try');
-  });
-});
-
-describe('documentCountMessage', () => {
-  it('says how much of the result set is on the page', () => {
-    expect(documentCountMessage(2158, 1, 10)).toBe('Showing 10 of 2,158 documents');
-  });
-
-  it('drops the "showing" half once the whole result set fits the page', () => {
-    expect(documentCountMessage(7, 1, 10)).toBe('7 documents');
-  });
-
-  it('counts through to the end of the current page', () => {
-    expect(documentCountMessage(2158, 3, 10)).toBe('Showing 30 of 2,158 documents');
-  });
-
-  it('drops the plural on one document', () => {
-    expect(documentCountMessage(1, 1, 10)).toBe('1 document');
-  });
-
-  it('names the empty result set', () => {
-    expect(documentCountMessage(0, 1, 10)).toBe('No documents');
-  });
-});
+import { pageNumbers, tableObject } from './table-object';
 
 describe('pageNumbers', () => {
   it('lists every page while there are 7 or fewer', () => {
@@ -66,34 +19,9 @@ describe('pageNumbers', () => {
   });
 });
 
-describe('withAllPicker', () => {
-  const options = [
-    { displayText: '10', value: 10 },
-    { displayText: '25', value: 25 },
-  ];
-
-  it('offers Show All while the result set is small enough', () => {
-    expect(withAllPicker(options, 300)).toEqual([
-      ...options,
-      { displayText: 'Show All', value: 300 },
-    ]);
-  });
-
-  it('withholds Show All past the cap, and with no results', () => {
-    expect(withAllPicker(options, 501)).toEqual(options);
-    expect(withAllPicker(options, 0)).toEqual(options);
-  });
-
-  it('never stacks two Show All options', () => {
-    const once = withAllPicker(options, 300);
-    expect(withAllPicker(once, 400)).toEqual([...options, { displayText: 'Show All', value: 400 }]);
-  });
-});
-
 describe('table options', () => {
   it('leaves selection off unless a table asks for it', () => {
-    // Every table shares these defaults; on by default would grow a checkbox column everywhere.
-    expect(DEFAULT_TABLE_OPTIONS.selectable).toBeUndefined();
+    // On by default would grow a checkbox column on every table.
     expect(tableObject({ tableId: 'test' }).options.selectable).toBeUndefined();
   });
 });

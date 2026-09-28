@@ -17,6 +17,8 @@ interface ProjectPanelProps {
   lists: PhaseListItem[];
   /** The shell's project fetch is still in flight. */
   loading?: boolean;
+  /** Known from the route before the record loads; the record's own flag covers the rest. */
+  isNotification?: boolean;
 }
 
 interface FactProps {
@@ -63,28 +65,42 @@ function eaDecisionMeta(
 }
 
 /** The card under the masthead: assessment progress beside the core project facts, on every tab. */
-export function ProjectPanel({ project, lists, loading = false }: ProjectPanelProps) {
+export function ProjectPanel({
+  project,
+  lists,
+  loading = false,
+  isNotification = false,
+}: ProjectPanelProps) {
   const centroid = project?.centroid?.length === 2 ? project.centroid : null;
-  const projId = project?._id ?? '';
+  const notification = isNotification || !!project?.notification;
+  // DEMI has no phases or certificate for a notification; an empty id keeps those reads off.
+  const projId = project && !notification ? project._id : '';
   const phases = useProjectPhases(projId);
   const eaCertificate = useProjectEaCertificate(projId);
 
   return (
     <section
       className="project-panel"
-      aria-label="Project summary"
+      aria-label={notification ? 'Project notification summary' : 'Project summary'}
       aria-busy={loading || undefined}
     >
-      <div className="project-panel__progress">
-        <AssessmentRail project={project} lists={lists} phases={phases} loading={loading} />
-      </div>
+      {/* A notification has no assessment stages; the rail would show every one as upcoming. */}
+      {!notification && (
+        <div className="project-panel__progress">
+          <AssessmentRail project={project} lists={lists} phases={phases} loading={loading} />
+        </div>
+      )}
 
       <div className="project-panel__facts">
-        {loading && <span className="visually-hidden">Loading project summary</span>}
+        {loading && (
+          <span className="visually-hidden">
+            {notification ? 'Loading project notification summary' : 'Loading project summary'}
+          </span>
+        )}
         <dl>
           <Fact label="Status" value={project?.currentPhaseName?.name} loading={loading} />
           <Fact
-            label="EA decision"
+            label={notification ? 'Decision' : 'EA decision'}
             value={project?.eacDecision?.name}
             detail={eaDecisionMeta(project?.decisionDate, eaCertificate, projId)}
             loading={loading}

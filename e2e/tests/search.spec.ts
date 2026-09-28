@@ -325,30 +325,32 @@ test('the attachments filter keeps only the updates that carry a document', asyn
   await expect(page.locator(ROWS)).toHaveCount(9);
 });
 
-test('the notifications pill draws one card per notification', async ({ page }) => {
+test('the notifications pill draws one table row per notification, named to its page', async ({
+  page,
+}) => {
   await openSearch(page);
   await pill(page, 'Project notifications').click();
 
   expect(new URL(page.url()).searchParams.get('record')).toBe('notifications');
-  await expect(page.locator(ROWS)).toHaveCount(8);
-  const first = page.locator(ROWS).first();
-  // The card names the notification in its open Details tab; the other tab panels stay hidden.
-  await expect(first.getByRole('heading', { level: 3 })).toHaveText('SKEENA MODULAR HOUSING WORKS');
-  await expect(first.getByRole('tab', { name: 'Documents' })).toBeVisible();
+  await expect(page.locator(`tbody ${ROWS}`)).toHaveCount(8);
+  await expect(page.getByRole('columnheader', { name: /^Received/ })).toBeVisible();
+  // The fixture carries no received dates, so the rows keep their stored order.
+  const first = page.locator(`tbody ${ROWS}`).first();
+  await expect(first.getByRole('link', { name: 'Bear Creek Aggregate Expansion' })).toHaveAttribute(
+    'href',
+    '/pn/n1',
+  );
 });
 
-test('a notification filter lives in the panel, because a card has no filter row', async ({
-  page,
-}) => {
+test('the comment period filter lives in the panel, because it has no column', async ({ page }) => {
   await openSearch(page, '/search?record=notifications');
-  await expect(page.getByRole('columnheader')).toHaveCount(0);
 
   await page.getByRole('button', { name: /More filters/ }).click();
-  await page.getByLabel('Notification decision').selectOption('In Progress');
+  await page.getByLabel('Public comment period').selectOption('Open');
 
-  expect(new URL(page.url()).searchParams.get('decision')).toBe('In Progress');
-  await expect(page.locator(ROWS)).toHaveCount(4);
-  expect((await gridCount(page)).total).toBe(4);
+  expect(new URL(page.url()).searchParams.get('pcp')).toBe('open');
+  await expect(page.locator(`tbody ${ROWS}`)).toHaveCount(2);
+  expect((await gridCount(page)).total).toBe(2);
 });
 
 test('selecting a document offers it for download', async ({ page }) => {

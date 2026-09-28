@@ -175,17 +175,13 @@ export async function expectA11ySmoke(page: Page): Promise<{ skipLinks: number }
 }
 
 /**
- * "Showing 10 of 348 results" -> { shown: 10, total: 348 }. A selectable table carries the line in
- * its header bar instead of the top row, so both hooks are accepted. The line drops the "Showing"
- * prefix once every item fits on one page ("1,284 comments"), or reads "No comments" when the total
- * is zero: both are folded into the same shown/total shape here. The display grid states its count
- * differently; `gridCount` reads that one.
+ * "Showing 10 of 348 results" -> { shown: 10, total: 348 }, read off the table's header bar. The
+ * line drops the "Showing" prefix once every item fits on one page ("1,284 comments"), or reads
+ * "No comments" when the total is zero: both are folded into the same shown/total shape here. The
+ * display grid states its count differently; `gridCount` reads that one.
  */
 export async function pageCount(page: Page): Promise<{ shown: number; total: number }> {
-  const text = await page
-    .locator('[id^="table-template-page-count-display"], .table-header-bar__count')
-    .first()
-    .innerText();
+  const text = await page.locator('.table-header-bar__count').first().innerText();
   if (/^no\s+\S+/i.test(text.trim())) {
     return { shown: 0, total: 0 };
   }

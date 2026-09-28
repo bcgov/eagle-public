@@ -47,6 +47,8 @@ function jsonResponse(body: unknown) {
 const CONTEXT: ProjectContext = {
   project: { _id: 'proj-1', name: 'Cedar Quarry' } as ProjectContext['project'],
   projId: 'proj-1',
+  basePath: '/p/proj-1',
+  isNotification: false,
   lists: LISTS,
   projectLoading: false,
 };

@@ -81,7 +81,7 @@ test('@data a project notification comment period renders through /pn', async ({
 }) => {
   const notifications = await searchFixture(
     request,
-    'dataset=ProjectNotification&pageNum=0&pageSize=25&projectLegislation=default&sortBy=-_id&populate=true&fuzzy=false',
+    'dataset=ProjectNotification&pageNum=0&pageSize=25&projectLegislation=default&sortBy=-notificationReceivedDate&populate=true&fuzzy=false',
   );
 
   let pn: any, cp: any;

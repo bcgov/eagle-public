@@ -1,12 +1,19 @@
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import type { RouteObject } from 'react-router';
+import { track } from 'app/analytics/analytics';
 import { loadConfig } from 'app/config/config';
 import { queryClient } from 'app/api/query-client';
 import { renderAt } from '../../../test-utils';
 import { routes } from 'app/routes';
 import { ProjectPage } from './project';
 import { OverviewTab } from './overview-tab';
+
+vi.mock('app/analytics/analytics', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('app/analytics/analytics')>()),
+  track: vi.fn(),
+}));
 
 const LISTS = [
   { _id: 'type-app-2002', name: 'Application Materials', legislation: 2002, type: 'doctype' },
@@ -222,6 +229,24 @@ describe('project shell', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
+  });
+
+  it('tells analytics a tab click was on a project', async () => {
+    const user = userEvent.setup();
+    vi.mocked(track).mockClear();
+    renderShell();
+    await screen.findByRole('heading', { level: 1, name: 'Cedar Quarry' });
+
+    await user.click(tabLink('Documents'));
+
+    expect(track).toHaveBeenCalledWith(
+      'Project Tab Clicked',
+      expect.objectContaining({
+        project_id: 'proj-1',
+        tab_path: 'documents',
+        record_type: 'project',
+      }),
+    );
   });
 
   it('renders the always-on tabs, and no Updates, Decisions or Compliance for a project with none', async () => {

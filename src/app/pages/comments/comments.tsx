@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router';
-import { useQuery } from '@tanstack/react-query';
-import { searchKeywords } from 'app/api/api';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as commentApi from 'app/api/comment';
 import * as commentPeriodApi from 'app/api/commentperiod';
 import * as documentApi from 'app/api/document';
+import { notificationQueryOptions } from 'app/api/notification';
 import * as projectApi from 'app/api/project';
 import { logger } from 'app/config/logging';
 import { searchUrl } from 'app/routes/legacy-search';
@@ -45,31 +45,6 @@ const EA_DECISION_TONES: Record<string, StatusTone> = {
 
 function eaDecisionTone(name: string): StatusTone {
   return EA_DECISION_TONES[name] ?? 'info';
-}
-
-/** Project notifications have no project endpoint, so their name comes out of search. */
-async function getNotificationProject(projId: string): Promise<Project | null> {
-  try {
-    const raw = await searchKeywords(
-      '',
-      'ProjectNotification',
-      [],
-      1,
-      1,
-      '',
-      '',
-      { _id: projId },
-      false,
-      null,
-      {},
-      false,
-    );
-    const hit = (raw as any)?.[0]?.searchResults?.[0];
-    return hit ? ({ name: hit.name } as Project) : null;
-  } catch {
-    // the notification name is non-critical
-    return null;
-  }
 }
 
 async function loadComments(periodId: string, pageNum: number, pageSize: number) {
@@ -114,6 +89,7 @@ export function Comments() {
   const { projId, commentPeriodId } = useParams();
   const { pathname } = useLocation();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const isProjectNotificationRoute = pathname.includes('/pn/');
 
   const [page, setPage] = useState(1);
@@ -133,7 +109,15 @@ export function Comments() {
         }
         logger.warn(`Project ${projId} not found, trying as ProjectNotification`, 'Comments');
       }
-      return { project: await getNotificationProject(projId!), type: 'PROJECT-NOTIFICATION' };
+      try {
+        // Same cache entry as the notification page, so its breadcrumb link opens warm.
+        const project = await queryClient.fetchQuery(notificationQueryOptions(projId!));
+        return { project, type: 'PROJECT-NOTIFICATION' };
+      } catch (error) {
+        // Only the name is read off the notification, so the page still renders without it.
+        logger.warn('Error loading project notification', 'Comments', error);
+        return { project: null, type: 'PROJECT-NOTIFICATION' };
+      }
     },
   });
 
@@ -197,10 +181,12 @@ export function Comments() {
   }
 
   function goBackToProjectDetails() {
-    if (type === 'PROJECT' && project) {
+    if (type === 'PROJECT-NOTIFICATION' && project) {
+      navigate(`/pn/${project._id}`);
+    } else if (project) {
       navigate(`/p/${project._id}`);
     } else {
-      navigate(searchUrl('notifications'));
+      navigate(searchUrl(type === 'PROJECT' ? 'projects' : 'notifications'));
     }
   }
 
@@ -213,6 +199,15 @@ export function Comments() {
     ? COMMENT_PERIOD_HEADERS[commentPeriod.commentPeriodStatus] || ''
     : '';
   const pageLoading = !commentPeriod || (type === 'PROJECT' && projectQuery.isPending);
+  // Matches goBackToProjectDetails: without the record, the button leads to the search list.
+  const backLabel =
+    type === 'PROJECT'
+      ? project
+        ? 'Back to Project Details'
+        : 'Back to Projects'
+      : project
+        ? 'Back to Project Notification Details'
+        : 'Back to Project Notifications';
 
   return (
     <>
@@ -221,8 +216,11 @@ export function Comments() {
         breadcrumbs={[
           { label: 'Home', to: '/' },
           { label: 'Search', to: searchUrl(type === 'PROJECT' ? 'projects' : 'notifications') },
-          // A notification has no page of its own, so its name is plain text.
-          { label: project?.name ?? '', to: type === 'PROJECT' ? `/p/${projId}` : undefined },
+          {
+            label: project?.name ?? '',
+            // No link while the record loads or failed: an empty label would render a bare anchor.
+            to: project ? `${type === 'PROJECT' ? '/p' : '/pn'}/${projId}` : undefined,
+          },
           { label: 'Comment period' },
         ]}
         title={
@@ -335,7 +333,7 @@ export function Comments() {
               onClick={goBackToProjectDetails}
               type="button"
             >
-              {type === 'PROJECT' ? 'Back to Project Details' : 'Back to Project Notifications'}
+              {backLabel}
             </button>
           </div>
         )}

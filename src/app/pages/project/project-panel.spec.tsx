@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { screen } from '@testing-library/react';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { screen, waitFor } from '@testing-library/react';
 import type { Project } from 'app/models/project';
 import { loadConfig } from 'app/config/config';
 import { fakeMap } from 'app/pages/projects/maplibre-test-stub';
@@ -21,16 +21,115 @@ const PROJECT = {
   decisionDate: '2023-03-14T00:00:00.000Z',
 } as unknown as Project;
 
-function renderPanel(project: Project | null) {
+const NOTIFICATION = {
+  _id: 'pn-1',
+  name: 'Birch Mine Expansion',
+  location: 'Near Birch Lake',
+  centroid: [],
+  eacDecision: { name: 'Designated' },
+  notification: { trigger: 'Threshold' },
+} as unknown as Project;
+
+function renderPanel(
+  project: Project | null,
+  { loading = false, isNotification }: { loading?: boolean; isNotification?: boolean } = {},
+) {
   return renderAt('/p/proj-1/overview', [
     {
       path: '/p/:projId/overview',
-      element: <ProjectPanel project={project} lists={[]} loading={false} />,
+      element: (
+        <ProjectPanel
+          project={project}
+          lists={[]}
+          loading={loading}
+          isNotification={isNotification}
+        />
+      ),
     },
   ]);
 }
 
+function factLabels(): string[] {
+  return screen.getAllByRole('term').map((term) => term.textContent ?? '');
+}
+
 beforeEach(() => fakeMap.reset());
+
+describe('project panel for a project or a notification', () => {
+  it('shows the assessment progress rail and an "EA decision" fact for a project', () => {
+    renderPanel(PROJECT);
+
+    expect(screen.getByRole('heading', { name: 'Assessment progress' })).toBeInTheDocument();
+    expect(factLabels()).toContain('EA decision');
+    expect(factLabels()).not.toContain('Decision');
+  });
+
+  it('leaves the rail out and labels the fact "Decision" for a notification record', () => {
+    renderPanel(NOTIFICATION);
+
+    expect(screen.queryByRole('heading', { name: 'Assessment progress' })).toBeNull();
+    expect(factLabels()).toContain('Decision');
+    expect(factLabels()).not.toContain('EA decision');
+    expect(screen.getByText('Designated')).toBeInTheDocument();
+  });
+
+  it('leaves the rail out while a notification route is still loading its record', () => {
+    renderPanel(null, { loading: true, isNotification: true });
+
+    expect(screen.getByText('Loading project notification summary')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Assessment progress' })).toBeNull();
+    expect(factLabels()).toContain('Decision');
+  });
+
+  it('names the panel a project notification summary', () => {
+    renderPanel(NOTIFICATION);
+
+    expect(
+      screen.getByRole('region', { name: 'Project notification summary' }),
+    ).toBeInTheDocument();
+  });
+});
+
+describe('project panel DEMI reads', () => {
+  let requests: string[];
+
+  beforeEach(async () => {
+    requests = [];
+    window.__env = { logLevel: 4, DEMI_PROJECTS_PATH: '/demi-projects', SEARCH_API_PATH: '/demi' };
+    await loadConfig();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        requests.push(String(input));
+        return new Response('{}', { status: 200, headers: { 'content-type': 'application/json' } });
+      }),
+    );
+  });
+
+  afterEach(async () => {
+    vi.unstubAllGlobals();
+    window.__env = { logLevel: 4, DEMI_PROJECTS_PATH: '' };
+    await loadConfig();
+  });
+
+  it('asks DEMI about the project beside it, never about the notification', async () => {
+    // Mounted together, so the project's read marks the moment the notification's would go too.
+    renderAt('/p/proj-1/overview', [
+      {
+        path: '/p/:projId/overview',
+        element: (
+          <>
+            <ProjectPanel project={PROJECT} lists={[]} />
+            <ProjectPanel project={NOTIFICATION} lists={[]} />
+          </>
+        ),
+      },
+    ]);
+
+    await waitFor(() => expect(requests).toContain('/demi-projects/proj-1'));
+    expect(requests.filter((url) => url.includes('pn-1'))).toEqual([]);
+  });
+});
 
 describe('project panel map', () => {
   it('pins the project at its centroid', async () => {

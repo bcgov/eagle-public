@@ -22,6 +22,10 @@ import { DocumentsTab } from './pages/project/documents-tab';
 import { ComplianceDocumentsTab } from './pages/project/compliance-documents-tab';
 import { DecisionsTab } from './pages/project/decisions-tab';
 import { Comments } from './pages/comments/comments';
+import {
+  NotificationDocuments,
+  NotificationPage,
+} from './pages/project-notifications/notification-page';
 import { legacySearchRedirect, resolveLegacySearch } from './routes/legacy-search';
 
 /**
@@ -56,6 +60,22 @@ export const routes: RouteObject[] = [
           redirect(`/pn/${params['projId']}/cp/${params['commentPeriodId']}/details`),
       },
       { path: 'pn/:projId/cp/:commentPeriodId/details', Component: Comments },
+
+      // Project notification detail, on the project page shell. The comment period routes above
+      // stay siblings, as the project ones do: the comments page is its own page, not a tab.
+      {
+        path: 'pn/:projId',
+        Component: NotificationPage,
+        children: [
+          {
+            index: true,
+            loader: ({ params }) => redirect(`/pn/${params['projId']}/overview`),
+          },
+          { path: 'overview', Component: OverviewTab },
+          { path: 'engagement', Component: EngagementTab },
+          { path: 'documents', Component: NotificationDocuments },
+        ],
+      },
 
       { path: 'news', loader: legacySearchRedirect('activities') },
 

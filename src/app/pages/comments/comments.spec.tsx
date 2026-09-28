@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { openDocumentDownload } from 'app/utils/utils';
 import { loadConfig } from 'app/config/config';
 import { queryClient } from 'app/api/query-client';
+import { logger } from 'app/config/logging';
 import { renderAt } from '../../../test-utils';
 import { Comments } from './comments';
 
@@ -74,6 +75,8 @@ let sent: Sent[];
 let commentCount: number;
 let period: typeof PERIOD;
 let demiProject: Record<string, unknown>;
+let notificationFails: boolean;
+let projectFails: boolean;
 
 function json(body: unknown, headers: Record<string, string> = {}): Response {
   return new Response(JSON.stringify(body), {
@@ -91,9 +94,16 @@ function stubFetch() {
 
       if (url.includes('dataset=CommentPeriod'))
         return json([{ searchResults: [period], meta: [{ searchResultsTotal: 1 }] }]);
-      if (url.startsWith('/demi-projects/proj1')) return json(demiProject);
-      if (url.startsWith('/demi-search/search?dataset=ProjectNotification'))
-        return json([{ searchResults: [{ _id: 'pn1', name: 'Notified Project' }] }]);
+      if (url.startsWith('/demi-projects/proj1')) {
+        if (projectFails) return new Response('', { status: 500 });
+        return json(demiProject);
+      }
+      if (url.startsWith('/demi-search/search?dataset=ProjectNotification')) {
+        if (notificationFails) return new Response('', { status: 500 });
+        return json([
+          { searchResults: [{ _id: '5c8a3a3ce7f1f1002466c2b1', name: 'Notified Project' }] },
+        ]);
+      }
       if (url.startsWith(COMMENT_LIST_PREFIX)) {
         return json([
           {
@@ -116,6 +126,7 @@ function renderComments(path = '/p/proj1/cp/cp1/details') {
     { path: '/p/:projId/cp/:commentPeriodId/details', Component: Comments },
     { path: '/pn/:projId/cp/:commentPeriodId/details', Component: Comments },
     { path: '/p/:projId', element: <h1>Project page</h1> },
+    { path: '/pn/:projId', element: <h1>Notification page</h1> },
     { path: '/search', element: <h1>Search page</h1> },
   ]).router;
 }
@@ -132,6 +143,8 @@ describe('comments', () => {
     commentCount = 2;
     period = PERIOD;
     demiProject = DEMI_PROJECT;
+    notificationFails = false;
+    projectFails = false;
     // The project read goes through the app-wide cache, which would otherwise carry one test's
     // project into the next.
     queryClient.clear();
@@ -146,6 +159,7 @@ describe('comments', () => {
   afterEach(() => {
     window.__env = originalEnv;
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
   });
 
   /** The blue band, once the project name is in its h1. */
@@ -308,7 +322,7 @@ describe('comments', () => {
   });
 
   it('leaves the project facts off a project notification period', async () => {
-    renderComments('/pn/pn1/cp/cp1/details');
+    renderComments('/pn/5c8a3a3ce7f1f1002466c2b1/cp/cp1/details');
 
     const band = await findBanner('Notified Project');
     expect(within(band).getByText('Additional text here')).toBeInTheDocument();
@@ -437,20 +451,81 @@ describe('comments', () => {
     expect(router.state.location.pathname).toBe('/p/proj1');
   });
 
-  it('names a project notification from search and sends Back to the notifications list', async () => {
-    const router = renderComments('/pn/pn1/cp/cp1/details');
+  it('names a project notification from its record and links the trail to its page', async () => {
+    renderComments('/pn/5c8a3a3ce7f1f1002466c2b1/cp/cp1/details');
 
-    const heading = await screen.findByRole('heading', { level: 1, name: 'Notified Project' });
-    // A notification has no EA decision to show.
-    expect(within(heading.closest('.page-masthead') as HTMLElement).queryByText('-')).toBeNull();
+    const band = await findBanner('Notified Project');
     expect(
       sent.some((entry) => entry.url.startsWith('/demi-search/search?dataset=ProjectNotification')),
     ).toBe(true);
-    expect(sent.some((entry) => entry.url.startsWith('/demi-projects/pn1'))).toBe(false);
+    expect(
+      sent.some((entry) => entry.url.startsWith('/demi-projects/5c8a3a3ce7f1f1002466c2b1')),
+    ).toBe(false);
 
+    const trail = within(band).getByRole('navigation', { name: 'Breadcrumb' });
+    expect(within(trail).getByRole('link', { name: 'Search' })).toHaveAttribute(
+      'href',
+      '/search?record=notifications',
+    );
+    expect(within(trail).getByRole('link', { name: 'Notified Project' })).toHaveAttribute(
+      'href',
+      '/pn/5c8a3a3ce7f1f1002466c2b1',
+    );
+  });
+
+  it('sends Back on a project notification period to the notification page', async () => {
+    const router = renderComments('/pn/5c8a3a3ce7f1f1002466c2b1/cp/cp1/details');
+
+    await findBanner('Notified Project');
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Back to Project Notification Details' }),
+    );
+    expect(router.state.location.pathname).toBe('/pn/5c8a3a3ce7f1f1002466c2b1');
+  });
+
+  it('still shows the period and its comments when the notification fails to load', async () => {
+    notificationFails = true;
+    const warn = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
+    const router = renderComments('/pn/5c8a3a3ce7f1f1002466c2b1/cp/cp1/details');
+
+    expect(await screen.findByText('First comment')).toBeInTheDocument();
+    expect(screen.getByText('Public Comment Period is Now Open')).toBeInTheDocument();
+    await waitFor(() =>
+      expect(warn.mock.calls.map((call) => call[0])).toContain(
+        'Error loading project notification',
+      ),
+    );
+
+    // With no record to name, Back falls back to the notifications list.
     await userEvent.click(screen.getByRole('button', { name: 'Back to Project Notifications' }));
     expect(router.state.location.pathname + router.state.location.search).toBe(
       '/search?record=notifications',
+    );
+  });
+
+  it('leaves the unnamed record out of the trail links when the notification fails to load', async () => {
+    notificationFails = true;
+    vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
+    renderComments('/pn/5c8a3a3ce7f1f1002466c2b1/cp/cp1/details');
+
+    await screen.findByText('First comment');
+    const trail = screen.getByRole('navigation', { name: 'Breadcrumb' });
+    expect(
+      within(trail)
+        .getAllByRole('link')
+        .map((link) => link.getAttribute('href')),
+    ).toEqual(['/', '/search?record=notifications']);
+  });
+
+  it('sends Back to the projects list when the project fails to load', async () => {
+    projectFails = true;
+    vi.spyOn(logger, 'error').mockImplementation(() => undefined);
+    const router = renderComments();
+
+    await screen.findByText('First comment');
+    await userEvent.click(screen.getByRole('button', { name: 'Back to Projects' }));
+    expect(router.state.location.pathname + router.state.location.search).toBe(
+      '/search?record=projects',
     );
   });
 
