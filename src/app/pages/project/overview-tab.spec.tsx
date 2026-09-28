@@ -6,6 +6,8 @@ import { queryClient } from 'app/api/query-client';
 import { renderAt } from '../../../test-utils';
 import { CommentPeriod } from 'app/models/commentperiod';
 import { Project } from 'app/models/project';
+import { ProjectNotification } from 'app/models/projectNotification';
+import { notificationToProject } from 'app/api/notification';
 import { OverviewTab } from './overview-tab';
 
 const { track } = vi.hoisted(() => ({ track: vi.fn() }));
@@ -84,8 +86,25 @@ function openPeriod(extra: Record<string, unknown> = {}) {
   });
 }
 
+/** A notification as the `/pn/:projId` shell hands it to the tab: through the real adapter. */
+const NOTIFICATION = notificationToProject(
+  new ProjectNotification({
+    _id: 'pn-1',
+    name: 'Bear Creek Aggregate',
+    description: 'Expansion of a gravel pit.',
+    trigger: 'Greenfield,Expansion',
+    notificationThresholdValue: 50,
+    notificationThresholdUnits: 'hectares',
+    notificationReceivedDate: '2025-03-14T12:00:00.000Z',
+    subType: 'Sand and Gravel',
+    nature: 'Modification of Existing',
+  }),
+);
+
 let project: Project;
 let requests: string[];
+/** What the route says the record is, which the shell knows before the record loads. */
+let route: { projId: string; basePath: string; isNotification: boolean };
 
 vi.mock('./project-context', async (importOriginal) => {
   const original = await importOriginal<typeof import('./project-context')>();
@@ -93,7 +112,7 @@ vi.mock('./project-context', async (importOriginal) => {
     ...original,
     useProjectContext: () => ({
       project,
-      projId: 'proj-1',
+      ...route,
       lists: LISTS,
       projectLoading: false,
     }),
@@ -109,7 +128,7 @@ function jsonResponse(body: unknown) {
 
 const DEMI = '/demi-projects';
 
-function renderTab(demiProject?: { eaCertificate?: string }) {
+function renderTab(demiProject?: { eaCertificate?: string }, at = '/p/proj-1/overview') {
   requests = [];
   vi.stubGlobal(
     'fetch',
@@ -139,9 +158,10 @@ function renderTab(demiProject?: { eaCertificate?: string }) {
   );
 
   return renderAt(
-    '/p/proj-1/overview',
+    at,
     [
       { path: '/p/:projId/overview', Component: OverviewTab },
+      { path: '/pn/:projId/overview', Component: OverviewTab },
       { path: '/p/:projId/cp/:cpId/details', element: <div>comment period details</div> },
       { path: '/p/:projId/updates', element: <div>updates tab</div> },
     ],
@@ -156,6 +176,7 @@ describe('overview tab', () => {
 
   beforeEach(async () => {
     project = PROJECT;
+    route = { projId: 'proj-1', basePath: '/p/proj-1', isNotification: false };
     pinsTotal = 1;
     featuredTotal = 1;
     updatesFail = false;
@@ -436,5 +457,78 @@ describe('overview tab', () => {
 
     await screen.findByRole('heading', { level: 2, name: 'About this project' });
     expect(screen.queryByText('EA Certificate')).not.toBeInTheDocument();
+  });
+
+  it('keeps the notification facts off a project', async () => {
+    renderTab();
+
+    await screen.findByRole('heading', { level: 2, name: 'About this project' });
+    expect(screen.queryByText('Notification trigger')).not.toBeInTheDocument();
+    expect(screen.queryByText('Threshold')).not.toBeInTheDocument();
+    expect(screen.queryByText('Notification received')).not.toBeInTheDocument();
+  });
+});
+
+describe('overview tab on a project notification', () => {
+  const originalEnv = window.__env;
+
+  beforeEach(async () => {
+    project = NOTIFICATION;
+    route = { projId: 'pn-1', basePath: '/pn/pn-1', isNotification: true };
+    pinsTotal = 1;
+    featuredTotal = 1;
+    updatesFail = false;
+    window.__env = { logLevel: 4, DEMI_PROJECTS_PATH: DEMI };
+    await loadConfig();
+    queryClient.clear();
+  });
+
+  afterEach(() => {
+    window.__env = originalEnv;
+    vi.unstubAllGlobals();
+  });
+
+  it('lists the notification facts under About this project notification', async () => {
+    renderTab(undefined, '/pn/pn-1/overview');
+
+    expect(
+      await screen.findByRole('heading', { level: 2, name: 'About this project notification' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Notification trigger')).toBeInTheDocument();
+    // Stored without a space after the comma.
+    expect(screen.getByText('Greenfield, Expansion')).toBeInTheDocument();
+    expect(screen.getByText('50 hectares')).toBeInTheDocument();
+    expect(screen.getByText('March 14, 2025')).toBeInTheDocument();
+    expect(screen.getByText('Modification of Existing')).toBeInTheDocument();
+    expect(screen.getByText('Sand and Gravel')).toBeInTheDocument();
+  });
+
+  it('leaves the project-only facts off a notification', async () => {
+    renderTab(undefined, '/pn/pn-1/overview');
+
+    await screen.findByRole('heading', { level: 2, name: 'About this project notification' });
+    expect(screen.queryByText('Legislation')).not.toBeInTheDocument();
+    expect(screen.queryByText('IAAC involvement')).not.toBeInTheDocument();
+    expect(screen.queryByText('EAO project lead')).not.toBeInTheDocument();
+    expect(screen.queryByText('First posted')).not.toBeInTheDocument();
+    expect(screen.queryByText('Last updated')).not.toBeInTheDocument();
+  });
+
+  it('links the document count to the notification Documents tab', async () => {
+    renderTab(undefined, '/pn/pn-1/overview');
+
+    expect(await screen.findByRole('link', { name: '1 documents' })).toHaveAttribute(
+      'href',
+      '/pn/pn-1/documents',
+    );
+  });
+
+  it('asks DEMI nothing and shows no updates or nations, which only projects have', async () => {
+    renderTab(undefined, '/pn/pn-1/overview');
+
+    await screen.findByRole('link', { name: 'Featured Report' });
+    expect(requests.filter((url) => url.startsWith(`${DEMI}/`))).toEqual([]);
+    expect(requests.filter((url) => url.includes('dataset=RecentActivity'))).toEqual([]);
+    expect(screen.queryByText('Participating Indigenous Nations')).not.toBeInTheDocument();
   });
 });

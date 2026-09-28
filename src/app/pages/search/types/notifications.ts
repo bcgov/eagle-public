@@ -1,6 +1,6 @@
 import type { GridColumn } from 'app/components/display-grid/types';
 import { Constants } from 'app/utils/constants';
-import { NotificationRow } from './notification-row';
+import { proponentName } from './projects';
 import {
   RECORD_DATASETS,
   toOptions,
@@ -8,25 +8,41 @@ import {
   type RecordTypeConfig,
 } from './record-type';
 
-/** What the `/project-notifications` table asked for: newest record first, by insertion order. */
-export const NOTIFICATIONS_SORT = '-_id';
+type Row = Record<string, unknown>;
 
-/** The notification's own page. `/p/:id` lands on the project the notification became. */
-function projectHref(row: Record<string, unknown>): string | undefined {
-  const id = row['associatedProjectId'];
-  return typeof id === 'string' && id !== '' ? `/p/${id}` : undefined;
+/** Newest received first, on a sortable column so the Received heading shows the order. */
+export const NOTIFICATIONS_SORT = '-notificationReceivedDate';
+
+/** The project a notification became when it has one, else the notification's own page. */
+function notificationHref(row: Row): string | undefined {
+  const associatedProjectId = String(row['associatedProjectId'] ?? '');
+  if (associatedProjectId) return `/p/${associatedProjectId}`;
+  const id = String(row['_id'] ?? '');
+  return id ? `/pn/${id}` : undefined;
 }
 
-/**
- * A notification renders as one card, so these are its filterable fields rather than a layout.
- * A headerless grid has no filter row, so every one of them reaches the reader through the panel.
- */
-const COLUMNS: GridColumn<Record<string, unknown>>[] = [
-  { key: 'name', label: 'Project notification', link: true, href: projectHref, locked: true },
-  { key: 'type', label: 'Project type', filter: 'values', filterId: 'type' },
-  { key: 'region', label: 'Region', filter: 'values', filterId: 'region' },
-  { key: 'pcp', label: 'Public comment period', filter: 'values', filterId: 'pcp' },
-  { key: 'decision', label: 'Notification decision', filter: 'values', filterId: 'decision' },
+const COLUMNS: GridColumn<Row>[] = [
+  {
+    key: 'name',
+    label: 'Name',
+    sortable: true,
+    link: true,
+    href: notificationHref,
+    locked: true,
+    width: '26%',
+  },
+  { key: 'type', label: 'Type', filter: 'values', filterId: 'type', width: '16%' },
+  { key: 'region', label: 'Region', filter: 'values', filterId: 'region', width: '11%' },
+  { key: 'proponent', label: 'Proponent', render: proponentName, width: '19%' },
+  { key: 'decision', label: 'Decision', filter: 'values', filterId: 'decision', width: '14%' },
+  {
+    key: 'notificationReceivedDate',
+    label: 'Received',
+    sortable: true,
+    date: true,
+    primaryDate: true,
+    width: '14%',
+  },
 ];
 
 /** Project notifications: the records the `/project-notifications` page listed. */
@@ -36,9 +52,10 @@ export const notificationsConfig: RecordTypeConfig = {
   noun: 'notifications',
   dataset: RECORD_DATASETS.notifications,
   defaultSort: NOTIFICATIONS_SORT,
-  template: 'list',
+  template: 'grid',
   columns: COLUMNS,
-  advancedFields: [],
+  // The comment period has no column, so its filter lives in the panel.
+  advancedFields: [{ id: 'pcp', label: 'Public comment period', kind: 'select' }],
   // Every option is a constant, so these filters never wait on a request.
   optionsFrom: () => ({
     type: toOptions(Constants.TEMPORARY_PROJECT_TYPE as OptionSource[]),
@@ -47,6 +64,5 @@ export const notificationsConfig: RecordTypeConfig = {
     decision: toOptions(Constants.PROJECT_NOTIFICATION_DECISIONS as OptionSource[]),
   }),
   selectable: false,
-  headerless: true,
-  rowComponent: NotificationRow,
+  headerless: false,
 };

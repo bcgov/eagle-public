@@ -5,6 +5,9 @@ import { track } from 'app/analytics/analytics';
 import { getById } from 'app/api/project';
 import { listsQueryOptions } from 'app/api/api';
 import { Skeleton } from 'app/components/skeleton/skeleton';
+import type { Project } from 'app/models/project';
+import { searchUrl } from 'app/routes/legacy-search';
+import type { ProjectContext } from './project-context';
 import { ProjectMasthead } from './project-masthead';
 import { ProjectPanel } from './project-panel';
 import { useProjectTabMeta, type ProjectTab } from './use-project-tab-meta';
@@ -27,7 +30,7 @@ export function ProjectPage() {
   const {
     data: project,
     isError,
-    isPending: projectLoading,
+    isPending,
     isSuccess,
   } = useQuery({
     queryKey: ['project', projId],
@@ -42,10 +45,53 @@ export function ProjectPage() {
   // The open tab stays in the strip even when its rule would hide it, so the page never loses it.
   const activeTab = useMatch('/p/:projId/:tab/*')?.params['tab'];
 
-  const notFound = isError || (isSuccess && !project);
+  return (
+    <ProjectShell
+      project={project ?? null}
+      projId={projId}
+      lists={lists}
+      tabs={tabs.filter((tab) => tab.show || tab.key === activeTab)}
+      isPending={isPending}
+      notFound={isError || (isSuccess && !project)}
+    />
+  );
+}
+
+interface ProjectShellProps {
+  project: Project | null;
+  projId: string;
+  /** The record is a project notification: its links hang off `/pn/`, not `/p/`. */
+  isNotification?: boolean;
+  lists: ProjectContext['lists'];
+  /** The tabs to show, already filtered. */
+  tabs: ProjectTab[];
+  isPending: boolean;
+  notFound: boolean;
+}
+
+/** Masthead, summary panel, tab strip and the open tab: the frame every project-like page shares. */
+export function ProjectShell({
+  project,
+  projId,
+  isNotification = false,
+  lists,
+  tabs,
+  isPending,
+  notFound,
+}: ProjectShellProps) {
+  const basePath = `${isNotification ? '/pn' : '/p'}/${projId}`;
 
   if (notFound) {
-    return (
+    return isNotification ? (
+      <div className="container py-5">
+        <h1>Project notification not found</h1>
+        <p>
+          This project notification is not available. It may have been removed, or the link may be
+          wrong.
+        </p>
+        <Link to={searchUrl('notifications')}>Back to all project notifications</Link>
+      </div>
+    ) : (
       <div className="container py-5">
         <h1>Project not found</h1>
         <p>This project is not available. It may have been removed, or the link may be wrong.</p>
@@ -54,13 +100,32 @@ export function ProjectPage() {
     );
   }
 
+  const context: ProjectContext = {
+    project,
+    projId,
+    basePath,
+    isNotification,
+    lists,
+    projectLoading: isPending,
+  };
+
   return (
     <div className="project-page">
-      <ProjectMasthead project={project ?? null} projId={projId} loading={projectLoading} />
+      <ProjectMasthead
+        project={project}
+        projId={projId}
+        isNotification={isNotification}
+        loading={isPending}
+      />
 
       <div className="project-page__panel">
         <div className="page-container">
-          <ProjectPanel project={project ?? null} lists={lists} loading={projectLoading} />
+          <ProjectPanel
+            project={project}
+            lists={lists}
+            loading={isPending}
+            isNotification={isNotification}
+          />
         </div>
       </div>
 
@@ -68,16 +133,16 @@ export function ProjectPage() {
         <div className="page-container">
           <TabBar
             projId={projId}
-            tabs={tabs.filter((tab) => tab.show || tab.key === activeTab)}
+            tabs={tabs}
             projectName={project?.name}
-            ariaLabel="Project sections"
+            isNotification={isNotification}
           />
         </div>
       </div>
 
       {/* Not a landmark: the app shell's <main> already holds the whole page. */}
       <div className="page-container project-page__content">
-        <Outlet context={{ project: project ?? null, projId, lists, projectLoading }} />
+        <Outlet context={context} />
       </div>
     </div>
   );
@@ -87,14 +152,13 @@ interface TabBarProps {
   projId: string;
   tabs: ProjectTab[];
   projectName?: string;
-  /** Names the strip for screen readers. */
-  ariaLabel: string;
+  isNotification: boolean;
 }
 
 const SCROLL_STEP = 200;
 
 /** Tab strip with scroll arrows, shown only while the strip actually overflows. */
-function TabBar({ projId, tabs, projectName, ariaLabel }: TabBarProps) {
+function TabBar({ projId, tabs, projectName, isNotification }: TabBarProps) {
   const navTabs = useRef<HTMLUListElement>(null);
   const [arrows, setArrows] = useState({ left: false, right: false });
 
@@ -128,7 +192,7 @@ function TabBar({ projId, tabs, projectName, ariaLabel }: TabBarProps) {
     <div className="tabs-container">
       {/* Links, not tabs: each one routes, so the ARIA tab pattern would promise keyboard
           behaviour this strip does not have (PUBLIC-156). */}
-      <nav aria-label={ariaLabel}>
+      <nav aria-label={isNotification ? 'Project notification sections' : 'Project sections'}>
         <ul className="nav-tabs" ref={navTabs}>
           {tabs.map((tab) => (
             <li className="nav-item" key={tab.key}>
@@ -142,6 +206,7 @@ function TabBar({ projId, tabs, projectName, ariaLabel }: TabBarProps) {
                     project_name: projectName ?? null,
                     tab_name: tab.label,
                     tab_path: tab.key,
+                    record_type: isNotification ? 'notification' : 'project',
                   })
                 }
               >

@@ -35,7 +35,7 @@ test('/p/:projId/cp/:cpId redirects to /details', async ({ page, request }) => {
 test('@data /pn/:projId/cp/:cpId redirects to /details', async ({ page, request }) => {
   const notifications = await searchFixture(
     request,
-    'dataset=ProjectNotification&pageNum=0&pageSize=25&projectLegislation=default&sortBy=-_id&populate=true&fuzzy=false',
+    'dataset=ProjectNotification&pageNum=0&pageSize=25&projectLegislation=default&sortBy=-notificationReceivedDate&populate=true&fuzzy=false',
   );
 
   let pn: any, cp: any;

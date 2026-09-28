@@ -2,10 +2,10 @@ import { isClosed, isNotStarted, isOpen } from 'app/api/commentperiod';
 import { EngagementLink } from 'app/components/engagement-link';
 import { Skeleton } from 'app/components/skeleton/skeleton';
 import { StatusPill, type StatusTone } from 'app/components/status-pill';
-import { useCommentPeriods } from 'app/components/use-comment-periods';
 import type { CommentPeriod } from 'app/models/commentperiod';
 import { mediumDate } from 'app/utils/utils';
 import { useProjectContext } from './project-context';
+import { useEngagementPeriods } from './use-engagement-periods';
 import './engagement-tab.css';
 
 const SKELETON_CARDS = [1, 2];
@@ -19,9 +19,14 @@ function pill(cp: CommentPeriod): { text: string; tone: StatusTone } | null {
 }
 
 export function EngagementTab() {
-  const { projId } = useProjectContext();
+  const { project, projId, basePath, isNotification, projectLoading } = useProjectContext();
 
-  const { data: commentPeriods, isPending } = useCommentPeriods(projId);
+  const { periods: commentPeriods, isPending: periodsPending } = useEngagementPeriods(
+    projId,
+    project?.notification,
+  );
+  // A notification's own period comes from the record, so hold the skeleton until it loads.
+  const isPending = periodsPending || (isNotification && projectLoading);
 
   return (
     <div className="engagement-tab">
@@ -40,7 +45,8 @@ export function EngagementTab() {
         </ul>
       ) : !commentPeriods || commentPeriods.length < 1 ? (
         <p className="engagement-tab__empty">
-          No comment periods are currently scheduled for this project.
+          No comment periods are currently scheduled for this{' '}
+          {isNotification ? 'project notification' : 'project'}.
         </p>
       ) : (
         <ul className="engagement-tab__list">
@@ -72,7 +78,8 @@ export function EngagementTab() {
                   className={`engagement-tab__cta engagement-tab__cta--${open ? 'primary' : 'secondary'}`}
                   isMet={cp.isMet}
                   metURL={cp.metURL}
-                  to={`/p/${projId}/cp/${cp._id}`}
+                  // The inline period has no comment period record to open.
+                  to={cp._id === projId ? null : `${basePath}/cp/${cp._id}`}
                   label={open ? 'Share your thoughts' : 'View Engagement'}
                 />
               </li>

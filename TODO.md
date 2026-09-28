@@ -191,3 +191,17 @@ Fixes shipped on `develop` (Angular) not yet re-implemented here. One line each:
 - unified-search.parity.spec.ts: move `.unified-search__query` and `[data-tour="types"]` into selectors.ts.
 - reference/manifest.json: all 30 entries were backfilled from the committed PNGs (07-search-help-modal cannot be captured yet), so the height check is circular until references are recaptured. Replace the manifest on the next full recapture.
 - 07-search-help-modal: reference capture fails `helpDialog is modal (top layer)` at 924 and 400 on the base commit too; the prototype never calls `showModal`. Decide in states.ts whether that check applies to the prototype.
+
+## Project notification page follow-ups (2026-09-28)
+
+- `src/app/layout/app-shell.tsx` getPageName: skip the `pn` segment like `p` and `cp`, so analytics page names are not "Pn > Overview".
+- `src/app/routes/legacy-search.ts` SORTABLE_FIELDS.notifications: set to `['name', 'notificationReceivedDate']`; dateUpdated has no column.
+- `src/app/api/notification.ts`: a stored `pcp` overrides the status worked out from dates. Decide whether dates win when both are present. Also drop `/i` on the ObjectId regex or lower-case the id before the read, since the Cosmos point read is case-sensitive.
+- `src/app/pages/project/project-panel.tsx`: hide "Open in map explorer" for notifications; the explorer lists projects only.
+- `src/app/pages/project/use-engagement-periods.ts`: build the inline fallback only after the periods query settles, so the tab count does not flicker.
+- `src/app/pages/search/types/notifications.ts:18`: restore the typeof string guard on associatedProjectId.
+- `src/app/models/projectNotification.ts`: type proponent as `string | { name?: string } | null`.
+- `src/app/components/table/document-row.ts`: delete the unused `useDocumentRow`; the `.clickable-row` rules in `table.css` are dead.
+- `overview-tab.tsx:335`: fix "1 documents" grammar. In `project.tsx`, the tab count needs a hidden separator so the accessible name reads correctly.
+- e2e: ids in `fixtures/unified-search/notifications.json` should be 24-hex; add notifications to the grid row hover parity check; `project-notification.spec.ts:29` should assert the full masthead text.
+- eagle-demi `test/helpers/eagle-mirror-fixtures.js:214`: the notification centroid is [lon, lat], but eagle-admin stores [lat, lon].

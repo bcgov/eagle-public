@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router';
 import { showToast } from 'app/state/toast';
 import { PageMasthead } from 'app/layout/page-masthead';
 import { Skeleton } from 'app/components/skeleton/skeleton';
@@ -12,15 +13,30 @@ import './project-masthead.css';
 interface ProjectMastheadProps {
   project: Project | null;
   projId: string;
+  /** A project notification: labelled as one, linked to its project, and not subscribable. */
+  isNotification?: boolean;
   /** The shell's project fetch is still in flight. */
   loading?: boolean;
 }
 
 /** The shared band, filled in for a project: what it is, and how to follow or share it. */
-export function ProjectMasthead({ project, projId, loading = false }: ProjectMastheadProps) {
-  const subtitle = [project?.proponent?.name, project?.location].filter(Boolean).join(' · ');
+export function ProjectMasthead({
+  project,
+  projId,
+  isNotification = false,
+  loading = false,
+}: ProjectMastheadProps) {
+  const subtitle = [
+    isNotification && 'Project notification',
+    project?.proponent?.name,
+    project?.location,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+  const associatedProjectId = project?.notification?.associatedProjectId;
 
-  const demiShortUrl = useDemiProject(projId).data?.shortUrl;
+  // DEMI holds projects only; a notification id would just 404.
+  const demiShortUrl = useDemiProject(isNotification ? '' : projId).data?.shortUrl;
 
   const [copyState, setCopyState] = useState<'idle' | 'copied'>('idle');
   const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -50,7 +66,9 @@ export function ProjectMasthead({ project, projId, loading = false }: ProjectMas
   }
 
   async function copyLink(): Promise<void> {
-    const url = isSafeUrl(demiShortUrl) ? demiShortUrl : `${window.location.origin}/p/${projId}`;
+    const url = isSafeUrl(demiShortUrl)
+      ? demiShortUrl
+      : `${window.location.origin}/${isNotification ? 'pn' : 'p'}/${projId}`;
     let copied = false;
     if (navigator.clipboard?.writeText) {
       try {
@@ -79,13 +97,15 @@ export function ProjectMasthead({ project, projId, loading = false }: ProjectMas
       busy={loading}
       breadcrumbs={[
         { label: 'Home', to: '/' },
-        { label: 'Search', to: searchUrl('projects') },
+        { label: 'Search', to: searchUrl(isNotification ? 'notifications' : 'projects') },
         { label: project?.name ?? '' },
       ]}
       title={
         loading ? (
           <>
-            <span className="visually-hidden">Loading project</span>
+            <span className="visually-hidden">
+              {isNotification ? 'Loading project notification' : 'Loading project'}
+            </span>
             <Skeleton width="60%" />
           </>
         ) : (
@@ -95,11 +115,21 @@ export function ProjectMasthead({ project, projId, loading = false }: ProjectMas
       meta={loading ? <Skeleton width="35%" /> : subtitle || undefined}
       actions={
         <>
-          <SubscribePopover
-            serviceName={`project:${projId}`}
-            variant="project"
-            surface="masthead"
-          />
+          {associatedProjectId && (
+            <Link className="btn-on-dark project-masthead__action" to={`/p/${associatedProjectId}`}>
+              <i className="material-icons" aria-hidden="true">
+                arrow_forward
+              </i>
+              <span className="project-masthead__action-label">View project</span>
+            </Link>
+          )}
+          {!isNotification && (
+            <SubscribePopover
+              serviceName={`project:${projId}`}
+              variant="project"
+              surface="masthead"
+            />
+          )}
           <button
             type="button"
             className={
@@ -113,7 +143,7 @@ export function ProjectMasthead({ project, projId, loading = false }: ProjectMas
               {copyState === 'copied' ? 'check' : 'link'}
             </i>
             <span className="project-masthead__action-label">
-              {copyState === 'copied' ? 'Copied' : 'Short link'}
+              {copyState === 'copied' ? 'Copied' : isNotification ? 'Copy link' : 'Short link'}
             </span>
           </button>
           {/* Sibling, not nested in the button: a live region inside it would fold into the

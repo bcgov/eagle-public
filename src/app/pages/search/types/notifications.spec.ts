@@ -17,6 +17,10 @@ const COLUMN_FILTER_IDS = notificationsConfig.columns
   .filter((column) => column.filter && column.filter !== 'year')
   .map((column) => column.filterId ?? column.key);
 
+const ADVANCED_IDS = notificationsConfig.advancedFields.map((field) => field.id);
+
+const OFFERED_IDS = [...COLUMN_FILTER_IDS, ...ADVANCED_IDS];
+
 const options = notificationsConfig.optionsFrom([], []);
 
 let requested: string;
@@ -42,39 +46,75 @@ beforeAll(async () => {
 });
 
 describe('notifications record type', () => {
-  it('searches the ProjectNotification dataset in the order the old page used', () => {
+  it('searches the ProjectNotification dataset, newest received first', () => {
     expect(notificationsConfig.dataset).toBe('ProjectNotification');
-    expect(notificationsConfig.defaultSort).toBe('-_id');
+    expect(notificationsConfig.defaultSort).toBe('-notificationReceivedDate');
   });
 
-  it('draws each notification as a card with no column headings over it', () => {
-    expect(notificationsConfig.template).toBe('list');
-    expect(notificationsConfig.headerless).toBe(true);
-    expect(notificationsConfig.rowComponent).toBeTypeOf('function');
+  it('asks the API for that order', () => {
+    expect(requested).toContain('sortBy=-notificationReceivedDate');
+  });
+
+  it('draws the notifications as a table with column headings', () => {
+    expect(notificationsConfig.template).toBe('grid');
+    expect(notificationsConfig.headerless).toBe(false);
     expect(notificationsConfig.selectable).toBe(false);
   });
 
-  it('offers the four filters the project notifications page offered', () => {
-    expect(COLUMN_FILTER_IDS).toEqual(['type', 'region', 'pcp', 'decision']);
-    expect(notificationsConfig.advancedFields).toEqual([]);
+  it('heads the table Name, Type, Region, Proponent, Decision, Received', () => {
+    expect(notificationsConfig.columns.map((column) => column.label)).toEqual([
+      'Name',
+      'Type',
+      'Region',
+      'Proponent',
+      'Decision',
+      'Received',
+    ]);
   });
 
-  it('puts every one of them in the panel, which is the only place a card layout has', () => {
+  it('leads with a locked link on the name', () => {
+    expect(notificationsConfig.columns[0]).toMatchObject({ key: 'name', link: true, locked: true });
+  });
+
+  it('lets the reader sort by the received date the table opens on', () => {
+    const received = notificationsConfig.columns.find(
+      (column) => column.key === 'notificationReceivedDate',
+    );
+
+    expect(received).toMatchObject({ sortable: true, date: true });
+  });
+
+  it('reads a proponent that arrives populated', () => {
+    const proponent = notificationsConfig.columns.find((column) => column.key === 'proponent');
+
+    expect(proponent?.render?.({ proponent: { name: 'Acme Aggregates Ltd.' } })).toBe(
+      'Acme Aggregates Ltd.',
+    );
+  });
+
+  it('filters type, region and decision from their columns', () => {
+    expect(COLUMN_FILTER_IDS).toEqual(['type', 'region', 'decision']);
+  });
+
+  it('keeps the comment period filter in the panel, as it has no column', () => {
+    expect(ADVANCED_IDS).toEqual(['pcp']);
+  });
+
+  it('puts the column filters in the panel too, in column order', () => {
     expect(columnFiltersForPanel(notificationsConfig.columns).map((field) => field.id)).toEqual([
       'type',
       'region',
-      'pcp',
       'decision',
     ]);
   });
 
   it('covers every offered filter with a filled value', () => {
-    expect(Object.keys(FILLED)).toEqual(COLUMN_FILTER_IDS);
+    expect(Object.keys(FILLED).sort()).toEqual([...OFFERED_IDS].sort());
   });
 
   /* These values are the option labels themselves, spaces and all: unlike the id-backed filters,
      a notification stores the words. The space is encoded by `fetch`, not by the caller. */
-  it.each(COLUMN_FILTER_IDS)('names %s to the API as and[]', (id) => {
+  it.each(OFFERED_IDS)('names %s to the API as and[]', (id) => {
     expect(requested).toContain(`and[${id}]=${FILLED[id]}`);
   });
 
@@ -98,7 +138,15 @@ describe('notifications record link', () => {
     expect(nameColumn?.href?.({ _id: 'n1', associatedProjectId: 'p9' })).toBe('/p/p9');
   });
 
-  it('leaves a notification with no project unlinked', () => {
-    expect(nameColumn?.href?.({ _id: 'n1' })).toBeUndefined();
+  it('points a notification with no project at its own page', () => {
+    expect(nameColumn?.href?.({ _id: 'n1' })).toBe('/pn/n1');
+  });
+
+  it('treats an empty associated project id as no project', () => {
+    expect(nameColumn?.href?.({ _id: 'n1', associatedProjectId: '' })).toBe('/pn/n1');
+  });
+
+  it('leaves a row with no id unlinked', () => {
+    expect(nameColumn?.href?.({ name: 'Orphan' })).toBeUndefined();
   });
 });
