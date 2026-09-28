@@ -26,7 +26,6 @@
 
 /* Components */
 @import url('./assets/styles/components/buttons.css');
-@import url('./assets/styles/components/feature-block.css');
 @import url('./assets/styles/components/form-elements.css');
 @import url('./assets/styles/components/tab-nav.css');
 @import url('./assets/styles/components/table.css');
@@ -45,23 +44,8 @@ body {
   padding: 0;
   font-family: 'BC Sans', 'Noto Sans', Arial, sans-serif;
   background-color: var(--bc-gray-light);
-  overflow-x: hidden;
+  overflow-x: clip;
   max-width: 100%;
-}
-
-/* Global Content Styles. Long-form copy fills the page container. */
-.content-wrapper {
-  font-size: 1rem;
-  line-height: 1.5;
-  color: var(--bc-gray);
-}
-
-.content-wrapper p {
-  margin-bottom: 0;
-}
-
-.content-wrapper p + p {
-  margin-top: 1.5rem;
 }
 
 /* A link's underline reaches a flex (blockified) icon and no rule on the icon stops it, so icon links

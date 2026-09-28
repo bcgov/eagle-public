@@ -5,13 +5,14 @@ import { projectUpdatesQueryOptions } from 'app/api/updates';
 import { useProjectEaCertificate } from 'app/api/project-phases';
 import { track } from 'app/analytics/analytics';
 import { EngagementLink } from 'app/components/engagement-link';
-import { NewTabHint } from 'app/components/new-tab-hint';
+import { ExternalLink } from 'app/components/external-link';
 import { Skeleton } from 'app/components/skeleton/skeleton';
 import { SubscribePopover } from 'app/components/subscribe-popover';
 import { useTable } from 'app/components/table/use-table';
 import { getNotifyApi } from 'app/config/config';
 import { engageUrl } from 'app/models/commentperiod';
 import type { NotificationFacts, Project } from 'app/models/project';
+import { Constants } from 'app/utils/constants';
 import { newlines } from 'app/utils/newlines';
 import { safeHtml } from 'app/utils/safe-html';
 import { isSafeUrl } from 'app/utils/safe-url';
@@ -22,21 +23,11 @@ import { useProjectContext } from './project-context';
 import './overview-tab.css';
 
 const OPERATIONS_EMAIL = 'EAO.operations@gov.bc.ca';
-const COMPLIANCE_EMAIL = 'EAO.compliance@gov.bc.ca';
 const COMPLIANCE_PHONE = '250-387-0131';
 
 /** Angular's `date:'MMMM d'`, e.g. "August 27". */
 function monthAndDay(value: Date | string): string {
   return new Date(value).toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
-}
-
-function ExternalLink({ href, children }: { href: string; children: ReactNode }) {
-  return (
-    <a href={href} target="_blank" rel="noopener noreferrer">
-      <span className="link-label">{children}</span>
-      <NewTabHint />
-    </a>
-  );
 }
 
 /** A card in the aside: a header with the title and an optional link, then rows. */
@@ -237,7 +228,7 @@ function ContactCard({ project }: { project: Project | null }) {
       </div>
       <div className="overview-tab__contact">
         <p className="overview-tab__list-title">Compliance &amp; Enforcement</p>
-        <a href={`mailto:${COMPLIANCE_EMAIL}`}>{COMPLIANCE_EMAIL}</a>
+        <a href={`mailto:${Constants.COMPLIANCE_EMAIL}`}>{Constants.COMPLIANCE_EMAIL}</a>
         <p className="overview-tab__contact-phone">{COMPLIANCE_PHONE}</p>
       </div>
     </section>

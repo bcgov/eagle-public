@@ -1,10 +1,7 @@
 import { redirect, type LoaderFunctionArgs, type RouteObject } from 'react-router';
 import { AppShell } from './layout/app-shell';
 import { Home } from './pages/home/home';
-import { Contact } from './pages/contact';
-import { Legislation } from './pages/legislation';
-import { Process } from './pages/process';
-import { ComplianceOversight } from './pages/compliance-oversight';
+import { About, type SectionId } from './pages/about';
 import { SearchHelp } from './pages/search-help';
 import { Projects } from './pages/projects/projects';
 import { UnifiedSearch } from './pages/search/unified-search';
@@ -38,6 +35,12 @@ export function searchLoader({ request }: LoaderFunctionArgs) {
   return next ? redirect(`${next.pathname}${next.search}`) : null;
 }
 
+/** The four static pages became sections of /about; old links land on their section. */
+function aboutSectionRedirect(section: SectionId) {
+  return ({ request }: LoaderFunctionArgs) =>
+    redirect(`/about${new URL(request.url).search}#${section}`);
+}
+
 export const routes: RouteObject[] = [
   {
     path: '/',
@@ -47,7 +50,8 @@ export const routes: RouteObject[] = [
       // The home page with one update open in its reader dialog.
       { path: 'updates/:id', Component: Home },
 
-      { path: 'contact', Component: Contact },
+      { path: 'about', Component: About },
+      { path: 'contact', loader: aboutSectionRedirect('contact') },
 
       { path: 'projects', Component: Projects },
       { path: 'projects-list', loader: legacySearchRedirect('projects') },
@@ -79,11 +83,9 @@ export const routes: RouteObject[] = [
 
       { path: 'news', loader: legacySearchRedirect('activities') },
 
-      { path: 'legislation', Component: Legislation },
-
-      { path: 'compliance-oversight', Component: ComplianceOversight },
-
-      { path: 'process', Component: Process },
+      { path: 'legislation', loader: aboutSectionRedirect('legislation') },
+      { path: 'compliance-oversight', loader: aboutSectionRedirect('compliance') },
+      { path: 'process', loader: aboutSectionRedirect('process') },
 
       { path: 'search', loader: searchLoader, Component: UnifiedSearch },
 

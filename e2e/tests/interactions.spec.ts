@@ -98,7 +98,7 @@ test('the header tabs through its links in visual order', async ({ page }) => {
     'EPIC Environmental Assessment Office Project Information Centre',
     'Map Explorer',
     'Search',
-    'Contact Us',
+    'About',
     'Log in (opens in new tab)',
   ]);
 });

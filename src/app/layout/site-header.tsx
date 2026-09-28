@@ -8,7 +8,7 @@ import './site-header.css';
 const NAV_LINKS = [
   { label: 'Map Explorer', to: '/projects' },
   { label: 'Search', to: '/search' },
-  { label: 'Contact Us', to: '/contact' },
+  { label: 'About', to: '/about' },
 ];
 
 const SITE_TITLE = 'Environmental Assessment Office Project Information Centre';

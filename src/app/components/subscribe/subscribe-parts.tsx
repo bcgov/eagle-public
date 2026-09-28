@@ -1,4 +1,5 @@
 import type { Ref } from 'react';
+import { Constants } from 'app/utils/constants';
 import 'app/components/subscribe-popover.css';
 
 /** The FOIPPA collection notice every subscribe form carries. */
@@ -8,7 +9,7 @@ export function CollectionNoticeText() {
       Your personal information is collected by the Environmental Assessment Office under section
       26(c) of the Freedom of Information and Protection of Privacy Act to send you the updates you
       asked for. Every email includes an unsubscribe link. Questions:{' '}
-      <a href="mailto:EAO.EPICsystem@gov.bc.ca">EAO.EPICsystem@gov.bc.ca</a>
+      <a href={`mailto:${Constants.FEEDBACK_EMAIL}`}>{Constants.FEEDBACK_EMAIL}</a>
     </>
   );
 }
