@@ -82,6 +82,9 @@ Descoped. The map stays on `/projects`; the home page carries none.
 
 ### Browse strip
 
+Superseded 2026-09-28 by the About page: the header's About link is now the way to
+Legislation, The assessment process and Compliance oversight.
+
 A centred strip of six links: Map Explorer, All projects, Project notifications, The
 assessment process, Legislation, Compliance oversight. It is the only in-app link to
 `/legislation`, `/process` and `/compliance-oversight`, so it replaces that role the old
