@@ -1,5 +1,4 @@
 import type { ReactNode } from 'react';
-import { NewTabHint } from 'app/components/new-tab-hint';
 import { Breadcrumbs, type Crumb } from './breadcrumbs';
 import './page-masthead.css';
 
@@ -65,34 +64,5 @@ export function PageMasthead({
         {children}
       </div>
     </section>
-  );
-}
-
-interface MastheadLinkProps {
-  label: string;
-  href: string;
-  /** Material icon shown before the label. Ignored on a new-tab link, which carries its own. */
-  icon?: string;
-  /** Open in a new tab. The accessible name then says so. */
-  newTab?: boolean;
-}
-
-/** A link in the band's actions row, in the site's one on-dark button style. */
-export function MastheadLink({ label, href, icon, newTab }: MastheadLinkProps) {
-  return (
-    <a
-      className="btn-on-dark"
-      href={href}
-      target={newTab ? '_blank' : undefined}
-      rel={newTab ? 'noopener noreferrer' : undefined}
-    >
-      {icon && !newTab && (
-        <i className="material-icons" aria-hidden="true">
-          {icon}
-        </i>
-      )}
-      <span className="link-label">{label}</span>
-      {newTab && <NewTabHint />}
-    </a>
   );
 }

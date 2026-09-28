@@ -143,9 +143,8 @@ test('the header navigates to every top-level destination', async ({ page }) => 
 
   await page.goto('/');
   await ready(page, 1000);
-  // The footer carries a gov.bc.ca "Contact us" link too, so scope the lookup to the header.
-  await page.getByRole('banner').getByRole('link', { name: 'Contact Us' }).click();
-  await page.waitForURL('**/contact');
+  await page.getByRole('banner').getByRole('link', { name: 'About', exact: true }).click();
+  await page.waitForURL('**/about');
 
   await page.goto('/');
   await ready(page, 1000);

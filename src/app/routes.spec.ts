@@ -41,6 +41,24 @@ describe('the legacy list routes', () => {
   );
 });
 
+describe('the old static page routes', () => {
+  it.each([
+    { path: 'process', section: 'process' },
+    { path: 'legislation', section: 'legislation' },
+    { path: 'compliance-oversight', section: 'compliance' },
+    { path: 'contact', section: 'contact' },
+  ])('sends /$path to its section of /about', async ({ path, section }) => {
+    expect(await loaderLocation(path, `http://localhost/${path}`)).toBe(`/about#${section}`);
+    expect(findRoute(path)?.Component).toBeUndefined();
+  });
+
+  it('keeps the query string ahead of the section hash', async () => {
+    expect(await loaderLocation('contact', 'http://localhost/contact?x=1')).toBe(
+      '/about?x=1#contact',
+    );
+  });
+});
+
 describe('searchLoader', () => {
   it('reads an Angular /search as documents when it carries a document param', async () => {
     expect(

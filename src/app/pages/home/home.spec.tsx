@@ -30,16 +30,14 @@ describe('home page shell', () => {
     expect(screen.queryByRole('navigation', { name: 'Breadcrumb' })).not.toBeInTheDocument();
   });
 
-  it('reads feed, then the rail (comment periods, uploads), then the Browse strip', () => {
+  it('reads feed, then the rail (comment periods, uploads)', () => {
     renderHome();
 
     const feed = screen.getByRole('heading', { level: 2, name: 'Updates' });
     const periods = screen.getByRole('heading', { level: 2, name: 'Open for comment' });
     const uploads = screen.getByRole('heading', { level: 2, name: 'Recent Uploads' });
-    const browse = screen.getByRole('navigation', { name: 'Browse' });
     expect(follows(feed, periods)).toBe(true);
     expect(follows(periods, uploads)).toBe(true);
-    expect(follows(uploads, browse)).toBe(true);
   });
 
   it('opens no reader on the bare home page', () => {

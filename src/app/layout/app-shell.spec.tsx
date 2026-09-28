@@ -51,10 +51,21 @@ describe('app shell', () => {
     expect(page).toHaveBeenCalledTimes(1);
     expect(page).toHaveBeenCalledWith('Home', { path: '/' });
 
-    await router.navigate('/contact');
+    await router.navigate('/about');
 
     await waitFor(() => expect(page).toHaveBeenCalledTimes(2));
-    expect(page).toHaveBeenLastCalledWith('Contact', { path: '/contact' });
+    expect(page).toHaveBeenLastCalledWith('About', { path: '/about' });
+  });
+
+  it('lands an Angular-era /#/contact address on the contact section of /about', async () => {
+    vi.stubGlobal('scrollTo', vi.fn());
+    const { router } = renderAt('/#/contact', routes);
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'About environmental assessment' }),
+    ).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe('/about');
+    expect(router.state.location.hash).toBe('#contact');
   });
 
   describe('scroll on navigation', () => {

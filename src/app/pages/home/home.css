@@ -122,45 +122,6 @@
   gap: var(--layout-padding-large);
 }
 
-/* Browse strip, above the footer. */
-
-.home-browse {
-  background: var(--theme-gray-20);
-  border-top: var(--layout-border-width-small) solid var(--theme-gray-30);
-}
-
-.home-browse__list {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: var(--layout-padding-small) var(--layout-padding-large);
-  margin-block: 0;
-  padding-block: var(--layout-padding-medium);
-  list-style: none;
-}
-
-.home-browse__link {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--layout-padding-xsmall);
-  min-height: 44px;
-  font: var(--typography-bold-small-body);
-  color: var(--typography-color-link);
-  text-decoration: none;
-}
-
-.home-browse__link:hover {
-  color: var(--theme-blue-90);
-}
-
-.home-browse__icon {
-  font-size: 20px;
-}
-
-.home-browse__label {
-  text-underline-offset: 3px;
-}
-
 /* Shared by the feed and the rail. */
 
 .home-heading {

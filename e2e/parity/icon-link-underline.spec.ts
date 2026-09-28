@@ -75,14 +75,21 @@ test('inline icon links underline the label, not the icon', async ({ page }) => 
 });
 
 test('home icon links underline the label, not the icon', async ({ page }) => {
-  // The fixture carries no home feed, so it answers empty; added last, this route wins. Both links
-  // render regardless: the browse strip is static and the feed footer always shows.
+  // The fixture carries no home feed, so it answers empty; added last, this route wins. The feed
+  // footer link renders regardless.
   await page.route(/dataset=HomeFeed/, (route) =>
     route.fulfill({
       json: [{ searchResults: [], meta: [{ searchResultsTotal: 0, dropped: [] }] }],
     }),
   );
   await page.goto('/', { waitUntil: 'networkidle' });
-  await expectUnderlineOnLabelOnly(page.locator('a.home-browse__link').first());
   await expectUnderlineOnLabelOnly(page.locator('a.home-updates__all'));
+});
+
+test('About page icon links underline the label, not the icon', async ({ page }) => {
+  await page.goto('/about', { waitUntil: 'networkidle' });
+  const actRow = page.locator('a.about-act__link').first();
+  await expect(actRow).toHaveCSS('display', 'flex');
+  await expectUnderlineOnLabelOnly(actRow);
+  await expectUnderlineOnLabelOnly(page.locator('a.about-contact__cta[target="_blank"]').first());
 });

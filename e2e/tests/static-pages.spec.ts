@@ -1,63 +1,110 @@
-import { test, expect } from '../support/fixtures';
+import { test, expect, type Page } from '../support/fixtures';
 import { ready, recordApiCalls, checkBaseline, waitForSearch } from '../support/helpers';
 
 /**
- * The static content pages and the home page. The activities and project-notification lists used
- * to live here too; they are record types on /search now, covered by `search.spec.ts`, and their
- * old addresses by `routing.spec.ts`.
+ * The About page, search help and the home page. The activities and project-notification lists
+ * used to live here too; they are record types on /search now, covered by `search.spec.ts`, and
+ * their old addresses by `routing.spec.ts`.
  */
 
-test.describe('content pages', () => {
-  const HEADINGS: [string, string][] = [
-    ['/contact', 'Connect With Us'],
-    ['/legislation', 'Legislation'],
-    ['/compliance-oversight', 'Compliance Oversight'],
-    ['/process', 'Process & Procedures'],
-    ['/search-help', 'Advanced Search Help'],
+/** A jump leaves 24px above the section; 40 allows for rounding and a scroll still settling. */
+const LANDED_WITHIN = 40;
+
+function sectionTop(page: Page, id: string): Promise<number> {
+  return page.evaluate((sid) => document.getElementById(sid)!.getBoundingClientRect().top, id);
+}
+
+async function expectSectionAtTop(page: Page, id: string): Promise<void> {
+  await expect.poll(() => sectionTop(page, id)).toBeLessThanOrEqual(LANDED_WITHIN);
+  expect(await sectionTop(page, id)).toBeGreaterThanOrEqual(0);
+}
+
+test.describe('about page', () => {
+  test('holds the four former pages as sections, in reading order', async ({ page }) => {
+    await page.goto('/about');
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'About environmental assessment' }),
+    ).toBeVisible();
+    await expect(page.getByRole('main').getByRole('heading', { level: 2 })).toHaveText([
+      'The assessment process',
+      'Legislation',
+      'Compliance oversight',
+      'Contact us',
+    ]); // The ids are the redirect targets, so each must name its own heading.
+    await expect(page.locator('section#process h2')).toHaveText('The assessment process');
+    await expect(page.locator('section#legislation h2')).toHaveText('Legislation');
+    await expect(page.locator('section#compliance h2')).toHaveText('Compliance oversight');
+    await expect(page.locator('section#contact h2')).toHaveText('Contact us');
+  });
+
+  const REDIRECTS: [string, string][] = [
+    ['/process', 'process'],
+    ['/legislation', 'legislation'],
+    ['/compliance-oversight', 'compliance'],
+    ['/contact', 'contact'],
   ];
 
-  for (const [route, heading] of HEADINGS) {
-    test(`${route} renders "${heading}"`, async ({ page }) => {
+  for (const [route, section] of REDIRECTS) {
+    test(`${route} lands on /about#${section} with the section at the top`, async ({ page }) => {
       await page.goto(route);
-      await expect(page.getByRole('heading', { level: 1, name: heading })).toBeVisible();
+      await expect(page).toHaveURL(new RegExp(`/about#${section}$`));
+      await expectSectionAtTop(page, section);
     });
   }
 
-  test('/contact links the EAO and compliance mailboxes', async ({ page }) => {
-    await page.goto('/contact');
+  test('a rail link marks itself current and scrolls to its section', async ({ page }) => {
+    await page.goto('/about');
     await ready(page, 500);
-    await expect(
-      page.getByRole('heading', { level: 3, name: 'B.C. Environmental Assessment Office' }),
-    ).toBeVisible();
-    await expect(
-      page.getByRole('heading', { level: 3, name: 'Report Natural Resource Violations' }),
-    ).toBeVisible();
+    const rail = page.getByRole('navigation', { name: 'On this page' });
+    const first = rail.getByRole('link', { name: 'The assessment process' });
+    const target = rail.getByRole('link', { name: 'Compliance oversight' });
+    await expect(first).toHaveAttribute('aria-current', 'true');
+
+    await target.click();
+    await expect(target).toHaveAttribute('aria-current', 'true');
+    await expect(first).not.toHaveAttribute('aria-current');
+    await expect(rail.locator('[aria-current]')).toHaveCount(1);
+    await expectSectionAtTop(page, 'compliance');
   });
 
-  test.describe('at 1440px', () => {
-    test.use({ viewport: { width: 1440, height: 900 } });
+  test('links that leave the tab say so and cut the opener', async ({ page }) => {
+    await page.goto('/about');
+    const content = page.getByRole('main');
+    // Two rows per Act card, the compliance policies link, and two of the three contact cards.
+    await expect(content.locator('a[target="_blank"]')).toHaveCount(7);
+    await expect(
+      content.locator('a[target="_blank"]:not([rel="noopener noreferrer"])'),
+    ).toHaveCount(0);
 
-    test('/legislation copy runs the full width of its container', async ({ page }) => {
-      await page.goto('/legislation');
-      const copy = page.locator('.page-body .content-wrapper');
-      await expect(copy).toBeVisible();
+    await expect(
+      content.getByRole('link', { name: 'The Act and regulations (2018 Act) (opens in new tab)' }),
+    ).toHaveAttribute('target', '_blank');
+    await expect(
+      content.getByRole('link', {
+        name: 'View Compliance & Enforcement Policies and Procedures (opens in new tab)',
+      }),
+    ).toHaveAttribute('target', '_blank');
+    await expect(
+      content.getByRole('link', {
+        name: 'Visit EAO B.C. Government Directory (opens in new tab)',
+      }),
+    ).toHaveAttribute('target', '_blank');
+  });
 
-      const size = await copy.evaluate((el) => {
-        const container = el.parentElement as HTMLElement;
-        const style = getComputedStyle(container);
-        return {
-          cap: getComputedStyle(el).maxWidth,
-          copy: el.getBoundingClientRect().width,
-          container:
-            container.getBoundingClientRect().width -
-            parseFloat(style.paddingLeft) -
-            parseFloat(style.paddingRight),
-        };
-      });
-      // No reading measure: a 78ch cap held this copy to about half the container at this width.
-      expect(size.cap).toBe('none');
-      expect(size.copy).toBeGreaterThan(size.container * 0.98);
-    });
+  test('the feedback link opens a mail to the EPIC mailbox in the same tab', async ({ page }) => {
+    await page.goto('/about');
+    const feedback = page.getByRole('main').getByRole('link', { name: 'Submit your Feedback' });
+    await expect(feedback).toHaveAttribute('href', 'mailto:EAO.EPICsystem@gov.bc.ca');
+    await expect(feedback).not.toHaveAttribute('target');
+  });
+});
+
+test.describe('search help', () => {
+  test('/search-help renders "Advanced Search Help"', async ({ page }) => {
+    await page.goto('/search-help');
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Advanced Search Help' }),
+    ).toBeVisible();
   });
 
   test('/search-help explains quotes and hyphens', async ({ page }) => {
@@ -69,7 +116,7 @@ test.describe('content pages', () => {
 });
 
 test.describe('home', () => {
-  test('shows the updates feed, the rail and the Browse strip', async ({ page }) => {
+  test('shows the updates feed and the rail', async ({ page }) => {
     const calls = recordApiCalls(page);
     await page.goto('/');
     await ready(page);
@@ -87,21 +134,6 @@ test.describe('home', () => {
     await expect(
       page.getByRole('region', { name: 'Recent Uploads' }).getByRole('heading', { level: 2 }),
     ).toHaveText('Recent Uploads');
-
-    // The strip is the only way into these three pages; the masthead does not link them.
-    const browse = page.getByRole('navigation', { name: 'Browse' });
-    await expect(browse.getByRole('link', { name: 'The assessment process' })).toHaveAttribute(
-      'href',
-      '/process',
-    );
-    await expect(browse.getByRole('link', { name: 'Legislation' })).toHaveAttribute(
-      'href',
-      '/legislation',
-    );
-    await expect(browse.getByRole('link', { name: 'Compliance oversight' })).toHaveAttribute(
-      'href',
-      '/compliance-oversight',
-    );
 
     checkBaseline('home', calls);
   });

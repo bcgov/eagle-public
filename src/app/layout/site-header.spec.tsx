@@ -87,13 +87,13 @@ describe('site header', () => {
     expect(links.map((link) => link.getAttribute('href'))).toEqual([
       '/projects',
       '/search',
-      '/contact',
+      '/about',
       adminUrl(),
     ]);
     expect(links.slice(0, 3).map((link) => link.textContent)).toEqual([
       'Map Explorer',
       'Search',
-      'Contact Us',
+      'About',
     ]);
     expect(links[3].textContent).toBe('Log in (opens in new tab)');
     expect(links[3]).toHaveAccessibleName(/^Log in\s*\(opens in new tab\)$/);
@@ -121,12 +121,9 @@ describe('site header', () => {
   });
 
   it('marks the link for the page being viewed', () => {
-    renderHeader('/contact');
+    renderHeader('/about');
 
-    expect(screen.getByRole('link', { name: 'Contact Us' })).toHaveAttribute(
-      'aria-current',
-      'page',
-    );
+    expect(screen.getByRole('link', { name: 'About' })).toHaveAttribute('aria-current', 'page');
     expect(screen.getByRole('link', { name: 'Search' })).not.toHaveAttribute('aria-current');
   });
 
@@ -245,7 +242,7 @@ describe('site header', () => {
       await user.click(toggler());
       expect(toggler()).toHaveAttribute('aria-expanded', 'true');
 
-      await router.navigate('/contact');
+      await router.navigate('/about');
 
       await waitFor(() => expect(toggler()).toHaveAttribute('aria-expanded', 'false'));
     });
