@@ -8,7 +8,11 @@ import { fetchData, getSearchResults, SearchParamObject } from 'app/api/search';
 import { AdvancedFilters } from 'app/components/display-grid/advanced-filters';
 import { ChipRow, type GridChip } from 'app/components/display-grid/chip-row';
 import { DisplayGrid, type SortOption } from 'app/components/display-grid/display-grid';
-import { columnFiltersForPanel, sortStateOf } from 'app/components/display-grid/grid-helpers';
+import {
+  columnFiltersForPanel,
+  optionLabel,
+  sortStateOf,
+} from 'app/components/display-grid/grid-helpers';
 import { GridToolbar } from 'app/components/display-grid/grid-toolbar';
 import { GuidedTour } from 'app/components/display-grid/guided-tour';
 import { toTerms } from 'app/components/display-grid/highlight';
@@ -280,13 +284,10 @@ async function runSearch(request: SearchRequest, signal?: AbortSignal): Promise<
   };
 }
 
-/** Option label for a stored filter value, and the way back from a chip's text to that value. */
+/** Option label for a stored filter value, with its Act where it has one. */
 function labelOfValue(options: ValueOption[], value: string): string {
-  return options.find((option) => option.value === value)?.label ?? value;
-}
-
-function valueOfLabel(options: ValueOption[], label: string): string {
-  return options.find((option) => option.label === label)?.value ?? label;
+  const option = options.find((item) => item.value === value);
+  return option ? optionLabel(option) : value;
 }
 
 /** A Mongo id, which is a database key and never a word the reader asked to see. */
@@ -713,11 +714,11 @@ export function UnifiedSearch() {
     }
     const picks = Array.isArray(value) ? value : [value];
     for (const pick of picks) {
-      chips.push({ id, label, value: labelOfValue(options[id] ?? [], pick) });
+      chips.push({ id, label, value: labelOfValue(options[id] ?? [], pick), raw: pick });
     }
   }
 
-  function removeChip(id: string, value?: string): void {
+  function removeChip(id: string, raw?: string): void {
     if (id === 'keywords') {
       setDraft('');
       setKeyword('');
@@ -728,8 +729,7 @@ export function UnifiedSearch() {
       return;
     }
     const current = filters[id];
-    if (value !== undefined && Array.isArray(current)) {
-      const raw = valueOfLabel(options[id] ?? [], value);
+    if (raw !== undefined && Array.isArray(current)) {
       const next = current.filter((pick) => pick !== raw);
       setFilter(id, next.length > 0 ? next : null);
       return;

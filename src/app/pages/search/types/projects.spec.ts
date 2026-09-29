@@ -158,6 +158,21 @@ describe('projects record type', () => {
     expect(options['CEAAInvolvement']).toEqual([{ value: 'ceaa-1', label: 'Substituted' }]);
   });
 
+  it('keeps a phase both Acts name as two options, each with its Act', () => {
+    const options = projectsConfig.optionsFrom(
+      [
+        { _id: 'pre-2002', name: 'Pre-Application', type: 'projectPhase', legislation: 2002 },
+        { _id: 'pre-2018', name: 'Pre-Application', type: 'projectPhase', legislation: 2018 },
+      ],
+      [],
+    );
+
+    expect(options['currentPhaseName']).toEqual([
+      { value: 'pre-2002', label: 'Pre-Application', legislation: '2002' },
+      { value: 'pre-2018', label: 'Pre-Application', legislation: '2018' },
+    ]);
+  });
+
   it('reads a proponent that arrives populated', () => {
     const proponent = projectsConfig.columns.find((column) => column.key === 'proponent');
 

@@ -7,6 +7,7 @@ import {
   listsQueryOptions,
 } from './api';
 import { loadConfig } from 'app/config/config';
+import { logger } from 'app/config/logging';
 
 /**
  * The reads demi-search serves.
@@ -59,6 +60,7 @@ describe('reads served by demi-search', () => {
   afterEach(() => {
     window.__env = original;
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
   });
 
   describe('getOrgsByCompanyType', () => {
@@ -155,8 +157,52 @@ describe('reads served by demi-search', () => {
 
       const lists = await listsQueryOptions().queryFn();
 
-      expect(requestedUrl()).toBe(`${SEARCH}/search?pageSize=250&dataset=List`);
+      expect(requestedUrl()).toBe(`${SEARCH}/search?pageSize=1000&dataset=List`);
       expect(lists).toEqual(LISTS);
+    });
+
+    it('keeps the terms past the first 250 of a 300-row List', async () => {
+      await setup(SEARCH);
+      const terms = Array.from({ length: 300 }, (_, index) => ({
+        _id: `t${index}`,
+        name: `T${index}`,
+      }));
+      // Answers only as many rows as the request asked for, as demi-search does.
+      fetchMock = vi.fn(async (url: string) => {
+        const pageSize = Number(new URL(url, 'http://host').searchParams.get('pageSize'));
+        return new Response(envelope(terms.slice(0, pageSize), terms.length), { status: 200 });
+      });
+      vi.stubGlobal('fetch', fetchMock);
+
+      const lists = await listsQueryOptions().queryFn();
+
+      expect(lists).toHaveLength(300);
+      expect(lists[299]).toEqual({ _id: 't299', name: 'T299' });
+    });
+
+    it('warns once when the List holds more rows than one page brought back', async () => {
+      await setup(SEARCH);
+      const warn = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
+      respondWith(envelope(LISTS, 1200));
+
+      const lists = await listsQueryOptions().queryFn();
+
+      expect(lists).toEqual(LISTS);
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn).toHaveBeenCalledWith(
+        'List answered 1 of 1200 rows; the rest are not shown',
+        'api',
+      );
+    });
+
+    it('stays quiet when every List row came back', async () => {
+      await setup(SEARCH);
+      const warn = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
+      respondWith(envelope(LISTS));
+
+      await listsQueryOptions().queryFn();
+
+      expect(warn).not.toHaveBeenCalled();
     });
   });
 

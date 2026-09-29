@@ -3,6 +3,7 @@ import {
   CustomMultiSelect,
   type CustomMultiSelectOption,
 } from 'app/components/filters/custom-multi-select';
+import { actHeading, groupByAct, hasActs, optionLabel } from './grid-helpers';
 import type { ValueOption } from './types';
 
 /** Over this many values a checkbox list stops being readable and the typeahead takes over. */
@@ -46,9 +47,9 @@ export function ValuePicker({ label, options, selected, onChange }: ValuePickerP
     picked.length === 0
       ? 'All'
       : picked.length === 1
-        ? picked[0].label
+        ? optionLabel(picked[0])
         : `${picked.length} selected`;
-  const fullList = picked.length ? picked.map((option) => option.label).join(', ') : undefined;
+  const fullList = picked.length ? picked.map(optionLabel).join(', ') : undefined;
 
   useEffect(() => {
     if (!open) return;
@@ -111,8 +112,23 @@ export function ValuePicker({ label, options, selected, onChange }: ValuePickerP
     );
   }
 
+  function checkbox(option: ValueOption) {
+    return (
+      <label key={option.value} className="display-grid__option">
+        <input
+          type="checkbox"
+          checked={selected.includes(option.value)}
+          onChange={() => toggleValue(option.value)}
+        />
+        {option.label}
+      </label>
+    );
+  }
+
   let popover = null;
   if (anchor) {
+    const groups = groupByAct(options);
+    const grouped = hasActs(options);
     const roomBelow = anchor.viewHeight - anchor.below - 16;
     const roomAbove = anchor.above - 16;
     // Opening past the bottom of the viewport is the same clipping in a new place.
@@ -152,25 +168,30 @@ export function ValuePicker({ label, options, selected, onChange }: ValuePickerP
         </div>
         {options.length > TYPEAHEAD_FROM ? (
           <CustomMultiSelect
-            items={options}
+            items={groups.flatMap((group) => group.options)}
             selected={picked}
             bindLabel="label"
+            groupBy={grouped ? 'legislation' : null}
+            groupLabel={grouped ? actHeading : undefined}
             placeholder={`Search ${label.toLowerCase()}`}
             onChange={(next: CustomMultiSelectOption[]) =>
               onChange(next.map((option) => String(option['value'])))
             }
           />
+        ) : grouped ? (
+          groups.map((group) => {
+            const groupId = `${popoverId}-act-${group.legislation}`;
+            return (
+              <div key={group.legislation} role="group" aria-labelledby={groupId}>
+                <p className="display-grid__picker-group" id={groupId}>
+                  {actHeading(group.legislation)}
+                </p>
+                {group.options.map(checkbox)}
+              </div>
+            );
+          })
         ) : (
-          options.map((option) => (
-            <label key={option.value} className="display-grid__option">
-              <input
-                type="checkbox"
-                checked={selected.includes(option.value)}
-                onChange={() => toggleValue(option.value)}
-              />
-              {option.label}
-            </label>
-          ))
+          options.map(checkbox)
         )}
       </div>
     );

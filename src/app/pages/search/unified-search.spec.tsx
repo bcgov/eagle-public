@@ -23,6 +23,11 @@ const DOCUMENTS = [
 const LISTS = [
   { _id: 'l1', name: 'Letter', type: 'doctype' },
   { _id: 'a1', name: 'EAO', type: 'author' },
+  // Both Acts carry a milestone of this name, each under its own id.
+  { _id: 'amend-2002', name: 'Amendment', type: 'label', legislation: 2002 },
+  { _id: 'amend-2018', name: 'Amendment', type: 'label', legislation: 2018 },
+  // A second 2002 row of the same name, which only its id tells apart.
+  { _id: 'amend-2002-b', name: 'Amendment', type: 'label', legislation: 2002 },
 ];
 
 /** An author id in no `List` row, which is what the test backend returns for some documents. */
@@ -338,6 +343,39 @@ describe('UnifiedSearch', () => {
       expect(new URLSearchParams(router.state.location.search).get('nameContains')).toBeNull(),
     );
     expect(screen.getByLabelText('Filter by Name')).toHaveValue('');
+  });
+
+  it('names the Act on a milestone chip and drops only the term whose chip was cleared', async () => {
+    const user = userEvent.setup();
+    const { router } = renderSearch('/search?record=documents&milestone=amend-2002,amend-2018');
+    const newer = await screen.findByRole('button', { name: 'Remove Milestone Amendment (2018)' });
+    expect(
+      screen.getByRole('button', { name: 'Remove Milestone Amendment (2002)' }),
+    ).toBeInTheDocument();
+
+    await user.click(newer);
+
+    await waitFor(() =>
+      expect(new URLSearchParams(router.state.location.search).get('milestone')).toBe('amend-2002'),
+    );
+  });
+
+  it('drops the second of two same-name, same-Act milestones when its chip is cleared', async () => {
+    const user = userEvent.setup();
+    const { router } = renderSearch('/search?record=documents&milestone=amend-2002,amend-2002-b');
+    await waitFor(() =>
+      expect(
+        screen.getAllByRole('button', { name: 'Remove Milestone Amendment (2002)' }),
+      ).toHaveLength(2),
+    );
+
+    await user.click(
+      screen.getAllByRole('button', { name: 'Remove Milestone Amendment (2002)' })[1],
+    );
+
+    await waitFor(() =>
+      expect(new URLSearchParams(router.state.location.search).get('milestone')).toBe('amend-2002'),
+    );
   });
 
   it('clears the name filter along with everything else', async () => {

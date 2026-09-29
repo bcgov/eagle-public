@@ -1,8 +1,9 @@
 /* eslint-disable react-refresh/only-export-components -- the date rule is this panel's, and the
    grid applies the same test before it turns a typed date into a filter. */
 import { useId, useState } from 'react';
+import { actHeading, groupByAct, hasActs, optionLabel } from './grid-helpers';
 import { FILTER_TEXT_MAX, useDebouncedDraft } from './use-debounced-draft';
-import type { AdvancedField, FilterValues } from './types';
+import type { AdvancedField, FilterValues, ValueOption } from './types';
 import './advanced-filters.css';
 
 /** The panel's element id, so the toolbar button can name it in `aria-controls`. */
@@ -26,6 +27,14 @@ export interface AdvancedFiltersProps {
   /** `null` clears the filter. An unparseable date emits nothing at all. */
   onChange: (id: string, value: string | null) => void;
   open: boolean;
+}
+
+function selectOption(option: ValueOption) {
+  return (
+    <option value={option.value} key={option.value}>
+      {optionLabel(option)}
+    </option>
+  );
 }
 
 function asText(value: FilterValues[string] | undefined): string {
@@ -180,6 +189,7 @@ export function AdvancedFilters({ fields, values, onChange, open }: AdvancedFilt
           }
 
           if (field.kind === 'select') {
+            const options = field.options ?? [];
             return (
               <label className="display-grid__panel-field" key={field.id}>
                 <span className="display-grid__panel-label">{field.label}</span>
@@ -189,11 +199,13 @@ export function AdvancedFilters({ fields, values, onChange, open }: AdvancedFilt
                   onChange={(event) => onChange(field.id, event.target.value || null)}
                 >
                   <option value="">All</option>
-                  {(field.options ?? []).map((option) => (
-                    <option value={option.value} key={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
+                  {hasActs(options)
+                    ? groupByAct(options).map((group) => (
+                        <optgroup label={actHeading(group.legislation)} key={group.legislation}>
+                          {group.options.map(selectOption)}
+                        </optgroup>
+                      ))
+                    : options.map(selectOption)}
                 </select>
               </label>
             );

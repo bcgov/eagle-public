@@ -3,8 +3,10 @@ import './chip-row.css';
 export interface GridChip {
   /** Filter id, or `keywords` for the search chip. Handed back to `onRemove`. */
   id: string;
-  /** The one value this chip stands for. Absent for single-value filters. */
+  /** The one value this chip stands for, as shown. Absent for single-value filters. */
   value?: string;
+  /** The stored value behind `value`, handed to `onRemove`, where the two differ. */
+  raw?: string;
   /** What the reader calls the filter: a column name, or `Search`. */
   label: string;
 }
@@ -33,11 +35,11 @@ export function ChipRow({ chips, onRemove, onClearAll }: ChipRowProps) {
       <span className="display-grid__chips-label">Narrowed by</span>
       {chips.map((chip) => (
         <button
-          key={`${chip.id}:${chip.value ?? ''}`}
+          key={`${chip.id}:${chip.raw ?? chip.value ?? ''}`}
           type="button"
           className="display-grid__chip"
           aria-label={removeLabel(chip)}
-          onClick={() => onRemove(chip.id, chip.value)}
+          onClick={() => onRemove(chip.id, chip.raw ?? chip.value)}
         >
           <span aria-hidden="true">
             {chip.value ? (

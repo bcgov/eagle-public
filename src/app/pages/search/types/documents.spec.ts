@@ -148,8 +148,12 @@ describe('documents record type', () => {
       [],
     );
 
-    expect(options['type']).toEqual([{ value: 'doctype-1', label: 'Amendment Package' }]);
-    expect(options['milestone']).toEqual([{ value: 'milestone-1', label: 'Amendment' }]);
+    expect(options['type']).toEqual([
+      { value: 'doctype-1', label: 'Amendment Package', legislation: '2018' },
+    ]);
+    expect(options['milestone']).toEqual([
+      { value: 'milestone-1', label: 'Amendment', legislation: '2002' },
+    ]);
     expect(options['projectPhase']).toEqual([{ value: 'phase-1', label: 'Post decision' }]);
     expect(options['documentAuthorType']).toEqual([{ value: 'author-1', label: 'Proponent' }]);
     expect(options['legislation']).toEqual([

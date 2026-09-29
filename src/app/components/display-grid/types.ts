@@ -4,6 +4,8 @@ export type ColumnFilter = 'text' | 'year' | 'values' | null;
 export interface ValueOption {
   value: string;
   label: string;
+  /** The Act year a `List` term belongs to. Both Acts hold terms with the same name. */
+  legislation?: string;
 }
 export interface GridColumn<Row = unknown> {
   key: string;

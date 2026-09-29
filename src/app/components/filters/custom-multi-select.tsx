@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 
 export type CustomMultiSelectOption = Record<string, any>;
 
@@ -8,6 +8,8 @@ interface CustomMultiSelectProps {
   selected: CustomMultiSelectOption[];
   bindLabel?: string;
   groupBy?: string | null;
+  /** A group's heading from its `groupBy` value, '' included. Without it the value is the heading. */
+  groupLabel?: (name: string) => string;
   placeholder?: string;
   disabled?: boolean;
   onChange: (selected: CustomMultiSelectOption[]) => void;
@@ -20,12 +22,20 @@ function sameOption(item: any, other: any): boolean {
   return item === other;
 }
 
+/** An item's label plus its group, so a search or a chip tells same-name terms apart. */
+function fullLabel(item: CustomMultiSelectOption, bindLabel: string, groupBy: string | null) {
+  const label: string = item[bindLabel] || '';
+  const group = groupBy ? item[groupBy] : '';
+  return group ? `${label} (${group})` : label;
+}
+
 export function CustomMultiSelect({
   id = '',
   items,
   selected,
   bindLabel = 'label',
   groupBy = null,
+  groupLabel,
   placeholder = 'Select items',
   disabled = false,
   onChange,
@@ -34,6 +44,7 @@ export function CustomMultiSelect({
   const [searchTerm, setSearchTerm] = useState('');
   const [focusedIndex, setFocusedIndex] = useState(-1);
   const hostRef = useRef<HTMLDivElement>(null);
+  const groupIdBase = useId();
 
   useEffect(() => {
     if (!isOpen) return;
@@ -52,8 +63,8 @@ export function CustomMultiSelect({
   const filteredItems = useMemo(() => {
     const term = searchTerm.toLowerCase();
     if (!term) return items;
-    return items.filter((item) => (item[bindLabel] || '').toLowerCase().includes(term));
-  }, [items, searchTerm, bindLabel]);
+    return items.filter((item) => fullLabel(item, bindLabel, groupBy).toLowerCase().includes(term));
+  }, [items, searchTerm, bindLabel, groupBy]);
 
   const groupedItems = useMemo(() => {
     if (!groupBy) {
@@ -155,7 +166,7 @@ export function CustomMultiSelect({
                     event.stopPropagation();
                     onChange(selected.filter((entry) => !sameOption(item, entry)));
                   }}
-                  aria-label={`Remove ${getLabel(item)}`}
+                  aria-label={`Remove ${fullLabel(item, bindLabel, groupBy)}`}
                 >
                   ×
                 </button>
@@ -230,15 +241,24 @@ export function CustomMultiSelect({
               <div className="custom-multi-select__no-results">No items found</div>
             )}
 
-            {groupedItems.map((group) =>
-              group.items.length === 0 ? null : (
-                <div key={group.name}>
-                  {groupBy && group.name && (
-                    <div className="custom-multi-select__group-header">{group.name}</div>
+            {groupedItems.map((group) => {
+              if (group.items.length === 0) return null;
+              const heading = groupBy ? (groupLabel ? groupLabel(group.name) : group.name) : '';
+              const headingId = `${groupIdBase}-group-${String(group.name).replace(/[^\w-]/g, '_')}`;
+              return (
+                <div
+                  key={group.name}
+                  role={heading ? 'group' : undefined}
+                  aria-labelledby={heading ? headingId : undefined}
+                >
+                  {heading && (
+                    <div className="custom-multi-select__group-header" id={headingId}>
+                      {heading}
+                    </div>
                   )}
                   {group.items.map((item) => (
                     <div
-                      key={item['_id'] ?? item['code'] ?? getLabel(item)}
+                      key={item['_id'] ?? item['code'] ?? item['value'] ?? getLabel(item)}
                       className={`custom-multi-select__option${
                         isSelected(item) ? ' custom-multi-select__option--selected' : ''
                       }${flatItems[focusedIndex] === item ? ' custom-multi-select__option--focused' : ''}`}
@@ -279,8 +299,8 @@ export function CustomMultiSelect({
                     </div>
                   ))}
                 </div>
-              ),
-            )}
+              );
+            })}
           </div>
         </div>
       )}
