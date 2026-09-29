@@ -148,35 +148,37 @@
   inset: -4px;
 }
 
-/* The image is a pseudo-element so hover and selection can scale it without scaling the label. */
+/* A pseudo-element, so it scales without the label. `--pin-scale` is set on the marker wrapper so
+   the engagement glow, which hangs off the wrapper, scales with it. */
 .map-pin::before {
   content: '';
   position: absolute;
   inset: 0;
   background: url('/assets/images/marker-icon-yellow.svg') center / contain no-repeat;
   transform-origin: bottom center;
+  transform: scale(var(--pin-scale, 1));
 }
 
-.map-pin.is-hovered::before {
-  transform: scale(1.1);
+.maplibregl-marker:has(.map-pin.is-hovered) {
+  --pin-scale: 1.1;
 }
 
-.map-pin.is-selected::before {
-  transform: scale(1.33);
+.maplibregl-marker:has(.map-pin.is-selected) {
+  --pin-scale: 1.33;
 }
 
-.map-pin.is-selected.is-hovered::before {
-  transform: scale(1.45);
+.maplibregl-marker:has(.map-pin.is-selected.is-hovered) {
+  --pin-scale: 1.45;
 }
 
 /* Touch leaves `:hover` stuck on the last thing tapped, so the pointer rules are hover-only. */
 @media (hover: hover) {
-  .map-pin:hover::before {
-    transform: scale(1.1);
+  .maplibregl-marker:has(.map-pin:hover) {
+    --pin-scale: 1.1;
   }
 
-  .map-pin.is-selected:hover::before {
-    transform: scale(1.45);
+  .maplibregl-marker:has(.map-pin.is-selected:hover) {
+    --pin-scale: 1.45;
   }
 
   .map-pin:hover .map-pin__label {
@@ -187,6 +189,31 @@
 
   .map-cluster:hover {
     transform: scale(1.1);
+  }
+}
+
+/* Without `:has()` the wrapper never gets `--pin-scale`: scale the pin itself. The glow stays put. */
+@supports not selector(:has(*)) {
+  .map-pin.is-hovered::before {
+    transform: scale(1.1);
+  }
+
+  .map-pin.is-selected::before {
+    transform: scale(1.33);
+  }
+
+  .map-pin.is-selected.is-hovered::before {
+    transform: scale(1.45);
+  }
+
+  @media (hover: hover) {
+    .map-pin:hover::before {
+      transform: scale(1.1);
+    }
+
+    .map-pin.is-selected:hover::before {
+      transform: scale(1.45);
+    }
   }
 }
 
@@ -254,6 +281,124 @@
   font-size: 1rem;
 }
 
+/* --- Engagement ------------------------------------------------------------ */
+
+/* Pins and clusters alike: open = glow plus ripple; upcoming = fainter glow plus dashed hairline,
+   so the states differ without colour or motion. */
+.maplibregl-marker {
+  /* Outside BCDS palette by request: engaged map marker glow. #22c55e is lighter and more
+     saturated than the fill, so the glow reads as a halo around it rather than more of the pin. */
+  --map-engaged-glow: #22c55e;
+  /* Outside BCDS palette by request: engaged map marker fill. White count text on it is 2.92:1,
+     below 4.5:1, kept white by request (dark text would be 4.72:1). The pin is 2.2:1 on the
+     light grey basemap: below 3:1 but clearer than the yellow pin (1.5:1); the glow, the
+     hairline and the label carry the state. */
+  --map-engaged-fill: #4daa57;
+}
+
+.maplibregl-marker:has(.map-pin.is-open)::before,
+.maplibregl-marker:has(.map-pin.is-open)::after,
+.maplibregl-marker:has(.map-pin.is-upcoming)::before,
+.maplibregl-marker:has(.map-pin.is-upcoming)::after {
+  /* On the wrapper, not the button, so the glow adds no hit area. The pin head sits 14.7 of the
+     SVG's 42 units down; the translate keeps it there as `--pin-scale` grows from the 36px tip. */
+  --glow-size: 48px;
+  --pin-head-y: 12.6px;
+
+  content: '';
+  position: absolute;
+  top: calc(var(--pin-head-y) - var(--glow-size) / 2);
+  left: calc(50% - var(--glow-size) / 2);
+  z-index: -1;
+  box-sizing: border-box;
+  width: var(--glow-size);
+  height: var(--glow-size);
+  border-radius: 50%;
+  pointer-events: none;
+  scale: var(--pin-scale, 1);
+  translate: 0 calc((1 - var(--pin-scale, 1)) * (36px - var(--pin-head-y)));
+}
+
+/* A wide, faint halo: solid to 55% of the radius (just past the pin head), fading to 24px. */
+.maplibregl-marker:has(.map-pin.is-open)::before,
+.maplibregl-marker:has(.map-pin.is-open)::after,
+.maplibregl-marker:has(.map-pin.is-upcoming)::before {
+  background: radial-gradient(closest-side, var(--map-engaged-glow) 55%, transparent);
+}
+
+.maplibregl-marker:has(.map-pin.is-open)::before {
+  opacity: 0.35;
+}
+
+/* The ripple only exists when motion is allowed; see the Motion section. */
+.maplibregl-marker:has(.map-pin.is-open)::after {
+  display: none;
+}
+
+.maplibregl-marker:has(.map-pin.is-upcoming)::before {
+  opacity: 0.15;
+}
+
+/* The success token, not the fill green: 4.1:1 over the glow on white, where the fill is 2.6:1. */
+.maplibregl-marker:has(.map-pin.is-upcoming)::after {
+  --glow-size: 28px;
+
+  border: var(--layout-border-width-small) dashed var(--icons-color-success);
+}
+
+/* The pin art as a mask, so the fill colour paints it. */
+.map-pin.is-open::before,
+.map-pin.is-upcoming::before {
+  background: var(--map-engaged-fill);
+  -webkit-mask-image: url('/assets/images/marker-icon-yellow.svg');
+  -webkit-mask-size: contain;
+  -webkit-mask-position: center;
+  -webkit-mask-repeat: no-repeat;
+  mask-image: url('/assets/images/marker-icon-yellow.svg');
+  mask-size: contain;
+  mask-position: center;
+  mask-repeat: no-repeat;
+}
+
+/* Wrap rather than cut off the status suffix; `max-content` stops the absolutely placed label
+   shrinking to one word per line. */
+.map-pin.is-open .map-pin__label,
+.map-pin.is-upcoming .map-pin__label {
+  width: max-content;
+  white-space: normal;
+}
+
+/* An outer box-shadow never paints under its own box, so the glow leaves the fill and count alone. */
+.map-cluster[data-engagement] {
+  border-color: color-mix(in srgb, var(--map-engaged-fill) 60%, transparent);
+  background-color: var(--map-engaged-fill);
+}
+
+.map-cluster[data-engagement]::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  box-shadow: 0 0 8px 3px var(--map-engaged-glow);
+  pointer-events: none;
+}
+
+.map-cluster[data-size='l'][data-engagement]::before {
+  inset: -8px;
+}
+
+.map-cluster[data-engagement='open']::before {
+  opacity: 0.5;
+}
+
+/* Alpha on the shadow, not `opacity`, so the hairline stays full strength. Success token on the
+   glow over white: 3.78:1. An outline, so the `::after` tap target and the glow geometry are untouched. */
+.map-cluster[data-engagement='upcoming']::before {
+  box-shadow: 0 0 8px 3px color-mix(in srgb, var(--map-engaged-glow) 25%, transparent);
+  outline: var(--layout-border-width-small) dashed var(--icons-color-success);
+  outline-offset: 2px;
+}
+
 /* --- Motion ---------------------------------------------------------------- */
 
 @media (prefers-reduced-motion: no-preference) {
@@ -276,6 +421,62 @@
 
   @keyframes marker-in {
     from {
+      opacity: 0;
+    }
+  }
+
+  /* The glow follows the pin's hover and selection scale at the pin's own speed. */
+  .maplibregl-marker:has(.map-pin.is-open)::before,
+  .maplibregl-marker:has(.map-pin.is-open)::after,
+  .maplibregl-marker:has(.map-pin.is-upcoming)::before,
+  .maplibregl-marker:has(.map-pin.is-upcoming)::after {
+    transition:
+      scale 0.15s ease,
+      translate 0.15s ease;
+  }
+
+  /* Each cycle ends by holding at zero opacity, so the restart is never seen. */
+  .maplibregl-marker:has(.map-pin.is-open)::after {
+    display: block;
+    animation: engagement-ripple 2.4s cubic-bezier(0.25, 0.6, 0.35, 1) infinite;
+  }
+
+  /* Clusters sit close together at low zoom, so their ripple travels less far. */
+  .map-cluster[data-engagement='open']::before {
+    animation: engagement-ripple-cluster 2.4s cubic-bezier(0.25, 0.6, 0.35, 1) infinite;
+  }
+
+  /* `transform` composes with the `scale`/`translate` the pin state sets, so both apply. */
+  @keyframes engagement-ripple {
+    0% {
+      transform: scale(1);
+      opacity: 0;
+    }
+
+    15% {
+      opacity: 0.45;
+    }
+
+    75%,
+    100% {
+      transform: scale(1.8);
+      opacity: 0;
+    }
+  }
+
+  @keyframes engagement-ripple-cluster {
+    0% {
+      transform: scale(1);
+      opacity: 0;
+    }
+
+    15% {
+      opacity: 0.6;
+    }
+
+    75%,
+    100% {
+      transform: scale(1.3);
       opacity: 0;
     }
   }

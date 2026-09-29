@@ -6,6 +6,7 @@ import { fakeMap, mapProps } from './maplibre-test-stub';
 import { Projects } from './projects';
 import { filtersToParams, parseFilters } from './filter-state';
 import { projectMatchesFilters } from './project-filter';
+import { logger } from 'app/config/logging';
 import {
   baseLayerName,
   LIST_PAGE_SIZE,
@@ -55,6 +56,13 @@ const LISTS = [
   { _id: 'ph2', type: 'projectPhase', name: 'Pre-Application', legislation: '2018' },
 ];
 
+// Far enough from today that the live clock never moves a period between states.
+const OPEN_DATES = { dateStarted: '2020-01-01T12:00:00Z', dateCompleted: '2099-01-01T12:00:00Z' };
+const UPCOMING_DATES = {
+  dateStarted: '2098-01-01T12:00:00Z',
+  dateCompleted: '2098-03-01T12:00:00Z',
+};
+
 /** Two of the nine EAO region polygons, enough to assert on the layer filter. */
 const REGION_SHAPES = {
   type: 'FeatureCollection',
@@ -96,6 +104,7 @@ const REGION_SHAPES = {
 
 let requests: string[];
 let projectFixtures: typeof PROJECTS;
+/** Comment period answers by `and[status]` (`open`, `upcoming`); an unset one answers empty. */
 let commentPeriodResponders: Map<string, () => Promise<Response>>;
 
 function jsonResponse(body: unknown) {
@@ -136,8 +145,8 @@ function stubFetch() {
         return jsonResponse(REGION_SHAPES);
       }
       if (url.includes('dataset=CommentPeriod')) {
-        const projId = new URL(url, 'http://localhost').searchParams.get('and[project]') ?? '';
-        const responder = commentPeriodResponders.get(projId);
+        const status = new URL(url, 'http://localhost').searchParams.get('and[status]') ?? '';
+        const responder = commentPeriodResponders.get(status);
         return responder ? responder() : jsonResponse(periodEnvelope([]));
       }
       return jsonResponse([]);
@@ -806,24 +815,39 @@ describe('projects map on a phone', () => {
 });
 
 describe('project detail popup', () => {
-  it('fetches the comment period for the selected pin', async () => {
-    commentPeriodResponders.set('p1', async () =>
-      jsonResponse(
-        periodEnvelope([{ _id: 'cp1', dateStarted: '2026-01-01', dateCompleted: '2099-01-01' }]),
-      ),
+  it('shows the open comment period of the selected pin above its card', async () => {
+    commentPeriodResponders.set('open', async () =>
+      jsonResponse(periodEnvelope([{ _id: 'cp1', project: 'p1', ...OPEN_DATES }])),
     );
     renderProjects();
     await screen.findByText('Application Review');
+    await waitFor(() => expect(pinFor('p1')).toHaveAttribute('data-engagement', 'open'));
 
     await userEvent.click(pinFor('p1'));
 
     const popup = await screen.findByTestId('map-popup');
-    expect(await within(popup).findByText('Open for comment')).toBeInTheDocument();
+    expect(within(popup).getByRole('region', { name: 'Open for public comment' })).toBeVisible();
+    expect(within(popup).getByRole('link', { name: 'Share your thoughts' })).toHaveAttribute(
+      'href',
+      '/p/p1/cp/cp1/details',
+    );
+  });
+
+  it('draws no banner for a pin with no open or upcoming period', async () => {
+    commentPeriodResponders.set('open', async () =>
+      jsonResponse(periodEnvelope([{ _id: 'cp1', project: 'p1', ...OPEN_DATES }])),
+    );
+    renderProjects();
+    await screen.findByText('Application Review');
+    await waitFor(() => expect(pinFor('p1')).toHaveAttribute('data-engagement', 'open'));
+
+    await userEvent.click(pinFor('p2'));
+
+    const popup = await screen.findByTestId('map-popup');
     expect(
-      requests.some(
-        (url) => url.includes('dataset=CommentPeriod&') && url.includes('and[project]=p1'),
-      ),
-    ).toBe(true);
+      within(popup).getByRole('heading', { name: 'Fir Transmission Line' }),
+    ).toBeInTheDocument();
+    expect(within(popup).queryByRole('region')).toBeNull();
   });
 
   it('expands the clamped description', async () => {
@@ -849,41 +873,112 @@ describe('project detail popup', () => {
       'true',
     );
   });
+});
 
-  it('ignores the in-flight comment period once another pin is selected', async () => {
-    let releaseFirst: (() => void) | undefined;
-    commentPeriodResponders.set('p1', async () => {
-      await new Promise<void>((resolve) => {
-        releaseFirst = resolve;
-      });
-      return jsonResponse(
-        periodEnvelope([{ _id: 'cp1', dateStarted: '2020-01-01', dateCompleted: '2020-06-01' }]),
-      );
-    });
-    commentPeriodResponders.set('p2', async () =>
-      jsonResponse(
-        periodEnvelope([{ _id: 'cp2', dateStarted: '2026-01-01', dateCompleted: '2099-01-01' }]),
-      ),
+describe('engagement markers', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it('marks open and upcoming pins, and says the state in the pin label', async () => {
+    commentPeriodResponders.set('open', async () =>
+      jsonResponse(periodEnvelope([{ _id: 'cp1', project: 'p1', ...OPEN_DATES }])),
     );
-
+    commentPeriodResponders.set('upcoming', async () =>
+      jsonResponse(periodEnvelope([{ _id: 'cp2', project: 'p2', ...UPCOMING_DATES }])),
+    );
     renderProjects();
     await screen.findByText('Application Review');
 
+    await waitFor(() => expect(pinFor('p2')).toHaveAttribute('data-engagement', 'upcoming'));
+    expect(pinFor('p2')).toHaveClass('is-upcoming');
+    expect(pinFor('p2')).toHaveTextContent(
+      'Fir Transmission Line, public comment period coming soon',
+    );
+    expect(pinFor('p1')).toHaveAttribute('data-engagement', 'open');
+    expect(pinFor('p1')).toHaveClass('is-open');
+    expect(pinFor('p1')).toHaveTextContent('Cedar Quarry, open for public comment');
+  });
+
+  it('marks a cluster by the most urgent state among its members', async () => {
+    fakeMap.setFeatures([
+      {
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [-125.5, 55.5] },
+        properties: {
+          cluster: true,
+          cluster_id: 7,
+          point_count: 12,
+          openCount: 1,
+          upcomingCount: 4,
+        },
+      },
+      {
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [-121.5, 50.5] },
+        properties: {
+          cluster: true,
+          cluster_id: 8,
+          point_count: 5,
+          openCount: 0,
+          upcomingCount: 2,
+        },
+      },
+      {
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [-118.5, 49.5] },
+        properties: {
+          cluster: true,
+          cluster_id: 9,
+          point_count: 3,
+          openCount: 0,
+          upcomingCount: 0,
+        },
+      },
+    ]);
+    renderProjects();
+    await screen.findByText('Application Review');
+
+    const clusters = await screen.findAllByTestId('map-cluster');
+    const byCount = (count: string) => clusters.find((item) => item.textContent === count);
+    expect(byCount('12')).toHaveAttribute('data-engagement', 'open');
+    expect(byCount('5')).toHaveAttribute('data-engagement', 'upcoming');
+    expect(byCount('3')).not.toHaveAttribute('data-engagement');
+  });
+
+  it('keeps the upcoming markers when the open read fails, and logs the failure', async () => {
+    const error = vi.spyOn(logger, 'error').mockImplementation(() => undefined);
+    commentPeriodResponders.set('open', async () => new Response('', { status: 500 }));
+    commentPeriodResponders.set('upcoming', async () =>
+      jsonResponse(periodEnvelope([{ _id: 'cp2', project: 'p2', ...UPCOMING_DATES }])),
+    );
+    renderProjects();
+    await screen.findByText('Application Review');
+
+    await waitFor(() => expect(pinFor('p2')).toHaveAttribute('data-engagement', 'upcoming'));
+    expect(pinFor('p1')).not.toHaveAttribute('data-engagement');
+    expect(error).toHaveBeenCalledWith(
+      'Error loading comment periods',
+      'Projects',
+      expect.anything(),
+    );
+  });
+
+  it('shows the banner inside the expanded list card on a phone', async () => {
+    stubViewport(false);
+    commentPeriodResponders.set('open', async () =>
+      jsonResponse(periodEnvelope([{ _id: 'cp1', project: 'p1', ...OPEN_DATES }])),
+    );
+    renderProjects();
+    await screen.findByText('Application Review');
+    await waitFor(() => expect(pinFor('p1')).toHaveAttribute('data-engagement', 'open'));
+
     await userEvent.click(pinFor('p1'));
-    await userEvent.click(pinFor('p2'));
 
-    const popup = await screen.findByTestId('map-popup');
-    expect(
-      within(popup).getByRole('heading', { name: 'Fir Transmission Line' }),
-    ).toBeInTheDocument();
-    expect(await within(popup).findByText('Open for comment')).toBeInTheDocument();
-
-    // The first project's closed period lands late; it must not overwrite the second project's chip.
-    await act(async () => {
-      releaseFirst?.();
-      await Promise.resolve();
-    });
-    expect(within(popup).getByText('Open for comment')).toBeInTheDocument();
+    const body = bodyOf(cardFor('Cedar Quarry'));
+    expect(within(body).getByRole('region', { name: 'Open for public comment' })).toBeVisible();
+    expect(within(body).getByRole('link', { name: 'Share your thoughts' })).toHaveAttribute(
+      'href',
+      '/p/p1/cp/cp1/details',
+    );
   });
 });
 

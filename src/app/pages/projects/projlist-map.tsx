@@ -6,6 +6,7 @@ import type { MapLayerMouseEvent, MapRef } from '@vis.gl/react-maplibre';
 import type { FilterSpecification, GeoJSONSource, MapGeoJSONFeature } from 'maplibre-gl';
 import type { FeatureCollection, Point } from 'geojson';
 import type { Project } from 'app/models/project';
+import { ENGAGEMENT_LABEL, type Engagement, type ProjectEngagement } from 'app/api/commentperiod';
 import { track } from 'app/analytics/analytics';
 import { logger } from 'app/config/logging';
 import { mapBounds, regionsVisible } from 'app/state/map-ui';
@@ -35,6 +36,8 @@ interface ProjlistMapProps {
   regionNames: string[];
   /** Mobile shows the selected project in the page's bottom sheet, so the map renders no card. */
   mobile: boolean;
+  /** Open or upcoming comment period per project id; undefined while loading, drawn as no state. */
+  engagementById: ReadonlyMap<string, ProjectEngagement> | undefined;
 }
 
 const CLUSTER_MAX_ZOOM = 9;
@@ -47,6 +50,12 @@ const REGION_COLOUR = '#003366';
 const TIP_OFFSET = 12;
 /** How long a tapped region keeps its name on screen. */
 const TIP_LINGER_MS = 1500;
+
+/** Clustering drops member properties, so each cluster counts its open and upcoming members. */
+const CLUSTER_PROPERTIES = {
+  openCount: ['+', ['case', ['==', ['get', 'engagement'], 'open'], 1, 0]],
+  upcomingCount: ['+', ['case', ['==', ['get', 'engagement'], 'upcoming'], 1, 0]],
+};
 
 interface RegionHover {
   name: string;
@@ -63,6 +72,7 @@ interface MapFeature {
   count: number;
   id: string;
   name: string;
+  engagement: Engagement | undefined;
 }
 
 /** Polygon rings and MultiPolygon members both bottom out in `[lng, lat]`, so recurse to the pairs. */
@@ -91,6 +101,17 @@ function regionsBbox(shapes: FeatureCollection, names: string[]): Bbox | null {
   return west === Infinity ? null : [west, south, east, north];
 }
 
+/** A pin carries its own state; a cluster carries its members' counts from `CLUSTER_PROPERTIES`. */
+function featureEngagement(properties: Record<string, unknown>): Engagement | undefined {
+  if (!properties['cluster']) {
+    const own = properties['engagement'];
+    return own === 'open' || own === 'upcoming' ? own : undefined;
+  }
+  if (Number(properties['openCount']) > 0) return 'open';
+  if (Number(properties['upcomingCount']) > 0) return 'upcoming';
+  return undefined;
+}
+
 function clusterSize(count: number): string {
   if (count < 10) return 's';
   if (count < 100) return 'm';
@@ -106,6 +127,7 @@ export function ProjlistMap({
   onHover,
   regionNames,
   mobile,
+  engagementById,
 }: ProjlistMapProps) {
   const mapRef = useRef<MapRef>(null);
   const [loaded, setLoaded] = useState(false);
@@ -132,16 +154,22 @@ export function ProjlistMap({
 
   const byId = useMemo(() => new Map(valid.map((project) => [project._id, project])), [valid]);
 
-  const fc = useMemo<FeatureCollection<Point, { id: string; name: string }>>(
+  const fc = useMemo<
+    FeatureCollection<Point, { id: string; name: string; engagement: Engagement | undefined }>
+  >(
     () => ({
       type: 'FeatureCollection',
       features: valid.map((project) => ({
         type: 'Feature',
         geometry: { type: 'Point', coordinates: [project.centroid[0], project.centroid[1]] },
-        properties: { id: project._id, name: project.name },
+        properties: {
+          id: project._id,
+          name: project.name,
+          engagement: engagementById?.get(project._id)?.state,
+        },
       })),
     }),
-    [valid],
+    [valid, engagementById],
   );
 
   const bbox = useMemo<Bbox | null>(() => {
@@ -236,6 +264,7 @@ export function ProjlistMap({
         count: clusterId === null ? 1 : (properties['point_count'] as number),
         id,
         name: clusterId === null ? String(properties['name'] ?? '') : '',
+        engagement: featureEngagement(properties),
       });
     }
 
@@ -243,7 +272,9 @@ export function ProjlistMap({
     const signature = next
       .map(
         (feature) =>
-          `${feature.key}@${feature.lng.toFixed(4)},${feature.lat.toFixed(4)}x${feature.count}`,
+          `${feature.key}@${feature.lng.toFixed(4)},${feature.lat.toFixed(4)}x${feature.count}${
+            feature.engagement ?? ''
+          }`,
       )
       .join('|');
     if (signature === signatureRef.current) return;
@@ -412,6 +443,7 @@ export function ProjlistMap({
           type="geojson"
           data={fc}
           cluster
+          clusterProperties={CLUSTER_PROPERTIES}
           clusterRadius={60}
           clusterMaxZoom={CLUSTER_MAX_ZOOM}
         >
@@ -435,9 +467,10 @@ export function ProjlistMap({
                 type="button"
                 className={`map-pin${feature.id === hoveredId ? ' is-hovered' : ''}${
                   feature.id === selectedId ? ' is-selected' : ''
-                }`}
+                }${feature.engagement ? ` is-${feature.engagement}` : ''}`}
                 data-testid="map-marker"
                 data-project-id={feature.id}
+                data-engagement={feature.engagement}
                 tabIndex={-1}
                 aria-hidden="true"
                 onClick={() => selectPin(feature)}
@@ -445,7 +478,11 @@ export function ProjlistMap({
                 onMouseEnter={mobile ? undefined : () => onHover(feature.id)}
                 onMouseLeave={mobile ? undefined : () => onHover(null)}
               >
-                <span className="map-pin__label">{feature.name}</span>
+                <span className="map-pin__label">
+                  {feature.name}
+                  {/* Said in the label too, so the state is never carried by colour alone. */}
+                  {feature.engagement && `, ${ENGAGEMENT_LABEL[feature.engagement]}`}
+                </span>
               </button>
             </Marker>
           ) : (
@@ -460,6 +497,7 @@ export function ProjlistMap({
                 className="map-cluster"
                 data-testid="map-cluster"
                 data-size={clusterSize(feature.count)}
+                data-engagement={feature.engagement}
                 tabIndex={-1}
                 aria-hidden="true"
                 onClick={() => void expandCluster(feature)}
@@ -493,7 +531,11 @@ export function ProjlistMap({
           role="dialog"
           aria-label={cardProject.name}
         >
-          <ProjDetailPopup project={cardProject} onClose={() => onSelect(null)} />
+          <ProjDetailPopup
+            project={cardProject}
+            engagement={engagementById?.get(cardProject._id)}
+            onClose={() => onSelect(null)}
+          />
         </div>
       )}
     </div>

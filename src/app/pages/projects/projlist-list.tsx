@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Project } from 'app/models/project';
+import type { ProjectEngagement } from 'app/api/commentperiod';
 import { LIST_PAGE_SIZE, sheetState, snapSheet, type SheetState } from 'app/state/map-ui';
 import { useStore } from 'app/state/store';
 import { ProjDetailPopup } from './proj-detail-popup';
@@ -14,6 +15,8 @@ interface ProjlistListProps {
   onSelect: (project: Project) => void;
   onHover: (id: string | null) => void;
   mobile: boolean;
+  /** Open or upcoming comment period per project id; undefined while loading. */
+  engagementById: ReadonlyMap<string, ProjectEngagement> | undefined;
 }
 
 const NEXT_SHEET_STATE = { peek: 'half', half: 'full', full: 'peek' } as const;
@@ -30,6 +33,7 @@ export function ProjlistList({
   onSelect,
   onHover,
   mobile,
+  engagementById,
 }: ProjlistListProps) {
   const [numToLoad, setNumToLoad] = useState(LIST_PAGE_SIZE);
   // The body that just lost the selection stays mounted until its row has shrunk, so closing animates too.
@@ -237,7 +241,11 @@ export function ProjlistList({
                   >
                     <div>
                       {(open || closingId === item._id) && (
-                        <ProjDetailPopup project={item} variant="inline" />
+                        <ProjDetailPopup
+                          project={item}
+                          engagement={engagementById?.get(item._id)}
+                          variant="inline"
+                        />
                       )}
                     </div>
                   </div>

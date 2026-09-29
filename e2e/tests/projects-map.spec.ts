@@ -125,6 +125,31 @@ test('clicking a list card selects it and opens the project card', async ({ page
   await expect(page.locator(POPUP)).toHaveCount(1);
 });
 
+test('clusters carry the open state their members hold', async ({ page }) => {
+  // Every project gets an open period, so maplibre's cluster counters must mark every cluster open.
+  const projects = waitForSearch(page, 'Project');
+  await page.route(
+    (url) => url.pathname.endsWith('/search') && url.searchParams.get('and[status]') === 'open',
+    async (route) => {
+      const rows = ((await projects).searchResults as { _id: string }[]).map((project) => ({
+        _id: `cp-${project._id}`,
+        project: project._id,
+        dateStarted: '2020-01-01T12:00:00Z',
+        dateCompleted: '2099-01-01T12:00:00Z',
+      }));
+      await route.fulfill({
+        json: [{ searchResults: rows, meta: [{ searchResultsTotal: rows.length }] }],
+      });
+    },
+  );
+  await page.goto('/projects');
+
+  await expect(page.locator(`${CLUSTERS}[data-engagement="open"]`).first()).toBeVisible({
+    timeout: 60_000,
+  });
+  await expect(page.locator(`${CLUSTERS}:not([data-engagement="open"])`)).toHaveCount(0);
+});
+
 test('the Layers menu switches the base map tiles', async ({ page }) => {
   await openMap(page);
 

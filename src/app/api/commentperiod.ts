@@ -1,5 +1,6 @@
 import * as api from './api';
-import { CommentPeriod } from 'app/models/commentperiod';
+import { logger } from 'app/config/logging';
+import { CommentPeriod, projectIdOf } from 'app/models/commentperiod';
 
 // statuses / query param options
 const NOT_STARTED = 'NS';
@@ -46,6 +47,45 @@ export interface OpenPeriods {
   closedCount: number | null;
 }
 
+/** A project's comment-period state on the projects map. */
+export type Engagement = 'open' | 'upcoming';
+
+/** Mid-sentence wording of each state; capitalize the first letter to lead with it. */
+export const ENGAGEMENT_LABEL: Record<Engagement, string> = {
+  open: 'open for public comment',
+  upcoming: 'public comment period coming soon',
+};
+
+interface PeriodSearchPage {
+  searchResults?: unknown[];
+  closedCount?: unknown;
+}
+
+/** demi-search 400s above 100 rows for an anonymous request, and public visitors are anonymous. */
+const ANONYMOUS_PAGE_SIZE_CAP = 100;
+
+/** One page of every project's comment periods in the given state, as `and[status]` reads it. */
+async function searchPeriodsByStatus(status: Engagement): Promise<PeriodSearchPage | undefined> {
+  const envelope = (await api.searchKeywords(
+    '',
+    'CommentPeriod',
+    [],
+    1,
+    ANONYMOUS_PAGE_SIZE_CAP,
+    '',
+    null,
+    { status },
+  )) as unknown as PeriodSearchPage[];
+  const page = envelope?.[0];
+  if ((page?.searchResults?.length ?? 0) >= ANONYMOUS_PAGE_SIZE_CAP) {
+    logger.warn(
+      `${status} comment periods filled one page of ${ANONYMOUS_PAGE_SIZE_CAP}; the rest are not shown`,
+      'commentperiod',
+    );
+  }
+  return page;
+}
+
 /** Every comment period open now, across all projects, soonest to close first. */
 export function openCommentPeriodsQueryOptions() {
   return {
@@ -53,17 +93,66 @@ export function openCommentPeriodsQueryOptions() {
     // The rail shows its own error in place; retrying only holds the skeleton up.
     retry: false,
     queryFn: async (): Promise<OpenPeriods> => {
-      const envelope = (await api.searchKeywords('', 'CommentPeriod', [], null, null, '', null, {
-        status: 'open',
-      })) as unknown as { searchResults?: unknown[]; closedCount?: unknown }[];
-      const answer = envelope?.[0];
+      const answer = await searchPeriodsByStatus('open');
       return {
-        // The dates decide "open" here too, so a cached answer never shows a period that has closed.
+        // Drops rows whose dates disagree with the server's status at fetch time.
         periods: (answer?.searchResults ?? []).map((row) => new CommentPeriod(row)).filter(isOpen),
         closedCount: typeof answer?.closedCount === 'number' ? answer.closedCount : null,
       };
     },
   };
+}
+
+/** Every comment period not started yet, across all projects. */
+export function upcomingCommentPeriodsQueryOptions() {
+  return {
+    queryKey: ['upcomingCommentPeriods'],
+    retry: false,
+    queryFn: async (): Promise<CommentPeriod[]> =>
+      // Checked at fetch time only; `engagementPeriodsByProject` re-reads the dates when it runs.
+      ((await searchPeriodsByStatus('upcoming'))?.searchResults ?? [])
+        .map((row) => new CommentPeriod(row))
+        .filter(isNotStarted),
+  };
+}
+
+/** A project's open or upcoming comment period, with the state it is in. */
+export interface ProjectEngagement {
+  state: Engagement;
+  period: CommentPeriod;
+}
+
+const ENGAGEMENT_OF: Partial<Record<CommentPeriod['bannerState'], Engagement>> = {
+  Open: 'open',
+  Upcoming: 'upcoming',
+};
+
+/** Open beats upcoming; then the open period closing first, or the upcoming one starting first. */
+function outranks(next: ProjectEngagement, held: ProjectEngagement): boolean {
+  if (next.state !== held.state) return next.state === 'open';
+  const date = next.state === 'open' ? 'dateCompleted' : 'dateStarted';
+  const diff = next.period[date].getTime() - held.period[date].getTime();
+  return diff < 0 || (diff === 0 && next.period._id < held.period._id);
+}
+
+/**
+ * Project id to its engagement. The state comes from each period's dates as of this call, not the
+ * list it was fetched in, so a cached period that has since opened or closed is read as it is now.
+ */
+export function engagementPeriodsByProject(
+  open: CommentPeriod[],
+  upcoming: CommentPeriod[],
+): Map<string, ProjectEngagement> {
+  const byId = new Map<string, ProjectEngagement>();
+  for (const period of [...open, ...upcoming]) {
+    const state = ENGAGEMENT_OF[period.bannerState];
+    const id = projectIdOf(period);
+    if (!state || !id) continue;
+    const next = { state, period };
+    const held = byId.get(id);
+    if (!held || outranks(next, held)) byId.set(id, next);
+  }
+  return byId;
 }
 
 // get a specific comment period by its id

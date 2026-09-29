@@ -1,14 +1,34 @@
 /* Project card. Rendered in the map's bottom-left corner on desktop and, as `--inline`, in the
    accordion body under the selected list card on mobile; the parent sets the width. */
 
-.popup-card {
+/* Engagement banner and project card, stacked as two separate blocks. */
+.popup-stack {
   display: flex;
   flex-direction: column;
+  gap: var(--layout-margin-small);
   min-height: 0;
   font-family: var(--bs-font-sans-serif);
   font-size: var(--bs-font-size-sm, 0.875rem);
   line-height: 1.4;
   color: var(--bc-gray, #494949);
+}
+
+.popup-stack--inline {
+  padding-top: var(--layout-padding-small);
+}
+
+.popup-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* Inline, the accordion body is the card's surface. */
+.popup-card:not(.popup-card--inline) {
+  border: var(--layout-border-width-small) solid var(--surface-color-border-default);
+  border-radius: var(--layout-border-radius-large);
+  background: var(--surface-color-background-white);
+  box-shadow: var(--surface-shadow-medium);
 }
 
 .popup-head {
@@ -43,7 +63,8 @@
   color: var(--bc-blue, #003366);
 }
 
-.popup-title:focus-visible {
+.popup-title:focus-visible,
+.popup-engagement:focus-visible {
   outline: 2px solid var(--bc-blue-interactive, #38598a);
   outline-offset: 2px;
 }
@@ -99,9 +120,41 @@
   white-space: nowrap;
 }
 
-.chip--open {
-  background: var(--bc-success, #2e8540);
-  color: var(--bc-white, #fff);
+.popup-engagement {
+  flex: 0 0 auto;
+  padding: var(--layout-padding-small) var(--layout-padding-medium);
+  border: var(--layout-border-width-small) solid var(--support-border-color-info);
+  border-left-width: var(--layout-border-width-large);
+  border-radius: var(--layout-border-radius-large);
+  background: var(--support-surface-color-info);
+  box-shadow: var(--surface-shadow-medium);
+}
+
+.popup-engagement--open {
+  border-color: var(--support-border-color-success);
+  background: var(--support-surface-color-success);
+}
+
+/* Inline, the banner lines up with the card's padded content. */
+.popup-stack--inline .popup-engagement {
+  margin-inline: var(--layout-margin-medium);
+  box-shadow: none;
+}
+
+.popup-engagement__title {
+  margin: 0;
+  font-weight: var(--bs-font-weight-bold, 700);
+  color: var(--typography-color-primary);
+}
+
+.popup-engagement__dates {
+  margin: var(--layout-margin-hair) 0 var(--layout-margin-xsmall);
+  color: var(--typography-color-secondary);
+}
+
+.popup-engagement__link {
+  font-weight: var(--bs-font-weight-bold, 700);
+  color: var(--typography-color-link);
 }
 
 /* Scrolls once the description is expanded; the clamped card is shorter than this. */
