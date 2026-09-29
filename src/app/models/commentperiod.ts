@@ -184,12 +184,17 @@ export function periodDates(period: CommentPeriod): string {
   return end ? `Closes ${end}` : '';
 }
 
+/** The Eagle project id a period row carries, either bare or inside the populated project. */
+export function projectIdOf(period: CommentPeriod): string | undefined {
+  const project: unknown = period.project;
+  if (typeof project === 'string') return project;
+  const id = (project as { _id?: unknown } | null | undefined)?._id;
+  return typeof id === 'string' ? id : undefined;
+}
+
 /** The period's details page, or null when the row names no project to reach it through. */
 export function periodDetailsHref(period: CommentPeriod): string | null {
-  // A row carries its project as an Eagle id or as a populated project.
-  const project = period.project as unknown;
-  const projectId =
-    typeof project === 'string' ? project : ((project as { _id?: string } | null)?._id ?? '');
+  const projectId = projectIdOf(period);
   // The row does not say whether its parent is a notification, so such a period gets /p/, not /pn/.
   return projectId ? `/p/${projectId}/cp/${period._id}/details` : null;
 }

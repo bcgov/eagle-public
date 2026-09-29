@@ -1,8 +1,14 @@
-import { lazy, Suspense, useMemo, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { Project } from 'app/models/project';
 import { getAllFull } from 'app/api/project';
 import { listsQueryOptions } from 'app/api/api';
+import {
+  engagementPeriodsByProject,
+  openCommentPeriodsQueryOptions,
+  upcomingCommentPeriodsQueryOptions,
+} from 'app/api/commentperiod';
+import { logger } from 'app/config/logging';
 import { isProjectInBounds, mapBounds, sheetState } from 'app/state/map-ui';
 import { useResponsive } from 'app/state/responsive';
 import { useStore } from 'app/state/store';
@@ -34,6 +40,22 @@ export function Projects() {
   });
   // null until the projects are known, so the list can tell "loading" from "none found".
   const allApps = useMemo<Project[] | null>(() => data ?? (isError ? [] : null), [data, isError]);
+
+  // Marker state and the card's engagement banner; the map draws without them and picks them up
+  // when both reads settle.
+  const openPeriods = useQuery(openCommentPeriodsQueryOptions());
+  const upcomingPeriods = useQuery(upcomingCommentPeriodsQueryOptions());
+  const engagementById = useMemo(
+    () =>
+      openPeriods.status === 'pending' || upcomingPeriods.status === 'pending'
+        ? undefined
+        : engagementPeriodsByProject(openPeriods.data?.periods ?? [], upcomingPeriods.data ?? []),
+    [openPeriods.status, openPeriods.data, upcomingPeriods.status, upcomingPeriods.data],
+  );
+  const periodsError = openPeriods.error ?? upcomingPeriods.error;
+  useEffect(() => {
+    if (periodsError) logger.error('Error loading comment periods', 'Projects', periodsError);
+  }, [periodsError]);
 
   const regions = useMemo(() => lists.filter((item: any) => item.type === 'region'), [lists]);
   const phases = useMemo(() => lists.filter((item: any) => item.type === 'projectPhase'), [lists]);
@@ -83,6 +105,7 @@ export function Projects() {
           }
           onHover={setHoveredId}
           mobile={mobile}
+          engagementById={engagementById}
         />
       </aside>
 
@@ -107,6 +130,7 @@ export function Projects() {
             onHover={setHoveredId}
             regionNames={regionNames}
             mobile={mobile}
+            engagementById={engagementById}
           />
         </Suspense>
       </div>

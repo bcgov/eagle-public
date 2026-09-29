@@ -192,6 +192,17 @@ Fixes shipped on `develop` (Angular) not yet re-implemented here. One line each:
 - reference/manifest.json: all 30 entries were backfilled from the committed PNGs (07-search-help-modal cannot be captured yet), so the height check is circular until references are recaptured. Replace the manifest on the next full recapture.
 - 07-search-help-modal: reference capture fails `helpDialog is modal (top layer)` at 924 and 400 on the base commit too; the prototype never calls `showModal`. Decide in states.ts whether that check applies to the prototype.
 
+## Map engagement markers (deferred from review, 2026-09-29)
+
+- api/commentperiod.ts: status searches have no sortBy; if the 100-row cap is ever hit, sort open by dateCompleted and upcoming by dateStarted.
+- projects.tsx: engagement is classified only when query data changes (5 min staleTime); a period that opens or closes while the page is open keeps its old pin state until refetch.
+- proj-detail-popup.tsx: initial focus lands on the engagement block; screen reader hears the period state before the project name. Consider focusing the heading and putting the block after it in DOM order, or an aria-describedby.
+- projlist-map.tsx / basemaps.css: pin buttons are aria-hidden, so the open/upcoming state is visual only; under reduced motion "open" differs from "none" by fill hue and glow only (WCAG 1.4.1). Add a text cue reachable by AT (list card or popup already carries it).
+- basemaps.css: open ripple loops forever (WCAG 2.2.2 wants a stop control for motion over 5 s). Accepted for now.
+- basemaps.css: engaged cluster count is white on #4daa57 at 2.92:1 (below 4.5:1). Accepted for now.
+- basemaps.css: rationale comments at the glow/fill block exceed the comment cap; move contrast figures to the PR.
+- api/commentperiod.ts and api/api.ts both define a 500 page-size constant; export one.
+
 ## Project notification page follow-ups (2026-09-28)
 
 - `src/app/layout/app-shell.tsx` getPageName: skip the `pn` segment like `p` and `cp`, so analytics page names are not "Pn > Overview".

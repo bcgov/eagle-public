@@ -46,7 +46,7 @@
   pointer-events: none;
 }
 
-/* Selected project card, fixed in the map's bottom-left corner. */
+/* Selected project card, fixed in the map's bottom-left corner. The card draws its own surface. */
 .map-info {
   position: absolute;
   left: 1rem;
@@ -56,10 +56,8 @@
   flex-direction: column;
   width: 24rem;
   max-width: calc(100% - 2rem);
-  border: 1px solid var(--bs-border-color, #ddd);
-  border-radius: 0.5rem;
-  background: var(--bs-white, #fff);
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.22);
+  /* A tall card shrinks to fit and its body scrolls, so the banner never runs off the map's top. */
+  max-height: calc(100% - 2rem);
 }
 
 @media (prefers-reduced-motion: no-preference) {
