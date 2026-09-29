@@ -69,6 +69,7 @@ const PROJECTS = [
     name: 'Alpha Mine',
     dateUpdated: '2025-02-03',
     region: 'Skeena',
+    sector: 'Coal Mines',
     // Populated here, which is not the bare name a notification carries under the same word.
     proponent: { _id: 'o1', name: 'Coast Aggregates' },
     // Populated on this read, a bare id on others.
@@ -508,6 +509,28 @@ describe('UnifiedSearch', () => {
     expect(screen.getByRole('checkbox', { name: 'Last updated' })).not.toBeChecked();
   });
 
+  it('chips a sub-type from a home page link by its column name and sends it as a filter', async () => {
+    const fetchMock = stubApi();
+    renderSearch('/search?record=projects&type=Mines&sector=Mineral%20Mines');
+    await screen.findByText('Alpha Mine');
+
+    const chip = await screen.findByRole('button', { name: 'Remove Sub-type Mineral Mines' });
+    expect(chip).toHaveTextContent('Sub-type: Mineral Mines');
+    expect(asked(fetchMock, 'Project').at(-1)).toContain('and[sector]=Mineral Mines');
+  });
+
+  it('offers the sub-types on the page plus the one picked, with the pick ticked', async () => {
+    const user = userEvent.setup();
+    renderSearch('/search?record=projects&cols=none&sector=Mineral%20Mines');
+    const row = (await screen.findByText('Alpha Mine')).closest('tr') as HTMLElement;
+    expect(cellUnder(row, 'Sub-type')).toHaveTextContent('Coal Mines');
+
+    await user.click(screen.getByRole('button', { name: 'Filter by Sub-type' }));
+
+    expect(screen.getByRole('checkbox', { name: 'Coal Mines' })).not.toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Mineral Mines' })).toBeChecked();
+  });
+
   it('ranks by relevance, not by name, when a keyword is set and no sort is picked', async () => {
     const fetchMock = stubApi();
     renderSearch('/search?record=projects&keywords=alpha');
@@ -589,8 +612,8 @@ describe('UnifiedSearch', () => {
     await user.click(screen.getByRole('checkbox', { name: 'Last updated' }));
 
     expect(await screen.findByRole('columnheader', { name: /Last updated/ })).toBeInTheDocument();
-    // `none` and not an empty value: an absent `cols` would read back as the tab's own default.
-    expect(new URLSearchParams(router.state.location.search).get('cols')).toBe('none');
+    // Sub-type, the tab's other default-off column, stays off and is now named on the address.
+    expect(new URLSearchParams(router.state.location.search).get('cols')).toBe('sector');
   });
 
   it('names a populated record in a cell rather than printing the object', async () => {

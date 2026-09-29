@@ -56,7 +56,7 @@ import {
 import { showToast } from 'app/state/toast';
 import { isSafeUrl } from 'app/utils/safe-url';
 import { documentDownloadUrl } from 'app/utils/utils';
-import { toWireFilters, yearOptions } from './search-filters';
+import { toWireFilters, withChosen, yearOptions } from './search-filters';
 import { recordConfig, type RecordTypeConfig, type SearchMeta } from './types';
 import { ATTACHMENTS_FILTER_ID, attachmentsFilterDropped } from './types/activities';
 import { useSettled } from './use-settled';
@@ -94,6 +94,9 @@ const INSIDE_SORT_OPTIONS: SortOption[] = [{ value: INSIDE_SORT, label: 'Most ma
 
 /** A half-typed last word is a name affordance; the API leaves prefix matching off for passages. */
 const NO_PREFIX = [{ name: 'prefix', value: 'false' }];
+
+/** One empty page, so options read off the rows are not rebuilt on every render while none land. */
+const NO_ROWS: Row[] = [];
 
 /** demi-search answers 400 for `and[nameContains]` on the chunk dataset: it filters names only. */
 const NAMES_ONLY_FILTERS = ['nameContains'];
@@ -448,70 +451,12 @@ export function UnifiedSearch() {
 
   const { counts } = useTypeCounts(draft);
 
-  const options = useMemo(
-    () => config.optionsFrom(lists, orgs),
-    // `optionsFrom` is a property of the config object, so the config identity is the dependency.
-    [config, lists, orgs],
-  );
-
   /* A column whose filter the scope cannot answer is not offered there at all: not as a filter
      row, not in the panel, and not in the Filters badge. */
   const scopeColumns = useMemo(
     () => config.columns.filter((column) => scopeTakes(inside, column.filterId ?? column.key)),
     [config, inside],
   );
-
-  /* Every column of every record type is sortable in the index, and the dropdown values only
-     exist once the `List` and `Organization` reads land. */
-  const sortColumns: GridColumn<Row>[] = useMemo(
-    () =>
-      scopeColumns.map((column) => {
-        const picks = options[column.filterId ?? column.key] ?? column.options;
-        return {
-          ...column,
-          sortable: true,
-          options: picks,
-          // A values column stores ids; without the lookup the cell shows a raw ObjectId.
-          render: column.render ?? cellRenderer(column, picks),
-        };
-      }),
-    [scopeColumns, options],
-  );
-
-  const columns: GridColumn<Row>[] = useMemo(
-    () => sortColumns.filter((column) => !hiddenColumns.includes(column.key)),
-    [sortColumns, hiddenColumns],
-  );
-
-  const advancedFields: AdvancedField[] = useMemo(
-    () =>
-      config.advancedFields
-        // A filter the index cannot honour is taken off the panel rather than left there to
-        // narrow nothing.
-        .filter((field) => !(attachmentsDropped && field.id === ATTACHMENTS_FILTER_ID))
-        .map((field) =>
-          field.kind === 'select'
-            ? { ...field, options: options[field.id] ?? field.options }
-            : field,
-        ),
-    [attachmentsDropped, config, options],
-  );
-
-  /* The narrow card has room the table never had, so it carries the attributes only the advanced
-     panel can filter by. An attribute the record does not have is left off rather than shown empty. */
-  function narrowExtras(row: Row): ListRowField[] {
-    const pairs: ListRowField[] = [];
-    for (const field of advancedFields) {
-      const value = row[field.id];
-      if (field.kind === 'toggle') {
-        if (value) pairs.push({ label: field.label, value: 'Yes' });
-        continue;
-      }
-      if (field.kind !== 'select' || value == null || value === '') continue;
-      pairs.push({ label: field.label, value: optionText(options[field.id] ?? [], value) });
-    }
-    return pairs;
-  }
 
   /* The columns whose filter is a year. Their value stands for a range, so it is not sent as it
      is written, and the panel's own date bounds keep precedence over it. */
@@ -594,7 +539,69 @@ export function UnifiedSearch() {
     }
   }, [attachmentsDropped, filters, setFilter]);
 
-  const rows = insidePrompt ? [] : (data?.rows ?? []);
+  const rows = insidePrompt ? NO_ROWS : (data?.rows ?? NO_ROWS);
+
+  const options = useMemo(() => {
+    const all: Record<string, ValueOption[]> = { ...config.optionsFrom(lists, orgs) };
+    for (const [id, found] of Object.entries(config.optionsFromRows?.(rows) ?? {})) {
+      all[id] = withChosen(found, filters[id]);
+    }
+    return all;
+    // `optionsFrom` is a property of the config object, so the config identity is the dependency.
+  }, [config, lists, orgs, rows, filters]);
+
+  /* Every column of every record type is sortable in the index, and the dropdown values only
+     exist once the `List` and `Organization` reads land. */
+  const sortColumns: GridColumn<Row>[] = useMemo(
+    () =>
+      scopeColumns.map((column) => {
+        const picks = options[column.filterId ?? column.key] ?? column.options;
+        return {
+          ...column,
+          sortable: true,
+          options: picks,
+          // A values column stores ids; without the lookup the cell shows a raw ObjectId.
+          render: column.render ?? cellRenderer(column, picks),
+        };
+      }),
+    [scopeColumns, options],
+  );
+
+  const columns: GridColumn<Row>[] = useMemo(
+    () => sortColumns.filter((column) => !hiddenColumns.includes(column.key)),
+    [sortColumns, hiddenColumns],
+  );
+
+  const advancedFields: AdvancedField[] = useMemo(
+    () =>
+      config.advancedFields
+        // A filter the index cannot honour is taken off the panel rather than left there to
+        // narrow nothing.
+        .filter((field) => !(attachmentsDropped && field.id === ATTACHMENTS_FILTER_ID))
+        .map((field) =>
+          field.kind === 'select'
+            ? { ...field, options: options[field.id] ?? field.options }
+            : field,
+        ),
+    [attachmentsDropped, config, options],
+  );
+
+  /* The narrow card has room the table never had, so it carries the attributes only the advanced
+     panel can filter by. An attribute the record does not have is left off rather than shown empty. */
+  function narrowExtras(row: Row): ListRowField[] {
+    const pairs: ListRowField[] = [];
+    for (const field of advancedFields) {
+      const value = row[field.id];
+      if (field.kind === 'toggle') {
+        if (value) pairs.push({ label: field.label, value: 'Yes' });
+        continue;
+      }
+      if (field.kind !== 'select' || value == null || value === '') continue;
+      pairs.push({ label: field.label, value: optionText(options[field.id] ?? [], value) });
+    }
+    return pairs;
+  }
+
   const total = data?.total ?? 0;
   /* No answer yet, so there is no total to read. Without this the bar and the empty state would
      both say the record has none of whatever was asked for, until the first answer lands. The

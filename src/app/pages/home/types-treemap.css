@@ -1,0 +1,123 @@
+/* Projects by type treemap. Geometry and colour come inline from types-layout.ts; this file owns
+   borders, labels, hover and motion. */
+
+.home-types__map {
+  position: relative;
+  /* Set inline from MAP_PX_H, which the layout also uses as the box height. */
+  height: var(--home-types-map-h);
+  overflow: hidden;
+  opacity: 1;
+  margin-bottom: 0;
+  transition:
+    opacity 450ms var(--home-types-ease),
+    height 450ms var(--home-types-ease),
+    margin-bottom 450ms var(--home-types-ease);
+}
+
+/* Project level: fade first, then fold the height and the chart gap below it away. */
+.home-types__map.home-types__map--hidden {
+  height: 0;
+  opacity: 0;
+  margin-bottom: calc(-1 * var(--home-types-gap, 0px));
+  transition:
+    opacity 300ms var(--home-types-ease),
+    height 450ms var(--home-types-ease) 250ms,
+    margin-bottom 450ms var(--home-types-ease) 250ms;
+}
+
+.home-types__map .home-types__tile,
+.home-types__map .home-types__frame {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 8px 10px;
+  overflow: hidden;
+  cursor: pointer;
+  pointer-events: none;
+}
+
+.home-types__map .home-types__tile {
+  border: var(--layout-border-width-small) solid var(--home-types-edge);
+  transition-property: left, top, width, height, background-color, border-color, color;
+  transition-duration: 700ms;
+  transition-timing-function: var(--home-types-ease);
+}
+
+/* The zoomed type's sub-tiles are the ones in play, split by solid white lines. */
+.home-types__map .home-types__tile--active {
+  border-color: var(--theme-gray-white);
+  pointer-events: auto;
+}
+
+.home-types__map .home-types__frame {
+  background: transparent;
+  border: var(--layout-border-width-medium) solid var(--theme-gray-white);
+  transition-property: left, top, width, height;
+  transition-duration: 700ms;
+  transition-timing-function: var(--home-types-ease);
+}
+
+.home-types__map .home-types__frame--active {
+  pointer-events: auto;
+}
+
+.home-types__map .home-types__tile--hover {
+  box-shadow: inset 0 0 0 3px var(--theme-gold-100);
+}
+
+.home-types__map .home-types__tile-name,
+.home-types__map .home-types__frame-name {
+  font-weight: var(--typography-font-weights-bold);
+  line-height: 1.25;
+}
+
+.home-types__map .home-types__tile-name {
+  font-size: 14px;
+}
+
+.home-types__map .home-types__frame-name {
+  font-size: 15px;
+}
+
+.home-types__map .home-types__tile-count {
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Out at once; in only after the zoom has mostly settled. */
+.home-types__map .home-types__tile > span,
+.home-types__map .home-types__frame > span {
+  opacity: 0;
+  transition: opacity 250ms var(--home-types-ease) 0ms;
+}
+
+.home-types__map .home-types__tile--labelled > span {
+  opacity: 1;
+  transition-delay: 450ms;
+}
+
+/* Names a tile too small for its label. Placed by transform from the pointer; in at once, out with a fade. */
+.home-types__map .home-types__tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  padding: 4px 8px;
+  border: 1px solid var(--theme-gray-40);
+  background: var(--theme-gray-white);
+  box-shadow: var(--surface-shadow-small);
+  color: var(--theme-gray-110);
+  font-size: 13px;
+  line-height: 1.3;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 150ms var(--home-types-ease);
+}
+
+.home-types__map .home-types__tip--shown {
+  opacity: 1;
+  transition: none;
+}

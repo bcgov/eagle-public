@@ -11,7 +11,8 @@
     "GET /demi-search/documents/recent-uploads?limit=5",
     "GET /demi-search/search?and[status]=open&dataset=CommentPeriod&fuzzy=false&pageNum=0&pageSize=100&populate=false&projectLegislation=default",
     "GET /demi-search/search?dataset=HomeFeed&fuzzy=false&pageNum=0&pageSize=5&populate=false&projectLegislation=default",
-    "GET /demi-search/search?dataset=List&pageSize=1000"
+    "GET /demi-search/search?dataset=List&pageSize=1000",
+    "GET /demi-search/search?dataset=Project&fuzzy=false&pageNum=0&pageSize=1000000&populate=true&projectLegislation=default&sortBy=&sortBy="
   ],
   "news": [
     "GET /demi-search/config",

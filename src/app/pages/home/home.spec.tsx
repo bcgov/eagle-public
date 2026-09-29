@@ -40,7 +40,7 @@ describe('home page shell', () => {
     expect(follows(periods, uploads)).toBe(true);
   });
 
-  it('reads h1, then Map Explorer, the feed, the rail and About, in that order', () => {
+  it('reads h1, then Map Explorer, the feed, the rail, Projects by type and About, in that order', () => {
     renderHome();
 
     const title = screen.getByRole('heading', { level: 1 });
@@ -50,6 +50,7 @@ describe('home page shell', () => {
       'Updates',
       'Open for comment',
       'Recent Uploads',
+      'Projects by type',
       'About',
     ]);
     expect(follows(title, sections[0])).toBe(true);

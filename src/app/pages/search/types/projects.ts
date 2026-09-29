@@ -1,5 +1,6 @@
 import type { GridColumn } from 'app/components/display-grid/types';
 import { Constants } from 'app/utils/constants';
+import { rowValueOptions } from '../search-filters';
 import {
   RECORD_DATASETS,
   toOptions,
@@ -65,6 +66,15 @@ const COLUMNS: GridColumn<Record<string, unknown>>[] = [
     width: '22%',
   },
   { key: 'type', label: 'Type', filter: 'values', filterId: 'type', width: '17%' },
+  {
+    // The project's `sector`, which the home page's projects-by-type band calls its sub-type.
+    key: 'sector',
+    label: 'Sub-type',
+    filter: 'values',
+    filterId: 'sector',
+    defaultHidden: true,
+    width: '17%',
+  },
   { key: 'region', label: 'Region', filter: 'values', filterId: 'region', width: '11%' },
   {
     key: 'currentPhaseName',
@@ -106,6 +116,8 @@ export const projectsConfig: RecordTypeConfig = {
       CEAAInvolvement: ofType(LIST_TYPES.CEAAInvolvement),
     };
   },
+  // No `List` type or constant names the sub-types, so the menu offers the ones the page shows.
+  optionsFromRows: (rows) => ({ sector: rowValueOptions(rows, 'sector') }),
   selectable: false,
   headerless: false,
 };

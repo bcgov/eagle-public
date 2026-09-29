@@ -2,7 +2,7 @@
    ships as global CSS, and Bootstrap is loaded app-wide, so no block borrows a Bootstrap name.
    Mobile first; the one breakpoint is the masthead's 768px (site-header.css). */
 
-/* White page below the navy masthead; the Map Explorer and About bands are light gray. */
+/* White page below the navy masthead; Map Explorer and Projects by type are light gray bands. */
 .home {
   background: var(--surface-color-background-white);
 }
@@ -602,7 +602,7 @@
 
 .home-about {
   border-top: var(--layout-border-width-small) solid var(--theme-gray-30);
-  background: var(--surface-color-background-light-gray);
+  background: var(--surface-color-background-white);
 }
 
 .home-about__inner {

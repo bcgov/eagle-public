@@ -241,3 +241,9 @@ Review polish items left after the unified About page landed. None block the pag
 - `e2e/tests/static-pages.spec.ts`: raise the `expectSectionAtTop` lower bound to about 16 so the 24px offset is tested; move the `aria-current` checks after the pin releases and add a tall-viewport Compliance case; drop the exact `toHaveCount(7)` on new-tab links.
 - `e2e/tests/smoke.spec.ts`: the `/legislation` redirect case duplicates static-pages.
 - The masthead title and lede start at the container's left edge while the body column is centred. Decide whether to cap the masthead inner block to match.
+
+## Projects by type follow-ups (2026-09-29)
+
+- The Search link for an "Other" sub-type sends `sector=Other`, but the tree's Other also holds projects with no sector, so Search can show fewer projects than the band.
+- `demi-search` caps a read at 1000 rows and the band counts rows, so its totals drift from Search once there are more than 1000 projects.
+- Check in Safari that `position: relative` on `<tr>` holds the stretched project links in the table rows.

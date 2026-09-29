@@ -54,6 +54,14 @@ export async function getAllFull(pageNum = 0, pageSize = 1000000): Promise<Proje
   return (await getAll(pageNum, pageSize)).data;
 }
 
+/** Every public project in one request; the key is shared with /projects so both read one cache entry. */
+export function allProjectsQueryOptions() {
+  return {
+    queryKey: ['projects', 'all'],
+    queryFn: (): Promise<Project[]> => getAllFull(1, 1000000),
+  };
+}
+
 /**
  * The comment periods the banner may draw, from every period of the project.
  *

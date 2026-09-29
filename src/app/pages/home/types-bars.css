@@ -1,0 +1,113 @@
+/* Projects by type: bar list under the treemap. Each row is one link holding its name, bar and
+   count, so a row grows with its name and one element owns hover, focus and click. */
+
+.home-types__bars {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.home-types__bar-row {
+  animation: home-types-row-in 300ms var(--home-types-ease) var(--delay, 0ms) both;
+}
+
+/* Scoped under the band so the theme's `a:hover, a:focus` colour and underline stay off the row. */
+.home-types .home-types__bar-link {
+  display: grid;
+  grid-template-columns: minmax(0, 220px) minmax(0, 1fr) 48px;
+  gap: 12px;
+  align-items: center;
+  min-height: 40px;
+  padding: 6px;
+  color: var(--theme-blue-90);
+  font-size: 14px;
+  font-weight: var(--typography-font-weights-bold);
+  line-height: 1.25;
+  text-decoration: none;
+}
+
+.home-types__bar-row--hover .home-types__bar-link {
+  background: var(--theme-blue-10);
+}
+
+.home-types__bar-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.home-types__bar-swatch {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  box-shadow: inset 0 0 0 1px var(--theme-gray-80);
+}
+
+.home-types__bar-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.home-types__bar-row--sub .home-types__bar-name {
+  text-decoration: underline;
+}
+
+.home-types__bar-count {
+  text-align: right;
+  color: var(--typography-color-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.home-types__bar-lane {
+  position: relative;
+  height: 20px;
+  transform-origin: left;
+  animation: home-types-bar-grow 600ms var(--home-types-ease) var(--delay, 0ms) both;
+}
+
+.home-types__bar-seg {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+
+.home-types__bar-seg + .home-types__bar-seg {
+  border-left: var(--layout-border-width-medium) solid var(--home-types-edge);
+}
+
+/* 3:1 edge around the filled part of the bar (--fill, set per lane). An overlay, because the
+   lane's own border or shadow paints under the absolutely positioned segments. */
+.home-types__bar-lane::after {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--fill, 100%);
+  box-sizing: border-box;
+  border: var(--layout-border-width-small) solid var(--theme-gray-80);
+  pointer-events: none;
+}
+
+.home-types__bar-seg--hover {
+  box-shadow: 0 0 0 var(--layout-border-width-medium) var(--theme-gold-100);
+}
+
+@keyframes home-types-bar-grow {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+/* Narrow screens: name and count on one line, the bar full width under them. */
+@media (max-width: 575.98px) {
+  .home-types .home-types__bar-link {
+    grid-template-columns: minmax(0, 1fr) auto;
+    row-gap: 6px;
+  }
+
+  .home-types__bar-lane {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}

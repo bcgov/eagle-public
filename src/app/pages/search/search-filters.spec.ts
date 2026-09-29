@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { toWireFilters, yearOptions } from './search-filters';
+import { rowValueOptions, toWireFilters, withChosen, yearOptions } from './search-filters';
 
 const TEXT = ['nameContains'];
 const YEARS = ['datePosted'];
@@ -109,5 +109,42 @@ describe('yearOptions', () => {
 
   it('ignores a chosen value that is not a year', () => {
     expect(values('any')).toEqual(values());
+  });
+});
+
+describe('rowValueOptions', () => {
+  it('offers each value the rows hold once, trimmed, A to Z', () => {
+    expect(
+      rowValueOptions(
+        [{ sector: 'Dams' }, { sector: 'Airports ' }, { sector: 'Dams' }, { sector: '  ' }, {}],
+        'sector',
+      ),
+    ).toEqual([
+      { value: 'Airports', label: 'Airports' },
+      { value: 'Dams', label: 'Dams' },
+    ]);
+  });
+
+  it('skips a value that is not text', () => {
+    expect(rowValueOptions([{ sector: 7 }, { sector: null }], 'sector')).toEqual([]);
+  });
+});
+
+describe('withChosen', () => {
+  const DAMS = { value: 'Dams', label: 'Dams' };
+
+  it('adds a pick the rows no longer show, in label order', () => {
+    expect(withChosen([DAMS], ['Airports'])).toEqual([
+      { value: 'Airports', label: 'Airports' },
+      DAMS,
+    ]);
+  });
+
+  it('offers a pick the rows already show only once', () => {
+    expect(withChosen([DAMS], 'Dams')).toEqual([DAMS]);
+  });
+
+  it('leaves the options alone when nothing is picked', () => {
+    expect(withChosen([DAMS], undefined)).toEqual([DAMS]);
   });
 });
