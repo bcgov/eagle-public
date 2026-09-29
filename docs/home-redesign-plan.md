@@ -1,15 +1,19 @@
 # Home page redesign
 
-The home page: masthead, a blue statement band with one `<h1>` and a keyword search, a
-two-column body (Updates feed, then a rail of open comment periods and Recent Uploads),
-a Browse strip, footer.
+The home page: header, a blue masthead with one `<h1>` and a keyword search; a slim Map
+Explorer band directly under the masthead; a two-column body (Updates feed, then a rail
+of open comment periods and Recent Uploads); an About section; footer. The Browse strip
+is gone; the home page's About band and the About page's rail carry the links it used
+to hold.
 
 ## Context
 
-The design handoff sits at `design/handoffs/home/` (local only, not committed; `design`
-is in the checkout's local exclude file). The source archive is kept at
-`/root/repos/eagle-public-design-handoff-home.zip` and can be unzipped again if the
-directory is missing. Same convention as the unified-search handoff.
+The design handoff sits at `design/handoffs/home-v4/` (local only, not committed;
+`design` is in the checkout's local exclude file). The original archive it came from
+was not kept. v4 supersedes v3: v3 had a map screenshot and a masthead
+purpose line, both dropped in v4. The v2 handoff and its
+`/root/repos/eagle-public-design-handoff-home.zip` archive stay as the record of what
+v2 shipped.
 
 Five tickets name pieces of this work: PUBLIC-154 (homepage search), PUBLIC-152 (Recent
 Uploads), PUBLIC-160 (Updates display), PUBLIC-142 (email subscription), PUBLIC-136
@@ -78,17 +82,34 @@ that checkbox from the design handoff was dropped rather than built.
 
 ### Homepage map
 
-Descoped. The map stays on `/projects`; the home page carries none.
+A slim Map Explorer band sits directly under the masthead: an `<h2>`, body copy naming
+the map's real filters (project type, region, project phase), and an "Open Map
+Explorer" button. There is no preview image. The button links to `/projects`, the Map
+Explorer route. The live interactive map is not embedded on the home page; it is heavy
+to load and would trap scroll and keyboard focus inside a home-page band. Because the
+band carries no image, the masthead above it stays the same height as `/search` and
+the project page.
+
+### About section
+
+An About section sits after the Updates/rail body and before the footer, in two
+columns. The left column has an `<h2>` About, the About page's summary paragraph, and
+a link, "About environmental assessment," to `/about`. The right column is three link
+rows, the same pattern as Recent Uploads: Which Act applies (`/about#process`),
+Legislation (`/about#legislation`), and Compliance oversight (`/about#compliance`).
+The two shortened row descriptions still need content-owner sign-off; tracked in
+`TODO.md`.
 
 ### Browse strip
 
-Superseded 2026-09-28 by the About page: the header's About link is now the way to
-Legislation, The assessment process and Compliance oversight.
+Superseded 2026-09-28 by the About page: the header's About link and the home page's
+About band now carry the way to Legislation, The assessment process and Compliance
+oversight.
 
 A centred strip of six links: Map Explorer, All projects, Project notifications, The
-assessment process, Legislation, Compliance oversight. It is the only in-app link to
-`/legislation`, `/process` and `/compliance-oversight`, so it replaces that role the old
-About band held.
+assessment process, Legislation, Compliance oversight. Superseded as above; the home
+page's About band and the header's About link carry the `/legislation`, `/process`
+and `/compliance-oversight` links now too.
 
 ## Decisions taken
 
@@ -98,9 +119,15 @@ About band held.
   decision type of its own.
 - The reader gets a real route, `/updates/:id`, rendered as a dialog.
 - The subscribe dialog drops the comment-period checkbox; no ticket asks for it.
-- The homepage map is descoped; the map stays on `/projects` only.
+- The homepage map is a slim text-and-button band, not a live embed and not a preview
+  image. The button links to `/projects`; the interactive map itself stays on
+  `/projects` only.
 - Pinning survives. The backend keeps pinned-first ordering; only the row count became a
   parameter.
+- The Map Explorer band and the About band both use a light gray background; the page
+  body itself stays white. The v4 handoff showed the About band white.
+- The Map Explorer band's copy says "project phase," matching the map's real filter
+  name, not "assessment phase" as the v4 handoff draft had it.
 - Nine ticket-reconciliation items are tracked, not filed as Jira tickets yet (see
   below).
 
@@ -120,7 +147,9 @@ Tracked here, not yet filed:
    dropped.
 6. PUBLIC-31 asked for expand-in-place cards with Project Info / View Document(s) / View
    Engagement buttons, not a reader dialog.
-7. PUBLIC-158 names a homepage map deployment; that deployment is descoped.
+7. PUBLIC-158 names a homepage map deployment. The home page now carries a Map
+   Explorer band that links to `/projects`, not a live map; check whether that satisfies
+   the ticket or whether it stays open. Not yet confirmed as the ticket to close.
 8. PUBLIC-152 says each Recent Uploads row links to the project's documents tab; the
    design handoff says the details page. The documents tab shipped.
 9. PUBLIC-152 asks that the rail rows be built on the shared display grid component;

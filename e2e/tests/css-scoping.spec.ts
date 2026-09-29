@@ -95,6 +95,32 @@ test('a project update card summary runs the card width, with no reading measure
   expect(await styleOf(page, '.update-card__summary', 'max-width')).toBe('none');
 });
 
+const WHITE = 'rgb(255, 255, 255)';
+
+/**
+ * Focuses a link and waits out its colour transition. Links fade colour over 0.2s, so a read taken
+ * straight after focus still shows the resting white even when a:focus is about to repaint it.
+ */
+async function focusAndSettle(link: import('@playwright/test').Locator): Promise<void> {
+  await link.focus();
+  await expect
+    .poll(() => link.evaluate((el) => el.getAnimations({ subtree: true }).length))
+    .toBe(0);
+}
+
+// The theme's a:focus (0,1,1) outranks the button rule and would turn the label navy on the fill.
+test('the home filled link buttons keep a white label on focus', async ({ page }) => {
+  await page.goto('/');
+  await ready(page, 500);
+  const openMap = page.getByRole('link', { name: 'Open Map Explorer', exact: true });
+  const viewAll = page.getByRole('link', { name: /View all Activities & Updates/ });
+
+  await focusAndSettle(openMap);
+  await expect(openMap.locator('.link-label')).toHaveCSS('color', WHITE);
+  await focusAndSettle(viewAll);
+  await expect(viewAll.locator('.link-label')).toHaveCSS('color', WHITE);
+});
+
 test('the home page stylesheet stays inside .home', () => {
   expect(
     selectorsOf('src/app/pages/home/home.css').filter((selector) => !selector.startsWith('.home')),

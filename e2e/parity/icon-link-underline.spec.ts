@@ -84,6 +84,7 @@ test('home icon links underline the label, not the icon', async ({ page }) => {
   );
   await page.goto('/', { waitUntil: 'networkidle' });
   await expectUnderlineOnLabelOnly(page.locator('a.home-updates__all'));
+  await expectUnderlineOnLabelOnly(page.locator('a.home-map__open'));
 });
 
 test('About page icon links underline the label, not the icon', async ({ page }) => {

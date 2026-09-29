@@ -144,7 +144,11 @@ function useActiveSection() {
   useEffect(() => {
     // ScrollRestoration scrolls a hash arrival (the old section routes redirect here) into view.
     const hashId = window.location.hash.slice(1);
-    if (isSectionId(hashId)) held.current = hashId;
+    if (isSectionId(hashId)) {
+      held.current = hashId;
+      // As on a rail click, the next Tab continues inside the section.
+      document.getElementById(headingId(hashId))?.focus({ preventScroll: true });
+    }
     let frame = 0;
     const onScroll = () => {
       if (pinned.current || frame) return;
