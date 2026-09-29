@@ -2,10 +2,11 @@ import { defineConfig, devices } from '@playwright/test';
 
 const BASE_URL = process.env['BASE_URL'] || 'https://projects.eao.gov.bc.ca';
 
-// Port 4173 is the preview server this config starts. Any other target - a deployed environment,
-// or a dev server on 4200 - is already up and must be left alone.
-const PREVIEW_URL = 'http://localhost:4173';
-const OWNS_SERVER = BASE_URL === PREVIEW_URL || BASE_URL === 'http://127.0.0.1:4173';
+// A loopback BASE_URL with an explicit port is the preview server this config starts, on that port,
+// so two checkouts can run at once. Any other target - a deployed environment, or the dev server on
+// 4200 - is already up and must be left alone.
+const PREVIEW_PORT = BASE_URL.match(/^http:\/\/(?:localhost|127\.0\.0\.1):(\d+)\/?$/)?.[1];
+const OWNS_SERVER = PREVIEW_PORT !== undefined && PREVIEW_PORT !== '4200';
 
 // The test environment puts the whole site (but not /api) behind HTTP basic auth.
 const { BASIC_AUTH_USER, BASIC_AUTH_PASS } = process.env;
@@ -35,8 +36,8 @@ export default defineConfig({
   },
   webServer: OWNS_SERVER
     ? {
-        command: 'yarn --cwd .. preview --port 4173 --strictPort',
-        url: PREVIEW_URL,
+        command: `yarn --cwd .. preview --port ${PREVIEW_PORT} --strictPort`,
+        url: BASE_URL,
         reuseExistingServer: !process.env['CI'],
         timeout: 120_000,
       }

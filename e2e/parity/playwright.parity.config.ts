@@ -10,7 +10,11 @@ import { defineConfig, devices } from '@playwright/test';
 
 import { CAPTURE_USE, SHOT_OPTIONS } from './capture';
 
-const PORT = process.env['PARITY_PORT'] ?? '4173';
+// The verifier hands every suite the same loopback BASE_URL; its port keeps two checkouts apart.
+const PORT =
+  process.env['PARITY_PORT'] ??
+  process.env['BASE_URL']?.match(/^http:\/\/(?:localhost|127\.0\.0\.1):(\d+)\/?$/)?.[1] ??
+  '4173';
 const PREVIEW_URL = `http://localhost:${PORT}`;
 
 export default defineConfig({
