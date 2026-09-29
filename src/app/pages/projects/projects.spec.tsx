@@ -5,8 +5,9 @@ import { renderAt } from '../../../test-utils';
 import { fakeMap, mapProps } from './maplibre-test-stub';
 import { Projects } from './projects';
 import { filtersToParams, parseFilters } from './filter-state';
-import { projectMatchesFilters } from './project-filter';
+import { projectMatchesFilters, rankByName } from './project-filter';
 import { logger } from 'app/config/logging';
+import type { Project } from 'app/models/project';
 import {
   baseLayerName,
   LIST_PAGE_SIZE,
@@ -284,12 +285,54 @@ describe('project filter', () => {
     expect(projectMatchesFilters(project, { ...empty, regions: ['r2'] }, regions)).toBe(false);
   });
 
+  it('matches a name filter typed with surrounding spaces, as the ranking reads it', () => {
+    expect(projectMatchesFilters(project, { ...empty, applicant: ' cedar ' }, regions)).toBe(true);
+    expect(projectMatchesFilters(project, { ...empty, applicant: ' fir ' }, regions)).toBe(false);
+  });
+
   it('drops projects outside the publish date range', () => {
     const publishFrom = new Date('2026-02-01T00:00:00.000Z');
     expect(projectMatchesFilters(project, { ...empty, publishFrom }, regions)).toBe(false);
     expect(projectMatchesFilters(PROJECTS[1] as any, { ...empty, publishFrom }, regions)).toBe(
       true,
     );
+  });
+});
+
+describe('rankByName', () => {
+  const named = (...names: string[]) => names.map((name) => ({ _id: name, name }) as Project);
+  const names = (projects: { name?: string }[]) => projects.map((project) => project.name);
+
+  it('puts a name that starts with the query above one that only contains it', () => {
+    const ranked = rankByName(
+      named('Northern Transmission Line', 'Trans Mountain Expansion'),
+      'trans',
+    );
+    expect(names(ranked)).toEqual(['Trans Mountain Expansion', 'Northern Transmission Line']);
+  });
+
+  it('puts a word that starts with the query above a match inside a word', () => {
+    const ranked = rankByName(named('Intrans Terminal', 'Northern Transmission Line'), 'trans');
+    expect(names(ranked)).toEqual(['Northern Transmission Line', 'Intrans Terminal']);
+  });
+
+  it('orders names alphabetically within the same tier', () => {
+    const ranked = rankByName(named('Trans Mountain', 'Bear Mountain Wind'), 'mountain');
+    expect(names(ranked)).toEqual(['Bear Mountain Wind', 'Trans Mountain']);
+  });
+
+  it('ignores case and surrounding spaces in the query', () => {
+    const ranked = rankByName(
+      named('Northern Transmission Line', 'Trans Mountain Expansion'),
+      '  TRANS ',
+    );
+    expect(names(ranked)).toEqual(['Trans Mountain Expansion', 'Northern Transmission Line']);
+  });
+
+  it('keeps the input order when the query is empty', () => {
+    const input = named('Zeballos Mine', 'Northern Transmission Line', 'Trans Mountain Expansion');
+    expect(names(rankByName(input, '  '))).toEqual(names(input));
+    expect(names(rankByName(input, null))).toEqual(names(input));
   });
 });
 
@@ -521,6 +564,25 @@ describe('projects map', () => {
 
     await waitFor(() => expect(screen.queryByTestId('map-popup')).toBeNull());
     expect(card).toHaveFocus();
+  });
+
+  it('lists the best name matches first, also once the map narrows the list', async () => {
+    const NAMES = ['Trans Mountain Expansion', 'Kitimat Transload', 'Northern Transmission Line'];
+    projectFixtures = [
+      { ...PROJECTS[1], _id: 'n1', name: NAMES[2] },
+      { ...PROJECTS[0], _id: 'k1', name: NAMES[1], centroid: [-135, 59] },
+      { ...PROJECTS[0], _id: 't1', name: NAMES[0] },
+    ];
+    renderProjects('/projects?applicant=trans');
+    await screen.findAllByText(NAMES[0]);
+    const order = () =>
+      cards().map((card) => NAMES.find((name) => card.textContent?.includes(name)));
+    expect(order()).toEqual(NAMES);
+
+    // A box around the two outer matches only; the middle one lies to the north-west of it.
+    act(() => mapBounds.set({ north: 57, south: 53, east: -119, west: -129 }));
+    await waitFor(() => expect(cards()).toHaveLength(2));
+    expect(order()).toEqual([NAMES[0], NAMES[2]]);
   });
 
   it('pages the list far enough to show a project selected past the first page', async () => {

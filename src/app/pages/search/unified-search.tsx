@@ -29,6 +29,7 @@ import {
   INSIDE_SORT,
   parseGridParams,
   RECORD_TYPES,
+  RELEVANCE_SORT,
   useGridUrlState,
   type RecordType,
   type SearchScope,
@@ -405,13 +406,21 @@ export function UnifiedSearch() {
      `scope=inside` address in an environment that does not reads as the names scope. */
   const scopeShown = config.id === 'documents' && contentSearchEnabled();
   const inside = scopeShown && scope === 'inside';
+  /* The keyword the request sends. One under the typeahead minimum is not sent, so it does not rank. */
+  const searchTerm = typeaheadKeywords(keywords).trim();
   /* A tab with a fixed sort list reads a sort it does not offer as its default: the select could
-     not show it, and could not be used to get back from it. */
+     not show it, and could not be used to get back from it. Relevance is offered on every tab
+     while a keyword is sent, which is the only time the grid state reads it, and is then the
+     default. */
+  const ranked = !inside && searchTerm !== '';
   const sortBy =
     !inside &&
+    urlSortBy !== RELEVANCE_SORT &&
     config.sortOptions &&
     !config.sortOptions.some((option) => option.value === urlSortBy)
-      ? config.defaultSort
+      ? ranked
+        ? RELEVANCE_SORT
+        : config.defaultSort
       : urlSortBy;
 
   /* A filter the chunk dataset cannot answer is not applied inside the documents, so it is not
@@ -503,7 +512,6 @@ export function UnifiedSearch() {
     return pairs;
   }
 
-  const searchTerm = typeaheadKeywords(keywords).trim();
   /* The columns whose filter is a year. Their value stands for a range, so it is not sent as it
      is written, and the panel's own date bounds keep precedence over it. */
   const yearFilterIds = useMemo(
@@ -953,6 +961,7 @@ export function UnifiedSearch() {
           body={insideBody}
           sortOptions={inside ? INSIDE_SORT_OPTIONS : config.sortOptions}
           sortColumns={sortColumns}
+          ranked={ranked}
           footer={!insidePrompt}
           headerless={config.headerless}
           loading={isFetching && !insidePrompt}

@@ -1,4 +1,5 @@
 import type { Project } from 'app/models/project';
+import { gridCollator } from 'app/components/display-grid/grid-helpers';
 import { Constants } from 'app/utils/constants';
 import type { FilterCriteria } from './filter-state';
 
@@ -45,9 +46,10 @@ export function projectMatchesFilters(
     if (!typeMatch) return false;
   }
 
-  if (filters.applicant) {
+  const applicant = filters.applicant?.trim().toLowerCase();
+  if (applicant) {
     const projectName = project.name?.toLowerCase() || '';
-    if (!projectName.includes(filters.applicant.toLowerCase())) return false;
+    if (!projectName.includes(applicant)) return false;
   }
 
   if (filters.clFile) {
@@ -76,10 +78,38 @@ export function projectMatchesFilters(
   return true;
 }
 
+const WORD_CHAR = /[\p{L}\p{N}]/u;
+
+/** 0: name starts with the query, 1: a word in the name does, 2: any other match. */
+function nameMatchTier(name: string, query: string): number {
+  if (name.startsWith(query)) return 0;
+  for (let at = name.indexOf(query); at > 0; at = name.indexOf(query, at + 1)) {
+    if (!WORD_CHAR.test(name[at - 1])) return 1;
+  }
+  return 2;
+}
+
+/**
+ * Orders projects by how well their name matches a typed query, then by name. An empty query
+ * keeps the input order (the server's).
+ */
+export function rankByName(projects: Project[], query: string | null): Project[] {
+  const q = query?.trim().toLowerCase();
+  if (!q) return projects;
+  return projects
+    .map((project) => {
+      const name = project.name ?? '';
+      return { project, name, tier: nameMatchTier(name.toLowerCase(), q) };
+    })
+    .sort((a, b) => a.tier - b.tier || gridCollator.compare(a.name, b.name))
+    .map(({ project }) => project);
+}
+
 export function filterProjects(
   projects: Project[],
   filters: FilterCriteria,
   regions: { _id?: string; name?: string }[],
 ): Project[] {
-  return projects.filter((project) => projectMatchesFilters(project, filters, regions));
+  const matches = projects.filter((project) => projectMatchesFilters(project, filters, regions));
+  return rankByName(matches, filters.applicant);
 }
