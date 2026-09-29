@@ -488,6 +488,47 @@ describe('UnifiedSearch', () => {
     expect(within(select).getAllByRole('option')[0]).toHaveTextContent('Relevance');
   });
 
+  it('does not rank a keyword too short to be sent', async () => {
+    const fetchMock = stubApi();
+    renderSearch('/search?record=projects&keywords=a');
+    await screen.findByText('Alpha Mine');
+
+    const wire = asked(fetchMock, 'Project').at(-1);
+    expect(wire).toContain('sortBy=+name');
+    expect(wire).not.toContain('keywords=a');
+  });
+
+  it('leaves Relevance out of the phone sort select while there is no keyword', async () => {
+    stubNarrow();
+    renderSearch('/search?record=projects');
+    await screen.findByText('Alpha Mine');
+
+    const select = screen.getByRole('combobox', { name: 'Sort' });
+    expect(within(select).queryByRole('option', { name: 'Relevance' })).not.toBeInTheDocument();
+  });
+
+  it('drops Relevance from the phone sort select once the keyword is cleared', async () => {
+    const user = userEvent.setup();
+    stubNarrow();
+    const { router } = renderSearch('/search?record=projects&keywords=alpha');
+    await screen.findByText('Alpha Mine');
+    const select = screen.getByRole('combobox', { name: 'Sort' });
+    expect(within(select).getByRole('option', { name: 'Relevance' })).toBeInTheDocument();
+
+    await user.clear(screen.getByRole('searchbox'));
+
+    await waitFor(() => expect(router.state.location.search).not.toContain('keywords'));
+    // The router state moves before React renders the page that reads it.
+    await waitFor(() =>
+      expect(
+        within(screen.getByRole('combobox', { name: 'Sort' })).queryByRole('option', {
+          name: 'Relevance',
+        }),
+      ).not.toBeInTheDocument(),
+    );
+    expect(screen.getByRole('combobox', { name: 'Sort' })).not.toHaveDisplayValue('Relevance');
+  });
+
   it('offers last updated in the phone sort select, though its column starts switched off', async () => {
     stubNarrow();
     renderSearch('/search?record=projects');
@@ -1128,6 +1169,15 @@ describe('the comment periods tab', () => {
   it('ranks by relevance while a keyword is set, though relevance is not in its list', async () => {
     const fetchMock = stubApi();
     renderSearch('/search?record=commentPeriods&keywords=kitimat');
+    await screen.findByRole('link', { name: /Kitimat Terminal/ });
+
+    expect(screen.getByRole('combobox', { name: 'Sort' })).toHaveDisplayValue('Relevance');
+    expect(asked(fetchMock, 'CommentPeriod').at(-1)).toContain('sortBy=-score');
+  });
+
+  it('reads a sort the tab does not offer as relevance while a keyword is set', async () => {
+    const fetchMock = stubApi();
+    renderSearch('/search?record=commentPeriods&keywords=kitimat&sortBy=%2Bfoo');
     await screen.findByRole('link', { name: /Kitimat Terminal/ });
 
     expect(screen.getByRole('combobox', { name: 'Sort' })).toHaveDisplayValue('Relevance');

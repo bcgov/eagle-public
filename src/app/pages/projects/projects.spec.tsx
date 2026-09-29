@@ -285,6 +285,11 @@ describe('project filter', () => {
     expect(projectMatchesFilters(project, { ...empty, regions: ['r2'] }, regions)).toBe(false);
   });
 
+  it('matches a name filter typed with surrounding spaces, as the ranking reads it', () => {
+    expect(projectMatchesFilters(project, { ...empty, applicant: ' cedar ' }, regions)).toBe(true);
+    expect(projectMatchesFilters(project, { ...empty, applicant: ' fir ' }, regions)).toBe(false);
+  });
+
   it('drops projects outside the publish date range', () => {
     const publishFrom = new Date('2026-02-01T00:00:00.000Z');
     expect(projectMatchesFilters(project, { ...empty, publishFrom }, regions)).toBe(false);
@@ -562,17 +567,22 @@ describe('projects map', () => {
   });
 
   it('lists the best name matches first, also once the map narrows the list', async () => {
+    const NAMES = ['Trans Mountain Expansion', 'Kitimat Transload', 'Northern Transmission Line'];
     projectFixtures = [
-      { ...PROJECTS[1], _id: 'n1', name: 'Northern Transmission Line' },
-      { ...PROJECTS[0], _id: 't1', name: 'Trans Mountain Expansion' },
+      { ...PROJECTS[1], _id: 'n1', name: NAMES[2] },
+      { ...PROJECTS[0], _id: 'k1', name: NAMES[1], centroid: [-135, 59] },
+      { ...PROJECTS[0], _id: 't1', name: NAMES[0] },
     ];
     renderProjects('/projects?applicant=trans');
-    await screen.findAllByText('Trans Mountain Expansion');
-    const order = () => cards().map((card) => card.textContent?.includes('Trans Mountain'));
-    expect(order()).toEqual([true, false]);
+    await screen.findAllByText(NAMES[0]);
+    const order = () =>
+      cards().map((card) => NAMES.find((name) => card.textContent?.includes(name)));
+    expect(order()).toEqual(NAMES);
 
-    act(() => mapBounds.set({ north: 60, south: 48, east: -114, west: -139 }));
-    expect(order()).toEqual([true, false]);
+    // A box around the two outer matches only; the middle one lies to the north-west of it.
+    act(() => mapBounds.set({ north: 57, south: 53, east: -119, west: -129 }));
+    await waitFor(() => expect(cards()).toHaveLength(2));
+    expect(order()).toEqual([NAMES[0], NAMES[2]]);
   });
 
   it('pages the list far enough to show a project selected past the first page', async () => {

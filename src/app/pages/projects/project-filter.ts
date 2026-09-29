@@ -46,9 +46,10 @@ export function projectMatchesFilters(
     if (!typeMatch) return false;
   }
 
-  if (filters.applicant) {
+  const applicant = filters.applicant?.trim().toLowerCase();
+  if (applicant) {
     const projectName = project.name?.toLowerCase() || '';
-    if (!projectName.includes(filters.applicant.toLowerCase())) return false;
+    if (!projectName.includes(applicant)) return false;
   }
 
   if (filters.clFile) {

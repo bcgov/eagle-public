@@ -71,6 +71,10 @@ describe('parseGridParams', () => {
     expect(state.sortBy).toBe('-score');
   });
 
+  it('uses the record type default for a keyword too short to be sent', () => {
+    expect(parseGridParams(params('?keywords=a&record=projects'), PROJECTS).sortBy).toBe('+name');
+  });
+
   it('keeps a sort the address names over relevance when a keyword is set', () => {
     const state = parseGridParams(params('?keywords=trans&sortBy=-name'), PROJECTS);
 

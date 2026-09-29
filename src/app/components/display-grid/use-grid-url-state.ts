@@ -7,6 +7,7 @@ import {
   toggleSortDirection,
   type Params,
 } from 'app/components/table/table-params';
+import { typeaheadKeywords } from 'app/components/filters/typeahead';
 import type { FilterValue, FilterValues } from './types';
 
 export type RecordType =
@@ -87,7 +88,8 @@ function readFilterValue(raw: string): FilterValue {
 /**
  * The sort in force. One the URL names wins; otherwise a keyword ranks by relevance and no keyword
  * falls back to the record's own order. Relevance with no keyword is no order at all, so a link
- * that kept `-score` after its keyword was cleared reads as the default.
+ * that kept `-score` after its keyword was cleared reads as the default. `keywords` is the one the
+ * request sends: a keyword under the typeahead minimum is not sent, so it does not rank.
  */
 function readSort(raw: unknown, scope: SearchScope, keywords: string, defaultSort: string): string {
   const named = raw ? normalizeSortBy(String(raw)) : '';
@@ -125,7 +127,7 @@ export function parseGridParams(
     sortBy: readSort(
       params['sortBy'],
       scope,
-      keywords.trim(),
+      typeaheadKeywords(keywords).trim(),
       defaults.defaultSort ?? DEFAULT_SORT,
     ),
     currentPage: Number.isFinite(page) && page > 0 ? page : 1,
