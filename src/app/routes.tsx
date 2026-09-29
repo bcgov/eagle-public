@@ -1,10 +1,7 @@
 import { redirect, type LoaderFunctionArgs, type RouteObject } from 'react-router';
 import { AppShell } from './layout/app-shell';
 import { Home } from './pages/home/home';
-import { Contact } from './pages/contact';
-import { Legislation } from './pages/legislation';
-import { Process } from './pages/process';
-import { ComplianceOversight } from './pages/compliance-oversight';
+import { About, type SectionId } from './pages/about';
 import { SearchHelp } from './pages/search-help';
 import { Projects } from './pages/projects/projects';
 import { UnifiedSearch } from './pages/search/unified-search';
@@ -22,6 +19,10 @@ import { DocumentsTab } from './pages/project/documents-tab';
 import { ComplianceDocumentsTab } from './pages/project/compliance-documents-tab';
 import { DecisionsTab } from './pages/project/decisions-tab';
 import { Comments } from './pages/comments/comments';
+import {
+  NotificationDocuments,
+  NotificationPage,
+} from './pages/project-notifications/notification-page';
 import { legacySearchRedirect, resolveLegacySearch } from './routes/legacy-search';
 
 /**
@@ -34,6 +35,12 @@ export function searchLoader({ request }: LoaderFunctionArgs) {
   return next ? redirect(`${next.pathname}${next.search}`) : null;
 }
 
+/** The four static pages became sections of /about; old links land on their section. */
+function aboutSectionRedirect(section: SectionId) {
+  return ({ request }: LoaderFunctionArgs) =>
+    redirect(`/about${new URL(request.url).search}#${section}`);
+}
+
 export const routes: RouteObject[] = [
   {
     path: '/',
@@ -43,7 +50,8 @@ export const routes: RouteObject[] = [
       // The home page with one update open in its reader dialog.
       { path: 'updates/:id', Component: Home },
 
-      { path: 'contact', Component: Contact },
+      { path: 'about', Component: About },
+      { path: 'contact', loader: aboutSectionRedirect('contact') },
 
       { path: 'projects', Component: Projects },
       { path: 'projects-list', loader: legacySearchRedirect('projects') },
@@ -57,13 +65,27 @@ export const routes: RouteObject[] = [
       },
       { path: 'pn/:projId/cp/:commentPeriodId/details', Component: Comments },
 
+      // Project notification detail, on the project page shell. The comment period routes above
+      // stay siblings, as the project ones do: the comments page is its own page, not a tab.
+      {
+        path: 'pn/:projId',
+        Component: NotificationPage,
+        children: [
+          {
+            index: true,
+            loader: ({ params }) => redirect(`/pn/${params['projId']}/overview`),
+          },
+          { path: 'overview', Component: OverviewTab },
+          { path: 'engagement', Component: EngagementTab },
+          { path: 'documents', Component: NotificationDocuments },
+        ],
+      },
+
       { path: 'news', loader: legacySearchRedirect('activities') },
 
-      { path: 'legislation', Component: Legislation },
-
-      { path: 'compliance-oversight', Component: ComplianceOversight },
-
-      { path: 'process', Component: Process },
+      { path: 'legislation', loader: aboutSectionRedirect('legislation') },
+      { path: 'compliance-oversight', loader: aboutSectionRedirect('compliance') },
+      { path: 'process', loader: aboutSectionRedirect('process') },
 
       { path: 'search', loader: searchLoader, Component: UnifiedSearch },
 

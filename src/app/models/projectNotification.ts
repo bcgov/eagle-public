@@ -7,16 +7,21 @@ export class ProjectNotification {
   name!: string;
   type!: string;
   subType!: string;
+  nature!: string;
   region!: string;
   location!: string;
   decision!: string;
-  decisionDate!: Date;
+  decisionDate!: string | null;
   description!: string;
   trigger!: string;
-  associatedProjectId!: string;
-  associatedProjectName!: string;
+  notificationReceivedDate!: string | null;
+  notificationThresholdValue!: number | string | null;
+  notificationThresholdUnits!: string | null;
+  associatedProjectId!: string | null;
+  associatedProjectName!: string | null;
   proponent!: string;
-  centroid: number[] = [];
+  /** Stored as `[lat, lon]`, the reverse of a project's centroid. */
+  centroid: (number | string)[] = [];
   // dynamic attributes
   commentPeriod!: CommentPeriod;
   documents!: Document[];

@@ -9,6 +9,21 @@ import './documents-page.css';
 /** Stand-ins for the segments still being probed, sized like the labels they replace. */
 const PLACEHOLDER_WIDTHS = ['7.5rem', '8.5rem', '9.5rem'];
 
+/** The Documents heading and its search help link. */
+export function DocumentsHeader() {
+  return (
+    <div className="documents-page__header">
+      <h2 className="documents-page__title">Documents</h2>
+      <Link className="documents-page__help" to="/search-help">
+        <i className="material-icons" aria-hidden="true">
+          help_outline
+        </i>
+        <span className="link-label">Search help</span>
+      </Link>
+    </div>
+  );
+}
+
 /** Documents tab shell: the document-type filter, and whichever document view it selects. */
 export function DocumentsPage() {
   const context = useProjectContext();
@@ -33,15 +48,7 @@ export function DocumentsPage() {
 
   return (
     <>
-      <div className="documents-page__header">
-        <h2 className="documents-page__title">Documents</h2>
-        <Link className="documents-page__help" to="/search-help">
-          <i className="material-icons" aria-hidden="true">
-            help_outline
-          </i>
-          <span className="link-label">Search help</span>
-        </Link>
-      </div>
+      <DocumentsHeader />
 
       <nav className="document-type-filter" aria-labelledby="document-type-filter-label">
         <span className="visually-hidden" id="document-type-filter-label">

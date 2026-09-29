@@ -11,6 +11,12 @@ export class Constants {
   public static readonly BC_ENERGY_REGULATOR_LINK =
     'https://www.bc-er.ca/data-reports/data-centre/';
 
+  /** Where feedback on this site and questions about subscriptions go. */
+  public static readonly FEEDBACK_EMAIL = 'EAO.EPICsystem@gov.bc.ca';
+
+  /** EAO compliance and enforcement: questions and reports of possible non-compliance. */
+  public static readonly COMPLIANCE_EMAIL = 'EAO.compliance@gov.bc.ca';
+
   public static readonly searchDisclaimer =
     'Note: Some documents within this project have not yet been categorized by author, document type, and/or milestone and may not be displayed when using some of the search filters. We are actively processing these documents so they can be searched and filtered, making it easier to find what you’re looking for. Clearing the filters and searching based on a keyword will show all results.';
   public static readonly docSearchDisclaimer =
@@ -40,14 +46,6 @@ export class Constants {
     DEFAULT_SORT_BY: '-datePosted',
     DEFAULT_KEYWORDS: '',
     DEFAULT_SHOW_MORE_INCREMENT: 5,
-    DEFAULT_DATASET: '',
-    MAX_SHOW_ALL_ITEMS: 500,
-    DEFAULT_PAGE_SIZE_OPTIONS: [
-      { displayText: '10', value: 10 },
-      { displayText: '25', value: 25 },
-      { displayText: '50', value: 50 },
-      { displayText: '100', value: 100 },
-    ],
   };
 
   public static readonly PCP_COLLECTION: object[] = [

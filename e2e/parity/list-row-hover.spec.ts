@@ -1,5 +1,5 @@
 /**
- * Hover on the /search list rows (activities, notifications).
+ * Hover on the /search list rows (activities; notifications are a table now).
  *
  * These rows carry no click target, so there is no hover affordance: background colour must stay
  * the same before and after hover, for the list item and for the inner `.display-grid__row` alike.
@@ -17,8 +17,6 @@ import { computed, LIST_ROW_RULE, rootFontPx } from './tokens';
 const CASES = [
   { record: 'activities', width: 1280 },
   { record: 'activities', width: 400 },
-  { record: 'notifications', width: 1280 },
-  { record: 'notifications', width: 400 },
 ] as const;
 
 async function openList(page: Page, record: string, width: number) {

@@ -10,10 +10,7 @@ import { ready, expectA11ySmoke } from '../support/helpers';
  */
 const ROUTES = [
   '/',
-  '/contact',
-  '/legislation',
-  '/compliance-oversight',
-  '/process',
+  '/about',
   '/search-help',
   '/projects',
   '/search',
@@ -35,3 +32,13 @@ for (const route of ROUTES) {
     testInfo.annotations.push({ type: 'skip-link count', description: `${route} => ${skipLinks}` });
   });
 }
+
+// The other old static routes redirect the same way; static-pages.spec.ts covers each landing.
+test('/legislation redirects to its About section and passes the a11y smoke', async ({ page }) => {
+  await page.goto('/legislation');
+  await ready(page);
+
+  const url = new URL(page.url());
+  expect(url.pathname + url.hash).toBe('/about#legislation');
+  await expectA11ySmoke(page);
+});

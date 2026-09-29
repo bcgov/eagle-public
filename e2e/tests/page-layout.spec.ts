@@ -31,7 +31,7 @@ async function contentEdges(page: import('@playwright/test').Page, selector: str
 const ROUTES: [string, string][] = [
   ['home', '/'],
   ['search', '/search'],
-  ['a static page', '/legislation'],
+  ['a static page', '/about'],
 ];
 
 const WIDE_WIDTH = 1600;
@@ -173,14 +173,6 @@ for (const width of WIDTHS) {
     });
 
     if (width === WIDE_WIDTH) {
-      test('home browse list is centred in the viewport', async ({ page }) => {
-        await page.goto('/');
-        await ready(page, 500);
-        const list = page.locator('.home-browse__list');
-        await list.waitFor({ state: 'visible', timeout: 60_000 });
-        await expectCentred(list, '.home-browse__list');
-      });
-
       for (const [name, route] of ROUTES) {
         test(`${name} page-container elements are centred in the viewport`, async ({ page }) => {
           await page.goto(route);

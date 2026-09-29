@@ -5,13 +5,14 @@ import { projectUpdatesQueryOptions } from 'app/api/updates';
 import { useProjectEaCertificate } from 'app/api/project-phases';
 import { track } from 'app/analytics/analytics';
 import { EngagementLink } from 'app/components/engagement-link';
-import { NewTabHint } from 'app/components/new-tab-hint';
+import { ExternalLink } from 'app/components/external-link';
 import { Skeleton } from 'app/components/skeleton/skeleton';
 import { SubscribePopover } from 'app/components/subscribe-popover';
 import { useTable } from 'app/components/table/use-table';
 import { getNotifyApi } from 'app/config/config';
 import { engageUrl } from 'app/models/commentperiod';
-import type { Project } from 'app/models/project';
+import type { NotificationFacts, Project } from 'app/models/project';
+import { Constants } from 'app/utils/constants';
 import { newlines } from 'app/utils/newlines';
 import { safeHtml } from 'app/utils/safe-html';
 import { isSafeUrl } from 'app/utils/safe-url';
@@ -22,21 +23,11 @@ import { useProjectContext } from './project-context';
 import './overview-tab.css';
 
 const OPERATIONS_EMAIL = 'EAO.operations@gov.bc.ca';
-const COMPLIANCE_EMAIL = 'EAO.compliance@gov.bc.ca';
 const COMPLIANCE_PHONE = '250-387-0131';
 
 /** Angular's `date:'MMMM d'`, e.g. "August 27". */
 function monthAndDay(value: Date | string): string {
   return new Date(value).toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
-}
-
-function ExternalLink({ href, children }: { href: string; children: ReactNode }) {
-  return (
-    <a href={href} target="_blank" rel="noopener noreferrer">
-      <span className="link-label">{children}</span>
-      <NewTabHint />
-    </a>
-  );
 }
 
 /** A card in the aside: a header with the title and an optional link, then rows. */
@@ -237,17 +228,33 @@ function ContactCard({ project }: { project: Project | null }) {
       </div>
       <div className="overview-tab__contact">
         <p className="overview-tab__list-title">Compliance &amp; Enforcement</p>
-        <a href={`mailto:${COMPLIANCE_EMAIL}`}>{COMPLIANCE_EMAIL}</a>
+        <a href={`mailto:${Constants.COMPLIANCE_EMAIL}`}>{Constants.COMPLIANCE_EMAIL}</a>
         <p className="overview-tab__contact-phone">{COMPLIANCE_PHONE}</p>
       </div>
     </section>
   );
 }
 
+/** The facts only a project notification carries. */
+function NotificationFactRows({ facts }: { facts: NotificationFacts }) {
+  const threshold = [facts.notificationThresholdValue, facts.notificationThresholdUnits]
+    .filter((part) => part !== undefined && part !== null && part !== '')
+    .join(' ');
+  return (
+    <>
+      <Fact label="Notification trigger">{facts.trigger?.replace(/,(?!\s)/g, ', ')}</Fact>
+      <Fact label="Threshold">{threshold}</Fact>
+      <Fact label="Notification received">{longDate(facts.notificationReceivedDate)}</Fact>
+    </>
+  );
+}
+
 export function OverviewTab() {
-  const { project, projId, projectLoading } = useProjectContext();
+  const { project, projId, basePath, isNotification, projectLoading } = useProjectContext();
   const banner = project?.commentPeriodForBanner;
-  const eaCertificate = useProjectEaCertificate(projId);
+  // DEMI has no certificate for a notification, and the fallback reads every project.
+  const eaCertificate = useProjectEaCertificate(isNotification ? '' : projId);
+  const notification = project?.notification;
 
   // The same one-row count the tab strip runs, so both read one cached answer.
   const documents = useTable('projectTabDocuments', {
@@ -281,64 +288,78 @@ export function OverviewTab() {
             <Skeleton lines={3} />
           </section>
         ) : (
-          <DetailsPanel title="About this project" titleId="about-title">
+          <DetailsPanel
+            title={isNotification ? 'About this project notification' : 'About this project'}
+            titleId="about-title"
+          >
             <p
               className="details-panel__description"
               dangerouslySetInnerHTML={safeHtml(newlines(project?.description?.toString() || '-'))}
             ></p>
             <dl className="details-panel__facts">
-              <Fact label="Legislation">
-                <ExternalLink href={legislationLink(project?.legislation)}>
-                  {project?.legislation || '2018 Environmental Assessment Act'}
-                </ExternalLink>
-              </Fact>
-              {eaCertificate && <Fact label="EA Certificate">{eaCertificate}</Fact>}
-              <Fact label="IAAC involvement">
-                {project?.CEAAInvolvement?.name && isSafeUrl(project.CEAALink) ? (
-                  <ExternalLink href={project.CEAALink}>
-                    {project.CEAAInvolvement.name}
-                  </ExternalLink>
-                ) : (
-                  project?.CEAAInvolvement?.name
-                )}
-              </Fact>
+              {notification ? (
+                <NotificationFactRows facts={notification} />
+              ) : (
+                <>
+                  <Fact label="Legislation">
+                    <ExternalLink href={legislationLink(project?.legislation)}>
+                      {project?.legislation || '2018 Environmental Assessment Act'}
+                    </ExternalLink>
+                  </Fact>
+                  {eaCertificate && <Fact label="EA Certificate">{eaCertificate}</Fact>}
+                  <Fact label="IAAC involvement">
+                    {project?.CEAAInvolvement?.name && isSafeUrl(project.CEAALink) ? (
+                      <ExternalLink href={project.CEAALink}>
+                        {project.CEAAInvolvement.name}
+                      </ExternalLink>
+                    ) : (
+                      project?.CEAAInvolvement?.name
+                    )}
+                  </Fact>
+                </>
+              )}
               <Fact label="Nature">{project?.nature}</Fact>
               <Fact label="Sub-type">{project?.sector}</Fact>
               <Fact label="Documents">
                 {documents.totalListItems > 0 && (
-                  <Link to={`/p/${projId}/documents`}>
+                  <Link to={`${basePath}/documents`}>
                     {documents.totalListItems.toLocaleString('en-CA')} documents
                   </Link>
                 )}
               </Fact>
-              {project?.eacDecision?.name === 'Regulatory Transfer' && (
-                <Fact label="Regulated by">
-                  <ExternalLink href={regulatorLink(project.applicableRegulation?.item)}>
-                    {project.applicableRegulation?.name || 'BC Energy Regulator'}
-                  </ExternalLink>
-                </Fact>
+              {!notification && (
+                <>
+                  {project?.eacDecision?.name === 'Regulatory Transfer' && (
+                    <Fact label="Regulated by">
+                      <ExternalLink href={regulatorLink(project.applicableRegulation?.item)}>
+                        {project.applicableRegulation?.name || 'BC Energy Regulator'}
+                      </ExternalLink>
+                    </Fact>
+                  )}
+                  <Fact label="EAO project lead">
+                    {project?.projectLeadEmail ? (
+                      <a href={`mailto:${project.projectLeadEmail}`}>
+                        {project.projectLead || project.projectLeadEmail}
+                      </a>
+                    ) : (
+                      project?.projectLead
+                    )}
+                  </Fact>
+                  <Fact label="First posted">{longDate(project?.dateAdded)}</Fact>
+                  <Fact label="Last updated">{longDate(project?.dateUpdated)}</Fact>
+                </>
               )}
-              <Fact label="EAO project lead">
-                {project?.projectLeadEmail ? (
-                  <a href={`mailto:${project.projectLeadEmail}`}>
-                    {project.projectLead || project.projectLeadEmail}
-                  </a>
-                ) : (
-                  project?.projectLead
-                )}
-              </Fact>
-              <Fact label="First posted">{longDate(project?.dateAdded)}</Fact>
-              <Fact label="Last updated">{longDate(project?.dateUpdated)}</Fact>
             </dl>
           </DetailsPanel>
         )}
 
-        <Pins />
+        {/* Pins and updates hang off DEMI projects, which a notification is not. */}
+        {!isNotification && <Pins />}
         <FeaturedDocuments />
       </div>
 
       <aside className="record-layout__aside">
-        <UpdatesCard projId={projId} />
+        {!isNotification && <UpdatesCard projId={projId} />}
         <ContactCard project={project} />
       </aside>
     </div>

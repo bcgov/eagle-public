@@ -14,7 +14,7 @@ const SKELETON_ROWS = [1, 2, 3];
 
 /** The project's starred documents: a fixed top five, no paging or sorting. */
 export function FeaturedDocuments() {
-  const { projId, lists } = useProjectContext();
+  const { projId, basePath, lists } = useProjectContext();
 
   const result = useTable('featuredDocuments', {
     dataset: 'Document',
@@ -34,7 +34,7 @@ export function FeaturedDocuments() {
     <section aria-labelledby="featured-documents-title">
       <div className="overview-tab__card-header">
         <h2 id="featured-documents-title">Featured documents</h2>
-        <Link to={`/p/${projId}/documents`}>
+        <Link to={`${basePath}/documents`}>
           {result.totalListItems > 0
             ? `All ${result.totalListItems.toLocaleString()} documents`
             : 'All documents'}

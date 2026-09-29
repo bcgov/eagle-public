@@ -35,7 +35,7 @@ test('/p/:projId/cp/:cpId redirects to /details', async ({ page, request }) => {
 test('@data /pn/:projId/cp/:cpId redirects to /details', async ({ page, request }) => {
   const notifications = await searchFixture(
     request,
-    'dataset=ProjectNotification&pageNum=0&pageSize=25&projectLegislation=default&sortBy=-_id&populate=true&fuzzy=false',
+    'dataset=ProjectNotification&pageNum=0&pageSize=25&projectLegislation=default&sortBy=-notificationReceivedDate&populate=true&fuzzy=false',
   );
 
   let pn: any, cp: any;
@@ -143,9 +143,8 @@ test('the header navigates to every top-level destination', async ({ page }) => 
 
   await page.goto('/');
   await ready(page, 1000);
-  // The footer carries a gov.bc.ca "Contact us" link too, so scope the lookup to the header.
-  await page.getByRole('banner').getByRole('link', { name: 'Contact Us' }).click();
-  await page.waitForURL('**/contact');
+  await page.getByRole('banner').getByRole('link', { name: 'About', exact: true }).click();
+  await page.waitForURL('**/about');
 
   await page.goto('/');
   await ready(page, 1000);

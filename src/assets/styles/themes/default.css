@@ -42,13 +42,6 @@
   --card-header-color: var(--white);
   --card-header-bg: #003367;
 
-  /* Feature Blocks */
-  --feature-block-color: var(--white);
-  --feature-block-bg: #244278;
-  --feature-block-light-bg: var(--white);
-  --feature-block-light-color: #666;
-  --feature-block-primary: var(--primary);
-
   /* Form Controls */
   --fc-height: 2.75rem;
   --fc-border-color: #ddd;

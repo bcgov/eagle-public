@@ -17,25 +17,6 @@
 
 /* === EAGLE-SPECIFIC BUTTON VARIANTS === */
 
-/* Inverted button: the contact page's feature cards (info-card.tsx), transparent with a white
-   border. */
-.feature-block .btn.inverted {
-  color: var(--white);
-  border: 2px solid var(--white);
-  background: transparent;
-  text-transform: uppercase;
-  font-weight: var(--bs-font-weight-bold);
-}
-
-.feature-block .btn.inverted:active,
-.feature-block .btn.inverted:focus,
-.feature-block .btn.inverted:hover {
-  border-color: var(--white);
-  background: var(--white);
-  color: var(--bs-primary);
-  text-decoration: none;
-}
-
 /* On-dark button: the one style for every button and link on the blue masthead or any other
    dark band. White on --theme-primary-blue is 12.6:1 for the label and the 2px border alike; the
    hover and focus fill swaps the pair, blue on white, same 12.6:1. The focus ring is the band's

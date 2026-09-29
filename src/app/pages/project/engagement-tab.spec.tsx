@@ -1,12 +1,27 @@
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { renderAt } from '../../../test-utils';
+import { notificationToProject } from 'app/api/notification';
+import { ProjectNotification } from 'app/models/projectNotification';
+import { makeQueryClient, renderAt } from '../../../test-utils';
+import type { ProjectContext } from './project-context';
 import { EngagementTab } from './engagement-tab';
+
+const PROJECT_CONTEXT: ProjectContext = {
+  project: null,
+  projId: 'proj-1',
+  basePath: '/p/proj-1',
+  isNotification: false,
+  lists: [],
+  projectLoading: false,
+};
+
+/** What the shell hands its tabs; a notification test swaps in its own. */
+let context: ProjectContext;
 
 vi.mock('./project-context', async (importOriginal) => {
   const original = await importOriginal<typeof import('./project-context')>();
-  return { ...original, useProjectContext: () => ({ project: null, projId: 'proj-1', lists: [] }) };
+  return { ...original, useProjectContext: () => context };
 });
 
 function daysFromNow(days: number): string {
@@ -62,6 +77,7 @@ describe('engagement tab', () => {
   beforeEach(() => {
     requests = [];
     periods = [OPEN_PERIOD, CLOSED_PERIOD];
+    context = PROJECT_CONTEXT;
   });
 
   afterEach(() => vi.unstubAllGlobals());
@@ -172,6 +188,135 @@ describe('engagement tab', () => {
     expect(screen.getByText('Loading')).toBeInTheDocument();
     expect(
       screen.queryByText('No comment periods are currently scheduled for this project.'),
+    ).not.toBeInTheDocument();
+  });
+});
+
+describe('engagement tab on a project notification', () => {
+  const ID = '5c8a3a3ce7f1f1002466c2b1';
+
+  /** A notification record as the shell holds it, with a period only on its own fields. */
+  function notificationContext(
+    fields: Record<string, unknown> = {},
+    projectLoading = false,
+  ): ProjectContext {
+    const project = notificationToProject(
+      new ProjectNotification({
+        _id: ID,
+        name: 'Bear Creek Aggregate',
+        pcp: 'open',
+        dateStarted: daysFromNow(-3),
+        dateCompleted: daysFromNow(4),
+        ...fields,
+      }),
+    );
+    return {
+      project: projectLoading ? null : project,
+      projId: ID,
+      basePath: `/pn/${ID}`,
+      isNotification: true,
+      lists: [],
+      projectLoading,
+    };
+  }
+
+  function renderNotificationTab(respond: () => Response) {
+    requests = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        requests.push(String(input));
+        return respond();
+      }),
+    );
+    return renderAt(`/pn/${ID}/engagement`, [
+      { path: '/pn/:projId/engagement', Component: EngagementTab },
+    ]);
+  }
+
+  const noPeriods = () => jsonResponse([{ searchResults: [], meta: [{ searchResultsTotal: 0 }] }]);
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('shows the period the notification holds when no period record answers', async () => {
+    context = notificationContext();
+    renderNotificationTab(noPeriods);
+
+    expect(
+      await screen.findByRole('heading', { level: 3, name: 'Public Comment Period' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Open', { exact: true })).toBeInTheDocument();
+  });
+
+  it('shows the period the notification holds when the period search fails', async () => {
+    context = notificationContext();
+    renderNotificationTab(() => new Response('', { status: 500 }));
+
+    expect(
+      await screen.findByRole('heading', { level: 3, name: 'Public Comment Period' }),
+    ).toBeInTheDocument();
+  });
+
+  it('offers no link into EPIC for the held period, which has no page of its own', async () => {
+    context = notificationContext();
+    renderNotificationTab(noPeriods);
+
+    await screen.findByRole('heading', { level: 3, name: 'Public Comment Period' });
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
+  });
+
+  it('links the held period out to ENGAGE when it has an ENGAGE page', async () => {
+    context = notificationContext({ isMet: true, metURL: 'https://engage.example/bear-creek' });
+    renderNotificationTab(noPeriods);
+
+    expect(
+      await screen.findByRole('link', { name: 'Share your thoughts (opens in new tab)' }),
+    ).toHaveAttribute('href', 'https://engage.example/bear-creek');
+  });
+
+  it('links a period record under /pn/, not /p/', async () => {
+    context = notificationContext();
+    renderNotificationTab(() =>
+      jsonResponse([{ searchResults: [OPEN_PERIOD], meta: [{ searchResultsTotal: 1 }] }]),
+    );
+
+    expect(await screen.findByRole('link', { name: 'Share your thoughts' })).toHaveAttribute(
+      'href',
+      `/pn/${ID}/cp/cp-open`,
+    );
+  });
+
+  it('calls it a project notification when there is no period at all', async () => {
+    context = notificationContext({ pcp: 'none' });
+    renderNotificationTab(noPeriods);
+
+    expect(
+      await screen.findByText(
+        'No comment periods are currently scheduled for this project notification.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('holds the list busy while the notification loads, even once the periods answer none', async () => {
+    context = notificationContext({}, true);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => noPeriods()),
+    );
+    // The periods have already answered none, so only the notification is still in flight.
+    const queryClient = makeQueryClient();
+    queryClient.setQueryData(['commentPeriods', ID], []);
+    renderAt(
+      `/pn/${ID}/engagement`,
+      [{ path: '/pn/:projId/engagement', Component: EngagementTab }],
+      {
+        queryClient,
+      },
+    );
+
+    expect(screen.getByText('Loading')).toBeInTheDocument();
+    expect(
+      screen.queryByText(/No comment periods are currently scheduled/),
     ).not.toBeInTheDocument();
   });
 });

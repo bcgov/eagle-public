@@ -1,5 +1,20 @@
 import type { Document } from './document';
 
+/** What a project notification carries that a project record does not. */
+export interface NotificationFacts {
+  trigger?: string;
+  notificationReceivedDate?: string;
+  notificationThresholdValue?: number | string;
+  notificationThresholdUnits?: string;
+  associatedProjectId?: string;
+  /** The inline comment period, for notifications that hold no CommentPeriod record. */
+  pcp?: string;
+  isMet?: boolean;
+  metURL?: string;
+  dateStarted?: Date | null;
+  dateCompleted?: Date | null;
+}
+
 /** Fields are copied straight off the API payload, so a missing one is `undefined`. */
 export class Project {
   // the following are retrieved from the API
@@ -60,6 +75,8 @@ export class Project {
   operational?: any;
   nature?: any;
   commentPeriodForBanner: any;
+  /** Set only when this record is a project notification shown through the project page. */
+  notification?: NotificationFacts;
 
   // Permissions
   read?: string[] = [];

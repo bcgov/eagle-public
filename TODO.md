@@ -194,7 +194,7 @@ Fixes shipped on `develop` (Angular) not yet re-implemented here. One line each:
 
 ## Map engagement markers (deferred from review, 2026-09-29)
 
-- api/commentperiod.ts: status searches have no sortBy; if the 500-row cap is ever hit, sort open by dateCompleted and upcoming by dateStarted.
+- api/commentperiod.ts: status searches have no sortBy; if the 100-row cap is ever hit, sort open by dateCompleted and upcoming by dateStarted.
 - projects.tsx: engagement is classified only when query data changes (5 min staleTime); a period that opens or closes while the page is open keeps its old pin state until refetch.
 - proj-detail-popup.tsx: initial focus lands on the engagement block; screen reader hears the period state before the project name. Consider focusing the heading and putting the block after it in DOM order, or an aria-describedby.
 - projlist-map.tsx / basemaps.css: pin buttons are aria-hidden, so the open/upcoming state is visual only; under reduced motion "open" differs from "none" by fill hue and glow only (WCAG 1.4.1). Add a text cue reachable by AT (list card or popup already carries it).
@@ -202,3 +202,34 @@ Fixes shipped on `develop` (Angular) not yet re-implemented here. One line each:
 - basemaps.css: engaged cluster count is white on #4daa57 at 2.92:1 (below 4.5:1). Accepted for now.
 - basemaps.css: rationale comments at the glow/fill block exceed the comment cap; move contrast figures to the PR.
 - api/commentperiod.ts and api/api.ts both define a 500 page-size constant; export one.
+
+## Project notification page follow-ups (2026-09-28)
+
+- `src/app/layout/app-shell.tsx` getPageName: skip the `pn` segment like `p` and `cp`, so analytics page names are not "Pn > Overview".
+- `src/app/routes/legacy-search.ts` SORTABLE_FIELDS.notifications: set to `['name', 'notificationReceivedDate']`; dateUpdated has no column.
+- `src/app/api/notification.ts`: a stored `pcp` overrides the status worked out from dates. Decide whether dates win when both are present. Also drop `/i` on the ObjectId regex or lower-case the id before the read, since the Cosmos point read is case-sensitive.
+- `src/app/pages/project/project-panel.tsx`: hide "Open in map explorer" for notifications; the explorer lists projects only.
+- `src/app/pages/project/use-engagement-periods.ts`: build the inline fallback only after the periods query settles, so the tab count does not flicker.
+- `src/app/pages/search/types/notifications.ts:18`: restore the typeof string guard on associatedProjectId.
+- `src/app/models/projectNotification.ts`: type proponent as `string | { name?: string } | null`.
+- `src/app/components/table/document-row.ts`: delete the unused `useDocumentRow`; the `.clickable-row` rules in `table.css` are dead.
+- `overview-tab.tsx:335`: fix "1 documents" grammar. In `project.tsx`, the tab count needs a hidden separator so the accessible name reads correctly.
+- e2e: ids in `fixtures/unified-search/notifications.json` should be 24-hex; add notifications to the grid row hover parity check; `project-notification.spec.ts:29` should assert the full masthead text.
+- eagle-demi `test/helpers/eagle-mirror-fixtures.js:214`: the notification centroid is [lon, lat], but eagle-admin stores [lat, lon].
+
+## About page follow-ups (2026-09-28)
+
+Review polish items left after the unified About page landed. None block the page.
+
+- `src/app/pages/about.tsx`: drop the `event.button` check and the `matchMedia?.` guard; consider `aria-current="location"` for the rail; add `role="list"` on `.about-acts` and `.about-contacts` for Safari.
+- `src/app/pages/about.tsx` rail hold (`held` ref): record `scrollY` when the hold starts and clear the hold on any change over 1px instead of using `isAtBottom`, so a 1 to 4px scroll up and back down shows Contact and a resize that changes `innerHeight` keeps the hold; hold from the hash only when `useNavigationType() !== 'POP'`; a jump whose clamped target equals the current `scrollY` fires no `scrollend` and stays pinned until the next gesture, so release at once in that case; reset `pinned.current` in the effect cleanup; in `release`, keep the hold only when `scrollY` equals the computed target.
+- `src/app/pages/about.spec.tsx`: cover the `top >= 0` half of the hold, a resize after a click hold, the small-scroll-then-bottom case, a jump with no scroll, and a hash that names a non-section id.
+- `src/app/pages/about.css`: the current-link background `#faf9f8` is invisible on the page grey `#f7f8fa`; scope the inset left bar to the 768px-and-up block; delete the dead `max-width: 760px` on the content column; the comment says the rail floor wins below 1296px, the real threshold is 1232px.
+- Icon sizes use tokens (24px contact icon, 16px new-tab icon) where the handoff says 28px and 18px. Design decision.
+- `src/app/pages/about.spec.tsx`: cover the bottom-of-page rule, pin release by `scrollend` and by the timer, the resize listener, reduced motion, `replaceState` keeping `history.state`, and all four modifier keys.
+- `src/app/layout/app-shell.spec.tsx`: stub `scrollIntoView` and assert it is called on `#contact`, so the hash arrival is proven at unit level.
+- `src/app/routes.spec.ts`: drop the `Component toBeUndefined` shape checks; the loader location check already proves the redirect.
+- `e2e/tests/page-layout.spec.ts`: assert `.about__content` is centred at 1600 wide and the rail clears the column at 860 and 1024.
+- `e2e/tests/static-pages.spec.ts`: raise the `expectSectionAtTop` lower bound to about 16 so the 24px offset is tested; move the `aria-current` checks after the pin releases and add a tall-viewport Compliance case; drop the exact `toHaveCount(7)` on new-tab links.
+- `e2e/tests/smoke.spec.ts`: the `/legislation` redirect case duplicates static-pages.
+- The masthead title and lede start at the container's left edge while the body column is centred. Decide whether to cap the masthead inner block to match.
