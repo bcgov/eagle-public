@@ -7,7 +7,7 @@ import { columnFiltersForPanel } from './grid-helpers';
 import { ListRow, type ListRowField } from './list-row';
 import { RecordLink } from './record-link';
 import { SelectCell } from './select-cell';
-import { PAGE_SIZES } from './use-grid-url-state';
+import { PAGE_SIZES, RELEVANCE_SORT } from './use-grid-url-state';
 import type {
   AdvancedField,
   FilterValue,
@@ -47,6 +47,8 @@ export interface SortOption {
   value: string;
   label: string;
 }
+
+const RELEVANCE_OPTION: SortOption = { value: RELEVANCE_SORT, label: 'Relevance' };
 
 /** A sort as the URL spells it, which is the value the select carries. */
 function sortValue(sort: SortState): string {
@@ -121,6 +123,8 @@ interface DisplayGridProps<Row> {
    * the cards show no headings, so the select is the only way back to that order.
    */
   sortColumns?: GridColumn<Row>[];
+  /** A keyword is set, so the select also offers relevance, which no column can name. */
+  ranked?: boolean;
   /** Page sizes and pager. Off where there is no result set to page: a prompt, not an answer. */
   footer?: boolean;
   loading?: boolean;
@@ -165,6 +169,7 @@ export function DisplayGrid<Row>({
   body,
   sortOptions,
   sortColumns,
+  ranked = false,
   footer = true,
   loading = false,
   emptyMessage = 'No results found',
@@ -212,7 +217,8 @@ export function DisplayGrid<Row>({
      every width. */
   /* The orders this view can be read in: the record's own columns, unless the page names them —
      a relevance-ranked view has no column to sort by. */
-  const sortChoices = sortOptions ?? sortOptionsFor(sortColumns ?? columns, sort);
+  const ownChoices = sortOptions ?? sortOptionsFor(sortColumns ?? columns, sort);
+  const sortChoices = ranked ? [RELEVANCE_OPTION, ...ownChoices] : ownChoices;
   const showSortBar = !showEmpty && (listMode || cardMode) && sortChoices.length > 0;
 
   // The filter row sticks under the header, whose height changes when a label wraps.

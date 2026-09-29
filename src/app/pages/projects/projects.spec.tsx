@@ -5,8 +5,9 @@ import { renderAt } from '../../../test-utils';
 import { fakeMap, mapProps } from './maplibre-test-stub';
 import { Projects } from './projects';
 import { filtersToParams, parseFilters } from './filter-state';
-import { projectMatchesFilters } from './project-filter';
+import { projectMatchesFilters, rankByName } from './project-filter';
 import { logger } from 'app/config/logging';
+import type { Project } from 'app/models/project';
 import {
   baseLayerName,
   LIST_PAGE_SIZE,
@@ -293,6 +294,43 @@ describe('project filter', () => {
   });
 });
 
+describe('rankByName', () => {
+  const named = (...names: string[]) => names.map((name) => ({ _id: name, name }) as Project);
+  const names = (projects: { name?: string }[]) => projects.map((project) => project.name);
+
+  it('puts a name that starts with the query above one that only contains it', () => {
+    const ranked = rankByName(
+      named('Northern Transmission Line', 'Trans Mountain Expansion'),
+      'trans',
+    );
+    expect(names(ranked)).toEqual(['Trans Mountain Expansion', 'Northern Transmission Line']);
+  });
+
+  it('puts a word that starts with the query above a match inside a word', () => {
+    const ranked = rankByName(named('Intrans Terminal', 'Northern Transmission Line'), 'trans');
+    expect(names(ranked)).toEqual(['Northern Transmission Line', 'Intrans Terminal']);
+  });
+
+  it('orders names alphabetically within the same tier', () => {
+    const ranked = rankByName(named('Trans Mountain', 'Bear Mountain Wind'), 'mountain');
+    expect(names(ranked)).toEqual(['Bear Mountain Wind', 'Trans Mountain']);
+  });
+
+  it('ignores case and surrounding spaces in the query', () => {
+    const ranked = rankByName(
+      named('Northern Transmission Line', 'Trans Mountain Expansion'),
+      '  TRANS ',
+    );
+    expect(names(ranked)).toEqual(['Trans Mountain Expansion', 'Northern Transmission Line']);
+  });
+
+  it('keeps the input order when the query is empty', () => {
+    const input = named('Zeballos Mine', 'Northern Transmission Line', 'Trans Mountain Expansion');
+    expect(names(rankByName(input, '  '))).toEqual(names(input));
+    expect(names(rankByName(input, null))).toEqual(names(input));
+  });
+});
+
 describe('projects page', () => {
   it('requests every project once and renders a card per result', async () => {
     renderProjects();
@@ -521,6 +559,20 @@ describe('projects map', () => {
 
     await waitFor(() => expect(screen.queryByTestId('map-popup')).toBeNull());
     expect(card).toHaveFocus();
+  });
+
+  it('lists the best name matches first, also once the map narrows the list', async () => {
+    projectFixtures = [
+      { ...PROJECTS[1], _id: 'n1', name: 'Northern Transmission Line' },
+      { ...PROJECTS[0], _id: 't1', name: 'Trans Mountain Expansion' },
+    ];
+    renderProjects('/projects?applicant=trans');
+    await screen.findAllByText('Trans Mountain Expansion');
+    const order = () => cards().map((card) => card.textContent?.includes('Trans Mountain'));
+    expect(order()).toEqual([true, false]);
+
+    act(() => mapBounds.set({ north: 60, south: 48, east: -114, west: -139 }));
+    expect(order()).toEqual([true, false]);
   });
 
   it('pages the list far enough to show a project selected past the first page', async () => {

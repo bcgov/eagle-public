@@ -24,6 +24,9 @@ function renderGrid(initial = '/search', defaults: GridDefaults = {}) {
   );
 }
 
+/** A record type whose own order is by name, as the projects tab's is. */
+const PROJECTS: GridDefaults = { defaultSort: '+name' };
+
 /** A record type that starts with one column switched off, the way projects hides Last updated. */
 const HIDES_DATE: GridDefaults = { defaultHiddenColumns: ['dateUpdated'] };
 
@@ -60,6 +63,26 @@ describe('parseGridParams', () => {
 
   it('sorts by match count when the scope is inside documents', () => {
     expect(parseGridParams(params('?scope=inside')).sortBy).toBe('-matches');
+  });
+
+  it('ranks by relevance when a keyword is set and the address names no sort', () => {
+    const state = parseGridParams(params('?keywords=trans&record=projects'), PROJECTS);
+
+    expect(state.sortBy).toBe('-score');
+  });
+
+  it('keeps a sort the address names over relevance when a keyword is set', () => {
+    const state = parseGridParams(params('?keywords=trans&sortBy=-name'), PROJECTS);
+
+    expect(state.sortBy).toBe('-name');
+  });
+
+  it("uses the record type's own sort when there is no keyword", () => {
+    expect(parseGridParams(params('?record=projects'), PROJECTS).sortBy).toBe('+name');
+  });
+
+  it('reads a relevance sort with no keyword as the record type default', () => {
+    expect(parseGridParams(params('?sortBy=-score'), PROJECTS).sortBy).toBe('+name');
   });
 
   it('treats every other param as a filter, comma lists as several values', () => {
@@ -178,8 +201,16 @@ describe('useGridUrlState', () => {
     expect(result.current.grid.state.scope).toBe('inside');
 
     act(() => result.current.grid.setScope('names'));
-    expect(params(result.current.search).get('sortBy')).toBe('-datePosted');
+    expect(result.current.grid.state.sortBy).toBe('-datePosted');
     expect(params(result.current.search).get('scope')).toBeNull();
+  });
+
+  it('returns to relevance, not the names default, when a keyword search leaves inside', () => {
+    const { result } = renderGrid('/search?keywords=trans&scope=inside&sortBy=-matches');
+
+    act(() => result.current.grid.setScope('names'));
+
+    expect(result.current.grid.state.sortBy).toBe('-score');
   });
 
   it('applies a filter, joins several values and returns to the first page', () => {
@@ -298,6 +329,35 @@ describe('useGridUrlState', () => {
     expect(next.get('record')).toBe('documents');
     expect(next.get('sortBy')).toBe('-datePosted');
     expect(next.get('pageSize')).toBe('50');
+  });
+
+  it('ranks by relevance once a keyword is typed, and by the default once it is cleared', () => {
+    const { result } = renderGrid('/search?record=projects', PROJECTS);
+
+    act(() => result.current.grid.setKeyword('trans'));
+    expect(result.current.grid.state.sortBy).toBe('-score');
+
+    act(() => result.current.grid.setKeyword(''));
+    expect(result.current.grid.state.sortBy).toBe('+name');
+  });
+
+  it('keeps a sort the reader picked when the keyword changes or is cleared', () => {
+    const { result } = renderGrid('/search?record=projects&sortBy=-name', PROJECTS);
+
+    act(() => result.current.grid.setKeyword('trans'));
+    expect(result.current.grid.state.sortBy).toBe('-name');
+
+    act(() => result.current.grid.setKeyword(''));
+    expect(result.current.grid.state.sortBy).toBe('-name');
+  });
+
+  it('clears the sort from the address when the reader picks relevance', () => {
+    const { result } = renderGrid('/search?keywords=trans&sortBy=%2Bname', PROJECTS);
+
+    act(() => result.current.grid.setSort('score', '-'));
+
+    expect(params(result.current.search).get('sortBy')).toBeNull();
+    expect(result.current.grid.state.sortBy).toBe('-score');
   });
 
   it('keeps the rest of the view when only the keyword changes', () => {

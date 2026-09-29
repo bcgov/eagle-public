@@ -28,6 +28,8 @@ export const DEFAULT_PAGE_SIZE = 25;
 /** Names & details sorts by posted date; inside-document search sorts by match count. */
 export const DEFAULT_SORT = '-datePosted';
 export const INSIDE_SORT = '-matches';
+/** demi-search's own ranking against the keyword; it reads `-score` as "issue no $orderby". */
+export const RELEVANCE_SORT = '-score';
 
 /** URL keys the grid owns. Anything else on the query string is a filter id. */
 const RESERVED = ['keywords', 'record', 'scope', 'sortBy', 'currentPage', 'pageSize', 'cols'];
@@ -68,7 +70,7 @@ export interface GridUrlState {
 }
 
 export interface GridDefaults {
-  /** Sort applied when the URL names none, and restored when the scope returns to names. */
+  /** Sort applied when the URL names none and there is no keyword to rank by. */
   defaultSort?: string;
   defaultRecord?: RecordType;
   defaultPageSize?: number;
@@ -80,6 +82,18 @@ function readFilterValue(raw: string): FilterValue {
   // A comma is how a multi-select column writes several picks; a single pick stays a string so
   // callers do not have to unwrap one-element arrays everywhere.
   return raw.includes(',') ? raw.split(',').filter((part) => part !== '') : raw;
+}
+
+/**
+ * The sort in force. One the URL names wins; otherwise a keyword ranks by relevance and no keyword
+ * falls back to the record's own order. Relevance with no keyword is no order at all, so a link
+ * that kept `-score` after its keyword was cleared reads as the default.
+ */
+function readSort(raw: unknown, scope: SearchScope, keywords: string, defaultSort: string): string {
+  const named = raw ? normalizeSortBy(String(raw)) : '';
+  if (named && (keywords || named !== RELEVANCE_SORT)) return named;
+  if (scope === 'inside') return INSIDE_SORT;
+  return keywords ? RELEVANCE_SORT : defaultSort;
 }
 
 /** Reads the grid's URL schema off a query string. Pure, so the legacy redirect can reuse it. */
@@ -102,15 +116,18 @@ export function parseGridParams(
     filters[key] = readFilterValue(String(value));
   }
 
+  const keywords = String(params['keywords'] ?? '');
+
   return {
-    keywords: String(params['keywords'] ?? ''),
+    keywords,
     record,
     scope,
-    sortBy: params['sortBy']
-      ? normalizeSortBy(String(params['sortBy']))
-      : scope === 'inside'
-        ? INSIDE_SORT
-        : (defaults.defaultSort ?? DEFAULT_SORT),
+    sortBy: readSort(
+      params['sortBy'],
+      scope,
+      keywords.trim(),
+      defaults.defaultSort ?? DEFAULT_SORT,
+    ),
     currentPage: Number.isFinite(page) && page > 0 ? page : 1,
     pageSize: PAGE_SIZES.includes(size) ? size : (defaults.defaultPageSize ?? DEFAULT_PAGE_SIZE),
     hiddenColumns: readHiddenColumns(params['cols'], defaults.defaultHiddenColumns ?? []),
@@ -227,12 +244,13 @@ export function useGridUrlState(defaults: GridDefaults = {}): GridUrlApi {
       write({
         ...current(),
         scope: scope === 'names' ? null : scope,
-        // Inside documents ranks by how many passages matched; names & details by date.
-        sortBy: scope === 'inside' ? INSIDE_SORT : defaultSort,
+        // Inside documents ranks by how many passages matched; names & details reads its own
+        // default back off the keyword, so no sort is pinned on the way out.
+        sortBy: scope === 'inside' ? INSIDE_SORT : null,
         currentPage: null,
       });
     },
-    [current, defaultSort, write],
+    [current, write],
   );
 
   const setFilter = useCallback(
@@ -245,9 +263,11 @@ export function useGridUrlState(defaults: GridDefaults = {}): GridUrlApi {
 
   const setSort = useCallback(
     (key: string, fallback: '+' | '-' = '+') => {
+      const next = toggleSortDirection(state.sortBy, key, fallback);
       write({
         ...current(),
-        sortBy: toggleSortDirection(state.sortBy, key, fallback),
+        // Relevance is what a keyword reads by default; pinning it would outlive the keyword.
+        sortBy: next === RELEVANCE_SORT ? null : next,
         currentPage: null,
       });
     },
