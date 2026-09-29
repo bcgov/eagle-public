@@ -458,6 +458,15 @@
   margin-top: 2px;
 }
 
+/* Both Acts carry terms of the same name, so each Act's terms sit under their own heading. */
+.display-grid__picker-group {
+  margin: var(--layout-margin-xsmall) 0 0;
+  padding: 4px 2px 2px;
+  border-top: var(--layout-border-width-small) solid var(--theme-gray-50);
+  color: var(--typography-color-secondary);
+  font: var(--typography-bold-label);
+}
+
 .display-grid__picker-clear {
   padding: 0;
   border: none;

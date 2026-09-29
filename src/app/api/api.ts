@@ -356,16 +356,23 @@ export async function searchKeywords(
 /** One page holds every row of these small collections; callers need all of them at once. */
 export const ALL_ROWS_PAGE_SIZE = 250;
 
+/** The `List` collection spans both Acts and runs past 250 rows. demi-search caps a page here. */
+const LISTS_PAGE_SIZE = 1000;
+
 /** Dropdown/filter list items, lazily fetched and cached by TanStack Query. */
 export function listsQueryOptions() {
   return {
     queryKey: ['lists'],
     queryFn: async (): Promise<any[]> => {
-      return rowsFrom(
-        await getJson<unknown>(
-          `${searchPath()}/search?pageSize=${ALL_ROWS_PAGE_SIZE}&dataset=List`,
-        ),
+      const envelope = await getJson<unknown>(
+        `${searchPath()}/search?pageSize=${LISTS_PAGE_SIZE}&dataset=List`,
       );
+      const rows = rowsFrom(envelope);
+      const total = totalFrom(envelope);
+      if (total !== null && rows.length < total) {
+        logger.warn(`List answered ${rows.length} of ${total} rows; the rest are not shown`, 'api');
+      }
+      return rows;
     },
   };
 }

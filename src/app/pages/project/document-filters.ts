@@ -5,6 +5,7 @@ import {
   FilterGroupObject,
   MultiSelectDefinition,
 } from 'app/components/filters/filter-object';
+import { ACT_TERMS_POSTFIX } from 'app/components/display-grid/grid-helpers';
 
 /** The `List` item `type` each document filter draws its options from, and its label. */
 export const DOCUMENT_FILTERS: Record<string, { listType: string; label: string }> = {
@@ -14,7 +15,7 @@ export const DOCUMENT_FILTERS: Record<string, { listType: string; label: string 
   projectPhase: { listType: 'projectPhase', label: 'Project Phase' },
 };
 
-const LEGISLATION_GROUP = new FilterGroupObject('legislation', '', ' Act Terms');
+const LEGISLATION_GROUP = new FilterGroupObject('legislation', '', ACT_TERMS_POSTFIX);
 
 export const DATE_FILTER_LIST = ['datePostedStart', 'datePostedEnd'];
 

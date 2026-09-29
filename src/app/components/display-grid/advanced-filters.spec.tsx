@@ -185,6 +185,80 @@ describe('AdvancedFilters', () => {
     expect(onChange).toHaveBeenCalledWith('legislation', '2018');
   });
 
+  it('splits a select by Act, 2018 first, and emits the id of the term picked', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const decision: AdvancedField = {
+      id: 'eacDecision',
+      label: 'EA decision',
+      kind: 'select',
+      options: [
+        { value: 'issued-2002', label: 'Certificate issued', legislation: '2002' },
+        { value: 'issued-2018', label: 'Certificate issued', legislation: '2018' },
+      ],
+    };
+    render(<AdvancedFilters fields={[decision]} values={{}} onChange={onChange} open />);
+    const select = screen.getByLabelText('EA decision');
+
+    const acts = within(select).getAllByRole('group');
+    expect(acts.map((act) => act.getAttribute('label'))).toEqual([
+      '2018 Act Terms',
+      '2002 Act Terms',
+    ]);
+    expect(within(acts[1]).getByRole('option', { name: 'Certificate issued (2002)' })).toHaveValue(
+      'issued-2002',
+    );
+
+    await user.selectOptions(select, 'issued-2002');
+    expect(onChange).toHaveBeenCalledWith('eacDecision', 'issued-2002');
+  });
+
+  it('names the Act of the picked term in the closed select', () => {
+    const decision: AdvancedField = {
+      id: 'eacDecision',
+      label: 'EA decision',
+      kind: 'select',
+      options: [
+        { value: 'issued-2002', label: 'Certificate issued', legislation: '2002' },
+        { value: 'issued-2018', label: 'Certificate issued', legislation: '2018' },
+      ],
+    };
+    render(
+      <AdvancedFilters
+        fields={[decision]}
+        values={{ eacDecision: 'issued-2002' }}
+        onChange={vi.fn()}
+        open
+      />,
+    );
+    const select = screen.getByLabelText<HTMLSelectElement>('EA decision');
+
+    expect(select.selectedOptions[0]).toHaveTextContent('Certificate issued (2002)');
+  });
+
+  it('puts the terms with no Act last, under Other terms', () => {
+    const phase: AdvancedField = {
+      id: 'projectPhase',
+      label: 'Phase',
+      kind: 'select',
+      options: [
+        { value: 'other', label: 'Other' },
+        { value: 'pre-2002', label: 'Pre-Application', legislation: '2002' },
+        { value: 'pre-2018', label: 'Pre-Application', legislation: '2018' },
+      ],
+    };
+    render(<AdvancedFilters fields={[phase]} values={{}} onChange={vi.fn()} open />);
+    const select = screen.getByLabelText('Phase');
+
+    const groups = within(select).getAllByRole('group');
+    expect(groups.map((group) => group.getAttribute('label'))).toEqual([
+      '2018 Act Terms',
+      '2002 Act Terms',
+      'Other terms',
+    ]);
+    expect(within(groups[2]).getByRole('option', { name: 'Other' })).toHaveValue('other');
+  });
+
   it('drops a text filter when the box is emptied, once typing has stopped', async () => {
     const user = userEvent.setup();
     const { onChange } = setup({ proponent: 'Cedar' });

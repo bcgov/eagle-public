@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
+import { useState } from 'react';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ValuePicker } from './value-picker';
@@ -240,5 +241,138 @@ describe('ValuePicker', () => {
 
     expect(screen.queryByRole('checkbox', { name: 'Proponent 0' })).not.toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: 'Search type' })).toBeInTheDocument();
+  });
+});
+
+describe('ValuePicker with terms from both Acts', () => {
+  /** The same phase name under each Act, 2002 first as the List collection can send it. */
+  const phases: ValueOption[] = [
+    { value: 'pre-2002', label: 'Pre-Application', legislation: '2002' },
+    { value: 'pre-2018', label: 'Pre-Application', legislation: '2018' },
+    { value: 'early-2018', label: 'Early Engagement', legislation: '2018' },
+  ];
+
+  it('heads each Act with its own terms, 2018 first', async () => {
+    const user = userEvent.setup();
+    renderPicker([], phases);
+
+    await user.click(screen.getByRole('button', { name: 'Filter by Type' }));
+
+    const acts = screen.getAllByRole('group', { name: /Act Terms$/ });
+    expect(acts).toHaveLength(2);
+    expect(acts[0]).toBe(screen.getByRole('group', { name: '2018 Act Terms' }));
+    expect(acts[1]).toBe(screen.getByRole('group', { name: '2002 Act Terms' }));
+    expect(within(acts[0]).getAllByRole('checkbox')).toHaveLength(2);
+    expect(within(acts[0]).getByRole('checkbox', { name: 'Pre-Application' })).toBeInTheDocument();
+    expect(within(acts[1]).getAllByRole('checkbox')).toHaveLength(1);
+    expect(within(acts[1]).getByRole('checkbox', { name: 'Pre-Application' })).toBeInTheDocument();
+  });
+
+  it('reports the id of the Act whose term was ticked', async () => {
+    const user = userEvent.setup();
+    const onChange = renderPicker([], phases);
+
+    await user.click(screen.getByRole('button', { name: 'Filter by Type' }));
+    const act2002 = screen.getByRole('group', { name: '2002 Act Terms' });
+    await user.click(within(act2002).getByRole('checkbox', { name: 'Pre-Application' }));
+
+    expect(onChange).toHaveBeenCalledWith(['pre-2002']);
+  });
+
+  it('names the Act of a picked term on the button', () => {
+    renderPicker(['pre-2002'], phases);
+
+    expect(screen.getByRole('button', { name: 'Filter by Type' })).toHaveTextContent(
+      'Pre-Application (2002)',
+    );
+  });
+
+  it('heads each Act in the typeahead too', async () => {
+    const user = userEvent.setup();
+    const many: ValueOption[] = Array.from({ length: 42 }, (_, index) => ({
+      value: `t${index}`,
+      label: `Term ${Math.floor(index / 2)}`,
+      legislation: index % 2 ? '2018' : '2002',
+    }));
+    renderPicker([], many);
+
+    await user.click(screen.getByRole('button', { name: 'Filter by Type' }));
+    await user.click(screen.getByRole('combobox', { name: 'Search type' }));
+
+    const newer = screen.getByRole('group', { name: '2018 Act Terms' });
+    const older = screen.getByRole('group', { name: '2002 Act Terms' });
+    expect(newer.compareDocumentPosition(older) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(within(newer).getByRole('option', { name: 'Term 0' })).toBeInTheDocument();
+    expect(within(older).getByRole('option', { name: 'Term 0' })).toBeInTheDocument();
+  });
+
+  /** Over the typeahead threshold: both Acts' Pre-Application, 2018 fillers, and one no-Act term. */
+  const longMixed: ValueOption[] = [
+    ...phases,
+    ...Array.from({ length: 38 }, (_, index) => ({
+      value: `t${index}`,
+      label: `Term ${index}`,
+      legislation: '2018',
+    })),
+    { value: 'misc', label: 'Miscellaneous' },
+  ];
+
+  /** Holds the picks the way a column filter does, so chips and the button follow them. */
+  function PickerWithState({ onChange }: { onChange: (next: string[]) => void }) {
+    const [selected, setSelected] = useState<string[]>([]);
+    return (
+      <ValuePicker
+        label="Type"
+        options={longMixed}
+        selected={selected}
+        onChange={(next) => {
+          onChange(next);
+          setSelected(next);
+        }}
+      />
+    );
+  }
+
+  it('heads the no-Act terms in the typeahead as Other terms, after both Acts', async () => {
+    const user = userEvent.setup();
+    renderPicker([], longMixed);
+
+    await user.click(screen.getByRole('button', { name: 'Filter by Type' }));
+    await user.click(screen.getByRole('combobox', { name: 'Search type' }));
+
+    const listbox = screen.getByRole('listbox');
+    expect(
+      within(listbox)
+        .getAllByRole('group')
+        .map((group) => group.textContent),
+    ).toEqual([
+      expect.stringMatching(/^2018 Act Terms/),
+      expect.stringMatching(/^2002 Act Terms/),
+      expect.stringMatching(/^Other terms/),
+    ]);
+    const other = screen.getByRole('group', { name: 'Other terms' });
+    expect(within(other).getAllByRole('option')).toHaveLength(1);
+    expect(within(other).getByRole('option', { name: 'Miscellaneous' })).toBeInTheDocument();
+  });
+
+  it('drops only the 2002 term when its typeahead chip is removed', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(<PickerWithState onChange={onChange} />);
+    const button = screen.getByRole('button', { name: 'Filter by Type' });
+
+    await user.click(button);
+    await user.click(screen.getByRole('combobox', { name: 'Search type' }));
+    const newer = screen.getByRole('group', { name: '2018 Act Terms' });
+    await user.click(within(newer).getByRole('option', { name: 'Pre-Application' }));
+    const older = screen.getByRole('group', { name: '2002 Act Terms' });
+    await user.click(within(older).getByRole('option', { name: 'Pre-Application' }));
+
+    expect(button).toHaveAttribute('title', 'Pre-Application (2002), Pre-Application (2018)');
+
+    await user.click(screen.getByRole('button', { name: 'Remove Pre-Application (2002)' }));
+
+    expect(onChange).toHaveBeenLastCalledWith(['pre-2018']);
+    expect(button).toHaveAttribute('title', 'Pre-Application (2018)');
   });
 });

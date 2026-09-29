@@ -369,7 +369,7 @@ describe('project reads served by DEMI', () => {
       // The List read is not the banner: it happens either way, and it is the only other request.
       expect(requestedUrls()).toEqual([
         `${DEMI}/58851197aaecd9001b8227cc`,
-        `${SEARCH}/search?pageSize=250&dataset=List`,
+        `${SEARCH}/search?pageSize=1000&dataset=List`,
       ]);
     });
 
