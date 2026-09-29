@@ -40,6 +40,55 @@ describe('home page shell', () => {
     expect(follows(periods, uploads)).toBe(true);
   });
 
+  it('reads h1, then Map Explorer, the feed, the rail and About, in that order', () => {
+    renderHome();
+
+    const title = screen.getByRole('heading', { level: 1 });
+    const sections = screen.getAllByRole('heading', { level: 2 });
+    expect(sections.map((h) => h.textContent)).toEqual([
+      'Map Explorer',
+      'Updates',
+      'Open for comment',
+      'Recent Uploads',
+      'About',
+    ]);
+    expect(follows(title, sections[0])).toBe(true);
+  });
+
+  it('points the Map Explorer band at the projects map', () => {
+    renderHome();
+
+    const band = screen.getByRole('region', { name: 'Map Explorer' });
+    expect(within(band).getByRole('link', { name: 'Open Map Explorer' })).toHaveAttribute(
+      'href',
+      '/projects',
+    );
+  });
+
+  it('links the About band to the About page', () => {
+    renderHome();
+
+    const band = screen.getByRole('region', { name: 'About' });
+    expect(
+      within(band).getByRole('link', { name: 'About environmental assessment' }),
+    ).toHaveAttribute('href', '/about');
+  });
+
+  it('lists three About rows, each opening its own section of the About page', () => {
+    renderHome();
+
+    const list = within(screen.getByRole('region', { name: 'About' })).getByRole('list');
+    const rows = within(list).getAllByRole('link');
+    expect(rows.map((row) => row.getAttribute('href'))).toEqual([
+      '/about#process',
+      '/about#legislation',
+      '/about#compliance',
+    ]);
+    expect(rows[0]).toHaveAccessibleName(/^Which Act applies /);
+    expect(rows[1]).toHaveAccessibleName(/^Legislation /);
+    expect(rows[2]).toHaveAccessibleName(/^Compliance oversight /);
+  });
+
   it('opens no reader on the bare home page', () => {
     renderHome();
 

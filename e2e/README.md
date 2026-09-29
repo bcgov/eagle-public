@@ -14,12 +14,12 @@ yarn install                                                  # first time only
 BASE_URL=http://localhost:4173 yarn test
 ```
 
-A `BASE_URL` on port 4173 makes Playwright start the server itself (`webServer` in
-`playwright.config.ts`): `vite preview`, serving `dist/eagle-public/browser` with the dev server's
-proxy rules, so `/demi-search`, `/demi-projects` and `/notify-api` reach the
+A `BASE_URL` on `localhost` with a port makes Playwright start the server itself on that port
+(`webServer` in `playwright.config.ts`): `vite preview`, serving `dist/eagle-public/browser` with
+the dev server's proxy rules, so `/demi-search`, `/demi-projects` and `/notify-api` reach the
 same backends as `yarn start`. Build first, or preview has nothing to serve. It reuses a server
-already listening on 4173 unless `CI` is set. Every other `BASE_URL`, a dev server on 4200
-included, is left alone.
+already listening on that port unless `CI` is set. Pick a different port for a second checkout
+running at the same time. Every other `BASE_URL`, the dev server on 4200 included, is left alone.
 
 Against a deployed environment:
 

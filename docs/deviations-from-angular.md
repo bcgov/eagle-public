@@ -174,8 +174,18 @@ deviations. The deviations the pass turned up are below.
   component. Five 48px rows — project name, a document-type tab label, a date — are not
   a grid; PUBLIC-152 asks for the shared component, but the shipped rows are hand-built.
 - pages/home: the hero banner, the About cards, the Browse strip and the survey banner
-  are gone. The header's About link is the way to Legislation, The assessment process
-  and Compliance oversight now.
+  are gone. The header's About link and the home page's About band both link to
+  Legislation, The assessment process and Compliance oversight now.
+- pages/home: a slim Map Explorer band sits directly under the masthead, with an `<h2>`,
+  body copy and an "Open Map Explorer" button linking to `/projects`, no preview image.
+  The live interactive map is not embedded here; it is heavy, and it would trap scroll
+  and keyboard focus inside a home-page band.
+- pages/home: an About section sits after the Updates/rail body and before the footer,
+  with an `<h2>` About, the About page's summary paragraph, a link to `/about`, and
+  three link rows (Which Act applies, Legislation, Compliance oversight) to
+  `/about#process`, `/about#legislation` and `/about#compliance`. Angular's home page
+  carried About cards linking to the same three pages ("About the B.C. Environmental
+  Assessment Process"); this band brings that back in a smaller form.
 
 ## URLs
 

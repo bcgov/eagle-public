@@ -2,6 +2,11 @@
    ships as global CSS, and Bootstrap is loaded app-wide, so no block borrows a Bootstrap name.
    Mobile first; the one breakpoint is the masthead's 768px (site-header.css). */
 
+/* White page below the navy masthead; the Map Explorer and About bands are light gray. */
+.home {
+  background: var(--surface-color-background-white);
+}
+
 /* Blue-90 is lost on the opening band's blue, so the ring colour is a variable the band overrides
    (src/app/layout/page-masthead.css) rather than a second rule racing this one. */
 .home :focus-visible {
@@ -102,6 +107,35 @@
   color: var(--surface-color-primary-default);
 }
 
+/* Map Explorer band, between the masthead and the body. The button wraps below the text once the
+   420px text basis no longer fits beside it. */
+
+.home-map {
+  background: var(--surface-color-background-light-gray);
+  border-bottom: var(--layout-border-width-small) solid var(--theme-gray-30);
+}
+
+.home-map__inner {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--layout-padding-medium) var(--layout-padding-xlarge);
+  padding-block: var(--layout-padding-large);
+}
+
+.home-map__text {
+  flex: 1 1 420px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-padding-xsmall);
+}
+
+.home-map__open {
+  flex: 0 0 auto;
+}
+
 /* Body: the feed, then the rail; side by side from 768px. */
 
 .home-body {
@@ -122,12 +156,26 @@
   gap: var(--layout-padding-large);
 }
 
-/* Shared by the feed and the rail. */
+/* Shared by the feed, the rail and the Map Explorer and About bands. */
 
-.home-heading {
+.home-heading,
+.home-band__heading {
   margin: 0 0 var(--layout-margin-small);
   font: var(--typography-bold-h5);
   color: var(--typography-color-primary);
+}
+
+/* The bands' flex gap does the spacing. */
+.home-band__heading {
+  margin: 0;
+}
+
+.home-band__body {
+  margin: 0;
+  font: var(--typography-regular-body);
+  line-height: 1.5;
+  color: var(--typography-color-primary);
+  text-wrap: pretty;
 }
 
 .home-body ul {
@@ -250,7 +298,9 @@
   margin: var(--layout-margin-medium) 0 0;
 }
 
-.home-updates__all {
+/* The Map Explorer band's button shares this look. */
+.home-updates__all,
+.home-map__open {
   display: inline-flex;
   align-items: center;
   gap: var(--layout-padding-xsmall);
@@ -263,12 +313,27 @@
   text-decoration: none;
 }
 
-.home-updates__all:hover {
+.home-updates__all:hover,
+.home-map__open:hover {
   background: var(--surface-color-primary-button-hover);
   color: var(--typography-color-primary-invert);
 }
 
-.home-updates__all .material-icons {
+/* The theme's a:focus (0,1,1) would turn the label navy on the navy fill. */
+.home-updates__all:focus,
+.home-map__open:focus {
+  color: var(--typography-color-primary-invert);
+}
+
+/* Stops the global `a:active` blue landing on the blue fill while the button is pressed. */
+.home-updates__all:active,
+.home-map__open:active {
+  background: var(--surface-color-primary-button-hover);
+  color: var(--typography-color-primary-invert);
+}
+
+.home-updates__all .material-icons,
+.home-map__open .material-icons {
   font-size: 20px;
 }
 
@@ -530,6 +595,104 @@
   flex: 0 0 auto;
   font: var(--typography-regular-small-body);
   color: var(--typography-color-secondary);
+}
+
+/* About band, after the body and before the footer. Two equal columns that stack below
+   2 x 320px; neither has a max-width. */
+
+.home-about {
+  border-top: var(--layout-border-width-small) solid var(--theme-gray-30);
+  background: var(--surface-color-background-light-gray);
+}
+
+.home-about__inner {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  align-items: start;
+  gap: var(--layout-padding-large) var(--layout-padding-xlarge);
+  padding-block: var(--layout-padding-xlarge);
+}
+
+.home-about__intro {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-padding-small);
+}
+
+/* styles.css hides the underline on icon links and paints it back on `.link-label` only. */
+.home-about__more {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--layout-padding-xsmall);
+  font: var(--typography-bold-body);
+  text-decoration: underline;
+}
+
+.home-about__more .material-icons {
+  font-size: 18px;
+}
+
+/* Link rows: the Recent Uploads row pattern (`.home-upload`). */
+
+.home-about__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: var(--layout-border-width-small) solid var(--theme-gray-30);
+}
+
+.home-about__list > li {
+  border-bottom: var(--layout-border-width-small) solid var(--theme-gray-30);
+}
+
+.home-about__row {
+  display: flex;
+  align-items: center;
+  gap: var(--layout-padding-medium);
+  min-height: 48px;
+  padding: var(--layout-padding-small) var(--layout-padding-xsmall);
+  color: var(--typography-color-primary);
+  text-decoration: none;
+}
+
+/* Stated so Bootstrap's and the global link hover, focus and active colours do not repaint the row. */
+.home-about__row:hover,
+.home-about__row:focus,
+.home-about__row:active {
+  color: var(--typography-color-primary);
+  text-decoration: none;
+}
+
+.home-about__row:hover {
+  background: var(--theme-blue-10);
+}
+
+.home-about__text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-margin-hair);
+}
+
+.home-about__title {
+  font: var(--typography-bold-body);
+  color: var(--theme-blue-90);
+}
+
+.home-about__desc {
+  font: var(--typography-regular-small-body);
+  line-height: 1.45;
+  color: var(--typography-color-secondary);
+  text-wrap: pretty;
+}
+
+.home-about__row .material-icons {
+  flex: 0 0 auto;
+  font-size: 20px;
+  color: var(--theme-blue-90);
 }
 
 @media (width >= 768px) {

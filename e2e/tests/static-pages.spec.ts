@@ -138,6 +138,24 @@ test.describe('home', () => {
     checkBaseline('home', calls);
   });
 
+  test('an About row opens its section of the About page, with focus on its heading', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    await ready(page, 500);
+
+    await page
+      .getByRole('region', { name: 'About', exact: true })
+      .getByRole('link', { name: /^Legislation / })
+      .click();
+
+    await expect(page).toHaveURL(/\/about#legislation$/);
+    await expect(page.locator('section#legislation')).toBeInViewport();
+    await expect(
+      page.getByRole('heading', { level: 2, name: 'Legislation', exact: true }),
+    ).toBeFocused();
+  });
+
   // eagle-demi answers the feed in display order: pinned updates, then updates and decisions
   // newest first. The page shows every row it gets, in that order.
   test('@data feed cards come from the HomeFeed read', async ({ page }) => {

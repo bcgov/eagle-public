@@ -88,6 +88,13 @@ describe('about page', () => {
     ).toBeInTheDocument();
   });
 
+  it('puts focus on the heading of a section named in the address on arrival', () => {
+    window.history.replaceState(null, '', '/about#legislation');
+    renderAbout();
+
+    expect(screen.getByRole('heading', { level: 2, name: 'Legislation' })).toHaveFocus();
+  });
+
   it('lays out the four sections in reading order', () => {
     renderAbout();
 

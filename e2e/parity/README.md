@@ -35,8 +35,8 @@ Run from the repository root.
 Both installs are needed: `yarn install` at the root (the style checks read
 `@bcgov/design-tokens` from the root `node_modules`) and in `e2e` (Playwright).
 
-`test:parity` starts `vite preview` on port 4173 itself, so build first with
-`yarn build`. The reference check (below) runs first. While pixel comparison is parked
+`test:parity` starts `vite preview` itself on port 4173 (or the port of `BASE_URL`, or
+`PARITY_PORT`), so build first with `yarn build`. The reference check (below) runs first. While pixel comparison is parked
 it only warns; once it is live, a bad reference stops the whole run, including the
 checks that need no browser: the fixture backend in `demi-search.spec.ts`, the
 reference check in `reference-check.spec.ts` and the network guard in

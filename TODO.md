@@ -83,9 +83,11 @@ Follow-ups from phase 6, none of them blocking:
 Plan and detail: `docs/home-redesign-plan.md`; behaviour changes in
 `docs/deviations-from-angular.md` ("Home page redesign" section).
 
-The design handoff sits at `design/handoffs/home/`, local only and never committed; the
-source archive is kept at `/root/repos/eagle-public-design-handoff-home.zip` and can be
-unzipped again if the directory is missing.
+The v4 design handoff sits at `design/handoffs/home-v4/`, local only and never
+committed; the original archive it came from was not kept. v4 supersedes v3: it drops the masthead purpose line and the
+Map Explorer preview image, and adds an About section above the footer. The v2 handoff
+stays at `design/handoffs/home/` with its archive at
+`/root/repos/eagle-public-design-handoff-home.zip`, as the record of what v2 shipped.
 
 Update notification emails still link to the project page; they move to `/updates/:id`
 once this line serves production.
@@ -93,7 +95,11 @@ once this line serves production.
 Open (moved from the redesign tracker, 2026-09-23):
 
 - Accessibility audit of the home page, not done yet: one h1, labelled landmarks,
-  contrast re-measured, keyboard-only pass.
+  contrast re-measured, keyboard-only pass. Covers the Map Explorer band and the About
+  section too.
+- Confirm the About section's anchors and copy with the content owner: whether the
+  two shortened About row descriptions (Which Act applies, Legislation) need
+  sign-off. Open questions in the v4 handoff README.
 - Take these back to design and Jira. PUBLIC-142 and PUBLIC-152 are settled in the plan.
   - PUBLIC-154: the ticket says results show on the home page. The design sends them to
     `/search`. Record the change.
@@ -104,8 +110,10 @@ Open (moved from the redesign tracker, 2026-09-23):
     open only and links to the `/search` comment periods tab for the rest. Confirm.
   - PUBLIC-31: asked for cards that expand in place with three buttons each. Built as a
     reader dialog. Record that the ask was set aside.
-  - PUBLIC-158: asks for a home page map, and the design has none. Descope it from the
-    home page or plan a map section.
+  - PUBLIC-158: asks for a homepage map. The home page now carries a slim Map Explorer
+    band with a button linking to `/projects`, not a live map. Confirm whether that
+    satisfies the ticket or whether it stays open; not yet confirmed with design or
+    Jira.
   - PUBLIC-146: the handoff does not mention the display grid contract. Confirm the rail
     rows are exempt.
 

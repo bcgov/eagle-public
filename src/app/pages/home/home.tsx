@@ -6,6 +6,8 @@ import { UpdatesFeed } from './updates-feed';
 import { UpdateReader } from './update-reader';
 import { OpenForComment } from './open-for-comment';
 import { RecentUploads } from './recent-uploads';
+import { MapExplorerBand } from './map-explorer-band';
+import { AboutBand } from './about-band';
 import './home.css';
 
 /** The home page, and at `/updates/:id` the same page with that update open in the reader. */
@@ -22,6 +24,8 @@ export function Home() {
         <HomeSearch />
       </PageMasthead>
 
+      <MapExplorerBand />
+
       <div className="home-body page-container">
         <div className="home-body__feed">
           <UpdatesFeed />
@@ -31,6 +35,8 @@ export function Home() {
           <RecentUploads />
         </div>
       </div>
+
+      <AboutBand />
 
       {id && <UpdateReader key={id} id={id} onClose={closeReader} />}
     </div>
