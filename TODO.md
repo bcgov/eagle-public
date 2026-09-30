@@ -241,3 +241,18 @@ Review polish items left after the unified About page landed. None block the pag
 - `e2e/tests/static-pages.spec.ts`: raise the `expectSectionAtTop` lower bound to about 16 so the 24px offset is tested; move the `aria-current` checks after the pin releases and add a tall-viewport Compliance case; drop the exact `toHaveCount(7)` on new-tab links.
 - `e2e/tests/smoke.spec.ts`: the `/legislation` redirect case duplicates static-pages.
 - The masthead title and lede start at the container's left edge while the body column is centred. Decide whether to cap the masthead inner block to match.
+
+## Projects by type follow-ups (2026-09-29)
+
+- `demi-search` caps a read at 1000 rows and the band counts rows. Past 1000 projects the band says "Showing the first N of M projects", but its counts still cover only those rows.
+- `src/app/pages/projects/projects.tsx` still builds the `['projects', 'all']` query by hand and caches an empty list when the search fails. Switch it to `allProjectsQueryOptions()` once `feat-map-server-search`, which changes that key, has landed.
+- Search sub-type filter is exact-match; sectors with trailing spaces are being trimmed in eagle-demi #463 plus a backfill; until then the Search link may show fewer projects than the band count.
+- Check in Safari that `position: relative` on `<tr>` holds the stretched project links in the table rows.
+- 2026-09-30: `allProjectsQueryOptions` throws on failure with no `retry` override, so while demi-search is down each mount makes up to 4 full-list calls; consider `retry: 1` or `retryOnMount: false`.
+- 2026-09-30: If the home band fails the shared `['projects','all']` read and the visitor then opens /projects, that page flashes "No projects found" until its own refetch lands; switching projects.tsx to `allProjectsQueryOptions()` fixes it.
+- 2026-09-30: `ALL_PROJECTS_TOTAL_KEY` sits under the `['projects','all']` prefix; a future prefix invalidation would hit the skipToken total query. Use a sibling key.
+- 2026-09-30: Truncation note uses `projects.length` (includes rows without `_id`) while the chart total excludes them; use the chart total.
+- 2026-09-30: Other-type footer wording: "Other" is a real type Search can filter; the band's Other also merges blank and unlisted types. Reword to say Search's Other filter shows fewer. Same for the Other sub-type, which also holds sectors literally named "other".
+- 2026-09-30: Sub-types merge across case but the Search link and `?subType=` matching use the first-seen spelling; match case-insensitively in `useTypeLevel` and pick a stable display spelling.
+- 2026-09-30: Home e2e baseline holds only while the band sits more than 200px below a 900px fold; note the dependency in static-pages.spec.ts.
+- 2026-09-30: Add an unmount test for `useNearViewport` (observer disconnect), assert every Search column has a width in projects.spec.ts, and simplify `sel && focus` in types-chart.tsx.

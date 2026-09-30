@@ -1,5 +1,6 @@
 import type { GridColumn } from 'app/components/display-grid/types';
 import { Constants } from 'app/utils/constants';
+import { rowValueOptions } from '../search-filters';
 import {
   RECORD_DATASETS,
   toOptions,
@@ -32,6 +33,10 @@ function projectHref(row: Record<string, unknown>): string | undefined {
   return typeof id === 'string' && id !== '' ? `/p/${id}` : undefined;
 }
 
+/**
+ * Widths add up to 100% with every column on. A hidden column is not drawn, and the fixed table
+ * spreads the width it leaves across the columns still showing.
+ */
 const COLUMNS: GridColumn<Record<string, unknown>>[] = [
   {
     key: 'name',
@@ -43,7 +48,7 @@ const COLUMNS: GridColumn<Record<string, unknown>>[] = [
     link: true,
     href: projectHref,
     locked: true,
-    width: '24%',
+    width: '22%',
   },
   {
     key: 'dateUpdated',
@@ -54,7 +59,7 @@ const COLUMNS: GridColumn<Record<string, unknown>>[] = [
     date: true,
     primaryDate: true,
     defaultHidden: true,
-    width: '14%',
+    width: '12%',
   },
   {
     key: 'proponent',
@@ -62,16 +67,26 @@ const COLUMNS: GridColumn<Record<string, unknown>>[] = [
     filter: 'values',
     filterId: 'proponent',
     render: proponentName,
-    width: '22%',
+    width: '18%',
   },
-  { key: 'type', label: 'Type', filter: 'values', filterId: 'type', width: '17%' },
-  { key: 'region', label: 'Region', filter: 'values', filterId: 'region', width: '11%' },
+  { key: 'type', label: 'Type', filter: 'values', filterId: 'type', width: '14%' },
+  {
+    /* The project's `sector`, which the home page's projects-by-type band calls its sub-type. Its
+       menu lists only the sub-types on the page of results showing: the index has no facet for it. */
+    key: 'sector',
+    label: 'Sub-type',
+    filter: 'values',
+    filterId: 'sector',
+    defaultHidden: true,
+    width: '13%',
+  },
+  { key: 'region', label: 'Region', filter: 'values', filterId: 'region', width: '10%' },
   {
     key: 'currentPhaseName',
     label: 'Phase',
     filter: 'values',
     filterId: 'currentPhaseName',
-    width: '12%',
+    width: '11%',
   },
 ];
 
@@ -106,6 +121,8 @@ export const projectsConfig: RecordTypeConfig = {
       CEAAInvolvement: ofType(LIST_TYPES.CEAAInvolvement),
     };
   },
+  // No `List` type or constant names the sub-types, so the menu offers the ones the page shows.
+  optionsFromRows: (rows) => ({ sector: rowValueOptions(rows, 'sector') }),
   selectable: false,
   headerless: false,
 };

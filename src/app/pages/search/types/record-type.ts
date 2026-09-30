@@ -61,6 +61,8 @@ export interface RecordTypeConfig<Row = Record<string, unknown>> {
   advancedFields: AdvancedField[];
   /** Dropdown values per filter id, built from the cached `List` and `Organization` reads. */
   optionsFrom: (lists: OptionSource[], orgs: OptionSource[]) => Record<string, ValueOption[]>;
+  /** Dropdown values read off the page's own rows, for a filter whose values no lookup lists. */
+  optionsFromRows?: (rows: Row[]) => Record<string, ValueOption[]>;
   /** Whether rows carry a selection checkbox. */
   selectable: boolean;
   /** No column headings and no filter row: the column filters move into the panel. */

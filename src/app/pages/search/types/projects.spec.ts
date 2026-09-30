@@ -11,6 +11,7 @@ const FILLED: Record<string, string> = {
   nameContains: 'Cedar',
   proponent: 'org-1',
   type: 'Mines',
+  sector: 'Mineral Mines',
   region: 'Skeena',
   currentPhaseName: 'phase-1',
   dateUpdatedStart: '2020-01-01',
@@ -66,6 +67,7 @@ describe('projects record type', () => {
       'nameContains',
       'proponent',
       'type',
+      'sector',
       'region',
       'currentPhaseName',
     ]);
@@ -124,10 +126,20 @@ describe('projects record type', () => {
       'Last updated',
       'Proponent',
       'Type',
+      'Sub-type',
       'Region',
       'Phase',
     ]);
     expect(projectsConfig.columns[0]).toMatchObject({ link: true, locked: true });
+  });
+
+  it('fills the table exactly when every column is on', () => {
+    const total = projectsConfig.columns.reduce(
+      (sum, column) => sum + Number.parseFloat(column.width ?? '0'),
+      0,
+    );
+
+    expect(total).toBe(100);
   });
 
   it('covers every offered filter with a filled value', () => {
@@ -170,6 +182,32 @@ describe('projects record type', () => {
     expect(options['currentPhaseName']).toEqual([
       { value: 'pre-2002', label: 'Pre-Application', legislation: '2002' },
       { value: 'pre-2018', label: 'Pre-Application', legislation: '2018' },
+    ]);
+  });
+
+  it('filters the sub-type column by the project sector, off until the reader turns it on', () => {
+    const subType = projectsConfig.columns.find((column) => column.label === 'Sub-type');
+
+    expect(subType).toMatchObject({
+      key: 'sector',
+      filter: 'values',
+      filterId: 'sector',
+      defaultHidden: true,
+    });
+  });
+
+  it('fills the sub-type dropdown from the sectors the rows carry', () => {
+    const options = projectsConfig.optionsFromRows?.([
+      { sector: 'Mineral Mines' },
+      { sector: 'Coal Mines' },
+      { sector: 'Mineral Mines ' },
+      { sector: '' },
+      {},
+    ]);
+
+    expect(options?.['sector']).toEqual([
+      { value: 'Coal Mines', label: 'Coal Mines' },
+      { value: 'Mineral Mines', label: 'Mineral Mines' },
     ]);
   });
 

@@ -4,6 +4,7 @@ import type { DemiProject, ListRef } from './api';
 import { CommentPeriod } from 'app/models/commentperiod';
 import { commentPeriodsQueryOptions } from './commentperiod';
 import { queryClient } from './query-client';
+import type { QueryClient } from '@tanstack/react-query';
 import type { Org } from 'app/models/organization';
 import type { ISearchResults } from 'app/models/search';
 import * as search from './search';
@@ -11,11 +12,8 @@ import { extractFromSearchResults, idToListRow, natureBuildMapper } from 'app/ut
 import type { DataQueryResponse } from 'app/models/api-response';
 import { logger } from 'app/config/logging';
 
-// get just the projects (for fast mapping)
-export async function getAll(
-  pageNum = 0,
-  pageSize = 1000000,
-): Promise<{ totalCount: number; data: Project[] }> {
+/** One project search; `data` is `null` when the search failed or came back malformed. */
+async function searchProjects(pageNum: number, pageSize: number) {
   const res = (await search.getSearchResults(
     '',
     'Project',
@@ -29,6 +27,20 @@ export async function getAll(
     {},
     '',
   )) as ISearchResults<Project>[] | null;
+  const results = extractFromSearchResults(res as ISearchResults<Project>[]);
+  return {
+    res,
+    totalCount: (res?.[0]?.data?.meta?.[0]?.searchResultsTotal as number) ?? 0,
+    data: results ? results.map((project) => new Project(project)) : null,
+  };
+}
+
+// get just the projects (for fast mapping)
+export async function getAll(
+  pageNum = 0,
+  pageSize = 1000000,
+): Promise<{ totalCount: number; data: Project[] }> {
+  const { res, totalCount, data } = await searchProjects(pageNum, pageSize);
   // WHY: search.getSearchResults collapses ANY failed request into a single `null`, not an
   // array, and demi-api - the incoming search backend - answers non-2xx when a search fails
   // rather than 200-with-an-empty-result-set. So on a failed search `res` is null here, and on
@@ -36,22 +48,41 @@ export async function getAll(
   // `res[0].data.meta[0].searchResultsTotal` threw a TypeError on all three, which escaped
   // into the projects page error handler and bounced the visitor off /projects onto the home
   // page. Degrade to an empty result set instead; the list then renders "No projects found".
-  const results = extractFromSearchResults(res as ISearchResults<Project>[]);
-  if (!results) {
+  if (!data) {
     logger.error('Project search returned no usable results, showing an empty list', 'project', {
       res,
     });
   }
-  const projectList = (results ?? []).map((project) => new Project(project));
-  return {
-    totalCount: (res?.[0]?.data?.meta?.[0]?.searchResultsTotal as number) ?? 0,
-    data: projectList,
-  };
+  return { totalCount, data: data ?? [] };
 }
 
 // get all projects and related data
 export async function getAllFull(pageNum = 0, pageSize = 1000000): Promise<Project[]> {
   return (await getAll(pageNum, pageSize)).data;
+}
+
+/** The search's own total behind `allProjectsQueryOptions`, which can exceed the rows it sent. */
+export const ALL_PROJECTS_TOTAL_KEY = ['projects', 'all', 'total'] as const;
+
+/**
+ * Every public project in one request; the key is shared with /projects so both read one cache
+ * entry. A failed search throws, so the query retries and caches nothing, rather than caching an
+ * empty list the way `getAll` degrades. The search total goes under `ALL_PROJECTS_TOTAL_KEY`.
+ */
+export function allProjectsQueryOptions() {
+  return {
+    queryKey: ['projects', 'all'],
+    queryFn: async ({ client }: { client: QueryClient }): Promise<Project[]> => {
+      const { res, totalCount, data } = await searchProjects(1, 1000000);
+      if (!data) {
+        const message = 'Project search returned no usable results';
+        logger.error(message, 'project', { res });
+        throw new Error(message);
+      }
+      client.setQueryData(ALL_PROJECTS_TOTAL_KEY, totalCount);
+      return data;
+    },
+  };
 }
 
 /**

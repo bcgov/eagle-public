@@ -56,3 +56,52 @@ export function yearOptions(chosen: string): ValueOption[] {
   }
   return years.map((year) => ({ value: String(year), label: String(year) }));
 }
+
+/**
+ * The distinct values one field holds across the rows on the page, A to Z, for a filter no lookup
+ * lists. Stored text often carries a stray trailing space, so values are trimmed and merged.
+ */
+export function rowValueOptions(rows: Record<string, unknown>[], key: string): ValueOption[] {
+  const values = new Set<string>();
+  for (const row of rows) {
+    const value = row[key];
+    if (typeof value === 'string' && value.trim() !== '') values.add(value.trim());
+  }
+  return [...values].sort((a, b) => a.localeCompare(b)).map((value) => ({ value, label: value }));
+}
+
+/**
+ * Options read off the page's rows, plus every pick in force the page no longer shows, so a choice
+ * never drops out of its own menu (the rows a filter leaves hold only the values it picked).
+ */
+export function withChosen(
+  options: ValueOption[],
+  chosen: FilterValues[string] | undefined,
+): ValueOption[] {
+  const picks = chosen == null ? [] : Array.isArray(chosen) ? chosen : [chosen];
+  const missing = picks.filter(
+    (pick) => pick !== '' && !options.some((option) => option.value === pick),
+  );
+  if (missing.length === 0) return options;
+  return [...options, ...missing.map((pick) => ({ value: pick, label: pick }))].sort((a, b) =>
+    a.label.localeCompare(b.label),
+  );
+}
+
+/**
+ * Lookup options with any read off the rows laid over them. A record type that reads none gets the
+ * lookup object back as is, so what is built from it is not rebuilt each time rows land.
+ */
+export function withRowOptions(
+  listed: Record<string, ValueOption[]>,
+  fromRows: ((rows: Record<string, unknown>[]) => Record<string, ValueOption[]>) | undefined,
+  rows: Record<string, unknown>[],
+  filters: FilterValues,
+): Record<string, ValueOption[]> {
+  if (!fromRows) return listed;
+  const all = { ...listed };
+  for (const [id, found] of Object.entries(fromRows(rows))) {
+    all[id] = withChosen(found, filters[id]);
+  }
+  return all;
+}
