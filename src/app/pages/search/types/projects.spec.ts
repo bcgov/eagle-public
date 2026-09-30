@@ -133,6 +133,15 @@ describe('projects record type', () => {
     expect(projectsConfig.columns[0]).toMatchObject({ link: true, locked: true });
   });
 
+  it('fills the table exactly when every column is on', () => {
+    const total = projectsConfig.columns.reduce(
+      (sum, column) => sum + Number.parseFloat(column.width ?? '0'),
+      0,
+    );
+
+    expect(total).toBe(100);
+  });
+
   it('covers every offered filter with a filled value', () => {
     expect(Object.keys(FILLED)).toEqual([...COLUMN_FILTER_IDS, ...ADVANCED_IDS]);
   });

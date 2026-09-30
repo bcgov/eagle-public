@@ -41,6 +41,8 @@ async function readRow(link: Locator): Promise<{ name: string; count: number }> 
 
 async function openHome(page: Page): Promise<void> {
   await page.goto('/');
+  // The band reads nothing until it nears the viewport.
+  await band(page).scrollIntoViewIfNeeded();
   await expect(barLinks(page).first()).toBeVisible({ timeout: DATA_TIMEOUT });
 }
 

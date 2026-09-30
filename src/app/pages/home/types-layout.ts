@@ -1,4 +1,4 @@
-import { rankOf, shade, ink, type SubNode, type TypeNode } from './types-tree';
+import { rankOf, shade, ink, subRank, type SubNode, type TypeNode } from './types-tree';
 
 /** Placeholder map box until the map is measured; tiles are drawn as percentages of the box. */
 export const MAP_W = 141;
@@ -187,14 +187,15 @@ export function layoutTiles(
       );
     }
     t.subs.forEach((s, si) => {
+      const tone = on ? subRank(s.name, si) : rank;
       tiles.push({
         key: subKey(t.name, s.name),
         type: t.name,
         subType: s.name,
         count: s.count,
         rect: rects[si],
-        fill: shade(on ? si : rank),
-        ink: ink(on ? si : rank),
+        fill: shade(tone),
+        ink: ink(tone),
         active: on,
       });
     });
@@ -263,18 +264,21 @@ export function layoutBars(tree: readonly TypeNode[], type: string | null): BarR
 
   if (sel) {
     const subMax = Math.max(0, ...sel.subs.map((s) => s.count));
-    return sel.subs.map((s, si): BarRow => ({
-      key: `r:${sel.name}:${s.name}`,
-      kind: 'sub',
-      type: sel.name,
-      subType: s.name,
-      name: s.name,
-      count: s.count,
-      fill: shade(si),
-      opens: 'projects',
-      delay: ROW_STAGGER_MS * si,
-      segments: [segment(sel, s, 0, (s.count / subMax) * 100, shade(si))],
-    }));
+    return sel.subs.map((s, si): BarRow => {
+      const fill = shade(subRank(s.name, si));
+      return {
+        key: `r:${sel.name}:${s.name}`,
+        kind: 'sub',
+        type: sel.name,
+        subType: s.name,
+        name: s.name,
+        count: s.count,
+        fill,
+        opens: 'projects',
+        delay: ROW_STAGGER_MS * si,
+        segments: [segment(sel, s, 0, (s.count / subMax) * 100, fill)],
+      };
+    });
   }
 
   const max = Math.max(0, ...tree.map((t) => t.count));

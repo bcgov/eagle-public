@@ -43,13 +43,13 @@ describe('useTypeLevel', () => {
     expect(result.current.level).toMatchObject({ type: 'Mines', subType: 'Coal Mines' });
   });
 
-  it('clears both keys for a type the tree does not hold', () => {
+  it('reads as no level for a type the tree does not hold', () => {
     const { result } = renderLevel('/?type=Bogus&subType=Coal%20Mines');
 
     expect(result.current.level).toMatchObject({ type: null, subType: null });
   });
 
-  it('keeps the type and clears a sub-type that type does not hold', () => {
+  it('reads as the type alone for a sub-type that type does not hold', () => {
     // "Oil & Gas Pipelines" exists, but under another type.
     const { result } = renderLevel('/?type=Mines&subType=Oil%20%26%20Gas%20Pipelines');
 

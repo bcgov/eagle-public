@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { createElement, type ReactNode } from 'react';
 import { makeQueryClient } from '../../../test-utils';
@@ -23,14 +23,21 @@ const ROWS = [
   project('p4', 'Energy - Electricity', 'Hydroelectric'),
 ];
 
-function renderTree(answer: Response | typeof PENDING) {
+function renderTree(answer: Response | typeof PENDING, enabled = true) {
   const requests = stubFetch((url) => (url.includes('dataset=Project') ? answer : undefined));
   const client = makeQueryClient();
   function wrapper({ children }: { children: ReactNode }) {
     return createElement(QueryClientProvider, { client }, children);
   }
-  return { requests, ...renderHook(() => useProjectTypeTree(), { wrapper }) };
+  const view = renderHook((props: { enabled: boolean }) => useProjectTypeTree(props.enabled), {
+    wrapper,
+    initialProps: { enabled },
+  });
+  return { requests, client, ...view };
 }
+
+const projectReads = (requests: string[]) =>
+  requests.filter((url) => url.includes('dataset=Project')).length;
 
 describe('useProjectTypeTree', () => {
   afterEach(() => vi.unstubAllGlobals());
@@ -38,7 +45,36 @@ describe('useProjectTypeTree', () => {
   it('holds no tree and no failure while the list loads', () => {
     const { result } = renderTree(PENDING);
 
-    expect(result.current).toEqual({ tree: null, total: 0, failed: false });
+    expect(result.current).toEqual({ tree: null, total: 0, failed: false, truncated: null });
+  });
+
+  it('reads nothing while disabled, and reads once enabled', async () => {
+    const { result, requests, rerender } = renderTree(envelope(ROWS), false);
+
+    await act(() => Promise.resolve());
+    expect(projectReads(requests)).toBe(0);
+    expect(result.current.tree).toBeNull();
+
+    rerender({ enabled: true });
+
+    await waitFor(() => expect(result.current.tree).not.toBeNull());
+    expect(projectReads(requests)).toBe(1);
+  });
+
+  it('flags a read the search cut short, with the rows sent and the search total', async () => {
+    const { result } = renderTree(
+      json([{ searchResults: ROWS, meta: [{ searchResultsTotal: 1500 }] }]),
+    );
+
+    await waitFor(() => expect(result.current.tree).not.toBeNull());
+    expect(result.current.truncated).toEqual({ shown: 4, of: 1500 });
+  });
+
+  it('flags nothing when the search sent every project', async () => {
+    const { result } = renderTree(envelope(ROWS));
+
+    await waitFor(() => expect(result.current.tree).not.toBeNull());
+    expect(result.current.truncated).toBeNull();
   });
 
   it('groups the projects by type and sub-type from one project search', async () => {
@@ -66,9 +102,10 @@ describe('useProjectTypeTree', () => {
     expect(result.current.total).toBe(0);
   });
 
-  it('reports a failure when the search answers 500', async () => {
-    const { result } = renderTree(json(null, 500));
+  it('reports a failure when the search answers 500, and caches no list for /projects', async () => {
+    const { result, client } = renderTree(json(null, 500));
 
     await waitFor(() => expect(result.current.failed).toBe(true));
+    expect(client.getQueryData(['projects', 'all'])).toBeUndefined();
   });
 });

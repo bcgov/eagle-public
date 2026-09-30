@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { useMediaQuery } from 'app/state/responsive';
-import { projectsLabel, shade, type TypeNode, type SubNode } from './types-tree';
+import { OTHER, projectsLabel, shade, subRank, type TypeNode, type SubNode } from './types-tree';
 import { TypesBreadcrumb, type TypesCrumb } from './types-breadcrumb';
 import { TypesTreemap } from './types-treemap';
 import { TypesBars } from './types-bars';
@@ -16,6 +16,9 @@ export interface TypesChartProps {
 
 const HINT =
   'Select a type in the map or the list to see its sub-types, then a sub-type to see its projects.';
+const OTHER_TYPE_NOTE =
+  'Other holds projects with no type or an unlisted one, so Search has no filter for it.';
+const OTHER_SUB_NOTE = 'Other holds projects with no sub-type, so Search has no filter for it.';
 
 /** What the status region reads out after a level change; the focused crumb already says the name. */
 function announce(sel: TypeNode | undefined, trailSub: SubNode | undefined, total: number): string {
@@ -64,11 +67,19 @@ export function TypesChart({ tree, total }: TypesChartProps) {
 
   // The deepest level the trail names: what the count and the Search link describe.
   const focus = trailSub ?? sel;
-  let searchHref = '';
-  if (sel) {
+  let foot: ReactNode = HINT;
+  // Search filters on the exact value, but the band's Other also holds blank and unknown values,
+  // so a link there would promise a count Search cannot match.
+  if (sel?.name === OTHER) foot = OTHER_TYPE_NOTE;
+  else if (trailSub?.name === OTHER) foot = OTHER_SUB_NOTE;
+  else if (sel && focus) {
     const query = new URLSearchParams({ record: 'projects', type: sel.name });
     if (trailSub) query.set('sector', trailSub.name);
-    searchHref = `/search?${query}`;
+    foot = (
+      <Link to={`/search?${query}`}>
+        See all {focus.count} {focus.name} projects in Search
+      </Link>
+    );
   }
 
   return (
@@ -95,7 +106,11 @@ export function TypesChart({ tree, total }: TypesChartProps) {
 
       {sel && sub ? (
         // Keyed on the level so a new sub-type starts with an empty filter.
-        <TypesProjectTable key={levelKey} sub={sub} fill={shade(sel.subs.indexOf(sub))} />
+        <TypesProjectTable
+          key={levelKey}
+          sub={sub}
+          fill={shade(subRank(sub.name, sel.subs.indexOf(sub)))}
+        />
       ) : (
         <TypesBars
           tree={tree}
@@ -106,15 +121,7 @@ export function TypesChart({ tree, total }: TypesChartProps) {
         />
       )}
 
-      <p className="home-types__foot">
-        {focus ? (
-          <Link to={searchHref}>
-            See all {focus.count} {focus.name} projects in Search
-          </Link>
-        ) : (
-          HINT
-        )}
-      </p>
+      <p className="home-types__foot">{foot}</p>
     </div>
   );
 }

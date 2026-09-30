@@ -29,8 +29,9 @@ function withLevel(
 }
 
 /**
- * The chart level the address names. Once the tree is in, a type it does not hold clears both keys
- * and a sub-type the type does not hold clears the sub-type; before that the raw values pass through.
+ * The chart level the address names. Once the tree is in, a type it does not hold reads as no level
+ * and a sub-type the type does not hold reads as the type alone; the address is not rewritten.
+ * Before that the raw values pass through.
  */
 export function useTypeLevel(tree: readonly TypeNode[] | null): TypeLevel {
   const [params, setParams] = useSearchParams();

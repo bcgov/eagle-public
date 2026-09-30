@@ -1,4 +1,5 @@
 import { Constants } from 'app/utils/constants';
+import { logger } from 'app/config/logging';
 
 export const OTHER = 'Other';
 
@@ -72,26 +73,43 @@ const byCountOtherLast = (a: { name: string; count: number }, b: { name: string;
   b.count - a.count ||
   a.name.localeCompare(b.name);
 
-/** Groups projects by type, then sub-type (the project's sector). Types with no projects are left out. */
+interface SubGroup {
+  /** The first spelling seen, which the band shows. */
+  name: string;
+  rows: ProjectRow[];
+}
+
+/**
+ * Groups projects by type, then sub-type (the project's sector, compared without case). Types with
+ * no projects are left out, and so are rows with no id, which could not link to a project.
+ */
 export function buildTypeTree(projects: readonly TypeTreeSource[]): TypeNode[] {
-  const types = new Map<string, Map<string, ProjectRow[]>>();
+  const types = new Map<string, Map<string, SubGroup>>();
+  let skipped = 0;
   for (const p of projects) {
+    if (!p._id) {
+      skipped++;
+      continue;
+    }
     const type = normalizeType(p.type);
     const sub = subTypeOf(p.sector);
-    const subs = types.get(type) ?? new Map<string, ProjectRow[]>();
+    const subs = types.get(type) ?? new Map<string, SubGroup>();
     types.set(type, subs);
-    const rows = subs.get(sub) ?? [];
-    subs.set(sub, rows);
-    rows.push({
+    const key = sub.toLowerCase();
+    const group = subs.get(key) ?? { name: sub, rows: [] };
+    subs.set(key, group);
+    group.rows.push({
       id: p._id,
       name: p.name ?? '',
       region: p.region ?? '',
       phase: phaseOf(p.currentPhaseName),
     });
   }
+  if (skipped)
+    logger.warn(`Left ${skipped} projects with no id out of the type tree`, 'ProjectsByType');
 
   const tree: TypeNode[] = [...types].map(([name, subs]) => {
-    const subNodes: SubNode[] = [...subs].map(([subName, rows]) => ({
+    const subNodes: SubNode[] = [...subs.values()].map(({ name: subName, rows }) => ({
       name: subName,
       count: rows.length,
       projects: rows.sort((a, b) => a.name.localeCompare(b.name)),
@@ -130,6 +148,16 @@ export function rankOf(tree: readonly TypeNode[], type: string): number {
   if (type === OTHER) return OTHER_RANK;
   const i = tree.filter((t) => t.name !== OTHER).findIndex((t) => t.name === type);
   return i < 0 ? OTHER_RANK : i;
+}
+
+/**
+ * A sub-type's colour rank from its place in its type's list. "Other" always takes the gray. The
+ * rest cycle through the blues rather than clamp, so a tenth sub-type does not share the shade of
+ * the ninth beside it; the list is largest first, so the repeat lands on a small tile far from the
+ * first.
+ */
+export function subRank(name: string, index: number): number {
+  return name === OTHER ? OTHER_RANK : index % OTHER_RANK;
 }
 
 /** Fill for rank `i`: darkest blue first, gray from the last shade on. */

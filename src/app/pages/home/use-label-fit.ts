@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react';
 
 /** How long a level change takes to settle; labels are measured once the tiles stop moving. */
 export const LEVEL_SETTLE_MS = 760;
@@ -14,9 +14,9 @@ const spills = (el: HTMLElement): boolean =>
   el.scrollWidth > el.clientWidth + 1 || el.scrollHeight > el.clientHeight + 1;
 
 /**
- * Measures every `[data-fit]` label under the map. The first width measures on the next tick; a
- * later resize or a level change moves the tiles, so it waits for them to settle (no wait when
- * motion is reduced).
+ * Measures every `[data-fit]` label under the map. The first width measures before paint; a later
+ * resize or a level change moves the tiles, so it waits for them to settle (no wait when motion is
+ * reduced).
  */
 export function useLabelFit(
   mapRef: RefObject<HTMLElement | null>,
@@ -50,15 +50,24 @@ export function useLabelFit(
     if (!map) return;
     const observer = new ResizeObserver((entries) => {
       const width = entries[0]?.contentRect.width ?? map.clientWidth;
-      const settle = reduced || lastWidth.current === 0 ? 0 : LEVEL_SETTLE_MS;
+      const first = lastWidth.current === 0;
       lastWidth.current = width;
       setMapWidth(width);
+      if (first) return;
       clearTimeout(resizeTimer.current);
-      resizeTimer.current = setTimeout(measure, settle);
+      resizeTimer.current = setTimeout(measure, reduced ? 0 : LEVEL_SETTLE_MS);
     });
     observer.observe(map);
     return () => observer.disconnect();
   }, [mapRef, measure, reduced]);
+
+  // The first real box: the tiles are laid out at this width in the same commit, so measure
+  // before paint.
+  const measuredWidth = useRef(0);
+  useLayoutEffect(() => {
+    if (mapWidth > 0 && measuredWidth.current === 0) measure();
+    measuredWidth.current = mapWidth;
+  }, [mapWidth, measure]);
 
   useEffect(() => {
     clearTimeout(levelTimer.current);

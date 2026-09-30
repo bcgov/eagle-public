@@ -3,6 +3,7 @@ import * as api from './api';
 import * as search from './search';
 import * as project from './project';
 import { logger } from 'app/config/logging';
+import { makeQueryClient } from '../../test-utils';
 
 vi.mock('./api');
 vi.mock('./search');
@@ -62,6 +63,37 @@ describe('project', () => {
       vi.mocked(search.getSearchResults).mockResolvedValue(null);
 
       await expect(project.getAllFull(1, 10)).resolves.toEqual([]);
+    });
+  });
+
+  describe('allProjectsQueryOptions()', () => {
+    it('throws on a failed search, so the query caches nothing', async () => {
+      vi.mocked(search.getSearchResults).mockResolvedValue(null);
+      const client = makeQueryClient();
+
+      await expect(client.fetchQuery(project.allProjectsQueryOptions())).rejects.toThrow(
+        'no usable results',
+      );
+      expect(client.getQueryData(['projects', 'all'])).toBeUndefined();
+      expect(logger.error).toHaveBeenCalled();
+    });
+
+    it('caches the rows under the shared key and the search total beside them', async () => {
+      vi.mocked(search.getSearchResults).mockResolvedValue([
+        {
+          data: {
+            searchResults: [{ _id: 'a' }, { _id: 'b' }],
+            meta: [{ searchResultsTotal: 1500 }],
+          },
+        },
+      ]);
+      const client = makeQueryClient({ gcTime: Infinity });
+
+      const rows = await client.fetchQuery(project.allProjectsQueryOptions());
+
+      expect(rows.map((p) => p._id)).toEqual(['a', 'b']);
+      expect(client.getQueryData(['projects', 'all'])).toBe(rows);
+      expect(client.getQueryData(project.ALL_PROJECTS_TOTAL_KEY)).toBe(1500);
     });
   });
 

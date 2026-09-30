@@ -244,6 +244,7 @@ Review polish items left after the unified About page landed. None block the pag
 
 ## Projects by type follow-ups (2026-09-29)
 
-- The Search link for an "Other" sub-type sends `sector=Other`, but the tree's Other also holds projects with no sector, so Search can show fewer projects than the band.
-- `demi-search` caps a read at 1000 rows and the band counts rows, so its totals drift from Search once there are more than 1000 projects.
+- `demi-search` caps a read at 1000 rows and the band counts rows. Past 1000 projects the band says "Showing the first N of M projects", but its counts still cover only those rows.
+- `src/app/pages/projects/projects.tsx` still builds the `['projects', 'all']` query by hand and caches an empty list when the search fails. Switch it to `allProjectsQueryOptions()` once `feat-map-server-search`, which changes that key, has landed.
+- Search sub-type filter is exact-match; sectors with trailing spaces are being trimmed in eagle-demi #463 plus a backfill; until then the Search link may show fewer projects than the band count.
 - Check in Safari that `position: relative` on `<tr>` holds the stretched project links in the table rows.

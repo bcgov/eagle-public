@@ -41,11 +41,40 @@ function renderBand(
   answer: Response | typeof PENDING = envelope(ROWS),
   options: Parameters<typeof renderAt>[2] = {},
 ) {
-  stubFetch((url) => (url.includes('dataset=Project') ? answer : undefined));
+  const requests = stubFetch((url) => (url.includes('dataset=Project') ? answer : undefined));
   const view = renderAt(at, [{ path: '/', Component: ProjectsByType }], options);
   const search = () => view.router.state.location.search;
-  return { ...view, search };
+  const projectReads = () => requests.filter((url) => url.includes('dataset=Project')).length;
+  return { ...view, search, projectReads };
 }
+
+/** Stubs IntersectionObserver; `enter` reports the observed element near the viewport. */
+function stubIntersection() {
+  let callback: IntersectionObserverCallback = () => undefined;
+  const observed: { options?: IntersectionObserverInit } = {};
+  vi.stubGlobal(
+    'IntersectionObserver',
+    class {
+      constructor(cb: IntersectionObserverCallback, options?: IntersectionObserverInit) {
+        callback = cb;
+        observed.options = options;
+      }
+      observe = vi.fn();
+      disconnect = vi.fn();
+    },
+  );
+  const enter = () =>
+    act(() =>
+      callback([{ isIntersecting: true } as IntersectionObserverEntry], {} as IntersectionObserver),
+    );
+  return { enter, observed };
+}
+
+const OTHERS = [
+  ...ROWS,
+  project('o1', 'Sky Hook', 'Space Elevators', 'Orbital'),
+  project('o2', 'Pit Two', 'Mines', ''),
+];
 
 const typeRow = (name: string) => screen.findByRole('link', { name: new RegExp(`^${name}, `) });
 const trail = () => screen.getByRole('navigation', { name: 'Chart level' });
@@ -141,6 +170,59 @@ describe('ProjectsByType', () => {
     expect(
       screen.getByRole('link', { name: 'See all 2 Coal Mines projects in Search' }),
     ).toHaveAttribute('href', '/search?record=projects&type=Mines&sector=Coal+Mines');
+  });
+
+  it('gives the Other type no Search link, only a note', async () => {
+    renderBand('/?type=Other', envelope(OTHERS));
+
+    expect(await screen.findByRole('table', { name: 'Orbital projects' })).toBeInTheDocument();
+    expect(document.querySelector('.home-types__foot')).toHaveTextContent(
+      'Other holds projects with no type or an unlisted one, so Search has no filter for it.',
+    );
+    expect(screen.queryByRole('link', { name: /in Search$/ })).toBeNull();
+  });
+
+  it('gives the Other sub-type no Search link, only a note', async () => {
+    renderBand('/?type=Mines&subType=Other', envelope(OTHERS));
+
+    expect(await screen.findByRole('table', { name: 'Other projects' })).toBeInTheDocument();
+    expect(document.querySelector('.home-types__foot')).toHaveTextContent(
+      'Other holds projects with no sub-type, so Search has no filter for it.',
+    );
+    expect(screen.queryByRole('link', { name: /in Search$/ })).toBeNull();
+  });
+
+  it('reads nothing until the band nears the viewport, then reads once', async () => {
+    const { enter, observed } = stubIntersection();
+    const { container, projectReads } = renderBand();
+
+    // Let any fetch that was going to start, start.
+    await act(() => Promise.resolve());
+    expect(projectReads()).toBe(0);
+    expect(container.querySelector('[aria-busy="true"]')).not.toBeNull();
+    expect(observed.options).toEqual({ rootMargin: '200px' });
+
+    enter();
+
+    await typeRow('Mines');
+    expect(projectReads()).toBe(1);
+    enter();
+    expect(projectReads()).toBe(1);
+  });
+
+  it('says so when the search holds more projects than it sent', async () => {
+    renderBand('/', json([{ searchResults: ROWS, meta: [{ searchResultsTotal: 1200 }] }]));
+
+    expect(
+      await screen.findByText(`Showing the first ${ROWS.length} of 1200 projects.`),
+    ).toBeInTheDocument();
+  });
+
+  it('adds no note when every project came back', async () => {
+    renderBand();
+
+    await typeRow('Mines');
+    expect(screen.queryByText(/^Showing the first/)).toBeNull();
   });
 
   it('goes back to the top from the "All types" crumb', async () => {

@@ -4,6 +4,7 @@ import { track } from 'app/analytics/analytics';
 import { loadConfig } from 'app/config/config';
 import { clearSelection } from 'app/state/bulk-download';
 import { renderAt } from '../../../test-utils';
+import { documentsConfig } from './types/documents';
 import { UnifiedSearch } from './unified-search';
 
 vi.mock('app/analytics/analytics', () => ({ track: vi.fn(), page: vi.fn(), reset: vi.fn() }));
@@ -529,6 +530,28 @@ describe('UnifiedSearch', () => {
 
     expect(screen.getByRole('checkbox', { name: 'Coal Mines' })).not.toBeChecked();
     expect(screen.getByRole('checkbox', { name: 'Mineral Mines' })).toBeChecked();
+  });
+
+  it('keeps the lookup options of a type that reads none off its rows when new rows land', async () => {
+    const optionsFrom = vi.spyOn(documentsConfig, 'optionsFrom');
+    try {
+      const { router, queryClient } = renderSearch('/search?record=documents');
+      // Both lookups have landed and been built into options.
+      await waitFor(() => {
+        const [lists, orgs] = optionsFrom.mock.lastCall ?? [];
+        expect(lists).toBe(queryClient.getQueryData(['lists']));
+        expect(orgs).toBe(queryClient.getQueryData(['proponents']));
+      });
+      const built = optionsFrom.mock.calls.length;
+
+      documents = [{ ...DOCUMENTS[0], _id: 'd2', displayName: 'Salmon survey' }];
+      await act(() => router.navigate('/search?record=documents&sortBy=%2BdatePosted'));
+      await screen.findByText('Salmon survey');
+
+      expect(optionsFrom).toHaveBeenCalledTimes(built);
+    } finally {
+      optionsFrom.mockRestore();
+    }
   });
 
   it('ranks by relevance, not by name, when a keyword is set and no sort is picked', async () => {

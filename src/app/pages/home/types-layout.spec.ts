@@ -137,7 +137,7 @@ describe('layoutTiles', () => {
     ).toEqual(squarify([6, 3, 1], mines.w, mines.h).map(rounded));
   });
 
-  it('with a type chosen, its frame fills the box and its sub-types are laid out afresh with ranked shades', () => {
+  it('with a type chosen, its frame fills the box and its sub-types are laid out afresh with ranked shades, Other gray', () => {
     const { frames, tiles } = layoutTiles(TREE, 'Mines', null);
     expect(rounded(byKey(frames, 'f:Mines')?.rect ?? NONE)).toEqual({
       x: 0,
@@ -151,7 +151,7 @@ describe('layoutTiles', () => {
     expect(mines.map((t) => [t.active, t.fill, t.ink])).toEqual([
       [true, 'var(--theme-blue-100)', 'var(--theme-gray-white)'],
       [true, 'var(--theme-blue-90)', 'var(--theme-gray-white)'],
-      [true, 'var(--theme-blue-80)', 'var(--theme-gray-white)'],
+      [true, 'var(--theme-gray-40)', 'var(--theme-blue-100)'],
     ]);
     expect(byKey(tiles, 't:Transportation:Railways')?.active).toBe(false);
   });
@@ -317,6 +317,11 @@ describe('layoutBars', () => {
       [['s:Mines:Mineral Mines', 0, 100]],
       [['s:Mines:Coal Mines', 0, 50]],
       [['s:Mines:Other', 0, 16.6667]],
+    ]);
+    expect(rows.map((r) => [r.fill, r.segments[0].fill])).toEqual([
+      ['var(--theme-blue-100)', 'var(--theme-blue-100)'],
+      ['var(--theme-blue-90)', 'var(--theme-blue-90)'],
+      ['var(--theme-gray-40)', 'var(--theme-gray-40)'],
     ]);
   });
 

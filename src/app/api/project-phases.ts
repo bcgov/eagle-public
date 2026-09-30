@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { demiProjectQueryOptions } from './api';
-import { getAllFull } from './project';
+import { allProjectsQueryOptions } from './project';
 
 /**
  * One Track work phase, as DEMI mirrors it onto the project document's `phases`. The rail uses
@@ -52,8 +52,7 @@ export function useProjectEaCertificate(projId: string): string | undefined {
   const demi = useDemiProject(projId);
   const fromDemi = demi.data?.eaCertificate?.trim();
   const { data: hit } = useQuery({
-    queryKey: ['projects', 'all'],
-    queryFn: () => getAllFull(1, 1000000),
+    ...allProjectsQueryOptions(),
     // `isFetching`, not `isPending`: a disabled DEMI query stays pending forever.
     enabled: !fromDemi && !demi.isFetching && !!projId,
     select: (projects) => projects.find((project) => project._id === projId),

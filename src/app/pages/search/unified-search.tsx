@@ -56,8 +56,8 @@ import {
 import { showToast } from 'app/state/toast';
 import { isSafeUrl } from 'app/utils/safe-url';
 import { documentDownloadUrl } from 'app/utils/utils';
-import { toWireFilters, withChosen, yearOptions } from './search-filters';
-import { recordConfig, type RecordTypeConfig, type SearchMeta } from './types';
+import { toWireFilters, withRowOptions, yearOptions } from './search-filters';
+import { recordConfig, type OptionSource, type RecordTypeConfig, type SearchMeta } from './types';
 import { ATTACHMENTS_FILTER_ID, attachmentsFilterDropped } from './types/activities';
 import { useSettled } from './use-settled';
 import { useTypeCounts } from './use-type-counts';
@@ -97,6 +97,8 @@ const NO_PREFIX = [{ name: 'prefix', value: 'false' }];
 
 /** One empty page, so options read off the rows are not rebuilt on every render while none land. */
 const NO_ROWS: Row[] = [];
+/** Likewise for a lookup read still in flight or failed, so the options built from it hold still. */
+const NO_SOURCES: OptionSource[] = [];
 
 /** demi-search answers 400 for `and[nameContains]` on the chunk dataset: it filters names only. */
 const NAMES_ONLY_FILTERS = ['nameContains'];
@@ -357,8 +359,8 @@ function cellRenderer(
  * type. Everything the reader chooses lives in the URL, so a view can be linked and shared.
  */
 export function UnifiedSearch() {
-  const { data: lists = [] } = useQuery(listsQueryOptions());
-  const { data: orgs = [] } = useQuery(proponentsQueryOptions());
+  const { data: lists = NO_SOURCES } = useQuery(listsQueryOptions());
+  const { data: orgs = NO_SOURCES } = useQuery(proponentsQueryOptions());
 
   const [panelOpen, setPanelOpen] = useState(false);
 
@@ -541,14 +543,12 @@ export function UnifiedSearch() {
 
   const rows = insidePrompt ? NO_ROWS : (data?.rows ?? NO_ROWS);
 
-  const options = useMemo(() => {
-    const all: Record<string, ValueOption[]> = { ...config.optionsFrom(lists, orgs) };
-    for (const [id, found] of Object.entries(config.optionsFromRows?.(rows) ?? {})) {
-      all[id] = withChosen(found, filters[id]);
-    }
-    return all;
-    // `optionsFrom` is a property of the config object, so the config identity is the dependency.
-  }, [config, lists, orgs, rows, filters]);
+  // `optionsFrom` is a property of the config object, so the config identity is the dependency.
+  const listOptions = useMemo(() => config.optionsFrom(lists, orgs), [config, lists, orgs]);
+  const options = useMemo(
+    () => withRowOptions(listOptions, config.optionsFromRows, rows, filters),
+    [listOptions, config, rows, filters],
+  );
 
   /* Every column of every record type is sortable in the index, and the dropdown values only
      exist once the `List` and `Organization` reads land. */

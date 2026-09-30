@@ -1,11 +1,14 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+import { logger } from 'app/config/logging';
 import {
+  OTHER_RANK,
   PROJECT_TYPES,
   buildTypeTree,
   ink,
   normalizeType,
   rankOf,
   shade,
+  subRank,
   type TypeTreeSource,
 } from './types-tree';
 
@@ -110,6 +113,38 @@ describe('buildTypeTree', () => {
 
   it('returns an empty tree for no projects', () => {
     expect(buildTypeTree([])).toEqual([]);
+  });
+
+  it('merges sub-types that differ only in case, under the first spelling seen', () => {
+    const [mines] = buildTypeTree([
+      row('1', 'Mines', 'Coal mines'),
+      row('2', 'Mines', 'Coal Mines'),
+      row('3', 'Mines', 'COAL MINES '),
+    ]);
+    expect(mines.subs.map((s) => [s.name, s.count])).toEqual([['Coal mines', 3]]);
+  });
+
+  it('leaves out rows with no id, uncounted, and logs how many', () => {
+    const warn = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
+    const tree = buildTypeTree([
+      row('1', 'Mines', 'Coal Mines'),
+      row('', 'Mines', 'Coal Mines'),
+      row(undefined as unknown as string, 'Mines', 'Coal Mines'),
+    ]);
+    expect(tree.map((t) => [t.name, t.count])).toEqual([['Mines', 1]]);
+    expect(tree[0].subs[0].projects.map((p) => p.id)).toEqual(['1']);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('2 projects'), 'ProjectsByType');
+    warn.mockRestore();
+  });
+});
+
+describe('subRank', () => {
+  it('gives Other the gray whatever its place', () => {
+    expect([subRank('Other', 0), subRank('Other', 4)]).toEqual([OTHER_RANK, OTHER_RANK]);
+  });
+
+  it('cycles the rest through the nine blues instead of clamping', () => {
+    expect([0, 8, 9, 10, 18].map((i) => subRank(`Sub ${i}`, i))).toEqual([0, 8, 0, 1, 0]);
   });
 });
 

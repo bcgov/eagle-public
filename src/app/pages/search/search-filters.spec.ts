@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { rowValueOptions, toWireFilters, withChosen, yearOptions } from './search-filters';
+import {
+  rowValueOptions,
+  toWireFilters,
+  withChosen,
+  withRowOptions,
+  yearOptions,
+} from './search-filters';
 
 const TEXT = ['nameContains'];
 const YEARS = ['datePosted'];
@@ -127,6 +133,35 @@ describe('rowValueOptions', () => {
 
   it('skips a value that is not text', () => {
     expect(rowValueOptions([{ sector: 7 }, { sector: null }], 'sector')).toEqual([]);
+  });
+
+  // A record stored with the trailing space no longer matches; upstream trims the stored values.
+  it('sends a picked value trimmed, not as the row stored it', () => {
+    const [picked] = rowValueOptions([{ sector: 'Airports ' }], 'sector');
+
+    expect(toWireFilters({ sector: [picked.value] })).toEqual({ sector: 'Airports' });
+  });
+});
+
+describe('withRowOptions', () => {
+  const LISTED = { type: [{ value: 'l1', label: 'Letter' }] };
+  const ROWS = [{ sector: 'Dams' }];
+  const fromRows = (rows: Record<string, unknown>[]) => ({
+    sector: rowValueOptions(rows, 'sector'),
+  });
+
+  it('hands back the lookup options themselves when the type reads nothing off the rows', () => {
+    expect(withRowOptions(LISTED, undefined, ROWS, { sector: 'Dams' })).toBe(LISTED);
+  });
+
+  it('lays the row options over the lookup ones, keeping a pick the rows no longer show', () => {
+    expect(withRowOptions(LISTED, fromRows, ROWS, { sector: ['Airports'] })).toEqual({
+      type: LISTED.type,
+      sector: [
+        { value: 'Airports', label: 'Airports' },
+        { value: 'Dams', label: 'Dams' },
+      ],
+    });
   });
 });
 

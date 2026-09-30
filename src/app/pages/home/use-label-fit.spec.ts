@@ -67,7 +67,7 @@ function renderFit(map: HTMLElement, reduced = false) {
 }
 
 describe('useLabelFit', () => {
-  it('takes the map width from the resize and marks labels that spill past 1px', () => {
+  it('takes the map width from the first resize and marks labels that spill past 1px, with no wait', () => {
     const map = makeMap({
       'f:Mines': FITS,
       'f:Wide': { ...FITS, scrollWidth: 82 },
@@ -79,9 +79,6 @@ describe('useLabelFit', () => {
 
     act(() => fireResize(640));
     expect(result.current.mapWidth).toBe(640);
-    expect(result.current.overflowing.size).toBe(0);
-
-    act(() => vi.advanceTimersByTime(0));
     expect([...result.current.overflowing]).toEqual(['f:Tall', 'f:Wide']);
   });
 

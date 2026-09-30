@@ -87,3 +87,21 @@ export function withChosen(
     a.label.localeCompare(b.label),
   );
 }
+
+/**
+ * Lookup options with any read off the rows laid over them. A record type that reads none gets the
+ * lookup object back as is, so what is built from it is not rebuilt each time rows land.
+ */
+export function withRowOptions(
+  listed: Record<string, ValueOption[]>,
+  fromRows: ((rows: Record<string, unknown>[]) => Record<string, ValueOption[]>) | undefined,
+  rows: Record<string, unknown>[],
+  filters: FilterValues,
+): Record<string, ValueOption[]> {
+  if (!fromRows) return listed;
+  const all = { ...listed };
+  for (const [id, found] of Object.entries(fromRows(rows))) {
+    all[id] = withChosen(found, filters[id]);
+  }
+  return all;
+}
