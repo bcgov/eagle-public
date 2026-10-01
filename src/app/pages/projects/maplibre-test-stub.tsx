@@ -38,6 +38,7 @@ let override: Feature<Point>[] | null = null;
 let sourceData: Record<string, FeatureCollection> = {};
 /** The mounted map's `render` handler; the real map repaints whenever anything below changes. */
 let notifyRender: (() => void) | null = null;
+const canvas = document.createElement('canvas');
 const fireRender = () => notifyRender?.();
 
 export const fakeMap = {
@@ -48,10 +49,11 @@ export const fakeMap = {
     getWest: () => box.west,
   })),
   getZoom: vi.fn(() => zoom),
-  fitBounds: vi.fn(),
+  // A camera move starts with `movestart`, as on the real map; a programmatic one has no originalEvent.
+  fitBounds: vi.fn((..._args: unknown[]) => mapProps?.onMoveStart?.({})),
   resize: vi.fn(),
-  flyTo: vi.fn(),
-  easeTo: vi.fn(),
+  flyTo: vi.fn((..._args: unknown[]) => mapProps?.onMoveStart?.({})),
+  easeTo: vi.fn((..._args: unknown[]) => mapProps?.onMoveStart?.({})),
   getClusterExpansionZoom: vi.fn(async (_clusterId: number) => 11),
   isSourceLoaded: vi.fn((_sourceId: string) => sourceLoaded),
   querySourceFeatures: vi.fn(
@@ -61,7 +63,12 @@ export const fakeMap = {
   queryRenderedFeatures: vi.fn(() => override ?? sourceData['projects']?.features ?? []),
   getLayer: vi.fn((id: string) => ({ id })),
   getSource: vi.fn(() => ({ getClusterExpansionZoom: fakeMap.getClusterExpansionZoom })),
-  setFeatureState: vi.fn(),
+  setFeatureState: vi.fn(
+    (_target: { source: string; id: string | number }, _state: Record<string, unknown>) =>
+      undefined,
+  ),
+  /** A real element, so a spec can read the cursor the map sets on it. */
+  getCanvas: vi.fn(() => canvas),
 
   setBounds(next: BoundsBox): void {
     box = next;
@@ -85,6 +92,7 @@ export const fakeMap = {
     sourceData = {};
     notifyRender = null;
     mapProps = null;
+    canvas.style.cursor = '';
     for (const value of Object.values(fakeMap)) {
       if (typeof value === 'function' && 'mockClear' in value) value.mockClear();
     }
@@ -107,6 +115,8 @@ interface MapProps {
   onRender?: () => void;
   onMouseMove?: (event: FakeMouseEvent) => void;
   onMouseLeave?: (event?: FakeMouseEvent) => void;
+  onMouseOut?: () => void;
+  onMoveStart?: (event: { originalEvent?: unknown }) => void;
   ref?: Ref<FakeMap>;
   [key: string]: unknown;
 }

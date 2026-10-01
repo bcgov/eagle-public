@@ -52,4 +52,16 @@ describe('search routing', () => {
       );
     }
   });
+
+  it('escapes the keywords so an ampersand or hash stays part of them', async () => {
+    window.__env = { logLevel: 4, SEARCH_API_PATH: SEARCH };
+    await loadConfig();
+    fetchMock.mockClear();
+
+    await searchKeywords('fir & co #2', 'Project', [], 1, 10);
+
+    const url = new URL(fetchMock.mock.calls[0][0] as string);
+    expect(url.searchParams.get('keywords')).toBe('fir & co #2');
+    expect(url.searchParams.get('pageSize')).toBe('10');
+  });
 });

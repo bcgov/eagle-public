@@ -308,7 +308,7 @@ export async function searchKeywords(
     });
   }
   if (keys) {
-    queryString += `&keywords=${keys}`;
+    queryString += `&keywords=${encodeURIComponent(keys)}`;
   }
   if (pageNum !== null) {
     queryString += `&pageNum=${pageNum - 1}`;

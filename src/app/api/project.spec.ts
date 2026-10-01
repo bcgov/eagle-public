@@ -97,6 +97,73 @@ describe('project', () => {
     });
   });
 
+  describe('searchProjectIds()', () => {
+    it('returns the ids in the order demi-search ranked them', async () => {
+      vi.mocked(search.getSearchResults).mockResolvedValue([
+        {
+          data: {
+            searchResults: [{ _id: 'p2' }, { _id: 'p1' }],
+            meta: [{ searchResultsTotal: 2 }],
+          },
+        },
+      ]);
+
+      expect(await project.searchProjectIds('line')).toEqual(['p2', 'p1']);
+      // One unpopulated page, in score order (no sort field).
+      expect(search.getSearchResults).toHaveBeenCalledWith(
+        'line',
+        'Project',
+        [],
+        1,
+        project.KEYWORD_PAGE_SIZE,
+        '',
+        {},
+        false,
+        '',
+        {},
+        '',
+      );
+    });
+
+    it('throws on a failed search so the caller can retry and say so', async () => {
+      vi.mocked(search.getSearchResults).mockResolvedValue(null);
+
+      await expect(project.searchProjectIds('line')).rejects.toThrow('no usable results');
+    });
+
+    it('warns when more projects match than one page holds', async () => {
+      const warn = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
+      vi.mocked(search.getSearchResults).mockResolvedValue([
+        {
+          data: {
+            searchResults: [{ _id: 'p1' }],
+            meta: [{ searchResultsTotal: project.KEYWORD_PAGE_SIZE + 1 }],
+          },
+        },
+      ]);
+
+      await project.searchProjectIds('mine');
+
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('matched 501 projects'), 'project');
+    });
+
+    it('stays quiet when every match fits on the page', async () => {
+      const warn = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
+      vi.mocked(search.getSearchResults).mockResolvedValue([
+        {
+          data: {
+            searchResults: [{ _id: 'p1' }],
+            meta: [{ searchResultsTotal: project.KEYWORD_PAGE_SIZE }],
+          },
+        },
+      ]);
+
+      await project.searchProjectIds('mine');
+
+      expect(warn).not.toHaveBeenCalled();
+    });
+  });
+
   describe('getById()', () => {
     it('returns the project DEMI answered with', async () => {
       vi.mocked(api.getDemiProject).mockResolvedValue({

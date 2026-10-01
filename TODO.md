@@ -245,14 +245,30 @@ Review polish items left after the unified About page landed. None block the pag
 ## Projects by type follow-ups (2026-09-29)
 
 - `demi-search` caps a read at 1000 rows and the band counts rows. Past 1000 projects the band says "Showing the first N of M projects", but its counts still cover only those rows.
-- `src/app/pages/projects/projects.tsx` still builds the `['projects', 'all']` query by hand and caches an empty list when the search fails. Switch it to `allProjectsQueryOptions()` once `feat-map-server-search`, which changes that key, has landed.
 - Search sub-type filter is exact-match; sectors with trailing spaces are being trimmed in eagle-demi #463 plus a backfill; until then the Search link may show fewer projects than the band count.
 - Check in Safari that `position: relative` on `<tr>` holds the stretched project links in the table rows.
 - 2026-09-30: `allProjectsQueryOptions` throws on failure with no `retry` override, so while demi-search is down each mount makes up to 4 full-list calls; consider `retry: 1` or `retryOnMount: false`.
-- 2026-09-30: If the home band fails the shared `['projects','all']` read and the visitor then opens /projects, that page flashes "No projects found" until its own refetch lands; switching projects.tsx to `allProjectsQueryOptions()` fixes it.
 - 2026-09-30: `ALL_PROJECTS_TOTAL_KEY` sits under the `['projects','all']` prefix; a future prefix invalidation would hit the skipToken total query. Use a sibling key.
 - 2026-09-30: Truncation note uses `projects.length` (includes rows without `_id`) while the chart total excludes them; use the chart total.
 - 2026-09-30: Other-type footer wording: "Other" is a real type Search can filter; the band's Other also merges blank and unlisted types. Reword to say Search's Other filter shows fewer. Same for the Other sub-type, which also holds sectors literally named "other".
 - 2026-09-30: Sub-types merge across case but the Search link and `?subType=` matching use the first-seen spelling; match case-insensitively in `useTypeLevel` and pick a stable display spelling.
 - 2026-09-30: Home e2e baseline holds only while the band sits more than 200px below a 900px fold; note the dependency in static-pages.spec.ts.
 - 2026-09-30: Add an unmount test for `useNearViewport` (observer disconnect), assert every Search column has a width in projects.spec.ts, and simplify `sel && focus` in types-chart.tsx.
+
+## Map server search follow-ups (deferred from review, 2026-09-29)
+
+- `src/app/api/project.ts`: `searchProjectIds` caps at 500 rows and only warns on the console; show a "first 500 shown" hint in the list header when `totalCount` is above the cap, and pass the React Query `signal` through to `getSearchResults` so a superseded search aborts.
+- `src/app/api/api.ts`: `searchKeywords` now encodes for every caller (unified search, `use-table`, bulk download); a `+` reaches the server as a literal plus. Add a spec per caller.
+- `src/app/pages/projects/projects.tsx`: log a failed keyword search through the app logger (only `periodsError` is logged today); show a busy indicator while a search is in flight so the previous count does not read as the answer; de-duplicate ids from the index before mapping; show the comment-period error only when the failed read is the chosen state.
+- `src/app/pages/projects/projects.spec.tsx`: add a spec holding search A's results on screen while search B loads; add a spec that fails when the `cleared` rule 2 branch is removed; drop the no-op `advance(300)` in the same-term-retyped spec.
+- `src/app/map/basemaps.css`: only engaged pins get the contact shadow; decide whether plain pins and the details-map pin should sit on the ground too.
+- `src/app/pages/projects/project-filter.ts`: the publish-date filter reads `dateAdded`, which demi-search never returns, so a URL date range (`?publishFrom=`, `?publishTo=`) drops every project. Either DEMI returns `dateAdded` in the project list or the filter moves to `dateUpdated`.
+- `src/app/pages/projects/projects.tsx`: `sortNote` is never cleared, so the live result count repeats "Sorted by ..." on every count change after a sort.
+- `src/app/pages/projects/projects.spec.tsx`: the map-pick analytics spec should assert the call count, one `Project Filters Applied` per pick.
+- `src/app/pages/projects/projects.spec.tsx`: no spec for a map click on no feature closing the card, or for the `.maplibregl-marker` click guard.
+- `src/app/pages/projects/projlist-list.tsx`: while loading, the count reads only ". Sorted by X" (hidden text with no count before it).
+- `src/app/pages/projects/projlist-map.tsx`: unpicking the last region leaves the map framed on it, so the in-view list stays narrow. Product call.
+- `src/app/pages/projects/projlist-map.tsx`: a programmatic fit keeps the desktop region tip at the old pointer point until the next mousemove.
+- `package.json`: declare `@maplibre/maplibre-gl-style-spec` as a devDependency at `^26`. The paint spec imports the hoisted copy, 19.3.3 from `@vis.gl/react-maplibre`, while maplibre-gl uses 26.4.1.
+- `src/app/pages/projects/projlist-map.tsx`: after a region-click fit, the hover highlight stays on the old polygon until the pointer moves.
+- `src/app/pages/projects/projlist-map.tsx`: the deferred desktop pick reads `regionNames` from 300 ms earlier, when the click happened.

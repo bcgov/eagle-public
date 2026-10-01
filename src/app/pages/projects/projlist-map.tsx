@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 // Aliased: `Map` would shadow the built-in used for the id lookup below.
 import { Layer, Map as MapGL, Marker, Source } from '@vis.gl/react-maplibre';
 import type { MapLayerMouseEvent, MapRef } from '@vis.gl/react-maplibre';
-import type { FilterSpecification, GeoJSONSource, MapGeoJSONFeature } from 'maplibre-gl';
+import type { GeoJSONSource, MapGeoJSONFeature } from 'maplibre-gl';
 import type { FeatureCollection, Point } from 'geojson';
 import type { Project } from 'app/models/project';
 import { ENGAGEMENT_LABEL, type Engagement, type ProjectEngagement } from 'app/api/commentperiod';
@@ -23,6 +23,8 @@ import {
   hasValidCentroid,
 } from 'app/map/basemaps';
 import { ProjDetailPopup } from './proj-detail-popup';
+import { createHoverTween } from './region-hover-tween';
+import { regionFillOpacity, regionLineOpacity, regionLineWidth } from './region-paint';
 import './projlist-map.css';
 
 interface ProjlistMapProps {
@@ -32,8 +34,10 @@ interface ProjlistMapProps {
   hoveredId: string | null;
   onSelect: (project: Project | null) => void;
   onHover: (id: string | null) => void;
-  /** EAO region polygons to draw; empty means all of them. */
+  /** EAO region polygons the Region filter holds; every polygon draws, these ones picked. */
   regionNames: string[];
+  /** Adds or drops a region polygon from the Region filter; false when it names no known region. */
+  onRegionToggle: (regionName: string) => boolean;
   /** Mobile shows the selected project in the page's bottom sheet, so the map renders no card. */
   mobile: boolean;
   /** Open or upcoming comment period per project id; undefined while loading, drawn as no state. */
@@ -46,6 +50,13 @@ const REGION_SOURCE_ID = 'eao-regions';
 const REGION_HIT_LAYERS = ['eao-regions-fill'];
 const FIT_PADDING = 48;
 const REGION_COLOUR = '#003366';
+/**
+ * How long a region click waits for a second click. MapLibre exports no double-click timing (its
+ * `clickTolerance` is in pixels), so this sits inside the usual desktop double-click window.
+ */
+const DBLCLICK_WINDOW_MS = 300;
+/** Framing one region picked on the map. */
+const REGION_FIT = { padding: 30, maxZoom: 9 };
 /** Pointer offset for the region tip, so the cursor never sits on top of the label. */
 const TIP_OFFSET = 12;
 /** How long a tapped region keeps its name on screen. */
@@ -126,6 +137,7 @@ export function ProjlistMap({
   onSelect,
   onHover,
   regionNames,
+  onRegionToggle,
   mobile,
   engagementById,
 }: ProjlistMapProps) {
@@ -137,6 +149,10 @@ export function ProjlistMap({
   const signatureRef = useRef('');
   /** Set by a pin click so the card-selection flyTo does not fight the marker the visitor just hit. */
   const lastMarkerSelectId = useRef<string | null>(null);
+  /** Set by a region click, which frames the map itself, so the filter-driven refit stands down. */
+  const skipNextFit = useRef(false);
+  /** A region click waiting out the double-click window; a double-click zooms instead. */
+  const pendingPick = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const overlayVisible = useStore(regionsVisible);
   const { data: regionShapes } = useQuery({
@@ -145,9 +161,7 @@ export function ProjlistMap({
       (await fetch('/assets/geojson/eao-regions.geojson')).json(),
     staleTime: Infinity,
   });
-  const regionFilter: FilterSpecification = regionNames.length
-    ? ['in', ['get', 'regionName'], ['literal', regionNames]]
-    : true;
+  const hasRegionPick = regionNames.length > 0;
   const regionLayout = { visibility: overlayVisible ? ('visible' as const) : ('none' as const) };
 
   const valid = useMemo(() => projects.filter(hasValidCentroid), [projects]);
@@ -202,6 +216,20 @@ export function ProjlistMap({
     latest.current = { byId, onSelect, selectedId };
   });
 
+  // The picked polygons, as feature state, so one paint expression draws every look a polygon has.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!loaded || !map || !regionShapes || !map.getSource(REGION_SOURCE_ID)) return;
+    for (const feature of regionShapes.features) {
+      const name = String(feature.properties?.['regionName'] ?? '');
+      if (!name) continue;
+      map.setFeatureState(
+        { source: REGION_SOURCE_ID, id: name },
+        { selected: regionNames.includes(name) },
+      );
+    }
+  }, [loaded, regionShapes, regionNames]);
+
   const publishBounds = useCallback((map: MapRef) => {
     const bounds = map.getBounds();
     const next = {
@@ -223,18 +251,27 @@ export function ProjlistMap({
     if (!same) mapBounds.set(next);
   }, []);
 
-  /** Only the polygon under the pointer carries `hover`, so the paint expression lights just it. */
+  /** Eases `hoverT` up on the polygon under the pointer and back down on the one it left. */
+  const hoverTween = useRef<ReturnType<typeof createHoverTween> | null>(null);
+  useEffect(() => {
+    const tween = createHoverTween((id, t) =>
+      mapRef.current?.setFeatureState({ source: REGION_SOURCE_ID, id }, { hoverT: t }),
+    );
+    hoverTween.current = tween;
+    return () => {
+      tween.dispose();
+      hoverTween.current = null;
+    };
+  }, []);
+
   const setRegionHover = useCallback((id: string | number | null) => {
     const map = mapRef.current;
     if (!map || hoverRegionId.current === id) return;
-    if (hoverRegionId.current !== null) {
-      map.setFeatureState(
-        { source: REGION_SOURCE_ID, id: hoverRegionId.current },
-        { hover: false },
-      );
-    }
+    if (hoverRegionId.current !== null) hoverTween.current?.to(hoverRegionId.current, 0);
     hoverRegionId.current = id;
-    if (id !== null) map.setFeatureState({ source: REGION_SOURCE_ID, id }, { hover: true });
+    if (id !== null) hoverTween.current?.to(id, 1);
+    // A polygon is a button: clicking it picks the region.
+    map.getCanvas().style.cursor = id !== null ? 'pointer' : '';
   }, []);
 
   // The canonical HTML-cluster refresh: every frame, once the clustering worker has caught up with
@@ -294,10 +331,20 @@ export function ProjlistMap({
   // Refit whenever the extent to frame changes, unless a project is selected.
   useEffect(() => {
     const map = mapRef.current;
+    if (skipNextFit.current) {
+      skipNextFit.current = false;
+      return;
+    }
     if (!loaded || !map || !fitBox || latest.current.selectedId !== null) return;
     map.fitBounds(fitBox, { padding: FIT_PADDING, maxZoom: 10, ...flyOptions() });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fitKey, loaded]);
+
+  // After the effect above: a region click only speaks for the render its own change lands in.
+  const regionKey = regionNames.join('|');
+  useEffect(() => {
+    skipNextFit.current = false;
+  }, [regionKey]);
 
   // Fly to a project the visitor picked from the list; a pin click already centred itself.
   useEffect(() => {
@@ -318,12 +365,24 @@ export function ProjlistMap({
   const selected = selectedId ? byId.get(selectedId) : undefined;
   const cardProject = !mobile && selected ? selected : null;
 
-  // Touch has no hover, so a tap names the region for a moment instead of holding the tip open.
+  // A switch between the phone and desktop layouts drops a tip and highlight the other one set,
+  // since the phone's linger timer no longer runs and no pointer is there to clear them.
+  const [tipLayout, setTipLayout] = useState(mobile);
+  if (tipLayout !== mobile) {
+    setTipLayout(mobile);
+    setHoverRegion(null);
+  }
+  useEffect(() => setRegionHover(null), [mobile, setRegionHover]);
+
+  // Touch has no hover, so a tap names and lights the region for a moment instead of holding on.
   useEffect(() => {
     if (!hoverRegion || !mobile) return;
-    const timer = setTimeout(() => setHoverRegion(null), TIP_LINGER_MS);
+    const timer = setTimeout(() => {
+      setHoverRegion(null);
+      setRegionHover(null);
+    }, TIP_LINGER_MS);
     return () => clearTimeout(timer);
-  }, [hoverRegion, mobile]);
+  }, [hoverRegion, mobile, setRegionHover]);
 
   /** Names the region under the pointer, or clears the tip when there is no region there. */
   function showRegionTip(
@@ -334,6 +393,27 @@ export function ProjlistMap({
     setHoverRegion(name ? { name: String(name), x: point.x, y: point.y } : null);
     setRegionHover(name ? (feature?.id ?? null) : null);
   }
+
+  /**
+   * A polygon click toggles its region in the Region filter, and frames it when it was picked.
+   * The Region multi-select in the Filters panel is the keyboard and screen reader route to the
+   * same filter; the map adds a pointer shortcut, not a new control.
+   */
+  function toggleRegion(name: string): void {
+    const picking = !regionNames.includes(name);
+    skipNextFit.current = onRegionToggle(name);
+    if (!skipNextFit.current || !picking || !regionShapes) return;
+    const box = regionsBbox(regionShapes, [name]);
+    if (box) mapRef.current?.fitBounds(box, { ...REGION_FIT, ...flyOptions() });
+  }
+
+  function cancelPendingPick(): void {
+    if (pendingPick.current === null) return;
+    clearTimeout(pendingPick.current);
+    pendingPick.current = null;
+  }
+
+  useEffect(() => cancelPendingPick, []);
 
   async function expandCluster(feature: MapFeature): Promise<void> {
     const map = mapRef.current;
@@ -380,7 +460,12 @@ export function ProjlistMap({
         onLoad={() => setLoaded(true)}
         onRender={refreshFeatures}
         // Not `moveend`: a touch tap ends a zero-length move after the click that set the tip.
-        onMoveStart={() => setHoverRegion(null)}
+        // Only a visitor's drag or zoom; the fit a region tap starts must leave its tip to linger.
+        onMoveStart={(event: { originalEvent?: unknown }) => {
+          if (!event.originalEvent) return;
+          setHoverRegion(null);
+          setRegionHover(null);
+        }}
         onMoveEnd={() => {
           const map = mapRef.current;
           if (map) publishBounds(map);
@@ -395,11 +480,31 @@ export function ProjlistMap({
                 showRegionTip(hoveredId ? undefined : event.features?.[0], event.point)
         }
         onMouseLeave={mobile ? undefined : () => showRegionTip(undefined, { x: 0, y: 0 })}
+        // Leaving the canvas fires no layer leave when the pointer exits straight off a polygon.
+        onMouseOut={mobile ? undefined : () => showRegionTip(undefined, { x: 0, y: 0 })}
+        onDblClick={cancelPendingPick}
         onClick={(event: MapLayerMouseEvent) => {
           // Marker buttons live inside the canvas container, so their clicks reach the map too.
           if ((event.originalEvent.target as Element).closest('.maplibregl-marker')) return;
+          const region = event.features?.[0];
+          showRegionTip(region, event.point);
+          // A polygon click picks the region and nothing else, so an open project card stays.
+          const name = region?.properties?.['regionName'];
+          if (region && REGION_HIT_LAYERS.includes(region.layer?.id) && name) {
+            // Touch zooms with a double tap, which fires no `dblclick`, so a tap picks at once.
+            if (mobile) {
+              toggleRegion(String(name));
+              return;
+            }
+            // Held until the double-click window passes, so a double-click only zooms.
+            cancelPendingPick();
+            pendingPick.current = setTimeout(() => {
+              pendingPick.current = null;
+              toggleRegion(String(name));
+            }, DBLCLICK_WINDOW_MS);
+            return;
+          }
           onSelect(null);
-          showRegionTip(event.features?.[0], event.point);
         }}
       >
         <Basemaps />
@@ -412,28 +517,26 @@ export function ProjlistMap({
 
         {/* Before the projects source, so the pins and their hit layer draw above the polygons. */}
         {regionShapes && (
-          <Source id={REGION_SOURCE_ID} type="geojson" data={regionShapes} promoteId="regionNumber">
+          // Keyed by name, which is what the Region filter and the feature state both hold.
+          <Source id={REGION_SOURCE_ID} type="geojson" data={regionShapes} promoteId="regionName">
             <Layer
               id="eao-regions-fill"
               type="fill"
-              filter={regionFilter}
               layout={regionLayout}
               paint={{
                 'fill-color': REGION_COLOUR,
-                'fill-opacity': [
-                  'case',
-                  ['boolean', ['feature-state', 'hover'], false],
-                  0.18,
-                  0.08,
-                ],
+                'fill-opacity': regionFillOpacity(hasRegionPick),
               }}
             />
             <Layer
               id="eao-regions-line"
               type="line"
-              filter={regionFilter}
               layout={regionLayout}
-              paint={{ 'line-color': REGION_COLOUR, 'line-width': 1, 'line-opacity': 0.5 }}
+              paint={{
+                'line-color': REGION_COLOUR,
+                'line-width': regionLineWidth(hasRegionPick),
+                'line-opacity': regionLineOpacity(hasRegionPick),
+              }}
             />
           </Source>
         )}

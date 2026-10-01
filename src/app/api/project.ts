@@ -13,16 +13,17 @@ import type { DataQueryResponse } from 'app/models/api-response';
 import { logger } from 'app/config/logging';
 
 /** One project search; `data` is `null` when the search failed or came back malformed. */
-async function searchProjects(pageNum: number, pageSize: number) {
+async function searchProjects(pageNum: number, pageSize: number, keywords = '', populate = true) {
   const res = (await search.getSearchResults(
-    '',
+    keywords,
     'Project',
     [],
     pageNum,
     pageSize,
+    // Empty keeps demi-search's score order for a keyword search.
     '',
     {},
-    true,
+    populate,
     '',
     {},
     '',
@@ -83,6 +84,26 @@ export function allProjectsQueryOptions() {
       return data;
     },
   };
+}
+
+/** demi-search answers 400 to a keyword search asking for more than 500 rows. */
+export const KEYWORD_PAGE_SIZE = 500;
+
+/**
+ * Ids of the projects matching the keywords, best match first. Only ids: a keyword hit comes from
+ * the search index, which lacks fields the full list carries, such as `location`.
+ */
+export async function searchProjectIds(keywords: string): Promise<string[]> {
+  const { totalCount, data } = await searchProjects(1, KEYWORD_PAGE_SIZE, keywords, false);
+  // Thrown, not emptied, so React Query retries and the page can say the search failed.
+  if (!data) throw new Error(`Project search for "${keywords}" returned no usable results`);
+  if (totalCount > KEYWORD_PAGE_SIZE) {
+    logger.warn(
+      `Project search for "${keywords}" matched ${totalCount} projects; only the first ${KEYWORD_PAGE_SIZE} are shown`,
+      'project',
+    );
+  }
+  return data.map((project) => project._id);
 }
 
 /**

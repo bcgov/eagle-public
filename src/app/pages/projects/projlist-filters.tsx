@@ -5,7 +5,16 @@ import {
 } from 'app/components/filters/custom-multi-select';
 import { Constants } from 'app/utils/constants';
 import { track } from 'app/analytics/analytics';
-import { countFilters, EMPTY_FILTERS, type FilterCriteria } from './filter-state';
+import type { Engagement } from 'app/api/commentperiod';
+import {
+  COMMENT_PERIOD_LABEL,
+  countFilters,
+  EMPTY_FILTERS,
+  SORT_LABEL,
+  trackFiltersApplied,
+  type FilterCriteria,
+  type ProjectSort,
+} from './filter-state';
 import './projlist-filters.css';
 
 interface ProjlistFiltersProps {
@@ -72,18 +81,8 @@ export function ProjlistFilters({ filters, updateFilters, regions, phases }: Pro
   }, [showFilters, setFiltersOpen]);
 
   function applyFilters(next: Partial<FilterCriteria>): void {
-    const applied = { ...filters, ...next };
     updateFilters(next);
-    track('Project Filters Applied', {
-      regions_count: applied.regions.length,
-      phases_count: applied.phases.length,
-      types_count: applied.types.length,
-      has_applicant: !!applied.applicant,
-      has_cl_file: !!applied.clFile,
-      has_disp_id: !!applied.dispId,
-      has_date_range: !!(applied.publishFrom || applied.publishTo),
-      total_filters: countFilters(applied),
-    });
+    trackFiltersApplied({ ...filters, ...next });
   }
 
   return (
@@ -102,7 +101,7 @@ export function ProjlistFilters({ filters, updateFilters, regions, phases }: Pro
             autoCapitalize="off"
             autoCorrect="off"
             className="form-control gtm-filter-applicant"
-            placeholder="Start typing a project name"
+            placeholder="Search projects"
             id="applicantInput"
             value={applicantInput}
             onChange={(event) => {
@@ -201,6 +200,26 @@ export function ProjlistFilters({ filters, updateFilters, regions, phases }: Pro
                 />
               </div>
             </div>
+            <div className="filter-container">
+              <label htmlFor="commentPeriod">Comment Period</label>
+              <div className="filter-select">
+                <select
+                  id="commentPeriod"
+                  className="form-select"
+                  value={filters.commentPeriod ?? ''}
+                  onChange={(event) =>
+                    applyFilters({ commentPeriod: (event.target.value as Engagement) || null })
+                  }
+                >
+                  <option value="">Any</option>
+                  {Object.entries(COMMENT_PERIOD_LABEL).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
 
             <div className="filters-panel__actions">
               <button
@@ -208,7 +227,8 @@ export function ProjlistFilters({ filters, updateFilters, regions, phases }: Pro
                 className="btn btn-link"
                 onClick={() => {
                   setApplicantInput('');
-                  applyFilters(EMPTY_FILTERS);
+                  // The order is a view choice, not a filter, so it survives.
+                  applyFilters({ ...EMPTY_FILTERS, sort: filters.sort });
                 }}
               >
                 Clear all
@@ -218,5 +238,29 @@ export function ProjlistFilters({ filters, updateFilters, regions, phases }: Pro
         </div>
       </div>
     </div>
+  );
+}
+
+interface ProjlistSortProps {
+  sort: ProjectSort;
+  onChange: (sort: ProjectSort) => void;
+}
+
+export function ProjlistSort({ sort, onChange }: ProjlistSortProps) {
+  return (
+    <label className="projlist-sort">
+      Sort
+      <select
+        className="form-select form-select-sm"
+        value={sort}
+        onChange={(event) => onChange(event.target.value as ProjectSort)}
+      >
+        {(Object.entries(SORT_LABEL) as [ProjectSort, string][]).map(([value, label]) => (
+          <option key={value} value={value}>
+            {label}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }
