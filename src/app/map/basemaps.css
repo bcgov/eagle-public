@@ -287,7 +287,8 @@
    so the states differ without colour or motion. */
 .maplibregl-marker {
   /* Outside BCDS palette by request: engaged map marker glow. #22c55e is lighter and more
-     saturated than the fill, so the glow reads as a halo around it rather than more of the pin. */
+     saturated than the fill, so the ground ellipse at a pin's tip (a cluster's halo) reads as
+     light rather than more of the marker. */
   --map-engaged-glow: #22c55e;
   /* Outside BCDS palette by request: engaged map marker fill. White count text on it is 2.92:1,
      below 4.5:1, kept white by request (dark text would be 4.72:1). The pin is 2.2:1 on the
@@ -300,48 +301,56 @@
 .maplibregl-marker:has(.map-pin.is-open)::after,
 .maplibregl-marker:has(.map-pin.is-upcoming)::before,
 .maplibregl-marker:has(.map-pin.is-upcoming)::after {
-  /* On the wrapper, not the button, so the glow adds no hit area. The pin head sits 14.7 of the
-     SVG's 42 units down; the translate keeps it there as `--pin-scale` grows from the 36px tip. */
-  --glow-size: 48px;
-  --pin-head-y: 12.6px;
+  /* On the wrapper, not the button, so the glow adds no hit area. A flat ellipse centred on the
+     36px tip reads as light on the ground; the pin scales from the tip, so a centred scale keeps
+     the ellipse on it. */
+  --glow-w: 48px;
+  --glow-h: 18px;
 
   content: '';
   position: absolute;
-  top: calc(var(--pin-head-y) - var(--glow-size) / 2);
-  left: calc(50% - var(--glow-size) / 2);
+  top: calc(36px - var(--glow-h) / 2);
+  left: calc(50% - var(--glow-w) / 2);
   z-index: -1;
   box-sizing: border-box;
-  width: var(--glow-size);
-  height: var(--glow-size);
+  width: var(--glow-w);
+  height: var(--glow-h);
   border-radius: 50%;
   pointer-events: none;
   scale: var(--pin-scale, 1);
-  translate: 0 calc((1 - var(--pin-scale, 1)) * (36px - var(--pin-head-y)));
 }
 
-/* A wide, faint halo: solid to 55% of the radius (just past the pin head), fading to 24px. */
+/* Solid to 55% of each radius, then fading out. Alpha in the colour, not `opacity`, so the contact
+   shadow layered on top stays at full strength. */
 .maplibregl-marker:has(.map-pin.is-open)::before,
-.maplibregl-marker:has(.map-pin.is-open)::after,
 .maplibregl-marker:has(.map-pin.is-upcoming)::before {
-  background: radial-gradient(closest-side, var(--map-engaged-glow) 55%, transparent);
+  --glow-alpha: 35%;
+
+  background:
+    radial-gradient(7px 2.5px, rgb(0 0 0 / 0.18) 40%, transparent),
+    radial-gradient(
+      closest-side,
+      color-mix(in srgb, var(--map-engaged-glow) var(--glow-alpha), transparent) 55%,
+      transparent
+    );
 }
 
-.maplibregl-marker:has(.map-pin.is-open)::before {
-  opacity: 0.35;
+.maplibregl-marker:has(.map-pin.is-upcoming)::before {
+  --glow-alpha: 15%;
 }
 
-/* The ripple only exists when motion is allowed; see the Motion section. */
+/* Under the glow so the contact shadow stays on top; same colour, so the blend is unchanged. The
+   ripple only exists when motion is allowed; see the Motion section. */
 .maplibregl-marker:has(.map-pin.is-open)::after {
   display: none;
-}
-
-.maplibregl-marker:has(.map-pin.is-upcoming)::before {
-  opacity: 0.15;
+  z-index: -2;
+  background: radial-gradient(closest-side, var(--map-engaged-glow) 55%, transparent);
 }
 
 /* The success token, not the fill green: 4.1:1 over the glow on white, where the fill is 2.6:1. */
 .maplibregl-marker:has(.map-pin.is-upcoming)::after {
-  --glow-size: 28px;
+  --glow-w: 30px;
+  --glow-h: 10px;
 
   border: var(--layout-border-width-small) dashed var(--icons-color-success);
 }
@@ -430,9 +439,7 @@
   .maplibregl-marker:has(.map-pin.is-open)::after,
   .maplibregl-marker:has(.map-pin.is-upcoming)::before,
   .maplibregl-marker:has(.map-pin.is-upcoming)::after {
-    transition:
-      scale 0.15s ease,
-      translate 0.15s ease;
+    transition: scale 0.15s ease;
   }
 
   /* Each cycle ends by holding at zero opacity, so the restart is never seen. */
@@ -446,7 +453,7 @@
     animation: engagement-ripple-cluster 2.4s cubic-bezier(0.25, 0.6, 0.35, 1) infinite;
   }
 
-  /* `transform` composes with the `scale`/`translate` the pin state sets, so both apply. */
+  /* `transform` composes with the `scale` the pin state sets, so both apply. */
   @keyframes engagement-ripple {
     0% {
       transform: scale(1);
