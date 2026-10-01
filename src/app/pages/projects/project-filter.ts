@@ -1,7 +1,7 @@
 import type { Project } from 'app/models/project';
-import { gridCollator } from 'app/components/display-grid/grid-helpers';
+import type { Engagement } from 'app/api/commentperiod';
 import { Constants } from 'app/utils/constants';
-import type { FilterCriteria } from './filter-state';
+import type { FilterCriteria, ProjectSort } from './filter-state';
 
 interface TypeOption {
   code: string;
@@ -19,10 +19,12 @@ function typeNameForCode(code: string): string {
   return PROJECT_TYPES.find((option) => option.code === code)?.name ?? code;
 }
 
+/** `applicant` is not checked here: demi-search matches the search box text and ranks the results. */
 export function projectMatchesFilters(
   project: Project,
   filters: FilterCriteria,
   regions: { _id?: string; name?: string }[],
+  engagementStates?: ReadonlyMap<string, ReadonlySet<Engagement>>,
 ): boolean {
   if (filters.regions.length > 0) {
     const regionMatch = filters.regions.some((regionId) => {
@@ -46,10 +48,8 @@ export function projectMatchesFilters(
     if (!typeMatch) return false;
   }
 
-  const applicant = filters.applicant?.trim().toLowerCase();
-  if (applicant) {
-    const projectName = project.name?.toLowerCase() || '';
-    if (!projectName.includes(applicant)) return false;
+  if (filters.commentPeriod && !engagementStates?.get(project._id)?.has(filters.commentPeriod)) {
+    return false;
   }
 
   if (filters.clFile) {
@@ -78,38 +78,32 @@ export function projectMatchesFilters(
   return true;
 }
 
-const WORD_CHAR = /[\p{L}\p{N}]/u;
-
-/** 0: name starts with the query, 1: a word in the name does, 2: any other match. */
-function nameMatchTier(name: string, query: string): number {
-  if (name.startsWith(query)) return 0;
-  for (let at = name.indexOf(query); at > 0; at = name.indexOf(query, at + 1)) {
-    if (!WORD_CHAR.test(name[at - 1])) return 1;
-  }
-  return 2;
-}
-
-/**
- * Orders projects by how well their name matches a typed query, then by name. An empty query
- * keeps the input order (the server's).
- */
-export function rankByName(projects: Project[], query: string | null): Project[] {
-  const q = query?.trim().toLowerCase();
-  if (!q) return projects;
-  return projects
-    .map((project) => {
-      const name = project.name ?? '';
-      return { project, name, tier: nameMatchTier(name.toLowerCase(), q) };
-    })
-    .sort((a, b) => a.tier - b.tier || gridCollator.compare(a.name, b.name))
-    .map(({ project }) => project);
-}
-
 export function filterProjects(
   projects: Project[],
   filters: FilterCriteria,
   regions: { _id?: string; name?: string }[],
+  engagementStates?: ReadonlyMap<string, ReadonlySet<Engagement>>,
 ): Project[] {
-  const matches = projects.filter((project) => projectMatchesFilters(project, filters, regions));
-  return rankByName(matches, filters.applicant);
+  return projects.filter((project) =>
+    projectMatchesFilters(project, filters, regions, engagementStates),
+  );
+}
+
+/** A project with no date sorts after every dated one. */
+function updatedTime(project: Project): number {
+  const time = project.dateUpdated ? new Date(project.dateUpdated).getTime() : NaN;
+  return Number.isNaN(time) ? 0 : time;
+}
+
+/**
+ * Relevance keeps the order the projects came in: demi-search's ranking for a keyword search, and
+ * its name order for the full list.
+ */
+export function sortProjects(projects: Project[], sort: ProjectSort): Project[] {
+  if (sort === 'relevance') return projects;
+  const compare: Record<Exclude<ProjectSort, 'relevance'>, (a: Project, b: Project) => number> = {
+    name: (a, b) => (a.name || '').localeCompare(b.name || ''),
+    updated: (a, b) => updatedTime(b) - updatedTime(a),
+  };
+  return [...projects].sort(compare[sort]);
 }

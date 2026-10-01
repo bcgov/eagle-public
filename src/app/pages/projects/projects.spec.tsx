@@ -1,13 +1,20 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, onTestFinished, vi } from 'vitest';
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderAt } from '../../../test-utils';
 import { fakeMap, mapProps } from './maplibre-test-stub';
 import { Projects } from './projects';
 import { filtersToParams, parseFilters } from './filter-state';
-import { projectMatchesFilters, rankByName } from './project-filter';
+import { projectMatchesFilters, sortProjects } from './project-filter';
+import { regionFillOpacity, regionLineOpacity, regionLineWidth } from './region-paint';
+// Comes in with maplibre-gl, so the paint is checked by the same compiler the map uses.
+import { createPropertyExpression, latest } from '@maplibre/maplibre-gl-style-spec';
 import { logger } from 'app/config/logging';
 import type { Project } from 'app/models/project';
+
+const { track } = vi.hoisted(() => ({ track: vi.fn() }));
+vi.mock('app/analytics/analytics', () => ({ track }));
+
 import {
   baseLayerName,
   LIST_PAGE_SIZE,
@@ -38,6 +45,7 @@ const PROJECTS = [
   {
     _id: 'p2',
     name: 'Fir Transmission Line',
+    location: 'Near Fort St. John',
     proponent: { _id: 'o2', name: 'Fir Power' },
     sector: 'Energy Storage',
     type: 'Energy-Electricity',
@@ -53,6 +61,7 @@ const LISTS = [
   { _id: 'r1', type: 'region', name: 'Skeena' },
   { _id: 'r2', type: 'region', name: 'Peace' },
   { _id: 'r3', type: 'region', name: 'Thompson-Nicola' },
+  { _id: 'r4', type: 'region', name: 'Omineca' },
   { _id: 'ph1', type: 'projectPhase', name: 'Application Review', legislation: '2018' },
   { _id: 'ph2', type: 'projectPhase', name: 'Pre-Application', legislation: '2018' },
 ];
@@ -100,11 +109,35 @@ const REGION_SHAPES = {
         ],
       },
     },
+    // Inside Peace's bounding box, so picking both frames the same extent as Peace alone.
+    {
+      type: 'Feature',
+      properties: { regionName: 'Omineca', regionNumber: 7 },
+      geometry: {
+        type: 'Polygon',
+        coordinates: [
+          [
+            [-121, 56],
+            [-120, 56],
+            [-120, 57],
+            [-121, 57],
+            [-121, 56],
+          ],
+        ],
+      },
+    },
   ],
 };
 
 let requests: string[];
-let projectFixtures: typeof PROJECTS;
+let projectFixtures: Record<string, unknown>[];
+/**
+ * What demi-search answers a keyword search with. By default the fixtures whose name matches, as
+ * the index returns them: id and name only.
+ */
+let keywordResults: (keywords: string) => Record<string, unknown>[];
+/** `searchResultsTotal` of a keyword answer; the row count when unset. */
+let keywordTotal: number | undefined;
 /** Comment period answers by `and[status]` (`open`, `upcoming`); an unset one answers empty. */
 let commentPeriodResponders: Map<string, () => Promise<Response>>;
 
@@ -123,6 +156,11 @@ function periodEnvelope(periods: unknown[]) {
 function stubFetch() {
   requests = [];
   projectFixtures = PROJECTS;
+  keywordResults = (keywords) =>
+    PROJECTS.filter((project) => project.name.toLowerCase().includes(keywords)).map(
+      ({ _id, name }) => ({ _id, name }),
+    );
+  keywordTotal = undefined;
   commentPeriodResponders = new Map();
   vi.stubGlobal(
     'fetch',
@@ -130,12 +168,10 @@ function stubFetch() {
       const url = String(input);
       requests.push(url);
       if (url.includes('dataset=Project')) {
-        return jsonResponse([
-          {
-            searchResults: projectFixtures,
-            meta: [{ searchResultsTotal: projectFixtures.length }],
-          },
-        ]);
+        const keywords = new URL(url, 'http://localhost').searchParams.get('keywords');
+        const results = keywords ? keywordResults(keywords) : projectFixtures;
+        const total = (keywords && keywordTotal) || results.length;
+        return jsonResponse([{ searchResults: results, meta: [{ searchResultsTotal: total }] }]);
       }
       if (url.includes('dataset=List')) {
         return jsonResponse([
@@ -180,6 +216,69 @@ function cards(): HTMLElement[] {
   return screen.getAllByTestId('project-card');
 }
 
+function projectRequests(): string[] {
+  return requests.filter((url) => url.includes('dataset=Project'));
+}
+
+/** Card titles, top to bottom. */
+function titles(): (string | null | undefined)[] {
+  return cards().map((card) => card.querySelector('.app-card__name')?.textContent);
+}
+
+function keywordRequests(): string[] {
+  return projectRequests().filter((url) => url.includes('keywords='));
+}
+
+/** Holds a request whose URL contains `match` until the returned release is called. */
+function holdRequests(match: string): { release: () => void; held: () => boolean } {
+  let release = () => undefined as void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  let held = false;
+  const responder = globalThis.fetch;
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input).includes(match)) {
+        held = true;
+        await gate;
+      }
+      return responder(input);
+    }),
+  );
+  return { release: () => release(), held: () => held };
+}
+
+/** Types into the search box on a fake clock, where userEvent's key timing would stall. */
+async function typeOnFakeClock(text: string): Promise<void> {
+  await act(async () => {
+    fireEvent.change(screen.getByPlaceholderText('Search projects'), { target: { value: text } });
+  });
+}
+
+async function advance(ms: number): Promise<void> {
+  await act(async () => {
+    vi.advanceTimersByTime(ms);
+  });
+}
+
+function pinIds(): (string | null)[] {
+  return [...document.querySelectorAll('[data-testid="map-marker"]')].map((pin) =>
+    pin.getAttribute('data-project-id'),
+  );
+}
+
+/** p1 (Cedar Quarry) has an open comment period, p2 (Fir Transmission Line) an upcoming one. */
+function stubEngagement(): void {
+  commentPeriodResponders.set('open', async () =>
+    jsonResponse(periodEnvelope([{ _id: 'cp1', project: 'p1', ...OPEN_DATES }])),
+  );
+  commentPeriodResponders.set('upcoming', async () =>
+    jsonResponse(periodEnvelope([{ _id: 'cp2', project: 'p2', ...UPCOMING_DATES }])),
+  );
+}
+
 /** By card text, not `getByText`: the pin tooltip carries the same project name. */
 function cardFor(name: string): HTMLElement {
   const card = cards().find((item) => item.textContent?.includes(name));
@@ -202,20 +301,64 @@ function layerFor(id: string): HTMLElement {
 }
 
 /** The pointer sitting over a region polygon; the real map fills `features` from the fill layer. */
-function moveOverRegion(regionName: string, id: number, x = 40, y = 60): void {
+/** A region fill feature as the map reports it; `promoteId` makes the name its id. */
+function regionFeature(regionName: string) {
+  return {
+    type: 'Feature' as const,
+    id: regionName,
+    layer: { id: 'eao-regions-fill' },
+    properties: { regionName },
+    geometry: { type: 'Point' as const, coordinates: [0, 0] },
+  };
+}
+
+/** The pointer sitting over a region polygon; the real map fills `features` from the fill layer. */
+function moveOverRegion(regionName: string, x = 40, y = 60): void {
+  act(() => mapProps?.onMouseMove?.({ features: [regionFeature(regionName)], point: { x, y } }));
+}
+
+/**
+ * Watches every `scrollTop` written to the list's scroll area from now on, the first render
+ * included; read it through the returned function. jsdom does not scroll.
+ */
+function watchListScroll(): () => number[] {
+  const setter = vi.spyOn(Element.prototype, 'scrollTop', 'set');
+  onTestFinished(() => setter.mockRestore());
+  return () =>
+    setter.mock.calls
+      .filter((_, index) =>
+        (setter.mock.contexts[index] as Element).classList.contains('app-list__scroll-container'),
+      )
+      .map(([value]) => value);
+}
+
+/** The last hover amount the map was given for a region; it eases between 0 and 1. */
+function hoverAmount(regionName: string): unknown {
+  const calls = fakeMap.setFeatureState.mock.calls.filter(
+    ([target, state]) => target.id === regionName && 'hoverT' in state,
+  );
+  return calls.at(-1)?.[1]['hoverT'];
+}
+
+/** A click on a region polygon, off any pin. */
+function clickRegion(regionName: string): void {
+  const onClick = mapProps?.['onClick'] as (event: unknown) => void;
   act(() =>
-    mapProps?.onMouseMove?.({
-      features: [
-        {
-          type: 'Feature',
-          id,
-          properties: { regionName },
-          geometry: { type: 'Point', coordinates: [0, 0] },
-        },
-      ],
-      point: { x, y },
+    onClick({
+      features: [regionFeature(regionName)],
+      point: { x: 40, y: 60 },
+      originalEvent: { target: document.body },
     }),
   );
+}
+
+/** The map's double-click window, which a desktop region click waits out before it picks. */
+const DBLCLICK_WINDOW_MS = 300;
+
+/** A desktop region click, then the wait before it picks. */
+async function pickRegion(regionName: string): Promise<void> {
+  clickRegion(regionName);
+  await act(() => new Promise((resolve) => setTimeout(resolve, DBLCLICK_WINDOW_MS)));
 }
 
 function pinFor(id: string): HTMLElement {
@@ -238,7 +381,9 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.unstubAllGlobals();
+  track.mockClear();
 });
 
 describe('filter state', () => {
@@ -253,18 +398,30 @@ describe('filter state', () => {
       purpose: 'quarry',
       publishFrom: new Date('2026-01-01T00:00:00.000Z'),
       publishTo: new Date('2026-06-30T00:00:00.000Z'),
+      commentPeriod: 'open' as const,
+      sort: 'updated' as const,
     };
     const params = filtersToParams(filters);
 
     expect(params.toString()).toBe(
       'regions=r1%2Cr2&phases=ph1&types=mines&applicant=cedar&clFile=123&dispId=456&purpose=quarry' +
-        '&publishFrom=2026-01-01&publishTo=2026-06-30',
+        '&publishFrom=2026-01-01&publishTo=2026-06-30&cp=open&sort=updated',
     );
     expect(parseFilters(params)).toEqual(filters);
   });
 
   it('leaves empty filters out of the query string', () => {
     expect(filtersToParams(parseFilters(new URLSearchParams())).toString()).toBe('');
+  });
+
+  it('ignores a comment period state it does not offer', () => {
+    expect(parseFilters(new URLSearchParams('cp=closed')).commentPeriod).toBeNull();
+    expect(parseFilters(new URLSearchParams('cp=toString')).commentPeriod).toBeNull();
+  });
+
+  it('ignores a sort it does not offer', () => {
+    expect(parseFilters(new URLSearchParams('sort=oldest')).sort).toBeNull();
+    expect(parseFilters(new URLSearchParams('sort=hasOwnProperty')).sort).toBeNull();
   });
 });
 
@@ -285,9 +442,53 @@ describe('project filter', () => {
     expect(projectMatchesFilters(project, { ...empty, regions: ['r2'] }, regions)).toBe(false);
   });
 
-  it('matches a name filter typed with surrounding spaces, as the ranking reads it', () => {
-    expect(projectMatchesFilters(project, { ...empty, applicant: ' cedar ' }, regions)).toBe(true);
-    expect(projectMatchesFilters(project, { ...empty, applicant: ' fir ' }, regions)).toBe(false);
+  it('keeps only projects with a comment period in the chosen state', () => {
+    const states = new Map([['p1', new Set(['open' as const])]]);
+    const open = { ...empty, commentPeriod: 'open' as const };
+    const upcoming = { ...empty, commentPeriod: 'upcoming' as const };
+
+    expect(projectMatchesFilters(project, open, regions, states)).toBe(true);
+    expect(projectMatchesFilters(project, upcoming, regions, states)).toBe(false);
+    expect(projectMatchesFilters(PROJECTS[1] as any, open, regions, states)).toBe(false);
+    expect(projectMatchesFilters(PROJECTS[1] as any, empty, regions, states)).toBe(true);
+  });
+
+  it('matches a project under each state its comment periods are in', () => {
+    const states = new Map([['p1', new Set(['open', 'upcoming'] as const)]]);
+
+    expect(
+      projectMatchesFilters(project, { ...empty, commentPeriod: 'open' }, regions, states),
+    ).toBe(true);
+    expect(
+      projectMatchesFilters(project, { ...empty, commentPeriod: 'upcoming' }, regions, states),
+    ).toBe(true);
+  });
+
+  it('leaves the search box text to the server', () => {
+    expect(projectMatchesFilters(project, { ...empty, applicant: 'no such name' }, regions)).toBe(
+      true,
+    );
+  });
+
+  /** Just the fields a sort reads. */
+  const row = (fields: Partial<Project>) => fields as Project;
+
+  it('keeps the incoming order for equal names or equal update dates', () => {
+    const a = row({ _id: 'a', name: 'Same', dateUpdated: '2026-01-01T00:00:00.000Z' });
+    const b = row({ _id: 'b', name: 'Same', dateUpdated: '2026-01-01T00:00:00.000Z' });
+
+    expect(sortProjects([a, b], 'name').map((p) => p._id)).toEqual(['a', 'b']);
+    expect(sortProjects([b, a], 'updated').map((p) => p._id)).toEqual(['b', 'a']);
+  });
+
+  it('sorts an unreadable update date with the undated projects, last', () => {
+    const dated = row({ _id: 'dated', name: 'B', dateUpdated: '2020-01-01T00:00:00.000Z' });
+    const garbage = row({ _id: 'garbage', name: 'A', dateUpdated: 'garbage' });
+
+    expect(sortProjects([garbage, dated], 'updated').map((p) => p._id)).toEqual([
+      'dated',
+      'garbage',
+    ]);
   });
 
   it('drops projects outside the publish date range', () => {
@@ -296,43 +497,6 @@ describe('project filter', () => {
     expect(projectMatchesFilters(PROJECTS[1] as any, { ...empty, publishFrom }, regions)).toBe(
       true,
     );
-  });
-});
-
-describe('rankByName', () => {
-  const named = (...names: string[]) => names.map((name) => ({ _id: name, name }) as Project);
-  const names = (projects: { name?: string }[]) => projects.map((project) => project.name);
-
-  it('puts a name that starts with the query above one that only contains it', () => {
-    const ranked = rankByName(
-      named('Northern Transmission Line', 'Trans Mountain Expansion'),
-      'trans',
-    );
-    expect(names(ranked)).toEqual(['Trans Mountain Expansion', 'Northern Transmission Line']);
-  });
-
-  it('puts a word that starts with the query above a match inside a word', () => {
-    const ranked = rankByName(named('Intrans Terminal', 'Northern Transmission Line'), 'trans');
-    expect(names(ranked)).toEqual(['Northern Transmission Line', 'Intrans Terminal']);
-  });
-
-  it('orders names alphabetically within the same tier', () => {
-    const ranked = rankByName(named('Trans Mountain', 'Bear Mountain Wind'), 'mountain');
-    expect(names(ranked)).toEqual(['Bear Mountain Wind', 'Trans Mountain']);
-  });
-
-  it('ignores case and surrounding spaces in the query', () => {
-    const ranked = rankByName(
-      named('Northern Transmission Line', 'Trans Mountain Expansion'),
-      '  TRANS ',
-    );
-    expect(names(ranked)).toEqual(['Trans Mountain Expansion', 'Northern Transmission Line']);
-  });
-
-  it('keeps the input order when the query is empty', () => {
-    const input = named('Zeballos Mine', 'Northern Transmission Line', 'Trans Mountain Expansion');
-    expect(names(rankByName(input, '  '))).toEqual(names(input));
-    expect(names(rankByName(input, null))).toEqual(names(input));
   });
 });
 
@@ -346,8 +510,7 @@ describe('projects page', () => {
     expect(screen.getByText('Fir Power')).toBeInTheDocument();
     expect(screen.getByTestId('results-count')).toHaveTextContent('2 projects in view');
 
-    const projectRequests = requests.filter((url) => url.includes('dataset=Project'));
-    expect(projectRequests).toEqual([
+    expect(projectRequests()).toEqual([
       '/demi-search/search?dataset=Project&pageNum=0&pageSize=1000000&projectLegislation=default&sortBy=&sortBy=&populate=true&fuzzy=false',
     ]);
   });
@@ -368,22 +531,262 @@ describe('projects page', () => {
     const router = renderProjects();
     await screen.findByText('Application Review');
 
-    await userEvent.type(screen.getByPlaceholderText('Start typing a project name'), 'fir');
+    await userEvent.type(screen.getByPlaceholderText('Search projects'), 'fir');
 
     await waitFor(() => expect(router.state.location.search).toBe('?applicant=fir'));
+    await waitFor(() => expect(screen.queryByText('Application Review')).not.toBeInTheDocument());
     expect(screen.getByText('Pre-Application')).toBeInTheDocument();
-    expect(screen.queryByText('Application Review')).not.toBeInTheDocument();
     expect(screen.getByTestId('results-count')).toHaveTextContent('1 project in view');
+  });
+
+  it('sends the search box to demi-search once typing stops', async () => {
+    renderProjects();
+    await screen.findByText('Application Review');
+
+    await userEvent.type(screen.getByPlaceholderText('Search projects'), 'fir');
+
+    await waitFor(() => expect(keywordRequests()).toHaveLength(1));
+    // One request for the whole word, not one per keystroke; sortBy stays empty for score order.
+    expect(keywordRequests()[0]).toBe(
+      '/demi-search/search?dataset=Project&keywords=fir&pageNum=0&pageSize=500&projectLegislation=default&sortBy=&sortBy=&populate=false&fuzzy=false',
+    );
+
+    vi.useFakeTimers();
+    await advance(300);
+    expect(projectRequests()).toHaveLength(2);
+  });
+
+  it('sends no search for a single character', async () => {
+    renderProjects();
+    await screen.findByText('Application Review');
+    vi.useFakeTimers();
+
+    await typeOnFakeClock('f');
+    await advance(300);
+
+    expect(keywordRequests()).toEqual([]);
+    expect(cards()).toHaveLength(2);
+  });
+
+  it('searches with the keywords a shared link carries', async () => {
+    renderProjects('/projects?applicant=fir');
+
+    expect(await screen.findByText('Pre-Application')).toBeInTheDocument();
+    expect(screen.queryByText('Application Review')).not.toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Search projects')).toHaveValue('fir');
+    expect(keywordRequests()).toHaveLength(1);
+    expect(keywordRequests()[0]).toContain('&keywords=fir&');
+  });
+
+  it('shows the full project record for a search hit, not the thinner index row', async () => {
+    renderProjects('/projects?applicant=fir');
+    await screen.findByText('Pre-Application');
+
+    await userEvent.click(cardFor('Fir Transmission Line'));
+
+    const popup = await screen.findByTestId('map-popup');
+    expect(within(popup).getByText('Near Fort St. John')).toBeInTheDocument();
+    expect(within(popup).getByText('Peace')).toBeInTheDocument();
+  });
+
+  it('says so when the search fails instead of finding nothing', async () => {
+    const stub = globalThis.fetch;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) =>
+        // A 2xx with no result envelope, which the search client cannot read.
+        String(input).includes('keywords=') ? jsonResponse([]) : stub(input),
+      ),
+    );
+    vi.spyOn(logger, 'error').mockImplementation(() => undefined);
+    renderProjects('/projects?applicant=fir');
+
+    expect(await screen.findByText('Projects could not be loaded right now.')).toBeInTheDocument();
+    expect(screen.queryByText('No projects found')).not.toBeInTheDocument();
+  });
+
+  it('says so when the full project list fails to load', async () => {
+    const stub = globalThis.fetch;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) =>
+        String(input).includes('dataset=Project') ? jsonResponse([]) : stub(input),
+      ),
+    );
+    vi.spyOn(logger, 'error').mockImplementation(() => undefined);
+    renderProjects();
+
+    expect(await screen.findByText('Projects could not be loaded right now.')).toBeInTheDocument();
+    expect(screen.queryByText('No projects found')).not.toBeInTheDocument();
+  });
+
+  it('warns when more projects match than one search page holds', async () => {
+    keywordTotal = 501;
+    const warn = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
+    renderProjects('/projects?applicant=fir');
+    await screen.findByText('Pre-Application');
+
+    await waitFor(() =>
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('matched 501 projects'), 'project'),
+    );
+  });
+
+  it('escapes the search text so an ampersand stays in the keywords', async () => {
+    renderProjects(`/projects?applicant=${encodeURIComponent('fir & co')}`);
+    await screen.findByText('No projects found');
+
+    expect(keywordRequests()[0]).toContain('&keywords=fir%20%26%20co&');
+  });
+
+  it('lists the search results in the order demi-search ranked them', async () => {
+    // p9 is in the index but not the full list, so it has no card.
+    keywordResults = () => [{ _id: 'p2' }, { _id: 'p9' }, { _id: 'p1' }];
+    renderProjects('/projects?applicant=line');
+    await screen.findByText('Pre-Application');
+
+    expect(titles()).toEqual(['Fir Transmission Line', 'Cedar Quarry']);
+  });
+
+  it('scrolls the list back to the top once, when the new search results land', async () => {
+    const scrolls = watchListScroll();
+    const fir = holdRequests('keywords=fir');
+    renderProjects();
+    await screen.findByText('Application Review');
+
+    await userEvent.type(screen.getByPlaceholderText('Search projects'), 'fir');
+    await waitFor(() => expect(fir.held()).toBe(true));
+    expect(scrolls()).toEqual([]);
+
+    fir.release();
+    await waitFor(() => expect(screen.queryByText('Application Review')).not.toBeInTheDocument());
+
+    expect(scrolls()).toEqual([0]);
+  });
+
+  it('brings the open card back into view once the new search results land', async () => {
+    const scrolls = watchListScroll();
+    const fir = holdRequests('keywords=fir');
+    renderProjects();
+    await screen.findByText('Application Review');
+    await userEvent.click(cardFor('Fir Transmission Line'));
+    await screen.findByTestId('map-popup');
+
+    await userEvent.type(screen.getByPlaceholderText('Search projects'), 'fir');
+    await waitFor(() => expect(fir.held()).toBe(true));
+    const scrolledIntoView = vi.mocked(Element.prototype.scrollIntoView);
+    scrolledIntoView.mockClear();
+    const before = scrolls().length;
+
+    fir.release();
+    await waitFor(() => expect(screen.queryByText('Application Review')).not.toBeInTheDocument());
+
+    expect(scrolls().slice(before)).toEqual([0]);
+    expect(scrolledIntoView.mock.contexts).toContain(cardFor('Fir Transmission Line'));
+  });
+
+  it('leaves the list where it is on first load, a card pick and a map pan', async () => {
+    const scrolls = watchListScroll();
+    renderProjects();
+    await screen.findByText('Application Review');
+    expect(scrolls()).toEqual([]);
+
+    await userEvent.click(cardFor('Cedar Quarry'));
+    await screen.findByTestId('map-popup');
+    act(() => mapBounds.set({ north: 58, south: 54, east: -119, west: -128 }));
+    await userEvent.hover(cardFor('Cedar Quarry'));
+
+    expect(scrolls()).toEqual([]);
+  });
+
+  it('scrolls the list back to the top when the sort changes, keeping the open card in sight', async () => {
+    const scrolls = watchListScroll();
+    renderProjects();
+    await screen.findByText('Application Review');
+    await userEvent.click(cardFor('Fir Transmission Line'));
+    await screen.findByTestId('map-popup');
+    const scrolledIntoView = vi.mocked(Element.prototype.scrollIntoView);
+    scrolledIntoView.mockClear();
+
+    await userEvent.selectOptions(screen.getByLabelText('Sort'), 'Name A-Z');
+
+    await waitFor(() => expect(scrolls()).toEqual([0]));
+    expect(scrolledIntoView.mock.contexts).toContain(cardFor('Fir Transmission Line'));
+  });
+
+  it('renders with an unreadable date in the URL, ignoring it', async () => {
+    renderProjects('/projects?publishFrom=garbage');
+
+    expect(await screen.findByText('Application Review')).toBeInTheDocument();
+    expect(cards()).toHaveLength(2);
+  });
+
+  it('keeps the last results on screen while the next search runs', async () => {
+    const cedar = holdRequests('keywords=cedar');
+    renderProjects();
+    await screen.findByText('Application Review');
+
+    await userEvent.type(screen.getByPlaceholderText('Search projects'), 'cedar');
+    await waitFor(() => expect(cedar.held()).toBe(true));
+
+    expect(screen.queryAllByTestId('project-card-skeleton')).toHaveLength(0);
+    expect(cards()).toHaveLength(2);
+
+    cedar.release();
+
+    await waitFor(() => expect(screen.queryByText('Pre-Application')).not.toBeInTheDocument());
+    expect(cards()).toHaveLength(1);
   });
 
   it('clears the search filter out of the URL again', async () => {
     const router = renderProjects('/projects?applicant=fir');
     await screen.findByText('Pre-Application');
 
-    await userEvent.click(screen.getByLabelText('Clear search'));
+    await waitFor(() => expect(screen.queryByText('Application Review')).not.toBeInTheDocument());
+    const sent = projectRequests().length;
+    vi.useFakeTimers();
 
-    await waitFor(() => expect(router.state.location.search).toBe(''));
-    expect(await screen.findByText('Application Review')).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Clear search'));
+    });
+
+    // Back to the full list at once, from the list already loaded.
+    expect(router.state.location.search).toBe('');
+    expect(cards()).toHaveLength(2);
+    await advance(300);
+    expect(projectRequests()).toHaveLength(sent);
+  });
+
+  it('shows the old results again when the same term is typed back after clearing', async () => {
+    renderProjects('/projects?applicant=fir');
+    await screen.findByText('Pre-Application');
+    await waitFor(() => expect(screen.queryByText('Application Review')).not.toBeInTheDocument());
+    vi.useFakeTimers();
+
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Clear search'));
+    });
+    await typeOnFakeClock('fir');
+    await advance(300);
+
+    expect(screen.queryByText('Application Review')).not.toBeInTheDocument();
+    expect(cardFor('Fir Transmission Line')).toBeInTheDocument();
+  });
+
+  it('never shows the old results for a term typed straight after clearing', async () => {
+    renderProjects('/projects?applicant=fir');
+    await screen.findByText('Pre-Application');
+    await waitFor(() => expect(screen.queryByText('Application Review')).not.toBeInTheDocument());
+    vi.useFakeTimers();
+
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Clear search'));
+    });
+    await typeOnFakeClock('ce');
+
+    expect(screen.getByText('Application Review')).toBeInTheDocument();
+    await advance(299);
+    expect(screen.getByText('Application Review')).toBeInTheDocument();
+    expect(keywordRequests()).toHaveLength(1);
   });
 
   it('applies filters taken from the URL on first load', async () => {
@@ -464,10 +867,232 @@ describe('projects page', () => {
     expect(document.querySelector('.app-map__shimmer')).toBeNull();
   });
 
+  it('narrows the list and the pins to the chosen comment period state', async () => {
+    stubEngagement();
+    const router = renderProjects();
+    await screen.findByText('Application Review');
+    await waitFor(() => expect(pinFor('p2')).toHaveAttribute('data-engagement', 'upcoming'));
+
+    await userEvent.click(screen.getByRole('button', { name: /Filters/ }));
+    await userEvent.selectOptions(screen.getByLabelText('Comment Period'), 'Open now');
+
+    await waitFor(() => expect(router.state.location.search).toBe('?cp=open'));
+    expect(track).toHaveBeenLastCalledWith(
+      'Project Filters Applied',
+      expect.objectContaining({ comment_period: 'open', total_filters: 1 }),
+    );
+    expect(cards()).toHaveLength(1);
+    expect(cardFor('Cedar Quarry')).toBeInTheDocument();
+    expect(pinIds()).toEqual(['p1']);
+
+    await userEvent.selectOptions(screen.getByLabelText('Comment Period'), 'Upcoming');
+
+    await waitFor(() => expect(router.state.location.search).toBe('?cp=upcoming'));
+    expect(cardFor('Fir Transmission Line')).toBeInTheDocument();
+    expect(pinIds()).toEqual(['p2']);
+
+    await userEvent.selectOptions(screen.getByLabelText('Comment Period'), 'Any');
+
+    await waitFor(() => expect(router.state.location.search).toBe(''));
+    expect(cards()).toHaveLength(2);
+  });
+
+  it('lists a project with an open and an upcoming period under both', async () => {
+    commentPeriodResponders.set('open', async () =>
+      jsonResponse(periodEnvelope([{ _id: 'cp1', project: 'p1', ...OPEN_DATES }])),
+    );
+    commentPeriodResponders.set('upcoming', async () =>
+      jsonResponse(periodEnvelope([{ _id: 'cp2', project: 'p1', ...UPCOMING_DATES }])),
+    );
+    renderProjects('/projects?cp=upcoming');
+
+    expect(await screen.findByText('Application Review')).toBeInTheDocument();
+    expect(screen.queryByText('Pre-Application')).not.toBeInTheDocument();
+    // The pin still shows the state that outranks.
+    expect(pinFor('p1')).toHaveAttribute('data-engagement', 'open');
+  });
+
+  it('says the comment periods failed to load instead of finding no projects', async () => {
+    vi.spyOn(logger, 'error').mockImplementation(() => undefined);
+    commentPeriodResponders.set('open', async () => new Response('', { status: 500 }));
+    renderProjects('/projects?cp=open');
+
+    expect(
+      await screen.findByText('Comment periods could not be loaded right now.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('No projects found')).not.toBeInTheDocument();
+  });
+
+  it('applies and counts a comment period filter taken from the URL', async () => {
+    stubEngagement();
+    renderProjects('/projects?cp=open');
+
+    expect(await screen.findByText('Application Review')).toBeInTheDocument();
+    expect(screen.queryByText('Pre-Application')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Comment Period')).toHaveDisplayValue('Open now');
+    const toggle = screen.getByRole('button', { name: /Filters/ });
+    expect(within(toggle).getByText('1')).toBeInTheDocument();
+  });
+
+  it('holds the list on skeletons until the comment periods arrive', async () => {
+    let release: (() => void) | undefined;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    stubEngagement();
+    const open = commentPeriodResponders.get('open')!;
+    commentPeriodResponders.set('open', async () => {
+      await gate;
+      return open();
+    });
+    renderProjects();
+    await screen.findByText('Application Review');
+
+    await userEvent.click(screen.getByRole('button', { name: /Filters/ }));
+    await userEvent.selectOptions(screen.getByLabelText('Comment Period'), 'Open now');
+
+    expect(await screen.findAllByTestId('project-card-skeleton')).toHaveLength(6);
+    expect(screen.queryByText('No projects found')).not.toBeInTheDocument();
+    expect(screen.queryByText('Pre-Application')).not.toBeInTheDocument();
+
+    release?.();
+
+    expect(await screen.findByText('Application Review')).toBeInTheDocument();
+    expect(screen.queryByText('Pre-Application')).not.toBeInTheDocument();
+  });
+
   it('shows "No projects found" when nothing matches', async () => {
     renderProjects('/projects?applicant=nothing-matches-this');
 
     expect(await screen.findByText('No projects found')).toBeInTheDocument();
+  });
+});
+
+describe('region paint', () => {
+  type PaintKey = 'fill-opacity' | 'line-width' | 'line-opacity';
+
+  /** Compiles a paint expression the way MapLibre does, then evaluates it for one feature state. */
+  function paintAt(
+    key: PaintKey,
+    expression: unknown,
+    state: { hoverT?: number; selected?: boolean },
+  ): number {
+    const spec = key === 'fill-opacity' ? latest.paint_fill[key] : latest.paint_line[key];
+    const compiled = createPropertyExpression(expression, spec as never);
+    if (compiled.result !== 'success') throw new Error(JSON.stringify(compiled.value));
+    return compiled.value.evaluate({ zoom: 6 }, { type: 2, properties: {} } as never, state);
+  }
+
+  /** The value at rest and fully hovered, for one paint and one pick state. */
+  function restAndHover(key: PaintKey, expression: unknown, selected?: boolean): number[] {
+    return [0, 1].map((hoverT) => paintAt(key, expression, { hoverT, selected }));
+  }
+
+  it('eases every look with the hover amount when no region is picked', () => {
+    expect(restAndHover('fill-opacity', regionFillOpacity(false))).toEqual([0.08, 0.13]);
+    expect(restAndHover('line-width', regionLineWidth(false))).toEqual([1, 2]);
+    expect(restAndHover('line-opacity', regionLineOpacity(false))).toEqual([0.5, 0.7]);
+    // Half-way through the tween sits half-way between.
+    expect(paintAt('line-width', regionLineWidth(false), { hoverT: 0.5 })).toBe(1.5);
+    // No hover state yet reads as rest.
+    expect(paintAt('fill-opacity', regionFillOpacity(false), {})).toBe(0.08);
+  });
+
+  it('holds a picked region strong and fades the rest when a region is picked', () => {
+    expect(restAndHover('fill-opacity', regionFillOpacity(true), true)).toEqual([0.14, 0.17]);
+    expect(restAndHover('fill-opacity', regionFillOpacity(true), false)).toEqual([0.04, 0.09]);
+    // A picked outline never thins under the pointer.
+    expect(restAndHover('line-width', regionLineWidth(true), true)).toEqual([4.5, 4.5]);
+    expect(restAndHover('line-width', regionLineWidth(true), false)).toEqual([1, 2]);
+    expect(restAndHover('line-opacity', regionLineOpacity(true), true)).toEqual([1, 1]);
+    expect(restAndHover('line-opacity', regionLineOpacity(true), false)).toEqual([0.4, 0.6]);
+  });
+});
+
+describe('project sort', () => {
+  /** A third project, with no update date, so name, date and rank each give a different order. */
+  const ASPEN = { ...PROJECTS[0], _id: 'p3', name: 'Aspen Road', centroid: [-126, 54.5] };
+  const AZ = ['Aspen Road', 'Cedar Quarry', 'Fir Transmission Line'];
+  const RECENTLY_UPDATED = ['Cedar Quarry', 'Fir Transmission Line', 'Aspen Road'];
+
+  async function renderThree(path: string, shown = 3) {
+    projectFixtures = [
+      { ...PROJECTS[1], dateUpdated: '2026-03-01T00:00:00.000Z' },
+      ASPEN,
+      { ...PROJECTS[0], dateUpdated: '2026-04-01T00:00:00.000Z' },
+    ];
+    keywordResults = () => [{ _id: 'p2' }, { _id: 'p3' }, { _id: 'p1' }];
+    const router = renderProjects(path);
+    await waitFor(() => expect(cards()).toHaveLength(shown));
+    return router;
+  }
+
+  function sortOptions(): string[] {
+    return within(screen.getByLabelText('Sort'))
+      .getAllByRole('option')
+      .map((option) => option.textContent ?? '');
+  }
+
+  it('keeps the server order under Relevance by default with no keywords', async () => {
+    const router = await renderThree('/projects');
+
+    // The fixture list is out of name order, so any client sort would show.
+    expect(titles()).toEqual(['Fir Transmission Line', 'Aspen Road', 'Cedar Quarry']);
+    expect(screen.getByLabelText('Sort')).toHaveDisplayValue('Relevance');
+    expect(sortOptions()).toEqual(['Relevance', 'Name A-Z', 'Recently updated']);
+    expect(router.state.location.search).toBe('');
+  });
+
+  it('keeps the demi-search order by default while searching', async () => {
+    await renderThree('/projects?applicant=road');
+
+    expect(titles()).toEqual(['Fir Transmission Line', 'Aspen Road', 'Cedar Quarry']);
+    expect(screen.getByLabelText('Sort')).toHaveDisplayValue('Relevance');
+  });
+
+  it('reorders the search results by name and writes the choice to the URL', async () => {
+    const router = await renderThree('/projects?applicant=road');
+
+    await userEvent.selectOptions(screen.getByLabelText('Sort'), 'Name A-Z');
+
+    await waitFor(() => expect(router.state.location.search).toBe('?applicant=road&sort=name'));
+    expect(titles()).toEqual(AZ);
+  });
+
+  it('sorts by most recently updated, undated last', async () => {
+    const router = await renderThree('/projects');
+
+    await userEvent.selectOptions(screen.getByLabelText('Sort'), 'Recently updated');
+    await waitFor(() => expect(router.state.location.search).toBe('?sort=updated'));
+    expect(titles()).toEqual(RECENTLY_UPDATED);
+  });
+
+  it('drops the sort from the URL when Relevance is picked again, and says the new order', async () => {
+    const router = await renderThree('/projects?sort=name');
+
+    await userEvent.selectOptions(screen.getByLabelText('Sort'), 'Relevance');
+
+    await waitFor(() => expect(router.state.location.search).toBe(''));
+    expect(screen.getByTestId('results-count')).toHaveTextContent(
+      '3 projects in view. Sorted by Relevance',
+    );
+    expect(screen.getByText('. Sorted by Relevance')).toHaveClass('visually-hidden');
+  });
+
+  it('keeps the sort when the filters are cleared', async () => {
+    const router = await renderThree('/projects?regions=r1&sort=updated', 2);
+
+    await userEvent.click(screen.getByRole('button', { name: /Filters/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'Clear all' }));
+
+    await waitFor(() => expect(router.state.location.search).toBe('?sort=updated'));
+  });
+
+  it('restores the sort a shared link carries', async () => {
+    await renderThree('/projects?sort=updated');
+
+    expect(screen.getByLabelText('Sort')).toHaveDisplayValue('Recently updated');
+    expect(titles()).toEqual(RECENTLY_UPDATED);
   });
 });
 
@@ -566,13 +1191,14 @@ describe('projects map', () => {
     expect(card).toHaveFocus();
   });
 
-  it('lists the best name matches first, also once the map narrows the list', async () => {
+  it('keeps the search ranking, also once the map narrows the list', async () => {
     const NAMES = ['Trans Mountain Expansion', 'Kitimat Transload', 'Northern Transmission Line'];
     projectFixtures = [
       { ...PROJECTS[1], _id: 'n1', name: NAMES[2] },
       { ...PROJECTS[0], _id: 'k1', name: NAMES[1], centroid: [-135, 59] },
       { ...PROJECTS[0], _id: 't1', name: NAMES[0] },
     ];
+    keywordResults = () => [{ _id: 't1' }, { _id: 'k1' }, { _id: 'n1' }];
     renderProjects('/projects?applicant=trans');
     await screen.findAllByText(NAMES[0]);
     const order = () =>
@@ -661,24 +1287,192 @@ describe('eao region overlay', () => {
     renderProjects();
     await screen.findByText('Application Review');
 
-    expect(layerFor('eao-regions-fill')).toHaveAttribute('data-filter', 'true');
-    expect(layerFor('eao-regions-line')).toHaveAttribute('data-filter', 'true');
+    expect(layerFor('eao-regions-fill')).toHaveAttribute('data-filter', 'null');
+    expect(layerFor('eao-regions-line')).toHaveAttribute('data-filter', 'null');
     expect(layerFor('eao-regions-fill')).toHaveAttribute('data-visibility', 'visible');
     expect(requests).toContain('/assets/geojson/eao-regions.geojson');
   });
 
-  it('narrows the polygons to the filtered regions, under the polygon spelling', async () => {
-    renderProjects('/projects?regions=r2,r3');
-    await screen.findByText('Pre-Application');
+  it('marks the filtered regions as picked, under the polygon spelling', async () => {
+    renderProjects('/projects?regions=r3');
+    await screen.findByText('No projects found');
 
     // r3 is "Thompson-Nicola" in the region list and "Thompson" in the shapefile.
-    const expected = JSON.stringify([
-      'in',
-      ['get', 'regionName'],
-      ['literal', ['Peace', 'Thompson']],
+    await waitFor(() =>
+      expect(fakeMap.setFeatureState).toHaveBeenCalledWith(
+        { source: 'eao-regions', id: 'Thompson' },
+        { selected: true },
+      ),
+    );
+    expect(fakeMap.setFeatureState).toHaveBeenCalledWith(
+      { source: 'eao-regions', id: 'Peace' },
+      { selected: false },
+    );
+    // Every polygon still draws; the unpicked ones only recede.
+    expect(layerFor('eao-regions-fill')).toHaveAttribute('data-filter', 'null');
+  });
+
+  it('picks a region from a polygon click and drops it on a second click', async () => {
+    const router = renderProjects();
+    await screen.findByText('Application Review');
+    const fitsBefore = fakeMap.fitBounds.mock.calls.length;
+
+    await pickRegion('Peace');
+
+    await waitFor(() => expect(router.state.location.search).toBe('?regions=r2'));
+    expect(cards()).toHaveLength(1);
+    expect(cardFor('Fir Transmission Line')).toBeInTheDocument();
+    expect(pinIds()).toEqual(['p2']);
+    expect(screen.getByTestId('map-region-tip')).toHaveTextContent('Peace');
+    expect(fakeMap.setFeatureState).toHaveBeenCalledWith(
+      { source: 'eao-regions', id: 'Peace' },
+      { selected: true },
+    );
+    // One fit, to the clicked polygon; the filter change does not refit on top of it.
+    expect(fakeMap.fitBounds.mock.calls.slice(fitsBefore)).toEqual([
+      [[-122, 55, -119, 58], expect.objectContaining({ padding: 30, maxZoom: 9 })],
     ]);
-    expect(layerFor('eao-regions-fill')).toHaveAttribute('data-filter', expected);
-    expect(layerFor('eao-regions-line')).toHaveAttribute('data-filter', expected);
+
+    await pickRegion('Peace');
+
+    await waitFor(() => expect(router.state.location.search).toBe(''));
+    expect(cards()).toHaveLength(2);
+    expect(fakeMap.fitBounds.mock.calls.length).toBe(fitsBefore + 1);
+  });
+
+  it('keeps the open project card when a polygon is clicked', async () => {
+    const router = renderProjects();
+    await screen.findByText('Application Review');
+    await userEvent.click(cardFor('Fir Transmission Line'));
+    expect(await screen.findByTestId('map-popup')).toBeInTheDocument();
+
+    await pickRegion('Peace');
+
+    await waitFor(() => expect(router.state.location.search).toBe('?regions=r2'));
+    expect(screen.getByTestId('map-popup')).toHaveTextContent('Fir Transmission Line');
+  });
+
+  it('closes a card the picked region filters out, and later filter changes still refit', async () => {
+    const router = renderProjects();
+    await screen.findByText('Application Review');
+    await userEvent.click(cardFor('Fir Transmission Line'));
+    expect(await screen.findByTestId('map-popup')).toBeInTheDocument();
+
+    await pickRegion('Thompson');
+
+    await waitFor(() => expect(router.state.location.search).toBe('?regions=r3'));
+    expect(screen.queryByTestId('map-popup')).toBeNull();
+    expect(fakeMap.fitBounds).toHaveBeenLastCalledWith(
+      [-121, 50, -119, 52],
+      expect.objectContaining({ padding: 30 }),
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: /Filters/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'Clear all' }));
+
+    await waitFor(() => expect(router.state.location.search).toBe(''));
+    expect(fakeMap.fitBounds.mock.lastCall?.[1]).toMatchObject({ padding: 48 });
+  });
+
+  it('refits after a panel change even when a picked region did not move the extent', async () => {
+    const router = renderProjects();
+    await screen.findByText('Application Review');
+
+    await pickRegion('Peace');
+    await waitFor(() => expect(router.state.location.search).toBe('?regions=r2'));
+    // Omineca sits inside Peace's box, so this pick leaves the framed extent as it was.
+    await pickRegion('Omineca');
+    await waitFor(() => expect(router.state.location.search).toBe('?regions=r2%2Cr4'));
+    const fits = fakeMap.fitBounds.mock.calls.length;
+
+    await userEvent.click(screen.getByRole('button', { name: /Filters/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'Clear all' }));
+
+    await waitFor(() => expect(router.state.location.search).toBe(''));
+    expect(fakeMap.fitBounds.mock.calls.length).toBe(fits + 1);
+    expect(fakeMap.fitBounds.mock.lastCall?.[1]).toMatchObject({ padding: 48 });
+  });
+
+  it('leaves a double-click to the zoom: no pick, no event, no fit', async () => {
+    const router = renderProjects();
+    await screen.findByText('Application Review');
+    await waitFor(() => expect(mapProps?.['onDblClick']).toBeDefined());
+    const fits = fakeMap.fitBounds.mock.calls.length;
+    track.mockClear();
+    vi.useFakeTimers();
+
+    clickRegion('Peace');
+    clickRegion('Peace');
+    act(() => (mapProps?.['onDblClick'] as () => void)());
+    await advance(DBLCLICK_WINDOW_MS);
+
+    expect(router.state.location.search).toBe('');
+    expect(track).not.toHaveBeenCalled();
+    expect(fakeMap.fitBounds.mock.calls.length).toBe(fits);
+  });
+
+  it('picks on a lone click once the double-click window has passed', async () => {
+    const router = renderProjects();
+    await screen.findByText('Application Review');
+    await waitFor(() => expect(mapProps?.['onClick']).toBeDefined());
+    vi.useFakeTimers();
+
+    clickRegion('Peace');
+    await advance(DBLCLICK_WINDOW_MS - 1);
+    expect(router.state.location.search).toBe('');
+
+    await advance(1);
+    expect(router.state.location.search).toBe('?regions=r2');
+    expect(track).toHaveBeenCalledTimes(1);
+  });
+
+  it('reports a region picked on the map like one picked in the panel', async () => {
+    renderProjects();
+    await screen.findByText('Application Review');
+
+    await pickRegion('Peace');
+
+    expect(track).toHaveBeenLastCalledWith(
+      'Project Filters Applied',
+      expect.objectContaining({ regions_count: 1, total_filters: 1 }),
+    );
+  });
+
+  it('clears the region name, highlight and cursor when the pointer leaves the map', async () => {
+    renderProjects();
+    await screen.findByText('Application Review');
+    moveOverRegion('Peace');
+
+    await waitFor(() => expect(hoverAmount('Peace')).toBe(1));
+
+    act(() => mapProps?.onMouseOut?.());
+
+    expect(screen.queryByTestId('map-region-tip')).toBeNull();
+    expect(fakeMap.getCanvas().style.cursor).toBe('');
+    await waitFor(() => expect(hoverAmount('Peace')).toBe(0));
+  });
+
+  it('clears the region name and highlight when the visitor drags the map', async () => {
+    renderProjects();
+    await screen.findByText('Application Review');
+    moveOverRegion('Peace');
+
+    await waitFor(() => expect(hoverAmount('Peace')).toBe(1));
+
+    act(() => mapProps?.onMoveStart?.({ originalEvent: new MouseEvent('mousedown') }));
+
+    expect(screen.queryByTestId('map-region-tip')).toBeNull();
+    await waitFor(() => expect(hoverAmount('Peace')).toBe(0));
+  });
+
+  it('leaves the filter alone for a polygon with no region in the list', async () => {
+    const router = renderProjects();
+    await screen.findByText('Application Review');
+
+    await pickRegion('Atlantis');
+
+    expect(router.state.location.search).toBe('');
+    expect(cards()).toHaveLength(2);
   });
 
   it('opens on the whole selected regions, not on the projects left inside them', async () => {
@@ -696,30 +1490,27 @@ describe('eao region overlay', () => {
     renderProjects();
     await screen.findByText('Application Review');
 
-    moveOverRegion('Peace', 9);
+    moveOverRegion('Peace');
 
     const tip = screen.getByTestId('map-region-tip');
     expect(tip).toHaveTextContent('Peace');
+    expect(fakeMap.getCanvas().style.cursor).toBe('pointer');
     // Offset from the pointer, so the cursor never covers the label.
     expect(tip).toHaveStyle({ left: '52px', top: '72px' });
-    expect(fakeMap.setFeatureState).toHaveBeenCalledWith(
-      { source: 'eao-regions', id: 9 },
-      { hover: true },
-    );
+    await waitFor(() => expect(hoverAmount('Peace')).toBe(1));
   });
 
   it('drops the region name and the highlight when the pointer leaves', async () => {
     renderProjects();
     await screen.findByText('Application Review');
-    moveOverRegion('Peace', 9);
+    moveOverRegion('Peace');
+    await waitFor(() => expect(hoverAmount('Peace')).toBe(1));
 
     act(() => mapProps?.onMouseLeave?.());
 
     expect(screen.queryByTestId('map-region-tip')).toBeNull();
-    expect(fakeMap.setFeatureState).toHaveBeenLastCalledWith(
-      { source: 'eao-regions', id: 9 },
-      { hover: false },
-    );
+    expect(fakeMap.getCanvas().style.cursor).toBe('');
+    await waitFor(() => expect(hoverAmount('Peace')).toBe(0));
   });
 
   it('leaves the region unnamed while a pin is hovered', async () => {
@@ -727,7 +1518,7 @@ describe('eao region overlay', () => {
     await screen.findByText('Application Review');
 
     await userEvent.hover(pinFor('p1'));
-    moveOverRegion('Peace', 9);
+    moveOverRegion('Peace');
 
     expect(screen.queryByTestId('map-region-tip')).toBeNull();
   });
@@ -747,6 +1538,54 @@ describe('eao region overlay', () => {
 
 describe('projects map on a phone', () => {
   beforeEach(() => stubViewport(false));
+
+  it('picks a tapped region at once, naming and lighting it only for a moment', async () => {
+    const router = renderProjects();
+    await screen.findByText('Application Review');
+    // The map is lazy-loaded; its handlers exist once it has mounted.
+    await waitFor(() => expect(mapProps?.['onClick']).toBeDefined());
+    vi.useFakeTimers();
+
+    clickRegion('Peace');
+
+    // A double tap zooms without a `dblclick`, so a tap does not wait out the window.
+    expect(router.state.location.search).toBe('?regions=r2');
+    expect(screen.getByTestId('map-region-tip')).toHaveTextContent('Peace');
+
+    await advance(1000);
+    expect(hoverAmount('Peace')).toBe(1);
+
+    await advance(1000);
+
+    expect(screen.queryByTestId('map-region-tip')).toBeNull();
+    expect(hoverAmount('Peace')).toBe(0);
+  });
+
+  it('scrolls the sheet list back to the top when a tapped region narrows it', async () => {
+    const scrolls = watchListScroll();
+    renderProjects();
+    await screen.findByText('Application Review');
+    await waitFor(() => expect(mapProps?.['onClick']).toBeDefined());
+
+    clickRegion('Peace');
+
+    await waitFor(() => expect(scrolls()).toEqual([0]));
+  });
+
+  it('drops a tapped region name and highlight when the layout switches to desktop', async () => {
+    renderProjects();
+    await screen.findByText('Application Review');
+    await waitFor(() => expect(mapProps?.['onClick']).toBeDefined());
+    clickRegion('Peace');
+    await waitFor(() => expect(hoverAmount('Peace')).toBe(1));
+
+    stubViewport(true);
+    // Any render reads the media queries again.
+    await userEvent.hover(cardFor('Fir Transmission Line'));
+
+    expect(screen.queryByTestId('map-region-tip')).toBeNull();
+    await waitFor(() => expect(hoverAmount('Peace')).toBe(0));
+  });
 
   it('cycles the sheet through its three heights', async () => {
     renderProjects();

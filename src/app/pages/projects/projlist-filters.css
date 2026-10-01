@@ -126,6 +126,41 @@
   font-weight: bold;
 }
 
+/* Bootstrap's `.badge` has white text and no fill of its own; without one the count is invisible. */
+.projlist-filters__toggle .badge {
+  background-color: var(--bs-primary);
+}
+
+/* Bordered like the multi-selects in the Filters panel. */
+.filters-panel .form-select,
+.projlist-sort .form-select {
+  border-color: var(--bc-gray-border);
+  border-radius: 0.25rem;
+  font-size: inherit;
+  background-color: var(--bs-white);
+}
+
+/* Sized like the multi-selects above it. */
+.filters-panel .form-select {
+  max-width: 600px;
+  min-height: 2.5rem;
+}
+
+/* The Sort control in the list header, beside the result count. */
+.projlist-sort {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: var(--bs-font-size-sm);
+  white-space: nowrap;
+}
+
+.projlist-sort .form-select {
+  width: auto;
+}
+
 .filters-panel__actions {
   margin-top: 1rem;
   text-align: right;

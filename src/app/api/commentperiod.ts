@@ -135,6 +135,18 @@ function outranks(next: ProjectEngagement, held: ProjectEngagement): boolean {
   return diff < 0 || (diff === 0 && next.period._id < held.period._id);
 }
 
+/** Each open or upcoming period with its project id and state, read from its dates now. */
+function* engagedPeriods(
+  open: CommentPeriod[],
+  upcoming: CommentPeriod[],
+): Generator<ProjectEngagement & { id: string }> {
+  for (const period of [...open, ...upcoming]) {
+    const state = ENGAGEMENT_OF[period.bannerState];
+    const id = projectIdOf(period);
+    if (state && id) yield { id, state, period };
+  }
+}
+
 /**
  * Project id to its engagement. The state comes from each period's dates as of this call, not the
  * list it was fetched in, so a cached period that has since opened or closed is read as it is now.
@@ -144,13 +156,24 @@ export function engagementPeriodsByProject(
   upcoming: CommentPeriod[],
 ): Map<string, ProjectEngagement> {
   const byId = new Map<string, ProjectEngagement>();
-  for (const period of [...open, ...upcoming]) {
-    const state = ENGAGEMENT_OF[period.bannerState];
-    const id = projectIdOf(period);
-    if (!state || !id) continue;
+  for (const { id, state, period } of engagedPeriods(open, upcoming)) {
     const next = { state, period };
     const held = byId.get(id);
     if (!held || outranks(next, held)) byId.set(id, next);
+  }
+  return byId;
+}
+
+/** Project id to every state its periods are in, so a project open now can also be upcoming. */
+export function engagementStatesByProject(
+  open: CommentPeriod[],
+  upcoming: CommentPeriod[],
+): Map<string, Set<Engagement>> {
+  const byId = new Map<string, Set<Engagement>>();
+  for (const { id, state } of engagedPeriods(open, upcoming)) {
+    const states = byId.get(id) ?? new Set<Engagement>();
+    states.add(state);
+    byId.set(id, states);
   }
   return byId;
 }

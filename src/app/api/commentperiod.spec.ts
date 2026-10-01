@@ -2,7 +2,11 @@ import { describe, it, expect, afterEach, vi } from 'vitest';
 import { envelope, stubFetch } from 'app/pages/home/home-fetch.spec-helper';
 import { logger } from 'app/config/logging';
 import { CommentPeriod } from 'app/models/commentperiod';
-import { engagementPeriodsByProject, upcomingCommentPeriodsQueryOptions } from './commentperiod';
+import {
+  engagementPeriodsByProject,
+  engagementStatesByProject,
+  upcomingCommentPeriodsQueryOptions,
+} from './commentperiod';
 
 // Dates far enough either side of today that the live clock never moves a row between states.
 const OPEN_DATES = { dateStarted: '2020-01-01T12:00:00Z', dateCompleted: '2099-06-01T12:00:00Z' };
@@ -15,6 +19,19 @@ const CLOSED_DATES = { dateStarted: '2020-01-01T12:00:00Z', dateCompleted: '2020
 function period(row: Record<string, unknown>): CommentPeriod {
   return new CommentPeriod({ project: 'p1', ...row });
 }
+
+describe('engagementStatesByProject', () => {
+  it('keeps every state a project has, not only the one that outranks', () => {
+    const open = period({ _id: 'cp-open', ...OPEN_DATES });
+    const upcoming = period({ _id: 'cp-next', ...UPCOMING_DATES });
+    const closed = period({ _id: 'cp-done', project: 'p2', ...CLOSED_DATES });
+
+    const states = engagementStatesByProject([open, closed], [upcoming]);
+
+    expect([...(states.get('p1') ?? [])].sort()).toEqual(['open', 'upcoming']);
+    expect(states.has('p2')).toBe(false);
+  });
+});
 
 describe('engagementPeriodsByProject', () => {
   it('picks the open period over an upcoming one for the same project', () => {

@@ -17,6 +17,16 @@ interface ProjlistListProps {
   mobile: boolean;
   /** Open or upcoming comment period per project id; undefined while loading. */
   engagementById: ReadonlyMap<string, ProjectEngagement> | undefined;
+  /** Says why the list is empty when a read failed; "No projects found" otherwise. */
+  emptyMessage?: string;
+  /** Drawn beside the result count. */
+  headerControl?: React.ReactNode;
+  /** Visually hidden, read out with the result count, such as the order just picked. */
+  status?: string;
+  /** Changes whenever the search, sort or filters reorder the list, which then scrolls to the top. */
+  orderKey?: string;
+  /** True while the last search's results stay on screen until the next search answers. */
+  stale?: boolean;
 }
 
 const NEXT_SHEET_STATE = { peek: 'half', half: 'full', full: 'peek' } as const;
@@ -34,6 +44,11 @@ export function ProjlistList({
   onHover,
   mobile,
   engagementById,
+  emptyMessage = 'No projects found',
+  headerControl,
+  status,
+  orderKey,
+  stale = false,
 }: ProjlistListProps) {
   const [numToLoad, setNumToLoad] = useState(LIST_PAGE_SIZE);
   // The body that just lost the selection stays mounted until its row has shrunk, so closing animates too.
@@ -45,6 +60,8 @@ export function ProjlistList({
   }
   const sheet = useStore(sheetState);
   const listRef = useRef<HTMLUListElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const lastOrderKey = useRef(orderKey);
   const sheetRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{ y0: number; from: SheetState; moved: boolean } | null>(null);
   /** A drag ends in a click as well; this swallows that one click. */
@@ -79,6 +96,21 @@ export function ProjlistList({
     card?.scrollIntoView?.({ block: mobile ? 'start' : 'nearest' });
     if (mobile && !fromCard) card?.focus();
   }, [selectedId, revealed, mobile]);
+
+  // A new order starts from its first result; the scroll area is the list's own, on the sheet too.
+  // The order counts as seen only once it is on screen, so the reset waits out the old results.
+  const settling = loading || stale;
+  useEffect(() => {
+    if (orderKey === lastOrderKey.current || settling) return;
+    lastOrderKey.current = orderKey;
+    if (scrollRef.current) scrollRef.current.scrollTop = 0;
+    // The open card stays in sight when it survives the new order.
+    if (!selectedId) return;
+    listRef.current
+      ?.querySelector<HTMLElement>(`[data-project-id="${selectedId}"]`)
+      ?.scrollIntoView?.({ block: mobile ? 'start' : 'nearest' });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only a new order scrolls
+  }, [orderKey, settling]);
 
   function endDrag(clientY: number): void {
     const drag = dragRef.current;
@@ -146,25 +178,29 @@ export function ProjlistList({
         </button>
       )}
 
-      <p
-        className="app-list__count"
-        data-testid="results-count"
-        aria-live="polite"
-        aria-atomic="true"
-      >
-        {numResults > 0
-          ? `${numResults} ${numResults === 1 ? 'project' : 'projects'} in view`
-          : loading
-            ? ''
-            : 'No projects in view'}
-      </p>
+      <div className="app-list__head">
+        <p
+          className="app-list__count"
+          data-testid="results-count"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          {numResults > 0
+            ? `${numResults} ${numResults === 1 ? 'project' : 'projects'} in view`
+            : loading
+              ? ''
+              : 'No projects in view'}
+          {status && <span className="visually-hidden">. {status}</span>}
+        </p>
+        {headerControl}
+      </div>
 
-      <div className="app-list__scroll-container">
+      <div className="app-list__scroll-container" ref={scrollRef}>
         {pending && <span className="visually-hidden">Loading projects</span>}
 
         {!loading && projects !== null && loadedApps.length === 0 && (
           <div className="no-results">
-            <strong>No projects found</strong>
+            <strong>{emptyMessage}</strong>
           </div>
         )}
 
