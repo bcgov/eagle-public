@@ -158,13 +158,19 @@ function downloadUrl(id: string): string {
   return documentDownloadUrl({ _id: encodeURIComponent(id) });
 }
 
+/** Each file once, at its first place, under a name any copy of it carries; the rest are numbered. */
 function toDocuments(refs: DocumentRef[]): UpdateDocument[] {
-  let unnamed = 0;
-  return refs.flatMap((ref) => {
+  const names = new Map<string, string | null>();
+  for (const ref of refs) {
     const id = refId(ref);
-    if (!id) return [];
-    return [{ id, name: refName(ref) ?? `Document ${++unnamed}`, href: downloadUrl(id) }];
-  });
+    if (id) names.set(id, names.get(id) || refName(ref));
+  }
+  let unnamed = 0;
+  return [...names].map(([id, name]) => ({
+    id,
+    name: name ?? `Document ${++unnamed}`,
+    href: downloadUrl(id),
+  }));
 }
 
 /** Admin and the API both stop an Update at five photos; the gallery grid is laid out for five. */
