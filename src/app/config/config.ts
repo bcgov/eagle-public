@@ -122,7 +122,10 @@ export function getSearchApiPath(): string {
 
 /** DEMI project base path, without a trailing slash. */
 export function getDemiProjectsPath(): string {
-  return (config.DEMI_PROJECTS_PATH || DEFAULT_DEMI_PROJECTS_PATH).trim().replace(/\/+$/, '');
+  const path = config.DEMI_PROJECTS_PATH;
+  return (
+    (typeof path === 'string' ? path.trim().replace(/\/+$/, '') : '') || DEFAULT_DEMI_PROJECTS_PATH
+  );
 }
 
 /** Whether bulk (and presigned single) download is offered. demi-api always serves it. */

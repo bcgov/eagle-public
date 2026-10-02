@@ -1896,10 +1896,37 @@ describe('project detail popup', () => {
 
     const popup = await screen.findByTestId('map-popup');
     expect(within(popup).getByRole('region', { name: 'Open for public comment' })).toBeVisible();
-    expect(within(popup).getByRole('link', { name: 'Share your thoughts' })).toHaveAttribute(
+    expect(within(popup).getByRole('link', { name: 'View comment period' })).toHaveAttribute(
       'href',
       '/p/p1/cp/cp1/details',
     );
+    expect(within(popup).queryByRole('link', { name: /Share your thoughts/ })).toBeNull();
+  });
+
+  it('invites comment from the selected pin when ENGAGE runs its open period', async () => {
+    commentPeriodResponders.set('open', async () =>
+      jsonResponse(
+        periodEnvelope([
+          {
+            _id: 'cp1',
+            project: 'p1',
+            isMet: true,
+            metURL: 'https://engage.eao.gov.bc.ca/cedar-quarry',
+            ...OPEN_DATES,
+          },
+        ]),
+      ),
+    );
+    renderProjects();
+    await screen.findByText('Application Review');
+    await waitFor(() => expect(pinFor('p1')).toHaveAttribute('data-engagement', 'open'));
+
+    await userEvent.click(pinFor('p1'));
+
+    const popup = await screen.findByTestId('map-popup');
+    expect(
+      within(popup).getByRole('link', { name: 'Share your thoughts (opens in new tab)' }),
+    ).toHaveAttribute('href', 'https://engage.eao.gov.bc.ca/cedar-quarry');
   });
 
   it('draws no banner for a pin with no open or upcoming period', async () => {
@@ -2063,7 +2090,7 @@ describe('engagement markers', () => {
 
     const body = bodyOf(cardFor('Cedar Quarry'));
     expect(within(body).getByRole('region', { name: 'Open for public comment' })).toBeVisible();
-    expect(within(body).getByRole('link', { name: 'Share your thoughts' })).toHaveAttribute(
+    expect(within(body).getByRole('link', { name: 'View comment period' })).toHaveAttribute(
       'href',
       '/p/p1/cp/cp1/details',
     );

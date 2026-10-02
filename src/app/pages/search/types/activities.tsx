@@ -4,8 +4,9 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import { ListRow, type ListRowAttachment } from 'app/components/display-grid/list-row';
 import type { GridColumn, ValueOption } from 'app/components/display-grid/types';
+import { rewriteLegacyDocumentUrl } from 'app/utils/legacy-document-url';
 import { htmlToText } from 'app/utils/safe-html';
-import { isSafeUrl } from 'app/utils/safe-url';
+import { fileName, isSafeUrl } from 'app/utils/safe-url';
 import { RECORD_DATASETS, type RecordTypeConfig, type SearchMeta } from './record-type';
 
 type Row = Record<string, unknown>;
@@ -68,21 +69,16 @@ function projectHref(row: Row): string | undefined {
 }
 
 /**
- * The file an update points at, named by the last segment of its URL. The record carries no size
- * and no file type, so the row offers the name and nothing else.
+ * The file an update points at, named by the file name its stored URL ends in. The record carries
+ * no size and no file type, so the row offers the name and nothing else.
  */
 export function attachmentsOf(row: Row): ListRowAttachment[] {
   const url = row[ATTACHMENTS_FILTER_ID];
   // A `docs?folder` link is a folder listing rather than a file, which the news page skips too.
-  if (!isSafeUrl(url) || url.includes('docs?folder')) return [];
-  const last = (url.split('?')[0] ?? '').split('/').pop() ?? '';
-  let name = last;
-  try {
-    name = decodeURIComponent(last);
-  } catch {
-    // A stray percent sign is not a reason to drop the link; show the segment as it is written.
-  }
-  return [{ name: name || 'Attached document', href: url }];
+  if (typeof url !== 'string' || url.includes('docs?folder')) return [];
+  const href = rewriteLegacyDocumentUrl(url);
+  if (!isSafeUrl(href)) return [];
+  return [{ name: fileName(url) ?? 'Attached document', href }];
 }
 
 /**

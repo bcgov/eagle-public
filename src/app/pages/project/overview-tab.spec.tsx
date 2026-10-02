@@ -288,8 +288,9 @@ describe('overview tab', () => {
     ).toBeInTheDocument();
     expect(screen.getByText('Draft Application')).toBeInTheDocument();
 
-    const link = screen.getByRole('link', { name: 'Share your thoughts' });
+    const link = screen.getByRole('link', { name: 'View comment period' });
     expect(link).toHaveAttribute('href', '/p/proj-1/cp/cp-1/details');
+    expect(screen.queryByRole('link', { name: /Share your thoughts/ })).toBeNull();
 
     await userEvent.click(link);
 
