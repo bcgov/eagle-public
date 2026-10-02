@@ -21,7 +21,6 @@ import { expect, type Browser, type Page } from '@playwright/test';
 
 import { routeDemiSearch } from '../fixtures/unified-search/demi-search';
 import {
-  CAPTURE_USE,
   keepLocal,
   masksFor,
   PIXEL_COMPARISON_PARKED,
@@ -42,7 +41,15 @@ import {
   STILL_CSS,
 } from './drive';
 import { selectorFor } from './selectors';
-import { measurementsFor, type ParityState, STATES, WIDE, WIDTHS, widthsFor } from './states';
+import {
+  measurementsFor,
+  type ParityState,
+  stateById,
+  STATES,
+  WIDE,
+  WIDTHS,
+  widthsFor,
+} from './states';
 import { computed, rootFontPx, SEARCH_STYLES, spacing } from './tokens';
 
 /** Navigate, freeze everything that moves, replay the state's steps. Shared by both tests. */
@@ -114,35 +121,37 @@ for (const state of STATES) {
 }
 
 /** The default view, and the one the value checks below read. */
-const DEFAULT_STATE = STATES.find((state) => state.id === '01-documents-grid')!;
+const DEFAULT_STATE = stateById('01-documents-grid');
 /** An overlay state, so the check covers a dialog as well as the page under it. */
-const HELP_STATE = STATES.find((state) => state.id === '07-search-help-modal')!;
+const HELP_STATE = stateById('07-search-help-modal');
 
-/** Drives `state` in a context of its own, so nothing carries over from an earlier capture. */
+/**
+ * Drives `state` in a context of its own, so nothing carries over from an earlier capture. The
+ * context takes the project's `use` options, base URL and permissions included.
+ */
 async function captureFresh(browser: Browser, state: ParityState, width: number): Promise<Buffer> {
-  const context = await browser.newContext({
-    ...CAPTURE_USE,
-    baseURL: test.info().project.use.baseURL,
-    permissions: test.info().project.use.permissions,
-  });
+  const context = await browser.newContext();
   const stopped = await keepLocal(context);
+  let png: Buffer;
   try {
     const page = await context.newPage();
     await driveState(page, state, width);
-    return await page.screenshot({
+    png = await page.screenshot({
       ...SHOT_OPTIONS,
       fullPage: !state.viewportOnly,
       mask: masksFor(page, 'app'),
     });
   } finally {
     await context.close();
-    expect(stopped, STAYED_LOCAL).toEqual([]);
   }
+  // After the try, so a thrown error or a skip is reported as itself.
+  expect(stopped, STAYED_LOCAL).toEqual([]);
+  return png;
 }
 
 // A difference here is something that moves between runs: freeze it, or add it to `MASKS`.
 for (const state of [DEFAULT_STATE, HELP_STATE]) {
-  for (const width of WIDTHS) {
+  for (const width of widthsFor(state)) {
     test(`${state.id} @ ${width} captures the same twice`, async ({ browser }) => {
       const first = await captureFresh(browser, state, width);
       const second = await captureFresh(browser, state, width);
@@ -226,11 +235,11 @@ for (const width of WIDTHS) {
 
   test(`search controls keep their roles and names @ ${width}`, async ({ page }) => {
     await driveState(page, DEFAULT_STATE, width);
-    await expect(page.locator('.unified-search__query')).toMatchAriaSnapshot(`
+    await expect(page.locator(selectorFor('searchQuery', 'app'))).toMatchAriaSnapshot(`
       - searchbox "Search projects, documents, updates and comment periods"
       - link "Search help"
     `);
-    await expect(page.locator('[data-tour="types"]')).toMatchAriaSnapshot(`
+    await expect(page.locator(selectorFor('recordTypes', 'app'))).toMatchAriaSnapshot(`
       - group "Record type":
         - /children: equal
         - button "Projects 12"

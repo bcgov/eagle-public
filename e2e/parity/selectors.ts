@@ -18,6 +18,8 @@
 export type ControlKey =
   | 'root'
   | 'searchInput'
+  | 'searchQuery'
+  | 'recordTypes'
   | 'tabProjects'
   | 'tabDocuments'
   | 'tabActivities'
@@ -58,6 +60,9 @@ export const SELECTORS: Record<ControlKey, ControlSelector> = {
     proto: '[data-tour="search"] input[type="search"]',
     app: '[data-tour="search"] input[type="search"]',
   },
+  // The search box's own row. The app puts the Search help link in it; the prototype does not.
+  searchQuery: { proto: 'form:has(> [data-tour="search"])', app: '.unified-search__query' },
+  recordTypes: { proto: '[data-tour="types"]', app: '[data-tour="types"]' },
   tabProjects: {
     proto: '[data-tour="types"] button:has-text("Projects")',
     app: '[data-tour="types"] button:has-text("Projects")',
@@ -100,13 +105,14 @@ export const SELECTORS: Record<ControlKey, ControlSelector> = {
     proto: 'a:has-text("Search help")',
     app: 'a:has-text("Search help")',
   },
+  // The app's help is a native `<dialog>`, so it is found by element, not by an explicit role.
   helpDialog: {
     proto: '[data-help="1"] [role="dialog"]',
-    app: '[data-help="1"] [role="dialog"]',
+    app: '[data-help="1"] dialog',
   },
   startTour: {
     proto: '[data-help="1"] [role="dialog"] button:has-text("tour")',
-    app: '[data-help="1"] [role="dialog"] button:has-text("tour")',
+    app: '[data-help="1"] dialog button:has-text("tour")',
   },
   tourCard: {
     proto: '[role="dialog"][aria-modal="true"]:not([aria-labelledby])',
