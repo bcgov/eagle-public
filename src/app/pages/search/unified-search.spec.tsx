@@ -626,6 +626,19 @@ describe('UnifiedSearch', () => {
     ).toEqual(['Newest first', 'Oldest first', 'Name A–Z', 'Name Z–A']);
   });
 
+  it('sorts updates by name on their headline in the phone sort select, not on their project', async () => {
+    stubNarrow();
+    renderSearch('/search?record=activities');
+    await screen.findByRole('heading', { level: 3, name: ACTIVITIES[0].headline });
+
+    const select = screen.getByRole('combobox', { name: 'Sort' });
+    expect(
+      within(select)
+        .getAllByRole('option')
+        .map((option) => option.getAttribute('value')),
+    ).toEqual(['-dateAdded', '+dateAdded', '+headline', '-headline']);
+  });
+
   it('shows Last updated once the reader picks it, and says so on the address', async () => {
     const user = userEvent.setup();
     const { router } = renderSearch('/search?record=projects');

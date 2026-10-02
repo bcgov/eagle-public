@@ -458,23 +458,42 @@ describe('DisplayGrid', () => {
       expect(screen.queryByLabelText('Sort')).not.toBeInTheDocument();
     });
 
-    it('sorts by name on the sortable headline when the link column points elsewhere', () => {
+    const sortValues = () =>
+      within(screen.getByLabelText('Sort'))
+        .getAllByRole('option')
+        .map((option) => option.getAttribute('value'));
+
+    it('sorts by name on the locked headline, not a link column that points elsewhere', () => {
+      stubNarrow(false);
+      // Search sorts on every column, so the link column sorts too; it comes first here.
+      renderGrid({
+        template: 'list',
+        rowComponent: Row,
+        columns: [
+          { key: 'project', label: 'Project', sortable: true, link: true },
+          { key: 'name', label: 'Update', sortable: true, locked: true },
+          { key: 'date', label: 'Posted', sortable: true, date: true },
+        ],
+        sort: { key: 'date', dir: 'desc' },
+      });
+
+      expect(sortValues()).toEqual(['-date', '+date', '+name', '-name']);
+    });
+
+    it('sorts by name on the first sortable column that is not a date when the locked one does not sort', () => {
       stubNarrow(false);
       renderGrid({
         template: 'list',
         rowComponent: Row,
         columns: [
-          { key: 'name', label: 'Update', sortable: true },
+          { key: 'title', label: 'Title', locked: true },
           { key: 'date', label: 'Posted', sortable: true, date: true },
-          { key: 'project', label: 'Project', link: true },
+          { key: 'name', label: 'Name', sortable: true },
         ],
         sort: { key: 'date', dir: 'desc' },
       });
 
-      const values = within(screen.getByLabelText('Sort'))
-        .getAllByRole('option')
-        .map((option) => option.getAttribute('value'));
-      expect(values).toEqual(['-date', '+date', '+name', '-name']);
+      expect(sortValues()).toEqual(['-date', '+date', '+name', '-name']);
     });
 
     it('leaves the select off a table at full width, whose headings sort it', () => {

@@ -67,9 +67,9 @@ function sortValue(sort: SortState): string {
 function sortOptionsFor<Row>(columns: GridColumn<Row>[], sort?: SortState | null): SortOption[] {
   const date =
     columns.find((column) => column.primaryDate) ?? columns.find((column) => column.date);
-  // A list's link may point elsewhere (an update links its project), so it must also sort.
+  // The locked column names the record; a link may point elsewhere (an update links its project).
   const name =
-    columns.find((column) => column.link && column.sortable) ??
+    columns.find((column) => column.locked && column.sortable) ??
     columns.find((column) => column.sortable && !column.date);
   const options: SortOption[] = [];
   if (date?.sortable) {
