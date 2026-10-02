@@ -44,6 +44,52 @@ describe('CustomMultiSelect', () => {
     ]);
   });
 
+  describe('with the Act year stored as a number', () => {
+    const numericPhases = phases.map((phase) => ({
+      ...phase,
+      legislation: Number(phase['legislation']),
+    }));
+
+    async function search(term: string) {
+      const user = userEvent.setup();
+      render(
+        <CustomMultiSelect
+          items={numericPhases}
+          selected={[]}
+          groupBy="legislation"
+          placeholder="Search phase"
+          onChange={vi.fn()}
+        />,
+      );
+      await user.click(screen.getByRole('combobox', { name: 'Search phase' }));
+      await user.type(screen.getByRole('textbox', { name: 'Search options' }), term);
+    }
+
+    it('matches a single typed digit against the name only, not the year', async () => {
+      await search('2');
+
+      expect(screen.queryAllByRole('option')).toEqual([]);
+    });
+
+    it('still narrows to one Act on a typed year', async () => {
+      await search('2002');
+
+      expect(screen.getAllByRole('option').map((option) => option.textContent)).toEqual([
+        'Pre-Application',
+      ]);
+    });
+  });
+
+  it('keeps a chip on its own node when an earlier chip is removed', () => {
+    const props = { items: phases, groupBy: 'legislation', onChange: vi.fn() };
+    const { rerender } = render(<CustomMultiSelect {...props} selected={[phases[0], phases[1]]} />);
+    const chip = screen.getByText('Early Engagement').closest('.custom-multi-select__value');
+
+    rerender(<CustomMultiSelect {...props} selected={[phases[1]]} />);
+
+    expect(screen.getByText('Early Engagement').closest('.custom-multi-select__value')).toBe(chip);
+  });
+
   it('names the Act on a chip remove button and drops only that term', async () => {
     const user = userEvent.setup();
     const onChange = renderSelect([phases[0], phases[2]]);

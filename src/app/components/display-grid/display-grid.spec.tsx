@@ -432,6 +432,51 @@ describe('DisplayGrid', () => {
       expect(screen.getByLabelText('Sort')).toBeInTheDocument();
     });
 
+    it('heads the rows with the caption as an h2, above the rows own h3 titles', () => {
+      stubNarrow(false);
+      renderGrid({ template: 'list', rowComponent: Row });
+
+      expect(screen.getByRole('heading', { level: 2, name: 'Documents' })).toBeInTheDocument();
+    });
+
+    it('heads a page-drawn body with the caption as an h2 too', () => {
+      stubNarrow(false);
+      renderGrid({ template: 'list', body: <h3>Passage</h3> });
+
+      expect(screen.getByRole('heading', { level: 2, name: 'Documents' })).toBeInTheDocument();
+    });
+
+    it('drops the select when it would offer one order alone', () => {
+      stubNarrow(false);
+      renderGrid({
+        template: 'list',
+        rowComponent: Row,
+        sortOptions: [{ value: '-matches', label: 'Most matches' }],
+        sort: { key: 'matches', dir: 'desc' },
+      });
+
+      expect(screen.queryByLabelText('Sort')).not.toBeInTheDocument();
+    });
+
+    it('sorts by name on the sortable headline when the link column points elsewhere', () => {
+      stubNarrow(false);
+      renderGrid({
+        template: 'list',
+        rowComponent: Row,
+        columns: [
+          { key: 'name', label: 'Update', sortable: true },
+          { key: 'date', label: 'Posted', sortable: true, date: true },
+          { key: 'project', label: 'Project', link: true },
+        ],
+        sort: { key: 'date', dir: 'desc' },
+      });
+
+      const values = within(screen.getByLabelText('Sort'))
+        .getAllByRole('option')
+        .map((option) => option.getAttribute('value'));
+      expect(values).toEqual(['-date', '+date', '+name', '-name']);
+    });
+
     it('leaves the select off a table at full width, whose headings sort it', () => {
       stubNarrow(false);
       renderGrid({ columns: sortableColumns, sort: { key: 'date', dir: 'desc' } });

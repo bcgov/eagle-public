@@ -63,7 +63,11 @@ export function CustomMultiSelect({
   const filteredItems = useMemo(() => {
     const term = searchTerm.toLowerCase();
     if (!term) return items;
-    return items.filter((item) => fullLabel(item, bindLabel, groupBy).toLowerCase().includes(term));
+    // Only a typed year reaches the group, so a single digit does not list every phase.
+    const searchGroup = /^\d{4}$/.test(term) ? groupBy : null;
+    return items.filter((item) =>
+      fullLabel(item, bindLabel, searchGroup).toLowerCase().includes(term),
+    );
   }, [items, searchTerm, bindLabel, groupBy]);
 
   const groupedItems = useMemo(() => {
@@ -153,7 +157,7 @@ export function CustomMultiSelect({
             {selected.map((item, index) => (
               <div
                 className="custom-multi-select__value"
-                key={item['_id'] ?? item['code'] ?? index}
+                key={item['_id'] ?? item['code'] ?? item['value'] ?? index}
               >
                 <span className="custom-multi-select__value-label">{getLabel(item)}</span>
                 {groupBy && item[groupBy] && (

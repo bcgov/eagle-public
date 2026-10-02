@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ComponentType, type ReactNode } from 'react';
-import { useMediaQuery } from 'app/state/responsive';
+import { useSettledMediaQuery } from 'app/state/responsive';
 import { FilterRow } from './filter-row';
 import { GridPageSizes, GridPager } from './grid-footer';
 import { GridHeader } from './grid-header';
@@ -67,7 +67,10 @@ function sortValue(sort: SortState): string {
 function sortOptionsFor<Row>(columns: GridColumn<Row>[], sort?: SortState | null): SortOption[] {
   const date =
     columns.find((column) => column.primaryDate) ?? columns.find((column) => column.date);
-  const name = columns.find((column) => column.link) ?? columns.find((column) => column.sortable);
+  // A list's link may point elsewhere (an update links its project), so it must also sort.
+  const name =
+    columns.find((column) => column.link && column.sortable) ??
+    columns.find((column) => column.sortable && !column.date);
   const options: SortOption[] = [];
   if (date?.sortable) {
     options.push(
@@ -199,7 +202,7 @@ export function DisplayGrid<Row>({
   const headRowRef = useRef<HTMLTableRowElement>(null);
   const [headHeight, setHeadHeight] = useState(0);
 
-  const narrow = useMediaQuery(NARROW_QUERY);
+  const narrow = useSettledMediaQuery(NARROW_QUERY);
   const listMode = template === 'list';
   const showSkeleton = loading && rows.length === 0;
   const showEmpty = !loading && rows.length === 0;
@@ -219,7 +222,10 @@ export function DisplayGrid<Row>({
      a relevance-ranked view has no column to sort by. */
   const ownChoices = sortOptions ?? sortOptionsFor(sortColumns ?? columns, sort);
   const sortChoices = ranked ? [RELEVANCE_OPTION, ...ownChoices] : ownChoices;
-  const showSortBar = !showEmpty && (listMode || cardMode) && sortChoices.length > 0;
+  // A select with one option offers no choice.
+  const showSortBar = !showEmpty && (listMode || cardMode) && sortChoices.length > 1;
+  // Prose rows carry their own h3 titles, so they sit under a results h2.
+  const proseRows = !!body || cardMode || listMode;
 
   // The filter row sticks under the header, whose height changes when a label wraps.
   useEffect(() => {
@@ -295,86 +301,74 @@ export function DisplayGrid<Row>({
           </div>
         )}
 
+        {proseRows && (
+          <h2
+            className="display-grid__visually-hidden"
+            tabIndex={-1}
+            ref={(node) => {
+              captionRef.current = node;
+            }}
+          >
+            {caption}
+          </h2>
+        )}
+
         {body ? (
           body
         ) : cardMode ? (
-          <>
-            <p
-              className="display-grid__visually-hidden"
-              tabIndex={-1}
-              ref={(node) => {
-                captionRef.current = node;
-              }}
-            >
-              {caption}
-            </p>
-            <ol className="display-grid__cards">
-              {rows.map((row, index) => {
-                const id = rowId ? rowId(row) : String(index);
-                const selected = selectedIds.includes(id);
-                const title = headline
-                  ? String(
-                      (headline.render ? headline.render(row) : readCell(row, headline.key)) ?? '',
-                    )
-                  : id;
-                const date = dateColumn
-                  ? dateColumn.render
-                    ? dateColumn.render(row)
-                    : readCell(row, dateColumn.key)
-                  : null;
-                return (
-                  <li
-                    className={`display-grid__card${
-                      selected ? ' display-grid__card--selected' : ''
-                    }`}
-                    key={id}
-                  >
-                    {selectable && (
-                      <input
-                        type="checkbox"
-                        className="display-grid__checkbox display-grid__card-check"
-                        aria-label={`Select ${rowLabel ? rowLabel(row) : title}`}
-                        checked={selected}
-                        onChange={() => onToggleRow?.(row)}
-                      />
-                    )}
-                    <ListRow
-                      meta={date ? [date] : []}
-                      title={title}
-                      href={headline?.href?.(row)}
-                      external={headline?.hrefExternal}
-                      onLinkClick={
-                        headline?.onLinkClick ? () => headline.onLinkClick?.(row) : undefined
-                      }
-                      fields={[
-                        ...cardFields(columns, row),
-                        ...(narrowExtras ? narrowExtras(row) : []),
-                      ]}
+          <ol className="display-grid__cards">
+            {rows.map((row, index) => {
+              const id = rowId ? rowId(row) : String(index);
+              const selected = selectedIds.includes(id);
+              const title = headline
+                ? String(
+                    (headline.render ? headline.render(row) : readCell(row, headline.key)) ?? '',
+                  )
+                : id;
+              const date = dateColumn
+                ? dateColumn.render
+                  ? dateColumn.render(row)
+                  : readCell(row, dateColumn.key)
+                : null;
+              return (
+                <li
+                  className={`display-grid__card${selected ? ' display-grid__card--selected' : ''}`}
+                  key={id}
+                >
+                  {selectable && (
+                    <input
+                      type="checkbox"
+                      className="display-grid__checkbox display-grid__card-check"
+                      aria-label={`Select ${rowLabel ? rowLabel(row) : title}`}
+                      checked={selected}
+                      onChange={() => onToggleRow?.(row)}
                     />
-                  </li>
-                );
-              })}
-            </ol>
-          </>
-        ) : listMode ? (
-          <>
-            <p
-              className="display-grid__visually-hidden"
-              tabIndex={-1}
-              ref={(node) => {
-                captionRef.current = node;
-              }}
-            >
-              {caption}
-            </p>
-            <ul className="display-grid__list display-grid__list--rows">
-              {rows.map((row, index) => (
-                <li className="display-grid__list-item" key={rowId ? rowId(row) : index}>
-                  {RowComponent ? <RowComponent row={row} /> : null}
+                  )}
+                  <ListRow
+                    meta={date ? [date] : []}
+                    title={title}
+                    href={headline?.href?.(row)}
+                    external={headline?.hrefExternal}
+                    onLinkClick={
+                      headline?.onLinkClick ? () => headline.onLinkClick?.(row) : undefined
+                    }
+                    fields={[
+                      ...cardFields(columns, row),
+                      ...(narrowExtras ? narrowExtras(row) : []),
+                    ]}
+                  />
                 </li>
-              ))}
-            </ul>
-          </>
+              );
+            })}
+          </ol>
+        ) : listMode ? (
+          <ul className="display-grid__list display-grid__list--rows">
+            {rows.map((row, index) => (
+              <li className="display-grid__list-item" key={rowId ? rowId(row) : index}>
+                {RowComponent ? <RowComponent row={row} /> : null}
+              </li>
+            ))}
+          </ul>
         ) : (
           <div className="display-grid__scroll">
             <table className="display-grid__table">
