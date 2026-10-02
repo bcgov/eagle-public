@@ -10,8 +10,8 @@ export function sortStateOf(sortBy: string): SortState | null {
 export const gridCollator = new Intl.Collator(undefined, { numeric: true });
 
 /**
- * The column filters as advanced-panel fields. In list and headerless modes no column is on
- * screen, so the panel is the only place their filters can live.
+ * The column filters as advanced-panel fields. Wherever no filter row shows, the panel is the only
+ * place their filters can live.
  */
 export function columnFiltersForPanel<Row>(columns: GridColumn<Row>[]): AdvancedField[] {
   const fields: AdvancedField[] = [];

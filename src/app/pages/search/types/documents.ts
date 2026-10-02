@@ -93,5 +93,4 @@ export const documentsConfig: RecordTypeConfig = {
     return options;
   },
   selectable: bulkDownloadEnabled(),
-  headerless: false,
 };

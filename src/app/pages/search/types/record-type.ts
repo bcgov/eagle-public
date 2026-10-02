@@ -65,8 +65,6 @@ export interface RecordTypeConfig<Row = Record<string, unknown>> {
   optionsFromRows?: (rows: Row[]) => Record<string, ValueOption[]>;
   /** Whether rows carry a selection checkbox. */
   selectable: boolean;
-  /** No column headings and no filter row: the column filters move into the panel. */
-  headerless: boolean;
   rowComponent?: ComponentType<{ row: Row }>;
 }
 

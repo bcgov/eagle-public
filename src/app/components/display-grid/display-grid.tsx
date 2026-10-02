@@ -148,8 +148,6 @@ interface DisplayGridProps<Row> {
   total: number;
   onPageChange: (page: number) => void;
   onPageSizeChange: (pageSize: number) => void;
-  /** No column headings and no filter row: their filters move to the panel. */
-  headerless?: boolean;
   toolbar?: ReactNode;
   chips?: ReactNode;
   /** The advanced panel. As a function it receives the column filters this mode cannot show. */
@@ -187,7 +185,6 @@ export function DisplayGrid<Row>({
   total,
   onPageChange,
   onPageSizeChange,
-  headerless = false,
   toolbar,
   chips,
   panel,
@@ -213,7 +210,7 @@ export function DisplayGrid<Row>({
      reader mid-keystroke moves focus to the body and eats the next key. Unfiltered there is
      nothing to sort or filter, and on a phone those filters live in the panel, which stays put. */
   const keepHeadWhileEmpty = showEmpty && !narrow && anyFilterSet(filters);
-  const showHead = !listMode && !headerless && !cardMode && (!showEmpty || keepHeadWhileEmpty);
+  const showHead = !listMode && !cardMode && (!showEmpty || keepHeadWhileEmpty);
   const showFilterRow = showHead && columns.some((column) => !!column.filter);
   /* Wherever the records are rows of prose rather than a table there is no sortable heading to
      click, so the bar is the only way to reorder them: the narrow cards, and the list template at

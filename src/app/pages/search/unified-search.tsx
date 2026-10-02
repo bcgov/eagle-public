@@ -970,7 +970,6 @@ export function UnifiedSearch() {
           sortColumns={sortColumns}
           ranked={ranked}
           footer={!insidePrompt}
-          headerless={config.headerless}
           loading={isFetching && !insidePrompt}
           emptyMessage={emptyState()}
           selectable={selectable}

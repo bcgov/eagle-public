@@ -57,7 +57,6 @@ describe('notifications record type', () => {
 
   it('draws the notifications as a table with column headings', () => {
     expect(notificationsConfig.template).toBe('grid');
-    expect(notificationsConfig.headerless).toBe(false);
     expect(notificationsConfig.selectable).toBe(false);
   });
 
