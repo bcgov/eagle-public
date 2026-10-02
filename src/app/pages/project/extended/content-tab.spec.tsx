@@ -21,9 +21,15 @@ const CONTACTS: Block = {
   items: [{ label: 'Desk', link: { label: 'desk@example.org', href: 'mailto:desk@example.org' } }],
 };
 
-function renderTab(entry: ContentTabEntry, state?: unknown) {
+const UPDATES: Block = { type: 'updates', id: 'all', heading: 'All updates' };
+
+function renderTab(
+  entry: ContentTabEntry,
+  state?: unknown,
+  at: { search?: string; hash?: string } = {},
+) {
   return renderAt(
-    [{ pathname: `/p/lib-1/${entry.segment}`, state }],
+    [{ pathname: `/p/lib-1/${entry.segment}`, ...at, state }],
     [
       {
         path: '/p/:projId/:segment',
@@ -94,25 +100,47 @@ describe('ContentTab', () => {
     expect(router.state.location.state).toBeNull();
   });
 
+  it('keeps the query, hash and any other state when it clears the focus flag', async () => {
+    const { router } = renderTab(
+      { segment: 'faq', title: 'Questions', main: [PROSE] },
+      { focusTab: true, from: 'band' },
+      { search: '?q=wing', hash: '#why' },
+    );
+
+    expect(await screen.findByRole('heading', { level: 2, name: 'Questions' })).toHaveFocus();
+    expect(router.state.location).toMatchObject({
+      pathname: '/p/lib-1/faq',
+      search: '?q=wing',
+      hash: '#why',
+      state: { from: 'band' },
+    });
+  });
+
   it.each([
     ['with an aside', { aside: [LINKS] }],
     ['without an aside', {}],
   ])('moves focus to the tab itself when it has no title, %s', async (_name, extra) => {
-    const { container } = renderTab(
-      { segment: 'faq', main: [PROSE], ...extra },
-      { focusTab: true },
-    );
+    renderTab({ segment: 'faq', main: [PROSE], ...extra }, { focusTab: true });
 
-    await screen.findByRole('region', { name: 'Why a new wing' });
+    const section = await screen.findByRole('region', { name: 'Why a new wing' });
     expect(document.activeElement).not.toBe(document.body);
-    expect(document.activeElement?.parentElement).toBe(container);
+    expect(document.activeElement).toContainElement(section);
   });
 
   it('moves focus to the full updates list heading on a tab with no title', async () => {
-    const updates: Block = { type: 'updates', id: 'all', heading: 'All updates' };
-    renderTab({ segment: 'news', main: [updates] }, { focusTab: true });
+    renderTab({ segment: 'news', main: [UPDATES] }, { focusTab: true });
 
     expect(await screen.findByRole('heading', { level: 2, name: 'All updates' })).toHaveFocus();
+  });
+
+  it('keeps focus on the main updates list heading when the aside holds another', async () => {
+    const asideUpdates: Block = { ...UPDATES, id: 'side', heading: 'Also in updates' };
+    renderTab({ segment: 'news', main: [UPDATES], aside: [asideUpdates] }, { focusTab: true });
+
+    expect(await screen.findByRole('heading', { level: 2, name: 'All updates' })).toHaveFocus();
+    expect(screen.getByRole('heading', { level: 2, name: 'Also in updates' })).not.toHaveAttribute(
+      'tabindex',
+    );
   });
 
   it('leaves focus alone when the tab opened from the strip', async () => {

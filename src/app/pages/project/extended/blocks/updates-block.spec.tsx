@@ -83,6 +83,13 @@ describe('updates block as the full list', () => {
     expect(heading).not.toHaveAttribute('tabindex');
   });
 
+  it('leaves focus alone at the top level outside a content tab, as in a banner', async () => {
+    renderBlocks([LIST], { segment: 'news', level: 2 });
+
+    const heading = await screen.findByRole('heading', { level: 2, name: 'News' });
+    expect(heading).not.toHaveAttribute('tabindex');
+  });
+
   it('keeps its heading and intro when there are no updates', async () => {
     renderBlocks([LIST], { content: { ...SAMPLE_PAGE, updates: [] } });
 

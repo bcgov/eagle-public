@@ -1,9 +1,10 @@
+import type { RefCallback } from 'react';
 import type { Project } from 'app/models/project';
 import { BlockList } from './blocks/block-list';
 import { classNames, headingId, type BlockContext } from './blocks/block-context';
 import { RichTextView } from './rich-text';
 import type { Block, ContentTabEntry, ExtendedPage, RichText } from './types';
-import { useFocusTabTitle, useOpenedByLink } from './use-focus-tab-title';
+import { TabFocusTarget, useFocusTabTitle, useOpenedByLink } from './use-focus-tab-title';
 import './extended.css';
 import './content-tab.css';
 
@@ -22,8 +23,15 @@ function holdsTabFocus(block: Block): boolean {
 }
 
 /** The tab's own heading, which takes focus when an in-page link opened the tab. */
-function TabTitle({ title, intro }: { title: string; intro?: RichText }) {
-  const titleRef = useFocusTabTitle();
+function TabTitle({
+  title,
+  intro,
+  titleRef,
+}: {
+  title: string;
+  intro?: RichText;
+  titleRef: RefCallback<HTMLElement>;
+}) {
   return (
     <div>
       <h2 ref={titleRef} tabIndex={-1} className="extended-tab__title">
@@ -53,13 +61,18 @@ export function ContentTab({ entry, content, project, basePath }: ContentTabProp
     level: title ? 3 : 2,
     labelled: true,
   };
-  const heading = title ? <TabTitle title={title} intro={intro} /> : null;
+  const focusRef = useFocusTabTitle();
+  const heading = title ? <TabTitle title={title} intro={intro} titleRef={focusRef} /> : null;
   // With no title, a full updates list's heading stands in for it; failing that, the tab itself
   // takes focus, so it never drops to the page body.
-  const containerFocus = !title && !main.some(holdsTabFocus);
-  const containerRef = useFocusTabTitle<HTMLDivElement>(containerFocus);
-  const focusable = useOpenedByLink() && containerFocus;
-  const containerProps = focusable ? { ref: containerRef, tabIndex: -1 } : {};
+  const focusBlock = title ? undefined : main.find(holdsTabFocus);
+  const focusable = useOpenedByLink() && !title && !focusBlock;
+  const containerProps = focusable ? { ref: focusRef, tabIndex: -1 } : {};
+  const mainList = (
+    <TabFocusTarget value={focusBlock ? { blockId: focusBlock.id, ref: focusRef } : null}>
+      <BlockList blocks={main} context={context} />
+    </TabFocusTarget>
+  );
 
   if (aside.length > 0) {
     // A single block names the aside itself, so its section is left unnamed.
@@ -76,7 +89,7 @@ export function ContentTab({ entry, content, project, basePath }: ContentTabProp
       >
         <div className="record-layout__main">
           {heading}
-          <BlockList blocks={main} context={context} />
+          {mainList}
         </div>
         <aside className="record-layout__aside" aria-labelledby={asideLabel}>
           <BlockList blocks={aside} context={{ ...context, labelled: !asideLabel }} />
@@ -89,16 +102,10 @@ export function ContentTab({ entry, content, project, basePath }: ContentTabProp
     return (
       <div className={`extended-stack extended-${segment}`}>
         {heading}
-        <BlockList blocks={main} context={context} />
+        {mainList}
       </div>
     );
   }
 
-  return focusable ? (
-    <div {...containerProps}>
-      <BlockList blocks={main} context={context} />
-    </div>
-  ) : (
-    <BlockList blocks={main} context={context} />
-  );
+  return focusable ? <div {...containerProps}>{mainList}</div> : mainList;
 }
