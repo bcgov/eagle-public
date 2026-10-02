@@ -1,4 +1,4 @@
-import { useCallback, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 
 // Verbatim `Breakpoints.Tablet` and `Breakpoints.Web` from the Angular CDK, orientation clauses
 // included: without them a 1024px-wide landscape window reads as web here and as tablet there.
@@ -24,6 +24,21 @@ export function useMediaQuery(query: string): boolean {
     () => window.matchMedia(query).matches,
     () => false,
   );
+}
+
+/**
+ * The media query's answer once it has held for a frame. A full-page capture resizes the viewport
+ * to 1px for one frame; a layout gated on the live answer would unmount and remount in it.
+ */
+export function useSettledMediaQuery(query: string): boolean {
+  const live = useMediaQuery(query);
+  const [settled, setSettled] = useState(live);
+  useEffect(() => {
+    if (live === settled) return;
+    const frame = requestAnimationFrame(() => setSettled(live));
+    return () => cancelAnimationFrame(frame);
+  }, [live, settled]);
+  return settled;
 }
 
 export function useResponsive(): { isMobile: boolean; isTablet: boolean; isDesktop: boolean } {

@@ -91,8 +91,10 @@ describe('update card', () => {
       expect.stringMatching(/\/documents\/img-1\/download\?redirect=1$/),
     );
     expect(screen.getByText('It applies from March.')).toBeInTheDocument();
-    // The card is on its own project's tab, so it links nowhere back to that project.
-    expect(screen.queryByRole('link', { name: /overview/i })).not.toBeInTheDocument();
+    // The card is on its own project's tab, so its one link is the ENGAGE call to action.
+    expect(screen.getAllByRole('link').map((link) => link.getAttribute('href'))).toEqual([
+      'https://engage.eao.gov.bc.ca/cedar',
+    ]);
   });
 
   it('offers one engagement call to action, the ENGAGE link over the comment period', async () => {
@@ -118,7 +120,7 @@ describe('update card', () => {
       within(docs).getByRole('link', { name: /^Amendment order\.pdf\s*\(opens in new tab\)$/ }),
     ).toHaveAttribute('href', expect.stringMatching(/\/documents\/doc-1\/download\?redirect=1$/));
     expect(
-      within(docs).getByRole('link', { name: /^Document 2\s*\(opens in new tab\)$/ }),
+      within(docs).getByRole('link', { name: /^Document 1\s*\(opens in new tab\)$/ }),
     ).toHaveAttribute('href', expect.stringMatching(/\/documents\/doc-2\/download\?redirect=1$/));
   });
 
@@ -127,6 +129,8 @@ describe('update card', () => {
     await userEvent.setup().click(readMore());
 
     expect(screen.getByText('About: Fees')).toBeInTheDocument();
+    // Named once: the meta line under the headline leaves it out.
+    expect(screen.getAllByText(/Fees/)).toHaveLength(1);
   });
 
   it('drops an ENGAGE link that is not http or https', async () => {
@@ -143,6 +147,15 @@ describe('update card', () => {
     expect(screen.getByRole('link', { name: /View engagement/ })).toHaveAttribute(
       'href',
       '/p/proj-1/cp/cp-9',
+    );
+  });
+
+  it('encodes the ids in the comment period link', () => {
+    renderCard({ ...OLD_ROW, project: { _id: 'proj/1' }, pcp: { _id: 'cp 9' } });
+
+    expect(screen.getByRole('link', { name: /View engagement/ })).toHaveAttribute(
+      'href',
+      '/p/proj%2F1/cp/cp%209',
     );
   });
 

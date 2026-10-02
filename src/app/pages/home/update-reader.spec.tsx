@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { updateQueryOptions } from 'app/api/updates';
 import { makeQueryClient, renderAt } from '../../../test-utils';
 import {
   ACTIVITY_ROW,
@@ -29,6 +30,7 @@ function renderAtPath(path: Parameters<typeof renderAt>[0], answers: Answers = {
     }
     return undefined;
   });
+  const queryClient = makeQueryClient();
   const view = renderAt(
     path,
     [
@@ -36,9 +38,9 @@ function renderAtPath(path: Parameters<typeof renderAt>[0], answers: Answers = {
       { path: '/updates/:id', Component: Home },
       { path: '/p/:projId/*', Component: () => <p>project page</p> },
     ],
-    { queryClient: makeQueryClient() },
+    { queryClient },
   );
-  return { ...view, requests };
+  return { ...view, requests, queryClient };
 }
 
 const reader = () => screen.findByRole('dialog');
@@ -153,6 +155,7 @@ describe('home update reader', () => {
     const dialog = await reader();
 
     expect(await within(dialog).findByText('About: Fees')).toBeInTheDocument();
+    expect(within(dialog).getAllByText(/Fees/)).toHaveLength(1);
     expect(within(dialog).queryByRole('link', { name: 'View Project' })).not.toBeInTheDocument();
   });
 
@@ -186,30 +189,44 @@ describe('home update reader', () => {
     },
   );
 
-  it('links the project a link handed over in route state', async () => {
-    renderAtPath([{ pathname: '/updates/gone', state: { projectId: 'eagle-7' } }], {
+  it('encodes the project id in the link from a hidden update', async () => {
+    renderAtPath('/', {
+      feed: envelope([{ ...HOME_FEED[0], projectId: 'eagle/1' }]),
       byId: envelope([]),
     });
-    const dialog = await reader();
+    await userEvent
+      .setup()
+      .click(await screen.findByRole('link', { name: /Application accepted/ }));
 
-    expect(await within(dialog).findByRole('link', { name: 'Go to the project' })).toHaveAttribute(
-      'href',
-      '/p/eagle-7/overview',
-    );
+    expect(
+      await within(await reader()).findByRole('link', { name: 'Go to the project' }),
+    ).toHaveAttribute('href', '/p/eagle%2F1/overview');
+  });
+
+  it('takes no feed row of another kind for the update, even with the same id', async () => {
+    const { router } = renderAtPath('/', { byId: PENDING });
+    await screen.findByText('Environmental assessment certificate issued');
+
+    // The decision row's id is its project's id.
+    await router.navigate('/updates/eagle-2');
+
+    expect(
+      within(await reader()).getByRole('heading', { name: 'Loading update' }),
+    ).toBeInTheDocument();
   });
 
   it('keeps showing the feed row when the full read fails', async () => {
-    renderAtPath('/', { byId: json(null, 500) });
+    const { queryClient } = renderAtPath('/', { byId: json(null, 500) });
     await userEvent
       .setup()
       .click(await screen.findByRole('link', { name: /Application accepted/ }));
     const dialog = await reader();
 
-    // The failed read settles before this passes: the error note would replace the body.
     await waitFor(() =>
-      expect(within(dialog).queryByText(/unavailable right now/)).not.toBeInTheDocument(),
+      expect(queryClient.getQueryState(updateQueryOptions('u1').queryKey)?.status).toBe('error'),
     );
-    expect(await within(dialog).findByText('The application is complete.')).toBeInTheDocument();
+    expect(within(dialog).queryByText(/unavailable right now/)).not.toBeInTheDocument();
+    expect(within(dialog).getByText('The application is complete.')).toBeInTheDocument();
   });
 
   it('closes to the home page from its close button', async () => {
@@ -342,6 +359,35 @@ describe('home update reader', () => {
     );
   });
 
+  it('encodes the project id in its footer links', async () => {
+    renderAtPath('/updates/u1', {
+      byId: envelope([{ ...ACTIVITY_ROW, project: { _id: 'eagle/1', name: 'Cedar LNG' } }]),
+    });
+    const dialog = await reader();
+
+    expect(await within(dialog).findByRole('link', { name: 'View Project' })).toHaveAttribute(
+      'href',
+      '/p/eagle%2F1/overview',
+    );
+    expect(within(dialog).getByRole('link', { name: 'All project documents' })).toHaveAttribute(
+      'href',
+      '/p/eagle%2F1/documents?sortBy=-datePosted',
+    );
+  });
+
+  it('skips the project read when the update names its own location', async () => {
+    // An id the feed does not hold, so no feed row without a location shows first.
+    const { requests } = renderAtPath('/updates/u9', {
+      byId: envelope([{ ...ACTIVITY_ROW, _id: 'u9', location: 'Terrace' }]),
+    });
+    const dialog = await reader();
+
+    expect(
+      await within(dialog).findByText('Cedar LNG · Terrace · September 15, 2026'),
+    ).toBeInTheDocument();
+    expect(requests.filter((url) => url.startsWith('/demi-projects/'))).toEqual([]);
+  });
+
   it('leaves for the project page from its footer', async () => {
     const { router } = renderAtPath('/updates/u1');
 
@@ -372,8 +418,19 @@ describe('home update reader', () => {
     expect(within(dialog).queryByRole('link', { name: 'Go to the project' })).toBeNull();
     expect(within(dialog).getByRole('link', { name: 'See recent updates' })).toHaveAttribute(
       'href',
-      '/',
+      '/#home-updates-heading',
     );
+  });
+
+  it('moves focus to the Updates heading from "See recent updates"', async () => {
+    renderAtPath('/updates/gone', { byId: envelope([]) });
+
+    await userEvent
+      .setup()
+      .click(await within(await reader()).findByRole('link', { name: 'See recent updates' }));
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(screen.getByRole('heading', { level: 2, name: 'Updates' })).toHaveFocus();
   });
 
   it('says the update is unavailable when the read fails', async () => {

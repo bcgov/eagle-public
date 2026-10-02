@@ -162,7 +162,7 @@ describe('project notification page', () => {
 
     await screen.findByRole('heading', { level: 1, name: 'Bear Creek Aggregate' });
     const links = within(strip()).getAllByRole('link');
-    // A label may carry its count after it, e.g. "Documents1".
+    // A label may carry its count after it, e.g. "Documents, 1".
     expect(links.map((link) => link.textContent)).toEqual([
       expect.stringMatching(/^Overview/),
       expect.stringMatching(/^Engagement/),
@@ -213,7 +213,8 @@ describe('project notification page', () => {
     renderPage();
 
     expect(
-      await within(strip()).findByRole('link', { name: 'Engagement1 open' }),
+      // The hidden comma keeps the label and count apart for a screen reader.
+      await within(strip()).findByRole('link', { name: 'Engagement, 1 open' }),
     ).toBeInTheDocument();
   });
 
@@ -337,7 +338,7 @@ describe('project notification routes', () => {
 
     renderAt(`/pn/${ID}/overview`, NOTIFICATION_ROUTES, { queryClient });
 
-    expect(await screen.findByRole('link', { name: '1 documents' })).toHaveAttribute(
+    expect(await screen.findByRole('link', { name: '1 document' })).toHaveAttribute(
       'href',
       `/pn/${ID}/documents`,
     );

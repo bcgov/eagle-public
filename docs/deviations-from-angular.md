@@ -238,3 +238,22 @@ item goes to `/search`, so it is the current page for every record type, and the
 to `/search?record=projects`, `/search?record=activities` and `/search?record=notifications`.
 Angular's masthead had no Search item at all: the list pages hung off the "Project Information"
 dropdown.
+
+## Stack and port rules
+
+- Stack: Vite 8, React 19, TypeScript strict, react-router 7 (data router), TanStack Query 5.
+- Tests: Vitest, jsdom and Testing Library; keep the `yarn test`, `yarn lint` and `yarn build` script names.
+- Styles are the Angular global CSS ported unchanged; component CSS is plain global files imported by the component (`:host` becomes a root class). No CSS modules, no design-system library.
+- Maps use MapLibre GL 6 with the `@vis.gl/react-maplibre` binding, bundled; no map library from a CDN.
+- Runtime config stays `env.js` plus the config document at `CONFIG_PATH` (`/demi-search/config` by default), and `index.html` loads `env.js` before the app bundle.
+- Build output stays `dist/eagle-public/browser` with an entry chunk named `main-[hash].js`; the `deploy-azure-*.yaml` workflows grep for both.
+- Node 24 and Yarn 4.12 through Corepack; never npm.
+- No `any` unless the Angular source had it. ESLint uses the flat config with @eslint/js, typescript-eslint, react-hooks and react-refresh.
+- Do not port bugs or inefficiencies: when the Angular code is wrong, wasteful or dead, fix or drop it in the port.
+- Every deliberate behaviour change goes in this file, one line: file, what changed, why.
+- Cut dependencies where a native API or a few lines do the job; keep each one in `package.json` only for real use.
+- `luxon` stays: `models/commentperiod.ts` does America/Vancouver date arithmetic across DST, which `Intl.DateTimeFormat` cannot do and `Temporal` is not yet available for. Revisit when `Temporal` ships.
+- Act-specific code outside the Act registry in `utils/legislation.ts` is deliberate: the 'detailed' stages in `pages/project/assessment-stages.ts` are the 2018 table, and `pages/about.tsx`, `pages/home/about-band.tsx`, `pages/search/types/documents.ts`, `pages/search/search-filters.ts` and the Act URLs in `pages/project/extended/content/pacific-link.ts` name Acts directly.
+- `layout/page-masthead.tsx` puts the eyebrow badge after the title in the DOM and shows it above, so heading navigation lands on the title first.
+- `src/app/map/basemaps.css`: the open-pin ripple loops forever (WCAG 2.2.2 wants a stop control for motion over 5 s). Accepted.
+- `src/app/map/basemaps.css`: the engaged cluster count is white on `#4daa57` at 2.92:1, below 4.5:1. Accepted.

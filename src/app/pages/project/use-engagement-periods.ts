@@ -12,8 +12,9 @@ export function useEngagementPeriods(
   notification: NotificationFacts | undefined,
 ): { periods: CommentPeriod[] | undefined; isPending: boolean } {
   const { data, isPending } = useCommentPeriods(projId);
+  // Only once the search settles, so the tab count does not flash the fallback first.
   const inline =
-    (!Array.isArray(data) || data.length === 0) && notification
+    !isPending && (!Array.isArray(data) || data.length === 0) && notification
       ? inlineCommentPeriod(projId, notification)
       : null;
   return { periods: inline ? [inline] : data, isPending };

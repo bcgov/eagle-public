@@ -250,7 +250,7 @@ describe('overview tab', () => {
   it('counts the project documents in the About grid, linked to the Documents tab', async () => {
     renderTab();
 
-    expect(await screen.findByRole('link', { name: '1 documents' })).toHaveAttribute(
+    expect(await screen.findByRole('link', { name: '1 document' })).toHaveAttribute(
       'href',
       '/p/proj-1/documents',
     );
@@ -538,7 +538,7 @@ describe('overview tab on a project notification', () => {
   it('links the document count to the notification Documents tab', async () => {
     renderTab(undefined, '/pn/pn-1/overview');
 
-    expect(await screen.findByRole('link', { name: '1 documents' })).toHaveAttribute(
+    expect(await screen.findByRole('link', { name: '1 document' })).toHaveAttribute(
       'href',
       '/pn/pn-1/documents',
     );

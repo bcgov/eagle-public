@@ -167,8 +167,10 @@ test.describe('home', () => {
     const cards = page.getByRole('region', { name: 'Updates' }).locator('.home-update');
     expect(rows.length).toBeGreaterThan(0);
     await expect(cards).toHaveCount(rows.length);
-    await expect(cards.first()).toContainText(rows[0].headline.trim());
-    await expect(cards.last()).toContainText(rows[rows.length - 1].headline.trim());
+    // A card heads with the short headline, the headline when there is none.
+    const title = (row: any) => row.shortHeadline?.trim() || row.headline.trim();
+    await expect(cards.first()).toContainText(title(rows[0]));
+    await expect(cards.last()).toContainText(title(rows[rows.length - 1]));
   });
 
   test('@data an update card opens the reader at /updates/:id and Close returns home', async ({

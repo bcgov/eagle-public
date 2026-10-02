@@ -13,7 +13,9 @@ export function UpdateCard({ update }: { update: Update }) {
   const label = update.category ?? update.type;
   const period = update.commentPeriod;
   const commentPeriod =
-    period && update.projectId ? `/p/${update.projectId}/cp/${period.id}` : null;
+    period && update.projectId
+      ? `/p/${encodeURIComponent(update.projectId)}/cp/${encodeURIComponent(period.id)}`
+      : null;
 
   return (
     <li className="update-card">

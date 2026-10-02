@@ -39,7 +39,7 @@ export function notificationToProject(n: ProjectNotification): Project {
   });
 }
 
-const OBJECT_ID = /^[a-f0-9]{24}$/i;
+const OBJECT_ID = /^[a-f0-9]{24}$/;
 
 /** One notification by `_id`, `null` when the dataset holds none. demi-search reads `and[_id]`. */
 export async function getNotificationById(id: string): Promise<Project | null> {

@@ -1,71 +1,27 @@
 # React migration (branch `react`)
 
-Angular source of truth for behaviour: the `develop` checkout, read-only. This branch holds the React rewrite. Old Angular `src/` is removed on this branch once phase 1 lands; read the original from the `develop` checkout.
-
-## Stack (decided 2026-08-27)
-
-- Vite 8, React 19, TypeScript strict, react-router 7 (data router), TanStack Query 5.
-- Vitest + jsdom + @testing-library/react. Keep `yarn test`, `yarn lint`, `yarn build` script names.
-- Styles: port existing global CSS unchanged (bootstrap.min.css, `src/assets/styles/**`, BCSans, material icons). Component CSS becomes plain global CSS files imported by the component (`:host` becomes a root class). No CSS modules, no design-system library yet.
-- Maps: MapLibre GL 6 with the `@vis.gl/react-maplibre` binding, installed and bundled. No map library from a CDN.
-- `env.js` + `/api/config` runtime config pattern unchanged. `index.html` keeps `<script src="env.js">` before the app bundle.
-- Build output must stay `dist/eagle-public/browser` with entry chunk named `main-[hash].js` (deploy workflows `deploy-azure-*.yaml` grep for both).
-- Node 24, Yarn 4.12 (Corepack). Never npm.
-- No `any` unless the Angular source had it. ESLint flat config: @eslint/js, typescript-eslint, react-hooks, react-refresh.
-
-## Layout
-
-```
-src/
-  main.tsx            bootstrap: load config, init analytics, createRoot
-  index.html moved to repo root (Vite convention); env.js copied to dist root via public/
-  app/
-    routes.tsx        route table (mirror app.routes.ts)
-    api/              api.ts port (fetch wrapper, endpoints, search routing), query hooks
-    config/           config.ts (env.js + /api/config), logging
-    analytics/        analytics.ts (eagle-analytics client only; penguin plugin removed)
-    models/           ported as-is
-    utils/            constants, utils, word-html-sanitizer, newlines, list-converter
-    components/       shared UI (table engine, filters, pagination, toast, date-picker, ...)
-    pages/            one dir per route
-    layout/           header, footer, app shell
-```
-
-## Phases
-
-Migration phases 1 to 4 (scaffold, table engine, pages, parity pass against prod) finished 2026-08-27. What remains before prod is under "Cutover prerequisites" and "Follow-ups".
+Angular source of truth for behaviour: the `develop` checkout, read-only. This branch holds the React rewrite. Old Angular `src/` is removed on this branch; read the original from the `develop` checkout.
 
 ## Unified search (PUBLIC-146)
-
-Done 2026-09-17. One `/search` page and one display grid replaced `/projects-list`, `/search`, `/news` and `/project-notifications`. Phases 1 to 6 landed as PRs #881 to #889 on `react`, live on the next site as `v3.0.0-beta.37` (efc62432). Plan and detail: `docs/unified-search-plan.md`; behaviour changes in `docs/deviations-from-angular.md` (URLs section); redirect table on the `eagle-dev-guides.wiki` page `Eagle-Search`.
-
-The design prototype sits at `design/handoffs/unified-search/`, local only and never committed; the source archive is kept at `/root/repos/eagle-public-design-handoff.zip` and can be unzipped again if the directory is missing.
-
-Still open in eagle-demi `TODO.md`: 7.5 re-extraction on test (about 6 days from 2026-09-16, adds "Page N" labels as it goes); 0.6 (counts equal `/search` totals) verified 2026-09-17. Test-only cosmetic: 9 List names appear twice in the filters because the old test rows sit beside the reseeded prod ids.
 
 Follow-ups from the phase 2 review, none of them blocking:
 
 - `CustomMultiSelect`, which the value picker uses above 40 options, is a div combobox without the ARIA 1.2 structure. Rebuild it on a real input with `aria-activedescendant`.
-- `list-row.tsx` renders an `<h3>` under the page `h1` with no `h2` in between. Add a results `h2` before activities and notifications ship on the list template.
 - `api.ts:323` concatenates `sortBy` unencoded, so `+name` reaches the wire as ` name`. Encode it once the backend contract is confirmed.
 - Move the column `sortable` flags and the cell renderers out of `unified-search.tsx` into the type configs.
 
 Follow-ups from phase 3, none of them blocking:
 
-- The sort select on a list offers only Newest first and Oldest first. `sortOptionsFor` in `display-grid.tsx` takes the name option from the first column carrying `link`, which on the activities list is the project rather than the update headline, and that column is not sortable.
 - The gold underline under the active tab in `tab-nav.css` measures 1.72:1 against white, below the 3:1 a non-text indicator needs. It is the pattern the whole app uses, so changing it is a site-wide decision rather than a search one.
 - A project notification title is not a link to its project. The old page did not link it either, but the activities rows beside it do.
 - The tab lists in `content-search.tsx:84` and `table-list.tsx:161` do not move focus with the arrow keys and carry no `aria-controls`. Fix them with the `moveFocus` helper in `notification-row.tsx`, moved somewhere both can read it.
-- The Show more button in `list-row.tsx` has no `aria-controls` naming the body it expands.
-- `headerless` does nothing for `template: 'list'`: a list has no head to drop. Either the flag is read there or the list configs stop setting it.
+- 2026-10-02: `headerless` is now `false` in every record-type config (comment periods stopped setting it on its list). Drop it from `RecordTypeConfig`, the configs and `unified-search.tsx`; the `DisplayGrid` prop is then read only by its own spec.
 
 Follow-ups from phase 4, none of them blocking:
 
 - The scope switch and the record-type pills are single-choice controls built as `role="group"` buttons with `aria-pressed`. A radiogroup (`role="radio"`, `aria-checked`) says "one of a set" where a pressed toggle does not.
-- Row titles in `list-row.tsx` and `passage-list.tsx` are `h3` under the page `h1` with no `h2` between.
 - The row checkbox is 16px, and 13px in the passage list on a phone where the prototype lets it shrink; both sit under the 24px target size. A design decision, the grid tables share it.
 - File links in `record-link.tsx` open a new tab with no "opens in a new tab" cue in the name.
-- In the inside scope the sort select offers "Most matches" alone; the select could hide when it has one option.
 
 Follow-ups from phase 5, none of them blocking:
 
@@ -76,18 +32,9 @@ Follow-ups from phase 5, none of them blocking:
 Follow-ups from phase 6, none of them blocking:
 
 - Migrate `pages/comments/comments.tsx` and `project-notifications/project-notification-documents-table.tsx` off `TableTemplate` onto `DisplayGrid`, then delete `components/table/*`. Both are small fixed tables inside a page rather than list pages, so neither blocks the search work.
-- `responsive.ts` reads `matchMedia` live, so any component gated on it re-renders during a full-page capture's one-frame 1px viewport (the table branch of `display-grid.tsx` unmounts and remounts). The tour now tolerates it; other width-gated components may still churn in that frame. Consider debouncing the `narrow` snapshot by a frame.
+- 2026-10-02: `display-grid.tsx` now reads its breakpoint through `useSettledMediaQuery`, so its table no longer remounts in a full-page capture's 1px frame. Other components on `useMediaQuery` still read it live; move them over if they churn (the projects map spec relies on the live read).
 
 ## Home page redesign
-
-Plan and detail: `docs/home-redesign-plan.md`; behaviour changes in
-`docs/deviations-from-angular.md` ("Home page redesign" section).
-
-The v4 design handoff sits at `design/handoffs/home-v4/`, local only and never
-committed; the original archive it came from was not kept. v4 supersedes v3: it drops the masthead purpose line and the
-Map Explorer preview image, and adds an About section above the footer. The v2 handoff
-stays at `design/handoffs/home/` with its archive at
-`/root/repos/eagle-public-design-handoff-home.zip`, as the record of what v2 shipped.
 
 Update notification emails still link to the project page; they move to `/updates/:id`
 once this line serves production.
@@ -117,17 +64,9 @@ Open (moved from the redesign tracker, 2026-09-23):
   - PUBLIC-146: the handoff does not mention the display grid contract. Confirm the rail
     rows are exempt.
 
-## Port rules (added 2026-08-27)
-
-- Do not port bugs or inefficiencies. When the Angular code is wrong, wasteful (redundant fetches, N+1, dead caches, needless re-renders), or dead, fix or drop it in the port.
-- Every deliberate behaviour change goes in `docs/deviations-from-angular.md`, one line: file, what changed, why. Parity tests against prod may flag these; the list explains them.
-- Cut dependencies where a native API or a few lines do the job. Justify each dependency kept in `package.json` by real use; remove anything unused.
-
 ## Cutover prerequisites
 
-Checked 2026-10-02 against the live prod edge, the prod config document and the next site (`v3.0.0-beta.54`). The app builds no request to eagle-api: a browser walk of every route on the next site saw only `/demi-search/*`, `/demi-projects/*`, the analytics beacon, App Insights, map tiles and presigned files. There is no fallback to eagle-api, so each open line below blocks the cutover.
-
-Open:
+Checked 2026-10-02 against the live prod edge, the prod config document and the next site (`v3.0.0-beta.54`). The app builds no request to eagle-api: a browser walk of every route on the next site saw only `/demi-search/*`, `/demi-projects/*`, the analytics beacon, App Insights, map tiles and presigned files. There is no fallback to eagle-api, so each line below blocks the cutover unless it says otherwise.
 
 - Prod DEMI is missing data. `dataset=CommentPeriod` returns 1 period on prod where eagle-api holds 143 public ones, a legacy period with 15 comments in eagle-api returns 0 from DEMI, and `dataset=RecentActivity` returns 17 rows (test has 662). Until the prod backfill runs, the Engagement tab, the comment pages and the Updates feed would be close to empty. Find out whether this is a missing backfill or a visibility rule, fix it in eagle-demi, then compare counts per dataset between eagle-api and demi-search on prod.
 - Old document links. `/api/public/document/:id/download` and `/api/document/:id/fetch` are public permalinks (about 32,500 requests a day on prod) and staff still paste them into updates and comment period instructions. They need the Front Door redirects to `/demi-search/documents/:id/download?redirect=1` (eagle-edge branch `feat-legacy-document-redirects`), proven on the test edge, then deployed to prod. Links shown inside this app do not wait for that: `rewriteLegacyDocumentUrl` points them at the DEMI download before they render. Behaviour change: the file always downloads (PDFs no longer open in the tab) and the file name is the stored one.
@@ -135,76 +74,40 @@ Open:
 - A document created in DEMI has a UUID id, and the edge download rule matches 24-hex ids only, so its download link returns 404. Fixed on the same eagle-edge branch; check with a real DEMI-created document on test.
 - The edge must keep `/api/*` after the cutover. `/api/v2/projects` and `/api/public/*` have outside callers, eagle-admin uses `/api`, and a rollback to `v2.7.x` needs it. Do not drop the `/api` patterns from the public edge at `v3.0.0`.
 - Email subscribe is hidden on prod: `NOTIFY_API` is not in the prod config document and eagle-notify has no prod deployment. Decide whether `v3.0.0` ships without it.
-
-Done, checked on prod:
-
-- The config document carries `SEARCH_API_PATH=/demi-search`. `CONFIG_PATH` is not needed in the document; the app defaults to `/demi-search/config`.
-- `DEMI_PROJECTS_PATH` is empty in the prod document. The app defaults to `/demi-projects`, so it works; set it to match test.
-- `EAGLE_ANALYTICS_URL` is `/api/usage` on test and prod. The edge sends `/api/usage/*` to the analytics API, not to eagle-api. Moving it to `/analytics` is optional and would stop the path looking like an eagle-api call in the logs.
-- The edge serves `/demi-search/gate`, `/demi-search/documents/:id/download` (24-hex ids) and the bulk-download routes. The rproxy is scaled to 0, so the eao-nginx version no longer matters.
-- Prod ships `ACCESS_GATE` false, so DEMI prod does not need `ACCESS_GATE_PASSWORD`.
-
-Proof after cutover: on workspace `eagle-logs-prod`, table `AzureDiagnostics`, category `FrontDoorAccessLog`, route `routingRuleName_s == "eagle-api"`, count requests whose `referer_s` host is `projects.eao.gov.bc.ca` or `www.projects.eao.gov.bc.ca` and whose referer path is not under `/admin`. The count must be 0 apart from the 302 redirects of old document links.
+- Not blocking: `DEMI_PROJECTS_PATH` is empty in the prod config document and the app defaults to `/demi-projects`; set it to match test. `EAGLE_ANALYTICS_URL` is `/api/usage` on test and prod, which the edge sends to the analytics API; moving it to `/analytics` would stop it looking like an eagle-api call in the logs.
+- Proof after cutover: on workspace `eagle-logs-prod`, table `AzureDiagnostics`, category `FrontDoorAccessLog`, route `routingRuleName_s == "eagle-api"`, count requests whose `referer_s` host is `projects.eao.gov.bc.ca` or `www.projects.eao.gov.bc.ca` and whose referer path is not under `/admin`. The count must be 0 apart from the 302 redirects of old document links.
 
 ## Retired on this line (decided 2026-10-02)
 
-- Comments are read-only. The public cannot submit a comment or attach a file; ENGAGE owns submission. On the Angular line the attachment upload already failed, because it posted to a staff-only route.
-- CAC sign-up and removal are gone. Prod holds 85 sign-ups, the last on 2024-10-26, none in 2025 or 2026. The Angular line called routes that do not exist, so it could not sign anyone up either.
+Comment submission and CAC sign-up are gone; the decision is in `docs/deviations-from-angular.md` (pages/comments). Left open:
+
 - Left behind in eagle-api until it retires: the 85 `CACUser` records (names and emails), the unauthenticated `PUT /api/public/project/:id/cacRemoveMember` route, and the `projectCAC` flag on 18 projects (12 published). Nothing on this line reads them.
 - An old emailed `/cac-unsubscribe` link lands on the home page with no message. Decide whether it needs a short notice page.
 - eagle-admin can still create a comment period that is not run by ENGAGE. This line shows it read-only.
 
-## Ports pending
-
-Fixes shipped on `develop` (Angular) not yet re-implemented here. One line each: tag, commit, what. Delete the line when ported.
-
-- none
-
 ## Follow-ups
 
 - Display grid: control borders in `display-grid.css` (`--theme-gray-50`, 1.55:1), the same token on the unselected record pill in `unified-search.css`, and the inactive sort arrow (`--theme-gray-60`, 1.54:1) follow the design handoff and sit under the 3:1 non-text contrast floor (WCAG 1.4.11); needs a design decision before the grid ships to prod.
-- Unscheduled ideas live in `docs/FUTURE.md` (per-branch preview URLs, automatic create and teardown).
 - After the prod cutover of the unified search page, submit the new `/search` URL to the search engines. The client redirects keep old indexed links working in the meantime.
 - Assessment rail (`src/app/pages/project/assessment-stages.ts`) has no per-stage dates. Historic stages should scale to how long they actually took and only current and future stages show the statutory maximum, but eagle-api holds no phase dates (`phaseHistory` is bare List ids). Source is Track `work_phases` (start_date, end_date, number_of_days, legislated) through a demi-api endpoint, for example `GET /api/projects/:id/phases`; fill `elapsedDays` and `dates` from it. Same feed can carry the certificate number (`ea_certificate` in DEMI Track data). Never through eagle-api.
 - After cutover, delete `e2e/tools/` and `e2e/tests/css-scoping.spec.ts`. Both only compare the Angular and React renderings, so neither has anything to check once Angular is gone.
-
-- `luxon` kept. `models/commentperiod.ts` does America/Vancouver arithmetic, not formatting: `endOf('day')` in Pacific, `minus({days: 7})`, `plus({days: 7})`, `diff(now, 'days')`, hour/minute reads in Pacific and a `ZZZZ` zone name. `Intl.DateTimeFormat` formats in a zone but cannot do zone-aware arithmetic across DST, and `Temporal` is not available. Revisit when `Temporal` ships.
 - Non-interactive `tabIndex={0}` on `<td>` in `pins` and `activity-card` is an Angular-era idiom that puts unactionable content in the tab order (WCAG 2.4.3). `jsx-a11y/no-noninteractive-tabindex` does not flag table cells, so lint will not catch it; it needs a decision on how those tables should be navigated.
 - `surveyUrl()` and `showSurveyBanner()` in `src/app/config/config.ts` have no consumer since the home redesign removed the survey banner. Decide whether the survey returns somewhere else; if not, delete both and the `SURVEY_URL` / `SHOW_SURVEY_BANNER` config keys.
-- Project reads all come from demi-search now, so the two corpora can no longer disagree. Background on why the split existed: `eagle-demi/docs/FUTURE.md`, "Serve eagle-public's project reads".
 - Comment periods search tab, open items (2026-09-22):
   - `docs/unified-search-plan.md` still says four tabs (L28-29, L500, L527) and has no section on the Comment periods tab.
   - No e2e opens `/search?record=commentPeriods` or follows the home "Upcoming and recently closed periods" link. Add one once the eagle-demi list change is on test.
   - Documents tab: on long names the ellipsis hides the new-tab icon.
-  - `periodDates` shows "Opens <date>" even when the date is years in the past.
-  - `open-for-comment.spec.tsx` has no case for `projectName: ''`.
-  - The home card shows dates in the browser's time zone (`longDate`); search rows show Pacific.
   - Check whether the longer search placeholder is cut off at 390px.
   - A period whose parent is a project notification links to `/p/<id>/cp/...` instead of `/pn/...`, because the search row does not say what kind of parent it has.
 
 ## Updates tab and reader
 
-- 2026-09-23: Document what `ALL_ROWS_PAGE_SIZE` in `src/app/api/api.ts` is for and who pages with it.
-- 2026-09-23: `LEADING_BLOCK` in `updates.ts` misses content that starts with bare text before any block tag, so the summary falls back to later text.
-- 2026-09-23: Content that starts with an empty block (`<p></p>`) gives a blank summary; skip empty blocks.
-- 2026-09-23: Unnamed attachments are numbered by position in the whole list, so the only unnamed one can be "Document 2"; number unnamed ones on their own.
-- 2026-09-23: Encode the project id in the `/p/:projId/...` links built from Update rows.
-- 2026-09-23: Decide the retry option on the project updates query, so an error shows without the default backoff wait.
-- 2026-09-23: Spec fixtures should use the real `featuredImage` object shape from DEMI.
-- 2026-09-23: The update-card spec's `/overview/` link assertion is a no-op; assert on a link that would really appear.
-- 2026-09-23: The subject shows twice on a corporate update (meta line and "About:").
-- 2026-09-23: The featured image crops with `object-fit: cover`; use `contain` so charts and maps stay whole.
-- 2026-09-23: The Documents list keys on the document id, which repeats when an attachment is also the legacy `documentUrl`.
-- 2026-09-23: Add the new Update fields (shortHeadline, summary, category, publishDate) to the `HOME_FEED` fixture.
-- 2026-09-23: The `waitFor` at `update-reader.spec.tsx:176` passes before the failed read settles; wait on the settled read instead.
-- 2026-09-23: Skip the `/demi-projects` read in the reader when the Update already carries a location.
-- 2026-09-23: Point "See recent updates" at the home page updates list anchor, not `/`.
-- 2026-09-23: The reader's feed-row lookup matches on id only and ignores the row kind.
-- 2026-09-23: Nothing sets the route-state `projectId` the reader reads; add a caller or delete the branch.
-- 2026-09-23: The home feed card shows the headline; use shortHeadline with the headline as fallback.
-- 2026-09-23: Add a test for the rule that keeps the open tab in the project strip, apart from the Updates case.
 - 2026-09-23: Keep the Updates tab count live region mounted so screen readers announce changes.
 - 2026-09-23: The Updates tab stays in the strip when its read fails (`isError`); decide whether it should.
+- 2026-10-02: `projectDocumentsHref` in `src/app/pages/home/home-shared.ts` does not encode the project id; `recent-uploads.tsx` passes it raw. `update-reader.tsx` encodes before the call, so move the encode into the helper and pass the raw id there in the same edit. Move `UPDATES_HEADING_ID` from `updates-feed.tsx` to `home-shared.ts` too.
+- 2026-10-02: `updates-feed.tsx` focuses the Updates heading on every arrival at `#home-updates-heading`, Back included, so Back from a card opened there moves focus off the card; skip on `POP`. Its `preventScroll` may race the modal scroll lock (`use-scroll-lock.ts`); add an e2e like the about legislation check (`toBeInViewport`, `toBeFocused`).
+- 2026-10-02: `documentsOf` in `update-detail.tsx` keeps the first copy of a file listed twice, so a bare id before its named row shows "Document 1"; keep the named copy.
+- 2026-10-02: The short-headline fallback is written twice (`toUpdate`, `toFeedItem` in `updates.ts`), and no spec covers a blank feed `shortHeadline`.
 
 ## Parity harness follow-ups (added 2026-09-24)
 
@@ -229,23 +132,15 @@ Fixes shipped on `develop` (Angular) not yet re-implemented here. One line each:
 - projects.tsx: engagement is classified only when query data changes (5 min staleTime); a period that opens or closes while the page is open keeps its old pin state until refetch.
 - proj-detail-popup.tsx: initial focus lands on the engagement block; screen reader hears the period state before the project name. Consider focusing the heading and putting the block after it in DOM order, or an aria-describedby.
 - projlist-map.tsx / basemaps.css: pin buttons are aria-hidden, so the open/upcoming state is visual only; under reduced motion "open" differs from "none" by fill hue and glow only (WCAG 1.4.1). Add a text cue reachable by AT (list card or popup already carries it).
-- basemaps.css: open ripple loops forever (WCAG 2.2.2 wants a stop control for motion over 5 s). Accepted for now.
-- basemaps.css: engaged cluster count is white on #4daa57 at 2.92:1 (below 4.5:1). Accepted for now.
 - basemaps.css: rationale comments at the glow/fill block exceed the comment cap; move contrast figures to the PR.
 - api/commentperiod.ts and api/api.ts both define a 500 page-size constant; export one.
 
 ## Project notification page follow-ups (2026-09-28)
 
-- `src/app/layout/app-shell.tsx` getPageName: skip the `pn` segment like `p` and `cp`, so analytics page names are not "Pn > Overview".
-- `src/app/routes/legacy-search.ts` SORTABLE_FIELDS.notifications: set to `['name', 'notificationReceivedDate']`; dateUpdated has no column.
-- `src/app/api/notification.ts`: a stored `pcp` overrides the status worked out from dates. Decide whether dates win when both are present. Also drop `/i` on the ObjectId regex or lower-case the id before the read, since the Cosmos point read is case-sensitive.
+- `src/app/api/notification.ts`: a stored `pcp` overrides the status worked out from dates. Decide whether dates win when both are present.
 - `src/app/pages/project/project-panel.tsx`: hide "Open in map explorer" for notifications; the explorer lists projects only.
-- `src/app/pages/project/use-engagement-periods.ts`: build the inline fallback only after the periods query settles, so the tab count does not flicker.
-- `src/app/pages/search/types/notifications.ts:18`: restore the typeof string guard on associatedProjectId.
-- `src/app/models/projectNotification.ts`: type proponent as `string | { name?: string } | null`.
-- `src/app/components/table/document-row.ts`: delete the unused `useDocumentRow`; the `.clickable-row` rules in `table.css` are dead.
-- `overview-tab.tsx:335`: fix "1 documents" grammar. In `project.tsx`, the tab count needs a hidden separator so the accessible name reads correctly.
-- e2e: ids in `fixtures/unified-search/notifications.json` should be 24-hex; add notifications to the grid row hover parity check; `project-notification.spec.ts:29` should assert the full masthead text.
+- 2026-10-02 `featured-documents.tsx:39`: one document reads "All 1 documents". Pick the wording for a single document.
+- e2e: add notifications to the grid row hover parity check.
 - eagle-demi `test/helpers/eagle-mirror-fixtures.js:214`: the notification centroid is [lon, lat], but eagle-admin stores [lat, lon].
 
 ## About page follow-ups (2026-09-28)
@@ -311,10 +206,8 @@ Review polish items left after the unified About page landed. None block the pag
 - 2026-10-01: `map/basemaps.css:64`: the map control buttons keep maplibre's default focus ring, a blurred shadow at about 3:1 contrast (shared).
 - 2026-10-01: Not run: `test:parity` (needs `PREPUSH_E2E=1`) and the e2e package (dependencies not installed). The real map drawing and layer colours have no automated test.
 - 2026-10-01: Needs a live check: map canvas focus ring, basemap contrast of the corridor lines, 320 px width with text spacing, Safari list semantics, an axe run (axe-core is not a dependency).
-- 2026-10-02: `pages/project/extended/route-lines.tsx:12`, `route-lines.css:5-6,16-22`: the two map lines differ by colour only (WCAG 1.4.1). The owner turned down a dashed line, so both stay solid.
-- 2026-10-02: `pages/project/extended/route-lines.css:6`: the line-2 red `#c8202f` is not a palette token. `extended-shell.css:12`: the badge text sits on gold; `extended-shell.css:114`: the gold status dot is low contrast. All three are the approved look from the design handoff; changing them needs a design decision.
-- 2026-10-02: Act-specific code outside the Act registry in `utils/legislation.ts`, kept on purpose: `pages/project/assessment-stages.ts:67,163,247` (the 'detailed' stages are the 2018 table), `pages/about.tsx:27-45,266-269`, `pages/home/about-band.tsx:8`, `pages/search/types/documents.ts:71` (`${year} Act`), `pages/search/search-filters.ts:41`, and the Act URLs in `pages/project/extended/content/pacific-link.ts:32,211`.
-- 2026-10-02: `layout/page-masthead.tsx:64`: the eyebrow badge comes after the title in the DOM and is shown above it. Kept on purpose, so heading navigation lands on the title first.
+- 2026-10-02: `pages/project/extended/route-lines.tsx:12`, `route-lines.css:5-6,16-22`: the two map lines differ by colour only (WCAG 1.4.1).
+- 2026-10-02: `pages/project/extended/route-lines.css:6`: the line-2 red `#c8202f` is not a palette token. `extended-shell.css:12`: the badge text sits on gold; `extended-shell.css:114`: the gold status dot is low contrast. Changing them needs a design decision.
 - 2026-10-02: `assessment-stages.ts:194`: `actYear` still reads a year the Act registry does not hold (a spec expects 2031 for "2031 Environmental Assessment Act"), so it keeps its own year match.
 - 2026-10-02: Which projects each environment lists in `EXTENDED_PROJECT_PAGES` belongs on the wiki, as a separate change.
 - 2026-10-02: `pages/project/extended/content-href.ts:19`: any `mailto:` passes, including `?cc=`, `&bcc=` and `&body=` parameters; any `https:` passes, including a user part (`https://gov.bc.ca@other.example`).

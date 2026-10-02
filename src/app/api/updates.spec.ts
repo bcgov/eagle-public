@@ -1,5 +1,9 @@
+import { createElement, type ReactNode } from 'react';
 import { describe, it, expect, afterEach, vi } from 'vitest';
+import { renderHook, waitFor } from '@testing-library/react';
+import { QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { json, stubFetch } from 'app/pages/home/home-fetch.spec-helper';
+import { makeQueryClient } from '../../test-utils';
 import { logger } from 'app/config/logging';
 import {
   filterUpdates,
@@ -53,15 +57,29 @@ describe('toUpdate summary', () => {
 
     expect(summary).toBe('Lead text.');
   });
+
+  it('falls back to bare text written before any block', () => {
+    const { summary } = toUpdate({
+      content: 'Bare <strong>lead</strong> text.<p>Second block.</p>',
+    });
+
+    expect(summary).toBe('Bare lead text.');
+  });
+
+  it('skips empty leading blocks to the first one with text', () => {
+    const { summary } = toUpdate({ content: '<p></p><div>&nbsp;</div><p>First words.</p>' });
+
+    expect(summary).toBe('First words.');
+  });
 });
 
 describe('toUpdate attachments', () => {
-  it('uses the name demi-search resolves, and numbers unnamed ones after dropping empty refs', () => {
+  it('uses the name demi-search resolves, and numbers only the unnamed ones', () => {
     const { attachments } = toUpdate({
-      attachments: [null, { _id: 'doc-1', displayName: 'Notice.pdf' }, '', 'doc-2'],
+      attachments: [null, { _id: 'doc-1', displayName: 'Notice.pdf' }, '', 'doc-2', 'doc-3'],
     });
 
-    expect(attachments.map((doc) => doc.name)).toEqual(['Notice.pdf', 'Document 2']);
+    expect(attachments.map((doc) => doc.name)).toEqual(['Notice.pdf', 'Document 1', 'Document 2']);
   });
 
   it('takes the location from the project when the update has none', () => {
@@ -228,5 +246,19 @@ describe('projectUpdatesQueryOptions', () => {
 
     expect(updates).toHaveLength(3);
     expect(requests).toHaveLength(2);
+  });
+
+  it('shows a failed read at once, after one request, even where retries are on', async () => {
+    const requests = stubFetch(() => json(null, 500));
+    const client = makeQueryClient({ retry: 3 });
+    const wrapper = ({ children }: { children: ReactNode }) =>
+      createElement(QueryClientProvider, { client }, children);
+
+    const { result } = renderHook(() => useQuery(projectUpdatesQueryOptions('proj-1')), {
+      wrapper,
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(requests).toHaveLength(1);
   });
 });

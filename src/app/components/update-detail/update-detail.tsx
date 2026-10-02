@@ -9,7 +9,7 @@ import { sanitizeWordHtml } from 'app/utils/word-html-sanitizer';
 import { ENGAGE_LABEL } from './update-meta';
 import './update-detail.css';
 
-/** Attachments, then the single link an older update carries, with any unsafe URL dropped. */
+/** Attachments, then the single link an older update carries, unsafe URLs dropped, each file once. */
 function documentsOf(update: Update): UpdateDocument[] {
   const legacy =
     update.documentUrl && isSafeUrl(update.documentUrl)
@@ -21,7 +21,12 @@ function documentsOf(update: Update): UpdateDocument[] {
           },
         ]
       : [];
-  return [...update.attachments, ...legacy];
+  const seen = new Set<string>();
+  return [...update.attachments, ...legacy].filter((doc) => {
+    if (seen.has(doc.href)) return false;
+    seen.add(doc.href);
+    return true;
+  });
 }
 
 function Documents({ documents }: { documents: UpdateDocument[] }) {
@@ -44,7 +49,7 @@ function Documents({ documents }: { documents: UpdateDocument[] }) {
       {open && (
         <ul id={listId} className="update-detail__docs-list">
           {documents.map((doc) => (
-            <li key={doc.id}>
+            <li key={doc.href}>
               <a
                 className="update-detail__doc"
                 href={doc.href}

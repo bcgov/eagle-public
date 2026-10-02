@@ -18,15 +18,15 @@ function renderPicker(selected: string[] = [], list: ValueOption[] = options) {
 }
 
 /** Puts the button where it is asked to be, so the popover's geometry can be asserted. */
-function placeButton(top: number, bottom: number) {
+function placeButton(top: number, bottom: number, left = 40) {
   return vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({
     top,
     bottom,
-    left: 40,
-    right: 240,
+    left,
+    right: left + 200,
     width: 200,
     height: bottom - top,
-    x: 40,
+    x: left,
     y: top,
     toJSON: () => ({}),
   });
@@ -110,8 +110,20 @@ describe('ValuePicker', () => {
     await user.click(screen.getByRole('button', { name: 'Filter by Type' }));
 
     const popover = screen.getByRole('group', { name: 'Filter by Type' });
-    expect(popover).toHaveStyle({ top: '152px' });
+    expect(popover).toHaveStyle({ top: '152px', left: '40px' });
     expect(popover.style.bottom).toBe('');
+  });
+
+  it('pulls the popover in from the right edge when the button sits near it', async () => {
+    vi.stubGlobal('innerWidth', 1280);
+    placeButton(120, 150, 1200);
+    const user = userEvent.setup();
+    renderPicker();
+
+    await user.click(screen.getByRole('button', { name: 'Filter by Type' }));
+
+    // 1280 wide, less the 232px popover and a 16px edge.
+    expect(screen.getByRole('group', { name: 'Filter by Type' })).toHaveStyle({ left: '1032px' });
   });
 
   it('flips above the button when the space below cannot hold a usable list', async () => {

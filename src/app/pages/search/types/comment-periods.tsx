@@ -66,6 +66,6 @@ export const commentPeriodsConfig: RecordTypeConfig = {
   advancedFields: [{ id: 'status', label: 'Status', kind: 'select' }],
   optionsFrom: () => ({ status: STATUS_OPTIONS }),
   selectable: false,
-  headerless: true,
+  headerless: false,
   rowComponent: CommentPeriodRow,
 };

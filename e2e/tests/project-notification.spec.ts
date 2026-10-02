@@ -26,7 +26,10 @@ test('a project notification opens on /pn/ and walks its Overview, Engagement an
   await page.waitForURL(`**/pn/${pn._id}/overview`);
 
   await expect(page.getByRole('heading', { level: 1, name: pn.name })).toBeVisible();
-  await expect(page.getByText(/^Project notification/).first()).toBeVisible();
+  // A populated proponent arrives as an organization object, not a string.
+  const proponent = typeof pn.proponent === 'object' ? pn.proponent?.name : pn.proponent;
+  const masthead = ['Project notification', proponent, pn.location].filter(Boolean).join(' · ');
+  await expect(page.getByText(masthead, { exact: true })).toBeVisible();
   const strip = page.getByRole('navigation', { name: 'Project notification sections' });
   await expect(strip.getByRole('link')).toHaveText([/^Overview/, /^Engagement/, /^Documents/]);
 

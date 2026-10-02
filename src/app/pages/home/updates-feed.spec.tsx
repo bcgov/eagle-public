@@ -36,8 +36,19 @@ describe('home updates feed', () => {
     await screen.findByText('Application accepted for review');
     const cards = within(screen.getByRole('list')).getAllByRole('listitem');
     expect(cards.map((card) => card.querySelector('.home-update__headline')?.textContent)).toEqual(
-      HOME_FEED.map((row) => row.headline),
+      HOME_FEED.map((row) => row.shortHeadline ?? row.headline),
     );
+  });
+
+  it('heads a card with the short headline, and the headline when there is none', async () => {
+    renderFeed();
+
+    expect(await screen.findByRole('link', { name: /Order issued$/ })).toHaveAttribute(
+      'href',
+      '/updates/u5',
+    );
+    expect(screen.queryByText(/Compliance order issued/)).not.toBeInTheDocument();
+    expect(screen.getByText('Application accepted for review')).toBeInTheDocument();
   });
 
   it('draws an update as a three-line card that opens the reader', async () => {
