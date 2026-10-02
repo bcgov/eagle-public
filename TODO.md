@@ -1,47 +1,8 @@
 # React migration (branch `react`)
 
-Angular source of truth for behaviour: the `develop` checkout, read-only. This branch holds the React rewrite. Old Angular `src/` is removed on this branch once phase 1 lands; read the original from the `develop` checkout.
-
-## Stack (decided 2026-08-27)
-
-- Vite 8, React 19, TypeScript strict, react-router 7 (data router), TanStack Query 5.
-- Vitest + jsdom + @testing-library/react. Keep `yarn test`, `yarn lint`, `yarn build` script names.
-- Styles: port existing global CSS unchanged (bootstrap.min.css, `src/assets/styles/**`, BCSans, material icons). Component CSS becomes plain global CSS files imported by the component (`:host` becomes a root class). No CSS modules, no design-system library yet.
-- Maps: MapLibre GL 6 with the `@vis.gl/react-maplibre` binding, installed and bundled. No map library from a CDN.
-- `env.js` + `/api/config` runtime config pattern unchanged. `index.html` keeps `<script src="env.js">` before the app bundle.
-- Build output must stay `dist/eagle-public/browser` with entry chunk named `main-[hash].js` (deploy workflows `deploy-azure-*.yaml` grep for both).
-- Node 24, Yarn 4.12 (Corepack). Never npm.
-- No `any` unless the Angular source had it. ESLint flat config: @eslint/js, typescript-eslint, react-hooks, react-refresh.
-
-## Layout
-
-```
-src/
-  main.tsx            bootstrap: load config, init analytics, createRoot
-  index.html moved to repo root (Vite convention); env.js copied to dist root via public/
-  app/
-    routes.tsx        route table (mirror app.routes.ts)
-    api/              api.ts port (fetch wrapper, endpoints, search routing), query hooks
-    config/           config.ts (env.js + /api/config), logging
-    analytics/        analytics.ts (eagle-analytics client only; penguin plugin removed)
-    models/           ported as-is
-    utils/            constants, utils, word-html-sanitizer, newlines, list-converter
-    components/       shared UI (table engine, filters, pagination, toast, date-picker, ...)
-    pages/            one dir per route
-    layout/           header, footer, app shell
-```
-
-## Phases
-
-Migration phases 1 to 4 (scaffold, table engine, pages, parity pass against prod) finished 2026-08-27. What remains before prod is under "Cutover prerequisites" and "Follow-ups".
+Angular source of truth for behaviour: the `develop` checkout, read-only. This branch holds the React rewrite. Old Angular `src/` is removed on this branch; read the original from the `develop` checkout.
 
 ## Unified search (PUBLIC-146)
-
-Done 2026-09-17. One `/search` page and one display grid replaced `/projects-list`, `/search`, `/news` and `/project-notifications`. Phases 1 to 6 landed as PRs #881 to #889 on `react`, live on the next site as `v3.0.0-beta.37` (efc62432). Plan and detail: `docs/unified-search-plan.md`; behaviour changes in `docs/deviations-from-angular.md` (URLs section); redirect table on the `eagle-dev-guides.wiki` page `Eagle-Search`.
-
-The design prototype sits at `design/handoffs/unified-search/`, local only and never committed; the source archive is kept at `/root/repos/eagle-public-design-handoff.zip` and can be unzipped again if the directory is missing.
-
-Still open in eagle-demi `TODO.md`: 7.5 re-extraction on test (about 6 days from 2026-09-16, adds "Page N" labels as it goes); 0.6 (counts equal `/search` totals) verified 2026-09-17. Test-only cosmetic: 9 List names appear twice in the filters because the old test rows sit beside the reseeded prod ids.
 
 Follow-ups from the phase 2 review, none of them blocking:
 
@@ -75,15 +36,6 @@ Follow-ups from phase 6, none of them blocking:
 
 ## Home page redesign
 
-Plan and detail: `docs/home-redesign-plan.md`; behaviour changes in
-`docs/deviations-from-angular.md` ("Home page redesign" section).
-
-The v4 design handoff sits at `design/handoffs/home-v4/`, local only and never
-committed; the original archive it came from was not kept. v4 supersedes v3: it drops the masthead purpose line and the
-Map Explorer preview image, and adds an About section above the footer. The v2 handoff
-stays at `design/handoffs/home/` with its archive at
-`/root/repos/eagle-public-design-handoff-home.zip`, as the record of what v2 shipped.
-
 Update notification emails still link to the project page; they move to `/updates/:id`
 once this line serves production.
 
@@ -112,38 +64,20 @@ Open (moved from the redesign tracker, 2026-09-23):
   - PUBLIC-146: the handoff does not mention the display grid contract. Confirm the rail
     rows are exempt.
 
-## Port rules (added 2026-08-27)
-
-- Do not port bugs or inefficiencies. When the Angular code is wrong, wasteful (redundant fetches, N+1, dead caches, needless re-renders), or dead, fix or drop it in the port.
-- Every deliberate behaviour change goes in `docs/deviations-from-angular.md`, one line: file, what changed, why. Parity tests against prod may flag these; the list explains them.
-- Cut dependencies where a native API or a few lines do the job. Justify each dependency kept in `package.json` by real use; remove anything unused.
-
 ## Cutover prerequisites
 
 - Bulk download needs eao-nginx v2.7.29+ and the eagle-edge bulk-downloads patterns on prod before the React cutover; until then the UI is staging-only.
 - The app asks eagle-api for nothing. Prod cannot take this bundle until both of these are true, because there is no fallback left:
   - The prod config document carries `SEARCH_API_PATH=/demi-search`, `DEMI_PROJECTS_PATH=/demi-projects`, `CONFIG_PATH=/demi-search/config` and `EAGLE_ANALYTICS_URL=/analytics`.
   - The prod rproxy serves `/demi-search/gate` and `/demi-search/documents/*` on top of what it already proxies (eao-nginx v2.7.37).
-- DEMI prod needs `ACCESS_GATE_PASSWORD` set only if the prod gate is ever turned on. Prod ships `ACCESS_GATE` false, so it is not a blocker.
-
-## Ports pending
-
-Fixes shipped on `develop` (Angular) not yet re-implemented here. One line each: tag, commit, what. Delete the line when ported.
-
-- none
-
 ## Follow-ups
 
 - Display grid: control borders in `display-grid.css` (`--theme-gray-50`, 1.55:1), the same token on the unselected record pill in `unified-search.css`, and the inactive sort arrow (`--theme-gray-60`, 1.54:1) follow the design handoff and sit under the 3:1 non-text contrast floor (WCAG 1.4.11); needs a design decision before the grid ships to prod.
-- Unscheduled ideas live in `docs/FUTURE.md` (per-branch preview URLs, automatic create and teardown).
 - After the prod cutover of the unified search page, submit the new `/search` URL to the search engines. The client redirects keep old indexed links working in the meantime.
 - Assessment rail (`src/app/pages/project/assessment-stages.ts`) has no per-stage dates. Historic stages should scale to how long they actually took and only current and future stages show the statutory maximum, but eagle-api holds no phase dates (`phaseHistory` is bare List ids). Source is Track `work_phases` (start_date, end_date, number_of_days, legislated) through a demi-api endpoint, for example `GET /api/projects/:id/phases`; fill `elapsedDays` and `dates` from it. Same feed can carry the certificate number (`ea_certificate` in DEMI Track data). Never through eagle-api.
 - After cutover, delete `e2e/tools/` and `e2e/tests/css-scoping.spec.ts`. Both only compare the Angular and React renderings, so neither has anything to check once Angular is gone.
-
-- `luxon` kept. `models/commentperiod.ts` does America/Vancouver arithmetic, not formatting: `endOf('day')` in Pacific, `minus({days: 7})`, `plus({days: 7})`, `diff(now, 'days')`, hour/minute reads in Pacific and a `ZZZZ` zone name. `Intl.DateTimeFormat` formats in a zone but cannot do zone-aware arithmetic across DST, and `Temporal` is not available. Revisit when `Temporal` ships.
 - Non-interactive `tabIndex={0}` on `<td>` in `pins` and `activity-card` is an Angular-era idiom that puts unactionable content in the tab order (WCAG 2.4.3). `jsx-a11y/no-noninteractive-tabindex` does not flag table cells, so lint will not catch it; it needs a decision on how those tables should be navigated.
 - `surveyUrl()` and `showSurveyBanner()` in `src/app/config/config.ts` have no consumer since the home redesign removed the survey banner. Decide whether the survey returns somewhere else; if not, delete both and the `SURVEY_URL` / `SHOW_SURVEY_BANNER` config keys.
-- Project reads all come from demi-search now, so the two corpora can no longer disagree. Background on why the split existed: `eagle-demi/docs/FUTURE.md`, "Serve eagle-public's project reads".
 - Comment periods search tab, open items (2026-09-22):
   - `docs/unified-search-plan.md` still says four tabs (L28-29, L500, L527) and has no section on the Comment periods tab.
   - No e2e opens `/search?record=commentPeriods` or follows the home "Upcoming and recently closed periods" link. Add one once the eagle-demi list change is on test.
@@ -183,8 +117,6 @@ Fixes shipped on `develop` (Angular) not yet re-implemented here. One line each:
 - projects.tsx: engagement is classified only when query data changes (5 min staleTime); a period that opens or closes while the page is open keeps its old pin state until refetch.
 - proj-detail-popup.tsx: initial focus lands on the engagement block; screen reader hears the period state before the project name. Consider focusing the heading and putting the block after it in DOM order, or an aria-describedby.
 - projlist-map.tsx / basemaps.css: pin buttons are aria-hidden, so the open/upcoming state is visual only; under reduced motion "open" differs from "none" by fill hue and glow only (WCAG 1.4.1). Add a text cue reachable by AT (list card or popup already carries it).
-- basemaps.css: open ripple loops forever (WCAG 2.2.2 wants a stop control for motion over 5 s). Accepted for now.
-- basemaps.css: engaged cluster count is white on #4daa57 at 2.92:1 (below 4.5:1). Accepted for now.
 - basemaps.css: rationale comments at the glow/fill block exceed the comment cap; move contrast figures to the PR.
 - api/commentperiod.ts and api/api.ts both define a 500 page-size constant; export one.
 
@@ -259,10 +191,7 @@ Review polish items left after the unified About page landed. None block the pag
 - 2026-10-01: `map/basemaps.css:64`: the map control buttons keep maplibre's default focus ring, a blurred shadow at about 3:1 contrast (shared).
 - 2026-10-01: Not run: `test:parity` (needs `PREPUSH_E2E=1`) and the e2e package (dependencies not installed). The real map drawing and layer colours have no automated test.
 - 2026-10-01: Needs a live check: map canvas focus ring, basemap contrast of the corridor lines, 320 px width with text spacing, Safari list semantics, an axe run (axe-core is not a dependency).
-- 2026-10-02: `pages/project/extended/route-lines.tsx:12`, `route-lines.css:5-6,16-22`: the two map lines differ by colour only (WCAG 1.4.1). The owner turned down a dashed line, so both stay solid.
-- 2026-10-02: `pages/project/extended/route-lines.css:6`: the line-2 red `#c8202f` is not a palette token. `extended-shell.css:12`: the badge text sits on gold; `extended-shell.css:114`: the gold status dot is low contrast. All three are the approved look from the design handoff; changing them needs a design decision.
-- 2026-10-02: Act-specific code outside the Act registry in `utils/legislation.ts`, kept on purpose: `pages/project/assessment-stages.ts:67,163,247` (the 'detailed' stages are the 2018 table), `pages/about.tsx:27-45,266-269`, `pages/home/about-band.tsx:8`, `pages/search/types/documents.ts:71` (`${year} Act`), `pages/search/search-filters.ts:41`, and the Act URLs in `pages/project/extended/content/pacific-link.ts:32,211`.
-- 2026-10-02: `layout/page-masthead.tsx:64`: the eyebrow badge comes after the title in the DOM and is shown above it. Kept on purpose, so heading navigation lands on the title first.
+- 2026-10-02: `pages/project/extended/route-lines.tsx:12`, `route-lines.css:5-6,16-22`: the two map lines differ by colour only (WCAG 1.4.1).- 2026-10-02: `pages/project/extended/route-lines.css:6`: the line-2 red `#c8202f` is not a palette token. `extended-shell.css:12`: the badge text sits on gold; `extended-shell.css:114`: the gold status dot is low contrast. Changing them needs a design decision.
 - 2026-10-02: `assessment-stages.ts:194`: `actYear` still reads a year the Act registry does not hold (a spec expects 2031 for "2031 Environmental Assessment Act"), so it keeps its own year match.
 - 2026-10-02: Which projects each environment lists in `EXTENDED_PROJECT_PAGES` belongs on the wiki, as a separate change.
 - 2026-10-02: `pages/project/extended/content-href.ts:19`: any `mailto:` passes, including `?cc=`, `&bcc=` and `&body=` parameters; any `https:` passes, including a user part (`https://gov.bc.ca@other.example`).
