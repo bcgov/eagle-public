@@ -73,6 +73,18 @@ describe('ListRow', () => {
     expect(collapse).toHaveAttribute('aria-expanded', 'true');
   });
 
+  it('names the body that Show more expands', () => {
+    const { container } = render(
+      <ListRow meta={['2026-02-18']} title="Inspection Record" body={longBody} />,
+    );
+
+    const controls = screen
+      .getByRole('button', { name: 'Show more' })
+      .getAttribute('aria-controls');
+    expect(controls).toBeTruthy();
+    expect(container.querySelector('.display-grid__row-body')).toHaveAttribute('id', controls);
+  });
+
   it('leaves a short body alone', () => {
     render(<ListRow meta={['2026-02-18']} title="Inspection Record" body="Short note." />);
 

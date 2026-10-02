@@ -15,6 +15,8 @@ const MIN_BELOW = 220;
 const MAX_HEIGHT = 320;
 const MIN_HEIGHT = 140;
 const WIDTH = 232;
+/** Space kept between the popover and the viewport's side edges. */
+const EDGE = 16;
 
 /** Where the popover sits, measured off the button when it opens. */
 interface Anchor {
@@ -99,7 +101,8 @@ export function ValuePicker({ label, options, selected, onChange }: ValuePickerP
     const rect = buttonRef.current?.getBoundingClientRect();
     if (!rect) return;
     setAnchor({
-      left: rect.left,
+      // Pulled in from the right edge so the last column's popover is not clipped.
+      left: Math.max(EDGE, Math.min(rect.left, window.innerWidth - WIDTH - EDGE)),
       below: rect.bottom + 2,
       above: rect.top - 2,
       viewHeight: window.innerHeight,

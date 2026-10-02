@@ -70,6 +70,7 @@ export function ListRow({
   onToggle,
 }: ListRowProps) {
   const docsId = useId();
+  const bodyId = useId();
   const [selfExpanded, setSelfExpanded] = useState(false);
   const isOpen = expanded ?? selfExpanded;
   const toggle = onToggle ?? (() => setSelfExpanded((open) => !open));
@@ -118,7 +119,7 @@ export function ListRow({
       ) : null}
 
       {full ? (
-        <p className="display-grid__row-body">
+        <p className="display-grid__row-body" id={bodyId}>
           <Highlight text={shown} terms={terms} />
         </p>
       ) : null}
@@ -128,6 +129,7 @@ export function ListRow({
           type="button"
           className="display-grid__row-more"
           aria-expanded={isOpen}
+          aria-controls={bodyId}
           onClick={toggle}
         >
           {isOpen ? 'Show less' : 'Show more'}

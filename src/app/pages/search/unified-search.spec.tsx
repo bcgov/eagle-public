@@ -1022,10 +1022,8 @@ describe('the inside-documents scope', () => {
     expect(new URLSearchParams(router.state.location.search).get('sortBy')).toBe('-matches');
     // The chunk index sorts by no field at all, so the wire asks for relevance.
     expect(asked(fetchMock, 'DocumentChunk').at(-1)).toContain('sortBy=-score');
-    expect(screen.getByRole('combobox', { name: 'Sort' })).toHaveValue('-matches');
-    expect(within(screen.getByRole('combobox', { name: 'Sort' })).getAllByRole('option')).toEqual([
-      expect.objectContaining({ textContent: 'Most matches' }),
-    ]);
+    // Most matches is the only order here, and a select with one option is no choice.
+    expect(screen.queryByRole('combobox', { name: 'Sort' })).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Names & details' }));
     await screen.findByText('Fish habitat report');
