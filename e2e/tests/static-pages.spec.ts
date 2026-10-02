@@ -156,6 +156,29 @@ test.describe('home', () => {
     ).toBeFocused();
   });
 
+  test('the reader links back to the Updates heading, and Back from a card keeps the card focused', async ({
+    page,
+  }) => {
+    // An id with no visible Update opens the reader on its "no longer available" note.
+    await page.goto('/updates/no-such-update');
+    await page.getByRole('link', { name: 'See recent updates' }).click();
+
+    await expect(page).toHaveURL(/\/#home-updates-heading$/);
+    const heading = page.getByRole('heading', { level: 2, name: 'Updates', exact: true });
+    // The reader's scroll lock lets go as the page scrolls to the heading; it must still land.
+    await expect(heading).toBeInViewport();
+    await expect(heading).toBeFocused();
+
+    const card = page.locator('.home-update[href^="/updates/"]').first();
+    await card.click();
+    await expect(page.locator('.home-reader[open]')).toBeVisible();
+    await page.goBack();
+
+    await expect(page).toHaveURL(/\/#home-updates-heading$/);
+    await expect(card).toBeFocused();
+    await expect(heading).not.toBeFocused();
+  });
+
   // eagle-demi answers the feed in display order: pinned updates, then updates and decisions
   // newest first. The page shows every row it gets, in that order.
   test('@data feed cards come from the HomeFeed read', async ({ page }) => {
