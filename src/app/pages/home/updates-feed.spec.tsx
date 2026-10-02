@@ -67,6 +67,14 @@ describe('home updates feed', () => {
     expect(screen.getByText('Application accepted for review')).toBeInTheDocument();
   });
 
+  it('heads a card with the headline when the short headline is blank', async () => {
+    renderFeed(envelope([{ ...HOME_FEED[0], shortHeadline: '   ' }]));
+
+    expect(
+      await screen.findByRole('link', { name: /Application accepted for review$/ }),
+    ).toBeInTheDocument();
+  });
+
   it('draws an update as a three-line card that opens the reader', async () => {
     renderFeed();
 

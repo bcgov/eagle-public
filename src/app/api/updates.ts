@@ -205,9 +205,14 @@ function httpUrl(value: string | null | undefined): string | null {
   }
 }
 
+/** The card's headline: the short one, or the full one when that is missing or blank. */
+function shortHeadlineOf(shortHeadline: string | null | undefined, headline: string): string {
+  return shortHeadline?.trim() || headline;
+}
+
 export function toUpdate(row: ActivityRow): Update {
   const headline = row.headline ?? '';
-  const shortHeadline = row.shortHeadline?.trim() || headline;
+  const shortHeadline = shortHeadlineOf(row.shortHeadline, headline);
   const summary = summaryOf(row.summary, row.content);
   return {
     id: row._id ?? '',
@@ -289,7 +294,7 @@ function toFeedItem(row: FeedRow): HomeUpdate {
     projectName: row.projectName ?? null,
     date: row.date ?? row.publishDate ?? null,
     headline,
-    shortHeadline: row.shortHeadline?.trim() || headline,
+    shortHeadline: shortHeadlineOf(row.shortHeadline, headline),
     summary: row.summary ?? null,
     category: row.category ?? null,
     content: row.content ?? null,
