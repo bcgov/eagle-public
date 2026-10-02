@@ -8,7 +8,7 @@ export interface ProjectTypeTree {
   total: number;
   /** The read failed, or it answered no projects at all. */
   failed: boolean;
-  /** Set when the search holds more projects than it sent: `shown` rows of `of`. */
+  /** Set when the search holds more projects than it sent: the chart's `shown` of `of`. */
   truncated: { shown: number; of: number } | null;
 }
 
@@ -28,10 +28,12 @@ export function useProjectTypeTree(enabled = true): ProjectTypeTree {
   });
   if (!data) return { tree: null, total: 0, failed: isError, truncated: null };
   const { tree, rows } = data;
+  const total = tree.reduce((sum, t) => sum + t.count, 0);
   return {
     tree,
-    total: tree.reduce((sum, t) => sum + t.count, 0),
+    total,
     failed: tree.length === 0,
-    truncated: searchTotal && searchTotal > rows ? { shown: rows, of: searchTotal } : null,
+    // Cut short is judged on the rows sent; shown is what the chart counts, which drops rows with no id.
+    truncated: searchTotal && searchTotal > rows ? { shown: total, of: searchTotal } : null,
   };
 }
