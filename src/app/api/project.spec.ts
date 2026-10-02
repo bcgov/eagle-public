@@ -95,6 +95,28 @@ describe('project', () => {
       expect(client.getQueryData(['projects', 'all'])).toBe(rows);
       expect(client.getQueryData(project.ALL_PROJECTS_TOTAL_KEY)).toBe(1500);
     });
+
+    it('retries a failed full-list search once, not three times', async () => {
+      vi.mocked(search.getSearchResults).mockResolvedValue(null);
+      const client = makeQueryClient({ retry: 3, retryDelay: 0 });
+
+      await expect(client.fetchQuery(project.allProjectsQueryOptions())).rejects.toThrow();
+
+      expect(search.getSearchResults).toHaveBeenCalledTimes(2);
+    });
+
+    it('keeps the search total outside the list key, so invalidating the list leaves it alone', async () => {
+      vi.mocked(search.getSearchResults).mockResolvedValue([
+        { data: { searchResults: [{ _id: 'a' }], meta: [{ searchResultsTotal: 1 }] } },
+      ]);
+      const client = makeQueryClient({ gcTime: Infinity });
+      await client.fetchQuery(project.allProjectsQueryOptions());
+
+      await client.invalidateQueries({ queryKey: ['projects', 'all'] });
+
+      expect(client.getQueryState(['projects', 'all'])?.isInvalidated).toBe(true);
+      expect(client.getQueryState(project.ALL_PROJECTS_TOTAL_KEY)?.isInvalidated).toBe(false);
+    });
   });
 
   describe('searchProjectIds()', () => {
