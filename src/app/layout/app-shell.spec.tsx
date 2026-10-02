@@ -57,6 +57,13 @@ describe('app shell', () => {
     expect(page).toHaveBeenLastCalledWith('About', { path: '/about' });
   });
 
+  it('names a project notification page without its pn prefix or id', async () => {
+    const path = '/pn/5c8a3a3ce7f1f1002466c2b1/overview';
+    renderAt(path, routes);
+
+    await waitFor(() => expect(page).toHaveBeenCalledWith('Overview', { path }));
+  });
+
   it('lands an Angular-era /#/contact address on the contact section of /about', async () => {
     vi.stubGlobal('scrollTo', vi.fn());
     const { router } = renderAt('/#/contact', routes);

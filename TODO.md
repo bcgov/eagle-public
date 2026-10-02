@@ -46,26 +46,21 @@ Still open in eagle-demi `TODO.md`: 7.5 re-extraction on test (about 6 days from
 Follow-ups from the phase 2 review, none of them blocking:
 
 - `CustomMultiSelect`, which the value picker uses above 40 options, is a div combobox without the ARIA 1.2 structure. Rebuild it on a real input with `aria-activedescendant`.
-- `list-row.tsx` renders an `<h3>` under the page `h1` with no `h2` in between. Add a results `h2` before activities and notifications ship on the list template.
 - `api.ts:323` concatenates `sortBy` unencoded, so `+name` reaches the wire as ` name`. Encode it once the backend contract is confirmed.
 - Move the column `sortable` flags and the cell renderers out of `unified-search.tsx` into the type configs.
 
 Follow-ups from phase 3, none of them blocking:
 
-- The sort select on a list offers only Newest first and Oldest first. `sortOptionsFor` in `display-grid.tsx` takes the name option from the first column carrying `link`, which on the activities list is the project rather than the update headline, and that column is not sortable.
 - The gold underline under the active tab in `tab-nav.css` measures 1.72:1 against white, below the 3:1 a non-text indicator needs. It is the pattern the whole app uses, so changing it is a site-wide decision rather than a search one.
 - A project notification title is not a link to its project. The old page did not link it either, but the activities rows beside it do.
 - The tab lists in `content-search.tsx:84` and `table-list.tsx:161` do not move focus with the arrow keys and carry no `aria-controls`. Fix them with the `moveFocus` helper in `notification-row.tsx`, moved somewhere both can read it.
-- The Show more button in `list-row.tsx` has no `aria-controls` naming the body it expands.
-- `headerless` does nothing for `template: 'list'`: a list has no head to drop. Either the flag is read there or the list configs stop setting it.
+- 2026-10-02: `headerless` is now `false` in every record-type config (comment periods stopped setting it on its list). Drop it from `RecordTypeConfig`, the configs and `unified-search.tsx`; the `DisplayGrid` prop is then read only by its own spec.
 
 Follow-ups from phase 4, none of them blocking:
 
 - The scope switch and the record-type pills are single-choice controls built as `role="group"` buttons with `aria-pressed`. A radiogroup (`role="radio"`, `aria-checked`) says "one of a set" where a pressed toggle does not.
-- Row titles in `list-row.tsx` and `passage-list.tsx` are `h3` under the page `h1` with no `h2` between.
 - The row checkbox is 16px, and 13px in the passage list on a phone where the prototype lets it shrink; both sit under the 24px target size. A design decision, the grid tables share it.
 - File links in `record-link.tsx` open a new tab with no "opens in a new tab" cue in the name.
-- In the inside scope the sort select offers "Most matches" alone; the select could hide when it has one option.
 
 Follow-ups from phase 5, none of them blocking:
 
@@ -76,7 +71,7 @@ Follow-ups from phase 5, none of them blocking:
 Follow-ups from phase 6, none of them blocking:
 
 - Migrate `pages/comments/comments.tsx` and `project-notifications/project-notification-documents-table.tsx` off `TableTemplate` onto `DisplayGrid`, then delete `components/table/*`. Both are small fixed tables inside a page rather than list pages, so neither blocks the search work.
-- `responsive.ts` reads `matchMedia` live, so any component gated on it re-renders during a full-page capture's one-frame 1px viewport (the table branch of `display-grid.tsx` unmounts and remounts). The tour now tolerates it; other width-gated components may still churn in that frame. Consider debouncing the `narrow` snapshot by a frame.
+- 2026-10-02: `display-grid.tsx` now reads its breakpoint through `useSettledMediaQuery`, so its table no longer remounts in a full-page capture's 1px frame. Other components on `useMediaQuery` still read it live; move them over if they churn (the projects map spec relies on the live read).
 
 ## Home page redesign
 
@@ -153,9 +148,6 @@ Fixes shipped on `develop` (Angular) not yet re-implemented here. One line each:
   - `docs/unified-search-plan.md` still says four tabs (L28-29, L500, L527) and has no section on the Comment periods tab.
   - No e2e opens `/search?record=commentPeriods` or follows the home "Upcoming and recently closed periods" link. Add one once the eagle-demi list change is on test.
   - Documents tab: on long names the ellipsis hides the new-tab icon.
-  - `periodDates` shows "Opens <date>" even when the date is years in the past.
-  - `open-for-comment.spec.tsx` has no case for `projectName: ''`.
-  - The home card shows dates in the browser's time zone (`longDate`); search rows show Pacific.
   - Check whether the longer search placeholder is cut off at 390px.
   - A period whose parent is a project notification links to `/p/<id>/cp/...` instead of `/pn/...`, because the search row does not say what kind of parent it has.
 
@@ -198,16 +190,10 @@ Fixes shipped on `develop` (Angular) not yet re-implemented here. One line each:
 
 ## Project notification page follow-ups (2026-09-28)
 
-- `src/app/layout/app-shell.tsx` getPageName: skip the `pn` segment like `p` and `cp`, so analytics page names are not "Pn > Overview".
-- `src/app/routes/legacy-search.ts` SORTABLE_FIELDS.notifications: set to `['name', 'notificationReceivedDate']`; dateUpdated has no column.
-- `src/app/api/notification.ts`: a stored `pcp` overrides the status worked out from dates. Decide whether dates win when both are present. Also drop `/i` on the ObjectId regex or lower-case the id before the read, since the Cosmos point read is case-sensitive.
+- `src/app/api/notification.ts`: a stored `pcp` overrides the status worked out from dates. Decide whether dates win when both are present.
 - `src/app/pages/project/project-panel.tsx`: hide "Open in map explorer" for notifications; the explorer lists projects only.
-- `src/app/pages/project/use-engagement-periods.ts`: build the inline fallback only after the periods query settles, so the tab count does not flicker.
-- `src/app/pages/search/types/notifications.ts:18`: restore the typeof string guard on associatedProjectId.
-- `src/app/models/projectNotification.ts`: type proponent as `string | { name?: string } | null`.
-- `src/app/components/table/document-row.ts`: delete the unused `useDocumentRow`; the `.clickable-row` rules in `table.css` are dead.
-- `overview-tab.tsx:335`: fix "1 documents" grammar. In `project.tsx`, the tab count needs a hidden separator so the accessible name reads correctly.
-- e2e: ids in `fixtures/unified-search/notifications.json` should be 24-hex; add notifications to the grid row hover parity check; `project-notification.spec.ts:29` should assert the full masthead text.
+- 2026-10-02 `featured-documents.tsx:39`: one document reads "All 1 documents". Pick the wording for a single document.
+- e2e: add notifications to the grid row hover parity check.
 - eagle-demi `test/helpers/eagle-mirror-fixtures.js:214`: the notification centroid is [lon, lat], but eagle-admin stores [lat, lon].
 
 ## About page follow-ups (2026-09-28)

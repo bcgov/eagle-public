@@ -432,6 +432,70 @@ describe('DisplayGrid', () => {
       expect(screen.getByLabelText('Sort')).toBeInTheDocument();
     });
 
+    it('heads the rows with the caption as an h2, above the rows own h3 titles', () => {
+      stubNarrow(false);
+      renderGrid({ template: 'list', rowComponent: Row });
+
+      expect(screen.getByRole('heading', { level: 2, name: 'Documents' })).toBeInTheDocument();
+    });
+
+    it('heads a page-drawn body with the caption as an h2 too', () => {
+      stubNarrow(false);
+      renderGrid({ template: 'list', body: <h3>Passage</h3> });
+
+      expect(screen.getByRole('heading', { level: 2, name: 'Documents' })).toBeInTheDocument();
+    });
+
+    it('drops the select when it would offer one order alone', () => {
+      stubNarrow(false);
+      renderGrid({
+        template: 'list',
+        rowComponent: Row,
+        sortOptions: [{ value: '-matches', label: 'Most matches' }],
+        sort: { key: 'matches', dir: 'desc' },
+      });
+
+      expect(screen.queryByLabelText('Sort')).not.toBeInTheDocument();
+    });
+
+    const sortValues = () =>
+      within(screen.getByLabelText('Sort'))
+        .getAllByRole('option')
+        .map((option) => option.getAttribute('value'));
+
+    it('sorts by name on the locked headline, not a link column that points elsewhere', () => {
+      stubNarrow(false);
+      // Search sorts on every column, so the link column sorts too; it comes first here.
+      renderGrid({
+        template: 'list',
+        rowComponent: Row,
+        columns: [
+          { key: 'project', label: 'Project', sortable: true, link: true },
+          { key: 'name', label: 'Update', sortable: true, locked: true },
+          { key: 'date', label: 'Posted', sortable: true, date: true },
+        ],
+        sort: { key: 'date', dir: 'desc' },
+      });
+
+      expect(sortValues()).toEqual(['-date', '+date', '+name', '-name']);
+    });
+
+    it('sorts by name on the first sortable column that is not a date when the locked one does not sort', () => {
+      stubNarrow(false);
+      renderGrid({
+        template: 'list',
+        rowComponent: Row,
+        columns: [
+          { key: 'title', label: 'Title', locked: true },
+          { key: 'date', label: 'Posted', sortable: true, date: true },
+          { key: 'name', label: 'Name', sortable: true },
+        ],
+        sort: { key: 'date', dir: 'desc' },
+      });
+
+      expect(sortValues()).toEqual(['-date', '+date', '+name', '-name']);
+    });
+
     it('leaves the select off a table at full width, whose headings sort it', () => {
       stubNarrow(false);
       renderGrid({ columns: sortableColumns, sort: { key: 'date', dir: 'desc' } });

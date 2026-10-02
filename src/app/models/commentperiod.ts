@@ -171,8 +171,13 @@ export class CommentPeriod {
 }
 
 /** A period date as a BC reader dates it, e.g. `Mar 3, 2025`, whatever the browser's zone. */
-function pacificDay(value: Date): string {
-  return DateTime.fromJSDate(value).setZone(PACIFIC).toFormat('MMM d, yyyy');
+function pacificDay(value: Date, format = 'MMM d, yyyy'): string {
+  return DateTime.fromJSDate(value).setZone(PACIFIC).toFormat(format);
+}
+
+/** The long form, e.g. `March 3, 2025`, also in BC's zone. Blank when the date is unset. */
+export function pacificLongDay(value: Date | null | undefined): string {
+  return value ? pacificDay(value, 'MMMM d, yyyy') : '';
 }
 
 /** The period's span, or the one end of it the row carries; blank when it has neither date. */
@@ -180,7 +185,7 @@ export function periodDates(period: CommentPeriod): string {
   const start = period.dateStarted ? pacificDay(period.dateStarted) : '';
   const end = period.dateCompleted ? pacificDay(period.dateCompleted) : '';
   if (start && end) return `${start} – ${end}`;
-  if (start) return `Opens ${start}`;
+  if (start) return `${period.dateStarted <= new Date() ? 'Opened' : 'Opens'} ${start}`;
   return end ? `Closes ${end}` : '';
 }
 

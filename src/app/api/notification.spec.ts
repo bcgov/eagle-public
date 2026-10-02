@@ -250,18 +250,13 @@ describe('getNotificationById', () => {
     ['two ids joined by a comma', `${ID},5c8a3a3ce7f1f1002466c2b2`],
     ['23 hex digits', ID.slice(1)],
     ['a non-hex letter', `${ID.slice(1)}g`],
+    // The point read is case-sensitive, so an upper-case id would never match.
+    ['an upper-case hex id', ID.toUpperCase()],
   ])('answers null for %s without asking the backend', async (_label, id) => {
     respondWith([ROW]);
 
     expect(await getNotificationById(id)).toBeNull();
     expect(fetchMock).not.toHaveBeenCalled();
-  });
-
-  it('takes an upper-case hex id', async () => {
-    const upper = ID.toUpperCase();
-    respondWith([{ ...ROW, _id: upper }]);
-
-    expect((await getNotificationById(upper))?.name).toBe('Bear Creek Aggregate');
   });
 
   it('throws when the search backend fails, so the page can say so', async () => {

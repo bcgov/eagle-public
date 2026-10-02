@@ -3,9 +3,13 @@ import { Link } from 'react-router';
 import { openCommentPeriodsQueryOptions } from 'app/api/commentperiod';
 import { EngagementLink } from 'app/components/engagement-link';
 import { Skeleton } from 'app/components/skeleton/skeleton';
-import { periodDetailsHref, periodName, type CommentPeriod } from 'app/models/commentperiod';
+import {
+  pacificLongDay,
+  periodDetailsHref,
+  periodName,
+  type CommentPeriod,
+} from 'app/models/commentperiod';
 import { searchUrl } from 'app/routes/legacy-search';
-import { longDate } from 'app/utils/utils';
 
 const MORE_PERIODS_HREF = searchUrl('commentPeriods');
 
@@ -23,7 +27,7 @@ function PeriodCard({ period }: { period: CommentPeriod }) {
         label={periodName(period)}
       />
       <span className="home-period__window">
-        {longDate(period.dateStarted)} – {longDate(period.dateCompleted)}
+        {pacificLongDay(period.dateStarted)} – {pacificLongDay(period.dateCompleted)}
       </span>
     </li>
   );

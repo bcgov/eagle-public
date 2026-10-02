@@ -19,7 +19,7 @@ export class ProjectNotification {
   notificationThresholdUnits!: string | null;
   associatedProjectId!: string | null;
   associatedProjectName!: string | null;
-  proponent!: string;
+  proponent!: string | { name?: string } | null;
   /** Stored as `[lat, lon]`, the reverse of a project's centroid. */
   centroid: (number | string)[] = [];
   // dynamic attributes
