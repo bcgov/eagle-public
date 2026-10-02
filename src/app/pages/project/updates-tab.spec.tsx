@@ -86,6 +86,29 @@ describe('updates tab', () => {
     expect(requests[0]).toContain('and[project]=proj-1');
   });
 
+  it('keeps one count live region from the first render, so the count landing is announced', async () => {
+    let release: () => void = () => undefined;
+    const body = JSON.stringify([{ searchResults: UPDATES, meta: [{ searchResultsTotal: 2 }] }]);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        () =>
+          new Promise<Response>((resolve) => {
+            release = () =>
+              resolve(new Response(body, { headers: { 'content-type': 'application/json' } }));
+          }),
+      ),
+    );
+    renderAt('/p/proj-1/updates', [{ path: '/p/:projId/updates', element: <UpdatesTab /> }]);
+
+    const region = screen.getByRole('status');
+    expect(region).toHaveTextContent('');
+    await act(async () => release());
+
+    await waitFor(() => expect(region).toHaveTextContent('2 updates, newest first'));
+    expect(screen.getByRole('status')).toBe(region);
+  });
+
   it('lists updates newest first by publish date, falling back to the date added', async () => {
     await renderTab('https://notify-api.example', [
       ...UPDATES,
