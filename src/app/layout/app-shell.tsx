@@ -24,10 +24,8 @@ function getPageName(path: string): string {
   const filteredSegments = segments.filter((segment) => {
     // Skip segments that look like IDs (UUIDs or long alphanumeric)
     if (/^[0-9a-f-]{20,}$/i.test(segment)) return false;
-    // Skip 'p' prefix for project routes
-    if (segment === 'p') return false;
-    // Skip 'cp' prefix for comment period routes
-    if (segment === 'cp') return false;
+    // Skip the project, comment period and project notification route prefixes
+    if (segment === 'p' || segment === 'cp' || segment === 'pn') return false;
     return segment.length > 0;
   });
 

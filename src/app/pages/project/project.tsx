@@ -267,7 +267,12 @@ function TabBar({ projId, tabs, projectName, isNotification }: TabBarProps) {
                 }
               >
                 {tab.label}
-                {tab.count && <span className="tab-count">{tab.count}</span>}
+                {tab.count && (
+                  <>
+                    <span className="visually-hidden">,</span>{' '}
+                    <span className="tab-count">{tab.count}</span>
+                  </>
+                )}
                 {/* Held open so the strip does not jump when the count lands. */}
                 {!tab.count && tab.countPending && (
                   <Skeleton className="tab-count tab-count--loading" width="1.5rem" />

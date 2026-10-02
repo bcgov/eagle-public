@@ -99,6 +99,18 @@ describe('legacySearchRedirect', () => {
       to: '/search?record=activities&keywords=fish',
     },
     {
+      name: 'a notification sort on the received date the table shows',
+      loader: legacySearchRedirect('notifications'),
+      from: '/project-notifications?sortBy=-notificationReceivedDate',
+      to: '/search?record=notifications&sortBy=-notificationReceivedDate',
+    },
+    {
+      name: 'a notification sort on dateUpdated, which has no column and is dropped',
+      loader: legacySearchRedirect('notifications'),
+      from: '/project-notifications?sortBy=-dateUpdated',
+      to: '/search?record=notifications',
+    },
+    {
       name: 'a param no page owns, which is dropped',
       loader: legacySearchRedirect('projects'),
       from: '/projects-list?keywords=coal&dataset=Project&ms=1&milestone=m1',

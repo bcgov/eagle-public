@@ -56,7 +56,7 @@ export const SORTABLE_FIELDS: Record<LegacyRecord, string[]> = {
     'documentAuthorType',
   ],
   activities: ['dateAdded', 'headline'],
-  notifications: ['name', 'dateUpdated'],
+  notifications: ['name', 'notificationReceivedDate'],
 };
 
 function validSortBy(record: LegacyRecord, raw: string | null): string | null {

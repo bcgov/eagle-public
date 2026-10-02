@@ -103,15 +103,6 @@
 
 /* === INTERACTIVE STATES === */
 
-/* Clickable rows - generic utility class */
-.clickable-row {
-  cursor: pointer;
-}
-
-.clickable-row:hover {
-  background-color: var(--hover-tint);
-}
-
 /* Hover state - only for tables with highlight class. Bootstrap's own overlay, so a hovered
    row and a selected row are painted the same way. */
 .table tbody.highlight tr:hover td {
