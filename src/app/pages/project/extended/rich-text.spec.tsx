@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { ExtendedPageContext } from '../project-context';
@@ -8,6 +8,7 @@ import type { AutoLink, ExtendedPage } from './types';
 const BCA = 'https://laws.example/bca/';
 const EAA = 'https://laws.example/eaa/';
 const FISHERIES = 'https://laws.example/fisheries/';
+const MPO = 'https://mpo.example/';
 
 const AUTO_LINKS: AutoLink[] = [
   { text: 'Building Canada Act', href: BCA },
@@ -124,6 +125,59 @@ describe('RichTextView', () => {
     renderOnPage(<RichTextView text="B.C.'s Environmental Assessment Act still applies." />);
 
     expect(termLinks('Environmental Assessment Act')[0]).toHaveAttribute('href', EAA);
+  });
+
+  it('sends a term to its own address when the copy only holds the match inside a longer word', () => {
+    renderOnPage(
+      <RichTextView text="Section 410 of B.C.'s Environmental Assessment Act applies." />,
+    );
+
+    expect(termLinks('Environmental Assessment Act')[0]).toHaveAttribute('href', EAA);
+  });
+
+  it('links a term the pattern matches under Unicode case folding', () => {
+    // A long s folds to s, though toLowerCase keeps it.
+    renderOnPage(<RichTextView text="Permits under the Fiſheries Act." />);
+
+    expect(termLinks('Fiſheries Act')[0]).toHaveAttribute('href', FISHERIES);
+  });
+
+  it('sends two terms equal apart from case to the first one listed', () => {
+    renderOnPage(<RichTextView text="Permits under the Fisheries Act." />, {
+      autoLinks: [
+        { text: 'Fisheries Act', href: FISHERIES },
+        { text: 'fisheries act', href: 'https://laws.example/other/' },
+      ],
+    });
+
+    expect(screen.getAllByRole('link').map((link) => link.getAttribute('href'))).toEqual([
+      FISHERIES,
+    ]);
+  });
+
+  it('keeps the copy and its explicit links where the browser cannot build the term pattern', () => {
+    // Safari before 16.4 has no lookbehind.
+    vi.stubGlobal(
+      'RegExp',
+      class extends RegExp {
+        constructor(pattern: string | RegExp, flags?: string) {
+          if (String(pattern).includes('(?<!')) throw new SyntaxError('Invalid group');
+          super(pattern, flags);
+        }
+      },
+    );
+    try {
+      renderOnPage(
+        <RichTextView
+          text={['Listed under the Building Canada Act by ', { text: 'the MPO', href: MPO }]}
+        />,
+      );
+    } finally {
+      vi.unstubAllGlobals();
+    }
+
+    expect(screen.getAllByRole('link').map((link) => link.getAttribute('href'))).toEqual([MPO]);
+    expect(screen.getByText(/Listed under the Building Canada Act by/)).toBeInTheDocument();
   });
 
   it('adds no link to copy that names no term', () => {
