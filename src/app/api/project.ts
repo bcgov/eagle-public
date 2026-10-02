@@ -62,8 +62,11 @@ export async function getAllFull(pageNum = 0, pageSize = 1000000): Promise<Proje
   return (await getAll(pageNum, pageSize)).data;
 }
 
-/** The search's own total behind `allProjectsQueryOptions`, which can exceed the rows it sent. */
-export const ALL_PROJECTS_TOTAL_KEY = ['projects', 'all', 'total'] as const;
+/**
+ * The search's own total behind `allProjectsQueryOptions`, which can exceed the rows it sent. A
+ * sibling of the list key, so invalidating the list never refetches this fetch-less query.
+ */
+export const ALL_PROJECTS_TOTAL_KEY = ['projects', 'all-total'] as const;
 
 /**
  * Every public project in one request; the key is shared with /projects so both read one cache
@@ -73,6 +76,8 @@ export const ALL_PROJECTS_TOTAL_KEY = ['projects', 'all', 'total'] as const;
 export function allProjectsQueryOptions() {
   return {
     queryKey: ['projects', 'all'],
+    // Each try asks for the full list, so a search outage costs one retry per mount, not three.
+    retry: 1,
     queryFn: async ({ client }: { client: QueryClient }): Promise<Project[]> => {
       const { res, totalCount, data } = await searchProjects(1, 1000000);
       if (!data) {
