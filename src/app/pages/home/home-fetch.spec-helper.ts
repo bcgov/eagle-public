@@ -49,6 +49,9 @@ export const ACTIVITY_ROW = {
   project: { _id: 'eagle-1', name: 'Cedar LNG' },
 };
 
+/** The four Update fields eagle-demi answers as null on a decision row, and an update may leave empty. */
+const NO_UPDATE_FIELDS = { shortHeadline: null, summary: null, category: null, publishDate: null };
+
 /** `HomeFeed` rows: the pinned update, then updates and decisions newest first. */
 export const HOME_FEED = [
   {
@@ -58,6 +61,8 @@ export const HOME_FEED = [
     projectName: 'Cedar LNG',
     date: '2026-09-15T12:00:00.000Z',
     headline: 'Application accepted for review',
+    ...NO_UPDATE_FIELDS,
+    publishDate: '2026-09-15T12:00:00.000Z',
     content: '<p>The application is complete.</p>',
     documentUrl: 'https://example.com/files/acceptance-letter.pdf',
   },
@@ -68,6 +73,7 @@ export const HOME_FEED = [
     projectName: 'Kitimat Terminal',
     date: '2026-09-12T12:00:00.000Z',
     headline: 'Environmental assessment certificate issued',
+    ...NO_UPDATE_FIELDS,
     content: null,
     documentUrl: null,
   },
@@ -78,6 +84,8 @@ export const HOME_FEED = [
     projectName: null,
     date: '2026-09-06T12:00:00.000Z',
     headline: 'Draft certificate published',
+    ...NO_UPDATE_FIELDS,
+    publishDate: '2026-09-06T12:00:00.000Z',
     content: null,
     documentUrl: null,
   },
@@ -88,6 +96,7 @@ export const HOME_FEED = [
     projectName: null,
     date: '2026-09-04T12:00:00.000Z',
     headline: 'Exemption order issued',
+    ...NO_UPDATE_FIELDS,
     content: null,
     documentUrl: null,
   },
@@ -97,7 +106,11 @@ export const HOME_FEED = [
     projectId: 'eagle-3',
     projectName: 'Murray River Coal',
     date: '2026-09-01T12:00:00.000Z',
-    headline: 'Order issued',
+    headline: 'Compliance order issued to Murray River Coal for water discharge',
+    shortHeadline: 'Order issued',
+    summary: 'The order sets new limits on water discharge.',
+    category: 'Compliance',
+    publishDate: '2026-09-01T12:00:00.000Z',
     content: null,
     documentUrl: null,
   },

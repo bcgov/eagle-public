@@ -353,7 +353,10 @@ export async function searchKeywords(
   return getJson<SearchResults[]>(fullUrl, { signal });
 }
 
-/** One page holds every row of these small collections; callers need all of them at once. */
+/**
+ * Page size for reads that need every row at once: a project's comment periods in one page
+ * (`getPeriodsByProjId`), and its Updates paged to the count (`projectUpdatesQueryOptions`).
+ */
 export const ALL_ROWS_PAGE_SIZE = 250;
 
 /** The `List` collection spans both Acts and runs past 250 rows. demi-search caps a page here. */

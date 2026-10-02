@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useLocation } from 'react-router';
+import { Link } from 'react-router';
 import { demiProjectQueryOptions } from 'app/api/api';
 import {
   feedRowToUpdate,
@@ -13,10 +13,14 @@ import { Skeleton } from 'app/components/skeleton/skeleton';
 import { UpdateBody } from 'app/components/update-detail/update-detail';
 import { updateMeta } from 'app/components/update-detail/update-meta';
 import { KIND_LABELS, projectDocumentsHref } from './home-shared';
+import { UPDATES_HEADING_ID } from './updates-feed';
 
 function ReaderBody({ update }: { update: Update }) {
-  // The project read adds the location; until it lands the line is project and date alone.
-  const { data: project } = useQuery(demiProjectQueryOptions(update.projectId ?? ''));
+  // The project read adds a missing location; until it lands the line is project and date alone.
+  const { data: project } = useQuery(
+    demiProjectQueryOptions(update.location ? '' : (update.projectId ?? '')),
+  );
+  const projId = update.projectId && encodeURIComponent(update.projectId);
 
   return (
     <>
@@ -27,12 +31,12 @@ function ReaderBody({ update }: { update: Update }) {
       <div className="home-reader__scroll">
         <UpdateBody update={update} />
       </div>
-      {update.projectId ? (
+      {projId ? (
         <div className="home-reader__foot">
-          <Link className="home-reader__primary" to={`/p/${update.projectId}/overview`}>
+          <Link className="home-reader__primary" to={`/p/${projId}/overview`}>
             View Project
           </Link>
-          <Link className="home-reader__secondary" to={projectDocumentsHref(update.projectId)}>
+          <Link className="home-reader__secondary" to={projectDocumentsHref(projId)}>
             All project documents
           </Link>
         </div>
@@ -55,9 +59,9 @@ function Unavailable({ projectId }: { projectId: string | null }) {
         <span className="home-note__title">This update is no longer available.</span>
         <span className="home-note__detail">
           {projectId ? (
-            <Link to={`/p/${projectId}/overview`}>Go to the project</Link>
+            <Link to={`/p/${encodeURIComponent(projectId)}/overview`}>Go to the project</Link>
           ) : (
-            <Link to="/">See recent updates</Link>
+            <Link to={`/#${UPDATES_HEADING_ID}`}>See recent updates</Link>
           )}
         </span>
       </p>
@@ -71,13 +75,11 @@ function Unavailable({ projectId }: { projectId: string | null }) {
  */
 export function UpdateReader({ id, onClose }: { id: string; onClose: () => void }) {
   const queryClient = useQueryClient();
-  const location = useLocation();
+  // A decision row carries its project's id, so only an update row can be this one.
   const feedRow = queryClient
     .getQueryData<HomeUpdate[]>(homeFeedQueryOptions().queryKey)
-    ?.find((u) => u.id === id);
+    ?.find((u) => u.kind === 'update' && u.id === id);
   const fromFeed = feedRow ? feedRowToUpdate(feedRow) : undefined;
-  const knownProjectId =
-    feedRow?.projectId ?? (location.state as { projectId?: string } | null)?.projectId ?? null;
   // Opened from the feed, the row shows at once and stays if the full read fails.
   const { data, isPending, isError } = useQuery({
     ...updateQueryOptions(id),
@@ -103,7 +105,7 @@ export function UpdateReader({ id, onClose }: { id: string; onClose: () => void 
           </p>
         </div>
       ) : (
-        <Unavailable projectId={knownProjectId} />
+        <Unavailable projectId={feedRow?.projectId ?? null} />
       )}
     </Modal>
   );

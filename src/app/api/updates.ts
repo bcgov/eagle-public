@@ -14,7 +14,8 @@ export interface HomeUpdate {
   projectName: string | null;
   date: string | null;
   headline: string;
-  shortHeadline: string | null;
+  /** The short headline, or the headline when the row has none. */
+  shortHeadline: string;
   summary: string | null;
   category: string | null;
   /** TinyMCE HTML, sanitized where it is rendered. */
@@ -105,8 +106,19 @@ export interface Update {
 
 export const SUMMARY_MAX = 280;
 
-/** The first block an editor wrote, so a leading heading or div counts as the first paragraph. */
-const LEADING_BLOCK = /<(p|div|h[1-6]|li|blockquote)[\s>][\s\S]*?<\/\1>/i;
+/** One block an editor wrote, so a leading heading or div counts as a paragraph. */
+const BLOCK = /<(p|div|h[1-6]|li|blockquote)[\s>][\s\S]*?<\/\1>/gi;
+
+/** The first text the body shows: bare text before any block, else the first block with text. */
+function leadingText(content: string): string {
+  let rest = 0;
+  for (const match of content.matchAll(BLOCK)) {
+    const text = htmlToText(content.slice(rest, match.index)) || htmlToText(match[0]);
+    if (text) return text;
+    rest = match.index + match[0].length;
+  }
+  return htmlToText(content.slice(rest));
+}
 
 /** Text cut to `SUMMARY_MAX` at a word boundary, with an ellipsis when anything was cut. */
 function clip(text: string): string {
@@ -120,7 +132,7 @@ function clip(text: string): string {
 export function summaryOf(summary: string | null | undefined, content: string | null | undefined) {
   if (summary?.trim()) return clip(summary.trim());
   if (!content) return '';
-  return clip(htmlToText(LEADING_BLOCK.exec(content)?.[0] ?? content));
+  return clip(leadingText(content));
 }
 
 /**
@@ -147,16 +159,12 @@ function downloadUrl(id: string): string {
 }
 
 function toDocuments(refs: DocumentRef[]): UpdateDocument[] {
-  return refs
-    .filter((ref) => refId(ref))
-    .map((ref, index) => {
-      const id = refId(ref) as string;
-      return {
-        id,
-        name: refName(ref) ?? `Document ${index + 1}`,
-        href: downloadUrl(id),
-      };
-    });
+  let unnamed = 0;
+  return refs.flatMap((ref) => {
+    const id = refId(ref);
+    if (!id) return [];
+    return [{ id, name: refName(ref) ?? `Document ${++unnamed}`, href: downloadUrl(id) }];
+  });
 }
 
 /** Admin and the API both stop an Update at five photos; the gallery grid is laid out for five. */
@@ -267,14 +275,15 @@ interface FeedRow {
 const FEED_SIZE = 5;
 
 function toFeedItem(row: FeedRow): HomeUpdate {
+  const headline = row.headline ?? '';
   return {
     id: row.id ?? '',
     kind: row.kind === 'decision' ? 'decision' : 'update',
     projectId: row.projectId ?? null,
     projectName: row.projectName ?? null,
     date: row.date ?? row.publishDate ?? null,
-    headline: row.headline ?? '',
-    shortHeadline: row.shortHeadline ?? null,
+    headline,
+    shortHeadline: row.shortHeadline?.trim() || headline,
     summary: row.summary ?? null,
     category: row.category ?? null,
     content: row.content ?? null,
@@ -350,6 +359,8 @@ export function projectUpdatesQueryOptions(projId: string) {
   return {
     queryKey: ['projectUpdates', projId],
     enabled: !!projId,
+    // The tab and overview show an error at once and the strip drops the tab; a retry only delays it.
+    retry: false,
     queryFn: async (): Promise<Update[]> => {
       const first = await readProjectPage(projId, 1);
       const rows = [...first.rows];

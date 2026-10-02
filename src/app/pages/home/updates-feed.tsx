@@ -1,5 +1,6 @@
+import { useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router';
+import { Link, useLocation } from 'react-router';
 import { homeFeedQueryOptions, type HomeUpdate } from 'app/api/updates';
 import { Skeleton } from 'app/components/skeleton/skeleton';
 import { SubscribeDialog } from 'app/components/subscribe/subscribe-dialog';
@@ -8,6 +9,9 @@ import { longDate } from 'app/utils/utils';
 import { KIND_LABELS } from './home-shared';
 
 const SKELETON_ROWS = [1, 2, 3, 4, 5];
+
+/** The feed's heading, also the anchor the reader links back to. */
+export const UPDATES_HEADING_ID = 'home-updates-heading';
 
 function CardBody({ update }: { update: HomeUpdate }) {
   return (
@@ -20,7 +24,7 @@ function CardBody({ update }: { update: HomeUpdate }) {
         </span>{' '}
         <span className="home-update__date">{longDate(update.date)}</span>
       </span>{' '}
-      <span className="home-update__headline">{update.headline}</span>
+      <span className="home-update__headline">{update.shortHeadline}</span>
     </>
   );
 }
@@ -98,10 +102,17 @@ function FeedBody() {
 
 /** The home page's Updates feed: three-line cards for updates and decisions. */
 export function UpdatesFeed() {
+  const { hash } = useLocation();
+  const heading = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    // ScrollRestoration scrolls a link here into view; focus follows so the next Tab is in the list.
+    if (hash === `#${UPDATES_HEADING_ID}`) heading.current?.focus({ preventScroll: true });
+  }, [hash]);
+
   return (
-    <section className="home-updates" aria-labelledby="home-updates-heading">
+    <section className="home-updates" aria-labelledby={UPDATES_HEADING_ID}>
       <div className="home-updates__head">
-        <h2 id="home-updates-heading" className="home-heading">
+        <h2 id={UPDATES_HEADING_ID} className="home-heading" ref={heading} tabIndex={-1}>
           Updates
         </h2>
         <SubscribeDialog />
