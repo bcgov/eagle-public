@@ -93,9 +93,15 @@ describe('CommentPeriodRow', () => {
   });
 
   it('names only the opening day when the period has no closing date', () => {
+    renderRows([{ ...PERIOD, dateStarted: '2099-03-03T19:00:00.000Z', dateCompleted: null }]);
+
+    expect(screen.getByRole('link')).toHaveAccessibleName('Kitimat Terminal: Opens Mar 3, 2099');
+  });
+
+  it('says a past opening day opened, rather than opens', () => {
     renderRows([{ ...PERIOD, dateCompleted: null }]);
 
-    expect(screen.getByRole('link')).toHaveAccessibleName('Kitimat Terminal: Opens Mar 3, 2025');
+    expect(screen.getByRole('link')).toHaveAccessibleName('Kitimat Terminal: Opened Mar 3, 2025');
   });
 
   it('leaves out the meta line when the period has no status to show', () => {

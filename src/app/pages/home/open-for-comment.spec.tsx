@@ -1,7 +1,7 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { screen, within } from '@testing-library/react';
 import { makeQueryClient, renderAt } from '../../../test-utils';
-import { longDate } from 'app/utils/utils';
+import { pacificLongDay } from 'app/models/commentperiod';
 import { envelope, json, PENDING, stubFetch } from './home-fetch.spec-helper';
 import { OpenForComment } from './open-for-comment';
 
@@ -55,7 +55,10 @@ function renderRail(
 const section = () => screen.getByRole('heading', { name: 'Open for comment' }).closest('section')!;
 
 describe('home open for comment', () => {
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+  });
 
   it('asks for the periods open now across every project', async () => {
     const requests = renderRail();
@@ -75,7 +78,9 @@ describe('home open for comment', () => {
     const card = link.closest('li')!;
     expect(within(card).getByText('10 Days Remaining')).toBeInTheDocument();
     expect(card).toHaveTextContent(
-      `${longDate(ENGAGE_PERIOD.dateStarted)} – ${longDate(ENGAGE_PERIOD.dateCompleted)}`,
+      `${pacificLongDay(new Date(ENGAGE_PERIOD.dateStarted))} – ${pacificLongDay(
+        new Date(ENGAGE_PERIOD.dateCompleted),
+      )}`,
     );
   });
 
@@ -107,6 +112,31 @@ describe('home open for comment', () => {
       'href',
       '/p/eagle-4/cp/cp-4/details',
     );
+  });
+
+  it('reads the name off the period label when the project name is blank', async () => {
+    renderRail(envelope([{ ...LEGACY_PERIOD, projectName: '' }]));
+
+    expect(
+      await screen.findByRole('link', { name: 'Kitimat Terminal comment period' }),
+    ).toHaveAttribute('href', '/p/eagle-2/cp/cp-2/details');
+  });
+
+  it('dates the card as BC does, whatever zone the browser is in', async () => {
+    vi.stubEnv('TZ', 'UTC');
+    // 03:00 UTC is the previous evening in Vancouver.
+    renderRail(
+      envelope([
+        {
+          ...LEGACY_PERIOD,
+          dateStarted: '2025-03-03T03:00:00.000Z',
+          dateCompleted: '2099-04-02T03:00:00.000Z',
+        },
+      ]),
+    );
+
+    const card = (await screen.findByRole('link', { name: 'Kitimat Terminal' })).closest('li')!;
+    expect(card).toHaveTextContent('March 2, 2025 – April 1, 2099');
   });
 
   it('leaves out a period whose dates have passed', async () => {
