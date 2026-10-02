@@ -4,6 +4,7 @@ import {
   EAO_DAYS,
   TOTAL_DAYS,
   YEAR_TICKS,
+  actYear,
   detailedStages,
   durationLabel,
   layout,
@@ -12,6 +13,7 @@ import {
   simplifiedStages,
   withPhaseDates,
 } from './assessment-stages';
+import type { Project } from 'app/models/project';
 import { LISTS, PHASES, makeProject } from './assessment-stages.fixture';
 
 const SIMPLE_2018 = [
@@ -227,6 +229,36 @@ describe('offRailPhase', () => {
   it('is null for a phase on the rail', () => {
     expect(offRailPhase(makeProject('Process Planning'))).toBeNull();
     expect(offRailPhase(makeProject('Post Decision - Construction'))).toBeNull();
+  });
+});
+
+describe('actYear', () => {
+  function withLegislation(legislation: string | undefined): Project {
+    return { ...makeProject(null), legislation } as Project;
+  }
+
+  it.each([
+    ['1996 Environmental Assessment Act', 1996],
+    ['2002 Environmental Assessment Act', 2002],
+    ['2018 Environmental Assessment Act', 2018],
+    ['Building Canada Act', 2025],
+  ])('reads %s as %i', (legislation, year) => {
+    expect(actYear(withLegislation(legislation))).toBe(year);
+  });
+
+  it('keeps the year of a label the registry does not hold', () => {
+    expect(actYear(withLegislation('2031 Environmental Assessment Act'))).toBe(2031);
+  });
+
+  it.each(['Environmental Assessment Act', '', undefined])(
+    'is not a year for legislation %j',
+    (legislation) => {
+      expect(actYear(withLegislation(legislation))).toBeNaN();
+    },
+  );
+
+  it('is not a year with no project', () => {
+    expect(actYear(null)).toBeNaN();
   });
 });
 

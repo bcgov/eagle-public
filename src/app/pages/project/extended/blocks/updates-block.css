@@ -1,0 +1,22 @@
+/* Updates block. The full list's card is the Decisions tab's (decisions-tab.css); the side card is
+   the Overview's (overview-tab.css). */
+
+.side-card__headline.extended-updates__headline .new-tab-hint__icon {
+  margin-left: var(--layout-margin-xsmall);
+}
+
+/* Updates carry the home feed's update rule, not the decision colour. */
+.decisions-tab__item.extended-updates__item {
+  border-left-color: var(--eao-update-rule);
+}
+
+/* The headline is the link, at the title's size rather than the card's small link size. */
+.extended-updates__item .decisions-tab__item-title a {
+  font: inherit;
+}
+
+.extended-updates__source {
+  margin: 0;
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-primary);
+}

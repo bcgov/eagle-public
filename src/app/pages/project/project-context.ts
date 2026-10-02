@@ -1,5 +1,7 @@
+import { createContext, useContext } from 'react';
 import { useOutletContext } from 'react-router';
 import type { Project } from 'app/models/project';
+import type { ExtendedPage } from './extended/types';
 
 export interface ProjectContext {
   project: Project | null;
@@ -17,4 +19,15 @@ export interface ProjectContext {
 /** The project the shell loaded, for its tab routes. */
 export function useProjectContext(): ProjectContext {
   return useOutletContext<ProjectContext>();
+}
+
+/**
+ * The extended page content, for parts the shell draws outside the tab outlet (masthead, panel,
+ * Act band) as well as the tabs. Null on an ordinary project.
+ */
+export const ExtendedPageContext = createContext<ExtendedPage | null>(null);
+
+/** The project's extended page content, or null on an ordinary project. */
+export function useExtendedPage(): ExtendedPage | null {
+  return useContext(ExtendedPageContext);
 }

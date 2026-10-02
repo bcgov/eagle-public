@@ -1,0 +1,7 @@
+/* Prose block. Tokens come from @bcgov/design-tokens and eao-tokens.css. */
+
+.extended-prose {
+  margin: 0;
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-primary);
+}

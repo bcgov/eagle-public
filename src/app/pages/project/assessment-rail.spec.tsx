@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Phase } from 'app/api/project-phases';
+import type { Project } from 'app/models/project';
 import { AssessmentRail } from './assessment-rail';
 import { LISTS, PHASES, makeProject } from './assessment-stages.fixture';
 
@@ -65,6 +66,26 @@ describe('simplified rail', () => {
 
     expect(screen.getByText(/current phase is Withdrawal/)).toBeInTheDocument();
     expect(screen.queryByRole('listitem', { current: 'step' })).toBeNull();
+  });
+
+  it('draws the 2018 phases with no Act name or Detailed button when the label has no year', () => {
+    const project = { ...makeProject(null), legislation: 'Environmental Assessment Act' };
+
+    render(<AssessmentRail project={project as Project} lists={LISTS} phases={null} />);
+
+    expect(screen.getAllByRole('listitem')).toHaveLength(8);
+    expect(screen.queryByText('Environmental Assessment Act')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Detailed' })).toBeNull();
+  });
+
+  it('renders nothing for a project under the federal Building Canada Act', () => {
+    const project = { ...makeProject('Process Planning'), legislation: 'Building Canada Act' };
+
+    const { container } = render(
+      <AssessmentRail project={project as Project} lists={LISTS} phases={null} />,
+    );
+
+    expect(container).toBeEmptyDOMElement();
   });
 });
 

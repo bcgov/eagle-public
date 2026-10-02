@@ -1,0 +1,137 @@
+/* Pieces the extended project page tabs share. Main and aside columns reuse `.record-layout`
+   (overview-tab.css, loaded with the routes); every card in those columns already gets card chrome
+   there. Tokens come from @bcgov/design-tokens and eao-tokens.css. */
+
+/* `layout: 'wide'`: a wider main column and a narrower aside than the Overview's. */
+.record-layout.extended-layout--wide .record-layout__main {
+  flex-basis: 32.5rem;
+}
+
+.record-layout.extended-layout--wide .record-layout__aside {
+  flex-basis: 17.5rem;
+}
+
+/* A card outside `.record-layout`, e.g. in the Review process column or an empty state. */
+.extended-card {
+  padding: var(--layout-padding-large);
+  background: var(--theme-gray-white);
+  border: var(--layout-border-width-small) solid var(--theme-gray-40);
+  border-radius: var(--layout-border-radius-medium);
+}
+
+.extended-card__title {
+  margin: 0 0 var(--layout-margin-small);
+  font: var(--typography-bold-h5);
+  color: var(--typography-color-primary);
+}
+
+/* Card titles that sit over a list get a little more room than over a paragraph. */
+.extended-block__spaced-title {
+  margin-bottom: var(--layout-margin-medium);
+}
+
+/* A heading inside a block, e.g. over the summary's list or the route map's line tiles. */
+.extended-block__subtitle {
+  margin: 0 0 var(--layout-margin-small);
+  font: var(--typography-bold-body);
+  color: var(--typography-color-primary);
+}
+
+/* Name and detail per item: the projects block, and the links block's cards. */
+.extended-related {
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-padding-small);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.extended-related__name {
+  margin: 0;
+  font: var(--typography-bold-small-body);
+}
+
+.extended-related__detail {
+  margin: 0;
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-secondary);
+}
+
+/* Tab heading and intro, at the top of a content tab or the full updates list. */
+.extended-tab__title {
+  margin: 0 0 var(--layout-margin-small);
+  font: var(--typography-bold-h4);
+  color: var(--typography-color-primary);
+}
+
+.extended-tab__intro {
+  margin: 0 0 var(--layout-margin-large);
+  font: var(--typography-regular-body);
+  color: var(--typography-color-secondary);
+}
+
+/* Act links and other links in running copy stay underlined. */
+.extended-copy a {
+  color: var(--typography-color-link);
+  text-decoration: underline;
+}
+
+/* Grey tile: corridor options, consultation figures, Act step tiles. */
+.extended-tile {
+  padding: var(--layout-padding-medium);
+  background: var(--theme-gray-10);
+  border-radius: var(--layout-border-radius-medium);
+}
+
+/* Numbered list with round numerals: grey 24px by default, blue 28px with `--blue`. Lists styled
+   here drop their markers, so the element takes role="list" to keep its semantics in Safari. */
+.extended-numbered {
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-padding-small);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.extended-numbered > li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--layout-padding-small);
+}
+
+.extended-numbered__num {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--layout-border-radius-circular);
+  background: var(--theme-gray-20);
+  color: var(--typography-color-primary);
+  font: var(--typography-bold-label);
+}
+
+.extended-numbered--blue .extended-numbered__num {
+  width: 28px;
+  height: 28px;
+  background: var(--theme-primary-blue);
+  color: var(--typography-color-primary-invert);
+}
+
+/* External link list (Sources, Learn more): the new-tab icon sits after the last word. Takes
+   role="list" too. */
+.extended-link-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-padding-small);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.extended-link-list .new-tab-hint__icon {
+  vertical-align: -2px;
+}

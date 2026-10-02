@@ -7,6 +7,8 @@ describe('isSafeUrl', () => {
     'https://example.gov.bc.ca/x',
     'mailto:someone@gov.bc.ca',
     '/p/123',
+    // Stored links can end in a space; the browser drops it.
+    'https://example.gov.bc.ca/x ',
   ])('accepts %s', (url) => {
     expect(isSafeUrl(url)).toBe(true);
   });
@@ -19,6 +21,9 @@ describe('isSafeUrl', () => {
     'vbscript:msgbox(1)',
     '//evil.example',
     '/\\evil.example',
+    '/\t/example.com/',
+    '/\n/example.com/',
+    '/\r/example.com/',
     '',
   ])('rejects %s', (url) => {
     expect(isSafeUrl(url)).toBe(false);

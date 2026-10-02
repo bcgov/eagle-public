@@ -1,0 +1,43 @@
+/* The map line palette, for the route map lines and the option tile swatches, set on each so
+   either reads it wherever it is placed. The line-2 red is not a design token. */
+.extended-route__options,
+.route-map {
+  --extended-line-1: var(--theme-blue-80);
+  --extended-line-2: #c8202f;
+}
+
+.extended-route__swatch {
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 24px;
+  height: 4px;
+}
+
+.extended-route__swatch--line-1 {
+  background: var(--extended-line-1);
+}
+
+.extended-route__swatch--line-2 {
+  background: var(--extended-line-2);
+}
+
+.extended-route__options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--layout-padding-medium);
+  margin: 0 0 var(--layout-margin-medium);
+}
+
+.extended-route__options dt {
+  display: flex;
+  align-items: center;
+  gap: var(--layout-padding-xsmall);
+  font: var(--typography-bold-small-body);
+  color: var(--typography-color-primary);
+}
+
+.extended-route__options dd {
+  margin: var(--layout-margin-hair) 0 0;
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-secondary);
+}

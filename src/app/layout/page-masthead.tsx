@@ -7,6 +7,11 @@ interface PageMastheadProps {
   title: ReactNode;
   /** Root first, current page last. Left off on the site root, which leads nowhere. */
   breadcrumbs?: Crumb[];
+  /**
+   * A badge or label for the title, e.g. a project's listing status. Rendered after the h1 so
+   * heading navigation reaches it; the page's CSS shows it above the title.
+   */
+  eyebrow?: ReactNode;
   /** One line under the title. Elides at desktop, so keep it short. */
   meta?: ReactNode;
   /** A sentence or two about the page, under the title. Wraps at the masthead width. */
@@ -25,6 +30,7 @@ interface PageMastheadProps {
 export function PageMasthead({
   title,
   breadcrumbs,
+  eyebrow,
   meta,
   lede,
   actions,
@@ -55,6 +61,7 @@ export function PageMasthead({
             >
               {title}
             </h1>
+            {eyebrow}
             {meta && <p className="page-masthead__meta">{meta}</p>}
             {lede && <p className="page-masthead__lede">{lede}</p>}
           </div>

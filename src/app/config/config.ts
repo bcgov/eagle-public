@@ -61,6 +61,12 @@ export interface EnvConfig {
    * sends nothing and loads no SDK. Served from the runtime config like SEARCH_API_PATH.
    */
   APPINSIGHTS_CONNECTION_STRING?: string;
+  /**
+   * Projects whose page is an extended project page instead of the EAO page: eagle project id to
+   * content key in pages/project/extended/content, e.g. `{ "<projectId>": "pacific-link" }`. Read
+   * from the runtime config. An empty object (or unset) turns the variant off everywhere.
+   */
+  EXTENDED_PROJECT_PAGES?: Record<string, string>;
   GH_HASH?: string;
 }
 
@@ -135,6 +141,15 @@ export function getNotifyApi(): string {
 /** Whether the Document Content search tab is offered. Only a literal `true` turns it on. */
 export function contentSearchEnabled(): boolean {
   return config.CONTENT_SEARCH === true;
+}
+
+/** The extended project page content key configured for a project, or undefined when none. */
+export function extendedPageKey(projId: string): string | undefined {
+  const projects = config.EXTENDED_PROJECT_PAGES;
+  // A hand-edited config document can hold anything; only an object of strings counts.
+  if (!projId || typeof projects !== 'object' || projects === null) return undefined;
+  const key = projects[projId];
+  return typeof key === 'string' && key ? key : undefined;
 }
 
 /** Origin of API_LOCATION — the rproxy host. Empty when unset or unparsable. */

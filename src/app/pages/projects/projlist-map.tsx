@@ -346,11 +346,23 @@ export function ProjlistMap({
     skipNextFit.current = false;
   }, [regionKey]);
 
-  // Fly to a project the visitor picked from the list; a pin click already centred itself.
+  const selected = selectedId ? byId.get(selectedId) : undefined;
+  const hasSelected = selected !== undefined;
+  /** The selection already flown to, so a list refresh that keeps it does not fly again. */
+  const flownId = useRef<string | null>(null);
+
+  // Fly to a project the visitor picked from the list; a pin click already centred itself. A
+  // selection from the URL can arrive before the list, so this waits for the map and the project.
   useEffect(() => {
     const map = mapRef.current;
-    if (!loaded || !map) return;
-    const project = selectedId ? latest.current.byId.get(selectedId) : undefined;
+    if (!selectedId) {
+      flownId.current = null;
+      lastMarkerSelectId.current = null;
+      return;
+    }
+    if (!loaded || !map || !hasSelected || flownId.current === selectedId) return;
+    flownId.current = selectedId;
+    const project = latest.current.byId.get(selectedId);
     if (project && lastMarkerSelectId.current !== selectedId) {
       map.flyTo({
         center: [project.centroid[0], project.centroid[1]],
@@ -360,9 +372,8 @@ export function ProjlistMap({
       });
     }
     lastMarkerSelectId.current = null;
-  }, [selectedId, loaded]);
+  }, [selectedId, loaded, hasSelected]);
 
-  const selected = selectedId ? byId.get(selectedId) : undefined;
   const cardProject = !mobile && selected ? selected : null;
 
   // A switch between the phone and desktop layouts drops a tip and highlight the other one set,
