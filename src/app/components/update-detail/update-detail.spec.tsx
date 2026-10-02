@@ -41,10 +41,13 @@ describe('UpdateBody featured image', () => {
 });
 
 describe('UpdateBody documents', () => {
-  it('lists a file attached twice once', async () => {
-    renderBody({ attachments: ['doc-1', { _id: 'doc-1', displayName: 'Notice.pdf' }] });
+  it('lists a file attached twice once, under the name either copy carries', async () => {
+    renderBody({ attachments: ['doc-1', { _id: 'doc-1', displayName: 'Notice.pdf' }, 'doc-2'] });
 
-    await userEvent.setup().click(screen.getByRole('button', { name: 'Documents (1)' }));
-    expect(screen.getAllByRole('link')).toHaveLength(1);
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Documents (2)' }));
+    expect(screen.getAllByRole('link').map((link) => link.textContent)).toEqual([
+      expect.stringContaining('Notice.pdf'),
+      expect.stringContaining('Document 1'),
+    ]);
   });
 });

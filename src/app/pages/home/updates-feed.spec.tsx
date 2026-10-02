@@ -1,7 +1,8 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { screen, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import { makeQueryClient, renderAt } from '../../../test-utils';
 import { envelope, HOME_FEED, json, PENDING, stubFetch } from './home-fetch.spec-helper';
+import { UPDATES_HEADING_ID } from './home-shared';
 import { UpdatesFeed } from './updates-feed';
 
 function renderFeed(
@@ -18,6 +19,21 @@ function renderFeed(
   );
   return requests;
 }
+
+/** The feed at `/` and under the reader, two routes as in the app. */
+function renderFeedRoutes(at: string[], initialIndex?: number) {
+  stubFetch((url) => (url.includes('dataset=HomeFeed') ? envelope(HOME_FEED) : undefined));
+  return renderAt(
+    at,
+    [
+      { path: '/', Component: UpdatesFeed },
+      { path: '/updates/:id', Component: UpdatesFeed },
+    ],
+    { initialIndex },
+  );
+}
+
+const updatesHeading = () => screen.getByRole('heading', { level: 2, name: 'Updates' });
 
 describe('home updates feed', () => {
   afterEach(() => vi.unstubAllGlobals());
@@ -49,6 +65,14 @@ describe('home updates feed', () => {
     );
     expect(screen.queryByText(/Compliance order issued/)).not.toBeInTheDocument();
     expect(screen.getByText('Application accepted for review')).toBeInTheDocument();
+  });
+
+  it('heads a card with the headline when the short headline is blank', async () => {
+    renderFeed(envelope([{ ...HOME_FEED[0], shortHeadline: '   ' }]));
+
+    expect(
+      await screen.findByRole('link', { name: /Application accepted for review$/ }),
+    ).toBeInTheDocument();
   });
 
   it('draws an update as a three-line card that opens the reader', async () => {
@@ -123,5 +147,22 @@ describe('home updates feed', () => {
     expect(await screen.findByText('Updates are unavailable right now.')).toBeInTheDocument();
     expect(screen.getByText('Try again in a moment.')).toBeInTheDocument();
     expect(requests.filter((url) => url.includes('dataset=HomeFeed'))).toHaveLength(1);
+  });
+
+  it('moves focus to the heading when a link lands on it', async () => {
+    const { router } = renderFeedRoutes(['/updates/gone']);
+
+    await act(() => router.navigate(`/#${UPDATES_HEADING_ID}`));
+    await waitFor(() => expect(updatesHeading()).toHaveFocus());
+  });
+
+  it('leaves focus alone when Back returns to the heading anchor', async () => {
+    const { router } = renderFeedRoutes([`/#${UPDATES_HEADING_ID}`, '/updates/u1'], 1);
+    const card = await screen.findByRole('link', { name: /Application accepted for review$/ });
+    card.focus();
+
+    await act(() => router.navigate(-1));
+    expect(router.state.location.hash).toBe(`#${UPDATES_HEADING_ID}`);
+    expect(card).toHaveFocus();
   });
 });
