@@ -51,7 +51,8 @@ export function ProjectPage() {
     projId,
     lists,
     isPending,
-    notFound: isError || (isSuccess && !project),
+    // An extended page's content is static, so a failed read still leaves a page worth showing.
+    notFound: (isError && !extended) || (isSuccess && !project),
   };
 
   // Two components, so each page runs only its own tab queries.

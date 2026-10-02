@@ -73,19 +73,14 @@ export function UpdatesTab() {
       <div className="updates-tab__main">
         <div className="updates-tab__header">
           <h2 className="updates-tab__title">Updates</h2>
-          {updates && shown ? (
-            <p className="updates-tab__count" role="status">
-              {text
+          {/* Mounted from the start: a screen reader only announces changes to a region it has seen. */}
+          <p className="updates-tab__count" role="status">
+            {updates && shown
+              ? text
                 ? `${shown.length.toLocaleString('en-CA')} of ${plural(updates.length)} match`
-                : `${plural(updates.length)}, newest first`}
-            </p>
-          ) : (
-            !isError && (
-              <p className="updates-tab__count">
-                <Skeleton width="9rem" />
-              </p>
-            )
-          )}
+                : `${plural(updates.length)}, newest first`
+              : !isError && <Skeleton width="9rem" />}
+          </p>
         </div>
 
         <div className="updates-tab__filter">

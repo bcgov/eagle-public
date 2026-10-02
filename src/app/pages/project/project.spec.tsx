@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { RouteObject } from 'react-router';
 import { track } from 'app/analytics/analytics';
@@ -133,6 +133,8 @@ let project: Record<string, unknown> | undefined;
 let commentPeriods: unknown[];
 let updateRows: Record<string, unknown>[];
 let documentsTotal: number;
+/** DEMI answers the project read with a server error. */
+let projectReadFails: boolean;
 
 function visibleUpdates(count: number) {
   return Array.from({ length: count }, (_, index) => ({ _id: `u${index}`, headline: 'Update' }));
@@ -162,6 +164,7 @@ function stubFetch() {
         return jsonResponse(searchResponse(commentPeriods.length, commentPeriods));
       }
       if (url.startsWith(`${DEMI}/`)) {
+        if (projectReadFails) return new Response('', { status: 500 });
         // 404 is how DEMI says it holds no such project.
         return project ? jsonResponse(project) : new Response('{}', { status: 404 });
       }
@@ -225,6 +228,7 @@ describe('project shell', () => {
     updateRows = [];
     documentsTotal = 0;
     probeHits = [];
+    projectReadFails = false;
   });
 
   afterEach(() => {
@@ -432,6 +436,29 @@ describe('project shell', () => {
       'href',
       '/projects',
     );
+  });
+
+  it('keeps an extended page on screen when the project read fails', async () => {
+    window.__env = {
+      logLevel: 4,
+      DEMI_PROJECTS_PATH: DEMI,
+      EXTENDED_PROJECT_PAGES: { 'proj-1': 'pacific-link' },
+    } as unknown as typeof window.__env;
+    await loadConfig();
+    projectReadFails = true;
+
+    renderShell();
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Pacific Link' }),
+    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(queryClient.getQueryState(['demi-project', 'proj-1'])?.status).toBe('error'),
+    );
+    // One more turn, so the page's own query settles on the failure and renders.
+    await act(async () => undefined);
+    expect(screen.queryByText('Project not found')).not.toBeInTheDocument();
+    expect(strip()).toBeInTheDocument();
   });
 });
 
