@@ -196,6 +196,7 @@ function renderShell(path = '/p/proj-1/overview') {
         { path: 'overview', element: <div>tab body</div> },
         { path: 'documents', element: <div>documents body</div> },
         { path: 'updates', element: <div>updates body</div> },
+        { path: 'compliance', element: <div>compliance body</div> },
       ],
     },
     { path: '/projects', element: <div>projects page</div> },
@@ -269,6 +270,17 @@ describe('project shell', () => {
     await waitFor(() => expect(tabLink('Updates').querySelector('.tab-count--loading')).toBeNull());
     expect(tabLabels()).toEqual(['Overview', 'Updates', 'Engagement', 'Documents']);
     expect(tabLink('Updates')).toHaveAttribute('aria-current', 'page');
+  });
+
+  it('keeps an open document tab in the strip while its probe says hide', async () => {
+    renderShell('/p/proj-1/compliance');
+
+    await screen.findByText('compliance body');
+    await waitFor(() =>
+      expect(requests.some((url) => url.includes(PROBE_MARKERS.compliance))).toBe(true),
+    );
+    expect(tabLabels()).toContain('Compliance');
+    expect(tabLink('Compliance')).toHaveAttribute('aria-current', 'page');
   });
 
   it('holds the tab body on the page gutter, with no main landmark of its own', async () => {
