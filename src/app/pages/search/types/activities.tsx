@@ -171,6 +171,5 @@ export const activitiesConfig: RecordTypeConfig = {
   ],
   optionsFrom: () => ({ type: KIND_OPTIONS }),
   selectable: false,
-  headerless: false,
   rowComponent: ActivityRow,
 };

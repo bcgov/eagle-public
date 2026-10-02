@@ -195,7 +195,8 @@ describe('DisplayGrid', () => {
 
   it('hands the column filters to the panel when no column is on screen', () => {
     renderGrid({
-      headerless: true,
+      template: 'list',
+      rowComponent: ({ row }) => <h3>{row.name}</h3>,
       panel: (fields) => (
         <div data-testid="panel">{fields.map((field) => field.label).join(', ')}</div>
       ),

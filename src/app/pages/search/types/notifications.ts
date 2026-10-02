@@ -66,5 +66,4 @@ export const notificationsConfig: RecordTypeConfig = {
     decision: toOptions(Constants.PROJECT_NOTIFICATION_DECISIONS as OptionSource[]),
   }),
   selectable: false,
-  headerless: false,
 };

@@ -124,5 +124,4 @@ export const projectsConfig: RecordTypeConfig = {
   // No `List` type or constant names the sub-types, so the menu offers the ones the page shows.
   optionsFromRows: (rows) => ({ sector: rowValueOptions(rows, 'sector') }),
   selectable: false,
-  headerless: false,
 };
