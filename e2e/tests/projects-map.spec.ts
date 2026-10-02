@@ -87,11 +87,10 @@ test('@data the project-name filter narrows the list and the map', async ({ page
 
   const before = countIn(await page.locator(COUNT).innerText());
   await page.fill('#applicantInput', 'Coal');
-  await expect(page.locator(COUNT)).not.toHaveText(`${before} projects in view`);
+  await expect.poll(async () => countIn(await page.locator(COUNT).innerText())).toBeLessThan(before);
 
   const after = countIn(await page.locator(COUNT).innerText());
   expect(after).toBeGreaterThan(0);
-  expect(after).toBeLessThan(before);
   expect(await page.locator(CARDS).count()).toBeGreaterThan(0);
 });
 
