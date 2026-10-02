@@ -71,6 +71,10 @@ describe('phaseSetYear', () => {
     expect(phaseSetYear(makeProject(null, 2018, 2002))).toBe(2002);
     expect(phaseSetYear(null)).toBe(2018);
   });
+
+  it('takes the default Act for a label the registry does not hold', () => {
+    expect(phaseSetYear(makeProject(null, 2018, 2031))).toBe(2018);
+  });
 });
 
 describe('layout', () => {
@@ -246,16 +250,15 @@ describe('actYear', () => {
     expect(actYear(withLegislation(legislation))).toBe(year);
   });
 
-  it('keeps the year of a label the registry does not hold', () => {
-    expect(actYear(withLegislation('2031 Environmental Assessment Act'))).toBe(2031);
+  it.each([
+    '2031 Environmental Assessment Act',
+    'Environmental Assessment Act',
+    'Bill 12018',
+    '',
+    undefined,
+  ])('is not a year for legislation %j', (legislation) => {
+    expect(actYear(withLegislation(legislation))).toBeNaN();
   });
-
-  it.each(['Environmental Assessment Act', '', undefined])(
-    'is not a year for legislation %j',
-    (legislation) => {
-      expect(actYear(withLegislation(legislation))).toBeNaN();
-    },
-  );
 
   it('is not a year with no project', () => {
     expect(actYear(null)).toBeNaN();
