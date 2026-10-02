@@ -5,6 +5,7 @@ import { logger } from 'app/config/logging';
 import type { Project } from 'app/models/project';
 import { explorerLink } from 'app/pages/projects/explorer-link';
 import { Fact as FactRow, type PanelParts } from '../project-panel';
+import { StepStatus } from './blocks/timeline-block';
 import { RichTextView } from './rich-text';
 import { extendedSteps } from './extended-page';
 import type { ExtendedMap, ExtendedPage, ExtendedTimeline, Fact } from './types';
@@ -72,7 +73,7 @@ function TimelineRail({ timeline }: { timeline: ExtendedTimeline }) {
             <span className="extended-rail__bar" aria-hidden="true" />
             <span className="extended-rail__name">{step.name}</span>
             <span className="extended-rail__date">
-              {timeline.stateLabels[step.state]} · {step.dateLabel}
+              <StepStatus timeline={timeline} step={step} />
             </span>
           </li>
         ))}
@@ -119,7 +120,9 @@ function ExtendedPanelMap({
   return (
     <div className="project-panel__map extended-panel__map">
       <div className="map-container extended-panel__thumbnail">
-        <RouteMapBoundary>
+        <RouteMapBoundary
+          fallback={<p className="extended-panel__map-unavailable">The map could not be loaded.</p>}
+        >
           <Suspense fallback={<Skeleton height="100%" />}>
             <RouteMapThumbnail map={map} label={label} />
           </Suspense>

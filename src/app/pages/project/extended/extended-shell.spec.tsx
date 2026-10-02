@@ -1,9 +1,17 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { screen, within } from '@testing-library/react';
+import { logger } from 'app/config/logging';
 import { renderAt } from '../../../../test-utils';
 import { ProjectPanel } from '../project-panel';
 import { extendedPanelParts } from './extended-shell';
-import type { ExtendedPage } from './types';
+import type { ExtendedMap, ExtendedPage } from './types';
+
+// Stands in for a map chunk that fails to load after a deploy.
+vi.mock('./route-map', () => ({
+  RouteMapThumbnail: () => {
+    throw new Error('chunk failed to load');
+  },
+}));
 
 /** A page with made-up facts only: no label below comes from the panel's own code. */
 const FACTS_ONLY = {
@@ -109,5 +117,19 @@ describe('extended page panel parts', () => {
     expect(screen.queryByRole('heading', { name: 'Assessment progress' })).toBeNull();
     const steps = within(screen.getByRole('list')).getAllByRole('listitem');
     expect(steps.map((step) => step.textContent)).toEqual(['BuiltDone · 1901', 'LitNow · 1902']);
+  });
+
+  it('says the map could not be loaded where the thumbnail fails, and keeps its caption', async () => {
+    // React reports the caught throw; the boundary logs it through the app logger.
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    vi.spyOn(logger, 'error').mockImplementation(() => undefined);
+    renderPanel({
+      version: 1,
+      panel: { map: { label: 'Lamp map', caption: 'From the pier to the point' } },
+      map: { label: 'Lamp map' } as ExtendedMap,
+    } as ExtendedPage);
+
+    expect(await screen.findByText('The map could not be loaded.')).toBeInTheDocument();
+    expect(screen.getByText('From the pier to the point')).toBeInTheDocument();
   });
 });

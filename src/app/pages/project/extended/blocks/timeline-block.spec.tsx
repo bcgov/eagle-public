@@ -14,12 +14,12 @@ describe('timeline block', () => {
     expect(
       stops.map((stop) => within(stop).getByRole('heading', { level: 4 }).textContent),
     ).toEqual(['Design', 'Build', 'Open']);
-    expect(stops[0]).toHaveTextContent('Jan 2026 · Done');
+    expect(stops[0]).toHaveTextContent('Done · Jan 2026');
     expect(stops.filter((stop) => stop.getAttribute('aria-current') === 'step')).toEqual([
       stops[1],
     ]);
-    expect(stops[1]).toHaveTextContent('Mar 2026 · Under way');
-    expect(stops[2]).toHaveTextContent('Sep 2026 · Next');
+    expect(stops[1]).toHaveTextContent('Under way · Mar 2026');
+    expect(stops[2]).toHaveTextContent('Next · Sep 2026');
   });
 
   it('is left out when the page has no timeline', async () => {
