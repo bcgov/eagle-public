@@ -6,12 +6,9 @@ import { Skeleton } from 'app/components/skeleton/skeleton';
 import { SubscribeDialog } from 'app/components/subscribe/subscribe-dialog';
 import { searchUrl } from 'app/routes/legacy-search';
 import { longDate } from 'app/utils/utils';
-import { KIND_LABELS } from './home-shared';
+import { KIND_LABELS, UPDATES_HEADING_ID } from './home-shared';
 
 const SKELETON_ROWS = [1, 2, 3, 4, 5];
-
-/** The feed's heading, also the anchor the reader links back to. */
-export const UPDATES_HEADING_ID = 'home-updates-heading';
 
 function CardBody({ update }: { update: HomeUpdate }) {
   return (
