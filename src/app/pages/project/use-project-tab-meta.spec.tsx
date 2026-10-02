@@ -178,6 +178,32 @@ describe('useProjectTabMeta', () => {
     expect(updates?.countPending).toBe(true);
   });
 
+  it('holds the Documents count while its first total is loading', () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => new Promise<Response>(() => undefined)),
+    );
+    client = makeQueryClient();
+
+    const { result } = renderHook(() => useProjectTabMeta('proj-1', LISTS, null), { wrapper });
+
+    expect(result.current.find((tab) => tab.key === 'documents')?.countPending).toBe(true);
+  });
+
+  it('does not hold the Documents count while a cached zero total refetches', async () => {
+    const { result } = await renderTabs();
+    await waitFor(() => expect(client.isFetching()).toBe(0));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => new Promise<Response>(() => undefined)),
+    );
+
+    void client.invalidateQueries({ queryKey: ['table', 'projectTabDocuments'] });
+
+    await waitFor(() => expect(client.isFetching()).toBeGreaterThan(0));
+    expect(result.current.find((tab) => tab.key === 'documents')?.countPending).toBe(false);
+  });
+
   it('leaves a zero total uncounted', async () => {
     const { result } = await renderTabs();
 
