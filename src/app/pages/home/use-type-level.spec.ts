@@ -43,6 +43,12 @@ describe('useTypeLevel', () => {
     expect(result.current.level).toMatchObject({ type: 'Mines', subType: 'Coal Mines' });
   });
 
+  it("reads a sub-type in any case as the tree's spelling", () => {
+    const { result } = renderLevel('/?type=Mines&subType=coal%20MINES');
+
+    expect(result.current.level).toMatchObject({ type: 'Mines', subType: 'Coal Mines' });
+  });
+
   it('reads as no level for a type the tree does not hold', () => {
     const { result } = renderLevel('/?type=Bogus&subType=Coal%20Mines');
 

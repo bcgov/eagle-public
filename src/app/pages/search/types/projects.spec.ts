@@ -133,6 +133,12 @@ describe('projects record type', () => {
     expect(projectsConfig.columns[0]).toMatchObject({ link: true, locked: true });
   });
 
+  it('gives every column a width', () => {
+    const unsized = projectsConfig.columns.filter((column) => !column.width);
+
+    expect(unsized.map((column) => column.label)).toEqual([]);
+  });
+
   it('fills the table exactly when every column is on', () => {
     const total = projectsConfig.columns.reduce(
       (sum, column) => sum + Number.parseFloat(column.width ?? '0'),

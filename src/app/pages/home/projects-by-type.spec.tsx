@@ -3,6 +3,7 @@ import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderAt } from '../../../test-utils';
 import { envelope, json, PENDING, stubFetch } from './home-fetch.spec-helper';
+import { stubIntersection } from './intersection.spec-helper';
 import { ProjectsByType } from './projects-by-type';
 
 const project = (
@@ -46,28 +47,6 @@ function renderBand(
   const search = () => view.router.state.location.search;
   const projectReads = () => requests.filter((url) => url.includes('dataset=Project')).length;
   return { ...view, search, projectReads };
-}
-
-/** Stubs IntersectionObserver; `enter` reports the observed element near the viewport. */
-function stubIntersection() {
-  let callback: IntersectionObserverCallback = () => undefined;
-  const observed: { options?: IntersectionObserverInit } = {};
-  vi.stubGlobal(
-    'IntersectionObserver',
-    class {
-      constructor(cb: IntersectionObserverCallback, options?: IntersectionObserverInit) {
-        callback = cb;
-        observed.options = options;
-      }
-      observe = vi.fn();
-      disconnect = vi.fn();
-    },
-  );
-  const enter = () =>
-    act(() =>
-      callback([{ isIntersecting: true } as IntersectionObserverEntry], {} as IntersectionObserver),
-    );
-  return { enter, observed };
 }
 
 const OTHERS = [
@@ -177,7 +156,7 @@ describe('ProjectsByType', () => {
 
     expect(await screen.findByRole('table', { name: 'Orbital projects' })).toBeInTheDocument();
     expect(document.querySelector('.home-types__foot')).toHaveTextContent(
-      'Other holds projects with no type or an unlisted one, so Search has no filter for it.',
+      "Other here also holds projects with no type or an unlisted one, so Search's Other filter shows fewer.",
     );
     expect(screen.queryByRole('link', { name: /in Search$/ })).toBeNull();
   });
@@ -187,7 +166,7 @@ describe('ProjectsByType', () => {
 
     expect(await screen.findByRole('table', { name: 'Other projects' })).toBeInTheDocument();
     expect(document.querySelector('.home-types__foot')).toHaveTextContent(
-      'Other holds projects with no sub-type, so Search has no filter for it.',
+      "Other here also holds projects with no sub-type, so Search's Other filter shows fewer.",
     );
     expect(screen.queryByRole('link', { name: /in Search$/ })).toBeNull();
   });
