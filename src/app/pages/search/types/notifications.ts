@@ -15,8 +15,10 @@ export const NOTIFICATIONS_SORT = '-notificationReceivedDate';
 
 /** The project a notification became when it has one, else the notification's own page. */
 function notificationHref(row: Row): string | undefined {
-  const associatedProjectId = String(row['associatedProjectId'] ?? '');
-  if (associatedProjectId) return `/p/${associatedProjectId}`;
+  const associatedProjectId = row['associatedProjectId'];
+  if (typeof associatedProjectId === 'string' && associatedProjectId) {
+    return `/p/${associatedProjectId}`;
+  }
   const id = String(row['_id'] ?? '');
   return id ? `/pn/${id}` : undefined;
 }

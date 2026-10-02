@@ -336,7 +336,8 @@ export function OverviewTab() {
               <Fact label="Documents">
                 {documents.totalListItems > 0 && (
                   <Link to={`${basePath}/documents`}>
-                    {documents.totalListItems.toLocaleString('en-CA')} documents
+                    {documents.totalListItems.toLocaleString('en-CA')}{' '}
+                    {documents.totalListItems === 1 ? 'document' : 'documents'}
                   </Link>
                 )}
               </Fact>

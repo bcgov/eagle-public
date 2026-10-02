@@ -338,7 +338,7 @@ test('the notifications pill draws one table row per notification, named to its 
   const first = page.locator(`tbody ${ROWS}`).first();
   await expect(first.getByRole('link', { name: 'Bear Creek Aggregate Expansion' })).toHaveAttribute(
     'href',
-    '/pn/n1',
+    '/pn/5c8a3a3ce7f1f1002466c2d1',
   );
 });
 

@@ -146,6 +146,10 @@ describe('notifications record link', () => {
     expect(nameColumn?.href?.({ _id: 'n1', associatedProjectId: '' })).toBe('/pn/n1');
   });
 
+  it('treats an associated project id that is not a string as no project', () => {
+    expect(nameColumn?.href?.({ _id: 'n1', associatedProjectId: { _id: 'p9' } })).toBe('/pn/n1');
+  });
+
   it('leaves a row with no id unlinked', () => {
     expect(nameColumn?.href?.({ name: 'Orphan' })).toBeUndefined();
   });
