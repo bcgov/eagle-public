@@ -102,6 +102,11 @@
   // matter. Empty keeps the client off, which is what local work wants.
   window.__env.EAGLE_ANALYTICS_URL = '';
 
+  // Projects shown as an extended project page rather than the EAO page: eagle project id to
+  // content key, e.g. { '<projectId>': 'pacific-link' }. Read from the runtime config. An empty
+  // object (or unset) turns the variant off and keeps every page as it is.
+  window.__env.EXTENDED_PROJECT_PAGES = {};
+
   // Build hash — replaced during CI build
   window.__env.GH_HASH = 'local-build';
 

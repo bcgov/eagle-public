@@ -9,6 +9,23 @@
   white-space: nowrap;
 }
 
+/* A long label (an extended project page's external pages) wraps rather than overflow a phone
+   screen. */
+.project-masthead__action--wrap {
+  white-space: normal;
+}
+
+/* The eyebrow badge follows the h1 in the DOM, so heading navigation reaches it; shown above. */
+.project-masthead .page-masthead__titles:has(.extended-badge) {
+  display: flex;
+  flex-direction: column;
+}
+
+.project-masthead .extended-badge {
+  order: -1;
+  align-self: flex-start;
+}
+
 .project-masthead__action--link {
   /* Fits "Short link" and "Copied" both, so the actions row does not reflow on click. */
   position: relative;

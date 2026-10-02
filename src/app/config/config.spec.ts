@@ -5,6 +5,7 @@ import {
   bulkDownloadEnabled,
   contentSearchEnabled,
   env,
+  extendedPageKey,
   getConfig,
   getDemiProjectsPath,
   getNotifyApi,
@@ -49,6 +50,24 @@ describe('contentSearchEnabled', () => {
   it('is off for a value that is merely truthy', async () => {
     await configuredWith({ CONTENT_SEARCH: 'false' });
     expect(contentSearchEnabled()).toBe(false);
+  });
+});
+
+describe('extendedPageKey', () => {
+  const original = window.__env;
+
+  afterEach(async () => {
+    window.__env = original;
+  });
+
+  async function configuredWith(env: Record<string, unknown>): Promise<void> {
+    window.__env = { logLevel: 4, ...env };
+    await loadConfig();
+  }
+
+  it('reads the content key from EXTENDED_PROJECT_PAGES', async () => {
+    await configuredWith({ EXTENDED_PROJECT_PAGES: { 'proj-1': 'pacific-link' } });
+    expect(extendedPageKey('proj-1')).toBe('pacific-link');
   });
 });
 

@@ -16,10 +16,14 @@ import { Constants } from 'app/utils/constants';
 import { newlines } from 'app/utils/newlines';
 import { safeHtml } from 'app/utils/safe-html';
 import { isSafeUrl } from 'app/utils/safe-url';
+import { DEFAULT_ACT } from 'app/utils/legislation';
 import { legislationLink, longDate, regulatorLink } from 'app/utils/utils';
+import { BlockList } from './extended/blocks/block-list';
+import type { BlockContext } from './extended/blocks/block-context';
+import { overviewAppend } from './extended/extended-page';
 import { FeaturedDocuments } from './featured-documents';
 import { Pins } from './pins';
-import { useProjectContext } from './project-context';
+import { useExtendedPage, useProjectContext } from './project-context';
 import './overview-tab.css';
 
 const OPERATIONS_EMAIL = 'EAO.operations@gov.bc.ca';
@@ -251,6 +255,7 @@ function NotificationFactRows({ facts }: { facts: NotificationFacts }) {
 
 export function OverviewTab() {
   const { project, projId, basePath, isNotification, projectLoading } = useProjectContext();
+  const extended = useExtendedPage();
   const banner = project?.commentPeriodForBanner;
   // DEMI has no certificate for a notification, and the fallback reads every project.
   const eaCertificate = useProjectEaCertificate(isNotification ? '' : projId);
@@ -265,6 +270,14 @@ export function OverviewTab() {
     sortBy: '',
     queryModifiers: { project: projId },
   });
+
+  // An extended project page's own blocks, after the details panel and after the contact card.
+  // Their headings are h2, as the Overview's own sections are.
+  const append = extended ? overviewAppend(extended) : null;
+  const blockContext: BlockContext | null =
+    extended && append
+      ? { segment: 'overview', content: extended, project, basePath, level: 2, labelled: true }
+      : null;
 
   return (
     <div className="record-layout">
@@ -303,7 +316,7 @@ export function OverviewTab() {
                 <>
                   <Fact label="Legislation">
                     <ExternalLink href={legislationLink(project?.legislation)}>
-                      {project?.legislation || '2018 Environmental Assessment Act'}
+                      {project?.legislation || DEFAULT_ACT.label}
                     </ExternalLink>
                   </Fact>
                   {eaCertificate && <Fact label="EA Certificate">{eaCertificate}</Fact>}
@@ -353,6 +366,8 @@ export function OverviewTab() {
           </DetailsPanel>
         )}
 
+        {append && blockContext && <BlockList blocks={append.main} context={blockContext} />}
+
         {/* Pins and updates hang off DEMI projects, which a notification is not. */}
         {!isNotification && <Pins />}
         <FeaturedDocuments />
@@ -361,6 +376,9 @@ export function OverviewTab() {
       <aside className="record-layout__aside">
         {!isNotification && <UpdatesCard projId={projId} />}
         <ContactCard project={project} />
+        {append?.aside && blockContext && (
+          <BlockList blocks={append.aside} context={blockContext} />
+        )}
       </aside>
     </div>
   );

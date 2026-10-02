@@ -21,6 +21,7 @@ import {
   type PhaseListItem,
   type RailStage,
 } from './assessment-stages';
+import { actFor } from 'app/utils/legislation';
 import type { Phase } from 'app/api/project-phases';
 import './assessment-rail.css';
 
@@ -106,9 +107,12 @@ export function AssessmentRail({
     [project, phases],
   );
 
-  const act = actYear(project);
+  const act = actFor(project?.legislation);
+  if (act?.stages === 'none') return null;
+
+  const year = actYear(project);
   // A 2002 Act project parked in a 2018 phase row never went through the 2018 stages.
-  const canDetail = phaseSetYear(project) === 2018 && act === 2018;
+  const canDetail = act?.stages === 'detailed' && phaseSetYear(project) === act.year;
   const detailed = canDetail && view === 'detailed';
   const offRail = offRailPhase(project);
   // One phase can span several stages; aria-current marks only the first so there is one step.
@@ -125,9 +129,9 @@ export function AssessmentRail({
         <h2 id="assessment-rail-heading" className="assessment-rail__title">
           Assessment progress
         </h2>
-        {(act > 0 || canDetail) && (
+        {(year > 0 || canDetail) && (
           <div className="assessment-rail__head-right">
-            {act > 0 && <p className="assessment-rail__act">{project?.legislation}</p>}
+            {year > 0 && <p className="assessment-rail__act">{project?.legislation}</p>}
             {canDetail && (
               <div className="assessment-rail__views" role="group" aria-label="Progress detail">
                 <button

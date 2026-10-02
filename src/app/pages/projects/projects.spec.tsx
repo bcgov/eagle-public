@@ -1140,6 +1140,51 @@ describe('projects map', () => {
     expect(options.zoom).toBeGreaterThanOrEqual(10);
   });
 
+  it('selects and flies to the project a link names in `selected`', async () => {
+    renderProjects('/projects?selected=p2');
+    await screen.findByText('Application Review');
+
+    expect(cardFor('Fir Transmission Line')).toHaveAttribute('aria-current', 'true');
+    expect(cardFor('Cedar Quarry')).not.toHaveAttribute('aria-current');
+    const popup = await screen.findByTestId('map-popup');
+    expect(
+      within(popup).getByRole('heading', { name: 'Fir Transmission Line' }),
+    ).toBeInTheDocument();
+    await waitFor(() => expect(fakeMap.flyTo).toHaveBeenCalledTimes(1));
+    const options = fakeMap.flyTo.mock.calls[0][0] as { center: [number, number] };
+    expect(options.center).toEqual([-120.1, 56.4]);
+  });
+
+  it('takes `selected` out of the URL once the visitor clears the selection', async () => {
+    const router = renderProjects('/projects?selected=p2&type=Mines');
+    await screen.findByText('Application Review');
+    expect(new URLSearchParams(router.state.location.search).get('selected')).toBe('p2');
+
+    await userEvent.click(cardFor('Fir Transmission Line'));
+
+    expect(cardFor('Fir Transmission Line')).not.toHaveAttribute('aria-current');
+    await waitFor(() =>
+      expect(new URLSearchParams(router.state.location.search).has('selected')).toBe(false),
+    );
+    expect(new URLSearchParams(router.state.location.search).get('type')).toBe('Mines');
+  });
+
+  it('selects nothing and frames every pin when the linked project is not in the list', async () => {
+    renderProjects('/projects?selected=gone');
+    await screen.findByText('Application Review');
+
+    expect(cards().filter((card) => card.hasAttribute('aria-current'))).toEqual([]);
+    expect(screen.queryByTestId('map-popup')).not.toBeInTheDocument();
+    expect(fakeMap.flyTo).not.toHaveBeenCalled();
+    // The two fixture centroids, so the stale id did not hold back the refit.
+    await waitFor(() =>
+      expect(fakeMap.fitBounds).toHaveBeenLastCalledWith(
+        [-127.5, 54.2, -120.1, 56.4],
+        expect.objectContaining({ padding: 48 }),
+      ),
+    );
+  });
+
   it('shrinks the list to the map view without dropping pins', async () => {
     renderProjects();
     await screen.findByText('Application Review');

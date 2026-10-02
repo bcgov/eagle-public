@@ -1,6 +1,7 @@
 import type { ISearchResults } from 'app/models/search';
 import type { ListRef } from 'app/api/api';
 import { Constants } from './constants';
+import { DEFAULT_ACT, actFor } from './legislation';
 import { documentTabByKey, idsForTerms } from './document-tabs';
 import { track } from 'app/analytics/analytics';
 import { createBulkDownload } from 'app/api/api';
@@ -197,13 +198,7 @@ export function regulatorLink(item: unknown): string {
   return isSafeUrl(item) ? item : Constants.BC_ENERGY_REGULATOR_LINK;
 }
 
-/** bclaws link for the Act a project was assessed under; unknown legislation reads as 2018. */
+/** Link to the Act a project was assessed under; unknown legislation reads as the default Act. */
 export function legislationLink(legislation: string | undefined): string {
-  if (legislation?.includes('2002')) {
-    return Constants.legislationLinks.ENVIRONMENTAL_ASSESSMENT_ACT_2002_LINK;
-  }
-  if (legislation?.includes('1996')) {
-    return Constants.legislationLinks.ENVIRONMENTAL_ASSESSMENT_ACT_1996_LINK;
-  }
-  return Constants.legislationLinks.ENVIRONMENTAL_ASSESSMENT_ACT_2018_LINK;
+  return (actFor(legislation) ?? DEFAULT_ACT).href;
 }

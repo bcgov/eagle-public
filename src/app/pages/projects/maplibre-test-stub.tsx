@@ -187,16 +187,18 @@ interface LayerProps {
   id?: string;
   filter?: unknown;
   layout?: { visibility?: string };
+  paint?: unknown;
 }
 
-/** Rendered, not dropped: specs assert on a layer's filter and visibility. */
-function Layer({ id, filter, layout }: LayerProps) {
+/** Rendered, not dropped: specs assert on a layer's filter, visibility and paint. */
+function Layer({ id, filter, layout, paint }: LayerProps) {
   return (
     <div
       data-testid="layer"
       data-id={id}
       data-filter={JSON.stringify(filter ?? null)}
       data-visibility={layout?.visibility ?? 'visible'}
+      data-paint={JSON.stringify(paint ?? null)}
     />
   );
 }

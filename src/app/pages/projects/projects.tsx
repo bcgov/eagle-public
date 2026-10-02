@@ -1,5 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router';
 import type { Project } from 'app/models/project';
 import { allProjectsQueryOptions, searchProjectIds } from 'app/api/project';
 import { listsQueryOptions } from 'app/api/api';
@@ -22,6 +23,7 @@ import {
   useProjectFilters,
   type ProjectSort,
 } from './filter-state';
+import { SELECTED_PARAM } from './explorer-link';
 import { filterProjects, projectMatchesFilters, sortProjects } from './project-filter';
 import { ProjlistFilters, ProjlistSort } from './projlist-filters';
 import { ProjlistList } from './projlist-list';
@@ -34,7 +36,21 @@ const ProjlistMap = lazy(() => import('./projlist-map').then((m) => ({ default: 
 const POLYGON_NAME: Record<string, string> = { 'Thompson-Nicola': 'Thompson' };
 
 export function Projects() {
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [params, setParams] = useSearchParams();
+  // Seeded once from a project page's link; later filter changes may drop it from the URL.
+  const [selectedId, setSelectedId] = useState<string | null>(() => params.get(SELECTED_PARAM));
+  // Once the visitor clears the selection, the link's id leaves the URL, so a reload keeps it clear.
+  useEffect(() => {
+    if (selectedId !== null || !params.has(SELECTED_PARAM)) return;
+    setParams(
+      (current) => {
+        const next = new URLSearchParams(current);
+        next.delete(SELECTED_PARAM);
+        return next;
+      },
+      { replace: true },
+    );
+  }, [selectedId, params, setParams]);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   /** Read out with the result count after a sort change; the list reorders without a sound. */
   const [sortNote, setSortNote] = useState('');
@@ -53,6 +69,8 @@ export function Projects() {
     () => new Map((allApps ?? []).map((project) => [project._id, project])),
     [allApps],
   );
+  // A linked id the loaded list does not hold is dropped, so it never holds back the map's refit.
+  if (allApps !== null && selectedId !== null && !projectsById.has(selectedId)) setSelectedId(null);
 
   // One character searches nothing, as in the other typeahead boxes.
   const typed = typeaheadKeywords(filters.applicant ?? '').toLowerCase();

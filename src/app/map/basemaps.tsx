@@ -37,27 +37,34 @@ export const BC_BOUNDS: [[number, number], [number, number]] = [
 interface Basemap {
   /** Also the value stored in `baseLayerName`. */
   name: string;
-  path: string;
+  /** Raster tile URL template. */
+  tiles: string;
   maxzoom: number;
   attribution: string;
 }
 
+const esriTiles = (path: string) =>
+  `https://server.arcgisonline.com/ArcGIS/rest/services/${path}/MapServer/tile/{z}/{y}/{x}`;
+
+/** One of the Map Explorer's basemaps, and the one the extended page's route map draws on. */
+export const LIGHT_GRAY_BASEMAP: Basemap = {
+  name: 'Light Gray',
+  tiles: esriTiles('Canvas/World_Light_Gray_Base'),
+  maxzoom: 16,
+  attribution: 'Tiles &copy; Esri',
+};
+
 const BASEMAPS: Basemap[] = [
-  {
-    name: 'Light Gray',
-    path: 'Canvas/World_Light_Gray_Base',
-    maxzoom: 16,
-    attribution: 'Tiles &copy; Esri',
-  },
+  LIGHT_GRAY_BASEMAP,
   {
     name: 'World Topographic',
-    path: 'World_Topo_Map',
+    tiles: esriTiles('World_Topo_Map'),
     maxzoom: 16,
     attribution: 'Tiles &copy; Esri',
   },
   {
     name: 'World Imagery',
-    path: 'World_Imagery',
+    tiles: esriTiles('World_Imagery'),
     maxzoom: 17,
     attribution: 'Tiles &copy; Esri',
   },
@@ -81,9 +88,7 @@ export function Basemaps() {
           key={basemap.name}
           id={slug(basemap)}
           type="raster"
-          tiles={[
-            `https://server.arcgisonline.com/ArcGIS/rest/services/${basemap.path}/MapServer/tile/{z}/{y}/{x}`,
-          ]}
+          tiles={[basemap.tiles]}
           tileSize={256}
           maxzoom={basemap.maxzoom}
           attribution={basemap.attribution}

@@ -18,12 +18,18 @@ import { DocumentsPage } from './pages/project/documents-page';
 import { DocumentsTab } from './pages/project/documents-tab';
 import { ComplianceDocumentsTab } from './pages/project/compliance-documents-tab';
 import { DecisionsTab } from './pages/project/decisions-tab';
+import { ContentTabRoute, standardTab } from './pages/project/extended/extended-route';
 import { Comments } from './pages/comments/comments';
 import {
   NotificationDocuments,
   NotificationPage,
 } from './pages/project-notifications/notification-page';
 import { legacySearchRedirect, resolveLegacySearch } from './routes/legacy-search';
+import {
+  COMMENT_PERIOD_SEGMENT,
+  LEGACY_DOCUMENT_TABS,
+  RENAMED_PROJECT_TABS,
+} from './routes/project-segments';
 
 /**
  * An Angular-era /search address means document search, and carries params the unified page does
@@ -99,11 +105,13 @@ export const routes: RouteObject[] = [
 
       // Project comment period routes
       {
-        path: 'p/:projId/cp/:commentPeriodId',
+        path: `p/:projId/${COMMENT_PERIOD_SEGMENT}/:commentPeriodId`,
         loader: ({ params }) =>
-          redirect(`/p/${params['projId']}/cp/${params['commentPeriodId']}/details`),
+          redirect(
+            `/p/${params['projId']}/${COMMENT_PERIOD_SEGMENT}/${params['commentPeriodId']}/details`,
+          ),
       },
-      { path: 'p/:projId/cp/:commentPeriodId/details', Component: Comments },
+      { path: `p/:projId/${COMMENT_PERIOD_SEGMENT}/:commentPeriodId/details`, Component: Comments },
 
       // Project detail routes with tabs
       {
@@ -114,12 +122,12 @@ export const routes: RouteObject[] = [
             index: true,
             loader: ({ params }) => redirect(`/p/${params['projId']}/overview`),
           },
-          { path: 'overview', Component: OverviewTab },
-          { path: 'updates', Component: UpdatesTab },
-          { path: 'engagement', Component: EngagementTab },
+          { path: 'overview', Component: standardTab('overview', OverviewTab) },
+          { path: 'updates', Component: standardTab('updates', UpdatesTab) },
+          { path: 'engagement', Component: standardTab('engagement', EngagementTab) },
           {
             path: 'documents',
-            Component: DocumentsPage,
+            Component: standardTab('documents', DocumentsPage),
             children: [
               { index: true, Component: DocumentsTab },
               { path: 'application', Component: Application },
@@ -131,22 +139,22 @@ export const routes: RouteObject[] = [
           },
           // The document-type tabs used to sit at the top level. Keep the old paths pointing at
           // their sub-tab, filters and paging intact, so published links still work.
-          ...['application', 'certificates', 'amendments'].map((tab) => ({
+          ...LEGACY_DOCUMENT_TABS.map((tab) => ({
             path: tab,
             loader: ({ params, request }: LoaderFunctionArgs) =>
               redirect(`/p/${params['projId']}/documents/${tab}${new URL(request.url).search}`),
           })),
           // Same for the two tabs the redesign renamed.
-          ...[
-            { from: 'project-details', to: 'overview' },
-            { from: 'commenting', to: 'engagement' },
-          ].map(({ from, to }) => ({
+          ...RENAMED_PROJECT_TABS.map(({ from, to }) => ({
             path: from,
             loader: ({ params, request }: LoaderFunctionArgs) =>
               redirect(`/p/${params['projId']}/${to}${new URL(request.url).search}`),
           })),
-          { path: 'decisions', Component: DecisionsTab },
-          { path: 'compliance', Component: ComplianceTab },
+          { path: 'decisions', Component: standardTab('decisions', DecisionsTab) },
+          { path: 'compliance', Component: standardTab('compliance', ComplianceTab) },
+          // An extended project page's own tabs. Every static path above outranks it; any other
+          // path under the project goes to the project's Overview.
+          { path: ':segment/*', Component: ContentTabRoute },
         ],
       },
 

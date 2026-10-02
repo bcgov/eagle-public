@@ -1,0 +1,89 @@
+/* Band block. Tokens come from @bcgov/design-tokens and eao-tokens.css; the eyebrow and the two
+   actions are the Overview callout's, in overview-tab.css. */
+
+.extended-band {
+  background: var(--theme-gray-white);
+  border-bottom: var(--layout-border-width-small) solid var(--theme-gray-40);
+}
+
+.extended-band__inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--layout-padding-xlarge);
+  padding-block: var(--layout-padding-xlarge);
+}
+
+.extended-band__intro {
+  flex: 1 1 420px;
+  min-width: 0;
+  padding-left: var(--layout-padding-large);
+  border-left: var(--layout-border-width-large) solid var(--theme-primary-gold);
+}
+
+.extended-band__intro .overview-tab__eyebrow {
+  margin-bottom: var(--layout-margin-xsmall);
+}
+
+.extended-band__title {
+  margin: 0 0 var(--layout-margin-small);
+  font: var(--typography-bold-h3);
+  color: var(--typography-color-primary);
+}
+
+.extended-band__text {
+  margin: 0 0 var(--layout-margin-small);
+  font: var(--typography-regular-body);
+  color: var(--typography-color-primary);
+}
+
+/* Paragraphs after the first qualify it: smaller and quieter. */
+.extended-band__text + .extended-band__text {
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-secondary);
+}
+
+.extended-band__text:last-of-type {
+  margin-bottom: var(--layout-margin-medium);
+}
+
+.extended-band__icon {
+  font-size: var(--icons-size-medium);
+}
+
+.extended-band__steps {
+  display: grid;
+  flex: 1 1 360px;
+  /* The steps wrap. The design's 150px minimum fits four columns at 1440 and up and leaves step 5
+     alone on a second row; 10rem holds three columns from 1280 up, so the rows read 3 + 2. */
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: var(--layout-padding-medium);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* On a phone three columns squeeze each step to a word a line; two read better. */
+@media (max-width: 575.98px) {
+  .extended-band__steps {
+    grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  }
+}
+
+.extended-band__num {
+  margin-bottom: var(--layout-margin-xsmall);
+  font: var(--typography-bold-small-body);
+}
+
+.extended-band__step-name {
+  display: block;
+  font: var(--typography-bold-small-body);
+  color: var(--typography-color-primary);
+}
+
+.extended-band__step-short {
+  display: block;
+  font: var(--typography-regular-label);
+  color: var(--typography-color-secondary);
+}

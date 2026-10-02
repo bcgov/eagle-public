@@ -1,0 +1,53 @@
+/* Table block. Tokens come from @bcgov/design-tokens and eao-tokens.css. */
+
+.extended-table__intro {
+  margin: 0 0 var(--layout-margin-medium);
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-secondary);
+}
+
+.extended-table {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.extended-table__row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--layout-padding-small) var(--layout-padding-large);
+  padding: var(--layout-padding-small) 0;
+  border-bottom: var(--layout-border-width-small) solid var(--theme-gray-30);
+}
+
+.extended-table__who {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.extended-table__name,
+.extended-table__share {
+  font: var(--typography-bold-small-body);
+  color: var(--typography-color-primary);
+}
+
+.extended-table__name,
+.extended-table__note {
+  display: block;
+}
+
+.extended-table__note {
+  font: var(--typography-regular-label);
+  color: var(--typography-color-secondary);
+}
+
+.extended-table__share {
+  text-align: right;
+}
+
+.extended-table__footnote {
+  margin: var(--layout-margin-small) 0 0;
+  font: var(--typography-regular-label);
+  color: var(--typography-color-secondary);
+}

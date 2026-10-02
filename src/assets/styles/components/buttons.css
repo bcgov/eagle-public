@@ -38,6 +38,17 @@
   cursor: pointer;
 }
 
+/* On a link, the theme's `a:focus` and `a:active` (bcgov-bootstrap-theme.css, 0,1,1) outrank the
+   class and paint the label --bc-blue, the band's own colour: a clicked link keeps :focus and its
+   label vanishes. These hold the resting white; the hover and focus-visible rules below come later
+   at the same weight, so they still win. */
+.btn-on-dark:focus,
+.btn-on-dark:active,
+.btn-on-dark:visited {
+  color: var(--typography-color-primary-invert);
+  text-decoration: none;
+}
+
 .btn-on-dark:hover,
 .btn-on-dark:focus-visible,
 .btn-on-dark[aria-expanded='true'] {

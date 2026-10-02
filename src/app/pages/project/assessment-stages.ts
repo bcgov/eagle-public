@@ -1,5 +1,6 @@
 import type { Phase } from 'app/api/project-phases';
 import type { Project } from 'app/models/project';
+import { DEFAULT_ACT, actByYear, actFor } from 'app/utils/legislation';
 
 /**
  * Stage data for the assessment progress rail. Hex values mirror
@@ -178,17 +179,19 @@ function isPostDecision(name: string): boolean {
 
 /**
  * Which set of `projectPhase` rows the project sits in. The phase row's own `legislation`
- * wins because 2002 Act projects can end up in the 2018 "Complete" phase; 1996 Act projects
- * have no rows of their own and use the 2002 set.
+ * wins because 2002 Act projects can end up in the 2018 "Complete" phase; an Act with no rows
+ * of its own uses its `phaseRowsYear` set.
  */
 export function phaseSetYear(project: Project | null): number {
-  const year = Number(project?.currentPhaseName?.legislation) || actYear(project) || 2018;
-  return year === 1996 ? 2002 : year;
+  const year =
+    Number(project?.currentPhaseName?.legislation) || actYear(project) || DEFAULT_ACT.year;
+  return actByYear(year)?.phaseRowsYear ?? year;
 }
 
-/** The Act the project was assessed under, from its `legislation` string. */
+/** The year of the Act the project was assessed under, from its `legislation` string. */
 export function actYear(project: Project | null): number {
-  return Number(String(project?.legislation ?? '').match(/\d{4}/)?.[0]);
+  const label = String(project?.legislation ?? '');
+  return actFor(label)?.year ?? Number(label.match(/\d{4}/)?.[0]);
 }
 
 /** The current phase when it sits off the rail, so the rail can say so. */

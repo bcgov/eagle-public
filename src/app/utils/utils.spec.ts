@@ -267,17 +267,20 @@ describe('openDocumentDownload()', () => {
 });
 
 describe('legislationLink()', () => {
-  it('picks the Act named in the project legislation, defaulting to 2018', () => {
-    const links = Constants.legislationLinks;
-    expect(legislationLink('2002 Environmental Assessment Act')).toBe(
-      links.ENVIRONMENTAL_ASSESSMENT_ACT_2002_LINK,
-    );
-    expect(legislationLink('1996 Environmental Assessment Act')).toBe(
-      links.ENVIRONMENTAL_ASSESSMENT_ACT_1996_LINK,
-    );
-    expect(legislationLink('2018 Environmental Assessment Act')).toBe(
-      links.ENVIRONMENTAL_ASSESSMENT_ACT_2018_LINK,
-    );
-    expect(legislationLink(undefined)).toBe(links.ENVIRONMENTAL_ASSESSMENT_ACT_2018_LINK);
+  const EAA_1996 = 'http://www.bclaws.ca/civix/document/id/complete/statreg/96119_pit';
+  const EAA_2002 = 'http://www.bclaws.ca/civix/document/id/complete/statreg/02043_01';
+  const EAA_2018 = 'http://www.bclaws.ca/civix/document/id/complete/statreg/18051';
+  const BUILDING_CANADA_ACT = 'https://laws-lois.justice.gc.ca/eng/acts/B-9.89/page-1.html';
+
+  it.each([
+    ['1996 Environmental Assessment Act', EAA_1996],
+    ['2002 Environmental Assessment Act', EAA_2002],
+    ['2018 Environmental Assessment Act', EAA_2018],
+    ['Building Canada Act', BUILDING_CANADA_ACT],
+    ['', EAA_2018],
+    [undefined, EAA_2018],
+    ['Environmental Management Act', EAA_2018],
+  ])('links %j to %s', (legislation, href) => {
+    expect(legislationLink(legislation)).toBe(href);
   });
 });

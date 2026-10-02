@@ -1,0 +1,60 @@
+/* Route map block: the figure around the map and the facts under it. The map itself is styled in
+   route-map.css, the line tiles in route-lines.css. */
+
+.extended-route__figure {
+  margin: 0 0 var(--layout-margin-medium);
+}
+
+.extended-route__map {
+  overflow: hidden;
+  border: var(--layout-border-width-small) solid var(--theme-gray-40);
+  border-radius: var(--layout-border-radius-medium);
+  background: var(--theme-gray-20);
+}
+
+.extended-route__loading {
+  height: 440px;
+}
+
+/* Shown in the map's place when its code fails to load, so route-map.css is absent too. */
+.extended-route__unavailable {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 440px;
+  padding: var(--layout-padding-medium);
+  color: var(--typography-color-secondary);
+  font: var(--typography-regular-small-body);
+  text-align: center;
+}
+
+.extended-route__unavailable p {
+  margin: 0;
+}
+
+.extended-route__caption {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--layout-padding-xsmall) var(--layout-padding-medium);
+  margin-top: var(--layout-margin-xsmall);
+  font: var(--typography-regular-label);
+  color: var(--typography-color-secondary);
+}
+
+.extended-route__description {
+  flex: 1 0 100%;
+  margin: 0;
+}
+
+/* Plain disc bullets: the earlier icon list did not render reliably. */
+.extended-route-map__bullets {
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-padding-small);
+  margin: 0;
+  padding-left: 1.25rem;
+  list-style: disc;
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-primary);
+}

@@ -227,6 +227,26 @@ describe('overview tab', () => {
     expect(screen.queryByText('EA decision')).not.toBeInTheDocument();
   });
 
+  it('names the federal Building Canada Act and links its full text', async () => {
+    project = new Project({ ...PROJECT, legislation: 'Building Canada Act' });
+    renderTab();
+
+    expect(await screen.findByRole('link', { name: /^Building Canada Act/ })).toHaveAttribute(
+      'href',
+      'https://laws-lois.justice.gc.ca/eng/acts/B-9.89/page-1.html',
+    );
+    expect(screen.queryByText(/Environmental Assessment Act/)).not.toBeInTheDocument();
+  });
+
+  it('names and links the 2018 Act when the project has no legislation', async () => {
+    project = new Project({ ...PROJECT, legislation: '' });
+    renderTab();
+
+    expect(
+      await screen.findByRole('link', { name: /^2018 Environmental Assessment Act/ }),
+    ).toHaveAttribute('href', 'http://www.bclaws.ca/civix/document/id/complete/statreg/18051');
+  });
+
   it('counts the project documents in the About grid, linked to the Documents tab', async () => {
     renderTab();
 

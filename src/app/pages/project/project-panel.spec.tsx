@@ -21,6 +21,15 @@ const PROJECT = {
   decisionDate: '2023-03-14T00:00:00.000Z',
 } as unknown as Project;
 
+const FEDERAL = {
+  _id: 'bca-1',
+  name: 'Coastal Corridor',
+  legislation: 'Building Canada Act',
+  location: 'Near Prince Rupert',
+  centroid: [-130.3, 54.3],
+  eacDecision: { name: 'In progress' },
+} as unknown as Project;
+
 const NOTIFICATION = {
   _id: 'pn-1',
   name: 'Birch Mine Expansion',
@@ -129,6 +138,45 @@ describe('project panel DEMI reads', () => {
     await waitFor(() => expect(requests).toContain('/demi-projects/proj-1'));
     expect(requests.filter((url) => url.includes('pn-1'))).toEqual([]);
   });
+
+  it('reads no phases for a project under an Act with no stages', async () => {
+    // Both panels draw their own facts, so the certificate read is off and only the phase read
+    // could ask DEMI. The 2018 project's read marks the moment the other one would go too.
+    const ownFacts = { facts: <p>Facts from the page</p> };
+    renderAt('/p/proj-1/overview', [
+      {
+        path: '/p/:projId/overview',
+        element: (
+          <>
+            <ProjectPanel project={PROJECT} lists={[]} parts={ownFacts} />
+            <ProjectPanel project={FEDERAL} lists={[]} parts={ownFacts} />
+          </>
+        ),
+      },
+    ]);
+
+    await waitFor(() => expect(requests).toContain('/demi-projects/proj-1'));
+    expect(requests.filter((url) => url.includes('bca-1'))).toEqual([]);
+  });
+});
+
+describe('project panel for a project under an Act with no stages', () => {
+  it("still draws the page's own progress part", () => {
+    renderAt('/p/bca-1/overview', [
+      {
+        path: '/p/:projId/overview',
+        element: (
+          <ProjectPanel
+            project={FEDERAL}
+            lists={[]}
+            parts={{ progress: <h2>Corridor review progress</h2> }}
+          />
+        ),
+      },
+    ]);
+
+    expect(screen.getByRole('heading', { name: 'Corridor review progress' })).toBeInTheDocument();
+  });
 });
 
 describe('project panel map', () => {
@@ -142,8 +190,17 @@ describe('project panel map', () => {
     expect(markers[0]).toHaveAttribute('data-lat', '54.2');
   });
 
-  it('links from the thumbnail to the map explorer', async () => {
+  it('links from the thumbnail to the map explorer, searched for and selecting this project', async () => {
     renderPanel(PROJECT);
+
+    expect(await screen.findByRole('link', { name: /Open in map explorer/ })).toHaveAttribute(
+      'href',
+      '/projects?applicant=Cedar+Quarry&selected=proj-1',
+    );
+  });
+
+  it('links a notification to the plain map explorer, which lists only projects', async () => {
+    renderPanel({ ...NOTIFICATION, centroid: [-127.5, 54.2] } as unknown as Project);
 
     expect(await screen.findByRole('link', { name: /Open in map explorer/ })).toHaveAttribute(
       'href',

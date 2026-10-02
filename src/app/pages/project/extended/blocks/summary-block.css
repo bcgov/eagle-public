@@ -1,0 +1,35 @@
+/* Summary block. Tokens come from @bcgov/design-tokens and eao-tokens.css. */
+
+.extended-summary__description {
+  margin-bottom: var(--layout-margin-medium);
+}
+
+.extended-summary__item {
+  padding-top: 2px;
+  font: var(--typography-regular-small-body);
+  color: var(--typography-color-primary);
+}
+
+/* Three headline figures between two rules. */
+.extended-summary__stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--layout-padding-medium);
+  margin: 0 0 var(--layout-margin-medium);
+  padding: var(--layout-padding-medium) 0;
+  border-block: var(--layout-border-width-small) solid var(--theme-gray-30);
+}
+
+.extended-summary__stats dt {
+  margin-bottom: var(--layout-margin-hair);
+  font: var(--typography-bold-label);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--typography-color-secondary);
+}
+
+.extended-summary__stats dd {
+  margin: 0;
+  font: var(--typography-bold-h5);
+  color: var(--typography-color-primary);
+}

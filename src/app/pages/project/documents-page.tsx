@@ -3,7 +3,10 @@ import { track } from 'app/analytics/analytics';
 import { Skeleton } from 'app/components/skeleton/skeleton';
 import { DOCUMENT_TABS } from 'app/utils/document-tabs';
 import { useDocTabProbes } from './use-doc-tab-probes';
-import { useProjectContext } from './project-context';
+import { useExtendedPage, useProjectContext } from './project-context';
+import { useProjectDocumentCount } from './use-project-tab-meta';
+import { ExtendedDocumentsEmpty } from './extended/extended-documents-empty';
+import { ExtendedExternalDocuments } from './extended/extended-external-documents';
 import './documents-page.css';
 
 /** Stand-ins for the segments still being probed, sized like the labels they replace. */
@@ -28,9 +31,13 @@ export function DocumentsHeader() {
 export function DocumentsPage() {
   const context = useProjectContext();
   const { projId, lists, project } = context;
+  const extended = useExtendedPage();
 
   // Shared with the project tab strip, which needs the same answers.
   const probes = useDocTabProbes(projId, lists);
+  const emptyNotice = extended?.documents?.empty;
+  // Same query as the strip's count, so this reads its cache.
+  const documents = useProjectDocumentCount(emptyNotice ? projId : '');
 
   // Absolute links: a relative `.` resolves against the open view, which would leave All
   // Documents marked active everywhere. `end` keeps it inactive while a filtered view is open.
@@ -45,6 +52,18 @@ export function DocumentsPage() {
       end: false,
     })),
   ];
+
+  // An extended project page with an empty notice points elsewhere for its records rather than
+  // showing an empty table. Documents other governments published sit below, never in the table.
+  if (extended && emptyNotice && !documents.pending && documents.total === 0) {
+    return (
+      <>
+        <DocumentsHeader />
+        <ExtendedDocumentsEmpty content={extended} />
+        <ExtendedExternalDocuments content={extended} />
+      </>
+    );
+  }
 
   return (
     <>
@@ -96,6 +115,7 @@ export function DocumentsPage() {
       <div className="documents-page__body">
         <Outlet context={context} />
       </div>
+      {extended && <ExtendedExternalDocuments content={extended} />}
     </>
   );
 }

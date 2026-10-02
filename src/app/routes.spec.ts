@@ -99,7 +99,8 @@ describe('routes', () => {
 
   it('gives the project route its top-level tabs plus an index redirect', () => {
     const project = findRoute('p/:projId');
-    expect(project?.children?.map((child) => child.path)).toEqual([
+    const paths = project?.children?.map((child) => child.path);
+    expect(paths?.filter((path) => !path?.startsWith(':'))).toEqual([
       undefined,
       'overview',
       'updates',

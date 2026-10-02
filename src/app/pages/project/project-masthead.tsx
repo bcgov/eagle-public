@@ -8,6 +8,9 @@ import { useDemiProject } from 'app/api/project-phases';
 import { searchUrl } from 'app/routes/legacy-search';
 import { isSafeUrl } from 'app/utils/safe-url';
 import type { Project } from 'app/models/project';
+import { ContentLink } from './extended/content-link';
+import { MastheadBadge } from './extended/extended-shell';
+import type { ExtendedPage } from './extended/types';
 import './project-masthead.css';
 
 interface ProjectMastheadProps {
@@ -17,6 +20,11 @@ interface ProjectMastheadProps {
   isNotification?: boolean;
   /** The shell's project fetch is still in flight. */
   loading?: boolean;
+  /**
+   * An extended project page: whichever of its name, badge, sub-line and actions (in place of
+   * Short link) the content sets.
+   */
+  extended?: ExtendedPage | null;
 }
 
 /** The shared band, filled in for a project: what it is, and how to follow or share it. */
@@ -25,18 +33,26 @@ export function ProjectMasthead({
   projId,
   isNotification = false,
   loading = false,
+  extended = null,
 }: ProjectMastheadProps) {
-  const subtitle = [
+  const masthead = extended?.masthead;
+  const subLine = masthead?.subLine;
+  const subtitleParts: (string | false | undefined)[] = subLine ?? [
     isNotification && 'Project notification',
     project?.proponent?.name,
     project?.location,
-  ]
-    .filter(Boolean)
-    .join(' · ');
+  ];
+  const subtitle = subtitleParts.filter(Boolean).join(' · ');
+  const name = extended?.displayName ?? project?.name;
+  // Content, not the record: nothing to wait for.
+  const titleLoading = loading && !extended?.displayName;
+  const metaLoading = loading && !subLine;
+  const actions = masthead?.actions;
   const associatedProjectId = project?.notification?.associatedProjectId;
 
-  // DEMI holds projects only; a notification id would just 404.
-  const demiShortUrl = useDemiProject(isNotification ? '' : projId).data?.shortUrl;
+  // DEMI holds projects only; a notification id would just 404. Content actions replace the
+  // short link, so it is not fetched then.
+  const demiShortUrl = useDemiProject(isNotification || actions ? '' : projId).data?.shortUrl;
 
   const [copyState, setCopyState] = useState<'idle' | 'copied'>('idle');
   const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -94,14 +110,15 @@ export function ProjectMasthead({
   return (
     <PageMasthead
       className="project-masthead"
-      busy={loading}
+      busy={titleLoading}
       breadcrumbs={[
         { label: 'Home', to: '/' },
         { label: 'Search', to: searchUrl(isNotification ? 'notifications' : 'projects') },
-        { label: project?.name ?? '' },
+        { label: name ?? '' },
       ]}
+      eyebrow={masthead?.badge && <MastheadBadge label={masthead.badge} />}
       title={
-        loading ? (
+        titleLoading ? (
           <>
             <span className="visually-hidden">
               {isNotification ? 'Loading project notification' : 'Loading project'}
@@ -109,10 +126,10 @@ export function ProjectMasthead({
             <Skeleton width="60%" />
           </>
         ) : (
-          project?.name
+          name
         )
       }
-      meta={loading ? <Skeleton width="35%" /> : subtitle || undefined}
+      meta={metaLoading ? <Skeleton width="35%" /> : subtitle || undefined}
       actions={
         <>
           {associatedProjectId && (
@@ -130,27 +147,41 @@ export function ProjectMasthead({
               surface="masthead"
             />
           )}
-          <button
-            type="button"
-            className={
-              copyState === 'copied'
-                ? 'btn-on-dark project-masthead__action project-masthead__action--link project-masthead__action--copied'
-                : 'btn-on-dark project-masthead__action project-masthead__action--link'
-            }
-            onClick={copyLink}
-          >
-            <i className="material-icons" aria-hidden="true">
-              {copyState === 'copied' ? 'check' : 'link'}
-            </i>
-            <span className="project-masthead__action-label">
-              {copyState === 'copied' ? 'Copied' : isNotification ? 'Copy link' : 'Short link'}
-            </span>
-          </button>
-          {/* Sibling, not nested in the button: a live region inside it would fold into the
+          {actions ? (
+            actions.map((action) => (
+              <ContentLink
+                key={action.href}
+                className="btn-on-dark project-masthead__action project-masthead__action--wrap"
+                href={action.href}
+              >
+                {action.label}
+              </ContentLink>
+            ))
+          ) : (
+            <>
+              <button
+                type="button"
+                className={
+                  copyState === 'copied'
+                    ? 'btn-on-dark project-masthead__action project-masthead__action--link project-masthead__action--copied'
+                    : 'btn-on-dark project-masthead__action project-masthead__action--link'
+                }
+                onClick={copyLink}
+              >
+                <i className="material-icons" aria-hidden="true">
+                  {copyState === 'copied' ? 'check' : 'link'}
+                </i>
+                <span className="project-masthead__action-label">
+                  {copyState === 'copied' ? 'Copied' : isNotification ? 'Copy link' : 'Short link'}
+                </span>
+              </button>
+              {/* Sibling, not nested in the button: a live region inside it would fold into the
               button's accessible name instead of announcing as its own update. */}
-          <span role="status" className="visually-hidden">
-            {copyState === 'copied' ? 'Link copied to clipboard' : ''}
-          </span>
+              <span role="status" className="visually-hidden">
+                {copyState === 'copied' ? 'Link copied to clipboard' : ''}
+              </span>
+            </>
+          )}
         </>
       }
     />
