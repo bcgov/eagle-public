@@ -1,6 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { useSearchParams } from 'react-router';
+import { useLocation, useSearchParams } from 'react-router';
 import type { Project } from 'app/models/project';
 import { allProjectsQueryOptions, searchProjectIds } from 'app/api/project';
 import { listsQueryOptions } from 'app/api/api';
@@ -35,13 +35,24 @@ const ProjlistMap = lazy(() => import('./projlist-map').then((m) => ({ default: 
 /** eagle-api's region list names the Thompson polygon "Thompson-Nicola"; the shapefile does not. */
 const POLYGON_NAME: Record<string, string> = { 'Thompson-Nicola': 'Thompson' };
 
+/** How often the comment periods' dates are re-read while the page stays open. */
+const ENGAGEMENT_RECHECK_MS = 60_000;
+
 export function Projects() {
   const [params, setParams] = useSearchParams();
-  // Seeded once from a project page's link; later filter changes may drop it from the URL.
-  const [selectedId, setSelectedId] = useState<string | null>(() => params.get(SELECTED_PARAM));
+  const linkedId = params.get(SELECTED_PARAM);
+  // Seeded from a project page's link; later filter changes may drop it from the URL.
+  const [selectedId, setSelectedId] = useState<string | null>(linkedId);
+  // A navigation that stays on this page, such as Back, can carry a new link.
+  const { key: locationKey } = useLocation();
+  const [seededKey, setSeededKey] = useState(locationKey);
+  if (seededKey !== locationKey) {
+    setSeededKey(locationKey);
+    if (linkedId !== null) setSelectedId(linkedId);
+  }
   // Once the visitor clears the selection, the link's id leaves the URL, so a reload keeps it clear.
   useEffect(() => {
-    if (selectedId !== null || !params.has(SELECTED_PARAM)) return;
+    if (selectedId !== null || linkedId === null) return;
     setParams(
       (current) => {
         const next = new URLSearchParams(current);
@@ -50,10 +61,13 @@ export function Projects() {
       },
       { replace: true },
     );
-  }, [selectedId, params, setParams]);
+  }, [selectedId, linkedId, setParams]);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
-  /** Read out with the result count after a sort change; the list reorders without a sound. */
-  const [sortNote, setSortNote] = useState('');
+  /**
+   * Read out with the result count after a sort change; the list reorders without a sound.
+   * `count` is the list length it was said with, so a later count change drops it.
+   */
+  const [sortNote, setSortNote] = useState<{ text: string; count: number | null } | null>(null);
 
   const bounds = useStore(mapBounds);
   const mobile = useResponsive().isMobile;
@@ -91,12 +105,17 @@ export function Projects() {
     placeholderData: keepPreviousData,
   });
   const searchFailed = keywords !== '' && search.isError;
+  const searchError = keywords !== '' ? search.error : null;
+  useEffect(() => {
+    if (searchError) logger.error('Error searching projects', 'Projects', searchError);
+  }, [searchError]);
+  const searching = keywords !== '' && search.isFetching;
   // In demi-search's order; an id missing from the full list drops out.
   const matchedApps = useMemo<Project[] | null>(() => {
     if (allApps === null) return null;
     if (search.data === undefined) return searchFailed ? [] : null;
     if (search.data === null) return allApps;
-    return search.data
+    return [...new Set(search.data)]
       .map((id) => projectsById.get(id))
       .filter((project): project is Project => !!project);
   }, [allApps, projectsById, search.data, searchFailed]);
@@ -106,22 +125,42 @@ export function Projects() {
   const openPeriods = useQuery(openCommentPeriodsQueryOptions());
   const upcomingPeriods = useQuery(upcomingCommentPeriodsQueryOptions());
   const periodsSettled = openPeriods.status !== 'pending' && upcomingPeriods.status !== 'pending';
-  const engagementById = useMemo(
-    () =>
-      periodsSettled
-        ? engagementPeriodsByProject(openPeriods.data?.periods ?? [], upcomingPeriods.data ?? [])
-        : undefined,
-    [periodsSettled, openPeriods.data, upcomingPeriods.data],
-  );
-  // Every state, not only the one the pin shows: a project open now can also have one upcoming.
-  const engagementStates = useMemo(
-    () =>
-      periodsSettled
-        ? engagementStatesByProject(openPeriods.data?.periods ?? [], upcomingPeriods.data ?? [])
-        : undefined,
-    [periodsSettled, openPeriods.data, upcomingPeriods.data],
-  );
+  // Bumped when a period opens or closes while the page is open, so the states below are re-read.
+  const [engagementTick, setEngagementTick] = useState(0);
+  useEffect(() => {
+    const periods = [...(openPeriods.data?.periods ?? []), ...(upcomingPeriods.data ?? [])];
+    if (periods.length === 0) return;
+    const read = () => periods.map((period) => period.bannerState).join();
+    let last = read();
+    const timer = setInterval(() => {
+      const next = read();
+      if (next === last) return;
+      last = next;
+      setEngagementTick((tick) => tick + 1);
+    }, ENGAGEMENT_RECHECK_MS);
+    return () => clearInterval(timer);
+  }, [openPeriods.data, upcomingPeriods.data]);
+  const engagement = useMemo(() => {
+    if (!periodsSettled) return undefined;
+    const open = openPeriods.data?.periods ?? [];
+    const upcoming = upcomingPeriods.data ?? [];
+    // Every state, not only the one the pin shows: a project open now can also have one upcoming.
+    return {
+      byId: engagementPeriodsByProject(open, upcoming),
+      states: engagementStatesByProject(open, upcoming),
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the tick re-reads the dates
+  }, [periodsSettled, openPeriods.data, upcomingPeriods.data, engagementTick]);
+  const engagementById = engagement?.byId;
+  const engagementStates = engagement?.states;
   const periodsError = openPeriods.error ?? upcomingPeriods.error;
+  // Only the read behind the chosen state can leave the filtered list empty.
+  const chosenPeriodsError =
+    filters.commentPeriod === 'open'
+      ? openPeriods.error
+      : filters.commentPeriod === 'upcoming'
+        ? upcomingPeriods.error
+        : null;
   useEffect(() => {
     if (periodsError) logger.error('Error loading comment periods', 'Projects', periodsError);
   }, [periodsError]);
@@ -181,7 +220,7 @@ export function Projects() {
   const emptyMessage =
     searchFailed || isError
       ? 'Projects could not be loaded right now.'
-      : filters.commentPeriod && periodsError
+      : chosenPeriodsError
         ? 'Comment periods could not be loaded right now.'
         : undefined;
   const mapApps = useMemo(() => filterApps ?? [], [filterApps]);
@@ -190,6 +229,10 @@ export function Projects() {
     if (!bounds) return filterApps;
     return filterApps.filter((project) => isProjectInBounds(project, bounds));
   }, [filterApps, bounds]);
+  const listCount = listApps?.length ?? null;
+  if (sortNote && sortNote.count !== listCount) setSortNote(null);
+  // Said with the count, so the old count is not taken for the new search's answer.
+  const status = [searching && 'Searching', sortNote?.text].filter(Boolean).join('. ');
 
   return (
     <div className="projects-view" data-mobile={mobile || undefined}>
@@ -217,7 +260,7 @@ export function Projects() {
           mobile={mobile}
           engagementById={engagementById}
           emptyMessage={emptyMessage}
-          status={sortNote}
+          status={status}
           orderKey={orderKey}
           stale={search.isPlaceholderData}
           headerControl={
@@ -226,7 +269,7 @@ export function Projects() {
               onChange={(next) => {
                 // Relevance is the default, so it leaves the URL clean.
                 updateFilters({ sort: next === 'relevance' ? null : next });
-                setSortNote(`Sorted by ${SORT_LABEL[next]}`);
+                setSortNote({ text: `Sorted by ${SORT_LABEL[next]}`, count: listCount });
               }}
             />
           }
