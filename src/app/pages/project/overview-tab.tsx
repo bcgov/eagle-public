@@ -90,11 +90,7 @@ function Fact({ label, children }: { label: string; children?: ReactNode }) {
 /** The comment period the project record carries, whether it is hosted in EPIC or on ENGAGE. */
 function EngagementCallout({ project, banner }: { project: Project; banner: any }) {
   const external = !!engageUrl(banner);
-  const cta = external
-    ? banner.bannerCTA
-    : banner.commentPeriodStatus === 'Open'
-      ? 'Share your thoughts'
-      : 'View comment period';
+  const cta = external ? banner.bannerCTA : 'View comment period';
 
   function trackClick(): void {
     track('Comment Period Banner Clicked', {

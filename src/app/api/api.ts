@@ -102,13 +102,13 @@ export interface DemiProject {
 /**
  * Query options for the single-project DEMI fetch, shared by every consumer that needs a field off
  * that document (the project record itself, phase dates, pins, the short link, …) so they collapse
- * onto one request via the shared query key. An unset DEMI_PROJECTS_PATH asks for nothing.
+ * onto one request via the shared query key. An unset or blank DEMI_PROJECTS_PATH reads `/demi-projects`.
  */
 export function demiProjectQueryOptions(projId: string) {
   const base = demiProjectsPath();
   return {
     queryKey: ['demi-project', projId],
-    enabled: !!base && !!projId,
+    enabled: !!projId,
     retry: false,
     queryFn: async (): Promise<DemiProject | null> => {
       try {

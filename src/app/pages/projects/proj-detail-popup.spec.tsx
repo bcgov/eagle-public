@@ -80,15 +80,16 @@ describe('ProjDetailPopup engagement banner', () => {
     expect(screen.queryByRole('region')).not.toBeInTheDocument();
   });
 
-  it('announces an open period with its dates and a link to its details page', () => {
+  it('announces an open period hosted here with its dates and a link to its details page', () => {
     renderPopup(new Project(BASE), open());
 
     const banner = screen.getByRole('region', { name: 'Open for public comment' });
     expect(banner).toHaveTextContent('Mar 3, 2020 – Jun 1, 2099');
-    expect(screen.getByRole('link', { name: 'Share your thoughts' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'View comment period' })).toHaveAttribute(
       'href',
       '/p/proj-1/cp/cp1/details',
     );
+    expect(screen.queryByRole('link', { name: /Share your thoughts/ })).toBeNull();
   });
 
   it('announces an upcoming period with the overview wording on its link', () => {
@@ -120,7 +121,7 @@ describe('ProjDetailPopup engagement banner', () => {
   it('falls back to the in-app details page when the ENGAGE URL has an unsafe scheme', () => {
     renderPopup(new Project(BASE), open({ isMet: true, metURL: 'javascript:alert(1)' }));
 
-    const link = screen.getByRole('link', { name: 'Share your thoughts' });
+    const link = screen.getByRole('link', { name: 'View comment period' });
     expect(link).toHaveAttribute('href', '/p/proj-1/cp/cp1/details');
     expect(link).not.toHaveAttribute('target');
   });
@@ -128,7 +129,7 @@ describe('ProjDetailPopup engagement banner', () => {
   it('tracks a banner click from the map card and opens the period', async () => {
     const { router } = renderPopup(new Project(BASE), open());
 
-    await userEvent.click(screen.getByRole('link', { name: 'Share your thoughts' }));
+    await userEvent.click(screen.getByRole('link', { name: 'View comment period' }));
 
     expect(track).toHaveBeenCalledWith('Comment Period Banner Clicked', {
       project_id: 'proj-1',
@@ -165,7 +166,7 @@ describe('ProjDetailPopup engagement banner', () => {
   it('tracks the unsafe-scheme fallback as the in-app page it opens', async () => {
     renderPopup(new Project(BASE), open({ isMet: true, metURL: 'javascript:alert(1)' }));
 
-    await userEvent.click(screen.getByRole('link', { name: 'Share your thoughts' }));
+    await userEvent.click(screen.getByRole('link', { name: 'View comment period' }));
 
     expect(track).toHaveBeenCalledWith(
       'Comment Period Banner Clicked',

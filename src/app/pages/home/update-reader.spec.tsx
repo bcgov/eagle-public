@@ -261,6 +261,73 @@ describe('home update reader', () => {
     expect(within(dialog).queryByRole('button', { name: /^Documents/ })).not.toBeInTheDocument();
   });
 
+  it('sends an old eagle-api document link to the DEMI download, named by its file', async () => {
+    renderAtPath('/updates/u1', {
+      byId: envelope([
+        {
+          ...ACTIVITY_ROW,
+          documentUrl:
+            'https://projects.eao.gov.bc.ca/api/document/5c8a3a3ce7f1f1002466c2b1/fetch/Acceptance%20Letter.pdf',
+        },
+      ]),
+    });
+    const dialog = await reader();
+
+    await userEvent
+      .setup()
+      .click(await within(dialog).findByRole('button', { name: 'Documents (1)' }));
+
+    expect(
+      within(dialog).getByRole('link', { name: /^Acceptance Letter\.pdf\s*\(opens in new tab\)$/ }),
+    ).toHaveAttribute(
+      'href',
+      '/demi-search/documents/5c8a3a3ce7f1f1002466c2b1/download?redirect=1',
+    );
+  });
+
+  it('calls an old document link with no file name "Project documents"', async () => {
+    renderAtPath('/updates/u1', {
+      byId: envelope([
+        { ...ACTIVITY_ROW, documentUrl: '/api/public/document/5c8a3a3ce7f1f1002466c2b1/download' },
+      ]),
+    });
+    const dialog = await reader();
+
+    await userEvent
+      .setup()
+      .click(await within(dialog).findByRole('button', { name: 'Documents (1)' }));
+
+    expect(
+      within(dialog).getByRole('link', { name: /^Project documents\s*\(opens in new tab\)$/ }),
+    ).toHaveAttribute(
+      'href',
+      '/demi-search/documents/5c8a3a3ce7f1f1002466c2b1/download?redirect=1',
+    );
+  });
+
+  it('keeps an old document link written relative to the page', async () => {
+    renderAtPath('/updates/u1', {
+      byId: envelope([
+        {
+          ...ACTIVITY_ROW,
+          documentUrl: '../api/document/5c8a3a3ce7f1f1002466c2b1/download/Order.pdf',
+        },
+      ]),
+    });
+    const dialog = await reader();
+
+    await userEvent
+      .setup()
+      .click(await within(dialog).findByRole('button', { name: 'Documents (1)' }));
+
+    expect(
+      within(dialog).getByRole('link', { name: /^Order\.pdf\s*\(opens in new tab\)$/ }),
+    ).toHaveAttribute(
+      'href',
+      '/demi-search/documents/5c8a3a3ce7f1f1002466c2b1/download?redirect=1',
+    );
+  });
+
   it('points its footer at the project and its documents', async () => {
     renderAtPath('/updates/u1');
     const dialog = await reader();

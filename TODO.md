@@ -125,11 +125,34 @@ Open (moved from the redesign tracker, 2026-09-23):
 
 ## Cutover prerequisites
 
-- Bulk download needs eao-nginx v2.7.29+ and the eagle-edge bulk-downloads patterns on prod before the React cutover; until then the UI is staging-only.
-- The app asks eagle-api for nothing. Prod cannot take this bundle until both of these are true, because there is no fallback left:
-  - The prod config document carries `SEARCH_API_PATH=/demi-search`, `DEMI_PROJECTS_PATH=/demi-projects`, `CONFIG_PATH=/demi-search/config` and `EAGLE_ANALYTICS_URL=/analytics`.
-  - The prod rproxy serves `/demi-search/gate` and `/demi-search/documents/*` on top of what it already proxies (eao-nginx v2.7.37).
-- DEMI prod needs `ACCESS_GATE_PASSWORD` set only if the prod gate is ever turned on. Prod ships `ACCESS_GATE` false, so it is not a blocker.
+Checked 2026-10-02 against the live prod edge, the prod config document and the next site (`v3.0.0-beta.54`). The app builds no request to eagle-api: a browser walk of every route on the next site saw only `/demi-search/*`, `/demi-projects/*`, the analytics beacon, App Insights, map tiles and presigned files. There is no fallback to eagle-api, so each open line below blocks the cutover.
+
+Open:
+
+- Prod DEMI is missing data. `dataset=CommentPeriod` returns 1 period on prod where eagle-api holds 143 public ones, a legacy period with 15 comments in eagle-api returns 0 from DEMI, and `dataset=RecentActivity` returns 17 rows (test has 662). Until the prod backfill runs, the Engagement tab, the comment pages and the Updates feed would be close to empty. Find out whether this is a missing backfill or a visibility rule, fix it in eagle-demi, then compare counts per dataset between eagle-api and demi-search on prod.
+- Old document links. `/api/public/document/:id/download` and `/api/document/:id/fetch` are public permalinks (about 32,500 requests a day on prod) and staff still paste them into updates and comment period instructions. They need the Front Door redirects to `/demi-search/documents/:id/download?redirect=1` (eagle-edge branch `feat-legacy-document-redirects`), proven on the test edge, then deployed to prod. Links shown inside this app do not wait for that: `rewriteLegacyDocumentUrl` points them at the DEMI download before they render. Behaviour change: the file always downloads (PDFs no longer open in the tab) and the file name is the stored one.
+- `/demi-search/search/counts` returns 404 at the edge on test and prod. The search page falls back to one request per record type. Fixed by a rewrite rule on the same eagle-edge branch.
+- A document created in DEMI has a UUID id, and the edge download rule matches 24-hex ids only, so its download link returns 404. Fixed on the same eagle-edge branch; check with a real DEMI-created document on test.
+- The edge must keep `/api/*` after the cutover. `/api/v2/projects` and `/api/public/*` have outside callers, eagle-admin uses `/api`, and a rollback to `v2.7.x` needs it. Do not drop the `/api` patterns from the public edge at `v3.0.0`.
+- Email subscribe is hidden on prod: `NOTIFY_API` is not in the prod config document and eagle-notify has no prod deployment. Decide whether `v3.0.0` ships without it.
+
+Done, checked on prod:
+
+- The config document carries `SEARCH_API_PATH=/demi-search`. `CONFIG_PATH` is not needed in the document; the app defaults to `/demi-search/config`.
+- `DEMI_PROJECTS_PATH` is empty in the prod document. The app defaults to `/demi-projects`, so it works; set it to match test.
+- `EAGLE_ANALYTICS_URL` is `/api/usage` on test and prod. The edge sends `/api/usage/*` to the analytics API, not to eagle-api. Moving it to `/analytics` is optional and would stop the path looking like an eagle-api call in the logs.
+- The edge serves `/demi-search/gate`, `/demi-search/documents/:id/download` (24-hex ids) and the bulk-download routes. The rproxy is scaled to 0, so the eao-nginx version no longer matters.
+- Prod ships `ACCESS_GATE` false, so DEMI prod does not need `ACCESS_GATE_PASSWORD`.
+
+Proof after cutover: on workspace `eagle-logs-prod`, table `AzureDiagnostics`, category `FrontDoorAccessLog`, route `routingRuleName_s == "eagle-api"`, count requests whose `referer_s` host is `projects.eao.gov.bc.ca` or `www.projects.eao.gov.bc.ca` and whose referer path is not under `/admin`. The count must be 0 apart from the 302 redirects of old document links.
+
+## Retired on this line (decided 2026-10-02)
+
+- Comments are read-only. The public cannot submit a comment or attach a file; ENGAGE owns submission. On the Angular line the attachment upload already failed, because it posted to a staff-only route.
+- CAC sign-up and removal are gone. Prod holds 85 sign-ups, the last on 2024-10-26, none in 2025 or 2026. The Angular line called routes that do not exist, so it could not sign anyone up either.
+- Left behind in eagle-api until it retires: the 85 `CACUser` records (names and emails), the unauthenticated `PUT /api/public/project/:id/cacRemoveMember` route, and the `projectCAC` flag on 18 projects (12 published). Nothing on this line reads them.
+- An old emailed `/cac-unsubscribe` link lands on the home page with no message. Decide whether it needs a short notice page.
+- eagle-admin can still create a comment period that is not run by ENGAGE. This line shows it read-only.
 
 ## Ports pending
 
@@ -305,3 +328,18 @@ Review polish items left after the unified About page landed. None block the pag
 - 2026-10-02: `pages/project/extended/validate-extended-page.ts:64`: `band.primary.tab` and `updates.tab` may name a standard tab, which never reads the focus flag. `:76`: several lists are keyed by content values the duplicate check does not cover (masthead actions, links, definitions, table rows, columns, steps, stats, projects, external documents). `:115`: `label`, `title`, `intro`, `count` and `layout` on an Overview append entry are ignored with no problem line. Nothing checks autoLinks, so two equal apart from case are accepted.
 - 2026-10-02: `pages/projects/projects.tsx:41`: `selected` is read from the URL once, at mount. `:45`: clearing the selection sends another page-view event.
 - 2026-10-02: `routes.tsx:157`: no test for a deeper path under a static child (`/p/:id/documents/foo`) or for the `cp` cases that go to Overview.
+
+## Legacy document links and read-only comments (deferred from review, 2026-10-02)
+
+- `utils/safe-html.ts` rewrites `<a href>`, `<area href>` and `<img src>` only. Any other tag or attribute in staff HTML that points at an old document path (`srcset`, `<source>`, `<video>`, a CSS `url()`) is left as written and answered by the edge redirect. None seen in the data; every old link found in prod and test staff HTML is a plain `<a>`.
+- `utils/safe-html.ts`: plain text with no tag is now re-serialised, so `&` comes back as `&amp;`. It renders the same.
+- `api/updates.ts` and `pages/search/types/activities.tsx`: `fileName()` runs on the stored link without trimming, so a link with a trailing space gets the fallback name. The two fallbacks differ ("Project documents", "Attached document"); use one.
+- `pages/search/types/activities.tsx`: a stored link whose last segment has no file extension is now named "Attached document" where it used to show the segment.
+- A comment period that ENGAGE does not run has three labels: "View Engagement" on the engagement tab, "View comment period" on the overview and the map popup, and "View engagement" from `bannerCTA` when closed. Pick one.
+- The overview callout and the map popup still say a period not on ENGAGE is "Open for public comment". It is open, but this site has no way to comment. Decide the wording.
+- `models/commentperiod.ts`: `hostedOnEngage` and direct `engageUrl` checks do the same job at four call sites. Use one.
+- `src/env.js` near the analytics path comment: it still says the rproxy rewrites the path. The edge does.
+- `pages/project/decisions-tab.spec.tsx:133` and `project-panel.spec.tsx:120,245,274` reset `DEMI_PROJECTS_PATH` to `''` as if that turns DEMI off. It means `/demi-projects`. Delete the resets or stub the DEMI response.
+- `pages/home/open-for-comment.spec.tsx:63` (`findByRole('link', { name: /Cedar LNG/ })`) failed once under verifier load on 2026-10-02 and passed alone and on rerun; add it to the known flaky list if it repeats.
+- The Vite dev proxy sends `/api/usage` to the eagle-api host on test, so local analytics posts reach eagle-api and return 404. Point it at the analytics API or drop it.
+- The config document's `SEARCH_API_PATH`, `DEMI_PROJECTS_PATH`, `EAGLE_ANALYTICS_URL` and `NOTIFY_API` are used as given. A value under `/api` other than `/api/usage` would send the app to eagle-api. Consider refusing it at load.

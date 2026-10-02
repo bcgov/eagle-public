@@ -1,5 +1,7 @@
 import { logger } from 'app/config/logging';
+import { rewriteLegacyDocumentUrl } from 'app/utils/legacy-document-url';
 import { htmlToText } from 'app/utils/safe-html';
+import { fileName } from 'app/utils/safe-url';
 import { documentDownloadUrl, type DownloadableDocument } from 'app/utils/utils';
 import { ALL_ROWS_PAGE_SIZE, rowsFrom, searchKeywords, totalFrom } from './api';
 
@@ -97,6 +99,8 @@ export interface Update {
   attachments: UpdateDocument[];
   /** The one link an old row carries in place of attachments. */
   documentUrl: string | null;
+  /** The file name the stored link ends in, or null. */
+  documentName: string | null;
   engagementUrl: string | null;
   commentPeriod: { id: string; isMet: boolean; metURL: string | null } | null;
   /** Headline, short headline, summary and body text, lower-cased once for the tab filter. */
@@ -211,7 +215,8 @@ export function toUpdate(row: ActivityRow): Update {
     featuredImage: toImages(row.featuredImage ? [row.featuredImage] : [])[0] ?? null,
     images: toImages(row.images ?? []),
     attachments: toDocuments(row.attachments ?? []),
-    documentUrl: row.documentUrl ?? null,
+    documentUrl: row.documentUrl ? rewriteLegacyDocumentUrl(row.documentUrl) : null,
+    documentName: row.documentUrl ? fileName(row.documentUrl) : null,
     engagementUrl: httpUrl(row.engagementUrl),
     commentPeriod: row.pcp?._id
       ? { id: row.pcp._id, isMet: !!row.pcp.isMet, metURL: row.pcp.metURL ?? null }

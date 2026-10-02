@@ -151,6 +151,42 @@ describe('update attachment', () => {
     ]);
   });
 
+  it('sends an old eagle-api document link to the DEMI download, keeping the file name', () => {
+    expect(
+      attachmentsOf({
+        documentUrl:
+          'https://projects.eao.gov.bc.ca/api/document/5c8a3a3ce7f1f1002466c2b1/fetch/Inspection%20Record.pdf',
+      }),
+    ).toEqual([
+      {
+        name: 'Inspection Record.pdf',
+        href: '/demi-search/documents/5c8a3a3ce7f1f1002466c2b1/download?redirect=1',
+      },
+    ]);
+  });
+
+  it('keeps an old document link written relative to the page', () => {
+    expect(
+      attachmentsOf({ documentUrl: '../api/document/5c8a3a3ce7f1f1002466c2b1/download/Order.pdf' }),
+    ).toEqual([
+      {
+        name: 'Order.pdf',
+        href: '/demi-search/documents/5c8a3a3ce7f1f1002466c2b1/download?redirect=1',
+      },
+    ]);
+  });
+
+  it('calls an old document link with no file name "Attached document"', () => {
+    expect(
+      attachmentsOf({ documentUrl: '/api/public/document/5c8a3a3ce7f1f1002466c2b1/download' }),
+    ).toEqual([
+      {
+        name: 'Attached document',
+        href: '/demi-search/documents/5c8a3a3ce7f1f1002466c2b1/download?redirect=1',
+      },
+    ]);
+  });
+
   it('offers nothing for an update with no document', () => {
     expect(attachmentsOf({ headline: 'Site visit' })).toEqual([]);
   });
