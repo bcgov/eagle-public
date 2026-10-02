@@ -419,7 +419,17 @@ describe('overview tab', () => {
       'href',
       '/demi-search/documents/doc-1/download?redirect=1',
     );
-    expect(screen.getByRole('link', { name: 'All 1 documents' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'All documents' })).toHaveAttribute(
+      'href',
+      '/p/proj-1/documents',
+    );
+  });
+
+  it('counts featured documents in the documents-tab link once there is more than one', async () => {
+    featuredTotal = 1234;
+    renderTab();
+
+    expect(await screen.findByRole('link', { name: 'All 1,234 documents' })).toHaveAttribute(
       'href',
       '/p/proj-1/documents',
     );
