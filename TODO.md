@@ -10,7 +10,6 @@
 - `src/app/models/commentperiod.ts`: `project` is typed `Project` but holds a string id at runtime.
 - `src/app/comments/comments.component.html`: `Comment Period Banner Clicked` has no `source` field, so the comments page and the project banner cannot be told apart; middle-click on the ENGAGE link is not tracked.
 - `src/app/project/project.ts` `goToCP`: checks `isMet && isSafeUrl(metURL)` itself; read `commentPeriod.isEngage` instead.
-- `src/app/shared/components/activity-card/`: an open ENGAGE period reads "View Engagement" on activity cards, not "Share your thoughts", because the search response sends `pcp` as `{ _id, isMet, metURL }` with no dates. Needs `dateStarted` and `dateCompleted` on `pcp` from the search API.
 - `src/app/shared/utils/search-query-limit.ts`: the 1800-character limit is a guess between two measured points (1544 passed, 1919 failed) and leaves out the `/demi-search/` prefix; measure the real edge limit. The message says "filters" even when a long keyword is the cause, has no error styling, and may not be announced when a page loads already holding it. No test checks the warning log line.
 - `src/app/shared/components/table-list/table-list.component.ts` (project list, search page): no query-length guard.
 - Document tabs: the filter panel does not show picks that come from the URL, and picking a new value replaces them (older than the guard). A slower earlier response can still land in the table.

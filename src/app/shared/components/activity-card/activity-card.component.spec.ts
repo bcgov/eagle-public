@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { ChangeDetectorRef } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
@@ -239,24 +239,47 @@ describe('ActivityCardComponent legacy document links', () => {
   });
 });
 
-/** Same wording as `CommentPeriod.ctaLabel`; demi-search sends `pcp` as `{ _id, isMet, metURL }`. */
+/** Same wording as `CommentPeriod.ctaLabel`. DEMI before PR #491 sends `pcp` as `{ _id, isMet, metURL }`, with no dates. */
 describe('ActivityCardComponent comment period button', () => {
   const DAY = 24 * 60 * 60 * 1000;
-  const OPEN = { dateStarted: new Date(Date.now() - DAY).toISOString(), dateCompleted: new Date(Date.now() + 7 * DAY).toISOString() };
-  const ENGAGE = { isMet: true, metURL: 'https://engage.eao.gov.bc.ca/site-c' };
+  const at = (days: number) => new Date(Date.now() + days * DAY).toISOString();
+  const OPEN = { dateStarted: at(-1), dateCompleted: at(7) };
+  const CLOSED = { dateStarted: at(-30), dateCompleted: at(-2) };
+  const UPCOMING = { dateStarted: at(2), dateCompleted: at(30) };
+  const METURL = 'https://engage.eao.gov.bc.ca/site-c';
+  const ENGAGE = { isMet: true, metURL: METURL };
+  const PERIOD_PAGE = 'p/proj1/cp/pcp1';
 
-  /** Visible label plus any visually hidden text: what a screen reader announces. */
-  function buttonText(pcp: object): string | undefined {
-    const el: HTMLElement = create({ headline: 'Update', type: 'Public Comment Period', pcp: { _id: 'pcp1', ...pcp } }).nativeElement;
-    return el.querySelector('button')?.textContent?.replace(/\s+/g, ' ').trim();
+  let open: ReturnType<typeof vi.spyOn>;
+  let navigate: ReturnType<typeof vi.spyOn>;
+
+  afterEach(() => {
+    open.mockRestore();
+    navigate.mockRestore();
+  });
+
+  /** Announced button text, and where a click on it goes. */
+  function renderButton(pcp: object): { text?: string; target?: string } {
+    const fixture = create({ headline: 'Update', type: 'Public Comment Period', project: { _id: 'proj1', name: 'P' }, pcp: { _id: 'pcp1', ...pcp } });
+    open = vi.spyOn(window, 'open').mockImplementation(() => null);
+    navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    const button: HTMLButtonElement | null = fixture.nativeElement.querySelector('button');
+    button?.click();
+    return {
+      text: button?.textContent?.replace(/\s+/g, ' ').trim(),
+      target: open.mock.calls[0]?.[0] ?? navigate.mock.calls[0]?.[0]?.join('/'),
+    };
   }
 
   it.each([
-    ['an ENGAGE period', 'View Engagement (opens in new tab)', ENGAGE],
-    ['an open ENGAGE period with dates (eagle-api fallback)', 'Share your thoughts (opens in new tab)', { ...OPEN, ...ENGAGE }],
-    ['a period with no ENGAGE page', 'View Comment Period', { isMet: false, metURL: '' }],
-    ['a period with an unsafe ENGAGE link', 'View Comment Period', { isMet: true, metURL: 'javascript:alert(1)' }],
-  ])('labels %s "%s"', (_name, text, pcp) => {
-    expect(buttonText(pcp)).toBe(text);
+    ['an open ENGAGE period', { ...OPEN, ...ENGAGE }, 'Share your thoughts (opens in new tab)', METURL],
+    ['a closed ENGAGE period', { ...CLOSED, ...ENGAGE }, 'View Engagement (opens in new tab)', METURL],
+    ['an upcoming ENGAGE period', { ...UPCOMING, ...ENGAGE }, 'View Engagement (opens in new tab)', METURL],
+    ['an ENGAGE period with no dates', ENGAGE, 'View Engagement (opens in new tab)', METURL],
+    ['an ENGAGE period with null dates', { dateStarted: null, dateCompleted: null, ...ENGAGE }, 'View Engagement (opens in new tab)', METURL],
+    ['an open period with no ENGAGE page', { ...OPEN, isMet: false, metURL: '' }, 'View Comment Period', PERIOD_PAGE],
+    ['a period with an unsafe ENGAGE link', { isMet: true, metURL: 'javascript:alert(1)' }, 'View Comment Period', PERIOD_PAGE],
+  ])('labels and links %s', (_name, pcp, text, target) => {
+    expect(renderButton(pcp)).toEqual({ text, target });
   });
 });
