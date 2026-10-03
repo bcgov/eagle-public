@@ -582,6 +582,15 @@ describe('UnifiedSearch', () => {
     expect(wire).not.toContain('keywords=a');
   });
 
+  it('sends a plus in the keyword as a literal plus, not a space', async () => {
+    const fetchMock = stubApi();
+    renderSearch('/search?record=projects&keywords=a%2Bb');
+    await screen.findByText('Alpha Mine');
+
+    const wire = new URL(asked(fetchMock, 'Project').at(-1)!, 'http://localhost');
+    expect(wire.searchParams.get('keywords')).toBe('a+b');
+  });
+
   it('leaves Relevance out of the phone sort select while there is no keyword', async () => {
     stubNarrow();
     renderSearch('/search?record=projects');

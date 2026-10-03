@@ -23,6 +23,8 @@ interface TableResult {
   data: any[];
   totalListItems: number;
   loading: boolean;
+  /** First load with nothing to show yet; false for a refetch, a placeholder page, or a disabled query. */
+  initialLoading: boolean;
 }
 
 /** The request a table config describes. Select-all reruns the same one at page 1, size 100. */
@@ -65,5 +67,6 @@ export function useTable(id: string, config: TableQueryConfig): TableResult {
     data: query.data?.data ?? [],
     totalListItems: query.data?.totalSearchCount ?? 0,
     loading: query.isFetching,
+    initialLoading: query.isLoading,
   };
 }
