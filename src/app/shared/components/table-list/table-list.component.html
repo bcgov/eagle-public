@@ -37,13 +37,17 @@
           [searching]="loadingTableData()">
         </search-filter-template>
       </section>
-      <div [class.table-loading]="loadingTableData()">
-        <lib-table-template
-          [data]="tableData()"
-          [loading]="loadingTableData()"
-          (messageOut)="onMessageOut($event)">
-        </lib-table-template>
-      </div>
+      @if (searchTooLong()) {
+        <app-search-too-long />
+      } @else {
+        <div [class.table-loading]="loadingTableData()">
+          <lib-table-template
+            [data]="tableData()"
+            [loading]="loadingTableData()"
+            (messageOut)="onMessageOut($event)">
+          </lib-table-template>
+        </div>
+      }
     </div>
   </section>
 </main>

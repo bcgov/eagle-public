@@ -12,13 +12,11 @@
       </search-filter-template>
     
 
-    <div role="alert">
-      @if (tooManyFilters()) {
-        {{ tooManyFiltersMessage }}
-      }
-    </div>
+    @if (searchTooLong()) {
+      <app-search-too-long />
+    }
 
-    @if (!tooManyFilters()) {
+    @if (!searchTooLong()) {
       @if (!loading() && tableData().totalListItems === 0) {
         <div>
           There are no application documents associated with this project.

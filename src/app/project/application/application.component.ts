@@ -15,13 +15,13 @@ import { LoadingStateService } from '../../services/loading-state.service';
 import { ConfigService } from '../../services/config.service';
 import { Utils } from '../../shared/utils/utils';
 import { Constants } from '../../shared/utils/constants';
-import { SearchQueryLimit, TOO_MANY_FILTERS_MESSAGE } from '../../shared/utils/search-query-limit';
+import { SearchQueryLimit, SearchTooLongComponent } from '../../shared/utils/search-query-limit';
 
 @Component({
   selector: 'app-application',
   templateUrl: './application.component.html',
   styleUrls: ['./application.component.css'],
-  imports: [TableTemplateComponent, SearchFilterTemplateComponent],
+  imports: [TableTemplateComponent, SearchFilterTemplateComponent, SearchTooLongComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true
 })
@@ -49,8 +49,7 @@ export class ApplicationComponent implements OnDestroy {
 
   public queryParams: Params = {};
   public readonly showAdvancedFilters = signal(false);
-  public readonly tooManyFilters = signal(false);
-  public readonly tooManyFiltersMessage = TOO_MANY_FILTERS_MESSAGE;
+  public readonly searchTooLong = signal(false);
   public readonly filters = signal<FilterObject[]>([]);
 
   public readonly loading = this.loadingState.getOperationState('table-application');
@@ -200,7 +199,7 @@ export class ApplicationComponent implements OnDestroy {
       secondarySort,
       filters
     );
-    this.tooManyFilters.set(!this.searchQueryLimit.fetchIfFits(search));
+    this.searchTooLong.set(!this.searchQueryLimit.fetchIfFits(search));
   }
 
   onMessageOut(msg: ITableMessage) {
