@@ -1,5 +1,4 @@
 import { DateTime } from 'luxon';
-import { Project } from './project';
 import { isSafeUrl } from 'app/shared/utils/safe-url';
 
 
@@ -38,7 +37,8 @@ export class CommentPeriod {
   periodType: string;
   phase: string;
   phaseName: string;
-  project: Project;
+  /** Id of the project the period belongs to. */
+  project: string;
   publishedPercent: number;
   rangeOption: string;
   rangeType: string;

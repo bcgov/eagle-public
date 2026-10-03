@@ -146,11 +146,21 @@
 }
 
 .doc-list li {
-  display: flex;
-  align-items: center;
   background: var(--table-row-bg);
   border-bottom: 1px solid var(--table-border-color);
   transition: background-color 0.15s ease-in-out;
+}
+
+.doc-list button {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
 }
 
 .doc-list li:hover {

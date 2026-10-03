@@ -145,7 +145,21 @@ describe('CommentsComponent period banner', () => {
       status: 'Open',
       is_met: true,
       destination: 'external_met',
+      source: 'comment_period_page',
     });
+  });
+
+  it('records a middle click on the ENGAGE link', () => {
+    const link = render(openPeriod({ isMet: true, metURL: METURL })).querySelector<HTMLAnchorElement>('a.engage-link')!;
+    link.dispatchEvent(new MouseEvent('auxclick', { button: 1, bubbles: true }));
+    expect(track).toHaveBeenCalledExactlyOnceWith('Comment Period Banner Clicked',
+      expect.objectContaining({ destination: 'external_met', source: 'comment_period_page' }));
+  });
+
+  it('does not record a right click on the ENGAGE link', () => {
+    const link = render(openPeriod({ isMet: true, metURL: METURL })).querySelector<HTMLAnchorElement>('a.engage-link')!;
+    link.dispatchEvent(new MouseEvent('auxclick', { button: 2, bubbles: true }));
+    expect(track).not.toHaveBeenCalled();
   });
 
   it('records the period\'s project id for a click when the project carries only a name', () => {
@@ -213,17 +227,35 @@ describe('CommentsComponent related documents', () => {
     return fixture.nativeElement;
   }
 
-  it('does not scroll the page when Space opens a document', () => {
-    const row = renderDocs().querySelector<HTMLElement>('li.clickable-row')!;
-    const press = new KeyboardEvent('keydown', { key: ' ', cancelable: true });
-    row.dispatchEvent(press);
-    expect(press.defaultPrevented).toBe(true);
+  function docButton(): HTMLButtonElement | null {
+    return renderDocs().querySelector<HTMLButtonElement>('ul.doc-list > li > button');
+  }
+
+  it('offers each related document as a button inside a plain list item', () => {
+    const button = docButton();
+    expect(button?.textContent?.trim()).toContain('a.pdf');
+    // A role on the list item breaks the list for screen readers (axe `list` rule).
+    expect(button?.closest('li')?.hasAttribute('role')).toBe(false);
+  });
+
+  it('starts one download when the button is clicked', () => {
+    docButton()!.click();
     // A failed check keeps the download from leaving a frame and timer behind.
     httpMock.expectOne(DOWNLOAD).flush(null, { status: 404, statusText: 'Not Found' });
   });
 
+  it('lets the first Enter press through and cancels the repeats a held key sends', () => {
+    const button = docButton()!;
+    const first = new KeyboardEvent('keydown', { key: 'Enter', cancelable: true });
+    const repeat = new KeyboardEvent('keydown', { key: 'Enter', repeat: true, cancelable: true });
+    button.dispatchEvent(first);
+    button.dispatchEvent(repeat);
+    expect(first.defaultPrevented).toBe(false);
+    expect(repeat.defaultPrevented).toBe(true);
+  });
+
   it('hides the file icon ligature from screen readers', () => {
-    const icon = renderDocs().querySelector('li.clickable-row i.material-icons');
+    const icon = docButton()?.querySelector('i.material-icons');
     expect(icon?.getAttribute('aria-hidden')).toBe('true');
   });
 });
@@ -252,6 +284,16 @@ describe('CommentsComponent comment count', () => {
     pages[1].next({ totalCount: null, currentComments: rows(5) });
 
     expect(component.tableData().totalListItems).toBe(25);
+  });
+
+  it('counts rows for the page that was asked for when its answer lands after a page change', () => {
+    const pages = [new Subject<any>(), new Subject<any>()];
+    const component = setup(pages);
+
+    component.getPaginatedComments(3);
+    pages[0].next({ totalCount: null, currentComments: rows(10) });
+
+    expect(component.tableData().totalListItems).toBe(10);
   });
 
   it('keeps the known total when an earlier page comes back without one', () => {
