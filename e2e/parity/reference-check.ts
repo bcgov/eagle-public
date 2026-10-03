@@ -52,11 +52,37 @@ export function sha256(bytes: Buffer): string {
   return createHash('sha256').update(bytes).digest('hex');
 }
 
-/** Throws on a manifest that is not JSON; a missing one reads as empty. */
+/** Throws on a manifest that is not JSON; a missing one reads as empty. Shape is not checked. */
 export function readManifest(dir: string): Manifest {
   const file = join(dir, MANIFEST_NAME);
   return existsSync(file) ? (JSON.parse(readFileSync(file, 'utf8')) as Manifest) : {};
 }
+
+const isPlainObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+/** One line per entry, or the whole file, that does not have the shape `ReferenceEntry` says. */
+export function manifestShapeProblems(manifest: unknown): string[] {
+  if (!isPlainObject(manifest)) return [`${MANIFEST_NAME}: not a JSON object`];
+  const problems: string[] = [];
+  for (const [name, entry] of Object.entries(manifest)) {
+    if (!isPlainObject(entry)) {
+      problems.push(`${MANIFEST_NAME}: entry ${name} is not an object`);
+      continue;
+    }
+    const wrong = [
+      typeof entry['pageHeight'] === 'number' ? null : 'pageHeight (number)',
+      typeof entry['fullPage'] === 'boolean' ? null : 'fullPage (boolean)',
+      typeof entry['sha256'] === 'string' ? null : 'sha256 (string)',
+    ].filter((field) => field !== null);
+    if (wrong.length > 0) {
+      problems.push(`${MANIFEST_NAME}: entry ${name} lacks ${wrong.join(', ')}`);
+    }
+  }
+  return problems;
+}
+
+const scope = (fullPage: boolean) => (fullPage ? 'full page' : 'viewport');
 
 /** Records one capture. Read, change, write: the capture runs one worker, so nothing races. */
 export function recordReference(dir: string, file: string, entry: ReferenceEntry): void {
@@ -79,6 +105,8 @@ export function referenceProblems(dir: string, expected: Expected): string[] {
   } catch (error) {
     return [`${MANIFEST_NAME}: not valid JSON (${(error as Error).message})`];
   }
+  const shape = manifestShapeProblems(manifest);
+  if (shape.length > 0) return shape;
 
   const problems: string[] = [];
   const present = new Set(readdirSync(dir).filter((name) => name.endsWith('.png')));
@@ -109,7 +137,6 @@ export function referenceProblems(dir: string, expected: Expected): string[] {
       );
       continue;
     }
-    const scope = (fullPage: boolean) => (fullPage ? 'full page' : 'viewport');
     if (entry.fullPage !== want.fullPage) {
       problems.push(
         `${name}: captured as ${scope(entry.fullPage)}, states.ts wants ${scope(want.fullPage)}`,
@@ -144,11 +171,13 @@ export function gate(problems: string[], parked: boolean): string | null {
   return `${message}\nPixel comparison is parked, so the run continues.`;
 }
 
+/** The whole check on one folder, with the parked flag `capture.ts` sets. */
+export function checkReferencesIn(dir: string): string | null {
+  return gate(referenceProblems(dir, expectedReferences()), PIXEL_COMPARISON_PARKED);
+}
+
 /** Playwright `globalSetup`. */
 export default function checkReferences(): void {
-  const warning = gate(
-    referenceProblems(REFERENCE_DIR, expectedReferences()),
-    PIXEL_COMPARISON_PARKED,
-  );
+  const warning = checkReferencesIn(REFERENCE_DIR);
   if (warning) console.warn(warning);
 }

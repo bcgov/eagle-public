@@ -7,8 +7,10 @@ import { join } from 'node:path';
 
 import { expect, test } from '@playwright/test';
 
-import { VIEWPORT } from './capture';
+import { PIXEL_COMPARISON_PARKED, VIEWPORT } from './capture';
 import {
+  checkReferencesIn,
+  expectedReferences,
   gate,
   MANIFEST_NAME,
   pngSize,
@@ -134,6 +136,36 @@ test('a manifest that is not JSON is one named problem', () => {
   ]);
 });
 
+test('a manifest that is JSON null is one named problem', () => {
+  const dir = folder();
+  writeFileSync(join(dir, MANIFEST_NAME), 'null');
+  expect(referenceProblems(dir, EXPECTED)).toEqual([`${MANIFEST_NAME}: not a JSON object`]);
+});
+
+test('a manifest that is a JSON array is one named problem', () => {
+  const dir = folder();
+  writeFileSync(join(dir, MANIFEST_NAME), '[]');
+  expect(referenceProblems(dir, EXPECTED)).toEqual([`${MANIFEST_NAME}: not a JSON object`]);
+});
+
+test('a manifest entry that is not an object is named', () => {
+  const dir = folder();
+  writeFileSync(join(dir, FULL), pngHeader(924, 2400));
+  writeFileSync(join(dir, MANIFEST_NAME), JSON.stringify({ [FULL]: null }));
+  expect(referenceProblems(dir, EXPECTED)).toEqual([
+    `${MANIFEST_NAME}: entry ${FULL} is not an object`,
+  ]);
+});
+
+test('a manifest entry with missing or mistyped fields names each field', () => {
+  const dir = folder();
+  writeFileSync(join(dir, FULL), pngHeader(924, 2400));
+  writeFileSync(join(dir, MANIFEST_NAME), JSON.stringify({ [FULL]: { pageHeight: '2400' } }));
+  expect(referenceProblems(dir, EXPECTED)).toEqual([
+    `${MANIFEST_NAME}: entry ${FULL} lacks pageHeight (number), fullPage (boolean), sha256 (string)`,
+  ]);
+});
+
 test('a missing reference folder is one named problem', () => {
   const dir = test.info().outputPath('never-created');
   expect(referenceProblems(dir, EXPECTED)).toEqual([`${dir}: reference folder is missing`]);
@@ -159,4 +191,21 @@ test('the gate only warns while pixel comparison is parked', () => {
 
 test('the gate is silent when every reference is whole', () => {
   expect(gate([], false)).toBeNull();
+});
+
+test('a viewport-only state expects a viewport reference, others a full page', () => {
+  const expected = expectedReferences();
+  expect(expected.get(VIEWPORT_ONLY)).toEqual({ width: 924, fullPage: false });
+  expect(expected.get('01-documents-grid-400.png')).toEqual({ width: 400, fullPage: true });
+  // State 06 runs at the wide width only.
+  expect(expected.has('06-multiselect-picker-400.png')).toBe(false);
+});
+
+test('the check warns or stops as PIXEL_COMPARISON_PARKED says', () => {
+  const empty = folder();
+  if (PIXEL_COMPARISON_PARKED) {
+    expect(checkReferencesIn(empty)).toMatch(/missing, expected[\s\S]*parked/);
+  } else {
+    expect(() => checkReferencesIn(empty)).toThrow(/missing, expected/);
+  }
 });
