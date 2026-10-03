@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, of, forkJoin } from 'rxjs';
 import { map, catchError, flatMap } from 'rxjs/operators';
 
-import { ApiService } from './api';
+import { ApiService, CommentPage } from './api';
 import { Comment } from 'app/models/comment';
 import { DocumentService } from './document.service';
 import { LoadingStateService } from './loading-state.service';
@@ -25,27 +25,15 @@ export class CommentService {
 
   // get all comments for the specified comment period id
   // (without documents)
-  getByPeriodId(periodId: string, pageNum: number | null = null, pageSize: number | null = null, getCount = false): Observable<object> {
+  getByPeriodId(periodId: string, pageNum: number | null = null, pageSize: number | null = null): Observable<{ totalCount: number | null; currentComments: Comment[] }> {
     const loadingId = pageNum && pageNum > 1 ? 'comments-list' : 'comments';
     this.loadingState.startLoading(loadingId, pageNum ? `Loading page ${pageNum}` : 'Loading comments');
     
-    return this.api.getCommentsByPeriodId(pageNum ? pageNum - 1 : null, pageSize, getCount, periodId)
+    return this.api.getCommentsByPeriodId(pageNum ? pageNum - 1 : null, pageSize, periodId)
       .pipe(
-        map((res: any) => {
-          if (res) {
-            const comments = res.body;
-            comments.forEach((comment: any, i: number) => {
-              comments[i] = new Comment(comment);
-            });
-            const commentsDataSet = {
-              totalCount: res.headers.get('x-total-count'),
-              currentComments: comments as Comment[]
-            };
-            this.loadingState.stopLoading(loadingId);
-            return commentsDataSet;
-          }
+        map((res: CommentPage) => {
           this.loadingState.stopLoading(loadingId);
-          return null;
+          return { totalCount: res.totalCount, currentComments: res.comments.map(comment => new Comment(comment)) };
         }),
         catchError(error => {
           this.loadingState.stopLoading(loadingId);
@@ -64,8 +52,7 @@ export class CommentService {
     // first get the comment data
     return this.api.getComment(commentId)
     .pipe(
-      flatMap(res => {
-        const comments = res.body;
+      flatMap(comments => {
         if (!comments || comments.length === 0) {
           return of(null as unknown as Comment);
         }

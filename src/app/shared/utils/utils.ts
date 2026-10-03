@@ -2,6 +2,8 @@ import { Injectable, inject } from '@angular/core';
 import { ISearchResults } from 'app/models/search';
 import { Constants } from './constants';
 import { AnalyticsService } from 'app/services/analytics/analytics.service';
+import { ConfigService } from 'app/services/config.service';
+import { documentDownloadUrl } from './legacy-document-url';
 
 const encode = encodeURIComponent;
 window['encodeURIComponent'] = (component: string | number | boolean) => {
@@ -14,6 +16,7 @@ window['encodeURIComponent'] = (component: string | number | boolean) => {
 @Injectable({providedIn:'root'})
 export class Utils {
   private analytics = inject(AnalyticsService);
+  private configService = inject(ConfigService);
 
   public encodeString(filename: string, isUrl: boolean) {
     let safeName;
@@ -180,8 +183,7 @@ export class Utils {
       document_type: 'unknown'
     });
     
-    const safeName = this.encodeString(filename, true);
-    window.open(`/api/public/document/${document._id}/download/${safeName}`, '_blank');
+    window.open(documentDownloadUrl(this.configService.getSearchApiPath(), document._id), '_blank');
   }
 
   /**

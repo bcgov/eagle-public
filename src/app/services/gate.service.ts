@@ -25,7 +25,7 @@ function remember(): void {
 /**
  * Shared-password curtain for pre-launch environments.
  *
- * The password is only ever checked by eagle-api — the client holds nothing to compare against,
+ * The password is only ever checked by demi-search — the client holds nothing to compare against,
  * and sessionStorage carries a flag, not a secret. Only a literal `ACCESS_GATE: true` closes the
  * curtain, so prod (false or unset) renders as it always has.
  */
@@ -44,7 +44,7 @@ export class GateService {
   public async unlock(password: string): Promise<boolean> {
     try {
       await firstValueFrom(
-        this.http.post(`${this.configService.getApiPath()}/public/gate`, { password })
+        this.http.post(`${this.configService.getSearchApiPath()}/gate`, { password })
       );
     } catch (e) {
       if (e instanceof HttpErrorResponse && e.status === 401) {

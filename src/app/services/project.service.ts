@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, of, forkJoin } from 'rxjs';
-import { map, catchError, mergeMap, flatMap, tap } from 'rxjs/operators';
+import { Observable, of } from 'rxjs';
+import { map, catchError, mergeMap } from 'rxjs/operators';
 
 import { Project } from 'app/models/project';
 import { ApiService } from './api';
@@ -12,11 +12,6 @@ import { Utils } from 'app/shared/utils/utils';
 import { DataQueryResponse } from 'app/models/api-response';
 import { LoadingStateService } from './loading-state.service';
 import { LoggingService } from './logging.service';
-
-interface GetParameters {
-  getresponsibleEPD?: boolean;
-  getprojectLead?: boolean;
-}
 
 @Injectable({providedIn:'root'})
 export class ProjectService {
@@ -136,15 +131,8 @@ export class ProjectService {
     }
     const loadingId = `project-${projId}`;
     this.loadingState.startLoading(loadingId, 'Loading project');
-    // Both requests run at once; the DEMI side never errors and gives up after a short timeout.
-    return forkJoin([this.api.getProject(projId, cpStart, cpEnd), this.api.getDemiProponentName(projId)])
+    return this.api.getProject(projId, cpStart, cpEnd)
       .pipe(
-        map(([projects, demiProponentName]) => {
-          if (demiProponentName && projects?.[0]) {
-            projects[0].proponent = this.withProponentName(projects[0].proponent, demiProponentName);
-          }
-          return projects;
-        }),
         map((projects: Project[]) => {
           // get upcoming comment period if there is one and convert it into a comment period object.
           // If there are multiple comment periods any that is currently running is a higher priority than a past comment period
@@ -170,28 +158,12 @@ export class ProjectService {
           // return the first (only) project
           return projects && projects.length > 0 && projects[0] ? new Project(projects[0]) : null;
         }),
-        flatMap(res => {
-          const project = res;
-          if (!project) {
-            this.loadingState.stopLoading(loadingId);
-            return of(null as unknown as Project);
-          }
+        map(project => {
+          this.loadingState.stopLoading(loadingId);
+          if (!project) { return null as unknown as Project; }
           // Map the build to the human readable nature field
           project.nature = this.utils.natureBuildMapper(project.build);
-          if (project.projectLeadId == null && project.responsibleEPDId == null) {
-            this.loadingState.stopLoading(loadingId);
-            return of(new Project(project));
-          }
-          // now get the rest of the data for this project
-          return this._getExtraAppData(
-            new Project(project),
-            {
-              getresponsibleEPD: project.responsibleEPDId !== null && project.responsibleEPDId !== '' || project.responsibleEPDId !== undefined,
-              getprojectLead: project.projectLeadId !== null && project.projectLeadId !== '' || project.projectLeadId !== undefined
-            }
-          ).pipe(
-            tap(() => this.loadingState.stopLoading(loadingId))
-          );
+          return new Project(project);
         }),
         catchError(error => {
           this.loadingState.stopLoading(loadingId);
@@ -212,81 +184,6 @@ export class ProjectService {
         catchError(error => {
           this.loadingState.stopLoading(loadingId);
           return this.api.handleError(error);
-        })
-      );
-  }
-
-  // Only the name changes: the Eagle org _id stays, the proponent filter and links key on it.
-  private withProponentName(proponent: any, name: string): any {
-    if (proponent && typeof proponent === 'object') {
-      return { ...proponent, name };
-    }
-    return proponent ? { _id: proponent, name } : { name };
-  }
-
-  private _getExtraAppData(project: Project, { getresponsibleEPD = false, getprojectLead = false }: GetParameters): Observable<Project> {
-    // Check if both roles are the same person to avoid duplicate API calls
-    const sameUser = getresponsibleEPD && getprojectLead && 
-                     project.responsibleEPDId && project.projectLeadId &&
-                     project.responsibleEPDId.toString() === project.projectLeadId.toString();
-    
-    if (sameUser) {
-      // Fetch user data once and assign to both roles
-      return this.searchService.getItem(project.responsibleEPDId.toString(), 'User')
-        .pipe(
-          map(payload => {
-            project.responsibleEPDObj = payload.data;
-            project.projectLeadObj = payload.data;
-            return project;
-          })
-        );
-    }
-    
-    // Different users or only one role needed - use forkJoin
-    return forkJoin(
-      getresponsibleEPD ? this.searchService.getItem(project.responsibleEPDId.toString(), 'User') : of(null),
-      getprojectLead ? this.searchService.getItem(project.projectLeadId.toString(), 'User') : of(null)
-    )
-      .pipe(
-        map(payloads => {
-          if (getresponsibleEPD) {
-            project.responsibleEPDObj = payloads[0].data;
-          }
-          if (getprojectLead) {
-            project.projectLeadObj = payloads[1].data;
-          }
-          // finally update the object and return
-          return project;
-        })
-      );
-  }
-  public getPeopleObjs(data: any): Observable<any> {
-    const projectSearchData = this.utils.extractFromSearchResults(data);
-    if (!projectSearchData) {
-      return of(data)
-    }
-    const project = projectSearchData[0] as Project;
-
-    if (!project) {
-      return of(data);
-    }
-    const epdId = (project.responsibleEPDId) ? project.responsibleEPDId.toString() : '';
-    const leadId = (project.projectLeadId) ? project.projectLeadId.toString() : '';
-    if (!epdId && !leadId) {
-      return of(data);
-    }
-    return forkJoin(
-      this.searchService.getItem(epdId, 'User'),
-      this.searchService.getItem(leadId, 'User')
-    )
-      .pipe(
-        map(payloads => {
-          if (payloads) {
-            project.responsibleEPDObj = payloads[0].data;
-            project.projectLeadObj = payloads[1].data;
-            // finally update the object and return
-          }
-          return data;
         })
       );
   }

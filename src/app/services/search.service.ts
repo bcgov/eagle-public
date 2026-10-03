@@ -20,36 +20,6 @@ export class SearchService {
 
   public isError = false;
 
-  getItem(_id: string, schema: string): Observable<any> {
-    const loadingId = `search-item-${_id}`;
-    this.loadingState.startLoading(loadingId, 'Loading item');
-    const searchResults = this.api.getItem(_id, schema)
-      .pipe(
-        map(res => {
-          const allResults = [] as any;
-          res.forEach(item => {
-            const r = new SearchResults({ type: item._schemaName, data: item });
-            allResults.push(r);
-          });
-          this.loadingState.stopLoading(loadingId);
-          if (allResults.length === 1) {
-            return allResults[0];
-          } else {
-            return {};
-          }
-        }),
-        catchError(() => {
-          this.loadingState.stopLoading(loadingId);
-          this.isError = true;
-          // if call fails, return null results
-          return of(null as unknown as SearchResults);
-        })
-      );
-    return searchResults;
-  }
-  getFullList(schema: string): Observable<any> {
-    return this.api.getFullDataSet(schema);
-  }
   getSearchResults(keys: string, dataset: string, fields: any[], pageNum = 1, pageSize = 10, sortBy: string | null = null, queryModifier: Record<string,string> = {}, populate = false, secondarySort: string | null = null, filter: Record<string,string> = {}, projectLegislation = '', fuzzy = false): Observable<any[]> {
     const searchResults = this.api.searchKeywords(keys, dataset, fields, pageNum, pageSize, projectLegislation, sortBy, queryModifier, populate, secondarySort, filter, fuzzy)
       .pipe(

@@ -8,10 +8,10 @@ import { GateService } from './gate.service';
 
 /**
  * The curtain must never open on its own: prod sends ACCESS_GATE false, and a wrong password must
- * leave the app hidden. Only a 204 from eagle-api counts as unlocked.
+ * leave the app hidden. Only a 204 from demi-search counts as unlocked.
  */
 describe('GateService', () => {
-  const URL = '/api/public/gate';
+  const URL = '/demi-search/gate';
   let httpMock: HttpTestingController;
 
   function setup(config: EnvConfig): GateService {
@@ -23,7 +23,7 @@ describe('GateService', () => {
         GateService,
         {
           provide: ConfigService,
-          useValue: { getApiPath: () => '/api', config: signal(config) }
+          useValue: { getApiPath: () => '/api', getSearchApiPath: () => '/demi-search', config: signal(config) }
         }
       ]
     });

@@ -1,12 +1,13 @@
 import { Component, EventEmitter, Input, ChangeDetectionStrategy, inject } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
-import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
 import { TableRowComponent, ITableMessage } from 'app/shared/components/table-template/table-row-component';
 import { TableObject } from 'app/shared/components/table-template/table-object';
 import { AnalyticsService } from 'app/services/analytics/analytics.service';
 import { sanitizeWordHtml } from 'app/shared/utils/word-html-sanitizer';
+import { rewriteLegacyDocumentLinks, rewriteLegacyDocumentUrl } from 'app/shared/utils/legacy-document-url';
+import { ConfigService } from 'app/services/config.service';
 
 /**
  * Shared activity card component. Renders a single RecentActivity item in the
@@ -29,11 +30,21 @@ import { sanitizeWordHtml } from 'app/shared/utils/word-html-sanitizer';
 })
 export class ActivityCardComponent implements TableRowComponent {
   private router = inject(Router);
-  private sanitizer = inject(DomSanitizer);
   private analytics = inject(AnalyticsService);
+  private configService = inject(ConfigService);
+
+  private row: any = null;
+  /** The update text with legacy document links rewritten; Angular's sanitizer runs on binding. */
+  contentHtml = '';
 
   // TableRowComponent interface — set by TableRowDirective in table context
-  @Input() rowData: any = null;
+  @Input() set rowData(value: any) {
+    this.row = value;
+    this.contentHtml = rewriteLegacyDocumentLinks(sanitizeWordHtml(value?.content), this.configService.getSearchApiPath());
+  }
+  get rowData(): any {
+    return this.row;
+  }
   tableData: TableObject = null as any;
   messageOut = new EventEmitter<ITableMessage>();
   messageIn = new EventEmitter<ITableMessage>();
@@ -60,8 +71,9 @@ export class ActivityCardComponent implements TableRowComponent {
     return this.showProjectInfo;
   }
 
-  getSafeHtml(content: string): SafeHtml {
-    return this.sanitizer.bypassSecurityTrustHtml(sanitizeWordHtml(content));
+  /** Old updates link eagle-api document routes; those now point at the demi-search download. */
+  documentHref(url: string): string {
+    return rewriteLegacyDocumentUrl(url, this.configService.getSearchApiPath());
   }
 
   goToCP(activity: any): void {

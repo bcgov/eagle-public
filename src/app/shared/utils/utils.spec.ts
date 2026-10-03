@@ -1,5 +1,6 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
 import { Utils } from './utils';
 import { AnalyticsService } from 'app/services/analytics/analytics.service';
 
@@ -10,6 +11,7 @@ describe('Utils', () => {
     TestBed.configureTestingModule({
       providers: [
         Utils,
+        provideHttpClient(),
         { provide: AnalyticsService, useValue: { track: () => undefined } }
       ]
     });
@@ -44,6 +46,13 @@ describe('Utils', () => {
     // The declared return type is `T[] | null`. Without the `?? null` this returned `undefined`
     // and the `as T[]` cast made every caller's type wrong about it.
     expect(utils.extractFromSearchResults([{ data: { meta: [] } }] as any)).toBeNull();
+  });
+
+  it('opens a document download at the demi-search download', () => {
+    const open = vi.spyOn(window, 'open').mockReturnValue(null);
+    utils.openDocumentDownload({ _id: 'doc1', documentFileName: 'a b.pdf' });
+    expect(open).toHaveBeenCalledWith('/demi-search/documents/doc1/download?redirect=1', '_blank');
+    open.mockRestore();
   });
 
 });

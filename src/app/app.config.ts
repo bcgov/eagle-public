@@ -9,22 +9,38 @@ import { GlobalErrorHandler } from './services/global-error-handler';
 import { ConfigService } from './services/config.service';
 import { AnalyticsService } from './services/analytics/analytics.service';
 
+const UNAVAILABLE_PAGE = `<main class="container py-5">
+  <h1>EPIC is temporarily unavailable</h1>
+  <p>The site could not load its configuration. Reload the page to try again.</p>
+</main>`;
+
+/**
+ * Loads the runtime config and builds the analytics client. When the config cannot be loaded,
+ * shows the unavailable page and rejects, which stops bootstrap before any component renders.
+ */
+export async function initializeApp(): Promise<void> {
+  const configService = inject(ConfigService);
+  const analyticsService = inject(AnalyticsService);
+
+  try {
+    await configService.init();
+  } catch (e) {
+    const root = document.querySelector('app-root') ?? document.body;
+    root.innerHTML = UNAVAILABLE_PAGE;
+    throw e;
+  }
+
+  // Must follow config.init(): EAGLE_ANALYTICS_URL comes only from the runtime config, and an
+  // empty value leaves the client a no-op.
+  analyticsService.initialize();
+}
+
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes),
     provideHttpClient(withInterceptors([httpCacheInterceptor, loggingInterceptor])),
     { provide: ErrorHandler, useClass: GlobalErrorHandler },
-    provideAppInitializer(async () => {
-      const configService = inject(ConfigService);
-      const analyticsService = inject(AnalyticsService);
-
-      // Load config — awaits the /api/config fetch before anything reads a config value.
-      await configService.init();
-
-      // Build the analytics client. Must follow config.init(): it reads EAGLE_ANALYTICS_URL, which
-      // only /api/config supplies, and an empty value leaves the client a no-op.
-      analyticsService.initialize();
-    })
+    provideAppInitializer(initializeApp)
   ]
 };

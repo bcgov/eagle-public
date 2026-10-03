@@ -21,13 +21,13 @@ export interface LogEntry {
 export class LoggingService {
   
   /**
-   * Get the minimum log level from ConfigService (populated from /api/config).
+   * Get the minimum log level from ConfigService (populated from /demi-search/config).
    * Falls back to window.__env for early logs before config loads.
    * Log levels: 0=All, 1=Debug, 2=Info, 3=Warn, 4=Error
    */
   private get minLevel(): LogLevel {
     // Try to read from ConfigService (exposed on window to avoid circular deps)
-    // ConfigService.config() contains merged env.js + /api/config values
+    // ConfigService.config() contains merged env.js + /demi-search/config values
     const configService = (window as any).__configService;
     if (configService?.config) {
       const config = configService.config();
