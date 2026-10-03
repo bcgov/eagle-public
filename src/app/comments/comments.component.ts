@@ -210,8 +210,9 @@ export class CommentsComponent implements OnDestroy {
   private loadComments() {
     if (!this.commentPeriodId) return;
 
-    const currentTableData = this.tableData();
-    this.commentService.getByPeriodId(this.commentPeriodId, currentTableData.currentPage, currentTableData.pageSize)
+    // Read before the request: a later page change mutates the same TableObject while this one is in flight.
+    const { currentPage, pageSize } = this.tableData();
+    this.commentService.getByPeriodId(this.commentPeriodId, currentPage, pageSize)
       .pipe(takeUntil(this.ngUnsubscribe))
       .subscribe(async res => {
         const currentComments = res.currentComments;
@@ -274,10 +275,10 @@ export class CommentsComponent implements OnDestroy {
         const currentTableData = this.tableData();
         const newTableData = new TableObject({ component: CommentsTableRowsComponent });
         newTableData.options = currentTableData.options;
-        newTableData.currentPage = currentTableData.currentPage;
-        newTableData.pageSize = currentTableData.pageSize;
+        newTableData.currentPage = currentPage;
+        newTableData.pageSize = pageSize;
         // A null count means the total is unknown: keep the last known total, but never fewer than the rows seen.
-        const rowsSeen = (currentTableData.currentPage - 1) * currentTableData.pageSize + currentComments.length;
+        const rowsSeen = (currentPage - 1) * pageSize + currentComments.length;
         newTableData.totalListItems = res.totalCount ?? Math.max(currentTableData.totalListItems, rowsSeen);
         newTableData.items = currentComments.map((comment: any) => ({ rowData: comment }));
 
@@ -301,6 +302,11 @@ export class CommentsComponent implements OnDestroy {
     return downloadDocumentWithToast(this.api, this.toastService, document);
   }
 
+  /** A held Enter repeats a button's click; this keeps it to one download per press. */
+  blockRepeatedEnter(event: KeyboardEvent) {
+    if (event.key === 'Enter' && event.repeat) event.preventDefault();
+  }
+
   trackEngageClick() {
     const period = this.commentPeriod()!;
     this.analytics.track('Comment Period Banner Clicked', {
@@ -309,8 +315,14 @@ export class CommentsComponent implements OnDestroy {
       project_name: this.project()?.name,
       status: period.commentPeriodStatus,
       is_met: true,
-      destination: 'external_met'
+      destination: 'external_met',
+      source: 'comment_period_page'
     });
+  }
+
+  trackEngageAuxClick(event: MouseEvent) {
+    // auxclick also fires for the right button; only a middle click opens the link.
+    if (event.button === 1) this.trackEngageClick();
   }
 
   goBackToProjectDetails() {

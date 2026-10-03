@@ -13,8 +13,6 @@ export class CommentService {
   private documentService = inject(DocumentService);
   private loadingState = inject(LoadingStateService);
 
-  private comment: Comment | null = null;
-
   // get count of projects
   getCountById(commentPeriodId: string): Observable<number> {
     return this.api.getCountCommentsById(commentPeriodId)
@@ -44,11 +42,7 @@ export class CommentService {
 
   // get a specific comment by its id
   // (including documents)
-  getById(commentId: string, forceReload = false): Observable<Comment> {
-    if (this.comment && this.comment._id === commentId && !forceReload) {
-      return of(this.comment);
-    }
-
+  getById(commentId: string): Observable<Comment> {
     // first get the comment data
     return this.api.getComment(commentId)
     .pipe(

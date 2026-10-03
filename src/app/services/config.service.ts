@@ -163,7 +163,11 @@ export class ConfigService {
         this.logger.debug('merged with the runtime config', 'config', this._config());
         return;
       } catch (e) {
-        if (!retryable || attempt >= CONFIG_ATTEMPTS) throw e;
+        if (!retryable || attempt >= CONFIG_ATTEMPTS) {
+          // A network error alone says only "Failed to fetch"; name the request for the boot log.
+          const reason = e instanceof Error ? e.message : String(e);
+          throw new Error(`runtime config ${CONFIG_PATH} failed after ${attempt} attempt${attempt === 1 ? '' : 's'}: ${reason}`, { cause: e });
+        }
         this.logger.warn(`${CONFIG_PATH} attempt ${attempt} of ${CONFIG_ATTEMPTS} failed, retrying`, 'config', e);
         await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
       }

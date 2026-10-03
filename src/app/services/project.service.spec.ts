@@ -132,18 +132,9 @@ describe('ProjectService', () => {
       const mockProject = [new Project({ _id: '58851197aaecd9001b8227cc', description: 'Test project' })];
       mockApiService.getProject.mockReturnValue(of(mockProject));
 
-      const project = await firstValueFrom(service.getById('58851197aaecd9001b8227cc', true));
+      const project = await firstValueFrom(service.getById('58851197aaecd9001b8227cc'));
 
       expect(project._id).toEqual('58851197aaecd9001b8227cc');
-      expect(mockApiService.getProject).toHaveBeenCalled();
-    });
-
-    it('calls the api when forceReload is true', async () => {
-      const mockProject = [new Project({ _id: 'test-id', description: 'Test' })];
-      mockApiService.getProject.mockReturnValue(of(mockProject));
-
-      await firstValueFrom(service.getById('test-id', true));
-
       expect(mockApiService.getProject).toHaveBeenCalled();
     });
   });
@@ -188,13 +179,13 @@ describe('ProjectService DEMI project reads', () => {
   }
 
   it('reads the project from /demi-projects by its Eagle id', async () => {
-    const project = firstValueFrom(service.getById(PROJECT_ID, true));
+    const project = firstValueFrom(service.getById(PROJECT_ID));
     projectRequest().flush(DOC);
     expect((await project)._id).toBe(PROJECT_ID);
   });
 
   it("maps Track's field names onto the Eagle ones", async () => {
-    const project = firstValueFrom(service.getById(PROJECT_ID, true));
+    const project = firstValueFrom(service.getById(PROJECT_ID));
     projectRequest().flush(DOC);
     const result = await project;
     expect(result.type).toBe('Mines');
@@ -203,19 +194,19 @@ describe('ProjectService DEMI project reads', () => {
   });
 
   it('flattens the GeoJSON centroid for the map', async () => {
-    const project = firstValueFrom(service.getById(PROJECT_ID, true));
+    const project = firstValueFrom(service.getById(PROJECT_ID));
     projectRequest().flush(DOC);
     expect((await project).centroid).toEqual([-130.4, 56.6]);
   });
 
   it('rebuilds the proponent from its id and name', async () => {
-    const project = firstValueFrom(service.getById(PROJECT_ID, true));
+    const project = firstValueFrom(service.getById(PROJECT_ID));
     projectRequest().flush(DOC);
     expect((await project).proponent).toEqual({ _id: DOC.proponentId, name: 'Skeena Resources Limited' });
   });
 
   it('resolves a List id to its row', async () => {
-    const project = firstValueFrom(service.getById(PROJECT_ID, true));
+    const project = firstValueFrom(service.getById(PROJECT_ID));
     projectRequest().flush(DOC);
     expect((await project).eacDecision?.name).toBe('Certificate Issued');
   });
@@ -223,7 +214,7 @@ describe('ProjectService DEMI project reads', () => {
   it('uses List fields DEMI already populated without reading the List rows', async () => {
     let listReads = 0;
     (TestBed.inject(ConfigService) as any).lists = defer(() => { listReads++; return of(LISTS); });
-    const project = firstValueFrom(service.getById(PROJECT_ID, true));
+    const project = firstValueFrom(service.getById(PROJECT_ID));
     projectRequest().flush({
       ...DOC,
       eacDecision: { _id: 'd', name: 'Certificate Issued' },
@@ -237,20 +228,20 @@ describe('ProjectService DEMI project reads', () => {
   });
 
   it('leaves a List id with no matching row empty, so the page shows "-"', async () => {
-    const project = firstValueFrom(service.getById(PROJECT_ID, true));
+    const project = firstValueFrom(service.getById(PROJECT_ID));
     projectRequest().flush({ ...DOC, eacDecision: 'list-unknown' });
     expect((await project).eacDecision).toBeNull();
   });
 
   it('answers null, not an error, when DEMI has no such project', async () => {
-    const project = firstValueFrom(service.getById(PROJECT_ID, true));
+    const project = firstValueFrom(service.getById(PROJECT_ID));
     projectRequest().flush({ message: 'Not found' }, { status: 404, statusText: 'Not Found' });
     expect(await project).toBeNull();
   });
 
   it('fails on any other DEMI error', async () => {
     vi.spyOn(TestBed.inject(LoggingService), 'error').mockImplementation(() => undefined);
-    const project = firstValueFrom(service.getById(PROJECT_ID, true));
+    const project = firstValueFrom(service.getById(PROJECT_ID));
     projectRequest().flush({ message: 'down' }, { status: 502, statusText: 'Bad Gateway' });
     await expect(project).rejects.toBeTruthy();
   });
@@ -260,7 +251,7 @@ describe('ProjectService DEMI project reads', () => {
     const END = '2026-10-31T00:00:00.000Z';
 
     it("reads the project's periods by and[project]", async () => {
-      const project = firstValueFrom(service.getById(PROJECT_ID, true, START, END));
+      const project = firstValueFrom(service.getById(PROJECT_ID, START, END));
       projectRequest().flush(DOC);
       const req = searchRequest(httpMock, 'CommentPeriod');
       expect(req.request.url).toContain(`&and[project]=${PROJECT_ID}`);
@@ -269,7 +260,7 @@ describe('ProjectService DEMI project reads', () => {
     });
 
     it('shows a period that falls inside the window', async () => {
-      const project = firstValueFrom(service.getById(PROJECT_ID, true, START, END));
+      const project = firstValueFrom(service.getById(PROJECT_ID, START, END));
       projectRequest().flush(DOC);
       searchRequest(httpMock, 'CommentPeriod').flush(envelope([
         { _id: 'old', informationLabel: 'Old', dateStarted: '2025-01-01T00:00:00Z', dateCompleted: '2025-02-01T00:00:00Z' },
@@ -279,7 +270,7 @@ describe('ProjectService DEMI project reads', () => {
     });
 
     it('shows a period that spans the window', async () => {
-      const project = firstValueFrom(service.getById(PROJECT_ID, true, START, END));
+      const project = firstValueFrom(service.getById(PROJECT_ID, START, END));
       projectRequest().flush(DOC);
       searchRequest(httpMock, 'CommentPeriod').flush(envelope([
         { _id: 'long', informationLabel: 'Long', dateStarted: '2026-08-01T00:00:00Z', dateCompleted: '2026-11-30T00:00:00Z' },
@@ -288,7 +279,7 @@ describe('ProjectService DEMI project reads', () => {
     });
 
     it('shows no banner when the window cannot be read', async () => {
-      const project = firstValueFrom(service.getById(PROJECT_ID, true, 'not a date', END));
+      const project = firstValueFrom(service.getById(PROJECT_ID, 'not a date', END));
       projectRequest().flush(DOC);
       searchRequest(httpMock, 'CommentPeriod').flush(envelope([
         { _id: 'cur', informationLabel: 'Current', dateStarted: '2026-09-15T00:00:00Z', dateCompleted: '2026-10-15T00:00:00Z' },
@@ -297,7 +288,7 @@ describe('ProjectService DEMI project reads', () => {
     });
 
     it('shows no banner for a period whose dates cannot be read', async () => {
-      const project = firstValueFrom(service.getById(PROJECT_ID, true, START, END));
+      const project = firstValueFrom(service.getById(PROJECT_ID, START, END));
       projectRequest().flush(DOC);
       searchRequest(httpMock, 'CommentPeriod').flush(envelope([
         { _id: 'bad', informationLabel: 'Bad', dateStarted: 'soon', dateCompleted: null },
@@ -306,7 +297,7 @@ describe('ProjectService DEMI project reads', () => {
     });
 
     it('shows no banner for a period outside the window', async () => {
-      const project = firstValueFrom(service.getById(PROJECT_ID, true, START, END));
+      const project = firstValueFrom(service.getById(PROJECT_ID, START, END));
       projectRequest().flush(DOC);
       searchRequest(httpMock, 'CommentPeriod').flush(envelope([
         { _id: 'old', informationLabel: 'Old', dateStarted: '2025-01-01T00:00:00Z', dateCompleted: '2025-02-01T00:00:00Z' },
@@ -315,7 +306,7 @@ describe('ProjectService DEMI project reads', () => {
     });
 
     it('still loads the project when the period read fails', async () => {
-      const project = firstValueFrom(service.getById(PROJECT_ID, true, START, END));
+      const project = firstValueFrom(service.getById(PROJECT_ID, START, END));
       projectRequest().flush(DOC);
       searchRequest(httpMock, 'CommentPeriod').flush({}, { status: 500, statusText: 'Server Error' });
       const result = await project;

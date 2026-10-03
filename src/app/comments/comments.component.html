@@ -33,7 +33,8 @@
                      [href]="commentPeriod()!.metURL"
                      target="_blank"
                      rel="noopener noreferrer"
-                     (click)="trackEngageClick()">
+                     (click)="trackEngageClick()"
+                     (auxclick)="trackEngageAuxClick($event)">
                     {{commentPeriod()!.ctaLabel}}
                     <i class="material-icons" aria-hidden="true">open_in_new</i>
                     <span class="visually-hidden">(opens in new tab)</span>
@@ -70,18 +71,18 @@
               <div class="card-header">Related Documents</div>
               <ul class="doc-list mb-0">
                 @for (doc of commentPeriodDocs(); track doc) {
-                  <li class="clickable-row" 
-                      role="button"
-                      tabindex="0"
-                      (click)="downloadDocument(doc)"
-                      (keydown.enter)="downloadDocument(doc)"
-                      (keydown.space)="$event.preventDefault(); downloadDocument(doc)">
-                    <span class="cell icon">
-                      <i class="material-icons" aria-hidden="true">insert_drive_file</i>
-                    </span>
-                    <span class="cell name" [title]="doc.displayName || ''">
-                      {{doc.displayName}}
-                    </span>
+                  <li>
+                    <button type="button"
+                            class="clickable-row"
+                            (click)="downloadDocument(doc)"
+                            (keydown)="blockRepeatedEnter($event)">
+                      <span class="cell icon">
+                        <i class="material-icons" aria-hidden="true">insert_drive_file</i>
+                      </span>
+                      <span class="cell name" [title]="doc.displayName || ''">
+                        {{doc.displayName}}
+                      </span>
+                    </button>
                   </li>
                 }
               </ul>

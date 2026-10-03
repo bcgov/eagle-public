@@ -21,7 +21,6 @@ export class ProjectService {
   private loadingState = inject(LoadingStateService);
   private logger = inject(LoggingService);
 
-  private project: Project | null = null; // for caching
   private projectList: Project[] = [];
   private cachedCount: number | null = null;
   private count$: Observable<number> | null = null;
@@ -125,10 +124,7 @@ export class ProjectService {
   }
 
   // get a specific project by its id
-  getById(projId: string, forceReload = false, cpStart: string | null = null, cpEnd: string | null = null): Observable<Project> {
-    if (this.project && this.project._id === projId && !forceReload) {
-      return of(this.project);
-    }
+  getById(projId: string, cpStart: string | null = null, cpEnd: string | null = null): Observable<Project> {
     const loadingId = `project-${projId}`;
     this.loadingState.startLoading(loadingId, 'Loading project');
     return this.api.getProject(projId, cpStart, cpEnd)

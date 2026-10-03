@@ -94,7 +94,7 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
     start.setDate(start.getDate() - 21);
     end.setDate(end.getDate() + 14);
     
-    this.projectService.getById(projId, false, start.toISOString(), end.toISOString())
+    this.projectService.getById(projId, start.toISOString(), end.toISOString())
       .pipe(takeUntil(this.ngUnsubscribe))
       .subscribe({
         next: (project) => {
@@ -544,7 +544,8 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
         project_name: proj.name,
         status: proj.commentPeriodForBanner.commentPeriodStatus,
         is_met: true,
-        destination: 'external_met'
+        destination: 'external_met',
+        source: 'project_banner'
       });
       window.open(proj.commentPeriodForBanner.metURL, '_blank');
     } else if (proj?.commentPeriodForBanner) {
@@ -553,7 +554,8 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
         project_name: proj.name,
         status: proj.commentPeriodForBanner.commentPeriodStatus,
         is_met: false,
-        destination: 'comment_period_details'
+        destination: 'comment_period_details',
+        source: 'project_banner'
       });
       this.router.navigate(['/p', proj._id, 'cp', proj.commentPeriodForBanner._id, 'details']);
     }

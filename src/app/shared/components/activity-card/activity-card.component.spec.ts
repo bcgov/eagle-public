@@ -282,4 +282,16 @@ describe('ActivityCardComponent comment period button', () => {
   ])('labels and links %s', (_name, pcp, text, target) => {
     expect(renderButton(pcp)).toEqual({ text, target });
   });
+
+  it('opens the period page, not a new tab, for a period with no ENGAGE page', () => {
+    const fixture = create({ headline: 'Update', type: 'Public Comment Period', project: { _id: 'proj1' }, pcp: { _id: 'pcp1', isMet: false, metURL: '' } });
+    const open = vi.spyOn(window, 'open').mockImplementation(() => null);
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+
+    fixture.nativeElement.querySelector('button').click();
+
+    expect(open).not.toHaveBeenCalled();
+    expect(navigate).toHaveBeenCalledWith(['p', 'proj1', 'cp', 'pcp1']);
+    open.mockRestore();
+  });
 });
