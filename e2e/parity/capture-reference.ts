@@ -16,7 +16,7 @@ import { join } from 'node:path';
 // public CDNs, so the capture needs the network the parity run refuses.
 import { expect, test, type Browser, type Page } from '@playwright/test';
 
-import { CAPTURE_USE, masksFor, SHOT_OPTIONS, VIEWPORT } from './capture';
+import { masksFor, SHOT_OPTIONS, VIEWPORT } from './capture';
 import {
   checkMeasurements,
   freezeClock,
@@ -34,6 +34,7 @@ import {
   CONTENT_SEARCH_STATE,
   measurementsFor,
   type ParityState,
+  stateById,
   STATES,
   WIDE,
   widthsFor,
@@ -71,21 +72,24 @@ async function blockLegacyFooterStyles(page: Page): Promise<void> {
  * Run after the steps: every click re-renders the prototype's tab list from its own data.
  */
 async function addNotificationsPill(page: Page): Promise<void> {
-  await page.evaluate(() => {
-    const pills = Array.from(document.querySelectorAll('[data-tour="types"] button'));
-    if (pills.length !== 3) throw new Error(`prototype drew ${pills.length} record pills, not 3`);
-    const clone = pills[2]!.cloneNode(true) as HTMLElement;
-    // Styling is inline and per-pill, so an unpressed sibling is the only source of the off state.
-    const off = pills.find((pill) => pill.getAttribute('aria-pressed') !== 'true') ?? pills[2]!;
-    clone.setAttribute('aria-pressed', 'false');
-    clone.setAttribute('style', off.getAttribute('style') ?? '');
-    // The prototype draws a pill as label span then count span; the count goes, the label is set.
-    const [label, count] = Array.from(clone.querySelectorAll('span'));
-    if (!label) throw new Error('record pill has no label');
-    label.textContent = 'Project notifications';
-    count?.remove();
-    pills[2]!.after(clone);
-  });
+  await page.evaluate(
+    (selector) => {
+      const pills = Array.from(document.querySelectorAll(selector));
+      if (pills.length !== 3) throw new Error(`prototype drew ${pills.length} record pills, not 3`);
+      const clone = pills[2]!.cloneNode(true) as HTMLElement;
+      // Styling is inline and per-pill, so an unpressed sibling is the only source of the off state.
+      const off = pills.find((pill) => pill.getAttribute('aria-pressed') !== 'true') ?? pills[2]!;
+      clone.setAttribute('aria-pressed', 'false');
+      clone.setAttribute('style', off.getAttribute('style') ?? '');
+      // The prototype draws a pill as label span then count span; the count goes, the label is set.
+      const [label, count] = Array.from(clone.querySelectorAll('span'));
+      if (!label) throw new Error('record pill has no label');
+      label.textContent = 'Project notifications';
+      count?.remove();
+      pills[2]!.after(clone);
+    },
+    selectorFor('recordPills', 'proto'),
+  );
 }
 
 /**
@@ -323,8 +327,20 @@ async function assertLegislationHidden(page: Page): Promise<void> {
 
 let server: PrototypeServer;
 
-test.beforeAll(async () => {
+/** Same check as the app side: a difference is something that moves between runs. */
+const REPEAT_STATE = stateById('01-documents-grid');
+
+// The stability check runs here, before any capture, so an unstable prototype fails the run
+// before it can overwrite a reference. A failed capture restarts the worker, which reruns it.
+test.beforeAll(async ({ browser }) => {
+  test.setTimeout(120_000);
   server = await startPrototypeServer();
+  const first = await shootFresh(browser, REPEAT_STATE, WIDE);
+  const second = await shootFresh(browser, REPEAT_STATE, WIDE);
+  expect(
+    second.equals(first),
+    `${REPEAT_STATE.id} @ ${WIDE}: second capture differs from the first`,
+  ).toBe(true);
   mkdirSync(REFERENCE_DIR, { recursive: true });
 });
 
@@ -408,20 +424,15 @@ for (const state of STATES) {
   }
 }
 
-/** Captures `state` in a context of its own, so nothing carries over from an earlier capture. */
+/**
+ * Captures `state` in a context of its own, so nothing carries over from an earlier capture. The
+ * context takes the project's `use` options, `CAPTURE_USE` included.
+ */
 async function shootFresh(browser: Browser, state: ParityState, width: number): Promise<Buffer> {
-  const context = await browser.newContext(CAPTURE_USE);
+  const context = await browser.newContext();
   try {
     return (await shoot(await context.newPage(), state, width)).png;
   } finally {
     await context.close();
   }
 }
-
-// Same check as the app side: a difference is something that moves between runs.
-const REPEAT_STATE = STATES.find((state) => state.id === '01-documents-grid')!;
-test(`${REPEAT_STATE.id} @ ${WIDE} captures the same twice`, async ({ browser }) => {
-  const first = await shootFresh(browser, REPEAT_STATE, WIDE);
-  const second = await shootFresh(browser, REPEAT_STATE, WIDE);
-  expect(second.equals(first), 'second capture differs from the first').toBe(true);
-});

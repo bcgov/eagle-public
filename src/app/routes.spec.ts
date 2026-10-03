@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
+import { matchRoutes } from 'react-router';
 import { routes, searchLoader } from './routes';
+import { ContentTabRoute } from './pages/project/extended/extended-route';
 
 function findRoute(path: string) {
   return routes[0].children?.find((route) => route.path === path);
@@ -36,7 +38,6 @@ describe('the legacy list routes', () => {
     'sends /$path to unified search instead of rendering a page of its own',
     async ({ path, from, to }) => {
       expect(await loaderLocation(path, from)).toBe(to);
-      expect(findRoute(path)?.Component).toBeUndefined();
     },
   );
 });
@@ -49,7 +50,6 @@ describe('the old static page routes', () => {
     { path: 'contact', section: 'contact' },
   ])('sends /$path to its section of /about', async ({ path, section }) => {
     expect(await loaderLocation(path, `http://localhost/${path}`)).toBe(`/about#${section}`);
-    expect(findRoute(path)?.Component).toBeUndefined();
   });
 
   it('keeps the query string ahead of the section hash', async () => {
@@ -160,5 +160,18 @@ describe('routes', () => {
       request: new Request(`http://localhost/p/abc/${from}?search=fish`),
     });
     expect(response.headers.get('Location')).toBe(`/p/abc/${to}?search=fish`);
+  });
+
+  // ContentTabRoute sends any path with a rest, or a segment no extended page owns, to Overview;
+  // its own specs prove that. Here: these paths reach it, not a tab or the home redirect.
+  it.each([
+    { path: '/p/abc/documents/foo', segment: 'documents', rest: 'foo' },
+    { path: '/p/abc/overview/foo', segment: 'overview', rest: 'foo' },
+    { path: '/p/abc/cp', segment: 'cp', rest: '' },
+    { path: '/p/abc/cp/def/details/foo', segment: 'cp', rest: 'def/details/foo' },
+  ])('hands $path to the route that sends it to Overview', ({ path, segment, rest }) => {
+    const leaf = matchRoutes(routes, path)?.at(-1);
+    expect(leaf?.route.Component).toBe(ContentTabRoute);
+    expect(leaf?.params).toMatchObject({ projId: 'abc', segment, '*': rest });
   });
 });

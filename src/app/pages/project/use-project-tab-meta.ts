@@ -53,7 +53,7 @@ export function useProjectDocumentCount(projId: string): { total: number; pendin
   });
   return {
     total: documents.totalListItems,
-    pending: !documents.totalListItems && documents.loading,
+    pending: documents.initialLoading,
   };
 }
 

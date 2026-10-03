@@ -9,7 +9,7 @@ import {
   Source,
 } from '@vis.gl/react-maplibre';
 import type { Map as MapLibreMap } from 'maplibre-gl';
-import type { FeatureCollection, Position } from 'geojson';
+import type { FeatureCollection, Geometry, Position } from 'geojson';
 import { Skeleton } from 'app/components/skeleton/skeleton';
 import { logger } from 'app/config/logging';
 import { EMPTY_STYLE, LIGHT_GRAY_BASEMAP, WORKER_URL } from 'app/map/basemaps';
@@ -43,13 +43,15 @@ const TOWN_ICON = 'route-town';
 const REGULAR_FONT = ['BC Sans'];
 const BOLD_FONT = ['BC Sans Bold', 'BC Sans'];
 
+class RefusedUrlError extends Error {}
+
 function useRouteData(url: string) {
   return useQuery({
     queryKey: ['geojson', url],
     queryFn: async (): Promise<FeatureCollection> => {
       try {
         // Map data ships with the site; content never sends the browser to another host for it.
-        if (!isSitePath(url)) throw new Error('not a site path');
+        if (!isSitePath(url)) throw new RefusedUrlError('not a site path');
         const response = await fetch(url);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return (await response.json()) as FeatureCollection;
@@ -59,18 +61,34 @@ function useRouteData(url: string) {
       }
     },
     staleTime: Infinity,
-    // One retry, so the error message shows within a couple of seconds.
-    retry: 1,
+    // One retry, so the error message shows within a couple of seconds; a refused URL stays refused.
+    retry: (failures, error) => failures < 1 && !(error instanceof RefusedUrlError),
   });
 }
 
-/** Bounding box of every line vertex and point; null when the collection holds neither. */
+/** Every position in a geometry, of any GeoJSON type. */
+function positionsOf(geometry: Geometry | null): Position[] {
+  switch (geometry?.type) {
+    case 'Point':
+      return [geometry.coordinates];
+    case 'MultiPoint':
+    case 'LineString':
+      return geometry.coordinates;
+    case 'MultiLineString':
+    case 'Polygon':
+      return geometry.coordinates.flat();
+    case 'MultiPolygon':
+      return geometry.coordinates.flat(2);
+    case 'GeometryCollection':
+      return geometry.geometries.flatMap(positionsOf);
+    default:
+      return [];
+  }
+}
+
+/** Bounding box of every position in the collection; null when it holds none. */
 function extentOf(data: FeatureCollection): Extent | null {
-  const positions: Position[] = data.features.flatMap(({ geometry }) => {
-    if (geometry?.type === 'Point') return [geometry.coordinates];
-    if (geometry?.type === 'LineString') return geometry.coordinates;
-    return [];
-  });
+  const positions = data.features.flatMap(({ geometry }) => positionsOf(geometry));
   if (positions.length === 0) return null;
   // A loop, not Math.min(...spread): a long line holds more vertices than a call takes arguments.
   let [west, south] = positions[0];
@@ -194,6 +212,7 @@ interface LineMapProps {
   towns?: MapPlace[];
 }
 
+/** Callers key it by `geojsonUrl`: another url is a new map, with none of the last one's state. */
 function LineMap({ geojsonUrl, lines, label, towns }: LineMapProps) {
   const full = towns !== undefined;
   const { data, isPending, isError } = useRouteData(geojsonUrl);
@@ -206,9 +225,7 @@ function LineMap({ geojsonUrl, lines, label, towns }: LineMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
   const [palette, setPalette] = useState<Palette | null>(null);
-  // The url whose map has its marker icons; a remount for another url waits for its own load.
-  const [markersFor, setMarkersFor] = useState<string | null>(null);
-  const markersReady = markersFor === geojsonUrl;
+  const [markersReady, setMarkersReady] = useState(false);
 
   // Runs as the DOM is removed, before the map is, so no refit hits a detached node.
   useLayoutEffect(() => () => resizeObserverRef.current?.disconnect(), []);
@@ -249,7 +266,6 @@ function LineMap({ geojsonUrl, lines, label, towns }: LineMapProps) {
       {...(full ? {} : { role: 'img', 'aria-label': label })}
     >
       <MapGL
-        key={geojsonUrl}
         initialViewState={{ bounds: extent, fitBoundsOptions: { padding } }}
         mapStyle={EMPTY_STYLE}
         workerUrl={WORKER_URL}
@@ -264,7 +280,7 @@ function LineMap({ geojsonUrl, lines, label, towns }: LineMapProps) {
         onLoad={({ target: map }) => {
           if (full) {
             addMarkerIcons(map, readPalette(map.getContainer()), lines);
-            setMarkersFor(geojsonUrl);
+            setMarkersReady(true);
           } else map.getCanvas().removeAttribute('tabindex');
           resizeObserverRef.current?.disconnect();
           resizeObserverRef.current = null;
@@ -375,11 +391,19 @@ function LineMap({ geojsonUrl, lines, label, towns }: LineMapProps) {
 /** The interactive line map for the Overview Route card. Callers lazy-load it. */
 export function RouteMap({ map }: RouteMapProps) {
   return (
-    <LineMap geojsonUrl={map.geojsonUrl} lines={map.lines} towns={map.places} label={map.label} />
+    <LineMap
+      key={map.geojsonUrl}
+      geojsonUrl={map.geojsonUrl}
+      lines={map.lines}
+      towns={map.places}
+      label={map.label}
+    />
   );
 }
 
 /** The non-interactive line map thumbnail in the persistent panel. */
 export function RouteMapThumbnail({ map, label }: RouteMapThumbnailProps) {
-  return <LineMap geojsonUrl={map.geojsonUrl} lines={map.lines} label={label} />;
+  return (
+    <LineMap key={map.geojsonUrl} geojsonUrl={map.geojsonUrl} lines={map.lines} label={label} />
+  );
 }

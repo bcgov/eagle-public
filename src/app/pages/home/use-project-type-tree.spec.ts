@@ -70,6 +70,21 @@ describe('useProjectTypeTree', () => {
     expect(result.current.truncated).toEqual({ shown: 4, of: 1500 });
   });
 
+  it('counts only the charted projects in a cut-short note, leaving out rows with no id', async () => {
+    const { result } = renderTree(
+      json([
+        {
+          searchResults: [...ROWS, project('', 'Mines', 'Coal Mines')],
+          meta: [{ searchResultsTotal: 1500 }],
+        },
+      ]),
+    );
+
+    await waitFor(() => expect(result.current.tree).not.toBeNull());
+    expect(result.current.truncated).toEqual({ shown: result.current.total, of: 1500 });
+    expect(result.current.total).toBe(4);
+  });
+
   it('flags nothing when the search sent every project', async () => {
     const { result } = renderTree(envelope(ROWS));
 

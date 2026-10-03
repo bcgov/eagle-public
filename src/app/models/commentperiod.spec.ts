@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { CommentPeriod } from './commentperiod';
+import { CommentPeriod, hostedOnEngage } from './commentperiod';
 
 // Noon Pacific on a summer (PDT, UTC-7) day, so every expectation below is offset-explicit.
 const NOW = new Date('2026-06-15T12:00:00-07:00');
@@ -64,6 +64,59 @@ describe('CommentPeriod', () => {
       });
 
       expect(period.bannerState).toBe('Open');
+    });
+  });
+
+  /** Only ENGAGE takes comments, so only an open ENGAGE period invites them. */
+  describe('bannerCTA', () => {
+    const OPEN = {
+      dateStarted: '2026-06-01T09:00:00-07:00',
+      dateCompleted: '2026-06-20T23:59:59-07:00',
+    };
+    const CLOSED = {
+      dateStarted: '2026-05-01T09:00:00-07:00',
+      dateCompleted: '2026-06-01T23:59:59-07:00',
+    };
+    const ENGAGE = { isMet: true, metURL: 'https://engage.eao.gov.bc.ca/cedar' };
+
+    it('invites comment on an open period ENGAGE runs', () => {
+      const period = new CommentPeriod({ ...OPEN, ...ENGAGE });
+
+      expect(hostedOnEngage(period)).toBe(true);
+      expect(period.bannerCTA).toBe('Share your thoughts');
+    });
+
+    it('only offers a look at an open period hosted here', () => {
+      const period = new CommentPeriod(OPEN);
+
+      expect(hostedOnEngage(period)).toBe(false);
+      expect(period.bannerCTA).toBe('View engagement');
+    });
+
+    it('does not count an ENGAGE link with an unsafe scheme as ENGAGE', () => {
+      // Built from parts so no linter rewrites the literal the test is about.
+      const period = new CommentPeriod({
+        ...OPEN,
+        isMet: true,
+        metURL: `${'java'}script:alert(1)`,
+      });
+
+      expect(hostedOnEngage(period)).toBe(false);
+      expect(period.bannerCTA).toBe('View engagement');
+    });
+
+    it('does not count a metURL without isMet as ENGAGE', () => {
+      const period = new CommentPeriod({ ...OPEN, isMet: false, metURL: ENGAGE.metURL });
+
+      expect(hostedOnEngage(period)).toBe(false);
+      expect(period.bannerCTA).toBe('View engagement');
+    });
+
+    it('only offers a look at a closed ENGAGE period', () => {
+      const period = new CommentPeriod({ ...CLOSED, ...ENGAGE });
+
+      expect(hostedOnEngage(period)).toBe(true);
+      expect(period.bannerCTA).toBe('View engagement');
     });
   });
 

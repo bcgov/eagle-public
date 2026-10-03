@@ -38,7 +38,7 @@ Both installs are needed: `yarn install` at the root (the style checks read
 `test:parity` starts `vite preview` itself on port 4173 (or the port of `BASE_URL`, or
 `PARITY_PORT`), so build first with `yarn build`. The reference check (below) runs first. While pixel comparison is parked
 it only warns; once it is live, a bad reference stops the whole run, including the
-checks that need no browser: the fixture backend in `demi-search.spec.ts`, the
+checks that need no app page: the fixture backend in `demi-search.spec.ts`, the
 reference check in `reference-check.spec.ts` and the network guard in
 `stay-local.spec.ts`. The reference images and the JSON fixtures are committed, so
 `test:parity` works from a clean checkout.
@@ -53,7 +53,10 @@ commands fail while the folder is missing.
 `e2e/parity/unified-search/reference/<state>-<width>.png`, committed. Playwright is
 pointed at that folder by `snapshotPathTemplate`, so the expected image is always a
 screenshot of the design, never one Playwright generated from the app.
-`updateSnapshots: 'none'` keeps a failing run from writing one.
+`updateSnapshots: 'none'` keeps a failing run from writing one. It does not stop
+`--update-snapshots` (or `-u`) on the command line, which overrides the config and
+overwrites the references. Never pass it to `test:parity`. If it happens, the SHA-256
+check below catches the changed images on the next run, not the run that wrote them.
 
 `manifest.json` in the same folder records, for each image, the page height the capture
 measured, whether the shot was full page, and the image's SHA-256. Commit it with the
@@ -70,7 +73,8 @@ reference against `states.ts` and `manifest.json`:
 - full page or viewport matches what the state asks for;
 - the SHA-256 matches, so an image swapped for another of the same size is caught;
 - no image is missing, no image is one no state asks for, and no manifest entry has lost
-  its image. A missing folder or a manifest that is not JSON is reported the same way.
+  its image. A missing folder, a manifest that is not a JSON object, or an entry without
+  its page height, full-page flag or SHA-256 is reported the same way.
 
 Each problem names the file, for example:
 

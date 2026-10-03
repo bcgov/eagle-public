@@ -17,8 +17,9 @@ export interface TypesChartProps {
 const HINT =
   'Select a type in the map or the list to see its sub-types, then a sub-type to see its projects.';
 const OTHER_TYPE_NOTE =
-  'Other holds projects with no type or an unlisted one, so Search has no filter for it.';
-const OTHER_SUB_NOTE = 'Other holds projects with no sub-type, so Search has no filter for it.';
+  "Other here also holds projects with no type or an unlisted one, so Search's Other filter shows fewer.";
+const OTHER_SUB_NOTE =
+  "Other here also holds projects with no sub-type, so Search's Other filter shows fewer.";
 
 /** What the status region reads out after a level change; the focused crumb already says the name. */
 function announce(sel: TypeNode | undefined, trailSub: SubNode | undefined, total: number): string {
@@ -69,15 +70,17 @@ export function TypesChart({ tree, total }: TypesChartProps) {
   const focus = trailSub ?? sel;
   let foot: ReactNode = HINT;
   // Search filters on the exact value, but the band's Other also holds blank and unknown values,
-  // so a link there would promise a count Search cannot match.
+  // so a link there would promise a count Search's Other filter cannot match.
   if (sel?.name === OTHER) foot = OTHER_TYPE_NOTE;
   else if (trailSub?.name === OTHER) foot = OTHER_SUB_NOTE;
-  else if (sel && focus) {
+  else if (sel) {
+    // `focus` again, narrowed: it is set whenever `sel` is.
+    const { count, name } = trailSub ?? sel;
     const query = new URLSearchParams({ record: 'projects', type: sel.name });
     if (trailSub) query.set('sector', trailSub.name);
     foot = (
       <Link to={`/search?${query}`}>
-        See all {focus.count} {focus.name} projects in Search
+        See all {count} {name} projects in Search
       </Link>
     );
   }

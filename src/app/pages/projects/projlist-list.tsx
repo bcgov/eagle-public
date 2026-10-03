@@ -85,6 +85,12 @@ export function ProjlistList({
     () => (projects ?? []).filter((project) => project.centroid?.length === 2).length,
     [projects],
   );
+  const countText =
+    numResults > 0
+      ? `${numResults} ${numResults === 1 ? 'project' : 'projects'} in view`
+      : loading
+        ? ''
+        : 'No projects in view';
 
   useEffect(() => {
     const fromCard = fromCardRef.current;
@@ -185,12 +191,8 @@ export function ProjlistList({
           aria-live="polite"
           aria-atomic="true"
         >
-          {numResults > 0
-            ? `${numResults} ${numResults === 1 ? 'project' : 'projects'} in view`
-            : loading
-              ? ''
-              : 'No projects in view'}
-          {status && <span className="visually-hidden">. {status}</span>}
+          {countText}
+          {status && <span className="visually-hidden">{countText ? `. ${status}` : status}</span>}
         </p>
         {headerControl}
       </div>

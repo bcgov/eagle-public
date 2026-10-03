@@ -136,15 +136,15 @@ export function ProjectPanel({
               <DetailsMap project={project} />
             </Suspense>
           </div>
-          <Link
-            className="project-panel__map-link"
-            to={notification ? '/projects' : explorerLink(project)}
-          >
-            <span className="link-label">Open in map explorer</span>
-            <span className="material-icons" aria-hidden="true">
-              arrow_forward
-            </span>
-          </Link>
+          {/* The explorer lists projects only, so a notification has nowhere to land. */}
+          {!notification && (
+            <Link className="project-panel__map-link" to={explorerLink(project)}>
+              <span className="link-label">Open in map explorer</span>
+              <span className="material-icons" aria-hidden="true">
+                arrow_forward
+              </span>
+            </Link>
+          )}
         </>
       ) : (
         <div className="map-placeholder">

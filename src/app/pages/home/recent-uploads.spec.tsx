@@ -81,6 +81,15 @@ describe('home recent uploads', () => {
     expect(within(section()).getAllByRole('listitem')).toHaveLength(5);
   });
 
+  it('encodes the project id in the row link', async () => {
+    renderUploads(json({ items: [upload('Cedar LNG', 'eagle/1', '2026-09-01', 'type-app-2018')] }));
+
+    expect(await screen.findByRole('link', { name: /^Cedar LNG/ })).toHaveAttribute(
+      'href',
+      '/p/eagle%2F1/documents?sortBy=-datePosted',
+    );
+  });
+
   it('labels an unresolved document type Documents, never a dash', async () => {
     renderUploads();
 

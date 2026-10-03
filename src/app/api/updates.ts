@@ -1,5 +1,7 @@
 import { logger } from 'app/config/logging';
+import { rewriteLegacyDocumentUrl } from 'app/utils/legacy-document-url';
 import { htmlToText } from 'app/utils/safe-html';
+import { fileName } from 'app/utils/safe-url';
 import { documentDownloadUrl, type DownloadableDocument } from 'app/utils/utils';
 import { ALL_ROWS_PAGE_SIZE, rowsFrom, searchKeywords, totalFrom } from './api';
 
@@ -98,6 +100,8 @@ export interface Update {
   attachments: UpdateDocument[];
   /** The one link an old row carries in place of attachments. */
   documentUrl: string | null;
+  /** The file name the stored link ends in, or null. */
+  documentName: string | null;
   engagementUrl: string | null;
   commentPeriod: { id: string; isMet: boolean; metURL: string | null } | null;
   /** Headline, short headline, summary and body text, lower-cased once for the tab filter. */
@@ -158,13 +162,19 @@ function downloadUrl(id: string): string {
   return documentDownloadUrl({ _id: encodeURIComponent(id) });
 }
 
+/** Each file once, at its first place, under a name any copy of it carries; the rest are numbered. */
 function toDocuments(refs: DocumentRef[]): UpdateDocument[] {
-  let unnamed = 0;
-  return refs.flatMap((ref) => {
+  const names = new Map<string, string | null>();
+  for (const ref of refs) {
     const id = refId(ref);
-    if (!id) return [];
-    return [{ id, name: refName(ref) ?? `Document ${++unnamed}`, href: downloadUrl(id) }];
-  });
+    if (id) names.set(id, names.get(id) || refName(ref));
+  }
+  let unnamed = 0;
+  return [...names].map(([id, name]) => ({
+    id,
+    name: name ?? `Document ${++unnamed}`,
+    href: downloadUrl(id),
+  }));
 }
 
 /** Admin and the API both stop an Update at five photos; the gallery grid is laid out for five. */
@@ -199,9 +209,14 @@ function httpUrl(value: string | null | undefined): string | null {
   }
 }
 
+/** The card's headline: the short one, or the full one when that is missing or blank. */
+function shortHeadlineOf(shortHeadline: string | null | undefined, headline: string): string {
+  return shortHeadline?.trim() || headline;
+}
+
 export function toUpdate(row: ActivityRow): Update {
   const headline = row.headline ?? '';
-  const shortHeadline = row.shortHeadline?.trim() || headline;
+  const shortHeadline = shortHeadlineOf(row.shortHeadline, headline);
   const summary = summaryOf(row.summary, row.content);
   return {
     id: row._id ?? '',
@@ -219,7 +234,8 @@ export function toUpdate(row: ActivityRow): Update {
     featuredImage: toImages(row.featuredImage ? [row.featuredImage] : [])[0] ?? null,
     images: toImages(row.images ?? []),
     attachments: toDocuments(row.attachments ?? []),
-    documentUrl: row.documentUrl ?? null,
+    documentUrl: row.documentUrl ? rewriteLegacyDocumentUrl(row.documentUrl) : null,
+    documentName: row.documentUrl ? fileName(row.documentUrl) : null,
     engagementUrl: httpUrl(row.engagementUrl),
     commentPeriod: row.pcp?._id
       ? { id: row.pcp._id, isMet: !!row.pcp.isMet, metURL: row.pcp.metURL ?? null }
@@ -283,7 +299,7 @@ function toFeedItem(row: FeedRow): HomeUpdate {
     projectName: row.projectName ?? null,
     date: row.date ?? row.publishDate ?? null,
     headline,
-    shortHeadline: row.shortHeadline?.trim() || headline,
+    shortHeadline: shortHeadlineOf(row.shortHeadline, headline),
     summary: row.summary ?? null,
     category: row.category ?? null,
     content: row.content ?? null,

@@ -121,6 +121,24 @@ describe('DEMI base paths', () => {
     expect(getDemiProjectsPath()).toBe('/demi-projects');
   });
 
+  it.each([
+    ['whitespace only', '   '],
+    ['a lone slash', '/'],
+    ['slashes and spaces', ' // '],
+  ])('default the projects path when it is %s, never the site root', async (_, value) => {
+    await configuredWith({ DEMI_PROJECTS_PATH: value });
+    expect(getDemiProjectsPath()).toBe('/demi-projects');
+  });
+
+  it.each([
+    ['false', false],
+    ['true', true],
+    ['a number', 42],
+  ])('default the projects path when the config document holds %s', async (_, value) => {
+    await configuredWith({ DEMI_PROJECTS_PATH: value });
+    expect(getDemiProjectsPath()).toBe('/demi-projects');
+  });
+
   it('read the configured values, trailing slashes trimmed off the projects path', async () => {
     await configuredWith({
       SEARCH_API_PATH: '/other-search',

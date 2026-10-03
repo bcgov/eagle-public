@@ -119,10 +119,20 @@ describe('engagement tab', () => {
     renderTab();
 
     expect(await screen.findByText('Draft Application')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Share your thoughts' })).toBeInTheDocument();
+  });
+
+  it('offers an open period hosted here as a View Engagement link in the closed style', async () => {
+    periods = [OPEN_PERIOD];
+    renderTab();
+
+    const link = await screen.findByRole('link', { name: 'View Engagement' });
+    expect(link).toHaveAttribute('href', '/p/proj-1/cp/cp-open');
+    expect(link).toHaveClass('engagement-tab__cta--secondary');
+    expect(screen.queryByRole('link', { name: /Share your thoughts/ })).toBeNull();
   });
 
   it('shows the closed period with its label and a View Engagement link', async () => {
+    periods = [CLOSED_PERIOD];
     renderTab();
 
     expect(await screen.findByRole('heading', { name: 'Early Engagement' })).toBeInTheDocument();
@@ -153,12 +163,14 @@ describe('engagement tab', () => {
     expect(link).toHaveAttribute('href', 'https://engage.example/cedar');
     expect(link).toHaveAttribute('target', '_blank');
     expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+    expect(link).toHaveClass('engagement-tab__cta--primary');
   });
 
   it('navigates to the comment period page for an eagle-hosted period', async () => {
+    periods = [OPEN_PERIOD];
     const router = renderTab();
 
-    const link = await screen.findByRole('link', { name: 'Share your thoughts' });
+    const link = await screen.findByRole('link', { name: 'View Engagement' });
     expect(link).toHaveAttribute('href', '/p/proj-1/cp/cp-open');
 
     await userEvent.click(link);
@@ -280,7 +292,7 @@ describe('engagement tab on a project notification', () => {
       jsonResponse([{ searchResults: [OPEN_PERIOD], meta: [{ searchResultsTotal: 1 }] }]),
     );
 
-    expect(await screen.findByRole('link', { name: 'Share your thoughts' })).toHaveAttribute(
+    expect(await screen.findByRole('link', { name: 'View Engagement' })).toHaveAttribute(
       'href',
       `/pn/${ID}/cp/cp-open`,
     );

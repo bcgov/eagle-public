@@ -35,6 +35,8 @@ const ROUTES: [string, string][] = [
 ];
 
 const WIDE_WIDTH = 1600;
+/** The widths where the About rail stands beside the column with least room to spare. */
+const RAIL_BESIDE_WIDTHS = [860, 1024];
 
 for (const width of WIDTHS) {
   test.describe(`at ${width}px`, () => {
@@ -180,6 +182,22 @@ for (const width of WIDTHS) {
           await expectAllContainersCentred(page, name);
         });
       }
+
+      test('the About content column is centred in the viewport', async ({ page }) => {
+        await page.goto('/about');
+        await ready(page, 500);
+        await expectCentred(page.locator('.about__content'), '.about__content');
+      });
+    }
+
+    if (RAIL_BESIDE_WIDTHS.includes(width)) {
+      test('the About rail ends before the content column starts', async ({ page }) => {
+        await page.goto('/about');
+        await ready(page, 500);
+        const rail = await page.locator('.about-rail').boundingBox();
+        const content = await page.locator('.about__content').boundingBox();
+        expect(rail!.x + rail!.width).toBeLessThanOrEqual(content!.x);
+      });
     }
   });
 }

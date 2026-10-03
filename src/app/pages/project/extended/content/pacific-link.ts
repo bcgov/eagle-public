@@ -29,7 +29,7 @@ const ALBERTA_FACT_SHEET_ECONOMY =
 const BCA_EXPLAINER =
   'https://www.canada.ca/en/one-canadian-economy/services/building-canada-act-projects-national-interest.html';
 const BUILDING_CANADA_ACT = actByYear(2025)!;
-const EAA = 'https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/18051';
+const EAA = actByYear(2018)!.href;
 const EAA_SECTION_41 = `${EAA}#section41`;
 
 /** The Act's own process: the Overview band's tiles and the Act tab's steps. */
@@ -207,8 +207,7 @@ export const pacificLink: ExtendedPage = {
   },
 
   autoLinks: [
-    // Inline mentions point at the Justice Laws home page, not the full text.
-    { text: BUILDING_CANADA_ACT.label, href: 'https://laws-lois.justice.gc.ca/eng/acts/B-9.89/' },
+    { text: BUILDING_CANADA_ACT.label, href: BUILDING_CANADA_ACT.href },
     {
       text: 'Environmental Assessment Act',
       href: EAA,

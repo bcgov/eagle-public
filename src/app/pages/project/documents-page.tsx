@@ -99,7 +99,7 @@ export function DocumentsPage() {
                   onClick={() =>
                     track('Project Tab Clicked', {
                       project_id: projId,
-                      project_name: project?.name ?? null,
+                      project_name: extended?.displayName ?? project?.name ?? null,
                       tab_name: tab.label,
                       tab_path: tab.link,
                     })

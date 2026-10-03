@@ -30,7 +30,8 @@ function withLevel(
 
 /**
  * The chart level the address names. Once the tree is in, a type it does not hold reads as no level
- * and a sub-type the type does not hold reads as the type alone; the address is not rewritten.
+ * and a sub-type the type does not hold reads as the type alone; a sub-type reads in the tree's
+ * spelling whatever its case. The address is not rewritten.
  * Before that the raw values pass through.
  */
 export function useTypeLevel(tree: readonly TypeNode[] | null): TypeLevel {
@@ -43,7 +44,9 @@ export function useTypeLevel(tree: readonly TypeNode[] | null): TypeLevel {
   if (tree) {
     const node = tree.find((t) => t.name === rawType);
     type = node ? node.name : null;
-    subType = node?.subs.some((s) => s.name === rawSubType) ? rawSubType : null;
+    // The tree merges sub-types across case, so the address matches them the same way.
+    const wanted = rawSubType?.toLowerCase();
+    subType = node?.subs.find((s) => s.name.toLowerCase() === wanted)?.name ?? null;
   }
 
   const setLevel = useCallback(

@@ -44,12 +44,11 @@
   text-decoration: underline;
 }
 
-/* Weight and the bar carry "current", not colour alone. */
+/* Weight, and the bar from 768px, carry "current", not colour alone. White, as the page is grey. */
 .about .about-rail__link[aria-current='true'] {
   font: var(--typography-bold-small-body);
   color: var(--typography-color-primary);
-  background: var(--surface-color-background-light-gray);
-  box-shadow: inset 3px 0 0 var(--theme-primary-blue);
+  background: var(--surface-color-background-white);
 }
 
 /* Content column */
@@ -59,7 +58,6 @@
   flex-direction: column;
   gap: var(--layout-margin-xxlarge);
   min-width: 0;
-  max-width: 760px;
 }
 
 .about .about-section {
@@ -228,7 +226,7 @@
 @media (width >= 768px) {
   /* The content column is centred on the page by itself: equal side tracks either side of it, and
      the rail hangs in the left one, so the rail never shifts the column. The left track keeps room
-     for the rail at its 180px floor plus the gap; below about 1296px wide that floor wins and the
+     for the rail at its 180px floor plus the gap; below about 1232px wide that floor wins and the
      column sits off centre by the difference, drifting back to centre as the window widens. */
   .about .about__body {
     display: grid;
@@ -259,5 +257,9 @@
   .about .about-rail__list {
     flex-direction: column;
     flex-wrap: nowrap;
+  }
+
+  .about .about-rail__link[aria-current='true'] {
+    box-shadow: inset 3px 0 0 var(--theme-primary-blue);
   }
 }

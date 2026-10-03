@@ -1,5 +1,5 @@
 import { StrictMode } from 'react';
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, onTestFinished, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import { renderAt } from '../../test-utils';
 import { routes } from 'app/routes';
@@ -66,6 +66,12 @@ describe('app shell', () => {
 
   it('lands an Angular-era /#/contact address on the contact section of /about', async () => {
     vi.stubGlobal('scrollTo', vi.fn());
+    // jsdom has no scrollIntoView, so the router's hash scroll would throw and be swallowed.
+    const scrollIntoView = vi.fn();
+    Element.prototype.scrollIntoView = scrollIntoView;
+    onTestFinished(() => {
+      delete (Element.prototype as Partial<Element>).scrollIntoView;
+    });
     const { router } = renderAt('/#/contact', routes);
 
     expect(
@@ -73,6 +79,9 @@ describe('app shell', () => {
     ).toBeInTheDocument();
     expect(router.state.location.pathname).toBe('/about');
     expect(router.state.location.hash).toBe('#contact');
+    await waitFor(() =>
+      expect(scrollIntoView.mock.contexts.map((el) => (el as Element).id)).toContain('contact'),
+    );
   });
 
   describe('scroll on navigation', () => {

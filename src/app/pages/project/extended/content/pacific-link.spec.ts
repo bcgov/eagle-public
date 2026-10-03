@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import geojsonText from '../../../../../assets/geojson/pacific-link-corridors.geojson?raw';
+import { actByYear } from 'app/utils/legislation';
 import { pacificLink } from './pacific-link';
 
 // The page-model rules (version, plain JSON, allowed links, site-relative map data) are checked for
@@ -44,6 +45,12 @@ describe('Pacific Link content', () => {
     expect(items).toHaveLength(5);
     expect(items.filter((item) => !item.href.startsWith('https://'))).toEqual([]);
     expect(new Set(items.map((item) => item.href)).size).toBe(5);
+  });
+
+  it('links each assessment Act to the same address the Act registry holds', () => {
+    const hrefs = new Map(pacificLink.autoLinks?.map((link) => [link.text, link.href]));
+    expect(hrefs.get('Building Canada Act')).toBe(actByYear(2025)?.href);
+    expect(hrefs.get('Environmental Assessment Act')).toBe(actByYear(2018)?.href);
   });
 
   it('names each map line after the lines in the bundled GeoJSON', () => {

@@ -64,6 +64,12 @@ interface PeriodSearchPage {
 /** demi-search 400s above 100 rows for an anonymous request, and public visitors are anonymous. */
 const ANONYMOUS_PAGE_SIZE_CAP = 100;
 
+/** If the cap is hit, the page keeps the periods that close or start soonest. */
+const STATUS_SORT: Record<Engagement, string> = {
+  open: '+dateCompleted',
+  upcoming: '+dateStarted',
+};
+
 /** One page of every project's comment periods in the given state, as `and[status]` reads it. */
 async function searchPeriodsByStatus(status: Engagement): Promise<PeriodSearchPage | undefined> {
   const envelope = (await api.searchKeywords(
@@ -73,7 +79,7 @@ async function searchPeriodsByStatus(status: Engagement): Promise<PeriodSearchPa
     1,
     ANONYMOUS_PAGE_SIZE_CAP,
     '',
-    null,
+    STATUS_SORT[status],
     { status },
   )) as unknown as PeriodSearchPage[];
   const page = envelope?.[0];
