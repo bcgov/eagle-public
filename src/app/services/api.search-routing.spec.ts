@@ -84,17 +84,50 @@ describe('ApiService search routing', () => {
     expect(await count).toBe(412);
   });
 
-  it('splits a long docIds read into requests of at most 300 ids, answered in input order', async () => {
-    const api = setup();
-    const ids = Array.from({ length: 301 }, (_, i) => `d${i}`);
-    const docs = firstValueFrom(api.getDocumentsByMultiId(ids));
-    const [first, second] = httpMock.match(req => req.url.startsWith(`${SEARCH}/search?dataset=Document&`));
-    expect(first.request.url).toContain(`&docIds=${ids.slice(0, 300).join('|')}&`);
-    expect(first.request.url).toContain('&pageSize=300&');
-    expect(second.request.url).toContain('&docIds=d300&');
-    second.flush(envelope([{ _id: 'd300' }]));
-    first.flush(envelope(ids.slice(0, 300).reverse().map(_id => ({ _id }))));
-    expect((await docs).map(doc => doc._id)).toEqual(ids);
+  describe('a long docIds read', () => {
+    // A real period: 167 Mongo ids. The prod edge 404s a 1919-char query, so 1500 leaves margin.
+    const ids = Array.from({ length: 167 }, (_, i) => i.toString(16).padStart(24, '0'));
+    const QUERY_BUDGET = 1500;
+
+    function documentReads() {
+      return httpMock.match(req => req.url.startsWith(`${SEARCH}/search?dataset=Document&`));
+    }
+
+    function idsOf(req: { request: { urlWithParams: string } }): string[] {
+      return new URLSearchParams(req.request.urlWithParams.split('?')[1]).get('docIds')!.split('|');
+    }
+
+    it('splits into requests whose query stays under the edge limit, even with `|` sent as %7C', () => {
+      const api = setup();
+      api.getDocumentsByMultiId(ids).subscribe();
+      const reads = documentReads();
+      expect(reads.length).toBeGreaterThan(1);
+      reads.forEach(req => {
+        const query = req.request.urlWithParams.split('?')[1];
+        expect(query.replaceAll('|', '%7C').length).toBeLessThanOrEqual(QUERY_BUDGET);
+        expect(query).toContain(`&pageSize=${idsOf(req).length}&`);
+      });
+      expect(reads.flatMap(idsOf)).toEqual(ids);
+      reads.forEach(req => req.flush(envelope([])));
+    });
+
+    it('answers in input order whatever order the batches return', async () => {
+      const api = setup();
+      const docs = firstValueFrom(api.getDocumentsByMultiId(ids));
+      documentReads().reverse().forEach(req => req.flush(envelope(idsOf(req).reverse().map(_id => ({ _id })))));
+      expect((await docs).map(doc => doc._id)).toEqual(ids);
+    });
+
+    it('still shows the other batches when one fails, and warns once', async () => {
+      const api = setup();
+      const warn = vi.spyOn(TestBed.inject(LoggingService), 'warn');
+      const docs = firstValueFrom(api.getDocumentsByMultiId(ids));
+      const [lost, ...kept] = documentReads();
+      lost.flush('gone', { status: 404, statusText: 'Not Found' });
+      kept.forEach(req => req.flush(envelope(idsOf(req).map(_id => ({ _id })))));
+      expect((await docs).map(doc => doc._id)).toEqual(ids.slice(idsOf(lost).length));
+      expect(warn).toHaveBeenCalledOnce();
+    });
   });
 
   it('answers no documents for no ids without a request', async () => {

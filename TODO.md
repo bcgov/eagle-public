@@ -13,9 +13,7 @@ The app makes no request to eagle-api. What is left is config and dead UI:
 - `src/app/comments/comments.component.ts:284`: keep the previous `totalListItems` when `totalCount` is null instead of the page length.
 - `src/app/models/project.ts:15,22,96,103`: `projectLeadObj`/`responsibleEPDObj` are never filled; delete.
 - `src/app/search/content-result/content-result.component.ts:11`: header comment cites eagle-search `service/snippet.js`; content search is DEMI now.
-- `src/app/services/api.search-routing.spec.ts:69`: add a test pinning behaviour when one document batch fails.
-- `src/app/services/api.ts:396,399`: `internalOriginalName` listed twice in `fields`.
-- `src/app/services/api.ts:426`: `forkJoin` over document batches is all-or-nothing; `DocumentService.getByMultiId` (`document.service.ts:18-39`) has no `catchError`, so loading never stops and `comments.component.ts:196,247` drop every attachment. Add `catchError` per batch to `[]` with a warn, or `catchError` + stop loading in the service.
+- `src/app/project/documents/documents-tab.component.ts:166` (also amendments, application tabs): each picked filter id adds `&and[<key>]=<24-char id>` to one paged, sorted search, so 40 to 50 picks reach the 1919-char query the prod edge 404s (all four filters fully picked: about 6000 chars). Batching would break paging and sort; cap picks or move filters to a POST body.
 - `src/app/services/config.service.spec.ts:140`: no test fails if the 1 s / 2 s backoff is deleted; advance 999 ms, assert one fetch, then 1 ms, assert two.
 - `src/app/services/config.service.ts:11,159`: `CONFIG_PATH` is set by nothing; use the default path directly and delete the key.
 - `src/app/services/config.service.ts:172`: worst-case wait before the unavailable page is about 39 s with a blank page (`src/index.html:28` empty `<app-root>`); add a static "Loading…" inside `<app-root>` and do not retry a definite 4xx other than 408/429.

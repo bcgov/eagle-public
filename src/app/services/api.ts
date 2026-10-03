@@ -118,8 +118,8 @@ export class ApiService {
   // 10,000 rows; stops endless paging should every page come back full.
   private static readonly ORGS_PAGE_CAP = 20;
   private static readonly ALL_ROWS_PAGE_SIZE = 250;
-  // Long `docIds` URLs break near 320 ids.
-  private static readonly DOC_IDS_PER_REQUEST = 300;
+  // The prod edge 404s a long query (1544 chars ok, 1919 not): 100 fixed + 50 × 24-char ids + 49 `|` = 1349 chars, 1447 as `%7C`.
+  private static readonly DOC_IDS_PER_REQUEST = 50;
 
   /** demi-search: every public read. */
   get searchPath(): string {
@@ -395,7 +395,6 @@ export class ApiService {
       'internalOriginalName',
       'documentFileName',
       'labels',
-      'internalOriginalName',
       'displayName',
       'documentType',
       'datePosted',
@@ -424,7 +423,14 @@ export class ApiService {
     // demi-search reads `docIds` bare and pipe-separated.
     return forkJoin(batches.map(batch =>
       this.searchKeywords('', 'Document', [{ name: 'docIds', value: this.buildValues(batch) }], 1, batch.length)
-        .pipe(map(envelope => rowsFrom<any>(envelope)))
+        .pipe(
+          map(envelope => rowsFrom<any>(envelope)),
+          // One lost batch must not blank every list on the page.
+          catchError(error => {
+            this.logger.warn(`Document read of ${batch.length} ids failed, showing the rest`, 'ApiService', error);
+            return of([]);
+          })
+        )
     )).pipe(map(pages => pages.flat()
       .sort((a, b) => (position.get(a._id) ?? Infinity) - (position.get(b._id) ?? Infinity))
       .map(row => pickFields<Document>({
