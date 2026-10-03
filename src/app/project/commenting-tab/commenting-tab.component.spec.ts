@@ -12,6 +12,7 @@ import { setupDemiApi } from '../../services/demi-api.spec-helper';
 const DAY = 24 * 60 * 60 * 1000;
 const OPEN = { dateStarted: new Date(Date.now() - DAY).toISOString(), dateCompleted: new Date(Date.now() + 7 * DAY).toISOString() };
 const CLOSED = { dateStarted: new Date(Date.now() - 30 * DAY).toISOString(), dateCompleted: new Date(Date.now() - 7 * DAY).toISOString() };
+const UPCOMING = { dateStarted: new Date(Date.now() + 7 * DAY).toISOString(), dateCompleted: new Date(Date.now() + 30 * DAY).toISOString() };
 const ENGAGE = { isMet: true, metURL: 'https://engage.eao.gov.bc.ca/site-c' };
 
 describe('CommentingTabComponent', () => {
@@ -29,6 +30,10 @@ describe('CommentingTabComponent', () => {
   it.each([
     ['an open ENGAGE period', 'Share your thoughts', { ...OPEN, ...ENGAGE }],
     ['a closed ENGAGE period', 'View Engagement', { ...CLOSED, ...ENGAGE }],
+    ['an upcoming ENGAGE period', 'View Engagement', { ...UPCOMING, ...ENGAGE }],
+    ['an ENGAGE period with no dates', 'View Engagement', ENGAGE],
+    ['an upcoming period with no ENGAGE page', 'View Comment Period', UPCOMING],
+    ['a period with no dates and no ENGAGE page', 'View Comment Period', {}],
     ['an open period with no ENGAGE page', 'View Comment Period', OPEN],
     ['an open period with an unsafe ENGAGE link', 'View Comment Period', { ...OPEN, isMet: true, metURL: 'javascript:alert(1)' }],
   ])('labels %s "%s"', (_name, label, fields) => {

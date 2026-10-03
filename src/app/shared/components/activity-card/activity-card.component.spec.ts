@@ -174,21 +174,21 @@ describe('ActivityCardComponent', () => {
   });
 });
 
+function create(rowData: any): ComponentFixture<ActivityCardComponent> {
+  TestBed.configureTestingModule({
+    imports: [ActivityCardComponent],
+    providers: [provideRouter([]), { provide: AnalyticsService, useValue: mockAnalyticsService }]
+  });
+  const fixture = TestBed.createComponent(ActivityCardComponent);
+  fixture.componentRef.setInput('rowData', rowData);
+  fixture.detectChanges();
+  return fixture;
+}
+
 /** Old updates link eagle-api document routes, which no longer serve public reads. */
 describe('ActivityCardComponent legacy document links', () => {
   const ID = '5c8a7b6d5e4f3a2b1c0d9e8f';
   const DEMI = `/demi-search/documents/${ID}/download?redirect=1&inline=1`;
-
-  function create(rowData: any): ComponentFixture<ActivityCardComponent> {
-    TestBed.configureTestingModule({
-      imports: [ActivityCardComponent],
-      providers: [provideRouter([]), { provide: AnalyticsService, useValue: mockAnalyticsService }]
-    });
-    const fixture = TestBed.createComponent(ActivityCardComponent);
-    fixture.componentRef.setInput('rowData', rowData);
-    fixture.detectChanges();
-    return fixture;
-  }
 
   function render(rowData: any): HTMLElement {
     return create(rowData).nativeElement;
@@ -220,5 +220,43 @@ describe('ActivityCardComponent legacy document links', () => {
     fixture.debugElement.injector.get(ChangeDetectorRef).markForCheck();
     fixture.detectChanges();
     expect(searchPath).not.toHaveBeenCalled();
+  });
+
+  it('resolves the document link once per row, not on every check', () => {
+    const fixture = create({ headline: 'Update', documentUrl: `/api/public/document/${ID}/download/r.pdf` });
+    const searchPath = vi.spyOn(TestBed.inject(ConfigService), 'getSearchApiPath');
+    fixture.detectChanges();
+    fixture.debugElement.injector.get(ChangeDetectorRef).markForCheck();
+    fixture.detectChanges();
+    expect(searchPath).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['document', { headline: 'Update', documentUrl: `/api/public/document/${ID}/download/r.pdf` }],
+    ['project notification', { headline: 'Update', notificationName: 'N', type: 'Project Notification Public Comment Period', documentUrl: `/api/public/document/${ID}/download/r.pdf` }],
+  ])('tells screen readers the %s link opens a new tab', (_name, rowData) => {
+    expect(render(rowData).querySelector('a.btn .visually-hidden')?.textContent).toBe('(opens in new tab)');
+  });
+});
+
+/** Same wording as `CommentPeriod.ctaLabel`; demi-search sends `pcp` as `{ _id, isMet, metURL }`. */
+describe('ActivityCardComponent comment period button', () => {
+  const DAY = 24 * 60 * 60 * 1000;
+  const OPEN = { dateStarted: new Date(Date.now() - DAY).toISOString(), dateCompleted: new Date(Date.now() + 7 * DAY).toISOString() };
+  const ENGAGE = { isMet: true, metURL: 'https://engage.eao.gov.bc.ca/site-c' };
+
+  /** Visible label plus any visually hidden text: what a screen reader announces. */
+  function buttonText(pcp: object): string | undefined {
+    const el: HTMLElement = create({ headline: 'Update', type: 'Public Comment Period', pcp: { _id: 'pcp1', ...pcp } }).nativeElement;
+    return el.querySelector('button')?.textContent?.replace(/\s+/g, ' ').trim();
+  }
+
+  it.each([
+    ['an ENGAGE period', 'View Engagement (opens in new tab)', ENGAGE],
+    ['an open ENGAGE period with dates (eagle-api fallback)', 'Share your thoughts (opens in new tab)', { ...OPEN, ...ENGAGE }],
+    ['a period with no ENGAGE page', 'View Comment Period', { isMet: false, metURL: '' }],
+    ['a period with an unsafe ENGAGE link', 'View Comment Period', { isMet: true, metURL: 'javascript:alert(1)' }],
+  ])('labels %s "%s"', (_name, text, pcp) => {
+    expect(buttonText(pcp)).toBe(text);
   });
 });

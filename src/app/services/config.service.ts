@@ -7,8 +7,6 @@ export interface EnvConfig {
   logLevel?: number;
   LOG_LEVEL?: number;
   configEndpoint?: boolean;
-  /** Runtime config URL when `configEndpoint` is true. Empty or unset reads `/demi-search/config`. */
-  CONFIG_PATH?: string;
   ENVIRONMENT?: string;
   BANNER_COLOUR?: string;
   /** demi-search base URL for every public read. Empty or unset reads `/demi-search`. */
@@ -44,10 +42,15 @@ declare global {
   interface Window { __env: EnvConfig; }
 }
 
-const DEFAULT_CONFIG_PATH = '/demi-search/config';
+const CONFIG_PATH = '/demi-search/config';
 const CONFIG_ATTEMPTS = 3;
 // nginx gives up at 11 s on this route, so the browser must abort after nginx, not before.
 const CONFIG_TIMEOUT_MS = 12_000;
+
+/** A 4xx that asking again will not change; 408 and 429 can clear on their own. */
+function isDefiniteClientError(status: number): boolean {
+  return status >= 400 && status < 500 && status !== 408 && status !== 429;
+}
 
 function isWholeConfig(payload: unknown): payload is EnvConfig {
   if (typeof payload !== 'object' || payload === null) {
@@ -65,7 +68,7 @@ function isWholeConfig(payload: unknown): payload is EnvConfig {
  *
  * DEPLOYED (configEndpoint = true):
  *   - The Azure deploy workflows sed configEndpoint to true
- *   - App fetches CONFIG_PATH (`/demi-search/config` unless env.js names another) on startup
+ *   - App fetches `/demi-search/config` on startup
  *   - Those values override env.js
  *
  * Lists (filter dropdowns) are lazy-loaded on first subscription, not during init.
@@ -139,16 +142,17 @@ export class ConfigService {
   }
 
   /**
-   * Fetch CONFIG_PATH (`/demi-search/config` unless env.js names another) and merge it over env.js.
+   * Fetch `/demi-search/config` and merge it over env.js.
    * Retried, then thrown: env.js ships ACCESS_GATE false, so booting on it would open the curtain.
-   * The app initializer turns the throw into the "temporarily unavailable" page.
+   * The app initializer turns the throw into the "temporarily unavailable" page; GlobalErrorHandler logs it.
    */
   private async fetchRemoteConfig(): Promise<void> {
-    const configPath = (this._config().CONFIG_PATH || '').trim() || DEFAULT_CONFIG_PATH;
     for (let attempt = 1; ; attempt++) {
+      let retryable = true;
       try {
-        const response = await fetch(configPath, { signal: AbortSignal.timeout(CONFIG_TIMEOUT_MS) });
+        const response = await fetch(CONFIG_PATH, { signal: AbortSignal.timeout(CONFIG_TIMEOUT_MS) });
         if (!response.ok) {
+          retryable = !isDefiniteClientError(response.status);
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
         const remote: unknown = await response.json();
@@ -159,8 +163,8 @@ export class ConfigService {
         this.logger.debug('merged with the runtime config', 'config', this._config());
         return;
       } catch (e) {
-        this.logger.error(`${configPath} attempt ${attempt} of ${CONFIG_ATTEMPTS} failed`, 'config', e);
-        if (attempt >= CONFIG_ATTEMPTS) throw e;
+        if (!retryable || attempt >= CONFIG_ATTEMPTS) throw e;
+        this.logger.warn(`${CONFIG_PATH} attempt ${attempt} of ${CONFIG_ATTEMPTS} failed, retrying`, 'config', e);
         await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
       }
     }

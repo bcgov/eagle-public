@@ -7,6 +7,8 @@ import { Document } from '../../../models/document';
 import { Project } from '../../../models/project';
 import { ApiService } from '../../../services/api';
 import { StorageService } from '../../../services/storage.service';
+import { ToastService } from '../../../services/toast.service';
+import { downloadDocumentWithToast } from '../../../shared/utils/download-document';
 import { ListConverterPipe } from '../../../shared/pipes/list-converter.pipe';
 
 @Component({
@@ -23,6 +25,7 @@ export class DocumentDetailComponent implements OnInit, OnDestroy {
   public readonly api = inject(ApiService);
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
   private readonly storageService = inject(StorageService);
+  private readonly toastService = inject(ToastService);
 
   private readonly ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
   
@@ -38,6 +41,10 @@ export class DocumentDetailComponent implements OnInit, OnDestroy {
         this.document.set(res.document);
         this.changeDetectorRef.detectChanges();
       });
+  }
+
+  download(document: Document) {
+    return downloadDocumentWithToast(this.api, this.toastService, document);
   }
 
   onEdit() {

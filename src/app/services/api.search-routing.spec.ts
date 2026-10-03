@@ -5,7 +5,8 @@ import { Observable, firstValueFrom } from 'rxjs';
 import { ApiService } from './api';
 import { Document } from 'app/models/document';
 import { LoggingService } from './logging.service';
-import { SEARCH, envelope, searchRequest, setupDemiApi } from './demi-api.spec-helper';
+import { AnalyticsService } from './analytics/analytics.service';
+import { DEMI_PROJECTS, SEARCH, envelope, searchRequest, setupDemiApi } from './demi-api.spec-helper';
 
 /**
  * Every public read goes to demi-search and the site makes no request to eagle-api. A read left on
@@ -58,7 +59,7 @@ describe('ApiService search routing', () => {
     reads.forEach(read => read.subscribe());
     const urls = httpMock.match(() => true).map(req => req.request.url);
     expect(urls.length).toBeGreaterThanOrEqual(reads.length);
-    expect(urls.filter(url => url.startsWith('/api/'))).toEqual([]);
+    expect(urls.filter(url => !url.startsWith(`${SEARCH}/`) && !url.startsWith(`${DEMI_PROJECTS}/`))).toEqual([]);
   });
 
   it('encodes the keywords', () => {
@@ -151,12 +152,34 @@ describe('ApiService search routing', () => {
     expect(open).toHaveBeenCalledWith(`${SEARCH}/documents/doc1/download?redirect=1&inline=1`, '_blank');
   });
 
-  it('downloads a document as a file, checked first, through the demi-search download', async () => {
-    const done = setup().downloadDocument(new Document({ _id: 'doc1', displayName: 'a.pdf' }));
-    httpMock.expectOne({ method: 'HEAD', url: `${SEARCH}/documents/doc1/download?redirect=1` }).flush(null);
-    await done;
-    const frame = document.body.querySelector('iframe');
-    expect(frame?.getAttribute('src')).toBe(`${SEARCH}/documents/doc1/download?redirect=1`);
-    frame?.remove();
+  describe('downloadDocument', () => {
+    const DOWNLOAD = `${SEARCH}/documents/doc1/download?redirect=1`;
+    const frameFor = () => document.body.querySelector(`iframe[src="${DOWNLOAD}"]`);
+    let track: ReturnType<typeof vi.fn>;
+
+    function download(): Promise<void> {
+      track = vi.fn();
+      httpMock = setupDemiApi([{ provide: AnalyticsService, useValue: { track } }]);
+      return TestBed.inject(ApiService).downloadDocument(new Document({ _id: 'doc1', displayName: 'a.pdf' }));
+    }
+
+    afterEach(() => frameFor()?.remove());
+
+    it('downloads as a file through the demi-search download once the check passes, and counts it', async () => {
+      const done = download();
+      httpMock.expectOne({ method: 'HEAD', url: DOWNLOAD }).flush(null);
+      await done;
+      expect(frameFor()).not.toBeNull();
+      expect(track).toHaveBeenCalledWith('Document Downloaded', expect.objectContaining({ document_id: 'doc1' }));
+    });
+
+    it('neither downloads nor counts a document whose check fails', async () => {
+      const done = download();
+      expect(track).not.toHaveBeenCalled();
+      httpMock.expectOne({ method: 'HEAD', url: DOWNLOAD }).flush(null, { status: 404, statusText: 'Not Found' });
+      await expect(done).rejects.toMatchObject({ status: 404 });
+      expect(frameFor()).toBeNull();
+      expect(track).not.toHaveBeenCalled();
+    });
   });
 });

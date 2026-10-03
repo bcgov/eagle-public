@@ -21,7 +21,7 @@
             
             <div class="header-section">
               <div>
-                <div id="instructions" [innerHTML]="sanitizedInstructions()"></div>
+                <div id="instructions" [innerHTML]="commentPeriod()!.instructions"></div>
                 @if (commentPeriod()!.additionalText) {
                   <p>{{commentPeriod()!.additionalText}}</p>
                 }
@@ -32,7 +32,8 @@
                   <a class="btn btn-warning d-inline-flex align-items-center gap-2 engage-link"
                      [href]="commentPeriod()!.metURL"
                      target="_blank"
-                     rel="noopener noreferrer">
+                     rel="noopener noreferrer"
+                     (click)="trackEngageClick()">
                     {{commentPeriod()!.ctaLabel}}
                     <i class="material-icons" aria-hidden="true">open_in_new</i>
                     <span class="visually-hidden">(opens in new tab)</span>
@@ -74,9 +75,9 @@
                       tabindex="0"
                       (click)="downloadDocument(doc)"
                       (keydown.enter)="downloadDocument(doc)"
-                      (keydown.space)="downloadDocument(doc)">
+                      (keydown.space)="$event.preventDefault(); downloadDocument(doc)">
                     <span class="cell icon">
-                      <i class="material-icons">insert_drive_file</i>
+                      <i class="material-icons" aria-hidden="true">insert_drive_file</i>
                     </span>
                     <span class="cell name" [title]="doc.displayName || ''">
                       {{doc.displayName}}

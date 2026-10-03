@@ -25,7 +25,7 @@
       <li><button class="dropdown-item" type="button" (click)="onEdit()">Edit</button></li>
       @if (document()) {
         <li><button class="dropdown-item" type="button" (click)="api.openDocument(document()!)">Open</button></li>
-        <li><button class="dropdown-item" type="button" (click)="api.downloadDocument(document()!)">Download</button></li>
+        <li><button class="dropdown-item" type="button" (click)="download(document()!)">Download</button></li>
       }
     </ul>
   </div>

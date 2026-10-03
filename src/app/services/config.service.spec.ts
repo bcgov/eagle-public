@@ -3,6 +3,8 @@ import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { firstValueFrom } from 'rxjs';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
 
 // app.config pulls in the route table, whose map component reads the Leaflet global that
 // index.html loads from a script tag. jsdom has no such tag, and the icons are built at module load.
@@ -176,7 +178,7 @@ describe('ConfigService runtime config', () => {
   const neverAnswers = (_url: string, init?: RequestInit) =>
     new Promise<Response>((_resolve, reject) => init?.signal?.addEventListener('abort', () => reject(init.signal!.reason)));
 
-  it('asks /demi-search/config while CONFIG_PATH is unset, and merges the answer', async () => {
+  it('asks /demi-search/config and merges the answer', async () => {
     const service = serviceAnswering({}, async () => ok(WHOLE));
     await settle(service.init());
     expect(askedFor()).toEqual(['/demi-search/config']);
@@ -184,14 +186,9 @@ describe('ConfigService runtime config', () => {
     expect(service.config().ENVIRONMENT).toBe('test');
   });
 
-  it('asks /demi-search/config while CONFIG_PATH is blank', async () => {
-    await settle(serviceAnswering({ CONFIG_PATH: '  ' }, async () => ok(WHOLE)).init());
-    expect(askedFor()).toEqual(['/demi-search/config']);
-  });
-
-  it('asks CONFIG_PATH when env.js names one', async () => {
+  it('ignores a CONFIG_PATH left in an old env.js', async () => {
     await settle(serviceAnswering({ CONFIG_PATH: '/other/config' }, async () => ok(WHOLE)).init());
-    expect(askedFor()).toEqual(['/other/config']);
+    expect(askedFor()).toEqual(['/demi-search/config']);
   });
 
   it('does not fetch when the config endpoint is off', async () => {
@@ -206,6 +203,40 @@ describe('ConfigService runtime config', () => {
     expect(await settle(service.init())).toEqual({ value: undefined });
     expect(fetchSpy).toHaveBeenCalledTimes(2);
     expect(service.config().ACCESS_GATE).toBe(true);
+  });
+
+  it('waits 1 s before the second attempt and 2 s before the third', async () => {
+    const pending = serviceAnswering({}, networkError, networkError, async () => ok(WHOLE)).init();
+    await vi.advanceTimersByTimeAsync(999);
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(1_999);
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(fetchSpy).toHaveBeenCalledTimes(3);
+    await pending;
+  });
+
+  it.each([400, 401, 403, 404])('fails at once on a %i, which asking again will not change', async (status) => {
+    const refused = () => Promise.resolve(new Response('no', { status }));
+    const { error } = await settle(serviceAnswering({}, refused, refused, refused).init());
+    expect(String(error)).toContain(`HTTP ${status}`);
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([408, 429])('retries a %i, which can clear on its own', async (status) => {
+    const busy = () => Promise.resolve(new Response('busy', { status }));
+    const service = serviceAnswering({}, busy, async () => ok(WHOLE));
+    expect(await settle(service.init())).toEqual({ value: undefined });
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it('warns on each retried attempt and leaves the final failure to the boot catch', async () => {
+    const warn = vi.spyOn(LoggingService.prototype, 'warn').mockImplementation(() => undefined);
+    await settle(serviceAnswering({}, networkError, networkError, networkError).init());
+    expect(warn).toHaveBeenCalledTimes(2);
+    expect(LoggingService.prototype.error).not.toHaveBeenCalled();
   });
 
   it('rejects after three network errors, keeping the curtain shut', async () => {
@@ -251,6 +282,11 @@ describe('ConfigService runtime config', () => {
     const { error } = await settle(TestBed.runInInjectionContext(() => initializeApp()));
     expect(error).toBeInstanceOf(TypeError);
     expect(document.querySelector('app-root h1')?.textContent).toBe('EPIC is temporarily unavailable');
+  });
+
+  it('shows a static Loading message until the app replaces it', () => {
+    const page = new DOMParser().parseFromString(readFileSync(resolve(__dirname, '../../index.html'), 'utf-8'), 'text/html');
+    expect(page.querySelector('app-root')?.textContent?.trim()).toBe('Loading…');
   });
 
   it('leaves the page alone when the config loads', async () => {

@@ -15,6 +15,7 @@ import { LoadingStateService } from '../../services/loading-state.service';
 import { ConfigService } from '../../services/config.service';
 import { Utils } from '../../shared/utils/utils';
 import { Constants } from '../../shared/utils/constants';
+import { SearchQueryLimit, TOO_MANY_FILTERS_MESSAGE } from '../../shared/utils/search-query-limit';
 
 @Component({
   selector: 'app-amendments',
@@ -31,6 +32,7 @@ export class AmendmentsComponent implements OnDestroy {
   private readonly loadingState = inject(LoadingStateService);
   private readonly configService = inject(ConfigService);
   private readonly utils = inject(Utils);
+  private readonly searchQueryLimit = inject(SearchQueryLimit);
 
   private readonly tableId = 'amendments';
   private alive = true;
@@ -45,6 +47,8 @@ export class AmendmentsComponent implements OnDestroy {
 
   public queryParams: Params = {};
   public readonly showAdvancedFilters = signal(false);
+  public readonly tooManyFilters = signal(false);
+  public readonly tooManyFiltersMessage = TOO_MANY_FILTERS_MESSAGE;
   public readonly filters = signal<FilterObject[]>([]);
 
   public readonly loading = this.loadingState.getOperationState('table-amendments');
@@ -168,7 +172,7 @@ export class AmendmentsComponent implements OnDestroy {
 
     const secondarySort = updatedTableData.sortBy.includes('displayName') ? '' : '+displayName';
 
-    this.tableService.fetchData(new SearchParamObject(
+    const search = new SearchParamObject(
       this.tableId,
       this.queryParams['keywords'] || '',
       'Document',
@@ -180,7 +184,8 @@ export class AmendmentsComponent implements OnDestroy {
       false,
       secondarySort,
       filters
-    ));
+    );
+    this.tooManyFilters.set(!this.searchQueryLimit.fetchIfFits(search));
   }
 
   onMessageOut(msg: ITableMessage) {

@@ -56,6 +56,54 @@ function periodsInWindow(periods: any[], since: string | null, until: string | n
   });
 }
 
+/** What `/search` is asked for. `SearchParamObject` fits this shape. */
+export interface SearchQuery {
+  keywords: string;
+  dataset: string;
+  fields: any[];
+  currentPage: number | null;
+  pageSize: number | null;
+  projectLegislation: string;
+  sortBy: string | null;
+  queryModifiers: Record<string, string>;
+  populate: boolean;
+  secondarySort: string | null;
+  filters: Record<string, string>;
+  fuzzy: boolean;
+}
+
+/**
+ * The `/search?...` path and query for one search. One `and[key]=a,b` per key: demi-search reads a
+ * comma list the same as a repeated key (OR within a key), and the short form keeps URLs under the
+ * edge's length limit.
+ */
+export function buildSearchQuery(query: SearchQuery, utils: Utils): string {
+  const projectLegislation = query.projectLegislation === '' ? 'default' : query.projectLegislation;
+  let queryString = `search?dataset=${query.dataset}`;
+  (query.fields || []).forEach(item => {
+    queryString += `&${item.name}=${item.value}`;
+  });
+  if (query.keywords) {
+    queryString += `&keywords=${encodeURIComponent(query.keywords)}`;
+  }
+  if (query.currentPage !== null) { queryString += `&pageNum=${query.currentPage - 1}`; }
+  if (query.pageSize !== null) { queryString += `&pageSize=${query.pageSize}`; }
+  queryString += `&projectLegislation=${projectLegislation}`;
+  if (query.sortBy !== null) { queryString += `&sortBy=${query.sortBy}`; }
+  if (query.secondarySort !== null) { queryString += `&sortBy=${query.secondarySort}`; }
+  queryString += `&populate=${query.populate}`;
+  Object.keys(query.queryModifiers).forEach(key => {
+    queryString += `&and[${key}]=${query.queryModifiers[key]}`;
+  });
+  Object.keys(query.filters).forEach(key => {
+    if (query.filters[key] === null || query.filters[key] === undefined) { return; }
+    const values = query.filters[key].split(',').map(item => (item.includes('&') ? utils.encodeString(item, true) : item));
+    queryString += `&and[${key}]=${values.join(',')}`;
+  });
+  // No `&fields=`: demi-search accepts it but reads nobody's; `fields` pairs are emitted above.
+  return queryString + '&fuzzy=' + query.fuzzy;
+}
+
 /** List-backed project fields DEMI may answer as bare ids rather than populated rows. */
 const LIST_REF_FIELDS = ['eacDecision', 'currentPhaseName', 'CEAAInvolvement'];
 
@@ -157,16 +205,15 @@ export class ApiService {
   }
 
   public async downloadDocument(document: Document): Promise<void> {
-    // Track document download
+    const url = this.getDocumentUrl(document);
+    // The frame below hides a failed transfer, so check first. DEMI answers HEAD itself, never redirecting.
+    await firstValueFrom(this.http.head(url));
+
     this.analytics.track('Document Downloaded', {
       document_id: document._id,
       document_name: document.displayName,
       document_type: document.internalMime || 'unknown'
     });
-
-    const url = this.getDocumentUrl(document);
-    // The frame below hides a failed transfer, so check first. DEMI answers HEAD itself, never redirecting.
-    await firstValueFrom(this.http.head(url));
 
     // A hidden iframe: the redirect lands on a cross-origin file a blob fetch could not read.
     const frame = window.document.createElement('iframe');
@@ -199,42 +246,10 @@ export class ApiService {
   //
   searchKeywords(keys: string, dataset: string, fields: any[], pageNum: number | null, pageSize: number | null, projectLegislation = '', sortBy: string | null = null, queryModifier: Record<string, string> = {}, populate = false, secondarySort: string | null = null, filter: Record<string, string> = {}, fuzzy = false): Observable<SearchResults[]> {
     this.logger.debug(`API.searchKeywords called with keys: ${keys}`, 'ApiService', { filter });
-    
-    projectLegislation = (projectLegislation === '') ? 'default' : projectLegislation;
-    let queryString = `search?dataset=${dataset}`;
-    if (fields && fields.length > 0) {
-      fields.forEach(item => {
-        queryString += `&${item.name}=${item.value}`;
-      });
-    }
-    if (keys) {
-      queryString += `&keywords=${encodeURIComponent(keys)}`;
-    }
-    if (pageNum !== null) { queryString += `&pageNum=${pageNum - 1}`; }
-    if (pageSize !== null) { queryString += `&pageSize=${pageSize}`; }
-    if (projectLegislation !== '') { queryString += `&projectLegislation=${projectLegislation}`; }
-    if (sortBy !== null) { queryString += `&sortBy=${sortBy}`; }
-    if (secondarySort !== null) { queryString += `&sortBy=${secondarySort}`; }
-    queryString += `&populate=${populate}`;
-    Object.keys(queryModifier).forEach((key: string) => {
-      queryModifier[key].split(',').forEach((item: string) => {
-        queryString += `&and[${key}]=${item}`;
-      });
-    });
-    let safeItem: string;
-    Object.keys(filter).map((key: string) => {
-      filter[key].split(',').map((item: string) => {
-        if (item.includes('&')) {
-          safeItem = this.utils.encodeString(item, true);
-        } else {
-          safeItem = item;
-        }
-        queryString += `&and[${key}]=${safeItem}`;
-      });
-    });
-    // No `&fields=`: demi-search accepts it but reads nobody's; `fields` pairs are emitted above.
-    queryString += '&fuzzy=' + fuzzy;
-
+    const queryString = buildSearchQuery({
+      keywords: keys, dataset, fields, currentPage: pageNum, pageSize, projectLegislation, sortBy,
+      queryModifiers: queryModifier, populate, secondarySort, filters: filter, fuzzy
+    }, this.utils);
     const fullUrl = `${this.searchPath}/${queryString}`;
     this.logger.trace(`API call URL: ${fullUrl}`, 'ApiService');
 

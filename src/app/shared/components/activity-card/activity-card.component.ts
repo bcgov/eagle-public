@@ -9,6 +9,7 @@ import { sanitizeWordHtml } from 'app/shared/utils/word-html-sanitizer';
 import { rewriteLegacyDocumentLinks, rewriteLegacyDocumentUrl } from 'app/shared/utils/legacy-document-url';
 import { ConfigService } from 'app/services/config.service';
 import { isSafeUrl } from 'app/shared/utils/safe-url';
+import { CommentPeriod } from 'app/models/commentperiod';
 
 /**
  * Shared activity card component. Renders a single RecentActivity item in the
@@ -37,11 +38,18 @@ export class ActivityCardComponent implements TableRowComponent {
   private row: any = null;
   /** The update text with legacy document links rewritten; Angular's sanitizer runs on binding. */
   contentHtml = '';
+  /** Old updates link eagle-api document routes; those now point at the demi-search download. */
+  documentHref = '';
+  /** For `ctaLabel` wording. demi-search sends `pcp` without dates, so an open ENGAGE period reads "View Engagement". */
+  commentPeriod: CommentPeriod | null = null;
 
   // TableRowComponent interface — set by TableRowDirective in table context
   @Input() set rowData(value: any) {
     this.row = value;
-    this.contentHtml = rewriteLegacyDocumentLinks(sanitizeWordHtml(value?.content), this.configService.getSearchApiPath());
+    const searchPath = this.configService.getSearchApiPath();
+    this.contentHtml = rewriteLegacyDocumentLinks(sanitizeWordHtml(value?.content), searchPath);
+    this.documentHref = value?.documentUrl ? rewriteLegacyDocumentUrl(value.documentUrl, searchPath) : '';
+    this.commentPeriod = value?.pcp ? new CommentPeriod(value.pcp) : null;
   }
   get rowData(): any {
     return this.row;
@@ -70,11 +78,6 @@ export class ActivityCardComponent implements TableRowComponent {
       return this.tableData.data.showProjectInfo;
     }
     return this.showProjectInfo;
-  }
-
-  /** Old updates link eagle-api document routes; those now point at the demi-search download. */
-  documentHref(url: string): string {
-    return rewriteLegacyDocumentUrl(url, this.configService.getSearchApiPath());
   }
 
   goToCP(activity: any): void {

@@ -115,8 +115,8 @@ jobs:
       # ---------------------------------------------------------------------------
       # Point env.js at the test runtime.
       #
-      # The committed `src/env.js` is the RELATIVE one — `API_PATH = '/api'` and
-      # `SEARCH_API_PATH = ''` — and it must stay that way
+      # The committed `src/env.js` is the RELATIVE one — `SEARCH_API_PATH = ''` — and it must
+      # stay that way
       # (`076bc94d chore: make env.js safe to merge`): an absolute env.js would point every
       # environment at test.
       #
@@ -148,23 +148,20 @@ jobs:
           # standalone preview: rproxy's `location /` fetches this bundle from Front Door and
           # serves it on test.projects.eao.gov.bc.ca, where `/api`, `/admin/` and
           # `/eagle-search/` are its own locations. So every path here stays RELATIVE and
-          # `configEndpoint` stays true — the SPA fetches /api/config at boot and the rproxy
-          # ConfigMap supplies the rest, which is what makes one bundle correct in both
+          # `configEndpoint` stays true — the SPA fetches /demi-search/config at boot and that
+          # response supplies the rest, which is what makes one bundle correct in both
           # environments.
           #
           # The absolute hostnames this used to bake were right for the preview and are wrong
           # now: they would send every call cross-origin from a host that has a same-origin
           # route for it, and reintroduce the CORS surface the flip removes.
           sed -i "s|window.__env.configEndpoint = .*|window.__env.configEndpoint = true;|" src/env.js
-          sed -i "s|window.__env.API_LOCATION = .*|window.__env.API_LOCATION = null;|" src/env.js
           sed -i "s|window.__env.logLevel = .*|window.__env.logLevel = 4;|" src/env.js
-          # These two are belt and braces: if /api/config cannot answer, whatever ships is what
-          # the page uses. Both stay correct when /api/config merges the same values over them.
+          # Belt and braces: both stay correct whatever /demi-search/config merges over them.
           sed -i "s|window.__env.ENVIRONMENT = .*|window.__env.ENVIRONMENT = 'test';|" src/env.js
           sed -i "s|window.__env.ADMIN_PATH = .*|window.__env.ADMIN_PATH = '/admin/';|" src/env.js
           for expected in \
             "window.__env.configEndpoint = true;" \
-            "window.__env.API_LOCATION = null;" \
             "window.__env.logLevel = 4;" \
             "window.__env.ENVIRONMENT = 'test';" \
             "window.__env.ADMIN_PATH = '/admin/';"; do
@@ -175,7 +172,6 @@ jobs:
           # that starts baking a hostname here would otherwise surface only as CORS failures in
           # a browser nobody has open.
           for relative in \
-            "window.__env.API_PATH = '/api';" \
             "window.__env.SEARCH_API_PATH = '';"; do
             grep -qF "$relative" src/env.js \
               || { echo "::error::env.js no longer holds the same-origin default: $relative — the test bundle must stay relative"; exit 1; }
@@ -402,11 +398,9 @@ jobs:
           # good deploy for a CORS path the app no longer takes.
           deployed_env=$(curl -s --max-time 15 "$host/env.js")
           echo "$deployed_env" | grep -qF 'window.__env.configEndpoint = true;' \
-            || { echo "::error::the deployed env.js still has configEndpoint = false — it will never fetch /api/config and will serve the committed dev defaults"; exit 1; }
-          echo "$deployed_env" | grep -qF "window.__env.API_PATH = '/api';" \
-            || { echo "::error::the deployed env.js does not use the relative /api path — the test bundle must stay same-origin"; exit 1; }
+            || { echo "::error::the deployed env.js still has configEndpoint = false — it will never fetch /demi-search/config and will serve the committed dev defaults"; exit 1; }
           echo "$deployed_env" | grep -qF "window.__env.SEARCH_API_PATH = '';" \
-            || { echo "::error::the deployed env.js bakes an absolute SEARCH_API_PATH — rproxy serves /eagle-search and /demi-search same-origin, and /api/config supplies the value at runtime"; exit 1; }
+            || { echo "::error::the deployed env.js bakes an absolute SEARCH_API_PATH — rproxy serves /eagle-search and /demi-search same-origin, and /demi-search/config supplies the value at runtime"; exit 1; }
           echo "$deployed_env" | grep -qF "window.__env.ENVIRONMENT = 'test';" \
             || { echo "::error::the deployed env.js does not announce the test environment — the banner would be wrong"; exit 1; }
 

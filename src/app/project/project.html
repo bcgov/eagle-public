@@ -31,7 +31,7 @@
                                         </p>
                                     }
                                     @if (!project()!.commentPeriodForBanner!.informationLabel && project()!.commentPeriodForBanner!.instructions) {
-                                        <div id="instructions" [innerHTML]="project()!.commentPeriodForBanner!.instructions | safeHtml"></div>
+                                        <div id="instructions" [innerHTML]="project()!.commentPeriodForBanner!.instructions"></div>
                                     }
                                 </div>
                             }
