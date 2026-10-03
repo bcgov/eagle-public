@@ -12,12 +12,11 @@ import { of } from 'rxjs';
 describe('App', () => {
   let component: App;
   let fixture: ComponentFixture<App>;
-  let mockApiService: { apiPath: string; env: string; bannerColour: string; adminUrl: string };
+  let mockApiService: { env: string; bannerColour: string; adminUrl: string };
   let config: ReturnType<typeof signal<Record<string, unknown>>>;
 
   beforeEach(() => {
     mockApiService = {
-      apiPath: 'https://great-api.gov.bc.ca/api/public',
       env: 'test',
       bannerColour: 'no-banner-colour-set',
       adminUrl: 'http://localhost:4000/admin/'
@@ -26,14 +25,12 @@ describe('App', () => {
     config = signal<Record<string, unknown>>({
       ENVIRONMENT: 'test',
       BANNER_COLOUR: 'red',
-      API_PATH: 'https://great-api.gov.bc.ca/api/public',
       ADMIN_PATH: 'http://localhost:4000/admin/'
     });
 
     const mockConfigService = {
       init: () => Promise.resolve(),
       lists: of([]),
-      getApiPath: () => '/api',
       config
     };
 

@@ -55,4 +55,21 @@ describe('Utils', () => {
     open.mockRestore();
   });
 
+  it('opens a document for viewing when asked for inline', () => {
+    const open = vi.spyOn(window, 'open').mockReturnValue(null);
+    utils.openDocumentDownload({ _id: 'doc1' }, { inline: true });
+    expect(open).toHaveBeenCalledWith('/demi-search/documents/doc1/download?redirect=1&inline=1', '_blank');
+    open.mockRestore();
+  });
+
+  it.each([
+    [{}, 'Document Downloaded'],
+    [{ inline: true }, 'Document Opened'],
+  ])('records the analytics event for %o as %s', (options, event) => {
+    const open = vi.spyOn(window, 'open').mockReturnValue(null);
+    const track = vi.spyOn(TestBed.inject(AnalyticsService), 'track');
+    utils.openDocumentDownload({ _id: 'doc1' }, options);
+    expect(track).toHaveBeenCalledExactlyOnceWith(event, expect.objectContaining({ document_id: 'doc1' }));
+    open.mockRestore();
+  });
 });

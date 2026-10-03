@@ -11,8 +11,6 @@ export interface EnvConfig {
   CONFIG_PATH?: string;
   ENVIRONMENT?: string;
   BANNER_COLOUR?: string;
-  API_PATH?: string;
-  API_LOCATION?: string;
   /** demi-search base URL for every public read. Empty or unset reads `/demi-search`. */
   SEARCH_API_PATH?: string;
   /** DEMI single-project base URL. Empty or unset reads `/demi-projects`. */
@@ -64,8 +62,6 @@ function isWholeConfig(payload: unknown): payload is EnvConfig {
  *
  * LOCAL DEV (configEndpoint = false):
  *   - Uses env.js values directly (src/env.js)
- *   - proxy.conf.js reads API_LOCATION from env.js to generate dev server proxy rules
- *   - App uses relative paths (/api) — never API_LOCATION directly
  *
  * DEPLOYED (configEndpoint = true):
  *   - The Azure deploy workflows sed configEndpoint to true
@@ -124,14 +120,6 @@ export class ConfigService {
     }
 
     this.configLoaded = true;
-  }
-
-  /**
-   * Get the API path for making API calls.
-   * Always relative — proxy.conf.js (local) or nginx (deployed) handles routing.
-   */
-  public getApiPath(): string {
-    return this._config().API_PATH || '/api';
   }
 
   /** Base URL for demi-search. Never eagle-api: it no longer serves public reads. */

@@ -4,7 +4,7 @@
            <details-sidebar [project]="project()" (sidebarToggle)="handleSidebarToggle($event)"></details-sidebar>
             <div class="content">
                 @if (project()?.commentPeriodForBanner && project()!.commentPeriodForBanner!.isBannerVisible) {
-                    @if (project()!.commentPeriodForBanner!.isMet && project()!.commentPeriodForBanner!.metURL) {
+                    @if (project()!.commentPeriodForBanner!.isEngage) {
                         <app-engage-banner [data]="project()!.commentPeriodForBanner!" />
                     } @else {
                     <div class="pcp-banner col-sm-12">

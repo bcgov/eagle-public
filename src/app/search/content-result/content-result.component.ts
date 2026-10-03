@@ -28,7 +28,7 @@ export class ContentResultComponent {
   readonly result = input.required<any>();
 
   /**
-   * The document itself, through the demi-search download route.
+   * The document itself, shown in the browser through the demi-search download route.
    *
    * There is deliberately no `#page=N` fragment. This card briefly rendered "Jump to page N" links
    * built from the chunk's `pageNumber`, and every one of them was wrong: `pageNumber` is a passage
@@ -37,7 +37,7 @@ export class ContentResultComponent {
    * Page links come back when the extractor emits real per-page markdown, and not before.
    */
   documentUrl(): string {
-    return documentDownloadUrl(this.configService.getSearchApiPath(), this.result()._id);
+    return documentDownloadUrl(this.configService.getSearchApiPath(), this.result()._id, { inline: true });
   }
 
   /** Matches only. There is no trustworthy page count to pair it with. */

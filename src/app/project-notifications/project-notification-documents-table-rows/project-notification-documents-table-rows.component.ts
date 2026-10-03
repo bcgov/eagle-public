@@ -41,7 +41,7 @@ export class ProjectNotificationDocumentsTableRowsComponent implements TableRowC
   }
 
   goToItem(item: any) {
-    this.utils.openDocumentDownload(item);
+    this.utils.openDocumentDownload(item, { inline: true });
   }
 
   ngOnDestroy() {

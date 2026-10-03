@@ -45,56 +45,6 @@ export class DocumentService {
       );
   }
 
-  // get all documents for the specified decision id
-  getAllByDecisionId(decisionId: string): Observable<Document[]> {
-    const loadingId = `documents-decision-${decisionId}`;
-    this.loadingState.startLoading(loadingId, 'Loading decision documents');
-    return this.api.getDocumentsByDecisionId(decisionId)
-      .pipe(
-        map((res: any) => {
-          if (res) {
-            const documents = res;
-            documents.forEach((document: any, i: number) => {
-              documents[i] = new Document(document);
-            });
-            this.loadingState.stopLoading(loadingId);
-            return documents;
-          }
-          this.loadingState.stopLoading(loadingId);
-          return [];
-        }),
-        catchError(error => {
-          this.loadingState.stopLoading(loadingId);
-          return this.api.handleError(error);
-        })
-      );
-  }
-
-  // get all documents for the specified comment id
-  getAllByCommentId(commentId: string): Observable<Document[]> {
-    const loadingId = `documents-comment-${commentId}`;
-    this.loadingState.startLoading(loadingId, 'Loading comment documents');
-    return this.api.getDocumentsByCommentId(commentId)
-      .pipe(
-        map((res: any) => {
-          if (res) {
-            const documents = res;
-            documents.forEach((document: any, i: number) => {
-              documents[i] = new Document(document);
-            });
-            this.loadingState.stopLoading(loadingId);
-            return documents;
-          }
-          this.loadingState.stopLoading(loadingId);
-          return [];
-        }),
-        catchError(error => {
-          this.loadingState.stopLoading(loadingId);
-          return this.api.handleError(error);
-        })
-      );
-  }
-
   // get a specific document by its id
   getById(documentId: string, forceReload = false): Observable<Document> {
     if (this.document && this.document._id === documentId && !forceReload) {
@@ -125,26 +75,6 @@ export class DocumentService {
         }),
         catchError(error => {
           this.loadingState.stopLoading(loadingId);
-          return this.api.handleError(error);
-        })
-      );
-  }
-
-  add(formData: FormData): Observable<Document | null> {
-    this.loadingState.startLoading('document-upload', 'Uploading document');
-    return this.api.uploadDocument(formData)
-      .pipe(
-        map((res: any) => {
-          if (res) {
-            const d = res;
-            this.loadingState.stopLoading('document-upload');
-            return d ? new Document(d) : null;
-          }
-          this.loadingState.stopLoading('document-upload');
-          return null;
-        }),
-        catchError(error => {
-          this.loadingState.stopLoading('document-upload');
           return this.api.handleError(error);
         })
       );

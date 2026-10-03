@@ -4,13 +4,11 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { DomSanitizer } from '@angular/platform-browser';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
-import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { ToastService } from '../services/toast.service';
 import { CommentPeriod } from '../models/commentperiod';
 import { CommentPeriodService } from '../services/commentperiod.service';
 import { ProjectService } from '../services/project.service';
 import { CommentService } from '../services/comment.service';
-import { AddCommentComponent } from './add-comment/add-comment.component';
 import { Project } from '../models/project';
 import { DocumentService } from '../services/document.service';
 import { ApiService } from '../services/api';
@@ -19,11 +17,10 @@ import { CommentsTableRowsComponent } from './comments-table-rows/comments-table
 import { TableObject } from '../shared/components/table-template/table-object';
 import { TableTemplateComponent } from '../shared/components/table-template/table-template.component';
 import { LoggingService } from '../services/logging.service';
-import { AnalyticsService } from '../services/analytics/analytics.service';
 
 @Component({
   selector: 'app-comments',
-  imports: [CommonModule, TableTemplateComponent, AddCommentComponent],
+  imports: [CommonModule, TableTemplateComponent],
   templateUrl: './comments.component.html',
   styleUrls: ['./comments.component.css'],
   encapsulation: ViewEncapsulation.None,
@@ -38,12 +35,10 @@ export class CommentsComponent implements OnDestroy {
   private projectService = inject(ProjectService);
   private documentService = inject(DocumentService);
   private changeDetectionRef = inject(ChangeDetectorRef);
-  private modalService = inject(NgbModal);
   private router = inject(Router);
   private loadingState = inject(LoadingStateService);
   private logger = inject(LoggingService);
   private sanitizer = inject(DomSanitizer);
-  private analytics = inject(AnalyticsService);
 
   loading = this.loadingState.getOperationState('comments');
   // True while comment period is not yet loaded.
@@ -69,7 +64,6 @@ export class CommentsComponent implements OnDestroy {
 
   private ngUnsubscribe = new Subject<boolean>();
   private commentPeriodId: string | null = null;
-  private ngbModal: NgbModalRef | null = null;
 
   type = signal<'PROJECT' | 'PROJECT-NOTIFICATION'>('PROJECT');
 
@@ -315,42 +309,6 @@ export class CommentsComponent implements OnDestroy {
     }
     // The file arrives in a hidden frame the page cannot watch, so this only says it was asked for.
     this.toastService.show('Starting download', '', { duration: 2000, type: 'info' });
-  }
-
-  addComment() {
-    if (this.commentPeriodId) {
-      // open modal
-      this.ngbModal = this.modalService.open(AddCommentComponent, { backdrop: 'static', size: 'lg' });
-      // set input parameters
-      const modalInstance = this.ngbModal.componentInstance as any;
-      modalInstance.currentPeriod = this.commentPeriod();
-      modalInstance.project = this.project();
-      
-      // Store current page for tracking on dismiss
-      const currentPage = modalInstance.currentPage?.() || 1;
-      
-      // check result
-      this.ngbModal.result.then(
-        value => {
-          this.logger.debug('Modal closed with success', 'CommentsComponent', { value });
-        },
-        reason => {
-          this.logger.debug('Modal cancelled', 'CommentsComponent', { reason });
-          
-          // Track modal dismissal
-          const proj = this.project();
-          if (proj) {
-            this.analytics.track('Comment Modal Dismissed', {
-              project_id: proj._id,
-              project_name: proj.name,
-              comment_period_id: this.commentPeriodId,
-              page: currentPage,
-              reason: String(reason || 'unknown')
-            });
-          }
-        }
-      );
-    }
   }
 
   goBackToProjectDetails() {

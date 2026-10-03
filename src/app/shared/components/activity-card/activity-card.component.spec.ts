@@ -156,12 +156,28 @@ describe('ActivityCardComponent', () => {
     expect(openSpy).toHaveBeenCalledWith('https://engage.example.com', '_blank');
     openSpy.mockRestore();
   });
+
+  it('goToCP opens no ENGAGE link for an unsafe metURL and shows the period page', () => {
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    const activity = {
+      type: 'Public Comment Period',
+      project: { _id: 'proj1', name: 'Test Project' },
+      pcp: { _id: 'pcp1', isMet: true, metURL: 'javascript:alert(1)' }
+    };
+
+    component.goToCP(activity);
+
+    expect(openSpy).not.toHaveBeenCalled();
+    expect(navigate).toHaveBeenCalledWith(['p', 'proj1', 'cp', 'pcp1']);
+    openSpy.mockRestore();
+  });
 });
 
 /** Old updates link eagle-api document routes, which no longer serve public reads. */
 describe('ActivityCardComponent legacy document links', () => {
   const ID = '5c8a7b6d5e4f3a2b1c0d9e8f';
-  const DEMI = `/demi-search/documents/${ID}/download?redirect=1`;
+  const DEMI = `/demi-search/documents/${ID}/download?redirect=1&inline=1`;
 
   function create(rowData: any): ComponentFixture<ActivityCardComponent> {
     TestBed.configureTestingModule({
@@ -178,12 +194,12 @@ describe('ActivityCardComponent legacy document links', () => {
     return create(rowData).nativeElement;
   }
 
-  it('points the document button at the DEMI download', () => {
+  it('points the document button at the inline DEMI download', () => {
     const el = render({ headline: 'Update', documentUrl: `/api/public/document/${ID}/download/r.pdf` });
     expect(el.querySelector('a.btn')?.getAttribute('href')).toBe(DEMI);
   });
 
-  it('points a link in the update text at the DEMI download', () => {
+  it('points a link in the update text at the inline DEMI download', () => {
     const el = render({ headline: 'Update', content: `<p>See <a href="/api/document/${ID}/fetch">the report</a></p>` });
     expect(el.querySelector('p a')?.getAttribute('href')).toBe(DEMI);
   });

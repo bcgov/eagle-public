@@ -23,7 +23,7 @@ describe('GateService', () => {
         GateService,
         {
           provide: ConfigService,
-          useValue: { getApiPath: () => '/api', getSearchApiPath: () => '/demi-search', config: signal(config) }
+          useValue: { getSearchApiPath: () => '/demi-search', config: signal(config) }
         }
       ]
     });

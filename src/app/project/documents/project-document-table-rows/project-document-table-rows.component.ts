@@ -50,7 +50,7 @@ export class DocumentTableRowsComponent implements TableRowComponent, OnInit, On
   }
 
   goToItem(item: any): void {
-    this.utils.openDocumentDownload(item);
+    this.utils.openDocumentDownload(item, { inline: true });
   }
 
   ngOnDestroy() {

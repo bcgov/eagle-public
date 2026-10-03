@@ -46,7 +46,7 @@ export class CommentingTabComponent implements OnDestroy {
 
   goToCP(commentPeriod: CommentPeriod) {
     const project = this.project();
-    if (commentPeriod.isMet && commentPeriod.metURL) {
+    if (commentPeriod.isEngage) {
       window.open(commentPeriod.metURL, '_blank');
     } else if (project?._id) {
       this.router.navigate(['p', project._id, 'cp', commentPeriod._id]);
@@ -73,7 +73,7 @@ export class CommentingTabComponent implements OnDestroy {
             const deduped = periods.filter((p: CommentPeriod) => {
               if (seenIds.has(p._id)) return false;
               seenIds.add(p._id);
-              if (p.isMet && p.metURL) {
+              if (p.isEngage) {
                 if (seenUrls.has(p.metURL)) return false;
                 seenUrls.add(p.metURL);
               }

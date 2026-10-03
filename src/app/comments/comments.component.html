@@ -28,6 +28,18 @@
                 @if (commentPeriod()!.informationLabel) {
                   <p>{{commentPeriod()!.informationLabel}}</p>
                 }
+                @if (commentPeriod()!.isEngage) {
+                  <a class="btn btn-warning d-inline-flex align-items-center gap-2 engage-link"
+                     [href]="commentPeriod()!.metURL"
+                     target="_blank"
+                     rel="noopener noreferrer">
+                    {{commentPeriod()!.ctaLabel}}
+                    <i class="material-icons" aria-hidden="true">open_in_new</i>
+                    <span class="visually-hidden">(opens in new tab)</span>
+                  </a>
+                } @else if (commentPeriod()!.commentPeriodStatus === 'Open') {
+                  <p class="no-comments-here">Comments are not accepted on this site.</p>
+                }
               </div>
 
             </div>
@@ -112,12 +124,6 @@
       </div>
     </div>
   } @else {
-    @if (commentPeriod() && commentPeriod()!.commentPeriodStatus === 'Open') {
-      <div class="mb-3 d-flex justify-content-end">
-        <button class="btn btn-warning" (click)="addComment()" type="button">Submit Comment</button>
-      </div>
-    }
-    
     @if (tableData().totalListItems > 0) {
       <div>
         <lib-table-template 

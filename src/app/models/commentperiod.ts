@@ -1,5 +1,6 @@
 import { DateTime } from 'luxon';
 import { Project } from './project';
+import { isSafeUrl } from 'app/shared/utils/safe-url';
 
 
 export class CommentPeriod {
@@ -193,8 +194,14 @@ export class CommentPeriod {
     return 'Closed';
   }
 
-  public get bannerCTA(): string {
-    return this.bannerState === 'Open' ? 'Share your thoughts' : 'View engagement';
+  public get isEngage(): boolean {
+    return !!this.isMet && isSafeUrl(this.metURL);
+  }
+
+  /** Label for the control that opens this period. Comments are taken only in ENGAGE, so only an open ENGAGE period asks for them. */
+  public get ctaLabel(): string {
+    if (!this.isEngage) return 'View Comment Period';
+    return this.commentPeriodStatus === 'Open' ? 'Share your thoughts' : 'View Engagement';
   }
 
   public get bannerTimerPillText(): string {

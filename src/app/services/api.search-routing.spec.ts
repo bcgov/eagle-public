@@ -1,15 +1,15 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { HttpTestingController } from '@angular/common/http/testing';
-import { firstValueFrom } from 'rxjs';
+import { Observable, firstValueFrom } from 'rxjs';
 import { ApiService } from './api';
 import { Document } from 'app/models/document';
 import { LoggingService } from './logging.service';
 import { SEARCH, envelope, searchRequest, setupDemiApi } from './demi-api.spec-helper';
 
 /**
- * Every public read goes to demi-search; eagle-api keeps only writes. A read left on eagle-api
- * still renders, so the URL is the only place the mistake shows.
+ * Every public read goes to demi-search and the site makes no request to eagle-api. A read left on
+ * eagle-api still renders, so the URL is the only place the mistake shows.
  */
 describe('ApiService search routing', () => {
   let httpMock: HttpTestingController;
@@ -36,6 +36,29 @@ describe('ApiService search routing', () => {
     'Organization', 'CommentPeriod', 'Comment', 'List',
   ])('sends %s to demi-search', dataset => {
     expect(urlFor(setup(), dataset).startsWith(`${SEARCH}/search?dataset=${dataset}&`)).toBe(true);
+  });
+
+  it('sends no read to eagle-api', () => {
+    const api = setup();
+    const reads: Observable<unknown>[] = [
+      api.searchKeywords('cariboo', 'Project', [], 1, 10),
+      api.getCountProjects(),
+      api.getProjectPins('p1', 1, 10, null),
+      api.getOrgsByCompanyType('Proponent'),
+      api.getProject('p1', null, null),
+      api.getPeriodsByProjId('p1'),
+      api.getPeriod('cp1'),
+      api.getCountCommentsById('cp1'),
+      api.getCommentsByPeriodId(1, 10, 'cp1'),
+      api.getComment('c1'),
+      api.getDocument('d1'),
+      api.getDocumentsByMultiId(['d1']),
+      api.getTopNewsItems(),
+    ];
+    reads.forEach(read => read.subscribe());
+    const urls = httpMock.match(() => true).map(req => req.request.url);
+    expect(urls.length).toBeGreaterThanOrEqual(reads.length);
+    expect(urls.filter(url => url.startsWith('/api/'))).toEqual([]);
   });
 
   it('encodes the keywords', () => {
@@ -89,13 +112,13 @@ describe('ApiService search routing', () => {
     expect(warn).toHaveBeenCalledOnce();
   });
 
-  it('opens a document at the demi-search download', () => {
+  it('opens a document in the browser through the demi-search download', () => {
     const open = vi.spyOn(window, 'open').mockReturnValue(null);
     setup().openDocument(new Document({ _id: 'doc1', documentFileName: 'a.pdf' }));
-    expect(open).toHaveBeenCalledWith(`${SEARCH}/documents/doc1/download?redirect=1`, '_blank');
+    expect(open).toHaveBeenCalledWith(`${SEARCH}/documents/doc1/download?redirect=1&inline=1`, '_blank');
   });
 
-  it('downloads a document through the demi-search download', async () => {
+  it('downloads a document as a file, checked first, through the demi-search download', async () => {
     const done = setup().downloadDocument(new Document({ _id: 'doc1', displayName: 'a.pdf' }));
     httpMock.expectOne({ method: 'HEAD', url: `${SEARCH}/documents/doc1/download?redirect=1` }).flush(null);
     await done;

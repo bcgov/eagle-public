@@ -8,6 +8,7 @@ import { AnalyticsService } from 'app/services/analytics/analytics.service';
 import { sanitizeWordHtml } from 'app/shared/utils/word-html-sanitizer';
 import { rewriteLegacyDocumentLinks, rewriteLegacyDocumentUrl } from 'app/shared/utils/legacy-document-url';
 import { ConfigService } from 'app/services/config.service';
+import { isSafeUrl } from 'app/shared/utils/safe-url';
 
 /**
  * Shared activity card component. Renders a single RecentActivity item in the
@@ -84,7 +85,7 @@ export class ActivityCardComponent implements TableRowComponent {
       has_comment_period: !!activity.pcp,
       is_met: activity.pcp?.isMet || false
     });
-    if (activity.pcp?.isMet && activity.pcp?.metURL) {
+    if (activity.pcp?.isMet && isSafeUrl(activity.pcp.metURL)) {
       window.open(activity.pcp.metURL, '_blank');
     } else {
       this.router.navigate(['p', activity.project._id, 'cp', activity.pcp._id]);
