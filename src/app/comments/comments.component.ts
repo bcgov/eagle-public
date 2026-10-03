@@ -107,7 +107,7 @@ export class CommentsComponent implements OnDestroy {
         // Load project data
         if (isProjectNotification) {
           // For PN routes, projId is a ProjectNotification ID — do NOT call projectService.getById
-          // (which queries /api/project/ and returns empty for PN IDs, causing a TypeError).
+          // (which queries /demi-projects/ and returns empty for PN IDs, causing a TypeError).
           // Fetch the notification name via search instead.
           this.api.searchKeywords(
             '',
@@ -222,9 +222,9 @@ export class CommentsComponent implements OnDestroy {
     if (!this.commentPeriodId) return;
 
     const currentTableData = this.tableData();
-    this.commentService.getByPeriodId(this.commentPeriodId, currentTableData.currentPage, currentTableData.pageSize, true)
+    this.commentService.getByPeriodId(this.commentPeriodId, currentTableData.currentPage, currentTableData.pageSize)
       .pipe(takeUntil(this.ngUnsubscribe))
-      .subscribe(async (res: any) => {
+      .subscribe(async res => {
         const currentComments = res.currentComments;
 
         // Initialize expanded property
@@ -247,7 +247,7 @@ export class CommentsComponent implements OnDestroy {
           }
         });
 
-        // Load all documents in a single batch request
+        // Load every comment's documents in one call
         if (allDocIds.length > 0) {
           try {
             const allDocs = await this.documentService.getByMultiId(allDocIds).toPromise();
@@ -287,7 +287,7 @@ export class CommentsComponent implements OnDestroy {
         newTableData.options = currentTableData.options;
         newTableData.currentPage = currentTableData.currentPage;
         newTableData.pageSize = currentTableData.pageSize;
-        newTableData.totalListItems = res.totalCount;
+        newTableData.totalListItems = res.totalCount ?? currentComments.length;
         newTableData.items = currentComments.map((comment: any) => ({ rowData: comment }));
 
         this.logger.debug(`Loaded ${currentComments.length} comments, tableData.items length: ${newTableData.items.length}, totalListItems: ${newTableData.totalListItems}`, 'CommentsComponent');
@@ -306,14 +306,15 @@ export class CommentsComponent implements OnDestroy {
     }
   }
 
-  downloadDocument(document: any) {
-    this.api.downloadDocument(document)
-      .then(() => {
-        this.toastService.show('Downloading document', '', { duration: 2000, type: 'info' });
-      })
-      .catch(() => {
-        this.toastService.show('Error opening document! Please try again later', '', { duration: 2000, type: 'error' });
-      });
+  async downloadDocument(document: any) {
+    try {
+      await this.api.downloadDocument(document);
+    } catch {
+      this.toastService.show('Error opening document! Please try again later', '', { duration: 2000, type: 'error' });
+      return;
+    }
+    // The file arrives in a hidden frame the page cannot watch, so this only says it was asked for.
+    this.toastService.show('Starting download', '', { duration: 2000, type: 'info' });
   }
 
   addComment() {

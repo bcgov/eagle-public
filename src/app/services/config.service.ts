@@ -1,27 +1,22 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, ReplaySubject, firstValueFrom } from 'rxjs';
+import { LoggingService } from './logging.service';
 
 export interface EnvConfig {
   logLevel?: number;
+  LOG_LEVEL?: number;
   configEndpoint?: boolean;
+  /** Runtime config URL when `configEndpoint` is true. Empty or unset reads `/demi-search/config`. */
+  CONFIG_PATH?: string;
   ENVIRONMENT?: string;
   BANNER_COLOUR?: string;
   API_PATH?: string;
   API_LOCATION?: string;
-  /**
-   * Base URL for Project/Document/DocumentChunk search, when it is served by eagle-search
-   * (Azure AI Search) rather than eagle-api.
-   *
-   * Normally RELATIVE — `/eagle-search` — because rproxy proxies that location to the Azure host,
-   * which keeps the call same-origin and needs no CORS. Absolute (`https://…/api`) only where there
-   * is no rproxy in front, which today means the static Azure Front Door build for test.
-   *
-   * EMPTY OR UNSET FALLS BACK TO eagle-api, and that is also the kill switch. In dev and test the
-   * switch is eagle-api's Mongo `Config` document; prod still reads it from the rproxy ConfigMap
-   * until prod moves to rproxy v2.7.11. Either way it reverts with no redeploy.
-   */
+  /** demi-search base URL for every public read. Empty or unset reads `/demi-search`. */
   SEARCH_API_PATH?: string;
+  /** DEMI single-project base URL. Empty or unset reads `/demi-projects`. */
+  DEMI_PROJECTS_PATH?: string;
   /**
    * Shows the Document Content search tab and route. The API serves content search everywhere, so
    * this only decides whether the UI offers it — false or unset hides it, with no redeploy needed
@@ -30,14 +25,14 @@ export interface EnvConfig {
   CONTENT_SEARCH?: boolean;
   /**
    * Puts a shared-password curtain in front of the whole app. Only a literal `true` closes it, so
-   * prod (false or unset) renders unchanged. eagle-api checks the password; see GateService.
+   * prod (false or unset) renders unchanged. demi-search checks the password; see GateService.
    */
   ACCESS_GATE?: boolean;
   ADMIN_PATH?: string;
   /**
    * Ingest base URL for the eagle-analytics client. Empty or unset gives a no-op client, so that is
    * the kill switch for tracking and it flips with no redeploy. Deployed environments get it from
-   * `/api/config`; it is deliberately absent from env.js, because a value baked in at build time
+   * the runtime config; it is deliberately absent from env.js, because a value baked in at build time
    * would follow the bundle into every environment.
    */
   EAGLE_ANALYTICS_URL?: string;
@@ -51,6 +46,19 @@ declare global {
   interface Window { __env: EnvConfig; }
 }
 
+const DEFAULT_CONFIG_PATH = '/demi-search/config';
+const CONFIG_ATTEMPTS = 3;
+// nginx gives up at 11 s on this route, so the browser must abort after nginx, not before.
+const CONFIG_TIMEOUT_MS = 12_000;
+
+function isWholeConfig(payload: unknown): payload is EnvConfig {
+  if (typeof payload !== 'object' || payload === null) {
+    return false;
+  }
+  const candidate = payload as EnvConfig;
+  return !!candidate.ENVIRONMENT && typeof candidate.ACCESS_GATE === 'boolean';
+}
+
 /**
  * Configuration Service
  *
@@ -61,8 +69,7 @@ declare global {
  *
  * DEPLOYED (configEndpoint = true):
  *   - The Azure deploy workflows sed configEndpoint to true
- *   - App fetches /api/config on startup. rproxy proxies that to eagle-api, which serves it from
- *     its Mongo `Config` document.
+ *   - App fetches CONFIG_PATH (`/demi-search/config` unless env.js names another) on startup
  *   - Those values override env.js
  *
  * Lists (filter dropdowns) are lazy-loaded on first subscription, not during init.
@@ -70,6 +77,7 @@ declare global {
 @Injectable({providedIn:'root'})
 export class ConfigService {
   private http = inject(HttpClient);
+  private logger = inject(LoggingService);
 
   // Environment configuration as a signal for reactivity
   private _config = signal<EnvConfig>({});
@@ -100,20 +108,17 @@ export class ConfigService {
    * Initialize the Config Service.
    *
    * 1. Load env.js values (synchronous — already on window.__env)
-   * 2. If deployed (configEndpoint=true), fetch and merge /api/config before returning
+   * 2. If deployed (configEndpoint=true), fetch and merge the runtime config, or reject
    *
-   * Must be awaited so that dependent services (Keycloak) initialize
-   * with the correct environment-specific values from the API config.
+   * Must be awaited so that dependent services (analytics) initialize with the correct
+   * environment-specific values.
    */
   public async init(): Promise<void> {
     // Step 1: Start with env.js values (loaded before Angular via script tag)
     this._config.set({ ...(window.__env || {}) });
+    this.logger.debug('env.js values', 'config', this._config());
 
-    if (this._config().logLevel === 0) {
-      console.log('ConfigService: env.js values:', this._config());
-    }
-
-    // Step 2: If deployed (configEndpoint=true), await config from API before continuing
+    // Step 2: If deployed (configEndpoint=true), await the runtime config before continuing
     if (this._config().configEndpoint === true) {
       await this.fetchRemoteConfig();
     }
@@ -123,18 +128,21 @@ export class ConfigService {
 
   /**
    * Get the API path for making API calls.
-   * Always relative — proxy.conf.js (local) or rproxy (deployed) handles routing.
+   * Always relative — proxy.conf.js (local) or nginx (deployed) handles routing.
    */
   public getApiPath(): string {
     return this._config().API_PATH || '/api';
   }
 
-  /**
-   * Base URL for search, when it is served by eagle-search. Falls back to the eagle-api path, so an
-   * unconfigured environment keeps working unchanged.
-   */
+  /** Base URL for demi-search. Never eagle-api: it no longer serves public reads. */
   public getSearchApiPath(): string {
-    return this._config().SEARCH_API_PATH || this.getApiPath();
+    return this._config().SEARCH_API_PATH || '/demi-search';
+  }
+
+  /** DEMI project base path, without a trailing slash. */
+  public getDemiProjectsPath(): string {
+    const path = this._config().DEMI_PROJECTS_PATH;
+    return (typeof path === 'string' ? path.trim().replace(/\/+$/, '') : '') || '/demi-projects';
   }
 
   /** Whether the Document Content search tab is offered. Only a literal `true` turns it on. */
@@ -143,37 +151,46 @@ export class ConfigService {
   }
 
   /**
-   * Fetch remote config from /api/config (deployed only, non-blocking).
-   * Served by eagle-api from Mongo in dev and test, by the rproxy ConfigMap in prod until it moves
-   * to rproxy v2.7.11 — same URL either way, which is why this method does not care which.
-   * On success, merges over env.js values. On failure, env.js defaults stand.
+   * Fetch CONFIG_PATH (`/demi-search/config` unless env.js names another) and merge it over env.js.
+   * Retried, then thrown: env.js ships ACCESS_GATE false, so booting on it would open the curtain.
+   * The app initializer turns the throw into the "temporarily unavailable" page.
    */
   private async fetchRemoteConfig(): Promise<void> {
-    try {
-      const response = await fetch('/api/config', {
-        signal: AbortSignal.timeout(5000)
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    const configPath = (this._config().CONFIG_PATH || '').trim() || DEFAULT_CONFIG_PATH;
+    for (let attempt = 1; ; attempt++) {
+      try {
+        const response = await fetch(configPath, { signal: AbortSignal.timeout(CONFIG_TIMEOUT_MS) });
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        const remote: unknown = await response.json();
+        if (!isWholeConfig(remote)) {
+          throw new Error('payload is missing ENVIRONMENT or a boolean ACCESS_GATE');
+        }
+        this._config.set({ ...this._config(), ...remote });
+        this.logger.debug('merged with the runtime config', 'config', this._config());
+        return;
+      } catch (e) {
+        this.logger.error(`${configPath} attempt ${attempt} of ${CONFIG_ATTEMPTS} failed`, 'config', e);
+        if (attempt >= CONFIG_ATTEMPTS) throw e;
+        await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
       }
-      const apiConfig: EnvConfig = await response.json();
-      this._config.set({ ...this._config(), ...apiConfig });
-      if (this._config().logLevel === 0) {
-        console.log('ConfigService: merged with API config:', this._config());
-      }
-    } catch (e) {
-      console.error('ConfigService: API config fetch failed, using env.js defaults:', e);
     }
   }
 
   private async loadLists(): Promise<void> {
     try {
-      const url = `${this.getApiPath()}/search?pageSize=250&dataset=List`;
+      // The List collection spans both Acts and runs past 250 rows; demi-search caps a page at 1000.
+      const url = `${this.getSearchApiPath()}/search?pageSize=1000&dataset=List`;
       const data = await firstValueFrom(this.http.get<any[]>(url));
       this._lists = data?.[0]?.searchResults ?? [];
+      const total = data?.[0]?.meta?.[0]?.searchResultsTotal;
+      if (typeof total === 'number' && this._lists.length < total) {
+        this.logger.warn(`List answered ${this._lists.length} of ${total} rows; the rest are not shown`, 'config');
+      }
       this._lists$.next(this._lists);
     } catch (error) {
-      console.error('ConfigService: Failed to load lists:', error);
+      this.logger.error('failed to load lists', 'config', error);
       this._lists$.next([]);
     }
   }

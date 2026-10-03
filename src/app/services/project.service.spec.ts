@@ -1,13 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
-import { HttpTestingController, provideHttpClientTesting, TestRequest } from '@angular/common/http/testing';
+import { HttpTestingController } from '@angular/common/http/testing';
 import { ProjectService } from './project.service';
 import { ApiService } from 'app/services/api';
-import { ConfigService } from './config.service';
-import { AnalyticsService } from './analytics/analytics.service';
 import { DecisionService } from './decision.service';
-import { of, lastValueFrom, firstValueFrom } from 'rxjs';
+import { defer, of, lastValueFrom, firstValueFrom } from 'rxjs';
 import { Project } from 'app/models/project';
 import { Decision } from 'app/models/decision';
 import { SearchService } from './search.service';
@@ -15,6 +12,8 @@ import { SearchService } from './search.service';
 import { Utils } from 'app/shared/utils/utils';
 import { Constants } from 'app/shared/utils/constants';
 import { LoggingService } from './logging.service';
+import { ConfigService } from './config.service';
+import { DEMI_PROJECTS, envelope, searchRequest, setupDemiApi } from './demi-api.spec-helper';
 
 describe('ProjectService', () => {
   let service: ProjectService;
@@ -28,26 +27,18 @@ describe('ProjectService', () => {
       getProject: vi.fn((id: string) => {
         return of([{ _id: id, status: 'ACCEPTED' }]);
       }),
-      getDemiProponentName: vi.fn(() => of(null)),
       getProjects: vi.fn(() => {
         return of([
           { _id: '58851197aaecd9001b8227cc', status: 'ACCEPTED' },
           { _id: 'BBBB', status: 'OFFERED' }
         ]);
       }),
-      getCountProjects: vi.fn(() => {
-        return of({
-          headers: {
-            get: (name: string) => (name === 'x-total-count' ? 300 : null)
-          }
-        });
-      }),
+      getCountProjects: vi.fn(() => of(300)),
       handleError: vi.fn()
     };
 
     mockSearchService = {
       getSearchResults: vi.fn((projectData: Project[]) => of(projectData)),
-      getItem: vi.fn((string: string) => of({ data: string }))
     };
 
     mockUtils = {
@@ -145,165 +136,245 @@ describe('ProjectService', () => {
   });
 
   describe('getById()', () => {
-    it('calls the api for a project', () => {
+    it('calls the api for a project', async () => {
       const mockProject = [new Project({ _id: '58851197aaecd9001b8227cc', description: 'Test project' })];
       mockApiService.getProject.mockReturnValue(of(mockProject));
 
-      service.getById('58851197aaecd9001b8227cc', true).subscribe(project => {
-        expect(project._id).toEqual('58851197aaecd9001b8227cc');
-        expect(mockApiService.getProject).toHaveBeenCalled();
-      });
+      const project = await firstValueFrom(service.getById('58851197aaecd9001b8227cc', true));
+
+      expect(project._id).toEqual('58851197aaecd9001b8227cc');
+      expect(mockApiService.getProject).toHaveBeenCalled();
     });
 
-    it('calls the api when forceReload is true', () => {
+    it('calls the api when forceReload is true', async () => {
       const mockProject = [new Project({ _id: 'test-id', description: 'Test' })];
       mockApiService.getProject.mockReturnValue(of(mockProject));
 
-      service.getById('test-id', true).subscribe(_project => {
-        expect(mockApiService.getProject).toHaveBeenCalled();
-      });
+      await firstValueFrom(service.getById('test-id', true));
+
+      expect(mockApiService.getProject).toHaveBeenCalled();
     });
   });
 });
 
 /**
- * The project detail page shows DEMI's proponent name, the same one the project list shows.
- *
- * Eagle Mongo and DEMI disagree for some projects because DEMI merges Track in and lets Track win.
- * Only the name comes from DEMI; the Eagle org _id stays because the proponent filter keys on it.
- * DEMI must never break or hold up the page: any failure keeps the Eagle value. Real ApiService
- * over HttpTestingController, so the DEMI query and the fallbacks are exercised end to end.
+ * The project page reads `GET /demi-projects/<id>` and maps it to the shape eagle-api answered.
+ * Real ApiService over HttpTestingController, so the URL, the mapping and the 404 are exercised.
  */
-describe('ProjectService.getById DEMI proponent name', () => {
-  const SEARCH = 'https://demi.example/demi-search';
+describe('ProjectService DEMI project reads', () => {
   const PROJECT_ID = '60f078d3332ebd0022a39224';
-  const EAGLE_ORG = { _id: '5c8a7b6d5e4f3a2b1c0d9e8f', name: 'Skeena Resources Limited' };
+  const DOC = {
+    _id: 'demi-uuid',
+    eagleId: PROJECT_ID,
+    name: 'Eskay Creek',
+    projectType: 'Mines',
+    projectState: 'Active',
+    address: 'Near Stewart',
+    centroid: { type: 'Point', coordinates: [-130.4, 56.6] },
+    proponentId: '5c8a7b6d5e4f3a2b1c0d9e8f',
+    proponentName: 'Skeena Resources Limited',
+    eacDecision: 'list-approved',
+    projectCAC: true,
+    pins: [
+      { _id: 'n2', name: 'Tahltan Central Government' },
+      { _id: 'n1', name: 'Nisga\'a Lisims Government' },
+      { _id: 'n3', name: 'Gitanyow Hereditary Chiefs' },
+    ],
+  };
+  const LISTS = [{ _id: 'list-approved', name: 'Certificate Issued', type: 'eacDecision' }];
   let httpMock: HttpTestingController;
+  let service: ProjectService;
 
-  function setup(searchApiPath: string) {
-    TestBed.resetTestingModule();
-    TestBed.configureTestingModule({
-      providers: [
-        provideHttpClient(),
-        provideHttpClientTesting(),
-        ApiService,
-        ProjectService,
-        {
-          provide: ConfigService,
-          useValue: {
-            getApiPath: () => '/api',
-            getSearchApiPath: () => searchApiPath || '/api',
-            config: () => ({}),
-          },
-        },
-        { provide: LoggingService, useValue: { debug: vi.fn(), trace: vi.fn(), warn: vi.fn(), error: vi.fn(), log: vi.fn() } },
-        { provide: SearchService, useValue: {} },
-        { provide: AnalyticsService, useValue: { track: vi.fn() } },
-        { provide: Utils, useValue: { natureBuildMapper: () => '' } },
-      ],
-    });
-    httpMock = TestBed.inject(HttpTestingController);
-    return TestBed.inject(ProjectService);
-  }
-
-  function load(service: ProjectService): Promise<Project> {
-    return firstValueFrom(service.getById(PROJECT_ID, true));
-  }
-
-  function demiRequest(): TestRequest {
-    return httpMock.expectOne(req => req.url.startsWith(`${SEARCH}/search?dataset=Project`));
-  }
-
-  function flushEagle() {
-    httpMock.expectOne(req => req.url.startsWith(`/api/project/${PROJECT_ID}`))
-      .flush([{ _id: PROJECT_ID, name: 'Eskay Creek', proponent: { ...EAGLE_ORG } }]);
-  }
-
-  function demiRow(proponentName: string, id = PROJECT_ID) {
-    return [{ searchResults: [{ _id: id, _schemaName: 'Project', proponent: { _id: null, name: proponentName } }], meta: [] }];
-  }
-
-  afterEach(() => {
-    httpMock.verify();
-    vi.useRealTimers();
+  beforeEach(() => {
+    httpMock = setupDemiApi([{ provide: Utils, useValue: { natureBuildMapper: () => '' } }], LISTS);
+    service = TestBed.inject(ProjectService);
   });
 
-  it('asks DEMI for the one project by its Eagle id', async () => {
-    const service = setup(SEARCH);
-    const project = load(service);
-    const req = demiRequest();
-    expect(req.request.url).toContain(`and[_id]=${PROJECT_ID}`);
-    expect(req.request.url).toContain('pageSize=1');
-    req.flush(demiRow('Eskay Creek Mining Ltd.'));
-    flushEagle();
-    await project;
+  afterEach(() => httpMock.verify());
+
+  function projectRequest() {
+    return httpMock.expectOne(`${DEMI_PROJECTS}/${PROJECT_ID}`);
+  }
+
+  it('reads the project from /demi-projects by its Eagle id', async () => {
+    const project = firstValueFrom(service.getById(PROJECT_ID, true));
+    projectRequest().flush(DOC);
+    expect((await project)._id).toBe(PROJECT_ID);
   });
 
-  it('shows the DEMI name and keeps the Eagle proponent _id', async () => {
-    const service = setup(SEARCH);
-    const project = load(service);
-    demiRequest().flush(demiRow('Eskay Creek Mining Ltd.'));
-    flushEagle();
-
+  it("maps Track's field names onto the Eagle ones", async () => {
+    const project = firstValueFrom(service.getById(PROJECT_ID, true));
+    projectRequest().flush(DOC);
     const result = await project;
-    expect(result.proponent.name).toBe('Eskay Creek Mining Ltd.');
-    expect(result.proponent._id).toBe(EAGLE_ORG._id);
+    expect(result.type).toBe('Mines');
+    expect(result.status).toBe('Active');
+    expect(result.location).toBe('Near Stewart');
   });
 
-  it('keeps the Eagle name when the DEMI call fails', async () => {
-    const service = setup(SEARCH);
-    const project = load(service);
-    demiRequest().flush({ message: 'Project search is unavailable' }, { status: 502, statusText: 'Bad Gateway' });
-    flushEagle();
-
-    expect((await project).proponent).toEqual(EAGLE_ORG);
+  it('flattens the GeoJSON centroid for the map', async () => {
+    const project = firstValueFrom(service.getById(PROJECT_ID, true));
+    projectRequest().flush(DOC);
+    expect((await project).centroid).toEqual([-130.4, 56.6]);
   });
 
-  it('keeps the Eagle name when DEMI has no matching row', async () => {
-    const service = setup(SEARCH);
-    const project = load(service);
-    demiRequest().flush([{ searchResults: [], count: 0 }]);
-    flushEagle();
-
-    expect((await project).proponent).toEqual(EAGLE_ORG);
+  it('rebuilds the proponent from its id and name', async () => {
+    const project = firstValueFrom(service.getById(PROJECT_ID, true));
+    projectRequest().flush(DOC);
+    expect((await project).proponent).toEqual({ _id: DOC.proponentId, name: 'Skeena Resources Limited' });
   });
 
-  it('ignores a DEMI row for a different project', async () => {
-    const service = setup(SEARCH);
-    const project = load(service);
-    demiRequest().flush(demiRow('Some Other Proponent', '000000000000000000000000'));
-    flushEagle();
-
-    expect((await project).proponent).toEqual(EAGLE_ORG);
+  it('resolves a List id to its row', async () => {
+    const project = firstValueFrom(service.getById(PROJECT_ID, true));
+    projectRequest().flush(DOC);
+    expect((await project).eacDecision?.name).toBe('Certificate Issued');
   });
 
-  it("ignores DEMI's placeholder name for a project with no proponent", async () => {
-    const service = setup(SEARCH);
-    const project = load(service);
-    demiRequest().flush(demiRow('Proponent Organization'));
-    flushEagle();
-
-    expect((await project).proponent).toEqual(EAGLE_ORG);
+  it('uses List fields DEMI already populated without reading the List rows', async () => {
+    let listReads = 0;
+    (TestBed.inject(ConfigService) as any).lists = defer(() => { listReads++; return of(LISTS); });
+    const project = firstValueFrom(service.getById(PROJECT_ID, true));
+    projectRequest().flush({
+      ...DOC,
+      eacDecision: { _id: 'd', name: 'Certificate Issued' },
+      currentPhaseName: { _id: 'p', name: 'Post-Certificate' },
+      CEAAInvolvement: { _id: 'c', name: 'None' },
+    });
+    const result = await project;
+    expect([result.eacDecision?.name, result.currentPhaseName?.name, result.CEAAInvolvement?.name])
+      .toEqual(['Certificate Issued', 'Post-Certificate', 'None']);
+    expect(listReads).toBe(0);
   });
 
-  it('gives up on a slow DEMI call and shows the Eagle name', async () => {
-    vi.useFakeTimers();
-    const service = setup(SEARCH);
-    const project = load(service);
-    demiRequest(); // never answered
-    flushEagle();
-    await vi.advanceTimersByTimeAsync(3000);
-
-    expect((await project).proponent).toEqual(EAGLE_ORG);
+  it('leaves a List id with no matching row empty, so the page shows "-"', async () => {
+    const project = firstValueFrom(service.getById(PROJECT_ID, true));
+    projectRequest().flush({ ...DOC, eacDecision: 'list-unknown' });
+    expect((await project).eacDecision).toBeNull();
   });
 
-  // Kill switch: with SEARCH_API_PATH empty, search is eagle-api, so there is nothing to overlay.
-  it('makes no DEMI call and keeps the Eagle name when SEARCH_API_PATH is empty', async () => {
-    const service = setup('');
-    const project = load(service);
-    flushEagle();
-    httpMock.expectNone(req => req.url.includes('/search?'));
+  it('keeps the CAC flag the comment form reads', async () => {
+    const project = firstValueFrom(service.getById(PROJECT_ID, true));
+    projectRequest().flush(DOC);
+    expect((await project).projectCAC).toBe(true);
+  });
 
-    expect((await project).proponent).toEqual(EAGLE_ORG);
+  it('answers null, not an error, when DEMI has no such project', async () => {
+    const project = firstValueFrom(service.getById(PROJECT_ID, true));
+    projectRequest().flush({ message: 'Not found' }, { status: 404, statusText: 'Not Found' });
+    expect(await project).toBeNull();
+  });
+
+  it('fails on any other DEMI error', async () => {
+    vi.spyOn(TestBed.inject(LoggingService), 'error').mockImplementation(() => undefined);
+    const project = firstValueFrom(service.getById(PROJECT_ID, true));
+    projectRequest().flush({ message: 'down' }, { status: 502, statusText: 'Bad Gateway' });
+    await expect(project).rejects.toBeTruthy();
+  });
+
+  describe('comment period banner', () => {
+    const START = '2026-09-01T00:00:00.000Z';
+    const END = '2026-10-31T00:00:00.000Z';
+
+    it("reads the project's periods by and[project]", async () => {
+      const project = firstValueFrom(service.getById(PROJECT_ID, true, START, END));
+      projectRequest().flush(DOC);
+      const req = searchRequest(httpMock, 'CommentPeriod');
+      expect(req.request.url).toContain(`&and[project]=${PROJECT_ID}`);
+      req.flush(envelope([]));
+      await project;
+    });
+
+    it('shows a period that falls inside the window', async () => {
+      const project = firstValueFrom(service.getById(PROJECT_ID, true, START, END));
+      projectRequest().flush(DOC);
+      searchRequest(httpMock, 'CommentPeriod').flush(envelope([
+        { _id: 'old', informationLabel: 'Old', dateStarted: '2025-01-01T00:00:00Z', dateCompleted: '2025-02-01T00:00:00Z' },
+        { _id: 'cur', informationLabel: 'Current', dateStarted: '2026-09-15T00:00:00Z', dateCompleted: '2026-10-15T00:00:00Z' },
+      ]));
+      expect((await project).commentPeriodForBanner?.informationLabel).toBe('Current');
+    });
+
+    it('shows a period that spans the window', async () => {
+      const project = firstValueFrom(service.getById(PROJECT_ID, true, START, END));
+      projectRequest().flush(DOC);
+      searchRequest(httpMock, 'CommentPeriod').flush(envelope([
+        { _id: 'long', informationLabel: 'Long', dateStarted: '2026-08-01T00:00:00Z', dateCompleted: '2026-11-30T00:00:00Z' },
+      ]));
+      expect((await project).commentPeriodForBanner?.informationLabel).toBe('Long');
+    });
+
+    it('shows no banner when the window cannot be read', async () => {
+      const project = firstValueFrom(service.getById(PROJECT_ID, true, 'not a date', END));
+      projectRequest().flush(DOC);
+      searchRequest(httpMock, 'CommentPeriod').flush(envelope([
+        { _id: 'cur', informationLabel: 'Current', dateStarted: '2026-09-15T00:00:00Z', dateCompleted: '2026-10-15T00:00:00Z' },
+      ]));
+      expect((await project).commentPeriodForBanner).toBeNull();
+    });
+
+    it('shows no banner for a period whose dates cannot be read', async () => {
+      const project = firstValueFrom(service.getById(PROJECT_ID, true, START, END));
+      projectRequest().flush(DOC);
+      searchRequest(httpMock, 'CommentPeriod').flush(envelope([
+        { _id: 'bad', informationLabel: 'Bad', dateStarted: 'soon', dateCompleted: null },
+      ]));
+      expect((await project).commentPeriodForBanner).toBeNull();
+    });
+
+    it('shows no banner for a period outside the window', async () => {
+      const project = firstValueFrom(service.getById(PROJECT_ID, true, START, END));
+      projectRequest().flush(DOC);
+      searchRequest(httpMock, 'CommentPeriod').flush(envelope([
+        { _id: 'old', informationLabel: 'Old', dateStarted: '2025-01-01T00:00:00Z', dateCompleted: '2025-02-01T00:00:00Z' },
+      ]));
+      expect((await project).commentPeriodForBanner).toBeNull();
+    });
+
+    it('still loads the project when the period read fails', async () => {
+      const project = firstValueFrom(service.getById(PROJECT_ID, true, START, END));
+      projectRequest().flush(DOC);
+      searchRequest(httpMock, 'CommentPeriod').flush({}, { status: 500, statusText: 'Server Error' });
+      const result = await project;
+      expect(result._id).toBe(PROJECT_ID);
+      expect(result.commentPeriodForBanner).toBeNull();
+    });
+  });
+
+  describe('getPins()', () => {
+    it('pages and sorts the pins carried on the project document', async () => {
+      const pins = firstValueFrom(service.getPins(PROJECT_ID, 1, 2, '+name'));
+      projectRequest().flush(DOC);
+      const [page] = await pins as any[];
+      expect(page.total_items).toBe(3);
+      expect(page.results.map((pin: any) => pin._id)).toEqual(['n3', 'n1']);
+    });
+
+    it('sorts the pins by name, descending', async () => {
+      const pins = firstValueFrom(service.getPins(PROJECT_ID, 1, 10, '-name'));
+      projectRequest().flush(DOC);
+      const [page] = await pins as any[];
+      expect(page.results.map((pin: any) => pin._id)).toEqual(['n2', 'n1', 'n3']);
+    });
+
+    it('answers every pin when no page size is given', async () => {
+      const pins = firstValueFrom(service.getPins(PROJECT_ID, 1, null as unknown as number, '+name'));
+      projectRequest().flush(DOC);
+      const [page] = await pins as any[];
+      expect(page.results.map((pin: any) => pin._id)).toEqual(['n3', 'n1', 'n2']);
+    });
+
+    it('answers an empty page past the last one, with the full total', async () => {
+      const pins = firstValueFrom(service.getPins(PROJECT_ID, 3, 2, '+name'));
+      projectRequest().flush(DOC);
+      const [page] = await pins as any[];
+      expect(page.total_items).toBe(3);
+      expect(page.results).toEqual([]);
+    });
+
+    it('answers no pins when DEMI has no such project', async () => {
+      const pins = firstValueFrom(service.getPins(PROJECT_ID, 1, 10, ''));
+      projectRequest().flush({}, { status: 404, statusText: 'Not Found' });
+      const [page] = await pins as any[];
+      expect(page.total_items).toBe(0);
+    });
   });
 });

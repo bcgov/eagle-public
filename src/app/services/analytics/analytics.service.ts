@@ -28,7 +28,7 @@ export class AnalyticsService implements OnDestroy {
 
   /**
    * Build the client from ConfigService. Called from the app initializer once
-   * `ConfigService.init()` has resolved, so `/api/config` values are already merged in.
+   * `ConfigService.init()` has resolved, so `/demi-search/config` values are already merged in.
    */
   initialize(): void {
     if (this.initialized) return;

@@ -154,7 +154,7 @@ export class ProjectNotificationDocumentsTableComponent implements OnInit {
     const currentTableData = this.tableData();
     const sortBy = currentTableData.sortBy || '-datePosted';
     
-    HttpCacheService.clearByPrefix(`${this.api.apiPath}/search?dataset=Document`);
+    HttpCacheService.clearByPrefix(`${this.api.searchPath}/search?dataset=Document`);
     
     this.tableService.fetchData(new SearchParamObject(
       this.tableId(),

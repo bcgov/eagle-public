@@ -2,6 +2,8 @@ import { Component, ChangeDetectionStrategy, input, computed, inject } from '@an
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { Utils } from 'app/shared/utils/utils';
+import { documentDownloadUrl } from 'app/shared/utils/legacy-document-url';
+import { ConfigService } from 'app/services/config.service';
 
 /**
  * One content-search result: a DOCUMENT, with the passages that matched inside it.
@@ -21,11 +23,12 @@ import { Utils } from 'app/shared/utils/utils';
 })
 export class ContentResultComponent {
   private utils = inject(Utils);
+  private configService = inject(ConfigService);
 
   readonly result = input.required<any>();
 
   /**
-   * The document itself. eagle-api serves PDFs inline, so this opens in the browser's viewer.
+   * The document itself, through the demi-search download route.
    *
    * There is deliberately no `#page=N` fragment. This card briefly rendered "Jump to page N" links
    * built from the chunk's `pageNumber`, and every one of them was wrong: `pageNumber` is a passage
@@ -34,9 +37,7 @@ export class ContentResultComponent {
    * Page links come back when the extractor emits real per-page markdown, and not before.
    */
   documentUrl(): string {
-    const r = this.result();
-    const name = this.utils.encodeString(r.documentName || 'document', true);
-    return `/api/public/document/${r._id}/download/${name}`;
+    return documentDownloadUrl(this.configService.getSearchApiPath(), this.result()._id);
   }
 
   /** Matches only. There is no trustworthy page count to pair it with. */

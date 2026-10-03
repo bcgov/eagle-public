@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpResponse } from '@angular/common/http';
-import { Observable, of, throwError } from 'rxjs';
-import { catchError, map, timeout } from 'rxjs/operators';
+import { HttpClient } from '@angular/common/http';
+import { EMPTY, Observable, firstValueFrom, forkJoin, of, throwError } from 'rxjs';
+import { catchError, expand, map, mergeMap, reduce, take } from 'rxjs/operators';
 
 import { Project } from 'app/models/project';
 import { Comment } from 'app/models/comment';
@@ -11,9 +11,103 @@ import { SearchResults } from 'app/models/search';
 import { Org } from 'app/models/organization';
 import { Decision } from 'app/models/decision';
 import { Utils } from 'app/shared/utils/utils';
+import { documentDownloadUrl } from 'app/shared/utils/legacy-document-url';
 import { LoggingService } from './logging.service';
 import { ConfigService } from './config.service';
 import { AnalyticsService } from './analytics/analytics.service';
+
+/** One page of a comment period's comments plus how many there are in total. */
+export interface CommentPage {
+  comments: any[];
+  totalCount: number | null;
+}
+
+/** Rows out of the `[{searchResults, meta}]` envelope `/search` answers with. */
+function rowsFrom<T>(envelope: any): T[] {
+  return envelope?.[0]?.searchResults ?? [];
+}
+
+/** How many rows match, ignoring paging. `null` when the backend did not count. */
+function totalFrom(envelope: any): number | null {
+  const total = envelope?.[0]?.meta?.[0]?.searchResultsTotal;
+  return typeof total === 'number' ? total : null;
+}
+
+/** `/search` ignores `fields=` and answers the whole stored record, so the projection happens here. */
+function pickFields<T>(row: any, fields: string[]): T {
+  return Object.fromEntries(Object.entries(row ?? {}).filter(([field]) => fields.includes(field))) as T;
+}
+
+/**
+ * The banner's comment periods: those that start inside, end inside, or span the window, the
+ * three branches of the old `cpStart`/`cpEnd` lookup.
+ */
+function periodsInWindow(periods: any[], since: string | null, until: string | null): any[] {
+  if (since === null || until === null) { return []; }
+  // An unreadable date is NaN, which fails every comparison below, so it matches nothing.
+  const from = Date.parse(since);
+  const to = Date.parse(until);
+  const timeOf = (value: any): number => new Date(value ?? '').getTime();
+  return periods.filter(period => {
+    const started = timeOf(period?.dateStarted);
+    const completed = timeOf(period?.dateCompleted);
+    return (started >= from && started <= to)
+      || (completed >= from && completed <= to)
+      || (started <= from && completed >= to);
+  });
+}
+
+/** List-backed project fields DEMI may answer as bare ids rather than populated rows. */
+const LIST_REF_FIELDS = ['eacDecision', 'currentPhaseName', 'CEAAInvolvement'];
+
+/**
+ * A DEMI project document in the shape eagle-api's `/project/<id>` answered, so `Project` and the
+ * pages reading it stay unchanged. Track spells `type`/`status`/`location` as
+ * `projectType`/`projectState`/`address`; `centroid` is GeoJSON; the proponent is two scalars.
+ * Fields DEMI does not carry (`CELead*`, `projectLeadId`, `responsibleEPDId`, ACLs) stay absent.
+ */
+function demiProjectToEagle(doc: any, commentPeriodForBanner: any[], lists: any[]): any {
+  const resolveListRef = (value: any) => typeof value === 'string' ? lists.find(row => row._id === value) : value;
+  const centroid = doc.centroid;
+  return {
+    _id: doc.eagleId ?? doc._id,
+    name: doc.name,
+    description: doc.description,
+    type: doc.projectType,
+    sector: doc.sector,
+    location: doc.address,
+    status: doc.projectState,
+    region: doc.region,
+    provElecDist: doc.provElecDist,
+    centroid: Array.isArray(centroid) ? centroid : (centroid?.coordinates ?? []),
+    legislation: doc.legislation,
+    build: doc.build,
+    code: doc.code,
+    substitution: doc.substitution,
+    overallProgress: doc.overallProgress,
+    eaoMember: doc.eaoMember,
+    dateAdded: doc.dateAdded,
+    dateUpdated: doc.dateUpdated,
+    decisionDate: doc.decisionDate,
+    eacDecision: resolveListRef(doc.eacDecision),
+    applicableRegulation: doc.applicableRegulation,
+    currentPhaseName: resolveListRef(doc.currentPhaseName),
+    phaseHistory: doc.phaseHistory,
+    CEAAInvolvement: resolveListRef(doc.CEAAInvolvement),
+    CEAALink: doc.CEAALink,
+    projectLead: doc.projectLead,
+    projectLeadEmail: doc.projectLeadEmail,
+    projectLeadPhone: doc.projectLeadPhone,
+    responsibleEPD: doc.responsibleEPD,
+    responsibleEPDEmail: doc.responsibleEPDEmail,
+    responsibleEPDPhone: doc.responsibleEPDPhone,
+    projectCAC: doc.projectCAC,
+    projectCACPublished: doc.projectCACPublished,
+    cacEmail: doc.cacEmail,
+    proponent: { _id: doc.proponentId, name: doc.proponentName },
+    commentPeriodForBanner,
+  };
+}
 
 @Injectable({providedIn:'root'})
 export class ApiService {
@@ -23,33 +117,30 @@ export class ApiService {
   private configService = inject(ConfigService);
   private analytics = inject(AnalyticsService);
 
-  // public token: string;
-  public isMS: boolean; // IE, Edge, etc
+  // demi-search 400s above 500 rows on a filtered search.
+  private static readonly ORGS_PAGE_SIZE = 500;
+  // 10,000 rows; stops endless paging should every page come back full.
+  private static readonly ORGS_PAGE_CAP = 20;
+  private static readonly ALL_ROWS_PAGE_SIZE = 250;
+  // Long `docIds` URLs break near 320 ids.
+  private static readonly DOC_IDS_PER_REQUEST = 300;
 
-  constructor() {
-    // const currentUser = JSON.parse(window.localStorage.getItem('currentUser'));
-    // this.token = currentUser && currentUser.token;
-    this.isMS = !!(window.navigator as any).msSaveOrOpenBlob;
-  }
-
-  // Configuration getters - delegated to ConfigService
+  /**
+   * eagle-api: comment and document uploads, CAC sign-up and removal, and the decision and
+   * by-parent document reads that have no caller (TODO.md).
+   */
   get apiPath(): string {
     return this.configService.getApiPath();
   }
 
-  /**
-   * Base URL for search. eagle-search when SEARCH_API_PATH is set, eagle-api otherwise.
-   *
-   * Only the datasets in AZURE_DATASETS move; RecentActivity and ProjectNotification stay on
-   * eagle-api, as do getItem() and getFullDataSet(). The two backends answer the same query
-   * language and the same `[{searchResults, meta}]` envelope, which is why nothing downstream —
-   * search.service.ts, SearchResults, SearchParamObject, ~40 call sites — has to change.
-   */
+  /** demi-search: every public read. */
   get searchPath(): string {
     return this.configService.getSearchApiPath();
   }
 
-  private static readonly AZURE_DATASETS = new Set(['Project', 'Document', 'DocumentChunk']);
+  get demiProjectsPath(): string {
+    return this.configService.getDemiProjectsPath();
+  }
 
   get adminUrl(): string {
     return this.configService.config().ADMIN_PATH || 'http://localhost:4200/admin/';
@@ -77,10 +168,6 @@ export class ApiService {
     return throwError(error);
   }
 
-  getFullDataSet(dataSet: string, pageSize = 250): Observable<any> {
-    return this.http.get<any>(`${this.apiPath}/search?pageSize=${pageSize}&dataset=${dataSet}`, {});
-  }
-
   public async downloadDocument(document: Document): Promise<void> {
     // Track document download
     this.analytics.track('Document Downloaded', {
@@ -89,30 +176,19 @@ export class ApiService {
       document_type: document.internalMime || 'unknown'
     });
 
-    let blob;
-    try {
-      blob = await this.downloadResource(document._id)
-    } catch (e) {
-      throw new Error(String(e))
-    }
-    if (!blob) {
-      throw new Error()
-    }
-    let filename = document.displayName;
-    filename = this.utils.encodeString(filename, false)
-    if (this.isMS) {
-      (window.navigator as any).msSaveBlob(blob, filename);
-    } else {
-      const url = window.URL.createObjectURL(blob);
-      const a = window.document.createElement('a');
-      window.document.body.appendChild(a);
-      a.setAttribute('style', 'display: none');
-      a.href = url;
-      a.download = filename;
-      a.click();
-      window.URL.revokeObjectURL(url);
-      a.remove();
-    }
+    const url = this.getDocumentUrl(document);
+    // The frame below hides a failed transfer, so check first. DEMI answers HEAD itself, never redirecting.
+    await firstValueFrom(this.http.head(url));
+
+    // A hidden iframe: the redirect lands on a cross-origin file a blob fetch could not read.
+    const frame = window.document.createElement('iframe');
+    frame.hidden = true;
+    frame.setAttribute('aria-hidden', 'true');
+    frame.setAttribute('tabindex', '-1');
+    frame.src = url;
+    window.document.body.appendChild(frame);
+    // Removing the iframe cancels a transfer that has not started yet, so give it a minute.
+    window.setTimeout(() => frame.remove(), 60_000);
   }
 
   public async openDocument(document: Document): Promise<void> {
@@ -122,42 +198,18 @@ export class ApiService {
       document_name: document.displayName || document.documentFileName,
       document_source: document.documentSource || 'unknown'
     });
-
-    let filename;
-    if (document.documentSource === 'COMMENT') {
-      filename = document.internalOriginalName;
-    } else {
-      filename = document.documentFileName;
-    }
-    this.logger.debug('Opening document', 'ApiService', { document });
-    let safeName = '';
-    try {
-      safeName = this.utils.encodeString(filename || '', true);
-    } catch (e) {
-      this.logger.warn('Failed to encode document filename', 'ApiService', e);
-    }
-    this.logger.debug('Opening document with safe name', 'ApiService', { safeName });
-    window.open('/api/public/document/' + document._id + '/download/' + safeName, '_blank');
+    window.open(this.getDocumentUrl(document), '_blank');
   }
 
-  private async downloadResource(id: string): Promise<Blob> {
-    const queryString = `document/${id}/download`;
-    const blob = await this.http.get<Blob>(this.apiPath + '/' + queryString, { responseType: 'blob' as 'json' }).toPromise();
-    if (!blob) {
-      throw new Error('Failed to download document');
-    }
-    return blob;
-  }
-
-  getItem(_id: string, schema: string): Observable<SearchResults[]> {
-    const queryString = `search?dataset=Item&_id=${_id}&_schemaName=${schema}`;
-    return this.http.get<SearchResults[]>(`${this.apiPath}/${queryString}`, {});
+  /** The demi-search download URL for a document; also usable as an anchor href. */
+  getDocumentUrl(document: { _id: string }): string {
+    return documentDownloadUrl(this.searchPath, document._id);
   }
 
   //
   // Searching
   //
-  searchKeywords(keys: string, dataset: string, fields: any[], pageNum: number, pageSize: number, projectLegislation = '', sortBy: string | null = null, queryModifier: Record<string, string> = {}, populate = false, secondarySort: string | null = null, filter: Record<string, string> = {}, fuzzy = false): Observable<SearchResults[]> {
+  searchKeywords(keys: string, dataset: string, fields: any[], pageNum: number | null, pageSize: number | null, projectLegislation = '', sortBy: string | null = null, queryModifier: Record<string, string> = {}, populate = false, secondarySort: string | null = null, filter: Record<string, string> = {}, fuzzy = false): Observable<SearchResults[]> {
     this.logger.debug(`API.searchKeywords called with keys: ${keys}`, 'ApiService', { filter });
     
     projectLegislation = (projectLegislation === '') ? 'default' : projectLegislation;
@@ -168,7 +220,7 @@ export class ApiService {
       });
     }
     if (keys) {
-      queryString += `&keywords=${keys}`;
+      queryString += `&keywords=${encodeURIComponent(keys)}`;
     }
     if (pageNum !== null) { queryString += `&pageNum=${pageNum - 1}`; }
     if (pageSize !== null) { queryString += `&pageSize=${pageSize}`; }
@@ -192,49 +244,46 @@ export class ApiService {
         queryString += `&and[${key}]=${safeItem}`;
       });
     });
-    queryString += `&fields=${this.buildValues(fields)}`;
+    // No `&fields=`: demi-search accepts it but reads nobody's; `fields` pairs are emitted above.
     queryString += '&fuzzy=' + fuzzy;
-    
-    const base = ApiService.AZURE_DATASETS.has(dataset) ? this.searchPath : this.apiPath;
-    const fullUrl = `${base}/${queryString}`;
+
+    const fullUrl = `${this.searchPath}/${queryString}`;
     this.logger.trace(`API call URL: ${fullUrl}`, 'ApiService');
-    
+
     return this.http.get<SearchResults[]>(fullUrl, {});
-    // if (dataset === 'Project') {
-    //   searchResults = searchResults.currentProjectData
-    // }
   }
 
   //
   // Projects
   //
   getCountProjects(): Observable<number> {
-    const queryString = `project`;
-    return this.http.head<HttpResponse<object>>(`${this.apiPath}/${queryString}`, { observe: 'response' })
-      .pipe(
-        map(res => {
-          // retrieve the count from the response headers
-          return parseInt(res.headers.get('x-total-count') || '0', 10);
-        })
-      );
+    return this.searchKeywords('', 'Project', [], 1, 1).pipe(map(envelope => totalFrom(envelope) ?? 0));
   }
 
-  //
-  // Using Search Service Instead
-  //
-  // getProjects(pageNum: number, pageSize: number, sortBy: string, populate: Boolean = true):
+  /** The DEMI project document, or null when DEMI has no record for it. */
+  private getDemiProject(id: string): Observable<any | null> {
+    return this.http.get<any>(`${this.demiProjectsPath}/${encodeURIComponent(id)}`).pipe(
+      catchError(error => error?.status === 404 ? of(null) : throwError(() => error))
+    );
+  }
 
-   //
-  // Using Search Service Instead
-  //
-  // getProject(id: string, cpStart: string, cpEnd: string): Observable<Project[]>
-
+  /**
+   * One page of a project's pinned Nations in the `[{total_items, results}]` envelope pins.service
+   * reads. DEMI carries them on the project document in stored order, so sort and page here.
+   */
   getProjectPins(id: string, pageNum: number, pageSize: number, sortBy: any): Observable<Org> {
-    let queryString = `project/${id}/pin`;
-    if (pageNum !== null) { queryString += `?pageNum=${pageNum - 1}`; }
-    if (pageSize !== null) { queryString += `&pageSize=${pageSize}`; }
-    if (sortBy !== '' && sortBy !== null) { queryString += `&sortBy=${sortBy}`; }
-    return this.http.get<any>(`${this.apiPath}/${queryString}`, {});
+    return this.getDemiProject(id).pipe(
+      map(doc => {
+        const pins: any[] = [...(doc?.pins ?? [])];
+        if (sortBy === '+name' || sortBy === '-name') {
+          const direction = sortBy === '-name' ? -1 : 1;
+          pins.sort((a, b) => direction * (a.name ?? '').localeCompare(b.name ?? ''));
+        }
+        const from = pageNum !== null && pageSize !== null ? (pageNum - 1) * pageSize : 0;
+        const page = pageSize !== null ? pins.slice(from, from + pageSize) : pins;
+        return [{ total_items: pins.length, results: page }] as unknown as Org;
+      })
+    );
   }
 
   // CAC
@@ -250,113 +299,51 @@ export class ApiService {
 
   // Organizations
 
+  /** Every organization of one company type, paged until a short page. */
   getOrgsByCompanyType(type: string): Observable<Org[]> {
-    const fields = [
-      'name'
-    ];
-
-    const queryString = `organization?companyType=${type}&sortBy=+name&fields=${this.buildValues(fields)}`;
-    return this.http.get<Org[]>(`${this.apiPath}/${queryString}`, {});
-  }
-
-  getProject(id: string, cpStart: string | null, cpEnd: string | null): Observable<Project[]> {
-    const fields = [	  // Using Search Service Instead
-      'CEAAInvolvement',	  //
-      'CELead',	  // getProject(id: string, cpStart: string, cpEnd: string): Observable<Project[]>
-      'CELeadEmail',
-      'CELeadPhone',
-      'centroid',
-      'description',
-      'eacDecision',
-      'location',
-      'name',
-      'projectLeadId',
-      'projectLead',
-      'projectLeadEmail',
-      'projectLeadPhone',
-      'proponent',
-      'region',
-      'responsibleEPDId',
-      'responsibleEPD',
-      'responsibleEPDEmail',
-      'responsibleEPDPhone',
-      'type',
-      'legislation',
-      'addedBy',
-      'build',
-      'CEAALink',
-      'code',
-      'commodity',
-      'currentPhaseName',
-      'dateAdded',
-      'dateCommentsClosed',
-      'commentPeriodStatus',
-      'dateUpdated',
-      'decisionDate',
-      'duration',
-      'eaoMember',
-      'epicProjectID',
-      'fedElecDist',
-      'isTermsAgreed',
-      'overallProgress',
-      'primaryContact',
-      'proMember',
-      'provElecDist',
-      'sector',
-      'shortName',
-      'status',
-      'legislation',
-      'substitution',
-      'featuredDocuments',
-      'updatedBy',
-      'read',
-      'write',
-      'delete',
-      'featuredDocuments',
-      'projectCAC',
-      'projectCACPublished',
-      'cacEmail'
-    ];
-    let queryString = `project/${id}?populate=true`;
-    if (cpStart !== null) { queryString += `&cpStart[since]=${cpStart}`; }
-    if (cpEnd !== null) { queryString += `&cpEnd[until]=${cpEnd}`; }
-    queryString += `&fields=${this.buildValues(fields)}`;
-    return this.http.get<Project[]>(`${this.apiPath}/${queryString}`, {});
+    const page = (pageNum: number) =>
+      this.searchKeywords('', 'Organization', [], pageNum, ApiService.ORGS_PAGE_SIZE, '', '+name', { companyType: type })
+        .pipe(map(envelope => ({ pageNum, rows: rowsFrom<Org>(envelope) })));
+    return page(1).pipe(
+      expand(({ pageNum, rows }) => {
+        if (rows.length < ApiService.ORGS_PAGE_SIZE) { return EMPTY; }
+        if (pageNum >= ApiService.ORGS_PAGE_CAP) {
+          this.logger.warn(`Stopped reading ${type} organizations at the ${pageNum}-page cap`, 'ApiService');
+          return EMPTY;
+        }
+        return page(pageNum + 1);
+      }),
+      reduce((orgs: Org[], { rows }) => orgs.concat(rows), [])
+    );
   }
 
   /**
-   * DEMI's proponent name for one project, looked up by its Eagle id (`and[_id]` maps to
-   * `legacyEagleId` in the DEMI project index). DEMI merges Track in and lets Track win, which is
-   * what the project list already shows. Emits null, never an error, when there is nothing usable:
-   * search kill switch on, request failed or slow, no row, or only DEMI's placeholder name.
+   * The one-element array eagle-api's `/project/<id>` answered, built from `GET /demi-projects/<id>`.
+   * Empty when DEMI has no such project; the banner periods are read separately and windowed here.
    */
-  getDemiProponentName(eagleId: string): Observable<string | null> {
-    // Kill switch: searchPath is eagle-api itself, which would only echo the Mongo value.
-    if (this.searchPath === this.apiPath) {
-      return of(null);
-    }
-    return this.searchKeywords('', 'Project', [], 1, 1, '', null, {}, false, null, { _id: eagleId }).pipe(
-      timeout(ApiService.DEMI_PROPONENT_TIMEOUT_MS),
-      map((res: any) => {
-        const row = res?.[0]?.searchResults?.[0];
-        // The _id check stops a dropped filter from answering with some other project's row.
-        if (!row || row._id !== eagleId) { return null; }
-        const name = typeof row.proponent?.name === 'string' ? row.proponent.name.trim() : '';
-        return name && name !== ApiService.DEMI_PROPONENT_PLACEHOLDER ? name : null;
-      }),
-      catchError(error => {
-        this.logger.warn(`DEMI proponent lookup failed for project ${eagleId}, keeping the Eagle value`, 'ApiService', error);
-        return of(null);
+  getProject(id: string, cpStart: string | null, cpEnd: string | null): Observable<Project[]> {
+    return this.getDemiProject(id).pipe(
+      mergeMap(doc => {
+        if (!doc) { return of([] as Project[]); }
+        // A banner that cannot be read is a missing banner, never a missing project.
+        const periods$ = cpStart !== null && cpEnd !== null
+          ? this.getPeriodsByProjId(id).pipe(catchError(error => {
+            this.logger.warn('Banner comment period read failed, showing no banner', 'ApiService', error);
+            return of([] as CommentPeriod[]);
+          }))
+          : of([] as CommentPeriod[]);
+        const lists$ = LIST_REF_FIELDS.some(field => typeof doc[field] === 'string')
+          ? this.configService.lists.pipe(take(1))
+          : of([]);
+        return forkJoin([periods$, lists$]).pipe(
+          map(([periods, lists]) => [demiProjectToEagle(doc, periodsInWindow(periods, cpStart, cpEnd), lists ?? [])] as Project[])
+        );
       })
     );
   }
 
-  private static readonly DEMI_PROPONENT_TIMEOUT_MS = 3000;
-  // DEMI's search emits this when the project has no proponent (eagle-demi search.js).
-  private static readonly DEMI_PROPONENT_PLACEHOLDER = 'Proponent Organization';
-
   //
-  // Decisions
+  // Decisions: still eagle-api, demi-search has no Decision dataset.
   //
   getDecisionByAppId(appId: string): Observable<Decision[]> {
     const fields = [
@@ -383,92 +370,62 @@ export class ApiService {
   //
   // Comment Periods
   //
-  getPeriodsByProjId(projId: string): Observable<object> {
-    const fields = [
-      'project',
-      'dateStarted',
-      'dateCompleted',
-      'instructions',
-      'isMet',
-      'metURL',
-      'informationLabel',
-    ];
-    const queryString = `commentperiod?project=${projId}&sortBy=-dateStarted&fields=${this.buildValues(fields)}`;
-    return this.http.get<object>(`${this.apiPath}/${queryString}`, {});
+  /** Every comment period of one project, newest first. A project has single-digit periods. */
+  getPeriodsByProjId(projId: string): Observable<CommentPeriod[]> {
+    return this.searchKeywords('', 'CommentPeriod', [], 1, ApiService.ALL_ROWS_PAGE_SIZE, '', '-dateStarted', { project: projId })
+      .pipe(map(envelope => rowsFrom(envelope).map(period => pickFields<CommentPeriod>(period, ApiService.PERIOD_LIST_FIELDS))));
   }
 
+  /** One comment period, filtered as `and[_id]`: a bare `_id` is not read as a filter. */
   getPeriod(id: string): Observable<CommentPeriod[]> {
-    const fields = [
-      'additionalText',
-      'dateCompleted',
-      'dateStarted',
-      'informationLabel',
-      'instructions',
-      'openHouses',
-      'project',
-      'relatedDocuments',
-      'commentTip'
-    ];
-    const queryString = 'commentperiod/' + id + '?fields=' + this.buildValues(fields);
-    return this.http.get<CommentPeriod[]>(`${this.apiPath}/${queryString}`, {});
+    return this.searchKeywords('', 'CommentPeriod', [], 1, 1, '', null, { _id: id })
+      .pipe(map(envelope => rowsFrom(envelope).map(period => pickFields<CommentPeriod>(period, ApiService.PERIOD_DETAIL_FIELDS))));
   }
+
+  // DEMI's visibility catalog decides what is public; these projections only trim the object.
+  // The full record also carries `additionalText`, which the cards would show in place of the description.
+  private static readonly PERIOD_LIST_FIELDS = [
+    '_id',
+    'project',
+    'dateStarted',
+    'dateCompleted',
+    'instructions',
+    'isMet',
+    'metURL',
+    'metBannerImageUrl',
+    'informationLabel',
+  ];
+
+  private static readonly PERIOD_DETAIL_FIELDS = [
+    '_id',
+    'additionalText',
+    'dateCompleted',
+    'dateStarted',
+    'informationLabel',
+    'instructions',
+    'openHouses',
+    'project',
+    'relatedDocuments',
+    'commentTip'
+  ];
 
   //
   // Comments
   //
   getCountCommentsById(commentPeriodId: string): Observable<number> {
-    const queryString = `public/comment?period=${commentPeriodId}`;
-    return this.http.head<HttpResponse<object>>(`${this.apiPath}/${queryString}`, { observe: 'response' })
-      .pipe(
-        map(res => {
-          // retrieve the count from the response headers
-          return parseInt(res.headers.get('x-total-count') || '0', 10);
-        })
-      );
+    return this.searchKeywords('', 'Comment', [], 1, 1, '', null, { period: commentPeriodId })
+      .pipe(map(envelope => totalFrom(envelope) ?? 0));
   }
 
-  getCommentsByPeriodId(pageNum: number | null, pageSize: number | null, getCount: boolean, periodId: string): Observable<object> {
-    const fields = [
-      'author',
-      'comment',
-      'documents',
-      'commentId',
-      'dateAdded',
-      'dateUpdated',
-      'isAnonymous',
-      'location',
-      'period',
-      'read',
-      'write',
-      'delete'
-    ];
-    // TODO: May want to pass this as a parameter in the future.
-    const sort = '-commentId';
-
-    let queryString = 'public/comment?period=' + periodId + '&fields=' + this.buildValues(fields) + '&';
-    if (sort !== null) { queryString += `sortBy=${sort}&`; }
-    if (pageNum !== null) { queryString += `pageNum=${pageNum}&`; }
-    if (pageSize !== null) { queryString += `pageSize=${pageSize}&`; }
-    if (getCount !== null) { queryString += `count=${getCount}&`; }
-    return this.http.get<object>(`${this.apiPath}/${queryString}`, { observe: 'response' });
+  /** One page of a period's comments, newest first. `pageNum` is zero-based here. */
+  getCommentsByPeriodId(pageNum: number | null, pageSize: number | null, periodId: string): Observable<CommentPage> {
+    return this.searchKeywords('', 'Comment', [], pageNum === null ? null : pageNum + 1, pageSize, '', '-commentId', { period: periodId })
+      .pipe(map(envelope => ({ comments: rowsFrom(envelope), totalCount: totalFrom(envelope) })));
   }
 
-  getComment(id: string): Observable<any> {
-    const fields = [
-      'author',
-      'comment',
-      'commentId',
-      'dateAdded',
-      'dateUpdated',
-      'isAnonymous',
-      'location',
-      'period',
-      'read',
-      'write',
-      'delete'
-    ];
-    const queryString = 'public/comment/' + id + '?fields=' + this.buildValues(fields);
-    return this.http.get<any>(`${this.apiPath}/${queryString}`, { observe: 'response' });
+  getComment(id: string): Observable<Comment[]> {
+    return this.searchKeywords('', 'Comment', [], 1, 1, '', null, { _id: id })
+      .pipe(map(envelope => rowsFrom<Comment>(envelope)));
   }
 
   addComment(comment: Comment): Observable<Comment> {
@@ -523,8 +480,7 @@ export class ApiService {
   }
 
   getDocument(id: string): Observable<Document[]> {
-    const queryString = 'document/' + id + '?fields=internalOriginalName|documentSource';
-    return this.http.get<Document[]>(`${this.apiPath}/${queryString}`, {});
+    return this.getDocumentsByMultiId([id]);
   }
 
   getDocumentsByMultiId(ids: string[]): Observable<Document[]> {
@@ -553,8 +509,23 @@ export class ApiService {
       'isPublished',
       'isFeatured'
     ];
-    const queryString = `document?docIds=${this.buildValues(ids)}&fields=${this.buildValues(fields)}`;
-    return this.http.get<Document[]>(`${this.apiPath}/${queryString}`, {});
+    if (ids.length === 0) { return of([]); }
+    const batches: string[][] = [];
+    for (let from = 0; from < ids.length; from += ApiService.DOC_IDS_PER_REQUEST) {
+      batches.push(ids.slice(from, from + ApiService.DOC_IDS_PER_REQUEST));
+    }
+    const position = new Map(ids.map((id, index) => [id, index]));
+    // demi-search reads `docIds` bare and pipe-separated.
+    return forkJoin(batches.map(batch =>
+      this.searchKeywords('', 'Document', [{ name: 'docIds', value: this.buildValues(batch) }], 1, batch.length)
+        .pipe(map(envelope => rowsFrom<any>(envelope)))
+    )).pipe(map(pages => pages.flat()
+      .sort((a, b) => (position.get(a._id) ?? Infinity) - (position.get(b._id) ?? Infinity))
+      .map(row => pickFields<Document>({
+        ...row,
+        // The index holds no `internalOriginalName`, the only label the comment attachment list renders.
+        internalOriginalName: row.internalOriginalName ?? row.documentFileName ?? row.displayName,
+      }, ['_id', ...fields]))));
   }
 
   uploadDocument(formData: FormData): Observable<Document> {
@@ -568,9 +539,10 @@ export class ApiService {
     return this.http.post<Document>(`${this.apiPath}/${queryString}`, formData, {});
   }
 
+  /** The pinned and newest updates for the home page strip. */
   getTopNewsItems(): Observable<any[]> {
-    const queryString = 'public/recentActivity?top=true';
-    return this.http.get<any[]>(`${this.apiPath}/${queryString}`, {});
+    return this.http.get<SearchResults[]>(`${this.searchPath}/search?dataset=RecentActivity&top=true`, {})
+      .pipe(map(envelope => rowsFrom<any>(envelope)));
   }
 
   //

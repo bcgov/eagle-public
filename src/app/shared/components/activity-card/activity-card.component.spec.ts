@@ -1,7 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { TestBed } from '@angular/core/testing';
+import { ChangeDetectorRef } from '@angular/core';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { AnalyticsService } from 'app/services/analytics/analytics.service';
+import { ConfigService } from 'app/services/config.service';
 import { ActivityCardComponent } from './activity-card.component';
 import { TableObject } from 'app/shared/components/table-template/table-object';
 
@@ -79,25 +81,24 @@ describe('ActivityCardComponent', () => {
     expect(component.showProjectInfoEffective).toBe(true);
   });
 
-  // ─── getSafeHtml ──────────────────────────────────────────────────────────
+  // ─── contentHtml ──────────────────────────────────────────────────────────
 
-  it('getSafeHtml strips Word HTML via sanitizeWordHtml', () => {
-    const wordHtml = '<p class="MsoNormal" style="margin: 0;">Hello world.</p>';
-    const result = component.getSafeHtml(wordHtml);
-    // sanitizeWordHtml removes class and style; result is SafeHtml wrapping '<p>Hello world.</p>'
-    expect(String(result)).not.toContain('MsoNormal');
-    expect(String(result)).not.toContain('margin');
+  it('contentHtml strips Word HTML via sanitizeWordHtml', () => {
+    component.rowData = { content: '<p class="MsoNormal" style="margin: 0;">Hello world.</p>' };
+    expect(component.contentHtml).not.toContain('MsoNormal');
+    expect(component.contentHtml).not.toContain('margin');
   });
 
-  it('getSafeHtml handles null/undefined content', () => {
-    expect(() => component.getSafeHtml(null as any)).not.toThrow();
-    expect(() => component.getSafeHtml(undefined as any)).not.toThrow();
+  it('contentHtml is empty for a row with no content', () => {
+    component.rowData = null;
+    expect(component.contentHtml).toBe('');
+    component.rowData = {};
+    expect(component.contentHtml).toBe('');
   });
 
-  it('getSafeHtml preserves clean HTML', () => {
-    const clean = '<p>Clean paragraph.</p>';
-    const result = component.getSafeHtml(clean);
-    expect(String(result)).toContain('Clean paragraph.');
+  it('contentHtml preserves clean HTML', () => {
+    component.rowData = { content: '<p>Clean paragraph.</p>' };
+    expect(component.contentHtml).toContain('Clean paragraph.');
   });
 
   // ─── isSingleDoc ──────────────────────────────────────────────────────────
@@ -154,5 +155,54 @@ describe('ActivityCardComponent', () => {
 
     expect(openSpy).toHaveBeenCalledWith('https://engage.example.com', '_blank');
     openSpy.mockRestore();
+  });
+});
+
+/** Old updates link eagle-api document routes, which no longer serve public reads. */
+describe('ActivityCardComponent legacy document links', () => {
+  const ID = '5c8a7b6d5e4f3a2b1c0d9e8f';
+  const DEMI = `/demi-search/documents/${ID}/download?redirect=1`;
+
+  function create(rowData: any): ComponentFixture<ActivityCardComponent> {
+    TestBed.configureTestingModule({
+      imports: [ActivityCardComponent],
+      providers: [provideRouter([]), { provide: AnalyticsService, useValue: mockAnalyticsService }]
+    });
+    const fixture = TestBed.createComponent(ActivityCardComponent);
+    fixture.componentRef.setInput('rowData', rowData);
+    fixture.detectChanges();
+    return fixture;
+  }
+
+  function render(rowData: any): HTMLElement {
+    return create(rowData).nativeElement;
+  }
+
+  it('points the document button at the DEMI download', () => {
+    const el = render({ headline: 'Update', documentUrl: `/api/public/document/${ID}/download/r.pdf` });
+    expect(el.querySelector('a.btn')?.getAttribute('href')).toBe(DEMI);
+  });
+
+  it('points a link in the update text at the DEMI download', () => {
+    const el = render({ headline: 'Update', content: `<p>See <a href="/api/document/${ID}/fetch">the report</a></p>` });
+    expect(el.querySelector('p a')?.getAttribute('href')).toBe(DEMI);
+  });
+
+  it('drops script and event handler markup from the update text', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const el = render({ headline: 'Update', content: '<p>Hi<script>alert(1)</script><img src="x.png" onerror="alert(2)"></p>' });
+    expect(el.querySelector('script')).toBeNull();
+    expect(el.querySelector('p img')?.hasAttribute('onerror')).toBe(false);
+    expect(el.querySelector('p')?.textContent).toBe('Hi');
+    warn.mockRestore();
+  });
+
+  it('rewrites the update text once per row, not on every check', () => {
+    const fixture = create({ headline: 'Update', content: `<p><a href="/api/document/${ID}/fetch">r</a></p>` });
+    const searchPath = vi.spyOn(TestBed.inject(ConfigService), 'getSearchApiPath');
+    fixture.detectChanges();
+    fixture.debugElement.injector.get(ChangeDetectorRef).markForCheck();
+    fixture.detectChanges();
+    expect(searchPath).not.toHaveBeenCalled();
   });
 });

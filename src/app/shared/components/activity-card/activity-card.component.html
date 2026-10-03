@@ -16,7 +16,7 @@
     <small class="d-block text-muted mb-3">{{ rowData?.dateAdded | date: 'longDate' }}</small>
   }
 
-  <div class="mb-3 lh-base" [innerHTML]="getSafeHtml(rowData?.content)"></div>
+  <div class="mb-3 lh-base" [innerHTML]="contentHtml"></div>
 
   <div class="d-flex flex-wrap gap-2">
     @if (rowData?.type === 'Project Notification News') {
@@ -41,14 +41,14 @@
     @if (isSingleDoc(rowData?.documentUrl) && !rowData?.documentUrl?.includes('docs?folder')) {
       @if (rowData?.notificationName && rowData?.type === 'Project Notification Public Comment Period') {
         <a class="btn btn-sm btn-outline-primary"
-           [href]="rowData.documentUrl"
+           [href]="documentHref(rowData.documentUrl)"
            target="_blank"
            rel="noopener">
           View Project Notification Public Comment Period
         </a>
       } @else if (!rowData?.notificationName) {
         <a class="btn btn-sm btn-outline-primary"
-           [href]="rowData.documentUrl"
+           [href]="documentHref(rowData.documentUrl)"
            target="_blank"
            rel="noopener">
           View Document(s)

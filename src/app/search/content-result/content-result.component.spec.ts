@@ -1,12 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
 import { Utils } from 'app/shared/utils/utils';
 import { ContentResultComponent } from './content-result.component';
 
 function card(data: any) {
   // Reset first: TestBed refuses to be reconfigured once instantiated, and each case builds its own.
   TestBed.resetTestingModule();
-  TestBed.configureTestingModule({ providers: [Utils] });
+  TestBed.configureTestingModule({ providers: [Utils, provideHttpClient()] });
   const fixture = TestBed.createComponent(ContentResultComponent);
   fixture.componentRef.setInput('result', data);
   fixture.detectChanges();
@@ -18,7 +19,7 @@ describe('content result card', () => {
     // pageNumber is a passage sequence number, not a PDF page, so a #page=N fragment built from it
     // points somewhere arbitrary. Measured: a 63-chunk document carries 51 distinct values.
     const c = card({ _id: 'doc1', documentName: 'Fish and Fish Habitat.pdf' }).componentInstance;
-    expect(c.documentUrl()).toContain('/api/public/document/doc1/download/');
+    expect(c.documentUrl()).toBe('/demi-search/documents/doc1/download?redirect=1');
     expect(c.documentUrl().includes('#')).toBe(false);
   });
 
