@@ -11,6 +11,8 @@ import { SearchParamObject, SearchService } from './search.service';
 })
 export class TableService {
   private tables = new Map<string, WritableSignal<any>>();
+  // Latest request number per table, so a slower earlier response cannot overwrite a newer one.
+  private latestRequest = new Map<string, number>();
   private searchService = inject(SearchService);
 
   /**
@@ -28,14 +30,20 @@ export class TableService {
    * Note: Loading state is managed by SearchService since it makes the actual API calls.
    */
   async fetchData(searchParamObject: SearchParamObject): Promise<void> {
-    const tableSignal = this.getTableSignal(searchParamObject.tableId);
-    
+    const tableId = searchParamObject.tableId;
+    const tableSignal = this.getTableSignal(tableId);
+    const request = (this.latestRequest.get(tableId) ?? 0) + 1;
+    this.latestRequest.set(tableId, request);
+    const isLatest = () => this.latestRequest.get(tableId) === request;
+
     try {
       const res = await this.searchService.fetchData(searchParamObject);
+      if (!isLatest()) { return; }
       // Always trigger an update by creating a new object reference
       // This ensures subscribers are notified even if data is identical
       tableSignal.set({ ...res, _timestamp: Date.now() });
     } catch (error) {
+      if (!isLatest()) { return; }
       // On error, still update signal to show empty state
       tableSignal.set({ data: [], totalSearchCount: 0, error: true, _timestamp: Date.now() });
       throw error;

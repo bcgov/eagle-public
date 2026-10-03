@@ -93,6 +93,8 @@ export class SearchFilterTemplateComponent implements OnInit, AfterViewInit, OnD
 
   private alive = true;
   private skipNextSearch = false;
+  // Filter values from the URL, kept so a rebuild after the filters load still preselects them.
+  private urlValues: Record<string, any> = {};
   private valueChangesSubscription?: any;
 
   constructor() {
@@ -105,7 +107,7 @@ export class SearchFilterTemplateComponent implements OnInit, AfterViewInit, OnD
     effect(() => {
       const currentFilters = this.filters();
       if (currentFilters && currentFilters.length > 0 && this.advancedFilters()) {
-        this.buildFormComponents();
+        this.buildFormComponents(this.urlValues);
       }
     });
   }
@@ -115,13 +117,12 @@ export class SearchFilterTemplateComponent implements OnInit, AfterViewInit, OnD
   }
 
   ngOnInit() {
-    const urlValues: Record<string, any> = {}; // Storage for the URL params
-
     // ensure we parse through values from the URL and preselect anything
     // that needs pre-selecting
 
     this.route.queryParamMap.pipe(takeWhile(() => this.alive)).subscribe(data => {
       const filterParams = { ...(data as any)['params'] };
+      const urlValues: Record<string, any> = {};
       delete filterParams.currentPage;
       delete filterParams.pageSize;
       delete filterParams.sortBy;
@@ -144,6 +145,7 @@ export class SearchFilterTemplateComponent implements OnInit, AfterViewInit, OnD
           urlValues[key] = filterParams[key];
         }
       }
+      this.urlValues = urlValues;
       
       // Update hasActiveFilters whenever URL params change
       if (this.formGroup) {
@@ -157,7 +159,7 @@ export class SearchFilterTemplateComponent implements OnInit, AfterViewInit, OnD
     }
 
     // build formGroup based on provided filters
-    this.buildFormComponents(urlValues);
+    this.buildFormComponents(this.urlValues);
   }
 
   /**

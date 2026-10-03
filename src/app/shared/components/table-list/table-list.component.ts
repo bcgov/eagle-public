@@ -10,6 +10,7 @@ import { TableTemplate } from '../table-template/table-template';
 import { FilterObject } from '../search-filter-template/filter-object';
 import { ITableMessage } from '../table-template/table-row-component';
 import { TableService } from 'app/services/table.service';
+import { SearchQueryLimit, SearchTooLongComponent } from 'app/shared/utils/search-query-limit';
 import { SearchParamObject } from 'app/services/search.service';
 import { TableTemplateComponent } from '../table-template/table-template.component';
 import { SearchFilterTemplateComponent } from '../search-filter-template/search-filter-template.component';
@@ -29,7 +30,8 @@ import { LoadingStateService } from 'app/services/loading-state.service';
     RouterLinkActive,
     TableTemplateComponent,
     SearchFilterTemplateComponent,
-    HeroBannerComponent
+    HeroBannerComponent,
+    SearchTooLongComponent
 ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true
@@ -43,11 +45,13 @@ export class TableListComponent implements OnInit, OnDestroy {
   private tableService = inject(TableService);
   public loadingState = inject(LoadingStateService);
   private injector = inject(Injector);
+  private searchQueryLimit = inject(SearchQueryLimit);
 
   // Signals for component state
   readonly showAdvancedFilters = signal(false);
   readonly filters = signal<FilterObject[]>([]);
   readonly tableData = signal<TableObject>(new TableObject({}));
+  readonly searchTooLong = signal(false);
   
   // Store filter data to pass to table rows
   private filterData: any = null;
@@ -174,7 +178,7 @@ export class TableListComponent implements OnInit, OnDestroy {
     const allFilterKeys = [...cfg.filterList, ...cfg.dateFilterList];
     const filters = this.tableTemplateUtils.getFiltersFromParams(params, allFilterKeys);
 
-    this.tableService.fetchData(new SearchParamObject(
+    this.searchTooLong.set(!this.searchQueryLimit.fetchIfFits(new SearchParamObject(
       cfg.tableId,
       params['keywords'] || '',
       cfg.datasetType,
@@ -186,7 +190,7 @@ export class TableListComponent implements OnInit, OnDestroy {
       true,
       '',
       filters
-    ));
+    )));
   }
 
   private hasFilterParams(params: Params): boolean {

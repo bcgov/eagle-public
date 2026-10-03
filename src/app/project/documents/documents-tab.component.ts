@@ -16,12 +16,12 @@ import { TableTemplateComponent } from '../../shared/components/table-template/t
 import { SearchFilterTemplateComponent } from '../../shared/components/search-filter-template/search-filter-template.component';
 import { LoggingService } from '../../services/logging.service';
 import { AnalyticsService } from '../../services/analytics/analytics.service';
-import { SearchQueryLimit, TOO_MANY_FILTERS_MESSAGE } from '../../shared/utils/search-query-limit';
+import { SearchQueryLimit, SearchTooLongComponent } from '../../shared/utils/search-query-limit';
 
 @Component({
   selector: 'app-documents',
   templateUrl: './documents-tab.component.html',
-  imports: [TableTemplateComponent, SearchFilterTemplateComponent],
+  imports: [TableTemplateComponent, SearchFilterTemplateComponent, SearchTooLongComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true
 })
@@ -52,8 +52,7 @@ export class DocumentsTabComponent implements OnDestroy {
   public queryParams: Params = {};
   public readonly loading = this.loadingState.getOperationState('table-documentsTab');
   public readonly showAdvancedFilters = signal(false);
-  public readonly tooManyFilters = signal(false);
-  public readonly tooManyFiltersMessage = TOO_MANY_FILTERS_MESSAGE;
+  public readonly searchTooLong = signal(false);
   public readonly filters = signal<FilterObject[]>([]);
   public readonly tableData = signal<TableObject>(new TableObject({ 
     component: DocumentTableRowsComponent,
@@ -194,7 +193,7 @@ export class DocumentsTabComponent implements OnDestroy {
         updatedTableData.sortBy.includes('displayName') ? '' : '+displayName',
         filters
       );
-      this.tooManyFilters.set(!this.searchQueryLimit.fetchIfFits(search));
+      this.searchTooLong.set(!this.searchQueryLimit.fetchIfFits(search));
     });
   }
 
