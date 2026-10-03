@@ -1,6 +1,0 @@
-.material-icons.new-tab-hint__icon {
-  /* inline-block opens a line break before the icon; inline keeps it on the last word's line */
-  display: inline;
-  font-size: var(--icons-size-small);
-  vertical-align: middle;
-}

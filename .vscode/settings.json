@@ -1,10 +1,13 @@
 {
   "typescript.tsdk": "node_modules/typescript/lib",
   "typescript.enablePromptUseWorkspaceTsdk": true,
-  "[typescript]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  "angular.enable-strict-mode-prompt": false,
+  "angular.forceStrictTemplates": true,
+  "angular.log": "off",
+  "[html]": {
+    "editor.defaultFormatter": "angular.ng-template"
   },
-  "[typescriptreact]": {
+  "[typescript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   }
 }

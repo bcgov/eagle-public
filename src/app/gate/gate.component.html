@@ -1,0 +1,27 @@
+<section class="container static-content">
+  <div class="row">
+    <main class="col-md-6">
+      <h1>EPIC is not open to the public yet</h1>
+      <p>Enter the access password to continue.</p>
+      <form (submit)="submit($event)">
+        <div class="form-group">
+          <label for="gate-password" class="control-label">Password</label>
+          <input
+            #password
+            id="gate-password"
+            name="password"
+            class="form-control"
+            type="password"
+            autocomplete="current-password"
+            [attr.aria-invalid]="error() ? 'true' : null"
+            [attr.aria-describedby]="error() ? 'gate-error' : null"
+          />
+        </div>
+        @if (error()) {
+          <p id="gate-error" class="text-danger" role="alert">{{ error() }}</p>
+        }
+        <button type="submit" class="btn btn-primary" [disabled]="busy()">Continue</button>
+      </form>
+    </main>
+  </div>
+</section>

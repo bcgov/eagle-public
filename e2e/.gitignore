@@ -1,6 +1,0 @@
-node_modules/
-playwright-report/
-parity-report/
-test-results/
-screenshots/
-.yarn/install-state.gz

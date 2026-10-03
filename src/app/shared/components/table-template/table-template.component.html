@@ -1,0 +1,90 @@
+<div class="table-template">
+  @if (data.options.showTopControls && (data.options.showPageCountDisplay || shouldShowPagination())) {
+  <div class="row mb-4">
+    <div class="col-12 col-md-6 text-center text-md-start mb-3 mb-md-0">
+      @if (data.options.showPageCountDisplay) {
+      <lib-page-count-display [isHidden]="false" [currentPageNum]="data.currentPage" [currentPageSize]="data.pageSize"
+        [totalItems]="data.totalListItems" id="table-template-page-count-display" />
+      }
+    </div>
+    <div class="col-12 col-md-6 text-center text-md-end">
+      @if (shouldShowPagination()) {
+      <lib-pagination 
+        [currentPage]="data.currentPage"
+        [pageSize]="data.pageSize"
+        [totalItems]="data.totalListItems"
+        [ariaLabel]="'Table pagination'"
+        (pageChange)="onUpdatePageNumber($event)" />
+      }
+    </div>
+  </div>
+  }
+
+  <div [class.table-loading]="loading && data.items.length > 0">
+  @if (loading && data.items.length === 0) {
+    <div class="text-center my-5">
+      <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    </div>
+  } @else if (!loading && data.items.length === 0 && data.totalListItems === 0) {
+    <div class="text-center my-5">
+      <p class="text-muted">No results found</p>
+    </div>
+  } @else {
+  <table class="table" aria-label="table-template">
+    @if (data.options.showHeader) {
+    <thead>
+      <tr>
+        @for (entry of data.columns; track entry.value) {
+        <th tabindex="0" [attr.aria-label]="'Column header ' + entry.name + (!entry.nosort ? ' sortable' : '')"
+          id="table-template-header" class="project-table__name-col"
+          (keyup.enter)="!entry.nosort && onSort(entry.value!)" (click)="!entry.nosort && onSort(entry.value!)"
+          [ngClass]="[entry.width, !entry.nosort ? 'sortable' : '']">
+          {{ entry.name }}
+          @if (entry.nosort !== true) {
+          <i class="sort" 
+             [class.sort-asc]="isSortedAsc(entry.value!)"
+             [class.sort-desc]="isSortedDesc(entry.value!)"
+             aria-hidden="true"></i>
+          }
+        </th>
+        }
+      </tr>
+    </thead>
+    }
+
+    <tbody [class.highlight]="!data.options.disableRowHighlight">
+      @for (item of paginatedItems(); track trackByRowId($index, item)) {
+      <ng-container [libTableRow]="item" [tableData]="data" [messageIn]="messageIn" (messageOut)="onMessageOut($event)">
+      </ng-container>
+      }
+    </tbody>
+  </table>
+
+  @if (data.items.length > 0 || !loading) {
+  <div class="table-controls-bottom mt-4">
+    <div class="row">
+      <div class="col-12 col-md-6 text-center text-md-start mb-3 mb-md-0">
+        @if (data.options.showPageSizePicker && data.totalListItems > 10) {
+        <lib-page-size-picker [isHidden]="false" [currentPageSize]="data.pageSize" [sizeOptions]="data.pageSizeOptions"
+          (pageSizeChosen)="onUpdatePageSize($event)" id="table-template-page-size-picker" />
+        }
+      </div>
+      <div class="col-12 col-md-6 text-center text-md-end">
+        @if (shouldShowPagination()) {
+        <lib-pagination 
+          [currentPage]="data.currentPage"
+          [pageSize]="data.pageSize"
+          [totalItems]="data.totalListItems"
+          [ariaLabel]="'Table pagination'"
+          (pageChange)="onUpdatePageNumber($event)" />
+        }
+      </div>
+    </div>
+  </div>
+  }
+  }
+  </div>
+</div>
+

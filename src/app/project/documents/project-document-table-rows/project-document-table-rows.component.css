@@ -1,0 +1,23 @@
+td:hover {
+  cursor: pointer;
+}
+
+.inputCheckBox {
+  cursor: pointer;
+}
+
+.featured-star {
+  color: var(--bs-warning);
+  font-size: 1.5rem;
+}
+
+.un-featured-star {
+  color: var(--bc-gray-medium);
+}
+
+/* Mobile card layout - remove extra styling since it's in global CSS */
+@media (max-width: 768px) {
+  .featured-star {
+    font-size: 1.75rem;
+  }
+}

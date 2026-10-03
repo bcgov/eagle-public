@@ -1,0 +1,30 @@
+/* Project name — blue, bold (matches home page card style) */
+.activity-card__project-name {
+  color: var(--bc-blue);
+  font-weight: var(--bs-font-weight-bold);
+  font-size: var(--bs-font-size-6);
+  margin-bottom: 0.25rem;
+}
+
+/* Headline — muted gray block below project name */
+.activity-card__headline {
+  display: block;
+  color: var(--bc-gray);
+  font-size: var(--bs-font-size-6);
+  margin-bottom: 0;
+}
+
+/* Date column (table mode only) */
+.activity-card__date {
+  white-space: nowrap;
+  vertical-align: top;
+  padding-top: 1.25rem;
+  color: var(--bc-gray);
+  font-size: var(--bs-font-size-6);
+}
+
+/* Card cell — remove default td border, add spacing */
+:host .activity-card {
+  border-bottom: none;
+  padding: 1.25rem 0.75rem;
+}

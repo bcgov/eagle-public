@@ -1,0 +1,140 @@
+
+.form-text {
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+}
+
+.file-upload {
+  position: relative;
+}
+
+.file-upload input {
+  position: relative;
+  opacity: 0;
+  width: 100%;
+  height: 3.5rem;
+  cursor: pointer;
+}
+
+.file-upload input:hover + .file-upload__target,
+.file-upload input:focus + .file-upload__target {
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+.file-upload__target {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  border-radius: 0.4rem;
+  border: 3px dashed var(--bc-gray-border);
+  text-align: center;
+  transition: all ease-out 0.2s;
+}
+
+.file-upload__prompt {
+  margin-top: 0.85rem;
+  display: inline-block;
+  color: var(--bs-primary);
+  font-size: var(--bs-font-size-sm);
+  font-weight: var(--bs-font-weight-bold);
+}
+
+.file-upload__prompt-icon {
+  margin-top: -0.2rem;
+  vertical-align: middle;
+}
+
+.file-upload__prompt strong {
+  color: var(--bs-primary);
+}
+
+.file-upload__prompt-msg {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .file-upload input {
+    height: 5rem;
+  }
+
+  .file-upload__prompt {
+    margin-top: 1.65rem;
+  }
+
+  .file-upload__prompt-msg {
+    display: inline;
+  }
+}
+
+/* Document List */
+.doc-list {
+  margin-top: 1rem;
+  margin-bottom: 0;
+  padding: 0;
+}
+
+.doc-list li {
+  display: flex;
+  flex-direction: row;
+  background: var(--table-row-bg);
+}
+
+.doc-list li + li {
+  margin-top: 2px;
+}
+
+.doc-list li:hover {
+  background-color: var(--table-row-hover-bg);
+}
+
+.doc-list .cell {
+  padding: 0.25rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Text Content */
+.doc-list .cell__txt-content {
+  margin-top: 0.5rem;
+  display: inline-block;
+  white-space: nowrap;
+}
+
+/* Icon Column */
+.doc-list .cell.icon {
+  flex: 0 0 auto;
+  padding-left: 0.75rem;
+  padding-right: 0;
+}
+
+.doc-list .cell.icon i {
+  margin-top: 0.5rem;
+  font-size: 1.35rem;
+  color: var(--bc-gray-medium);
+  cursor: default;
+}
+
+/* Name Column */
+.doc-list .cell.name {
+  flex: 1 1 auto;
+  font-size: var(--bs-font-size-sm);
+}
+
+/* Actions Column */
+.doc-list .cell.actions {
+  flex: 0 0 auto;
+}
+
+.dragDropStyling {
+    border-style: dotted;
+    border-color: var(--bc-gray-medium);
+    background-color: rgba(211, 211, 211, 0.48);
+    padding-bottom: 20px;
+    padding-top: 20px;
+}
+.fileInfo {
+    font-size: 10pt;
+}

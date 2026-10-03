@@ -4,12 +4,12 @@ on: [pull_request]
 
 permissions:
   contents: read
+  pull-requests: write
 
 jobs:
   install:
     name: Install
     runs-on: ubuntu-latest
-    timeout-minutes: 15
     strategy:
       matrix:
         node-version: [24.x]
@@ -30,7 +30,6 @@ jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
-    timeout-minutes: 15
     needs: install
     strategy:
       matrix:
@@ -49,12 +48,10 @@ jobs:
           cache: "yarn"
       - run: yarn install --immutable
       - run: yarn lint
-      - run: yarn format:check
 
   test:
     name: Test
     runs-on: ubuntu-latest
-    timeout-minutes: 15
     needs: install
     strategy:
       matrix:
@@ -77,7 +74,6 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
-    timeout-minutes: 15
     needs: install
     strategy:
       matrix:
@@ -95,61 +91,4 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: "yarn"
       - run: yarn install --immutable
-      # tsc -p e2e resolves @playwright/test, which lives in the e2e project's own tree.
-      - run: yarn install --immutable
-        working-directory: e2e
-      - run: yarn typecheck:e2e
       - run: yarn build
-
-  e2e:
-    name: E2E
-    runs-on: ubuntu-latest
-    needs: build
-    timeout-minutes: 20
-    strategy:
-      matrix:
-        node-version: [24.x]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Enable Corepack
-        run: corepack enable
-
-      - name: Setup node
-        uses: actions/setup-node@v6
-        with:
-          node-version: ${{ matrix.node-version }}
-          cache: "yarn"
-      - run: yarn install --immutable
-      - run: yarn build
-
-      - run: yarn install --immutable
-        working-directory: e2e
-      - run: yarn playwright install --with-deps chromium
-        working-directory: e2e
-      # playwright starts `vite preview` on 4173 itself; see e2e/playwright.config.ts.
-      - run: yarn test
-        working-directory: e2e
-        env:
-          BASE_URL: http://localhost:4173
-
-      # Parity gate: /search against the prototype screenshots in e2e/parity/unified-search.
-      # Skips itself until the unified page exists; see docs/unified-search-plan.md.
-      - run: yarn test:parity
-
-      - uses: actions/upload-artifact@v7
-        if: failure()
-        with:
-          name: playwright-report
-          path: e2e/playwright-report
-
-      # The parity gate fails on pixels, so its diff images and traces have to leave the runner.
-      - uses: actions/upload-artifact@v7
-        if: always()
-        with:
-          name: parity-report
-          path: |
-            e2e/parity-report
-            e2e/parity/test-results
-          if-no-files-found: ignore

@@ -1,0 +1,11 @@
+.tab-section .row {
+  @media (max-width: 767px) {
+    display: block;
+  }
+  @media (max-width: 767px) {
+    .row > div {
+      max-width: 100%;
+    }
+  }
+}
+

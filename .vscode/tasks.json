@@ -16,7 +16,26 @@
             "regexp": "(.*?)"
           },
           "endsPattern": {
-            "regexp": "ready in"
+            "regexp": "bundle generation complete"
+          }
+        }
+      }
+    },
+    {
+      "type": "shell",
+      "command": "yarn test",
+      "label": "yarn: test",
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "typescript",
+        "pattern": "$tsc",
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": {
+            "regexp": "(.*?)"
+          },
+          "endsPattern": {
+            "regexp": "bundle generation complete"
           }
         }
       }

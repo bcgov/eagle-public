@@ -1,0 +1,44 @@
+@if (totalPages() > 1) {
+<nav [attr.aria-label]="ariaLabel()">
+  <ul class="pagination justify-content-center justify-content-md-end mb-0">
+    <li class="page-item" [class.disabled]="isPreviousDisabled()">
+      <a class="page-link" 
+         role="button"
+         tabindex="0"
+         (click)="onPageChange(currentPage() - 1)"
+         (keydown.enter)="onPageChange(currentPage() - 1)"
+         (keydown.space)="onPageChange(currentPage() - 1)"
+         aria-label="Previous page">&laquo;</a>
+    </li>
+
+    @for (page of pageNumbers(); track $index) {
+      @if (isEllipsis(page)) {
+        <li class="page-item disabled">
+          <span class="page-link">…</span>
+        </li>
+      } @else {
+        <li class="page-item" [class.active]="page === currentPage()">
+          <a class="page-link"
+             role="button"
+             tabindex="0"
+             (click)="onPageChange(asPageNumber(page))"
+             (keydown.enter)="onPageChange(asPageNumber(page))"
+             (keydown.space)="onPageChange(asPageNumber(page))"
+             [attr.aria-label]="'Go to page ' + page"
+             [attr.aria-current]="page === currentPage() ? 'page' : null">{{ page }}</a>
+        </li>
+      }
+    }
+
+    <li class="page-item" [class.disabled]="isNextDisabled()">
+      <a class="page-link"
+         role="button"
+         tabindex="0"
+         (click)="onPageChange(currentPage() + 1)"
+         (keydown.enter)="onPageChange(currentPage() + 1)"
+         (keydown.space)="onPageChange(currentPage() + 1)"
+         aria-label="Next page">&raquo;</a>
+    </li>
+  </ul>
+</nav>
+}

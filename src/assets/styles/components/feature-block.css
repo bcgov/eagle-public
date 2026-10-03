@@ -1,0 +1,76 @@
+/* Feature Block Component Styles */
+
+.feature-block {
+  display: flex;
+  flex-direction: column;
+  padding: 2rem;
+  background-color: var(--feature-block-bg);
+  color: var(--feature-block-color);
+  border-radius: 0.25rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  height: 100%;
+  transition: box-shadow 0.2s ease-in-out;
+  text-align: center;
+}
+
+.feature-block:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.feature-block__icon {
+  margin-bottom: 1.5rem;
+}
+
+.feature-block__header h3 {
+  font-size: var(--bs-font-size-4);
+  font-weight: var(--bs-font-weight-bold);
+  margin-bottom: 1rem;
+  color: var(--feature-block-color);
+}
+
+.feature-block__body {
+  flex-grow: 1;
+  margin-bottom: 1.5rem;
+}
+
+.feature-block__body p {
+  font-size: var(--bs-font-size-6);
+  line-height: 1.6;
+  color: var(--feature-block-color);
+}
+
+/* Links inside feature blocks need BC Gold for visibility on dark background */
+.feature-block__body a {
+  color: var(--bc-gold);
+  text-decoration: underline;
+}
+
+.feature-block__body a:hover,
+.feature-block__body a:focus {
+  color: var(--bc-gold);
+  text-decoration: none;
+}
+
+.feature-block__footer {
+  margin-top: auto;
+  text-align: center;
+}
+
+/* Feature Cards Container */
+.feature-cards-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  margin-top: 2rem;
+  margin-bottom: 3rem;
+}
+
+@media (max-width: 767px) {
+  .feature-cards-container {
+    grid-template-columns: 1fr;
+  }
+  
+  .feature-block {
+    padding: 1.5rem;
+  }
+}

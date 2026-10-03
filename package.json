@@ -1,25 +1,27 @@
 {
   "name": "eagle-public",
   "version": "0.0.0",
-  "type": "module",
   "scripts": {
-    "start": "vite",
-    "build": "tsc --noEmit && vite build",
-    "preview": "vite preview",
+    "ng": "ng",
+    "start": "ng serve",
+    "build": "ng build",
+    "watch": "ng build --watch --configuration development",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:parity": "yarn --cwd e2e playwright test --config parity/playwright.parity.config.ts",
-    "parity:reference": "yarn --cwd e2e playwright test --config parity/playwright.reference.config.ts",
-    "parity:fixtures": "node e2e/parity/extract-fixtures.mjs",
-    "lint": "eslint .",
-    "typecheck:e2e": "tsc --noEmit -p e2e",
-    "format": "prettier --write \"src/**/*.{ts,tsx,css}\" \"e2e/**/*.ts\" vite.config.ts eslint.config.js",
-    "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\" \"e2e/**/*.ts\" vite.config.ts eslint.config.js"
+    "lint": "ng lint"
   },
   "prettier": {
     "printWidth": 100,
-    "singleQuote": true
+    "singleQuote": true,
+    "overrides": [
+      {
+        "files": "*.html",
+        "options": {
+          "parser": "angular"
+        }
+      }
+    ]
   },
   "private": true,
   "packageManager": "yarn@4.12.0",
@@ -29,42 +31,41 @@
     "yarn": ">=4.0.0"
   },
   "dependencies": {
-    "@bcgov/design-tokens": "5.0.0",
+    "@angular/animations": "^21.0.8",
+    "@angular/cdk": "^21.0.5",
+    "@angular/common": "^21.0.8",
+    "@angular/compiler": "^21.0.8",
+    "@angular/core": "^21.0.8",
+    "@angular/forms": "^21.0.8",
+    "@angular/localize": "^21.0.8",
+    "@angular/platform-browser": "^21.0.8",
+    "@angular/router": "^21.0.8",
     "@digitalspace/eagle-analytics-client": "file:./vendor/eagle-analytics-client",
-    "@microsoft/applicationinsights-web": "^3.4.3",
-    "@tanstack/react-query": "^5",
-    "@vis.gl/react-maplibre": "^8",
-    "bootstrap": "^5",
-    "dompurify": "^3.4.14",
-    "luxon": "^3",
-    "maplibre-gl": "^6",
-    "react": "^19",
-    "react-dom": "^19",
-    "react-router": "^7",
-    "yet-another-react-lightbox": "^3.32.2"
+    "@ng-bootstrap/ng-bootstrap": "20.0.0",
+    "@popperjs/core": "^2.11.8",
+    "bootstrap": "^5.3.8",
+    "luxon": "^3.7.2",
+    "rxjs": "^7.8.2",
+    "tslib": "^2.8.1"
   },
   "devDependencies": {
-    "@eslint/js": "^9",
-    "@testing-library/dom": "^10.4.1",
-    "@testing-library/jest-dom": "^7.0.1",
-    "@testing-library/react": "^16.3.2",
-    "@testing-library/user-event": "^14.6.6",
-    "@types/luxon": "^3.7.5",
-    "@types/node": "^24",
-    "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.5",
-    "@vitejs/plugin-react": "^6.1.0",
-    "@vitest/coverage-v8": "^4",
-    "eslint": "^9",
-    "eslint-plugin-jsx-a11y": "^6.10.2",
-    "eslint-plugin-react-hooks": "^7.1.1",
-    "eslint-plugin-react-refresh": "^0.5.5",
-    "globals": "^17.11.0",
-    "jsdom": "^30.0.1",
-    "prettier": "^3.9.6",
-    "typescript": "^5",
-    "typescript-eslint": "^8.68.0",
-    "vite": "^8",
-    "vitest": "^4"
+    "@analogjs/vite-plugin-angular": "^2.2.1",
+    "@analogjs/vitest-angular": "^2.2.2",
+    "@angular-eslint/builder": "21.1.0",
+    "@angular/build": "^21.0.5",
+    "@angular/cli": "^21.0.5",
+    "@angular/compiler-cli": "^21.0.8",
+    "@angular/platform-browser-dynamic": "^21.0.8",
+    "@eslint/js": "^9.39.1",
+    "@types/leaflet": "^1.9.21",
+    "@types/leaflet.markercluster": "^1.5.6",
+    "@types/luxon": "^3.7.1",
+    "@vitest/coverage-v8": "^4.0.16",
+    "angular-eslint": "21.1.0",
+    "eslint": "^9.39.1",
+    "jsdom": "^27.4.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "8.47.0",
+    "vitest": "^4.0.16"
   }
 }

@@ -1,0 +1,79 @@
+import { describe, it, expect, beforeEach } from 'vitest';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { signal } from '@angular/core';
+import { App } from './app';
+import { ApiService } from 'app/services/api';
+import { ConfigService } from 'app/services/config.service';
+import { of } from 'rxjs';
+
+describe('App', () => {
+  let component: App;
+  let fixture: ComponentFixture<App>;
+  let mockApiService: { apiPath: string; env: string; bannerColour: string; adminUrl: string };
+  let config: ReturnType<typeof signal<Record<string, unknown>>>;
+
+  beforeEach(() => {
+    mockApiService = {
+      apiPath: 'https://great-api.gov.bc.ca/api/public',
+      env: 'test',
+      bannerColour: 'no-banner-colour-set',
+      adminUrl: 'http://localhost:4000/admin/'
+    };
+
+    config = signal<Record<string, unknown>>({
+      ENVIRONMENT: 'test',
+      BANNER_COLOUR: 'red',
+      API_PATH: 'https://great-api.gov.bc.ca/api/public',
+      ADMIN_PATH: 'http://localhost:4000/admin/'
+    });
+
+    const mockConfigService = {
+      init: () => Promise.resolve(),
+      lists: of([]),
+      getApiPath: () => '/api',
+      config
+    };
+
+    TestBed.configureTestingModule({
+      imports: [App],
+      providers: [
+        provideRouter([]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: ApiService, useValue: mockApiService },
+        { provide: ConfigService, useValue: mockConfigService }
+      ]
+    });
+
+    fixture = TestBed.createComponent(App);
+    component = fixture.componentInstance;
+  });
+
+  it('should create the app', () => {
+    expect(component).toBeTruthy();
+  });
+
+  it('should have title', () => {
+    expect(component.title).toBe('EPIC - Environmental Assessment Office');
+  });
+
+  it('should render the header in a span tag', () => {
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const titleElement = compiled.querySelector('span.navbar-brand__title');
+    expect(titleElement?.textContent).toContain('EPIC');
+  });
+
+  it('replaces the whole shell with the curtain when ACCESS_GATE is true', () => {
+    sessionStorage.clear();
+    config.set({ ...config(), ACCESS_GATE: true });
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('#gate-password')).toBeTruthy();
+    expect(compiled.querySelector('app-header')).toBe(null);
+    expect(compiled.querySelector('app-footer')).toBe(null);
+  });
+});
