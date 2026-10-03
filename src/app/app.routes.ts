@@ -7,7 +7,6 @@ import { LegislationComponent } from './legislation/legislation.component';
 import { ProcessComponent } from './process/process.component';
 import { ComplianceOversightComponent } from './compliance-oversight/compliance-oversight.component';
 import { SearchHelpComponent } from './search-help/search-help.component';
-import { CACUnsubscribeComponent } from './cac-unsubscribe/cac-unsubscribe.component';
 import { NewsListComponent } from './news/news.component';
 import { ProjectsComponent } from './projects/projects.component';
 import { ProjectListComponent } from './projects/project-list/project-list.component';
@@ -36,11 +35,6 @@ export const routes: Routes = [
   {
     path: 'contact',
     component: ContactComponent
-  },
-  
-  {
-    path: 'cac-unsubscribe',
-    component: CACUnsubscribeComponent
   },
   
   {

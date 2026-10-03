@@ -72,7 +72,7 @@ describe('ConfigService DEMI paths', () => {
   }
 
   it('reads search from /demi-search when SEARCH_API_PATH is unset', async () => {
-    expect((await serviceWith({ API_PATH: '/api' })).getSearchApiPath()).toBe('/demi-search');
+    expect((await serviceWith({})).getSearchApiPath()).toBe('/demi-search');
   });
 
   it('reads search from /demi-search when SEARCH_API_PATH is empty', async () => {

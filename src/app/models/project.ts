@@ -58,9 +58,6 @@ export class Project {
   operational?: any;
   nature?: any;
   commentPeriodForBanner: any;
-  projectCAC: boolean;
-  projectCACPublished: boolean;
-  cacEmail: any;
   appStatus?: string; // Application status for display
   cpStatus?: string; // Comment period status for display
   clFile?: string; // CL File number
@@ -131,9 +128,6 @@ export class Project {
     this.substitution        = obj && obj.substitution        || null;
     this.updatedBy           = obj && obj.updatedBy           || null;
     this.commentPeriodForBanner           = obj && obj.commentPeriodForBanner           || null;
-    this.cacEmail            = obj && obj.cacEmail            || null;
-    this.projectCAC          = obj && obj.projectCAC          || null;
-    this.projectCACPublished = obj && obj.projectCACPublished || null;
     this.read                = obj && obj.read                || null;
     this.write               = obj && obj.write               || null;
     this.delete              = obj && obj.delete              || null;

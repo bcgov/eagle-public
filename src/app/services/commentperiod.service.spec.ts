@@ -65,6 +65,14 @@ describe('CommentPeriodService DEMI reads', () => {
       expect((await result).commentTip).toBe('Be specific');
     });
 
+    it('keeps the ENGAGE link the period page opens', async () => {
+      const result = firstValueFrom(service.getById(PERIOD));
+      searchRequest(httpMock, 'CommentPeriod').flush(envelope([{ _id: PERIOD, isMet: true, metURL: 'https://engage.eao.gov.bc.ca/site-c' }]));
+      const period = await result;
+      expect(period.metURL).toBe('https://engage.eao.gov.bc.ca/site-c');
+      expect(period.isEngage).toBe(true);
+    });
+
     it('drops the admin fields stored on the record', async () => {
       const result = firstValueFrom(TestBed.inject(ApiService).getPeriod(PERIOD));
       searchRequest(httpMock, 'CommentPeriod').flush(envelope([{ _id: PERIOD, metURLAdmin: 'https://admin' }]));

@@ -11,8 +11,7 @@ export class Constants {
   public static readonly optionalProjectDocTabs = {
     APPLICATION: 'application',
     CERTIFICATE: 'certificate',
-    AMENDMENT: 'amendment',
-    UNSUBSCRIBE_CAC: 'project-unsubscribe'
+    AMENDMENT: 'amendment'
   };
 
   public static readonly legislationLinks = {

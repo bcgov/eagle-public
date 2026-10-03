@@ -26,7 +26,6 @@ export function setupDemiApi(providers: Provider[] = [], lists: any[] = []): Htt
       {
         provide: ConfigService,
         useValue: {
-          getApiPath: () => '/api',
           getSearchApiPath: () => SEARCH,
           getDemiProjectsPath: () => DEMI_PROJECTS,
           config: () => ({}),

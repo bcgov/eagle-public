@@ -67,22 +67,6 @@ export class CommentService {
     );
   }
 
-  add(orig: Comment): Observable<Comment | null> {
-    // make a (deep) copy of the passed-in comment so we don't change it
-    const comment = JSON.parse(JSON.stringify(orig));
-
-    // ID must not exist on POST
-    delete comment._id;
-
-    return this.api.addComment(comment)
-      .pipe(
-        map((res: Comment | null) => {
-          return res ? new Comment(res) : null;
-        }),
-        catchError(this.api.handleError)
-      );
-  }
-
   private _getExtraAppData(comment: Comment): Observable<Comment> {
     return forkJoin(
       this.documentService.getByMultiId(comment.documents)

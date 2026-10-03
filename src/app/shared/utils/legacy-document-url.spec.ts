@@ -1,9 +1,19 @@
 import { describe, it, expect } from 'vitest';
-import { rewriteLegacyDocumentLinks, rewriteLegacyDocumentUrl } from './legacy-document-url';
+import { documentDownloadUrl, rewriteLegacyDocumentLinks, rewriteLegacyDocumentUrl } from './legacy-document-url';
 
 const ID = '5c8a7b6d5e4f3a2b1c0d9e8f';
 const SEARCH = '/demi-search';
-const DEMI = `${SEARCH}/documents/${ID}/download?redirect=1`;
+const DEMI = `${SEARCH}/documents/${ID}/download?redirect=1&inline=1`;
+
+describe('documentDownloadUrl', () => {
+  it('asks for an attachment by default', () => {
+    expect(documentDownloadUrl(SEARCH, 'a/b')).toBe(`${SEARCH}/documents/a%2Fb/download?redirect=1`);
+  });
+
+  it('asks for inline display when told to', () => {
+    expect(documentDownloadUrl(SEARCH, ID, { inline: true })).toBe(DEMI);
+  });
+});
 
 describe('rewriteLegacyDocumentUrl', () => {
   it.each([
@@ -16,7 +26,7 @@ describe('rewriteLegacyDocumentUrl', () => {
     ['host with a trailing dot', `https://projects.eao.gov.bc.ca./api/document/${ID}/fetch`],
     ['relative to a nested page', `../api/public/document/${ID}/download`],
     ['upper-case id', `/api/document/${ID.toUpperCase()}/fetch`],
-  ])('points a %s at the DEMI download', (_label, href) => {
+  ])('points a %s at the inline DEMI download', (_label, href) => {
     expect(rewriteLegacyDocumentUrl(href, SEARCH)).toBe(DEMI);
   });
 
@@ -38,7 +48,7 @@ describe('rewriteLegacyDocumentUrl', () => {
 
   it('builds the target on the configured search path', () => {
     expect(rewriteLegacyDocumentUrl(`/api/document/${ID}/fetch`, 'https://demi.example/api'))
-      .toBe(`https://demi.example/api/documents/${ID}/download?redirect=1`);
+      .toBe(`https://demi.example/api/documents/${ID}/download?redirect=1&inline=1`);
   });
 });
 

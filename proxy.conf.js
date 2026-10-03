@@ -1,28 +1,13 @@
 /**
- * Dev server proxy — auto-generated from src/env.js
- *
- * env.js is the single source of truth.  Change API_LOCATION there;
- * the dev server picks it up on next restart.  No need to touch this file.
+ * Dev server proxy for the two DEMI paths the app reads from.
  */
-const fs   = require('fs');
-const vm   = require('vm');
-const path = require('path');
-
-const envJs = fs.readFileSync(path.join(__dirname, 'src', 'env.js'), 'utf-8');
-const sandbox = { __env: {} };
-vm.runInNewContext(envJs, sandbox);
-
-const target = sandbox.__env.API_LOCATION || 'http://localhost:3000';
-
-const proxyRule = { target, secure: false, changeOrigin: true };
 
 // The APIM gateway nginx itself proxies to for both DEMI paths. It answers anonymously, while
-// test's site answers them with `401 WWW-Authenticate: Basic`, so they do NOT follow API_LOCATION.
+// test's site answers them with `401 WWW-Authenticate: Basic`, so they go to the gateway directly.
 const demiGateway = 'https://demi-apim-test.azure-api.net';
 
 module.exports = {
-  '/api':       proxyRule,
-  // Phase dates for the assessment rail. Nothing here supplies nginx's `/api/projects` prefix.
+  // Single project reads; rewritten onto DEMI's /api/projects.
   '/demi-projects': {
     target: demiGateway,
     secure: false,

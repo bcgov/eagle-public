@@ -90,18 +90,17 @@ export class ProjectNotificationsTableRowsComponent implements TableRowComponent
                 ? element.instructions.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
                 : '';
               const match = fullText.match(/Comment Period on the (.*?) for /);
-              return {
-                ...element,
-                instructions: match ? match[1] : '',
-                additionalText: element.additionalText || fullText || element.informationLabel,
-              };
+              // Update in place: a spread copy drops the CommentPeriod getters (isEngage, ctaLabel).
+              element.instructions = match ? match[1] : '';
+              element.additionalText = element.additionalText || fullText || element.informationLabel;
+              return element;
             });
             const seenIds = new Set<string>();
             const seenUrls = new Set<string>();
             deduped = periods.filter((p: CommentPeriod) => {
               if (seenIds.has(p._id)) return false;
               seenIds.add(p._id);
-              if (p.isMet && p.metURL) {
+              if (p.isEngage) {
                 if (seenUrls.has(p.metURL)) return false;
                 seenUrls.add(p.metURL);
               }
@@ -162,7 +161,7 @@ export class ProjectNotificationsTableRowsComponent implements TableRowComponent
   }
 
   goToCP(commentPeriod: CommentPeriod) {
-    if (commentPeriod.isMet && commentPeriod.metURL) {
+    if (commentPeriod.isEngage) {
       window.open(commentPeriod.metURL, '_blank');
     } else if (this.rowData?.associatedProjectId) {
       this.router.navigate(['p', this.rowData.associatedProjectId, 'cp', commentPeriod._id]);

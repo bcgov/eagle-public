@@ -9,9 +9,8 @@ import { CommentPeriod } from 'app/models/commentperiod';
 import { Document } from 'app/models/document';
 import { SearchResults } from 'app/models/search';
 import { Org } from 'app/models/organization';
-import { Decision } from 'app/models/decision';
 import { Utils } from 'app/shared/utils/utils';
-import { documentDownloadUrl } from 'app/shared/utils/legacy-document-url';
+import { documentDownloadUrl, DocumentUrlOptions } from 'app/shared/utils/legacy-document-url';
 import { LoggingService } from './logging.service';
 import { ConfigService } from './config.service';
 import { AnalyticsService } from './analytics/analytics.service';
@@ -101,9 +100,6 @@ function demiProjectToEagle(doc: any, commentPeriodForBanner: any[], lists: any[
     responsibleEPD: doc.responsibleEPD,
     responsibleEPDEmail: doc.responsibleEPDEmail,
     responsibleEPDPhone: doc.responsibleEPDPhone,
-    projectCAC: doc.projectCAC,
-    projectCACPublished: doc.projectCACPublished,
-    cacEmail: doc.cacEmail,
     proponent: { _id: doc.proponentId, name: doc.proponentName },
     commentPeriodForBanner,
   };
@@ -124,14 +120,6 @@ export class ApiService {
   private static readonly ALL_ROWS_PAGE_SIZE = 250;
   // Long `docIds` URLs break near 320 ids.
   private static readonly DOC_IDS_PER_REQUEST = 300;
-
-  /**
-   * eagle-api: comment and document uploads, CAC sign-up and removal, and the decision and
-   * by-parent document reads that have no caller (TODO.md).
-   */
-  get apiPath(): string {
-    return this.configService.getApiPath();
-  }
 
   /** demi-search: every public read. */
   get searchPath(): string {
@@ -198,12 +186,12 @@ export class ApiService {
       document_name: document.displayName || document.documentFileName,
       document_source: document.documentSource || 'unknown'
     });
-    window.open(this.getDocumentUrl(document), '_blank');
+    window.open(this.getDocumentUrl(document, { inline: true }), '_blank');
   }
 
   /** The demi-search download URL for a document; also usable as an anchor href. */
-  getDocumentUrl(document: { _id: string }): string {
-    return documentDownloadUrl(this.searchPath, document._id);
+  getDocumentUrl(document: { _id: string }, options?: DocumentUrlOptions): string {
+    return documentDownloadUrl(this.searchPath, document._id, options);
   }
 
   //
@@ -286,17 +274,6 @@ export class ApiService {
     );
   }
 
-  // CAC
-  cacSignUp(project: Project, meta: any) {
-    // We are just looking for a 200 OK
-    return this.http.post<any>(`${this.apiPath}/project/${project._id}/cacSignUp`, meta, {});
-  }
-
-  cacRemoveMember(projectId: string, meta: any) {
-    // We are just looking for a 200 OK
-    return this.http.put<any>(`${this.apiPath}/project/${projectId}/cacRemoveMember`, meta, {});
-  }
-
   // Organizations
 
   /** Every organization of one company type, paged until a short page. */
@@ -343,31 +320,6 @@ export class ApiService {
   }
 
   //
-  // Decisions: still eagle-api, demi-search has no Decision dataset.
-  //
-  getDecisionByAppId(appId: string): Observable<Decision[]> {
-    const fields = [
-      '_addedBy',
-      '_application',
-      'name',
-      'description'
-    ];
-    const queryString = 'decision?_application=' + appId + '&fields=' + this.buildValues(fields);
-    return this.http.get<Decision[]>(`${this.apiPath}/${queryString}`, {});
-  }
-
-  getDecision(id: string): Observable<Decision[]> {
-    const fields = [
-      '_addedBy',
-      '_application',
-      'name',
-      'description'
-    ];
-    const queryString = 'decision/' + id + '?fields=' + this.buildValues(fields);
-    return this.http.get<Decision[]>(`${this.apiPath}/${queryString}`, {});
-  }
-
-  //
   // Comment Periods
   //
   /** Every comment period of one project, newest first. A project has single-digit periods. */
@@ -403,6 +355,8 @@ export class ApiService {
     'dateStarted',
     'informationLabel',
     'instructions',
+    'isMet',
+    'metURL',
     'openHouses',
     'project',
     'relatedDocuments',
@@ -428,57 +382,9 @@ export class ApiService {
       .pipe(map(envelope => rowsFrom<Comment>(envelope)));
   }
 
-  addComment(comment: Comment): Observable<Comment> {
-    const fields = [
-      'comment',
-      'author'
-    ];
-    const queryString = 'public/comment?fields=' + this.buildValues(fields);
-    return this.http.post<Comment>(`${this.apiPath}/${queryString}`, comment, {});
-  }
-
   //
   // Documents
   //
-  getDocumentsByAppId(appId: string): Observable<Document[]> {
-    const fields = [
-      '_application',
-      'documentFileName',
-      'displayName',
-      'internalURL',
-      'internalMime',
-      'isFeatured'
-    ];
-    const queryString = 'document?_application=' + appId + '&fields=' + this.buildValues(fields);
-    return this.http.get<Document[]>(`${this.apiPath}/${queryString}`, {});
-  }
-
-  getDocumentsByCommentId(commentId: string): Observable<Document[]> {
-    const fields = [
-      '_comment',
-      'documentFileName',
-      'displayName',
-      'internalURL',
-      'internalMime',
-      'isFeatured'
-    ];
-    const queryString = 'document?_comment=' + commentId + '&fields=' + this.buildValues(fields);
-    return this.http.get<Document[]>(`${this.apiPath}/${queryString}`, {});
-  }
-
-  getDocumentsByDecisionId(decisionId: string): Observable<Document[]> {
-    const fields = [
-      '_decision',
-      'documentFileName',
-      'displayName',
-      'internalURL',
-      'internalMime',
-      'isFeatured'
-    ];
-    const queryString = 'document?_decision=' + decisionId + '&fields=' + this.buildValues(fields);
-    return this.http.get<Document[]>(`${this.apiPath}/${queryString}`, {});
-  }
-
   getDocument(id: string): Observable<Document[]> {
     return this.getDocumentsByMultiId([id]);
   }
@@ -526,17 +432,6 @@ export class ApiService {
         // The index holds no `internalOriginalName`, the only label the comment attachment list renders.
         internalOriginalName: row.internalOriginalName ?? row.documentFileName ?? row.displayName,
       }, ['_id', ...fields]))));
-  }
-
-  uploadDocument(formData: FormData): Observable<Document> {
-    const fields = [
-      'documentFileName',
-      'displayName',
-      'internalURL',
-      'internalMime'
-    ];
-    const queryString = 'document/?fields=' + this.buildValues(fields);
-    return this.http.post<Document>(`${this.apiPath}/${queryString}`, formData, {});
   }
 
   /** The pinned and newest updates for the home page strip. */

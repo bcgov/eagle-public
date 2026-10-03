@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { Utils } from 'app/shared/utils/utils';
@@ -15,12 +15,19 @@ function card(data: any) {
 }
 
 describe('content result card', () => {
-  it('links to the document with NO page fragment', () => {
+  it('links the title to the document for viewing, with NO page fragment', () => {
     // pageNumber is a passage sequence number, not a PDF page, so a #page=N fragment built from it
     // points somewhere arbitrary. Measured: a 63-chunk document carries 51 distinct values.
-    const c = card({ _id: 'doc1', documentName: 'Fish and Fish Habitat.pdf' }).componentInstance;
-    expect(c.documentUrl()).toBe('/demi-search/documents/doc1/download?redirect=1');
-    expect(c.documentUrl().includes('#')).toBe(false);
+    const el: HTMLElement = card({ _id: 'doc1', documentName: 'Fish and Fish Habitat.pdf' }).nativeElement;
+    expect(el.querySelector('.result-title a')?.getAttribute('href')).toBe('/demi-search/documents/doc1/download?redirect=1&inline=1');
+  });
+
+  it('saves the document as a file from the Download button', () => {
+    const open = vi.spyOn(window, 'open').mockReturnValue(null);
+    const el: HTMLElement = card({ _id: 'doc1', documentName: 'Fish.pdf' }).nativeElement;
+    (el.querySelector('button.result-download') as HTMLButtonElement).click();
+    expect(open).toHaveBeenCalledWith('/demi-search/documents/doc1/download?redirect=1', '_blank');
+    open.mockRestore();
   });
 
   it('summarises matches only', () => {

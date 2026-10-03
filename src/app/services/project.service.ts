@@ -187,37 +187,4 @@ export class ProjectService {
         })
       );
   }
-
-  // Send this users' information to our CAC back-end
-  cacSignUp(project: Project, meta: any): Observable<any> {
-    const loadingId = `cac-signup-${project._id}`;
-    this.loadingState.startLoading(loadingId, 'Signing up for CAC');
-    return this.api.cacSignUp(project, meta)
-      .pipe(
-        map(res => {
-          this.loadingState.stopLoading(loadingId);
-          return res;
-        }),
-        catchError(error => {
-          this.loadingState.stopLoading(loadingId);
-          return this.api.handleError(error);
-        })
-      );
-  }
-
-  // Remove this user from the CAC membership on this project
-  cacRemoveMember(projectId: string, meta: any): Observable<any> {
-    this.loadingState.startLoading('cac-unsubscribe', 'Unsubscribing from CAC');
-    return this.api.cacRemoveMember(projectId, meta)
-      .pipe(
-        map(result => {
-          this.loadingState.stopLoading('cac-unsubscribe');
-          return result;
-        }),
-        catchError(error => {
-          this.loadingState.stopLoading('cac-unsubscribe');
-          return this.api.handleError(error);
-        })
-      );
-  }
 }

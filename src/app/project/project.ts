@@ -157,13 +157,6 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
       link: 'amendments',
       tabDisplayCriteria: null,
       display: false,
-    },
-    {
-      key: Constants.optionalProjectDocTabs.UNSUBSCRIBE_CAC,
-      label: 'Unsubscribe',
-      link: Constants.optionalProjectDocTabs.UNSUBSCRIBE_CAC,
-      tabDisplayCriteria: null,
-      display: false,
     }
   ]);
 
@@ -537,7 +530,7 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
     ).subscribe(list => {
       const currentTabs = this.tabLinks();
       currentTabs.forEach(tabLink => {
-        if (!tabLink.display && tabLink.key !== Constants.optionalProjectDocTabs.UNSUBSCRIBE_CAC) {
+        if (!tabLink.display) {
           const tabModifier = this.utils.createProjectTabModifiers(tabLink.key, list);
           this.tabLinkIfNotEmpty(tabLink.key, tabModifier);
         }
@@ -547,7 +540,7 @@ export class ProjectComponent implements OnInit, OnDestroy, AfterViewInit {
 
   public goToViewComments() {
     const proj = this.project();
-    if (proj?.commentPeriodForBanner?.isMet && proj.commentPeriodForBanner.metURL) {
+    if (proj?.commentPeriodForBanner?.isEngage) {
       this.analytics.track('Comment Period Banner Clicked', {
         project_id: proj._id,
         project_name: proj.name,

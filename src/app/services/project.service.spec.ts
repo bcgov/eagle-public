@@ -3,10 +3,8 @@ import { TestBed } from '@angular/core/testing';
 import { HttpTestingController } from '@angular/common/http/testing';
 import { ProjectService } from './project.service';
 import { ApiService } from 'app/services/api';
-import { DecisionService } from './decision.service';
 import { defer, of, lastValueFrom, firstValueFrom } from 'rxjs';
 import { Project } from 'app/models/project';
-import { Decision } from 'app/models/decision';
 import { SearchService } from './search.service';
 // Mock data removed - simplified tests
 import { Utils } from 'app/shared/utils/utils';
@@ -20,7 +18,6 @@ describe('ProjectService', () => {
   let mockApiService: any;
   let mockSearchService: any;
   let mockUtils: any;
-  let mockDecisionService: any;
 
   beforeEach(() => {
     mockApiService = {
@@ -50,17 +47,12 @@ describe('ProjectService', () => {
       })
     };
 
-    mockDecisionService = {
-      getByProjectId: vi.fn(() => of(new Decision({ _id: 'IIIII' })))
-    };
-
     TestBed.configureTestingModule({
       providers: [
         ProjectService,
         { provide: ApiService, useValue: mockApiService },
         { provide: SearchService, useValue: mockSearchService },
-        { provide: Utils, useValue: mockUtils },
-        { provide: DecisionService, useValue: mockDecisionService }
+        { provide: Utils, useValue: mockUtils }
       ]
     });
 
@@ -174,7 +166,6 @@ describe('ProjectService DEMI project reads', () => {
     proponentId: '5c8a7b6d5e4f3a2b1c0d9e8f',
     proponentName: 'Skeena Resources Limited',
     eacDecision: 'list-approved',
-    projectCAC: true,
     pins: [
       { _id: 'n2', name: 'Tahltan Central Government' },
       { _id: 'n1', name: 'Nisga\'a Lisims Government' },
@@ -249,12 +240,6 @@ describe('ProjectService DEMI project reads', () => {
     const project = firstValueFrom(service.getById(PROJECT_ID, true));
     projectRequest().flush({ ...DOC, eacDecision: 'list-unknown' });
     expect((await project).eacDecision).toBeNull();
-  });
-
-  it('keeps the CAC flag the comment form reads', async () => {
-    const project = firstValueFrom(service.getById(PROJECT_ID, true));
-    projectRequest().flush(DOC);
-    expect((await project).projectCAC).toBe(true);
   });
 
   it('answers null, not an error, when DEMI has no such project', async () => {

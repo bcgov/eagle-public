@@ -18,7 +18,7 @@
   // ==========================================================================
 
   // KEEP EVERY PATH IN THIS FILE RELATIVE.
-  // rproxy fronts the Azure bundle in test and prod, so `/api`, `/admin/` and the
+  // rproxy fronts the Azure bundle in test and prod, so `/admin/` and the
   // search paths are all same-origin locations it already serves. An absolute value baked in here
   // would follow the bundle into both environments and send those calls cross-origin.
 
@@ -36,14 +36,9 @@
   // Environment label
   window.__env.ENVIRONMENT = 'dev';
 
-  // API target — proxy.conf.js reads this to route /api.
-  //
-  // TEST, not dev: the Azure estate is staging-and-prod rather than dev-test-prod, so test IS
-  // staging and is the only deployed environment worth developing against. `configEndpoint` is
-  // true above for the same reason: test's /demi-search/config supplies SEARCH_API_PATH,
-  // ADMIN_PATH and the rest, so this file cannot drift from what test serves.
+  // The app no longer calls eagle-api and reads neither line. The Azure deploy workflows rewrite
+  // and assert both, so remove them only together with those checks.
   window.__env.API_LOCATION = 'https://eagle-test.apps.silver.devops.gov.bc.ca';
-
   window.__env.API_PATH = '/api';
 
   // demi-search base path for every public read. Empty means `/demi-search`; there is no eagle-api

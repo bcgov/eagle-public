@@ -3,7 +3,7 @@ import { ISearchResults } from 'app/models/search';
 import { Constants } from './constants';
 import { AnalyticsService } from 'app/services/analytics/analytics.service';
 import { ConfigService } from 'app/services/config.service';
-import { documentDownloadUrl } from './legacy-document-url';
+import { documentDownloadUrl, DocumentUrlOptions } from './legacy-document-url';
 
 const encode = encodeURIComponent;
 window['encodeURIComponent'] = (component: string | number | boolean) => {
@@ -64,8 +64,6 @@ export class Utils {
     let phases: string | undefined;
 
     switch (projectTab) {
-      case Constants.optionalProjectDocTabs.UNSUBSCRIBE_CAC:
-        break;
       case Constants.optionalProjectDocTabs.AMENDMENT: {
         types = [
           { legislation: 2002, name: 'Amendment Package' },
@@ -169,21 +167,17 @@ export class Utils {
     return item?.name ?? '-';
   }
 
-  /**
-   * Opens a document download in a new browser tab.
-   * @param document Document object with _id, documentFileName, displayName, or internalOriginalName
-   */
-  public openDocumentDownload(document: { _id: string; documentFileName?: string; displayName?: string; internalOriginalName?: string }): void {
+  /** Opens a document in a new browser tab; `inline` shows it there instead of saving it. */
+  public openDocumentDownload(document: { _id: string; documentFileName?: string; displayName?: string; internalOriginalName?: string }, options?: DocumentUrlOptions): void {
     const filename = document.documentFileName || document.displayName || document.internalOriginalName || 'document';
     
-    // Track document download
-    this.analytics.track('Document Downloaded', {
+    this.analytics.track(options?.inline ? 'Document Opened' : 'Document Downloaded', {
       document_id: document._id,
       document_name: filename,
       document_type: 'unknown'
     });
     
-    window.open(documentDownloadUrl(this.configService.getSearchApiPath(), document._id), '_blank');
+    window.open(documentDownloadUrl(this.configService.getSearchApiPath(), document._id, options), '_blank');
   }
 
   /**

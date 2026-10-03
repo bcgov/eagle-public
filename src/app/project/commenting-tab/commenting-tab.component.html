@@ -41,7 +41,7 @@
           <p class="cp-card__description">{{ cp.additionalText }}</p>
         }
         <button class="btn btn-epic-cta" (click)="goToCP(cp)">
-          {{ cp.commentPeriodStatus === 'Open' ? 'Share your thoughts' : 'View Engagement' }}
+          {{ cp.ctaLabel }}
         </button>
       </div>
     </article>
