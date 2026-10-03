@@ -12,15 +12,23 @@
       </search-filter-template>
     </section>
 
-    @if (!loading() && tableData().totalListItems === 0) {
-      <div>
-        No results found.
-      </div>
-    } @else {
-      <lib-table-template
-        [data]="tableData()"
-        [loading]="loading()"
-        (messageOut)="onMessageOut($event)">
-      </lib-table-template>
+    <div role="alert">
+      @if (tooManyFilters()) {
+        {{ tooManyFiltersMessage }}
+      }
+    </div>
+
+    @if (!tooManyFilters()) {
+      @if (!loading() && tableData().totalListItems === 0) {
+        <div>
+          No results found.
+        </div>
+      } @else {
+        <lib-table-template
+          [data]="tableData()"
+          [loading]="loading()"
+          (messageOut)="onMessageOut($event)">
+        </lib-table-template>
+      }
     }
 

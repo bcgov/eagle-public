@@ -1,7 +1,6 @@
 import { Component, inject, signal, OnDestroy, ChangeDetectorRef, ViewEncapsulation, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
-import { DomSanitizer } from '@angular/platform-browser';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { ToastService } from '../services/toast.service';
@@ -17,6 +16,8 @@ import { CommentsTableRowsComponent } from './comments-table-rows/comments-table
 import { TableObject } from '../shared/components/table-template/table-object';
 import { TableTemplateComponent } from '../shared/components/table-template/table-template.component';
 import { LoggingService } from '../services/logging.service';
+import { AnalyticsService } from '../services/analytics/analytics.service';
+import { downloadDocumentWithToast } from '../shared/utils/download-document';
 
 @Component({
   selector: 'app-comments',
@@ -38,7 +39,7 @@ export class CommentsComponent implements OnDestroy {
   private router = inject(Router);
   private loadingState = inject(LoadingStateService);
   private logger = inject(LoggingService);
-  private sanitizer = inject(DomSanitizer);
+  private analytics = inject(AnalyticsService);
 
   loading = this.loadingState.getOperationState('comments');
   // True while comment period is not yet loaded.
@@ -52,13 +53,7 @@ export class CommentsComponent implements OnDestroy {
   project = signal<Project | null>(null);
   comments = signal<any[]>([]);
   commentPeriodDocs = signal<any[]>([]);
-  
-  // Sanitized instructions for safe HTML rendering
-  sanitizedInstructions = computed(() => {
-    const instructions = this.commentPeriod()?.instructions;
-    return instructions ? this.sanitizer.bypassSecurityTrustHtml(String(instructions)) : '';
-  });
-  
+
   tableData = signal<TableObject>(new TableObject({ component: CommentsTableRowsComponent }));
   commentPeriodHeader = signal('');
 
@@ -281,7 +276,9 @@ export class CommentsComponent implements OnDestroy {
         newTableData.options = currentTableData.options;
         newTableData.currentPage = currentTableData.currentPage;
         newTableData.pageSize = currentTableData.pageSize;
-        newTableData.totalListItems = res.totalCount ?? currentComments.length;
+        // A null count means the total is unknown: keep the last known total, but never fewer than the rows seen.
+        const rowsSeen = (currentTableData.currentPage - 1) * currentTableData.pageSize + currentComments.length;
+        newTableData.totalListItems = res.totalCount ?? Math.max(currentTableData.totalListItems, rowsSeen);
         newTableData.items = currentComments.map((comment: any) => ({ rowData: comment }));
 
         this.logger.debug(`Loaded ${currentComments.length} comments, tableData.items length: ${newTableData.items.length}, totalListItems: ${newTableData.totalListItems}`, 'CommentsComponent');
@@ -300,15 +297,20 @@ export class CommentsComponent implements OnDestroy {
     }
   }
 
-  async downloadDocument(document: any) {
-    try {
-      await this.api.downloadDocument(document);
-    } catch {
-      this.toastService.show('Error opening document! Please try again later', '', { duration: 2000, type: 'error' });
-      return;
-    }
-    // The file arrives in a hidden frame the page cannot watch, so this only says it was asked for.
-    this.toastService.show('Starting download', '', { duration: 2000, type: 'info' });
+  downloadDocument(document: any) {
+    return downloadDocumentWithToast(this.api, this.toastService, document);
+  }
+
+  trackEngageClick() {
+    const period = this.commentPeriod()!;
+    this.analytics.track('Comment Period Banner Clicked', {
+      // Notification routes carry only a name, so fall back to the period's own project id.
+      project_id: this.project()?._id ?? period.project,
+      project_name: this.project()?.name,
+      status: period.commentPeriodStatus,
+      is_met: true,
+      destination: 'external_met'
+    });
   }
 
   goBackToProjectDetails() {

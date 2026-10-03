@@ -12,7 +12,7 @@
   //   The Azure deploy workflows flip configEndpoint below with sed, then grep the BUILT copy to
   //   prove the rewrite took — sed exits 0 when it matches nothing. The sed is anchored on the full
   //   `window.__env.` assignment so it rewrites only that line, never these comments.
-  //   App then fetches runtime config from /demi-search/config (or CONFIG_PATH). Those values
+  //   App then fetches runtime config from /demi-search/config. Those values
   //   override everything below. If it cannot be loaded, the app shows an unavailable page.
   //
   // ==========================================================================
@@ -35,11 +35,6 @@
 
   // Environment label
   window.__env.ENVIRONMENT = 'dev';
-
-  // The app no longer calls eagle-api and reads neither line. The Azure deploy workflows rewrite
-  // and assert both, so remove them only together with those checks.
-  window.__env.API_LOCATION = 'https://eagle-test.apps.silver.devops.gov.bc.ca';
-  window.__env.API_PATH = '/api';
 
   // demi-search base path for every public read. Empty means `/demi-search`; there is no eagle-api
   // fallback. Leave it empty here: a value baked in at build time would follow the bundle into

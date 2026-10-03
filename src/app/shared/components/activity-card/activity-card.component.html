@@ -32,26 +32,31 @@
         Project Info
       </a>
     }
-    @if (rowData?.pcp && rowData?.type === 'Public Comment Period') {
+    @if (commentPeriod && rowData?.type === 'Public Comment Period') {
       <button class="btn btn-sm btn-outline-primary"
         (click)="goToCP(rowData)">
-        View Engagement
+        {{ commentPeriod.ctaLabel }}
+        @if (commentPeriod.isEngage) {
+          <span class="visually-hidden">(opens in new tab)</span>
+        }
       </button>
     }
     @if (isSingleDoc(rowData?.documentUrl) && !rowData?.documentUrl?.includes('docs?folder')) {
       @if (rowData?.notificationName && rowData?.type === 'Project Notification Public Comment Period') {
         <a class="btn btn-sm btn-outline-primary"
-           [href]="documentHref(rowData.documentUrl)"
+           [href]="documentHref"
            target="_blank"
            rel="noopener">
           View Project Notification Public Comment Period
+          <span class="visually-hidden">(opens in new tab)</span>
         </a>
       } @else if (!rowData?.notificationName) {
         <a class="btn btn-sm btn-outline-primary"
-           [href]="documentHref(rowData.documentUrl)"
+           [href]="documentHref"
            target="_blank"
            rel="noopener">
           View Document(s)
+          <span class="visually-hidden">(opens in new tab)</span>
         </a>
       }
     }

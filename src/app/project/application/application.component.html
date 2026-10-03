@@ -12,15 +12,23 @@
       </search-filter-template>
     
 
-    @if (!loading() && tableData().totalListItems === 0) {
-      <div>
-        There are no application documents associated with this project.
-      </div>
-    } @else {
-      <lib-table-template
-        [data]="tableData()"
-        [loading]="loading()"
-        (messageOut)="onMessageOut($event)">
-      </lib-table-template>
+    <div role="alert">
+      @if (tooManyFilters()) {
+        {{ tooManyFiltersMessage }}
+      }
+    </div>
+
+    @if (!tooManyFilters()) {
+      @if (!loading() && tableData().totalListItems === 0) {
+        <div>
+          There are no application documents associated with this project.
+        </div>
+      } @else {
+        <lib-table-template
+          [data]="tableData()"
+          [loading]="loading()"
+          (messageOut)="onMessageOut($event)">
+        </lib-table-template>
+      }
     }
 

@@ -8,10 +8,8 @@ import { ConfigService } from 'app/services/config.service';
 /**
  * One content-search result: a DOCUMENT, with the passages that matched inside it.
  *
- * The snippets arrive as markup and are bound with `[innerHTML]`. That is safe because eagle-search
- * escapes the document text BEFORE turning its highlight sentinels into `<mark>`, and balances the
- * tags per fragment — see `service/snippet.js` there. Angular's sanitizer keeps `<mark>` and strips
- * anything else, so this is belt and braces rather than the only guard.
+ * Snippets are bound with `[innerHTML]`: demi-search escapes the text before adding `<mark>` (eagle-demi
+ * `snippetFrom`), and Angular's sanitizer, which strips unsafe markup, is the second guard.
  */
 @Component({
   selector: 'app-content-result',

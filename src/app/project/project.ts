@@ -14,7 +14,6 @@ import { Constants } from '../shared/utils/constants';
 import { SearchService } from '../services/search.service';
 import { Utils } from '../shared/utils/utils';
 import { DetailsSidebarComponent } from './details-sidebar/details-sidebar';
-import { SafeHtmlPipe } from '../shared/pipes/safe-html-converter.pipe';
 import { LoggingService } from '../services/logging.service';
 import { AnalyticsService } from '../services/analytics/analytics.service';
 import { EngageBannerComponent } from './engage-banner/engage-banner.component';
@@ -25,7 +24,6 @@ import { EngageBannerComponent } from './engage-banner/engage-banner.component';
     CommonModule,
     RouterModule,
     DetailsSidebarComponent,
-    SafeHtmlPipe,
     EngageBannerComponent
   ],
   templateUrl: './project.html',
