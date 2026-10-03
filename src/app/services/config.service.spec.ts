@@ -242,8 +242,13 @@ describe('ConfigService runtime config', () => {
   it('rejects after three network errors, keeping the curtain shut', async () => {
     const service = serviceAnswering({}, networkError, networkError, networkError);
     const { error } = await settle(service.init());
-    expect(error).toBeInstanceOf(TypeError);
+    expect((error as Error).cause).toBeInstanceOf(TypeError);
     expect(fetchSpy).toHaveBeenCalledTimes(3);
+  });
+
+  it('names the config URL and the attempt count when it gives up', async () => {
+    const { error } = await settle(serviceAnswering({}, networkError, networkError, networkError).init());
+    expect((error as Error).message).toBe('runtime config /demi-search/config failed after 3 attempts: Failed to fetch');
   });
 
   it('rejects after three non-200 answers', async () => {
@@ -260,7 +265,7 @@ describe('ConfigService runtime config', () => {
       return controller.signal;
     });
     const { error } = await settle(serviceAnswering({}, neverAnswers, neverAnswers, neverAnswers).init());
-    expect((error as DOMException)?.name).toBe('TimeoutError');
+    expect(((error as Error).cause as DOMException)?.name).toBe('TimeoutError');
     expect(fetchSpy).toHaveBeenCalledTimes(3);
   });
 
@@ -280,7 +285,7 @@ describe('ConfigService runtime config', () => {
     document.body.innerHTML = '<app-root></app-root>';
     serviceAnswering({}, networkError, networkError, networkError);
     const { error } = await settle(TestBed.runInInjectionContext(() => initializeApp()));
-    expect(error).toBeInstanceOf(TypeError);
+    expect((error as Error).cause).toBeInstanceOf(TypeError);
     expect(document.querySelector('app-root h1')?.textContent).toBe('EPIC is temporarily unavailable');
   });
 
