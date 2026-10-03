@@ -40,7 +40,7 @@ export class ActivityCardComponent implements TableRowComponent {
   contentHtml = '';
   /** Old updates link eagle-api document routes; those now point at the demi-search download. */
   documentHref = '';
-  /** For `ctaLabel` wording. demi-search sends `pcp` without dates, so an open ENGAGE period reads "View Engagement". */
+  /** For `ctaLabel` wording. The search response carries the period's `dateStarted` and `dateCompleted`; the label falls back to "View Engagement" when they are missing or null. */
   commentPeriod: CommentPeriod | null = null;
 
   // TableRowComponent interface — set by TableRowDirective in table context
