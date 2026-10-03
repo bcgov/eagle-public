@@ -188,10 +188,9 @@ export function phaseSetYear(project: Project | null): number {
   return actByYear(year)?.phaseRowsYear ?? year;
 }
 
-/** The year of the Act the project was assessed under, from its `legislation` string. */
+/** The year of the Act the project was assessed under; NaN when the registry holds no such Act. */
 export function actYear(project: Project | null): number {
-  const label = String(project?.legislation ?? '');
-  return actFor(label)?.year ?? Number(label.match(/\d{4}/)?.[0]);
+  return actFor(project?.legislation)?.year ?? NaN;
 }
 
 /** The current phase when it sits off the rail, so the rail can say so. */

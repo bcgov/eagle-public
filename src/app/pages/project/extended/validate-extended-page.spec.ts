@@ -256,10 +256,63 @@ describe('validateExtendedPage on broken pages', () => {
     ]);
   });
 
-  it('accepts an in-page link to a tab the page lists', () => {
+  it('accepts an in-page link to a content tab the page lists, custom or replacing', () => {
     const sound = page([
+      {
+        segment: 'overview',
+        main: [{ type: 'updates', id: 'news', shown: 2, tab: 'updates' }],
+        banner: [
+          {
+            type: 'band',
+            id: 'band',
+            paragraphs: [],
+            steps: [],
+            primary: { label: 'More', tab: 'act' },
+          },
+        ],
+      },
+      { segment: 'updates', replace: true, main: [prose('list')] },
+      { segment: 'act', main: [prose('act')] },
+    ]);
+    expect(validateExtendedPage(sound)).toEqual([]);
+  });
+
+  it('refuses an in-page link to a standard tab, which does not take focus from it', () => {
+    const broken = page([
       { segment: 'overview', main: [{ type: 'updates', id: 'news', shown: 2, tab: 'updates' }] },
       { segment: 'updates' },
+    ]);
+    expect(validateExtendedPage(broken)).toEqual([
+      'tab "overview": block "news" links to tab "updates", a standard tab, which does not take focus from the link',
+    ]);
+  });
+
+  it('refuses fields an Overview append entry ignores', () => {
+    const broken = page(
+      [
+        {
+          segment: 'overview',
+          label: 'Home',
+          title: 'Home',
+          intro: 'Text.',
+          count: 'updates',
+          layout: 'wide',
+          main: [prose('intro')],
+        },
+      ],
+      { updates: [] },
+    );
+    expect(validateExtendedPage(broken)).toEqual(
+      ['label', 'title', 'intro', 'count', 'layout'].map(
+        (field) =>
+          `tab "overview": ${field} is ignored when blocks are appended; set replace to use it`,
+      ),
+    );
+  });
+
+  it('accepts those fields on an Overview entry that replaces the tab', () => {
+    const sound = page([
+      { segment: 'overview', replace: true, title: 'Home', layout: 'wide', main: [prose('intro')] },
     ]);
     expect(validateExtendedPage(sound)).toEqual([]);
   });
@@ -314,7 +367,120 @@ describe('validateExtendedPage on broken pages', () => {
     expect(validateExtendedPage(broken)).toEqual([
       'panel fact label "Status" is used more than once',
       'update link and date "https://town.example/news1 Oct 2026" is used more than once',
-      'tab "overview" contact label "Office" is used more than once',
+      'tab "overview" block "c" contact label "Office" is used more than once',
+    ]);
+  });
+
+  it('refuses every other list key used twice, in page fields and in blocks', () => {
+    const link = { label: 'Read', href: 'https://example.com/' };
+    const doc = { title: 'Report', format: 'PDF', pages: 2, href: 'https://example.com/r.pdf' };
+    const step = { name: 'Start', detail: '' };
+    const broken = page(
+      [
+        {
+          segment: 'overview',
+          replace: true,
+          main: [
+            { type: 'links', id: 'cards', style: 'cards', items: [link, { ...link, href: '/a' }] },
+            { type: 'links', id: 'list', style: 'list', items: [link, link] },
+            {
+              type: 'definitions',
+              id: 'defs',
+              items: [
+                { term: 'Act', detail: '' },
+                { term: 'Act', detail: 'x' },
+              ],
+            },
+            {
+              type: 'table',
+              id: 'table',
+              rows: [
+                { name: 'Cost', value: '1' },
+                { name: 'Cost', value: '2' },
+              ],
+            },
+            {
+              type: 'columns',
+              id: 'cols',
+              columns: [
+                { heading: 'Pro', items: [] },
+                { heading: 'Pro', items: [] },
+              ],
+            },
+            { type: 'steps', id: 'steps', steps: [step, step] },
+            {
+              type: 'band',
+              id: 'band',
+              paragraphs: [],
+              steps: [
+                { name: 'Go', short: '' },
+                { name: 'Go', short: '' },
+              ],
+            },
+            {
+              type: 'summary',
+              id: 'sum',
+              stats: [
+                { label: 'Length', value: '1' },
+                { label: 'Length', value: '2' },
+              ],
+              items: ['One', 'One'],
+            },
+            {
+              type: 'projects',
+              id: 'proj',
+              items: [
+                { id: 'p1', name: 'A', note: '' },
+                { id: 'p1', name: 'B', note: '' },
+              ],
+            },
+          ],
+        },
+      ],
+      {
+        masthead: { actions: [link, { ...link, label: 'Again' }] },
+        timeline: {
+          title: 'Progress',
+          note: '',
+          steps: [
+            { name: 'One', dateLabel: '2026', detail: '' },
+            { name: 'One', dateLabel: '2027', detail: '' },
+          ],
+          currentStep: 0,
+          stateLabels: { complete: 'Done', current: 'Now', upcoming: 'Next' },
+        },
+        documents: {
+          external: {
+            heading: 'Other documents',
+            intro: '',
+            groups: [
+              { publisher: 'Canada', items: [doc, doc] },
+              { publisher: 'Canada', items: [] },
+            ],
+          },
+        },
+        autoLinks: [
+          { text: 'Library Act', href: 'https://example.org/a' },
+          { text: 'library act', href: 'https://example.org/b' },
+        ],
+      },
+    );
+    expect(validateExtendedPage(broken)).toEqual([
+      'masthead action link "https://example.com/" is used more than once',
+      'timeline step name "One" is used more than once',
+      'external document publisher "Canada" is used more than once',
+      'external document link from "Canada" "https://example.com/r.pdf" is used more than once',
+      'autoLinks text "library act" is used more than once',
+      'tab "overview" block "cards" link label "Read" is used more than once',
+      'tab "overview" block "list" link address and label "https://example.com/Read" is used more than once',
+      'tab "overview" block "defs" definition term "Act" is used more than once',
+      'tab "overview" block "table" table row name "Cost" is used more than once',
+      'tab "overview" block "cols" column heading "Pro" is used more than once',
+      'tab "overview" block "steps" step name "Start" is used more than once',
+      'tab "overview" block "band" step name "Go" is used more than once',
+      'tab "overview" block "sum" stat label "Length" is used more than once',
+      'tab "overview" block "sum" summary item "One" is used more than once',
+      'tab "overview" block "proj" project id "p1" is used more than once',
     ]);
   });
 

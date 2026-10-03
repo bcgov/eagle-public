@@ -206,7 +206,7 @@ describe('overview tab', () => {
     // The 2002 Act, not the 2018 default.
     expect(screen.getByRole('link', { name: /2002 Environmental Assessment Act/ })).toHaveAttribute(
       'href',
-      'http://www.bclaws.ca/civix/document/id/complete/statreg/02043_01',
+      'https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/02043_01',
     );
     expect(screen.getByRole('link', { name: /Substituted/ })).toHaveAttribute(
       'href',
@@ -244,7 +244,10 @@ describe('overview tab', () => {
 
     expect(
       await screen.findByRole('link', { name: /^2018 Environmental Assessment Act/ }),
-    ).toHaveAttribute('href', 'http://www.bclaws.ca/civix/document/id/complete/statreg/18051');
+    ).toHaveAttribute(
+      'href',
+      'https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/18051',
+    );
   });
 
   it('counts the project documents in the About grid, linked to the Documents tab', async () => {
