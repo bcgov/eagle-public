@@ -1,0 +1,78 @@
+# =============================================================================
+# Safari check
+# =============================================================================
+# Loads a few pages of a deployed site in real Safari (safaridriver) and, as a cross-check,
+# in Playwright WebKit, then prints one PASS/FAIL row per engine per path. Read-only: it
+# needs no secrets and only reads the public site. Fails when any real-Safari row fails.
+# =============================================================================
+
+name: Safari check
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: 'Site to check'
+        required: true
+        type: string
+        default: 'https://test.projects.eao.gov.bc.ca'
+      paths:
+        description: 'Paths, comma or newline separated'
+        required: true
+        type: string
+        default: '/, /news, /projects, /p/588511a0aaecd9001b82316d/documents, /p/588511a0aaecd9001b82316d/cp/5d0010f4952f3100228e2bb6/details'
+      gate:
+        description: 'Seed the test-site access gate flag before each load (prod has no gate)'
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+env:
+  PLAYWRIGHT_VERSION: '1.63.0'
+
+jobs:
+  safari:
+    name: Safari and WebKit page check
+    # Pinned rather than macos-latest so a label move does not change the Safari under test.
+    runs-on: macos-26
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Setup node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24.x'
+
+      # Installed outside the app so package.json and yarn.lock stay untouched.
+      - name: Install Playwright WebKit
+        run: |
+          set -euo pipefail
+          npm install --prefix "$RUNNER_TEMP/pw" --no-audit --no-fund "playwright@$PLAYWRIGHT_VERSION"
+          "$RUNNER_TEMP/pw/node_modules/.bin/playwright" install webkit
+
+      - name: Enable safaridriver
+        run: sudo safaridriver --enable
+
+      - name: Check pages
+        env:
+          BASE_URL: ${{ inputs.base_url }}
+          PATHS: ${{ inputs.paths }}
+          GATE: ${{ inputs.gate }}
+          SHOT_DIR: safari-check-shots
+        run: PLAYWRIGHT_DIR="$RUNNER_TEMP/pw" node .github/scripts/safari-check.mjs
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: safari-check-screenshots
+          path: safari-check-shots/
+          retention-days: 3
+          if-no-files-found: ignore
